@@ -72,13 +72,13 @@ end
 
 -- Run a single migration body, stamp the flag on success, log on error.
 local function RunOne(specInfo, context, flagHost)
-    local flags = GetFlagTable(flagHost)
-    if flags[specInfo.id] then
+    local flagSet = GetFlagTable(flagHost)
+    if flagSet[specInfo.id] then
         return
     end
     local success, err = pcall(specInfo.body, context)
     if success then
-        flags[specInfo.id] = true
+        flagSet[specInfo.id] = true
     else
         _migrationErrors[#_migrationErrors + 1] = {
             id = specInfo.id,
@@ -146,10 +146,10 @@ function CludesUI.RunRegisteredMigrations()
         -- table, every "preserve the old default for veterans" migration would
         -- hand a reset user the OLD default. Profile-scoped stamps live inside
         -- each profile (and ride exports), so they need no genesis pass.
-        local flags = GetFlagTable(CludesUIDB)
+        local flagSet = GetFlagTable(CludesUIDB)
         for _, specInfo in ipairs(_migrations) do
             if specInfo.scope == "global" then
-                flags[specInfo.id] = true
+                flagSet[specInfo.id] = true
             end
         end
         return
@@ -177,21 +177,21 @@ CludesUI.RegisterMigration({
         if type(cc) ~= "table" then
             return
         end
-        local function seed(list)
-            if type(list) ~= "table" then
+        local function seedValue(entryList)
+            if type(entryList) ~= "table" then
                 return
             end
-            for _, b in ipairs(list) do
+            for _, b in ipairs(entryList) do
                 if type(b) == "table" and b.type == "macro" and b.hovercast then
                     b.hoverFriendly = true
                     b.hoverEnemy = true
                 end
             end
         end
-        seed(cc.globals)
+        seedValue(cc.globals)
         if type(cc.specs) == "table" then
-            for _, list in pairs(cc.specs) do
-                seed(list)
+            for _, entryList in pairs(cc.specs) do
+                seedValue(entryList)
             end
         end
     end,
@@ -226,13 +226,13 @@ CludesUI.RegisterMigration({
             end
             return true, true
         end
-        local function migrate(list)
-            if type(list) ~= "table" then
+        local function migrate(entryList)
+            if type(entryList) ~= "table" then
                 return
             end
-            local total = #list
+            local total = #entryList
             for index = 1, total do
-                local b = list[index]
+                local b = entryList[index]
                 if
                     type(b) == "table"
                     and not b.reactionSeeded
@@ -240,15 +240,15 @@ CludesUI.RegisterMigration({
                 then
                     if b.hovercast == "both" then
                         -- Frame copy: flags were ignored on the frame path.
-                        local frameBinding = {}
-                        for key, value in pairs(b) do
-                            frameBinding[key] = value
+                        local frameBind = {}
+                        for fieldKey, value in pairs(b) do
+                            frameBind[fieldKey] = value
                         end
-                        frameBinding.hovercast = false
-                        frameBinding.hoverFriendly = true
-                        frameBinding.hoverEnemy = true
-                        frameBinding.reactionSeeded = true
-                        list[#list + 1] = frameBinding
+                        frameBind.hovercast = false
+                        frameBind.hoverFriendly = true
+                        frameBind.hoverEnemy = true
+                        frameBind.reactionSeeded = true
+                        entryList[#entryList + 1] = frameBind
                         b.hovercast = true
                     end
                     if not b.hovercast or b.type == "item" then
@@ -264,8 +264,8 @@ CludesUI.RegisterMigration({
         end
         migrate(cc.globals)
         if type(cc.specs) == "table" then
-            for _, list in pairs(cc.specs) do
-                migrate(list)
+            for _, entryList in pairs(cc.specs) do
+                migrate(entryList)
             end
         end
     end,
@@ -301,15 +301,15 @@ local function MakeSnappers()
         end
         return result
     end
-    local function snapPosition(list)
-        if type(list) ~= "table" then
+    local function snapPosition(entryList)
+        if type(entryList) ~= "table" then
             return
         end
-        if list.x then
-            list.x = snap(list.x)
+        if entryList.x then
+            entryList.x = snap(entryList.x)
         end
-        if list.y then
-            list.y = snap(list.y)
+        if entryList.y then
+            entryList.y = snap(entryList.y)
         end
     end
     local function snapPosMap(map)
@@ -361,9 +361,9 @@ local function SnapProfilePositions(profileRec)
         snapPosMap(ufStore.positions)
     end
 
-    local eab = addonStores.CludesUIActionBars
-    if eab then
-        snapPosMap(eab.barPositions)
+    local actionBarsCfg = addonStores.CludesUIActionBars
+    if actionBarsCfg then
+        snapPosMap(actionBarsCfg.barPositions)
     end
 
     local cdmStore = addonStores.CludesUICooldownManager
@@ -380,9 +380,9 @@ local function SnapProfilePositions(profileRec)
         end
     end
 
-    local abr = addonStores.CludesUIAuraBuffReminders
-    if type(abr) == "table" and abr.unlockPos then
-        snapPosition(abr.unlockPos)
+    local reminderCfg = addonStores.CludesUIAuraBuffReminders
+    if type(reminderCfg) == "table" and reminderCfg.unlockPos then
+        snapPosition(reminderCfg.unlockPos)
     end
 
     local cursor = addonStores.CludesUICursor
@@ -449,11 +449,11 @@ do
         if type(resourceBars) ~= "table" or not resourceBars._rbAdvMigrated then
             return
         end
-        local backup = resourceBars.advancedSpecsBackup
-        if type(backup) == "table" then
-            resourceBars.advancedSpecs = backup.advancedSpecs
-            if type(backup.disabledSpecs) == "table" then
-                for secKey, ds in pairs(backup.disabledSpecs) do
+        local backupCopy = resourceBars.advancedSpecsBackup
+        if type(backupCopy) == "table" then
+            resourceBars.advancedSpecs = backupCopy.advancedSpecs
+            if type(backupCopy.disabledSpecs) == "table" then
+                for secKey, ds in pairs(backupCopy.disabledSpecs) do
                     if type(resourceBars[secKey]) == "table" then
                         resourceBars[secKey].disabledSpecs = ds
                     end
@@ -603,29 +603,29 @@ CludesUI.RegisterMigration({
             assignments.profiles = {}
         end
         local DeepCopy = CludesUI._DeepCopy or (CludesUI.Lite and CludesUI.Lite.DeepCopy)
-        local function seed(name)
-            if not name then
+        local function seedValue(label)
+            if not label then
                 return
             end
-            if assignments.profiles[name] then
+            if assignments.profiles[label] then
                 return
             end -- idempotent: never clobber an existing bucket
             local specList = {}
             if legacy and DeepCopy then
                 specList = DeepCopy(legacy)
             end
-            assignments.profiles[name] = { specProfiles = specList }
+            assignments.profiles[label] = { specProfiles = specList }
         end
         if saved.profiles then
-            for name, profileSaved in pairs(saved.profiles) do
+            for label, profileSaved in pairs(saved.profiles) do
                 if type(profileSaved) == "table" then
-                    seed(name)
+                    seedValue(label)
                 end
             end
         end
         -- Ensure the active/Default profile has a bucket even when db.profiles
         -- lacks it (very early / minimal-state installs).
-        seed(saved.activeProfile or "Default")
+        seedValue(saved.activeProfile or "Default")
         assignments._perProfileSeeded = true
     end,
 })
@@ -675,9 +675,9 @@ CludesUI.RegisterMigration({
 
         -- Auto-seeded buckets have no `meta`; only they are consolidation candidates.
         local wasSeeded = {}
-        for name, specBucket in pairs(assignments.profiles) do
+        for label, specBucket in pairs(assignments.profiles) do
             if type(specBucket) == "table" and not specBucket.meta then
-                wasSeeded[#wasSeeded + 1] = name
+                wasSeeded[#wasSeeded + 1] = label
             end
         end
         if #wasSeeded <= 1 then
@@ -703,23 +703,23 @@ CludesUI.RegisterMigration({
             end
         end
 
-        local kept = {}
+        local keptCount = {}
         local repOf = {} -- every processed seeded name -> its surviving layout
-        for _, name in ipairs(ordered) do
-            local specBucket = assignments.profiles[name]
+        for _, label in ipairs(ordered) do
+            local specBucket = assignments.profiles[label]
             local rep
-            for _, kn in ipairs(kept) do
+            for _, kn in ipairs(keptCount) do
                 if ContentEqual(assignments.profiles[kn].specProfiles or {}, specBucket.specProfiles or {}) then
                     rep = kn
                     break
                 end
             end
             if rep then
-                assignments.profiles[name] = nil -- identical duplicate: drop it
-                repOf[name] = rep
+                assignments.profiles[label] = nil -- identical duplicate: drop it
+                repOf[label] = rep
             else
-                kept[#kept + 1] = name
-                repOf[name] = name
+                keptCount[#keptCount + 1] = label
+                repOf[label] = label
             end
         end
 
@@ -734,7 +734,7 @@ CludesUI.RegisterMigration({
                 end
             end
         end
-        local activeRep = repOf[activeName] or kept[1] or activeName
+        local activeRep = repOf[activeName] or keptCount[1] or activeName
         if not assignments.activeLayoutByProfile[activeName] then
             assignments.activeLayoutByProfile[activeName] = activeRep
         end
@@ -918,13 +918,13 @@ CludesUI.RegisterMigration({
     description = "Snap global unlock anchors and spec-profile TBB positions/sizes to the physical pixel grid.",
     body = function(context)
         local snapPosition, snapPosMap, snapAnchors, snapVal = MakeSnappers()
-        local function roundFields(list, keyList)
-            if not list then
+        local function roundFields(entryList, keyList)
+            if not entryList then
                 return
             end
-            for _, key in ipairs(keyList) do
-                if type(list[key]) == "number" then
-                    list[key] = snapVal(list[key])
+            for _, fieldKey in ipairs(keyList) do
+                if type(entryList[fieldKey]) == "number" then
+                    entryList[fieldKey] = snapVal(entryList[fieldKey])
                 end
             end
         end
@@ -932,8 +932,8 @@ CludesUI.RegisterMigration({
         snapAnchors(context.db.unlockAnchors)
 
         -- Spec profiles (per-profile store): TBB positions + bar sizes
-        for _, specData in ipairs(CollectSpecProfiles(context.db.spellAssignments)) do
-            local tbbPos = specData.tbbPositions
+        for _, specRec in ipairs(CollectSpecProfiles(context.db.spellAssignments)) do
+            local tbbPos = specRec.tbbPositions
             if tbbPos then
                 for _, place in pairs(tbbPos) do
                     if type(place) == "table" then
@@ -941,12 +941,12 @@ CludesUI.RegisterMigration({
                     end
                 end
             end
-            local trackingBars = specData.trackedBuffBars
+            local trackingBars = specRec.trackedBuffBars
             local tbbBars = trackingBars and trackingBars.bars
             if tbbBars then
-                for _, barCfg in ipairs(tbbBars) do
-                    if type(barCfg) == "table" then
-                        roundFields(barCfg, { "width", "height" })
+                for _, barConf in ipairs(tbbBars) do
+                    if type(barConf) == "table" then
+                        roundFields(barConf, { "width", "height" })
                     end
                 end
             end
@@ -960,13 +960,13 @@ CludesUI.RegisterMigration({
     description = "Snap all per-profile positions and sizes to the physical pixel grid. Runs on each profile individually so imported profiles are covered.",
     body = function(context)
         local snapPosition, snapPosMap, _, snapVal = MakeSnappers()
-        local function roundFields(list, keyList)
-            if not list then
+        local function roundFields(entryList, keyList)
+            if not entryList then
                 return
             end
-            for _, key in ipairs(keyList) do
-                if type(list[key]) == "number" then
-                    list[key] = snapVal(list[key])
+            for _, fieldKey in ipairs(keyList) do
+                if type(entryList[fieldKey]) == "number" then
+                    entryList[fieldKey] = snapVal(entryList[fieldKey])
                 end
             end
         end
@@ -983,13 +983,13 @@ CludesUI.RegisterMigration({
             return
         end
 
-        local eab = addonStores.CludesUIActionBars
-        if eab then
-            snapPosMap(eab.barPositions)
-            if eab.bars then
-                for _, barCfg in pairs(eab.bars) do
-                    if type(barCfg) == "table" then
-                        roundFields(barCfg, { "buttonWidth", "buttonHeight", "width", "height" })
+        local actionBarsCfg = addonStores.CludesUIActionBars
+        if actionBarsCfg then
+            snapPosMap(actionBarsCfg.barPositions)
+            if actionBarsCfg.bars then
+                for _, barConf in pairs(actionBarsCfg.bars) do
+                    if type(barConf) == "table" then
+                        roundFields(barConf, { "buttonWidth", "buttonHeight", "width", "height" })
                     end
                 end
             end
@@ -1046,10 +1046,10 @@ CludesUI.RegisterMigration({
             roundFields(chatCfg, { "chatWidth", "chatHeight" })
         end
 
-        local abr = addonStores.CludesUIAuraBuffReminders
-        if abr and abr.display then
-            snapPosition(abr.display.unlockPos)
-            roundFields(abr.display, { "iconSize", "iconSpacing" })
+        local reminderCfg = addonStores.CludesUIAuraBuffReminders
+        if reminderCfg and reminderCfg.display then
+            snapPosition(reminderCfg.display.unlockPos)
+            roundFields(reminderCfg.display, { "iconSize", "iconSpacing" })
         end
     end,
 })
@@ -1284,10 +1284,10 @@ CludesUI.RegisterMigration({
             return
         end
 
-        for _, barCfg in ipairs(tbbBars) do
-            barCfg._linkedFrame = nil
-            barCfg._linkedCdID = nil
-            barCfg._linkedGen = nil
+        for _, barConf in ipairs(tbbBars) do
+            barConf._linkedFrame = nil
+            barConf._linkedCdID = nil
+            barConf._linkedGen = nil
         end
     end,
 })
@@ -1310,13 +1310,13 @@ CludesUI.RegisterMigration({
 
         -- First pass: is there anything to migrate?
         local hasWork = false
-        for barId, barCfg in pairs(barSpellMap) do
+        for barId, barConf in pairs(barSpellMap) do
             if
                 barId ~= GHOST_CD
                 and barId ~= GHOST_BUFF
-                and type(barCfg) == "table"
-                and barCfg.removedSpells
-                and next(barCfg.removedSpells)
+                and type(barConf) == "table"
+                and barConf.removedSpells
+                and next(barConf.removedSpells)
             then
                 hasWork = true
                 break
@@ -1341,21 +1341,21 @@ CludesUI.RegisterMigration({
         end
 
         -- Second pass: migrate and wipe.
-        for barId, barCfg in pairs(barSpellMap) do
+        for barId, barConf in pairs(barSpellMap) do
             if
                 barId ~= GHOST_CD
                 and barId ~= GHOST_BUFF
-                and type(barCfg) == "table"
-                and barCfg.removedSpells
-                and next(barCfg.removedSpells)
+                and type(barConf) == "table"
+                and barConf.removedSpells
+                and next(barConf.removedSpells)
             then
-                for spellRef in pairs(barCfg.removedSpells) do
+                for spellRef in pairs(barConf.removedSpells) do
                     if not existing[spellRef] then
                         existing[spellRef] = true
                         ghostBS.assignedSpells[#ghostBS.assignedSpells + 1] = spellRef
                     end
                 end
-                wipe(barCfg.removedSpells)
+                wipe(barConf.removedSpells)
             end
         end
     end,
@@ -1438,17 +1438,17 @@ CludesUI.RegisterMigration({
         -- Spells currently on real bars + currently stamped as custom.
         local realBarSpells = {}
         local customSet = {}
-        for barKey, barCfg in pairs(barSpellMap) do
-            if barKey ~= GHOST_CD and barKey ~= GHOST_BUFF and type(barCfg) == "table" then
-                if barCfg.assignedSpells then
-                    for _, spellRef in ipairs(barCfg.assignedSpells) do
+        for barKey, barConf in pairs(barSpellMap) do
+            if barKey ~= GHOST_CD and barKey ~= GHOST_BUFF and type(barConf) == "table" then
+                if barConf.assignedSpells then
+                    for _, spellRef in ipairs(barConf.assignedSpells) do
                         if spellRef and spellRef > 0 then
                             realBarSpells[spellRef] = true
                         end
                     end
                 end
-                if barCfg.customSpellIDs then
-                    for spellRef in pairs(barCfg.customSpellIDs) do
+                if barConf.customSpellIDs then
+                    for spellRef in pairs(barConf.customSpellIDs) do
                         customSet[spellRef] = true
                     end
                 end
@@ -1508,10 +1508,10 @@ CludesUI.RegisterMigration({
             return
         end
 
-        for _, barCfg in pairs(barSpellMap) do
-            if type(barCfg) == "table" then
-                barCfg.trackedSpells = nil
-                barCfg.customSpells = nil
+        for _, barConf in pairs(barSpellMap) do
+            if type(barConf) == "table" then
+                barConf.trackedSpells = nil
+                barConf.customSpells = nil
             end
         end
     end,
@@ -1537,15 +1537,15 @@ CludesUI.RegisterMigration({
                 local cdmBars = cdmStore and cdmStore.cdmBars
                 local barList = cdmBars and cdmBars.bars
                 if type(barList) == "table" then
-                    local kept = {}
+                    local keptCount = {}
                     for _, edge in ipairs(barList) do
                         if edge.barType == "buffs" and edge.key ~= "buffs" then
                             removedBuffBarKeys[edge.key] = true
                         else
-                            kept[#kept + 1] = edge
+                            keptCount[#keptCount + 1] = edge
                         end
                     end
-                    cdmBars.bars = kept
+                    cdmBars.bars = keptCount
                 end
             end
         end
@@ -1611,9 +1611,9 @@ CludesUI.RegisterMigration({
             return
         end
 
-        for key in pairs(assignments) do
-            if type(key) == "string" and key:match("^10[12]_") then
-                assignments[key] = nil
+        for fieldKey in pairs(assignments) do
+            if type(fieldKey) == "string" and fieldKey:match("^10[12]_") then
+                assignments[fieldKey] = nil
             end
         end
     end,
@@ -1654,18 +1654,18 @@ CludesUI.RegisterMigration({
 
         local barSpellMap = context.specProfile.barSpells
         if type(barSpellMap) == "table" then
-            for _, barCfg in pairs(barSpellMap) do
-                if type(barCfg) == "table" then
-                    if barCfg.assignedSpells and barCfg.customSpellDurations then
-                        for index = #barCfg.assignedSpells, 1, -1 do
-                            local spellRef = barCfg.assignedSpells[index]
-                            if removedPresets[spellRef] and barCfg.customSpellDurations[spellRef] then
-                                table.remove(barCfg.assignedSpells, index)
-                                barCfg.customSpellDurations[spellRef] = nil
+            for _, barConf in pairs(barSpellMap) do
+                if type(barConf) == "table" then
+                    if barConf.assignedSpells and barConf.customSpellDurations then
+                        for index = #barConf.assignedSpells, 1, -1 do
+                            local spellRef = barConf.assignedSpells[index]
+                            if removedPresets[spellRef] and barConf.customSpellDurations[spellRef] then
+                                table.remove(barConf.assignedSpells, index)
+                                barConf.customSpellDurations[spellRef] = nil
                             end
                         end
                     end
-                    barCfg.presetVariants = nil
+                    barConf.presetVariants = nil
                 end
             end
         end
@@ -1674,8 +1674,8 @@ CludesUI.RegisterMigration({
         local trackingBars = context.specProfile.trackedBuffBars
         if trackingBars and type(trackingBars.bars) == "table" then
             for index = #trackingBars.bars, 1, -1 do
-                local barCfg = trackingBars.bars[index]
-                if barCfg.popularKey and removedPopularKeys[barCfg.popularKey] then
+                local barConf = trackingBars.bars[index]
+                if barConf.popularKey and removedPopularKeys[barConf.popularKey] then
                     table.remove(trackingBars.bars, index)
                 end
             end
@@ -1710,9 +1710,9 @@ CludesUI.RegisterMigration({
             end
         end
 
-        for barId, barCfg in pairs(barSpellMap) do
-            if buffKeys[barId] and type(barCfg) == "table" and type(barCfg.assignedSpells) == "table" then
-                local as = barCfg.assignedSpells
+        for barId, barConf in pairs(barSpellMap) do
+            if buffKeys[barId] and type(barConf) == "table" and type(barConf.assignedSpells) == "table" then
+                local as = barConf.assignedSpells
                 for index = #as, 1, -1 do
                     local ident = as[index]
                     -- Negative ids are item markers (-itemID / trinket slots);
@@ -1720,14 +1720,14 @@ CludesUI.RegisterMigration({
                     if type(ident) == "number" and ident < 0 then
                         table.remove(as, index)
                         -- Drop any per-id side data so nothing dangles.
-                        if type(barCfg.spellSettings) == "table" then
-                            barCfg.spellSettings[ident] = nil
+                        if type(barConf.spellSettings) == "table" then
+                            barConf.spellSettings[ident] = nil
                         end
-                        if type(barCfg.spellDurations) == "table" then
-                            barCfg.spellDurations[ident] = nil
+                        if type(barConf.spellDurations) == "table" then
+                            barConf.spellDurations[ident] = nil
                         end
-                        if type(barCfg.customSpellDurations) == "table" then
-                            barCfg.customSpellDurations[ident] = nil
+                        if type(barConf.customSpellDurations) == "table" then
+                            barConf.customSpellDurations[ident] = nil
                         end
                     end
                 end
@@ -1804,17 +1804,17 @@ CludesUI.RegisterMigration({
             if edge.activeStateAnim == "hideActive" and not edge.isGhostBar then
                 for _, profileTbl in ipairs(specProfs) do
                     local barSpellMap = profileTbl and profileTbl.barSpells
-                    local barCfg = barSpellMap and barSpellMap[edge.key]
-                    if barCfg and barCfg.assignedSpells then
-                        if not barCfg.spellSettings then
-                            barCfg.spellSettings = {}
+                    local barConf = barSpellMap and barSpellMap[edge.key]
+                    if barConf and barConf.assignedSpells then
+                        if not barConf.spellSettings then
+                            barConf.spellSettings = {}
                         end
-                        for _, spellRef in ipairs(barCfg.assignedSpells) do
+                        for _, spellRef in ipairs(barConf.assignedSpells) do
                             if spellRef and spellRef > 0 then
-                                if not barCfg.spellSettings[spellRef] then
-                                    barCfg.spellSettings[spellRef] = {}
+                                if not barConf.spellSettings[spellRef] then
+                                    barConf.spellSettings[spellRef] = {}
                                 end
-                                local ss = barCfg.spellSettings[spellRef]
+                                local ss = barConf.spellSettings[spellRef]
                                 -- Skip icons with an explicit per-icon active state already set.
                                 if not ss.activeSwipeMode and not ss.activeSwipeR then
                                     ss.activeSwipeMode = "none"
@@ -1837,11 +1837,11 @@ CludesUI.RegisterMigration({
     body = function(context)
         -- Under the unified model EnsureAssignedSpells lazily seeds the buff bar
         -- from live icons, so stale stored data must be cleared to re-seed clean.
-        local barCfg = context.specProfile.barSpells
-        if not barCfg then
+        local barConf = context.specProfile.barSpells
+        if not barConf then
             return
         end
-        local buffData = barCfg["buffs"]
+        local buffData = barConf["buffs"]
         if buffData and buffData.assignedSpells then
             buffData.assignedSpells = nil
         end
@@ -1971,11 +1971,11 @@ CludesUI.RegisterMigration({
             LUNAR_POWER = { { r = 0.300, g = 0.520, b = 0.900 } },
             MAELSTROM = { { r = 0.000, g = 0.500, b = 1.000 } },
         }
-        for key, oldList in pairs(OLD) do
-            local current = cc.power[key]
+        for fieldKey, oldList in pairs(OLD) do
+            local current = cc.power[fieldKey]
             for _, old in ipairs(oldList) do
                 if matchesOld(current, old) then
-                    cc.power[key] = nil
+                    cc.power[fieldKey] = nil
                     break
                 end
             end
@@ -2014,9 +2014,9 @@ CludesUI.RegisterMigration({
         if not chatDB or not chatDB.profiles then
             return
         end
-        for _, profile in pairs(chatDB.profiles) do
-            if profile.chat and profile.chat.visibility == "mouseover" then
-                profile.chat.visibility = "always"
+        for _, profileRec in pairs(chatDB.profiles) do
+            if profileRec.chat and profileRec.chat.visibility == "mouseover" then
+                profileRec.chat.visibility = "always"
             end
         end
     end,
@@ -2076,13 +2076,13 @@ CludesUI.RegisterMigration({
             return
         end
         for _, unitName in ipairs({ "player", "target", "playerTarget", "focus" }) do
-            local unitCfg = ufStore[unitName]
-            if unitCfg then
-                local val = unitCfg.showPlayerAbsorb
+            local unitConf = ufStore[unitName]
+            if unitConf then
+                local val = unitConf.showPlayerAbsorb
                 if val == true then
-                    unitCfg.showPlayerAbsorb = "striped"
+                    unitConf.showPlayerAbsorb = "striped"
                 elseif val == false or val == nil then
-                    unitCfg.showPlayerAbsorb = "none"
+                    unitConf.showPlayerAbsorb = "none"
                 end
             end
         end
@@ -2100,13 +2100,13 @@ CludesUI.RegisterMigration({
         if type(ufStore) ~= "table" then
             return
         end
-        for _, unitCfg in pairs(ufStore) do
-            if type(unitCfg) == "table" then
-                local val = unitCfg.showPlayerAbsorb
+        for _, unitConf in pairs(ufStore) do
+            if type(unitConf) == "table" then
+                local val = unitConf.showPlayerAbsorb
                 if val == true then
-                    unitCfg.showPlayerAbsorb = "striped" -- v1's mapping for true
+                    unitConf.showPlayerAbsorb = "striped" -- v1's mapping for true
                 elseif val ~= nil and type(val) ~= "string" then
-                    unitCfg.showPlayerAbsorb = "none"
+                    unitConf.showPlayerAbsorb = "none"
                 end
             end
         end
@@ -2143,9 +2143,9 @@ CludesUI.RegisterMigration({
     scope = "global",
     description = "Remove __ghost_buffs spell data from all spec profiles.",
     body = function(context)
-        for _, specData in ipairs(CollectSpecProfiles(context.db and context.db.spellAssignments)) do
-            if specData.barSpells then
-                specData.barSpells["__ghost_buffs"] = nil
+        for _, specRec in ipairs(CollectSpecProfiles(context.db and context.db.spellAssignments)) do
+            if specRec.barSpells then
+                specRec.barSpells["__ghost_buffs"] = nil
             end
         end
     end,
@@ -2167,12 +2167,12 @@ CludesUI.RegisterMigration({
             if old == nil then
                 return
             end
-            local mode = (old == true) and "right" or "overlay"
+            local modeName = (old == true) and "right" or "overlay"
             if raidCfg[absKey] == nil then
-                raidCfg[absKey] = mode
+                raidCfg[absKey] = modeName
             end
             if raidCfg[healKey] == nil then
-                raidCfg[healKey] = mode
+                raidCfg[healKey] = modeName
             end
         end
         split("absorbFromRightEdge", "absorbEdgeMode", "healAbsorbEdgeMode")
@@ -2192,15 +2192,15 @@ CludesUI.RegisterMigration({
         local positions = ufStore.positions or ufStore.unlockPositions
         local anchorMap = CludesUIDB and CludesUIDB.unlockAnchors
 
-        local playerS = ufStore.player
-        if playerS then
-            local pw = playerS.playerCastbarWidth or 0
+        local playerScale = ufStore.player
+        if playerScale then
+            local pw = playerScale.playerCastbarWidth or 0
             if pw == 0 then
-                playerS.playerCastbarWidth = playerS.frameWidth or 181
+                playerScale.playerCastbarWidth = playerScale.frameWidth or 181
             end
-            local ph = playerS.playerCastbarHeight or 0
+            local ph = playerScale.playerCastbarHeight or 0
             if ph == 0 then
-                playerS.playerCastbarHeight = playerS.castbarHeight or 14
+                playerScale.playerCastbarHeight = playerScale.castbarHeight or 14
             end
         end
 
@@ -2459,11 +2459,11 @@ CludesUI.RegisterMigration({
         local cdmStore = context.profile.addons and context.profile.addons.CludesUICooldownManager
         local cdmBars = cdmStore and cdmStore.cdmBars and cdmStore.cdmBars.bars
         if cdmBars then
-            for _, barCfg in ipairs(cdmBars) do
-                local anchorKey = "CDM_" .. barCfg.key
+            for _, barConf in ipairs(cdmBars) do
+                local anchorKey = "CDM_" .. barConf.key
                 local ai = anchorMap[anchorKey]
-                if ai and ai.side and not barCfg.growDirection then
-                    barCfg.growDirection = "CENTER"
+                if ai and ai.side and not barConf.growDirection then
+                    barConf.growDirection = "CENTER"
                 end
             end
         end
@@ -2490,8 +2490,8 @@ CludesUI.RegisterMigration({
                         local current = conf.growDirection
                         -- Only migrate bars at default ("up" or nil)
                         if not current or current == "up" then
-                            local isVert = (conf.orientation == "vertical")
-                            local map = isVert and VERT_MAP or HORIZ_MAP
+                            local vertical = (conf.orientation == "vertical")
+                            local map = vertical and VERT_MAP or HORIZ_MAP
                             conf.growDirection = (map[ai.side] or "CENTER"):lower()
                         end
                     end
@@ -2546,12 +2546,12 @@ CludesUI.RegisterMigration({
         if not barList then
             return
         end
-        for _, barCfg in ipairs(barList) do
-            if barCfg.anchorFirstRow then
-                if barCfg.rowGrowDirection == nil then
-                    barCfg.rowGrowDirection = barCfg.verticalOrientation and "RIGHT" or "DOWN"
+        for _, barConf in ipairs(barList) do
+            if barConf.anchorFirstRow then
+                if barConf.rowGrowDirection == nil then
+                    barConf.rowGrowDirection = barConf.verticalOrientation and "RIGHT" or "DOWN"
                 end
-                barCfg.anchorFirstRow = nil
+                barConf.anchorFirstRow = nil
             end
         end
     end,
@@ -3297,14 +3297,14 @@ CludesUI.RegisterMigration({
     scope = "profile",
     description = "Convert Show Tertiary Stats into the per-stat visibility checklist.",
     body = function(context)
-        local profile = context.profile
-        if type(profile.addons) ~= "table" then
-            profile.addons = {}
+        local profileRec = context.profile
+        if type(profileRec.addons) ~= "table" then
+            profileRec.addons = {}
         end
-        local qolCfg = profile.addons.CludesUIQoL
+        local qolCfg = profileRec.addons.CludesUIQoL
         if type(qolCfg) ~= "table" then
             qolCfg = {}
-            profile.addons.CludesUIQoL = qolCfg
+            profileRec.addons.CludesUIQoL = qolCfg
         end
 
         local enabled = qolCfg.showTertiaryStats
@@ -3343,28 +3343,28 @@ CludesUI.RegisterMigration({
         if slug == nil and type(oit) ~= "table" then
             return
         end
-        local function seed(fonts)
-            if type(fonts) ~= "table" then
+        local function seedValue(fontMap)
+            if type(fontMap) ~= "table" then
                 return
             end
-            if fonts.neverShowSlug == nil and slug ~= nil then
-                fonts.neverShowSlug = slug and true or false
+            if fontMap.neverShowSlug == nil and slug ~= nil then
+                fontMap.neverShowSlug = slug and true or false
             end
-            if fonts.outlineIconText == nil and type(oit) == "table" then
+            if fontMap.outlineIconText == nil and type(oit) == "table" then
                 local t = {}
                 for k, val in pairs(oit) do
                     t[k] = val
                 end
-                fonts.outlineIconText = t
+                fontMap.outlineIconText = t
             end
         end
         -- Live working copy = what a full export snapshots via DeepCopy(GetFontsDB()).
-        seed(saved.fonts)
+        seedValue(saved.fonts)
         -- Existing stored snapshots = so exporting a non-active profile carries it.
         if type(saved.profiles) == "table" then
             for _, profileSaved in pairs(saved.profiles) do
                 if type(profileSaved) == "table" then
-                    seed(profileSaved.fonts)
+                    seedValue(profileSaved.fonts)
                 end
             end
         end
@@ -3460,8 +3460,8 @@ CludesUI.RegisterMigration({
             "CludesUIResourceBars",
             "CludesUIDamageMeters",
         }
-        for _, name in ipairs(MODULES) do
-            swap(addonStores[name], 1)
+        for _, label in ipairs(MODULES) do
+            swap(addonStores[label], 1)
         end
     end,
 })
@@ -3648,10 +3648,10 @@ function CludesUI.MigrateCdmSpellSettingsShape(specProfile, barsCfg)
     -- count as visible, so a hidden spell's orphaned entry still migrates and
     -- un-hiding restores its styling on any bar.
     local visibleAssign = { spellSettingsCD = {}, spellSettingsBuff = {} }
-    for barId, barCfg in pairs(barSpellMap) do
-        if barId ~= "__ghost_cd" and type(barCfg) == "table" and type(barCfg.assignedSpells) == "table" then
+    for barId, barConf in pairs(barSpellMap) do
+        if barId ~= "__ghost_cd" and type(barConf) == "table" and type(barConf.assignedSpells) == "table" then
             local famKey = CdmBarFamilyKey(barId, barsCfg)
-            for _, spellRef in ipairs(barCfg.assignedSpells) do
+            for _, spellRef in ipairs(barConf.assignedSpells) do
                 if type(spellRef) == "number" and spellRef ~= 0 then
                     visibleAssign[famKey][spellRef] = barId
                 end
@@ -3662,8 +3662,8 @@ function CludesUI.MigrateCdmSpellSettingsShape(specProfile, barsCfg)
     -- Pass 1: relocate entries whose spell is assigned to the bar the entry
     -- lives on. Pass 2: adopt entries for spells not visibly assigned anywhere.
     for pass = 1, 2 do
-        for barId, barCfg in pairs(barSpellMap) do
-            local old = type(barCfg) == "table" and barCfg.spellSettings
+        for barId, barConf in pairs(barSpellMap) do
+            local old = type(barConf) == "table" and barConf.spellSettings
             if type(old) == "table" then
                 local famKey = CdmBarFamilyKey(barId, barsCfg)
                 local assign = visibleAssign[famKey]
@@ -3696,32 +3696,32 @@ function CludesUI.MigrateCdmSpellSettingsShape(specProfile, barsCfg)
 
     -- Pass 3: promote synced bars to the bar tier, then clear the flag and
     -- drop whatever old-shape residue remains (stale different-bar orphans).
-    for barId, barCfg in pairs(barSpellMap) do
-        if type(barCfg) == "table" then
+    for barId, barConf in pairs(barSpellMap) do
+        if type(barConf) == "table" then
             if
-                barCfg._syncIconSettings == true
-                and type(barCfg.assignedSpells) == "table"
-                and type(barCfg.barSettings) ~= "table"
+                barConf._syncIconSettings == true
+                and type(barConf.assignedSpells) == "table"
+                and type(barConf.barSettings) ~= "table"
             then
                 local famKey = CdmBarFamilyKey(barId, barsCfg)
                 local storage = specProfile[famKey]
-                local seed
+                local seedValue
                 if storage then
-                    for _, spellRef in ipairs(barCfg.assignedSpells) do
+                    for _, spellRef in ipairs(barConf.assignedSpells) do
                         local e = storage[spellRef]
                         if type(e) == "table" and next(e) ~= nil then
-                            seed = e
+                            seedValue = e
                             break
                         end
                     end
                 end
-                if seed then
+                if seedValue then
                     local duplicate = {}
-                    for k, val in pairs(seed) do
+                    for k, val in pairs(seedValue) do
                         duplicate[k] = val
                     end
-                    barCfg.barSettings = duplicate
-                    for _, spellRef in ipairs(barCfg.assignedSpells) do
+                    barConf.barSettings = duplicate
+                    for _, spellRef in ipairs(barConf.assignedSpells) do
                         local e = storage[spellRef]
                         if type(e) == "table" then
                             if CdmFlatSettingsEqual(e, duplicate) then
@@ -3739,9 +3739,9 @@ function CludesUI.MigrateCdmSpellSettingsShape(specProfile, barsCfg)
                     end
                 end
             end
-            barCfg._syncIconSettings = nil
-            if type(barCfg.spellSettings) == "table" then
-                barCfg.spellSettings = nil
+            barConf._syncIconSettings = nil
+            if type(barConf.spellSettings) == "table" then
+                barConf.spellSettings = nil
             end
         end
     end
@@ -3780,17 +3780,17 @@ function CludesUI.MigrateCdmHostedBuffSettings(specProfile)
     for _, sd in pairs(specProfile.barSpells) do
         local hosted = type(sd) == "table" and sd.hostedBuffSpellIDs
         if type(hosted) == "table" then
-            for hsid in pairs(hosted) do
-                local e = stCD[hsid]
+            for hostedSpellId in pairs(hosted) do
+                local e = stCD[hostedSpellId]
                 if type(e) == "table" then
                     local stBuff = specProfile.spellSettingsBuff
                     if type(stBuff) ~= "table" then
                         stBuff = {}
                         specProfile.spellSettingsBuff = stBuff
                     end
-                    local tgt = stBuff[hsid]
+                    local tgt = stBuff[hostedSpellId]
                     if type(tgt) ~= "table" then
-                        stBuff[hsid] = e
+                        stBuff[hostedSpellId] = e
                     else
                         for k, val in pairs(e) do
                             if tgt[k] == nil then
@@ -3798,7 +3798,7 @@ function CludesUI.MigrateCdmHostedBuffSettings(specProfile)
                             end
                         end
                     end
-                    stCD[hsid] = nil
+                    stCD[hostedSpellId] = nil
                 end
             end
         end
@@ -3858,23 +3858,23 @@ function CludesUI.MigrateCdmThresholdText(cdmStore, specProfiles)
                         e.thresholdColorB = callback
                     end
                 end
-                local function StampCas(key)
+                local function StampCas(fieldKey)
                     if type(cdmStore.customActiveStates) ~= "table" then
                         cdmStore.customActiveStates = {}
                     end
-                    local e = cdmStore.customActiveStates[key]
+                    local e = cdmStore.customActiveStates[fieldKey]
                     if type(e) ~= "table" then
                         e = {}
-                        cdmStore.customActiveStates[key] = e
+                        cdmStore.customActiveStates[fieldKey] = e
                     end
                     Stamp(e)
                 end
                 if type(specProfiles) == "table" then
                     for _, specProfile in pairs(specProfiles) do
-                        local barCfg = type(specProfile) == "table"
+                        local barConf = type(specProfile) == "table"
                             and type(specProfile.barSpells) == "table"
                             and specProfile.barSpells[edge.key]
-                        local assigned = type(barCfg) == "table" and barCfg.assignedSpells
+                        local assigned = type(barConf) == "table" and barConf.assignedSpells
                         if type(assigned) == "table" then
                             for _, spellRef in ipairs(assigned) do
                                 if type(spellRef) == "number" then
@@ -3885,12 +3885,12 @@ function CludesUI.MigrateCdmThresholdText(cdmStore, specProfiles)
                                             spellRef > 0
                                             and (
                                                 (
-                                                    type(barCfg.spellDurations) == "table"
-                                                    and (tonumber(barCfg.spellDurations[spellRef]) or 0) > 0
+                                                    type(barConf.spellDurations) == "table"
+                                                    and (tonumber(barConf.spellDurations[spellRef]) or 0) > 0
                                                 )
                                                 or (
-                                                    type(barCfg.customSpellIDs) == "table"
-                                                    and barCfg.customSpellIDs[spellRef]
+                                                    type(barConf.customSpellIDs) == "table"
+                                                    and barConf.customSpellIDs[spellRef]
                                                 )
                                             )
                                         then
@@ -3917,7 +3917,7 @@ function CludesUI.MigrateCdmThresholdText(cdmStore, specProfiles)
                                     elseif spellRef < 0 then
                                         StampCas(spellRef)
                                     elseif
-                                        (type(barCfg.customSpellIDs) == "table" and barCfg.customSpellIDs[spellRef])
+                                        (type(barConf.customSpellIDs) == "table" and barConf.customSpellIDs[spellRef])
                                         or (
                                             type(cdmStore.customActiveStates) == "table"
                                             and type(cdmStore.customActiveStates[spellRef]) == "table"
@@ -3979,12 +3979,12 @@ CludesUI.RegisterMigration({
 -- outright, so there's no order to preserve. Shared with profile import so
 -- orders exported from older builds stay protected.
 function CludesUI.MigrateCdmBuffOrderUserFlag(specProfile)
-    local barCfg = type(specProfile) == "table" and type(specProfile.barSpells) == "table" and specProfile.barSpells.buffs
-    if type(barCfg) ~= "table" then
+    local barConf = type(specProfile) == "table" and type(specProfile.barSpells) == "table" and specProfile.barSpells.buffs
+    if type(barConf) ~= "table" then
         return
     end
-    if type(barCfg.buffDisplayOrder) == "table" and type(barCfg.buffDisplayOrder[1]) == "string" then
-        barCfg._buffDisplayOrderUserModified = true
+    if type(barConf.buffDisplayOrder) == "table" and type(barConf.buffDisplayOrder[1]) == "string" then
+        barConf._buffDisplayOrderUserModified = true
     end
 end
 
@@ -4070,24 +4070,24 @@ function CludesUI.MigrateCdmBuffCdClaims(specProfile)
     if type(barSpellMap) ~= "table" then
         return
     end
-    for _, barCfg in pairs(barSpellMap) do
-        if type(barCfg) == "table" and type(barCfg.assignedBuffCdIDs) == "table" and next(barCfg.assignedBuffCdIDs) then
-            if not barCfg.assignedSpells then
-                barCfg.assignedSpells = {}
+    for _, barConf in pairs(barSpellMap) do
+        if type(barConf) == "table" and type(barConf.assignedBuffCdIDs) == "table" and next(barConf.assignedBuffCdIDs) then
+            if not barConf.assignedSpells then
+                barConf.assignedSpells = {}
             end
             -- Dedup against any marker already present (e.g. an interrupted run).
             local present = {}
-            for _, ident in ipairs(barCfg.assignedSpells) do
+            for _, ident in ipairs(barConf.assignedSpells) do
                 if type(ident) == "number" and ident <= -CD_CLAIM_MARKER_BASE then
                     present[-ident - CD_CLAIM_MARKER_BASE] = true
                 end
             end
-            for cdID in pairs(barCfg.assignedBuffCdIDs) do
+            for cdID in pairs(barConf.assignedBuffCdIDs) do
                 if type(cdID) == "number" and not present[cdID] then
-                    barCfg.assignedSpells[#barCfg.assignedSpells + 1] = -(CD_CLAIM_MARKER_BASE + cdID)
+                    barConf.assignedSpells[#barConf.assignedSpells + 1] = -(CD_CLAIM_MARKER_BASE + cdID)
                 end
             end
-            barCfg.assignedBuffCdIDs = nil
+            barConf.assignedBuffCdIDs = nil
         end
     end
 end
@@ -4167,9 +4167,9 @@ migrationFrame:SetScript("OnEvent", function(self, event, addonName)
                 end
             end
         end
-        for _, specData in ipairs(CollectSpecProfiles(CludesUIDB.spellAssignments)) do
-            if specData.barSpells then
-                specData.barSpells["__ghost_buffs"] = nil
+        for _, specRec in ipairs(CollectSpecProfiles(CludesUIDB.spellAssignments)) do
+            if specRec.barSpells then
+                specRec.barSpells["__ghost_buffs"] = nil
             end
         end
     end
@@ -4282,16 +4282,16 @@ do
         if en == nil then
             en = defaults and defaults.enabled
         end
-        local eff
+        local effective
         if section.optIn then
-            eff = en and true or false
+            effective = en and true or false
         else
-            eff = en ~= false
+            effective = en ~= false
         end
-        if eff and specId and type(t.disabledSpecs) == "table" and t.disabledSpecs[specId] then
-            eff = false
+        if effective and specId and type(t.disabledSpecs) == "table" and t.disabledSpecs[specId] then
+            effective = false
         end
-        return eff
+        return effective
     end
 
     -- Threshold-system keys are never diffed into overrides; disabledSpecs
@@ -4349,12 +4349,12 @@ do
     -- defaults as edits). Skips threshold/disabledSpecs/enabled/numeric keys and
     -- table-shape mismatches; an emitted leaf involves nil only when neither side
     -- nor defaults define it (renderers already tolerate that as absent).
-    local function DiffSection(simple, duplicate, defaults, prefixText, result)
-        simple = type(simple) == "table" and simple or {}
+    local function DiffSection(simpleCfg, duplicate, defaults, prefixText, result)
+        simpleCfg = type(simpleCfg) == "table" and simpleCfg or {}
         duplicate = type(duplicate) == "table" and duplicate or {}
         defaults = type(defaults) == "table" and defaults or {}
         local keyList = {}
-        for k in pairs(simple) do
+        for k in pairs(simpleCfg) do
             keyList[k] = true
         end
         for k in pairs(duplicate) do
@@ -4365,7 +4365,7 @@ do
         end
         for k in pairs(keyList) do
             if type(k) ~= "number" and not RB_SKIP_KEYS[k] then
-                local sv, cv, dv = simple[k], duplicate[k], defaults[k]
+                local sv, cv, dv = simpleCfg[k], duplicate[k], defaults[k]
                 local effS = (sv == nil) and dv or sv
                 local effC = (cv == nil) and dv or cv
                 local filePath = prefixText and (prefixText .. PS .. tostring(k)) or tostring(k)
@@ -4389,7 +4389,7 @@ do
     -- are retargeted to specIDs={spec} and front-inserted in resolver tier order
     -- (spec+talent, spec plain, all+talent, all plain); the spec is stripped from
     -- pre-existing Simple entries so nothing else can match it.
-    local function MergeThresholds(simpleSec, copySec, specId, backup)
+    local function MergeThresholds(simpleSec, copySec, specId, backupCopy)
         local cList = copySec.thresholdSpecs
         if type(cList) ~= "table" or #cList == 0 then
             return
@@ -4400,7 +4400,7 @@ do
         if copySec.thresholdFormMode or simpleSec.thresholdFormMode then
             -- Form-mode thresholds resolve by druid form, not spec; a per-spec
             -- retarget cannot represent them. Keep them in the backup only.
-            backup.thresholdFormMergeSkipped = true
+            backupCopy.thresholdFormMergeSkipped = true
             return
         end
         local specTalent, specPlain, allTalent, allPlain = {}, {}, {}, {}
@@ -4480,12 +4480,12 @@ do
         end
         resourceBars._rbAdvMigrated = true
 
-        local adv = resourceBars.advancedSpecs
-        local activeAdv = {}
-        if type(adv) == "table" then
-            for _, e in ipairs(adv) do
+        local advancedCfg = resourceBars.advancedSpecs
+        local advancedActive = {}
+        if type(advancedCfg) == "table" then
+            for _, e in ipairs(advancedCfg) do
                 if type(e) == "table" and type(e.specID) == "number" and e.enabled ~= false then
-                    activeAdv[#activeAdv + 1] = e
+                    advancedActive[#advancedActive + 1] = e
                 end
             end
         end
@@ -4497,7 +4497,7 @@ do
                 break
             end
         end
-        if #activeAdv == 0 and not hasDisabled and not (type(adv) == "table" and #adv > 0) then
+        if #advancedActive == 0 and not hasDisabled and not (type(advancedCfg) == "table" and #advancedCfg > 0) then
             return -- nothing to migrate
         end
 
@@ -4510,7 +4510,7 @@ do
             return ident
         end
 
-        local backup = { advancedSpecs = adv, disabledSpecs = {} }
+        local backupCopy = { advancedSpecs = advancedCfg, disabledSpecs = {} }
 
         -- One card per advanced spec (created lazily).
         local specCards = {}
@@ -4518,15 +4518,15 @@ do
             local g = specCards[specId]
             if not g then
                 local details = SPEC_INFO[specId]
-                local name
+                local label
                 if details then
-                    name = details[1] .. " - " .. (CLASS_TITLE[details[2]] or details[2])
+                    label = details[1] .. " - " .. (CLASS_TITLE[details[2]] or details[2])
                 else
-                    name = "Spec " .. tostring(specId)
+                    label = "Spec " .. tostring(specId)
                 end
                 g = {
                     id = nextId(),
-                    name = name,
+                    name = label,
                     icon = details and { kind = "class", key = details[2] } or nil,
                     specs = { specId },
                 }
@@ -4537,23 +4537,23 @@ do
         end
 
         for _, section in ipairs(RB_SECTIONS) do
-            local simple = resourceBars[section.key]
-            if type(simple) == "table" then
+            local simpleCfg = resourceBars[section.key]
+            if type(simpleCfg) == "table" then
                 local defaults = type(DEFS[section.key]) == "table" and DEFS[section.key] or {}
                 local enabledFkey = RB_FOLDER .. FS .. section.key .. PS .. "enabled"
-                local simpleEff = SectionEff(section, simple, defaults)
+                local simpleEff = SectionEff(section, simpleCfg, defaults)
 
                 -- 1) Threshold merges + per-spec diffs (defaults-merged)
                 local union = {}
                 local copyBySpec = {}
                 local specsWithDiffs = {}
-                for _, e in ipairs(activeAdv) do
+                for _, e in ipairs(advancedActive) do
                     local duplicate = e[section.key]
                     if type(duplicate) == "table" then
-                        MergeThresholds(simple, duplicate, e.specID, backup)
+                        MergeThresholds(simpleCfg, duplicate, e.specID, backupCopy)
                         copyBySpec[e.specID] = duplicate
                         local result = {}
-                        DiffSection(simple, duplicate, defaults, nil, result)
+                        DiffSection(simpleCfg, duplicate, defaults, nil, result)
                         for filePath in pairs(result) do
                             union[filePath] = true
                             specsWithDiffs[e.specID] = true
@@ -4565,15 +4565,15 @@ do
                 --    + disabledSpecs; Simple disabledSpecs cover non-copy specs.
                 local effEnable = {}
                 for specId, duplicate in pairs(copyBySpec) do
-                    local eff = SectionEff(section, duplicate, defaults, specId)
-                    if eff ~= simpleEff then
-                        effEnable[specId] = eff
+                    local effective = SectionEff(section, duplicate, defaults, specId)
+                    if effective ~= simpleEff then
+                        effEnable[specId] = effective
                         specsWithDiffs[specId] = true
                     end
                 end
                 local dsSpecs = {}
-                local ds = simple.disabledSpecs
-                backup.disabledSpecs[section.key] = ds
+                local ds = simpleCfg.disabledSpecs
+                backupCopy.disabledSpecs[section.key] = ds
                 if type(ds) == "table" then
                     for specId, on in pairs(ds) do
                         if on and type(specId) == "number" and not copyBySpec[specId] and simpleEff then
@@ -4593,7 +4593,7 @@ do
                 if next(union) then
                     local default = {}
                     for filePath in pairs(union) do
-                        local val = GetPathEff(simple, defaults, filePath)
+                        local val = GetPathEff(simpleCfg, defaults, filePath)
                         local fieldKey = RB_FOLDER .. FS .. section.key .. PS .. filePath
                         default[fieldKey] = (val == nil or type(val) == "table") and NIL_SENT or val
                     end
@@ -4653,19 +4653,19 @@ do
                         }
                         -- every diverging spec gets its effective value so
                         -- apply order over the shared key can never clobber
-                        for specId, eff in pairs(effEnable) do
-                            record.values[specId] = { [enabledFkey] = eff }
+                        for specId, effective in pairs(effEnable) do
+                            record.values[specId] = { [enabledFkey] = effective }
                         end
                         storage[#storage + 1] = record
                     end
                 end
 
-                simple.disabledSpecs = nil
+                simpleCfg.disabledSpecs = nil
             end
         end
 
         -- 5) Backup + strip the retired mechanisms.
-        resourceBars.advancedSpecsBackup = backup
+        resourceBars.advancedSpecsBackup = backupCopy
         resourceBars.advancedSpecs = nil
         resourceBars.advancedSelectedSpec = nil
         resourceBars.barDisplayMode = nil
@@ -4911,12 +4911,12 @@ CludesUI.RegisterMigration({
         if CludesUI.LOCALE_SCRIPT ~= "cyrillic" then
             return
         end
-        local fonts = context.db and context.db.fonts
-        if not fonts then
+        local fontMap = context.db and context.db.fonts
+        if not fontMap then
             return
         end -- fresh install: GetFontsDB seeds it
-        if fonts.global == "Expressway" then
-            fonts.global = CludesUI.SYSTEM_FONT_KEY
+        if fontMap.global == "Expressway" then
+            fontMap.global = CludesUI.SYSTEM_FONT_KEY
         end
     end,
 })
@@ -4953,9 +4953,9 @@ CludesUI.RegisterMigration({
     scope = "global",
     description = "Move the saved global font from Barlow Condensed back to Expressway, the default again.",
     body = function(context)
-        local fonts = context.db and context.db.fonts
-        if fonts and fonts.global == "Barlow Condensed" then
-            fonts.global = "Expressway"
+        local fontMap = context.db and context.db.fonts
+        if fontMap and fontMap.global == "Barlow Condensed" then
+            fontMap.global = "Expressway"
         end
     end,
 })
@@ -4965,9 +4965,9 @@ CludesUI.RegisterMigration({
     scope = "profile",
     description = "Move a profile's global font from Barlow Condensed back to Expressway, the default again.",
     body = function(context)
-        local fonts = context.profile and context.profile.fonts
-        if fonts and fonts.global == "Barlow Condensed" then
-            fonts.global = "Expressway"
+        local fontMap = context.profile and context.profile.fonts
+        if fontMap and fontMap.global == "Barlow Condensed" then
+            fontMap.global = "Expressway"
         end
     end,
 })
@@ -5061,12 +5061,12 @@ CludesUI.RegisterMigration({
         if not raidCfg.mergeGroups then
             return
         end
-        local function isVert(g)
+        local function vertical(g)
             return g == "UP" or g == "DOWN"
         end
         local gg, ug = raidCfg.groupGrowth or "RIGHT", raidCfg.unitGrowth or "DOWN"
-        if isVert(gg) == isVert(ug) then
-            ug = isVert(gg) and "RIGHT" or "DOWN"
+        if vertical(gg) == vertical(ug) then
+            ug = vertical(gg) and "RIGHT" or "DOWN"
             raidCfg.unitGrowth = ug
         end
         local overrides = raidCfg.raidSizeOverrides
@@ -5077,8 +5077,8 @@ CludesUI.RegisterMigration({
             if type(shade) == "table" then
                 local ogg = shade.groupGrowth or gg
                 local oug = shade.unitGrowth or ug
-                if isVert(ogg) == isVert(oug) then
-                    shade.unitGrowth = isVert(ogg) and "RIGHT" or "DOWN"
+                if vertical(ogg) == vertical(oug) then
+                    shade.unitGrowth = vertical(ogg) and "RIGHT" or "DOWN"
                 end
             end
         end
@@ -5245,12 +5245,12 @@ CludesUI.RegisterMigration({
         end
         for _, profileRec in pairs(saved.profiles) do
             if type(profileRec) == "table" then
-                local stamps = profileRec._migrations
-                if type(stamps) ~= "table" then
-                    stamps = {}
-                    profileRec._migrations = stamps
+                local stampSet = profileRec._migrations
+                if type(stampSet) ~= "table" then
+                    stampSet = {}
+                    profileRec._migrations = stampSet
                 end
-                if not stamps[ID] then
+                if not stampSet[ID] then
                     -- Folder present = DM ran in this profile; dm itself is
                     -- missing when every value was a stripped default.
                     local addon = convert
@@ -5268,7 +5268,7 @@ CludesUI.RegisterMigration({
                             sh.iconSize = conv(sh.iconSize, 36)
                         end
                     end
-                    stamps[ID] = true
+                    stampSet[ID] = true
                 end
             end
         end
@@ -5294,18 +5294,18 @@ CludesUI.RegisterMigration({
         end
         for _, profileRec in pairs(saved.profiles) do
             if type(profileRec) == "table" then
-                local stamps = profileRec._migrations
-                if type(stamps) ~= "table" then
-                    stamps = {}
-                    profileRec._migrations = stamps
+                local stampSet = profileRec._migrations
+                if type(stampSet) ~= "table" then
+                    stampSet = {}
+                    profileRec._migrations = stampSet
                 end
-                if not stamps[ID] then
+                if not stampSet[ID] then
                     local resBarsCfg = type(profileRec.addons) == "table" and profileRec.addons.CludesUIResourceBars
                     local settingsTbl = type(resBarsCfg) == "table" and resBarsCfg.swingTimer
                     if type(settingsTbl) == "table" and settingsTbl.visibility == "always" and settingsTbl.visibilityModes == nil then
                         settingsTbl.visibility = "in_combat"
                     end
-                    stamps[ID] = true
+                    stampSet[ID] = true
                 end
             end
         end
@@ -5459,12 +5459,12 @@ if CludesUI.IS_FOREVER == true then
             return false
         end
         if type(profileTbl.barSpells) == "table" then
-            for barKey, barCfg in pairs(profileTbl.barSpells) do
+            for barKey, barConf in pairs(profileTbl.barSpells) do
                 if
                     barKey ~= GHOST_CD
-                    and type(barCfg) == "table"
-                    and type(barCfg.assignedSpells) == "table"
-                    and #barCfg.assignedSpells > 0
+                    and type(barConf) == "table"
+                    and type(barConf.assignedSpells) == "table"
+                    and #barConf.assignedSpells > 0
                 then
                     return true
                 end
@@ -5491,8 +5491,8 @@ if CludesUI.IS_FOREVER == true then
         end
         local glows = profileTbl.barGlows
         if type(glows) == "table" and type(glows.assignments) == "table" then
-            for _, list in pairs(glows.assignments) do
-                if HasEntries(list) then
+            for _, entryList in pairs(glows.assignments) do
+                if HasEntries(entryList) then
                     return true
                 end
             end
@@ -5500,29 +5500,29 @@ if CludesUI.IS_FOREVER == true then
         if type(profileTbl.barSpells) ~= "table" then
             return false
         end
-        for barKey, barCfg in pairs(profileTbl.barSpells) do
-            if type(barCfg) == "table" then
+        for barKey, barConf in pairs(profileTbl.barSpells) do
+            if type(barConf) == "table" then
                 if
-                    HasEntries(barCfg.customSpellIDs)
-                    or HasEntries(barCfg.customSpellDurations)
-                    or HasEntries(barCfg.spellDurations)
-                    or HasEntries(barCfg.spellSettings)
-                    or HasEntries(barCfg.barSettings)
-                    or HasEntries(barCfg.hostedBuffSpellIDs)
-                    or barCfg._buffDisplayOrderUserModified
+                    HasEntries(barConf.customSpellIDs)
+                    or HasEntries(barConf.customSpellDurations)
+                    or HasEntries(barConf.spellDurations)
+                    or HasEntries(barConf.spellSettings)
+                    or HasEntries(barConf.barSettings)
+                    or HasEntries(barConf.hostedBuffSpellIDs)
+                    or barConf._buffDisplayOrderUserModified
                 then
                     return true
                 end
-                local list = barCfg.assignedSpells
-                if type(list) == "table" then
-                    if #list > 0 and barKey ~= "cooldowns" and barKey ~= "utility" then
+                local entryList = barConf.assignedSpells
+                if type(entryList) == "table" then
+                    if #entryList > 0 and barKey ~= "cooldowns" and barKey ~= "utility" then
                         return true
                     end
-                    for _, spellRef in ipairs(list) do
+                    for _, spellRef in ipairs(entryList) do
                         if
                             type(spellRef) == "number"
                             and spellRef < 0
-                            and not (barCfg.nativeItems and barCfg.nativeItems[spellRef])
+                            and not (barConf.nativeItems and barConf.nativeItems[spellRef])
                         then
                             return true
                         end
@@ -5581,8 +5581,8 @@ if CludesUI.IS_FOREVER == true then
         body = function(context)
             local barSpellMap = context.specProfile.barSpells
             local ghost = type(barSpellMap) == "table" and barSpellMap[GHOST_CD]
-            local list = type(ghost) == "table" and ghost.assignedSpells
-            if type(list) ~= "table" or #list == 0 then
+            local entryList = type(ghost) == "table" and ghost.assignedSpells
+            if type(entryList) ~= "table" or #entryList == 0 then
                 return
             end
             local profileTbl = CludesUIDB.profiles and CludesUIDB.profiles[context.profileName]
@@ -5597,24 +5597,24 @@ if CludesUI.IS_FOREVER == true then
             local placedNames, placedIds = {}, {}
             for index, edge in ipairs(barList) do
                 local default = DEFAULT_BARS[index]
-                local key = edge.key or (default and default.key)
+                local fieldKey = edge.key or (default and default.key)
                 local barType = edge.barType or (default and default.barType)
                 local enabled = edge.enabled
                 if enabled == nil and default then
                     enabled = true
                 end
-                local barCfg = key
+                local barConf = fieldKey
                     and enabled
                     and not edge.isGhostBar
                     and barType ~= "buffs"
                     and barType ~= "custom_buff"
-                    and barSpellMap[key]
-                if type(barCfg) == "table" and type(barCfg.assignedSpells) == "table" then
-                    for _, spellRef in ipairs(barCfg.assignedSpells) do
+                    and barSpellMap[fieldKey]
+                if type(barConf) == "table" and type(barConf.assignedSpells) == "table" then
+                    for _, spellRef in ipairs(barConf.assignedSpells) do
                         if
                             type(spellRef) == "number"
                             and spellRef > 0
-                            and not (barCfg.customSpellIDs and barCfg.customSpellIDs[spellRef])
+                            and not (barConf.customSpellIDs and barConf.customSpellIDs[spellRef])
                         then
                             placedIds[spellRef] = true
                             local num = SpellName(spellRef)
@@ -5627,12 +5627,12 @@ if CludesUI.IS_FOREVER == true then
             end
 
             -- An entry hidden under the placed ID itself stays hidden.
-            for index = #list, 1, -1 do
-                local spellRef = list[index]
+            for index = #entryList, 1, -1 do
+                local spellRef = entryList[index]
                 if type(spellRef) == "number" and spellRef > 0 and not placedIds[spellRef] then
                     local num = SpellName(spellRef)
                     if num and placedNames[num] then
-                        table.remove(list, index)
+                        table.remove(entryList, index)
                     end
                 end
             end
@@ -5710,10 +5710,10 @@ do
                 if type(val) == "table" then
                     FixTree(val, 0)
                 elseif val == 0 and fieldKey:sub(-#ZOOM_LEAF) == ZOOM_LEAF then
-                    local barCfg = fieldKey:sub(1, -#ZOOM_LEAF - 1)
-                    local shape = map[barCfg .. SHAPE_LEAF]
+                    local barConf = fieldKey:sub(1, -#ZOOM_LEAF - 1)
+                    local shape = map[barConf .. SHAPE_LEAF]
                     if shape == nil and pab then
-                        local t = BarAt(pab, barCfg:sub(#PAB_PREFIX + 1))
+                        local t = BarAt(pab, barConf:sub(#PAB_PREFIX + 1))
                         shape = t and t.iconShape
                     end
                     if shape ~= NIL_SENT and Shaped(shape) then
@@ -5742,9 +5742,9 @@ do
                 local storage = profileTbl[OV_STORES[si]]
                 if type(storage) == "table" then
                     for _, record in pairs(storage) do
-                        local values = type(record) == "table" and record.values
-                        if type(values) == "table" then
-                            for _, map in pairs(values) do
+                        local valueList = type(record) == "table" and record.values
+                        if type(valueList) == "table" then
+                            for _, map in pairs(valueList) do
                                 if type(map) == "table" then
                                     FixMap(map, pab)
                                 end
@@ -5819,8 +5819,8 @@ do
     -- The interface number, read directly: WoW Forever reports 16000-19999
     -- (the client gate's own band); retail and the PTR report 120100+.
     local function TocForever()
-        local toc = select(4, GetBuildInfo())
-        return type(toc) == "number" and toc >= 16000 and toc < 20000
+        local tocVersion = select(4, GetBuildInfo())
+        return type(tocVersion) == "number" and tocVersion >= 16000 and tocVersion < 20000
     end
     -- Two independent client checks: the suite's flag and the raw interface
     -- number. Tested here and again inside every function that writes.
@@ -5983,14 +5983,14 @@ do
             end
         end
 
-        local function CollectIds(list, set)
-            if type(list) ~= "table" then
+        local function CollectIds(entryList, set)
+            if type(entryList) ~= "table" then
                 return
             end
-            for index = 1, #list do
-                local barCfg = list[index]
-                if type(barCfg) == "table" and barCfg.id ~= nil then
-                    set[barCfg.id] = true
+            for index = 1, #entryList do
+                local barConf = entryList[index]
+                if type(barConf) == "table" and barConf.id ~= nil then
+                    set[barConf.id] = true
                 end
             end
         end
@@ -6138,18 +6138,18 @@ do
         -- (its own starter seed is FvBW.SeedStarter). Guarantees the bucket
         -- exists with an indicator array (so the retired editor fallback never
         -- runs) and is marked seeded. False only when the client check fails.
-        function FvBW.SeedEmpty(b, key)
-            if type(b) ~= "table" or key == nil then
+        function FvBW.SeedEmpty(b, fieldKey)
+            if type(b) ~= "table" or fieldKey == nil then
                 return false
             end
             local specs, wasSeeded = b.specs, b.seeded
-            local barKey = type(specs) == "table" and specs[key] or nil
+            local barKey = type(specs) == "table" and specs[fieldKey] or nil
             if
                 type(barKey) == "table"
                 and type(barKey.inds) == "table"
                 and type(barKey.nextId) == "number"
                 and type(wasSeeded) == "table"
-                and wasSeeded[key]
+                and wasSeeded[fieldKey]
             then
                 return true
             end
@@ -6165,7 +6165,7 @@ do
                 b.seeded = wasSeeded
             end
             if type(barKey) ~= "table" then
-                specs[key] = { nextId = 1000001, inds = {} }
+                specs[fieldKey] = { nextId = 1000001, inds = {} }
             else
                 if type(barKey.inds) ~= "table" then
                     barKey.inds = {}
@@ -6182,7 +6182,7 @@ do
                     barKey.nextId = topY + 1
                 end
             end
-            wasSeeded[key] = true
+            wasSeeded[fieldKey] = true
             return true
         end
 
@@ -6307,7 +6307,7 @@ do
         -- Adds the two starter groups to the "allspecs" bucket of a v2 payload
         -- (the live store or a layer's), marked seeded. ids = preset key ->
         -- filter id in the profile's filter library. Fresh tables every call.
-        local function SeedAllSpecs(pay, ids)
+        local function SeedAllSpecs(pay, idList)
             local specs, wasSeeded = pay.specs, pay.seeded
             if type(specs) ~= "table" then
                 specs = {}
@@ -6340,14 +6340,14 @@ do
                 growDirection = "CENTER",
                 size = 18,
             }
-            if ids.defensives then
-                center.filters[ids.defensives] = true
+            if idList.defensives then
+                center.filters[idList.defensives] = true
             end
-            if ids.externals then
-                center.filters[ids.externals] = true
+            if idList.externals then
+                center.filters[idList.externals] = true
             end
-            if ids.consumables then
-                center.filters[ids.consumables] = true
+            if idList.consumables then
+                center.filters[idList.consumables] = true
             end
             local corner = {
                 id = num + 1,
@@ -6361,8 +6361,8 @@ do
                 growDirection = "LEFT",
                 size = 18,
             }
-            if ids.coreheals then
-                corner.filters[ids.coreheals] = true
+            if idList.coreheals then
+                corner.filters[idList.coreheals] = true
             end
             inds[#inds + 1] = center
             inds[#inds + 1] = corner
@@ -6419,18 +6419,18 @@ do
             if CludesUI._bmSessionGid ~= nil then
                 return false
             end
-            local ids = {}
-            local list = type(b.filters) == "table" and b.filters.list
-            if type(list) == "table" then
-                for index = 1, #list do
-                    local f = list[index]
+            local idList = {}
+            local entryList = type(b.filters) == "table" and b.filters.list
+            if type(entryList) == "table" then
+                for index = 1, #entryList do
+                    local f = entryList[index]
                     if type(f) == "table" and f.preset ~= nil and f.id ~= nil then
-                        ids[f.preset] = f.id
+                        idList[f.preset] = f.id
                     end
                 end
             end
             -- Waits for the filter library.
-            if not (ids.defensives or ids.externals or ids.consumables or ids.coreheals) then
+            if not (idList.defensives or idList.externals or idList.consumables or idList.coreheals) then
                 return false
             end
             if not ClientOK() then
@@ -6499,13 +6499,13 @@ do
                 bl = nil
             end
             if not forkLive then
-                SeedAllSpecs(b, ids)
+                SeedAllSpecs(b, idList)
             end
             if bl then
                 if type(bl.bm2) ~= "table" then
                     bl.bm2 = BlankFork()
                 end
-                SeedAllSpecs(bl.bm2, ids)
+                SeedAllSpecs(bl.bm2, idList)
             end
             b[SEED_KEY] = 1
             return not forkLive
@@ -6520,27 +6520,27 @@ do
         --     data they did not arrive with) and "first" (the account's one
         --     sweep of data older than this block) strip the stores anyway.
         -- A planning error still stamps the mark (logged): never cleared twice.
-        function FvBW.ProcessUF(ufStore, profileTbl, mode)
+        function FvBW.ProcessUF(ufStore, profileTbl, modeName)
             local ufT = type(ufStore) == "table"
             local s = ufT and ufStore.playerAuraBars or nil
             local swingCfg = type(s) == "table"
             local strip, clear
             if swingCfg and s[KEY] ~= nil then
-                if mode ~= "import" then
+                if modeName ~= "import" then
                     return
                 end
                 strip = "mark"
             elseif swingCfg then
                 clear = true
-                if mode ~= "live" then
+                if modeName ~= "live" then
                     strip = "full"
                 end
-            elseif mode == "live" then
+            elseif modeName == "live" then
                 return
             elseif ufT and ufStore.externalDefensives ~= nil then
                 clear = true
                 strip = "full"
-            elseif mode == "import" or mode == "first" then
+            elseif modeName == "import" or modeName == "first" then
                 strip = "full"
             else
                 return
@@ -6562,13 +6562,13 @@ do
         end
 
         -- Profile-level entry (pd = a profile root: stored, or an import payload).
-        function FvBW.ProcessProfile(profileSaved, mode)
+        function FvBW.ProcessProfile(profileSaved, modeName)
             if type(profileSaved) ~= "table" then
                 return
             end
             local addonStores = profileSaved.addons
-            FvBW.ProcessUF(type(addonStores) == "table" and addonStores[UF] or nil, profileSaved, mode)
-            if mode == "import" then
+            FvBW.ProcessUF(type(addonStores) == "table" and addonStores[UF] or nil, profileSaved, modeName)
+            if modeName == "import" then
                 TrustForks(profileSaved)
             end
         end
@@ -6583,8 +6583,8 @@ do
         -- that starts with no profiles never runs one.
         local boot = CreateFrame("Frame")
         boot:RegisterEvent("ADDON_LOADED")
-        boot:SetScript("OnEvent", function(self, _, name)
-            if name ~= ADDON_NAME then
+        boot:SetScript("OnEvent", function(self, _, label)
+            if label ~= ADDON_NAME then
                 return
             end
             self:UnregisterEvent("ADDON_LOADED")
@@ -6592,19 +6592,19 @@ do
             if type(saved) ~= "table" or not ClientOK() then
                 return
             end
-            local flags = saved._migrations
-            if type(flags) ~= "table" then
-                flags = {}
-                saved._migrations = flags
+            local flagSet = saved._migrations
+            if type(flagSet) ~= "table" then
+                flagSet = {}
+                saved._migrations = flagSet
             end
-            local mode = flags[SWEEP_ID] and "login" or "first"
+            local modeName = flagSet[SWEEP_ID] and "login" or "first"
             local profileSet = saved.profiles
             if type(profileSet) == "table" then
                 for _, profileSaved in pairs(profileSet) do
-                    FvBW.ProcessProfile(profileSaved, mode)
+                    FvBW.ProcessProfile(profileSaved, modeName)
                 end
             end
-            flags[SWEEP_ID] = true
+            flagSet[SWEEP_ID] = true
         end)
     end
 end
@@ -6632,19 +6632,19 @@ do
     CludesUI._FvSnapFlag = FLAG
 
     local function ClientOK()
-        local toc = select(4, GetBuildInfo())
+        local tocVersion = select(4, GetBuildInfo())
         return CludesUI ~= nil
             and CludesUI.IS_FOREVER == true
-            and type(toc) == "number"
-            and toc >= 16000
-            and toc < 20000
+            and type(tocVersion) == "number"
+            and tocVersion >= 16000
+            and tocVersion < 20000
     end
 
-    local function Sub(t, key)
-        if type(t[key]) ~= "table" then
-            t[key] = {}
+    local function Sub(t, fieldKey)
+        if type(t[fieldKey]) ~= "table" then
+            t[fieldKey] = {}
         end
-        return t[key]
+        return t[fieldKey]
     end
 
     -- True when the account holds data from an earlier WoW Forever session.
@@ -6718,11 +6718,11 @@ do
                 end)
                 return
             end
-            local flags = Sub(saved, "_migrations")
-            if flags[FLAG] then
+            local flagSet = Sub(saved, "_migrations")
+            if flagSet[FLAG] then
                 return
             end
-            flags[FLAG] = true
+            flagSet[FLAG] = true
             if not HadData(saved) then
                 return
             end
@@ -6756,12 +6756,12 @@ do
     local NIL_SENT = "__SPECOV_NIL__"
 
     local function ClientOK()
-        local toc = select(4, GetBuildInfo())
+        local tocVersion = select(4, GetBuildInfo())
         return CludesUI ~= nil
             and CludesUI.IS_FOREVER == true
-            and type(toc) == "number"
-            and toc >= 16000
-            and toc < 20000
+            and type(tocVersion) == "number"
+            and tocVersion >= 16000
+            and tocVersion < 20000
     end
 
     local function MoveProfile(profileTbl)
@@ -6776,9 +6776,9 @@ do
             return
         end
         for _, record in pairs(profileTbl.specOverrides) do
-            local values = type(record) == "table" and record.values
-            if type(values) == "table" then
-                for _, specBucket in pairs(values) do
+            local valueList = type(record) == "table" and record.values
+            if type(valueList) == "table" then
+                for _, specBucket in pairs(valueList) do
                     if type(specBucket) == "table" then
                         local val = specBucket[OVERRIDE_KEY]
                         if val ~= nil and val ~= NIL_SENT then
@@ -6846,12 +6846,12 @@ do
     local FLAG = "forever_np_rare_box_v1"
 
     local function ClientOK()
-        local toc = select(4, GetBuildInfo())
+        local tocVersion = select(4, GetBuildInfo())
         return CludesUI ~= nil
             and CludesUI.IS_FOREVER == true
-            and type(toc) == "number"
-            and toc >= 16000
-            and toc < 20000
+            and type(tocVersion) == "number"
+            and tocVersion >= 16000
+            and tocVersion < 20000
     end
 
     local function MoveProfile(profileTbl)
@@ -6938,12 +6938,12 @@ do
     local SMART, VALUE = "smart", "curpp"
 
     local function ClientOK()
-        local toc = select(4, GetBuildInfo())
+        local tocVersion = select(4, GetBuildInfo())
         return CludesUI ~= nil
             and CludesUI.IS_FOREVER == true
-            and type(toc) == "number"
-            and toc >= 16000
-            and toc < 20000
+            and type(tocVersion) == "number"
+            and tocVersion >= 16000
+            and tocVersion < 20000
     end
 
     -- Spec Override value keys: the module folder, "\31", then the key path's
@@ -6989,9 +6989,9 @@ do
             return
         end
         for _, record in pairs(profileTbl.specOverrides) do
-            local values = type(record) == "table" and record.values
-            if type(values) == "table" then
-                for _, specBucket in pairs(values) do
+            local valueList = type(record) == "table" and record.values
+            if type(valueList) == "table" then
+                for _, specBucket in pairs(valueList) do
                     if type(specBucket) == "table" then
                         for fieldKey, val in pairs(specBucket) do
                             if val == SMART and type(fieldKey) == "string" and PowerTextKey(fieldKey) then

@@ -316,7 +316,7 @@ local function BuildFrame()
     bgB:SetAlpha(0)
 
     -- Track which layer is "front" (the one fading in)
-    local bgFront, bgBack = bgA, bgB
+    local frontBg, bgBack = bgA, bgB
     local bgFadeProgress = 1 -- 1 = fully transitioned (front is fully visible)
     local BG_FADE_DURATION = 0.5
 
@@ -402,13 +402,13 @@ local function BuildFrame()
         end
         if glyph then
             local tc = titleBoxes.GLYPH[glyph]
-            local icon = CludesUI.RESIZE_ICON
+            local iconTex = CludesUI.RESIZE_ICON
             boxState.shadow = owner:CreateTexture(nil, "BORDER")
             boxState.base = owner:CreateTexture(nil, "BORDER")
             boxState.acc = owner:CreateTexture(nil, "BORDER")
-            boxState.shadow:SetTexture(icon)
-            boxState.base:SetTexture(icon)
-            boxState.acc:SetTexture(icon)
+            boxState.shadow:SetTexture(iconTex)
+            boxState.base:SetTexture(iconTex)
+            boxState.acc:SetTexture(iconTex)
             boxState.shadow:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
             boxState.base:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
             boxState.acc:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
@@ -560,7 +560,7 @@ local function BuildFrame()
         local overlay = backdrop._accentOverlayDir and backdrop._accentOverlay
         if bgFadeProgress >= 1 then
             bgFadeProgress = 1
-            bgFront:SetAlpha(1)
+            frontBg:SetAlpha(1)
             -- The collapse box pair is not occluded (its rect differs per art), so
             -- the outgoing one hides.
             titleBoxes.Alpha(titleBoxes.front, 1)
@@ -584,7 +584,7 @@ local function BuildFrame()
             local t = bgFadeProgress
             t = t < 0.5 and (2 * t * t) or (1 - (-2 * t + 2) * (-2 * t + 2) / 2)
             bgBack:SetAlpha(1)
-            bgFront:SetAlpha(t)
+            frontBg:SetAlpha(t)
             titleBoxes.Alpha(titleBoxes.front, t)
             -- The outgoing box stays near solid until late, like bgBack: a plain
             -- 1 - t leaves both boxes part-transparent mid-fade and they dim.
@@ -657,14 +657,14 @@ local function BuildFrame()
         local newPath = MEDIA_PATH .. file
 
         -- Swap roles: old front becomes back, new incoming becomes front
-        bgBack, bgFront = bgFront, bgBack
+        bgBack, frontBg = frontBg, bgBack
 
         -- New front layer gets the target texture + tint on top; this SetTexture is also
         -- the lazy cleanup of the previous transition's idle layer.
-        bgFront:SetTexture(newPath)
-        ApplyBgTintToLayer(bgFront, skinName, r, g, b)
-        bgFront:SetDrawLayer("BACKGROUND", 1)
-        bgFront:SetAlpha(0)
+        frontBg:SetTexture(newPath)
+        ApplyBgTintToLayer(frontBg, skinName, r, g, b)
+        frontBg:SetDrawLayer("BACKGROUND", 1)
+        frontBg:SetAlpha(0)
 
         -- Old layer stays fully solid underneath
         bgBack:SetDrawLayer("BACKGROUND", 0)
@@ -696,7 +696,7 @@ local function BuildFrame()
     -- For tint-only updates (Custom Color picker dragging), update the front layer directly
     local function ApplyBgTint(r, g, b)
         local skinName = ResolveFactionTheme((CludesUIDB or {}).activeTheme or CludesUI.DEFAULT_THEME)
-        ApplyBgTintToLayer(bgFront, skinName, r, g, b)
+        ApplyBgTintToLayer(frontBg, skinName, r, g, b)
         titleBoxes.Paint(titleBoxes.front, skinName, r, g, b)
         if CludesUI._panelCollapsed then
             titleBoxes.SkinMini(skinName, r, g, b)
@@ -737,8 +737,8 @@ local function BuildFrame()
     -- Shift + mouse wheel over any part of the panel without a wheel of its own (the
     -- header, the footer, the margins) scales it too; a plain wheel there does nothing.
     hitArea:EnableMouseWheel(true)
-    hitArea:SetScript("OnMouseWheel", function(_, delta)
-        CludesUI._ShiftWheelScale(delta)
+    hitArea:SetScript("OnMouseWheel", function(_, stepDelta)
+        CludesUI._ShiftWheelScale(stepDelta)
     end)
     -- Controller cursor: the drag surface is not a stop; its children are.
     CludesUI.PadHint(hitArea, "nodepass")
@@ -1079,18 +1079,18 @@ local function BuildSidebar()
         glow:Hide()
         button._iconGlow = glow
         RegAccent({ type = "vertex", obj = glow })
-        local icon = button:CreateTexture(nil, "ARTWORK", nil, 1)
-        icon:SetTexture(offPath)
-        icon:SetSize(NAV_ICON_W, NAV_ICON_H)
-        icon:SetPoint("LEFT", button, "LEFT", NAV_LEFT, 0)
-        button._icon = icon
+        local iconTex = button:CreateTexture(nil, "ARTWORK", nil, 1)
+        iconTex:SetTexture(offPath)
+        iconTex:SetSize(NAV_ICON_W, NAV_ICON_H)
+        iconTex:SetPoint("LEFT", button, "LEFT", NAV_LEFT, 0)
+        button._icon = iconTex
         button._iconOn = onPath
         button._iconOff = offPath
-        local label = MakeFont(button, 14, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
-        label:SetPoint("LEFT", icon, "RIGHT", NAV_TXT_GAP, 0)
-        label:SetText(caption)
-        button._label = label
-        return icon, label
+        local navLabel = MakeFont(button, 14, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+        navLabel:SetPoint("LEFT", iconTex, "RIGHT", NAV_TXT_GAP, 0)
+        navLabel:SetText(caption)
+        button._label = navLabel
+        return iconTex, navLabel
     end
 
     local function DecorateSidebarButton(button)
@@ -1129,10 +1129,10 @@ local function BuildSidebar()
 
     -- The resting look of a row that is always available: full caption
     -- colour and an undimmed icon.
-    local function ShowNavEnabled(icon, label)
-        label:SetTextColor(NAV_ENABLED_TEXT.r, NAV_ENABLED_TEXT.g, NAV_ENABLED_TEXT.b, NAV_ENABLED_TEXT.a)
-        icon:SetDesaturated(false)
-        icon:SetAlpha(NAV_ENABLED_ICON_A)
+    local function ShowNavEnabled(iconTex, navLabel)
+        navLabel:SetTextColor(NAV_ENABLED_TEXT.r, NAV_ENABLED_TEXT.g, NAV_ENABLED_TEXT.b, NAV_ENABLED_TEXT.a)
+        iconTex:SetDesaturated(false)
+        iconTex:SetAlpha(NAV_ENABLED_ICON_A)
     end
 
     -------------------------------------------------------------------
@@ -1141,7 +1141,7 @@ local function BuildSidebar()
     do
         local button = NewNavButton(NAV_TOP)
 
-        local icon, label = AddNavIconAndLabel(
+        local iconTex, navLabel = AddNavIconAndLabel(
             button,
             ICONS_PATH .. "sidebar\\unlockmode-ig-on.png",
             ICONS_PATH .. "sidebar\\unlockmode-ig.png",
@@ -1149,7 +1149,7 @@ local function BuildSidebar()
         )
 
         -- Always "loaded" appearance
-        ShowNavEnabled(icon, label)
+        ShowNavEnabled(iconTex, navLabel)
 
         local hoverFill = SolidTex(button, "HIGHLIGHT", 1, 1, 1, 0)
         hoverFill:SetAllPoints()
@@ -1193,7 +1193,7 @@ local function BuildSidebar()
     do
         local button = NewNavButton(NAV_TOP - NAV_ROW_H)
 
-        local icon, label = AddNavIconAndLabel(
+        local iconTex, navLabel = AddNavIconAndLabel(
             button,
             ICONS_PATH .. "sidebar\\settings-ig-on-2.png",
             ICONS_PATH .. "sidebar\\settings-ig-2.png",
@@ -1208,7 +1208,7 @@ local function BuildSidebar()
         button._dlIcon = dlIcon
 
         -- Always "loaded" -- global settings is built-in
-        ShowNavEnabled(icon, label)
+        ShowNavEnabled(iconTex, navLabel)
         button._folder = GLOBAL_KEY
         button._loaded = true
 
@@ -1273,14 +1273,14 @@ local function BuildSidebar()
     do
         local button = NewNavButton(NAV_TOP - NAV_ROW_H * 3)
 
-        local icon, label = AddNavIconAndLabel(
+        local iconTex, navLabel = AddNavIconAndLabel(
             button,
             ICONS_PATH .. "sidebar\\notes-on.png",
             ICONS_PATH .. "sidebar\\notes-off.png",
             CludesUI.L("Patch Notes")
         )
 
-        ShowNavEnabled(icon, label)
+        ShowNavEnabled(iconTex, navLabel)
 
         button._folder = "_CUIPatchNotes"
         button._loaded = true
@@ -1347,27 +1347,27 @@ local function BuildSidebar()
 
         -- Pulsing "new patch" dot: shown while patchDotPending is raised (version-increase
         -- stamp near CludesUI.VERSION) and patchDotDisabled is unset. Built lazily.
-        local dot
+        local dotTex
         CludesUI._UpdatePatchDot = function()
             local show = CludesUIDB
                     and CludesUIDB.patchDotPending
                     and not CludesUIDB.patchDotDisabled
                     and true
                 or false
-            if not dot then
+            if not dotTex then
                 if not show then
                     return
                 end
-                dot = CreateFrame("Frame", nil, button)
-                dot:SetFrameLevel(button:GetFrameLevel() + 5)
-                dot:SetSize(9, 9)
-                dot:SetPoint("RIGHT", button, "RIGHT", -14, 0)
-                local t = dot:CreateTexture(nil, "OVERLAY")
+                dotTex = CreateFrame("Frame", nil, button)
+                dotTex:SetFrameLevel(button:GetFrameLevel() + 5)
+                dotTex:SetSize(9, 9)
+                dotTex:SetPoint("RIGHT", button, "RIGHT", -14, 0)
+                local t = dotTex:CreateTexture(nil, "OVERLAY")
                 t:SetAllPoints()
                 t:SetColorTexture(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
                 CludesUI.RegAccent({ type = "solid", obj = t, a = 1 })
                 -- Round: run the solid color through the portrait circle mask.
-                local mask = dot:CreateMaskTexture()
+                local mask = dotTex:CreateMaskTexture()
                 mask:SetTexture(
                     "Interface\\AddOns\\CludesUI\\media\\portraits\\circle_mask.tga",
                     "CLAMPTOBLACKADDITIVE",
@@ -1375,7 +1375,7 @@ local function BuildSidebar()
                 )
                 mask:SetAllPoints(t)
                 t:AddMaskTexture(mask)
-                local ag = dot:CreateAnimationGroup()
+                local ag = dotTex:CreateAnimationGroup()
                 ag:SetLooping("REPEAT")
                 local a1 = ag:CreateAnimation("Alpha")
                 a1:SetFromAlpha(1)
@@ -1389,13 +1389,13 @@ local function BuildSidebar()
                 a2:SetDuration(0.7)
                 a2:SetOrder(2)
                 a2:SetSmoothing("IN_OUT")
-                dot._ag = ag
+                dotTex._ag = ag
             end
-            dot:SetShown(show)
+            dotTex:SetShown(show)
             if show then
-                dot._ag:Play()
+                dotTex._ag:Play()
             else
-                dot._ag:Stop()
+                dotTex._ag:Stop()
             end
         end
         CludesUI._UpdatePatchDot()
@@ -1410,14 +1410,14 @@ local function BuildSidebar()
     do
         local button = NewNavButton(NAV_TOP - NAV_ROW_H * 2)
 
-        local icon, label = AddNavIconAndLabel(
+        local iconTex, navLabel = AddNavIconAndLabel(
             button,
             ICONS_PATH .. "sidebar\\profiles-on.png",
             ICONS_PATH .. "sidebar\\profiles-off.png",
             CludesUI.L("Profiles")
         )
 
-        ShowNavEnabled(icon, label)
+        ShowNavEnabled(iconTex, navLabel)
 
         button._folder = "_CUIProfiles"
         button._loaded = true
@@ -1531,21 +1531,21 @@ local function BuildSidebar()
     sbPlaceholder:SetPoint("LEFT", sidebarSearchFrame, "LEFT", 10, 0)
     sbPlaceholder:SetText(CludesUI.L("Search Features..."))
 
-    local sbClearBtn = CreateFrame("Button", nil, sidebarSearchFrame)
-    sbClearBtn:SetSize(20, 20)
-    sbClearBtn:SetPoint("RIGHT", sidebarSearchFrame, "RIGHT", -4, 0)
-    sbClearBtn:SetFrameLevel(sidebarEdit:GetFrameLevel() + 2)
-    sbClearBtn:Hide()
-    local sbClearLabel = MakeFont(sbClearBtn, 15, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.35)
+    local clearSearchBtn = CreateFrame("Button", nil, sidebarSearchFrame)
+    clearSearchBtn:SetSize(20, 20)
+    clearSearchBtn:SetPoint("RIGHT", sidebarSearchFrame, "RIGHT", -4, 0)
+    clearSearchBtn:SetFrameLevel(sidebarEdit:GetFrameLevel() + 2)
+    clearSearchBtn:Hide()
+    local sbClearLabel = MakeFont(clearSearchBtn, 15, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.35)
     sbClearLabel:SetPoint("CENTER")
     sbClearLabel:SetText("x")
-    sbClearBtn:SetScript("OnEnter", function()
+    clearSearchBtn:SetScript("OnEnter", function()
         sbClearLabel:SetTextColor(1, 1, 1, 1)
     end)
-    sbClearBtn:SetScript("OnLeave", function()
+    clearSearchBtn:SetScript("OnLeave", function()
         sbClearLabel:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.35)
     end)
-    sbClearBtn:SetScript("OnClick", function()
+    clearSearchBtn:SetScript("OnClick", function()
         sidebarEdit:SetText("")
         sidebarEdit:ClearFocus()
     end)
@@ -1577,15 +1577,15 @@ local function BuildSidebar()
     CludesUI._sidebarSearchText = ""
 
     sidebarEdit:SetScript("OnTextChanged", function(self)
-        local text = self:GetText() or ""
-        if text == "" then
+        local textValue = self:GetText() or ""
+        if textValue == "" then
             sbPlaceholder:Show()
-            sbClearBtn:Hide()
+            clearSearchBtn:Hide()
         else
             sbPlaceholder:Hide()
-            sbClearBtn:Show()
+            clearSearchBtn:Show()
         end
-        CludesUI._sidebarSearchText = text
+        CludesUI._sidebarSearchText = textValue
         -- Deliberately NO sidebar filtering here: the global search results popup
         -- (CludesUI_GlobalSearch.lua) lists matches without reshuffling the nav.
     end)
@@ -1734,8 +1734,8 @@ local function BuildSidebar()
         UpdateAddonThumb()
     end)
 
-    addonScroller:SetScript("OnMouseWheel", function(self, delta)
-        if CludesUI._ShiftWheelScale(delta) then
+    addonScroller:SetScript("OnMouseWheel", function(self, stepDelta)
+        if CludesUI._ShiftWheelScale(stepDelta) then
             return
         end
         local scrollMax = CludesUI.SafeScrollRange(self) or 0
@@ -1745,7 +1745,7 @@ local function BuildSidebar()
         local zoom = self:GetEffectiveScale()
         scrollMax = math.floor(scrollMax * zoom) / zoom
         local base = addonIsSmoothing and addonScrollTarget or self:GetVerticalScroll()
-        local target = math.max(0, math.min(scrollMax, base - delta * ADDON_SCROLL_STEP))
+        local target = math.max(0, math.min(scrollMax, base - stepDelta * ADDON_SCROLL_STEP))
         -- Snap the resting target to a pixel boundary so settlement lands on an integer row offset.
         target = math.floor(target * zoom + 0.5) / zoom
         addonScrollTarget = math.min(target, scrollMax)
@@ -1850,58 +1850,58 @@ local function BuildSidebar()
     -- expands the group; RefreshSidebarStates lays the rows out and sets the
     -- +/- for the saved state.
     local function CreateGroupHeader(navGroup)
-        local row = CreateFrame("Button", nil, addonScrollChild)
-        row:SetSize(SIDEBAR_W, GROUP_ROW_H)
-        row:SetFrameLevel(addonScrollChild:GetFrameLevel() + 1)
+        local line = CreateFrame("Button", nil, addonScrollChild)
+        line:SetSize(SIDEBAR_W, GROUP_ROW_H)
+        line:SetFrameLevel(addonScrollChild:GetFrameLevel() + 1)
 
         local EG = CLUDES_GREEN
         -- The label takes its text's width (one anchor), so the +/- follows the text.
-        local label = MakeFont(row, 15, nil, EG.r, EG.g, EG.b, 1)
-        label:SetPoint("LEFT", row, "LEFT", NAV_LEFT, 0)
-        label:SetWordWrap(false)
-        label:SetMaxLines(1)
-        label:SetText(CludesUI.L(navGroup.label))
+        local navLabel = MakeFont(line, 15, nil, EG.r, EG.g, EG.b, 1)
+        navLabel:SetPoint("LEFT", line, "LEFT", NAV_LEFT, 0)
+        navLabel:SetWordWrap(false)
+        navLabel:SetMaxLines(1)
+        navLabel:SetText(CludesUI.L(navGroup.label))
 
-        local toggle = row:CreateTexture(nil, "ARTWORK")
-        toggle:SetSize(14, 14)
-        toggle:SetPoint("LEFT", label, "RIGHT", 4, 0)
-        toggle:SetAtlas("ui-questtrackerbutton-secondary-collapse")
-        toggle:SetDesaturated(true)
-        toggle:SetVertexColor(EG.r, EG.g, EG.b, 1)
-        toggle:Hide()
+        local toggleBtn = line:CreateTexture(nil, "ARTWORK")
+        toggleBtn:SetSize(14, 14)
+        toggleBtn:SetPoint("LEFT", navLabel, "RIGHT", 4, 0)
+        toggleBtn:SetAtlas("ui-questtrackerbutton-secondary-collapse")
+        toggleBtn:SetDesaturated(true)
+        toggleBtn:SetVertexColor(EG.r, EG.g, EG.b, 1)
+        toggleBtn:Hide()
 
         -- Hovering the row shows the +/- and lightens it and the label by 25%.
         local cr, cg, cb = EG.r, EG.g, EG.b
         local function Paint(lit)
             local m = lit and 1.25 or 1
             local r, g, b = math.min(1, cr * m), math.min(1, cg * m), math.min(1, cb * m)
-            label:SetTextColor(r, g, b, 1)
-            toggle:SetVertexColor(r, g, b, 1)
-            toggle:SetShown(lit)
+            navLabel:SetTextColor(r, g, b, 1)
+            toggleBtn:SetVertexColor(r, g, b, 1)
+            toggleBtn:SetShown(lit)
         end
         RegAccent({
             type = "callback",
             fn = function(r, g, b)
                 cr, cg, cb = r, g, b
-                Paint(row:IsMouseOver())
+                Paint(line:IsMouseOver())
             end,
         })
-        row:SetScript("OnEnter", function()
+        line:SetScript("OnEnter", function()
             Paint(true)
         end)
-        row:SetScript("OnLeave", function()
+        line:SetScript("OnLeave", function()
             Paint(false)
         end)
 
-        local key = navGroup.key
-        row:SetScript("OnClick", function()
-            CUI_NS.ToggleSidebarGroup(key)
+        local entryKey = navGroup.key
+        line:SetScript("OnClick", function()
+            CUI_NS.ToggleSidebarGroup(entryKey)
         end)
 
-        row._isGroup = true
-        row._label = label
-        row._toggle = toggle
-        return row
+        line._isGroup = true
+        line._label = navLabel
+        line._toggle = toggleBtn
+        return line
     end
 
     -- Create a child (addon) row: indented label + power on the right, no left icon.
@@ -1912,10 +1912,10 @@ local function BuildSidebar()
 
         DecorateSidebarButton(button)
 
-        local label = MakeFont(button, 14, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
-        label:SetPoint("LEFT", button, "LEFT", CHILD_INDENT_X, 0)
-        label:SetText(CludesUI.L(navInfo.display))
-        button._label = label
+        local navLabel = MakeFont(button, 14, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+        navLabel:SetPoint("LEFT", button, "LEFT", CHILD_INDENT_X, 0)
+        navLabel:SetText(CludesUI.L(navInfo.display))
+        button._label = navLabel
 
         -- Download icon (shown for uninstalled addons)
         local dlIcon = button:CreateTexture(nil, "ARTWORK")
@@ -1947,8 +1947,8 @@ local function BuildSidebar()
             pwrBtn._folder = navInfo.folder
             pwrBtn._display = navInfo.display
             pwrBtn:SetScript("OnEnter", function(self)
-                local enabled = IsAddonLoaded(self._folder)
-                if enabled then
+                local isEnabled = IsAddonLoaded(self._folder)
+                if isEnabled then
                     self._tex:SetVertexColor(0.824, 0.212, 0.212, 1)
                 else
                     self._tex:SetVertexColor(0.212, 0.824, 0.325, 1)
@@ -1956,39 +1956,39 @@ local function BuildSidebar()
                 if CludesUI.ShowWidgetTooltip then
                     CludesUI.ShowWidgetTooltip(
                         self,
-                        enabled and "Disable " .. self._display or "Enable " .. self._display
+                        isEnabled and "Disable " .. self._display or "Enable " .. self._display
                     )
                 end
             end)
             pwrBtn:SetScript("OnLeave", function(self)
-                local enabled = IsAddonLoaded(self._folder)
-                self._tex:SetVertexColor(1, 1, 1, enabled and 1 or 0.5)
+                local isEnabled = IsAddonLoaded(self._folder)
+                self._tex:SetVertexColor(1, 1, 1, isEnabled and 1 or 0.5)
                 if CludesUI.HideWidgetTooltip then
                     CludesUI.HideWidgetTooltip()
                 end
             end)
             pwrBtn:SetScript("OnClick", function(self)
-                local enabled = IsAddonLoaded(self._folder)
-                local action = enabled and "disable" or "enable"
+                local isEnabled = IsAddonLoaded(self._folder)
+                local action = isEnabled and "disable" or "enable"
                 local moduleKey = self._folder
                 CludesUI:ShowConfirmPopup({
                     title = CludesUI.Lf(
                         "%1$s Module",
-                        enabled and CludesUI.L("Disable") or CludesUI.L("Enable")
+                        isEnabled and CludesUI.L("Disable") or CludesUI.L("Enable")
                     ),
                     message = CludesUI.Lf(
                         "Are you sure you want to %1$s %2$s?",
                         CludesUI.L(action),
                         CludesUI.L(self._display)
                     ),
-                    confirmText = enabled and "Disable & Reload" or "Enable & Reload",
+                    confirmText = isEnabled and "Disable & Reload" or "Enable & Reload",
                     cancelText = "Cancel",
                     reload = true,
                     onConfirm = function()
                         if moduleKey == "CludesUIBags" and CludesUIDB then
                             CludesUIDB.bagsUserChosen = true
                         end
-                        if enabled then
+                        if isEnabled then
                             C_AddOns.DisableAddOn(moduleKey)
                         else
                             C_AddOns.EnableAddOn(moduleKey)
@@ -2008,25 +2008,25 @@ local function BuildSidebar()
             and not navInfo.plugin
             and not CludesUI._syncExempt[navInfo.folder]
         then
-            local syncBtn = CreateFrame("Button", nil, button)
-            syncBtn:SetSize(15, 15)
+            local syncButton = CreateFrame("Button", nil, button)
+            syncButton:SetSize(15, 15)
             if button._pwrBtn then
-                syncBtn:SetPoint("RIGHT", button._pwrBtn, "LEFT", -8, 0)
+                syncButton:SetPoint("RIGHT", button._pwrBtn, "LEFT", -8, 0)
             else
-                syncBtn:SetPoint("RIGHT", button, "RIGHT", -20, 0)
+                syncButton:SetPoint("RIGHT", button, "RIGHT", -20, 0)
             end
-            syncBtn:SetFrameLevel(button:GetFrameLevel() + 5)
-            local syncTex = syncBtn:CreateTexture(nil, "ARTWORK")
+            syncButton:SetFrameLevel(button:GetFrameLevel() + 5)
+            local syncTex = syncButton:CreateTexture(nil, "ARTWORK")
             syncTex:SetAllPoints()
             syncTex:SetTexture(CludesUI.SYNC_ICON)
             syncTex:SetVertexColor(1, 1, 1, 1)
-            syncBtn._tex = syncTex
+            syncButton._tex = syncTex
             -- syncFolder/syncDisplay let an entry drive the sync of a DIFFERENT profile
             -- folder (Dragon Riding lives in the BlizzardSkin entry); the loaded check
             -- still uses info.folder, only the sync state/group target is redirected.
             local syncFolder = navInfo.syncFolder or navInfo.folder
-            syncBtn._folder = syncFolder
-            syncBtn._display = navInfo.syncDisplay or navInfo.display
+            syncButton._folder = syncFolder
+            syncButton._display = navInfo.syncDisplay or navInfo.display
             local SYNC_ON_R, SYNC_ON_G, SYNC_ON_B = 0x32 / 255, 0xbc / 255, 0x53 / 255
             local SYNC_HOVER_R = math.min(1, SYNC_ON_R * 1.25)
             local SYNC_HOVER_G = math.min(1, SYNC_ON_G * 1.25)
@@ -2036,7 +2036,7 @@ local function BuildSidebar()
                 -- Hide the sync icon for disabled modules (no live settings to sync);
                 -- same loaded check as the power button so the two stay consistent.
                 if not IsAddonLoaded(navInfo.folder) then
-                    syncBtn:Hide()
+                    syncButton:Hide()
                     return
                 end
                 -- Hide if only one profile exists
@@ -2050,7 +2050,7 @@ local function BuildSidebar()
                     end
                 end
                 if profCount <= 1 then
-                    syncBtn:Hide()
+                    syncButton:Hide()
                     return
                 end
                 -- Green when the ACTIVE profile is a member of this module's sync group;
@@ -2062,16 +2062,16 @@ local function BuildSidebar()
                     if CludesUIDB.hideSyncIcons then
                         if CludesUIDB.hideSyncIconsOnlyFull then
                             if activeSynced then
-                                syncBtn:Hide()
+                                syncButton:Hide()
                                 return
                             end
                         else
-                            syncBtn:Hide()
+                            syncButton:Hide()
                             return
                         end
                     end
                 end
-                syncBtn:Show()
+                syncButton:Show()
                 if activeSynced then
                     syncTex:SetVertexColor(SYNC_ON_R, SYNC_ON_G, SYNC_ON_B, 1)
                 else
@@ -2079,14 +2079,14 @@ local function BuildSidebar()
                 end
             end
             RefreshSyncState()
-            syncBtn._refreshAlpha = RefreshSyncState
+            syncButton._refreshAlpha = RefreshSyncState
             -- Bulk-refresh registry (e.g. after profile deletion), keyed by folder so a
             -- sidebar rebuild overwrites the old closure instead of accumulating stale ones.
             if not CludesUI._syncRefreshFns then
                 CludesUI._syncRefreshFns = {}
             end
             CludesUI._syncRefreshFns[navInfo.folder] = RefreshSyncState
-            syncBtn:SetScript("OnEnter", function(self)
+            syncButton:SetScript("OnEnter", function(self)
                 if isGlobalOnly then
                     self._tex:SetVertexColor(SYNC_HOVER_R, SYNC_HOVER_G, SYNC_HOVER_B, 1)
                     if CludesUI.ShowWidgetTooltip then
@@ -2106,34 +2106,34 @@ local function BuildSidebar()
                     CludesUI.ShowWidgetTooltip(self, tip)
                 end
             end)
-            syncBtn:SetScript("OnLeave", function(self)
+            syncButton:SetScript("OnLeave", function(self)
                 RefreshSyncState()
                 if CludesUI.HideWidgetTooltip then
                     CludesUI.HideWidgetTooltip()
                 end
             end)
-            syncBtn:SetScript("OnClick", function(self)
+            syncButton:SetScript("OnClick", function(self)
                 if isGlobalOnly then
                     return
                 end
                 CludesUI.OpenSyncPopup(self._folder, self._display, self)
             end)
-            button._syncBtn = syncBtn
+            button._syncBtn = syncButton
         end
 
         -- Bound the label to the leftmost right-side icon so long translated names
         -- ellipsize instead of overlapping the sync/power icons. The download icon always
         -- exists, so there is always a right anchor reserving the cluster's space.
-        label:SetJustifyH("LEFT")
-        label:SetWordWrap(false)
-        label:SetMaxLines(1)
+        navLabel:SetJustifyH("LEFT")
+        navLabel:SetWordWrap(false)
+        navLabel:SetMaxLines(1)
         local rightEdge = button._syncBtn or button._pwrBtn or button._dlIcon
         if rightEdge then
-            label:SetPoint("RIGHT", rightEdge, "LEFT", -6, 0)
+            navLabel:SetPoint("RIGHT", rightEdge, "LEFT", -6, 0)
         end
 
         -- Default to unloaded appearance (refreshed each time panel opens)
-        label:SetTextColor(NAV_DISABLED_TEXT.r, NAV_DISABLED_TEXT.g, NAV_DISABLED_TEXT.b, NAV_DISABLED_TEXT.a)
+        navLabel:SetTextColor(NAV_DISABLED_TEXT.r, NAV_DISABLED_TEXT.g, NAV_DISABLED_TEXT.b, NAV_DISABLED_TEXT.a)
         button._folder = navInfo.folder
         button._loaded = false
         button._alwaysLoaded = navInfo.alwaysLoaded or false
@@ -2368,16 +2368,16 @@ local function BuildSidebar()
         local horizontal = false
         local currentAlpha = DEFAULT_A
 
-        local opacityFrame = CreateFrame("Frame", nil, navBar)
-        opacityFrame:SetFrameLevel(navBar:GetFrameLevel() + 5)
+        local opacityPanel = CreateFrame("Frame", nil, navBar)
+        opacityPanel:SetFrameLevel(navBar:GetFrameLevel() + 5)
 
         -- Track background (thin line)
-        local rail = opacityFrame:CreateTexture(nil, "BACKGROUND")
+        local rail = opacityPanel:CreateTexture(nil, "BACKGROUND")
         rail:SetColorTexture(1, 1, 1, 0.10)
 
         -- Thumb (sits on top of track, hides the line behind it)
-        local knob = CreateFrame("Frame", nil, opacityFrame)
-        knob:SetFrameLevel(opacityFrame:GetFrameLevel() + 2)
+        local knob = CreateFrame("Frame", nil, opacityPanel)
+        knob:SetFrameLevel(opacityPanel:GetFrameLevel() + 2)
 
         -- Thumb texture (ARTWORK layer, above track's BACKGROUND)
         local thumbTex = knob:CreateTexture(nil, "ARTWORK")
@@ -2391,8 +2391,8 @@ local function BuildSidebar()
         thumbBlocker:SetColorTexture(DARK_BG.r, DARK_BG.g, DARK_BG.b, 1)
 
         -- Click on track to jump AND begin dragging immediately
-        local trackFrame = CreateFrame("Button", nil, opacityFrame)
-        trackFrame:SetFrameLevel(opacityFrame:GetFrameLevel())
+        local trackFrame = CreateFrame("Button", nil, opacityPanel)
+        trackFrame:SetFrameLevel(opacityPanel:GetFrameLevel())
 
         -- Track length along the slider axis (falls back before the first layout pass)
         local function TrackLength()
@@ -2408,8 +2408,8 @@ local function BuildSidebar()
             currentAlpha = alpha
             panelFrame:SetAlpha(alpha)
             -- Thumb position: MIN at the bottom / left end, MAX at the top / right end
-            local frac = (alpha - MIN_ALPHA) / (MAX_ALPHA - MIN_ALPHA)
-            local pos = frac * (TrackLength() - THUMB_H)
+            local fraction = (alpha - MIN_ALPHA) / (MAX_ALPHA - MIN_ALPHA)
+            local pos = fraction * (TrackLength() - THUMB_H)
             knob:ClearAllPoints()
             if horizontal then
                 knob:SetPoint("LEFT", rail, "LEFT", pos, 0)
@@ -2429,9 +2429,9 @@ local function BuildSidebar()
             if not origin then
                 return nil
             end
-            local cur = (horizontal and cx or centerY) / opacityFrame:GetEffectiveScale()
-            local frac = (cur - origin - THUMB_H / 2) / (len - THUMB_H)
-            return math.max(0, math.min(1, frac))
+            local cur = (horizontal and cx or centerY) / opacityPanel:GetEffectiveScale()
+            local fraction = (cur - origin - THUMB_H / 2) / (len - THUMB_H)
+            return math.max(0, math.min(1, fraction))
         end
 
         -- Dragging (OnUpdate only while active); a click on the track jumps, then drags too
@@ -2442,9 +2442,9 @@ local function BuildSidebar()
                 if not dragging then
                     return
                 end
-                local frac = CursorFrac()
-                if frac then
-                    SetOpacity(MIN_ALPHA + frac * (MAX_ALPHA - MIN_ALPHA))
+                local fraction = CursorFrac()
+                if fraction then
+                    SetOpacity(MIN_ALPHA + fraction * (MAX_ALPHA - MIN_ALPHA))
                 end
             end)
         end
@@ -2467,9 +2467,9 @@ local function BuildSidebar()
             if button ~= "LeftButton" then
                 return
             end
-            local frac = CursorFrac()
-            if frac then
-                SetOpacity(MIN_ALPHA + frac * (MAX_ALPHA - MIN_ALPHA))
+            local fraction = CursorFrac()
+            if fraction then
+                SetOpacity(MIN_ALPHA + fraction * (MAX_ALPHA - MIN_ALPHA))
             end
             StartDrag()
         end)
@@ -2480,13 +2480,13 @@ local function BuildSidebar()
         end)
 
         -- Mouse wheel on the whole area
-        opacityFrame:EnableMouseWheel(true)
-        opacityFrame:SetScript("OnMouseWheel", function(self, delta)
-            if CludesUI._ShiftWheelScale(delta) then
+        opacityPanel:EnableMouseWheel(true)
+        opacityPanel:SetScript("OnMouseWheel", function(self, stepDelta)
+            if CludesUI._ShiftWheelScale(stepDelta) then
                 return
             end
             local cur = panelFrame:GetAlpha()
-            SetOpacity(cur + delta * 0.05)
+            SetOpacity(cur + stepDelta * 0.05)
         end)
 
         -- Orientation from the active theme. Sizes resolve a frame after the
@@ -2494,24 +2494,24 @@ local function BuildSidebar()
         local function Layout()
             local skinName = CludesUI.GetActiveTheme()
             horizontal = (skinName == "CludesUI" or skinName == "CludesUI Forever")
-            opacityFrame:ClearAllPoints()
+            opacityPanel:ClearAllPoints()
             rail:ClearAllPoints()
             trackFrame:ClearAllPoints()
             if horizontal then
-                opacityFrame:SetSize(SLIDER_W, THUMB_W + 4)
-                opacityFrame:SetPoint("LEFT", versionText, "RIGHT", 10, 0)
+                opacityPanel:SetSize(SLIDER_W, THUMB_W + 4)
+                opacityPanel:SetPoint("LEFT", versionText, "RIGHT", 10, 0)
                 rail:SetSize(SLIDER_W, TRACK_W)
-                rail:SetPoint("LEFT", opacityFrame, "LEFT", 0, 0)
-                rail:SetPoint("RIGHT", opacityFrame, "RIGHT", 0, 0)
+                rail:SetPoint("LEFT", opacityPanel, "LEFT", 0, 0)
+                rail:SetPoint("RIGHT", opacityPanel, "RIGHT", 0, 0)
                 knob:SetSize(THUMB_H, THUMB_W)
                 trackFrame:SetPoint("TOPLEFT", rail, "TOPLEFT", 0, THUMB_W / 2)
                 trackFrame:SetPoint("BOTTOMRIGHT", rail, "BOTTOMRIGHT", 0, -(THUMB_W / 2))
             else
-                opacityFrame:SetSize(THUMB_W + 12, SLIDER_H + 26)
-                opacityFrame:SetPoint("BOTTOM", versionText, "TOP", 0, 16)
+                opacityPanel:SetSize(THUMB_W + 12, SLIDER_H + 26)
+                opacityPanel:SetPoint("BOTTOM", versionText, "TOP", 0, 16)
                 rail:SetSize(TRACK_W, SLIDER_H)
-                rail:SetPoint("TOP", opacityFrame, "TOP", 0, -16)
-                rail:SetPoint("BOTTOM", opacityFrame, "BOTTOM", 0, 0)
+                rail:SetPoint("TOP", opacityPanel, "TOP", 0, -16)
+                rail:SetPoint("BOTTOM", opacityPanel, "BOTTOM", 0, 0)
                 knob:SetSize(THUMB_W, THUMB_H)
                 trackFrame:SetPoint("TOPLEFT", rail, "TOPLEFT", -(THUMB_W / 2), 0)
                 trackFrame:SetPoint("BOTTOMRIGHT", rail, "BOTTOMRIGHT", (THUMB_W / 2), 0)
@@ -2688,9 +2688,9 @@ local function BuildContent()
     PanelPP.Point(headStrip, "TOPLEFT", hitArea, "TOPLEFT", rightX, -contentBaseTop)
     headStrip:SetFrameLevel(hitArea:GetFrameLevel() + 4)
     headStrip:EnableMouseWheel(true)
-    headStrip:SetScript("OnMouseWheel", function(_, delta)
+    headStrip:SetScript("OnMouseWheel", function(_, stepDelta)
         if contentScroll then
-            contentScroll:GetScript("OnMouseWheel")(contentScroll, delta)
+            contentScroll:GetScript("OnMouseWheel")(contentScroll, stepDelta)
         end
     end)
     headStrip:SetClipsChildren(true)
@@ -2779,15 +2779,15 @@ local function BuildContent()
     thumbKnob:SetScript("OnDragStop", function() end)
 
     -- Invisible wider hit area so the scrollbar is easier to grab
-    local scrollHitArea = CreateFrame("Button", nil, contentScroll)
-    scrollHitArea:SetWidth(16)
-    scrollHitArea:SetPoint("TOPRIGHT", contentScroll, "TOPRIGHT", -6, -4)
-    scrollHitArea:SetPoint("BOTTOMRIGHT", contentScroll, "BOTTOMRIGHT", -6, 4)
-    scrollHitArea:SetFrameLevel(thumbRail:GetFrameLevel() + 2)
-    scrollHitArea:EnableMouse(true)
-    scrollHitArea:RegisterForDrag("LeftButton")
-    scrollHitArea:SetScript("OnDragStart", function() end)
-    scrollHitArea:SetScript("OnDragStop", function() end)
+    local scrollHit = CreateFrame("Button", nil, contentScroll)
+    scrollHit:SetWidth(16)
+    scrollHit:SetPoint("TOPRIGHT", contentScroll, "TOPRIGHT", -6, -4)
+    scrollHit:SetPoint("BOTTOMRIGHT", contentScroll, "BOTTOMRIGHT", -6, 4)
+    scrollHit:SetFrameLevel(thumbRail:GetFrameLevel() + 2)
+    scrollHit:EnableMouse(true)
+    scrollHit:RegisterForDrag("LeftButton")
+    scrollHit:SetScript("OnDragStart", function() end)
+    scrollHit:SetScript("OnDragStop", function() end)
 
     local thumbTex = SolidTex(thumbKnob, "ARTWORK", 1, 1, 1, 0.27)
     thumbTex:SetAllPoints()
@@ -2888,8 +2888,8 @@ local function BuildContent()
         return (contentScroll and tonumber(contentScroll:GetVerticalScroll())) or 0
     end
 
-    contentScroll:SetScript("OnMouseWheel", function(self, delta)
-        if CludesUI._ShiftWheelScale(delta) then
+    contentScroll:SetScript("OnMouseWheel", function(self, stepDelta)
+        if CludesUI._ShiftWheelScale(stepDelta) then
             return
         end
         local scrollMax = CludesUI.SafeScrollRange(self)
@@ -2898,7 +2898,7 @@ local function BuildContent()
         end
         -- Accumulate on top of the current target (not current position) for responsive chained scrolls
         local base = smoothing and scrollTarget or self:GetVerticalScroll()
-        SmoothScrollTo(base - delta * SCROLL_STEP)
+        SmoothScrollTo(base - stepDelta * SCROLL_STEP)
     end)
     contentScroll:SetScript("OnScrollRangeChanged", function(self)
         if suppressScrollRangeChanged then
@@ -2964,7 +2964,7 @@ local function BuildContent()
     end)
 
     -- Hit area: click to jump + drag (same as track click but with wider target)
-    scrollHitArea:SetScript("OnMouseDown", function(_, button)
+    scrollHit:SetScript("OnMouseDown", function(_, button)
         if button ~= "LeftButton" then
             return
         end
@@ -2984,9 +2984,9 @@ local function BuildContent()
         if trackH <= thumbH then
             return
         end
-        local frac = (top - centerY - thumbH / 2) / (trackH - thumbH)
-        frac = math.max(0, math.min(1, frac))
-        local nextScroll = frac * scrollMax
+        local fraction = (top - centerY - thumbH / 2) / (trackH - thumbH)
+        fraction = math.max(0, math.min(1, fraction))
+        local nextScroll = fraction * scrollMax
         local zoom = contentScroll:GetEffectiveScale()
         nextScroll = math.floor(nextScroll * zoom + 0.5) / zoom
         scrollTarget = nextScroll
@@ -2998,7 +2998,7 @@ local function BuildContent()
         dragStartScroll = nextScroll
         thumbKnob:SetScript("OnUpdate", ScrollThumbOnUpdate)
     end)
-    scrollHitArea:SetScript("OnMouseUp", function(_, button)
+    scrollHit:SetScript("OnMouseUp", function(_, button)
         if button ~= "LeftButton" then
             return
         end
@@ -3007,7 +3007,7 @@ local function BuildContent()
     -- Controller cursor: pointer-position controls are never stops, and its own
     -- scrolling of the content moves the thumb (the lerp and drag paint their own).
     CludesUI.PadHint(thumbKnob, "nodeignore")
-    CludesUI.PadHint(scrollHitArea, "nodeignore")
+    CludesUI.PadHint(scrollHit, "nodeignore")
     if CludesUI.PadCP() then
         contentScroll:HookScript("OnVerticalScroll", function()
             if not smoothing and not isDragging then
@@ -3051,13 +3051,13 @@ local function BuildContent()
         -- (stale until built again); a saved root keeps its parts. What still
         -- shows over it (an open popup) is pinned first, before the header
         -- collapses under it (Pool.Pin, CludesUI_FramePool.lua).
-        local act = H.active
-        if act then
+        local activeFlag = H.active
+        if activeFlag then
             if CUI_NS.PoolPin then
-                CUI_NS.PoolPin(act)
+                CUI_NS.PoolPin(activeFlag)
             end
-            H.stale[isRoot[act]] = true
-            CUI_NS.DropRootForeign(act)
+            H.stale[isRoot[activeFlag]] = true
+            CUI_NS.DropRootForeign(activeFlag)
             H.active = nil
         end
         headStrip:Hide()
@@ -3185,7 +3185,7 @@ local function BuildContent()
     -- Stashed headers are dropped; kept roots are marked stale (the one showing
     -- stays until its next build dresses it again).
     local function InvalidateContentHeaderCache()
-        for key, record in pairs(_contentHeaderCache) do
+        for entryKey, record in pairs(_contentHeaderCache) do
             for _, c in ipairs(record.children) do
                 c:Hide()
                 c:SetParent(nil)
@@ -3194,13 +3194,13 @@ local function BuildContent()
                 r:Hide()
                 r:SetParent(nil)
             end
-            _contentHeaderCache[key] = nil
+            _contentHeaderCache[entryKey] = nil
         end
         -- (the stashed copies' parts are dropped at once, as above; the root that
         -- shows keeps its parts until its rebuild clears them)
         local H = CUI_NS.hdr
-        for key, rootFrame in pairs(H.roots) do
-            H.stale[key] = true
+        for entryKey, rootFrame in pairs(H.roots) do
+            H.stale[entryKey] = true
             if rootFrame ~= H.active then
                 CUI_NS.DropRootForeign(rootFrame)
             end
@@ -3208,8 +3208,8 @@ local function BuildContent()
     end
 
     -- One page's header only (search-sensitive pages, CludesUI._InvalidateSearchSensitive).
-    function CUI_NS.InvalidateHeaderKey(key)
-        local record = _contentHeaderCache[key]
+    function CUI_NS.InvalidateHeaderKey(entryKey)
+        local record = _contentHeaderCache[entryKey]
         if record then
             for _, c in ipairs(record.children) do
                 c:Hide()
@@ -3219,12 +3219,12 @@ local function BuildContent()
                 r:Hide()
                 r:SetParent(nil)
             end
-            _contentHeaderCache[key] = nil
+            _contentHeaderCache[entryKey] = nil
         end
         local H = CUI_NS.hdr
-        local rootFrame = H.roots[key]
+        local rootFrame = H.roots[entryKey]
         if rootFrame then
-            H.stale[key] = true
+            H.stale[entryKey] = true
             if rootFrame ~= H.active then
                 CUI_NS.DropRootForeign(rootFrame)
             end
@@ -3236,32 +3236,32 @@ local function BuildContent()
         headStrip:Show()
         -- A suite page under page reuse builds into its kept root: the header
         -- frame's size, and its frame level, so the builders' level math holds.
-        local key = CUI_NS.HeaderReuseKey and CUI_NS.HeaderReuseKey()
+        local entryKey = CUI_NS.HeaderReuseKey and CUI_NS.HeaderReuseKey()
         local target = headStrip
-        if key then
+        if entryKey then
             local H = CUI_NS.hdr
             -- A saved root built again drops its old parts first, as above.
-            if H.roots[key] then
-                CUI_NS.DropRootForeign(H.roots[key])
+            if H.roots[entryKey] then
+                CUI_NS.DropRootForeign(H.roots[entryKey])
             end
-            local rootFrame = CUI_NS.PoolKept(CUI_NS.headerOwner, key, "Frame", headStrip)
+            local rootFrame = CUI_NS.PoolKept(CUI_NS.headerOwner, entryKey, "Frame", headStrip)
             rootFrame:SetAllPoints(headStrip)
             rootFrame:SetFrameLevel(headStrip:GetFrameLevel())
-            H.roots[key] = rootFrame
-            H.isRoot[rootFrame] = key
+            H.roots[entryKey] = rootFrame
+            H.isRoot[rootFrame] = entryKey
             H.active = rootFrame
             target = rootFrame
         end
         local h = buildFunc(target, rightW) or 0
         contentHeaderH = h
         PanelPP.Height(headStrip, h)
-        if key then
+        if entryKey then
             local H = CUI_NS.hdr
-            H.height[key] = h
-            H.stale[key] = nil
+            H.height[entryKey] = h
+            H.stale[entryKey] = nil
             -- dev mode: an idle pooled object left showing on the kept root
             if CUI_NS.PoolDevEndPass then
-                CUI_NS.PoolDevEndPass(target, key)
+                CUI_NS.PoolDevEndPass(target, entryKey)
             end
         end
         ApplyContentLayout()
@@ -3282,14 +3282,14 @@ local function BuildContent()
         -- delta: rounding to physical pixels at the frame's effective scale makes the
         -- real change differ from h-oldH by a sub-pixel amount (1px content shift).
         local newActualH = headStrip:GetHeight()
-        local delta = newActualH - oldActualH
+        local stepDelta = newActualH - oldActualH
         ApplyContentLayout()
         -- The scroll frame moved by |delta| px; scroll content the same to hold the viewport.
-        if delta ~= 0 and contentScroll then
-            local adjusted = math.max(0, savedScroll + delta)
+        if stepDelta ~= 0 and contentScroll then
+            local adjusted = math.max(0, savedScroll + stepDelta)
             contentScroll:SetVerticalScroll(adjusted)
             if smoothing then
-                scrollTarget = math.max(0, savedTarget + delta)
+                scrollTarget = math.max(0, savedTarget + stepDelta)
             else
                 scrollTarget = adjusted
             end
@@ -3318,10 +3318,10 @@ local function BuildContent()
     -- would have dropped them.
     function CludesUI:HideContentHeader()
         local H = CUI_NS.hdr
-        local act = H.active
-        if act then
-            H.stale[H.isRoot[act]] = true
-            CUI_NS.DropRootForeign(act)
+        local activeFlag = H.active
+        if activeFlag then
+            H.stale[H.isRoot[activeFlag]] = true
+            CUI_NS.DropRootForeign(activeFlag)
             H.active = nil
         end
         local ch = { headStrip:GetChildren() }
@@ -3335,8 +3335,8 @@ local function BuildContent()
             end
         end
         -- what still shows over the root stays put while the header collapses
-        if act and CUI_NS.PoolPin then
-            CUI_NS.PoolPin(act)
+        if activeFlag and CUI_NS.PoolPin then
+            CUI_NS.PoolPin(activeFlag)
         end
         headStrip:Hide()
         headStrip:SetHeight(1)
@@ -3402,7 +3402,7 @@ local function BuildFooter(rightW, rightX)
         brdHG,
         brdHB,
         brdHA,
-        label,
+        navLabel,
         onClick
     )
         local button = CreateFrame("Button", nil, parent)
@@ -3415,7 +3415,7 @@ local function BuildFooter(rightW, rightX)
         local captionText = MakeFont(button, 13, nil, textR, textG, textB)
         captionText:SetAlpha(textA)
         captionText:SetPoint("CENTER")
-        captionText:SetText(CludesUI.L(label))
+        captionText:SetText(CludesUI.L(navLabel))
         button._label = captionText
         do
             local FADE_DUR = 0.1
@@ -3882,9 +3882,9 @@ CreateTabButton = function(index, name)
         button._fill = fill
         RegAccent({ type = "solid", obj = fill, a = 0.16 })
 
-        local label = MakeFont(button, 14, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
-        label:SetPoint("CENTER", 0, 0)
-        button._label = label
+        local navLabel = MakeFont(button, 14, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+        navLabel:SetPoint("CENTER", 0, 0)
+        button._label = navLabel
 
         -- Accent cap on the active tab (kept under the old field name).
         local underline = SolidTex(button, "ARTWORK", CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
@@ -3925,12 +3925,12 @@ CreateTabButton = function(index, name)
     button._name = name
     button._disabled = nil
     button._tip = nil
-    local label = button._label
-    label:SetText(CludesUI.L(CUI_NS.GetTabLabel(currentModule, name)))
-    label:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
-    label:SetAlpha(1)
+    local navLabel = button._label
+    navLabel:SetText(CludesUI.L(CUI_NS.GetTabLabel(currentModule, name)))
+    navLabel:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+    navLabel:SetAlpha(1)
 
-    local textW = label:GetStringWidth() or 60
+    local textW = navLabel:GetStringWidth() or 60
     button:SetWidth(textW + 28)
     button._underline:Hide()
     button._fill:Hide()
@@ -3974,13 +3974,13 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
     ---------------------------------------------------------------------------
     if not tabStrip._searchBox then
         local SEARCH_W, SEARCH_H = 210, 28
-        local searchFrame = CreateFrame("Frame", nil, tabStrip)
-        searchFrame:SetSize(SEARCH_W, SEARCH_H)
-        searchFrame:SetPoint("BOTTOMRIGHT", tabStrip, "BOTTOMRIGHT", -10, (TAB_BAR_H - SEARCH_H) / 2 + 2)
-        searchFrame:SetFrameLevel(tabStrip:GetFrameLevel() + 2)
+        local searchPanel = CreateFrame("Frame", nil, tabStrip)
+        searchPanel:SetSize(SEARCH_W, SEARCH_H)
+        searchPanel:SetPoint("BOTTOMRIGHT", tabStrip, "BOTTOMRIGHT", -10, (TAB_BAR_H - SEARCH_H) / 2 + 2)
+        searchPanel:SetFrameLevel(tabStrip:GetFrameLevel() + 2)
 
         local searchBg = SolidTex(
-            searchFrame,
+            searchPanel,
             "BACKGROUND",
             STYLE.SL_INPUT_R,
             STYLE.SL_INPUT_G,
@@ -3989,7 +3989,7 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
         )
         searchBg:SetAllPoints()
         local searchBrd = CludesUI.MakeRoundedBorder(
-            searchFrame,
+            searchPanel,
             STYLE.BORDER_R,
             STYLE.BORDER_G,
             STYLE.BORDER_B,
@@ -3997,7 +3997,7 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
             searchBg
         )
 
-        local inputBox = CreateFrame("EditBox", nil, searchFrame)
+        local inputBox = CreateFrame("EditBox", nil, searchPanel)
         inputBox:SetAllPoints()
         inputBox:SetAutoFocus(false)
         inputBox:SetFont(CludesUI.EXPRESSWAY, 13, "")
@@ -4006,14 +4006,14 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
         inputBox:SetMaxLetters(40)
 
         local placeholder =
-            MakeFont(searchFrame, 12, nil, STYLE.TEXT_DIM_R, STYLE.TEXT_DIM_G, STYLE.TEXT_DIM_B, 0.3)
-        placeholder:SetPoint("LEFT", searchFrame, "LEFT", 10, 0)
+            MakeFont(searchPanel, 12, nil, STYLE.TEXT_DIM_R, STYLE.TEXT_DIM_G, STYLE.TEXT_DIM_B, 0.3)
+        placeholder:SetPoint("LEFT", searchPanel, "LEFT", 10, 0)
         placeholder:SetText(CludesUI.L("Search Module Settings..."))
 
         -- Clear button (X) on right side -- frame level above editBox so clicks register
-        local clearBtn = CreateFrame("Button", nil, searchFrame)
+        local clearBtn = CreateFrame("Button", nil, searchPanel)
         clearBtn:SetSize(20, 20)
-        clearBtn:SetPoint("RIGHT", searchFrame, "RIGHT", -4, 0)
+        clearBtn:SetPoint("RIGHT", searchPanel, "RIGHT", -4, 0)
         clearBtn:SetFrameLevel(inputBox:GetFrameLevel() + 2)
         clearBtn:Hide()
         local clearLabel =
@@ -4033,13 +4033,13 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
 
         -- Disabled (a page the inline search cannot filter, SelectPage): greyed
         -- like a disabled option, under a blocker that takes the mouse and says why.
-        local searchBlock = CreateFrame("Frame", nil, searchFrame)
+        local searchBlock = CreateFrame("Frame", nil, searchPanel)
         searchBlock:SetAllPoints()
         searchBlock:SetFrameLevel(clearBtn:GetFrameLevel() + 1)
         searchBlock:EnableMouse(true)
         searchBlock:Hide()
         searchBlock:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(searchFrame, CludesUI.L("Search is not available on this page."))
+            CludesUI.ShowWidgetTooltip(searchPanel, CludesUI.L("Search is not available on this page."))
         end)
         searchBlock:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
@@ -4048,15 +4048,15 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
             if off then
                 inputBox:ClearFocus()
             end
-            searchFrame:SetAlpha(off and 0.3 or 1)
+            searchPanel:SetAlpha(off and 0.3 or 1)
             searchBlock:SetShown(off)
         end
 
         -- Border hover effect
-        searchFrame:SetScript("OnEnter", function()
+        searchPanel:SetScript("OnEnter", function()
             searchBrd:SetColor(STYLE.BORDER_R, STYLE.BORDER_G, STYLE.BORDER_B, 0.15)
         end)
-        searchFrame:SetScript("OnLeave", function()
+        searchPanel:SetScript("OnLeave", function()
             searchBrd:SetColor(STYLE.BORDER_R, STYLE.BORDER_G, STYLE.BORDER_B, 0.10)
         end)
         inputBox:SetScript("OnEditFocusGained", function()
@@ -4068,8 +4068,8 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
 
         local searchDebounceTimer
         inputBox:SetScript("OnTextChanged", function(self, userInput)
-            local text = self:GetText() or ""
-            if text == "" then
+            local textValue = self:GetText() or ""
+            if textValue == "" then
                 placeholder:Show()
                 clearBtn:Hide()
             else
@@ -4080,11 +4080,11 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
                 searchDebounceTimer:Cancel()
                 searchDebounceTimer = nil
             end
-            CludesUI:ApplyInlineSearch(text, true)
-            if text ~= "" then
+            CludesUI:ApplyInlineSearch(textValue, true)
+            if textValue ~= "" then
                 searchDebounceTimer = C_Timer.NewTimer(0.5, function()
                     searchDebounceTimer = nil
-                    CludesUI:ApplyInlineSearch(text)
+                    CludesUI:ApplyInlineSearch(textValue)
                 end)
             end
         end)
@@ -4099,14 +4099,14 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
         end)
 
         tabStrip._searchBox = inputBox
-        tabStrip._searchFrame = searchFrame
+        tabStrip._searchFrame = searchPanel
 
         -- Spec Override capture toggle (left of the search box). All look
         -- and behavior live in CUI_SpecOverrides_Popups.lua (SpecOverrides_SetupButton).
         if CludesUI.SpecOverrides_SetupButton then
             local soBtn = CreateFrame("Button", nil, tabStrip)
             soBtn:SetSize(26, 26)
-            soBtn:SetPoint("RIGHT", searchFrame, "LEFT", -10, 0)
+            soBtn:SetPoint("RIGHT", searchPanel, "LEFT", -10, 0)
             soBtn:SetFrameLevel(tabStrip:GetFrameLevel() + 2)
             CludesUI.SpecOverrides_SetupButton(soBtn)
             tabStrip._specOvBtn = soBtn
@@ -4323,12 +4323,12 @@ function CludesUI:NavigateToElementSettings(moduleName, pageTitle, sectionName, 
     -- For split rows (DualRow etc.), narrow a deep-link highlight to the half/slot whose own
     -- label matches instead of pulsing the whole row; returns that child region, or nil to fall
     -- back to the full row. Inline, not a file-scope local: the main chunk is at the 200-local cap.
-    local function ResolveHighlightSlot(row, text, exactOnly)
-        if not text or not row.GetChildren then
+    local function ResolveHighlightSlot(line, textValue, exactOnly)
+        if not textValue or not line.GetChildren then
             return nil
         end
-        local locText = CludesUI.L(text) or text
-        local regions = { row:GetChildren() }
+        local locText = CludesUI.L(textValue) or textValue
+        local regions = { line:GetChildren() }
         -- Objects the page pool parked keep their last dress's labels: not slots.
         local isIdle = CUI_NS.PoolIsIdle
         if isIdle then
@@ -4340,28 +4340,28 @@ function CludesUI:NavigateToElementSettings(moduleName, pageTitle, sectionName, 
         end
         -- A label equal to the text first, so "Sidebar Icons" lands on its own slot rather
         -- than on an earlier "Sidebar Icons Color"; then the first label containing it.
-        for _, region in ipairs(regions) do
-            local captionText = region._label
+        for _, regionObj in ipairs(regions) do
+            local captionText = regionObj._label
             if captionText and captionText.GetText then
                 local t = captionText:GetText()
-                if t and t ~= "" and (t == text or t == locText) then
-                    return region
+                if t and t ~= "" and (t == textValue or t == locText) then
+                    return regionObj
                 end
             end
         end
         if exactOnly then
             return nil
         end
-        for _, region in ipairs(regions) do
-            local captionText = region._label
+        for _, regionObj in ipairs(regions) do
+            local captionText = regionObj._label
             if captionText and captionText.GetText then
                 local t = captionText:GetText()
                 if
                     t
                     and t ~= ""
-                    and (t:find(text, 1, true) or (locText ~= text and t:find(locText, 1, true)))
+                    and (t:find(textValue, 1, true) or (locText ~= textValue and t:find(locText, 1, true)))
                 then
-                    return region
+                    return regionObj
                 end
             end
         end
@@ -4500,15 +4500,15 @@ local function GetSearchLabel(kid)
 end
 
 -- Resolve the current display text of a dropdown on a region (if any)
-local function GetDropdownValueText(region)
-    if not region._ddGetValue or not region._ddValues then
+local function GetDropdownValueText(regionObj)
+    if not regionObj._ddGetValue or not regionObj._ddValues then
         return nil
     end
-    local key = region._ddGetValue()
-    if key == nil then
+    local entryKey = regionObj._ddGetValue()
+    if entryKey == nil then
         return nil
     end
-    local val = region._ddValues[key]
+    local val = regionObj._ddValues[entryKey]
     if val == nil then
         return nil
     end
@@ -4524,8 +4524,8 @@ end
 local SetInlineEmptyHint
 do
     local hintText
-    SetInlineEmptyHint = function(query)
-        if not query then
+    SetInlineEmptyHint = function(searchQuery)
+        if not searchQuery then
             if hintText then
                 hintText:Hide()
             end
@@ -4535,23 +4535,23 @@ do
             hintText = CreateFrame("Frame", nil, contentFrame)
             PanelPP.Size(hintText, 600, 100)
             -- Blizzard's own search box magnifier (SearchBoxTemplate).
-            local icon = hintText:CreateTexture(nil, "ARTWORK")
-            icon:SetAtlas("common-search-magnifyingglass")
-            icon:SetDesaturated(true)
-            icon:SetVertexColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.6)
-            PanelPP.Size(icon, 24, 24)
-            PanelPP.Point(icon, "TOP", hintText, "TOP", 0, 0)
+            local iconTex = hintText:CreateTexture(nil, "ARTWORK")
+            iconTex:SetAtlas("common-search-magnifyingglass")
+            iconTex:SetDesaturated(true)
+            iconTex:SetVertexColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.6)
+            PanelPP.Size(iconTex, 24, 24)
+            PanelPP.Point(iconTex, "TOP", hintText, "TOP", 0, 0)
             hintText._text = MakeFont(hintText, 14, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
             PanelPP.Point(hintText._text, "TOPLEFT", hintText, "TOPLEFT", 0, -34)
             PanelPP.Point(hintText._text, "TOPRIGHT", hintText, "TOPRIGHT", 0, -34)
             hintText._text:SetJustifyH("CENTER")
             hintText._text:SetWordWrap(false)
-            local link = CreateFrame("Button", nil, hintText)
-            link:SetPoint("TOP", hintText._text, "BOTTOM", 0, -8)
-            local linkFS = MakeFont(link, 13, nil, CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
+            local linkText = CreateFrame("Button", nil, hintText)
+            linkText:SetPoint("TOP", hintText._text, "BOTTOM", 0, -8)
+            local linkFS = MakeFont(linkText, 13, nil, CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
             linkFS:SetPoint("LEFT")
             linkFS:SetText(CludesUI.L("Search all modules"))
-            local arrow = link:CreateTexture(nil, "ARTWORK")
+            local arrow = linkText:CreateTexture(nil, "ARTWORK")
             arrow:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-right.png")
             arrow:SetVertexColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
             PanelPP.Size(arrow, 12, 12)
@@ -4563,15 +4563,15 @@ do
                     arrow:SetVertexColor(r, g, b, 1)
                 end,
             })
-            PanelPP.Size(link, linkFS:GetStringWidth() + 16, 18)
-            link:SetAlpha(0.8)
-            link:SetScript("OnEnter", function()
-                link:SetAlpha(1)
+            PanelPP.Size(linkText, linkFS:GetStringWidth() + 16, 18)
+            linkText:SetAlpha(0.8)
+            linkText:SetScript("OnEnter", function()
+                linkText:SetAlpha(1)
             end)
-            link:SetScript("OnLeave", function()
-                link:SetAlpha(0.8)
+            linkText:SetScript("OnLeave", function()
+                linkText:SetAlpha(0.8)
             end)
-            link:SetScript("OnClick", function()
+            linkText:SetScript("OnClick", function()
                 local box = tabStrip and tabStrip._searchBox
                 local q = box and box:GetText() or ""
                 -- Clear this box first: it restores the page and cancels its
@@ -4588,7 +4588,7 @@ do
                 end
             end)
         end
-        local q = query:gsub("||", "|"):gsub("|", "||")
+        local q = searchQuery:gsub("||", "|"):gsub("|", "||")
         hintText._text:SetText(CludesUI.Lf("No results for %s", '"' .. q .. '"'))
         hintText:ClearAllPoints()
         PanelPP.Point(hintText, "TOP", contentFrame, "TOP", 0, -40)
@@ -4597,7 +4597,7 @@ do
     end
 end
 
-function CludesUI:ApplyInlineSearch(query, skipHighlights)
+function CludesUI:ApplyInlineSearch(searchQuery, skipHighlights)
     SetInlineEmptyHint(nil)
     if not currentModule or not activePage then
         return
@@ -4606,7 +4606,7 @@ function CludesUI:ApplyInlineSearch(query, skipHighlights)
     -- clearing collapses back to session state. MUST run before the cache lookup below:
     -- a state transition rebuilds and replaces this page's cache entry.
     if CludesUI.SetLessCommonSearchActive then
-        CludesUI.SetLessCommonSearchActive(query ~= nil and query ~= "")
+        CludesUI.SetLessCommonSearchActive(searchQuery ~= nil and searchQuery ~= "")
     end
     local pageKey = currentModule .. "::" .. activePage
     local cachedPage = _pageCache[pageKey]
@@ -4617,19 +4617,19 @@ function CludesUI:ApplyInlineSearch(query, skipHighlights)
     -- Per-page search-state hook (e.g. the party tab hides its sync overlays
     -- while a search is active). Fires for both filtering and restore.
     if CludesUI._onInlineSearch then
-        CludesUI._onInlineSearch(query or "")
+        CludesUI._onInlineSearch(searchQuery or "")
     end
 
     RecycleAllSearchHighlights()
     -- Section cards (CludesUI_Widgets.lua) step aside while a query moves rows.
     if CludesUI._SetSectionCardsShown then
-        CludesUI._SetSectionCardsShown(not query or query == "")
+        CludesUI._SetSectionCardsShown(not searchQuery or searchQuery == "")
     end
 
     local sections, orphans = CollectAllChildren(cachedPage.wrapper)
 
     -- Empty query: restore everything
-    if not query or query == "" then
+    if not searchQuery or searchQuery == "" then
         for _, section in ipairs(sections) do
             section.header:Show()
             if section.header._origAnchor then
@@ -4669,16 +4669,16 @@ function CludesUI:ApplyInlineSearch(query, skipHighlights)
         return
     end
 
-    local queryLower = query:lower()
+    local lowerQuery = searchQuery:lower()
 
     -- Determine which sections are visible and which rows/slots match
     local visibleSections = {}
     for _, section in ipairs(sections) do
         local sectionName = section.header._sectionName or ""
-        local sectionMatch = sectionName:lower():find(queryLower, 1, true)
+        local sectionMatch = sectionName:lower():find(lowerQuery, 1, true)
         -- Bilingual: also match the localized section name on translated clients.
         if not sectionMatch and section.header._sectionNameLoc then
-            sectionMatch = section.header._sectionNameLoc:lower():find(queryLower, 1, true)
+            sectionMatch = section.header._sectionNameLoc:lower():find(lowerQuery, 1, true)
         end
         -- Per-page section exclusion hook (e.g. the party tab hides sections that
         -- are synced with raid settings). Only consulted during a live search.
@@ -4687,14 +4687,14 @@ function CludesUI:ApplyInlineSearch(query, skipHighlights)
         local anyMemberMatch = false
         local matchingMembers = {}
         for _, m in ipairs(section.members) do
-            local label = GetSearchLabel(m)
-            local matched = label ~= "" and label:lower():find(queryLower, 1, true)
+            local navLabel = GetSearchLabel(m)
+            local matched = navLabel ~= "" and navLabel:lower():find(lowerQuery, 1, true)
             if not matched then
                 -- Also check current dropdown selected values on this row's regions
                 for _, rgn in ipairs({ m._leftRegion, m._midRegion, m._rightRegion }) do
                     if rgn then
                         local ddText = GetDropdownValueText(rgn)
-                        if ddText and ddText:lower():find(queryLower, 1, true) then
+                        if ddText and ddText:lower():find(lowerQuery, 1, true) then
                             matched = true
                             break
                         end
@@ -4726,13 +4726,13 @@ function CludesUI:ApplyInlineSearch(query, skipHighlights)
     -- section members instead of hiding them unconditionally, or a query matching only an orphan (a lead "Activate X" button) leaves the page empty.
     local visibleOrphans = {}
     for _, o in ipairs(orphans) do
-        local label = GetSearchLabel(o)
-        local matched = label ~= "" and label:lower():find(queryLower, 1, true)
+        local navLabel = GetSearchLabel(o)
+        local matched = navLabel ~= "" and navLabel:lower():find(lowerQuery, 1, true)
         if not matched then
             for _, rgn in ipairs({ o._leftRegion, o._midRegion, o._rightRegion }) do
                 if rgn then
                     local ddText = GetDropdownValueText(rgn)
-                    if ddText and ddText:lower():find(queryLower, 1, true) then
+                    if ddText and ddText:lower():find(lowerQuery, 1, true) then
                         matched = true
                         break
                     end
@@ -4748,9 +4748,9 @@ function CludesUI:ApplyInlineSearch(query, skipHighlights)
 
     -- Build per-slot highlight targets and count totals to decide if we suppress
     -- highlights (when every visible slot is highlighted, none should glow).
-    local highlightTargets = {} -- list of { frame = region_or_member }
-    local totalSlots = 0
-    local highlightedSlots = 0
+    local litTargets = {} -- list of { frame = region_or_member }
+    local slotTotal = 0
+    local litSlots = 0
 
     for _, vs in ipairs(visibleSections) do
         for _, m in ipairs(vs.sec.members) do
@@ -4774,28 +4774,28 @@ function CludesUI:ApplyInlineSearch(query, skipHighlights)
                     -- Split row: check each slot individually
                     for _, s in ipairs(slots) do
                         if s.label ~= "" then
-                            totalSlots = totalSlots + 1
-                            local slotMatch = s.label:lower():find(queryLower, 1, true)
+                            slotTotal = slotTotal + 1
+                            local slotMatch = s.label:lower():find(lowerQuery, 1, true)
                             if not slotMatch then
                                 local ddText = GetDropdownValueText(s.region)
                                 if ddText then
-                                    slotMatch = ddText:lower():find(queryLower, 1, true)
+                                    slotMatch = ddText:lower():find(lowerQuery, 1, true)
                                 end
                             end
                             if vs.sectionMatch or slotMatch then
-                                highlightedSlots = highlightedSlots + 1
-                                highlightTargets[#highlightTargets + 1] = s.region
+                                litSlots = litSlots + 1
+                                litTargets[#litTargets + 1] = s.region
                             end
                         end
                     end
                 else
                     -- Non-split row: whole member is one slot
-                    totalSlots = totalSlots + 1
-                    local label = GetSearchLabel(m)
-                    local memberMatch = label ~= "" and label:lower():find(queryLower, 1, true)
+                    slotTotal = slotTotal + 1
+                    local navLabel = GetSearchLabel(m)
+                    local memberMatch = navLabel ~= "" and navLabel:lower():find(lowerQuery, 1, true)
                     if vs.sectionMatch or memberMatch then
-                        highlightedSlots = highlightedSlots + 1
-                        highlightTargets[#highlightTargets + 1] = m
+                        litSlots = litSlots + 1
+                        litTargets[#litTargets + 1] = m
                     end
                 end
             end -- _isSpacer else
@@ -4819,36 +4819,36 @@ function CludesUI:ApplyInlineSearch(query, skipHighlights)
             if #slots > 0 then
                 for _, s in ipairs(slots) do
                     if s.label ~= "" then
-                        totalSlots = totalSlots + 1
-                        local slotMatch = s.label:lower():find(queryLower, 1, true)
+                        slotTotal = slotTotal + 1
+                        local slotMatch = s.label:lower():find(lowerQuery, 1, true)
                         if not slotMatch then
                             local ddText = GetDropdownValueText(s.region)
                             if ddText then
-                                slotMatch = ddText:lower():find(queryLower, 1, true)
+                                slotMatch = ddText:lower():find(lowerQuery, 1, true)
                             end
                         end
                         if slotMatch then
-                            highlightedSlots = highlightedSlots + 1
-                            highlightTargets[#highlightTargets + 1] = s.region
+                            litSlots = litSlots + 1
+                            litTargets[#litTargets + 1] = s.region
                         end
                     end
                 end
             else
-                totalSlots = totalSlots + 1
-                highlightedSlots = highlightedSlots + 1
-                highlightTargets[#highlightTargets + 1] = o
+                slotTotal = slotTotal + 1
+                litSlots = litSlots + 1
+                litTargets[#litTargets + 1] = o
             end
         end
     end
 
     -- If every visible slot is highlighted, suppress all highlights
-    local suppressHighlights = (highlightedSlots >= totalSlots)
+    local suppressHighlights = (litSlots >= slotTotal)
 
     -- Build a fast lookup for highlight targets
-    local hlSet = {}
+    local litSet = {}
     if not suppressHighlights then
-        for _, target in ipairs(highlightTargets) do
-            hlSet[target] = true
+        for _, target in ipairs(litTargets) do
+            litSet[target] = true
         end
     end
 
@@ -4868,19 +4868,19 @@ function CludesUI:ApplyInlineSearch(query, skipHighlights)
             o:Show()
 
             if not suppressHighlights and not skipHighlights then
-                if o._leftRegion and hlSet[o._leftRegion] then
+                if o._leftRegion and litSet[o._leftRegion] then
                     local pulse = GetSearchHighlight()
                     PlaySearchHighlight(pulse, o._leftRegion)
                 end
-                if o._midRegion and hlSet[o._midRegion] then
+                if o._midRegion and litSet[o._midRegion] then
                     local pulse = GetSearchHighlight()
                     PlaySearchHighlight(pulse, o._midRegion)
                 end
-                if o._rightRegion and hlSet[o._rightRegion] then
+                if o._rightRegion and litSet[o._rightRegion] then
                     local pulse = GetSearchHighlight()
                     PlaySearchHighlight(pulse, o._rightRegion)
                 end
-                if not o._leftRegion and hlSet[o] then
+                if not o._leftRegion and litSet[o] then
                     local pulse = GetSearchHighlight()
                     PlaySearchHighlight(pulse, o)
                 end
@@ -4910,20 +4910,20 @@ function CludesUI:ApplyInlineSearch(query, skipHighlights)
 
                 if not suppressHighlights and not skipHighlights then
                     -- Check slot-level highlights for split rows
-                    if m._leftRegion and hlSet[m._leftRegion] then
+                    if m._leftRegion and litSet[m._leftRegion] then
                         local pulse = GetSearchHighlight()
                         PlaySearchHighlight(pulse, m._leftRegion)
                     end
-                    if m._midRegion and hlSet[m._midRegion] then
+                    if m._midRegion and litSet[m._midRegion] then
                         local pulse = GetSearchHighlight()
                         PlaySearchHighlight(pulse, m._midRegion)
                     end
-                    if m._rightRegion and hlSet[m._rightRegion] then
+                    if m._rightRegion and litSet[m._rightRegion] then
                         local pulse = GetSearchHighlight()
                         PlaySearchHighlight(pulse, m._rightRegion)
                     end
                     -- Non-split row highlight
-                    if not m._leftRegion and hlSet[m] then
+                    if not m._leftRegion and litSet[m] then
                         local pulse = GetSearchHighlight()
                         PlaySearchHighlight(pulse, m)
                     end
@@ -4936,8 +4936,8 @@ function CludesUI:ApplyInlineSearch(query, skipHighlights)
 
     -- Resize content to fit visible items only
     local visibleH = math.abs(rowY - startY)
-    if #visibleSections == 0 and #visibleOrphans == 0 and query:match("%S") then
-        SetInlineEmptyHint(query)
+    if #visibleSections == 0 and #visibleOrphans == 0 and searchQuery:match("%S") then
+        SetInlineEmptyHint(searchQuery)
         visibleH = 140
     end
     contentFrame:SetHeight(visibleH + 30)
@@ -5059,8 +5059,8 @@ ClearContent = function()
         kid:Hide()
     end
     local regions = { contentChild:GetRegions() }
-    for _, region in ipairs(regions) do
-        region:Hide()
+    for _, regionObj in ipairs(regions) do
+        regionObj:Hide()
     end
 end
 
@@ -5212,11 +5212,11 @@ do
     -- A suite page's key: any suite folder (including one the running client
     -- hides from the sidebar), one of the fixed panel pages, or a key the core
     -- registered itself.
-    function CUI_NS.IsSuiteKey(key)
-        if CUI_NS.IsPluginKey(key) then
+    function CUI_NS.IsSuiteKey(entryKey)
+        if CUI_NS.IsPluginKey(entryKey) then
             return false
         end
-        return ALLOWED[key] == true or CORE_PAGE_KEYS[key] == true or sealed[key] == true
+        return ALLOWED[entryKey] == true or CORE_PAGE_KEYS[entryKey] == true or sealed[entryKey] == true
     end
 
     -- Internal registration for pages the core file builds itself (no caller check).
@@ -5309,12 +5309,12 @@ function CUI_NS.HeaderReuseKey()
 end
 
 -- A build-and-drop page's teardown: hidden, detached (WoW never frees it), dropped.
-local function DropLegacyPage(key, record)
+local function DropLegacyPage(entryKey, record)
     if record.wrapper then
         record.wrapper:Hide()
         record.wrapper:SetParent(nil)
     end
-    _pageCache[key] = nil
+    _pageCache[entryKey] = nil
 end
 
 -- The active page lost its entry, or holds a stale one, while the panel is closed
@@ -5336,14 +5336,14 @@ end
 -- Invalidate all cached pages (called on profile reset, module reload, etc.)
 function CludesUI:InvalidatePageCache()
     local keepActive
-    for key, record in pairs(_pageCache) do
+    for entryKey, record in pairs(_pageCache) do
         if record.reuse then
             record.stale = true
             if record.wrapper == _activePageWrapper then
                 keepActive = true
             end
         else
-            DropLegacyPage(key, record)
+            DropLegacyPage(entryKey, record)
         end
     end
     if not keepActive then
@@ -5368,12 +5368,12 @@ function CludesUI:InvalidateModulePageCache(moduleName)
     if self.IsShown and self:IsShown() and currentModule and activePage then
         keepKey = currentModule .. "::" .. activePage
     end
-    for key, record in pairs(_pageCache) do
-        if key:sub(1, #prefix) == prefix and key ~= keepKey then
+    for entryKey, record in pairs(_pageCache) do
+        if entryKey:sub(1, #prefix) == prefix and entryKey ~= keepKey then
             if record.reuse then
                 record.stale = true
             else
-                DropLegacyPage(key, record)
+                DropLegacyPage(entryKey, record)
             end
         end
     end
@@ -5386,18 +5386,18 @@ end
 function CludesUI._InvalidateSearchSensitive()
     local activeKey = currentModule and activePage and (currentModule .. "::" .. activePage)
     local hit = false
-    for key, record in pairs(_pageCache) do
+    for entryKey, record in pairs(_pageCache) do
         if record.searchSensitive then
-            if key == activeKey then
+            if entryKey == activeKey then
                 hit = true
             end
             if record.reuse then
                 record.stale = true
             else
-                DropLegacyPage(key, record)
+                DropLegacyPage(entryKey, record)
             end
             if CUI_NS.InvalidateHeaderKey then
-                CUI_NS.InvalidateHeaderKey(key)
+                CUI_NS.InvalidateHeaderKey(entryKey)
             end
         end
     end
@@ -5607,46 +5607,46 @@ end
 -- widgets, no growing list).
 do
     local renders, drop = {}, {}
-    function CludesUI._BeginRootRender(key)
-        if key == nil then
+    function CludesUI._BeginRootRender(entryKey)
+        if entryKey == nil then
             return
         end
-        local rec = renders[key]
-        if not rec then
-            rec = { fns = {} }
-            renders[key] = rec
+        local record = renders[entryKey]
+        if not record then
+            record = { fns = {} }
+            renders[entryKey] = record
         end
-        local fns = rec.fns
+        local fns = record.fns
         if #fns > 0 then
             for i = 1, #fns do
                 drop[fns[i]] = true
                 fns[i] = nil
             end
-            local list, n = _widgetRefreshList, 0
-            for i = 1, #list do
-                local fn = list[i]
+            local entryList, n = _widgetRefreshList, 0
+            for i = 1, #entryList do
+                local fn = entryList[i]
                 if not drop[fn] then
                     n = n + 1
-                    list[n] = fn
+                    entryList[n] = fn
                 end
             end
-            for i = #list, n + 1, -1 do
-                list[i] = nil
+            for i = #entryList, n + 1, -1 do
+                entryList[i] = nil
             end
             wipe(drop)
         end
-        rec.mark = #_widgetRefreshList
+        record.mark = #_widgetRefreshList
     end
-    function CludesUI._EndRootRender(key)
-        local rec = key ~= nil and renders[key]
-        if not (rec and rec.mark) then
+    function CludesUI._EndRootRender(entryKey)
+        local record = entryKey ~= nil and renders[entryKey]
+        if not (record and record.mark) then
             return
         end
-        local fns, list = rec.fns, _widgetRefreshList
-        for i = rec.mark + 1, #list do
-            fns[#fns + 1] = list[i]
+        local fns, entryList = record.fns, _widgetRefreshList
+        for i = record.mark + 1, #entryList do
+            fns[#fns + 1] = entryList[i]
         end
-        rec.mark = nil
+        record.mark = nil
     end
 end
 
@@ -5676,15 +5676,15 @@ function CludesUI:SelectPage(pageTitle)
     -- module's page instead of one of its own. Nothing here changes, so coming
     -- back lands on the page that was open.
     local links = moduleList[currentModule].pageLinks
-    local link = links and links[pageTitle]
-    if link then
-        if moduleList[link.module] then
+    local linkText = links and links[pageTitle]
+    if linkText then
+        if moduleList[linkText.module] then
             -- SelectModule opens a module on its last page: make that the target,
             -- so the module's previous page is never built on the way.
-            _lastPagePerModule[link.module] = link.page
-            self:SelectModule(link.module)
-            if activePage ~= link.page then
-                self:SelectPage(link.page)
+            _lastPagePerModule[linkText.module] = linkText.page
+            self:SelectModule(linkText.module)
+            if activePage ~= linkText.page then
+                self:SelectPage(linkText.page)
             end
         end
         return
@@ -5982,8 +5982,8 @@ local RESET_SCOPE_TEXT = {
     character = "Only this character's settings are reset.",
 }
 
-local function ConfirmModuleReset(key, name)
-    local moduleConfig = moduleList[key]
+local function ConfirmModuleReset(entryKey, name)
+    local moduleConfig = moduleList[entryKey]
     if not (moduleConfig and moduleConfig.onReset) then
         return
     end
@@ -6005,7 +6005,7 @@ local function ConfirmModuleReset(key, name)
         cancelText = "Cancel",
         onConfirm = function()
             CludesUI.RequestReload(title, CludesUI.L("Reload to finish the reset."), function()
-                local c = moduleList[key]
+                local c = moduleList[entryKey]
                 if c and c.onReset then
                     c.onReset()
                 end
@@ -6026,25 +6026,25 @@ function CludesUI._ShowModuleResetMenu(anchor, onAll)
         },
         "---",
     }
-    local function Add(key)
-        local moduleConfig = moduleList[key]
-        if not (moduleConfig and moduleConfig.onReset and CUI_NS.IsSuiteKey(key)) then
+    local function Add(entryKey)
+        local moduleConfig = moduleList[entryKey]
+        if not (moduleConfig and moduleConfig.onReset and CUI_NS.IsSuiteKey(entryKey)) then
             return
         end
-        local nav = CUI_NS.navInfo[key]
-        local name = CludesUI.L((nav and nav.display) or moduleConfig.title or key)
+        local nav = CUI_NS.navInfo[entryKey]
+        local name = CludesUI.L((nav and nav.display) or moduleConfig.title or entryKey)
         items[#items + 1] = {
             text = name,
             noLoc = true,
             onClick = function()
-                ConfirmModuleReset(key, name)
+                ConfirmModuleReset(entryKey, name)
             end,
         }
     end
     Add(CludesUI.GLOBAL_KEY)
     for _, navGroup in ipairs(CUI_NS.coreGroups) do
-        for _, key in ipairs(navGroup.members) do
-            Add(key)
+        for _, entryKey in ipairs(navGroup.members) do
+            Add(entryKey)
         end
     end
     CludesUI.ShowContextMenu(anchor, items, { below = true, scaleToAnchor = true })
@@ -6235,13 +6235,13 @@ local function RefreshSidebarStates()
             header:ClearAllPoints()
             header:SetPoint("TOPLEFT", contentChild, "TOPLEFT", 0, -rowY)
             header:Show()
-            local toggle = header._toggle
-            if toggle then
-                toggle:SetAtlas(
+            local toggleBtn = header._toggle
+            if toggleBtn then
+                toggleBtn:SetAtlas(
                     shut and "ui-questtrackerbutton-secondary-expand"
                         or "ui-questtrackerbutton-secondary-collapse"
                 )
-                toggle:SetDesaturated(true)
+                toggleBtn:SetDesaturated(true)
             end
             rowY = rowY + GROUP_H
         end
@@ -6342,7 +6342,7 @@ end
 
 -- Collapse or expand a sidebar group (header click). The state is account-wide,
 -- in CludesUIDB.sidebarCollapsed keyed by group key (true = collapsed).
-function CUI_NS.ToggleSidebarGroup(key)
+function CUI_NS.ToggleSidebarGroup(entryKey)
     if not CludesUIDB then
         return
     end
@@ -6351,7 +6351,7 @@ function CUI_NS.ToggleSidebarGroup(key)
         c = {}
         CludesUIDB.sidebarCollapsed = c
     end
-    c[key] = (not c[key]) or nil
+    c[entryKey] = (not c[entryKey]) or nil
     RefreshSidebarStates()
 end
 
@@ -6670,10 +6670,10 @@ do
     --- One 5% step of the panel scale (delta > 0 grows), clamped to
     --- PANEL_SCALE_MIN-MAX and gliding about `pin` as SetPanelScale does. An off-step
     --- value (an older seed) steps to the next 5% mark. True when it changed.
-    function CludesUI:StepPanelScale(delta, pin)
+    function CludesUI:StepPanelScale(stepDelta, pin)
         local cur = ((CludesUIDB and CludesUIDB.panelScale) or 1) * 100
         local v
-        if delta > 0 then
+        if stepDelta > 0 then
             v = math.floor(cur / 5 + 1e-6) * 5 + 5
         else
             v = math.ceil(cur / 5 - 1e-6) * 5 - 5
@@ -6690,11 +6690,11 @@ do
     -- the header's Window Scale control lights up so the change can be traced
     -- (CludesUI._FlashWindowScale, set by that control once it is built). The
     -- panel's wheel handlers call this first; true = the wheel was used here.
-    function CludesUI._ShiftWheelScale(delta)
+    function CludesUI._ShiftWheelScale(stepDelta)
         if not IsShiftKeyDown() or CludesUI._sliderDragging then
             return false
         end
-        if CludesUI:StepPanelScale(delta, "cursor") and CludesUI._FlashWindowScale then
+        if CludesUI:StepPanelScale(stepDelta, "cursor") and CludesUI._FlashWindowScale then
             CludesUI._FlashWindowScale()
         end
         return true
@@ -6812,8 +6812,8 @@ do
 
     -- Section labels a plugin may not use: the suite's own group labels (English
     -- and localized), the fixed panel entries, and the suite name itself.
-    local function IsReservedLabel(label)
-        local lower = label:lower()
+    local function IsReservedLabel(navLabel)
+        local lower = navLabel:lower()
         if lower:find("^cludes") or lower:find("^cui") then
             return true
         end
@@ -6869,7 +6869,7 @@ do
     local CALLBACKS = { "buildPage", "getHeaderBuilder", "onPageCacheRestore", "onReset", "onModuleLeave" }
 
     -- Validates one module spec and returns the registry's private config copy.
-    local function BuildModuleConfig(pluginId, label, m, index, seenKeys)
+    local function BuildModuleConfig(pluginId, navLabel, m, index, seenKeys)
         if type(m) ~= "table" then
             return nil, ("modules[%d] must be a table"):format(index)
         end
@@ -6923,7 +6923,7 @@ do
             onModuleLeave = Guard(m.onModuleLeave),
             _cuiCore = false,
             _plugin = pluginId,
-            _pluginLabel = label,
+            _pluginLabel = navLabel,
             _searchPrebuild = m.searchPrebuild ~= false,
         }
     end
@@ -6936,8 +6936,8 @@ do
             return
         end
         CUI_NS.sidebarGroupButtons[navGroup.key] = createHeader(navGroup)
-        for _, key in ipairs(navGroup.members) do
-            sidebarButtons[key] = createRow(CUI_NS.navInfo[key])
+        for _, entryKey in ipairs(navGroup.members) do
+            sidebarButtons[entryKey] = createRow(CUI_NS.navInfo[entryKey])
         end
         if CludesUI.RefreshSidebarOverrideLocks then
             CludesUI.RefreshSidebarOverrideLocks()
@@ -6948,7 +6948,7 @@ do
     end
 
     -- Adds one validated module to a plugin's record and section.
-    local function CommitModule(pluginId, record, key, fullKey, moduleConfig)
+    local function CommitModule(pluginId, record, entryKey, fullKey, moduleConfig)
         CUI_NS.navInfo[fullKey] = {
             folder = fullKey,
             display = moduleConfig.title,
@@ -6958,7 +6958,7 @@ do
         }
         local members = record.group.members
         members[#members + 1] = fullKey
-        record.keys[key] = fullKey
+        record.keys[entryKey] = fullKey
         record.firstKey = record.firstKey or fullKey
         CUI_NS.StoreModule(fullKey, moduleConfig)
     end
@@ -6978,12 +6978,12 @@ do
             return Reject(pluginId, "spec must be a table")
         end
 
-        local label = PlainText(pluginSpec.label, MAX_LABEL_CHARS)
-        if not label then
+        local navLabel = PlainText(pluginSpec.label, MAX_LABEL_CHARS)
+        if not navLabel then
             return Reject(pluginId, "label must be a non-empty string")
         end
-        if IsReservedLabel(label) then
-            return Reject(pluginId, ("label %q is reserved"):format(label))
+        if IsReservedLabel(navLabel) then
+            return Reject(pluginId, ("label %q is reserved"):format(navLabel))
         end
 
         local position = pluginSpec.position
@@ -7005,7 +7005,7 @@ do
         -- Validate everything before touching any shared state.
         local configs, seenKeys = {}, {}
         for i, m in ipairs(pluginSpec.modules) do
-            local moduleConfig, err = BuildModuleConfig(pluginId, label, m, i, seenKeys)
+            local moduleConfig, err = BuildModuleConfig(pluginId, navLabel, m, i, seenKeys)
             if not moduleConfig then
                 return Reject(pluginId, err)
             end
@@ -7016,15 +7016,15 @@ do
             configs[i] = { key = m.key, fullKey = fullKey, config = moduleConfig }
         end
 
-        local navGroup = { key = PREFIX .. pluginId, label = label, members = {}, plugin = pluginId }
-        local record = { label = label, position = position, keys = {}, group = navGroup }
+        local navGroup = { key = PREFIX .. pluginId, label = navLabel, members = {}, plugin = pluginId }
+        local record = { label = navLabel, position = position, keys = {}, group = navGroup }
         for _, c in ipairs(configs) do
             CommitModule(pluginId, record, c.key, c.fullKey, c.config)
         end
         plugins[pluginId] = record
 
-        local list = (position == "top") and CUI_NS.pluginGroupsTop or CUI_NS.pluginGroupsBottom
-        list[#list + 1] = navGroup
+        local entryList = (position == "top") and CUI_NS.pluginGroupsTop or CUI_NS.pluginGroupsBottom
+        entryList[#entryList + 1] = navGroup
         CUI_NS.RebuildNavGroups()
         BuildLateSection(navGroup)
         return true
@@ -7056,8 +7056,8 @@ do
         if not record then
             return false
         end
-        local key = (moduleKey == nil) and record.firstKey or record.keys[moduleKey]
-        local moduleConfig = key and moduleList[key]
+        local entryKey = (moduleKey == nil) and record.firstKey or record.keys[moduleKey]
+        local moduleConfig = entryKey and moduleList[entryKey]
         if not moduleConfig then
             return false
         end
@@ -7077,13 +7077,13 @@ do
                 return false
             end
             -- SelectModule opens the module on its last page.
-            _lastPagePerModule[key] = pageTitle
+            _lastPagePerModule[entryKey] = pageTitle
         end
-        CludesUI:ShowModule(key)
+        CludesUI:ShowModule(entryKey)
         -- Already on this module: SelectModule was a no-op, switch the page here.
         if
             pageTitle
-            and currentModule == key
+            and currentModule == entryKey
             and activePage ~= pageTitle
             and panelFrame
             and panelFrame:IsShown()
@@ -7132,8 +7132,8 @@ do
     -- and for anything that is not an installed addon). Taint names the writer
     -- even where the stack cannot: a wrapper's tail call, a path-less chunk,
     -- a chunk named after one of our files.
-    local function WriterOf(t, key)
-        local _, by = issecurevariable(t, key)
+    local function WriterOf(t, entryKey)
+        local _, by = issecurevariable(t, entryKey)
         if type(by) == "string" and not CUI_NS.IsSuiteFolder(by) and AddonTitle(by) then
             return by
         end
@@ -7153,55 +7153,55 @@ do
     end
 
     -- The roster entry an addon published for one of its keys, if any.
-    local function PublicInfo(key)
-        local navInfo = CludesUI._addonInfoByFolder and CludesUI._addonInfoByFolder[key]
+    local function PublicInfo(entryKey)
+        local navInfo = CludesUI._addonInfoByFolder and CludesUI._addonInfoByFolder[entryKey]
         if type(navInfo) == "table" then
             return navInfo
         end
         for _, e in ipairs(ADDON_ROSTER) do
-            if type(e) == "table" and e.folder == key then
+            if type(e) == "table" and e.folder == entryKey then
                 return e
             end
         end
     end
 
-    local function Section(source, label, top)
+    local function Section(source, navLabel, top)
         local s = sections[source]
         if not s then
-            label = label or "Other Addons"
-            if IsReservedLabel(label) then
-                label = CapChars("Plugin: " .. label, MAX_LABEL_CHARS)
+            navLabel = navLabel or "Other Addons"
+            if IsReservedLabel(navLabel) then
+                navLabel = CapChars("Plugin: " .. navLabel, MAX_LABEL_CHARS)
             end
-            s = { key = "ext:" .. source, label = label, members = {} }
+            s = { key = "ext:" .. source, label = navLabel, members = {} }
             sections[source] = s
-            local list = top and CUI_NS.pluginGroupsTop or CUI_NS.pluginGroupsBottom
-            list[#list + 1] = s
+            local entryList = top and CUI_NS.pluginGroupsTop or CUI_NS.pluginGroupsBottom
+            entryList[#entryList + 1] = s
         end
         return s
     end
 
     -- Gives an outside key its row in section s, labelled from the roster entry
     -- its addon published, else from its page. Returns true for a new row.
-    local function Place(key, s)
-        if placed[key] or #s.members >= MAX_MODULES then
+    local function Place(entryKey, s)
+        if placed[entryKey] or #s.members >= MAX_MODULES then
             return false
         end
-        local pub = PublicInfo(key)
-        local page = moduleList[key]
+        local pub = PublicInfo(entryKey)
+        local page = moduleList[entryKey]
         local display = (pub and PlainText(pub.display, MAX_LABEL_CHARS))
             or (page and PlainText(page.title, MAX_LABEL_CHARS))
-            or PlainText(key, MAX_LABEL_CHARS)
+            or PlainText(entryKey, MAX_LABEL_CHARS)
             or "?"
-        CUI_NS.navInfo[key] = {
-            folder = key,
+        CUI_NS.navInfo[entryKey] = {
+            folder = entryKey,
             display = display,
             search_name = (pub and PlainText(pub.search_name, MAX_DESC_CHARS)) or display,
             alwaysLoaded = pub == nil or pub.alwaysLoaded == true,
             comingSoon = pub and pub.comingSoon == true or nil,
             maintenance = pub and pub.maintenance == true or nil,
         }
-        s.members[#s.members + 1] = key
-        placed[key] = true
+        s.members[#s.members + 1] = entryKey
+        placed[entryKey] = true
         return true
     end
 
@@ -7235,14 +7235,14 @@ do
                 end
             end
         end
-        for key, moduleKey in pairs(owner) do
-            if not placed[key] then
+        for entryKey, moduleKey in pairs(owner) do
+            if not placed[entryKey] then
                 local s = Section(
                     "addon:" .. (moduleKey or "?"),
                     moduleKey and (AddonTitle(moduleKey) or PlainText(moduleKey, MAX_LABEL_CHARS)) or nil,
                     false
                 )
-                if Place(key, s) then
+                if Place(entryKey, s) then
                     added = added or {}
                     added[s] = true
                 end
@@ -7258,9 +7258,9 @@ do
         for s in pairs(added) do
             if CUI_NS.sidebarGroupButtons[s.key] then
                 -- Its section is already on the sidebar: add the new rows.
-                for _, key in ipairs(s.members) do
-                    if not sidebarButtons[key] and CUI_NS.CreateSidebarChildRow then
-                        sidebarButtons[key] = CUI_NS.CreateSidebarChildRow(CUI_NS.navInfo[key])
+                for _, entryKey in ipairs(s.members) do
+                    if not sidebarButtons[entryKey] and CUI_NS.CreateSidebarChildRow then
+                        sidebarButtons[entryKey] = CUI_NS.CreateSidebarChildRow(CUI_NS.navInfo[entryKey])
                     end
                 end
             else
@@ -7277,27 +7277,27 @@ do
 
     -- A page another addon registers under a key of its own (folder: that
     -- addon as the stack names it). It may register again.
-    function CUI_NS.RegisterExternal(moduleKey, key, moduleConfig)
-        if type(key) ~= "string" or type(moduleConfig) ~= "table" then
+    function CUI_NS.RegisterExternal(moduleKey, entryKey, moduleConfig)
+        if type(entryKey) ~= "string" or type(moduleConfig) ~= "table" then
             return
         end
         -- No folder on the stack, or one of ours: the page's builder names it.
         if not moduleKey or CUI_NS.IsSuiteFolder(moduleKey) then
             moduleKey = Author(moduleConfig)
         end
-        if CUI_NS.IsSuiteKey(key) then
+        if CUI_NS.IsSuiteKey(entryKey) then
             if moduleKey then
                 Offend(moduleKey)
             end
             return
         end
-        if CUI_NS.IsPluginKey(key) then
+        if CUI_NS.IsPluginKey(entryKey) then
             return
         end
         moduleConfig._cuiCore = false
-        CUI_NS.StoreModule(key, moduleConfig, true)
-        if owner[key] == nil then
-            owner[key] = moduleKey or false
+        CUI_NS.StoreModule(entryKey, moduleConfig, true)
+        if owner[entryKey] == nil then
+            owner[entryKey] = moduleKey or false
         end
         if panelFrame then
             CUI_NS.SyncExternal()
@@ -7307,13 +7307,13 @@ do
     -- The old public registry, kept as an inbox: writes register the page,
     -- reads only ever return an outside addon's own pages.
     CludesUI._modules = setmetatable({}, {
-        __index = function(_, key)
-            if owner[key] ~= nil then
-                return moduleList[key]
+        __index = function(_, entryKey)
+            if owner[entryKey] ~= nil then
+                return moduleList[entryKey]
             end
         end,
-        __newindex = function(_, key, page)
-            CUI_NS.RegisterExternal((debugstack(2, 1, 0) or ""):match("AddOns/([^/]+)/"), key, page)
+        __newindex = function(_, entryKey, page)
+            CUI_NS.RegisterExternal((debugstack(2, 1, 0) or ""):match("AddOns/([^/]+)/"), entryKey, page)
         end,
         __metatable = false,
     })
