@@ -15,13 +15,7 @@ end
 
 local PAGE = "Title Line"
 
-local initFrame = CreateFrame("Frame")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:SetScript("OnEvent", function(self)
-    self:UnregisterEvent("PLAYER_LOGIN")
-    if not CludesUI or not CludesUI.RegisterModule then
-        return
-    end
+CludesUI.AtOptionsLogin(function()
 
     local function DB()
         return _G.CludesUITitleLineDB or {}
@@ -151,6 +145,3 @@ initFrame:SetScript("OnEvent", function(self)
         end,
     })
 end)
-if IsLoggedIn() then
-    initFrame:GetScript("OnEvent")(initFrame)
-end

@@ -531,6 +531,31 @@ end
 CludesUI.ShowWidgetTooltip = ShowWidgetTooltip
 CludesUI.HideWidgetTooltip = HideWidgetTooltip
 
+-- Runs setup once: at PLAYER_LOGIN, or right away when the player is already
+-- in (the options load on demand, after login).
+function CludesUI.AtLogin(setup)
+    local listener = CreateFrame("Frame")
+    listener:RegisterEvent("PLAYER_LOGIN")
+    listener:SetScript("OnEvent", function(self)
+        self:UnregisterEvent("PLAYER_LOGIN")
+        setup()
+    end)
+    if IsLoggedIn() then
+        listener:GetScript("OnEvent")(listener)
+    end
+end
+
+-- As AtLogin, for an options file's module registration: skipped when the
+-- module registry does not exist by then.
+function CludesUI.AtOptionsLogin(setup)
+    CludesUI.AtLogin(function()
+        if not CludesUI or not CludesUI.RegisterModule then
+            return
+        end
+        setup()
+    end)
+end
+
 -- Gives a widget a fixed hover tooltip, in place of any hover scripts it had. The show and hide go through CludesUI at hover
 -- time, as a hand-written pair of scripts would.
 function CludesUI.HoverTip(widget, text)

@@ -488,14 +488,7 @@ CludesUI._WHATSNEW_PATCHES = {
 -------------------------------------------------------------------------------
 
 -- Wait for CludesUI to exist
-local initFrame = CreateFrame("Frame")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:SetScript("OnEvent", function(self)
-    self:UnregisterEvent("PLAYER_LOGIN")
-
-    if not CludesUI or not CludesUI.RegisterModule then
-        return
-    end
+CludesUI.AtOptionsLogin(function()
     local Pix = CludesUI.PanelPP
 
     local GLOBAL_KEY = CludesUI.GLOBAL_KEY or "_CUIGlobal"
@@ -2435,7 +2428,3 @@ initFrame:SetScript("OnEvent", function(self)
     -- HideAllChildren (every page switch) hides the profiles root too.
     CludesUI._AddScrollRootHider(CleanupProfilesRoot)
 end)
--- LoadOnDemand: this addon loads after PLAYER_LOGIN, so the event above will never fire; run the init now.
-if IsLoggedIn() then
-    initFrame:GetScript("OnEvent")(initFrame)
-end

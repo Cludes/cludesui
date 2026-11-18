@@ -1003,10 +1003,7 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
     return posY
 end
 
-local initFrame = CreateFrame("Frame")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:SetScript("OnEvent", function(self)
-    self:UnregisterEvent("PLAYER_LOGIN")
+CludesUI.AtLogin(function()
 
     mod._InitCUIModule = function()
         if not CludesUI or not CludesUI.RegisterModule then
@@ -2930,7 +2927,3 @@ initFrame:SetScript("OnEvent", function(self)
         mod._InitCUIModule()
     end
 end)
--- LoadOnDemand: this addon loads after PLAYER_LOGIN, so the event above will never fire; run the init now.
-if IsLoggedIn() then
-    initFrame:GetScript("OnEvent")(initFrame)
-end

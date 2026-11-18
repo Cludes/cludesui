@@ -30,13 +30,7 @@ local function Account()
     return CludesUIDB
 end
 
-local initFrame = CreateFrame("Frame")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:SetScript("OnEvent", function(self)
-    self:UnregisterEvent("PLAYER_LOGIN")
-    if not CludesUI or not CludesUI.RegisterModule then
-        return
-    end
+CludesUI.AtOptionsLogin(function()
     -- Page reuse (CludesUI_FramePool.lua): a frame made under a page pool
     -- host comes from the pool and is dressed again by every later build; under
     -- any other parent it is a plain new frame.
@@ -6474,7 +6468,3 @@ initFrame:SetScript("OnEvent", function(self)
         CludesUI:ShowModule("CludesUIBlizzardSkin")
     end
 end)
--- LoadOnDemand: this addon loads after PLAYER_LOGIN, so the event above will never fire; run the init now.
-if IsLoggedIn() then
-    initFrame:GetScript("OnEvent")(initFrame)
-end

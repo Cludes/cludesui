@@ -1314,10 +1314,7 @@ local function AttachDebuffModeWarn(rgn, getS, offFn)
     )
 end
 
-local initFrame = CreateFrame("Frame")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:SetScript("OnEvent", function(self)
-    self:UnregisterEvent("PLAYER_LOGIN")
+CludesUI.AtLogin(function()
 
     -- Init fn on the namespace; the main addon calls it from SetupOptionsPanel()
     -- once ns.db/ns.frames are ready, or immediately if that already ran.
@@ -4451,7 +4448,3 @@ initFrame:SetScript("OnEvent", function(self)
         mod._InitCUIModule()
     end
 end)
--- LoadOnDemand: this addon loads after PLAYER_LOGIN, so the event above will never fire; run the init now.
-if IsLoggedIn() then
-    initFrame:GetScript("OnEvent")(initFrame)
-end

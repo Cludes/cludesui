@@ -9,10 +9,7 @@ if not mod then
     return
 end
 
-local initFrame = CreateFrame("Frame")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:SetScript("OnEvent", function(self)
-    self:UnregisterEvent("PLAYER_LOGIN")
+CludesUI.AtLogin(function()
 
     local CreateFrame = CludesUI._Pool.CreateFrame
 
@@ -1969,7 +1966,3 @@ initFrame:SetScript("OnEvent", function(self)
         onModuleLeave = HideBanner,
     })
 end)
-
-if IsLoggedIn() then
-    initFrame:GetScript("OnEvent")(initFrame)
-end

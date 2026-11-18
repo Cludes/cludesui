@@ -14,10 +14,7 @@ local CUI = CludesUI
 local PAGE_SEARCH = "Premade Search"
 local PAGE_APPS = "Mythic+ Tracker"
 
-local initFrame = CreateFrame("Frame")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:SetScript("OnEvent", function(self)
-    self:UnregisterEvent("PLAYER_LOGIN")
+CludesUI.AtLogin(function()
 
     local AddAppsSections, AddListSections
 
@@ -1138,7 +1135,3 @@ initFrame:SetScript("OnEvent", function(self)
         end,
     })
 end)
--- LoadOnDemand: PLAYER_LOGIN already fired, so run it now.
-if IsLoggedIn() then
-    initFrame:GetScript("OnEvent")(initFrame)
-end

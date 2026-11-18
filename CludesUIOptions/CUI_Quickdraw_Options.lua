@@ -24,14 +24,7 @@ local BINDING_PREFIX = "CUI_RADIAL"
 local MAX_PALETTES = mod.MAX_PALETTES or 16
 local MAX_SLOTS = mod.MAX_SLOTS or 12
 
-local initFrame = CreateFrame("Frame")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:SetScript("OnEvent", function(self)
-    self:UnregisterEvent("PLAYER_LOGIN")
-
-    if not CludesUI or not CludesUI.RegisterModule then
-        return
-    end
+CludesUI.AtOptionsLogin(function()
 
     local db
 
@@ -4558,7 +4551,3 @@ initFrame:SetScript("OnEvent", function(self)
         end,
     })
 end)
--- LoadOnDemand: this addon loads after PLAYER_LOGIN, so the event above will never fire; run the init now.
-if IsLoggedIn() then
-    initFrame:GetScript("OnEvent")(initFrame)
-end

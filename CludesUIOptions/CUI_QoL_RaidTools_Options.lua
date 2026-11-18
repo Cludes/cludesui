@@ -18,10 +18,7 @@ end -- module disabled: no options page
 -- frames back reset to new; on any other parent it is the plain CreateFrame.
 local CreateFrame = CludesUI._Pool.CreateFrame
 
-local initFrame = CreateFrame("Frame")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:SetScript("OnEvent", function(self)
-    self:UnregisterEvent("PLAYER_LOGIN")
+CludesUI.AtLogin(function()
 
     -- NOT gated on CludesUI.Widgets: on this LoadOnDemand addon the
     -- IsLoggedIn() re-fire below runs this handler at FILE SCOPE, before
@@ -549,7 +546,3 @@ initFrame:SetScript("OnEvent", function(self)
         end)
     end
 end)
--- LoadOnDemand: this addon loads after PLAYER_LOGIN, so the event above will never fire; run the init now.
-if IsLoggedIn() then
-    initFrame:GetScript("OnEvent")(initFrame)
-end

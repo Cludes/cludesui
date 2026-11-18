@@ -30,14 +30,7 @@ local function PvSnap(v, onePx)
     return math.floor(v / onePx + 0.5) * onePx
 end
 
-local initFrame = CreateFrame("Frame")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:SetScript("OnEvent", function(self)
-    self:UnregisterEvent("PLAYER_LOGIN")
-
-    if not CludesUI or not CludesUI.RegisterModule then
-        return
-    end
+CludesUI.AtOptionsLogin(function()
 
     local saved
     C_Timer.After(0, function()
@@ -3081,7 +3074,3 @@ initFrame:SetScript("OnEvent", function(self)
         end,
     })
 end)
--- LoadOnDemand: this addon loads after PLAYER_LOGIN, so the event above will never fire; run the init now.
-if IsLoggedIn() then
-    initFrame:GetScript("OnEvent")(initFrame)
-end

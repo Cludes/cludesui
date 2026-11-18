@@ -38,14 +38,7 @@ local SEC_APPEARANCE = "APPEARANCE"
 local SEC_FILTER = "FILTER"
 local SEC_BEHAVIOR = "BEHAVIOR"
 
-local initFrame = CreateFrame("Frame")
-initFrame:RegisterEvent("PLAYER_LOGIN")
-initFrame:SetScript("OnEvent", function(self)
-    self:UnregisterEvent("PLAYER_LOGIN")
-
-    if not CludesUI or not CludesUI.RegisterModule then
-        return
-    end
+CludesUI.AtOptionsLogin(function()
     local Pix = CludesUI.PanelPP
     -- The options page pool (CludesUI_FramePool.lua): a frame made here under
     -- a pool host (a reused page or header, a kept menu) is handed out again reset
@@ -3327,7 +3320,3 @@ initFrame:SetScript("OnEvent", function(self)
         CludesUI:ShowModule("CludesUICooldownManager")
     end
 end)
--- LoadOnDemand: this addon loads after PLAYER_LOGIN, so the event above will never fire; run the init now.
-if IsLoggedIn() then
-    initFrame:GetScript("OnEvent")(initFrame)
-end
