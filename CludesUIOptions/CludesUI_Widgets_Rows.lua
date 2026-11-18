@@ -61,6 +61,46 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     local LabelTooltipText = WI.LabelTooltipText
     local WidgetFactory = CludesUI.Widgets
     local ResolveDisabledTip = CludesUI.ResolveDisabledTip
+
+    -- A row label's tooltip: a frame a little larger than the label that, on
+    -- hover, shows the disabled reason while conf.disabled() holds (and then
+    -- also swallows clicks over the label), else conf.tooltip, else the full
+    -- text of a label cut short. Clicks pass through while enabled. With a
+    -- dropdown (ddBtn), nothing but the disabled reason shows while its menu
+    -- is open.
+    local function AddLabelTooltipHit(regionFrame, labelText, conf, ddBtn)
+        local function MenuOpen()
+            return ddBtn and ddBtn._ddMenu and ddBtn._ddMenu:IsShown()
+        end
+        local ttOpts = conf.tooltipOpts
+        local hit = CreateFrame("Frame", nil, regionFrame)
+        hit:SetPoint("TOPLEFT", labelText, "TOPLEFT", -5, 5)
+        hit:SetPoint("BOTTOMRIGHT", labelText, "BOTTOMRIGHT", 5, -5)
+        hit:SetFrameLevel(regionFrame:GetFrameLevel() + 10)
+        hit:SetScript("OnEnter", function()
+            if conf.disabled and conf.disabled() and conf.disabledTooltip then
+                local reason = ResolveDisabledTip(conf)
+                if reason then
+                    ShowWidgetTooltip(labelText, reason)
+                end
+            elseif conf.tooltip and not MenuOpen() then
+                ShowWidgetTooltip(labelText, LabelTooltipText(regionFrame, labelText, conf.tooltip), ttOpts)
+            elseif regionFrame._labelTruncated and not MenuOpen() then
+                ShowWidgetTooltip(labelText, labelText:GetText())
+            end
+        end)
+        hit:SetScript("OnLeave", function()
+            HideWidgetTooltip()
+        end)
+        hit:SetMouseClickEnabled(false)
+        if conf.disabled and conf.disabledTooltip then
+            local function BlockWhileDisabled()
+                hit:SetMouseClickEnabled(conf.disabled() and true or false)
+            end
+            RegisterWidgetRefresh(BlockWhileDisabled)
+            BlockWhileDisabled()
+        end
+    end
     local BuildDropdownMenu = CludesUI.BuildDropdownMenu
     local WireLazyDropdown = WI.WireLazyDropdown
     local WD_DD_COLOURS = CludesUI.WD_DD_COLOURS
@@ -576,40 +616,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             -- Label tooltip. For dropdowns the hitFrame is created after the dropdown button so it can check whether the menu is open.
             -- A half-row button hides its label (the button explains its own lock, below).
             if (conf.tooltip or conf.disabledTooltip) and t ~= "dropdown" and t ~= "button" then
-                local ttOpts = conf.tooltipOpts
-                local hitFrame = CreateFrame("Frame", nil, regionFrame)
-                hitFrame:SetPoint("TOPLEFT", labelText, "TOPLEFT", -5, 5)
-                hitFrame:SetPoint("BOTTOMRIGHT", labelText, "BOTTOMRIGHT", 5, -5)
-                hitFrame:SetFrameLevel(regionFrame:GetFrameLevel() + 10)
-                hitFrame:SetScript("OnEnter", function()
-                    if conf.disabled and conf.disabled() and conf.disabledTooltip then
-                        local tt = ResolveDisabledTip(conf)
-                        if tt then
-                            ShowWidgetTooltip(labelText, tt)
-                        end
-                    elseif conf.tooltip then
-                        ShowWidgetTooltip(
-                            labelText,
-                            LabelTooltipText(regionFrame, labelText, conf.tooltip),
-                            ttOpts
-                        )
-                    elseif regionFrame._labelTruncated then
-                        -- Truncated label whose hit exists only for the disabled tooltip: reveal the full text while enabled.
-                        ShowWidgetTooltip(labelText, labelText:GetText())
-                    end
-                end)
-                hitFrame:SetScript("OnLeave", function()
-                    HideWidgetTooltip()
-                end)
-                -- Clicks pass through by default so controls stay interactive; intercepted while disabled to block interaction.
-                hitFrame:SetMouseClickEnabled(false)
-                if conf.disabled and conf.disabledTooltip then
-                    local function UpdateHitMouse()
-                        hitFrame:SetMouseClickEnabled(conf.disabled() and true or false)
-                    end
-                    RegisterWidgetRefresh(UpdateHitMouse)
-                    UpdateHitMouse()
-                end
+                AddLabelTooltipHit(regionFrame, labelText, conf)
             end
 
             -- cfg.disabled: optional fn returning bool; when true the label dims and the control goes non-interactive.
@@ -783,41 +790,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         ddBtn._ttText = conf.tooltip
                         ddBtn._ttOpts = conf.tooltipOpts
                     end
-                    local ttOpts = conf.tooltipOpts
-                    local hitFrame = CreateFrame("Frame", nil, regionFrame)
-                    hitFrame:SetPoint("TOPLEFT", labelText, "TOPLEFT", -5, 5)
-                    hitFrame:SetPoint("BOTTOMRIGHT", labelText, "BOTTOMRIGHT", 5, -5)
-                    hitFrame:SetFrameLevel(regionFrame:GetFrameLevel() + 10)
-                    hitFrame:SetScript("OnEnter", function()
-                        if conf.disabled and conf.disabled() and conf.disabledTooltip then
-                            local tt = ResolveDisabledTip(conf)
-                            if tt then
-                                ShowWidgetTooltip(labelText, tt)
-                            end
-                        elseif conf.tooltip and not (ddBtn._ddMenu and ddBtn._ddMenu:IsShown()) then
-                            ShowWidgetTooltip(
-                                labelText,
-                                LabelTooltipText(regionFrame, labelText, conf.tooltip),
-                                ttOpts
-                            )
-                        elseif
-                            regionFrame._labelTruncated and not (ddBtn._ddMenu and ddBtn._ddMenu:IsShown())
-                        then
-                            ShowWidgetTooltip(labelText, labelText:GetText())
-                        end
-                    end)
-                    hitFrame:SetScript("OnLeave", function()
-                        HideWidgetTooltip()
-                    end)
-                    hitFrame:SetMouseClickEnabled(false)
-                    -- Intercept clicks over the label area while disabled
-                    if conf.disabled and conf.disabledTooltip then
-                        local function UpdateHitMouse()
-                            hitFrame:SetMouseClickEnabled(conf.disabled() and true or false)
-                        end
-                        RegisterWidgetRefresh(UpdateHitMouse)
-                        UpdateHitMouse()
-                    end
+                    AddLabelTooltipHit(regionFrame, labelText, conf, ddBtn)
                 end
                 if conf.labelOnlyDisabled and conf.disabled then
                     local function ApplyLabelOnly()
@@ -1189,40 +1162,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             regionFrame._labelHasHit = (conf.tooltip or conf.disabledTooltip) and true or false
 
             if (conf.tooltip or conf.disabledTooltip) and t ~= "dropdown" then
-                local ttOpts = conf.tooltipOpts
-                local hitFrame = CreateFrame("Frame", nil, regionFrame)
-                hitFrame:SetPoint("TOPLEFT", labelText, "TOPLEFT", -5, 5)
-                hitFrame:SetPoint("BOTTOMRIGHT", labelText, "BOTTOMRIGHT", 5, -5)
-                hitFrame:SetFrameLevel(regionFrame:GetFrameLevel() + 10)
-                hitFrame:SetScript("OnEnter", function()
-                    if conf.disabled and conf.disabled() and conf.disabledTooltip then
-                        local tt = ResolveDisabledTip(conf)
-                        if tt then
-                            ShowWidgetTooltip(labelText, tt)
-                        end
-                    elseif conf.tooltip then
-                        ShowWidgetTooltip(
-                            labelText,
-                            LabelTooltipText(regionFrame, labelText, conf.tooltip),
-                            ttOpts
-                        )
-                    elseif regionFrame._labelTruncated then
-                        -- Truncated label whose hit exists only for the disabled tooltip: reveal the full text while enabled.
-                        ShowWidgetTooltip(labelText, labelText:GetText())
-                    end
-                end)
-                hitFrame:SetScript("OnLeave", function()
-                    HideWidgetTooltip()
-                end)
-                -- Clicks pass through by default so controls stay interactive; intercepted while disabled to block interaction.
-                hitFrame:SetMouseClickEnabled(false)
-                if conf.disabled and conf.disabledTooltip then
-                    local function UpdateHitMouse()
-                        hitFrame:SetMouseClickEnabled(conf.disabled() and true or false)
-                    end
-                    RegisterWidgetRefresh(UpdateHitMouse)
-                    UpdateHitMouse()
-                end
+                AddLabelTooltipHit(regionFrame, labelText, conf)
             end
 
             local controlFrame, controlAnchor
@@ -1332,40 +1272,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         ddBtn._ttText = conf.tooltip
                         ddBtn._ttOpts = conf.tooltipOpts
                     end
-                    local ttOpts = conf.tooltipOpts
-                    local hitFrame = CreateFrame("Frame", nil, regionFrame)
-                    hitFrame:SetPoint("TOPLEFT", labelText, "TOPLEFT", -5, 5)
-                    hitFrame:SetPoint("BOTTOMRIGHT", labelText, "BOTTOMRIGHT", 5, -5)
-                    hitFrame:SetFrameLevel(regionFrame:GetFrameLevel() + 10)
-                    hitFrame:SetScript("OnEnter", function()
-                        if conf.disabled and conf.disabled() and conf.disabledTooltip then
-                            local tt = ResolveDisabledTip(conf)
-                            if tt then
-                                ShowWidgetTooltip(labelText, tt)
-                            end
-                        elseif conf.tooltip and not (ddBtn._ddMenu and ddBtn._ddMenu:IsShown()) then
-                            ShowWidgetTooltip(
-                                labelText,
-                                LabelTooltipText(regionFrame, labelText, conf.tooltip),
-                                ttOpts
-                            )
-                        elseif
-                            regionFrame._labelTruncated and not (ddBtn._ddMenu and ddBtn._ddMenu:IsShown())
-                        then
-                            ShowWidgetTooltip(labelText, labelText:GetText())
-                        end
-                    end)
-                    hitFrame:SetScript("OnLeave", function()
-                        HideWidgetTooltip()
-                    end)
-                    hitFrame:SetMouseClickEnabled(false)
-                    if conf.disabled and conf.disabledTooltip then
-                        local function UpdateHitMouse()
-                            hitFrame:SetMouseClickEnabled(conf.disabled() and true or false)
-                        end
-                        RegisterWidgetRefresh(UpdateHitMouse)
-                        UpdateHitMouse()
-                    end
+                    AddLabelTooltipHit(regionFrame, labelText, conf, ddBtn)
                 end
                 if conf.labelOnlyDisabled and conf.disabled then
                     local function ApplyLabelOnly()
