@@ -55,38 +55,38 @@ local function TitleCase(s)
     return out
 end
 
-local function BuildListRow(parent, y, entry)
+local function BuildListRow(host, rowY, item)
     -- Options page pool (CludesUI_FramePool.lua): on a pool host these rows
     -- are reset and dressed again by the next build (the list builders below).
     local CreateFrame = CludesUI._Pool.CreateFrame
     local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
-    local row = CreateFrame("Frame", nil, parent)
-    row:SetSize(parent:GetWidth() - CONTENT_PAD * 2, 36)
-    row:SetPoint("TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, y)
+    local line = CreateFrame("Frame", nil, host)
+    line:SetSize(host:GetWidth() - CONTENT_PAD * 2, 36)
+    line:SetPoint("TOPLEFT", host, "TOPLEFT", CONTENT_PAD, rowY)
 
-    local name = CludesUI.MakeFont(row, 13, nil, 1, 1, 1, 0.9)
-    name:SetPoint("LEFT", row, "LEFT", 20, 0)
-    name:SetText(L(entry.label or "?"))
+    local label = CludesUI.MakeFont(line, 13, nil, 1, 1, 1, 0.9)
+    label:SetPoint("LEFT", line, "LEFT", 20, 0)
+    label:SetText(L(item.label or "?"))
 
-    local crumb = CludesUI.MakeFont(row, 11, nil, 1, 1, 1, 0.3)
-    crumb:SetPoint("LEFT", name, "RIGHT", 10, 0)
+    local trail = CludesUI.MakeFont(line, 11, nil, 1, 1, 1, 0.3)
+    trail:SetPoint("LEFT", label, "RIGHT", 10, 0)
     -- Built from the entry's fields when it has a page, so a renamed module or
     -- tab label (or a client language switch) shows current names, not the
     -- baked crumb.
-    local crumbText = entry.page and BuildEntryCrumb(entry.module, entry.element, entry.page, entry.section)
-        or entry.crumb
-    crumb:SetText(crumbText and TitleCase(crumbText) or "")
+    local crumbText = item.page and BuildEntryCrumb(item.module, item.element, item.page, item.section)
+        or item.crumb
+    trail:SetText(crumbText and TitleCase(crumbText) or "")
 
     local function MakeBtn(text, xOff, w)
-        local b = CreateFrame("Button", nil, row)
-        b:SetSize(w or 110, 22)
-        b:SetPoint("RIGHT", row, "RIGHT", xOff, 0)
-        CludesUI.SolidTex(b, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
-        local brd = CludesUI.MakeRoundedBorder(b, 1, 1, 1, 0.22)
-        local lbl = CludesUI.MakeFont(b, 11, nil, 1, 1, 1, 0.8)
-        lbl:SetPoint("CENTER")
-        lbl:SetText(L(text))
-        return b, brd
+        local button = CreateFrame("Button", nil, line)
+        button:SetSize(w or 110, 22)
+        button:SetPoint("RIGHT", line, "RIGHT", xOff, 0)
+        CludesUI.SolidTex(button, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
+        local brd = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.22)
+        local caption = CludesUI.MakeFont(button, 11, nil, 1, 1, 1, 0.8)
+        caption:SetPoint("CENTER")
+        caption:SetText(L(text))
+        return button, brd
     end
 
     -- One row serves BOTH stores: entries created by an editing-as-conditional
@@ -95,8 +95,8 @@ local function BuildListRow(parent, y, entry)
     do
         local cst = Cond.GetStore()
         if cst then
-            for _, e in ipairs(cst) do
-                if e == entry then
+            for _, record in ipairs(cst) do
+                if record == item then
                     isCondEntry = true
                     break
                 end
@@ -111,18 +111,18 @@ local function BuildListRow(parent, y, entry)
     -- owner instead of leaving the eviction silent.
     if isCondEntry then
         local ownerEntry
-        for fkey in pairs(entry.values and entry.values.default or {}) do
-            ownerEntry = EntryOwning(fkey)
+        for fieldKey in pairs(item.values and item.values.default or {}) do
+            ownerEntry = EntryOwning(fieldKey)
             if ownerEntry then
                 break
             end
         end
         if ownerEntry then
             local og = GroupById(ownerEntry.group)
-            local warn = CludesUI.MakeFont(row, 11, nil, 1, 0.45, 0.45, 0.85)
-            warn:SetPoint("LEFT", crumb, "RIGHT", 10, 0)
+            local warn = CludesUI.MakeFont(line, 11, nil, 1, 0.45, 0.45, 0.85)
+            warn:SetPoint("LEFT", trail, "RIGHT", 10, 0)
             warn:SetText(string.format(L("held by '%s'"), (og and og.name) or "?"))
-            local hit = CreateFrame("Frame", nil, row)
+            local hit = CreateFrame("Frame", nil, line)
             hit:SetAllPoints(warn)
             hit:EnableMouse(true)
             hit:SetScript("OnEnter", function(self)
@@ -139,31 +139,31 @@ local function BuildListRow(parent, y, entry)
         end
     end
 
-    local rm, rmBrd = MakeBtn("Remove Override", -20, 116)
-    rm:SetScript("OnEnter", function()
+    local removeBtn, rmBrd = MakeBtn("Remove Override", -20, 116)
+    removeBtn:SetScript("OnEnter", function()
         if rmBrd and rmBrd.SetColor then
             rmBrd:SetColor(1, 0.35, 0.35, 0.8)
         end
     end)
-    rm:SetScript("OnLeave", function()
+    removeBtn:SetScript("OnLeave", function()
         if rmBrd and rmBrd.SetColor then
             rmBrd:SetColor(1, 1, 1, 0.22)
         end
     end)
-    rm:SetScript("OnClick", function()
+    removeBtn:SetScript("OnClick", function()
         CludesUI:ShowConfirmPopup({
             title = isCondEntry and L("Remove Conditional Override") or L("Remove Spec Override"),
             message = string.format(
                 L("Remove '%s'? The setting keeps its current live value."),
-                entry.label or "?"
+                item.label or "?"
             ),
             confirmText = L("Remove"),
             cancelText = L("Cancel"),
             onConfirm = function()
                 local st = isCondEntry and Cond.GetStore() or GetStore()
                 if st then
-                    for i, e in ipairs(st) do
-                        if e == entry then
+                    for i, record in ipairs(st) do
+                        if record == item then
                             table.remove(st, i)
                             break
                         end
@@ -192,80 +192,80 @@ local function BuildListRow(parent, y, entry)
         end
     end)
     go:SetScript("OnClick", function()
-        local mod = entry.module
+        local mod = item.module
         if not mod then
-            for fkey in pairs(entry.values and entry.values.default or {}) do
-                mod = SplitFKey(fkey)
+            for fieldKey in pairs(item.values and item.values.default or {}) do
+                mod = SplitFKey(fieldKey)
                 break
             end
         end
         if mod and CludesUI:GetModuleTitle(mod) then
             CludesUI:SelectModule(mod)
-            if entry.page and CludesUI.SelectPage then
-                CludesUI:SelectPage(entry.page)
+            if item.page and CludesUI.SelectPage then
+                CludesUI:SelectPage(item.page)
             end
         end
     end)
 
-    return row, 38
+    return line, 38
 end
 
 -- Row for one STRANDED per-spec value (see SpecStrandedOnEntry): shows the spec
 -- and the setting it silently overrides, with a per-value Remove returning the
 -- spec to the shared default. Removal is the only possible action -- no editing
 -- session can reach them.
-local function BuildStrandedRow(parent, y, entry, specID)
+local function BuildStrandedRow(host, rowY, item, specID)
     local CreateFrame = CludesUI._Pool.CreateFrame
     local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
-    local row = CreateFrame("Frame", nil, parent)
-    row:SetSize(parent:GetWidth() - CONTENT_PAD * 2, 36)
-    row:SetPoint("TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, y)
+    local line = CreateFrame("Frame", nil, host)
+    line:SetSize(host:GetWidth() - CONTENT_PAD * 2, 36)
+    line:SetPoint("TOPLEFT", host, "TOPLEFT", CONTENT_PAD, rowY)
 
-    local name = CludesUI.MakeFont(row, 13, nil, 1, 1, 1, 0.9)
-    name:SetPoint("LEFT", row, "LEFT", 20, 0)
-    name:SetText(SpecName(specID))
+    local label = CludesUI.MakeFont(line, 13, nil, 1, 1, 1, 0.9)
+    label:SetPoint("LEFT", line, "LEFT", 20, 0)
+    label:SetText(SpecName(specID))
 
-    local owner = GroupById(entry.group)
-    local crumb = CludesUI.MakeFont(row, 11, nil, 1, 1, 1, 0.3)
-    crumb:SetPoint("LEFT", name, "RIGHT", 10, 0)
-    crumb:SetText(
+    local owner = GroupById(item.group)
+    local trail = CludesUI.MakeFont(line, 11, nil, 1, 1, 1, 0.3)
+    trail:SetPoint("LEFT", label, "RIGHT", 10, 0)
+    trail:SetText(
         string.format(
             "%s  -  %s",
-            L(entry.label or "?"),
+            L(item.label or "?"),
             string.format(L("held by '%s'"), (owner and owner.name) or "?")
         )
     )
 
-    local rm = CreateFrame("Button", nil, row)
-    rm:SetSize(116, 22)
-    rm:SetPoint("RIGHT", row, "RIGHT", -20, 0)
-    CludesUI.SolidTex(rm, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
-    local rmBrd = CludesUI.MakeRoundedBorder(rm, 1, 1, 1, 0.22)
-    local rmLbl = CludesUI.MakeFont(rm, 11, nil, 1, 1, 1, 0.8)
+    local removeBtn = CreateFrame("Button", nil, line)
+    removeBtn:SetSize(116, 22)
+    removeBtn:SetPoint("RIGHT", line, "RIGHT", -20, 0)
+    CludesUI.SolidTex(removeBtn, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
+    local rmBrd = CludesUI.MakeRoundedBorder(removeBtn, 1, 1, 1, 0.22)
+    local rmLbl = CludesUI.MakeFont(removeBtn, 11, nil, 1, 1, 1, 0.8)
     rmLbl:SetPoint("CENTER")
     rmLbl:SetText(L("Remove Override"))
-    rm:SetScript("OnEnter", function()
+    removeBtn:SetScript("OnEnter", function()
         if rmBrd and rmBrd.SetColor then
             rmBrd:SetColor(1, 0.35, 0.35, 0.8)
         end
     end)
-    rm:SetScript("OnLeave", function()
+    removeBtn:SetScript("OnLeave", function()
         if rmBrd and rmBrd.SetColor then
             rmBrd:SetColor(1, 1, 1, 0.22)
         end
     end)
-    rm:SetScript("OnClick", function()
+    removeBtn:SetScript("OnClick", function()
         CludesUI:ShowConfirmPopup({
             title = L("Remove Stranded Override"),
             message = string.format(
                 L("Remove the stranded '%s' override for %s? The spec returns to the shared default."),
-                entry.label or "?",
+                item.label or "?",
                 SpecName(specID)
             ),
             confirmText = L("Remove"),
             cancelText = L("Cancel"),
             onConfirm = function()
-                entry.values[specID] = nil
+                item.values[specID] = nil
                 CludesUI.SpecOverrides_Apply(_activeSpec or CurrentSpecID())
                 RequestGoldWalk()
                 CludesUI:RefreshPage(true)
@@ -273,14 +273,14 @@ local function BuildStrandedRow(parent, y, entry, specID)
         })
     end)
 
-    return row, 38
+    return line, 38
 end
 
 -- Prunes entries whose owning group no longer exists. Entries with no group at
 -- all (legacy captures) are kept.
 local function PruneOrphanEntries()
-    local store = GetStore()
-    if not store then
+    local storeTbl = GetStore()
+    if not storeTbl then
         return false
     end
     local removed = false
@@ -290,22 +290,22 @@ local function PruneOrphanEntries()
     -- nothing would ever write the default back (residue becomes the permanent
     -- baseline). Loaded, non-blacklisted scalar paths only; excluded-context drops
     -- deliberately keep live as-is (those settings left the system).
-    local function RestoreEntryDefaults(e)
-        if not (e.values and e.values.default) then
+    local function RestoreEntryDefaults(record)
+        if not (record.values and record.values.default) then
             return
         end
-        for fkey, def in pairs(e.values.default) do
-            if not BlacklistedFKey(fkey) and FKeyLoaded(fkey) then
+        for fieldKey, def in pairs(record.values.default) do
+            if not BlacklistedFKey(fieldKey) and FKeyLoaded(fieldKey) then
                 local v = def
                 if v == NIL_SENT then
                     v = nil
                 end
                 -- Same defaults-backed nil-poison skip as WriteSpecValues.
-                local nilPoison = (v == nil) and HasRegisteredDefault(fkey)
-                local cur = ReadLive(fkey)
+                local nilPoison = (v == nil) and HasRegisteredDefault(fieldKey)
+                local cur = ReadLive(fieldKey)
                 if not nilPoison and type(v) ~= "table" and type(cur) ~= "table" and cur ~= v then
-                    if WriteLive(fkey, v) then
-                        local folder = SplitFKey(fkey)
+                    if WriteLive(fieldKey, v) then
+                        local folder = SplitFKey(fieldKey)
                         if folder then
                             touched = touched or {}
                             touched[folder] = true
@@ -315,35 +315,35 @@ local function PruneOrphanEntries()
             end
         end
     end
-    for i = #store, 1, -1 do
-        local e = store[i]
-        local drop = false
-        if e.group ~= nil and not GroupById(e.group) then
+    for i = #storeTbl, 1, -1 do
+        local record = storeTbl[i]
+        local dropBtn = false
+        if record.group ~= nil and not GroupById(record.group) then
             -- Dangling creator id: retag to a surviving holder like the delete
             -- flow does; drop (with live restore) only when no group holds
             -- values on the entry.
-            local holder = EntryHolderGroup(e)
+            local holder = EntryHolderGroup(record)
             if holder then
-                e.group = holder.id
+                record.group = holder.id
                 removed = true
             else
-                RestoreEntryDefaults(e)
-                drop = true
+                RestoreEntryDefaults(record)
+                dropBtn = true
             end
         end
         -- Entries captured in contexts later excluded from the system (module-,
         -- page-, or section-scoped) drop wholesale so they stop applying and
         -- vanish from the management list.
-        if not drop and e.module then
-            local ex = EXCLUDED_CONTEXTS[e.module]
+        if not dropBtn and record.module then
+            local ex = EXCLUDED_CONTEXTS[record.module]
             if ex == true then
-                drop = true
-            elseif type(ex) == "table" and e.page then
-                local pex = ex[e.page]
+                dropBtn = true
+            elseif type(ex) == "table" and record.page then
+                local pex = ex[record.page]
                 if pex == true then
-                    drop = true
-                elseif type(pex) == "table" and e.section and pex[e.section] then
-                    drop = true
+                    dropBtn = true
+                elseif type(pex) == "table" and record.section and pex[record.section] then
+                    dropBtn = true
                 end
             end
         end
@@ -351,13 +351,13 @@ local function PruneOrphanEntries()
         -- Cooldown Manager paths, and applying those re-injects frozen per-spec
         -- spell data (cross-spec spells flashing on bars). An entry left with
         -- no paths is dropped entirely.
-        if not drop and e.values and e.values.default then
+        if not dropBtn and record.values and record.values.default then
             local stripped = false
-            for fkey in pairs(e.values.default) do
-                if BlacklistedFKey(fkey) then
-                    for _, m in pairs(e.values) do
+            for fieldKey in pairs(record.values.default) do
+                if BlacklistedFKey(fieldKey) then
+                    for _, m in pairs(record.values) do
                         if type(m) == "table" then
-                            m[fkey] = nil
+                            m[fieldKey] = nil
                         end
                     end
                     stripped = true
@@ -365,13 +365,13 @@ local function PruneOrphanEntries()
             end
             if stripped then
                 removed = true
-                if not next(e.values.default) then
-                    drop = true
+                if not next(record.values.default) then
+                    dropBtn = true
                 end
             end
         end
-        if drop then
-            table.remove(store, i)
+        if dropBtn then
+            table.remove(storeTbl, i)
             removed = true
         end
     end
@@ -381,11 +381,11 @@ local function PruneOrphanEntries()
     -- show creator + member deviations only). Legacy pre-group entries (group == nil)
     -- keep their per-spec values: that is their model.
     local healed = false
-    for _, e in ipairs(store) do
-        if e.group ~= nil and e.values then
-            for k in pairs(e.values) do
+    for _, record in ipairs(storeTbl) do
+        if record.group ~= nil and record.values then
+            for k in pairs(record.values) do
                 if type(k) == "number" and not SpecInAnyGroup(k) then
-                    e.values[k] = nil
+                    record.values[k] = nil
                     healed = true
                 end
             end
@@ -415,55 +415,55 @@ end
 --- Generic fork-management row (name + gold crumb + Delete behind a confirm
 --- popup). opts: crumb, title, message ('%s' = group name), removeFn. Defaults
 --- describe the unlock-layout fork.
-local function BuildUnlockLayoutRow(parent, y, g, opts)
+local function BuildUnlockLayoutRow(host, rowY, group, opts)
     opts = opts or {}
     local crumbText = opts.crumb or "Custom Layout Mode"
-    local title = opts.title or "Delete Custom Layout Mode"
+    local heading = opts.title or "Delete Custom Layout Mode"
     local msgText = opts.message
         or "Delete the custom layout mode for '%s'? Its specs return to your default layout mode layout."
     local removeFn = opts.removeFn or CludesUI.SpecOverrides_RemoveUnlockLayout
 
     local CreateFrame = CludesUI._Pool.CreateFrame
     local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
-    local row = CreateFrame("Frame", nil, parent)
-    row:SetSize(parent:GetWidth() - CONTENT_PAD * 2, 36)
-    row:SetPoint("TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, y)
+    local line = CreateFrame("Frame", nil, host)
+    line:SetSize(host:GetWidth() - CONTENT_PAD * 2, 36)
+    line:SetPoint("TOPLEFT", host, "TOPLEFT", CONTENT_PAD, rowY)
 
-    local name = CludesUI.MakeFont(row, 13, nil, 1, 1, 1, 0.9)
-    name:SetPoint("LEFT", row, "LEFT", 20, 0)
-    name:SetText(g.name or "?")
+    local label = CludesUI.MakeFont(line, 13, nil, 1, 1, 1, 0.9)
+    label:SetPoint("LEFT", line, "LEFT", 20, 0)
+    label:SetText(group.name or "?")
 
-    local crumb = CludesUI.MakeFont(row, 11, nil, GOLD_R, GOLD_G, GOLD_B, 0.75)
-    crumb:SetPoint("LEFT", name, "RIGHT", 10, 0)
-    crumb:SetText(L(crumbText))
+    local trail = CludesUI.MakeFont(line, 11, nil, GOLD_R, GOLD_G, GOLD_B, 0.75)
+    trail:SetPoint("LEFT", label, "RIGHT", 10, 0)
+    trail:SetText(L(crumbText))
 
-    local b = CreateFrame("Button", nil, row)
-    b:SetSize(116, 22)
-    b:SetPoint("RIGHT", row, "RIGHT", -20, 0)
-    CludesUI.SolidTex(b, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
-    local brd = CludesUI.MakeRoundedBorder(b, 1, 1, 1, 0.22)
-    local lbl = CludesUI.MakeFont(b, 11, nil, 1, 1, 1, 0.8)
-    lbl:SetPoint("CENTER")
-    lbl:SetText(L("Delete"))
-    b:SetScript("OnEnter", function()
+    local button = CreateFrame("Button", nil, line)
+    button:SetSize(116, 22)
+    button:SetPoint("RIGHT", line, "RIGHT", -20, 0)
+    CludesUI.SolidTex(button, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
+    local brd = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.22)
+    local caption = CludesUI.MakeFont(button, 11, nil, 1, 1, 1, 0.8)
+    caption:SetPoint("CENTER")
+    caption:SetText(L("Delete"))
+    button:SetScript("OnEnter", function()
         if brd and brd.SetColor then
             brd:SetColor(1, 0.35, 0.35, 0.8)
         end
     end)
-    b:SetScript("OnLeave", function()
+    button:SetScript("OnLeave", function()
         if brd and brd.SetColor then
             brd:SetColor(1, 1, 1, 0.22)
         end
     end)
-    b:SetScript("OnClick", function()
+    button:SetScript("OnClick", function()
         CludesUI:ShowConfirmPopup({
-            title = L(title),
-            message = string.format(L(msgText), g.name or "?"),
+            title = L(heading),
+            message = string.format(L(msgText), group.name or "?"),
             confirmText = L("Delete"),
             cancelText = L("Cancel"),
             onConfirm = function()
                 if removeFn then
-                    removeFn(g.id)
+                    removeFn(group.id)
                 end
                 CludesUI:RefreshPage(true)
             end,
@@ -475,25 +475,25 @@ local function BuildUnlockLayoutRow(parent, y, g, opts)
     -- while a session is open, and Cond.ExitEdit is the sole release path, so the
     -- swap is never engaged directly here.
     if opts.editKind and opts.editPage then
-        local e = CreateFrame("Button", nil, row)
-        e:SetSize(116, 22)
-        e:SetPoint("RIGHT", b, "LEFT", -8, 0)
-        CludesUI.SolidTex(e, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
-        local ebrd = CludesUI.MakeRoundedBorder(e, 1, 1, 1, 0.22)
-        local elbl = CludesUI.MakeFont(e, 11, nil, 1, 1, 1, 0.8)
+        local record = CreateFrame("Button", nil, line)
+        record:SetSize(116, 22)
+        record:SetPoint("RIGHT", button, "LEFT", -8, 0)
+        CludesUI.SolidTex(record, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
+        local ebrd = CludesUI.MakeRoundedBorder(record, 1, 1, 1, 0.22)
+        local elbl = CludesUI.MakeFont(record, 11, nil, 1, 1, 1, 0.8)
         elbl:SetPoint("CENTER")
         elbl:SetText(L("Edit"))
-        e:SetScript("OnEnter", function()
+        record:SetScript("OnEnter", function()
             if ebrd and ebrd.SetColor then
                 ebrd:SetColor(ACCENT_R, ACCENT_G, ACCENT_B, 0.8)
             end
         end)
-        e:SetScript("OnLeave", function()
+        record:SetScript("OnLeave", function()
             if ebrd and ebrd.SetColor then
                 ebrd:SetColor(1, 1, 1, 0.22)
             end
         end)
-        e:SetScript("OnClick", function()
+        record:SetScript("OnClick", function()
             -- Raid Frames must be registered to navigate to (same gate as the
             -- entry rows' Go to Setting).
             if not (CludesUI:GetModuleTitle("CludesUIRaidFrames")) then
@@ -505,16 +505,16 @@ local function BuildUnlockLayoutRow(parent, y, g, opts)
                 if not Cond.EnterEdit then
                     return
                 end
-                Cond.EnterEdit(g)
-                if Cond._edit ~= g then
+                Cond.EnterEdit(group)
+                if Cond._edit ~= group then
                     return
                 end
             else
                 if not EnterGroupEdit then
                     return
                 end
-                EnterGroupEdit(g)
-                if _editGroup ~= g then
+                EnterGroupEdit(group)
+                if _editGroup ~= group then
                     return
                 end
             end
@@ -523,7 +523,7 @@ local function BuildUnlockLayoutRow(parent, y, g, opts)
         end)
     end
 
-    return row, 38
+    return line, 38
 end
 
 --- Row presets for the Buff Manager forks (spec + conditional variants).
@@ -583,8 +583,8 @@ local DM_ROW_COND = {
 -------------------------------------------------------------------------------
 local _promoteSelGid = nil -- list-page dropdown selection (runtime only)
 
-local function PromoteGroupToProfile(g)
-    if not g or not g.specs or #g.specs == 0 then
+local function PromoteGroupToProfile(group)
+    if not group or not group.specs or #group.specs == 0 then
         return
     end
     -- Combat re-check (the typed-confirm popup can sit open while combat starts): the
@@ -612,15 +612,15 @@ local function PromoteGroupToProfile(g)
     --    Resolution mirrors WriteGroupValues (first member spec's map, per-fkey
     --    fallback to the current default), so the promoted baseline is exactly
     --    what "editing as" the group shows.
-    local store = GetStore()
-    local seed = g.specs[1]
-    if store then
-        for _, entry in ipairs(store) do
-            local def = entry.values and entry.values.default
-            local m = entry.values and entry.values[seed]
+    local storeTbl = GetStore()
+    local seed = group.specs[1]
+    if storeTbl then
+        for _, item in ipairs(storeTbl) do
+            local def = item.values and item.values.default
+            local m = item.values and item.values[seed]
             if def and m then
-                for fkey in pairs(def) do
-                    local v = m[fkey]
+                for fieldKey in pairs(def) do
+                    local v = m[fieldKey]
                     -- Blacklisted paths never apply; match-owned size keys belong to
                     -- the match engine (the layer promote below carries the real
                     -- geometry). NIL_SENT markers promote as-is: the default writer
@@ -628,10 +628,10 @@ local function PromoteGroupToProfile(g)
                     if
                         v ~= nil
                         and type(v) ~= "table"
-                        and not BlacklistedFKey(fkey)
-                        and not MatchOwnedFKey(fkey)
+                        and not BlacklistedFKey(fieldKey)
+                        and not MatchOwnedFKey(fieldKey)
                     then
-                        def[fkey] = v
+                        def[fieldKey] = v
                     end
                 end
             end
@@ -649,9 +649,9 @@ local function PromoteGroupToProfile(g)
     --    tables with the wiped fork buckets.
     local s = GetUnlockStore()
     if s then
-        local layer = s.layouts and s.layouts[g.id]
+        local layerRec = s.layouts and s.layouts[group.id]
         local base = s.baselineLayout
-        if layer then
+        if layerRec then
             local nb = {
                 anchors = {},
                 widthMatch = {},
@@ -660,29 +660,29 @@ local function PromoteGroupToProfile(g)
                 abGrow = {},
                 elems = {},
             }
-            for k, v in pairs(layer.anchors or {}) do
+            for k, v in pairs(layerRec.anchors or {}) do
                 if not IsTBBChildKey(k) then
                     nb.anchors[k] = DeepCopy(v)
                 end
             end
-            for k, v in pairs(layer.widthMatch or {}) do
+            for k, v in pairs(layerRec.widthMatch or {}) do
                 if not IsTBBChildKey(k) then
                     nb.widthMatch[k] = v
                 end
             end
-            for k, v in pairs(layer.heightMatch or {}) do
+            for k, v in pairs(layerRec.heightMatch or {}) do
                 if not IsTBBChildKey(k) then
                     nb.heightMatch[k] = v
                 end
             end
             -- Match extras ride with the links (a fork without them promotes none).
             nb.widthMatchExtra, nb.heightMatchExtra = {}, {}
-            for k, v in pairs(layer.widthMatchExtra or {}) do
+            for k, v in pairs(layerRec.widthMatchExtra or {}) do
                 if not IsTBBChildKey(k) then
                     nb.widthMatchExtra[k] = v
                 end
             end
-            for k, v in pairs(layer.heightMatchExtra or {}) do
+            for k, v in pairs(layerRec.heightMatchExtra or {}) do
                 if not IsTBBChildKey(k) then
                     nb.heightMatchExtra[k] = v
                 end
@@ -698,8 +698,8 @@ local function PromoteGroupToProfile(g)
                 end
                 return out
             end
-            nb.cdmPos = MergePos(layer.cdmPos, base and base.cdmPos)
-            nb.abPos = MergePos(layer.abPos, base and base.abPos)
+            nb.cdmPos = MergePos(layerRec.cdmPos, base and base.cdmPos)
+            nb.abPos = MergePos(layerRec.abPos, base and base.abPos)
             -- A grow store is authoritative only when its layer was harvested
             -- with the owning module loaded (pos store present); effective =
             -- layer's grow, else the baseline's.
@@ -717,28 +717,28 @@ local function PromoteGroupToProfile(g)
             end
             MergeGrow(
                 nb.cdmGrow,
-                layer.cdmPos ~= nil,
-                layer.cdmGrow,
+                layerRec.cdmPos ~= nil,
+                layerRec.cdmGrow,
                 base and base.cdmPos ~= nil,
                 base and base.cdmGrow
             )
             MergeGrow(
                 nb.abGrow,
-                layer.abPos ~= nil,
-                layer.abGrow,
+                layerRec.abPos ~= nil,
+                layerRec.abGrow,
                 base and base.abPos ~= nil,
                 base and base.abGrow
             )
             if base and base.elems then
-                for k, e in pairs(base.elems) do
+                for k, record in pairs(base.elems) do
                     if not LayerSkipsKey(k) then
-                        nb.elems[k] = DeepCopy(e)
+                        nb.elems[k] = DeepCopy(record)
                     end
                 end
             end
-            for k, e in pairs(layer.elems or {}) do
+            for k, record in pairs(layerRec.elems or {}) do
                 if not LayerSkipsKey(k) then
-                    nb.elems[k] = DeepCopy(e)
+                    nb.elems[k] = DeepCopy(record)
                 end
             end
             s.baselineLayout = nb
@@ -751,7 +751,7 @@ local function PromoteGroupToProfile(g)
     --    (when present) becomes the baseline verbatim.
     local bs = GetBmStore()
     if bs then
-        local bl = bs.layouts and bs.layouts[g.id]
+        local bl = bs.layouts and bs.layouts[group.id]
         if bl then
             bs.baselineLayout = DeepCopy(bl)
         end
@@ -762,7 +762,7 @@ local function PromoteGroupToProfile(g)
     -- 3b) DEBUFF MANAGER: same wholesale promote as the BM store.
     local ds = GetDmStore()
     if ds then
-        local dl = ds.layouts and ds.layouts[g.id]
+        local dl = ds.layouts and ds.layouts[group.id]
         if dl then
             ds.baselineLayout = DeepCopy(dl)
         end
@@ -773,12 +773,12 @@ local function PromoteGroupToProfile(g)
     -- 4) DELETE the spec override system: every group and entry. The promoted
     --    values are already live and the promoted layouts are the baselines,
     --    so from here the profile simply IS the override.
-    local groups = GetGroups()
-    if groups then
-        wipe(groups)
+    local groupList = GetGroups()
+    if groupList then
+        wipe(groupList)
     end
-    if store then
-        wipe(store)
+    if storeTbl then
+        wipe(storeTbl)
     end
     RebuildFKeyIndex()
 
@@ -806,96 +806,96 @@ end
 
 --- Page builder for the "Spec Overrides" tab (called from the Profiles &
 --- Presets module registration).
-function CludesUI.SpecOverrides_BuildListPage(parent, startY)
+function CludesUI.SpecOverrides_BuildListPage(host, startY)
     local CreateFrame = CludesUI._Pool.CreateFrame
     local W = CludesUI.Widgets
-    local y = startY
+    local rowY = startY
     -- Skip during a hidden search pre-build: the page is only indexed for its
     -- static labels, and pruning mutates saved profile data -- not something a
     -- read-only indexing pass may do as a side effect.
     if not CludesUI._prebuilding then
         PruneOrphanEntries()
     end
-    local store = GetStore()
-    local groups = GetGroups() or {}
+    local storeTbl = GetStore()
+    local groupList = GetGroups() or {}
     local us = GetUnlockStore()
-    local layoutGroups
+    local layoutList
     if us then
-        for _, g in ipairs(groups) do
-            if us.layouts[g.id] ~= nil then
-                layoutGroups = layoutGroups or {}
-                layoutGroups[#layoutGroups + 1] = g
+        for _, group in ipairs(groupList) do
+            if us.layouts[group.id] ~= nil then
+                layoutList = layoutList or {}
+                layoutList[#layoutList + 1] = group
             end
         end
     end
     local bs = GetBmStore()
-    local bmGroups
+    local bmList
     if bs then
-        for _, g in ipairs(groups) do
-            if bs.layouts[g.id] ~= nil then
-                bmGroups = bmGroups or {}
-                bmGroups[#bmGroups + 1] = g
+        for _, group in ipairs(groupList) do
+            if bs.layouts[group.id] ~= nil then
+                bmList = bmList or {}
+                bmList[#bmList + 1] = group
             end
         end
     end
     local dds = GetDmStore()
-    local dmGroups
+    local dmList
     if dds then
-        for _, g in ipairs(groups) do
-            if dds.layouts[g.id] ~= nil then
-                dmGroups = dmGroups or {}
-                dmGroups[#dmGroups + 1] = g
+        for _, group in ipairs(groupList) do
+            if dds.layouts[group.id] ~= nil then
+                dmList = dmList or {}
+                dmList[#dmList + 1] = group
             end
         end
     end
 
-    if (not store or #store == 0) and not layoutGroups and not bmGroups and not dmGroups then
-        local _, h = W:SectionHeader(parent, L("Spec Overrides"), y)
-        y = y - h
+    if (not storeTbl or #storeTbl == 0) and not layoutList and not bmList and not dmList then
+        local _, h = W:SectionHeader(host, L("Spec Overrides"), rowY)
+        rowY = rowY - h
         local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
-        local hint = CreateFrame("Frame", nil, parent)
-        hint:SetSize(parent:GetWidth() - CONTENT_PAD * 2, 80)
-        hint:SetPoint("TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, y)
-        local fs = CludesUI.MakeFont(hint, 13, nil, 1, 1, 1, 0.5)
-        fs:SetPoint("TOPLEFT", hint, "TOPLEFT", 20, -10)
-        fs:SetWidth(hint:GetWidth() - 40)
+        local hintText = CreateFrame("Frame", nil, host)
+        hintText:SetSize(host:GetWidth() - CONTENT_PAD * 2, 80)
+        hintText:SetPoint("TOPLEFT", host, "TOPLEFT", CONTENT_PAD, rowY)
+        local fs = CludesUI.MakeFont(hintText, 13, nil, 1, 1, 1, 0.5)
+        fs:SetPoint("TOPLEFT", hintText, "TOPLEFT", 20, -10)
+        fs:SetWidth(hintText:GetWidth() - 40)
         fs:SetJustifyH("LEFT")
         fs:SetText(
             L(
                 "No spec overrides yet. Click the spec glyph next to the module search bar, select or create a spec group, and any setting you change while editing as that group is saved here."
             )
         )
-        y = y - 90
-        return -y + 40
+        rowY = rowY - 90
+        return -rowY + 40
     end
 
     -- TOP section: custom unlock modes (one whole-layout fork per group).
-    if layoutGroups then
-        local _, hh = W:SectionHeader(parent, "Custom Layout Modes", y)
-        y = y - hh
-        for _, g in ipairs(layoutGroups) do
-            local _, rh = BuildUnlockLayoutRow(parent, y, g)
-            y = y - rh
+    if layoutList then
+        local _, hh = W:SectionHeader(host, "Custom Layout Modes", rowY)
+        rowY = rowY - hh
+        for _, group in ipairs(layoutList) do
+            local _, rowH = BuildUnlockLayoutRow(host, rowY, group)
+            rowY = rowY - rowH
         end
     end
 
     -- Custom Buff Manager forks (Raid Frames Buff Manager tab).
-    if bmGroups then
-        local _, hh = W:SectionHeader(parent, "Custom Buff Managers", y)
-        y = y - hh
-        for _, g in ipairs(bmGroups) do
-            local _, rh = BuildUnlockLayoutRow(parent, y, g, BM_ROW_SPEC)
-            y = y - rh
+    if bmList then
+        local _, hh = W:SectionHeader(host, "Custom Buff Managers", rowY)
+        rowY = rowY - hh
+        for _, group in ipairs(bmList) do
+            local _, rowH = BuildUnlockLayoutRow(host, rowY, group, BM_ROW_SPEC)
+            rowY = rowY - rowH
         end
     end
 
     -- Custom Debuff Manager forks (Raid Frames Debuff Manager tab).
-    if dmGroups then
-        local _, hh = W:SectionHeader(parent, "Custom Debuff Managers", y)
-        y = y - hh
-        for _, g in ipairs(dmGroups) do
-            local _, rh = BuildUnlockLayoutRow(parent, y, g, DM_ROW_SPEC)
-            y = y - rh
+    if dmList then
+        local _, hh = W:SectionHeader(host, "Custom Debuff Managers", rowY)
+        rowY = rowY - hh
+        for _, group in ipairs(dmList) do
+            local _, rowH = BuildUnlockLayoutRow(host, rowY, group, DM_ROW_SPEC)
+            rowY = rowY - rowH
         end
     end
 
@@ -904,19 +904,19 @@ function CludesUI.SpecOverrides_BuildListPage(parent, startY)
     -- group's entry), so an entry lists under its creating group AND under any
     -- group whose member specs store a value differing from the entry's shared
     -- default. Derived live -- no stored ownership metadata.
-    local function GroupCustomizes(entry, g)
-        if entry.group == g.id then
+    local function GroupCustomizes(item, group)
+        if item.group == group.id then
             return true
         end
-        local def = entry.values and entry.values.default
+        local def = item.values and item.values.default
         if not def then
             return false
         end
-        for _, sid in ipairs(g.specs or {}) do
-            local m = entry.values[sid]
+        for _, sid in ipairs(group.specs or {}) do
+            local m = item.values[sid]
             if m then
-                for fkey, dv in pairs(def) do
-                    if m[fkey] ~= nil and m[fkey] ~= dv then
+                for fieldKey, dv in pairs(def) do
+                    if m[fieldKey] ~= nil and m[fieldKey] ~= dv then
                         return true
                     end
                 end
@@ -925,37 +925,37 @@ function CludesUI.SpecOverrides_BuildListPage(parent, startY)
         return false
     end
     local byGroup, ungrouped = {}, {}
-    for _, entry in ipairs(store or {}) do
+    for _, item in ipairs(storeTbl or {}) do
         local listed = false
-        for _, g in ipairs(groups) do
-            if GroupCustomizes(entry, g) then
-                byGroup[g.id] = byGroup[g.id] or {}
-                table.insert(byGroup[g.id], entry)
+        for _, group in ipairs(groupList) do
+            if GroupCustomizes(item, group) then
+                byGroup[group.id] = byGroup[group.id] or {}
+                table.insert(byGroup[group.id], item)
                 listed = true
             end
         end
         if not listed then
-            ungrouped[#ungrouped + 1] = entry
+            ungrouped[#ungrouped + 1] = item
         end
     end
 
-    for _, g in ipairs(groups) do
-        local list = byGroup[g.id]
+    for _, group in ipairs(groupList) do
+        local list = byGroup[group.id]
         if list and #list > 0 then
-            local _, hh = W:SectionHeader(parent, g.name or "?", y)
-            y = y - hh
-            for _, entry in ipairs(list) do
-                local _, rh = BuildListRow(parent, y, entry)
-                y = y - rh
+            local _, hh = W:SectionHeader(host, group.name or "?", rowY)
+            rowY = rowY - hh
+            for _, item in ipairs(list) do
+                local _, rowH = BuildListRow(host, rowY, item)
+                rowY = rowY - rowH
             end
         end
     end
     if #ungrouped > 0 then
-        local _, hh = W:SectionHeader(parent, "Ungrouped", y)
-        y = y - hh
-        for _, entry in ipairs(ungrouped) do
-            local _, rh = BuildListRow(parent, y, entry)
-            y = y - rh
+        local _, hh = W:SectionHeader(host, "Ungrouped", rowY)
+        rowY = rowY - hh
+        for _, item in ipairs(ungrouped) do
+            local _, rowH = BuildListRow(host, rowY, item)
+            rowY = rowY - rowH
         end
     end
 
@@ -963,91 +963,91 @@ function CludesUI.SpecOverrides_BuildListPage(parent, startY)
     -- SpecStrandedOnEntry). They apply at every boundary but are invisible in
     -- the group buckets above, so each gets a row with a per-value Remove.
     local stranded
-    for _, entry in ipairs(store or {}) do
-        if entry.values then
-            for k in pairs(entry.values) do
-                if type(k) == "number" and SpecStrandedOnEntry(entry, k) then
+    for _, item in ipairs(storeTbl or {}) do
+        if item.values then
+            for k in pairs(item.values) do
+                if type(k) == "number" and SpecStrandedOnEntry(item, k) then
                     stranded = stranded or {}
-                    stranded[#stranded + 1] = { entry = entry, spec = k }
+                    stranded[#stranded + 1] = { entry = item, spec = k }
                 end
             end
         end
     end
     if stranded then
-        table.sort(stranded, function(a, b)
-            return a.spec < b.spec
+        table.sort(stranded, function(a, button)
+            return a.spec < button.spec
         end)
-        local _, hh = W:SectionHeader(parent, "Stranded Overrides", y)
-        y = y - hh
+        local _, hh = W:SectionHeader(host, "Stranded Overrides", rowY)
+        rowY = rowY - hh
         local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
-        local hint = CludesUI.MakeFont(parent, 11, nil, 1, 1, 1, 0.45)
-        hint:SetPoint("TOPLEFT", parent, "TOPLEFT", CONTENT_PAD + 20, y)
-        hint:SetWidth(parent:GetWidth() - CONTENT_PAD * 2 - 40)
-        hint:SetJustifyH("LEFT")
-        hint:SetText(
+        local hintText = CludesUI.MakeFont(host, 11, nil, 1, 1, 1, 0.45)
+        hintText:SetPoint("TOPLEFT", host, "TOPLEFT", CONTENT_PAD + 20, rowY)
+        hintText:SetWidth(host:GetWidth() - CONTENT_PAD * 2 - 40)
+        hintText:SetJustifyH("LEFT")
+        hintText:SetText(
             L(
                 "These specs hold override values that no group's editing mode can reach anymore (left behind by membership changes). They still apply. Remove one to return that spec to the shared default."
             )
         )
-        y = y - 34
+        rowY = rowY - 34
         for _, s in ipairs(stranded) do
-            local _, rh = BuildStrandedRow(parent, y, s.entry, s.spec)
-            y = y - rh
+            local _, rowH = BuildStrandedRow(host, rowY, s.entry, s.spec)
+            rowY = rowY - rowH
         end
     end
 
     -- DANGER ZONE: one-shot "this override IS my profile" rescue. Rendered only
     -- while a group exists to promote.
-    if #groups > 0 then
-        y = y - 14
-        local _, hh = W:SectionHeader(parent, "Promote Override to Profile", y)
-        y = y - hh
+    if #groupList > 0 then
+        rowY = rowY - 14
+        local _, hh = W:SectionHeader(host, "Promote Override to Profile", rowY)
+        rowY = rowY - hh
         local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
-        local hint = CludesUI.MakeFont(parent, 11, nil, 1, 1, 1, 0.45)
-        hint:SetPoint("TOPLEFT", parent, "TOPLEFT", CONTENT_PAD + 20, y)
-        hint:SetWidth(parent:GetWidth() - CONTENT_PAD * 2 - 40)
-        hint:SetJustifyH("LEFT")
-        hint:SetText(
+        local hintText = CludesUI.MakeFont(host, 11, nil, 1, 1, 1, 0.45)
+        hintText:SetPoint("TOPLEFT", host, "TOPLEFT", CONTENT_PAD + 20, rowY)
+        hintText:SetWidth(host:GetWidth() - CONTENT_PAD * 2 - 40)
+        hintText:SetJustifyH("LEFT")
+        hintText:SetText(
             L(
                 "Rescue tool for a profile built inside an override: the selected group's settings and layouts become this profile's own baseline, then ALL spec override groups are deleted. Conditional overrides are not affected."
             )
         )
-        y = y - 44
+        rowY = rowY - 44
         local ddValues, ddOrder = {}, {}
-        for _, gg in ipairs(groups) do
+        for _, gg in ipairs(groupList) do
             ddValues[gg.id] = gg.name or ("Group " .. gg.id)
             ddOrder[#ddOrder + 1] = gg.id
         end
         if not _promoteSelGid or not GroupById(_promoteSelGid) then
-            _promoteSelGid = groups[1].id
+            _promoteSelGid = groupList[1].id
         end
-        local _, dh = W:WideDropdown(parent, "Override to Promote", y, ddValues, function()
+        local _, dh = W:WideDropdown(host, "Override to Promote", rowY, ddValues, function()
             return _promoteSelGid
         end, function(v)
             _promoteSelGid = v
         end, ddOrder, 300)
-        y = y - dh
-        y = y - 6
+        rowY = rowY - dh
+        rowY = rowY - 6
         local BTN_W, BTN_H = 300, 38
         local lerp = CludesUI.lerp
         local DARK_BG = CludesUI.DARK_BG
-        local btn = CreateFrame("Button", nil, parent)
+        local btn = CreateFrame("Button", nil, host)
         btn:SetSize(BTN_W, BTN_H)
-        btn:SetPoint("TOP", parent, "TOP", 0, y)
-        btn:SetFrameLevel(parent:GetFrameLevel() + 5)
+        btn:SetPoint("TOP", host, "TOP", 0, rowY)
+        btn:SetFrameLevel(host:GetFrameLevel() + 5)
         btn:SetAlpha(0.85)
         local bg = CludesUI.SolidTex(btn, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, 0.92)
         bg:SetAllPoints()
         local brd = CludesUI.MakeRoundedBorder(btn, 0.8, 0.2, 0.2, 0.5, bg)
-        local lbl = CludesUI.MakeFont(btn, 13, nil, 0.9, 0.3, 0.3)
-        lbl:SetAlpha(0.7)
-        lbl:SetPoint("CENTER")
-        lbl:SetText(L("Promote Override & Delete ALL Overrides"))
+        local caption = CludesUI.MakeFont(btn, 13, nil, 0.9, 0.3, 0.3)
+        caption:SetAlpha(0.7)
+        caption:SetPoint("CENTER")
+        caption:SetText(L("Promote Override & Delete ALL Overrides"))
         do
             local FADE_DUR = 0.1
             local progress, target = 0, 0
             local function Apply(t)
-                lbl:SetTextColor(lerp(0.9, 1, t), lerp(0.3, 0.35, t), lerp(0.3, 0.35, t), lerp(0.7, 1, t))
+                caption:SetTextColor(lerp(0.9, 1, t), lerp(0.3, 0.35, t), lerp(0.3, 0.35, t), lerp(0.7, 1, t))
                 brd:SetColor(0.8, 0.2, 0.2, lerp(0.5, 0.8, t))
             end
             local function OnUpdate(self, elapsed)
@@ -1090,10 +1090,10 @@ function CludesUI.SpecOverrides_BuildListPage(parent, startY)
             -- values for an unloaded module cannot be written live, and the
             -- store they lived in is deleted at the end -- silent loss.
             local missingSet, missingList
-            for _, entry in ipairs(GetStore() or {}) do
-                for fkey in pairs(entry.values and entry.values.default or {}) do
-                    if not BlacklistedFKey(fkey) and not FKeyLoaded(fkey) then
-                        local folder = SplitFKey(fkey)
+            for _, item in ipairs(GetStore() or {}) do
+                for fieldKey in pairs(item.values and item.values.default or {}) do
+                    if not BlacklistedFKey(fieldKey) and not FKeyLoaded(fieldKey) then
+                        local folder = SplitFKey(fieldKey)
                         if folder and not (missingSet and missingSet[folder]) then
                             missingSet = missingSet or {}
                             missingSet[folder] = true
@@ -1134,108 +1134,108 @@ function CludesUI.SpecOverrides_BuildListPage(parent, startY)
                 end,
             })
         end)
-        y = y - BTN_H - 10
+        rowY = rowY - BTN_H - 10
     end
 
-    return -y + 40
+    return -rowY + 40
 end
 
 --- Page builder for the "Conditional Overrides" tab (mirror of the spec tab).
-function CludesUI.Conditions_BuildListPage(parent, startY)
+function CludesUI.Conditions_BuildListPage(host, startY)
     local CreateFrame = CludesUI._Pool.CreateFrame
     local W = CludesUI.Widgets
-    local y = startY
+    local rowY = startY
     Cond.PruneEntries()
-    local store = Cond.GetStore()
-    local groups = CludesUI.Conditions_GetGroups() or {}
+    local storeTbl = Cond.GetStore()
+    local groupList = CludesUI.Conditions_GetGroups() or {}
     local cs = Cond.GetUnlockStore()
 
-    local layoutGroups
+    local layoutList
     if cs then
-        for _, g in ipairs(groups) do
-            if cs.layouts[g.id] ~= nil then
-                layoutGroups = layoutGroups or {}
-                layoutGroups[#layoutGroups + 1] = g
+        for _, group in ipairs(groupList) do
+            if cs.layouts[group.id] ~= nil then
+                layoutList = layoutList or {}
+                layoutList[#layoutList + 1] = group
             end
         end
     end
     local cbs = GetCondBmStore()
-    local bmGroups
+    local bmList
     if cbs then
-        for _, g in ipairs(groups) do
-            if cbs.layouts[g.id] ~= nil then
-                bmGroups = bmGroups or {}
-                bmGroups[#bmGroups + 1] = g
+        for _, group in ipairs(groupList) do
+            if cbs.layouts[group.id] ~= nil then
+                bmList = bmList or {}
+                bmList[#bmList + 1] = group
             end
         end
     end
     local cds = GetCondDmStore()
-    local dmGroups
+    local dmList
     if cds then
-        for _, g in ipairs(groups) do
-            if cds.layouts[g.id] ~= nil then
-                dmGroups = dmGroups or {}
-                dmGroups[#dmGroups + 1] = g
+        for _, group in ipairs(groupList) do
+            if cds.layouts[group.id] ~= nil then
+                dmList = dmList or {}
+                dmList[#dmList + 1] = group
             end
         end
     end
 
-    if (not store or #store == 0) and not layoutGroups and not bmGroups and not dmGroups and #groups == 0 then
-        local _, h = W:SectionHeader(parent, L("Conditional Overrides"), y)
-        y = y - h
+    if (not storeTbl or #storeTbl == 0) and not layoutList and not bmList and not dmList and #groupList == 0 then
+        local _, h = W:SectionHeader(host, L("Conditional Overrides"), rowY)
+        rowY = rowY - h
         local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
-        local hint = CreateFrame("Frame", nil, parent)
-        hint:SetSize(parent:GetWidth() - CONTENT_PAD * 2, 80)
-        hint:SetPoint("TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, y)
-        local fs = CludesUI.MakeFont(hint, 13, nil, 1, 1, 1, 0.5)
-        fs:SetPoint("TOPLEFT", hint, "TOPLEFT", 20, -10)
-        fs:SetWidth(hint:GetWidth() - 40)
+        local hintText = CreateFrame("Frame", nil, host)
+        hintText:SetSize(host:GetWidth() - CONTENT_PAD * 2, 80)
+        hintText:SetPoint("TOPLEFT", host, "TOPLEFT", CONTENT_PAD, rowY)
+        local fs = CludesUI.MakeFont(hintText, 13, nil, 1, 1, 1, 0.5)
+        fs:SetPoint("TOPLEFT", hintText, "TOPLEFT", 20, -10)
+        fs:SetWidth(hintText:GetWidth() - 40)
         fs:SetJustifyH("LEFT")
         fs:SetText(
             L(
                 "No conditional overrides yet. Click the Conditional Overrides button next to the module search bar and create a conditional group (Dungeon, Raid, Keybind...). Spec overrides always take precedence over conditionals."
             )
         )
-        y = y - 90
-        return -y + 40
+        rowY = rowY - 90
+        return -rowY + 40
     end
 
     -- TOP section: custom unlock modes (one whole-layout fork per group).
-    if layoutGroups then
-        local _, hh = W:SectionHeader(parent, "Custom Layout Modes", y)
-        y = y - hh
-        for _, g in ipairs(layoutGroups) do
+    if layoutList then
+        local _, hh = W:SectionHeader(host, "Custom Layout Modes", rowY)
+        rowY = rowY - hh
+        for _, group in ipairs(layoutList) do
             local CONTENT_PAD = CludesUI.CONTENT_PAD or 40
-            local row = CreateFrame("Frame", nil, parent)
-            row:SetSize(parent:GetWidth() - CONTENT_PAD * 2, 36)
-            row:SetPoint("TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, y)
-            local name = CludesUI.MakeFont(row, 13, nil, 1, 1, 1, 0.9)
-            name:SetPoint("LEFT", row, "LEFT", 20, 0)
-            name:SetText(g.name or "?")
-            local crumb = CludesUI.MakeFont(row, 11, nil, GOLD_R, GOLD_G, GOLD_B, 0.75)
-            crumb:SetPoint("LEFT", name, "RIGHT", 10, 0)
-            crumb:SetText(L("Custom Layout Mode"))
-            local b = CreateFrame("Button", nil, row)
-            b:SetSize(116, 22)
-            b:SetPoint("RIGHT", row, "RIGHT", -20, 0)
-            CludesUI.SolidTex(b, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
-            local brd = CludesUI.MakeRoundedBorder(b, 1, 1, 1, 0.22)
-            local lbl = CludesUI.MakeFont(b, 11, nil, 1, 1, 1, 0.8)
-            lbl:SetPoint("CENTER")
-            lbl:SetText(L("Delete"))
-            b:SetScript("OnEnter", function()
+            local line = CreateFrame("Frame", nil, host)
+            line:SetSize(host:GetWidth() - CONTENT_PAD * 2, 36)
+            line:SetPoint("TOPLEFT", host, "TOPLEFT", CONTENT_PAD, rowY)
+            local label = CludesUI.MakeFont(line, 13, nil, 1, 1, 1, 0.9)
+            label:SetPoint("LEFT", line, "LEFT", 20, 0)
+            label:SetText(group.name or "?")
+            local trail = CludesUI.MakeFont(line, 11, nil, GOLD_R, GOLD_G, GOLD_B, 0.75)
+            trail:SetPoint("LEFT", label, "RIGHT", 10, 0)
+            trail:SetText(L("Custom Layout Mode"))
+            local button = CreateFrame("Button", nil, line)
+            button:SetSize(116, 22)
+            button:SetPoint("RIGHT", line, "RIGHT", -20, 0)
+            CludesUI.SolidTex(button, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
+            local brd = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.22)
+            local caption = CludesUI.MakeFont(button, 11, nil, 1, 1, 1, 0.8)
+            caption:SetPoint("CENTER")
+            caption:SetText(L("Delete"))
+            button:SetScript("OnEnter", function()
                 if brd and brd.SetColor then
                     brd:SetColor(1, 0.35, 0.35, 0.8)
                 end
             end)
-            b:SetScript("OnLeave", function()
+            button:SetScript("OnLeave", function()
                 if brd and brd.SetColor then
                     brd:SetColor(1, 1, 1, 0.22)
                 end
             end)
-            local gid = g.id
-            local gname = g.name or "?"
-            b:SetScript("OnClick", function()
+            local gid = group.id
+            local gname = group.name or "?"
+            button:SetScript("OnClick", function()
                 CludesUI:ShowConfirmPopup({
                     title = L("Delete Custom Layout Mode"),
                     message = string.format(
@@ -1252,42 +1252,42 @@ function CludesUI.Conditions_BuildListPage(parent, startY)
                     end,
                 })
             end)
-            y = y - 38
+            rowY = rowY - 38
         end
     end
 
     -- Custom Buff Manager forks (Raid Frames Buff Manager tab).
-    if bmGroups then
-        local _, hh = W:SectionHeader(parent, "Custom Buff Managers", y)
-        y = y - hh
-        for _, g in ipairs(bmGroups) do
-            local _, rh = BuildUnlockLayoutRow(parent, y, g, BM_ROW_COND)
-            y = y - rh
+    if bmList then
+        local _, hh = W:SectionHeader(host, "Custom Buff Managers", rowY)
+        rowY = rowY - hh
+        for _, group in ipairs(bmList) do
+            local _, rowH = BuildUnlockLayoutRow(host, rowY, group, BM_ROW_COND)
+            rowY = rowY - rowH
         end
     end
 
     -- Custom Debuff Manager forks (Raid Frames Debuff Manager tab).
-    if dmGroups then
-        local _, hh = W:SectionHeader(parent, "Custom Debuff Managers", y)
-        y = y - hh
-        for _, g in ipairs(dmGroups) do
-            local _, rh = BuildUnlockLayoutRow(parent, y, g, DM_ROW_COND)
-            y = y - rh
+    if dmList then
+        local _, hh = W:SectionHeader(host, "Custom Debuff Managers", rowY)
+        rowY = rowY - hh
+        for _, group in ipairs(dmList) do
+            local _, rowH = BuildUnlockLayoutRow(host, rowY, group, DM_ROW_COND)
+            rowY = rowY - rowH
         end
     end
 
     -- Captured value entries bucketed under EVERY conditional group that
     -- customizes them (creator, plus any group whose stored map differs from
     -- the entry's shared default -- same shared-slot rule as the spec list).
-    for _, g in ipairs(groups) do
+    for _, group in ipairs(groupList) do
         local list = {}
-        for _, entry in ipairs(store or {}) do
-            local owns = entry.group == g.id
-            if not owns and entry.values and entry.values.default then
-                local m = entry.values[g.id]
+        for _, item in ipairs(storeTbl or {}) do
+            local owns = item.group == group.id
+            if not owns and item.values and item.values.default then
+                local m = item.values[group.id]
                 if m then
-                    for fkey, dv in pairs(entry.values.default) do
-                        if m[fkey] ~= nil and m[fkey] ~= dv then
+                    for fieldKey, dv in pairs(item.values.default) do
+                        if m[fieldKey] ~= nil and m[fieldKey] ~= dv then
                             owns = true
                             break
                         end
@@ -1295,20 +1295,20 @@ function CludesUI.Conditions_BuildListPage(parent, startY)
                 end
             end
             if owns then
-                list[#list + 1] = entry
+                list[#list + 1] = item
             end
         end
         if #list > 0 then
-            local _, hh = W:SectionHeader(parent, g.name or "?", y)
-            y = y - hh
-            for _, entry in ipairs(list) do
-                local _, rh = BuildListRow(parent, y, entry)
-                y = y - rh
+            local _, hh = W:SectionHeader(host, group.name or "?", rowY)
+            rowY = rowY - hh
+            for _, item in ipairs(list) do
+                local _, rowH = BuildListRow(host, rowY, item)
+                rowY = rowY - rowH
             end
         end
     end
 
-    return -y + 40
+    return -rowY + 40
 end
 
 I.PruneOrphanEntries = PruneOrphanEntries
