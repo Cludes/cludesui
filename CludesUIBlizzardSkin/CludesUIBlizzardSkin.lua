@@ -102,15 +102,15 @@ end
 -- leave them off; their card writes true or false. Enable keys are read and
 -- written through EnabledValue / OnValue, never `~= false` / `= nil` directly.
 local STOCK_WINDOWS = { flagcarrier = true }
-local function EnabledValue(winKey, val)
-    if STOCK_WINDOWS[winKey] then
+local function EnabledValue(windowKey, val)
+    if STOCK_WINDOWS[windowKey] then
         return val == true
     end
     return val ~= false
 end
 -- What "on" is stored as: nil (the install default) or, for a stock window, true.
-local function OnValue(winKey)
-    if STOCK_WINDOWS[winKey] then
+local function OnValue(windowKey)
+    if STOCK_WINDOWS[windowKey] then
         return true
     end
     return nil
@@ -122,8 +122,8 @@ end
 --- PRESERVED while killed. Skins install at load, so crossings need a reload
 --- (callers show the popup). Queue Popup, Pause Menu, and Dragon Riding are not windows and stay untouched.
 function CludesUI.BlizzWindowSkinsKilled()
-    local prof = CludesUI.GetActiveProfileData()
-    return (prof and prof.disableWindowSkins) and true or false
+    local profileTbl = CludesUI.GetActiveProfileData()
+    return (profileTbl and profileTbl.disableWindowSkins) and true or false
 end
 
 -------------------------------------------------------------------------------
@@ -161,43 +161,43 @@ do
         -- WoW Forever: the Progress Legacy window began skinning there.
         BATCHES[#BATCHES + 1] = { marker = "foreverLegacySkinSeeded", keys = { "legacysystem" } }
     end
-    local function SeedBatch(marker, newKeys)
-        if CludesUIDB[marker] then
+    local function SeedBatch(markerTex, newKeys)
+        if CludesUIDB[markerTex] then
             return
         end
-        CludesUIDB[marker] = true
-        local styles = CludesUIDB.blizzWindowSkinStyles
+        CludesUIDB[markerTex] = true
+        local styleMap = CludesUIDB.blizzWindowSkinStyles
         local isNew = {}
         for _, key in ipairs(newKeys) do
             isNew[key] = true
         end
-        local off, modern, cui = 0, 0, 0
-        for winKey, ek in pairs(WINDOW_ENABLE_KEYS) do
+        local isOff, modernStyle, ownStyle = 0, 0, 0
+        for windowKey, engineKey in pairs(WINDOW_ENABLE_KEYS) do
             -- A window that starts at Blizz Default says nothing of the
             -- player's taste.
-            if not isNew[winKey] and not STOCK_WINDOWS[winKey] then
+            if not isNew[windowKey] and not STOCK_WINDOWS[windowKey] then
                 -- A Blizz Default character sheet keeps Blizzard's look.
-                if CludesUIDB[ek] == false or (styles and styles[winKey] == "blizzard") then
-                    off = off + 1
-                elseif styles and styles[winKey] == "modern" then
-                    modern = modern + 1
+                if CludesUIDB[engineKey] == false or (styleMap and styleMap[windowKey] == "blizzard") then
+                    isOff = isOff + 1
+                elseif styleMap and styleMap[windowKey] == "modern" then
+                    modernStyle = modernStyle + 1
                 else
-                    cui = cui + 1
+                    ownStyle = ownStyle + 1
                 end
             end
         end
-        for _, winKey in ipairs(newKeys) do
-            local ek = WINDOW_ENABLE_KEYS[winKey]
-            local touched = CludesUIDB[ek] ~= nil or (styles and styles[winKey] ~= nil)
+        for _, windowKey in ipairs(newKeys) do
+            local engineKey = WINDOW_ENABLE_KEYS[windowKey]
+            local touched = CludesUIDB[engineKey] ~= nil or (styleMap and styleMap[windowKey] ~= nil)
             if not touched then
-                if off > cui and off > modern then
-                    CludesUIDB[ek] = false
-                elseif modern > cui and modern >= off then
-                    if not styles then
-                        styles = {}
-                        CludesUIDB.blizzWindowSkinStyles = styles
+                if isOff > ownStyle and isOff > modernStyle then
+                    CludesUIDB[engineKey] = false
+                elseif modernStyle > ownStyle and modernStyle >= isOff then
+                    if not styleMap then
+                        styleMap = {}
+                        CludesUIDB.blizzWindowSkinStyles = styleMap
                     end
-                    styles[winKey] = "modern"
+                    styleMap[windowKey] = "modern"
                 end
                 -- CUI majority (or tie): nil already means CUI-on.
             end
@@ -206,8 +206,8 @@ do
     -- The font look record a whole-UI style switch writes beside the window
     -- swap (fonts._styleSlots.active); the active profile's lives in the live
     -- font store, every other profile's in its own snapshot.
-    local function FontLookOf(db, name, prof)
-        local fonts = (name == (db.activeProfile or "Default")) and db.fonts or prof.fonts
+    local function FontLookOf(store, name, profileTbl)
+        local fonts = (name == (store.activeProfile or "Default")) and store.fonts or profileTbl.fonts
         local fontStr = type(fonts) == "table" and fonts._styleSlots
         local style = type(fontStr) == "table" and fontStr.active
         if style == "cui" or style == "blizzard" or style == "classic" then
@@ -220,22 +220,22 @@ do
     -- look (no windowSkinLook, no font look record -- a glyph-fallback locale
     -- never writes the latter) -- the active profile adopts the look its
     -- windows are on, so nothing moves.
-    local function AdoptLegacyWindowLook(db)
-        if db.windowLookPerProfile then
+    local function AdoptLegacyWindowLook(store)
+        if store.windowLookPerProfile then
             return
         end
-        db.windowLookPerProfile = true
-        local slots = db.windowSkinStyleSlots
-        local live = type(slots) == "table" and slots.active
-        if not live or live == "cui" or type(db.profiles) ~= "table" then
+        store.windowLookPerProfile = true
+        local slotMap = store.windowSkinStyleSlots
+        local live = type(slotMap) == "table" and slotMap.active
+        if not live or live == "cui" or type(store.profiles) ~= "table" then
             return
         end
-        for name, p in pairs(db.profiles) do
-            if type(p) == "table" and (p.windowSkinLook or FontLookOf(db, name, p)) then
+        for name, p in pairs(store.profiles) do
+            if type(p) == "table" and (p.windowSkinLook or FontLookOf(store, name, p)) then
                 return
             end
         end
-        local p = db.profiles[db.activeProfile or "Default"]
+        local p = store.profiles[store.activeProfile or "Default"]
         if type(p) == "table" then
             p.windowSkinLook = live
         end
@@ -250,49 +250,49 @@ do
     -- row's own adoption did. When the live look is a stock one, the skin the
     -- sheet wore before (CludesUI or Modern) is kept for the CludesUI
     -- look.
-    local function AdoptCharSheetCardStyle(db)
-        if db.charSheetCardStyleAdopted then
+    local function AdoptCharSheetCardStyle(store)
+        if store.charSheetCardStyleAdopted then
             return
         end
-        db.charSheetCardStyleAdopted = true
-        local name = db.activeProfile or "Default"
-        local p = type(db.profiles) == "table" and db.profiles[name]
+        store.charSheetCardStyleAdopted = true
+        local name = store.activeProfile or "Default"
+        local p = type(store.profiles) == "table" and store.profiles[name]
         if type(p) ~= "table" then
             p = nil
         end
-        local stock = db.charSheetUseBlizzardStyle
-            or db.charSheetUseClassicStyle
+        local stock = store.charSheetUseBlizzardStyle
+            or store.charSheetUseClassicStyle
             or (p and (p.charSheetUseBlizzardStyle or p.charSheetUseClassicStyle))
         if
             not stock
             and p
             and CludesUI.IS_FOREVER
-            and not db.foreverCharSheetStyleAdopted
+            and not store.foreverCharSheetStyleAdopted
             and p.charSheetUseBlizzardStyle == nil
             and p.charSheetUseClassicStyle == nil
         then
-            local style = p.windowSkinLook or FontLookOf(db, name, p)
+            local style = p.windowSkinLook or FontLookOf(store, name, p)
             stock = style == "blizzard" or style == "classic"
         end
         if not stock then
             return
         end
-        local styles = db.blizzWindowSkinStyles
-        if type(styles) ~= "table" then
-            styles = {}
-            db.blizzWindowSkinStyles = styles
+        local styleMap = store.blizzWindowSkinStyles
+        if type(styleMap) ~= "table" then
+            styleMap = {}
+            store.blizzWindowSkinStyles = styleMap
         end
-        local slots = db.windowSkinStyleSlots
+        local slotMap = store.windowSkinStyleSlots
         if
-            type(slots) == "table"
-            and slots.active
-            and slots.active ~= "cui"
-            and type(slots.cui) == "table"
-            and slots.cui.charsheetStyle == nil
+            type(slotMap) == "table"
+            and slotMap.active
+            and slotMap.active ~= "cui"
+            and type(slotMap.cui) == "table"
+            and slotMap.cui.charsheetStyle == nil
         then
-            slots.cui.charsheetStyle = styles.charsheet or "cui"
+            slotMap.cui.charsheetStyle = styleMap.charsheet or "cui"
         end
-        styles.charsheet = "blizzard"
+        styleMap.charsheet = "blizzard"
     end
 
     local seedFrame = CreateFrame("Frame")
@@ -323,21 +323,21 @@ do
     end)
 end
 
-function CludesUI.GetBlizzWindowStyle(winKey)
+function CludesUI.GetBlizzWindowStyle(windowKey)
     -- Third-party virtual keys ("tp:<AddonName>", RegisterSkin API) resolve by majority
     -- vote and bypass the kill switch: third-party skinning is its own opt-in, so window-skin settings only pick WHICH theme, never whether it runs.
-    if type(winKey) == "string" and winKey:sub(1, 3) == "tp:" then
+    if type(windowKey) == "string" and windowKey:sub(1, 3) == "tp:" then
         return CludesUI.GetThirdPartySkinStyle()
     end
     if CludesUI.BlizzWindowSkinsKilled() then
         return "off"
     end
-    local ek = WINDOW_ENABLE_KEYS[winKey]
-    if ek and not EnabledValue(winKey, CludesUIDB and CludesUIDB[ek]) then
+    local engineKey = WINDOW_ENABLE_KEYS[windowKey]
+    if engineKey and not EnabledValue(windowKey, CludesUIDB and CludesUIDB[engineKey]) then
         return "off"
     end
-    local styles = CludesUIDB and CludesUIDB.blizzWindowSkinStyles
-    local s = styles and styles[winKey]
+    local styleMap = CludesUIDB and CludesUIDB.blizzWindowSkinStyles
+    local s = styleMap and styleMap[windowKey]
     if s == "modern" or s == "blizzard" then
         return s
     end
@@ -350,39 +350,39 @@ end
 --- returns "off": whether third-party skinning runs is decided by its own toggles in
 --- the SkinAPI dispatcher (reload-bound there), so live refreshes only ever swap between the two themes.
 function CludesUI.GetThirdPartySkinStyle()
-    local cui, modern = 0, 0
-    local styles = CludesUIDB and CludesUIDB.blizzWindowSkinStyles
+    local ownStyle, modernStyle = 0, 0
+    local styleMap = CludesUIDB and CludesUIDB.blizzWindowSkinStyles
     -- Under a stock look (windowSkinStyleSlots.active) a window still votes
     -- as it stands in the CludesUI look's slot, so switching the whole UI
     -- leaves the vote where it was.
-    local slots = CludesUIDB and CludesUIDB.windowSkinStyleSlots
-    local cuiSlot = type(slots) == "table"
-            and slots.active
-            and slots.active ~= "cui"
-            and type(slots.cui) == "table"
-            and slots.cui
+    local slotMap = CludesUIDB and CludesUIDB.windowSkinStyleSlots
+    local cuiSlot = type(slotMap) == "table"
+            and slotMap.active
+            and slotMap.active ~= "cui"
+            and type(slotMap.cui) == "table"
+            and slotMap.cui
         or nil
     local killed = CludesUI.BlizzWindowSkinsKilled()
-    for winKey, ek in pairs(WINDOW_ENABLE_KEYS) do
+    for windowKey, engineKey in pairs(WINDOW_ENABLE_KEYS) do
         -- The inspect sheet renders in the character sheet's style: one vote.
-        if winKey ~= "inspect" then
-            local s = CludesUI.GetBlizzWindowStyle(winKey)
+        if windowKey ~= "inspect" then
+            local s = CludesUI.GetBlizzWindowStyle(windowKey)
             -- A Blizz Default character sheet wears no skin: it votes like
             -- a window that is off.
             if s == "blizzard" then
                 s = "off"
             end
-            if s == "off" and not killed and cuiSlot and EnabledValue(winKey, cuiSlot[ek]) then
-                s = (styles and styles[winKey] == "modern") and "modern" or "cui"
+            if s == "off" and not killed and cuiSlot and EnabledValue(windowKey, cuiSlot[engineKey]) then
+                s = (styleMap and styleMap[windowKey] == "modern") and "modern" or "cui"
             end
             if s == "modern" then
-                modern = modern + 1
+                modernStyle = modernStyle + 1
             elseif s == "cui" then
-                cui = cui + 1
+                ownStyle = ownStyle + 1
             end
         end
     end
-    return (modern > cui) and "modern" or "cui"
+    return (modernStyle > ownStyle) and "modern" or "cui"
 end
 
 -- Turn off every window reskin at once (feature-intro popup's "Disable"). Writes explicit
@@ -391,8 +391,8 @@ function CludesUI.DisableAllBlizzWindowSkins()
     if not CludesUIDB then
         CludesUIDB = {}
     end
-    for _, ek in pairs(WINDOW_ENABLE_KEYS) do
-        CludesUIDB[ek] = false
+    for _, engineKey in pairs(WINDOW_ENABLE_KEYS) do
+        CludesUIDB[engineKey] = false
     end
 end
 
@@ -420,19 +420,19 @@ end
 -- (windowSkinsStockSeeded) converts on the first swap: its windows were on
 -- under the CludesUI look, and legacyStock names the look it belongs to.
 -- dryRun: only report whether the whole UI's window look would change.
-local function WindowInSlots(winKey)
-    return winKey ~= "charsheet" and winKey ~= "inspect"
+local function WindowInSlots(windowKey)
+    return windowKey ~= "charsheet" and windowKey ~= "inspect"
 end
 -- The looks whose first visit skins the windows (winKey nil: the look as a
 -- whole). WoW Forever leaves the micro menu and the bag bar at Blizz Default,
 -- every look a window that starts there.
 local FOREVER_STOCK = { micromenu = true, bagbar = true }
-local function LookSkinsWindows(style, winKey)
-    if winKey and STOCK_WINDOWS[winKey] then
+local function LookSkinsWindows(style, windowKey)
+    if windowKey and STOCK_WINDOWS[windowKey] then
         return false
     end
     if style == "forever" then
-        return not (winKey and FOREVER_STOCK[winKey])
+        return not (windowKey and FOREVER_STOCK[windowKey])
     end
     return style == "cui"
 end
@@ -440,61 +440,61 @@ function CludesUI.SwapWindowSkinStyle(to, dryRun, legacyStock)
     if not CludesUIDB then
         CludesUIDB = {}
     end
-    local slots = CludesUIDB.windowSkinStyleSlots
-    if type(slots) ~= "table" then
-        slots = nil
+    local slotMap = CludesUIDB.windowSkinStyleSlots
+    if type(slotMap) ~= "table" then
+        slotMap = nil
     end
     local rec = CludesUIDB.windowSkinsStockSeeded
-    local from = (slots and slots.active) or (type(rec) == "table" and (legacyStock or "blizzard")) or "cui"
+    local from = (slotMap and slotMap.active) or (type(rec) == "table" and (legacyStock or "blizzard")) or "cui"
     if from == to then
         return false
     end
     if dryRun then
         return true
     end
-    if not slots then
-        slots = {}
+    if not slotMap then
+        slotMap = {}
         if type(rec) == "table" then
-            local cui = {}
-            for winKey, ek in pairs(WINDOW_ENABLE_KEYS) do
-                if WindowInSlots(winKey) then
-                    cui[ek] = rec[winKey] and true or EnabledValue(winKey, CludesUIDB[ek])
+            local ownStyle = {}
+            for windowKey, engineKey in pairs(WINDOW_ENABLE_KEYS) do
+                if WindowInSlots(windowKey) then
+                    ownStyle[engineKey] = rec[windowKey] and true or EnabledValue(windowKey, CludesUIDB[engineKey])
                 end
             end
-            slots.cui = cui
+            slotMap.cui = ownStyle
         end
-        CludesUIDB.windowSkinStyleSlots = slots
+        CludesUIDB.windowSkinStyleSlots = slotMap
     end
     CludesUIDB.windowSkinsStockSeeded = nil
-    local styles = CludesUIDB.blizzWindowSkinStyles
-    if type(styles) ~= "table" then
-        styles = nil
+    local styleMap = CludesUIDB.blizzWindowSkinStyles
+    if type(styleMap) ~= "table" then
+        styleMap = nil
     end
     local result = {}
-    for winKey, ek in pairs(WINDOW_ENABLE_KEYS) do
-        if WindowInSlots(winKey) then
-            result[ek] = EnabledValue(winKey, CludesUIDB[ek])
+    for windowKey, engineKey in pairs(WINDOW_ENABLE_KEYS) do
+        if WindowInSlots(windowKey) then
+            result[engineKey] = EnabledValue(windowKey, CludesUIDB[engineKey])
         end
     end
-    result.charsheetStyle = (styles and styles.charsheet) or "cui"
-    slots[from] = result
-    local saved = slots[to]
+    result.charsheetStyle = (styleMap and styleMap.charsheet) or "cui"
+    slotMap[from] = result
+    local saved = slotMap[to]
     if type(saved) ~= "table" then
         saved = nil
     end
-    for winKey, ek in pairs(WINDOW_ENABLE_KEYS) do
-        if WindowInSlots(winKey) then
-            local val = saved and saved[ek]
+    for windowKey, engineKey in pairs(WINDOW_ENABLE_KEYS) do
+        if WindowInSlots(windowKey) then
+            local val = saved and saved[engineKey]
             if val == nil then
-                val = LookSkinsWindows(to, winKey)
+                val = LookSkinsWindows(to, windowKey)
             end
             -- On = OnValue (nil, the install default, or true for a stock
             -- window), off = false. An explicit branch: `x and false or nil`
             -- can only ever yield nil.
             if val then
-                CludesUIDB[ek] = OnValue(winKey)
+                CludesUIDB[engineKey] = OnValue(windowKey)
             else
-                CludesUIDB[ek] = false
+                CludesUIDB[engineKey] = false
             end
         end
     end
@@ -502,26 +502,26 @@ function CludesUI.SwapWindowSkinStyle(to, dryRun, legacyStock)
     -- before the sheet rode them): Blizz Default on Blizzard Style and
     -- Classic WoW UI; on the CludesUI look and WoW Forever a Blizz Default
     -- goes back to the CludesUI skin and any other pick stays.
-    local cs = saved and saved.charsheetStyle
-    if cs == nil then
+    local classStyle = saved and saved.charsheetStyle
+    if classStyle == nil then
         if not LookSkinsWindows(to) then
-            cs = "blizzard"
-        elseif styles and styles.charsheet == "blizzard" then
-            cs = "cui"
+            classStyle = "blizzard"
+        elseif styleMap and styleMap.charsheet == "blizzard" then
+            classStyle = "cui"
         end
     end
-    if cs == "cui" then
-        if styles then
-            styles.charsheet = nil
+    if classStyle == "cui" then
+        if styleMap then
+            styleMap.charsheet = nil
         end
-    elseif cs then
-        if not styles then
-            styles = {}
-            CludesUIDB.blizzWindowSkinStyles = styles
+    elseif classStyle then
+        if not styleMap then
+            styleMap = {}
+            CludesUIDB.blizzWindowSkinStyles = styleMap
         end
-        styles.charsheet = cs
+        styleMap.charsheet = classStyle
     end
-    slots.active = to
+    slotMap.active = to
     return true
 end
 
@@ -532,11 +532,11 @@ end
 -- once the account's windows have been switched at all; before that there
 -- is nothing to follow (nil). liveFonts: the live font store, for the
 -- active profile (its own snapshot is stale until the next switch).
-function CludesUI.ProfileWindowSkinLook(prof, liveFonts)
-    if type(prof) ~= "table" then
+function CludesUI.ProfileWindowSkinLook(profileTbl, liveFonts)
+    if type(profileTbl) ~= "table" then
         return nil
     end
-    local style = prof.windowSkinLook
+    local style = profileTbl.windowSkinLook
     -- WoW Forever's own window look; a Forever profile imported on retail
     -- renders Blizzard Style there, so it takes that look's windows.
     if style == "forever" then
@@ -545,7 +545,7 @@ function CludesUI.ProfileWindowSkinLook(prof, liveFonts)
     if style == "cui" or style == "blizzard" or style == "classic" then
         return style
     end
-    local fonts = liveFonts or prof.fonts
+    local fonts = liveFonts or profileTbl.fonts
     local fontStr = type(fonts) == "table" and fonts._styleSlots
     style = type(fontStr) == "table" and fontStr.active
     if style == "cui" or style == "blizzard" or style == "classic" then
@@ -564,12 +564,12 @@ end
 -- the look it was made under. Skins install at load: a switch that changes
 -- the look offers the reload (ProfileChangesWindowSkins).
 function CludesUI.ReconcileWindowSkinLook()
-    local db = CludesUIDB
-    if type(db) ~= "table" then
+    local store = CludesUIDB
+    if type(store) ~= "table" then
         return
     end
-    local prof = CludesUI.GetActiveProfileData()
-    local style = CludesUI.ProfileWindowSkinLook(prof, db.fonts)
+    local profileTbl = CludesUI.GetActiveProfileData()
+    local style = CludesUI.ProfileWindowSkinLook(profileTbl, store.fonts)
     if style then
         CludesUI.SwapWindowSkinStyle(style, false, style ~= "cui" and style or nil)
     end

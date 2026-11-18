@@ -160,12 +160,12 @@ local childOf = setmetatable({}, WEAK_KEYS) -- frame -> its templated child
 -- small set, so this is bounded by their pool.
 local overlayFrame = setmetatable({}, WEAK_KEYS)
 -- frame -> the line it last drew, so the same bubble is redrawn when it comes back on screen
-local bound = setmetatable({}, WEAK_KEYS)
-local recent = {} -- chat lines not matched to a bubble yet, oldest first
+local isBound = setmetatable({}, WEAK_KEYS)
+local recentList = {} -- chat lines not matched to a bubble yet, oldest first
 -- frame -> GetTime() of its last appearance. Frame time, constant within a frame, so a bubble
 -- the engine built in the same frame as its chat event still counts as after the line.
-local shownAt = setmetatable({}, WEAK_KEYS)
-local eventFrame
+local shownTime = setmetatable({}, WEAK_KEYS)
+local watcher
 local EnsureFrame
 local retryLeft = 0
 
@@ -314,11 +314,11 @@ local function RawResolveParts()
     end
 end
 
-local function BlizzParts(outer)
-    if not outer then
+local function BlizzParts(bubble)
+    if not bubble then
         return nil, nil
     end
-    _partsOuter, _partsChild, _partsFS = outer, childOf[outer], nil
+    _partsOuter, _partsChild, _partsFS = bubble, childOf[bubble], nil
     local success = pcall(RawResolveParts)
     local childFrame, fontStr = _partsChild, _partsFS
     _partsOuter, _partsChild, _partsFS = nil, nil, nil
@@ -327,7 +327,7 @@ local function BlizzParts(outer)
     end
     -- Cached only once the pair actually resolved, so a frame that raised is retried rather
     -- than remembered as broken.
-    childOf[outer] = childFrame
+    childOf[bubble] = childFrame
     return childFrame, fontStr
 end
 
@@ -469,21 +469,21 @@ end
 
 -- Hides ours and hands the chrome back, so the next speaker on this recycled frame, whose
 -- channel we may not draw, gets Blizzard's balloon. The binding stays for a re-show.
-local function ReleaseBlizz(outer)
-    local frame = ours[outer]
+local function ReleaseBlizz(bubble)
+    local frame = ours[bubble]
     if not frame then
         return
     end
-    ours[outer] = nil
+    ours[bubble] = nil
     frame:ClearAllPoints()
     frame:Hide()
-    local childFrame = BlizzParts(outer)
+    local childFrame = BlizzParts(bubble)
     SetBlizzAlpha(childFrame, 1)
 end
 
 local function ReleaseAll()
-    for outer in pairs(ours) do
-        ReleaseBlizz(outer)
+    for bubble in pairs(ours) do
+        ReleaseBlizz(bubble)
     end
 end
 
@@ -526,8 +526,8 @@ local function Layout(frame, conf)
     end
     local fontSize = conf.fontSize or skinData.fontSize or 12
     BubbleFont(frame.text, filePath, fontSize, flag)
-    local tc = conf.textColor or skinData.textColor
-    local tr, tg, tb = (tc and tc.r) or 1, (tc and tc.g) or 1, (tc and tc.b) or 1
+    local textColor = conf.textColor or skinData.textColor
+    local tr, tg, tb = (textColor and textColor.r) or 1, (textColor and textColor.g) or 1, (textColor and textColor.b) or 1
     -- Blizzard's own colour when it was asked for AND we managed to read it; the configured
     -- one otherwise, so a bubble whose colour would not come back is still readable.
     if conf.followBlizzardColor == true and frame.blizzR then
@@ -553,7 +553,7 @@ local function Layout(frame, conf)
 
     -- Config numbers that end up as frame geometry go through the pixel grid. maxWidth is a
     -- real width (it clamps the FontString), so it is snapped before the measurement.
-    local padding = conf.padding or skinData.padding or 0
+    local pad = conf.padding or skinData.padding or 0
     local maxWidth = Pix.Scale(conf.maxWidth or skinData.maxWidth or 260)
 
     -- Three lines, not one: a secret string cannot be measured, and a single-line fallback
@@ -568,15 +568,15 @@ local function Layout(frame, conf)
     end
     local anchor = conf.nameAnchor or skinData.nameAnchor
     local bottom = anchor:find("BOTTOM") ~= nil
-    local nx = anchor:find("LEFT") and padding or (anchor:find("RIGHT") and -padding or 0)
-    local ny = bottom and padding or -padding
+    local nx = anchor:find("LEFT") and pad or (anchor:find("RIGHT") and -pad or 0)
+    local ny = bottom and pad or -pad
     frame.name:SetWidth(nameW)
     frame.name:SetJustifyH(anchor:find("LEFT") and "LEFT" or (anchor:find("RIGHT") and "RIGHT" or "CENTER"))
     frame.name:ClearAllPoints()
     Pix.Point(frame.name, anchor, frame, anchor, nx + (conf.nameOffsetX or 0), ny + (conf.nameOffsetY or 0))
     frame.text:ClearAllPoints()
     frame.text:SetPoint("CENTER", frame, "CENTER", 0, bottom and nameH / 2 or -nameH / 2)
-    Pix.Size(frame, wid + padding * 2, hgt + nameH + padding * 2)
+    Pix.Size(frame, wid + pad * 2, hgt + nameH + pad * 2)
 end
 
 local _anchorFrame, _anchorTo, _anchorOff
@@ -612,8 +612,8 @@ end
 --  Claiming a Blizzard bubble
 -------------------------------------------------------------------------------
 
-local function OnBlizzHide(outer)
-    ReleaseBlizz(outer)
+local function OnBlizzHide(bubble)
+    ReleaseBlizz(bubble)
 end
 
 -- Newest first: an older unmatched line with the same text is the stale one. Exact match
@@ -621,14 +621,14 @@ end
 -- already standing when a line arrived cannot be the bubble that line produced, and a line of
 -- a channel switched off since claims nothing, so an older line of one still on can.
 local function MatchRecent(textValue, at, conf)
-    for i = #recent, 1, -1 do
-        local e = recent[i]
+    for i = #recentList, 1, -1 do
+        local e = recentList[i]
         if e.at <= at and conf[e.channel] == true and SafeEq(textValue, e.text) then
             return i
         end
     end
-    for i = #recent, 1, -1 do
-        local e = recent[i]
+    for i = #recentList, 1, -1 do
+        local e = recentList[i]
         if e.at <= at and conf[e.channel] == true and SafeContains(textValue, e.text) then
             return i
         end
@@ -636,19 +636,19 @@ local function MatchRecent(textValue, at, conf)
     return nil
 end
 
-local function Draw(outer, childFrame, fontStr, textValue, line)
+local function Draw(bubble, childFrame, fontStr, textValue, line)
     local conf = Cfg()
     if not conf then
         return
     end
 
-    local frame = overlayFrame[outer]
+    local frame = overlayFrame[bubble]
     if not frame then
         frame = NewBubble()
-        overlayFrame[outer] = frame
+        overlayFrame[bubble] = frame
     end
-    frame.outer = outer
-    ours[outer] = frame
+    frame.outer = bubble
+    ours[bubble] = frame
     frame.blizzR, frame.blizzG, frame.blizzB = BlizzTextColor(fontStr)
     frame.speaker, frame.channel = line.speaker, line.channel
     frame.text:SetText(textValue)
@@ -660,7 +660,7 @@ local function Draw(outer, childFrame, fontStr, textValue, line)
     Layout(frame, conf)
     -- Before the chrome is blanked: a claim that cannot anchor leaves Blizzard's bubble drawing.
     if not Anchor(frame, conf) then
-        ReleaseBlizz(outer)
+        ReleaseBlizz(bubble)
         return
     end
     frame:SetAlpha(1)
@@ -671,11 +671,11 @@ end
 -- Draws this bubble if it shows a line of ours: a recent one, which binds it, or the one it
 -- is already bound to, back on screen after going off it. Answers whether it is ours, and
 -- second whether a next-frame read could change that (its text was not set yet).
-local function TryClaim(outer)
-    if ours[outer] then
+local function TryClaim(bubble)
+    if ours[bubble] then
         return true
     end
-    local childFrame, fontStr = BlizzParts(outer)
+    local childFrame, fontStr = BlizzParts(bubble)
     if not childFrame then
         return false
     end
@@ -692,21 +692,21 @@ local function TryClaim(outer)
         return false, true
     end
     local conf = Cfg()
-    local position = MatchRecent(textValue, shownAt[outer] or 0, conf)
+    local position = MatchRecent(textValue, shownTime[bubble] or 0, conf)
     local line
     if position then
-        line = table.remove(recent, position)
+        line = table.remove(recentList, position)
         -- Blizzard's own text, not the chat event's: the client has already formatted it, and
         -- it is what a re-show of this bubble is compared against.
         line.text = textValue
-        bound[outer] = line
+        isBound[bubble] = line
     else
-        line = bound[outer]
+        line = isBound[bubble]
         if not (line and SafeEq(textValue, line.text)) or conf[line.channel] ~= true then
             return false
         end
     end
-    Draw(outer, childFrame, fontStr, textValue, line)
+    Draw(bubble, childFrame, fontStr, textValue, line)
     return true
 end
 
@@ -722,16 +722,16 @@ local function RawHookOuter()
     _hookTarget:HookScript("OnHide", OnBlizzHide)
 end
 
-local function HookOuter(outer)
-    if hooked[outer] then
+local function HookOuter(bubble)
+    if hooked[bubble] then
         return
     end
     -- Marked BEFORE the guarded call, not after: the pair has to stay one-per-frame, and a
     -- retry that found the first HookScript already installed would stack a second OnShow.
     -- Nothing is lost by giving up on a frame that raised here -- a frame we cannot hook is
     -- one we can neither read nor blank, so it was never claimable in the first place.
-    hooked[outer] = true
-    _hookTarget = outer
+    hooked[bubble] = true
+    _hookTarget = bubble
     pcall(RawHookOuter)
     _hookTarget = nil
 end
@@ -744,8 +744,8 @@ end
 
 -- A listed bubble can be hidden (speaker off screen); ours would float at its stale spot, so
 -- that one waits for its OnShow.
-local function BlizzShown(outer)
-    _shownFrame, _shownOut = outer, false
+local function BlizzShown(bubble)
+    _shownFrame, _shownOut = bubble, false
     local success = pcall(RawShown)
     _shownFrame = nil
     return success and _shownOut == true
@@ -762,16 +762,16 @@ local function ClaimListed()
         return
     end
     for i = 1, #entries do
-        local outer = entries[i]
-        if outer then
-            HookOuter(outer)
+        local bubble = entries[i]
+        if bubble then
+            HookOuter(bubble)
             -- First sighting with no stamp: shown before our hook existed on it, so newer
             -- than every line waiting.
-            if not shownAt[outer] then
-                shownAt[outer] = GetTime()
+            if not shownTime[bubble] then
+                shownTime[bubble] = GetTime()
             end
-            if #recent > 0 and BlizzShown(outer) then
-                TryClaim(outer)
+            if #recentList > 0 and BlizzShown(bubble) then
+                TryClaim(bubble)
             end
         end
     end
@@ -781,7 +781,7 @@ end
 -- earliest anything in Lua can react to a frame the engine built after we last looked.
 local function Retry()
     retryLeft = retryLeft - 1
-    if not isActive or suspended or #recent == 0 then
+    if not isActive or suspended or #recentList == 0 then
         retryLeft = 0
         return
     end
@@ -803,18 +803,18 @@ end
 -- frame it appears. When it is not set yet, a next-frame pass reads it again. A readable text
 -- that matches nothing is not retried: recent lines never expire, so that would re-walk every
 -- bubble each time an unrelated one appears.
-function OnBlizzShow(outer)
+function OnBlizzShow(bubble)
     if not isActive or suspended then
         return
     end
     -- Stamped before the early return: a bubble shown while nothing waits must not be claimed
     -- by a later identical line.
-    shownAt[outer] = GetTime()
-    if #recent == 0 and not bound[outer] then
+    shownTime[bubble] = GetTime()
+    if #recentList == 0 and not isBound[bubble] then
         return
     end
-    local claimed, unread = TryClaim(outer)
-    if not claimed and unread and #recent > 0 then
+    local claimed, unread = TryClaim(bubble)
+    if not claimed and unread and #recentList > 0 then
         ScheduleRetry()
     end
 end
@@ -823,7 +823,7 @@ end
 --  Blizzard's CVars
 -------------------------------------------------------------------------------
 
-local cvarPending = false
+local cvarWaiting = false
 local FlushCVars -- forward: AssertCVars defers it, and it calls AssertCVars back
 
 -- Everything that is not the open world, rather than a whitelist of instance types: a type
@@ -843,46 +843,46 @@ end
 -- hand one player's CVar values to another, including to someone who never switched this on.
 -- Nothing is lost by keeping them in memory: PLAYER_LOGOUT restores and clears them before
 -- SavedVariables are ever written, so a record never legitimately outlives its session.
-local savedCVars, heldCVars
+local storedCVars, heldCVarSet
 
 local function SavedCVars()
-    if savedCVars then
-        return savedCVars
+    if storedCVars then
+        return storedCVars
     end
-    savedCVars = {}
-    for _, name in ipairs(BLIZZ_CVARS) do
-        savedCVars[name] = C_CVar.GetCVar(name)
+    storedCVars = {}
+    for _, label in ipairs(BLIZZ_CVARS) do
+        storedCVars[label] = C_CVar.GetCVar(label)
     end
-    return savedCVars
+    return storedCVars
 end
 
 -- Without the held set, "the player set this themselves" cannot be told apart from "we set
 -- it", and every pass would re-pin channels we do not draw to a stale snapshot, silently
 -- undoing the player's own change in Blizzard's options.
 local function HeldCVars()
-    if not heldCVars then
-        heldCVars = {}
+    if not heldCVarSet then
+        heldCVarSet = {}
     end
-    return heldCVars
+    return heldCVarSet
 end
 
 -- Drop both records. Called wherever we are certain nothing is held any more.
 local function ForgetCVars()
-    savedCVars, heldCVars = nil, nil
+    storedCVars, heldCVarSet = nil, nil
 end
 
 -- Hand back every CVar we are currently holding, and drop the claim on it.
 local function RestoreCVars()
-    local saved, held = savedCVars, heldCVars
-    if not saved or not held then
+    local stored, heldSet = storedCVars, heldCVarSet
+    if not stored or not heldSet then
         return
     end
-    for _, name in ipairs(BLIZZ_CVARS) do
-        if held[name] then
-            held[name] = nil
-            local prev = saved[name]
-            if prev and C_CVar.GetCVar(name) ~= prev then
-                CludesUI.ReleaseCVar(name, prev, "CludesUIBlizzardSkin")
+    for _, label in ipairs(BLIZZ_CVARS) do
+        if heldSet[label] then
+            heldSet[label] = nil
+            local prev = stored[label]
+            if prev and C_CVar.GetCVar(label) ~= prev then
+                CludesUI.ReleaseCVar(label, prev, "CludesUIBlizzardSkin")
             end
         end
     end
@@ -891,24 +891,24 @@ end
 -- target is the value this switch has to sit at while we hold it, or nil for "we do not need
 -- it", which hands it back. A value rather than a flag, because hiding bubbles inside an
 -- instance means forcing one OFF and not only on.
-local function ApplyCVar(name, target, saved, held)
-    local current = C_CVar.GetCVar(name)
+local function ApplyCVar(label, target, stored, heldSet)
+    local current = C_CVar.GetCVar(label)
     if target then
         -- Snapshot at the moment we take the CVar over, not once per install: while we were
         -- leaving this channel alone the player may well have changed it themselves, and that
         -- is the value they must get back.
-        if not held[name] then
-            saved[name] = current
-            held[name] = true
+        if not heldSet[label] then
+            stored[label] = current
+            heldSet[label] = true
         end
         if current ~= target then
-            CludesUI.HoldCVar(name, target, "CludesUIBlizzardSkin")
+            CludesUI.HoldCVar(label, target, "CludesUIBlizzardSkin")
         end
-    elseif held[name] then
-        held[name] = nil
-        local prev = saved[name]
+    elseif heldSet[label] then
+        heldSet[label] = nil
+        local prev = stored[label]
         if prev and current ~= prev then
-            CludesUI.ReleaseCVar(name, prev, "CludesUIBlizzardSkin")
+            CludesUI.ReleaseCVar(label, prev, "CludesUIBlizzardSkin")
         end
     end
     -- No third branch on purpose: a CVar we never took over is never written.
@@ -928,23 +928,23 @@ local function AssertCVars()
     suspended = conf.enabled == true and inInst
 
     if InCombatLockdown() then
-        local held = heldCVars
+        local heldSet = heldCVarSet
         -- Off and holding nothing: no CVar is owed to anyone, so a pass that lands here in
         -- combat has nothing to defer. Without this a profile swap in combat would build the
         -- event frame, arm PLAYER_LOGOUT and queue a CVar pass for a player who never switched
         -- the feature on.
-        if conf.enabled ~= true and not (held and next(held)) then
-            cvarPending = false
+        if conf.enabled ~= true and not (heldSet and next(heldSet)) then
+            cvarWaiting = false
             return
         end
         -- Deferred rather than only handled in SetActive: switching things off in combat still
         -- owes the player their CVars back once the fight ends.
-        cvarPending = true
+        cvarWaiting = true
         mod.CombatQueue.Defer("BubbleCVars", FlushCVars)
         EnsureFrame():RegisterEvent("PLAYER_LOGOUT")
         return
     end
-    cvarPending = false
+    cvarWaiting = false
 
     if conf.enabled ~= true then
         RestoreCVars()
@@ -952,8 +952,8 @@ local function AssertCVars()
         return
     end
 
-    local saved = SavedCVars()
-    local held = HeldCVars()
+    local stored = SavedCVars()
+    local heldSet = HeldCVars()
     -- From here on this pass can take a CVar over, so the hand-back has to be armed.
     EnsureFrame():RegisterEvent("PLAYER_LOGOUT")
 
@@ -963,8 +963,8 @@ local function AssertCVars()
             -- has, and hiding them means holding all three switches at zero for the stay.
             -- The snapshot each one was taken over on is untouched, so the loop below hands
             -- them back off it on the way out.
-            for _, name in ipairs(BLIZZ_CVARS) do
-                ApplyCVar(name, "0", saved, held)
+            for _, label in ipairs(BLIZZ_CVARS) do
+                ApplyCVar(label, "0", stored, heldSet)
             end
             return
         end
@@ -975,11 +975,11 @@ local function AssertCVars()
         return
     end
 
-    for _, name in ipairs(BLIZZ_CVARS) do
+    for _, label in ipairs(BLIZZ_CVARS) do
         local wanted
-        if name == "chatBubblesParty" then
+        if label == "chatBubblesParty" then
             wanted = (conf.party == true)
-        elseif name == "chatBubblesRaid" then
+        elseif label == "chatBubblesRaid" then
             wanted = (conf.raid == true)
         else
             -- Blizzard's say/yell/emote/NPC switch: one ticked channel is enough to need it,
@@ -987,18 +987,18 @@ local function AssertCVars()
             -- Independent of party and raid, which have switches of their own.
             wanted = (conf.say == true or conf.yell == true or conf.npc == true or conf.emote == true)
         end
-        ApplyCVar(name, wanted and "1" or nil, saved, held)
+        ApplyCVar(label, wanted and "1" or nil, stored, heldSet)
     end
 end
 
 -- Runs once on the regen edge after a pass that landed in combat.
 function FlushCVars()
-    if cvarPending then
+    if cvarWaiting then
         AssertCVars()
     end
     -- Only kept while the feature runs; a deferred restore leaves nothing behind.
-    if not cvarPending and not isActive and eventFrame then
-        eventFrame:UnregisterEvent("PLAYER_LOGOUT")
+    if not cvarWaiting and not isActive and watcher then
+        watcher:UnregisterEvent("PLAYER_LOGOUT")
     end
 end
 
@@ -1027,8 +1027,8 @@ local function OnEvent(_, evt, ...)
         AssertCVars()
         -- A loading screen ends every bubble, so no line or binding from before it can still
         -- find one (a stale binding could restyle a recycled frame showing the same text).
-        wipe(recent)
-        wipe(bound)
+        wipe(recentList)
+        wipe(isBound)
         if suspended then
             ReleaseAll()
         end
@@ -1048,7 +1048,7 @@ local function OnEvent(_, evt, ...)
         return
     end
 
-    local textValue, sender = ...
+    local textValue, senderName = ...
     -- Every one of the fourteen events above is declared SecretInChatMessagingLockdown in
     -- Blizzard's own ChatInfoDocumentation, and their "text" payload carries no NeverSecret,
     -- so arg1 IS a secret string whenever that lockdown is in effect -- which is a state of
@@ -1062,20 +1062,20 @@ local function OnEvent(_, evt, ...)
 
     -- Sender shares the lockdown; a secret one is dropped, never compared or shown.
     local speaker
-    if type(sender) == "string" and not IsSecret(sender) and sender ~= "" then
-        speaker = Ambiguate(sender, "short")
+    if type(senderName) == "string" and not IsSecret(senderName) and senderName ~= "" then
+        speaker = Ambiguate(senderName, "short")
     end
-    if #recent >= RECENT_MAX then
-        table.remove(recent, 1)
+    if #recentList >= RECENT_MAX then
+        table.remove(recentList, 1)
     end
     local line = { text = textValue, speaker = speaker, channel = channel, at = GetTime() }
-    recent[#recent + 1] = line
+    recentList[#recentList + 1] = line
     -- Claimed right here when the engine built the bubble before dispatching this event,
     -- including the first message of a session, before any frame of theirs is hooked.
     ClaimListed()
     -- Still unmatched: the bubble may land a frame later, or only once its speaker is on
     -- screen, where the OnShow hook finds the line.
-    if recent[#recent] == line then
+    if recentList[#recentList] == line then
         ScheduleRetry()
     end
 end
@@ -1097,10 +1097,10 @@ local function SyncChatEvents(conf)
         local wanted = conf ~= nil and conf[EVENT_CHANNEL[evt]] == true
         if wanted ~= (registeredChat[evt] == true) then
             if wanted then
-                eventFrame:RegisterEvent(evt)
+                watcher:RegisterEvent(evt)
                 registeredChat[evt] = true
             else
-                eventFrame:UnregisterEvent(evt)
+                watcher:UnregisterEvent(evt)
                 registeredChat[evt] = nil
             end
         end
@@ -1108,11 +1108,11 @@ local function SyncChatEvents(conf)
 end
 
 function EnsureFrame()
-    if not eventFrame then
-        eventFrame = CreateFrame("Frame")
-        eventFrame:SetScript("OnEvent", OnEvent)
+    if not watcher then
+        watcher = CreateFrame("Frame")
+        watcher:SetScript("OnEvent", OnEvent)
     end
-    return eventFrame
+    return watcher
 end
 
 local function SetActive(on)
@@ -1123,10 +1123,10 @@ local function SetActive(on)
             return
         end
         isActive = false
-        eventFrame:UnregisterAllEvents()
+        watcher:UnregisterAllEvents()
         wipe(registeredChat)
-        wipe(recent)
-        wipe(bound)
+        wipe(recentList)
+        wipe(isBound)
         ReleaseAll()
         return
     end
@@ -1136,8 +1136,8 @@ local function SetActive(on)
     isActive = true
 
     if firstPass then
-        eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        eventFrame:RegisterEvent("PLAYER_LOGOUT")
+        watcher:RegisterEvent("PLAYER_ENTERING_WORLD")
+        watcher:RegisterEvent("PLAYER_LOGOUT")
 
         -- Seed the hook set over the frames that already exist. Only a frame we have never
         -- seen can still flash, so hooking Blizzard's pool up front rather than one frame per
@@ -1146,11 +1146,11 @@ local function SetActive(on)
             local success, entries = pcall(C_ChatBubbles.GetAllChatBubbles)
             if success and type(entries) == "table" then
                 for i = 1, #entries do
-                    local outer = entries[i]
-                    if outer then
-                        HookOuter(outer)
+                    local bubble = entries[i]
+                    if bubble then
+                        HookOuter(bubble)
                         -- Already standing, so a line typed after switching on cannot claim it.
-                        shownAt[outer] = GetTime()
+                        shownTime[bubble] = GetTime()
                     end
                 end
             end
@@ -1171,41 +1171,41 @@ end
 -- a slider is being dragged, where the full pass below would re-diff the event registrations
 -- and round-trip Blizzard's switches for a change that can only move pixels.
 -- Options preview: one of our own frames, styled by the same Layout as a live bubble.
-local preview, previewOnResize
+local previewFrame, previewOnResize
 
 local function UpdatePreview(force)
-    if not preview or not (force or preview:IsVisible()) then
+    if not previewFrame or not (force or previewFrame:IsVisible()) then
         return
     end
     local conf = Cfg()
     local nameList = conf.showName
-    preview.channel = "say"
-    preview.speaker = (type(nameList) == "table" and next(nameList)) and UnitName("player") or nil
-    if preview.speaker then
-        preview.channel = next(nameList)
+    previewFrame.channel = "say"
+    previewFrame.speaker = (type(nameList) == "table" and next(nameList)) and UnitName("player") or nil
+    if previewFrame.speaker then
+        previewFrame.channel = next(nameList)
     end
-    Layout(preview, conf)
+    Layout(previewFrame, conf)
     if previewOnResize then
-        previewOnResize(preview:GetHeight())
+        previewOnResize(previewFrame:GetHeight())
     end
 end
 
 -- Built lazily the first time the options page asks. onResize gets the bubble height.
 function CB.ShowPreview(hostFrame, onResize)
-    if not preview then
-        preview = NewBubble()
-        preview.text:SetText(CludesUI.L("The quick brown fox jumps over the lazy dog."))
+    if not previewFrame then
+        previewFrame = NewBubble()
+        previewFrame.text:SetText(CludesUI.L("The quick brown fox jumps over the lazy dog."))
     end
-    preview:SetParent(hostFrame)
-    preview:SetFrameStrata(hostFrame:GetFrameStrata())
-    preview:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
-    preview:ClearAllPoints()
-    preview:SetPoint("CENTER", hostFrame, "CENTER", 0, 0)
-    preview:Show()
+    previewFrame:SetParent(hostFrame)
+    previewFrame:SetFrameStrata(hostFrame:GetFrameStrata())
+    previewFrame:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
+    previewFrame:ClearAllPoints()
+    previewFrame:SetPoint("CENTER", hostFrame, "CENTER", 0, 0)
+    previewFrame:Show()
     previewOnResize = nil
     UpdatePreview(true)
     previewOnResize = onResize
-    return preview
+    return previewFrame
 end
 
 function CB.RefreshStyle()
@@ -1258,16 +1258,16 @@ function CB.Refresh()
         return
     end
     if suspended then
-        wipe(recent)
+        wipe(recentList)
         ReleaseAll()
         return
     end
     -- A channel just switched off hands its drawn bubbles straight back to Blizzard. Clearing
     -- the entry being visited is allowed during pairs (ReleaseAll relies on it too).
     local conf = Cfg()
-    for outer, frame in pairs(ours) do
+    for bubble, frame in pairs(ours) do
         if conf[frame.channel] ~= true then
-            ReleaseBlizz(outer)
+            ReleaseBlizz(bubble)
         end
     end
     CB.RefreshStyle()
