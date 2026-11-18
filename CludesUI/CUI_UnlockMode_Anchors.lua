@@ -55,9 +55,9 @@ CUI_NS.unlockParts.Anchors = function(LM)
             local cdm = CludesUI.Lite.GetAddon("CludesUICooldownManager", true)
             local cdmBars = cdm and cdm.db and cdm.db.profile and cdm.db.profile.cdmBars
             if cdmBars and cdmBars.bars then
-                for _, bar in ipairs(cdmBars.bars) do
-                    if bar.key == rawKey then
-                        return bar.growDirection or "CENTER"
+                for _, barCfg in ipairs(cdmBars.bars) do
+                    if barCfg.key == rawKey then
+                        return barCfg.growDirection or "CENTER"
                     end
                 end
             end
@@ -105,9 +105,9 @@ CUI_NS.unlockParts.Anchors = function(LM)
             local cdm = CludesUI.Lite.GetAddon("CludesUICooldownManager", true)
             local cdmBars = cdm and cdm.db and cdm.db.profile and cdm.db.profile.cdmBars
             if cdmBars and cdmBars.bars then
-                for _, bar in ipairs(cdmBars.bars) do
-                    if bar.key == rawKey then
-                        local g = bar.growDirection
+                for _, barCfg in ipairs(cdmBars.bars) do
+                    if barCfg.key == rawKey then
+                        local g = barCfg.growDirection
                         if g and g ~= "CENTER" then
                             return g
                         end
@@ -153,8 +153,8 @@ CUI_NS.unlockParts.Anchors = function(LM)
         if not saved then
             return nil
         end
-        local elem = registeredElements[barId]
-        if elem and elem.ownsPosition then
+        local element = registeredElements[barId]
+        if element and element.ownsPosition then
             return nil
         end
         return saved[barId]
@@ -170,8 +170,8 @@ CUI_NS.unlockParts.Anchors = function(LM)
         if mod.PointAnchors.Recenter(barId, LM) then
             return
         end
-        local elem = registeredElements[barId]
-        if elem and elem.isAnchored and elem.isAnchored() then
+        local element = registeredElements[barId]
+        if element and element.isAnchored and element.isAnchored() then
             return
         end
         local b = LM.GetBarFrame(barId)
@@ -180,8 +180,8 @@ CUI_NS.unlockParts.Anchors = function(LM)
         end
 
         local s = b:GetEffectiveScale()
-        local uiS = UIParent:GetEffectiveScale()
-        local elemScale = s / uiS
+        local uiScale = UIParent:GetEffectiveScale()
+        local elemScale = s / uiScale
 
         local bL = b:GetLeft()
         local bT = b:GetTop()
@@ -232,11 +232,11 @@ CUI_NS.unlockParts.Anchors = function(LM)
         local PPr = Pix or (CludesUI and CludesUI.PP)
         if PPr then
             if anchor == "CENTER" then
-                cRelX = PPr.SnapCenterForDim(cRelX, wid, uiS)
-                cRelY = PPr.SnapCenterForDim(cRelY, hgt, uiS)
+                cRelX = PPr.SnapCenterForDim(cRelX, wid, uiScale)
+                cRelY = PPr.SnapCenterForDim(cRelY, hgt, uiScale)
             else
-                cRelX = PPr.SnapForES(cRelX, uiS)
-                cRelY = PPr.SnapForES(cRelY, uiS)
+                cRelX = PPr.SnapForES(cRelX, uiScale)
+                cRelY = PPr.SnapForES(cRelY, uiScale)
             end
         end
 
@@ -254,35 +254,35 @@ CUI_NS.unlockParts.Anchors = function(LM)
         end)
 
         -- Keep mover's stored center in sync so drag/snap logic stays consistent
-        local m = movers[barId]
-        if m and m._setCenterXY then
-            m._setCenterXY(uiCX, uiCY - uiH)
+        local handle = movers[barId]
+        if handle and handle._setCenterXY then
+            handle._setCenterXY(uiCX, uiCY - uiH)
         end
     end
 
-    local function SetAnchorInfo(childKey, targetKey, side, offsetX, offsetY)
+    local function SetAnchorInfo(childBarKey, targetBarKey, edgeSide, offsetX, offsetY)
         local saved = GetAnchorDB()
         if not saved then
             return
         end
         -- Keep an existing fallback only when re-anchoring to the SAME target; a new target invalidates it (fallback belongs to the link, not the child).
-        local prev = saved[childKey]
-        local fb = prev and prev.target == targetKey and prev.fallback or nil
+        local previous = saved[childBarKey]
+        local fb = previous and previous.target == targetBarKey and previous.fallback or nil
         -- The cross-axis screen edge belongs to the CHILD, not to this link, so it
         -- survives a re-anchor -- unless the new target claims its axis (edge target),
         -- in which case the two would fight over the same coordinate.
-        local edge = prev and prev.edge or nil
+        local edge = previous and previous.edge or nil
         if
             edge
             and edge.key
             and CludesUI._ScreenEdgeAxis
-            and CludesUI._ScreenEdgeAxis(edge.key) == CludesUI._ScreenEdgeAxis(targetKey)
+            and CludesUI._ScreenEdgeAxis(edge.key) == CludesUI._ScreenEdgeAxis(targetBarKey)
         then
             edge = nil
         end
-        saved[childKey] = {
-            target = targetKey,
-            side = side,
+        saved[childBarKey] = {
+            target = targetBarKey,
+            side = edgeSide,
             offsetX = offsetX,
             offsetY = offsetY,
             fallback = fb,
@@ -294,12 +294,12 @@ CUI_NS.unlockParts.Anchors = function(LM)
         CludesUI._EnsureFallbackWatchers()
     end
 
-    local function ClearAnchorInfo(childKey)
+    local function ClearAnchorInfo(childBarKey)
         local saved = GetAnchorDB()
         if not saved then
             return
         end
-        saved[childKey] = nil
+        saved[childBarKey] = nil
         CludesUI._anchorLinksStamp = (CludesUI._anchorLinksStamp or 0) + 1
         CludesUI._EnsureFallbackWatchers()
     end
@@ -309,19 +309,19 @@ CUI_NS.unlockParts.Anchors = function(LM)
         if details ~= nil then
             return true
         end
-        local elem = registeredElements[barId]
-        return elem and elem.isAnchored and elem.isAnchored() or false
+        local element = registeredElements[barId]
+        return element and element.isAnchored and element.isAnchored() or false
     end
 
     -- Element anchored via a module option (e.g. ERB "Anchor To") with keepMoverWhenAnchored:
     -- mover exists but is position-locked (module's anchor owns position) -- drag/nudge/
     -- anchor-link disabled, resize and width/height match stay. On ns: deferred body is at the 200-local cap.
     function mod.IsMoverPosLocked(barId)
-        local elem = registeredElements[barId]
-        if not (elem and elem.keepMoverWhenAnchored) then
+        local element = registeredElements[barId]
+        if not (element and element.keepMoverWhenAnchored) then
             return false
         end
-        return elem.isAnchored and elem.isAnchored() or false
+        return element.isAnchored and element.isAnchored() or false
     end
 
     -- Width/Height match persistent links
@@ -352,29 +352,29 @@ CUI_NS.unlockParts.Anchors = function(LM)
     -- after the target's pad and before the child's own pad comes off. Keyed by the
     -- child element like its link ("w" / "h" axis); stored only while non-zero and
     -- read only while the child's link exists, so a leftover entry does nothing.
-    function CludesUI.GetMatchExtra(axis, key)
-        if not CludesUIDB or not key then
+    function CludesUI.GetMatchExtra(dim, barKey)
+        if not CludesUIDB or not barKey then
             return nil
         end
         local t
-        if axis == "h" then
+        if dim == "h" then
             t = CludesUIDB.unlockHeightMatchExtra
         else
             t = CludesUIDB.unlockWidthMatchExtra
         end
-        local val = t and t[key]
+        local val = t and t[barKey]
         if val and val ~= 0 then
             return val
         end
         return nil
     end
 
-    function MatchH.SetMatchExtra(axis, key, px)
-        if not CludesUIDB or not key then
+    function MatchH.SetMatchExtra(dim, barKey, px)
+        if not CludesUIDB or not barKey then
             return
         end
         local field = "unlockWidthMatchExtra"
-        if axis == "h" then
+        if dim == "h" then
             field = "unlockHeightMatchExtra"
         end
         px = tonumber(px)
@@ -384,7 +384,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
         local t = CludesUIDB[field]
         if not px or px == 0 then
             if t then
-                t[key] = nil
+                t[barKey] = nil
             end
             return
         end
@@ -392,7 +392,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
             t = {}
             CludesUIDB[field] = t
         end
-        t[key] = px
+        t[barKey] = px
     end
 
     function MatchH.GetWidthMatchInfo(barId)
@@ -406,17 +406,17 @@ CUI_NS.unlockParts.Anchors = function(LM)
     end
 
     -- Cycle detect: walk the chain from targetKey; reaching childKey would loop forever.
-    function MatchH.WouldCreateCycle(saved, childKey, targetKey)
-        local visited = {}
-        local current = targetKey
+    function MatchH.WouldCreateCycle(saved, childBarKey, targetBarKey)
+        local seen = {}
+        local current = targetBarKey
         while current do
-            if current == childKey then
+            if current == childBarKey then
                 return true
             end
-            if visited[current] then
+            if seen[current] then
                 return false
             end
-            visited[current] = true
+            seen[current] = true
             current = saved[current]
         end
         return false
@@ -427,20 +427,20 @@ CUI_NS.unlockParts.Anchors = function(LM)
     -- link (0-hop start mirrors call-site direct-target tests, so a bar matched
     -- DIRECTLY to a plain action bar never qualifies). Match DBs key on literal element
     -- keys (no alias resolution), as the anchor cascade reads them; visited guards malformed cycles.
-    function MatchH.ChainDrivenToBar(barId, axis)
+    function MatchH.ChainDrivenToBar(barId, dim)
         if not barId then
             return false
         end
         local saved
-        if axis == "width" then
+        if dim == "width" then
             saved = MatchH.GetWidthMatchDB()
-        elseif axis == "height" then
+        elseif dim == "height" then
             saved = MatchH.GetHeightMatchDB()
         else
             return false
         end
         local abKeys = CludesUI._abBarKeys
-        local visited = {}
+        local seen = {}
         local current = barId
         while current do
             if current:sub(1, 4) == "CDM_" then
@@ -449,57 +449,57 @@ CUI_NS.unlockParts.Anchors = function(LM)
             if abKeys and abKeys[current] and current ~= barId then
                 return true
             end
-            if not saved or visited[current] then
+            if not saved or seen[current] then
                 return false
             end
-            visited[current] = true
+            seen[current] = true
             current = saved[current]
         end
         return false
     end
 
-    function MatchH.SetWidthMatch(childKey, targetKey)
+    function MatchH.SetWidthMatch(childBarKey, targetBarKey)
         local saved = MatchH.GetWidthMatchDB()
         if not saved then
             return
         end
-        if MatchH.WouldCreateCycle(saved, childKey, targetKey) then
+        if MatchH.WouldCreateCycle(saved, childBarKey, targetBarKey) then
             -- Break the cycle: clear the link that targetKey has, then set ours
-            saved[targetKey] = nil
-            MatchH.SetMatchExtra("w", targetKey, nil)
+            saved[targetBarKey] = nil
+            MatchH.SetMatchExtra("w", targetBarKey, nil)
         end
         -- A new match starts at +0.
-        if saved[childKey] ~= targetKey then
-            MatchH.SetMatchExtra("w", childKey, nil)
+        if saved[childBarKey] ~= targetBarKey then
+            MatchH.SetMatchExtra("w", childBarKey, nil)
         end
-        saved[childKey] = targetKey
+        saved[childBarKey] = targetBarKey
     end
 
-    function MatchH.SetHeightMatch(childKey, targetKey)
+    function MatchH.SetHeightMatch(childBarKey, targetBarKey)
         local saved = MatchH.GetHeightMatchDB()
         if not saved then
             return
         end
-        if MatchH.WouldCreateCycle(saved, childKey, targetKey) then
-            saved[targetKey] = nil
-            MatchH.SetMatchExtra("h", targetKey, nil)
+        if MatchH.WouldCreateCycle(saved, childBarKey, targetBarKey) then
+            saved[targetBarKey] = nil
+            MatchH.SetMatchExtra("h", targetBarKey, nil)
         end
-        if saved[childKey] ~= targetKey then
-            MatchH.SetMatchExtra("h", childKey, nil)
+        if saved[childBarKey] ~= targetBarKey then
+            MatchH.SetMatchExtra("h", childBarKey, nil)
         end
-        saved[childKey] = targetKey
+        saved[childBarKey] = targetBarKey
     end
 
-    function MatchH.ClearWidthMatch(childKey)
+    function MatchH.ClearWidthMatch(childBarKey)
         local saved = MatchH.GetWidthMatchDB()
         if not saved then
             return
         end
         -- Persist current width so "0 = match parent" defaults don't revert on reload
         -- (elem.setWidth saves to its own DB); pixel-snapped like every match apply, else an off-grid raw GetWidth propagates through setters/harvests.
-        local elem = registeredElements[childKey]
-        if elem and elem.setWidth then
-            local widget = LM.GetBarFrame(childKey)
+        local element = registeredElements[childBarKey]
+        if element and element.setWidth then
+            local widget = LM.GetBarFrame(childBarKey)
             if widget then
                 local curW = widget:GetWidth()
                 if curW and curW > 0 then
@@ -507,22 +507,22 @@ CUI_NS.unlockParts.Anchors = function(LM)
                     if PPm and PPm.SnapForES then
                         curW = PPm.SnapForES(curW, widget:GetEffectiveScale())
                     end
-                    pcall(elem.setWidth, childKey, curW)
+                    pcall(element.setWidth, childBarKey, curW)
                 end
             end
         end
-        saved[childKey] = nil
-        MatchH.SetMatchExtra("w", childKey, nil)
+        saved[childBarKey] = nil
+        MatchH.SetMatchExtra("w", childBarKey, nil)
     end
 
-    function MatchH.ClearHeightMatch(childKey)
+    function MatchH.ClearHeightMatch(childBarKey)
         local saved = MatchH.GetHeightMatchDB()
         if not saved then
             return
         end
-        local elem = registeredElements[childKey]
-        if elem and elem.setHeight then
-            local widget = LM.GetBarFrame(childKey)
+        local element = registeredElements[childBarKey]
+        if element and element.setHeight then
+            local widget = LM.GetBarFrame(childBarKey)
             if widget then
                 local curH = widget:GetHeight()
                 if curH and curH > 0 then
@@ -530,12 +530,12 @@ CUI_NS.unlockParts.Anchors = function(LM)
                     if PPm and PPm.SnapForES then
                         curH = PPm.SnapForES(curH, widget:GetEffectiveScale())
                     end
-                    pcall(elem.setHeight, childKey, curH)
+                    pcall(element.setHeight, childBarKey, curH)
                 end
             end
         end
-        saved[childKey] = nil
-        MatchH.SetMatchExtra("h", childKey, nil)
+        saved[childBarKey] = nil
+        MatchH.SetMatchExtra("h", childBarKey, nil)
     end
 
     -------------------------------------------------------------------------------
@@ -554,8 +554,8 @@ CUI_NS.unlockParts.Anchors = function(LM)
     -- Returns (disabled_fn, tooltip_fn, rawTooltip) for width/height sliders, composing
     -- with an optional existing disabled/tooltip so both conditions work.
     -- rawTooltip=true tells the widget system to skip DisabledTooltip wrapping.
-    function CludesUI.MatchGuard(barId, axis, existingDisabled, existingTooltip)
-        local isWidth = (axis == "Width" or axis == "width")
+    function CludesUI.MatchGuard(barId, dim, existingDisabled, existingTooltip)
+        local isWidth = (dim == "Width" or dim == "width")
         local getFn = isWidth and CludesUI.GetWidthMatchTarget or CludesUI.GetHeightMatchTarget
         local disabled = function()
             if getFn(barId) then
@@ -595,19 +595,19 @@ CUI_NS.unlockParts.Anchors = function(LM)
     --  PruneStaleLinks -- removes all anchor/match links for a key, as child AND
     --  as target. Call on unregister so nothing points to a ghost key.
     -------------------------------------------------------------------------------
-    local function PruneStaleLinks(key)
+    local function PruneStaleLinks(barKey)
         if not CludesUIDB then
             return
         end
 
         -- Anchors: key as child
-        local anchors = CludesUIDB.unlockAnchors
-        if anchors then
-            anchors[key] = nil
+        local anchorMap = CludesUIDB.unlockAnchors
+        if anchorMap then
+            anchorMap[barKey] = nil
             -- key as target -- scan all children
-            for childKey, details in pairs(anchors) do
-                if details and details.target == key then
-                    anchors[childKey] = nil
+            for childBarKey, details in pairs(anchorMap) do
+                if details and details.target == barKey then
+                    anchorMap[childBarKey] = nil
                 end
             end
         end
@@ -617,20 +617,20 @@ CUI_NS.unlockParts.Anchors = function(LM)
         local wx = CludesUIDB.unlockWidthMatchExtra
         if wx then
             local wmL = CludesUIDB.unlockWidthMatch
-            wx[key] = nil
-            for childKey in pairs(wx) do
-                if wmL and wmL[childKey] == key then
-                    wx[childKey] = nil
+            wx[barKey] = nil
+            for childBarKey in pairs(wx) do
+                if wmL and wmL[childBarKey] == barKey then
+                    wx[childBarKey] = nil
                 end
             end
         end
         local hx = CludesUIDB.unlockHeightMatchExtra
         if hx then
             local hmL = CludesUIDB.unlockHeightMatch
-            hx[key] = nil
-            for childKey in pairs(hx) do
-                if hmL and hmL[childKey] == key then
-                    hx[childKey] = nil
+            hx[barKey] = nil
+            for childBarKey in pairs(hx) do
+                if hmL and hmL[childBarKey] == barKey then
+                    hx[childBarKey] = nil
                 end
             end
         end
@@ -638,10 +638,10 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- Width matches: key as child or target
         local wm = CludesUIDB.unlockWidthMatch
         if wm then
-            wm[key] = nil
-            for childKey, targetKey in pairs(wm) do
-                if targetKey == key then
-                    wm[childKey] = nil
+            wm[barKey] = nil
+            for childBarKey, targetBarKey in pairs(wm) do
+                if targetBarKey == barKey then
+                    wm[childBarKey] = nil
                 end
             end
         end
@@ -649,10 +649,10 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- Height matches: key as child or target
         local hm = CludesUIDB.unlockHeightMatch
         if hm then
-            hm[key] = nil
-            for childKey, targetKey in pairs(hm) do
-                if targetKey == key then
-                    hm[childKey] = nil
+            hm[barKey] = nil
+            for childBarKey, targetBarKey in pairs(hm) do
+                if targetBarKey == barKey then
+                    hm[childBarKey] = nil
                 end
             end
         end
@@ -660,10 +660,10 @@ CUI_NS.unlockParts.Anchors = function(LM)
     CludesUI.PruneStaleLinks = PruneStaleLinks
 
     -- Override UnregisterUnlockElement so cleanup runs on removal (e.g. a deleted CDM bar).
-    function CludesUI:UnregisterUnlockElement(key)
-        self._unlockRegisteredElements[key] = nil
+    function CludesUI:UnregisterUnlockElement(barKey)
+        self._unlockRegisteredElements[barKey] = nil
         self._unlockRegistrationDirty = true
-        PruneStaleLinks(key)
+        PruneStaleLinks(barKey)
     end
 
     -------------------------------------------------------------------------------
@@ -681,23 +681,23 @@ CUI_NS.unlockParts.Anchors = function(LM)
         local plen = #prefixText
 
         -- Returns the shifted key for keys above the removed index, else nil.
-        local function ShiftedKey(key)
-            if type(key) ~= "string" or key:sub(1, plen) ~= prefixText then
+        local function ShiftedKey(barKey)
+            if type(barKey) ~= "string" or barKey:sub(1, plen) ~= prefixText then
                 return nil
             end
-            local idx = tonumber(key:sub(plen + 1))
+            local idx = tonumber(barKey:sub(plen + 1))
             if not idx or idx <= removedIdx or idx > oldCount then
                 return nil
             end
             return prefixText .. (idx - 1)
         end
 
-        local anchors = CludesUIDB.unlockAnchors
-        if anchors then
+        local anchorMap = CludesUIDB.unlockAnchors
+        if anchorMap then
             -- Sever children anchored to the removed key; retarget higher indexes.
-            for childKey, details in pairs(anchors) do
+            for childBarKey, details in pairs(anchorMap) do
                 if details and details.target == removedKey then
-                    anchors[childKey] = nil
+                    anchorMap[childBarKey] = nil
                 elseif details then
                     local nt = ShiftedKey(details.target)
                     if nt then
@@ -706,11 +706,11 @@ CUI_NS.unlockParts.Anchors = function(LM)
                 end
             end
             -- Shift child-role keys down one slot.
-            anchors[removedKey] = nil
+            anchorMap[removedKey] = nil
             for idx = removedIdx + 1, oldCount do
                 local oldK, newK = prefixText .. idx, prefixText .. (idx - 1)
-                anchors[newK] = anchors[oldK]
-                anchors[oldK] = nil
+                anchorMap[newK] = anchorMap[oldK]
+                anchorMap[oldK] = nil
             end
         end
 
@@ -718,13 +718,13 @@ CUI_NS.unlockParts.Anchors = function(LM)
             if not storage then
                 return
             end
-            for childKey, targetKey in pairs(storage) do
-                if targetKey == removedKey then
-                    storage[childKey] = nil
+            for childBarKey, targetBarKey in pairs(storage) do
+                if targetBarKey == removedKey then
+                    storage[childBarKey] = nil
                 else
-                    local nt = ShiftedKey(targetKey)
+                    local nt = ShiftedKey(targetBarKey)
                     if nt then
-                        storage[childKey] = nt
+                        storage[childBarKey] = nt
                     end
                 end
             end
@@ -743,9 +743,9 @@ CUI_NS.unlockParts.Anchors = function(LM)
             if not (links and extras) then
                 return
             end
-            for childKey, targetKey in pairs(links) do
-                if targetKey == removedKey then
-                    extras[childKey] = nil
+            for childBarKey, targetBarKey in pairs(links) do
+                if targetBarKey == removedKey then
+                    extras[childBarKey] = nil
                 end
             end
         end
@@ -778,14 +778,14 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- bars), so a missing TBB_ key may exist for another spec; never prune over one
         -- (bar deletion re-keys/severs via ShiftIndexedAnchorKeys). Global tracking bar
         -- groups (TBBG_) live in a per-profile registry too and may come back.
-        local function MissingForGood(key)
-            if key ~= nil and elems[key] then
+        local function MissingForGood(barKey)
+            if barKey ~= nil and elems[barKey] then
                 return false
             end
-            if type(key) == "string" and key:find("^TBB_%d+$") then
+            if type(barKey) == "string" and barKey:find("^TBB_%d+$") then
                 return false
             end
-            if type(key) == "string" and key:find("^TBBG_") then
+            if type(barKey) == "string" and barKey:find("^TBBG_") then
                 return false
             end
             return true
@@ -798,50 +798,50 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- cast bar and its frame). A live child anchored or matched to one is still
         -- freed, so it is never left following a frame that is not there.
         local resolveFolder = CludesUI.ResolveKeyToFolder
-        local function ufKey(key)
-            return resolveFolder ~= nil and resolveFolder(key) == "CludesUIUnitFrames"
+        local function ufKey(barKey)
+            return resolveFolder ~= nil and resolveFolder(barKey) == "CludesUIUnitFrames"
         end
         -- WoW Forever never builds the House Favor bar or the Battle Res and
         -- Bloodlust icons: a link whose CHILD is one of them stays for the other
         -- client on the same terms (its other end live, a unit frame key, or
         -- another such key).
-        local function clientAbsent(key)
+        local function clientAbsent(barKey)
             return CludesUI.IS_FOREVER == true
-                and (key == "FavorBar" or key == "CUI_BattleRes" or key == "CUI_Bloodlust")
+                and (barKey == "FavorBar" or barKey == "CUI_BattleRes" or barKey == "CUI_Bloodlust")
         end
-        local function LinkGone(childKey, targetKey)
-            local childGone, targetGone = MissingForGood(childKey), MissingForGood(targetKey)
+        local function LinkGone(childBarKey, targetBarKey)
+            local childGone, targetGone = MissingForGood(childBarKey), MissingForGood(targetBarKey)
             if not (childGone or targetGone) then
                 return false
             end
             if
                 childGone
-                and (ufKey(childKey) or clientAbsent(childKey))
-                and (not targetGone or ufKey(targetKey) or clientAbsent(targetKey))
+                and (ufKey(childBarKey) or clientAbsent(childBarKey))
+                and (not targetGone or ufKey(targetBarKey) or clientAbsent(targetBarKey))
             then
                 return false
             end
             return true
         end
 
-        local anchors = CludesUIDB.unlockAnchors
-        if anchors then
-            for childKey, details in pairs(anchors) do
-                local cElem = elems[childKey]
+        local anchorMap = CludesUIDB.unlockAnchors
+        if anchorMap then
+            for childBarKey, details in pairs(anchorMap) do
+                local cElem = elems[childBarKey]
                 if cElem and cElem.ownsPosition then
                     -- A link on an element that places itself (main chat) never
                     -- takes effect, yet the passes that walk the whole store still
                     -- see it: a line to its old target, and a loop that pulls back
                     -- an element linked to it. Dropped on every spec.
-                    anchors[childKey] = nil
-                elseif LinkGone(childKey, details and details.target) and not OverrideProtected(childKey) then
-                    anchors[childKey] = nil
+                    anchorMap[childBarKey] = nil
+                elseif LinkGone(childBarKey, details and details.target) and not OverrideProtected(childBarKey) then
+                    anchorMap[childBarKey] = nil
                 elseif
                     details
                     and details.edge
                     and details.edge.key
-                    and LinkGone(childKey, details.edge.key)
-                    and not OverrideProtected(childKey)
+                    and LinkGone(childBarKey, details.edge.key)
+                    and not OverrideProtected(childBarKey)
                 then
                     -- Unknown cross-axis edge (a string from a build without this
                     -- feature): drop the extra, keep the link itself.
@@ -854,8 +854,8 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- (unless it may match as a source) or a target with no size to follow.
         -- sizeFixedByLook endpoints are only size-locked by the current look
         -- (Blizzard Style unit frames), so their links stay for the other look.
-        local function MatchUnusable(childKey, targetKey)
-            local c, t = elems[childKey], elems[targetKey]
+        local function MatchUnusable(childBarKey, targetBarKey)
+            local c, t = elems[childBarKey], elems[targetBarKey]
             if not (c and t) then
                 return false
             end
@@ -870,22 +870,22 @@ CUI_NS.unlockParts.Anchors = function(LM)
 
         local wm = CludesUIDB.unlockWidthMatch
         if wm then
-            for childKey, targetKey in pairs(wm) do
-                if LinkGone(childKey, targetKey) and not OverrideProtected(childKey) then
-                    wm[childKey] = nil
-                elseif MatchUnusable(childKey, targetKey) then
-                    wm[childKey] = nil
+            for childBarKey, targetBarKey in pairs(wm) do
+                if LinkGone(childBarKey, targetBarKey) and not OverrideProtected(childBarKey) then
+                    wm[childBarKey] = nil
+                elseif MatchUnusable(childBarKey, targetBarKey) then
+                    wm[childBarKey] = nil
                 end
             end
         end
 
         local hm = CludesUIDB.unlockHeightMatch
         if hm then
-            for childKey, targetKey in pairs(hm) do
-                if LinkGone(childKey, targetKey) and not OverrideProtected(childKey) then
-                    hm[childKey] = nil
-                elseif MatchUnusable(childKey, targetKey) then
-                    hm[childKey] = nil
+            for childBarKey, targetBarKey in pairs(hm) do
+                if LinkGone(childBarKey, targetBarKey) and not OverrideProtected(childBarKey) then
+                    hm[childBarKey] = nil
+                elseif MatchUnusable(childBarKey, targetBarKey) then
+                    hm[childBarKey] = nil
                 end
             end
         end
@@ -894,17 +894,17 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- link is gone, so orphans never ride into snapshots and profiles.
         local wx = CludesUIDB.unlockWidthMatchExtra
         if wx then
-            for childKey in pairs(wx) do
-                if not (wm and wm[childKey]) then
-                    wx[childKey] = nil
+            for childBarKey in pairs(wx) do
+                if not (wm and wm[childBarKey]) then
+                    wx[childBarKey] = nil
                 end
             end
         end
         local hx = CludesUIDB.unlockHeightMatchExtra
         if hx then
-            for childKey in pairs(hx) do
-                if not (hm and hm[childKey]) then
-                    hx[childKey] = nil
+            for childBarKey in pairs(hx) do
+                if not (hm and hm[childBarKey]) then
+                    hx[childBarKey] = nil
                 end
             end
         end
@@ -916,110 +916,110 @@ CUI_NS.unlockParts.Anchors = function(LM)
     local _propagatingMatch = false
     CludesUI._propagatingMatch = false
 
-    function MatchH.ApplyWidthMatch(sourceKey, targetKey)
-        local targetElem = registeredElements[targetKey]
-        local targetBar = LM.GetBarFrame(targetKey)
-        local targetW
-        if targetElem and targetElem.getSize then
-            targetW = targetElem.getSize(targetKey)
-        elseif targetBar then
-            targetW = targetBar:GetWidth()
+    function MatchH.ApplyWidthMatch(sourceBarKey, targetBarKey)
+        local targetElement = registeredElements[targetBarKey]
+        local targetFrame = LM.GetBarFrame(targetBarKey)
+        local targetWidth
+        if targetElement and targetElement.getSize then
+            targetWidth = targetElement.getSize(targetBarKey)
+        elseif targetFrame then
+            targetWidth = targetFrame:GetWidth()
         end
         -- Chrome drawn outside the target's own rect (getMatchPad, e.g. a classic
         -- resource bar's frame): the match lines up with what is on screen.
-        if targetW and targetElem and targetElem.getMatchPad then
-            local pw = targetElem.getMatchPad(targetKey)
-            if pw and pw > 0 then
-                targetW = targetW + pw
+        if targetWidth and targetElement and targetElement.getMatchPad then
+            local padW = targetElement.getMatchPad(targetBarKey)
+            if padW and padW > 0 then
+                targetWidth = targetWidth + padW
             end
         end
         -- A width that is not a real number (a frame not laid out yet can read NaN)
         -- skips the match: WoW Forever errors on dividing one.
-        if targetW and CludesUI.PP.IsNum(targetW) and targetW > 0 then
-            local rawW, conv = targetW, 1
+        if targetWidth and CludesUI.PP.IsNum(targetWidth) and targetWidth > 0 then
+            local rawW, conv = targetWidth, 1
             -- Snap to the physical pixel grid with round-to-nearest: PP.Scale
             -- truncates and drops a pixel on float boundary values; SnapForES uses
             -- floor(x/px + 0.5), which is safe.
             local PPm = CludesUI and CludesUI.PP
-            if PPm and PPm.SnapForES and targetBar then
-                targetW = PPm.SnapForES(targetW, targetBar:GetEffectiveScale())
+            if PPm and PPm.SnapForES and targetFrame then
+                targetWidth = PPm.SnapForES(targetWidth, targetFrame:GetEffectiveScale())
             else
-                targetW = floor(targetW + 0.5)
+                targetWidth = floor(targetWidth + 0.5)
             end
             -- Convert target width to source's coordinate space if scales differ
-            local sourceBar = LM.GetBarFrame(sourceKey)
-            if targetBar and sourceBar then
-                local tES = targetBar:GetEffectiveScale()
+            local sourceBar = LM.GetBarFrame(sourceBarKey)
+            if targetFrame and sourceBar then
+                local tES = targetFrame:GetEffectiveScale()
                 local sES = sourceBar:GetEffectiveScale()
                 if math.abs(tES - sES) > 0.001 then
-                    targetW = targetW * tES / sES
+                    targetWidth = targetWidth * tES / sES
                     conv = tES / sES
                 end
             end
-            local sourceElem = registeredElements[sourceKey]
-            if sourceElem and sourceElem.setWidth then
+            local sourceElement = registeredElements[sourceBarKey]
+            if sourceElement and sourceElement.setWidth then
                 -- The source's own outside chrome comes off the width it is set
                 -- to, so what it draws is what matches. Taken off the unsnapped
                 -- width and snapped once: snapping before the subtraction rounds a
                 -- half-pixel pad twice, leaving two bars with the same pad a pixel
                 -- apart.
-                if sourceElem.getMatchPad then
-                    local pw = sourceElem.getMatchPad(sourceKey)
-                    if pw and pw > 0 then
-                        targetW = rawW * conv - pw
+                if sourceElement.getMatchPad then
+                    local padW = sourceElement.getMatchPad(sourceBarKey)
+                    if padW and padW > 0 then
+                        targetWidth = rawW * conv - padW
                         if PPm and PPm.SnapForES and sourceBar then
-                            targetW = PPm.SnapForES(targetW, sourceBar:GetEffectiveScale())
+                            targetWidth = PPm.SnapForES(targetWidth, sourceBar:GetEffectiveScale())
                         else
-                            targetW = floor(targetW + 0.5)
+                            targetWidth = floor(targetWidth + 0.5)
                         end
-                        targetW = math.max(1, targetW)
+                        targetWidth = math.max(1, targetWidth)
                     end
                 end
                 -- The match's Extra Width (whole pixels at the source's scale). targetW
                 -- sits on the source's pixel grid here, so whole pixels keep it there
                 -- with no second rounding. nil = no extra: nothing changes.
-                local ex = CludesUI.GetMatchExtra("w", sourceKey)
+                local ex = CludesUI.GetMatchExtra("w", sourceBarKey)
                 if ex then
                     local es = sourceBar and sourceBar:GetEffectiveScale()
                     local one = (PPm and PPm.perfect and es and es > 0) and (PPm.perfect / es) or 1
-                    targetW = math.max(1, targetW + ex * one)
+                    targetWidth = math.max(1, targetWidth + ex * one)
                 end
                 if LM.isUnlocked then
-                    local scrollBar = LM.GetBarFrame(sourceKey)
+                    local scrollBar = LM.GetBarFrame(sourceBarKey)
                     local savedAlpha = scrollBar and CludesUI._GetFFD(scrollBar).restoreAlpha
                     if scrollBar and not savedAlpha then
                         CludesUI._UnlockSetBarAlpha(scrollBar, 0)
                     end
                     _propagatingMatch = true
                     CludesUI._propagatingMatch = true
-                    pcall(sourceElem.setWidth, sourceKey, targetW)
+                    pcall(sourceElement.setWidth, sourceBarKey, targetWidth)
                     _propagatingMatch = false
                     CludesUI._propagatingMatch = false
-                    CludesUI.RecenterBarAnchor(sourceKey)
+                    CludesUI.RecenterBarAnchor(sourceBarKey)
                     if scrollBar and not savedAlpha then
                         C_Timer.After(0, function()
                             CludesUI._UnlockSetBarAlpha(scrollBar, 1)
                         end)
                     end
-                    local m = movers[sourceKey]
-                    if m then
-                        m:SyncSize()
+                    local handle = movers[sourceBarKey]
+                    if handle then
+                        handle:SyncSize()
                     end
                 else
                     _propagatingMatch = true
                     CludesUI._propagatingMatch = true
-                    pcall(sourceElem.setWidth, sourceKey, targetW)
+                    pcall(sourceElement.setWidth, sourceBarKey, targetWidth)
                     _propagatingMatch = false
                     CludesUI._propagatingMatch = false
-                    if sourceElem.noInitHook then
+                    if sourceElement.noInitHook then
                         -- Self-positioning: its own authority, never the stored CENTER.
-                        if sourceElem.applyPosition and not CludesUI.IsUnlockAnchored(sourceKey) then
-                            pcall(sourceElem.applyPosition, sourceKey)
+                        if sourceElement.applyPosition and not CludesUI.IsUnlockAnchored(sourceBarKey) then
+                            pcall(sourceElement.applyPosition, sourceBarKey)
                         end
-                    elseif sourceElem.loadPosition then
-                        local place = sourceElem.loadPosition(sourceKey)
+                    elseif sourceElement.loadPosition then
+                        local place = sourceElement.loadPosition(sourceBarKey)
                         if place and place.point == "CENTER" and place.relPoint == "CENTER" then
-                            LM.ApplyCenterPosition(sourceKey, place)
+                            LM.ApplyCenterPosition(sourceBarKey, place)
                         end
                     end
                 end
@@ -1027,101 +1027,101 @@ CUI_NS.unlockParts.Anchors = function(LM)
         end
     end
 
-    function MatchH.ApplyHeightMatch(sourceKey, targetKey)
-        local targetElem = registeredElements[targetKey]
-        local targetBar = LM.GetBarFrame(targetKey)
-        local _, targetH
-        if targetElem and targetElem.getSize then
-            _, targetH = targetElem.getSize(targetKey)
-        elseif targetBar then
-            targetH = targetBar:GetHeight()
+    function MatchH.ApplyHeightMatch(sourceBarKey, targetBarKey)
+        local targetElement = registeredElements[targetBarKey]
+        local targetFrame = LM.GetBarFrame(targetBarKey)
+        local _, targetHeight
+        if targetElement and targetElement.getSize then
+            _, targetHeight = targetElement.getSize(targetBarKey)
+        elseif targetFrame then
+            targetHeight = targetFrame:GetHeight()
         end
         -- Outside chrome on the target (getMatchPad), as in ApplyWidthMatch.
-        if targetH and targetElem and targetElem.getMatchPad then
-            local _, ph = targetElem.getMatchPad(targetKey)
+        if targetHeight and targetElement and targetElement.getMatchPad then
+            local _, ph = targetElement.getMatchPad(targetBarKey)
             if ph and ph > 0 then
-                targetH = targetH + ph
+                targetHeight = targetHeight + ph
             end
         end
-        if targetH and CludesUI.PP.IsNum(targetH) and targetH > 0 then
-            local rawH, conv = targetH, 1
+        if targetHeight and CludesUI.PP.IsNum(targetHeight) and targetHeight > 0 then
+            local rawH, conv = targetHeight, 1
             local PPm = CludesUI and CludesUI.PP
-            if PPm and PPm.SnapForES and targetBar then
-                targetH = PPm.SnapForES(targetH, targetBar:GetEffectiveScale())
+            if PPm and PPm.SnapForES and targetFrame then
+                targetHeight = PPm.SnapForES(targetHeight, targetFrame:GetEffectiveScale())
             else
-                targetH = floor(targetH + 0.5)
+                targetHeight = floor(targetHeight + 0.5)
             end
             -- Cross-scale conversion, mirroring ApplyWidthMatch: matched height is a
             -- coordinate in the TARGET's effective scale; a source at another scale
             -- would persist a physically wrong height into its module config.
-            local sourceBar = LM.GetBarFrame(sourceKey)
-            if targetBar and sourceBar then
-                local tES = targetBar:GetEffectiveScale()
+            local sourceBar = LM.GetBarFrame(sourceBarKey)
+            if targetFrame and sourceBar then
+                local tES = targetFrame:GetEffectiveScale()
                 local sES = sourceBar:GetEffectiveScale()
                 if math.abs(tES - sES) > 0.001 then
-                    targetH = targetH * tES / sES
+                    targetHeight = targetHeight * tES / sES
                     conv = tES / sES
                 end
             end
-            local sourceElem = registeredElements[sourceKey]
-            if sourceElem and sourceElem.setHeight then
+            local sourceElement = registeredElements[sourceBarKey]
+            if sourceElement and sourceElement.setHeight then
                 -- The source's own outside chrome comes off the unsnapped height,
                 -- snapped once, as in ApplyWidthMatch.
-                if sourceElem.getMatchPad then
-                    local _, ph = sourceElem.getMatchPad(sourceKey)
+                if sourceElement.getMatchPad then
+                    local _, ph = sourceElement.getMatchPad(sourceBarKey)
                     if ph and ph > 0 then
-                        targetH = rawH * conv - ph
+                        targetHeight = rawH * conv - ph
                         if PPm and PPm.SnapForES and sourceBar then
-                            targetH = PPm.SnapForES(targetH, sourceBar:GetEffectiveScale())
+                            targetHeight = PPm.SnapForES(targetHeight, sourceBar:GetEffectiveScale())
                         else
-                            targetH = floor(targetH + 0.5)
+                            targetHeight = floor(targetHeight + 0.5)
                         end
-                        targetH = math.max(1, targetH)
+                        targetHeight = math.max(1, targetHeight)
                     end
                 end
                 -- The match's Extra Height, as the Extra Width in ApplyWidthMatch.
-                local ex = CludesUI.GetMatchExtra("h", sourceKey)
+                local ex = CludesUI.GetMatchExtra("h", sourceBarKey)
                 if ex then
                     local es = sourceBar and sourceBar:GetEffectiveScale()
                     local one = (PPm and PPm.perfect and es and es > 0) and (PPm.perfect / es) or 1
-                    targetH = math.max(1, targetH + ex * one)
+                    targetHeight = math.max(1, targetHeight + ex * one)
                 end
                 if LM.isUnlocked then
-                    local scrollBar = LM.GetBarFrame(sourceKey)
+                    local scrollBar = LM.GetBarFrame(sourceBarKey)
                     local savedAlpha = scrollBar and CludesUI._GetFFD(scrollBar).restoreAlpha
                     if scrollBar and not savedAlpha then
                         CludesUI._UnlockSetBarAlpha(scrollBar, 0)
                     end
                     _propagatingMatch = true
                     CludesUI._propagatingMatch = true
-                    pcall(sourceElem.setHeight, sourceKey, targetH)
+                    pcall(sourceElement.setHeight, sourceBarKey, targetHeight)
                     _propagatingMatch = false
                     CludesUI._propagatingMatch = false
-                    CludesUI.RecenterBarAnchor(sourceKey)
+                    CludesUI.RecenterBarAnchor(sourceBarKey)
                     if scrollBar and not savedAlpha then
                         C_Timer.After(0, function()
                             CludesUI._UnlockSetBarAlpha(scrollBar, 1)
                         end)
                     end
-                    local m = movers[sourceKey]
-                    if m then
-                        m:SyncSize()
+                    local handle = movers[sourceBarKey]
+                    if handle then
+                        handle:SyncSize()
                     end
                 else
                     _propagatingMatch = true
                     CludesUI._propagatingMatch = true
-                    pcall(sourceElem.setHeight, sourceKey, targetH)
+                    pcall(sourceElement.setHeight, sourceBarKey, targetHeight)
                     _propagatingMatch = false
                     CludesUI._propagatingMatch = false
-                    if sourceElem.noInitHook then
+                    if sourceElement.noInitHook then
                         -- Self-positioning: its own authority, never the stored CENTER.
-                        if sourceElem.applyPosition and not CludesUI.IsUnlockAnchored(sourceKey) then
-                            pcall(sourceElem.applyPosition, sourceKey)
+                        if sourceElement.applyPosition and not CludesUI.IsUnlockAnchored(sourceBarKey) then
+                            pcall(sourceElement.applyPosition, sourceBarKey)
                         end
-                    elseif sourceElem.loadPosition then
-                        local place = sourceElem.loadPosition(sourceKey)
+                    elseif sourceElement.loadPosition then
+                        local place = sourceElement.loadPosition(sourceBarKey)
                         if place and place.point == "CENTER" and place.relPoint == "CENTER" then
-                            LM.ApplyCenterPosition(sourceKey, place)
+                            LM.ApplyCenterPosition(sourceBarKey, place)
                         end
                     end
                 end
@@ -1150,7 +1150,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
             -- Profile swap: skip AB bars entirely (LayoutBar already positioned them from
             -- the new profile; stale resize events would move them wrong). CDM bars pass through (need post-settle).
             local abSkip = CludesUI._abAnchorSuppressed and CludesUI._abBarKeys
-            for k, axis in pairs(keyList) do
+            for k, dim in pairs(keyList) do
                 if abSkip and abSkip[k] then
                 -- skip: AB bar during profile swap
                 else
@@ -1175,7 +1175,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
                         end
                     end
                     -- Propagate with axis filter (nil = all axes)
-                    local propagateAxis = (axis == "all") and nil or axis
+                    local propagateAxis = (dim == "all") and nil or dim
                     LM.PropagateAnchorChain(k, nil, propagateAxis)
                 end -- abSkip else
             end
@@ -1197,14 +1197,14 @@ CUI_NS.unlockParts.Anchors = function(LM)
     --  blessed pair. Skipped in combat/unlock mode (retries next settle).
     -------------------------------------------------------------------------------
     do
-        local function MigrateOne(childKey, details)
+        local function MigrateOne(childBarKey, details)
             local savedEdge
-            if childKey:sub(1, 4) == "CDM_" then
+            if childBarKey:sub(1, 4) == "CDM_" then
                 local t = CludesUI._cdmBarPositions
-                savedEdge = t and t[childKey:sub(5)]
-            elseif CludesUI._abBarKeys and CludesUI._abBarKeys[childKey] then
+                savedEdge = t and t[childBarKey:sub(5)]
+            elseif CludesUI._abBarKeys and CludesUI._abBarKeys[childBarKey] then
                 local t = CludesUI._abBarPositions
-                savedEdge = t and t[childKey]
+                savedEdge = t and t[childBarKey]
             end
             if not savedEdge then
                 return
@@ -1213,26 +1213,26 @@ CUI_NS.unlockParts.Anchors = function(LM)
             if savedEdge.tgtx ~= nil or savedEdge.tgty ~= nil then
                 return
             end
-            local growDir = GetBarGrowDirActual(childKey)
+            local growDir = GetBarGrowDirActual(childBarKey)
             if not growDir or growDir == "CENTER" then
                 return
             end
-            local targetBar = LM.GetBarFrame(details.target)
-            if not targetBar or not targetBar:GetLeft() then
+            local targetFrame = LM.GetBarFrame(details.target)
+            if not targetFrame or not targetFrame:GetLeft() then
                 return
             end
             -- A clamp-held target is not at its saved spot: pairing it would make the
             -- child jump once the target is released. Retries next settle.
-            if CludesUI._RectHeldByClamp(details.target, targetBar) then
+            if CludesUI._RectHeldByClamp(details.target, targetFrame) then
                 return
             end
             -- UIParent-space target geometry, computed like ApplyAnchorPosition's tL/tR/tT/tB so the baseline is comparable.
-            local uiS = UIParent:GetEffectiveScale()
-            local tS = targetBar:GetEffectiveScale()
-            local tL = (targetBar:GetLeft() or 0) * tS / uiS
-            local tR = (targetBar:GetRight() or 0) * tS / uiS
-            local tT = (targetBar:GetTop() or 0) * tS / uiS
-            local tB = (targetBar:GetBottom() or 0) * tS / uiS
+            local uiScale = UIParent:GetEffectiveScale()
+            local tS = targetFrame:GetEffectiveScale()
+            local tL = (targetFrame:GetLeft() or 0) * tS / uiScale
+            local tR = (targetFrame:GetRight() or 0) * tS / uiScale
+            local tT = (targetFrame:GetTop() or 0) * tS / uiScale
+            local tB = (targetFrame:GetBottom() or 0) * tS / uiScale
             savedEdge.tgtx = (tL + tR) / 2
             savedEdge.tgty = (tT + tB) / 2
             savedEdge.tgtL = tL
@@ -1250,16 +1250,16 @@ CUI_NS.unlockParts.Anchors = function(LM)
             if not adb then
                 return
             end
-            for childKey, details in pairs(adb) do
+            for childBarKey, details in pairs(adb) do
                 if
                     details.target
                     and details.mode ~= "POINT"
                     and (
-                        childKey:sub(1, 4) == "CDM_"
-                        or (CludesUI._abBarKeys and CludesUI._abBarKeys[childKey])
+                        childBarKey:sub(1, 4) == "CDM_"
+                        or (CludesUI._abBarKeys and CludesUI._abBarKeys[childBarKey])
                     )
                 then
-                    pcall(MigrateOne, childKey, details)
+                    pcall(MigrateOne, childBarKey, details)
                 end
             end
         end
@@ -1333,45 +1333,45 @@ CUI_NS.unlockParts.Anchors = function(LM)
         end)
     end
 
-    function CludesUI.PropagateWidthMatch(key)
+    function CludesUI.PropagateWidthMatch(barKey)
         local saved = MatchH.GetWidthMatchDB()
         if not saved then
             return
         end
         -- Push width to elements matching this key, then recurse so chained
         -- matches (A -> B -> C) propagate fully.
-        local visited = { [key] = true }
+        local seen = { [barKey] = true }
         local function pushChildren(parentKey)
-            for childKey, tKey in pairs(saved) do
-                if tKey == parentKey and not visited[childKey] then
-                    visited[childKey] = true
-                    MatchH.ApplyWidthMatch(childKey, parentKey)
-                    LM._pendingAnchorKeys[childKey] = "width"
-                    pushChildren(childKey)
+            for childBarKey, tKey in pairs(saved) do
+                if tKey == parentKey and not seen[childBarKey] then
+                    seen[childBarKey] = true
+                    MatchH.ApplyWidthMatch(childBarKey, parentKey)
+                    LM._pendingAnchorKeys[childBarKey] = "width"
+                    pushChildren(childBarKey)
                 end
             end
         end
-        pushChildren(key)
+        pushChildren(barKey)
         ScheduleAnchorBatch()
     end
 
-    function CludesUI.PropagateHeightMatch(key)
+    function CludesUI.PropagateHeightMatch(barKey)
         local saved = MatchH.GetHeightMatchDB()
         if not saved then
             return
         end
-        local visited = { [key] = true }
+        local seen = { [barKey] = true }
         local function pushChildren(parentKey)
-            for childKey, tKey in pairs(saved) do
-                if tKey == parentKey and not visited[childKey] then
-                    visited[childKey] = true
-                    MatchH.ApplyHeightMatch(childKey, parentKey)
-                    LM._pendingAnchorKeys[childKey] = "height"
-                    pushChildren(childKey)
+            for childBarKey, tKey in pairs(saved) do
+                if tKey == parentKey and not seen[childBarKey] then
+                    seen[childBarKey] = true
+                    MatchH.ApplyHeightMatch(childBarKey, parentKey)
+                    LM._pendingAnchorKeys[childBarKey] = "height"
+                    pushChildren(childBarKey)
                 end
             end
         end
-        pushChildren(key)
+        pushChildren(barKey)
         ScheduleAnchorBatch()
     end
 
@@ -1396,7 +1396,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
     -- SetSize; LayoutBar handles its own edge re-anchoring.
     CludesUI._layoutBarResizing = nil
 
-    function CludesUI.NotifyElementResized(key)
+    function CludesUI.NotifyElementResized(barKey)
         if LM.isUnlocked then
             return
         end -- unlock mode owns positioning
@@ -1407,7 +1407,7 @@ CUI_NS.unlockParts.Anchors = function(LM)
         end
         -- When LayoutBar handles positioning (custom grow directions), skip only the
         -- position re-apply below; match propagation and anchor chains still run.
-        local layoutBarHandled = (CludesUI._layoutBarResizing == key)
+        local layoutBarHandled = (CludesUI._layoutBarResizing == barKey)
         -- Suppression scope (spec swap / zone transition): CDM bar icon counts
         -- fluctuate in these windows as Blizzard recycles viewer frames, and a
         -- transient empty width propagated to a width-MATCHED sibling corrupts it until
@@ -1425,26 +1425,26 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- deferred call takes the normal path below and converges, since a size that
         -- no longer changes fires no further OnSizeChanged. One pending re-run per key.
         local nowTime = GetTime()
-        local lastNotify = _resizeNotifyThrottle[key]
+        local lastNotify = _resizeNotifyThrottle[barKey]
         if lastNotify and (nowTime - lastNotify) < RESIZE_THROTTLE_SEC then
             local trail = CludesUI._resizeTrail
-            local lastTrail = trail.at[key]
-            if not trail.pending[key] and (not lastTrail or (nowTime - lastTrail) >= 0.5) then
-                trail.pending[key] = true
+            local lastTrail = trail.at[barKey]
+            if not trail.pending[barKey] and (not lastTrail or (nowTime - lastTrail) >= 0.5) then
+                trail.pending[barKey] = true
                 C_Timer.After(RESIZE_THROTTLE_SEC - (nowTime - lastNotify), function()
-                    trail.pending[key] = nil
-                    trail.at[key] = GetTime()
-                    CludesUI.NotifyElementResized(key)
+                    trail.pending[barKey] = nil
+                    trail.at[barKey] = GetTime()
+                    CludesUI.NotifyElementResized(barKey)
                 end)
             end
             return
         end
-        _resizeNotifyThrottle[key] = nowTime
+        _resizeNotifyThrottle[barKey] = nowTime
 
         -- Detect which axis changed by comparing to last known size
-        local bar = LM.GetBarFrame(key)
-        local curW = bar and bar:GetWidth()
-        local curH = bar and bar:GetHeight()
+        local barCfg = LM.GetBarFrame(barKey)
+        local curW = barCfg and barCfg:GetWidth()
+        local curH = barCfg and barCfg:GetHeight()
         -- A secret size (a frame riding an engine aura container under aura
         -- restriction) can't be compared; the next plain resize converges.
         if issecretvalue and (issecretvalue(curW) or issecretvalue(curH)) then
@@ -1452,46 +1452,46 @@ CUI_NS.unlockParts.Anchors = function(LM)
         end
         curW = curW or 0
         curH = curH or 0
-        local prev = _resizeLastSize[key]
-        local widthChanged = not prev or math.abs(curW - prev.w) > 0.5
-        local heightChanged = not prev or math.abs(curH - prev.h) > 0.5
+        local previous = _resizeLastSize[barKey]
+        local widthChanged = not previous or math.abs(curW - previous.w) > 0.5
+        local heightChanged = not previous or math.abs(curH - previous.h) > 0.5
 
-        _resizeLastSize[key] = { w = curW, h = curH }
+        _resizeLastSize[barKey] = { w = curW, h = curH }
 
         -- Reapply own anchor first: an anchored element may need repositioning after
         -- its own resize. Unanchored elements get the stored CENTER re-applied so the
         -- WoW anchor stays CENTER after rebuilds that may use TOPLEFT. Skip when
         -- LayoutBar already positioned from its captured edge (avoids CENTER->edge->
         -- CENTER round-trip drift), and skip AB bars during profile swap (stale offsets cause a 1-frame blink); CDM bars are not suppressed.
-        local abSwapSkip = CludesUI._abAnchorSuppressed and CludesUI._abBarKeys and CludesUI._abBarKeys[key]
+        local abSwapSkip = CludesUI._abAnchorSuppressed and CludesUI._abBarKeys and CludesUI._abBarKeys[barKey]
         if not layoutBarHandled and not abSwapSkip then
             local anchorDB = GetAnchorDB()
-            local ownAnchor = anchorDB and anchorDB[key]
+            local ownAnchor = anchorDB and anchorDB[barKey]
             if ownAnchor and ownAnchor.target then
                 if CludesUI.ReapplyOwnAnchor then
-                    CludesUI.ReapplyOwnAnchor(key)
+                    CludesUI.ReapplyOwnAnchor(barKey)
                 end
             else
                 -- Unanchored: re-apply stored CENTER position
-                local elem = registeredElements[key]
-                if elem and elem.noInitHook then
+                local element = registeredElements[barKey]
+                if element and element.noInitHook then
                     -- Self-positioning element (noInitHook): stored CENTER was captured
                     -- under whatever footprint was live at save time, and re-applying it
                     -- clobbers the element's own scheme (e.g. raid container's per-tier
                     -- growth-corner anchor). Delegate to its own position authority instead.
-                    if elem.applyPosition then
-                        pcall(elem.applyPosition, key)
+                    if element.applyPosition then
+                        pcall(element.applyPosition, barKey)
                     end
                 else
                     local place
-                    if elem and elem.loadPosition then
-                        place = elem.loadPosition(key)
+                    if element and element.loadPosition then
+                        place = element.loadPosition(barKey)
                     else
                         local saved = LM.GetPositionDB()
-                        place = saved and saved[key]
+                        place = saved and saved[barKey]
                     end
                     if place and place.point == "CENTER" and place.relPoint == "CENTER" then
-                        LM.ApplyCenterPosition(key, place)
+                        LM.ApplyCenterPosition(barKey, place)
                     end
                 end
             end
@@ -1503,57 +1503,57 @@ CUI_NS.unlockParts.Anchors = function(LM)
             local wdb = MatchH.GetWidthMatchDB()
             if wdb then
                 local hasChildren = false
-                for childKey, tKey in pairs(wdb) do
-                    if tKey == key then
+                for childBarKey, tKey in pairs(wdb) do
+                    if tKey == barKey then
                         hasChildren = true
                         break
                     end
                 end
                 if hasChildren then
-                    CludesUI.PropagateWidthMatch(key)
+                    CludesUI.PropagateWidthMatch(barKey)
                 end
                 -- Re-pull from own target if this element is a width-match child
-                local ownTarget = wdb[key]
+                local ownTarget = wdb[barKey]
                 if ownTarget and widthChanged then
-                    MatchH.ApplyWidthMatch(key, ownTarget)
+                    MatchH.ApplyWidthMatch(barKey, ownTarget)
                 end
             end
             local hdb = MatchH.GetHeightMatchDB()
             if hdb then
                 local hasChildren = false
-                for childKey, tKey in pairs(hdb) do
-                    if tKey == key then
+                for childBarKey, tKey in pairs(hdb) do
+                    if tKey == barKey then
                         hasChildren = true
                         break
                     end
                 end
                 if hasChildren then
-                    CludesUI.PropagateHeightMatch(key)
+                    CludesUI.PropagateHeightMatch(barKey)
                 end
                 -- Re-pull from own target if this element is a height-match child
-                local ownHTarget = hdb[key]
+                local ownHTarget = hdb[barKey]
                 if ownHTarget and heightChanged then
-                    MatchH.ApplyHeightMatch(key, ownHTarget)
+                    MatchH.ApplyHeightMatch(barKey, ownHTarget)
                 end
             end
         end
 
         -- Propagate the anchor chain to children anchored to this element, using the
         -- detected axis so children on the unaffected axis don't move.
-        local axis
+        local dim
         if widthChanged and heightChanged then
-            axis = "all"
+            dim = "all"
         elseif widthChanged then
-            axis = "width"
+            dim = "width"
         elseif heightChanged then
-            axis = "height"
+            dim = "height"
         end
-        if axis then
-            local existing = LM._pendingAnchorKeys[key]
-            if existing and existing ~= axis then
-                LM._pendingAnchorKeys[key] = "all"
+        if dim then
+            local existing = LM._pendingAnchorKeys[barKey]
+            if existing and existing ~= dim then
+                LM._pendingAnchorKeys[barKey] = "all"
             else
-                LM._pendingAnchorKeys[key] = axis
+                LM._pendingAnchorKeys[barKey] = dim
             end
             ScheduleAnchorBatch()
             -- Arm the settle debounce so a forced full re-apply lands once the chain
@@ -1579,46 +1579,46 @@ CUI_NS.unlockParts.Anchors = function(LM)
     -- State on the addon table: this file sits at the 200-local cap.
     CludesUI._matchPad = { w = {}, h = {}, pending = {}, spare = {}, armed = false }
     CludesUI._matchPad.flush = function()
-        local mp = CludesUI._matchPad
-        mp.armed = false
-        local batch = mp.pending
-        mp.pending, mp.spare = mp.spare, batch
-        for k, m in pairs(batch) do
+        local matchPad = CludesUI._matchPad
+        matchPad.armed = false
+        local batch = matchPad.pending
+        matchPad.pending, matchPad.spare = matchPad.spare, batch
+        for k, handle in pairs(batch) do
             batch[k] = nil
-            CludesUI.ReapplyMatchPads(k, m)
+            CludesUI.ReapplyMatchPads(k, handle)
         end
     end
-    function CludesUI.MatchPadChanged(key)
-        if LM.isUnlocked or not key then
+    function CludesUI.MatchPadChanged(barKey)
+        if LM.isUnlocked or not barKey then
             return
         end
-        local elem = registeredElements[key]
-        if not (elem and elem.getMatchPad) then
+        local element = registeredElements[barKey]
+        if not (element and element.getMatchPad) then
             return
         end
-        local pw, ph = elem.getMatchPad(key)
-        pw, ph = pw or 0, ph or 0
-        local mp = CludesUI._matchPad
-        local ow, oh = mp.w[key], mp.h[key]
-        mp.w[key], mp.h[key] = pw, ph
-        if ow == nil or (ow == pw and oh == ph) then
+        local padW, ph = element.getMatchPad(barKey)
+        padW, ph = padW or 0, ph or 0
+        local matchPad = CludesUI._matchPad
+        local ow, oh = matchPad.w[barKey], matchPad.h[barKey]
+        matchPad.w[barKey], matchPad.h[barKey] = padW, ph
+        if ow == nil or (ow == padW and oh == ph) then
             return
         end
         if CludesUI._abAnchorSuppressed then
             return
         end
-        local m = ((ow ~= pw) and 1 or 0) + ((oh ~= ph) and 2 or 0)
-        if elem.linkedDimensions then
-            m = 3
+        local handle = ((ow ~= padW) and 1 or 0) + ((oh ~= ph) and 2 or 0)
+        if element.linkedDimensions then
+            handle = 3
         end
-        local cur = mp.pending[key]
-        if cur and cur ~= m then
-            m = 3
+        local cur = matchPad.pending[barKey]
+        if cur and cur ~= handle then
+            handle = 3
         end
-        mp.pending[key] = m
-        if not mp.armed then
-            mp.armed = true
-            C_Timer.After(0, mp.flush)
+        matchPad.pending[barKey] = handle
+        if not matchPad.armed then
+            matchPad.armed = true
+            C_Timer.After(0, matchPad.flush)
         end
     end
 
@@ -1628,32 +1628,32 @@ CUI_NS.unlockParts.Anchors = function(LM)
     -- NotifyElementResized cannot do this, since its self re-pull keys on a size
     -- change. Never in unlock mode; a no-op for elements in no match. mask (the
     -- notifier's): 1 = width only, 2 = height only, nil = both.
-    function CludesUI.ReapplyMatchPads(key, mask)
-        if LM.isUnlocked or not key then
+    function CludesUI.ReapplyMatchPads(barKey, mask)
+        if LM.isUnlocked or not barKey then
             return
         end
         -- An explicit call covers a queued one, and the pad it applies is the one
         -- on record, so the rebuild it triggers does not queue the same pass again.
-        local mp = CludesUI._matchPad
-        mp.pending[key] = nil
-        local pe = registeredElements[key]
+        local matchPad = CludesUI._matchPad
+        matchPad.pending[barKey] = nil
+        local pe = registeredElements[barKey]
         if pe and pe.getMatchPad then
-            local pw, ph = pe.getMatchPad(key)
-            mp.w[key], mp.h[key] = pw or 0, ph or 0
+            local padW, ph = pe.getMatchPad(barKey)
+            matchPad.w[barKey], matchPad.h[barKey] = padW or 0, ph or 0
         end
         local wdb = MatchH.GetWidthMatchDB()
         if wdb and mask ~= 2 then
-            if wdb[key] then
-                MatchH.ApplyWidthMatch(key, wdb[key])
+            if wdb[barKey] then
+                MatchH.ApplyWidthMatch(barKey, wdb[barKey])
             end
-            CludesUI.PropagateWidthMatch(key)
+            CludesUI.PropagateWidthMatch(barKey)
         end
         local hdb = MatchH.GetHeightMatchDB()
         if hdb and mask ~= 1 then
-            if hdb[key] then
-                MatchH.ApplyHeightMatch(key, hdb[key])
+            if hdb[barKey] then
+                MatchH.ApplyHeightMatch(barKey, hdb[barKey])
             end
-            CludesUI.PropagateHeightMatch(key)
+            CludesUI.PropagateHeightMatch(barKey)
         end
     end
 
@@ -1662,63 +1662,63 @@ CUI_NS.unlockParts.Anchors = function(LM)
     -- then re-push its match children and anchor chain exactly as a fresh match pick
     -- does. ReapplyMatchPads cannot serve here, it stands down in unlock mode. File
     -- scope because CreateMover sits at Lua 5.1's 60-upvalue cap.
-    function MatchH.CommitMatchExtra(axis, key, px)
-        if not key then
+    function MatchH.CommitMatchExtra(dim, barKey, px)
+        if not barKey then
             return
         end
-        local isH = (axis == "h")
+        local isH = (dim == "h")
         local target
         if isH then
-            target = MatchH.GetHeightMatchInfo(key)
+            target = MatchH.GetHeightMatchInfo(barKey)
         else
-            target = MatchH.GetWidthMatchInfo(key)
+            target = MatchH.GetWidthMatchInfo(barKey)
         end
         if not target then
             return
         end
         local ax = isH and "h" or "w"
         px = math.floor(math.max(-100, math.min(100, tonumber(px) or 0)) + 0.5)
-        if px == (CludesUI.GetMatchExtra(ax, key) or 0) then
+        if px == (CludesUI.GetMatchExtra(ax, barKey) or 0) then
             return
         end
-        MatchH.SetMatchExtra(ax, key, px)
+        MatchH.SetMatchExtra(ax, barKey, px)
         if isH then
-            MatchH.ApplyHeightMatch(key, target)
+            MatchH.ApplyHeightMatch(barKey, target)
         else
-            MatchH.ApplyWidthMatch(key, target)
+            MatchH.ApplyWidthMatch(barKey, target)
         end
         LM.hasChanges = true
-        local m = movers[key]
-        if m then
-            m:SyncSize()
-            if m.RefreshAnchoredText then
-                m:RefreshAnchoredText()
+        local handle = movers[barKey]
+        if handle then
+            handle:SyncSize()
+            if handle.RefreshAnchoredText then
+                handle:RefreshAnchoredText()
             end
             -- The matched label grew or shrank ("W Matched +5"): re-lay the row.
-            if m._layoutActionRow then
-                m._layoutActionRow()
+            if handle._layoutActionRow then
+                handle._layoutActionRow()
             end
         end
-        local ai = GetAnchorInfo(key)
+        local ai = GetAnchorInfo(barKey)
         if ai then
-            LM.ApplyAnchorPosition(key, ai.target, ai.side, true)
+            LM.ApplyAnchorPosition(barKey, ai.target, ai.side, true)
         end
         if isH then
-            CludesUI.PropagateHeightMatch(key)
+            CludesUI.PropagateHeightMatch(barKey)
         else
-            CludesUI.PropagateWidthMatch(key)
+            CludesUI.PropagateWidthMatch(barKey)
         end
         -- A linked-dimensions element (square icons) resizes both sides from one
         -- axis: re-push the other axis's match children too.
-        local el = registeredElements[key]
+        local el = registeredElements[barKey]
         if el and el.linkedDimensions then
             if isH then
-                CludesUI.PropagateWidthMatch(key)
+                CludesUI.PropagateWidthMatch(barKey)
             else
-                CludesUI.PropagateHeightMatch(key)
+                CludesUI.PropagateHeightMatch(barKey)
             end
         end
-        LM.PropagateAnchorChain(key)
+        LM.PropagateAnchorChain(barKey)
     end
 
     -- Each match's Extra Width / Height as it stood when unlock mode opened
@@ -1735,21 +1735,21 @@ CUI_NS.unlockParts.Anchors = function(LM)
             return
         end
         local safe = {} -- keys confirmed cycle-free
-        for childKey in pairs(saved) do
-            if not safe[childKey] then
-                local visited = {}
-                local current = childKey
+        for childBarKey in pairs(saved) do
+            if not safe[childBarKey] then
+                local seen = {}
+                local current = childBarKey
                 while current and saved[current] do
-                    if visited[current] then
+                    if seen[current] then
                         -- current closes the cycle; break it
                         saved[current] = nil
                         break
                     end
-                    visited[current] = true
+                    seen[current] = true
                     current = saved[current]
                 end
                 -- Mark all visited keys as safe
-                for k in pairs(visited) do
+                for k in pairs(seen) do
                     safe[k] = true
                 end
             end
@@ -1783,15 +1783,15 @@ CUI_NS.unlockParts.Anchors = function(LM)
             return depth[k]
         end
         local sequence = {}
-        for childKey in pairs(saved) do
-            GetDepth(childKey, {})
-            sequence[#sequence + 1] = childKey
+        for childBarKey in pairs(saved) do
+            GetDepth(childBarKey, {})
+            sequence[#sequence + 1] = childBarKey
         end
         table.sort(sequence, function(a, b)
             return depth[a] < depth[b]
         end)
-        for _, childKey in ipairs(sequence) do
-            applyFn(childKey, saved[childKey])
+        for _, childBarKey in ipairs(sequence) do
+            applyFn(childBarKey, saved[childBarKey])
         end
     end
 
@@ -1854,24 +1854,24 @@ CUI_NS.unlockParts.Anchors = function(LM)
     -- OnSizeChanged and the cascade only from ApplyAnchorPosition, so pure position
     -- changes from an addon's own SetPoint (e.g. ERB re-applying sp.unlockPos on every
     -- Class Resource rebuild) hit neither emitter and anchored children never learn the target moved.
-    local function NotifyElementMoved(key)
+    local function NotifyElementMoved(barKey)
         if LM.isUnlocked then
             return
         end -- unlock mode owns positioning
-        if _moveCheckScheduled[key] then
+        if _moveCheckScheduled[barKey] then
             return
         end
-        _moveCheckScheduled[key] = true
+        _moveCheckScheduled[barKey] = true
         C_Timer.After(0, function()
-            _moveCheckScheduled[key] = nil
+            _moveCheckScheduled[barKey] = nil
             if LM.isUnlocked then
                 return
             end
-            local bar = LM.GetBarFrame(key)
-            if not bar then
+            local barCfg = LM.GetBarFrame(barKey)
+            if not barCfg then
                 return
             end
-            local l, t = bar:GetLeft(), bar:GetTop()
+            local l, t = barCfg:GetLeft(), barCfg:GetTop()
             -- A frame riding an engine aura container (a Blizzard Style cast bar
             -- under its frame's aura stack) reports a secret position: nothing to
             -- compare, and its children cannot follow it anyway (they re-anchor on
@@ -1882,33 +1882,33 @@ CUI_NS.unlockParts.Anchors = function(LM)
             if not l or not t then
                 return
             end
-            local prev = _lastScreenPos[key]
-            if prev and math.abs(l - prev.l) < 0.5 and math.abs(t - prev.t) < 0.5 then
+            local previous = _lastScreenPos[barKey]
+            if previous and math.abs(l - previous.l) < 0.5 and math.abs(t - previous.t) < 0.5 then
                 return -- position unchanged (within half a physical pixel)
             end
-            if prev then
-                prev.l, prev.t = l, t
+            if previous then
+                previous.l, previous.t = l, t
             else
-                _lastScreenPos[key] = { l = l, t = t }
+                _lastScreenPos[barKey] = { l = l, t = t }
             end
             -- Convergence: ApplyAnchorPosition's idempotent guard skips SetPoint when the
             -- child is already within 0.5px of target, so the cascade drains in bounded
             -- passes -- each call re-enters this hook, but the check above returns early once settled.
             if CludesUI.PropagateAnchorChain then
-                CludesUI.PropagateAnchorChain(key, "all")
+                CludesUI.PropagateAnchorChain(barKey, "all")
             end
         end)
     end
 
-    local function HookFrameSizeChanged(key)
+    local function HookFrameSizeChanged(barKey)
         -- No hooks on chat frames: ChatFrame1 is docked inside Blizzard's secure
         -- FCF_OpenTemporaryWindow chain and any addon code in OnSizeChanged/SetPoint
         -- hooks taints the execution context. Chat persists its own position/size.
-        if key and key:find("^ECHAT_") then
+        if barKey and barKey:find("^ECHAT_") then
             return
         end
-        local bar = LM.GetBarFrame(key)
-        if not bar then
+        local barCfg = LM.GetBarFrame(barKey)
+        if not barCfg then
             return
         end
         -- The quest tracker key: Blizzard's tracker is laid out by its managed
@@ -1917,22 +1917,22 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- hooks. WoW Forever's custom tracker, a frame of ours under the same key
         -- that grows with its quests, does: its resize re-applies its anchor link,
         -- which otherwise keeps its centre and moves the edge it hangs from.
-        if key == "EQT_Tracker" and bar ~= _G.CUI_CustomQuestTracker then
+        if barKey == "EQT_Tracker" and barCfg ~= _G.CUI_CustomQuestTracker then
             return
         end
-        if not _sizeHookedFrames[bar] then
-            _sizeHookedFrames[bar] = true
-            bar:HookScript("OnSizeChanged", function()
+        if not _sizeHookedFrames[barCfg] then
+            _sizeHookedFrames[barCfg] = true
+            barCfg:HookScript("OnSizeChanged", function()
                 if LM.isUnlocked then
                     return
                 end
-                CludesUI.NotifyElementResized(key)
+                CludesUI.NotifyElementResized(barKey)
             end)
         end
-        if not _pointHookedFrames[bar] then
-            _pointHookedFrames[bar] = true
-            hooksecurefunc(bar, "SetPoint", function()
-                NotifyElementMoved(key)
+        if not _pointHookedFrames[barCfg] then
+            _pointHookedFrames[barCfg] = true
+            hooksecurefunc(barCfg, "SetPoint", function()
+                NotifyElementMoved(barKey)
             end)
         end
     end
@@ -1945,9 +1945,9 @@ CUI_NS.unlockParts.Anchors = function(LM)
             origRegister(self, elements, folder)
             -- Defer hook installation so the frame has time to be created/sized
             C_Timer.After(0.1, function()
-                for _, elem in ipairs(elements) do
-                    if elem.key then
-                        HookFrameSizeChanged(elem.key)
+                for _, element in ipairs(elements) do
+                    if element.key then
+                        HookFrameSizeChanged(element.key)
                     end
                 end
             end)
@@ -1966,10 +1966,10 @@ CUI_NS.unlockParts.Anchors = function(LM)
         if not _overlayFadeFrame then
             _overlayFadeFrame = CreateFrame("Frame")
         end
-        local elapsed = 0
+        local timePassed = 0
         _overlayFadeFrame:SetScript("OnUpdate", function(self, dt)
-            elapsed = elapsed + dt
-            local t = math.min(elapsed / SELECT_ELEMENT_FADE, 1)
+            timePassed = timePassed + dt
+            local t = math.min(timePassed / SELECT_ELEMENT_FADE, 1)
             local a = startA + (endA - startA) * t
             LM.unlockFrame._overlay:SetColorTexture(0.020, 0.025, 0.031, a)
             if t >= 1 then
@@ -1985,18 +1985,18 @@ CUI_NS.unlockParts.Anchors = function(LM)
             LM.PointPicker.Cancel()
         end
         if LM.pickModeMover then
-            local m = LM.pickModeMover
+            local handle = LM.pickModeMover
             -- Restore overlay text visibility only if still hovered
-            if m._hidePickText then
-                m._hidePickText()
+            if handle._hidePickText then
+                handle._hidePickText()
             end
-            if m:IsMouseOver() then
-                if m._showOverlayText then
-                    m._showOverlayText()
+            if handle:IsMouseOver() then
+                if handle._showOverlayText then
+                    handle._showOverlayText()
                 end
             else
-                if m._hideOverlayText then
-                    m._hideOverlayText()
+                if handle._hideOverlayText then
+                    handle._hideOverlayText()
                 end
             end
             LM.pickMode = nil
@@ -2046,30 +2046,30 @@ CUI_NS.unlockParts.Anchors = function(LM)
     end
 
     -- Red border flash animation for error feedback (e.g. trying to drag an anchored element)
-    local function FlashRedBorder(m)
-        if not m or not m._brd then
+    local function FlashRedBorder(handle)
+        if not handle or not handle._brd then
             return
         end
-        if not m._redFlashBrd then
-            m._redFlashBrd = CludesUI.MakeBorder(m, 1, 0.2, 0.2, 0)
-            m._redFlashBrd._frame:SetFrameLevel(m:GetFrameLevel() + 4)
+        if not handle._redFlashBrd then
+            handle._redFlashBrd = CludesUI.MakeBorder(handle, 1, 0.2, 0.2, 0)
+            handle._redFlashBrd._frame:SetFrameLevel(handle:GetFrameLevel() + 4)
             local Pix = CludesUI and CludesUI.PP
             if Pix then
-                Pix.SetBorderSize(m._redFlashBrd._frame, 2)
+                Pix.SetBorderSize(handle._redFlashBrd._frame, 2)
             end
         end
-        local brd = m._redFlashBrd
-        local elapsed = 0
-        if not m._redFlashFrame then
-            m._redFlashFrame = CreateFrame("Frame")
+        local brd = handle._redFlashBrd
+        local timePassed = 0
+        if not handle._redFlashFrame then
+            handle._redFlashFrame = CreateFrame("Frame")
         end
-        m._redFlashFrame:SetScript("OnUpdate", function(self, dt)
-            elapsed = elapsed + dt
-            if elapsed < 0.8 then
-                local a = 0.5 + 0.5 * math.sin(elapsed * 10)
+        handle._redFlashFrame:SetScript("OnUpdate", function(self, dt)
+            timePassed = timePassed + dt
+            if timePassed < 0.8 then
+                local a = 0.5 + 0.5 * math.sin(timePassed * 10)
                 brd:SetColor(1, 0.2, 0.2, a)
-            elseif elapsed < 1.5 then
-                brd:SetColor(1, 0.2, 0.2, math.max(0, 1 - (elapsed - 0.8) / 0.7))
+            elseif timePassed < 1.5 then
+                brd:SetColor(1, 0.2, 0.2, math.max(0, 1 - (timePassed - 0.8) / 0.7))
             else
                 brd:SetColor(1, 0.2, 0.2, 0)
                 self:SetScript("OnUpdate", nil)
@@ -2089,10 +2089,10 @@ CUI_NS.unlockParts.Anchors = function(LM)
         RejectH._anchor:ClearAllPoints()
         RejectH._anchor:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", mx / sc, my / sc)
         CludesUI.ShowWidgetTooltip(RejectH._anchor, textValue, {})
-        local elapsed = 0
+        local timePassed = 0
         RejectH._timer:SetScript("OnUpdate", function(self, dt)
-            elapsed = elapsed + dt
-            if elapsed >= 3 then
+            timePassed = timePassed + dt
+            if timePassed >= 3 then
                 CludesUI.HideWidgetTooltip()
                 self:SetScript("OnUpdate", nil)
                 return
@@ -2139,16 +2139,16 @@ CUI_NS.unlockParts.Anchors = function(LM)
             -- so targets must be placed before the anchor pass.
             if posKeys then
                 local saved = LM.GetPositionDB()
-                for key in pairs(posKeys) do
-                    local place = saved and saved[key]
+                for barKey in pairs(posKeys) do
+                    local place = saved and saved[barKey]
                     if place and place.point then
-                        if not LM.ApplyCenterPosition(key, place) then
-                            local bar = LM.GetBarFrame(key)
-                            if bar then
+                        if not LM.ApplyCenterPosition(barKey, place) then
+                            local barCfg = LM.GetBarFrame(barKey)
+                            if barCfg then
                                 pcall(function()
-                                    CludesUI.ClearFramePoints(bar)
+                                    CludesUI.ClearFramePoints(barCfg)
                                     CludesUI.SetFramePoint(
-                                        bar,
+                                        barCfg,
                                         place.point,
                                         UIParent,
                                         place.relPoint or place.point,
@@ -2171,13 +2171,13 @@ CUI_NS.unlockParts.Anchors = function(LM)
         end
 
         -- Park an anchored child whose apply was blocked by combat lockdown.
-        function AnchorPark.Park(childKey)
+        function AnchorPark.Park(childBarKey)
             local keyList = AnchorPark.keys
             if not keyList then
                 keyList = {}
                 AnchorPark.keys = keyList
             end
-            keyList[childKey] = true
+            keyList[childBarKey] = true
             queue.Defer("AnchorPark", AnchorPark_Drain)
         end
 
@@ -2204,11 +2204,11 @@ CUI_NS.unlockParts.Anchors = function(LM)
     --  Free until stored: one table lookup per apply; pet watcher created on first use.
     -------------------------------------------------------------------------------
     do
-        local function EligibleTarget(targetKey)
-            if type(targetKey) ~= "string" then
+        local function EligibleTarget(targetBarKey)
+            if type(targetBarKey) ~= "string" then
                 return false
             end
-            return targetKey == "pet" or targetKey:find("^TBB_%d+$") ~= nil or targetKey:find("^TBBG_") ~= nil
+            return targetBarKey == "pet" or targetBarKey:find("^TBB_%d+$") ~= nil or targetBarKey:find("^TBBG_") ~= nil
         end
 
         -- Targets where a HIDDEN frame means "logically inactive" (pet frame with no
@@ -2216,8 +2216,8 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- in this set -- their absent signal is a nil frame.
         local hiddenIsInactive = { pet = true }
 
-        function CludesUI.EligibleFallbackTarget(targetKey)
-            return EligibleTarget(targetKey)
+        function CludesUI.EligibleFallbackTarget(targetBarKey)
+            return EligibleTarget(targetBarKey)
         end
 
         -- Growth-fixed-edge pin for fallback placement: the flush side-snap centers
@@ -2227,14 +2227,14 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- center on the cross axis to match (the snap axis already holds its own edge,
         -- e.g. cx = tL - cW/2 keeps the right edge at tL). Zero for center-growth bars
         -- and non-CDM/AB elements (GetBarGrowDirActual returns "CENTER"). cW/cH are UIParent-space dims. Fallback/override anchor code only.
-        CludesUI._FallbackGrowShift = function(childKey, side, cW, cH)
-            local gd = GetBarGrowDirActual(childKey)
+        CludesUI._FallbackGrowShift = function(childBarKey, edgeSide, cW, cH)
+            local gd = GetBarGrowDirActual(childBarKey)
             if not gd or gd == "CENTER" then
                 return 0, 0
             end
             local horiz = (gd == "LEFT" or gd == "RIGHT")
-            local crossX = (side == "TOP" or side == "BOTTOM" or side == "CENTER" or side == nil)
-            local crossY = (side == "LEFT" or side == "RIGHT" or side == "CENTER" or side == nil)
+            local crossX = (edgeSide == "TOP" or edgeSide == "BOTTOM" or edgeSide == "CENTER" or edgeSide == nil)
+            local crossY = (edgeSide == "LEFT" or edgeSide == "RIGHT" or edgeSide == "CENTER" or edgeSide == nil)
             -- RIGHT/UP fix the near edge (left/bottom) -> center sits +half past it;
             -- LEFT/DOWN fix the far edge (right/top) -> center sits -half before it.
             if horiz and crossX then
@@ -2250,28 +2250,28 @@ CUI_NS.unlockParts.Anchors = function(LM)
         -- secondary anchor link {target, side}: with the primary target absent, the
         -- child snaps flush to that side of the fallback target, using the same
         -- absolute UIParent-space math as a fresh side-snap anchor.
-        function CludesUI._TryFallbackAnchor(childKey, targetKey, childBar, targetBar)
+        function CludesUI._TryFallbackAnchor(childBarKey, targetBarKey, childBar, targetFrame)
             if LM.isUnlocked then
                 return false
             end
             local saved = GetAnchorDB()
-            local details = saved and saved[childKey]
+            local details = saved and saved[childBarKey]
             local fb = details and details.fallback
             if not fb or not fb.target then
                 return false
             end
-            local side = fb.side
+            local edgeSide = fb.side
             local inactive
-            if not targetBar then
+            if not targetFrame then
                 inactive = true
-            elseif hiddenIsInactive[targetKey] then
-                inactive = not targetBar:IsShown()
+            elseif hiddenIsInactive[targetBarKey] then
+                inactive = not targetFrame:IsShown()
             end
             if not inactive then
                 return false
             end
             if InCombatLockdown() and childBar:IsProtected() then
-                CludesUI._AnchorPark.Park(childKey)
+                CludesUI._AnchorPark.Park(childBarKey)
                 return true
             end
             local tgt = LM.GetBarFrame(fb.target)
@@ -2279,40 +2279,40 @@ CUI_NS.unlockParts.Anchors = function(LM)
                 -- Fallback target unavailable as well: hold position.
                 return true
             end
-            local uiS = UIParent:GetEffectiveScale()
+            local uiScale = UIParent:GetEffectiveScale()
             local tS = tgt:GetEffectiveScale()
             local cS = childBar:GetEffectiveScale()
-            local tL = (tgt:GetLeft() or 0) * tS / uiS
-            local tR = (tgt:GetRight() or 0) * tS / uiS
-            local tT = (tgt:GetTop() or 0) * tS / uiS
-            local tB = (tgt:GetBottom() or 0) * tS / uiS
+            local tL = (tgt:GetLeft() or 0) * tS / uiScale
+            local tR = (tgt:GetRight() or 0) * tS / uiScale
+            local tT = (tgt:GetTop() or 0) * tS / uiScale
+            local tB = (tgt:GetBottom() or 0) * tS / uiScale
             local tCX = (tL + tR) / 2
             local tCY = (tT + tB) / 2
             -- Growth-edge extent applies to the fallback target too.
             if CludesUI._GetAnchorTargetExtent then
-                local ext = CludesUI._GetAnchorTargetExtent(fb.target, side)
+                local ext = CludesUI._GetAnchorTargetExtent(fb.target, edgeSide)
                 if ext then
-                    if side == "TOP" then
+                    if edgeSide == "TOP" then
                         tT = ext
-                    elseif side == "BOTTOM" then
+                    elseif edgeSide == "BOTTOM" then
                         tB = ext
-                    elseif side == "LEFT" then
+                    elseif edgeSide == "LEFT" then
                         tL = ext
-                    elseif side == "RIGHT" then
+                    elseif edgeSide == "RIGHT" then
                         tR = ext
                     end
                 end
             end
-            local cW = (childBar:GetWidth() or 50) * cS / uiS
-            local cH = (childBar:GetHeight() or 50) * cS / uiS
+            local cW = (childBar:GetWidth() or 50) * cS / uiScale
+            local cH = (childBar:GetHeight() or 50) * cS / uiScale
             local cx, cy
-            if side == "LEFT" then
+            if edgeSide == "LEFT" then
                 cx, cy = tL - cW / 2, tCY
-            elseif side == "RIGHT" then
+            elseif edgeSide == "RIGHT" then
                 cx, cy = tR + cW / 2, tCY
-            elseif side == "TOP" then
+            elseif edgeSide == "TOP" then
                 cx, cy = tCX, tT + cH / 2
-            elseif side == "BOTTOM" then
+            elseif edgeSide == "BOTTOM" then
                 cx, cy = tCX, tB - cH / 2
             else
                 cx, cy = tCX, tCY
@@ -2324,21 +2324,21 @@ CUI_NS.unlockParts.Anchors = function(LM)
             -- Keep the growth-fixed edge (not the center) pinned on the cross axis so
             -- a differently-sized bar on another character still lines up, like a
             -- standard anchor. Inert (0,0) for center-growth / non-bar children.
-            local gsx, gsy = CludesUI._FallbackGrowShift(childKey, side, cW, cH)
+            local gsx, gsy = CludesUI._FallbackGrowShift(childBarKey, edgeSide, cW, cH)
             cx = cx + gsx
             cy = cy + gsy
             -- Temporary per-target visual shift (e.g. "Shift Elements if No
             -- Resource/Power"), mirroring the main path. fb.target is the live target
             -- actually in use here, not targetKey (the inactive primary).
             if not LM.isUnlocked and CludesUI._GetAnchorTargetShiftDir then
-                local dir, extraY = CludesUI._GetAnchorTargetShiftDir(fb.target, childKey)
+                local dir, extraY = CludesUI._GetAnchorTargetShiftDir(fb.target, childBarKey)
                 if dir ~= 0 then
                     cy = cy + dir * ((tT - tB) + (extraY or 0))
                 end
             end
             -- Child-local scale space + pixel snap + idempotent guard, mirroring
             -- the standard CENTER path in ApplyAnchorPosition.
-            local acRatio = uiS / cS
+            local acRatio = uiScale / cS
             local bCenterX = (cx - UIParent:GetWidth() / 2) * acRatio
             local bCenterY = (cy - UIParent:GetHeight() / 2) * acRatio
             local PPa = Pix or (CludesUI and CludesUI.PP)
@@ -2372,23 +2372,23 @@ CUI_NS.unlockParts.Anchors = function(LM)
                 CludesUI.SetFramePoint(childBar, "CENTER", UIParent, "CENTER", bCenterX, bCenterY)
             end)
             -- Children anchored to THIS child must follow it to the fallback spot.
-            LM._pendingAnchorKeys[childKey] = "all"
+            LM._pendingAnchorKeys[childBarKey] = "all"
             ScheduleAnchorBatch()
             return true
         end
 
         -- Store the fallback link (target + side), chosen through the same element
         -- pick mode as regular anchoring.
-        function CludesUI.SetAnchorFallback(childKey, targetKey, side)
+        function CludesUI.SetAnchorFallback(childBarKey, targetBarKey, edgeSide)
             local saved = GetAnchorDB()
-            local details = saved and saved[childKey]
+            local details = saved and saved[childBarKey]
             if not details or not details.target then
                 return false
             end
-            if not targetKey or targetKey == childKey or targetKey == details.target then
+            if not targetBarKey or targetBarKey == childBarKey or targetBarKey == details.target then
                 return false
             end
-            details.fallback = { target = targetKey, side = side or "BOTTOM" }
+            details.fallback = { target = targetBarKey, side = edgeSide or "BOTTOM" }
             CludesUI._anchorLinksStamp = (CludesUI._anchorLinksStamp or 0) + 1
             CludesUI._EnsureFallbackWatchers()
             if CludesUI._RefreshFallbackGhosts then
@@ -2397,9 +2397,9 @@ CUI_NS.unlockParts.Anchors = function(LM)
             return true
         end
 
-        function CludesUI.ClearAnchorFallback(childKey)
+        function CludesUI.ClearAnchorFallback(childBarKey)
             local saved = GetAnchorDB()
-            local details = saved and saved[childKey]
+            local details = saved and saved[childBarKey]
             if details then
                 details.fallback = nil
             end
