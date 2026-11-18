@@ -59,11 +59,11 @@ do
 
     PF.MAX = 40
     PF.UNITS = { "pet" }
-    for idx = 1, 4 do
-        PF.UNITS[#PF.UNITS + 1] = "partypet" .. idx
+    for index = 1, 4 do
+        PF.UNITS[#PF.UNITS + 1] = "partypet" .. index
     end
-    for idx = 1, 40 do
-        PF.UNITS[#PF.UNITS + 1] = "raidpet" .. idx
+    for index = 1, 40 do
+        PF.UNITS[#PF.UNITS + 1] = "raidpet" .. index
     end
     -- Tracker frames (two tokens each): every token, or while raid pets are off the first seven, which
     -- hold your pet, the party pets and raidpet1-9 (inside a raid the party frames run below ten
@@ -73,11 +73,11 @@ do
     PF.EVENTS = { "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_NAME_UPDATE" }
     -- A party frame's token -> its pet's token.
     PF.PET_OF = { player = "pet" }
-    for idx = 1, 4 do
-        PF.PET_OF["party" .. idx] = "partypet" .. idx
+    for index = 1, 4 do
+        PF.PET_OF["party" .. index] = "partypet" .. index
     end
-    for idx = 1, 40 do
-        PF.PET_OF["raid" .. idx] = "raidpet" .. idx
+    for index = 1, 40 do
+        PF.PET_OF["raid" .. index] = "raidpet" .. index
     end
     PF.DEFAULT_BG = { r = 17 / 255, g = 17 / 255, b = 17 / 255 }
     -- Beside Owner pet -> the party frame it sits beside (your own pet has none); header button -> the
@@ -311,18 +311,18 @@ do
     -- One tracker's health, name and range listeners. Your own pet takes no range fade, so its token is
     -- left out of range.
     PF.TrackerEvents = function(tr, enabled)
-        local f = tr.frame
+        local frame = tr.frame
         if not enabled then
-            f:UnregisterAllEvents()
+            frame:UnregisterAllEvents()
             return
         end
         for _, ev in ipairs(PF.EVENTS) do
-            f:RegisterUnitEvent(ev, tr.u1, tr.u2)
+            frame:RegisterUnitEvent(ev, tr.u1, tr.u2)
         end
         if tr.u1 == "pet" then
-            f:RegisterUnitEvent("UNIT_IN_RANGE_UPDATE", tr.u2)
+            frame:RegisterUnitEvent("UNIT_IN_RANGE_UPDATE", tr.u2)
         else
-            f:RegisterUnitEvent("UNIT_IN_RANGE_UPDATE", tr.u1, tr.u2)
+            frame:RegisterUnitEvent("UNIT_IN_RANGE_UPDATE", tr.u1, tr.u2)
         end
     end
 
@@ -369,8 +369,8 @@ do
         if issecretvalue(g) then
             g = nil
         end
-        local d = GetFFD(b)
-        d.pfPaintUnit, d.pfGuid = u, g
+        local skinData = GetFFD(b)
+        skinData.pfPaintUnit, skinData.pfGuid = u, g
     end
 
     -- Repaints a shown button only when its occupant differs from the stamped one (a secret or missing
@@ -380,13 +380,13 @@ do
             return
         end
         local u = FB.UnitOf(b)
-        local d = GetFFD(b)
-        if u and u == d.pfPaintUnit then
+        local skinData = GetFFD(b)
+        if u and u == skinData.pfPaintUnit then
             local g = UnitGUID(u)
             if issecretvalue(g) then
                 g = nil
             end
-            if g and g == d.pfGuid then
+            if g and g == skinData.pfGuid then
                 return
             end
         end
@@ -495,15 +495,15 @@ do
             -- and dropped while this one was off screen with the same unit.
             if map then
                 local u = self:GetAttribute("unit")
-                local d = GetFFD(self)
-                local old = d.pfUnit
+                local skinData = GetFFD(self)
+                local old = skinData.pfUnit
                 if old and old ~= u and map[old] == self then
                     map[old] = nil
                 end
                 if u then
                     map[u] = self
                 end
-                d.pfUnit = u
+                skinData.pfUnit = u
             end
             -- Header buttons hidden at the last restyle catch up as they show.
             local g = PF.styledGen[self]
@@ -515,8 +515,8 @@ do
         end)
         b:HookScript("OnHide", function(self)
             PF.visCount = math.max(0, (PF.visCount or 0) - 1)
-            local d = GetFFD(self)
-            d.pfPaintUnit, d.pfGuid = nil, nil
+            local skinData = GetFFD(self)
+            skinData.pfPaintUnit, skinData.pfGuid = nil, nil
             PF.SyncShownEvents()
         end)
         b:HookScript("OnEnter", function(self)
@@ -535,30 +535,30 @@ do
             if name ~= "unit" then
                 return
             end
-            local d = GetFFD(self)
+            local skinData = GetFFD(self)
             if map then
-                local old = d.pfUnit
+                local old = skinData.pfUnit
                 if old and map[old] == self then
                     map[old] = nil
                 end
                 if value then
                     map[value] = self
                 end
-                d.pfUnit = value
+                skinData.pfUnit = value
             end
             if not value or not self:IsVisible() then
-                d.pfPaintUnit, d.pfGuid = nil, nil
+                skinData.pfPaintUnit, skinData.pfGuid = nil, nil
                 if not value then
                     FB.tgt[self] = nil
                 end
                 return
             end
-            if value == d.pfPaintUnit then
+            if value == skinData.pfPaintUnit then
                 local g = UnitGUID(value)
                 if issecretvalue(g) then
                     g = nil
                 end
-                if g and g == d.pfGuid then
+                if g and g == skinData.pfGuid then
                     return
                 end
             end
@@ -620,9 +620,9 @@ do
         end
         local old, at = PF.fp[key], 0
         if old then
-            for idx = 1, num or PF.STYLE_N do
-                if old[idx] ~= new[idx] then
-                    at = idx
+            for index = 1, num or PF.STYLE_N do
+                if old[index] ~= new[index] then
+                    at = index
                     break
                 end
             end
@@ -695,8 +695,8 @@ do
                 hider:Hide()
             end
         end
-        for idx = have + 1, cap do
-            local b = heading[idx]
+        for index = have + 1, cap do
+            local b = heading[index]
             if not b then
                 break
             end
@@ -704,7 +704,7 @@ do
             PF.StyleButton(b, PF.byUnit)
             FB.src[b] = PF.StyleSource
             PF.styledGen[b] = 0
-            PF.buttons[idx] = b
+            PF.buttons[index] = b
         end
         local num = #PF.buttons
         if num == 0 then
@@ -761,10 +761,10 @@ do
     -- pool. Frames added while pets are on screen listen at once (the listeners switch on edges).
     PF.EnsureTrackers = function(num)
         for k = #PF.trackers + 1, num do
-            local idx = 2 * k - 1
+            local index = 2 * k - 1
             local t = mod.TakeShell()
             t:SetScript("OnEvent", PF.OnTrackerEvent)
-            local tr = { frame = t, u1 = PF.UNITS[idx], u2 = PF.UNITS[idx + 1] }
+            local tr = { frame = t, u1 = PF.UNITS[index], u2 = PF.UNITS[index + 1] }
             PF.trackers[k] = tr
             if PF.shownEv then
                 PF.TrackerEvents(tr, true)
@@ -1101,8 +1101,8 @@ do
             b:SetAttribute("pf-hs", true)
             local heading = mod._partyHeader
             local last
-            for idx = 1, 5 do
-                local c = heading[idx]
+            for index = 1, 5 do
+                local c = heading[index]
                 if c and c:IsShown() and c:GetAttribute("unit") then
                     last = c
                 end
@@ -1215,17 +1215,17 @@ do
         if mask == 255 then
             return nil
         end
-        local str = PF.gf[mask]
-        if not str then
-            str = ""
+        local text = PF.gf[mask]
+        if not text then
+            text = ""
             for gi = 1, 8 do
                 if vg[gi] ~= false then
-                    str = (str == "") and tostring(gi) or (str .. "," .. gi)
+                    text = (text == "") and tostring(gi) or (text .. "," .. gi)
                 end
             end
-            PF.gf[mask] = str
+            PF.gf[mask] = text
         end
-        return str
+        return text
     end
 
     -- Size and growth follow the frames on screen (the party frames' in party mode, else the raid
@@ -1336,9 +1336,9 @@ do
         else
             wid = 5 * wid + 4 * sp
         end
-        local r = set.freeRect
-        local corner, posX, posY = FB.CornerPin(hDir, vDir, r)
-        if not r then
+        local region = set.freeRect
+        local corner, posX, posY = FB.CornerPin(hDir, vDir, region)
+        if not region then
             local p = set.freePos
             local cx, cy = p and p.x or 100, p and p.y or 0
             posX = (hDir == "LEFT") and (cx + wid / 2) or (cx - wid / 2)
@@ -1436,35 +1436,35 @@ do
     end
 
     -- Preview pet i at w x h, styled and painted (the caller places it).
-    PF.PvFrame = function(idx, hostFrame, s, wid, hgt, c, grouped)
-        local f = PF.pv[idx]
-        if not f then
-            f = CreateFrame("Frame", nil, hostFrame)
-            FB.BuildVisuals(f, true)
-            FB.src[f] = PF.PvStyle
-            PF.pv[idx] = f
-        elseif f:GetParent() ~= hostFrame then
-            f:SetParent(hostFrame)
+    PF.PvFrame = function(index, hostFrame, s, wid, hgt, c, grouped)
+        local frame = PF.pv[index]
+        if not frame then
+            frame = CreateFrame("Frame", nil, hostFrame)
+            FB.BuildVisuals(frame, true)
+            FB.src[frame] = PF.PvStyle
+            PF.pv[index] = frame
+        elseif frame:GetParent() ~= hostFrame then
+            frame:SetParent(hostFrame)
         end
-        f:SetFrameStrata(hostFrame == UIParent and "HIGH" or hostFrame:GetFrameStrata())
-        f:SetSize(wid, hgt)
-        local d = Inner.FFD[f]
+        frame:SetFrameStrata(hostFrame == UIParent and "HIGH" or hostFrame:GetFrameStrata())
+        frame:SetSize(wid, hgt)
+        local skinData = Inner.FFD[frame]
         if grouped and mod.RF_CompactOn(s, mod._partyPvActive == true) then
-            d = GetFFD(f)
-            d._petGroupedPreview, d._petPreviewParty = true, mod._partyPvActive == true
-        elseif d then
-            d._petGroupedPreview = nil
+            skinData = GetFFD(frame)
+            skinData._petGroupedPreview, skinData._petPreviewParty = true, mod._partyPvActive == true
+        elseif skinData then
+            skinData._petGroupedPreview = nil
         end
-        FB.StyleVisuals(f, s, wid, hgt, c.texPath, c.bgc)
+        FB.StyleVisuals(frame, s, wid, hgt, c.texPath, c.bgc)
 
-        local pet = PF.PV_PETS[idx]
+        local pet = PF.PV_PETS[index]
         local pct = pet.hp
         local hc = c.hc
-        f._health:SetMinMaxValues(0, 100)
+        frame._health:SetMinMaxValues(0, 100)
         -- pet.hp is a made-up plain number (PF.PV_PETS), so it is flipped here for an
         -- inverted fill (the _cuiInv stamp FB.StyleVisuals just left).
-        f._health:SetValue(f._health._cuiInv and (100 - pct) or pct)
-        f._health:SetStatusBarColor(
+        frame._health:SetValue(frame._health._cuiInv and (100 - pct) or pct)
+        frame._health:SetStatusBarColor(
             hc and hc.r or 23 / 255,
             hc and hc.g or 172 / 255,
             hc and hc.b or 49 / 255,
@@ -1472,12 +1472,12 @@ do
         )
         -- The texts with the boss/pet rules: made-up health (3000 per percent) and a heal absorb
         -- of a quarter of it, in the raid preview's proportions.
-        local st = FB.txs[f]
+        local st = FB.txs[frame]
         local pv = st._txPv or {}
         pv.hpPct, pv.hpPer, pv.ha, pv.name = pct, 3000, pct * 750, mod.CapName(pet.name, s)
         mod.RF_TextPreview(st, s, pv)
-        f:Show()
-        return f
+        frame:Show()
+        return frame
     end
 
     -- Beside Owner preview: the pet size, side and gap as the real pets take them, the room it needs
@@ -1631,9 +1631,9 @@ do
     -- are styled from.
     function mod.PF_ShowPreview(specInfo, s, hostFrame, rel, posX, posY)
         local c = PF.PvColors(s)
-        for idx = 1, specInfo.n do
-            local f = PF.PvFrame(idx, hostFrame, s, specInfo.w, specInfo.h, c, true)
-            local off = idx - 1
+        for index = 1, specInfo.n do
+            local frame = PF.PvFrame(index, hostFrame, s, specInfo.w, specInfo.h, c, true)
+            local off = index - 1
             local fx, fy = posX, posY
             if specInfo.grow == "RIGHT" then
                 fx = posX + off * (specInfo.w + specInfo.sp)
@@ -1644,11 +1644,11 @@ do
             else
                 fy = posY - off * (specInfo.h + specInfo.sp)
             end
-            f:ClearAllPoints()
-            f:SetPoint("TOPLEFT", rel, "TOPLEFT", fx, fy)
+            frame:ClearAllPoints()
+            frame:SetPoint("TOPLEFT", rel, "TOPLEFT", fx, fy)
         end
-        for idx = specInfo.n + 1, #PF.pv do
-            PF.pv[idx]:Hide()
+        for index = specInfo.n + 1, #PF.pv do
+            PF.pv[index]:Hide()
         end
         mod.RF_PreviewPetCompact(PF.pv, s, mod._partyPvActive == true, specInfo.grow)
     end
@@ -1659,30 +1659,30 @@ do
         mod.RF_PreviewPetCompact(nil)
         local c = PF.PvColors(s)
         local num = 0
-        for idx = 1, 5 do
-            local o = mod._partyPvFrames[idx]
+        for index = 1, 5 do
+            local o = mod._partyPvFrames[index]
             if o and o:IsShown() then
                 num = num + 1
-                local f = PF.PvFrame(num, hostFrame, s, specInfo.w, specInfo.h, c)
-                f:ClearAllPoints()
-                PF.OwnerPoint(f, o, specInfo.side, specInfo.gap)
+                local frame = PF.PvFrame(num, hostFrame, s, specInfo.w, specInfo.h, c)
+                frame:ClearAllPoints()
+                PF.OwnerPoint(frame, o, specInfo.side, specInfo.gap)
             end
         end
         if specInfo.selfSlot and lastF and num < #PF.PV_PETS then
             num = num + 1
-            local f = PF.PvFrame(num, hostFrame, s, specInfo.w, specInfo.h, c)
-            f:ClearAllPoints()
-            f:SetPoint(specInfo.sPt, lastF, specInfo.sRp, specInfo.sX, specInfo.sY)
+            local frame = PF.PvFrame(num, hostFrame, s, specInfo.w, specInfo.h, c)
+            frame:ClearAllPoints()
+            frame:SetPoint(specInfo.sPt, lastF, specInfo.sRp, specInfo.sX, specInfo.sY)
         end
-        for idx = num + 1, #PF.pv do
-            PF.pv[idx]:Hide()
+        for index = num + 1, #PF.pv do
+            PF.pv[index]:Hide()
         end
     end
 
     function mod.PF_HidePreview()
         mod.RF_PreviewPetCompact(nil)
-        for _, f in ipairs(PF.pv) do
-            f:Hide()
+        for _, frame in ipairs(PF.pv) do
+            frame:Hide()
         end
     end
 

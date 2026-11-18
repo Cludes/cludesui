@@ -109,8 +109,8 @@ do
             return nil
         end
         local bank = C_SpellBook and C_SpellBook.IsSpellInSpellBook and Enum.SpellBookSpellBank
-        for idx = 1, #entries do
-            local ident = entries[idx]
+        for index = 1, #entries do
+            local ident = entries[index]
             local known
             if bank then
                 known = C_SpellBook.IsSpellInSpellBook(ident, bank.Player, true)
@@ -221,21 +221,21 @@ do
             mod.RF_StockHighlight(b, b._borderFrame, s, hover, targeted)
             return
         end
-        local r, g, bcol, a
+        local region, g, bcol, a
         local raised, hlSize, hlPx = false, nil, nil
         if FB.hov[b] and s.hoverBorderEnabled ~= false then
             local c = s.hoverBorderColor or { r = 1, g = 1, b = 1 }
-            r, g, bcol, a = c.r, c.g, c.b, s.hoverBorderAlpha or 1
+            region, g, bcol, a = c.r, c.g, c.b, s.hoverBorderAlpha or 1
             raised, hlSize = true, s.hoverBorderSize or 1
             hlPx = CludesUI.BorderPx(s.hoverBorderSizePx, hlSize, s.borderTexture or "solid")
         elseif targeted then
             local c = s.targetBorderColor or { r = 1, g = 1, b = 1 }
-            r, g, bcol, a = c.r, c.g, c.b, s.targetBorderAlpha or 1
+            region, g, bcol, a = c.r, c.g, c.b, s.targetBorderAlpha or 1
             raised, hlSize = true, s.targetBorderSize or 1
             hlPx = CludesUI.BorderPx(s.targetBorderSizePx, hlSize, s.borderTexture or "solid")
         else
             local c = s.borderColor or { r = 0, g = 0, b = 0 }
-            r, g, bcol, a = c.r, c.g, c.b, s.borderAlpha or 1
+            region, g, bcol, a = c.r, c.g, c.b, s.borderAlpha or 1
         end
         -- Raise above neighbors while highlighted (as the raid buttons: overlapping frames would cover it).
         local pl = b:GetFrameLevel()
@@ -255,14 +255,14 @@ do
             end
         end
         if (s.borderSize or 1) <= 0 then
-            mod.ApplyHighlightBorder(b._borderFrame, s, hlSize, r, g, bcol, a, hlPx)
+            mod.ApplyHighlightBorder(b._borderFrame, s, hlSize, region, g, bcol, a, hlPx)
             return
         end
         if hlSize then
-            r, g, bcol = mod.RF_VisibleHighlight(s, r, g, bcol)
+            region, g, bcol = mod.RF_VisibleHighlight(s, region, g, bcol)
         end
         b._borderFrame._hlBorderSize = nil
-        CludesUI.SetBorderStyleColor(b._borderFrame, r, g, bcol, a)
+        CludesUI.SetBorderStyleColor(b._borderFrame, region, g, bcol, a)
     end
 
     -- Apply the border style (size/color/texture/offsets) to one button, from its FB.Source.
@@ -274,10 +274,10 @@ do
         local bs = s.borderSize or 1
         local bc = s.borderColor or { r = 0, g = 0, b = 0 }
         local pl = b:GetFrameLevel()
-        local d = Inner.FFD[b]
+        local skinData = Inner.FFD[b]
         local compact = mod.RF_PetCompactOn(b, s)
-        if compact or (d and d._petCompactBorder) then
-            d._petCompactBorder = compact
+        if compact or (skinData and skinData._petCompactBorder) then
+            skinData._petCompactBorder = compact
         end
         if compact then
             CludesUI.ApplyBorderStyle(b._borderFrame, 0, 0, 0, 0, 0, "solid")
@@ -336,9 +336,9 @@ do
         local health = b._health
         local fbc = (ownerFrame.ColorSettings or ownerFrame.Settings)()
         fbc = fbc and fbc.healthColor
-        local fill = health:GetStatusBarTexture()
-        if fill then
-            fill:SetAlpha(1)
+        local fillTex = health:GetStatusBarTexture()
+        if fillTex then
+            fillTex:SetAlpha(1)
         end
         health:SetStatusBarColor(
             fbc and fbc.r or 23 / 255,
@@ -486,9 +486,9 @@ do
         boxHolder:Hide()
         FB.container = boxHolder
 
-        for idx = 1, 5 do
-            local b = CreateFrame("Button", "ERFFriendlyBoss" .. idx, boxHolder, "SecureUnitButtonTemplate")
-            b._fbUnit = "boss" .. idx
+        for index = 1, 5 do
+            local b = CreateFrame("Button", "ERFFriendlyBoss" .. index, boxHolder, "SecureUnitButtonTemplate")
+            b._fbUnit = "boss" .. index
             b:SetAttribute("unit", b._fbUnit)
             b:SetAttribute("*type1", "target")
             b:RegisterForClicks("AnyUp")
@@ -506,10 +506,10 @@ do
                 FB.visCount = (FB.visCount or 0) + 1
                 -- Containers first: an error in the legacy refresh must not starve the unit assignment.
                 if mod.RFC_OnUnitAssigned then
-                    local d = GetFFD(self)
+                    local skinData = GetFFD(self)
                     local unitToken = FB.UnitOf(self)
-                    if d and unitToken then
-                        mod.RFC_OnUnitAssigned(self, d, unitToken)
+                    if skinData and unitToken then
+                        mod.RFC_OnUnitAssigned(self, skinData, unitToken)
                     end
                 end
                 FB.Update(self)
@@ -537,10 +537,10 @@ do
                 if name == "unit" and self:IsVisible() then
                     -- Containers first (same rationale as the OnShow hook).
                     if mod.RFC_OnUnitAssigned then
-                        local d = GetFFD(self)
+                        local skinData = GetFFD(self)
                         local unitToken = FB.UnitOf(self)
-                        if d and unitToken then
-                            mod.RFC_OnUnitAssigned(self, d, unitToken)
+                        if skinData and unitToken then
+                            mod.RFC_OnUnitAssigned(self, skinData, unitToken)
                         end
                     end
                     FB.Update(self)
@@ -555,7 +555,7 @@ do
 
             -- Boss units are outside the roster trackers; track here. The slot controller may have
             -- assigned this unit to ANY slot, so route the event to whichever button shows it.
-            local unitId = "boss" .. idx
+            local unitId = "boss" .. index
             local t = mod.TakeShell()
             t:RegisterUnitEvent("UNIT_HEALTH", unitId)
             t:RegisterUnitEvent("UNIT_MAXHEALTH", unitId)
@@ -568,13 +568,13 @@ do
                     end
                 end
             end)
-            FB.trackers[idx] = t
+            FB.trackers[index] = t
 
-            FB.buttons[idx] = b
+            FB.buttons[index] = b
 
             if mod.RFC_SetupButton then
-                local d = GetFFD(b)
-                mod.RFC_SetupButton(b, b._health, d)
+                local skinData = GetFFD(b)
+                mod.RFC_SetupButton(b, b._health, skinData)
             end
         end
 
@@ -607,8 +607,8 @@ do
     ]]
         local controller =
             CreateFrame("Frame", "ERFFriendlyBossController", nil, "SecureHandlerAttributeTemplate")
-        for idx = 1, 5 do
-            controller:SetFrameRef("slot" .. idx, FB.buttons[idx])
+        for index = 1, 5 do
+            controller:SetFrameRef("slot" .. index, FB.buttons[index])
         end
         -- The template's handler attribute is "_onattributechanged" (wildcard receiving name/value).
         -- The relayout body lives in its own attribute so the handler and the force-run share it.
@@ -675,10 +675,10 @@ do
             stepW = wid + sp
         end
 
-        for idx, b in ipairs(ownerFrame.buttons) do
+        for index, b in ipairs(ownerFrame.buttons) do
             b:SetSize(wid, hgt)
             b:ClearAllPoints()
-            local off = idx - 1
+            local off = index - 1
             if grow == "UP" then
                 b:SetPoint("BOTTOMLEFT", ownerFrame.container, "BOTTOMLEFT", 0, off * stepH)
             elseif grow == "LEFT" then
@@ -733,17 +733,17 @@ do
     -- it and every button under it. A secret point always rewrites.
     FB.Pin = function(c, anchorPoint, rel, relPoint, posX, posY)
         if c:GetNumPoints() == 1 then
-            local p, r, rp, px, py = c:GetPoint(1)
+            local p, region, rp, px, py = c:GetPoint(1)
             if
                 not (
                     issecretvalue(p)
-                    or issecretvalue(r)
+                    or issecretvalue(region)
                     or issecretvalue(rp)
                     or issecretvalue(px)
                     or issecretvalue(py)
                 )
                 and p == anchorPoint
-                and r == rel
+                and region == rel
                 and rp == relPoint
                 and px == posX
                 and py == posY
@@ -1063,8 +1063,8 @@ do
             if FB.built then
                 if FB.controller then
                     UnregisterAttributeDriver(FB.controller, "state-ingroup")
-                    for idx = 1, 5 do
-                        UnregisterAttributeDriver(FB.controller, "state-fb" .. idx)
+                    for index = 1, 5 do
+                        UnregisterAttributeDriver(FB.controller, "state-fb" .. index)
                     end
                 end
                 for _, b in ipairs(FB.buttons) do
@@ -1094,8 +1094,8 @@ do
         local groupCond = (fb.showInDungeons == true) and "[@raid1,exists][@party1,exists] 1; 0"
             or "[@raid1,exists] 1; 0"
         RegisterAttributeDriver(FB.controller, "state-ingroup", groupCond)
-        for idx = 1, 5 do
-            RegisterAttributeDriver(FB.controller, "state-fb" .. idx, "[@boss" .. idx .. ",help] 1; 0")
+        for index = 1, 5 do
+            RegisterAttributeDriver(FB.controller, "state-fb" .. index, "[@boss" .. index .. ",help] 1; 0")
         end
         -- Force one relayout now: the driver manager fires attribute handlers only on VALUE CHANGES, so
         -- a (re)apply with unchanged states would never run the initial layout. FB_Apply is OOC-only,
@@ -1151,17 +1151,17 @@ do
     -- Free Move corner pin (Extra Frames, Pet Frames): the corner a grid grows from (hDir, vDir: its
     -- horizontal and vertical growth), so its first frame stays put as frames come and go, and with a
     -- saved rect r (FB.SaveMoverRect) that corner's offset from UIParent's centre.
-    FB.CornerPin = function(hDir, vDir, r)
+    FB.CornerPin = function(hDir, vDir, region)
         local corner
         if vDir == "UP" then
             corner = (hDir == "LEFT") and "BOTTOMRIGHT" or "BOTTOMLEFT"
         else
             corner = (hDir == "LEFT") and "TOPRIGHT" or "TOPLEFT"
         end
-        if not r then
+        if not region then
             return corner
         end
-        return corner, (hDir == "LEFT") and r.right or r.left, (vDir == "UP") and r.bottom or r.top
+        return corner, (hDir == "LEFT") and region.right or region.left, (vDir == "UP") and region.bottom or region.top
     end
 
     -- The shared mover's drag stop, for corner-pinned owners: the dropped rect, relative to UIParent's

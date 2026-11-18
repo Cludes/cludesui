@@ -120,10 +120,10 @@ local function OnEvent(self, evt, arg1, ...)
             -- view the event changes no pixel and must not arm.
             local dropdown = GetFFD(button)
             if evt == "UNIT_HEAL_PREDICTION" then
-                local sv = dropdown._isParty and mod._scaledPartyProxy
+                local savedVars = dropdown._isParty and mod._scaledPartyProxy
                     or (dropdown._isExtra and mod._scaledExtraProxy)
                     or mod._scaledProfile
-                if sv.healPrediction then
+                if savedVars.healPrediction then
                     mod._AbArm(button, arg1, dropdown)
                     mod._MarkAbsorbDirty(button, arg1)
                 end
@@ -252,17 +252,17 @@ local function OnEvent(self, evt, arg1, ...)
         if mod._powerDirtyInCombat then
             mod._powerDirtyInCombat = nil
             for _, button in ipairs(allButtons) do
-                local d = GetFFD(button)
-                if d._powerDirtyInCombat then
-                    d._powerDirtyInCombat = nil
+                local skinData = GetFFD(button)
+                if skinData._powerDirtyInCombat then
+                    skinData._powerDirtyInCombat = nil
                     UpdateButton(button)
                 end
             end
             if mod._partyAllButtons then
                 for _, button in ipairs(mod._partyAllButtons) do
-                    local d = GetFFD(button)
-                    if d._powerDirtyInCombat then
-                        d._powerDirtyInCombat = nil
+                    local skinData = GetFFD(button)
+                    if skinData._powerDirtyInCombat then
+                        skinData._powerDirtyInCombat = nil
                         UpdateButton(button)
                     end
                 end
@@ -353,13 +353,13 @@ local function OnEvent(self, evt, arg1, ...)
                     if button:IsVisible() then
                         local u = button:GetAttribute("unit")
                         if u then
-                            local d = GetFFD(button)
+                            local skinData = GetFFD(button)
                             -- Extra Frames duplicates never own a map slot
-                            if not d._isExtra then
+                            if not skinData._isExtra then
                                 unitToButton[u] = button
                             end
                             local _, classToken = UnitClass(u)
-                            d.classToken = classToken
+                            skinData.classToken = classToken
                         end
                     end
                 end
@@ -372,9 +372,9 @@ local function OnEvent(self, evt, arg1, ...)
                         local u = button:GetAttribute("unit")
                         if u then
                             mod._partyUnitToButton[u] = button
-                            local d = GetFFD(button)
+                            local skinData = GetFFD(button)
                             local _, classToken = UnitClass(u)
-                            d.classToken = classToken
+                            skinData.classToken = classToken
                         end
                     end
                 end
@@ -498,8 +498,8 @@ local function OnEvent(self, evt, arg1, ...)
         -- attribute, never the routing map: a portrait is a sticky paint,
         -- and the map keeps stale tokens.
         local entries = mod._partyAllButtons
-        for idx = 1, #entries do
-            local b = entries[idx]
+        for index = 1, #entries do
+            local b = entries[index]
             local u = b:GetAttribute("unit")
             if u and (arg1 == nil or u == arg1) then
                 local edge = GetFFD(b)
@@ -539,38 +539,38 @@ local function OnEvent(self, evt, arg1, ...)
             mod._HMUpdateValue(arg1)
         end
         local button = unitToButton[arg1] or mod._partyUnitToButton[arg1]
-        local d = button and GetFFD(button)
-        if d and d.power then
+        local skinData = button and GetFFD(button)
+        if skinData and skinData.power then
             -- Value only (Blizzard's CompactUnitFrame_UpdatePower shape): type,
             -- color and bounds belong to the UNIT_DISPLAYPOWER edge below; nil
             -- = not derived yet for this occupant, derive once.
-            local pType = d._pwType
+            local pType = skinData._pwType
             if pType == nil then
-                mod._RFPowerTypeEdge(d, arg1)
-                pType = d._pwType
+                mod._RFPowerTypeEdge(skinData, arg1)
+                pType = skinData._pwType
             end
             -- Percent-based, secret-safe (see UpdateButton power block).
             local ppct = UnitPowerPercent(arg1, pType, true, CurveConstants.ScaleTo100)
-            d.power:SetValue(ppct)
+            skinData.power:SetValue(ppct)
             -- Power Texts and the Custom texts reading power ride the same value
             -- (two field reads while the button has neither).
-            local tp = d._txP
-            if tp and (d._pwtOn or tp.reads) then
-                mod.RF_TextPower(d, arg1, ppct, pType)
+            local tp = skinData._txP
+            if tp and (skinData._pwtOn or tp.reads) then
+                mod.RF_TextPower(skinData, arg1, ppct, pType)
             end
         end
     elseif evt == "UNIT_DISPLAYPOWER" then
         -- The displayed power type changed (forms, spec swaps, vehicles):
         -- re-derive type + color + bounds once (Power Text's colour too), then push the value.
         local button = unitToButton[arg1] or mod._partyUnitToButton[arg1]
-        local d = button and GetFFD(button)
-        if d and d.power then
-            mod._RFPowerTypeEdge(d, arg1)
-            local ppct = UnitPowerPercent(arg1, d._pwType, true, CurveConstants.ScaleTo100)
-            d.power:SetValue(ppct)
-            local tp = d._txP
-            if tp and (d._pwtOn or tp.reads) then
-                mod.RF_TextPower(d, arg1, ppct, d._pwType)
+        local skinData = button and GetFFD(button)
+        if skinData and skinData.power then
+            mod._RFPowerTypeEdge(skinData, arg1)
+            local ppct = UnitPowerPercent(arg1, skinData._pwType, true, CurveConstants.ScaleTo100)
+            skinData.power:SetValue(ppct)
+            local tp = skinData._txP
+            if tp and (skinData._pwtOn or tp.reads) then
+                mod.RF_TextPower(skinData, arg1, ppct, skinData._pwType)
             end
         end
     elseif evt == "UNIT_NAME_UPDATE" then
@@ -635,11 +635,11 @@ local function OnEvent(self, evt, arg1, ...)
     elseif evt == "UNIT_THREAT_LIST_UPDATE" or evt == "UNIT_THREAT_SITUATION_UPDATE" then
         local button = unitToButton[arg1] or mod._partyUnitToButton[arg1]
         if button then
-            local d = GetFFD(button)
+            local skinData = GetFFD(button)
             mod.RF_PaintThreat(
-                d,
-                d._isParty and mod._scaledPartyProxy
-                    or (d._isExtra and mod._scaledExtraProxy)
+                skinData,
+                skinData._isParty and mod._scaledPartyProxy
+                    or (skinData._isExtra and mod._scaledExtraProxy)
                     or mod._scaledProfile,
                 arg1
             )

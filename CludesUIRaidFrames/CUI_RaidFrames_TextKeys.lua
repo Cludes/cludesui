@@ -23,8 +23,8 @@ local ipairs = ipairs
 local POSITIONS =
     { "topleft", "top", "topright", "left", "center", "right", "bottomleft", "bottom", "bottomright" }
 local POS_INDEX = {}
-for idx, p in ipairs(POSITIONS) do
-    POS_INDEX[p] = idx
+for index, p in ipairs(POSITIONS) do
+    POS_INDEX[p] = index
 end
 mod.RF_TEXT_POSITIONS, mod.RF_TEXT_POS_INDEX = POSITIONS, POS_INDEX
 

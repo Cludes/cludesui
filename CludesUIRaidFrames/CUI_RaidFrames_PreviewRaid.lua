@@ -115,18 +115,18 @@ end
 function mod.RF_DockPreviewWindow(oc)
     oc:ClearAllPoints()
     local scrollFrame = CludesUI._scrollFrame
-    local l, r, t =
+    local l, region, t =
         scrollFrame and scrollFrame:GetLeft(),
         scrollFrame and scrollFrame:GetRight(),
         scrollFrame and scrollFrame:GetTop()
-    if not (l and r and t) then
+    if not (l and region and t) then
         oc:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
         return
     end
     -- The panel has its own scale (Window Scale): its edges in UIParent units.
     local key = scrollFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
     local wid = oc:GetWidth() or 0
-    local rightX = (r + 34) * key -- clear of the panel's right border
+    local rightX = (region + 34) * key -- clear of the panel's right border
     local leftX = (l - 310) * key -- clear of the sidebar's left border
     if rightX + wid <= UIParent:GetWidth() then
         oc:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", rightX, t * key)
@@ -209,14 +209,14 @@ local function RefreshPreview()
     -- Normalize unit positions within a group (0-indexed)
     local rawUX, rawUY = {}, {}
     local minUX, maxUY = 0, 0
-    for idx = 0, 4 do
-        rawUX[idx] = idx * uStepX
-        rawUY[idx] = idx * uStepY
-        if rawUX[idx] < minUX then
-            minUX = rawUX[idx]
+    for index = 0, 4 do
+        rawUX[index] = index * uStepX
+        rawUY[index] = index * uStepY
+        if rawUX[index] < minUX then
+            minUX = rawUX[index]
         end
-        if rawUY[idx] > maxUY then
-            maxUY = rawUY[idx]
+        if rawUY[index] > maxUY then
+            maxUY = rawUY[index]
         end
     end
 
@@ -255,8 +255,8 @@ local function RefreshPreview()
     end
 
     -- Hide all preview frames first
-    for _, f in ipairs(previewFrames) do
-        f:Hide()
+    for _, frame in ipairs(previewFrames) do
+        frame:Hide()
     end
 
     -- The 20-player preview keeps subgroup identities while moving each
@@ -283,25 +283,25 @@ local function RefreshPreview()
         local firstFrame -- the group's u == 0 frame, the group-number anchor
         for u = 0, 4 do
             frameIdx = frameIdx + 1
-            local f = GetOrCreatePreviewFrame(frameIdx)
-            f:ClearAllPoints()
+            local frame = GetOrCreatePreviewFrame(frameIdx)
+            frame:ClearAllPoints()
             local fx = gx + (rawUX[u] - minUX)
             local fy = gy + (rawUY[u] - maxUY)
-            f:SetPoint("TOPLEFT", anchor, "TOPLEFT", fx + anchorPad + padL, fy - anchorPad - topExtra - padT)
-            ApplyPreviewData(f, frameIdx)
+            frame:SetPoint("TOPLEFT", anchor, "TOPLEFT", fx + anchorPad + padL, fy - anchorPad - topExtra - padT)
+            ApplyPreviewData(frame, frameIdx)
 
-            if f._health and previewHealthValues[frameIdx] then
+            if frame._health and previewHealthValues[frameIdx] then
                 local barPct = mod.RF_IsInvertedFill(s) and (100 - previewHealthValues[frameIdx])
                     or previewHealthValues[frameIdx]
-                f._health:SetValue(barPct)
-                f._healthPct = previewHealthValues[frameIdx]
+                frame._health:SetValue(barPct)
+                frame._healthPct = previewHealthValues[frameIdx]
             end
-            if f._power and previewPowerValues[frameIdx] then
-                f._power:SetValue(previewPowerValues[frameIdx])
-                f._powerPct = previewPowerValues[frameIdx]
+            if frame._power and previewPowerValues[frameIdx] then
+                frame._power:SetValue(previewPowerValues[frameIdx])
+                frame._powerPct = previewPowerValues[frameIdx]
             end
             if u == 0 then
-                firstFrame = f
+                firstFrame = frame
             end
         end
 
@@ -338,8 +338,8 @@ local function RefreshPreview()
 
     -- Reparent after all frames are created (first load creates them in the loop above)
     local reparentTo = isOverlay and overlayContainer or (previewContainer or containerFrame)
-    for _, f in ipairs(previewFrames) do
-        f:SetParent(reparentTo)
+    for _, frame in ipairs(previewFrames) do
+        frame:SetParent(reparentTo)
     end
     -- Group-number labels go on a high-level overlay child of the same container
     -- so they draw ABOVE the preview bars (which are descendants of reparentTo);
@@ -626,9 +626,9 @@ local function HidePreview(skipRestore)
         previewContainer:Hide()
     end
     -- Reparent preview frames back to containerFrame
-    for _, f in ipairs(previewFrames) do
-        f:SetParent(containerFrame)
-        f:Hide()
+    for _, frame in ipairs(previewFrames) do
+        frame:SetParent(containerFrame)
+        frame:Hide()
     end
     for _, labelFS in ipairs(previewGroupLabels) do
         labelFS:SetParent(containerFrame)

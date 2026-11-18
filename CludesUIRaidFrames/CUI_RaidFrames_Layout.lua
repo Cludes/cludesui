@@ -123,8 +123,8 @@ mod._BuildHeaderSet = function(merge)
 
             -- Window-phase secure styling only; the insecure visual bodies run
             -- in the deferred login pass (or the restyle-loop fallback).
-            for idx = 1, 5 do
-                local button = heading[idx]
+            for index = 1, 5 do
+                local button = heading[index]
                 if button then
                     mod._StyleButtonSecure(button)
                     allButtons[#allButtons + 1] = button
@@ -163,8 +163,8 @@ mod._BuildHeaderSet = function(merge)
         mod._flatHeader:Hide() -- start hidden; LayoutGroups shows the right headers
 
         -- Window-phase secure styling only; bodies run in the deferred pass.
-        for idx = 1, 40 do
-            local button = mod._flatHeader[idx]
+        for index = 1, 40 do
+            local button = mod._flatHeader[index]
             if button then
                 mod._StyleButtonSecure(button)
                 allButtons[#allButtons + 1] = button
@@ -271,8 +271,8 @@ function mod._UpdateGroupNumbers()
         local firstBtn
         if labelFS and heading and vg[set] ~= false then
             -- First populated unit of this group (empty-but-visible groups -> none)
-            for idx = 1, 5 do
-                local button = heading[idx]
+            for index = 1, 5 do
+                local button = heading[index]
                 if button and button:IsShown() and button:GetAttribute("unit") then
                     firstBtn = button
                     break
@@ -384,9 +384,9 @@ mod._LayoutGroupsImpl = function()
 
         -- Build groupFilter from visible groups
         local gfParts = {}
-        for idx = 1, 8 do
-            if vg[idx] ~= false then
-                gfParts[#gfParts + 1] = tostring(idx)
+        for index = 1, 8 do
+            if vg[index] ~= false then
+                gfParts[#gfParts + 1] = tostring(index)
             end
         end
         local gfStr = table.concat(gfParts, ",")

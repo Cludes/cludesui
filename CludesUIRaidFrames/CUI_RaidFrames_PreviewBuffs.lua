@@ -50,28 +50,28 @@ local function GetConfiguredBuffSpells()
     local iscale = mod._bmScale or 1
     local spells = {}
     local seen = {}
-    for _, ind in ipairs(indicators) do
-        if ind.enabled and ind.spells and (ind.type == "icon" or ind.type == "square") then
-            for _, spellRef in ipairs(ind.spells) do
+    for _, indicator in ipairs(indicators) do
+        if indicator.enabled and indicator.spells and (indicator.type == "icon" or indicator.type == "square") then
+            for _, spellRef in ipairs(indicator.spells) do
                 if not seen[spellRef] then
                     seen[spellRef] = true
                     local iconTex
-                    if ind.type == "icon" then
+                    if indicator.type == "icon" then
                         local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(spellRef)
                         iconTex = details and details.iconID or 136243
                     end
                     spells[#spells + 1] = {
                         id = spellRef,
                         icon = iconTex,
-                        indType = ind.type,
-                        color = (ind.spellColors and ind.spellColors[spellRef]) or ind.color,
-                        size = mod.RFC_BmSize(ind, iscale),
-                        position = ind.position or "TOPLEFT",
-                        offsetX = ind.offsetX or 0,
-                        offsetY = ind.offsetY or 0,
-                        growDirection = ind.growDirection or "RIGHT",
-                        spacing = ind.spacing or 0,
-                        indicator = ind,
+                        indType = indicator.type,
+                        color = (indicator.spellColors and indicator.spellColors[spellRef]) or indicator.color,
+                        size = mod.RFC_BmSize(indicator, iscale),
+                        position = indicator.position or "TOPLEFT",
+                        offsetX = indicator.offsetX or 0,
+                        offsetY = indicator.offsetY or 0,
+                        growDirection = indicator.growDirection or "RIGHT",
+                        spacing = indicator.spacing or 0,
+                        indicator = indicator,
                         permanent = mod.BM_PREVIEW_NO_DURATION and mod.BM_PREVIEW_NO_DURATION[spellRef],
                     }
                 end
@@ -81,72 +81,72 @@ local function GetConfiguredBuffSpells()
     return spells
 end
 
-mod.PvBuffAnchor = function(icon, f, spellInfo, prevIcon)
-    if not f._health then
+mod.PvBuffAnchor = function(iconTex, frame, spellInfo, prevIcon)
+    if not frame._health then
         return
     end
-    icon:SetSize(spellInfo.size, spellInfo.size)
-    icon:ClearAllPoints()
+    iconTex:SetSize(spellInfo.size, spellInfo.size)
+    iconTex:ClearAllPoints()
     if prevIcon then
         -- Chain from previous icon using growth direction
         local spc = PixelSnap(spellInfo.spacing or 0)
         local grow = spellInfo.growDirection or "RIGHT"
         if grow == "RIGHT" then
-            icon:SetPoint("LEFT", prevIcon, "RIGHT", spc, 0)
+            iconTex:SetPoint("LEFT", prevIcon, "RIGHT", spc, 0)
         elseif grow == "LEFT" then
-            icon:SetPoint("RIGHT", prevIcon, "LEFT", -spc, 0)
+            iconTex:SetPoint("RIGHT", prevIcon, "LEFT", -spc, 0)
         elseif grow == "UP" then
-            icon:SetPoint("BOTTOM", prevIcon, "TOP", 0, spc)
+            iconTex:SetPoint("BOTTOM", prevIcon, "TOP", 0, spc)
         elseif grow == "DOWN" then
-            icon:SetPoint("TOP", prevIcon, "BOTTOM", 0, -spc)
+            iconTex:SetPoint("TOP", prevIcon, "BOTTOM", 0, -spc)
         end
     else
         local place = spellInfo.position and spellInfo.position:upper() or "BOTTOMLEFT"
         local ox, oy = spellInfo.offsetX or 0, spellInfo.offsetY or 0
-        icon:SetPoint(place, mod.RF_AnchorHost(f._health, PvSettings()), place, ox, oy)
+        iconTex:SetPoint(place, mod.RF_AnchorHost(frame._health, PvSettings()), place, ox, oy)
     end
 end
 
 mod.PvBuffApply = function(spellInfo, frameIndex, slot)
-    local f = previewFrames[frameIndex]
-    if not f or not f._pvBuffs then
+    local frame = previewFrames[frameIndex]
+    if not frame or not frame._pvBuffs then
         return
     end
-    local icon = f._pvBuffs[slot]
-    if not icon then
+    local iconTex = frame._pvBuffs[slot]
+    if not iconTex then
         return
     end
 
     if spellInfo.indType == "icon" then
-        icon._tex:SetTexture(spellInfo.icon or 136243)
-        icon._tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        icon._tex:SetVertexColor(1, 1, 1)
+        iconTex._tex:SetTexture(spellInfo.icon or 136243)
+        iconTex._tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        iconTex._tex:SetVertexColor(1, 1, 1)
     else
         local c = spellInfo.color or { r = 0.30, g = 0.79, b = 0.94 }
-        icon._tex:SetColorTexture(c.r, c.g, c.b, 1)
-        icon._tex:SetTexCoord(0, 1, 0, 1)
+        iconTex._tex:SetColorTexture(c.r, c.g, c.b, 1)
+        iconTex._tex:SetTexCoord(0, 1, 0, 1)
     end
 
-    mod.PvBuffAnchor(icon, f, spellInfo)
+    mod.PvBuffAnchor(iconTex, frame, spellInfo)
 
     -- Border
-    mod.RFC_PreviewAuraBorder(icon, icon._borderFrame, spellInfo.indicator, "indBorder")
+    mod.RFC_PreviewAuraBorder(iconTex, iconTex._borderFrame, spellInfo.indicator, "indBorder")
 
     -- Cooldown
-    if icon._cooldown then
+    if iconTex._cooldown then
         if not spellInfo.permanent then
             local dur = 15
             local startTime = GetTime() - math.random() * 10
-            icon._cooldown:SetCooldown(startTime, dur)
-            icon._cooldown:SetDrawSwipe(true)
-            icon._cooldown:SetHideCountdownNumbers(true)
-            icon._cooldown:Show()
+            iconTex._cooldown:SetCooldown(startTime, dur)
+            iconTex._cooldown:SetDrawSwipe(true)
+            iconTex._cooldown:SetHideCountdownNumbers(true)
+            iconTex._cooldown:Show()
         else
-            icon._cooldown:Hide()
+            iconTex._cooldown:Hide()
         end
     end
 
-    icon:Show()
+    iconTex:Show()
 end
 
 mod.PvBuffTick = function()
@@ -177,9 +177,9 @@ mod.PvBuffTick = function()
     for spellRef, details in pairs(mod._pvBuffAssignments) do
         if not details.permanent and details.expTime and details.expTime <= nowTime then
             -- Hide old
-            local f = previewFrames[details.frameIndex]
-            if f and f._pvBuffs and f._pvBuffs[details.slot] then
-                local ic = f._pvBuffs[details.slot]
+            local frame = previewFrames[details.frameIndex]
+            if frame and frame._pvBuffs and frame._pvBuffs[details.slot] then
+                local ic = frame._pvBuffs[details.slot]
                 ic:Hide()
                 if ic._cooldown then
                     ic._cooldown:SetCooldown(0, 0)
@@ -227,12 +227,12 @@ mod.StartPvBuffTicker = function()
                 if playerSlot > 8 then
                     break
                 end
-                local prev = posLastIcon[place]
+                local previous = posLastIcon[place]
                 mod.PvBuffApply(sp, 1, playerSlot)
-                local icon = playerF._pvBuffs[playerSlot]
-                if icon then
-                    mod.PvBuffAnchor(icon, playerF, sp, prev)
-                    posLastIcon[place] = icon
+                local iconTex = playerF._pvBuffs[playerSlot]
+                if iconTex then
+                    mod.PvBuffAnchor(iconTex, playerF, sp, previous)
+                    posLastIcon[place] = iconTex
                 end
                 mod._pvBuffAssignments[sp.id .. ":p"] = {
                     spellInfo = sp,
@@ -247,8 +247,8 @@ mod.StartPvBuffTicker = function()
 
     -- Other frames: spread spells across frames 2+, one each, cycling on expiry
     local frameSlotsUsed = {}
-    for idx, sp in ipairs(spells) do
-        local fi = ((idx - 1) % (PREVIEW_COUNT2 - 1)) + 2
+    for index, sp in ipairs(spells) do
+        local fi = ((index - 1) % (PREVIEW_COUNT2 - 1)) + 2
         frameSlotsUsed[fi] = (frameSlotsUsed[fi] or 0) + 1
         local slot = frameSlotsUsed[fi]
         if slot > 4 then
@@ -273,9 +273,9 @@ mod.StopPvBuffTicker = function()
         mod._pvBuffTicker = nil
     end
     wipe(mod._pvBuffAssignments)
-    for _, f in ipairs(previewFrames) do
-        if f._pvBuffs then
-            for _, ic in ipairs(f._pvBuffs) do
+    for _, frame in ipairs(previewFrames) do
+        if frame._pvBuffs then
+            for _, ic in ipairs(frame._pvBuffs) do
                 ic:Hide()
                 if ic._cooldown then
                     ic._cooldown:SetCooldown(0, 0)
@@ -325,9 +325,9 @@ mod.RefreshPvAuraVisuals = function()
     local sOX = s2.debuffStacksOffsetX or 0
     local sOY = s2.debuffStacksOffsetY or 0
 
-    for fi, f in ipairs(_pvFrames) do
-        if f._pvDebuffs then
-            for _, ic in ipairs(f._pvDebuffs) do
+    for fi, frame in ipairs(_pvFrames) do
+        if frame._pvDebuffs then
+            for _, ic in ipairs(frame._pvDebuffs) do
                 if ic:IsShown() then
                     ic:SetSize(mod.RFC_DebuffSize(s2), mod.RFC_DebuffSize(s2))
                     ic._tex:SetTexCoord(dbZ, 1 - dbZ, dbZ, 1 - dbZ)
@@ -356,8 +356,8 @@ mod.RefreshPvAuraVisuals = function()
             end
             _reanchor(fi, "db")
         end
-        if f._pvDefs then
-            for _, ic in ipairs(f._pvDefs) do
+        if frame._pvDefs then
+            for _, ic in ipairs(frame._pvDefs) do
                 if ic:IsShown() then
                     ic:SetSize(s2.defSize or 22, s2.defSize or 22)
                     ic._tex:SetTexCoord(defZ, 1 - defZ, defZ, 1 - defZ)

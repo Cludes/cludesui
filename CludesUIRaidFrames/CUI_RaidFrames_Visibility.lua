@@ -78,13 +78,13 @@ do
     -- stored in FFD so BM can read it; BM alpha lives in _bmSavedAlpha so range can
     -- read it. Each system stores its own value; final apply multiplies the two.
     local function ApplyRangeAlpha(button, rangeAlpha)
-        local d = GetFFD(button)
-        d.rangeAlpha = rangeAlpha
+        local skinData = GetFFD(button)
+        skinData.rangeAlpha = rangeAlpha
         local bmA = button._bmSavedAlpha or 1
         button:SetAlpha(bmA * rangeAlpha)
         -- A 3D party portrait does not take the button's alpha: mirror it.
-        if d.pt and d.pt._3dOn then
-            mod.RF_PtModelAlpha(d, bmA * rangeAlpha)
+        if skinData.pt and skinData.pt._3dOn then
+            mod.RF_PtModelAlpha(skinData, bmA * rangeAlpha)
         end
     end
 
@@ -99,11 +99,11 @@ do
             ApplyRangeAlpha(button, inAlpha)
             return
         end
-        local d = GetFFD(button)
-        d.rangeAlpha = nil
+        local skinData = GetFFD(button)
+        skinData.rangeAlpha = nil
         -- A 3D party portrait does not take the button's alpha: mirror it.
-        if d.pt and d.pt._3dOn then
-            mod.RF_PtModelAlphaSecret(d, inRange, bmA * inAlpha, bmA * outAlpha)
+        if skinData.pt and skinData.pt._3dOn then
+            mod.RF_PtModelAlphaSecret(skinData, inRange, bmA * inAlpha, bmA * outAlpha)
         end
     end
 
@@ -131,10 +131,10 @@ do
             -- Ghost units need to be checked using a rez-spell because UnitInRange checks the ghost's range, not the corpse's.
             -- We want to provide rez-range feedback based on the corpse's position.
             if playerHasRez then
-                local r = C_Spell_IsSpellInRange(playerRezSpell, unitToken)
-                if r == true then
+                local region = C_Spell_IsSpellInRange(playerRezSpell, unitToken)
+                if region == true then
                     ApplyRangeAlpha(button, 1)
-                elseif r == false then
+                elseif region == false then
                     ApplyRangeAlpha(button, oorAlpha)
                 else
                     -- Use the standard ~40yd interact range (UnitInRange) as fallback
@@ -145,10 +145,10 @@ do
                 ApplyRangeAlphaSecret(button, UnitInRange(unitToken), 1, oorAlpha)
             end
         elseif usesSpellRange then
-            local r = C_Spell_IsSpellInRange(playerFriendlySpell, unitToken)
-            if r == true then
+            local region = C_Spell_IsSpellInRange(playerFriendlySpell, unitToken)
+            if region == true then
                 ApplyRangeAlpha(button, 1)
-            elseif r == false then
+            elseif region == false then
                 ApplyRangeAlpha(button, oorAlpha)
             else
                 -- r == nil: no range relationship to this unit (unit-targeted spell, so a
@@ -175,12 +175,12 @@ do
         if not UnitExists(unitToken) or UnitIsUnit(unitToken, "player") then
             return
         end
-        local d = GetFFD(button)
+        local skinData = GetFFD(button)
         if UnitIsDeadOrGhost(unitToken) then
-            d._rangeWasDead = true
+            skinData._rangeWasDead = true
             UpdateButtonRange(unitToken, button)
-        elseif d._rangeWasDead then
-            d._rangeWasDead = nil
+        elseif skinData._rangeWasDead then
+            skinData._rangeWasDead = nil
             UpdateButtonRange(unitToken, button)
         elseif usesSpellRange then
             UpdateButtonRange(unitToken, button)
@@ -258,48 +258,48 @@ local ghostTicker = nil
 
 local function GhostAuraCheck()
     local function checkUnit(unitToken, button)
-        local d = GetFFD(button)
+        local skinData = GetFFD(button)
         -- unitToButton et al. only ever gain entries on reassignment, never drop
         -- the old one, so unit/btn here can be a stale pairing; re-confirm against
         -- the button's own live attribute before writing to it.
         if button:GetAttribute("unit") == unitToken and mod.RFC_RepointStale then
-            mod.RFC_RepointStale(d, unitToken)
+            mod.RFC_RepointStale(skinData, unitToken)
         end
         if not UnitIsVisible(unitToken) or not UnitIsConnected(unitToken) then
-            if not d.ghostCleared then
-                d.ghostCleared = true
+            if not skinData.ghostCleared then
+                skinData.ghostCleared = true
                 -- Binding at ghost time: a reassignment inside the window already
                 -- re-parsed the containers (RFC_OnUnitAssigned), so the regain pass
                 -- skips a button whose binding moved.
-                d.ghostUnit = d.rfcUnit
+                skinData.ghostUnit = skinData.rfcUnit
             end
         else
-            if d.ghostCleared then
-                d.ghostCleared = false
+            if skinData.ghostCleared then
+                skinData.ghostCleared = false
                 -- unitToButton only ever gains entries, so unit/btn can be a stale
                 -- pairing: re-parse only containers still bound to this unit.
-                if d.rfcUnit == unitToken and d.ghostUnit == unitToken then
-                    if d.rfcDebuffs then
-                        d.rfcDebuffs:UpdateAllAuras()
+                if skinData.rfcUnit == unitToken and skinData.ghostUnit == unitToken then
+                    if skinData.rfcDebuffs then
+                        skinData.rfcDebuffs:UpdateAllAuras()
                     end
-                    if d.rfcDispLoc then
-                        d.rfcDispLoc:UpdateAllAuras()
+                    if skinData.rfcDispLoc then
+                        skinData.rfcDispLoc:UpdateAllAuras()
                     end
-                    if d.rfcBm then
-                        d.rfcBm:UpdateAllAuras()
+                    if skinData.rfcBm then
+                        skinData.rfcBm:UpdateAllAuras()
                     end
-                    if d.rfcBmChain then
-                        for _, cc in pairs(d.rfcBmChain) do
+                    if skinData.rfcBmChain then
+                        for _, cc in pairs(skinData.rfcBmChain) do
                             cc:UpdateAllAuras()
                         end
                     end
-                    if d.dmTiles then
-                        for _, c in pairs(d.dmTiles) do
+                    if skinData.dmTiles then
+                        for _, c in pairs(skinData.dmTiles) do
                             c:UpdateAllAuras()
                         end
                     end
                 end
-                d.ghostUnit = nil
+                skinData.ghostUnit = nil
             end
         end
     end
@@ -327,16 +327,16 @@ local function StopGhostTicker()
     end
     -- Clear ghost flags
     for _, button in pairs(unitToButton) do
-        local d = GetFFD(button)
-        d.ghostCleared = nil
+        local skinData = GetFFD(button)
+        skinData.ghostCleared = nil
     end
     for _, button in pairs(mod._partyUnitToButton) do
-        local d = GetFFD(button)
-        d.ghostCleared = nil
+        local skinData = GetFFD(button)
+        skinData.ghostCleared = nil
     end
     for _, button in pairs(mod._xfUnitToButton) do
-        local d = GetFFD(button)
-        d.ghostCleared = nil
+        local skinData = GetFFD(button)
+        skinData.ghostCleared = nil
     end
 end
 
@@ -443,11 +443,11 @@ mod._RFSyncVisDrivers = function()
     local s = saved.profile
     local M = mod._RF_VIS_MACROS
     local mode = (mod._InArena() and "arena") or ((s.partySmallRaid == true) and "small") or "group"
-    local r = M.raid[mode][s.showWhenSolo and true or false]
+    local region = M.raid[mode][s.showWhenSolo and true or false]
     local p = M.party[mode][s.partyShowWhenSolo and true or false]
-    if mod._rfRaidVisMacro ~= r then
-        RegisterStateDriver(containerFrame, "visibility", r)
-        mod._rfRaidVisMacro = r
+    if mod._rfRaidVisMacro ~= region then
+        RegisterStateDriver(containerFrame, "visibility", region)
+        mod._rfRaidVisMacro = region
     end
     if mod._rfPartyVisMacro ~= p then
         RegisterStateDriver(pc, "visibility", p)
@@ -459,10 +459,10 @@ end
 -- roster) while its events stop routing: forget each painted occupant so the
 -- next assignment, in combat too, takes the full repaint.
 mod._RFForgetOccupants = function(entries)
-    for idx = 1, #entries do
-        local d = FFD[entries[idx]]
-        if d then
-            d._lastGuid = nil
+    for index = 1, #entries do
+        local skinData = FFD[entries[index]]
+        if skinData then
+            skinData._lastGuid = nil
         end
     end
 end

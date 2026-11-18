@@ -123,12 +123,12 @@ do
     -- would drift). Falls back to the legacy CENTER anchor (freePos) until the
     -- user drags the mover once. Called by FB.Anchor through the owner hook.
     XF.FreeAnchor = function(c, set)
-        local r = set and set.freeRect
-        if not r then
+        local region = set and set.freeRect
+        if not region then
             return false
         end
         local grow, wrap, horizontal = XF.GrowInfo(set, saved and saved.profile)
-        local corner, posX, posY = FB.CornerPin(horizontal and grow or wrap, horizontal and wrap or grow, r)
+        local corner, posX, posY = FB.CornerPin(horizontal and grow or wrap, horizontal and wrap or grow, region)
         FB.FreePin(c, corner, posX, posY)
         return true
     end
@@ -304,11 +304,11 @@ do
             )
             -- The bulk passes size inner elements for the BASE frame size;
             -- correct the height/width-derived pieces for the offset size.
-            local d = GetFFD(b)
-            if d.health then
-                d.health:SetHeight(
+            local skinData = GetFFD(b)
+            if skinData.health then
+                skinData.health:SetHeight(
                     (
-                        (d.power and d.power:IsShown())
+                        (skinData.power and skinData.power:IsShown())
                             and PixelSnap(hgt - mod.RF_HealthPowerInset(s, powerH))
                         or hgt
                     ) - topBarH
@@ -319,84 +319,84 @@ do
             -- the extra proxy (mirrors ReloadFrames per-button styling) so texts/
             -- indicators/auras/BM buffs auto-resize. Bounded to the built slots.
             local xs = mod._scaledExtraProxy
-            if xs.topNameBarDivider == true or (d.topNameBar and d.topNameBar._divider) then
+            if xs.topNameBarDivider == true or (skinData.topNameBar and skinData.topNameBar._divider) then
                 LayoutTopNameBar(
                     xs,
                     hgt,
-                    (d.power and d.power:IsShown()) and powerH or 0,
-                    d.health,
-                    d.topNameBar,
-                    d.topNameBarBg,
-                    d.topNameBarText,
-                    d.power
+                    (skinData.power and skinData.power:IsShown()) and powerH or 0,
+                    skinData.health,
+                    skinData.topNameBar,
+                    skinData.topNameBarBg,
+                    skinData.topNameBarText,
+                    skinData.power
                 )
                 if
                     xs.topNameBarDividerMatchColor == true
-                    and d.topNameBar
-                    and d.topNameBar._divider
-                    and d.topNameBar._divider._powerArtMode == "divider"
+                    and skinData.topNameBar
+                    and skinData.topNameBar._divider
+                    and skinData.topNameBar._divider._powerArtMode == "divider"
                 then
-                    d.ApplyBorderColor()
+                    skinData.ApplyBorderColor()
                 end
             end
             -- The texts through the extra proxy; the name width follows the offset
             -- width (the layout derives it from the BASE frame width).
-            if d.AnchorTexts then
-                d.AnchorTexts()
-                mod.RF_TextNameWidth(d, wid)
+            if skinData.AnchorTexts then
+                skinData.AnchorTexts()
+                mod.RF_TextNameWidth(skinData, wid)
             end
-            if d.statusText then
-                ApplyFont(d.statusText, xs.statusTextSize or 14)
-                if d.AnchorStatusText then
-                    d.AnchorStatusText()
+            if skinData.statusText then
+                ApplyFont(skinData.statusText, xs.statusTextSize or 14)
+                if skinData.AnchorStatusText then
+                    skinData.AnchorStatusText()
                 end
             end
-            if d.roleIcon then
+            if skinData.roleIcon then
                 local riSz = PixelSnap(xs.roleIconSize or 14)
-                d.roleIcon:SetSize(riSz, riSz)
-                if d.AnchorRoleIcon then
-                    d.AnchorRoleIcon()
+                skinData.roleIcon:SetSize(riSz, riSz)
+                if skinData.AnchorRoleIcon then
+                    skinData.AnchorRoleIcon()
                 end
             end
-            if d.leaderIcon then
+            if skinData.leaderIcon then
                 local liSz = PixelSnap(xs.leaderIconSize or 14)
-                d.leaderIcon:SetSize(liSz, liSz)
-                d.leaderIcon:ClearAllPoints()
+                skinData.leaderIcon:SetSize(liSz, liSz)
+                skinData.leaderIcon:ClearAllPoints()
                 local liPos = (xs.leaderIconPosition or "top"):upper()
-                d.leaderIcon:SetPoint(
+                skinData.leaderIcon:SetPoint(
                     liPos,
-                    mod.RF_AnchorHost(d.health, xs),
+                    mod.RF_AnchorHost(skinData.health, xs),
                     liPos,
                     xs.leaderIconOffsetX or 0,
                     xs.leaderIconOffsetY or 0
                 )
             end
-            if d.raidMarker then
+            if skinData.raidMarker then
                 local rmSz = PixelSnap(xs.raidMarkerSize or 16)
-                d.raidMarker:SetSize(rmSz, rmSz)
-                if d.AnchorRaidMarker then
-                    d.AnchorRaidMarker()
+                skinData.raidMarker:SetSize(rmSz, rmSz)
+                if skinData.AnchorRaidMarker then
+                    skinData.AnchorRaidMarker()
                 end
             end
-            if d.readyCheck then
+            if skinData.readyCheck then
                 local rcSz = PixelSnap(xs.readyCheckSize or 20)
-                d.readyCheck:SetSize(rcSz, rcSz)
-                if d.AnchorReadyCheck then
-                    d.AnchorReadyCheck()
+                skinData.readyCheck:SetSize(rcSz, rcSz)
+                if skinData.AnchorReadyCheck then
+                    skinData.AnchorReadyCheck()
                 end
             end
-            if d.combatIcon then
+            if skinData.combatIcon then
                 local cciSz = PixelSnap(xs.combatIndicatorSize or 16)
-                d.combatIcon:SetSize(cciSz, cciSz)
-                if d.AnchorCombatIcon then
-                    d.AnchorCombatIcon()
+                skinData.combatIcon:SetSize(cciSz, cciSz)
+                if skinData.AnchorCombatIcon then
+                    skinData.AnchorCombatIcon()
                 end
             end
-            if d.pingFrame then
-                mod._RFAnchorPing(d)
+            if skinData.pingFrame then
+                mod._RFAnchorPing(skinData)
             end
             if mod.RF_FvMissingAnchor then
-                mod.RF_FvMissingAnchor(b, d)
+                mod.RF_FvMissingAnchor(b, skinData)
             end
         end
     end
@@ -467,46 +467,46 @@ do
                         -- changes touch nothing UpdateAbsorb paints (overlays are
                         -- clip-anchored; the missing-health clamp edge rides the
                         -- armed belt / next absorb event instead).
-                        local d = GetFFD(b)
-                        if d._absActive then
+                        local skinData = GetFFD(b)
+                        if skinData._absActive then
                             mod._MarkAbsorbDirty(b, unitToken)
                         end
                     end
                 elseif evt == "UNIT_POWER_UPDATE" then
-                    local d = GetFFD(b)
-                    if d.power and d.power:IsShown() then
+                    local skinData = GetFFD(b)
+                    if skinData.power and skinData.power:IsShown() then
                         -- Value only; type/color/bounds ride the UNIT_DISPLAYPOWER
                         -- edge (see the header dispatcher's branch).
-                        local pType = d._pwType
+                        local pType = skinData._pwType
                         if pType == nil then
-                            mod._RFPowerTypeEdge(d, unitToken)
-                            pType = d._pwType
+                            mod._RFPowerTypeEdge(skinData, unitToken)
+                            pType = skinData._pwType
                         end
                         local ppct = UnitPowerPercent(unitToken, pType, true, CurveConstants.ScaleTo100)
-                        d.power:SetValue(ppct)
+                        skinData.power:SetValue(ppct)
                         -- Power Texts ride the same value (one field test while off);
                         -- the Custom texts follow below, power bar or not.
-                        if d._pwtOn then
-                            mod.RF_TextPower(d, unitToken, ppct, pType, true)
+                        if skinData._pwtOn then
+                            mod.RF_TextPower(skinData, unitToken, ppct, pType, true)
                         end
                     end
-                    local tp = d._txP
+                    local tp = skinData._txP
                     if tp and tp.reads and tp.reads.pp then
-                        mod.RF_TextRepaintCustom(d, unitToken, "pp")
+                        mod.RF_TextRepaintCustom(skinData, unitToken, "pp")
                     end
                 elseif evt == "UNIT_DISPLAYPOWER" then
-                    local d = GetFFD(b)
-                    if d.power and d.power:IsShown() then
-                        mod._RFPowerTypeEdge(d, unitToken)
-                        local ppct = UnitPowerPercent(unitToken, d._pwType, true, CurveConstants.ScaleTo100)
-                        d.power:SetValue(ppct)
-                        if d._pwtOn then
-                            mod.RF_TextPower(d, unitToken, ppct, d._pwType, true)
+                    local skinData = GetFFD(b)
+                    if skinData.power and skinData.power:IsShown() then
+                        mod._RFPowerTypeEdge(skinData, unitToken)
+                        local ppct = UnitPowerPercent(unitToken, skinData._pwType, true, CurveConstants.ScaleTo100)
+                        skinData.power:SetValue(ppct)
+                        if skinData._pwtOn then
+                            mod.RF_TextPower(skinData, unitToken, ppct, skinData._pwType, true)
                         end
                     end
-                    local tp = d._txP
+                    local tp = skinData._txP
                     if tp and tp.reads and tp.reads.pp then
-                        mod.RF_TextRepaintCustom(d, unitToken, "pp")
+                        mod.RF_TextRepaintCustom(skinData, unitToken, "pp")
                     end
                 elseif
                     evt == "UNIT_ABSORB_AMOUNT_CHANGED"
@@ -520,10 +520,10 @@ do
                     -- button's view the event changes no pixel and must not arm.
                     local dropdown = GetFFD(b)
                     if evt == "UNIT_HEAL_PREDICTION" then
-                        local sv = dropdown._isParty and mod._scaledPartyProxy
+                        local savedVars = dropdown._isParty and mod._scaledPartyProxy
                             or (dropdown._isExtra and mod._scaledExtraProxy)
                             or mod._scaledProfile
-                        if sv.healPrediction then
+                        if savedVars.healPrediction then
                             mod._AbArm(b, unitToken, dropdown)
                             mod._MarkAbsorbDirty(b, unitToken)
                         end
@@ -552,10 +552,10 @@ do
                         end
                     end -- prediction view-gate else
                 elseif evt == "UNIT_THREAT_LIST_UPDATE" or evt == "UNIT_THREAT_SITUATION_UPDATE" then
-                    local d = GetFFD(b)
+                    local skinData = GetFFD(b)
                     mod.RF_PaintThreat(
-                        d,
-                        d._isExtra and mod._scaledExtraProxy or mod._scaledProfile,
+                        skinData,
+                        skinData._isExtra and mod._scaledExtraProxy or mod._scaledProfile,
                         unitToken
                     )
                 elseif evt == "UNIT_IN_RANGE_UPDATE" then
@@ -645,9 +645,9 @@ do
             t:UnregisterAllEvents()
             if unitToken then
                 -- Class token cache for the power border (mirrors RebuildUnitMap)
-                local d = GetFFD(b)
+                local skinData = GetFFD(b)
                 local _, classToken = UnitClass(unitToken)
-                d.classToken = classToken
+                skinData.classToken = classToken
                 b:SetAttribute("unit", unitToken)
                 mod._xfUnitToButton[unitToken] = b
                 -- Fail-open backstop for a mid-raid reconnect: the roster can still be
@@ -751,8 +751,8 @@ do
         if not unitToken then
             return
         end
-        local idx = tonumber(unitToken:match("^raid(%d+)$"))
-        local name = idx and GetRaidRosterInfo(idx)
+        local index = tonumber(unitToken:match("^raid(%d+)$"))
+        local name = index and GetRaidRosterInfo(index)
         if not name then
             return
         end

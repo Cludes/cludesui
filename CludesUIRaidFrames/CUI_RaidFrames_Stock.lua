@@ -79,7 +79,7 @@ local function ColorSides(widget, cols)
     -- frames, each loading screen and UI-scale change) repaints all four
     -- strips from it, which would flatten these per-side colours to black.
     c._bdColor = nil
-    local t, b, l, r = cols.top, cols.bottom, cols.left, cols.right
+    local t, b, l, region = cols.top, cols.bottom, cols.left, cols.right
     if c._top then
         c._top:SetVertexColor(t[1], t[2], t[3], 1)
     end
@@ -90,7 +90,7 @@ local function ColorSides(widget, cols)
         c._left:SetVertexColor(l[1], l[2], l[3], 1)
     end
     if c._right then
-        c._right:SetVertexColor(r[1], r[2], r[3], 1)
+        c._right:SetVertexColor(region[1], region[2], region[3], 1)
     end
 end
 
@@ -143,12 +143,12 @@ function mod.RF_StockBuild(ownerFrame, st, power)
             st.stockDiv = { grey, black, power }
         end
     else
-        local r, g, b = BLIZZ_EDGE_R, BLIZZ_EDGE_G, BLIZZ_EDGE_B
+        local region, g, b = BLIZZ_EDGE_R, BLIZZ_EDGE_G, BLIZZ_EDGE_B
         local backdrop = _G.COMPACT_UNIT_FRAME_FRIENDLY_HEALTH_COLOR_BG
         if type(backdrop) == "table" and backdrop.GetRGB then
-            r, g, b = backdrop:GetRGB()
+            region, g, b = backdrop:GetRGB()
         end
-        Pix.CreateBorder(edge, r, g, b, 1, 1)
+        Pix.CreateBorder(edge, region, g, b, 1, 1)
     end
     -- Highlights: textures made on first need (login budget).
     local highlight = CreateFrame("Frame", nil, ownerFrame)
@@ -264,22 +264,22 @@ function mod.RF_StockAggro(st, status)
         st._stAggTex = texture
     end
     if status then
-        local r, g, b
+        local region, g, b
         -- The stock party frame (the Party Frames kit's Flash) colours its
         -- aggro by threat status too.
         if (mod.RF_Classic() or st.kit) and GetThreatStatusColor then
-            r, g, b = GetThreatStatusColor(status)
+            region, g, b = GetThreatStatusColor(status)
         else
             local c = (status == 3) and _G.HIGH_THREAT_COLOR or _G.GAINING_THREAT_COLOR
             if c and c.GetRGB then
-                r, g, b = c:GetRGB()
+                region, g, b = c:GetRGB()
             elseif status == 3 then
-                r, g, b = 1, 0.271, 0.043 -- #FF450B
+                region, g, b = 1, 0.271, 0.043 -- #FF450B
             else
-                r, g, b = 0.973, 0.710, 0 -- #F8B500
+                region, g, b = 0.973, 0.710, 0 -- #F8B500
             end
         end
-        texture:SetVertexColor(r, g, b, 1)
+        texture:SetVertexColor(region, g, b, 1)
         texture:Show()
     else
         texture:Hide()
@@ -362,8 +362,8 @@ function mod.RF_MigrateSmRaidBar(p)
     if not p then
         return
     end
-    for idx = 1, #SM_RAID_KEYS do
-        local k = SM_RAID_KEYS[idx]
+    for index = 1, #SM_RAID_KEYS do
+        local k = SM_RAID_KEYS[index]
         if rawget(p, k) == SM_RAID_BAR then
             p[k] = "blizzardRaid"
         end
@@ -468,15 +468,15 @@ local function ScaleRect(source, k)
     if not source then
         return nil
     end
-    local r = {}
+    local region = {}
     for key, v in pairs(source) do
         if type(v) == "number" then
-            r[key] = v * k
+            region[key] = v * k
         else
-            r[key] = v
+            region[key] = v
         end
     end
-    return r
+    return region
 end
 function mod.RF_KitGeom(k)
     local kit = mod.RF_PartyKit()
@@ -576,11 +576,11 @@ local KIT_BM_MT = {
         return rawget(t, "_kitSrc")[key]
     end,
 }
-local function KitBmProxy(ind)
-    local p = _kitBmProxy[ind]
+local function KitBmProxy(indicator)
+    local p = _kitBmProxy[indicator]
     if not p then
-        p = setmetatable({ _kitSrc = ind }, KIT_BM_MT)
-        _kitBmProxy[ind] = p
+        p = setmetatable({ _kitSrc = indicator }, KIT_BM_MT)
+        _kitBmProxy[indicator] = p
     end
     return p
 end
@@ -644,11 +644,11 @@ end
 -- line at Buff Size, then the squares' line above it, as RF_KitBmView last
 -- saw the Buff Manager (one icon line until it has run).
 function mod.RF_KitAboveUnits(s)
-    local icon = mod._kitAboveIcon
-    if icon == nil then
+    local iconTex = mod._kitAboveIcon
+    if iconTex == nil then
         return mod.RF_KitBuffSize(s) + KIT_BUFF_GAP
     end
-    local hgt = icon and (mod.RF_KitBuffSize(s) + KIT_BUFF_GAP) or 0
+    local hgt = iconTex and (mod.RF_KitBuffSize(s) + KIT_BUFF_GAP) or 0
     local sq = mod._kitAboveSq or 0
     if sq > 0 then
         hgt = hgt + sq + KIT_BUFF_GAP
@@ -679,30 +679,30 @@ function mod.RF_KitBmView(inds, noPublish)
     local leadIcon, leadSquare = 0, 0
     local leads
     local anyIcon, maxSq = false, 0
-    for idx = 1, #inds do
-        local ind = inds[idx]
-        local kind = ind.type or "icon"
-        if ind.enabled and ind.spells and #ind.spells > 0 then
+    for index = 1, #inds do
+        local indicator = inds[index]
+        local kind = indicator.type or "icon"
+        if indicator.enabled and indicator.spells and #indicator.spells > 0 then
             if kind == "icon" then
                 anyIcon = true
-            elseif kind == "square" and (ind.size or 18) > maxSq then
-                maxSq = ind.size or 18
+            elseif kind == "square" and (indicator.size or 18) > maxSq then
+                maxSq = indicator.size or 18
             end
         end
         if
-            ind.enabled
+            indicator.enabled
             and (kind == "icon" or kind == "square")
-            and not (chainMode and chainMode(ind) == "g")
+            and not (chainMode and chainMode(indicator) == "g")
         then
-            local size = (kind == "icon") and buffSize or (ind.size or 18)
-            local len = (ind.spells and #ind.spells or 0) * (size + (ind.spacing or 0))
+            local size = (kind == "icon") and buffSize or (indicator.size or 18)
+            local length = (indicator.spells and #indicator.spells or 0) * (size + (indicator.spacing or 0))
             leads = leads or {}
             if kind == "icon" then
-                leads[ind] = leadIcon
-                leadIcon = leadIcon + len
+                leads[indicator] = leadIcon
+                leadIcon = leadIcon + length
             else
-                leads[ind] = leadSquare
-                leadSquare = leadSquare + len
+                leads[indicator] = leadSquare
+                leadSquare = leadSquare + length
             end
         end
     end
@@ -723,12 +723,12 @@ function mod.RF_KitBmView(inds, noPublish)
         sqOy = oy + buffSize + KIT_BUFF_GAP
     end
     local iconRoot, squareRoot
-    for idx = 1, #inds do
-        local ind = inds[idx]
-        local kind = ind.type or "icon"
-        local record = ind
-        if ind.enabled and (kind == "icon" or kind == "square") then
-            local p = KitBmProxy(ind)
+    for index = 1, #inds do
+        local indicator = inds[index]
+        local kind = indicator.type or "icon"
+        local record = indicator
+        if indicator.enabled and (kind == "icon" or kind == "square") then
+            local p = KitBmProxy(indicator)
             -- Buff Size sets every buff icon; squares keep their own size.
             local size
             if kind == "icon" then
@@ -736,7 +736,7 @@ function mod.RF_KitBmView(inds, noPublish)
                 size = buffSize
             else
                 p.size = nil
-                size = ind.size or 18
+                size = indicator.size or 18
             end
             local reserve, root, runOy
             if kind == "icon" then
@@ -744,8 +744,8 @@ function mod.RF_KitBmView(inds, noPublish)
             else
                 reserve, root, runOy = leadSquare, squareRoot, sqOy
             end
-            local chain = chainMode and chainMode(ind) == "g"
-            local hasSpells = ind.spells and #ind.spells > 0
+            local chain = chainMode and chainMode(indicator) == "g"
+            local hasSpells = indicator.spells and #indicator.spells > 0
             p._kitAnchor = nil
             -- Above the frame, wrapped lines stack upward, away from it.
             if mode == "ABOVE" then
@@ -755,7 +755,7 @@ function mod.RF_KitBmView(inds, noPublish)
             end
             if not chain then
                 -- Fixed slots: their own reserved cells at the run's start.
-                PlaceRun(p, mode, kind, true, size, ox, runOy, leads and leads[ind] or 0)
+                PlaceRun(p, mode, kind, true, size, ox, runOy, leads and leads[indicator] or 0)
             elseif hasSpells and root and root.id ~= nil then
                 PlaceRun(p, mode, kind, false)
                 p._kitAnchor = root.id
@@ -763,9 +763,9 @@ function mod.RF_KitBmView(inds, noPublish)
                 PlaceRun(p, mode, kind, true, size, ox, runOy, reserve)
                 if hasSpells and not root then
                     if kind == "icon" then
-                        iconRoot = ind
+                        iconRoot = indicator
                     else
-                        squareRoot = ind
+                        squareRoot = indicator
                     end
                 end
             end
@@ -856,9 +856,9 @@ function mod.RF_PartyKitChanged(p)
 end
 
 local function Snap(v)
-    local f = mod.PixelSnap
-    if f then
-        return f(v)
+    local frame = mod.PixelSnap
+    if frame then
+        return frame(v)
     end
     return v
 end
@@ -878,13 +878,13 @@ function mod.RF_KitLeader(st, s)
     mod.RF_KitSpot(g.lead, li, st.kitOwner, s and s.leaderIconOffsetX, s and s.leaderIconOffsetY)
 end
 
-local function Place(regionFrame, ownerFrame, r)
-    if not (regionFrame and r) then
+local function Place(regionFrame, ownerFrame, region)
+    if not (regionFrame and region) then
         return
     end
     regionFrame:ClearAllPoints()
-    regionFrame:SetPoint("TOPLEFT", ownerFrame, "TOPLEFT", Snap(r.x), -Snap(r.y))
-    regionFrame:SetSize(Snap(r.w), Snap(r.h))
+    regionFrame:SetPoint("TOPLEFT", ownerFrame, "TOPLEFT", Snap(region.x), -Snap(region.y))
+    regionFrame:SetSize(Snap(region.w), Snap(region.h))
 end
 
 local function SetArt(texture, a)
@@ -904,10 +904,10 @@ local SHADE_CLEAR = CreateColor(0, 0, 0, 0)
 local SHADE_TOP = CreateColor(0, 0, 0, 0.55)
 local SHADE_BOTTOM = CreateColor(0, 0, 0, 0.30)
 local SHADE_END = CreateColor(0, 0, 0, 0.35)
-local function MakeBevel(bar, mask)
+local function MakeBevel(barFrame, mask)
     local sh = {}
-    for idx = 1, 4 do
-        local t = bar:CreateTexture(nil, "OVERLAY", nil, -3)
+    for index = 1, 4 do
+        local t = barFrame:CreateTexture(nil, "OVERLAY", nil, -3)
         t:SetTexture(WHITE)
         local Pix = CludesUI.PP or CludesUI.PanelPP
         if Pix and Pix.DisablePixelSnap then
@@ -916,7 +916,7 @@ local function MakeBevel(bar, mask)
         if mask then
             t:AddMaskTexture(mask)
         end
-        sh[idx] = t
+        sh[index] = t
     end
     -- VERTICAL runs bottom -> top, HORIZONTAL left -> right.
     sh[1]:SetGradient("VERTICAL", SHADE_CLEAR, SHADE_TOP)
@@ -925,7 +925,7 @@ local function MakeBevel(bar, mask)
     sh[4]:SetGradient("HORIZONTAL", SHADE_CLEAR, SHADE_END)
     return sh
 end
-local function SeatBevel(sh, bar, hgt)
+local function SeatBevel(sh, barFrame, hgt)
     if not sh then
         return
     end
@@ -934,30 +934,30 @@ local function SeatBevel(sh, bar, hgt)
         math.max(1, math.floor(hgt * 0.1)),
         math.max(2, math.floor(hgt * 0.15))
     sh[1]:ClearAllPoints()
-    sh[1]:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
-    sh[1]:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
+    sh[1]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", 0, 0)
+    sh[1]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", 0, 0)
     sh[1]:SetHeight(topY)
     sh[2]:ClearAllPoints()
-    sh[2]:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
-    sh[2]:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+    sh[2]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", 0, 0)
+    sh[2]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", 0, 0)
     sh[2]:SetHeight(bottom)
     sh[3]:ClearAllPoints()
-    sh[3]:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
-    sh[3]:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
+    sh[3]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", 0, 0)
+    sh[3]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", 0, 0)
     sh[3]:SetWidth(ends)
     sh[4]:ClearAllPoints()
-    sh[4]:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
-    sh[4]:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+    sh[4]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", 0, 0)
+    sh[4]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", 0, 0)
     sh[4]:SetWidth(ends)
 end
 
-local function SeatMask(mask, bar, r)
+local function SeatMask(mask, barFrame, region)
     if not mask then
         return
     end
     mask:ClearAllPoints()
-    mask:SetPoint("TOPLEFT", bar, "TOPLEFT", r.mx, r.my)
-    mask:SetSize(r.mw, r.mh)
+    mask:SetPoint("TOPLEFT", barFrame, "TOPLEFT", region.mx, region.my)
+    mask:SetSize(region.mw, region.mh)
 end
 
 -- Masks go on each fill OBJECT once (AddMaskTexture is additive); a texture
@@ -965,26 +965,26 @@ end
 local function SeatFillMasks(st)
     local hm = st.kitHMask
     if hm then
-        local fill = st.kitHealth:GetStatusBarTexture()
-        if fill and st._kitHFill ~= fill then
+        local fillTex = st.kitHealth:GetStatusBarTexture()
+        if fillTex and st._kitHFill ~= fillTex then
             local old = st._kitHFill
             if old then
                 pcall(old.RemoveMaskTexture, old, hm)
             end
-            fill:AddMaskTexture(hm)
-            st._kitHFill = fill
+            fillTex:AddMaskTexture(hm)
+            st._kitHFill = fillTex
         end
     end
     local pm, power = st.kitPMask, st.kitPower
     if pm and power then
-        local fill = power:GetStatusBarTexture()
-        if fill and st._kitPFill ~= fill then
+        local fillTex = power:GetStatusBarTexture()
+        if fillTex and st._kitPFill ~= fillTex then
             local old = st._kitPFill
             if old then
                 pcall(old.RemoveMaskTexture, old, pm)
             end
-            fill:AddMaskTexture(pm)
-            st._kitPFill = fill
+            fillTex:AddMaskTexture(pm)
+            st._kitPFill = fillTex
         end
     end
 end
@@ -998,19 +998,19 @@ end
 -- Preview frames have no anchor closures: the kit pass places their
 -- texts (with the settings they were painted with), role and ready check
 -- itself (every refresh re-anchors them first).
-local function PreviewSpots(f, s, g)
-    if f._txL then
-        mod.RF_TextLayout(f, f._txS)
+local function PreviewSpots(frame, s, g)
+    if frame._txL then
+        mod.RF_TextLayout(frame, frame._txS)
     end
-    if f._roleIcon then
-        mod.RF_KitSpot(g.role, f._roleIcon, f, s.roleIconOffsetX, s.roleIconOffsetY)
-        if f._roleIcon._roleText then
-            f._roleIcon._roleText:ClearAllPoints()
-            f._roleIcon._roleText:SetPoint(g.role.p, f._roleIcon, g.role.p, 0, 0)
+    if frame._roleIcon then
+        mod.RF_KitSpot(g.role, frame._roleIcon, frame, s.roleIconOffsetX, s.roleIconOffsetY)
+        if frame._roleIcon._roleText then
+            frame._roleIcon._roleText:ClearAllPoints()
+            frame._roleIcon._roleText:SetPoint(g.role.p, frame._roleIcon, g.role.p, 0, 0)
         end
     end
-    if f._readyCheck and f.kitPortrait then
-        mod.RF_KitSpot(g.rc, f._readyCheck, f.kitPortrait, s.readyCheckOffsetX, s.readyCheckOffsetY)
+    if frame._readyCheck and frame.kitPortrait then
+        mod.RF_KitSpot(g.rc, frame._readyCheck, frame.kitPortrait, s.readyCheckOffsetX, s.readyCheckOffsetY)
     end
 end
 
@@ -1062,15 +1062,15 @@ function mod.RF_KitBuild(ownerFrame, st, health, power, bdr)
     -- Host: the visible party frame. Anchored to the owner only (never to a
     -- bar or an art piece): secure aura containers anchored to it make it
     -- protected in combat, and the bars must stay movable out of it.
-    local host = CreateFrame("Frame", nil, ownerFrame)
-    host:EnableMouse(false)
-    st.kitHost = host
-    health._cuiKitRef = host
-    host._cuiHealth = health
+    local owner = CreateFrame("Frame", nil, ownerFrame)
+    owner:EnableMouse(false)
+    st.kitHost = owner
+    health._cuiKitRef = owner
+    owner._cuiHealth = health
     -- The stood-down border frame follows the visible frame.
     if bdr then
         bdr:ClearAllPoints()
-        bdr:SetAllPoints(host)
+        bdr:SetAllPoints(owner)
     end
 
     -- Under the bars: portrait (+ the Blizzard art, Flash and glows; the
@@ -1168,14 +1168,14 @@ function mod.RF_ApplyPartyKit(ownerFrame, st, s, unitToken, force)
     if not g then
         return
     end
-    local health, power, host = st.kitHealth, st.kitPower, st.kitHost
+    local health, power, owner = st.kitHealth, st.kitPower, st.kitHost
     -- The pixel grid the seat pass snaps to joins the memo (a live UI-scale
     -- change re-seats on the next pass).
     local P = CludesUI.PP
     local es = ownerFrame:GetEffectiveScale()
     local px = ((P and P.perfect) or 0) / ((es and es > 0) and es or 1)
     local locked = InCombatLockdown()
-        and (health:IsProtected() or host:IsProtected() or (power and power:IsProtected()))
+        and (health:IsProtected() or owner:IsProtected() or (power and power:IsProtected()))
     if force or st.kitG ~= g or st.kitPx ~= px then
         if locked then
             mod._partyKitDirtyInCombat = true
@@ -1245,8 +1245,8 @@ end
 -- class crest elsewhere (five copies of one face would read wrong); class
 -- art per slot under that Art Style.
 local CLASS_SHEET = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
-function mod.RF_KitPreviewPortrait(f, classToken, isPlayer, offline)
-    local texture = f.kitPortrait
+function mod.RF_KitPreviewPortrait(frame, classToken, isPlayer, offline)
+    local texture = frame.kitPortrait
     if not texture then
         return
     end

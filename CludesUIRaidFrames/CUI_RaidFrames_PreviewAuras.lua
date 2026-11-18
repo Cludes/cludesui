@@ -146,8 +146,8 @@ do
                     local liveT = saved.profile
                     local dstParent = overlayFrame
                     local success = true
-                    for idx = 1, #segs - 1 do
-                        local k = SegKey(liveT, segs[idx])
+                    for index = 1, #segs - 1 do
+                        local k = SegKey(liveT, segs[index])
                         local liveChild = liveT[k]
                         if type(liveChild) ~= "table" then
                             success = false
@@ -269,7 +269,7 @@ local function PvAuraPickIcon(auraType, frameIndex)
 end
 
 -- Position a preview aura icon on a frame (reuses anchor logic)
-local function PvAuraAnchor(icon, f, auraType, slot, totalShown)
+local function PvAuraAnchor(iconTex, frame, auraType, slot, totalShown)
     local s2 = PvSettings()
 
     -- Debuffs use the shared grid layout (same DebuffGridPoint helper as the live
@@ -277,10 +277,10 @@ local function PvAuraAnchor(icon, f, auraType, slot, totalShown)
     -- per-row centering. `slot` is the 0-based index among visible icons.
     if auraType ~= "def" then
         local sz = mod.RFC_DebuffSize(s2)
-        icon:SetSize(sz, sz)
-        icon:ClearAllPoints()
+        iconTex:SetSize(sz, sz)
+        iconTex:ClearAllPoints()
         local corner, fx, fy = mod.DebuffGridPoint(s2, slot, totalShown)
-        icon:SetPoint(corner, mod.RF_AnchorHost(f._health, s2), corner, fx, fy)
+        iconTex:SetPoint(corner, mod.RF_AnchorHost(frame._health, s2), corner, fx, fy)
         return
     end
 
@@ -297,45 +297,45 @@ local function PvAuraAnchor(icon, f, auraType, slot, totalShown)
     if grow == "CENTER" and totalShown > 0 then
         centerOff = -((totalShown - 1) * spacing) / 2
     end
-    icon:SetSize(sz, sz)
-    icon:ClearAllPoints()
+    iconTex:SetSize(sz, sz)
+    iconTex:ClearAllPoints()
     if slot == 0 then
         local fx = ox + (grow == "CENTER" and centerOff or 0)
         -- All aura icon previews (debuffs, defensives) anchor flush
         -- to the health bar edge -- no 1px inset -- matching the real frames.
-        local pvHost = mod.RF_AnchorHost(f._health, s2)
+        local pvHost = mod.RF_AnchorHost(frame._health, s2)
         if place == "topleft" then
-            icon:SetPoint("TOPLEFT", pvHost, "TOPLEFT", fx, oy)
+            iconTex:SetPoint("TOPLEFT", pvHost, "TOPLEFT", fx, oy)
         elseif place == "top" then
-            icon:SetPoint("TOP", pvHost, "TOP", fx, oy)
+            iconTex:SetPoint("TOP", pvHost, "TOP", fx, oy)
         elseif place == "topright" then
-            icon:SetPoint("TOPRIGHT", pvHost, "TOPRIGHT", fx, oy)
+            iconTex:SetPoint("TOPRIGHT", pvHost, "TOPRIGHT", fx, oy)
         elseif place == "left" then
-            icon:SetPoint("LEFT", pvHost, "LEFT", fx, oy)
+            iconTex:SetPoint("LEFT", pvHost, "LEFT", fx, oy)
         elseif place == "center" then
-            icon:SetPoint("CENTER", pvHost, "CENTER", fx, oy)
+            iconTex:SetPoint("CENTER", pvHost, "CENTER", fx, oy)
         elseif place == "right" then
-            icon:SetPoint("RIGHT", pvHost, "RIGHT", fx, oy)
+            iconTex:SetPoint("RIGHT", pvHost, "RIGHT", fx, oy)
         elseif place == "bottomright" then
-            icon:SetPoint("BOTTOMRIGHT", pvHost, "BOTTOMRIGHT", fx, oy)
+            iconTex:SetPoint("BOTTOMRIGHT", pvHost, "BOTTOMRIGHT", fx, oy)
         elseif place == "bottom" then
-            icon:SetPoint("BOTTOM", pvHost, "BOTTOM", fx, oy)
+            iconTex:SetPoint("BOTTOM", pvHost, "BOTTOM", fx, oy)
         else
-            icon:SetPoint("BOTTOMLEFT", pvHost, "BOTTOMLEFT", fx, oy)
+            iconTex:SetPoint("BOTTOMLEFT", pvHost, "BOTTOMLEFT", fx, oy)
         end
     else
         -- Chain from previous icon in same pool
-        local pool = f._pvDefs
-        local prev = pool[slot] -- slot is 0-based; current is slot+1, prev is pool[slot]
-        if prev and prev:IsShown() then
+        local pool = frame._pvDefs
+        local previous = pool[slot] -- slot is 0-based; current is slot+1, prev is pool[slot]
+        if previous and previous:IsShown() then
             if grow == "RIGHT" or grow == "CENTER" then
-                icon:SetPoint("LEFT", prev, "RIGHT", spc, 0)
+                iconTex:SetPoint("LEFT", previous, "RIGHT", spc, 0)
             elseif grow == "LEFT" then
-                icon:SetPoint("RIGHT", prev, "LEFT", -spc, 0)
+                iconTex:SetPoint("RIGHT", previous, "LEFT", -spc, 0)
             elseif grow == "UP" then
-                icon:SetPoint("BOTTOM", prev, "TOP", 0, spc)
+                iconTex:SetPoint("BOTTOM", previous, "TOP", 0, spc)
             elseif grow == "DOWN" then
-                icon:SetPoint("TOP", prev, "BOTTOM", 0, -spc)
+                iconTex:SetPoint("TOP", previous, "BOTTOM", 0, -spc)
             end
         end
     end
@@ -343,19 +343,19 @@ end
 
 -- Apply a fake aura to a preview frame slot
 local function PvAuraApply(frameIndex, auraType, slotIndex)
-    local f = PvFrames()[frameIndex]
-    if not f or not f._health then
+    local frame = PvFrames()[frameIndex]
+    if not frame or not frame._health then
         return
     end
-    local pool = auraType == "def" and f._pvDefs or f._pvDebuffs
-    local icon = pool and pool[slotIndex]
-    if not icon then
+    local pool = auraType == "def" and frame._pvDefs or frame._pvDebuffs
+    local iconTex = pool and pool[slotIndex]
+    if not iconTex then
         return
     end
 
     local texture = PvAuraPickIcon(auraType, frameIndex)
     if not texture then
-        icon:Hide()
+        iconTex:Hide()
         return
     end
 
@@ -363,15 +363,15 @@ local function PvAuraApply(frameIndex, auraType, slotIndex)
     local dur = 8 + math.random() * 4 -- 8-12 seconds
     local startTime = GetTime()
 
-    icon._tex:SetTexture(texture)
+    iconTex._tex:SetTexture(texture)
     if auraType == "db" then
         local _z = s2.debuffIconZoom or 0.08
-        icon._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
+        iconTex._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
     elseif auraType == "def" then
         local _z = s2.defIconZoom or 0.08
-        icon._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
+        iconTex._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
     end
-    if icon._cooldown then
+    if iconTex._cooldown then
         local showSwipe, showDurText, dtColor, dtSize, dtOX, dtOY
         if auraType == "db" then
             showSwipe = s2.debuffShowSwipe ~= false
@@ -388,37 +388,37 @@ local function PvAuraApply(frameIndex, auraType, slotIndex)
             dtOX = s2.defDurTextOffsetX or 0
             dtOY = s2.defDurTextOffsetY or 0
         end
-        icon._cooldown:SetCooldown(startTime, dur)
-        icon._cooldown:SetDrawSwipe(showSwipe)
-        icon._cooldown:SetHideCountdownNumbers(not showDurText)
-        icon._cooldown:Show()
+        iconTex._cooldown:SetCooldown(startTime, dur)
+        iconTex._cooldown:SetDrawSwipe(showSwipe)
+        iconTex._cooldown:SetHideCountdownNumbers(not showDurText)
+        iconTex._cooldown:Show()
 
         -- Style the built-in countdown text via GetCountdownFontString
         if showDurText and dtColor then
-            local cdText = icon._cooldown.GetCountdownFontString and icon._cooldown:GetCountdownFontString()
+            local cdText = iconTex._cooldown.GetCountdownFontString and iconTex._cooldown:GetCountdownFontString()
             if cdText then
                 local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
                 CludesUI.ApplyIconTextFont(cdText, fontFile, dtSize, "raidFrames")
                 cdText:SetTextColor(dtColor.r, dtColor.g, dtColor.b)
                 cdText:ClearAllPoints()
-                cdText:SetPoint("CENTER", icon, "CENTER", dtOX, dtOY)
+                cdText:SetPoint("CENTER", iconTex, "CENTER", dtOX, dtOY)
             end
         end
     end
 
     -- Border
     if auraType == "def" then
-        mod.RFC_PreviewAuraBorder(icon, icon._borderFrame, s2, "defBorder")
+        mod.RFC_PreviewAuraBorder(iconTex, iconTex._borderFrame, s2, "defBorder")
     else
-        mod.RFC_PreviewAuraBorder(icon, icon._borderFrame, s2, "debuffBorder")
+        mod.RFC_PreviewAuraBorder(iconTex, iconTex._borderFrame, s2, "debuffBorder")
     end
 
     -- Stacks text (debuffs only: show "2" on exactly one random debuff)
-    if icon._count then
-        icon._count:SetText("")
+    if iconTex._count then
+        iconTex._count:SetText("")
     end
 
-    icon:Show()
+    iconTex:Show()
 
     -- Track expiration
     local key = frameIndex .. ":" .. auraType .. ":" .. slotIndex
@@ -451,12 +451,12 @@ local function PvAuraPickFrame(set, auraType, minSlot)
     local popFrame = PvFrames()
     local startIdx = (set - 1) * 5 + 1
     local endIdx = set * 5
-    for idx = startIdx, endIdx do
-        if idx <= #popFrame and popFrame[idx] then
+    for index = startIdx, endIdx do
+        if index <= #popFrame and popFrame[index] then
             local hasType = false
             for _, details in pairs(mod._pvActiveAuras) do
                 if
-                    details.frameIndex == idx
+                    details.frameIndex == index
                     and details.auraType == auraType
                     and details.slot >= minSlot
                     and details.expTime > GetTime()
@@ -466,7 +466,7 @@ local function PvAuraPickFrame(set, auraType, minSlot)
                 end
             end
             if not hasType then
-                candidates[#candidates + 1] = idx
+                candidates[#candidates + 1] = index
             end
         end
     end
@@ -478,11 +478,11 @@ end
 
 -- Re-anchor all visible icons on a frame for CENTER growth
 local function PvAuraReanchorFrame(frameIndex, auraType)
-    local f = PvFrames()[frameIndex]
-    if not f then
+    local frame = PvFrames()[frameIndex]
+    if not frame then
         return
     end
-    local pool = auraType == "def" and f._pvDefs or f._pvDebuffs
+    local pool = auraType == "def" and frame._pvDefs or frame._pvDebuffs
     if not pool then
         return
     end
@@ -495,7 +495,7 @@ local function PvAuraReanchorFrame(frameIndex, auraType)
     local slotIdx = 0
     for _, ic in ipairs(pool) do
         if ic:IsShown() then
-            PvAuraAnchor(ic, f, auraType, slotIdx, isShown)
+            PvAuraAnchor(ic, frame, auraType, slotIdx, isShown)
             slotIdx = slotIdx + 1
         end
     end
@@ -530,9 +530,9 @@ local function PvAuraTick()
                 PvAuraApply(details.frameIndex, details.auraType, details.slot)
                 PvAuraReanchorFrame(details.frameIndex, details.auraType)
             else
-                local f = PvFrames()[details.frameIndex]
-                if f then
-                    local pool = details.auraType == "def" and f._pvDefs or f._pvDebuffs
+                local frame = PvFrames()[details.frameIndex]
+                if frame then
+                    local pool = details.auraType == "def" and frame._pvDefs or frame._pvDebuffs
                     local ic = pool and pool[details.slot]
                     if ic then
                         ic:Hide()
@@ -568,11 +568,11 @@ local function PvAuraTick()
             -- (filled below) so its slots stay put instead of pulsing.
             local popFrame = PvFrames()
             for fi = (((s2.debuffPerRow or 1) > 1) and 2 or 1), #popFrame do
-                local f = popFrame[fi]
-                if f and f._pvDebuffs and f._pvDebuffs[1] then
-                    f._pvDebuffs[1]:Hide()
-                    if f._pvDebuffs[1]._cooldown then
-                        f._pvDebuffs[1]._cooldown:Clear()
+                local frame = popFrame[fi]
+                if frame and frame._pvDebuffs and frame._pvDebuffs[1] then
+                    frame._pvDebuffs[1]:Hide()
+                    if frame._pvDebuffs[1]._cooldown then
+                        frame._pvDebuffs[1]._cooldown:Clear()
                     end
                     -- Re-pack remaining debuffs so a surviving slot-2+ icon shifts
                     -- into the vacated first position immediately, instead of only
@@ -591,21 +591,21 @@ local function PvAuraTick()
             local popFrame = PvFrames()
             for fi = (((s2.debuffPerRow or 1) > 1) and 2 or 1), #popFrame do
                 local key = fi .. ":db:1"
-                local f = popFrame[fi]
-                if f and f._pvDebuffs and f._pvDebuffs[1] and f._health then
-                    local icon = f._pvDebuffs[1]
-                    icon._tex:SetTexture(5927657)
+                local frame = popFrame[fi]
+                if frame and frame._pvDebuffs and frame._pvDebuffs[1] and frame._health then
+                    local iconTex = frame._pvDebuffs[1]
+                    iconTex._tex:SetTexture(5927657)
                     local _z = s2.debuffIconZoom or 0.08
-                    icon._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
-                    icon:SetSize(mod.RFC_DebuffSize(s2), mod.RFC_DebuffSize(s2))
-                    if icon._cooldown then
-                        icon._cooldown:SetCooldown(nowTime, dur)
-                        icon._cooldown:SetDrawSwipe(s2.debuffShowSwipe ~= false)
-                        icon._cooldown:SetHideCountdownNumbers(not s2.debuffShowDurText)
-                        icon._cooldown:Show()
+                    iconTex._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
+                    iconTex:SetSize(mod.RFC_DebuffSize(s2), mod.RFC_DebuffSize(s2))
+                    if iconTex._cooldown then
+                        iconTex._cooldown:SetCooldown(nowTime, dur)
+                        iconTex._cooldown:SetDrawSwipe(s2.debuffShowSwipe ~= false)
+                        iconTex._cooldown:SetHideCountdownNumbers(not s2.debuffShowDurText)
+                        iconTex._cooldown:Show()
                         if s2.debuffShowDurText then
-                            local cdText = icon._cooldown.GetCountdownFontString
-                                and icon._cooldown:GetCountdownFontString()
+                            local cdText = iconTex._cooldown.GetCountdownFontString
+                                and iconTex._cooldown:GetCountdownFontString()
                             if cdText then
                                 local dtc = s2.debuffDurTextColor or { r = 1, g = 1, b = 1 }
                                 local fp = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
@@ -619,7 +619,7 @@ local function PvAuraTick()
                                 cdText:ClearAllPoints()
                                 cdText:SetPoint(
                                     "CENTER",
-                                    icon,
+                                    iconTex,
                                     "CENTER",
                                     s2.debuffDurTextOffsetX or 0,
                                     s2.debuffDurTextOffsetY or 0
@@ -627,8 +627,8 @@ local function PvAuraTick()
                             end
                         end
                     end
-                    mod.RFC_PreviewAuraBorder(icon, icon._borderFrame, s2, "debuffBorder")
-                    icon:Show()
+                    mod.RFC_PreviewAuraBorder(iconTex, iconTex._borderFrame, s2, "debuffBorder")
+                    iconTex:Show()
                     -- Re-pack all shown debuffs so slot 1 takes the first position
                     -- and any random slot-2+ debuff shifts right, rather than the
                     -- two overlapping when the pulse returns.
@@ -723,8 +723,8 @@ local function PvAuraTick()
                     and details.expTime > nowTime
                 then
                     mod._pvActiveAuras._stackKey = key
-                    local f = PvFrames()[details.frameIndex]
-                    local ic = f and f._pvDebuffs and f._pvDebuffs[details.slot]
+                    local frame = PvFrames()[details.frameIndex]
+                    local ic = frame and frame._pvDebuffs and frame._pvDebuffs[details.slot]
                     if ic and ic._count then
                         local stc = s2.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
                         local fp = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
@@ -762,17 +762,17 @@ local function StopPvAuraTicker()
     end
     wipe(mod._pvActiveAuras)
     -- Hide all preview aura icons, reset cooldowns, unregister dur texts
-    for _, f in ipairs(PvFrames()) do
-        if f._pvDebuffs then
-            for _, ic in ipairs(f._pvDebuffs) do
+    for _, frame in ipairs(PvFrames()) do
+        if frame._pvDebuffs then
+            for _, ic in ipairs(frame._pvDebuffs) do
                 ic:Hide()
                 if ic._cooldown then
                     ic._cooldown:Clear()
                 end
             end
         end
-        if f._pvDefs then
-            for _, ic in ipairs(f._pvDefs) do
+        if frame._pvDefs then
+            for _, ic in ipairs(frame._pvDefs) do
                 ic:Hide()
                 if ic._cooldown then
                     ic._cooldown:Clear()

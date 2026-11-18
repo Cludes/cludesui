@@ -139,8 +139,8 @@ local function BuildPartyPreviewRoles()
                 or saved.profile.roleOrder
                 or { "TANK", "HEALER", "DAMAGER" }
             local rolePri = {}
-            for i, r in ipairs(roleOrder) do
-                rolePri[r] = i
+            for i, region in ipairs(roleOrder) do
+                rolePri[region] = i
             end
             local classPri
             if prioritizeClass then
@@ -158,9 +158,9 @@ local function BuildPartyPreviewRoles()
                     end
                 end
                 if classPri then
-                    local ca, cb = classPri[a.classToken] or 99, classPri[b.classToken] or 99
-                    if ca ~= cb then
-                        return ca < cb
+                    local ca, callback = classPri[a.classToken] or 99, classPri[b.classToken] or 99
+                    if ca ~= callback then
+                        return ca < callback
                     end
                 end
                 return a.idx < b.idx
@@ -276,21 +276,21 @@ local function GetOrCreatePartyPvFrame(index)
     if mod._partyPvFrames[index] then
         return mod._partyPvFrames[index]
     end
-    local f = CreatePreviewFrame(index, true)
-    f._isParty = true
+    local frame = CreatePreviewFrame(index, true)
+    frame._isParty = true
     -- Reparent from raid preview container to party overlay container
     if mod._partyOC then
-        f:SetParent(mod._partyOC)
+        frame:SetParent(mod._partyOC)
     end
-    mod._partyPvFrames[index] = f
-    return f
+    mod._partyPvFrames[index] = frame
+    return frame
 end
 
 -- Apply preview data with party-specific width/height override
 -- The raid values ApplyPartyPreviewData overwrites for one call, kept to put back.
 local savedHealth, savedPower = {}, {}
 
-local function ApplyPartyPreviewData(f, index)
+local function ApplyPartyPreviewData(frame, index)
     local s = saved.profile
     -- Use party proxy so ApplyPreviewData reads party-specific settings
     mod._previewSettingsOverride = mod._scaledPartyProxy
@@ -320,14 +320,14 @@ local function ApplyPartyPreviewData(f, index)
     mod.previewHealPredValues = mod.partyPvHealPredValues
     mod.previewReducedMaxHealth = mod.partyPvReducedMaxHealth
 
-    ApplyPreviewData(f, index, mod._partyPvRoles, mod._partyPvCT)
+    ApplyPreviewData(frame, index, mod._partyPvRoles, mod._partyPvCT)
 
     -- Re-apply BM indicators with the party proxy so Auto Resize scales the
     -- preview indicators/auras live. CreatePreviewFrame applies them only once
     -- (at creation, with the raid proxy), so without this the party preview
     -- would never reflect the party scale. Index 1 matches the creation call.
-    if f._bmIconPool and mod.BM_ApplyPreviewIndicators then
-        mod.BM_ApplyPreviewIndicators(f, 1, mod._scaledPartyProxy)
+    if frame._bmIconPool and mod.BM_ApplyPreviewIndicators then
+        mod.BM_ApplyPreviewIndicators(frame, 1, mod._scaledPartyProxy)
     end
 
     -- Restore everything
@@ -345,13 +345,13 @@ local function ApplyPartyPreviewData(f, index)
 
     -- Party Frames kit: bar rects, art, spots and a mock portrait, after the
     -- restore above (nothing here may run inside that swap window).
-    if f.kit then
+    if frame.kit then
         -- Forced: the refresh above re-laid the bars out at the box's edges.
-        mod.RF_ApplyPartyKit(f, f, mod._scaledPartyProxy, nil, true)
+        mod.RF_ApplyPartyKit(frame, frame, mod._scaledPartyProxy, nil, true)
         local roles = mod._partyPvRoles
         -- (Greyed only while the preview actually shows that slot offline.)
         mod.RF_KitPreviewPortrait(
-            f,
+            frame,
             mod._partyPvCT[index],
             index == (roles._playerSlot or 1),
             mod._indicatorsVisible ~= false and index == roles._offlineSlot
@@ -361,7 +361,7 @@ local function ApplyPartyPreviewData(f, index)
         -- the portrait, then a mock paint (same slots as the kit's).
         local roles = mod._partyPvRoles
         mod.RF_PtPreview(
-            f,
+            frame,
             mod._scaledPartyProxy,
             mod._partyPvCT[index],
             index == (roles._playerSlot or 1),
@@ -474,20 +474,20 @@ local function RefreshPartyPreview()
     local slot = 0 -- running layout position; skips the hidden player frame
     local lastF -- the last frame along the growth
     for i = 1, 5 do
-        local f = GetOrCreatePartyPvFrame(i)
+        local frame = GetOrCreatePartyPvFrame(i)
         if hideSelf and i == playerSlot then
-            f:Hide()
+            frame:Hide()
         else
-            lastF = f
-            if f:GetParent() ~= parentFrame then
-                f:SetParent(parentFrame)
+            lastF = frame
+            if frame:GetParent() ~= parentFrame then
+                frame:SetParent(parentFrame)
             end
-            f:SetFrameStrata(isOverlay and "FULLSCREEN_DIALOG" or "HIGH")
-            f:ClearAllPoints()
+            frame:SetFrameStrata(isOverlay and "FULLSCREEN_DIALOG" or "HIGH")
+            frame:ClearAllPoints()
             if isVert then
                 local yOff = slot * (hgt + pitch)
                 if unitGrowth == "DOWN" then
-                    f:SetPoint(
+                    frame:SetPoint(
                         "TOPLEFT",
                         parentFrame,
                         "TOPLEFT",
@@ -498,7 +498,7 @@ local function RefreshPartyPreview()
                     -- UP fills the same box from the bottom upward (positive
                     -- offsets); the container's extra top height creates the
                     -- title gap, so no per-frame correction is needed here.
-                    f:SetPoint(
+                    frame:SetPoint(
                         "BOTTOMLEFT",
                         parentFrame,
                         "BOTTOMLEFT",
@@ -512,7 +512,7 @@ local function RefreshPartyPreview()
                     xOff = -xOff
                 end
                 if unitGrowth == "RIGHT" then
-                    f:SetPoint(
+                    frame:SetPoint(
                         "TOPLEFT",
                         parentFrame,
                         "TOPLEFT",
@@ -520,7 +520,7 @@ local function RefreshPartyPreview()
                         -anchorPad - topExtra - padT
                     )
                 else
-                    f:SetPoint(
+                    frame:SetPoint(
                         "TOPRIGHT",
                         parentFrame,
                         "TOPRIGHT",
@@ -529,8 +529,8 @@ local function RefreshPartyPreview()
                     )
                 end
             end
-            ApplyPartyPreviewData(f, i)
-            f:Show()
+            ApplyPartyPreviewData(frame, i)
+            frame:Show()
             slot = slot + 1
         end
     end
@@ -640,13 +640,13 @@ local function RefreshPartyPreview()
             local cShiftY = PixelSnap(stepY * centerShift)
             local position = 0 -- running position; skips the hidden player frame
             for i = 1, 5 do
-                local f = mod._partyPvFrames[i]
-                if f then
+                local frame = mod._partyPvFrames[i]
+                if frame then
                     if hideSelf and i == playerSlot then
-                        f:Hide()
+                        frame:Hide()
                     else
-                        f:ClearAllPoints()
-                        f:SetPoint(
+                        frame:ClearAllPoints()
+                        frame:SetPoint(
                             basePoint,
                             anchorTo,
                             basePoint,

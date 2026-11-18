@@ -212,12 +212,12 @@ end
 -- while the fill is opaque, with the flat background under it painted clear.
 do
     local SetColor -- the stock SetColorTexture
-    local function PaintTinted(self, r, g, b, a)
-        self:SetVertexColor(r, g, b, a)
+    local function PaintTinted(self, region, g, b, a)
+        self:SetVertexColor(region, g, b, a)
     end
-    local function PaintLayer(self, r, g, b, a)
-        SetColor(self, r, g, b, 0)
-        self._rfTexBgLayer:SetVertexColor(r, g, b, a)
+    local function PaintLayer(self, region, g, b, a)
+        SetColor(self, region, g, b, 0)
+        self._rfTexBgLayer:SetVertexColor(region, g, b, a)
     end
     -- The background texture path in settings s (nil = flat); the previews share it.
     function mod.RF_TexBgPath(s)
@@ -297,22 +297,22 @@ do
             return
         end
         for btnFrame, health in pairs(watched) do
-            local d = GetFFD(btnFrame)
-            local s = d._isParty and mod._scaledPartyProxy
-                or (d._isExtra and mod._scaledExtraProxy)
+            local skinData = GetFFD(btnFrame)
+            local s = skinData._isParty and mod._scaledPartyProxy
+                or (skinData._isExtra and mod._scaledExtraProxy)
                 or mod._scaledProfile
             local filePath = mod.RF_TexBgPath(s)
             filePath = filePath
-                    and not d.kit
+                    and not skinData.kit
                     and mod.RF_TexBgOpaque(s, s.healthColorMode == "dark")
                     and filePath
                 or nil
-            if (filePath ~= nil) ~= (d.bg.SetColorTexture == PaintLayer) then
-                mod.RF_TexBgLayer(health, d.bg, filePath)
-                d._bgSt, d._bgA = nil, nil
+            if (filePath ~= nil) ~= (skinData.bg.SetColorTexture == PaintLayer) then
+                mod.RF_TexBgLayer(health, skinData.bg, filePath)
+                skinData._bgSt, skinData._bgA = nil, nil
                 local u = btnFrame:GetAttribute("unit")
                 if u and UnitExists(u) then
-                    mod._ApplyHealthBg(d, health, s, u)
+                    mod._ApplyHealthBg(skinData, health, s, u)
                 end
             end
         end
@@ -328,19 +328,19 @@ do
     end
     -- The raid, party and Extra Frames buttons (ReanchorAbsorbToFill: built, and
     -- every settings reload before both backgrounds repaint). s: the button's view.
-    function mod.RF_TexBgApply(btnFrame, d, health, s)
+    function mod.RF_TexBgApply(btnFrame, skinData, health, s)
         local filePath = mod.RF_TexBgPath(s)
-        if not (filePath or d._rfTexBg) then
+        if not (filePath or skinData._rfTexBg) then
             return
         end
-        d._rfTexBg = filePath and true or nil
-        local hp = filePath and not d.kit and mod.RF_TexBgOpaque(s, s.healthColorMode == "dark") and filePath
+        skinData._rfTexBg = filePath and true or nil
+        local hp = filePath and not skinData.kit and mod.RF_TexBgOpaque(s, s.healthColorMode == "dark") and filePath
             or nil
-        if d.bg then
-            mod.RF_TexBgLayer(health, d.bg, hp)
+        if skinData.bg then
+            mod.RF_TexBgLayer(health, skinData.bg, hp)
         end
-        if d.powerBg then
-            mod.RF_TexBgTint(d.powerBg, filePath)
+        if skinData.powerBg then
+            mod.RF_TexBgTint(skinData.powerBg, filePath)
         end
         if hp then
             mod.RF_TexBgWatch()[btnFrame] = health
@@ -361,9 +361,9 @@ end
 -- death/resurrect transitions) stay in lockstep -- else a resurrect arriving only via UNIT_HEALTH
 -- strands the tint. Colors overridable via the Status Colors swatch in Extras; inline fallbacks
 -- allocate only when the DB key is missing.
-function mod._ApplyHealthBg(d, health, s, unitToken, connected, deadOrGhost)
+function mod._ApplyHealthBg(skinData, health, s, unitToken, connected, deadOrGhost)
     local CludesUI = mod.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
-    local backdrop = d.bg
+    local backdrop = skinData.bg
     if connected == nil then
         connected = UnitIsConnected(unitToken)
     end
@@ -372,18 +372,18 @@ function mod._ApplyHealthBg(d, health, s, unitToken, connected, deadOrGhost)
     end
     -- Party Frames kit: the portrait greys out while offline, as stock does
     -- (every connection edge passes through here).
-    local kp = d.kitPortrait
+    local kp = skinData.kitPortrait
     if kp then
         local off = not connected
-        if d._kitDesat ~= off then
-            d._kitDesat = off
+        if skinData._kitDesat ~= off then
+            skinData._kitDesat = off
             kp:SetDesaturated(off)
         end
     end
     -- Party portrait (CUI_RaidFrames_Portrait.lua): the same grey.
-    local pt = d.pt
+    local pt = skinData.pt
     if pt and pt._on and pt._desat ~= not connected then
-        mod.RF_PtOffline(d, unitToken, connected)
+        mod.RF_PtOffline(skinData, unitToken, connected)
     end
     -- Dead/offline: bg covers the FULL bar, fill dims. State+color stamped so
     -- a repeated tick in the same state re-applies nothing; entering either
@@ -400,10 +400,10 @@ function mod._ApplyHealthBg(d, health, s, unitToken, connected, deadOrGhost)
         if hideFill then
             st = st + 2
         end
-        if d._bgSt ~= st or d._bgR ~= c.r or d._bgG ~= c.g or d._bgB ~= c.b then
-            d._bgSt, d._bgR, d._bgG, d._bgB = st, c.r, c.g, c.b
-            d._bgTex, d._bgA = nil, nil
-            d._hcR = nil
+        if skinData._bgSt ~= st or skinData._bgR ~= c.r or skinData._bgG ~= c.g or skinData._bgB ~= c.b then
+            skinData._bgSt, skinData._bgR, skinData._bgG, skinData._bgB = st, c.r, c.g, c.b
+            skinData._bgTex, skinData._bgA = nil, nil
+            skinData._hcR = nil
             if backdrop then
                 backdrop:ClearAllPoints()
                 backdrop:SetAllPoints(health)
@@ -432,14 +432,14 @@ function mod._ApplyHealthBg(d, health, s, unitToken, connected, deadOrGhost)
     -- object, the axis, or the inversion does; all three change only in the
     -- restyle passes (ReloadFrames / ReloadPartyFrames), which clear d._bgSt right
     -- after, so the steady-state tick skips the reads and the anchor pass entirely.
-    if d._bgSt ~= 1 then
+    if skinData._bgSt ~= 1 then
         -- Axis and inversion both read off the bar, never the settings, so the
         -- bg follows the direction the fill actually paints.
         local vert = health.GetOrientation and health:GetOrientation() == "VERTICAL"
         local invert = health:GetReverseFill()
         local texture = health:GetStatusBarTexture()
-        d._bgSt, d._bgTex, d._bgVert = 1, texture, vert
-        d._bgA = nil
+        skinData._bgSt, skinData._bgTex, skinData._bgVert = 1, texture, vert
+        skinData._bgA = nil
         backdrop:ClearAllPoints()
         if vert then
             if invert then
@@ -468,8 +468,8 @@ function mod._ApplyHealthBg(d, health, s, unitToken, connected, deadOrGhost)
         -- refresh clobbers the class-colored bg.
         br, bgr, bb, ba = mod.GetBgColor(unitToken, s)
     end
-    if d._bgR ~= br or d._bgG ~= bgr or d._bgB ~= bb or d._bgA ~= ba then
-        d._bgR, d._bgG, d._bgB, d._bgA = br, bgr, bb, ba
+    if skinData._bgR ~= br or skinData._bgG ~= bgr or skinData._bgB ~= bb or skinData._bgA ~= ba then
+        skinData._bgR, skinData._bgG, skinData._bgB, skinData._bgA = br, bgr, bb, ba
         backdrop:SetColorTexture(br, bgr, bb, ba)
     end
 end
@@ -859,42 +859,42 @@ function mod.RefreshAllNames()
     if not s then
         return
     end
-    local function refresh(unitToken, btn)
-        local d = GetFFD(btn)
+    local function refresh(unitToken, button)
+        local skinData = GetFFD(button)
         -- Party buttons read through the party proxy so a per-party cap applies.
-        local bs = (d and d._isParty) and (mod._scaledPartyProxy or s) or s
-        if d then
-            mod.RF_TextNames(d, unitToken)
+        local bs = (skinData and skinData._isParty) and (mod._scaledPartyProxy or s) or s
+        if skinData then
+            mod.RF_TextNames(skinData, unitToken)
         end
         -- The Top Name Bar keeps the level in front of the name as the name does.
         local attach = mod.RF_TextNameAttach(bs)
-        if d and d.topNameBarText and bs.topNameBarEnabled then
+        if skinData and skinData.topNameBarText and bs.topNameBarEnabled then
             if attach then
                 mod._RFNameWithLevel(
-                    d.topNameBarText,
+                    skinData.topNameBarText,
                     ResolveDisplayName(unitToken, false, bs),
                     unitToken,
                     attach
                 )
             else
-                d.topNameBarText:SetText(ResolveDisplayName(unitToken, false, bs))
+                skinData.topNameBarText:SetText(ResolveDisplayName(unitToken, false, bs))
             end
             local tr, tg, tb = GetTopNameBarColor(unitToken, bs)
-            d.topNameBarText:SetTextColor(tr, tg, tb)
+            skinData.topNameBarText:SetTextColor(tr, tg, tb)
         end
     end
-    for unitToken, btn in pairs(unitToButton) do
-        refresh(unitToken, btn)
+    for unitToken, button in pairs(unitToButton) do
+        refresh(unitToken, button)
     end
-    for unitToken, btn in pairs(mod._partyUnitToButton) do
-        refresh(unitToken, btn)
+    for unitToken, button in pairs(mod._partyUnitToButton) do
+        refresh(unitToken, button)
     end
 end
 
 -- A preview text's colour for its colour mode: accent, class (classToken: the sample member's
 -- class; none, as for a pet, reads white), power (pToken: the sample member's power type) or
 -- custom (custom: the colour). r, g, b: the colour without one.
-function mod.RF_PreviewTextColor(mode, custom, classToken, r, g, b, pToken)
+function mod.RF_PreviewTextColor(mode, custom, classToken, region, g, b, pToken)
     if mode == "accent" then
         local ar, ag, ab = CludesUI.ResolveActiveAccent()
         if ar then
@@ -911,7 +911,7 @@ function mod.RF_PreviewTextColor(mode, custom, classToken, r, g, b, pToken)
     elseif custom then
         return custom.r, custom.g, custom.b
     end
-    return r, g, b
+    return region, g, b
 end
 
 -- Anchor a FontString to the health bar using the shared position scheme of the texts.
@@ -1363,26 +1363,26 @@ end
 -- the value alone. Stamps d._pwType (nil = not derived for this occupant).
 -- force = full paint: settings may have changed, so the bg re-tints even when
 -- the type/darken stamps still match.
-mod._RFPowerTypeEdge = function(d, unitToken, force)
+mod._RFPowerTypeEdge = function(skinData, unitToken, force)
     local pType = UnitPowerType(unitToken) or 0
     local pr, pg, pb = GetPowerColor(unitToken)
-    d._pwType = pType
-    d.power:SetMinMaxValues(0, 100)
-    d.power:SetStatusBarColor(pr, pg, pb, 1)
-    local s = d._isParty and mod._scaledPartyProxy
-        or (d._isExtra and mod._scaledExtraProxy)
+    skinData._pwType = pType
+    skinData.power:SetMinMaxValues(0, 100)
+    skinData.power:SetStatusBarColor(pr, pg, pb, 1)
+    local s = skinData._isParty and mod._scaledPartyProxy
+        or (skinData._isExtra and mod._scaledExtraProxy)
         or mod._scaledProfile
-    if s.powerBgPowerColored and d.powerBg then
-        local f = mod.CludesUI.GetPowerBgDarkenFactor()
-        if force or d._pwBgTintType ~= pType or d._pwBgTintF ~= f then
-            d.powerBg:SetColorTexture(pr * f, pg * f, pb * f, (s.powerBgDarkness or 70) / 100)
-            d._pwBgTintType = pType
-            d._pwBgTintF = f
+    if s.powerBgPowerColored and skinData.powerBg then
+        local frame = mod.CludesUI.GetPowerBgDarkenFactor()
+        if force or skinData._pwBgTintType ~= pType or skinData._pwBgTintF ~= frame then
+            skinData.powerBg:SetColorTexture(pr * frame, pg * frame, pb * frame, (s.powerBgDarkness or 70) / 100)
+            skinData._pwBgTintType = pType
+            skinData._pwBgTintF = frame
         end
     end
     -- Power Text's colour is identity-class state too (its Power mode is this type's colour).
-    if d._pwtOn then
-        mod.RF_TextPowerColor(d, unitToken, s, pr, pg, pb)
+    if skinData._pwtOn then
+        mod.RF_TextPowerColor(skinData, unitToken, s, pr, pg, pb)
     end
 end
 

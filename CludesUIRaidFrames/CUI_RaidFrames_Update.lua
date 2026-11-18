@@ -96,45 +96,45 @@ mod.PING_EXPIRE = 20
 -- anchor set as the raid marker, and the size as a factor of Blizzard's native
 -- 30 so both atlases keep their proportions. Re-run by every reload path that
 -- re-anchors the other indicators.
-mod._RFAnchorPing = function(d)
-    local popFrame = d.pingFrame
+mod._RFAnchorPing = function(skinData)
+    local popFrame = skinData.pingFrame
     if not popFrame then
         return
     end
-    local s = d._isParty and mod._scaledPartyProxy
-        or (d._isExtra and mod._scaledExtraProxy)
+    local s = skinData._isParty and mod._scaledPartyProxy
+        or (skinData._isExtra and mod._scaledExtraProxy)
         or mod._scaledProfile
     local size = PixelSnap(s.pingMarkerSize or 30)
     popFrame:SetSize(size, size)
     popFrame._factor = size / 30
-    local host = mod.RF_AnchorHost(d.health, s)
+    local owner = mod.RF_AnchorHost(skinData.health, s)
     local place = s.pingMarkerPosition or "center"
     local ox = s.pingMarkerOffsetX or 0
     local oy = s.pingMarkerOffsetY or 0
     popFrame:ClearAllPoints()
     if place == "topleft" then
-        popFrame:SetPoint("TOPLEFT", host, "TOPLEFT", 2 + ox, -2 + oy)
+        popFrame:SetPoint("TOPLEFT", owner, "TOPLEFT", 2 + ox, -2 + oy)
     elseif place == "top" then
-        popFrame:SetPoint("TOP", host, "TOP", ox, -2 + oy)
+        popFrame:SetPoint("TOP", owner, "TOP", ox, -2 + oy)
     elseif place == "topright" then
-        popFrame:SetPoint("TOPRIGHT", host, "TOPRIGHT", -2 + ox, -2 + oy)
+        popFrame:SetPoint("TOPRIGHT", owner, "TOPRIGHT", -2 + ox, -2 + oy)
     elseif place == "left" then
-        popFrame:SetPoint("LEFT", host, "LEFT", 2 + ox, oy)
+        popFrame:SetPoint("LEFT", owner, "LEFT", 2 + ox, oy)
     elseif place == "right" then
-        popFrame:SetPoint("RIGHT", host, "RIGHT", -2 + ox, oy)
+        popFrame:SetPoint("RIGHT", owner, "RIGHT", -2 + ox, oy)
     elseif place == "bottomleft" then
-        popFrame:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", 2 + ox, 2 + oy)
+        popFrame:SetPoint("BOTTOMLEFT", owner, "BOTTOMLEFT", 2 + ox, 2 + oy)
     elseif place == "bottom" then
-        popFrame:SetPoint("BOTTOM", host, "BOTTOM", ox, 2 + oy)
+        popFrame:SetPoint("BOTTOM", owner, "BOTTOM", ox, 2 + oy)
     elseif place == "bottomright" then
-        popFrame:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", -2 + ox, 2 + oy)
+        popFrame:SetPoint("BOTTOMRIGHT", owner, "BOTTOMRIGHT", -2 + ox, 2 + oy)
     else
-        popFrame:SetPoint("CENTER", host, "CENTER", ox, oy)
+        popFrame:SetPoint("CENTER", owner, "CENTER", ox, oy)
     end
 end
 
-mod._RFPingOverlay = function(btnFrame, d)
-    local popFrame = d.pingFrame
+mod._RFPingOverlay = function(btnFrame, skinData)
+    local popFrame = skinData.pingFrame
     if popFrame then
         return popFrame
     end
@@ -146,8 +146,8 @@ mod._RFPingOverlay = function(btnFrame, d)
     popFrame.icon = popFrame:CreateTexture(nil, "ARTWORK")
     popFrame.icon:SetPoint("CENTER")
     popFrame:Hide()
-    d.pingFrame = popFrame
-    mod._RFAnchorPing(d)
+    skinData.pingFrame = popFrame
+    mod._RFAnchorPing(skinData)
     return popFrame
 end
 
@@ -155,9 +155,9 @@ mod._RFPingHide = function(btnFrame)
     if not btnFrame then
         return
     end
-    local d = GetFFD(btnFrame)
-    if d.pingFrame then
-        d.pingFrame:Hide()
+    local skinData = GetFFD(btnFrame)
+    if skinData.pingFrame then
+        skinData.pingFrame:Hide()
     end
 end
 
@@ -171,15 +171,15 @@ mod._pingKitArt = {}
 mod._PingKitArt = function(kit)
     local art = mod._pingKitArt[kit]
     if art == nil then
-        local backdrop, icon = "Ping_Frame_BG_" .. kit, "Ping_Frame_" .. kit
-        local bgInfo, iconInfo = C_Texture.GetAtlasInfo(backdrop), C_Texture.GetAtlasInfo(icon)
+        local backdrop, iconTex = "Ping_Frame_BG_" .. kit, "Ping_Frame_" .. kit
+        local bgInfo, iconInfo = C_Texture.GetAtlasInfo(backdrop), C_Texture.GetAtlasInfo(iconTex)
         art = bgInfo
                 and iconInfo
                 and {
                     bg = backdrop,
                     bgW = bgInfo.width,
                     bgH = bgInfo.height,
-                    icon = icon,
+                    icon = iconTex,
                     iconW = iconInfo.width,
                     iconH = iconInfo.height,
                 }
@@ -196,14 +196,14 @@ mod._RFPingLight = function(btnFrame, kit)
     if not art then
         return
     end
-    local d = GetFFD(btnFrame)
-    local s = d._isParty and mod._scaledPartyProxy
-        or (d._isExtra and mod._scaledExtraProxy)
+    local skinData = GetFFD(btnFrame)
+    local s = skinData._isParty and mod._scaledPartyProxy
+        or (skinData._isExtra and mod._scaledExtraProxy)
         or mod._scaledProfile
     if s.showPingMarker == false then
         return
     end
-    local popFrame = mod._RFPingOverlay(btnFrame, d)
+    local popFrame = mod._RFPingOverlay(btnFrame, skinData)
     local factor = popFrame._factor or 1
     popFrame.bg:SetAtlas(art.bg)
     popFrame.bg:SetSize(art.bgW * factor, art.bgH * factor)
@@ -212,76 +212,76 @@ mod._RFPingLight = function(btnFrame, kit)
     popFrame:Show()
     -- Expiry belt: a pin has a finite engine lifetime; if its removed edge can
     -- no longer reach this button (see header), the overlay still goes away.
-    local stamp = (d._pingStamp or 0) + 1
-    d._pingStamp = stamp
+    local stamp = (skinData._pingStamp or 0) + 1
+    skinData._pingStamp = stamp
     C_Timer.After(mod.PING_EXPIRE, function()
-        if d._pingStamp == stamp and d.pingFrame then
-            d.pingFrame:Hide()
+        if skinData._pingStamp == stamp and skinData.pingFrame then
+            skinData.pingFrame:Hide()
         end
     end)
 end
 
-mod._OnCufShowPing = function(icon, kit)
+mod._OnCufShowPing = function(iconTex, kit)
     if issecretvalue(kit) or type(kit) ~= "string" then
         return
     end
-    local ownerFrame = icon:GetParent()
+    local ownerFrame = iconTex:GetParent()
     local unitToken = ownerFrame and ownerFrame.unit
     if type(unitToken) ~= "string" then
         return
     end
-    local btn = unitToButton[unitToken] or mod._partyUnitToButton[unitToken]
+    local button = unitToButton[unitToken] or mod._partyUnitToButton[unitToken]
     local xf = mod._xfUnitToButton[unitToken]
     -- The icon re-lit for a different occupant: release what it lit before.
-    local prevB, prevX = mod._pingLitBtn[icon], mod._pingLitXf[icon]
-    if prevB and prevB ~= btn then
+    local prevB, prevX = mod._pingLitBtn[iconTex], mod._pingLitXf[iconTex]
+    if prevB and prevB ~= button then
         mod._RFPingHide(prevB)
     end
     if prevX and prevX ~= xf then
         mod._RFPingHide(prevX)
     end
-    if btn then
-        mod._RFPingLight(btn, kit)
+    if button then
+        mod._RFPingLight(button, kit)
     end
     if xf then
         mod._RFPingLight(xf, kit)
     end
-    mod._pingLitBtn[icon], mod._pingLitXf[icon] = btn, xf
+    mod._pingLitBtn[iconTex], mod._pingLitXf[iconTex] = button, xf
 end
 
-mod._OnCufClearPing = function(icon)
-    local b, posX = mod._pingLitBtn[icon], mod._pingLitXf[icon]
+mod._OnCufClearPing = function(iconTex)
+    local b, posX = mod._pingLitBtn[iconTex], mod._pingLitXf[iconTex]
     if not b and not posX then
         return
     end
-    mod._pingLitBtn[icon], mod._pingLitXf[icon] = nil, nil
+    mod._pingLitBtn[iconTex], mod._pingLitXf[iconTex] = nil, nil
     mod._RFPingHide(b)
     mod._RFPingHide(posX)
 end
 
 mod._HookCufPingIcon = function(cuf)
-    local icon = cuf and cuf.pingIconFrame
-    if not icon then
+    local iconTex = cuf and cuf.pingIconFrame
+    if not iconTex then
         return
     end
-    local state = mod._pingHooked[icon]
+    local state = mod._pingHooked[iconTex]
     if state ~= nil then
         return
     end
     -- Nameplate compact frames carry the same child; never ours to mirror.
     local okN, name = pcall(cuf.GetName, cuf)
     if okN and type(name) == "string" and name:find("^NamePlate") then
-        mod._pingHooked[icon] = false
+        mod._pingHooked[iconTex] = false
         return
     end
-    local okF, forbidden = pcall(icon.IsForbidden, icon)
+    local okF, forbidden = pcall(iconTex.IsForbidden, iconTex)
     if not okF or forbidden then
-        mod._pingHooked[icon] = false
+        mod._pingHooked[iconTex] = false
         return
     end
-    mod._pingHooked[icon] = true
-    hooksecurefunc(icon, "ShowPing", mod._OnCufShowPing)
-    hooksecurefunc(icon, "ClearPing", mod._OnCufClearPing)
+    mod._pingHooked[iconTex] = true
+    hooksecurefunc(iconTex, "ShowPing", mod._OnCufShowPing)
+    hooksecurefunc(iconTex, "ClearPing", mod._OnCufClearPing)
 end
 
 if type(CompactUnitFrame_SetUpFrame) == "function" then
@@ -325,10 +325,10 @@ local function SecretRoleMap(style, s)
     return map
 end
 
-local function PaintSecretRole(d, unitToken, style, s)
+local function PaintSecretRole(skinData, unitToken, style, s)
     local paint = UnitFrameUtil and UnitFrameUtil.UpdateUnitFrameRoleIcon
     local map = paint and not s.roleText and SecretRoleMap(style, s)
-    local texture = d.roleIconSecret
+    local texture = skinData.roleIconSecret
     if not map then
         if texture then
             texture:Hide()
@@ -336,29 +336,29 @@ local function PaintSecretRole(d, unitToken, style, s)
         return
     end
     if not texture then
-        local icon = d.roleIcon
-        local layer, sub = icon:GetDrawLayer()
-        texture = icon:GetParent():CreateTexture(nil, layer, nil, sub)
-        texture:SetAllPoints(icon)
-        d.roleIconSecret = texture
-        d.roleSecretProxy =
+        local iconTex = skinData.roleIcon
+        local layer, sub = iconTex:GetDrawLayer()
+        texture = iconTex:GetParent():CreateTexture(nil, layer, nil, sub)
+        texture:SetAllPoints(iconTex)
+        skinData.roleIconSecret = texture
+        skinData.roleSecretProxy =
             { roleIcon = texture, optionTable = { displayRoleIcon = true, displayRaidRoleIcon = false } }
     end
-    local proxy = d.roleSecretProxy
+    local proxy = skinData.roleSecretProxy
     proxy.unit = unitToken
     proxy.optionTable.textureMap = map
     pcall(paint, proxy)
 end
 
-local function UpdateRoleIconShown(d, s, unitToken)
-    local roleIcon = d.roleIcon
+local function UpdateRoleIconShown(skinData, s, unitToken)
+    local roleIcon = skinData.roleIcon
     if not roleIcon then
         return
     end
     if roleIcon._roleText then
         roleIcon._roleText:Hide()
     end
-    local secretTex = d.roleIconSecret
+    local secretTex = skinData.roleIconSecret
     local style = s.roleIconStyle or "modern"
     if style == "none" and not s.roleText then
         roleIcon:Hide()
@@ -377,7 +377,7 @@ local function UpdateRoleIconShown(d, s, unitToken)
     local role, roleSecret = CludesUI.UnitEffectiveRole(unitToken)
     if roleSecret then
         roleIcon:Hide()
-        PaintSecretRole(d, unitToken, style, s)
+        PaintSecretRole(skinData, unitToken, style, s)
     elseif role then
         if secretTex then
             secretTex:Hide()
@@ -403,21 +403,21 @@ end
 
 -- Attach Role Icons: the name only makes room on frames whose icon shows (a secret
 -- role's Blizzard-painted icon counts as shown).
-mod._UpdateRoleIcon = function(d, s, unitToken)
-    if not d.roleIcon then
+mod._UpdateRoleIcon = function(skinData, s, unitToken)
+    if not skinData.roleIcon then
         return
     end
-    UpdateRoleIconShown(d, s, unitToken)
-    local tnb = d.topNameBar
-    if not (s.roleIconOnNameBar and tnb and d.topNameBarText) then
+    UpdateRoleIconShown(skinData, s, unitToken)
+    local tnb = skinData.topNameBar
+    if not (s.roleIconOnNameBar and tnb and skinData.topNameBarText) then
         return
     end
-    local sec = d.roleIconSecret
+    local sec = skinData.roleIconSecret
     local secShown = sec and sec:IsShown()
-    local has = d.roleIcon:IsShown() or issecretvalue(secShown) or secShown or false
+    local has = skinData.roleIcon:IsShown() or issecretvalue(secShown) or secShown or false
     if tnb._cuiRoleIcon ~= has then
         tnb._cuiRoleIcon = has
-        mod.RF_PlaceTopNameText(d.topNameBarText, tnb, s)
+        mod.RF_PlaceTopNameText(skinData.topNameBarText, tnb, s)
     end
 end
 
@@ -426,8 +426,8 @@ end
 --  lightweight ns._UpdateLeaderIcons combat-transition updater (lockstep). Honors
 --  the "Show In Combat" cog (default on; off = hidden in combat).
 -------------------------------------------------------------------------------
-mod._UpdateLeaderIcon = function(d, s, unitToken)
-    local leaderIcon = d.leaderIcon
+mod._UpdateLeaderIcon = function(skinData, s, unitToken)
+    local leaderIcon = skinData.leaderIcon
     if not leaderIcon then
         return
     end
@@ -459,18 +459,18 @@ end
 --  awareness). Driven by UpdateButton and the lightweight ns._UpdateCombatIcons
 --  updater (UNIT_FLAGS / regen). Texture Show/Hide is combat-legal. On ns (cap).
 -------------------------------------------------------------------------------
-mod._UpdateCombatIcon = function(d, s, unitToken)
-    local icon = d.combatIcon
-    if not icon then
+mod._UpdateCombatIcon = function(skinData, s, unitToken)
+    local iconTex = skinData.combatIcon
+    if not iconTex then
         return
     end
     if not s.showCombatIndicator then
-        icon:Hide()
+        iconTex:Hide()
         return
     end
     local c = UnitAffectingCombat(unitToken)
     if issecretvalue(c) or not c then
-        icon:Hide()
+        iconTex:Hide()
         return
     end
 
@@ -478,14 +478,14 @@ mod._UpdateCombatIcon = function(d, s, unitToken)
     local style = s.combatIndicatorStyle or "standard"
     local MEDIA = mod._COMBAT_MEDIA
     if style:find("^combat%d") then
-        icon:SetTexture(MEDIA .. style .. ".tga")
-        icon:SetTexCoord(0, 1, 0, 1)
-        if icon.SetDesaturated then
-            icon:SetDesaturated(false)
+        iconTex:SetTexture(MEDIA .. style .. ".tga")
+        iconTex:SetTexCoord(0, 1, 0, 1)
+        if iconTex.SetDesaturated then
+            iconTex:SetDesaturated(false)
         end
-        icon:SetVertexColor(1, 1, 1, 1)
+        iconTex:SetVertexColor(1, 1, 1, 1)
     else
-        local classToken = d.classToken
+        local classToken = skinData.classToken
         if not classToken then
             local _, ct = UnitClass(unitToken)
             classToken = ct
@@ -494,27 +494,27 @@ mod._UpdateCombatIcon = function(d, s, unitToken)
             classToken = nil
         end
         if style == "class" then
-            icon:SetTexture(MEDIA .. "combat-indicator-class-custom.png")
+            iconTex:SetTexture(MEDIA .. "combat-indicator-class-custom.png")
             local coords = classToken and mod._COMBAT_CLASS_COORDS[classToken]
             if coords then
-                icon:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
+                iconTex:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
             else
-                icon:SetTexCoord(0, 1, 0, 1)
+                iconTex:SetTexCoord(0, 1, 0, 1)
             end
         else
-            icon:SetTexture(MEDIA .. "combat-indicator-custom.png")
-            icon:SetTexCoord(0, 1, 0, 1)
+            iconTex:SetTexture(MEDIA .. "combat-indicator-custom.png")
+            iconTex:SetTexCoord(0, 1, 0, 1)
         end
         local colorMode = s.combatIndicatorColor or "custom"
         if colorMode == "classcolor" then
             local cc = (classToken and CludesUI.GetClassColor(classToken)) or { r = 1, g = 1, b = 1 }
-            icon:SetVertexColor(cc.r, cc.g, cc.b, 1)
+            iconTex:SetVertexColor(cc.r, cc.g, cc.b, 1)
         else
             local cc = s.combatIndicatorCustomColor or { r = 1, g = 1, b = 1 }
-            icon:SetVertexColor(cc.r, cc.g, cc.b, 1)
+            iconTex:SetVertexColor(cc.r, cc.g, cc.b, 1)
         end
     end
-    icon:Show()
+    iconTex:Show()
 end
 
 -------------------------------------------------------------------------------
@@ -532,28 +532,28 @@ local function UpdateButton(btnFrame)
         return
     end
 
-    local d = GetFFD(btnFrame)
+    local skinData = GetFFD(btnFrame)
     -- Login gap guard: events registered in the loading-screen window can
     -- dispatch before the deferred styling pass builds this button's visual
     -- body; the pass ends with a full repaint, so skipping here loses nothing.
-    if not d.styled then
+    if not skinData.styled then
         return
     end
-    if not d.styled then
+    if not skinData.styled then
         return
     end
 
-    local s = d._isParty and mod._scaledPartyProxy
-        or (d._isExtra and mod._scaledExtraProxy)
+    local s = skinData._isParty and mod._scaledPartyProxy
+        or (skinData._isExtra and mod._scaledExtraProxy)
         or mod._scaledProfile
     -- Restore alpha respecting BM frame alpha + range alpha. nil rangeAlpha = managed by the
     -- secret-safe SetAlphaFromBoolean path; overriding it flashes full alpha until the next
     -- range ticker run (0.2s).
-    if d.rangeAlpha then
+    if skinData.rangeAlpha then
         local baseA = btnFrame._bmSavedAlpha or 1
-        btnFrame:SetAlpha(baseA * d.rangeAlpha)
-        if d.pt and d.pt._3dOn then
-            mod.RF_PtModelAlpha(d, baseA * d.rangeAlpha)
+        btnFrame:SetAlpha(baseA * skinData.rangeAlpha)
+        if skinData.pt and skinData.pt._3dOn then
+            mod.RF_PtModelAlpha(skinData, baseA * skinData.rangeAlpha)
         end
     end
 
@@ -563,7 +563,7 @@ local function UpdateButton(btnFrame)
         and Enum.StatusBarInterpolation
         and Enum.StatusBarInterpolation.ExponentialEaseOut
 
-    local health = d.health
+    local health = skinData.health
     -- Offline/dead units keep the gray tint _ApplyHealthBg owns. That tint is
     -- state-stamped there (applied on the transition, not on every call), so a
     -- full paint must never lay a class color over it -- the same split as
@@ -590,41 +590,41 @@ local function UpdateButton(btnFrame)
         end
 
         if connected and not deadOrGhost then
-            local r, g, b = GetHealthColor(unitToken, s)
-            local fill = health:GetStatusBarTexture()
+            local region, g, b = GetHealthColor(unitToken, s)
+            local fillTex = health:GetStatusBarTexture()
             if s.healthColorMode == "dark" then
-                health:SetStatusBarColor(r, g, b, 1)
+                health:SetStatusBarColor(region, g, b, 1)
                 -- 4th return of GetDarkModeFill() is the Dark Mode Fill Opacity.
-                if fill then
-                    fill:SetAlpha(select(4, CludesUI.GetDarkModeFill()))
+                if fillTex then
+                    fillTex:SetAlpha(select(4, CludesUI.GetDarkModeFill()))
                 end
             else
-                if fill then
-                    fill:SetAlpha(1)
+                if fillTex then
+                    fillTex:SetAlpha(1)
                 end
-                health:SetStatusBarColor(r, g, b, (s.healthBarOpacity or 100) / 100)
+                health:SetStatusBarColor(region, g, b, (s.healthBarOpacity or 100) / 100)
             end
         end
     end
 
     -- Background (+ dead/offline status tint). Centralized in ns._ApplyHealthBg so the lightweight UNIT_HEALTH path stays in lockstep.
-    mod._ApplyHealthBg(d, health, s, unitToken, connected, deadOrGhost)
+    mod._ApplyHealthBg(skinData, health, s, unitToken, connected, deadOrGhost)
 
     -- Power (filtered by role + hide if unit has no power)
-    mod._PaintPower(btnFrame, d, s, unitToken)
+    mod._PaintPower(btnFrame, skinData, s, unitToken)
 
     -- Absorb (full paint: re-read the reduced-max percent too)
-    d._rmhPct = nil
+    skinData._rmhPct = nil
     UpdateAbsorb(btnFrame, unitToken)
 
-    mod._PaintButtonTail(btnFrame, d, s, unitToken)
+    mod._PaintButtonTail(btnFrame, skinData, s, unitToken)
 end
 
 -- Power bar layout + value: role-gated show/hide, health-height reflow, then the
 -- value/color push. Split out of UpdateButton so the roster-state refresh
 -- (ns._RefreshRosterState) can re-evaluate the role gate without a full paint.
-mod._PaintPower = function(btnFrame, d, s, unitToken)
-    local power = d.power
+mod._PaintPower = function(btnFrame, skinData, s, unitToken)
+    local power = skinData.power
     if power then
         local role = mod._ResolvePowerRole(unitToken)
         local showForRole = (role == "HEALER" and s.powerShowForHealer)
@@ -642,12 +642,12 @@ mod._PaintPower = function(btnFrame, d, s, unitToken)
         local tnbH = (s.topNameBarEnabled and PixelSnap(s.topNameBarHeight or 20)) or 0
         -- Extra Frames duplicates carry a per-group size offset (Extra Height), so the BUTTON is
         -- authoritative -- the shared setting would shrink health and leave a gap every update.
-        local frameH = d._isExtra and btnFrame:GetHeight() or (s.frameHeight or 46)
+        local frameH = skinData._isExtra and btnFrame:GetHeight() or (s.frameHeight or 46)
 
         -- Party Frames kit: the mana bar is part of the stock frame and always
         -- shows (an empty track reads as no mana); the kit owns the bar rects.
-        if d.kit then
-            d._appliedHidePower = false
+        if skinData.kit then
+            skinData._appliedHidePower = false
             hidePower = false
         end
 
@@ -664,30 +664,30 @@ mod._PaintPower = function(btnFrame, d, s, unitToken)
         -- reassignment (new occupant on a built button) would then write SetHeight under lockdown
         -- and be blocked. A first paint after a mid-combat reload has nothing anchored yet, so
         -- IsProtected is false there and it still applies.
-        if d._appliedHidePower ~= hidePower then
-            if inCombat and (d._appliedHidePower ~= nil or (d.health and d.health:IsProtected())) then
-                d._powerDirtyInCombat = true
+        if skinData._appliedHidePower ~= hidePower then
+            if inCombat and (skinData._appliedHidePower ~= nil or (skinData.health and skinData.health:IsProtected())) then
+                skinData._powerDirtyInCombat = true
                 mod._powerDirtyInCombat = true
             else
-                d._appliedHidePower = hidePower
+                skinData._appliedHidePower = hidePower
                 if hidePower then
                     power:Hide()
-                    if d.powerBorderFrame and d.powerBorderFrame._powerArtKey then
-                        mod.RF_ClearPowerBorderArt(d.powerBorderFrame)
+                    if skinData.powerBorderFrame and skinData.powerBorderFrame._powerArtKey then
+                        mod.RF_ClearPowerBorderArt(skinData.powerBorderFrame)
                     end
-                    if d.powerBorderFrame then
-                        d.powerBorderFrame:Hide()
+                    if skinData.powerBorderFrame then
+                        skinData.powerBorderFrame:Hide()
                     end
-                    mod.RF_TextPowerHide(d)
+                    mod.RF_TextPowerHide(skinData)
                     -- Expand health bar to full frame height (minus the Top Name Bar)
-                    if d.health then
-                        d.health:SetHeight(PixelSnap(frameH - tnbH))
+                    if skinData.health then
+                        skinData.health:SetHeight(PixelSnap(frameH - tnbH))
                     end
                 else
                     -- Restore health bar height with power bar space (and Top Name Bar)
                     local powerH = PixelSnap(s.powerHeight or 4)
-                    if d.health then
-                        d.health:SetHeight(PixelSnap(frameH - mod.RF_HealthPowerInset(s, powerH) - tnbH))
+                    if skinData.health then
+                        skinData.health:SetHeight(PixelSnap(frameH - mod.RF_HealthPowerInset(s, powerH) - tnbH))
                     end
                 end
             end
@@ -696,17 +696,17 @@ mod._PaintPower = function(btnFrame, d, s, unitToken)
         -- Value/color refresh for the power bar in its last APPLIED shown state (not the
         -- freshly computed one), so a deferred transition keeps rendering the old state
         -- instead of updating a bar whose show/hide hasn't actually changed yet.
-        if d._appliedHidePower == false then
+        if skinData._appliedHidePower == false then
             -- Smooth interpolation only animates correctly on a bar already shown last frame; on a
             -- fresh hidden->shown transition (profile swap replacing the fill texture) it leaves
             -- the fill at 0. Snap plainly on first show, smooth only after that.
             local wasShown = power:IsShown()
             power:Show()
-            if d.UpdatePowerBorder then
-                d.UpdatePowerBorder()
+            if skinData.UpdatePowerBorder then
+                skinData.UpdatePowerBorder()
             end
             -- Power Texts: shown ahead of the edge below, which colours them.
-            mod.RF_TextPowerShow(d, s)
+            mod.RF_TextPowerShow(skinData, s)
             local smoothPower = wasShown
                 and s.smoothPowerBars
                 and Enum
@@ -718,7 +718,7 @@ mod._PaintPower = function(btnFrame, d, s, unitToken)
             -- Type + color + bounds (+ power-colored bg) through the shared edge,
             -- which stamps d._pwType for the per-tick value path; forced so a
             -- settings-driven full paint always re-tints.
-            mod._RFPowerTypeEdge(d, unitToken, true)
+            mod._RFPowerTypeEdge(skinData, unitToken, true)
             local ppct = UnitPowerPercent(unitToken, pType, true, CurveConstants.ScaleTo100)
             if smoothPower then
                 power:SetValue(ppct, smoothPower)
@@ -727,8 +727,8 @@ mod._PaintPower = function(btnFrame, d, s, unitToken)
             end
             -- Power Text rides the same value (RF_TextPowerShow cleared the dead/offline
             -- stamp, so the next health tick re-checks a possibly new occupant).
-            if d._pwtOn then
-                mod.RF_TextPower(d, unitToken, ppct, pType, true)
+            if skinData._pwtOn then
+                mod.RF_TextPower(skinData, unitToken, ppct, pType, true)
             end
         end
     end
@@ -739,17 +739,17 @@ end
 -- Everything else on the button is driven by its own unit events and was current
 -- before the roster event, so the full paint (name resolution, absorb, texts,
 -- marker, threat) is skipped.
-mod._RefreshRosterState = function(btnFrame, d, s, unitToken)
-    if not d.styled then
+mod._RefreshRosterState = function(btnFrame, skinData, s, unitToken)
+    if not skinData.styled then
         return
     end
-    mod._UpdateRoleIcon(d, s, unitToken)
-    mod._UpdateLeaderIcon(d, s, unitToken)
-    mod._PaintPower(btnFrame, d, s, unitToken)
+    mod._UpdateRoleIcon(skinData, s, unitToken)
+    mod._UpdateLeaderIcon(skinData, s, unitToken)
+    mod._PaintPower(btnFrame, skinData, s, unitToken)
     -- Custom texts showing [group]: the raid group can change with the occupant staying.
-    local tp = d._txP
+    local tp = skinData._txP
     if tp and tp.reads then
-        mod.RF_TextRepaintCustom(d, unitToken, "roster")
+        mod.RF_TextRepaintCustom(skinData, unitToken, "roster")
     end
 end
 
@@ -760,88 +760,88 @@ end
 -- Anything else -- no painted occupant on record, secret guid -- takes the full
 -- paint, exactly the old pass.
 mod._RosterPassPaint = function(btnFrame, unitToken)
-    local d = GetFFD(btnFrame)
+    local skinData = GetFFD(btnFrame)
     local armAt = mod._rosterArmAt
-    if armAt and d._fpAt and d._fpAt >= armAt and d._fpUnit == unitToken then
+    if armAt and skinData._fpAt and skinData._fpAt >= armAt and skinData._fpUnit == unitToken then
         return
     end
-    local unitGuid = d._lastGuid and UnitGUID(unitToken)
-    if unitGuid and not issecretvalue(unitGuid) and d._lastGuid == unitGuid and d._lastUnit == unitToken then
-        local s = d._isParty and mod._scaledPartyProxy
-            or (d._isExtra and mod._scaledExtraProxy)
+    local unitGuid = skinData._lastGuid and UnitGUID(unitToken)
+    if unitGuid and not issecretvalue(unitGuid) and skinData._lastGuid == unitGuid and skinData._lastUnit == unitToken then
+        local s = skinData._isParty and mod._scaledPartyProxy
+            or (skinData._isExtra and mod._scaledExtraProxy)
             or mod._scaledProfile
-        mod._RefreshRosterState(btnFrame, d, s, unitToken)
+        mod._RefreshRosterState(btnFrame, skinData, s, unitToken)
     else
         UpdateButton(btnFrame)
     end
 end
 
 -- Second half of the full paint (after power + absorb).
-mod._PaintButtonTail = function(btnFrame, d, s, unitToken)
+mod._PaintButtonTail = function(btnFrame, skinData, s, unitToken)
     local CludesUI = mod.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
 
     -- The texts (name, level, Health, Heal Absorb and Custom Text; Power Text is the
     -- power paint's). Health, Power and Heal Absorb Text blank while dead or offline (the
     -- status text shows DEAD/OFFLINE); Custom stays, its tags name the status.
-    mod.RF_TextFull(d, s, unitToken)
+    mod.RF_TextFull(skinData, s, unitToken)
 
     -- Top Name Bar text (unit name + class/custom color); size/anchor/visibility are LayoutTopNameBar's.
     -- It keeps the level in front of the name as the name does.
-    if d.topNameBarText and s.topNameBarEnabled then
+    if skinData.topNameBarText and s.topNameBarEnabled then
         local lvlAttach = mod.RF_TextNameAttach(s)
         if lvlAttach then
             mod._RFNameWithLevel(
-                d.topNameBarText,
+                skinData.topNameBarText,
                 ResolveDisplayName(unitToken, false, s),
                 unitToken,
                 lvlAttach
             )
         else
-            d.topNameBarText:SetText(ResolveDisplayName(unitToken, false, s))
+            skinData.topNameBarText:SetText(ResolveDisplayName(unitToken, false, s))
         end
         local tr, tg, tb = GetTopNameBarColor(unitToken, s)
-        d.topNameBarText:SetTextColor(tr, tg, tb)
+        skinData.topNameBarText:SetTextColor(tr, tg, tb)
     end
 
     -- Status text (DEAD / OFFLINE / AFK). The SAME stamped painter as the
     -- UNIT_HEALTH path: the stamp records what is on screen, so a full paint
     -- that shows DEAD on a freshly assigned corpse leaves a stamp the later
     -- resurrect tick can see as a transition.
-    mod._PaintStatusText(d, s, unitToken, UnitIsConnected(unitToken), UnitIsDeadOrGhost(unitToken))
+    mod._PaintStatusText(skinData, s, unitToken, UnitIsConnected(unitToken), UnitIsDeadOrGhost(unitToken))
 
     -- Role icon
-    mod._UpdateRoleIcon(d, s, unitToken)
+    mod._UpdateRoleIcon(skinData, s, unitToken)
 
     -- Leader/assistant icon (honors the "Show In Combat" cog)
-    mod._UpdateLeaderIcon(d, s, unitToken)
+    mod._UpdateLeaderIcon(skinData, s, unitToken)
 
     -- Combat icon (members currently in combat)
-    mod._UpdateCombatIcon(d, s, unitToken)
+    mod._UpdateCombatIcon(skinData, s, unitToken)
 
     -- Raid marker
-    if d.raidMarker then
+    if skinData.raidMarker then
         if s.showRaidMarker then
             local position = GetRaidTargetIndex(unitToken)
             if position then
                 if issecretvalue(position) then
                     -- Secret-safe path: use SetSpriteSheetCell for secret marker index
-                    d.raidMarker:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
-                    if d.raidMarker.SetSpriteSheetCell then
-                        pcall(d.raidMarker.SetSpriteSheetCell, d.raidMarker, position, 4, 4, 64, 64)
+                    skinData.raidMarker:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
+                    if skinData.raidMarker.SetSpriteSheetCell then
+                        pcall(skinData.raidMarker.SetSpriteSheetCell, skinData.raidMarker, position, 4, 4, 64, 64)
                     end
-                    d.raidMarker:Show()
+                    skinData.raidMarker:Show()
                 elseif RAID_MARKER_TEXCOORDS[position] then
                     local tc = RAID_MARKER_TEXCOORDS[position]
-                    d.raidMarker:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
-                    d.raidMarker:Show()
+                    skinData.raidMarker:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
+                    skinData.raidMarker:Show()
                 else
-                    d.raidMarker:Hide()
+                    skinData.raidMarker:Hide()
                 end
             else
-                d.raidMarker:Hide()
+                skinData.raidMarker:Hide()
             end
         else
-            d.raidMarker:Hide()
+            skinData.raidMarker:Hide()
         end
     end
 
@@ -851,16 +851,16 @@ mod._PaintButtonTail = function(btnFrame, d, s, unitToken)
     do
         local isTarget = UnitIsUnit(unitToken, "target")
         local newTarget = (not issecretvalue(isTarget) and isTarget) and true or false
-        if newTarget ~= d._isTarget then
-            d._isTarget = newTarget
-            if d.ApplyBorderColor then
-                d.ApplyBorderColor()
+        if newTarget ~= skinData._isTarget then
+            skinData._isTarget = newTarget
+            if skinData.ApplyBorderColor then
+                skinData.ApplyBorderColor()
             end
         end
     end
 
     -- Threat highlight (aggro): the inner border (size 0 = off) or the Color Custom Borders recolor
-    mod.RF_PaintThreat(d, s, unitToken)
+    mod.RF_PaintThreat(skinData, s, unitToken)
 end
 
 -- UNIT_LEVEL: only the name and level texts repaint (and the Top Name Bar while it
@@ -870,16 +870,16 @@ mod._RFRepaintLevel = function(btnFrame)
     if not unitToken or not UnitExists(unitToken) then
         return
     end
-    local d = GetFFD(btnFrame)
-    local p = d._txP
-    if not (d.styled and p and p.wantLevel) then
+    local skinData = GetFFD(btnFrame)
+    local p = skinData._txP
+    if not (skinData.styled and p and p.wantLevel) then
         return
     end
-    mod.RF_TextNames(d, unitToken)
-    local s = d._txS
-    if p.nameAttach and d.topNameBarText and s.topNameBarEnabled then
+    mod.RF_TextNames(skinData, unitToken)
+    local s = skinData._txS
+    if p.nameAttach and skinData.topNameBarText and s.topNameBarEnabled then
         mod._RFNameWithLevel(
-            d.topNameBarText,
+            skinData.topNameBarText,
             ResolveDisplayName(unitToken, false, s),
             unitToken,
             p.nameAttach
@@ -914,15 +914,15 @@ function mod._RebuildDispelCurves()
         local c = C_CurveUtil.CreateColorCurve()
         c:SetType(Enum.LuaCurveType.Step)
         local function add(position, key, dr, dg, saved)
-            local col = profile and profile[key]
+            local colour = profile and profile[key]
             -- Per-type alpha rides the curve too (0 = type opted out of the dispel border/overlay). Never darkened by mult.
             c:AddPoint(
                 position,
                 CreateColor(
-                    (col and col.r or dr) * mult,
-                    (col and col.g or dg) * mult,
-                    (col and col.b or saved) * mult,
-                    ((col and col.a) or 1) * (alphaMult or 1)
+                    (colour and colour.r or dr) * mult,
+                    (colour and colour.g or dg) * mult,
+                    (colour and colour.b or saved) * mult,
+                    ((colour and colour.a) or 1) * (alphaMult or 1)
                 )
             )
         end
@@ -994,8 +994,8 @@ end
 -- d.readyCheck is shared by the ready-check, incoming-summon and incoming-rez indicators (rez only
 -- on dead units). Priority: active ready check > pending summon > incoming rez.
 local function UpdateReadyCheck(btnFrame, unitToken)
-    local d = GetFFD(btnFrame)
-    local texture = d.readyCheck
+    local skinData = GetFFD(btnFrame)
+    local texture = skinData.readyCheck
     if not texture then
         return
     end
@@ -1003,8 +1003,8 @@ local function UpdateReadyCheck(btnFrame, unitToken)
     -- Party/extra-aware settings source, same as every other indicator updater.
     -- AnchorReadyCheck already resolves LIVE this way, so a raw db.profile read
     -- here re-sized the shared texture back to the RAID value on every paint.
-    local s = d._isParty and mod._scaledPartyProxy
-        or (d._isExtra and mod._scaledExtraProxy)
+    local s = skinData._isParty and mod._scaledPartyProxy
+        or (skinData._isExtra and mod._scaledExtraProxy)
         or mod._scaledProfile
 
     local sz = PixelSnap(s.readyCheckSize or 20)
@@ -1062,26 +1062,26 @@ end
 -------------------------------------------------------------------------------
 local function RebuildUnitMap()
     wipe(unitToButton)
-    for _, btn in ipairs(allButtons) do
-        if btn:IsVisible() then
-            local u = btn:GetAttribute("unit")
+    for _, button in ipairs(allButtons) do
+        if button:IsVisible() then
+            local u = button:GetAttribute("unit")
             if u then
-                local d = GetFFD(btn)
+                local skinData = GetFFD(button)
                 -- Extra Frames duplicates stay out of the routing map (one button per unit; the
                 -- real frame owns the slot). Everything else here applies to them.
-                if not d._isExtra then
-                    unitToButton[u] = btn
+                if not skinData._isExtra then
+                    unitToButton[u] = button
                 end
                 -- Cache class token for power border (avoids UnitClass in hot path)
                 local _, classToken = UnitClass(u)
-                d.classToken = classToken
+                skinData.classToken = classToken
                 -- Repair a container binding the OnAttributeChanged hook dropped because
                 -- UnitExists(u) was false at the moment the header assigned it (roster still
                 -- streaming in on a zone/group transition). Nothing else re-drives this once
                 -- the header stops re-asserting the same token, so aura containers can stay
                 -- bound to a stale unit indefinitely.
-                if d.rfcUnit ~= u and UnitExists(u) and mod.RFC_OnUnitAssigned then
-                    mod.RFC_OnUnitAssigned(btn, d, u)
+                if skinData.rfcUnit ~= u and UnitExists(u) and mod.RFC_OnUnitAssigned then
+                    mod.RFC_OnUnitAssigned(button, skinData, u)
                 end
             end
         end
@@ -1101,16 +1101,16 @@ end
 mod._paintGen = 0
 local function UpdateAllButtons()
     local nowTime, gen = GetTime(), mod._paintGen
-    for _, btn in ipairs(allButtons) do
-        local u = btn:GetAttribute("unit")
-        if u and btn:IsVisible() then
-            local d = GetFFD(btn)
-            if not (d._fpAt == nowTime and d._fpUnit == u and d._fpGen == gen) then
-                d._fpAt = nowTime
-                d._fpUnit = u
-                d._fpGen = gen
-                UpdateButton(btn)
-                UpdateReadyCheck(btn, u)
+    for _, button in ipairs(allButtons) do
+        local u = button:GetAttribute("unit")
+        if u and button:IsVisible() then
+            local skinData = GetFFD(button)
+            if not (skinData._fpAt == nowTime and skinData._fpUnit == u and skinData._fpGen == gen) then
+                skinData._fpAt = nowTime
+                skinData._fpUnit = u
+                skinData._fpGen = gen
+                UpdateButton(button)
+                UpdateReadyCheck(button, u)
             end
         end
     end
@@ -1120,18 +1120,18 @@ end
 -- UpdateAllButtons. On ns so the OnAttributeChanged("unit") watch in StyleButton (created before
 -- these locals exist) can repaint the instant the secure header assigns a unit.
 mod._RefreshAssignedButton = function(btnFrame, unitToken)
-    local d = GetFFD(btnFrame)
-    if not d.styled then
+    local skinData = GetFFD(btnFrame)
+    if not skinData.styled then
         return
     end -- not built yet; init paint handles it
     -- Same stamp as UpdateAllButtons (identical body): the assignment paint and a same-frame full pass collapse to one paint.
     local nowTime = GetTime()
-    if d._fpAt == nowTime and d._fpUnit == unitToken and d._fpGen == mod._paintGen then
+    if skinData._fpAt == nowTime and skinData._fpUnit == unitToken and skinData._fpGen == mod._paintGen then
         return
     end
-    d._fpAt = nowTime
-    d._fpUnit = unitToken
-    d._fpGen = mod._paintGen
+    skinData._fpAt = nowTime
+    skinData._fpUnit = unitToken
+    skinData._fpGen = mod._paintGen
     UpdateButton(btnFrame)
     UpdateReadyCheck(btnFrame, unitToken)
 end
@@ -1149,27 +1149,27 @@ function ERF:UpdateAllFrames()
     -- types. _UpdateButtonHealth is lightweight, combat-safe and self-guarding.
     if mod._UpdateButtonHealth then
         if mod._partyUnitToButton then
-            for u, btn in pairs(mod._partyUnitToButton) do
-                mod._UpdateButtonHealth(btn)
+            for u, button in pairs(mod._partyUnitToButton) do
+                mod._UpdateButtonHealth(button)
                 -- Power Text's accent/power colour moves with these pushes too (raid and extra
                 -- buttons take it from the full paint above): one field read while it is off.
-                local pd = GetFFD(btn)
+                local pd = GetFFD(button)
                 if pd._pwtOn then
                     mod.RF_TextPowerColor(pd, u, mod._scaledPartyProxy, GetPowerColor(u))
                 end
             end
         end
         if mod._xfUnitToButton then
-            for _, btn in pairs(mod._xfUnitToButton) do
-                mod._UpdateButtonHealth(btn)
+            for _, button in pairs(mod._xfUnitToButton) do
+                mod._UpdateButtonHealth(button)
             end
         end
     end
     -- Boss and pet frames paint through their own painter (names and their colours included).
     local FB = mod._FB
-    for _, btn in ipairs(FB.buttons) do
-        if btn:IsVisible() then
-            FB.Update(btn)
+    for _, button in ipairs(FB.buttons) do
+        if button:IsVisible() then
+            FB.Update(button)
         end
     end
     mod._PF_RefreshVisible()
@@ -1193,152 +1193,152 @@ end)
 
 -- Lightweight: only toggle raid markers on each button (for RAID_TARGET_UPDATE)
 mod._UpdateRaidMarkers = function()
-    local function updateMarker(unitToken, btn)
-        local d = GetFFD(btn)
-        local s = d._isParty and mod._scaledPartyProxy
-            or (d._isExtra and mod._scaledExtraProxy)
+    local function updateMarker(unitToken, button)
+        local skinData = GetFFD(button)
+        local s = skinData._isParty and mod._scaledPartyProxy
+            or (skinData._isExtra and mod._scaledExtraProxy)
             or mod._scaledProfile
         if not s.showRaidMarker then
-            if d.raidMarker then
-                d.raidMarker:Hide()
+            if skinData.raidMarker then
+                skinData.raidMarker:Hide()
             end
             return
         end
-        if d.raidMarker then
+        if skinData.raidMarker then
             local position = GetRaidTargetIndex(unitToken)
             if position then
                 if issecretvalue(position) then
-                    d.raidMarker:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
-                    if d.raidMarker.SetSpriteSheetCell then
-                        pcall(d.raidMarker.SetSpriteSheetCell, d.raidMarker, position, 4, 4, 64, 64)
+                    skinData.raidMarker:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
+                    if skinData.raidMarker.SetSpriteSheetCell then
+                        pcall(skinData.raidMarker.SetSpriteSheetCell, skinData.raidMarker, position, 4, 4, 64, 64)
                     end
-                    d.raidMarker:Show()
+                    skinData.raidMarker:Show()
                 elseif RAID_MARKER_TEXCOORDS[position] then
                     local tc = RAID_MARKER_TEXCOORDS[position]
-                    d.raidMarker:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
-                    d.raidMarker:Show()
+                    skinData.raidMarker:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
+                    skinData.raidMarker:Show()
                 else
-                    d.raidMarker:Hide()
+                    skinData.raidMarker:Hide()
                 end
             else
-                d.raidMarker:Hide()
+                skinData.raidMarker:Hide()
             end
         end
     end
-    for unitToken, btn in pairs(unitToButton) do
-        updateMarker(unitToken, btn)
+    for unitToken, button in pairs(unitToButton) do
+        updateMarker(unitToken, button)
     end
-    for unitToken, btn in pairs(mod._partyUnitToButton) do
-        updateMarker(unitToken, btn)
+    for unitToken, button in pairs(mod._partyUnitToButton) do
+        updateMarker(unitToken, button)
     end
-    for unitToken, btn in pairs(mod._xfUnitToButton) do
-        updateMarker(unitToken, btn)
+    for unitToken, button in pairs(mod._xfUnitToButton) do
+        updateMarker(unitToken, button)
     end
 end
 
 -- Lightweight: only toggle target border on each button (for PLAYER_TARGET_CHANGED)
 mod._UpdateTargetBorders = function()
-    local function updateTarget(unitToken, btn)
-        local d = GetFFD(btn)
+    local function updateTarget(unitToken, button)
+        local skinData = GetFFD(button)
         local isTarget = UnitIsUnit(unitToken, "target")
-        d._isTarget = (not issecretvalue(isTarget) and isTarget) and true or false
-        if d.ApplyBorderColor then
-            d.ApplyBorderColor()
+        skinData._isTarget = (not issecretvalue(isTarget) and isTarget) and true or false
+        if skinData.ApplyBorderColor then
+            skinData.ApplyBorderColor()
         end
     end
-    for unitToken, btn in pairs(unitToButton) do
-        updateTarget(unitToken, btn)
+    for unitToken, button in pairs(unitToButton) do
+        updateTarget(unitToken, button)
     end
-    for unitToken, btn in pairs(mod._partyUnitToButton) do
-        updateTarget(unitToken, btn)
+    for unitToken, button in pairs(mod._partyUnitToButton) do
+        updateTarget(unitToken, button)
     end
-    for unitToken, btn in pairs(mod._xfUnitToButton) do
-        updateTarget(unitToken, btn)
+    for unitToken, button in pairs(mod._xfUnitToButton) do
+        updateTarget(unitToken, button)
     end
 end
 
 -- Lightweight: role icons only. Driven by combat transitions so the "Hide In Combat" cog
 -- suppresses/restores without a full repaint. Texture Show/Hide is combat-legal.
 mod._UpdateRoleIcons = function()
-    local function updateRole(unitToken, btn)
-        local d = GetFFD(btn)
-        if not d.roleIcon then
+    local function updateRole(unitToken, button)
+        local skinData = GetFFD(button)
+        if not skinData.roleIcon then
             return
         end
-        local s = d._isParty and mod._scaledPartyProxy
-            or (d._isExtra and mod._scaledExtraProxy)
+        local s = skinData._isParty and mod._scaledPartyProxy
+            or (skinData._isExtra and mod._scaledExtraProxy)
             or mod._scaledProfile
-        mod._UpdateRoleIcon(d, s, unitToken)
+        mod._UpdateRoleIcon(skinData, s, unitToken)
     end
-    for unitToken, btn in pairs(unitToButton) do
-        updateRole(unitToken, btn)
+    for unitToken, button in pairs(unitToButton) do
+        updateRole(unitToken, button)
     end
-    for unitToken, btn in pairs(mod._partyUnitToButton) do
-        updateRole(unitToken, btn)
+    for unitToken, button in pairs(mod._partyUnitToButton) do
+        updateRole(unitToken, button)
     end
-    for unitToken, btn in pairs(mod._xfUnitToButton) do
-        updateRole(unitToken, btn)
+    for unitToken, button in pairs(mod._xfUnitToButton) do
+        updateRole(unitToken, button)
     end
 end
 
 -- Lightweight: refresh leader/assistant icons only (combat transitions; "Show
 -- In Combat" cog) without a full repaint. Texture Show/Hide is combat-legal.
 mod._UpdateLeaderIcons = function()
-    local function updateLeader(unitToken, btn)
-        local d = GetFFD(btn)
-        if not d.leaderIcon then
+    local function updateLeader(unitToken, button)
+        local skinData = GetFFD(button)
+        if not skinData.leaderIcon then
             return
         end
-        local s = d._isParty and mod._scaledPartyProxy
-            or (d._isExtra and mod._scaledExtraProxy)
+        local s = skinData._isParty and mod._scaledPartyProxy
+            or (skinData._isExtra and mod._scaledExtraProxy)
             or mod._scaledProfile
-        mod._UpdateLeaderIcon(d, s, unitToken)
+        mod._UpdateLeaderIcon(skinData, s, unitToken)
     end
-    for unitToken, btn in pairs(unitToButton) do
-        updateLeader(unitToken, btn)
+    for unitToken, button in pairs(unitToButton) do
+        updateLeader(unitToken, button)
     end
-    for unitToken, btn in pairs(mod._partyUnitToButton) do
-        updateLeader(unitToken, btn)
+    for unitToken, button in pairs(mod._partyUnitToButton) do
+        updateLeader(unitToken, button)
     end
-    for unitToken, btn in pairs(mod._xfUnitToButton) do
-        updateLeader(unitToken, btn)
+    for unitToken, button in pairs(mod._xfUnitToButton) do
+        updateLeader(unitToken, button)
     end
 end
 
 -- Lightweight: refresh combat icons only (UNIT_FLAGS flips + combat
 -- transitions). Texture Show/Hide is combat-legal, safe from PLAYER_REGEN_DISABLED.
 mod._UpdateCombatIcons = function()
-    local function updateCombat(unitToken, btn)
-        local d = GetFFD(btn)
-        if not d.combatIcon then
+    local function updateCombat(unitToken, button)
+        local skinData = GetFFD(button)
+        if not skinData.combatIcon then
             return
         end
-        local s = d._isParty and mod._scaledPartyProxy
-            or (d._isExtra and mod._scaledExtraProxy)
+        local s = skinData._isParty and mod._scaledPartyProxy
+            or (skinData._isExtra and mod._scaledExtraProxy)
             or mod._scaledProfile
-        mod._UpdateCombatIcon(d, s, unitToken)
+        mod._UpdateCombatIcon(skinData, s, unitToken)
     end
-    for unitToken, btn in pairs(unitToButton) do
-        updateCombat(unitToken, btn)
+    for unitToken, button in pairs(unitToButton) do
+        updateCombat(unitToken, button)
     end
-    for unitToken, btn in pairs(mod._partyUnitToButton) do
-        updateCombat(unitToken, btn)
+    for unitToken, button in pairs(mod._partyUnitToButton) do
+        updateCombat(unitToken, button)
     end
-    for unitToken, btn in pairs(mod._xfUnitToButton) do
-        updateCombat(unitToken, btn)
+    for unitToken, button in pairs(mod._xfUnitToButton) do
+        updateCombat(unitToken, button)
     end
 end
 
 -- Single-unit combat icon refresh for UNIT_FLAGS routing (raid + party).
-mod._UpdateCombatIconFor = function(unitToken, btn)
-    local d = GetFFD(btn)
-    if not d.combatIcon then
+mod._UpdateCombatIconFor = function(unitToken, button)
+    local skinData = GetFFD(button)
+    if not skinData.combatIcon then
         return
     end
-    local s = d._isParty and mod._scaledPartyProxy
-        or (d._isExtra and mod._scaledExtraProxy)
+    local s = skinData._isParty and mod._scaledPartyProxy
+        or (skinData._isExtra and mod._scaledExtraProxy)
         or mod._scaledProfile
-    mod._UpdateCombatIcon(d, s, unitToken)
+    mod._UpdateCombatIcon(skinData, s, unitToken)
 end
 
 -- True when the combat icon is enabled anywhere (raid or effective party); skips all combat-icon work while off.
@@ -1391,8 +1391,8 @@ end
 -- incoming resurrection (the offer latch also requires dead), so the C probe is
 -- skipped for the alive majority -- the same shape as Blizzard's
 -- CompactUnitFrame, which never probes rez from its UNIT_HEALTH path.
-mod._PaintStatusText = function(d, s, unitToken, connected, deadOrGhost)
-    local statusText = d.statusText
+mod._PaintStatusText = function(skinData, s, unitToken, connected, deadOrGhost)
+    local statusText = skinData.statusText
     if not statusText then
         return
     end
@@ -1417,8 +1417,8 @@ mod._PaintStatusText = function(d, s, unitToken, connected, deadOrGhost)
         end
         st = afk and 3 or 0
     end
-    if d._stSt ~= st or d._stR ~= stc.r or d._stG ~= stc.g or d._stB ~= stc.b then
-        d._stSt, d._stR, d._stG, d._stB = st, stc.r, stc.g, stc.b
+    if skinData._stSt ~= st or skinData._stR ~= stc.r or skinData._stG ~= stc.g or skinData._stB ~= stc.b then
+        skinData._stSt, skinData._stR, skinData._stG, skinData._stB = st, stc.r, stc.g, stc.b
         if st == 0 then
             statusText:Hide()
         else
@@ -1439,15 +1439,15 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
             return
         end
     end
-    local d = GetFFD(btnFrame)
-    if not d.styled then
+    local skinData = GetFFD(btnFrame)
+    if not skinData.styled then
         return
     end
-    local s = d._isParty and mod._scaledPartyProxy
-        or (d._isExtra and mod._scaledExtraProxy)
+    local s = skinData._isParty and mod._scaledPartyProxy
+        or (skinData._isExtra and mod._scaledExtraProxy)
         or mod._scaledProfile
 
-    local health = d.health
+    local health = skinData.health
     local pct = GetSafeHealthPercent(unitToken)
     local connected = UnitIsConnected(unitToken)
     local deadOrGhost = UnitIsDeadOrGhost(unitToken)
@@ -1456,8 +1456,8 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
     if health then
         -- The bar is always a percent bar; its range never changes after the
         -- first application.
-        if not d._hb100 then
-            d._hb100 = true
+        if not skinData._hb100 then
+            skinData._hb100 = true
             health:SetMinMaxValues(0, 100)
         end
         local smooth = s.smoothBars
@@ -1481,7 +1481,7 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
         -- (every static-mode component is a plain value by construction).
         if connected and not deadOrGhost then
             local mode = s.healthColorMode
-            local r, g, b
+            local region, g, b
             if mode == nil or mode == "class" then
                 -- Class color is identity, not health: resolve the class token
                 -- once per occupant and reuse it per tick. Cleared on unit
@@ -1490,45 +1490,45 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
                 -- outlive the person behind the token. A secret token (identity
                 -- restricted) is never cached: fail open to the per-tick read
                 -- and the neutral gray, exactly as before.
-                local tok = d._clsTok
+                local tok = skinData._clsTok
                 if not tok then
                     local _, ct = UnitClass(unitToken)
                     if ct and not issecretvalue(ct) then
                         tok = ct
-                        d._clsTok = ct
+                        skinData._clsTok = ct
                     end
                 end
                 local cc = tok and mod.CludesUI.GetClassColor(tok)
                 if cc then
-                    r, g, b = cc.r, cc.g, cc.b
+                    region, g, b = cc.r, cc.g, cc.b
                 else
-                    r, g, b = 0.5, 0.5, 0.5
+                    region, g, b = 0.5, 0.5, 0.5
                 end
             else
-                r, g, b = GetHealthColor(unitToken, s)
+                region, g, b = GetHealthColor(unitToken, s)
             end
             if mode == "classic" or mode == "customDynamic" or mode == "classReactive" then
-                local fill = health:GetStatusBarTexture()
-                if fill then
-                    fill:SetAlpha(1)
+                local fillTex = health:GetStatusBarTexture()
+                if fillTex then
+                    fillTex:SetAlpha(1)
                 end
-                health:SetStatusBarColor(r, g, b, (s.healthBarOpacity or 100) / 100)
+                health:SetStatusBarColor(region, g, b, (s.healthBarOpacity or 100) / 100)
             else
                 local a = (mode == "dark") and 1 or (s.healthBarOpacity or 100) / 100
-                if d._hcR ~= r or d._hcG ~= g or d._hcB ~= b or d._hcA ~= a or d._hcM ~= mode then
-                    d._hcR, d._hcG, d._hcB, d._hcA, d._hcM = r, g, b, a, mode
-                    local fill = health:GetStatusBarTexture()
+                if skinData._hcR ~= region or skinData._hcG ~= g or skinData._hcB ~= b or skinData._hcA ~= a or skinData._hcM ~= mode then
+                    skinData._hcR, skinData._hcG, skinData._hcB, skinData._hcA, skinData._hcM = region, g, b, a, mode
+                    local fillTex = health:GetStatusBarTexture()
                     if mode == "dark" then
-                        health:SetStatusBarColor(r, g, b, 1)
+                        health:SetStatusBarColor(region, g, b, 1)
                         -- 4th return of GetDarkModeFill() is the Dark Mode Fill Opacity.
-                        if fill then
-                            fill:SetAlpha(select(4, CludesUI.GetDarkModeFill()))
+                        if fillTex then
+                            fillTex:SetAlpha(select(4, CludesUI.GetDarkModeFill()))
                         end
                     else
-                        if fill then
-                            fill:SetAlpha(1)
+                        if fillTex then
+                            fillTex:SetAlpha(1)
                         end
-                        health:SetStatusBarColor(r, g, b, a)
+                        health:SetStatusBarColor(region, g, b, a)
                     end
                 end
             end
@@ -1538,22 +1538,22 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
     -- The texts: Health and Heal Absorb Text, Power Text's dead/offline edge (death
     -- and resurrection need not move a power value) and the Custom texts reading health.
     -- One field read while the button's texts have none of them.
-    local tp = d._txP
+    local tp = skinData._txP
     if tp and tp.tick then
-        mod.RF_TextHealth(d, unitToken, pct, deadOrGhost or not connected)
+        mod.RF_TextHealth(skinData, unitToken, pct, deadOrGhost or not connected)
     end
 
     -- Status text (dead/ghost state changes with health)
-    mod._PaintStatusText(d, s, unitToken, connected, deadOrGhost)
+    mod._PaintStatusText(skinData, s, unitToken, connected, deadOrGhost)
 
     -- Background + dead/offline tint. This path owns death/resurrect transitions
     -- arriving via UNIT_HEALTH, so it runs per tick (state-stamped inside).
-    mod._ApplyHealthBg(d, health, s, unitToken, connected, deadOrGhost)
+    mod._ApplyHealthBg(skinData, health, s, unitToken, connected, deadOrGhost)
 
     -- Debuff Manager dead-corpse swap rides the same ownership: one field read
     -- for every button without a qualifying config.
-    if d.dmDeadSwap then
-        mod.DM_DeadEdge(d, unitToken)
+    if skinData.dmDeadSwap then
+        mod.DM_DeadEdge(skinData, unitToken)
     end
 end
 
@@ -1562,13 +1562,13 @@ end
 -- button (canonical story: UF engine RESETTLE_EVENTS). Flag lives in FFD --
 -- header children never carry insecure keys.
 mod._ResettleButtonHealth = function(btnFrame)
-    local d = GetFFD(btnFrame)
-    if d.hpResettle then
+    local skinData = GetFFD(btnFrame)
+    if skinData.hpResettle then
         return
     end
-    d.hpResettle = true
+    skinData.hpResettle = true
     C_Timer.After(0, function()
-        d.hpResettle = nil
+        skinData.hpResettle = nil
         if btnFrame:IsVisible() then
             mod._UpdateButtonHealth(btnFrame)
         end

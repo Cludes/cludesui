@@ -34,9 +34,9 @@ local StyleButton, StartGhostTicker = Inner.StyleButton, Inner.StartGhostTicker
 local StartRangeTicker, StopGhostTicker = Inner.StartRangeTicker, Inner.StopGhostTicker
 local StopRangeTicker, SetFramesVisible = Inner.StopRangeTicker, Inner.SetFramesVisible
 
-local db
+local store
 Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
-    db = val
+    store = val
 end
 local containerFrame
 Inner.containerFrameSetters[#Inner.containerFrameSetters + 1] = function(val)
@@ -56,7 +56,7 @@ mod._LayoutPartyFrames = function()
         return
     end
 
-    local s = db.profile
+    local s = store.profile
     local pw, ph, pcs = mod.RF_PartyDims(s)
     local bw, bh, cs = PixelSnap(pw), PixelSnap(ph), PixelSnap(pcs)
     -- Party target frames along the stack sit between the frames: the pitch opens by their room.
@@ -92,8 +92,8 @@ mod._LayoutPartyFrames = function()
         if wasShown then
             mod._partyHeader:Hide()
         end
-        for idx = 1, 5 do
-            local button = mod._partyHeader[idx]
+        for index = 1, 5 do
+            local button = mod._partyHeader[index]
             if button then
                 button:ClearAllPoints()
             end
@@ -293,8 +293,8 @@ mod.RF_KitPortraitEvents = function(on)
     end
     mod._kitPortraitEv, mod._ptModelEv = wanted, wantModel
     local units = mod._kitPortraitUnits
-    for idx = 1, #units do
-        local u = units[idx]
+    for index = 1, #units do
+        local u = units[index]
         local t = unitTrackers[u]
         if t then
             if wanted ~= was then
@@ -348,7 +348,7 @@ mod._UpdatePartyVisibility = function()
         end
     end
 
-    local s = db.profile
+    local s = store.profile
     -- Profile and spec-override swaps: Include Own Target first, so an enable edge below takes it.
     if mod._ptInclDesired ~= (s.partyTargetIncludeSelf == true) then
         mod.PT_SetIncludeSelf(s.partyTargetIncludeSelf)
@@ -500,7 +500,7 @@ mod.ReloadPartyFrames = function(skipButtons)
         mod.UpdateCombatEventRegistration()
     end
     local p = mod._partyProxy -- reads party_ keys with fallthrough
-    local raw = db.profile
+    local raw = store.profile
     -- Scaled reads for everything in INDICATOR_SCALE_KEYS (role/leader/marker
     -- icons, aura icon sizes, text sizes): mirrors the raid loop, which reads
     -- through ns._scaledProfile. Non-scale keys pass through unchanged.
@@ -545,14 +545,14 @@ mod.ReloadPartyFrames = function(skipButtons)
     local texPath = ResolveHealthTexture()
 
     for _, button in ipairs(skipButtons and mod._emptyList or mod._partyAllButtons) do
-        local d = GetFFD(button)
-        if not d.styled then
+        local skinData = GetFFD(button)
+        if not skinData.styled then
             -- _isParty BEFORE StyleButton: the container setup inside it
             -- resolves the style key and settings proxy from this flag, and
             -- the dispel slots BIND that key permanently. Styling first
             -- registered party dispel slots under the RAID key -- party
             -- dispel mode/icons/colors never applied (8.8.3 field reports).
-            d._isParty = true
+            skinData._isParty = true
             mod._StyleButtonSecure(button)
             StyleButton(button)
         end
@@ -564,41 +564,41 @@ mod.ReloadPartyFrames = function(skipButtons)
 
         -- Party portrait (CUI_RaidFrames_Portrait.lua; the kit keeps its own):
         -- ahead of the bar layout below, which hangs the bars off its area.
-        if not d.kit then
+        if not skinData.kit then
             local pu = button:GetAttribute("unit")
-            mod.RF_PtApply(button, d, pp, bw, bh, pu and UnitExists(pu) and pu or nil)
+            mod.RF_PtApply(button, skinData, pp, bw, bh, pu and UnitExists(pu) and pu or nil)
         end
 
         -- Health bar height/anchor + Top Name Bar (reads party-resolved `raw`).
         -- The Party Frames kit owns its bar rects (its pass runs below, after
         -- the texture swaps, so its masks seat on the new fills).
-        if not d.kit then
+        if not skinData.kit then
             LayoutTopNameBar(
                 raw,
                 bh,
                 powerH,
-                d.health,
-                d.topNameBar,
-                d.topNameBarBg,
-                d.topNameBarText,
-                d.power
+                skinData.health,
+                skinData.topNameBar,
+                skinData.topNameBarBg,
+                skinData.topNameBarText,
+                skinData.power
             )
         end
-        if d.health then
-            d.health:SetStatusBarTexture(texPath)
-            d.health:GetStatusBarTexture():SetHorizTile(false)
-            if d.ReanchorAbsorbToFill then
-                d.ReanchorAbsorbToFill()
+        if skinData.health then
+            skinData.health:SetStatusBarTexture(texPath)
+            skinData.health:GetStatusBarTexture():SetHorizTile(false)
+            if skinData.ReanchorAbsorbToFill then
+                skinData.ReanchorAbsorbToFill()
             end
         end
 
         -- Background: through its stamped owner (dark-mode aware), AFTER the
         -- fill texture swap (see the raid loop).
-        if d.bg then
-            d._bgSt, d._bgA = nil, nil
+        if skinData.bg then
+            skinData._bgSt, skinData._bgA = nil, nil
             local u = button:GetAttribute("unit")
             if u and UnitExists(u) then
-                mod._ApplyHealthBg(d, d.health, raw, u)
+                mod._ApplyHealthBg(skinData, skinData.health, raw, u)
             end
         end
 
@@ -606,131 +606,131 @@ mod.ReloadPartyFrames = function(skipButtons)
         -- second writer of health height alongside UpdateButton's own cached transition
         -- (LayoutTopNameBar above sized health assuming power reserved), so drop the
         -- cache or UpdateAllButtons below sees applied == computed and never corrects it.
-        if d.kit then
+        if skinData.kit then
             -- Party Frames kit: the mana bar always shows in the art's track
             -- (no role gate, no height); then the kit pass itself.
-            if d.power then
-                d.power:SetStatusBarTexture(texPath)
-                d.power:GetStatusBarTexture():SetHorizTile(false)
+            if skinData.power then
+                skinData.power:SetStatusBarTexture(texPath)
+                skinData.power:GetStatusBarTexture():SetHorizTile(false)
             end
             local u = button:GetAttribute("unit")
-            mod.RF_ApplyPartyKit(button, d, pp, u and UnitExists(u) and u or nil)
+            mod.RF_ApplyPartyKit(button, skinData, pp, u and UnitExists(u) and u or nil)
         else
-            d._appliedHidePower = nil
-            if d.power then
-                d.power:Hide()
+            skinData._appliedHidePower = nil
+            if skinData.power then
+                skinData.power:Hide()
                 if powerH > 0 then
-                    d.power:SetHeight(powerH)
-                    d.power:SetStatusBarTexture(texPath)
-                    d.power:GetStatusBarTexture():SetHorizTile(false)
+                    skinData.power:SetHeight(powerH)
+                    skinData.power:SetStatusBarTexture(texPath)
+                    skinData.power:GetStatusBarTexture():SetHorizTile(false)
                 end
             end
         end
-        if d.powerBg then
-            d.powerBg:SetColorTexture(
+        if skinData.powerBg then
+            skinData.powerBg:SetColorTexture(
                 (raw.powerBgColor or {}).r or 0,
                 (raw.powerBgColor or {}).g or 0,
                 (raw.powerBgColor or {}).b or 0,
                 (raw.powerBgDarkness or 70) / 100
             )
-            d._pwBgTintType = nil
+            skinData._pwBgTintType = nil
         end
-        if d.UpdatePowerBorder then
-            d.UpdatePowerBorder(true)
+        if skinData.UpdatePowerBorder then
+            skinData.UpdatePowerBorder(true)
         end
 
         -- The texts: Power Text hidden with the bar above (not under the kit, whose
         -- mana bar stays shown) until _UpdateAllPartyButtons below shows it again; every
         -- text restyled and re-anchored, the name on the party bar width (the kit's is
         -- its own).
-        if d.AnchorTexts then
-            if not d.kit then
-                mod.RF_TextPowerHide(d)
+        if skinData.AnchorTexts then
+            if not skinData.kit then
+                mod.RF_TextPowerHide(skinData)
             end
-            d.AnchorTexts()
-            mod.RF_TextNameWidth(d, barW)
+            skinData.AnchorTexts()
+            mod.RF_TextNameWidth(skinData, barW)
         end
 
         -- Status text
-        if d.statusText then
+        if skinData.statusText then
             local stc = raw.statusTextColor or { r = 1, g = 1, b = 1 }
-            ApplyFont(d.statusText, pp.statusTextSize or 14)
-            d.statusText:SetTextColor(stc.r, stc.g, stc.b)
-            if d.AnchorStatusText then
-                d.AnchorStatusText()
+            ApplyFont(skinData.statusText, pp.statusTextSize or 14)
+            skinData.statusText:SetTextColor(stc.r, stc.g, stc.b)
+            if skinData.AnchorStatusText then
+                skinData.AnchorStatusText()
             end
         end
 
         -- Role icon
-        if d.roleIcon then
+        if skinData.roleIcon then
             local riSz = PixelSnap(pp.roleIconSize or 14)
-            d.roleIcon:SetSize(riSz, riSz)
-            if d.AnchorRoleIcon then
-                d.AnchorRoleIcon()
+            skinData.roleIcon:SetSize(riSz, riSz)
+            if skinData.AnchorRoleIcon then
+                skinData.AnchorRoleIcon()
             end
         end
 
         -- Leader icon
-        if d.leaderIcon then
+        if skinData.leaderIcon then
             local liSz = PixelSnap(pp.leaderIconSize or 14)
-            d.leaderIcon:SetSize(liSz, liSz)
-            if d.kitG then
-                mod.RF_KitLeader(d, pp)
+            skinData.leaderIcon:SetSize(liSz, liSz)
+            if skinData.kitG then
+                mod.RF_KitLeader(skinData, pp)
             else
-                d.leaderIcon:ClearAllPoints()
+                skinData.leaderIcon:ClearAllPoints()
                 local liPos = (raw.leaderIconPosition or "top"):upper()
-                d.leaderIcon:SetPoint(
+                skinData.leaderIcon:SetPoint(
                     liPos,
-                    mod.RF_AnchorHost(d.health, pp),
+                    mod.RF_AnchorHost(skinData.health, pp),
                     liPos,
                     pp.leaderIconOffsetX or 0,
                     pp.leaderIconOffsetY or 0
                 )
             end
             -- Re-assert the host's strata/level above the border
-            if d.leaderHost then
-                mod.ApplyLeaderStrata(d.leaderHost)
+            if skinData.leaderHost then
+                mod.ApplyLeaderStrata(skinData.leaderHost)
             end
         end
 
         -- Raid marker
-        if d.raidMarker then
+        if skinData.raidMarker then
             local rmSz = PixelSnap(pp.raidMarkerSize or 16)
-            d.raidMarker:SetSize(rmSz, rmSz)
-            if d.AnchorRaidMarker then
-                d.AnchorRaidMarker()
+            skinData.raidMarker:SetSize(rmSz, rmSz)
+            if skinData.AnchorRaidMarker then
+                skinData.AnchorRaidMarker()
             end
         end
 
         -- Ready check / summon
-        if d.readyCheck then
+        if skinData.readyCheck then
             local rcSz = PixelSnap(pp.readyCheckSize or 20)
-            d.readyCheck:SetSize(rcSz, rcSz)
-            if d.AnchorReadyCheck then
-                d.AnchorReadyCheck()
+            skinData.readyCheck:SetSize(rcSz, rcSz)
+            if skinData.AnchorReadyCheck then
+                skinData.AnchorReadyCheck()
             end
         end
 
         -- Combat icon
-        if d.combatIcon then
+        if skinData.combatIcon then
             local cciSz = PixelSnap(pp.combatIndicatorSize or 16)
-            d.combatIcon:SetSize(cciSz, cciSz)
-            if d.AnchorCombatIcon then
-                d.AnchorCombatIcon()
+            skinData.combatIcon:SetSize(cciSz, cciSz)
+            if skinData.AnchorCombatIcon then
+                skinData.AnchorCombatIcon()
             end
         end
 
         -- Ping marker
-        if d.pingFrame then
-            mod._RFAnchorPing(d)
+        if skinData.pingFrame then
+            mod._RFAnchorPing(skinData)
         end
         if mod.RF_FvMissingAnchor then
-            mod.RF_FvMissingAnchor(button, d)
+            mod.RF_FvMissingAnchor(button, skinData)
         end
 
         -- Border
-        if d.UpdateBorder then
-            d.UpdateBorder()
+        if skinData.UpdateBorder then
+            skinData.UpdateBorder()
         end
     end
 
@@ -830,7 +830,7 @@ local function RegisterWithUnlockMode()
                 then
                     posX, posY = mod._RFRebaseSavedCenter(posX, posY)
                 end
-                db.profile.unlockPos = {
+                store.profile.unlockPos = {
                     point = anchorPoint,
                     relPoint = relPoint,
                     x = snap(containerFrame, posX),
@@ -838,10 +838,10 @@ local function RegisterWithUnlockMode()
                 }
             end,
             loadPos = function()
-                return db.profile.unlockPos
+                return store.profile.unlockPos
             end,
             clearPos = function()
-                db.profile.unlockPos = nil
+                store.profile.unlockPos = nil
             end,
             applyPos = function()
                 -- Delegate to the tier-aware authority (base top-left + per-tier
@@ -868,7 +868,7 @@ local function RegisterWithUnlockMode()
             end,
 
             savePos = function(_, anchorPoint, relPoint, posX, posY)
-                db.profile.partyUnlockPos = {
+                store.profile.partyUnlockPos = {
                     point = anchorPoint,
                     relPoint = relPoint,
                     x = snap(mod._partyContainerFrame, posX),
@@ -876,10 +876,10 @@ local function RegisterWithUnlockMode()
                 }
             end,
             loadPos = function()
-                return db.profile.partyUnlockPos
+                return store.profile.partyUnlockPos
             end,
             clearPos = function()
-                db.profile.partyUnlockPos = nil
+                store.profile.partyUnlockPos = nil
             end,
             applyPos = function()
                 -- Element-anchored: the anchor system owns the position. Only
@@ -893,7 +893,7 @@ local function RegisterWithUnlockMode()
                 then
                     return
                 end
-                local place = db.profile.partyUnlockPos
+                local place = store.profile.partyUnlockPos
                 if place and mod._partyContainerFrame then
                     mod._partyContainerFrame:ClearAllPoints()
                     mod._partyContainerFrame:SetPoint(place.point, UIParent, place.relPoint, place.x, place.y)
@@ -973,9 +973,9 @@ local function RegisterWithUnlockMode()
                 return mod._pgFrame
             end,
             getSize = function()
-                local f = mod._pgFrame
-                if f then
-                    return f:GetWidth(), f:GetHeight()
+                local frame = mod._pgFrame
+                if frame then
+                    return frame:GetWidth(), frame:GetHeight()
                 end
                 return 50, 25
             end,

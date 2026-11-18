@@ -82,8 +82,8 @@ function ERF:OnInitialize()
     end
 
     -- Mark if we need to snapshot Blizzard's raid frame position
-    local sv = self.db.sv
-    self._needsCapture = not sv._capturedOnce_RF
+    local savedVars = self.db.sv
+    self._needsCapture = not savedVars._capturedOnce_RF
 
     InitHealthBarTextures()
 end
@@ -480,17 +480,17 @@ function ERF:OnEnable()
         -- Shell-pool adoption: the initial roster build runs from OnEnable
         -- (parent lifecycle context), which would bill every tracker's
         -- event tree to the parent addon for the whole session.
-        local f = mod.TakeShell()
+        local frame = mod.TakeShell()
         for _, ev in ipairs(UNIT_EVENTS_BASE) do
-            f:RegisterUnitEvent(ev, unitToken)
+            frame:RegisterUnitEvent(ev, unitToken)
         end
         if mod._RFPredWanted() then
-            f:RegisterUnitEvent("UNIT_HEAL_PREDICTION", unitToken)
+            frame:RegisterUnitEvent("UNIT_HEAL_PREDICTION", unitToken)
         end
-        f:RegisterUnitEvent("UNIT_POWER_UPDATE", unitToken)
-        f:RegisterUnitEvent("UNIT_DISPLAYPOWER", unitToken)
-        f:SetScript("OnEvent", OnEvent)
-        unitTrackers[unitToken] = f
+        frame:RegisterUnitEvent("UNIT_POWER_UPDATE", unitToken)
+        frame:RegisterUnitEvent("UNIT_DISPLAYPOWER", unitToken)
+        frame:SetScript("OnEvent", OnEvent)
+        unitTrackers[unitToken] = frame
     end
     MakeUnitTracker("player")
     for i = 1, 4 do
@@ -552,9 +552,9 @@ function ERF:OnEnable()
             tgtRegistered = wanted
             SyncOptInEvent("UNIT_TARGET", wanted)
         end
-        local r = mod.RF_TextPlan(mod._scaledProfile).reads
+        local region = mod.RF_TextPlan(mod._scaledProfile).reads
         local p = mod.RF_TextPlan(mod._scaledPartyProxy).reads
-        local raidPP, partyPP = (r and r.pp) and true or false, (p and p.pp) and true or false
+        local raidPP, partyPP = (region and region.pp) and true or false, (p and p.pp) and true or false
         if raidPP ~= raidPowerWanted or partyPP ~= partyPowerWanted then
             raidPowerWanted, partyPowerWanted = raidPP, partyPP
             if mod.UpdatePowerEventRegistration then

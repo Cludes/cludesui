@@ -104,8 +104,8 @@ local FAMILIES = {
     { key = "kings", class = "PALADIN", blessing = true, icon = 20217, from = { "kings" } },
 }
 local NUM_FAMILIES = #FAMILIES
-for idx = 1, NUM_FAMILIES do
-    local fam = FAMILIES[idx]
+for index = 1, NUM_FAMILIES do
+    local fam = FAMILIES[index]
     local nameList, ranks, ids = {}, {}, {}
     for _, key in ipairs(fam.from) do
         local shared = CludesUI.FOREVER_BUFF_FAMILIES[key]
@@ -128,12 +128,12 @@ for idx = 1, NUM_FAMILIES do
 end
 local FAMILY_BY_ID = {} -- spell id -> family index
 local BLESS_INDEX = {} -- blessing key -> family index
-for idx = 1, NUM_FAMILIES do
-    for _, ident in ipairs(FAMILIES[idx].ids) do
-        FAMILY_BY_ID[ident] = idx
+for index = 1, NUM_FAMILIES do
+    for _, ident in ipairs(FAMILIES[index].ids) do
+        FAMILY_BY_ID[ident] = index
     end
-    if FAMILIES[idx].blessing then
-        BLESS_INDEX[FAMILIES[idx].key] = idx
+    if FAMILIES[index].blessing then
+        BLESS_INDEX[FAMILIES[index].key] = index
     end
 end
 
@@ -190,8 +190,8 @@ mod.RF_FvBlessingChoice, mod.RF_FvBlessingKey, mod.RF_FvBlessingExKey = Choice, 
 -- A list takes a blessing when it holds a key the indicator knows: a saved key
 -- it skips (a blessing the game removed) does not count.
 local function TakesOne(entries)
-    for idx = 1, #entries do
-        if BLESS_INDEX[entries[idx]] then
+    for index = 1, #entries do
+        if BLESS_INDEX[entries[index]] then
             return true
         end
     end
@@ -221,8 +221,8 @@ end
 -- other class keeps the whole indicator off (no events, no overlays).
 local PLAYER_CLASS = select(2, UnitClass("player"))
 local CAN_EVER = false
-for idx = 1, NUM_FAMILIES do
-    if FAMILIES[idx].class == PLAYER_CLASS then
+for index = 1, NUM_FAMILIES do
+    if FAMILIES[index].class == PLAYER_CLASS then
         CAN_EVER = true
     end
 end
@@ -240,19 +240,19 @@ local trusted = {} -- key -> readable right now (Trusted rebuilds it once per fr
 local nameList = {} -- family index -> { localized names }
 local icons = {} -- family index -> texture
 
-local function SettingsFor(d)
-    return d._isParty and mod._scaledPartyProxy
-        or (d._isExtra and mod._scaledExtraProxy)
+local function SettingsFor(skinData)
+    return skinData._isParty and mod._scaledPartyProxy
+        or (skinData._isExtra and mod._scaledExtraProxy)
         or mod._scaledProfile
 end
 
-local function FamilyNames(idx)
-    local num = nameList[idx]
+local function FamilyNames(index)
+    local num = nameList[index]
     if num then
         return num
     end
     num = {}
-    for _, ident in ipairs(FAMILIES[idx].names) do
+    for _, ident in ipairs(FAMILIES[index].names) do
         local name = C_Spell.GetSpellName(ident)
         if name then
             num[#num + 1] = name
@@ -260,16 +260,16 @@ local function FamilyNames(idx)
     end
     -- Spell data can be cold this early: keep an empty answer uncached.
     if #num > 0 then
-        nameList[idx] = num
+        nameList[index] = num
     end
     return num
 end
 
-local function FamilyIcon(idx)
-    local texture = icons[idx]
+local function FamilyIcon(index)
+    local texture = icons[index]
     if not texture then
-        texture = C_Spell.GetSpellTexture(FAMILIES[idx].icon)
-        icons[idx] = texture
+        texture = C_Spell.GetSpellTexture(FAMILIES[index].icon)
+        icons[index] = texture
     end
     return texture or 134400
 end
@@ -280,7 +280,7 @@ end
 -- a lookup can only find a non-secret aura, so a stale "readable" turns a
 -- secret buff into a false "missing".
 local trustedAt
-local function Trusted(idx)
+local function Trusted(index)
     local nowTime = GetTime()
     if trustedAt ~= nowTime then
         trustedAt = nowTime
@@ -299,7 +299,7 @@ local function Trusted(idx)
             trusted[FAMILIES[fi].key] = success
         end
     end
-    return trusted[FAMILIES[idx].key]
+    return trusted[FAMILIES[index].key]
 end
 
 -- A buff's own switch in one settings table (nil = on); the blessings follow
@@ -313,8 +313,8 @@ end
 
 -- Worth reading: the player can cast it and it is switched on somewhere. A
 -- blessing the player cannot cast never shows and can never be theirs.
-local function Tracked(idx)
-    local key = FAMILIES[idx].key
+local function Tracked(index)
+    local key = FAMILIES[index].key
     return provider[key] and wantFam[key]
 end
 
@@ -401,14 +401,14 @@ local function MissingBlessing(s, st, unitToken)
     local wanted = Choice(s, role, class)
     for wid = 1, #wanted do
         local key = wanted[wid]
-        local idx = BLESS_INDEX[key]
-        if idx and provider[key] then
+        local index = BLESS_INDEX[key]
+        if index and provider[key] then
             local has = st[key]
             if has == nil then
                 return nil
             end
             if has == false then
-                return idx
+                return index
             end
         end
     end
@@ -449,18 +449,18 @@ local function Evaluate(unitToken, restricted)
     -- st.mine: the member has a blessing the player cast (a paladin keeps one
     -- blessing per target, so theirs is then done); nil while unknown.
     local mine = false
-    for idx = 1, NUM_FAMILIES do
-        local key = FAMILIES[idx].key
+    for index = 1, NUM_FAMILIES do
+        local key = FAMILIES[index].key
         local value
         -- A buff the player cannot cast, switched off everywhere, or one the
         -- member's class does not need, is never looked up (it never shows).
         if
             known
-            and Tracked(idx)
-            and not (restricted and not Trusted(idx))
-            and Serves(FAMILIES[idx], unitToken)
+            and Tracked(index)
+            and not (restricted and not Trusted(index))
+            and Serves(FAMILIES[index], unitToken)
         then
-            local entries = FamilyNames(idx)
+            local entries = FamilyNames(index)
             if #entries > 0 then
                 value = false
                 for num = 1, #entries do
@@ -474,7 +474,7 @@ local function Evaluate(unitToken, restricted)
                         value = true
                         -- The caster, not isFromPlayerOrPlayerPet: that is
                         -- true for any player's aura, another paladin's too.
-                        if FAMILIES[idx].blessing and mine ~= true then
+                        if FAMILIES[index].blessing and mine ~= true then
                             local source = aura.sourceUnit
                             if issecretvalue(source) then
                                 mine = nil
@@ -492,7 +492,7 @@ local function Evaluate(unitToken, restricted)
             end
         end
         st[key] = value
-        if value == nil and mine == false and FAMILIES[idx].blessing and Tracked(idx) then
+        if value == nil and mine == false and FAMILIES[index].blessing and Tracked(index) then
             mine = nil
         end
     end
@@ -507,8 +507,8 @@ local function Knows(fam)
         return false
     end
     local ranks = fam.ranks
-    for r = 1, #ranks do
-        if C_SpellBook.IsSpellKnown(ranks[r]) then
+    for region = 1, #ranks do
+        if C_SpellBook.IsSpellKnown(ranks[region]) then
             return true
         end
     end
@@ -518,8 +518,8 @@ end
 -- Re-reads what the player can cast; true when any buff changed.
 local function ScanProviders()
     local changed, anyBless = false, false
-    for idx = 1, NUM_FAMILIES do
-        local fam = FAMILIES[idx]
+    for index = 1, NUM_FAMILIES do
+        local fam = FAMILIES[index]
         local can = Knows(fam)
         if (provider[fam.key] == true) ~= can then
             provider[fam.key] = can
@@ -536,19 +536,19 @@ end
 -------------------------------------------------------------------------------
 --  Overlay
 -------------------------------------------------------------------------------
-local function Overlay(host, level)
-    local o = CreateFrame("Frame", nil, host)
+local function Overlay(owner, level)
+    local o = CreateFrame("Frame", nil, owner)
     o:SetFrameLevel(level)
     o:EnableMouse(false)
     o.slots = {}
-    for idx = 1, NUM_FAMILIES do
+    for index = 1, NUM_FAMILIES do
         local backdrop = o:CreateTexture(nil, "ARTWORK", nil, 0)
         backdrop:SetColorTexture(0, 0, 0, 1)
         local texture = o:CreateTexture(nil, "ARTWORK", nil, 1)
         texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         backdrop:Hide()
         texture:Hide()
-        o.slots[idx] = { bg = backdrop, tex = texture }
+        o.slots[index] = { bg = backdrop, tex = texture }
     end
     o:Hide()
     return o
@@ -561,8 +561,8 @@ local glowSpec = {}
 local NO_SHAPE = { [4] = true } -- Shape Glow follows an icon shape; these cells have none
 
 local function StopGlows(o, from)
-    for idx = from, NUM_FAMILIES do
-        local g = o.slots[idx].glow
+    for index = from, NUM_FAMILIES do
+        local g = o.slots[index].glow
         if g and g.fvOn then
             CludesUI.Glows.StopGlow(g)
             g.fvOn = nil
@@ -583,8 +583,8 @@ local function ApplyGlows(o, s, num, size)
         return
     end
     specInfo.excludes = NO_SHAPE
-    for idx = 1, num do
-        local slot = o.slots[idx]
+    for index = 1, num do
+        local slot = o.slots[index]
         local g = slot.glow
         if not g then
             g = CreateFrame("Frame", nil, o)
@@ -613,17 +613,17 @@ local function Layout(o, s, health, entries, num)
     if edge <= 0 then
         edge = 1
     end
-    for idx = 1, NUM_FAMILIES do
-        local slot = o.slots[idx]
-        if idx <= num then
-            local posX = (idx - 1) * (size + edge)
+    for index = 1, NUM_FAMILIES do
+        local slot = o.slots[index]
+        if index <= num then
+            local posX = (index - 1) * (size + edge)
             slot.bg:ClearAllPoints()
             slot.bg:SetPoint("TOPLEFT", o, "TOPLEFT", posX, 0)
             slot.bg:SetSize(size, size)
             slot.tex:ClearAllPoints()
             slot.tex:SetPoint("TOPLEFT", slot.bg, "TOPLEFT", edge, -edge)
             slot.tex:SetPoint("BOTTOMRIGHT", slot.bg, "BOTTOMRIGHT", -edge, edge)
-            slot.tex:SetTexture(FamilyIcon(entries[idx]))
+            slot.tex:SetTexture(FamilyIcon(entries[index]))
             slot.bg:Show()
             slot.tex:Show()
         else
@@ -636,41 +636,41 @@ local function Layout(o, s, health, entries, num)
         return
     end
     o:SetSize(num * size + (num - 1) * edge, size)
-    local host = mod.RF_AnchorHost(health, s)
+    local owner = mod.RF_AnchorHost(health, s)
     local place = s.missingBuffsPosition or "top"
     local ox, oy = s.missingBuffsOffsetX or 0, s.missingBuffsOffsetY or 0
     o:ClearAllPoints()
     if place == "topleft" then
-        o:SetPoint("TOPLEFT", host, "TOPLEFT", 2 + ox, -2 + oy)
+        o:SetPoint("TOPLEFT", owner, "TOPLEFT", 2 + ox, -2 + oy)
     elseif place == "top" then
-        o:SetPoint("TOP", host, "TOP", ox, -2 + oy)
+        o:SetPoint("TOP", owner, "TOP", ox, -2 + oy)
     elseif place == "topright" then
-        o:SetPoint("TOPRIGHT", host, "TOPRIGHT", -2 + ox, -2 + oy)
+        o:SetPoint("TOPRIGHT", owner, "TOPRIGHT", -2 + ox, -2 + oy)
     elseif place == "left" then
-        o:SetPoint("LEFT", host, "LEFT", 2 + ox, oy)
+        o:SetPoint("LEFT", owner, "LEFT", 2 + ox, oy)
     elseif place == "right" then
-        o:SetPoint("RIGHT", host, "RIGHT", -2 + ox, oy)
+        o:SetPoint("RIGHT", owner, "RIGHT", -2 + ox, oy)
     elseif place == "bottomleft" then
-        o:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", 2 + ox, 2 + oy)
+        o:SetPoint("BOTTOMLEFT", owner, "BOTTOMLEFT", 2 + ox, 2 + oy)
     elseif place == "bottom" then
-        o:SetPoint("BOTTOM", host, "BOTTOM", ox, 2 + oy)
+        o:SetPoint("BOTTOM", owner, "BOTTOM", ox, 2 + oy)
     elseif place == "bottomright" then
-        o:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", -2 + ox, 2 + oy)
+        o:SetPoint("BOTTOMRIGHT", owner, "BOTTOMRIGHT", -2 + ox, 2 + oy)
     else
-        o:SetPoint("CENTER", host, "CENTER", ox, oy)
+        o:SetPoint("CENTER", owner, "CENTER", ox, oy)
     end
     ApplyGlows(o, s, num, size)
     o:Show()
 end
 
 local paintList = {}
-local function PaintButton(button, d)
-    if not d.health then
+local function PaintButton(button, skinData)
+    if not skinData.health then
         return
     end
-    local s = SettingsFor(d)
+    local s = SettingsFor(skinData)
     local on = enabled and s and s.showMissingBuffs ~= false
-    local o = d.fvMissing
+    local o = skinData.fvMissing
     if not on then
         if o then
             HideOverlay(o)
@@ -681,8 +681,8 @@ local function PaintButton(button, d)
     local st = unitToken and status[unitToken]
     local num = 0
     if st then
-        for idx = 1, NUM_FAMILIES do
-            local fam = FAMILIES[idx]
+        for index = 1, NUM_FAMILIES do
+            local fam = FAMILIES[index]
             local key = fam.key
             -- This frame kind's own switch decides, so a buff turned off for
             -- party but on for raid shows on raid frames only.
@@ -695,7 +695,7 @@ local function PaintButton(button, d)
                 and (not fam.notTank or SalvationHere(unitToken))
             then
                 num = num + 1
-                paintList[num] = idx
+                paintList[num] = index
             end
         end
         -- One blessing at most, last: the member's role picks it.
@@ -712,9 +712,9 @@ local function PaintButton(button, d)
     end
     if not o then
         o = Overlay(button, button:GetFrameLevel() + mod.LVL_MARKER)
-        d.fvMissing = o
+        skinData.fvMissing = o
     end
-    Layout(o, s, d.health, paintList, num)
+    Layout(o, s, skinData.health, paintList, num)
 end
 
 local function PaintUnit(unitToken)
@@ -738,8 +738,8 @@ local function PaintList(entries)
         return
     end
     local GetFFD = mod.GetFFD
-    for idx = 1, #entries do
-        local b = entries[idx]
+    for index = 1, #entries do
+        local b = entries[index]
         PaintButton(b, GetFFD(b))
     end
 end
@@ -767,8 +767,8 @@ local function EvaluateList(entries, restricted)
     if not entries then
         return
     end
-    for idx = 1, #entries do
-        local unitToken = entries[idx]:GetAttribute("unit")
+    for index = 1, #entries do
+        local unitToken = entries[index]:GetAttribute("unit")
         if unitToken and not status[unitToken] then
             Evaluate(unitToken, restricted)
         end
@@ -839,8 +839,8 @@ end
 -- under the restriction. The rest read unknown until it lifts, and the
 -- restriction edge re-reads everyone then.
 local function Unprobeable(unitToken)
-    for idx = 1, NUM_FAMILIES do
-        if Tracked(idx) and Trusted(idx) then
+    for index = 1, NUM_FAMILIES do
+        if Tracked(index) and Trusted(index) then
             MarkDirty(unitToken)
             return
         end
@@ -876,8 +876,8 @@ local function OnUnitAura(unitToken, details)
             Unprobeable(unitToken)
             return
         end
-        for idx = 1, #added do
-            local aura = added[idx]
+        for index = 1, #added do
+            local aura = added[index]
             if issecretvalue(aura) then
                 Unprobeable(unitToken)
                 return
@@ -900,8 +900,8 @@ local function OnUnitAura(unitToken, details)
             Unprobeable(unitToken)
             return
         end
-        for idx = 1, #removed do
-            local iid = removed[idx]
+        for index = 1, #removed do
+            local iid = removed[index]
             if issecretvalue(iid) then
                 Unprobeable(unitToken)
                 return
@@ -926,18 +926,18 @@ end
 -- (built here, so their events bill this module; registered only while on).
 -- ScanTank walks the same list (declared above it).
 TOKENS = { "player" }
-for idx = 1, 4 do
-    TOKENS[#TOKENS + 1] = "party" .. idx
+for index = 1, 4 do
+    TOKENS[#TOKENS + 1] = "party" .. index
 end
-for idx = 1, 40 do
-    TOKENS[#TOKENS + 1] = "raid" .. idx
+for index = 1, 40 do
+    TOKENS[#TOKENS + 1] = "raid" .. index
 end
 local trackers = {}
-for idx = 1, #TOKENS, 2 do
-    local f = CreateFrame("Frame")
-    f._u1, f._u2 = TOKENS[idx], TOKENS[idx + 1]
-    f:SetScript("OnEvent", OnTrackerEvent)
-    trackers[#trackers + 1] = f
+for index = 1, #TOKENS, 2 do
+    local frame = CreateFrame("Frame")
+    frame._u1, frame._u2 = TOKENS[index], TOKENS[index + 1]
+    frame:SetScript("OnEvent", OnTrackerEvent)
+    trackers[#trackers + 1] = frame
 end
 
 local CHAT_RESTRICTION = Enum.AddOnRestrictionType and Enum.AddOnRestrictionType.Chat
@@ -963,13 +963,13 @@ world:SetScript("OnEvent", function(_, evt, rtype)
 end)
 
 local function SetEvents(on)
-    for idx = 1, #trackers do
-        local f = trackers[idx]
+    for index = 1, #trackers do
+        local frame = trackers[index]
         if on then
-            f:RegisterUnitEvent("UNIT_AURA", f._u1, f._u2)
-            f:RegisterUnitEvent("UNIT_CONNECTION", f._u1, f._u2)
+            frame:RegisterUnitEvent("UNIT_AURA", frame._u1, frame._u2)
+            frame:RegisterUnitEvent("UNIT_CONNECTION", frame._u1, frame._u2)
         else
-            f:UnregisterAllEvents()
+            frame:UnregisterAllEvents()
         end
     end
     if on then
@@ -994,8 +994,8 @@ local SETTINGS = {} -- scratch: this pass's three settings tables
 local function ScanWanted()
     SETTINGS[1], SETTINGS[2], SETTINGS[3] = mod._scaledProfile, mod._scaledPartyProxy, mod._scaledExtraProxy
     local any, changed = false, false
-    for idx = 1, NUM_FAMILIES do
-        local fam = FAMILIES[idx]
+    for index = 1, NUM_FAMILIES do
+        local fam = FAMILIES[index]
         local on = false
         for t = 1, 3 do
             local s = SETTINGS[t]
@@ -1046,8 +1046,8 @@ end
 -------------------------------------------------------------------------------
 -- Each reload path, per button: re-lay the icons from what is known (no
 -- look-ups), then settle the on/off state once for the whole pass.
-function mod.RF_FvMissingAnchor(button, d)
-    PaintButton(button, d)
+function mod.RF_FvMissingAnchor(button, skinData)
+    PaintButton(button, skinData)
     if not syncArmed then
         syncArmed = true
         C_Timer.After(0, Sync)
@@ -1056,15 +1056,15 @@ end
 
 -- The secure header's unit assignment (every roster re-process, same unit
 -- included): only a button whose unit really changed looks its member up.
-function mod.RF_FvMissingUnit(button, d, unitToken)
-    if not enabled or d._fvUnit == unitToken then
+function mod.RF_FvMissingUnit(button, skinData, unitToken)
+    if not enabled or skinData._fvUnit == unitToken then
         return
     end
-    d._fvUnit = unitToken
+    skinData._fvUnit = unitToken
     if not unitToken then
         -- An emptied button hides: its glows leave the driver with it.
-        if d.fvMissing then
-            HideOverlay(d.fvMissing)
+        if skinData.fvMissing then
+            HideOverlay(skinData.fvMissing)
         end
         return
     end
@@ -1086,33 +1086,33 @@ local PREVIEW = {
 }
 local PREVIEW_ROLES = { "DAMAGER", "HEALER", "TANK" }
 local function PreviewBlessing(s)
-    for r = 1, #PREVIEW_ROLES do
-        local c = Choice(s, PREVIEW_ROLES[r])
+    for region = 1, #PREVIEW_ROLES do
+        local c = Choice(s, PREVIEW_ROLES[region])
         for wid = 1, #c do
-            local idx = BLESS_INDEX[c[wid]]
-            if idx then
-                return idx
+            local index = BLESS_INDEX[c[wid]]
+            if index then
+                return index
             end
         end
     end
 end
 local previewList = {}
-function mod.RF_FvMissingPreview(f, index, s, indVis)
-    local spread = indVis and s.showMissingBuffs ~= false and f._health and PREVIEW[index]
+function mod.RF_FvMissingPreview(frame, index, s, indVis)
+    local spread = indVis and s.showMissingBuffs ~= false and frame._health and PREVIEW[index]
     local num = 0
     if spread then
         for k = 1, #spread do
-            local idx = spread[k]
-            if idx == "B" then
-                idx = PreviewBlessing(s)
+            local index = spread[k]
+            if index == "B" then
+                index = PreviewBlessing(s)
             end
-            if idx and (FAMILIES[idx].blessing or FamOn(s, FAMILIES[idx])) then
+            if index and (FAMILIES[index].blessing or FamOn(s, FAMILIES[index])) then
                 num = num + 1
-                previewList[num] = idx
+                previewList[num] = index
             end
         end
     end
-    local o = f._fvMissing
+    local o = frame._fvMissing
     if num == 0 then
         if o then
             HideOverlay(o)
@@ -1120,10 +1120,10 @@ function mod.RF_FvMissingPreview(f, index, s, indVis)
         return
     end
     if not o then
-        o = Overlay(f, f:GetFrameLevel() + mod.LVL_MARKER)
-        f._fvMissing = o
+        o = Overlay(frame, frame:GetFrameLevel() + mod.LVL_MARKER)
+        frame._fvMissing = o
     end
-    Layout(o, s, f._health, previewList, num)
+    Layout(o, s, frame._health, previewList, num)
 end
 
 -- First look once the world is up (the reload paths may not run at login).

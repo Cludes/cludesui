@@ -221,11 +221,11 @@ mod._ShowSizePreview = function(tier)
         end
     end
 
-    for idx = 1, frameCount do
-        local f = mod._sizePreviewFrames[idx]
-        if not f then
-            f = CreateFrame("Frame", nil, boxHolder)
-            local health = CreateFrame("StatusBar", nil, f)
+    for index = 1, frameCount do
+        local frame = mod._sizePreviewFrames[index]
+        if not frame then
+            frame = CreateFrame("Frame", nil, boxHolder)
+            local health = CreateFrame("StatusBar", nil, frame)
             health:SetPoint("TOPLEFT")
             health:SetPoint("TOPRIGHT")
             health:SetMinMaxValues(0, 100)
@@ -235,16 +235,16 @@ mod._ShowSizePreview = function(tier)
             if Pix then
                 Pix.DisablePixelSnap(health)
             end
-            f._health = health
+            frame._health = health
 
-            local backdrop = f:CreateTexture(nil, "BACKGROUND")
+            local backdrop = frame:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAllPoints()
             if Pix then
                 Pix.DisablePixelSnap(backdrop)
             end
-            f._bg = backdrop
+            frame._bg = backdrop
 
-            local power = CreateFrame("StatusBar", nil, f)
+            local power = CreateFrame("StatusBar", nil, frame)
             power:SetPoint("BOTTOMLEFT")
             power:SetPoint("BOTTOMRIGHT")
             power:SetMinMaxValues(0, 1)
@@ -252,27 +252,27 @@ mod._ShowSizePreview = function(tier)
             if Pix then
                 Pix.DisablePixelSnap(power)
             end
-            f._power = power
+            frame._power = power
 
-            local bdr = CreateFrame("Frame", nil, f)
+            local bdr = CreateFrame("Frame", nil, frame)
             bdr:SetAllPoints()
-            bdr:SetFrameLevel(f:GetFrameLevel() + 2)
+            bdr:SetFrameLevel(frame:GetFrameLevel() + 2)
             if Pix then
                 Pix.CreateBorder(bdr, 0, 0, 0, 1, 1)
             end
-            f._border = bdr
+            frame._border = bdr
 
             -- Name text
             local nameFS = health:CreateFontString(nil, "OVERLAY")
             nameFS:SetJustifyH("CENTER")
             nameFS:SetWordWrap(false)
-            f._nameText = nameFS
+            frame._nameText = nameFS
 
             -- Top Name Bar
-            local tnb = CreateFrame("Frame", nil, f)
-            tnb:SetFrameLevel(f:GetFrameLevel() + 4)
-            tnb:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-            tnb:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
+            local tnb = CreateFrame("Frame", nil, frame)
+            tnb:SetFrameLevel(frame:GetFrameLevel() + 4)
+            tnb:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+            tnb:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
             local tnbBg = tnb:CreateTexture(nil, "BACKGROUND")
             tnbBg:SetAllPoints()
             if Pix then
@@ -281,20 +281,20 @@ mod._ShowSizePreview = function(tier)
             local tnbText = tnb:CreateFontString(nil, "OVERLAY")
             tnbText:SetWordWrap(false)
             tnb:Hide()
-            f._topNameBar = tnb
-            f._topNameBarBg = tnbBg
-            f._topNameBarText = tnbText
+            frame._topNameBar = tnb
+            frame._topNameBarBg = tnbBg
+            frame._topNameBarText = tnbText
 
             -- Role icon
             local roleIcon = health:CreateTexture(nil, "OVERLAY")
             roleIcon:Hide()
-            f._roleIcon = roleIcon
+            frame._roleIcon = roleIcon
 
-            mod._sizePreviewFrames[idx] = f
+            mod._sizePreviewFrames[index] = frame
         end
 
-        f:SetParent(boxHolder)
-        f:SetSize(bw, bh)
+        frame:SetParent(boxHolder)
+        frame:SetSize(bw, bh)
         -- GENERIC SIZING PLACEHOLDER (NOT a style preview):
         -- The custom raid-size previews (10/15/25/30) deliberately do NOT mimic the
         -- user's real raid-frame style. They render as plain blocks that only show
@@ -303,33 +303,33 @@ mod._ShowSizePreview = function(tier)
         -- match the user's customized frames. No class colors, textures, power bars,
         -- names, role icons or custom border -- just a flat fill, a thin neutral
         -- outline and the unit number.
-        f._health:ClearAllPoints()
-        f._health:SetAllPoints(f)
-        f._health:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-        if f._health:GetStatusBarTexture() then
-            f._health:GetStatusBarTexture():SetHorizTile(false)
+        frame._health:ClearAllPoints()
+        frame._health:SetAllPoints(frame)
+        frame._health:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+        if frame._health:GetStatusBarTexture() then
+            frame._health:GetStatusBarTexture():SetHorizTile(false)
         end
-        f._health:SetStatusBarColor(0.24, 0.26, 0.30, 1)
-        f._health:SetValue(100)
-        f._bg:SetColorTexture(0.09, 0.09, 0.11, 1)
-        if f._power then
-            f._power:Hide()
+        frame._health:SetStatusBarColor(0.24, 0.26, 0.30, 1)
+        frame._health:SetValue(100)
+        frame._bg:SetColorTexture(0.09, 0.09, 0.11, 1)
+        if frame._power then
+            frame._power:Hide()
         end
-        if f._topNameBar then
-            f._topNameBar:Hide()
+        if frame._topNameBar then
+            frame._topNameBar:Hide()
         end
-        if f._roleIcon then
-            f._roleIcon:Hide()
-            if f._roleIcon._roleText then
-                f._roleIcon._roleText:Hide()
+        if frame._roleIcon then
+            frame._roleIcon:Hide()
+            if frame._roleIcon._roleText then
+                frame._roleIcon._roleText:Hide()
             end
         end
 
         -- Thin neutral outline so each block and the spacing between them reads clearly.
-        if f._border and Pix then
-            f._border:SetFrameLevel(f:GetFrameLevel() + 2)
+        if frame._border and Pix then
+            frame._border:SetFrameLevel(frame:GetFrameLevel() + 2)
             CludesUI.ApplyBorderStyle(
-                f._border,
+                frame._border,
                 1,
                 0.7,
                 0.7,
@@ -346,19 +346,19 @@ mod._ShowSizePreview = function(tier)
         end
 
         -- Centered unit number.
-        if f._nameText then
-            CludesUI.ApplyModuleFont(f._nameText, fontFile, math.max(11, nameSize), "raidFrames")
-            f._nameText:SetText(tostring(idx))
-            f._nameText:SetTextColor(0.9, 0.9, 0.9)
-            f._nameText:SetWidth(bw)
-            f._nameText:ClearAllPoints()
-            f._nameText:SetPoint("CENTER", f._health, "CENTER", 0, 0)
-            f._nameText:Show()
+        if frame._nameText then
+            CludesUI.ApplyModuleFont(frame._nameText, fontFile, math.max(11, nameSize), "raidFrames")
+            frame._nameText:SetText(tostring(index))
+            frame._nameText:SetTextColor(0.9, 0.9, 0.9)
+            frame._nameText:SetWidth(bw)
+            frame._nameText:ClearAllPoints()
+            frame._nameText:SetPoint("CENTER", frame._health, "CENTER", 0, 0)
+            frame._nameText:Show()
         end
 
         -- Position: group index + unit index within group
-        local groupIdx = math.ceil(idx / perGroup) - 1
-        local unitIdx = (idx - 1) % perGroup
+        local groupIdx = math.ceil(index / perGroup) - 1
+        local unitIdx = (index - 1) % perGroup
 
         -- Group origin (TOPLEFT-relative, adjusted for growth direction)
         local displaySlot = sizePreviewSlotByGroup and sizePreviewSlotByGroup[groupIdx + 1] or groupIdx
@@ -369,14 +369,14 @@ mod._ShowSizePreview = function(tier)
         local ux = unitIdx * uStepX - minUX
         local uy = unitIdx * uStepY - maxUY
 
-        f:ClearAllPoints()
-        f:SetPoint("TOPLEFT", boxHolder, "TOPLEFT", pad + gx + ux, -pad + gy + uy)
-        f:Show()
+        frame:ClearAllPoints()
+        frame:SetPoint("TOPLEFT", boxHolder, "TOPLEFT", pad + gx + ux, -pad + gy + uy)
+        frame:Show()
     end
 
     -- Hide excess frames
-    for idx = frameCount + 1, #mod._sizePreviewFrames do
-        mod._sizePreviewFrames[idx]:Hide()
+    for index = frameCount + 1, #mod._sizePreviewFrames do
+        mod._sizePreviewFrames[index]:Hide()
     end
 
     boxHolder:Show()
@@ -386,8 +386,8 @@ mod._HideSizePreview = function()
     if mod._sizePreviewContainer then
         mod._sizePreviewContainer:Hide()
     end
-    for _, f in ipairs(mod._sizePreviewFrames) do
-        f:Hide()
+    for _, frame in ipairs(mod._sizePreviewFrames) do
+        frame:Hide()
     end
     -- Restore real frame opacity (size preview only changed alpha, never the
     -- Shown state) and drop the mouse blocker. SetAlpha(1) is always legal, in

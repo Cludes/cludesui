@@ -90,39 +90,39 @@ end
 --  Per-frame borders under the mode: the frame's own border stands down for the
 --  shared outline, and hover and target draw a solid border of their own size.
 -------------------------------------------------------------------------------
-function mod.RF_ButtonCompact(d, s)
-    return not d._isExtra and mod.RF_CompactOn(s, d._isParty == true)
+function mod.RF_ButtonCompact(skinData, s)
+    return not skinData._isExtra and mod.RF_CompactOn(s, skinData._isParty == true)
 end
 
 -- A grouped pet: a header pet while its tab's mode is on, or a grouped preview pet.
 function mod.RF_PetCompactOn(btnFrame, s)
-    local d = FFD[btnFrame]
-    if not d then
+    local skinData = FFD[btnFrame]
+    if not skinData then
         return false
     end
-    if d._petGroupedPreview then
-        return mod.RF_CompactOn(s, d._petPreviewParty)
+    if skinData._petGroupedPreview then
+        return mod.RF_CompactOn(s, skinData._petPreviewParty)
     end
     local popFrame = mod._PF
-    return d._petHeader and popFrame and popFrame.active and mod.RF_CompactOn(s, popFrame.styleCtx == "party")
+    return skinData._petHeader and popFrame and popFrame.active and mod.RF_CompactOn(s, popFrame.styleCtx == "party")
         or false
 end
 
 function mod.RF_PetCompactHighlight(btnFrame, s)
-    local d = GetFFD(btnFrame)
-    d._hovered, d._isTarget = mod._FB.hov[btnFrame], mod._FB.tgt[btnFrame]
-    mod.RF_CompactHighlight(btnFrame._borderFrame, d, s, btnFrame)
+    local skinData = GetFFD(btnFrame)
+    skinData._hovered, skinData._isTarget = mod._FB.hov[btnFrame], mod._FB.tgt[btnFrame]
+    mod.RF_CompactHighlight(btnFrame._borderFrame, skinData, s, btnFrame)
 end
 
-function mod.RF_CompactHighlight(widget, d, s, btnFrame)
+function mod.RF_CompactHighlight(widget, skinData, s, btnFrame)
     local c, a, size, px
-    if d._hovered and s.hoverBorderEnabled ~= false then
+    if skinData._hovered and s.hoverBorderEnabled ~= false then
         c, a, size =
             s.hoverBorderColor or defaultSet.profile.hoverBorderColor,
             s.hoverBorderAlpha or 1,
             s.hoverBorderSize or 1
         px = CUI.BorderPx(s.hoverBorderSizePx, size, "solid")
-    elseif d._isTarget and s.targetBorderEnabled ~= false then
+    elseif skinData._isTarget and s.targetBorderEnabled ~= false then
         c, a, size =
             s.targetBorderColor or defaultSet.profile.targetBorderColor,
             s.targetBorderAlpha or 1,
@@ -131,13 +131,13 @@ function mod.RF_CompactHighlight(widget, d, s, btnFrame)
     end
     solidStyle = solidStyle or { borderTexture = "solid" }
     if c then
-        local r, g, b = mod.RF_VisibleHighlight(s, c.r, c.g, c.b)
+        local region, g, b = mod.RF_VisibleHighlight(s, c.r, c.g, c.b)
         local level = s.borderBehind and math.max(0, btnFrame:GetFrameLevel() - 1)
             or btnFrame:GetFrameLevel() + mod.LVL_RAISE
         if widget:GetFrameLevel() ~= level then
             widget:SetFrameLevel(level)
         end
-        mod.ApplyHighlightBorder(widget, solidStyle, size, r, g, b, a, px)
+        mod.ApplyHighlightBorder(widget, solidStyle, size, region, g, b, a, px)
         local strips = CUI.PP.GetBorders(widget)
         if strips and strips:GetFrameLevel() ~= level + 1 then
             strips:SetFrameLevel(level + 1)
@@ -161,16 +161,16 @@ local function HideState(st)
     if not st or not st.shown then
         return
     end
-    for _, host in ipairs(st.hosts) do
-        if host:IsShown() then
-            CUI.HideBorderStyle(host)
-            host:Hide()
-            host._sg = nil
+    for _, owner in ipairs(st.hosts) do
+        if owner:IsShown() then
+            CUI.HideBorderStyle(owner)
+            owner:Hide()
+            owner._sg = nil
         end
     end
-    for _, f in ipairs(st.empty) do
-        if f:IsShown() then
-            f:Hide()
+    for _, frame in ipairs(st.empty) do
+        if frame:IsShown() then
+            frame:Hide()
         end
     end
     for _, t in ipairs(st.seams) do
@@ -204,12 +204,12 @@ end
 local function UpdateStyle(st, s)
     local c = s.borderColor or defaultSet.profile.borderColor
     local grid = not st.isParty and mod.RF_GridOn(s)
-    local r, g, b, a
+    local region, g, b, a
     if grid and not st.isPet then
         if s.healthColorMode == "dark" then
-            r, g, b, a = CUI.GetDarkModeBg()
+            region, g, b, a = CUI.GetDarkModeBg()
         else
-            r, g, b, a = mod.GetBgColor(nil, s)
+            region, g, b, a = mod.GetBgColor(nil, s)
         end
     end
     PutStyle(st, "tex", s.borderTexture)
@@ -224,7 +224,7 @@ local function UpdateStyle(st, s)
     PutStyle(st, "g", c.g)
     PutStyle(st, "b", c.b)
     PutStyle(st, "a", s.borderAlpha or 1)
-    PutStyle(st, "bgR", r)
+    PutStyle(st, "bgR", region)
     PutStyle(st, "bgG", g)
     PutStyle(st, "bgB", b)
     PutStyle(st, "bgA", a)
@@ -236,7 +236,7 @@ local function UpdateStyle(st, s)
 end
 
 -- Records frame f as the index-th cell of group gi (rect in the owner's scale, top-left).
-local function Cell(st, gi, index, f)
+local function Cell(st, gi, index, frame)
     local set = st.groups[gi]
     if not set then
         set = { cells = {} }
@@ -247,15 +247,15 @@ local function Cell(st, gi, index, f)
         cell = {}
         set.cells[index] = cell
     end
-    local scale = f:GetEffectiveScale() / st.owner:GetEffectiveScale()
-    local posX, posY, wid, hgt = f:GetRect()
+    local scale = frame:GetEffectiveScale() / st.owner:GetEffectiveScale()
+    local posX, posY, wid, hgt = frame:GetRect()
     if not posX or not posY then
         return false
     end
     posX, posY, wid, hgt = posX * scale, (posY + hgt) * scale, wid * scale, hgt * scale
-    local level, strata = f:GetFrameLevel(), f:GetFrameStrata()
+    local level, strata = frame:GetFrameLevel(), frame:GetFrameStrata()
     if
-        cell.frame ~= f
+        cell.frame ~= frame
         or cell.x ~= posX
         or cell.y ~= posY
         or cell.w ~= wid
@@ -263,7 +263,7 @@ local function Cell(st, gi, index, f)
         or cell.level ~= level
         or cell.strata ~= strata
     then
-        cell.frame, cell.x, cell.y, cell.w, cell.h = f, posX, posY, wid, hgt
+        cell.frame, cell.x, cell.y, cell.w, cell.h = frame, posX, posY, wid, hgt
         cell.level, cell.strata = level, strata
         st.dirty = true
     end
@@ -294,22 +294,22 @@ end
 
 -- An outline host round one box (x, y: its top-left in the owner's scale).
 local function Host(st, index, first, posX, posY, wid, hgt)
-    local host = st.hosts[index]
-    if not host then
-        host = CreateFrame("Frame", nil, st.owner)
-        st.hosts[index] = host
+    local owner = st.hosts[index]
+    if not owner then
+        owner = CreateFrame("Frame", nil, st.owner)
+        st.hosts[index] = owner
     end
     local val = st.style
-    host:SetFrameStrata(first.strata)
+    owner:SetFrameStrata(first.strata)
     -- Normal dispel strips can reach button + 14; shared edges sit above them.
-    host:SetFrameLevel(val.behind and math.max(0, first.level - 1) or first.level + mod.LVL_AURA + 2)
-    host:ClearAllPoints()
-    host:SetPoint("TOPLEFT", first.frame, "TOPLEFT", posX - first.x, posY - first.y)
-    host:SetSize(wid, hgt)
-    if host._sg ~= st.styleGen or host._w ~= wid or host._h ~= hgt then
-        host._sg, host._w, host._h = st.styleGen, wid, hgt
+    owner:SetFrameLevel(val.behind and math.max(0, first.level - 1) or first.level + mod.LVL_AURA + 2)
+    owner:ClearAllPoints()
+    owner:SetPoint("TOPLEFT", first.frame, "TOPLEFT", posX - first.x, posY - first.y)
+    owner:SetSize(wid, hgt)
+    if owner._sg ~= st.styleGen or owner._w ~= wid or owner._h ~= hgt then
+        owner._sg, owner._w, owner._h = st.styleGen, wid, hgt
         CUI.ApplyBorderStyle(
-            host,
+            owner,
             val.size,
             val.r,
             val.g,
@@ -326,7 +326,7 @@ local function Host(st, index, first, posX, posY, wid, hgt)
             val.px
         )
     end
-    host:Show()
+    owner:Show()
 end
 
 -- A separator along one join (x, y: the join's top-left in the owner's scale).
@@ -341,12 +341,12 @@ local function Seam(st, index, first, posX, posY, length, vertical)
         st.seams[index] = t
     end
     local val = st.style
-    local host = st.seamHost
+    local owner = st.seamHost
     local level = val.behind and math.max(0, first.level - 1) or first.level + mod.LVL_AURA + 2
-    if host._level ~= level or host._strata ~= first.strata then
-        host._level, host._strata = level, first.strata
-        host:SetFrameStrata(first.strata)
-        host:SetFrameLevel(level)
+    if owner._level ~= level or owner._strata ~= first.strata then
+        owner._level, owner._strata = level, first.strata
+        owner:SetFrameStrata(first.strata)
+        owner:SetFrameLevel(level)
     end
     if t._sg ~= st.styleGen or t._vertical ~= vertical then
         t._sg, t._vertical = st.styleGen, vertical
@@ -390,11 +390,11 @@ local function Draw(st)
         if num > 0 then
             -- Keep the capture order stable so an unchanged UP/LEFT stack stays cached.
             set.sorted = set.sorted or {}
-            for idx = 1, num do
-                set.sorted[idx] = cells[idx]
+            for index = 1, num do
+                set.sorted[index] = cells[index]
             end
-            for idx = #set.sorted, num + 1, -1 do
-                set.sorted[idx] = nil
+            for index = #set.sorted, num + 1, -1 do
+                set.sorted[index] = nil
             end
             table.sort(set.sorted, Along)
             cells = set.sorted
@@ -415,31 +415,31 @@ local function Draw(st)
                 end
                 wid = horizontal and (5 * c.w + 4 * gap) or c.w
                 hgt = horizontal and c.h or (5 * c.h + 4 * gap)
-                for idx = num + 1, 5 do
+                for index = num + 1, 5 do
                     emptyCount = emptyCount + 1
-                    local f = st.empty[emptyCount]
-                    if not f then
-                        f = CreateFrame("Frame", nil, st.owner)
-                        f.bg = f:CreateTexture(nil, "BACKGROUND")
-                        f.bg:SetAllPoints()
-                        CUI.PP.DisablePixelSnap(f.bg)
-                        st.empty[emptyCount] = f
+                    local frame = st.empty[emptyCount]
+                    if not frame then
+                        frame = CreateFrame("Frame", nil, st.owner)
+                        frame.bg = frame:CreateTexture(nil, "BACKGROUND")
+                        frame.bg:SetAllPoints()
+                        CUI.PP.DisablePixelSnap(frame.bg)
+                        st.empty[emptyCount] = frame
                     end
-                    local off = idx - num
+                    local off = index - num
                     local endCell = (set.growth == "UP" or set.growth == "LEFT") and cells[1] or cells[num]
                     local dx = horizontal and off * (c.w + gap) * (set.growth == "LEFT" and -1 or 1) or 0
                     local dy = not horizontal and off * (c.h + gap) * (set.growth == "UP" and 1 or -1) or 0
-                    f:ClearAllPoints()
-                    f:SetPoint("TOPLEFT", endCell.frame, "TOPLEFT", dx, dy)
-                    f:SetSize(c.w, c.h)
-                    f:SetFrameStrata(c.strata)
-                    f:SetFrameLevel(c.level)
-                    if f._sg ~= st.styleGen then
-                        f._sg = st.styleGen
-                        mod.RF_TexBgTint(f.bg, val.bgTex or nil, val.bgVert)
-                        f.bg:SetColorTexture(val.bgR, val.bgG, val.bgB, val.bgA)
+                    frame:ClearAllPoints()
+                    frame:SetPoint("TOPLEFT", endCell.frame, "TOPLEFT", dx, dy)
+                    frame:SetSize(c.w, c.h)
+                    frame:SetFrameStrata(c.strata)
+                    frame:SetFrameLevel(c.level)
+                    if frame._sg ~= st.styleGen then
+                        frame._sg = st.styleGen
+                        mod.RF_TexBgTint(frame.bg, val.bgTex or nil, val.bgVert)
+                        frame.bg:SetColorTexture(val.bgR, val.bgG, val.bgB, val.bgA)
                     end
-                    f:Show()
+                    frame:Show()
                 end
                 num = 5
             end
@@ -449,14 +449,14 @@ local function Draw(st)
                 math.max(maxX or (posX + wid), posX + wid), math.min(minY or (posY - hgt), posY - hgt)
             area = area + (wid + gap) * (hgt + gap)
             first = first or c
-            for idx = 1, num - 1 do
+            for index = 1, num - 1 do
                 seamCount = seamCount + 1
                 Seam(
                     st,
                     seamCount,
                     c,
-                    horizontal and posX + idx * (c.w + gap) or posX,
-                    horizontal and posY or posY - idx * (c.h + gap),
+                    horizontal and posX + index * (c.w + gap) or posX,
+                    horizontal and posY or posY - index * (c.h + gap),
                     horizontal and hgt or wid,
                     horizontal
                 )
@@ -511,22 +511,22 @@ local function Draw(st)
             end
         end
     end
-    for idx = hostCount + 1, #st.hosts do
-        local host = st.hosts[idx]
-        if host:IsShown() then
-            CUI.HideBorderStyle(host)
-            host:Hide()
-            host._sg = nil
+    for index = hostCount + 1, #st.hosts do
+        local owner = st.hosts[index]
+        if owner:IsShown() then
+            CUI.HideBorderStyle(owner)
+            owner:Hide()
+            owner._sg = nil
         end
     end
-    for idx = emptyCount + 1, #st.empty do
-        if st.empty[idx]:IsShown() then
-            st.empty[idx]:Hide()
+    for index = emptyCount + 1, #st.empty do
+        if st.empty[index]:IsShown() then
+            st.empty[index]:Hide()
         end
     end
-    for idx = seamCount + 1, #st.seams do
-        if st.seams[idx]:IsShown() then
-            st.seams[idx]:Hide()
+    for index = seamCount + 1, #st.seams do
+        if st.seams[index]:IsShown() then
+            st.seams[index]:Hide()
         end
     end
     st.shown, st.dirty = first ~= nil, false
@@ -564,33 +564,33 @@ local function Queue(st)
     flusher:Show()
 end
 
-local function Hook(st, f)
-    if st.hooked[f] then
+local function Hook(st, frame)
+    if st.hooked[frame] then
         return
     end
-    st.hooked[f] = true
-    f:HookScript("OnShow", st.queue)
-    f:HookScript("OnHide", st.queue)
-    f:HookScript("OnSizeChanged", st.queue)
-    f:HookScript("OnAttributeChanged", st.assigned)
+    st.hooked[frame] = true
+    frame:HookScript("OnShow", st.queue)
+    frame:HookScript("OnHide", st.queue)
+    frame:HookScript("OnSizeChanged", st.queue)
+    frame:HookScript("OnAttributeChanged", st.assigned)
 end
 
 -- A mode turning on or off restyles the frames' own borders, threat and dispel rings.
 local function RefreshButtonBorders(st, enabled)
     local changed = false
-    for _, f in ipairs(st.isParty and mod._partyAllButtons or allButtons) do
-        local d = GetFFD(f)
+    for _, frame in ipairs(st.isParty and mod._partyAllButtons or allButtons) do
+        local skinData = GetFFD(frame)
         if
-            not d._isExtra
-            and d.UpdateBorder
-            and (enabled or d._compactBorder)
-            and d._compactBorder ~= enabled
+            not skinData._isExtra
+            and skinData.UpdateBorder
+            and (enabled or skinData._compactBorder)
+            and skinData._compactBorder ~= enabled
         then
-            d.UpdateBorder()
+            skinData.UpdateBorder()
             changed = true
-            local unitToken = f:GetAttribute("unit")
+            local unitToken = frame:GetAttribute("unit")
             if unitToken then
-                mod.RF_PaintThreat(d, st.isParty and mod._scaledPartyProxy or mod._scaledProfile, unitToken)
+                mod.RF_PaintThreat(skinData, st.isParty and mod._scaledPartyProxy or mod._scaledProfile, unitToken)
             end
         end
     end
@@ -601,11 +601,11 @@ end
 
 local function CollectGroup(st, frameList, start, limit, gi, growth)
     local num = 0
-    for idx = start, limit do
-        local f = frameList and frameList[idx]
-        if f then
-            Hook(st, f)
-            if f:IsVisible() and f:GetAttribute("unit") and Cell(st, gi, num + 1, f) then
+    for index = start, limit do
+        local frame = frameList and frameList[index]
+        if frame then
+            Hook(st, frame)
+            if frame:IsVisible() and frame:GetAttribute("unit") and Cell(st, gi, num + 1, frame) then
                 num = num + 1
             end
         end
@@ -643,21 +643,21 @@ local function CollectLive(st, s)
     elseif s.mergeGroups then
         st.flat = st.flat or {}
         local limit = 0
-        for idx = 1, 40 do
-            local f = mod._flatHeader and mod._flatHeader[idx]
-            if f then
-                Hook(st, f)
-                if f:IsVisible() and f:GetAttribute("unit") then
+        for index = 1, 40 do
+            local frame = mod._flatHeader and mod._flatHeader[index]
+            if frame then
+                Hook(st, frame)
+                if frame:IsVisible() and frame:GetAttribute("unit") then
                     limit = limit + 1
-                    st.flat[limit] = f
+                    st.flat[limit] = frame
                 end
             end
         end
         local growth = HeaderGrowth(mod._flatHeader)
         for gi = 1, math.ceil(limit / 5) do
             local num = 0
-            for idx = (gi - 1) * 5 + 1, math.min(gi * 5, limit) do
-                if Cell(st, gi, num + 1, st.flat[idx]) then
+            for index = (gi - 1) * 5 + 1, math.min(gi * 5, limit) do
+                if Cell(st, gi, num + 1, st.flat[index]) then
                     num = num + 1
                 end
             end
@@ -760,10 +760,10 @@ function mod.RF_SyncPetCompact()
     end
     if st.on ~= enabled then
         st.on = enabled
-        for _, f in ipairs(popFrame.buttons) do
-            local d = GetFFD(f)
-            if f._borderFrame and (enabled or d._petCompactBorder) and d._petCompactBorder ~= enabled then
-                mod._FB.StyleBorder(f)
+        for _, frame in ipairs(popFrame.buttons) do
+            local skinData = GetFFD(frame)
+            if frame._borderFrame and (enabled or skinData._petCompactBorder) and skinData._petCompactBorder ~= enabled then
+                mod._FB.StyleBorder(frame)
             end
         end
     end
@@ -824,9 +824,9 @@ local function PreviewCompact(st, frameList, s, isParty, growth, isPet)
         return st
     end
     local ownerFrame
-    for _, f in ipairs(frameList) do
-        if f:IsShown() then
-            ownerFrame = f:GetParent()
+    for _, frame in ipairs(frameList) do
+        if frame:IsShown() then
+            ownerFrame = frame:GetParent()
             break
         end
     end
@@ -840,11 +840,11 @@ local function PreviewCompact(st, frameList, s, isParty, growth, isPet)
     st.isPet, st.isParty = isPet, isParty
     if st.owner ~= ownerFrame then
         st.owner, st.dirty = ownerFrame, true
-        for _, f in ipairs(st.hosts) do
-            f:SetParent(ownerFrame)
+        for _, frame in ipairs(st.hosts) do
+            frame:SetParent(ownerFrame)
         end
-        for _, f in ipairs(st.empty) do
-            f:SetParent(ownerFrame)
+        for _, frame in ipairs(st.empty) do
+            frame:SetParent(ownerFrame)
         end
         if st.seamHost then
             st.seamHost:SetParent(ownerFrame)
@@ -854,9 +854,9 @@ local function PreviewCompact(st, frameList, s, isParty, growth, isPet)
     local total = isParty and 1 or math.ceil(#frameList / 5)
     for gi = 1, total do
         local num = 0
-        for idx = (gi - 1) * 5 + 1, math.min(gi * 5, #frameList) do
-            local f = frameList[idx]
-            if f:IsShown() and Cell(st, gi, num + 1, f) then
+        for index = (gi - 1) * 5 + 1, math.min(gi * 5, #frameList) do
+            local frame = frameList[index]
+            if frame:IsShown() and Cell(st, gi, num + 1, frame) then
                 num = num + 1
             end
         end

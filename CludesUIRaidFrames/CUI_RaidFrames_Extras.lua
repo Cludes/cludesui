@@ -109,11 +109,11 @@ do
     -- Value repaint: the engine percent object straight into the display
     -- sink -- secret-safe, no Lua math (same source as the power bars).
     function mod._HMUpdateValue(unitToken)
-        local r = mod._hmUnitRows and mod._hmUnitRows[unitToken]
-        if not r then
+        local region = mod._hmUnitRows and mod._hmUnitRows[unitToken]
+        if not region then
             return
         end
-        r.valFS:SetFormattedText("%d", UnitPowerPercent(unitToken, 0, true, CurveConstants.ScaleTo100))
+        region.valFS:SetFormattedText("%d", UnitPowerPercent(unitToken, 0, true, CurveConstants.ScaleTo100))
     end
 
     -- Full rebuild: healer set, names, colors, layout. Runs on the roster/
@@ -139,7 +139,7 @@ do
         local classNames = hm.classNames ~= false
         local powerMode = hm.colorMode == "power"
         local cc = hm.color
-        local cr, cg, cb = (cc and cc.r) or 1, (cc and cc.g) or 1, (cc and cc.b) or 1
+        local cr, cg, callback = (cc and cc.r) or 1, (cc and cc.g) or 1, (cc and cc.b) or 1
         local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
         local outline = (CludesUI.GetFontOutlineFlag("raidFrames")) or "OUTLINE"
         local rowH = size + spacing
@@ -148,16 +148,16 @@ do
 
         local function addRow(unitToken, fakeName, fakeClass, fakeVal)
             total = total + 1
-            local r = rowList[total]
-            if not r then
-                r = {
+            local region = rowList[total]
+            if not region then
+                region = {
                     nameFS = boxHolder:CreateFontString(nil, "OVERLAY"),
                     valFS = boxHolder:CreateFontString(nil, "OVERLAY"),
                 }
-                rowList[total] = r
+                rowList[total] = region
             end
-            r.unit = unitToken
-            local nameFS, valFS = r.nameFS, r.valFS
+            region.unit = unitToken
+            local nameFS, valFS = region.nameFS, region.valFS
             -- The name a font family (other players' names), with no shadow as
             -- the value's plain font.
             CludesUI.SetFontFamily(nameFS, fontFile, size, outline, false)
@@ -170,12 +170,12 @@ do
                 end
                 valFS:SetTextColor(pr or 0.3, pg or 0.5, pb or 0.85, 1)
             else
-                valFS:SetTextColor(cr, cg, cb, 1)
+                valFS:SetTextColor(cr, cg, callback, 1)
             end
             -- Name first (colors + text), so center alignment can measure it.
             local nameW = 0
             if showNames then
-                local nr, ng, nb = cr, cg, cb
+                local nr, ng, nb = cr, cg, callback
                 if classNames then
                     local token = fakeClass
                     if not token and unitToken then
@@ -184,13 +184,13 @@ do
                             token = nil
                         end
                     end
-                    local col = token
+                    local colour = token
                         and (
                             (CludesUI.GetClassColor(token))
                             or (RAID_CLASS_COLORS and RAID_CLASS_COLORS[token])
                         )
-                    if col then
-                        nr, ng, nb = col.r, col.g, col.b
+                    if colour then
+                        nr, ng, nb = colour.r, colour.g, colour.b
                     end
                 elseif powerMode then
                     nr, ng, nb = 1, 1, 1
@@ -263,7 +263,7 @@ do
             end
             valFS:Show()
             if unitToken then
-                map[unitToken] = r
+                map[unitToken] = region
             end
         end
 
@@ -275,8 +275,8 @@ do
             -- Ordered walk, roster order; the role read is the same cached
             -- resolver the power-bar registration uses.
             if inRaid then
-                for idx = 1, 40 do
-                    local unitToken = "raid" .. idx
+                for index = 1, 40 do
+                    local unitToken = "raid" .. index
                     if UnitExists(unitToken) and mod._ResolvePowerRole(unitToken) == "HEALER" then
                         addRow(unitToken)
                     end
@@ -285,8 +285,8 @@ do
                 if mod._ResolvePowerRole("player") == "HEALER" then
                     addRow("player")
                 end
-                for idx = 1, 4 do
-                    local unitToken = "party" .. idx
+                for index = 1, 4 do
+                    local unitToken = "party" .. index
                     if UnitExists(unitToken) and mod._ResolvePowerRole(unitToken) == "HEALER" then
                         addRow(unitToken)
                     end
@@ -295,10 +295,10 @@ do
         end
 
         -- Retire surplus rows from a previous, larger set.
-        for idx = total + 1, #rowList do
-            rowList[idx].nameFS:Hide()
-            rowList[idx].valFS:Hide()
-            rowList[idx].unit = nil
+        for index = total + 1, #rowList do
+            rowList[index].nameFS:Hide()
+            rowList[index].valFS:Hide()
+            rowList[index].unit = nil
         end
 
         mod._hmUnitRows = (not preview and total > 0) and map or nil
@@ -346,19 +346,19 @@ do
         if mode == "custom" then
             return custom
         end
-        local r, g, b
+        local region, g, b
         if mode == "class" then
             local cc = CludesUI.GetClassColor(CludesUI._playerClass)
             if cc then
-                r, g, b = cc.r, cc.g, cc.b
+                region, g, b = cc.r, cc.g, cc.b
             end
         else
-            r, g, b = CludesUI.ResolveActiveAccent()
+            region, g, b = CludesUI.ResolveActiveAccent()
         end
-        if not r then
+        if not region then
             return custom
         end
-        return { r = r, g = g, b = b, a = 1 }
+        return { r = region, g = g, b = b, a = 1 }
     end
 
     local function CustomColor(key)
@@ -634,16 +634,16 @@ mod._NotifyTrackerProviders = function()
     if mod._trackerRefreshPending then
         return
     end
-    local cb = mod._trackerRefreshCb
+    local callback = mod._trackerRefreshCb
     local lgf = LibStub and LibStub("LibGetFrame-1.0", true)
-    if not cb and not (lgf and lgf.ScanForUnitFrames) then
+    if not callback and not (lgf and lgf.ScanForUnitFrames) then
         return
     end
     mod._trackerRefreshPending = true
     C_Timer.After(0, function()
         mod._trackerRefreshPending = false
-        if cb then
-            pcall(cb)
+        if callback then
+            pcall(callback)
         end
         if lgf and not InCombatLockdown() then
             pcall(lgf.ScanForUnitFrames)
@@ -663,8 +663,8 @@ mod._RegisterTrackerProviders = function()
             api.v1:RegisterFrameProvider({
                 Name = "CludesUI",
                 GetFrames = mod._CollectTrackerFrames,
-                RegisterRefreshFrames = function(cb)
-                    mod._trackerRefreshCb = cb
+                RegisterRefreshFrames = function(callback)
+                    mod._trackerRefreshCb = callback
                 end,
             })
         end)

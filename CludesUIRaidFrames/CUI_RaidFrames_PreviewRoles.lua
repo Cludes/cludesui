@@ -148,9 +148,9 @@ local function BuildPreviewRoles()
                             return ra < rb
                         end
                     end
-                    local ca, cb = classPri[a.classToken] or 99, classPri[b.classToken] or 99
-                    if ca ~= cb then
-                        return ca < cb
+                    local ca, callback = classPri[a.classToken] or 99, classPri[b.classToken] or 99
+                    if ca ~= callback then
+                        return ca < callback
                     end
                     -- Slot 1 (the player) carries no preview name.
                     local na, nb = a.name or pName, b.name or pName

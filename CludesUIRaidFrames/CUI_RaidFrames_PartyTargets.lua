@@ -106,11 +106,11 @@ do
         if not IsInRaid() then
             return nil
         end
-        local idx = UnitInRaid("player")
-        if issecretvalue(idx) or not idx then
+        local index = UnitInRaid("player")
+        if issecretvalue(index) or not index then
             return nil
         end
-        return "raid" .. idx
+        return "raid" .. index
     end
 
     -- The unit a frame reads, from its owner's current unit: your own target reads "target" (the token
@@ -149,9 +149,9 @@ do
         if UnitIsPlayer(u) or (UnitInPartyIsAI and UnitInPartyIsAI(u)) then
             local _, ct = UnitClass(u)
             if issecretvalue(ct) then
-                local success, r, g, b = CUI.GetClassColorForRestrictedUnit(u, ct)
+                local success, region, g, b = CUI.GetClassColorForRestrictedUnit(u, ct)
                 if success then
-                    return true, r, g, b
+                    return true, region, g, b
                 end
                 local c = C_ClassColor.GetClassColor(ct)
                 if c then
@@ -202,33 +202,33 @@ do
         end
         widget._nameText:SetText(UnitName(u))
         local health, backdrop, mode = widget._health, widget._bg, PT.mode
-        local fill = health:GetStatusBarTexture()
+        local fillTex = health:GetStatusBarTexture()
         if mode == "dark" then
-            local r, g, b, a = CUI.GetDarkModeFill()
-            health:SetStatusBarColor(r, g, b, 1)
-            if fill then
-                fill:SetAlpha(a)
+            local region, g, b, a = CUI.GetDarkModeFill()
+            health:SetStatusBarColor(region, g, b, 1)
+            if fillTex then
+                fillTex:SetAlpha(a)
             end
             backdrop:SetColorTexture(CUI.GetDarkModeBg())
         else
-            if fill then
-                fill:SetAlpha(1)
+            if fillTex then
+                fillTex:SetAlpha(1)
             end
-            local success, r, g, b = false
+            local success, region, g, b = false
             if (mode ~= "classic" and mode ~= "custom") or PT.bgClass then
-                success, r, g, b = PT_ClassRGB(u, widget)
+                success, region, g, b = PT_ClassRGB(u, widget)
             end
             if mode == "classic" then
                 PT_PaintClassic(health, u)
             elseif mode == "custom" then
                 health:SetStatusBarColor(PT.fr, PT.fg, PT.fb, 1)
             elseif success then
-                health:SetStatusBarColor(r, g, b, 1)
+                health:SetStatusBarColor(region, g, b, 1)
             else
                 health:SetStatusBarColor(0.5, 0.5, 0.5, 1)
             end
             if success and PT.bgClass then
-                backdrop:SetColorTexture(r, g, b, PT.bgA)
+                backdrop:SetColorTexture(region, g, b, PT.bgA)
             else
                 backdrop:SetColorTexture(PT.br, PT.bgg, PT.bb, PT.bgA)
             end
@@ -274,13 +274,13 @@ do
         local wanted, poll, own = PT.tgtWant, 0, 0
         wipe(wanted)
         if mod._ptEnabled then
-            for i, f in ipairs(mod._partyTargetFrames) do
-                if f ~= except and f:IsVisible() then
-                    if f._ptOwn then
+            for i, frame in ipairs(mod._partyTargetFrames) do
+                if frame ~= except and frame:IsVisible() then
+                    if frame._ptOwn then
                         own = own + 1
-                    elseif f._ptOwnerUnit then
+                    elseif frame._ptOwnerUnit then
                         poll = poll + 1
-                        wanted[i] = f._ptOwnerUnit
+                        wanted[i] = frame._ptOwnerUnit
                     end
                 end
             end
@@ -333,17 +333,17 @@ do
             return
         end
         PT.acc = 0
-        for _, f in ipairs(mod._partyTargetFrames) do
-            local u = f._ptUnit
-            if u and not f._ptOwn and f:IsVisible() and UnitExists(u) then
-                PT_PaintValue(f, u)
-                if f._ptNpc then
+        for _, frame in ipairs(mod._partyTargetFrames) do
+            local u = frame._ptUnit
+            if u and not frame._ptOwn and frame:IsVisible() and UnitExists(u) then
+                PT_PaintValue(frame, u)
+                if frame._ptNpc then
                     local re = UnitReaction(u, "player")
                     if issecretvalue(re) then
                         re = nil
                     end
-                    if UnitIsTapDenied(u) ~= f._ptTap or re ~= f._ptRe then
-                        PT_Paint(f)
+                    if UnitIsTapDenied(u) ~= frame._ptTap or re ~= frame._ptRe then
+                        PT_Paint(frame)
                     end
                 end
             end
@@ -353,12 +353,12 @@ do
     -- Your target: a new target (or a faction change) repaints in full, its health events the value.
     local function PT_OnOwnEvent(_, evt)
         local full = evt == "PLAYER_TARGET_CHANGED" or evt == "UNIT_FACTION"
-        for _, f in ipairs(mod._partyTargetFrames) do
-            if f._ptOwn and f:IsVisible() then
+        for _, frame in ipairs(mod._partyTargetFrames) do
+            if frame._ptOwn and frame:IsVisible() then
                 if full then
-                    PT_Paint(f)
+                    PT_Paint(frame)
                 elseif UnitExists("target") then
-                    PT_PaintValue(f, "target")
+                    PT_PaintValue(frame, "target")
                 end
             end
         end
@@ -477,25 +477,25 @@ do
     -- the kit's clearance (the caller adds it) and any Beside Owner pets. Along the stack:
     -- how far they overhang the party frame's edge (a Width or Height past the frame's, an offset).
     local function PT_ReserveOf(st, horizontal, before)
-        local side, r = st.side, 0
+        local side, region = st.side, 0
         if st.across then
             if horizontal then
                 if before and side == "above" then
-                    r = st.h + st.gap + st.y
+                    region = st.h + st.gap + st.y
                 elseif not before and side == "below" then
-                    r = st.h + st.gap - st.y
+                    region = st.h + st.gap - st.y
                 end
             elseif before and side == "left" then
-                r = st.w + st.gap - st.x
+                region = st.w + st.gap - st.x
             elseif not before and side == "right" then
-                r = st.w + st.gap + st.x
+                region = st.w + st.gap + st.x
             end
         elseif horizontal then
-            r = (st.h - st.ph) / 2 + (before and st.y or -st.y)
+            region = (st.h - st.ph) / 2 + (before and st.y or -st.y)
         else
-            r = (st.w - st.pw) / 2 + (before and -st.x or st.x)
+            region = (st.w - st.pw) / 2 + (before and -st.x or st.x)
         end
-        return r > 0 and PixelSnap(r) or 0
+        return region > 0 and PixelSnap(region) or 0
     end
 
     -- None until the frames are laid out (PT.w is cleared for a full layout). pets: the Beside Owner
@@ -506,11 +506,11 @@ do
         if not (mod._ptEnabled and PT.w) then
             return pets
         end
-        local r = PT_ReserveOf(PT, horizontal, before)
+        local region = PT_ReserveOf(PT, horizontal, before)
         if PT.across then
-            return r + pets
+            return region + pets
         end
-        return (r > pets) and r or pets
+        return (region > pets) and region or pets
     end
 
     -- The Position the frames actually take (the options dropdown's value): under the Party Frames kit
@@ -923,21 +923,21 @@ do
             -- The listeners, made once: roster and zoning, UNIT_TARGET (three, two units each), your
             -- target's events, and the hidden value ticker.
             if not mod._ptEventFrame then
-                local f = mod.TakeShell()
-                f:SetScript("OnEvent", PT_OnEvent)
-                mod._ptEventFrame = f
+                local frame = mod.TakeShell()
+                frame:SetScript("OnEvent", PT_OnEvent)
+                mod._ptEventFrame = frame
                 for k = 1, 3 do
-                    f = mod.TakeShell()
-                    f:SetScript("OnEvent", PT_OnEvent)
-                    PT.tgtEv[k] = f
+                    frame = mod.TakeShell()
+                    frame:SetScript("OnEvent", PT_OnEvent)
+                    PT.tgtEv[k] = frame
                 end
-                f = mod.TakeShell()
-                f:SetScript("OnEvent", PT_OnOwnEvent)
-                PT.ownFrame = f
-                f = mod.TakeShell()
-                f:Hide()
-                f:SetScript("OnUpdate", PT_Tick)
-                PT.ticker = f
+                frame = mod.TakeShell()
+                frame:SetScript("OnEvent", PT_OnOwnEvent)
+                PT.ownFrame = frame
+                frame = mod.TakeShell()
+                frame:Hide()
+                frame:SetScript("OnUpdate", PT_Tick)
+                PT.ticker = frame
             end
             local events = mod._ptEventFrame
             events:RegisterEvent("GROUP_ROSTER_UPDATE")
@@ -1058,26 +1058,26 @@ do
     -- (made-up mobs: Class Color reads their reaction).
     local function PT_PvFrame(i, hostFrame, s, specInfo)
         local FB = mod._FB
-        local f = PT.pv[i]
-        if not f then
-            f = CreateFrame("Frame", nil, hostFrame)
-            FB.BuildVisuals(f)
-            FB.src[f] = PT_Source
-            local name = f._nameText
-            name:SetPoint("CENTER", f._health, "CENTER", 0, 0)
+        local frame = PT.pv[i]
+        if not frame then
+            frame = CreateFrame("Frame", nil, hostFrame)
+            FB.BuildVisuals(frame)
+            FB.src[frame] = PT_Source
+            local name = frame._nameText
+            name:SetPoint("CENTER", frame._health, "CENTER", 0, 0)
             name:SetJustifyH("CENTER")
             name:SetJustifyV("MIDDLE")
             name:SetTextColor(1, 1, 1, 1)
-            PT.pv[i] = f
-        elseif f:GetParent() ~= hostFrame then
-            f:SetParent(hostFrame)
+            PT.pv[i] = frame
+        elseif frame:GetParent() ~= hostFrame then
+            frame:SetParent(hostFrame)
         end
-        f:SetFrameStrata(hostFrame == UIParent and "HIGH" or hostFrame:GetFrameStrata())
+        frame:SetFrameStrata(hostFrame == UIParent and "HIGH" or hostFrame:GetFrameStrata())
         local wid, hgt = specInfo.w, specInfo.h
-        f:SetSize(wid, hgt)
-        FB.SizeVisuals(f, wid, hgt)
+        frame:SetSize(wid, hgt)
+        FB.SizeVisuals(frame, wid, hgt)
         local st = PT_Source()
-        local health, backdrop, name = f._health, f._bg, f._nameText
+        local health, backdrop, name = frame._health, frame._bg, frame._nameText
         health:SetStatusBarTexture(ResolveHealthTexture(st))
         local texture = health:GetStatusBarTexture()
         backdrop:ClearAllPoints()
@@ -1090,7 +1090,7 @@ do
         end
         ApplyFont(name, st.nameSize or 10)
         name:SetWidth(max(1, wid - 6))
-        FB.StyleBorder(f)
+        FB.StyleBorder(frame)
         local mock = PT.PV[i]
         health:SetMinMaxValues(0, 100)
         health:SetValue(mock.hp)
@@ -1102,8 +1102,8 @@ do
             (mode ~= "dark" or mod.RF_TexBgOpaque(st, true)) and mod.RF_TexBgPath(st) or nil
         )
         if mode == "dark" then
-            local r, g, b, a = CUI.GetDarkModeFill()
-            health:SetStatusBarColor(r, g, b, 1)
+            local region, g, b, a = CUI.GetDarkModeFill()
+            health:SetStatusBarColor(region, g, b, 1)
             if texture then
                 texture:SetAlpha(a)
             end
@@ -1130,8 +1130,8 @@ do
                 backdrop:SetColorTexture(c.r, c.g, c.b, a)
             end
         end
-        f:Show()
-        return f
+        frame:Show()
+        return frame
     end
 
     -- The preview targets beside the party preview frames on screen, parented to parent (skip: your
@@ -1160,8 +1160,8 @@ do
     end
 
     function mod.PT_HidePreview()
-        for _, f in ipairs(PT.pv) do
-            f:Hide()
+        for _, frame in ipairs(PT.pv) do
+            frame:Hide()
         end
     end
 end -- Party Targets scope block

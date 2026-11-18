@@ -55,9 +55,9 @@ function mod._GetPlayerSubgroup()
         return 1
     end
     local num = GetNumGroupMembers()
-    for idx = 1, num do
-        if UnitIsUnit("raid" .. idx, "player") then
-            local _, _, subgroup = GetRaidRosterInfo(idx)
+    for index = 1, num do
+        if UnitIsUnit("raid" .. index, "player") then
+            local _, _, subgroup = GetRaidRosterInfo(index)
             return subgroup
         end
     end
@@ -90,8 +90,8 @@ function mod._FinishNameList(members, noToken)
         nameList = {}
         mod._nlBuf = nameList
     end
-    for idx = 1, #members do
-        nameList[idx] = members[idx].name
+    for index = 1, #members do
+        nameList[index] = members[index].name
     end
     if not noToken then
         nameList[#nameList + 1] = UNKNOWNOBJECT
@@ -103,16 +103,16 @@ end
 -- run on every LayoutGroups pass (options slider drags included). One builder
 -- runs at a time and returns finished strings, so the pool is free again when
 -- it returns; each builder writes every field its comparator reads.
-function mod._NLRec(idx)
+function mod._NLRec(index)
     local pool = mod._nlPool
     if not pool then
         pool = {}
         mod._nlPool = pool
     end
-    local m = pool[idx]
+    local m = pool[index]
     if not m then
         m = {}
-        pool[idx] = m
+        pool[index] = m
     end
     return m
 end
@@ -145,14 +145,14 @@ function mod._BuildSelfFirstNameList(playerGroup, sortByRole, roleOrder, selfLas
     local pri
     if sortByRole then
         pri = {}
-        for p, r in ipairs(roleOrder) do
-            pri[r] = p
+        for p, region in ipairs(roleOrder) do
+            pri[region] = p
         end
     end
     local members = {}
     local num = GetNumGroupMembers()
-    for idx = 1, num do
-        local name, _, subgroup = GetRaidRosterInfo(idx)
+    for index = 1, num do
+        local name, _, subgroup = GetRaidRosterInfo(index)
         -- A nil name = roster not populated at all; the subgroup is not
         -- trustworthy either. Bail (see ns._FinishNameList).
         if not name then
@@ -160,7 +160,7 @@ function mod._BuildSelfFirstNameList(playerGroup, sortByRole, roleOrder, selfLas
         end
         if subgroup == playerGroup then
             if name ~= UNKNOWNOBJECT then
-                local unitToken = "raid" .. idx
+                local unitToken = "raid" .. index
                 local rp = 99
                 if pri then
                     rp = pri[CludesUI.UnitEffectiveRole(unitToken)] or 99
@@ -169,7 +169,7 @@ function mod._BuildSelfFirstNameList(playerGroup, sortByRole, roleOrder, selfLas
                     name = name,
                     isPlayer = UnitIsUnit(unitToken, "player"),
                     rolePri = rp,
-                    index = idx,
+                    index = index,
                 }
             end
         elseif name == UNKNOWNOBJECT then
@@ -204,8 +204,8 @@ function mod._GetDefaultClassOrder()
     end
     local entries, nameList = {}, {}
     local num = (GetNumClasses and GetNumClasses()) or 0
-    for idx = 1, num do
-        local details = C_CreatureInfo and C_CreatureInfo.GetClassInfo and C_CreatureInfo.GetClassInfo(idx)
+    for index = 1, num do
+        local details = C_CreatureInfo and C_CreatureInfo.GetClassInfo and C_CreatureInfo.GetClassInfo(index)
         if details and details.classFile then
             entries[#entries + 1] = details.classFile
             nameList[details.classFile] = details.className or details.classFile
@@ -232,14 +232,14 @@ function mod._BuildPartyClassNameList(includePlayer, sortByRole, roleOrder, clas
     end
     classOrder = classOrder or mod._GetDefaultClassOrder()
     local classPri = {}
-    for idx, c in ipairs(classOrder) do
-        classPri[c] = idx
+    for index, c in ipairs(classOrder) do
+        classPri[c] = index
     end
     local rolePri
     if sortByRole then
         rolePri = {}
-        for idx, r in ipairs(roleOrder) do
-            rolePri[r] = idx
+        for index, region in ipairs(roleOrder) do
+            rolePri[region] = index
         end
     end
     local members = {}
@@ -247,8 +247,8 @@ function mod._BuildPartyClassNameList(includePlayer, sortByRole, roleOrder, clas
     if includePlayer then
         units[#units + 1] = "player"
     end
-    for idx = 1, 4 do
-        units[#units + 1] = "party" .. idx
+    for index = 1, 4 do
+        units[#units + 1] = "party" .. index
     end
     for _, unitToken in ipairs(units) do
         if UnitExists(unitToken) then
@@ -299,21 +299,21 @@ function mod._BuildArenaNameList(hideSelf, selfFirst, selfLast, sortByRole, role
     local pri
     if sortByRole then
         pri = {}
-        for p, r in ipairs(roleOrder) do
-            pri[r] = p
+        for p, region in ipairs(roleOrder) do
+            pri[region] = p
         end
     end
     local members = {}
     local num = GetNumGroupMembers()
-    for idx = 1, num do
-        local name, _, subgroup = GetRaidRosterInfo(idx)
+    for index = 1, num do
+        local name, _, subgroup = GetRaidRosterInfo(index)
         if not name then
             return nil
         end
         -- Small Raid mode: members outside the kept subgroup are simply not
         -- listed (the header hides them); the player included.
         if not (onlyGroup and subgroup ~= onlyGroup) then
-            local unitToken = "raid" .. idx
+            local unitToken = "raid" .. index
             local isPlayer = UnitIsUnit(unitToken, "player")
             if not (hideSelf and isPlayer) then
                 if name ~= UNKNOWNOBJECT then
@@ -325,7 +325,7 @@ function mod._BuildArenaNameList(hideSelf, selfFirst, selfLast, sortByRole, role
                         name = name,
                         isPlayer = isPlayer,
                         rolePri = rp,
-                        index = idx,
+                        index = index,
                     }
                 end
             elseif name == UNKNOWNOBJECT then
@@ -366,20 +366,20 @@ function mod._BuildMergedSelfNameList(sortByRole, roleOrder, selfLast, visibleGr
     local pri
     if sortByRole then
         pri = {}
-        for p, r in ipairs(roleOrder) do
-            pri[r] = p
+        for p, region in ipairs(roleOrder) do
+            pri[region] = p
         end
     end
     local members = {}
     local num = GetNumGroupMembers()
-    for idx = 1, num do
-        local name, _, subgroup = GetRaidRosterInfo(idx)
+    for index = 1, num do
+        local name, _, subgroup = GetRaidRosterInfo(index)
         if not name then
             return nil
         end
         if not visibleGroups or visibleGroups[subgroup] ~= false then
             if name ~= UNKNOWNOBJECT then
-                local unitToken = "raid" .. idx
+                local unitToken = "raid" .. index
                 local rp = 99
                 if pri then
                     rp = pri[CludesUI.UnitEffectiveRole(unitToken)] or 99
@@ -388,7 +388,7 @@ function mod._BuildMergedSelfNameList(sortByRole, roleOrder, selfLast, visibleGr
                     name = name,
                     isPlayer = UnitIsUnit(unitToken, "player"),
                     rolePri = rp,
-                    index = idx,
+                    index = index,
                 }
             end
         elseif name == UNKNOWNOBJECT then
@@ -462,8 +462,8 @@ function mod._BuildRaidClassLists(
         classPri = {}
         mod._rcClassPri = classPri
     end
-    for idx, c in ipairs(classOrder or mod._GetDefaultClassOrder()) do
-        classPri[c] = idx
+    for index, c in ipairs(classOrder or mod._GetDefaultClassOrder()) do
+        classPri[c] = index
     end
     local rolePri = mod._rcRolePri
     if rolePri then
@@ -473,8 +473,8 @@ function mod._BuildRaidClassLists(
         mod._rcRolePri = rolePri
     end
     if sortByRole then
-        for idx, r in ipairs(roleOrder) do
-            rolePri[r] = idx
+        for index, region in ipairs(roleOrder) do
+            rolePri[region] = index
         end
     end
     mod._rcSelfLast = selfLast == true
@@ -483,8 +483,8 @@ function mod._BuildRaidClassLists(
     local groups, bad = mod._NLGroups()
     local used = 0
     local num = GetNumGroupMembers()
-    for idx = 1, num do
-        local name, _, subgroup, _, _, classToken = GetRaidRosterInfo(idx)
+    for index = 1, num do
+        local name, _, subgroup, _, _, classToken = GetRaidRosterInfo(index)
         if not name or not subgroup then
             return nil
         end
@@ -503,7 +503,7 @@ function mod._BuildRaidClassLists(
         elseif not skip then
             used = used + 1
             local m = mod._NLRec(used)
-            local unitToken = tok[idx]
+            local unitToken = tok[index]
             m.name = name
             m.isPlayer = pin and UnitIsUnit(unitToken, "player") == true
             m.rolePri = (sortByRole and rolePri[CludesUI.UnitEffectiveRole(unitToken)]) or 99
@@ -591,11 +591,11 @@ function mod._FrameSortRanks(fresh)
     local success = mod._fsTokenOK
     if not success then
         success = { player = true }
-        for idx = 1, 4 do
-            success["party" .. idx] = true
+        for index = 1, 4 do
+            success["party" .. index] = true
         end
-        for idx = 1, 40 do
-            success["raid" .. idx] = true
+        for index = 1, 40 do
+            success["raid" .. index] = true
         end
         mod._fsTokenOK = success
     end
@@ -607,8 +607,8 @@ function mod._FrameSortRanks(fresh)
         mod._fsRank = rank
     end
     local num = 0
-    for idx = 1, #units do
-        local tok = units[idx]
+    for index = 1, #units do
+        local tok = units[index]
         if type(tok) == "string" and success[tok] and not rank[tok] then
             num = num + 1
             rank[tok] = num
@@ -631,8 +631,8 @@ function mod._FsRaidTok()
     local tok = mod._raidTok
     if not tok then
         tok = {}
-        for idx = 1, 40 do
-            tok[idx] = "raid" .. idx
+        for index = 1, 40 do
+            tok[index] = "raid" .. index
         end
         mod._raidTok = tok
     end
@@ -653,8 +653,8 @@ function mod._BuildFrameSortRaidLists(rank, merged, visibleGroups)
     local groups, bad = mod._NLGroups()
     local used = 0
     local num = GetNumGroupMembers()
-    for idx = 1, num do
-        local name, _, subgroup = GetRaidRosterInfo(idx)
+    for index = 1, num do
+        local name, _, subgroup = GetRaidRosterInfo(index)
         if not name or not subgroup then
             return nil
         end
@@ -670,7 +670,7 @@ function mod._BuildFrameSortRaidLists(rank, merged, visibleGroups)
         elseif not hidden then
             used = used + 1
             local m = mod._NLRec(used)
-            m.name, m.rank, m.index = name, rank[tok[idx]] or 99, idx
+            m.name, m.rank, m.index = name, rank[tok[index]] or 99, index
             local g = groups[merged and 1 or subgroup]
             g[#g + 1] = m
         end
@@ -708,8 +708,8 @@ function mod._BuildFrameSortPartyNameList(rank, includePlayer)
         return nil
     end
     local members = {}
-    for idx = includePlayer and 0 or 1, 4 do
-        local unitToken = (idx == 0) and "player" or ("party" .. idx)
+    for index = includePlayer and 0 or 1, 4 do
+        local unitToken = (index == 0) and "player" or ("party" .. index)
         if UnitExists(unitToken) then
             local name, server = UnitName(unitToken)
             if
@@ -722,7 +722,7 @@ function mod._BuildFrameSortPartyNameList(rank, includePlayer)
                 if server and server ~= "" then
                     name = name .. "-" .. server
                 end
-                members[#members + 1] = { name = name, rank = rank[unitToken] or 99, index = idx }
+                members[#members + 1] = { name = name, rank = rank[unitToken] or 99, index = index }
             end
         end
     end
@@ -742,16 +742,16 @@ function mod._BuildFrameSortRaidPartyNameList(rank, hideSelf, onlyGroup)
     local tok = mod._FsRaidTok()
     local members = {}
     local num = GetNumGroupMembers()
-    for idx = 1, num do
-        local name, _, subgroup = GetRaidRosterInfo(idx)
+    for index = 1, num do
+        local name, _, subgroup = GetRaidRosterInfo(index)
         if not name then
             return nil
         end
         if not (onlyGroup and subgroup ~= onlyGroup) then
-            local unitToken = tok[idx]
+            local unitToken = tok[index]
             if not (hideSelf and UnitIsUnit(unitToken, "player")) then
                 if name ~= UNKNOWNOBJECT then
-                    members[#members + 1] = { name = name, rank = rank[unitToken] or 99, index = idx }
+                    members[#members + 1] = { name = name, rank = rank[unitToken] or 99, index = index }
                 end
             elseif name == UNKNOWNOBJECT then
                 return nil

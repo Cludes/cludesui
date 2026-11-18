@@ -110,8 +110,8 @@ local function ReloadFrames(skipButtons)
     local texPath = ResolveHealthTexture()
 
     for _, button in ipairs(skipButtons and mod._emptyList or allButtons) do
-        local d = GetFFD(button)
-        if not d.styled then
+        local skinData = GetFFD(button)
+        if not skinData.styled then
             mod._StyleButtonSecure(button)
             StyleButton(button)
         end
@@ -124,13 +124,13 @@ local function ReloadFrames(skipButtons)
 
         -- Health bar height/anchor + Top Name Bar. The helper reserves the top
         -- bar's height from the top of the health area and styles the bar.
-        LayoutTopNameBar(s, bh, powerH, d.health, d.topNameBar, d.topNameBarBg, d.topNameBarText, d.power)
-        if d.health then
-            d.health:SetStatusBarTexture(texPath)
-            d.health:GetStatusBarTexture():SetHorizTile(false)
+        LayoutTopNameBar(s, bh, powerH, skinData.health, skinData.topNameBar, skinData.topNameBarBg, skinData.topNameBarText, skinData.power)
+        if skinData.health then
+            skinData.health:SetStatusBarTexture(texPath)
+            skinData.health:GetStatusBarTexture():SetHorizTile(false)
             -- Re-anchor absorb clips to the new fill texture object
-            if d.ReanchorAbsorbToFill then
-                d.ReanchorAbsorbToFill()
+            if skinData.ReanchorAbsorbToFill then
+                skinData.ReanchorAbsorbToFill()
             end
         end
 
@@ -138,11 +138,11 @@ local function ReloadFrames(skipButtons)
         -- fill texture swap so the anchors bind the new fill edge. Stamps are
         -- cleared first so the restyle re-applies anchors + color; a direct
         -- SetColorTexture here is never overwritten by the stamped health tick.
-        if d.bg then
-            d._bgSt, d._bgA = nil, nil
+        if skinData.bg then
+            skinData._bgSt, skinData._bgA = nil, nil
             local u = button:GetAttribute("unit")
             if u and UnitExists(u) then
-                mod._ApplyHealthBg(d, d.health, s, u)
+                mod._ApplyHealthBg(skinData, skinData.health, s, u)
             end
         end
 
@@ -150,112 +150,112 @@ local function ReloadFrames(skipButtons)
         -- second writer of health height alongside UpdateButton's own cached transition
         -- (LayoutTopNameBar above sized health assuming power reserved), so drop the
         -- cache or UpdateAllButtons below sees applied == computed and never corrects it.
-        d._appliedHidePower = nil
-        if d.power then
-            d.power:Hide()
+        skinData._appliedHidePower = nil
+        if skinData.power then
+            skinData.power:Hide()
             if powerH > 0 then
-                d.power:SetHeight(powerH)
-                d.power:SetStatusBarTexture(texPath)
-                d.power:GetStatusBarTexture():SetHorizTile(false)
+                skinData.power:SetHeight(powerH)
+                skinData.power:SetStatusBarTexture(texPath)
+                skinData.power:GetStatusBarTexture():SetHorizTile(false)
             end
         end
-        if d.powerBg then
-            d.powerBg:SetColorTexture(
+        if skinData.powerBg then
+            skinData.powerBg:SetColorTexture(
                 (s.powerBgColor or {}).r or 0,
                 (s.powerBgColor or {}).g or 0,
                 (s.powerBgColor or {}).b or 0,
                 (s.powerBgDarkness or 70) / 100
             )
-            d._pwBgTintType = nil
+            skinData._pwBgTintType = nil
         end
-        if d.UpdatePowerBorder then
-            d.UpdatePowerBorder(true)
+        if skinData.UpdatePowerBorder then
+            skinData.UpdatePowerBorder(true)
         end
 
         -- The texts: Power Text hidden with the bar above until UpdateAllButtons
         -- below shows it again; every text restyled and re-anchored (the full paint that
         -- follows fills them).
-        if d.AnchorTexts then
-            mod.RF_TextPowerHide(d)
-            d.AnchorTexts()
+        if skinData.AnchorTexts then
+            mod.RF_TextPowerHide(skinData)
+            skinData.AnchorTexts()
         end
 
         -- Status text (DEAD/OFFLINE/AFK)
-        if d.statusText then
+        if skinData.statusText then
             local stc = s.statusTextColor or { r = 1, g = 1, b = 1 }
-            ApplyFont(d.statusText, s.statusTextSize or 14)
-            d.statusText:SetTextColor(stc.r, stc.g, stc.b)
-            if d.AnchorStatusText then
-                d.AnchorStatusText()
+            ApplyFont(skinData.statusText, s.statusTextSize or 14)
+            skinData.statusText:SetTextColor(stc.r, stc.g, stc.b)
+            if skinData.AnchorStatusText then
+                skinData.AnchorStatusText()
             end
         end
 
         -- Role icon size + position
-        if d.roleIcon then
+        if skinData.roleIcon then
             local riSz = PixelSnap(s.roleIconSize or 14)
-            d.roleIcon:SetSize(riSz, riSz)
-            if d.AnchorRoleIcon then
-                d.AnchorRoleIcon()
+            skinData.roleIcon:SetSize(riSz, riSz)
+            if skinData.AnchorRoleIcon then
+                skinData.AnchorRoleIcon()
             end
         end
 
         -- Leader icon size + position
-        if d.leaderIcon then
+        if skinData.leaderIcon then
             local liSz = PixelSnap(s.leaderIconSize or 14)
-            d.leaderIcon:SetSize(liSz, liSz)
-            d.leaderIcon:ClearAllPoints()
+            skinData.leaderIcon:SetSize(liSz, liSz)
+            skinData.leaderIcon:ClearAllPoints()
             local liPos = (s.leaderIconPosition or "top"):upper()
-            d.leaderIcon:SetPoint(
+            skinData.leaderIcon:SetPoint(
                 liPos,
-                mod.RF_AnchorHost(d.health, s),
+                mod.RF_AnchorHost(skinData.health, s),
                 liPos,
                 s.leaderIconOffsetX or 0,
                 s.leaderIconOffsetY or 0
             )
             -- Re-assert the host's strata/level above the border
-            if d.leaderHost then
-                mod.ApplyLeaderStrata(d.leaderHost)
+            if skinData.leaderHost then
+                mod.ApplyLeaderStrata(skinData.leaderHost)
             end
         end
 
         -- Raid marker size + position
-        if d.raidMarker then
+        if skinData.raidMarker then
             local rmSz = PixelSnap(s.raidMarkerSize or 16)
-            d.raidMarker:SetSize(rmSz, rmSz)
-            if d.AnchorRaidMarker then
-                d.AnchorRaidMarker()
+            skinData.raidMarker:SetSize(rmSz, rmSz)
+            if skinData.AnchorRaidMarker then
+                skinData.AnchorRaidMarker()
             end
         end
 
         -- Ready check / summon size + position
-        if d.readyCheck then
+        if skinData.readyCheck then
             local rcSz = PixelSnap(s.readyCheckSize or 20)
-            d.readyCheck:SetSize(rcSz, rcSz)
-            if d.AnchorReadyCheck then
-                d.AnchorReadyCheck()
+            skinData.readyCheck:SetSize(rcSz, rcSz)
+            if skinData.AnchorReadyCheck then
+                skinData.AnchorReadyCheck()
             end
         end
 
         -- Combat icon size + position
-        if d.combatIcon then
+        if skinData.combatIcon then
             local cciSz = PixelSnap(s.combatIndicatorSize or 16)
-            d.combatIcon:SetSize(cciSz, cciSz)
-            if d.AnchorCombatIcon then
-                d.AnchorCombatIcon()
+            skinData.combatIcon:SetSize(cciSz, cciSz)
+            if skinData.AnchorCombatIcon then
+                skinData.AnchorCombatIcon()
             end
         end
 
         -- Ping marker size + position (overlay exists only after a first ping)
-        if d.pingFrame then
-            mod._RFAnchorPing(d)
+        if skinData.pingFrame then
+            mod._RFAnchorPing(skinData)
         end
         if mod.RF_FvMissingAnchor then
-            mod.RF_FvMissingAnchor(button, d)
+            mod.RF_FvMissingAnchor(button, skinData)
         end
 
         -- Border
-        if d.UpdateBorder then
-            d.UpdateBorder()
+        if skinData.UpdateBorder then
+            skinData.UpdateBorder()
         end
     end
 
@@ -370,12 +370,12 @@ mod._ResizeButtons = function(wid, hgt)
     local topBarH = (s.topNameBarEnabled and PixelSnap(s.topNameBarHeight or 20)) or 0
     local xfset = s.extraFrames
     for _, button in ipairs(allButtons) do
-        local d = GetFFD(button)
-        if d.styled then
+        local skinData = GetFFD(button)
+        if skinData.styled then
             local xbw, xbh, xhealthH = bw, bh, healthH
             -- Extra Frames duplicates carry their size offset through the
             -- live slider path too (XF.Layout re-applies it on full reloads).
-            if d._isExtra and xfset then
+            if skinData._isExtra and xfset then
                 xbw = PixelSnap(math.max(10, wid + (xfset.extraWidth or 0)))
                 xbh = PixelSnap(math.max(10, hgt + (xfset.extraHeight or 0)))
                 xhealthH = PixelSnap(xbh - mod.RF_HealthPowerInset(s, powerH))
@@ -385,10 +385,10 @@ mod._ResizeButtons = function(wid, hgt)
             -- _ResizePartyButtons; avoids a dark strip on OFF-role units since
             -- d.power always exists). Top Name Bar reserves its height from the
             -- top (health top anchor stays -topBarH; only correct height here).
-            if d.health then
-                d.health:SetHeight(((d.power and d.power:IsShown()) and xhealthH or xbh) - topBarH)
+            if skinData.health then
+                skinData.health:SetHeight(((skinData.power and skinData.power:IsShown()) and xhealthH or xbh) - topBarH)
             end
-            mod.RF_TextNameWidth(d, xbw)
+            mod.RF_TextNameWidth(skinData, xbw)
         end
     end
     mod._activeSizeW = wid
@@ -430,24 +430,24 @@ mod._ResizePartyButtons = function(wid, hgt)
     local _, _, _, pres = mod.RF_PartyDims(s)
     local barW = bw - ((pres and pres > 0) and PixelSnap(pres) or 0)
     for _, button in ipairs(mod._partyAllButtons) do
-        local d = GetFFD(button)
-        if d.styled then
+        local skinData = GetFFD(button)
+        if skinData.styled then
             button:SetSize(bw, bh)
-            if d.kit then
+            if skinData.kit then
                 -- Party Frames kit: its own bar rects, spots and name width
                 -- (Frame Scale drags land here).
-                mod.RF_ApplyPartyKit(button, d, mod._scaledPartyProxy)
+                mod.RF_ApplyPartyKit(button, skinData, mod._scaledPartyProxy)
             else
                 -- Use full height if power bar is hidden for this button's role; the
                 -- Top Name Bar always reserves topBarH from the top.
-                if d.health then
-                    local hh = ((d.power and d.power:IsShown()) and healthH or bh) - topBarH
-                    d.health:SetHeight(hh)
+                if skinData.health then
+                    local hh = ((skinData.power and skinData.power:IsShown()) and healthH or bh) - topBarH
+                    skinData.health:SetHeight(hh)
                 end
-                mod.RF_TextNameWidth(d, barW)
+                mod.RF_TextNameWidth(skinData, barW)
                 -- Party portrait: the attached square follows the height.
-                if d.pt then
-                    mod.RF_PtApply(button, d, mod._scaledPartyProxy, bw, bh, nil)
+                if skinData.pt then
+                    mod.RF_PtApply(button, skinData, mod._scaledPartyProxy, bw, bh, nil)
                 end
             end
             -- Live-rescale indicators/auras. No-op for hidden buttons / no unit
@@ -456,31 +456,31 @@ mod._ResizePartyButtons = function(wid, hgt)
                 -- Scale derives from frame size (recomputed above): re-apply
                 -- the scaled sizes during the drag (same set as the full reload).
                 local pp = mod._scaledPartyProxy
-                if d.roleIcon then
+                if skinData.roleIcon then
                     local riSz = PixelSnap(pp.roleIconSize or 14)
-                    d.roleIcon:SetSize(riSz, riSz)
-                    if d.AnchorRoleIcon then
-                        d.AnchorRoleIcon()
+                    skinData.roleIcon:SetSize(riSz, riSz)
+                    if skinData.AnchorRoleIcon then
+                        skinData.AnchorRoleIcon()
                     end
                 end
-                if d.leaderIcon then
+                if skinData.leaderIcon then
                     local liSz = PixelSnap(pp.leaderIconSize or 14)
-                    d.leaderIcon:SetSize(liSz, liSz)
+                    skinData.leaderIcon:SetSize(liSz, liSz)
                 end
-                if d.raidMarker then
+                if skinData.raidMarker then
                     local rmSz = PixelSnap(pp.raidMarkerSize or 16)
-                    d.raidMarker:SetSize(rmSz, rmSz)
+                    skinData.raidMarker:SetSize(rmSz, rmSz)
                 end
-                if d.combatIcon then
+                if skinData.combatIcon then
                     local cciSz = PixelSnap(pp.combatIndicatorSize or 16)
-                    d.combatIcon:SetSize(cciSz, cciSz)
-                    if d.AnchorCombatIcon then
-                        d.AnchorCombatIcon()
+                    skinData.combatIcon:SetSize(cciSz, cciSz)
+                    if skinData.AnchorCombatIcon then
+                        skinData.AnchorCombatIcon()
                     end
                 end
-                mod.RF_TextFonts(d, pp)
-                if d.statusText then
-                    ApplyFont(d.statusText, pp.statusTextSize or 14)
+                mod.RF_TextFonts(skinData, pp)
+                if skinData.statusText then
+                    ApplyFont(skinData.statusText, pp.statusTextSize or 14)
                 end
             end
         end
@@ -548,24 +548,24 @@ mod._RFGroupFlow = function(groupGrowth, groupW, groupH, gs, total, result)
         stepX = -(groupW + gs) -- LEFT
     end
     local slots, minX, maxY = result or {}, 0, 0
-    for idx = 0, num - 1 do
+    for index = 0, num - 1 do
         local px, py
         if groupGrowth == "DOWNRIGHT" then
-            px = floor(idx / mod._RF_GRID_ROWS) * stepX
-            py = (idx % mod._RF_GRID_ROWS) * stepY
+            px = floor(index / mod._RF_GRID_ROWS) * stepX
+            py = (index % mod._RF_GRID_ROWS) * stepY
         else
-            px, py = idx * stepX, idx * stepY
+            px, py = index * stepX, index * stepY
         end
-        local p = slots[idx]
+        local p = slots[index]
         if p then
             p[1], p[2] = px, py
         else
-            slots[idx] = { px, py }
+            slots[index] = { px, py }
         end
     end
     local nc = min(MOVER_GROUPS, num)
-    for idx = 0, nc - 1 do
-        local px, py = slots[idx][1], slots[idx][2]
+    for index = 0, nc - 1 do
+        local px, py = slots[index][1], slots[index][2]
         if px < minX then
             minX = px
         end
@@ -727,8 +727,8 @@ end
 -- along the per-slot step of a _RFGroupFlow slot list (needs slots 0 and 1). More
 -- than MOVER_GROUPS groups give a negative shift: the run overflows both sides.
 mod._RFCenterShift = function(slots, num)
-    local f = (MOVER_GROUPS - num) / 2
-    return PixelSnap(f * (slots[1][1] - slots[0][1])), PixelSnap(f * (slots[1][2] - slots[0][2]))
+    local frame = (MOVER_GROUPS - num) / 2
+    return PixelSnap(frame * (slots[1][1] - slots[0][1])), PixelSnap(frame * (slots[1][2] - slots[0][2]))
 end
 
 -- Signed corner terms: how far a tier footprint's TOPLEFT shifts from the base
@@ -898,8 +898,8 @@ mod._NormalizeTierOffsetAnchors = function()
         end
     end
     if phantoms then
-        for idx = 1, #phantoms do
-            local key = phantoms[idx]
+        for index = 1, #phantoms do
+            local key = phantoms[index]
             local num = tonumber(key)
             if shade[num] == nil then
                 shade[num] = shade[key]
@@ -932,9 +932,9 @@ mod._NormalizeTierOffsetAnchors = function()
                         cs,
                         gs
                     )
-                    local tl, tt = mod._RFPosTopLeft(place, tw, th)
+                    local tl, tooltip = mod._RFPosTopLeft(place, tw, th)
                     o.offsetX = math.floor((o.offsetX or 0) + (tl - bl) + 0.5)
-                    o.offsetY = math.floor((o.offsetY or 0) + (tt - bt) + 0.5)
+                    o.offsetY = math.floor((o.offsetY or 0) + (tooltip - bt) + 0.5)
                 end
             end
         end
@@ -1051,7 +1051,7 @@ mod._ApplyTierOffset = function()
 end
 
 Inner.ReloadFrames = ReloadFrames
-Inner.SetRangeUpdate = function(f)
-    RangeUpdate = f
+Inner.SetRangeUpdate = function(frame)
+    RangeUpdate = frame
 end
 Inner.broken = false

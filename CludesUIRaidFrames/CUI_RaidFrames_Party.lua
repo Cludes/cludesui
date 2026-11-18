@@ -895,8 +895,8 @@ mod._CreatePartyHeader = function()
     -- _isParty goes first: the secure pass sizes party buttons to the party
     -- box (the header's own initConfig size would otherwise be overwritten
     -- with the raid size).
-    for idx = 1, 5 do
-        local button = heading[idx]
+    for index = 1, 5 do
+        local button = heading[index]
         if button then
             GetFFD(button)._isParty = true
             mod._StyleButtonSecure(button)
@@ -931,9 +931,9 @@ mod._RebuildPartyUnitMap = function()
             local u = button:GetAttribute("unit")
             if u then
                 mod._partyUnitToButton[u] = button
-                local d = GetFFD(button)
+                local skinData = GetFFD(button)
                 local _, classToken = UnitClass(u)
-                d.classToken = classToken
+                skinData.classToken = classToken
             end
         end
     end

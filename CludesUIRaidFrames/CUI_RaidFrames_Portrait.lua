@@ -45,15 +45,15 @@ local function Zoom3DOf(z)
         z = ZOOM3D_MAX
     end
     local t = (z - ZOOM3D_STOCK) / (ZOOM3D_MAX - ZOOM3D_STOCK)
-    local d = ZOOM3D_STOCK / 100
-    return 1 - t, d - (d - 1) * t
+    local skinData = ZOOM3D_STOCK / 100
+    return 1 - t, skinData - (skinData - 1) * t
 end
 
-local function Point(r, p, rel, rp, posX, posY)
+local function Point(region, p, rel, rp, posX, posY)
     if Pix and Pix.Point then
-        Pix.Point(r, p, rel, rp, posX, posY)
+        Pix.Point(region, p, rel, rp, posX, posY)
     else
-        r:SetPoint(p, rel, rp, posX, posY)
+        region:SetPoint(p, rel, rp, posX, posY)
     end
 end
 
@@ -189,16 +189,16 @@ end
 local function Ensure(ownerFrame, st, health)
     local edge = CreateFrame("Frame", nil, ownerFrame)
     edge:EnableMouse(false)
-    local bg = edge:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.1, 0.1, 0.1, 1)
+    local bgTex = edge:CreateTexture(nil, "BACKGROUND")
+    bgTex:SetAllPoints()
+    bgTex:SetColorTexture(0.1, 0.1, 0.1, 1)
     local t2 = edge:CreateTexture(nil, "ARTWORK")
     t2:SetTexCoord(0.15, 0.85, 0.15, 0.85)
     t2:Hide()
     local tc = edge:CreateTexture(nil, "ARTWORK")
     tc:SetAlpha(0.8)
     tc:Hide()
-    edge._bg, edge._2d, edge._class = bg, t2, tc
+    edge._bg, edge._2d, edge._class = bgTex, t2, tc
     edge._oL, edge._oT, edge._oR, edge._oB = 0, 0, 0, 0
     edge._owner, edge._st = ownerFrame, st
     edge._preview = (st == ownerFrame) or nil
@@ -340,8 +340,8 @@ local function Shape(edge, s, shaped, wid, hgt)
     local bs = s.partyPortraitBorderSize or 7
     local op = s.partyPortraitBorderOpacity or 100
     local art = s.partyPortraitArtScale or 100
-    local col = s.partyPortraitBorderColor
-    local cr, cg, cb = col and col.r or 0, col and col.g or 0, col and col.b or 0
+    local colour = s.partyPortraitBorderColor
+    local cr, cg, callback = colour and colour.r or 0, colour and colour.g or 0, colour and colour.b or 0
     local cc = s.partyPortraitBorderClassColor ~= false
     if
         edge._sShape == shape
@@ -352,14 +352,14 @@ local function Shape(edge, s, shaped, wid, hgt)
         and edge._sH == hgt
         and edge._sR == cr
         and edge._sG == cg
-        and edge._sB == cb
+        and edge._sB == callback
         and edge._sCC == cc
         and edge._sSet
     then
         return false
     end
     edge._sShape, edge._sBs, edge._sOp, edge._sArt, edge._sW, edge._sH = shape, bs, op, art, wid, hgt
-    edge._sR, edge._sG, edge._sB, edge._sCC, edge._sSet = cr, cg, cb, cc, true
+    edge._sR, edge._sG, edge._sB, edge._sCC, edge._sSet = cr, cg, callback, cc, true
     edge._tintClass = nil
     if not shape then
         Unmask(edge)
@@ -400,7 +400,7 @@ local function Shape(edge, s, shaped, wid, hgt)
             edge._masked = true
         end
         edge._bA = op / 100
-        bt:SetVertexColor(cr, cg, cb, edge._bA)
+        bt:SetVertexColor(cr, cg, callback, edge._bA)
         edge._tintClass = cc or nil
         bt:Show()
         local vis = (128 - 2 * (MASK_INSETS[shape] or 17)) / 128
@@ -429,35 +429,35 @@ local function TintBorder(edge, unitToken, ctOverride)
     if not (bt and edge._tintClass) then
         return
     end
-    local r, g, b
+    local region, g, b
     local s = mod._scaledPartyProxy
     if ctOverride then
         local c = CludesUI.GetClassColor(ctOverride)
         if c then
-            r, g, b = c.r, c.g, c.b
+            region, g, b = c.r, c.g, c.b
         end
     elseif s and s.healthColorMode == "dark" then
-        r, g, b = PlayerClassColor()
+        region, g, b = PlayerClassColor()
     elseif unitToken and UnitExists(unitToken) then
         local _, ct = UnitClass(unitToken)
         local isPl = UnitIsPlayer(unitToken)
         if not issecretvalue(ct) and not issecretvalue(isPl) and isPl and ct then
             local c = CludesUI.GetClassColor(ct)
             if c then
-                r, g, b = c.r, c.g, c.b
+                region, g, b = c.r, c.g, c.b
             end
         else
             local re = UnitReaction(unitToken, "player")
             local c = (not issecretvalue(re)) and re and FACTION_BAR_COLORS and FACTION_BAR_COLORS[re]
             if c then
-                r, g, b = c.r, c.g, c.b
+                region, g, b = c.r, c.g, c.b
             end
         end
     end
-    if not r then
-        r, g, b = PlayerClassColor()
+    if not region then
+        region, g, b = PlayerClassColor()
     end
-    bt:SetVertexColor(r, g, b, edge._bA or 1)
+    bt:SetVertexColor(region, g, b, edge._bA or 1)
 end
 
 -- Which art region shows. Leaving 3D drops the model (frees it). True when
@@ -621,12 +621,12 @@ end
 -- own tooltip and hover border.
 local PORTRAIT_CLICK = {
     wanted = function(ownerFrame)
-        local d = mod.GetFFD(ownerFrame)
-        local edge = d.pt
+        local skinData = mod.GetFFD(ownerFrame)
+        local edge = skinData.pt
         local s = mod._scaledPartyProxy
         return edge
                 and edge._on
-                and not d.kitPortrait
+                and not skinData.kitPortrait
                 and s.partyPortraitClickable
                 and (s.partyPortraitStyle or "none") == "detached"
             or false
@@ -812,13 +812,13 @@ function mod.RF_PtRepaintAll(evt)
         return
     end
     local GetFFD = mod.GetFFD
-    for idx = 1, #entries do
-        local b = entries[idx]
-        local d = GetFFD(b)
-        if d.kitPortrait or (d.pt and d.pt._on) then
+    for index = 1, #entries do
+        local b = entries[index]
+        local skinData = GetFFD(b)
+        if skinData.kitPortrait or (skinData.pt and skinData.pt._on) then
             local u = b:GetAttribute("unit")
             if u and UnitExists(u) then
-                mod.RF_PtPaint(d, u, evt)
+                mod.RF_PtPaint(skinData, u, evt)
             end
         end
     end
@@ -836,24 +836,24 @@ function mod.RF_PtRefreshAll()
     local s = mod._scaledPartyProxy
     local pw, ph = mod.RF_PartyDims(saved.profile)
     local bw, bh = mod.PixelSnap(pw), mod.PixelSnap(ph)
-    for idx = 1, #entries do
-        local b = entries[idx]
-        local d = GetFFD(b)
-        if d.styled then
+    for index = 1, #entries do
+        local b = entries[index]
+        local skinData = GetFFD(b)
+        if skinData.styled then
             local u = b:GetAttribute("unit")
             if u and not UnitExists(u) then
                 u = nil
             end
-            if d.kitPortrait then
+            if skinData.kitPortrait then
                 if u then
-                    mod.RF_KitPortrait(d, u)
+                    mod.RF_KitPortrait(skinData, u)
                 end
                 -- A click button from before the kit stands down.
-                if d.pt then
+                if skinData.pt then
                     CludesUI.SyncPortraitClick(b, PORTRAIT_CLICK)
                 end
             else
-                mod.RF_PtApply(b, d, s, bw, bh, u)
+                mod.RF_PtApply(b, skinData, s, bw, bh, u)
             end
         end
     end
@@ -914,8 +914,8 @@ function mod.RF_PtContainerAlpha()
         return
     end
     local GetFFD = mod.GetFFD
-    for idx = 1, #entries do
-        local edge = GetFFD(entries[idx]).pt
+    for index = 1, #entries do
+        local edge = GetFFD(entries[index]).pt
         if edge and edge._3dOn then
             mod.RF_PtModelAlphaApply(edge)
         end
@@ -929,16 +929,16 @@ end
 --  in the others (five copies of one face, or five models, would read
 --  wrong), class art per slot, the offline slot greyed.
 -------------------------------------------------------------------------------
-function mod.RF_PtPreview(f, s, classToken, isPlayer, offline)
-    if (s.partyPortraitStyle or "none") == "none" and not f.pt then
+function mod.RF_PtPreview(frame, s, classToken, isPlayer, offline)
+    if (s.partyPortraitStyle or "none") == "none" and not frame.pt then
         return
     end
     local saved = mod.db
     local pw, ph = mod.RF_PartyDims(mod._pvOverlayProxy or (saved and saved.profile) or s)
     local bw, bh = mod.PixelSnap(pw), mod.PixelSnap(ph)
-    f:SetSize(bw, bh)
-    mod.RF_PtApply(f, f, s, bw, bh, nil)
-    local edge = f.pt
+    frame:SetSize(bw, bh)
+    mod.RF_PtApply(frame, frame, s, bw, bh, nil)
+    local edge = frame.pt
     if not (edge and edge._on) then
         return
     end
@@ -966,7 +966,7 @@ function mod.RF_PtPreview(f, s, classToken, isPlayer, offline)
                 -- reloading it (a hidden model paints on its show edge).
                 edge._pvUnit = "player"
                 if m:IsShown() then
-                    mod.RF_PtPaint(f, "player", "Apply")
+                    mod.RF_PtPaint(frame, "player", "Apply")
                 else
                     m:Show()
                 end
