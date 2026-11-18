@@ -806,6 +806,21 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 --  local (AB) instead of individual locals: this function is enormous and Lua 5.1 caps active locals at 200.
                 -----------------------------------------------------------
                 local AB = {}
+                -- A new menu row at the menu's current bottom (mH): the row button,
+                -- full width less a pixel each side, and its left-hand caption.
+                AB.NewMenuRow = function(caption)
+                    local row = CreateFrame("Button", nil, inner)
+                    row:SetHeight(ITEM_H)
+                    row:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
+                    row:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
+                    row:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                    local labelFS = row:CreateFontString(nil, "OVERLAY")
+                    labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
+                    labelFS:SetPoint("LEFT", 10, 0)
+                    labelFS:SetJustifyH("LEFT")
+                    labelFS:SetText(CludesUI.L(caption))
+                    return row, labelFS
+                end
                 -- A colour row's Custom item ("<key>" set to "custom", the colour in
                 -- <key>R/G/B, default 1, g, b): CustomColorSwatch is its flyout hook,
                 -- a swatch on the Custom item whose first click also picks Custom and
@@ -2704,19 +2719,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     onItemCreated,
                     options
                 )
-                    local row = CreateFrame("Button", nil, inner)
-                    row:SetHeight(ITEM_H)
-                    row:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-                    row:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-                    row:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-
+                    local row, labelFS = AB.NewMenuRow(labelText)
                     local acR, acG, acB = CludesUI.GetAccentColor()
-
-                    local labelFS = row:CreateFontString(nil, "OVERLAY")
-                    labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                    labelFS:SetPoint("LEFT", 10, 0)
-                    labelFS:SetJustifyH("LEFT")
-                    labelFS:SetText(CludesUI.L(labelText))
 
                     -- Optional disabled state (opts.disabled = function -> bool): greys the row, blocks the flyout, and shows a tooltip.
                     local function RowDisabled()
@@ -3777,16 +3781,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     -- isChanged: a function returning true when this cog's per-icon values
                     -- DIFFER from the bar; the row label then rests at accent instead of dim (same "this is customized" cue as tri-state rows).
                     local function MakeCogRow(labelText, isChanged, buildCog)
-                        local row = CreateFrame("Button", nil, inner)
-                        row:SetHeight(ITEM_H)
-                        row:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-                        row:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-                        row:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                        local labelFS = row:CreateFontString(nil, "OVERLAY")
-                        labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                        labelFS:SetPoint("LEFT", 10, 0)
-                        labelFS:SetJustifyH("LEFT")
-                        labelFS:SetText(CludesUI.L(labelText))
+                        local row, labelFS = AB.NewMenuRow(labelText)
                         -- Resting label color: accent when this cog's values differ from the bar, dim when they all match/inherit it.
                         local function UpdateLabel()
                             if isChanged() then
@@ -4552,16 +4547,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
 
                         -- Plain clickable action row (label + hover highlight).
                         local function MakeActionRow(textValue, onClick)
-                            local row = CreateFrame("Button", nil, inner)
-                            row:SetHeight(ITEM_H)
-                            row:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-                            row:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-                            row:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                            local labelFS = row:CreateFontString(nil, "OVERLAY")
-                            labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                            labelFS:SetPoint("LEFT", 10, 0)
-                            labelFS:SetJustifyH("LEFT")
-                            labelFS:SetText(CludesUI.L(textValue))
+                            local row, labelFS = AB.NewMenuRow(textValue)
                             labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                             local highlight = row:CreateTexture(nil, "ARTWORK")
                             highlight:SetAllPoints()
@@ -4739,17 +4725,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end
                             end
 
-                            local row = CreateFrame("Button", nil, inner)
-                            row:SetHeight(ITEM_H)
-                            row:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-                            row:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-                            row:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                            local row, labelFS = AB.NewMenuRow("Combat Potion Icon")
                             local acR, acG, acB = CludesUI.GetAccentColor()
-                            local labelFS = row:CreateFontString(nil, "OVERLAY")
-                            labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                            labelFS:SetPoint("LEFT", 10, 0)
-                            labelFS:SetJustifyH("LEFT")
-                            labelFS:SetText(CludesUI.L("Combat Potion Icon"))
                             local function PaintRow()
                                 if PotIsDefault() then
                                     labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
