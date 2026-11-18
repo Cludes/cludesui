@@ -298,11 +298,11 @@ local MODE_VALID = {
     importantOrOwn = true,
 }
 local function HasActiveIncludes(s)
-    local inc = s.debuffInclude
-    if not inc then
+    local included = s.debuffInclude
+    if not included then
         return false
     end
-    for _, val in pairs(inc) do
+    for _, val in pairs(included) do
         if val then
             return true
         end
@@ -340,16 +340,16 @@ mod.UF_DebuffHasIncludes = HasActiveIncludes
 -- the config sweep -- includeSpellIDs = the actives, excludeSpellIDs = {}
 -- so the shared excludes (which hide the actives from every OTHER group,
 -- see ApplyGroupConfig) never blank these.
-local function AppendIncludeLinks(chain, s, unitToken)
-    local inc = s.debuffInclude
-    if not inc then
+local function AppendIncludeLinks(filterChain, s, unitToken)
+    local included = s.debuffInclude
+    if not included then
         return
     end
     local isBoss = unitToken:match("^boss") ~= nil
     local anym = isBoss and s.debuffIncludeAnyCaster or nil
     local minem = (not isBoss) and s.debuffIncludeMine or nil
     local m, mm
-    for ident, val in pairs(inc) do
+    for ident, val in pairs(included) do
         if val then
             local mine
             if isBoss then
@@ -367,7 +367,7 @@ local function AppendIncludeLinks(chain, s, unitToken)
         end
     end
     if m then
-        chain[#chain + 1] = {
+        filterChain[#filterChain + 1] = {
             key = "inc|" .. CandFP({ includeSpellIDs = m }),
             tokens = { "HARMFUL" },
             cand = { includeSpellIDs = m, excludeSpellIDs = {} },
@@ -375,7 +375,7 @@ local function AppendIncludeLinks(chain, s, unitToken)
         }
     end
     if mm then
-        chain[#chain + 1] = {
+        filterChain[#filterChain + 1] = {
             key = "incmine|" .. CandFP({ includeSpellIDs = mm }),
             tokens = { "HARMFUL", "PLAYER" },
             cand = { includeSpellIDs = mm, excludeSpellIDs = {} },
@@ -399,68 +399,68 @@ end
 -- spells, and ApplyGroupConfig leaves them un-excluded when no link renders
 -- them. Only Tracked Auras with an empty list = an empty chain = nothing.
 local function NonPlayerDebuffChain(s, unitToken)
-    local mode = DebuffFilterMode(s)
-    local chain = {}
-    if mode == "all" then
-        chain[1] = { key = "all", tokens = { "HARMFUL" } }
-        return chain
+    local modeName = DebuffFilterMode(s)
+    local filterChain = {}
+    if modeName == "all" then
+        filterChain[1] = { key = "all", tokens = { "HARMFUL" } }
+        return filterChain
     end
-    if mode == "own" then
-        chain[1] = { key = "own", tokens = { "HARMFUL", "PLAYER" } }
-    elseif mode == "important" then
-        chain[1] = { key = "priority", tokens = { "HARMFUL" }, cand = PRIORITY_CAND }
-        chain[2] = { key = "prioritynp", tokens = { "HARMFUL" }, cand = PRIORITY_NONPLAYER_CAND }
-    elseif mode == "importantOwn" then
-        chain[1] = { key = "priorityown", tokens = { "HARMFUL", "PLAYER" }, cand = PRIORITY_CAND }
-        chain[2] = { key = "prioritynpown", tokens = { "HARMFUL", "PLAYER" }, cand = PRIORITY_NONPLAYER_CAND }
-    elseif mode == "importantOrOwn" then
-        chain[1] = { key = "own", tokens = { "HARMFUL", "PLAYER" } }
-        chain[2] = {
+    if modeName == "own" then
+        filterChain[1] = { key = "own", tokens = { "HARMFUL", "PLAYER" } }
+    elseif modeName == "important" then
+        filterChain[1] = { key = "priority", tokens = { "HARMFUL" }, cand = PRIORITY_CAND }
+        filterChain[2] = { key = "prioritynp", tokens = { "HARMFUL" }, cand = PRIORITY_NONPLAYER_CAND }
+    elseif modeName == "importantOwn" then
+        filterChain[1] = { key = "priorityown", tokens = { "HARMFUL", "PLAYER" }, cand = PRIORITY_CAND }
+        filterChain[2] = { key = "prioritynpown", tokens = { "HARMFUL", "PLAYER" }, cand = PRIORITY_NONPLAYER_CAND }
+    elseif modeName == "importantOrOwn" then
+        filterChain[1] = { key = "own", tokens = { "HARMFUL", "PLAYER" } }
+        filterChain[2] = {
             key = "priorityoth",
             tokens = { "HARMFUL", "!PLAYER" },
             cand = PRIORITY_CAND,
             important = true,
         }
-        chain[3] = {
+        filterChain[3] = {
             key = "prioritynpoth",
             tokens = { "HARMFUL", "!PLAYER" },
             cand = PRIORITY_NONPLAYER_CAND,
             important = true,
         }
     end
-    AppendIncludeLinks(chain, s, unitToken)
-    return chain
+    AppendIncludeLinks(filterChain, s, unitToken)
+    return filterChain
 end
 
-local function ClassEnabled(class, isBuff, s, unitToken)
-    if class.buffOnly and not isBuff then
+local function ClassEnabled(classFile, buffSide, s, unitToken)
+    if classFile.buffOnly and not buffSide then
         return false
     end
-    if class.debuffOnly and isBuff then
+    if classFile.debuffOnly and buffSide then
         return false
     end
     -- Player-frame-only classes: offered nowhere else in the UI, and a
     -- stale key on another unit's settings must have no effect.
-    if class.playerUnitOnly and unitToken ~= "player" then
+    if classFile.playerUnitOnly and unitToken ~= "player" then
         return false
     end
     -- Non-player BUFF vocabulary is Stealable / Big Defensive / Dispellable only
     -- (zero-migration rule: retired checkbox keys go unread). Non-player DEBUFFS
     -- never reach the class system -- NonPlayerDebuffChain owns them.
     if
-        isBuff
+        buffSide
         and unitToken ~= "player"
-        and class.key ~= "steal"
-        and class.key ~= "bigdef"
-        and class.key ~= "dispellable"
+        and classFile.key ~= "steal"
+        and classFile.key ~= "bigdef"
+        and classFile.key ~= "dispellable"
     then
         return false
     end
     local prefixText = "debuff"
-    if isBuff then
+    if buffSide then
         prefixText = "buff"
     end
-    return s[prefixText .. class.skey] == true
+    return s[prefixText .. classFile.skey] == true
 end
 
 -- Hide-lane test (two-lane filter dropdowns): mirrors ClassEnabled's per-unit
@@ -468,32 +468,32 @@ end
 -- s.debuffNegClasses, keyed by class.skey). The options setters keep the two
 -- lanes mutually exclusive; if stale data ever disagrees, show wins (the hidden
 -- pass skips enabled classes).
-local function ClassNegated(class, isBuff, s, unitToken)
-    if class.buffOnly and not isBuff then
+local function ClassNegated(classFile, buffSide, s, unitToken)
+    if classFile.buffOnly and not buffSide then
         return false
     end
-    if class.debuffOnly and isBuff then
+    if classFile.debuffOnly and buffSide then
         return false
     end
-    if class.playerUnitOnly and unitToken ~= "player" then
+    if classFile.playerUnitOnly and unitToken ~= "player" then
         return false
     end
     if
-        isBuff
+        buffSide
         and unitToken ~= "player"
-        and class.key ~= "steal"
-        and class.key ~= "bigdef"
-        and class.key ~= "dispellable"
+        and classFile.key ~= "steal"
+        and classFile.key ~= "bigdef"
+        and classFile.key ~= "dispellable"
     then
         return false
     end
     local negs
-    if isBuff then
+    if buffSide then
         negs = s.buffNegClasses
     else
         negs = s.debuffNegClasses
     end
-    return negs ~= nil and negs[class.skey] == true
+    return negs ~= nil and negs[classFile.skey] == true
 end
 
 -- Union of two dispel-type sets as a NEW table (vocabulary tables are shared
@@ -512,16 +512,16 @@ local function MergeDispelTypes(acc, add)
 end
 mod.UF_MergeDispelTypes = MergeDispelTypes
 
-local function BuildChain(base, isBuff, s, unitToken)
+local function BuildChain(baseSet, buffSide, s, unitToken)
     -- Non-player DEBUFFS run the mode model (one dropdown value, see
     -- NonPlayerDebuffChain). The class chain below serves the non-player BUFF
     -- elements and the player frame's debuff legacy path (PlayerDebuffChain
     -- delegates here for the class-checkbox model).
-    if not isBuff and unitToken ~= "player" then
+    if not buffSide and unitToken ~= "player" then
         return NonPlayerDebuffChain(s, unitToken)
     end
-    local glowOn = isBuff and PurgeGlow.Active(unitToken, s)
-    local chain, negations = {}, {}
+    local glowOn = buffSide and PurgeGlow.Active(unitToken, s)
+    local filterChain, negList = {}, {}
     local subCand, negDispelTypes, npNegOwned, anyNegOwned
 
     -- HIDDEN PASS -- hide-lane classes join FIRST as parked links so their
@@ -531,69 +531,69 @@ local function BuildChain(base, isBuff, s, unitToken)
     -- their shapes change with the lane selection; with an empty hide lane this
     -- pass emits nothing and every legacy key below stays byte-identical.
     for index = 1, #TOKEN_CLASSES do
-        local class = TOKEN_CLASSES[index]
-        if ClassNegated(class, isBuff, s, unitToken) and not ClassEnabled(class, isBuff, s, unitToken) then
-            local tokens = { base, class.token }
-            for n = 1, #negations do
-                tokens[#tokens + 1] = negations[n]
+        local classFile = TOKEN_CLASSES[index]
+        if ClassNegated(classFile, buffSide, s, unitToken) and not ClassEnabled(classFile, buffSide, s, unitToken) then
+            local tokenList = { baseSet, classFile.token }
+            for n = 1, #negList do
+                tokenList[#tokenList + 1] = negList[n]
             end
-            chain[#chain + 1] = {
-                key = class.key .. "|" .. table.concat(tokens, ""),
-                tokens = tokens,
+            filterChain[#filterChain + 1] = {
+                key = classFile.key .. "|" .. table.concat(tokenList, ""),
+                tokens = tokenList,
                 hidden = true,
             }
-            negations[#negations + 1] = class.neg or ("!" .. class.token)
+            negList[#negList + 1] = classFile.neg or ("!" .. classFile.token)
         end
     end
     for index = 1, #CANDIDATE_CLASSES do
-        local class = CANDIDATE_CLASSES[index]
-        local cc = class.cand
+        local classFile = CANDIDATE_CLASSES[index]
+        local classColor = classFile.cand
         if
-            cc
-            and ClassNegated(class, isBuff, s, unitToken)
-            and not ClassEnabled(class, isBuff, s, unitToken)
+            classColor
+            and ClassNegated(classFile, buffSide, s, unitToken)
+            and not ClassEnabled(classFile, buffSide, s, unitToken)
         then
             -- Forward-capable candidate classes (dispeltyped's include map,
             -- nonplayer's complementary boolean) subtract through the hidden-link
             -- + forward-exclude route; pure boolean classes invert onto subCand
             -- (false-valued candidate booleans, field-proven).
-            local forward = cc.includeDispelTypes ~= nil or cc.isFromPlayerOrPlayerPet ~= nil
+            local forward = classColor.includeDispelTypes ~= nil or classColor.isFromPlayerOrPlayerPet ~= nil
             if forward then
-                local tokens = { base }
-                for n = 1, #negations do
-                    tokens[#tokens + 1] = negations[n]
+                local tokenList = { baseSet }
+                for n = 1, #negList do
+                    tokenList[#tokenList + 1] = negList[n]
                 end
-                chain[#chain + 1] = {
-                    key = class.key .. "|" .. table.concat(tokens, ""),
-                    tokens = tokens,
-                    cand = cc,
+                filterChain[#filterChain + 1] = {
+                    key = classFile.key .. "|" .. table.concat(tokenList, ""),
+                    tokens = tokenList,
+                    cand = classColor,
                     hidden = true,
                 }
-                if cc.includeDispelTypes then
-                    negDispelTypes = MergeDispelTypes(negDispelTypes, cc.includeDispelTypes)
+                if classColor.includeDispelTypes then
+                    negDispelTypes = MergeDispelTypes(negDispelTypes, classColor.includeDispelTypes)
                 end
-                if cc.isFromPlayerOrPlayerPet == false then
+                if classColor.isFromPlayerOrPlayerPet == false then
                     npNegOwned = true
-                elseif cc.isFromPlayerOrPlayerPet == true then
+                elseif classColor.isFromPlayerOrPlayerPet == true then
                     anyNegOwned = true
                 end
             else
                 subCand = subCand or {}
-                for k, val in pairs(cc) do
+                for k, val in pairs(classColor) do
                     if type(val) == "boolean" then
                         subCand[k] = not val
                     end
                 end
                 -- Non-player "Important" renders through TWO groups (priority +
                 -- prioritynp below); hiding it must exclude both faces.
-                if class.key == "priority" and unitToken ~= "player" then
+                if classFile.key == "priority" and unitToken ~= "player" then
                     subCand.nameplateShowPersonal = false
                 end
             end
         end
     end
 
-    local lanesActive = #chain > 0 or subCand ~= nil
+    local lanesActive = #filterChain > 0 or subCand ~= nil
     -- Merge the hide lane's candidate-side exclusions over a positive/catch-all
     -- group's own cand (copy-on-write: the vocabulary tables are shared and must
     -- never be mutated). Identity-preserving no-op while the hide lane is empty.
@@ -618,15 +618,15 @@ local function BuildChain(base, isBuff, s, unitToken)
         end
         if negDispelTypes then
             result = result or {}
-            local inc = result.includeDispelTypes
-            if inc then
+            local included = result.includeDispelTypes
+            if included then
                 -- A positive include map (typed dispels) shrinks by the hidden
                 -- types; a per-type map never holds a hidden type (lanes are
                 -- exclusive per class), so the copy is a no-op there.
                 local m
                 for T in pairs(negDispelTypes) do
-                    if inc[T] then
-                        m = m or MergeDispelTypes(nil, inc)
+                    if included[T] then
+                        m = m or MergeDispelTypes(nil, included)
                         m[T] = nil
                     end
                 end
@@ -657,24 +657,24 @@ local function BuildChain(base, isBuff, s, unitToken)
     -- Lane-shaped links (and links carrying a partition from the positive pass,
     -- `carried`) get self-describing keys, so each payload is its own declared
     -- variant; legacy plain keys survive untouched configs byte-identically.
-    local function LaneKey(key, tokens, cand, carried)
+    local function LaneKey(auraKey, tokenList, candidate, carried)
         if not (lanesActive or carried) then
-            return key
+            return auraKey
         end
-        return key .. "|" .. table.concat(tokens, "") .. "|" .. CandFP(cand)
+        return auraKey .. "|" .. table.concat(tokenList, "") .. "|" .. CandFP(candidate)
     end
 
     -- POSITIVE PASS -- the legacy chain verbatim when the hide lane is empty
     -- (negations arrive pre-seeded with the hidden pass).
     for index = 1, #TOKEN_CLASSES do
-        local class = TOKEN_CLASSES[index]
-        if ClassEnabled(class, isBuff, s, unitToken) then
-            local tokens = { base, class.token }
-            for n = 1, #negations do
-                tokens[#tokens + 1] = negations[n]
+        local classFile = TOKEN_CLASSES[index]
+        if ClassEnabled(classFile, buffSide, s, unitToken) then
+            local tokenList = { baseSet, classFile.token }
+            for n = 1, #negList do
+                tokenList[#tokenList + 1] = negList[n]
             end
-            local cand = NegCand(nil)
-            local key = LaneKey(class.key, tokens, cand)
+            local candidate = NegCand(nil)
+            local auraKey = LaneKey(classFile.key, tokenList, candidate)
             -- Purgeable Buff Glow (own keys: a group's style is fixed). The
             -- Dispellable class IS the purgeable set, so its link wears the glow;
             -- any other shown token class (Big Defensive) splits into its
@@ -682,35 +682,35 @@ local function BuildChain(base, isBuff, s, unitToken)
             -- shown before it or hidden, already took the purgeable buffs.
             local notPurge = "!" .. PurgeGlow.TOKEN
             local purgeTaken = false
-            if glowOn and class.key ~= "dispellable" then
-                for n = 1, #negations do
-                    if negations[n] == notPurge then
+            if glowOn and classFile.key ~= "dispellable" then
+                for n = 1, #negList do
+                    if negList[n] == notPurge then
                         purgeTaken = true
                         break
                     end
                 end
             end
-            if glowOn and class.key == "dispellable" then
-                chain[#chain + 1] = { key = key .. ":glow", tokens = tokens, cand = cand, glow = true }
+            if glowOn and classFile.key == "dispellable" then
+                filterChain[#filterChain + 1] = { key = auraKey .. ":glow", tokens = tokenList, cand = candidate, glow = true }
             elseif glowOn and not purgeTaken then
-                local gT = { base, class.token, PurgeGlow.TOKEN }
-                local rT = { base, class.token, notPurge }
-                for n = 1, #negations do
-                    gT[#gT + 1] = negations[n]
-                    rT[#rT + 1] = negations[n]
+                local gT = { baseSet, classFile.token, PurgeGlow.TOKEN }
+                local rT = { baseSet, classFile.token, notPurge }
+                for n = 1, #negList do
+                    gT[#gT + 1] = negList[n]
+                    rT[#rT + 1] = negList[n]
                 end
-                chain[#chain + 1] = {
-                    key = LaneKey(class.key .. ":glow", gT, cand),
+                filterChain[#filterChain + 1] = {
+                    key = LaneKey(classFile.key .. ":glow", gT, candidate),
                     tokens = gT,
-                    cand = cand,
+                    cand = candidate,
                     glow = true,
                 }
-                chain[#chain + 1] =
-                    { key = LaneKey(class.key .. ":rest", rT, cand), tokens = rT, cand = cand }
+                filterChain[#filterChain + 1] =
+                    { key = LaneKey(classFile.key .. ":rest", rT, candidate), tokens = rT, cand = candidate }
             else
-                chain[#chain + 1] = { key = key, tokens = tokens, cand = cand }
+                filterChain[#filterChain + 1] = { key = auraKey, tokens = tokenList, cand = candidate }
             end
-            negations[#negations + 1] = class.neg or ("!" .. class.token)
+            negList[#negList + 1] = classFile.neg or ("!" .. classFile.token)
         end
     end
     -- Non-Player exclusivity handoff: once the nonplayer class (boolean
@@ -725,7 +725,7 @@ local function BuildChain(base, isBuff, s, unitToken)
     -- the pre-scan below). Only the player frame offers Non-Player, so this
     -- never reaches another unit.
     local npOwned, anyOwned = false, false
-    local prioShown = PRIORITY_CLASS ~= nil and ClassEnabled(PRIORITY_CLASS, isBuff, s, unitToken)
+    local prioShown = PRIORITY_CLASS ~= nil and ClassEnabled(PRIORITY_CLASS, buffSide, s, unitToken)
     -- A shown Important carries isPriorityAura = false onto every later link
     -- (the typed dispel class), so an Important typed debuff renders once.
     local prioOwned = false
@@ -753,18 +753,18 @@ local function BuildChain(base, isBuff, s, unitToken)
     if prioShown then
         local npShown
         for index = 1, #CANDIDATE_CLASSES do
-            local class = CANDIDATE_CLASSES[index]
-            if class == PRIORITY_CLASS then
+            local classFile = CANDIDATE_CLASSES[index]
+            if classFile == PRIORITY_CLASS then
                 break
             end
-            if ClassEnabled(class, isBuff, s, unitToken) then
-                if class.key == "nonplayer" then
+            if ClassEnabled(classFile, buffSide, s, unitToken) then
+                if classFile.key == "nonplayer" then
                     npShown = true
-                elseif class.cand.includeDispelTypes then
-                    flipTypes = MergeDispelTypes(flipTypes, class.cand.includeDispelTypes)
-                elseif class.cand.isBossAura or class.cand.isRoleAura or class.cand.canApplyAura then
+                elseif classFile.cand.includeDispelTypes then
+                    flipTypes = MergeDispelTypes(flipTypes, classFile.cand.includeDispelTypes)
+                elseif classFile.cand.isBossAura or classFile.cand.isRoleAura or classFile.cand.canApplyAura then
                     flipBools = flipBools or {}
-                    for k, val in pairs(class.cand) do
+                    for k, val in pairs(classFile.cand) do
                         flipBools[k] = not val
                     end
                 end
@@ -777,64 +777,64 @@ local function BuildChain(base, isBuff, s, unitToken)
         end
     end
     for index = 1, #CANDIDATE_CLASSES do
-        local class = CANDIDATE_CLASSES[index]
-        if ClassEnabled(class, isBuff, s, unitToken) then
-            local tokens = { base }
-            for n = 1, #negations do
-                tokens[#tokens + 1] = negations[n]
+        local classFile = CANDIDATE_CLASSES[index]
+        if ClassEnabled(classFile, buffSide, s, unitToken) then
+            local tokenList = { baseSet }
+            for n = 1, #negList do
+                tokenList[#tokenList + 1] = negList[n]
             end
-            local cand = class.cand
+            local candidate = classFile.cand
             -- Set when one of the partitions below lands on this link: its
             -- payload then joins the key (see LaneKey), so a setup none of
             -- them touches keeps its legacy plain keys.
             local carried = false
             local owned = false -- cand is already this link's own copy
-            local boolOwner = class.cand.isBossAura or class.cand.isRoleAura or class.cand.canApplyAura
+            local boolOwner = classFile.cand.isBossAura or classFile.cand.isRoleAura or classFile.cand.canApplyAura
             local skipNp = npOwned
                 and (
-                    class.key == "priority"
+                    classFile.key == "priority"
                     or (npFlip and boolOwner)
                     or (
                         flipTypes ~= nil
-                        and class.cand.includeDispelTypes ~= nil
-                        and class.key ~= "dispeltyped"
+                        and classFile.cand.includeDispelTypes ~= nil
+                        and classFile.key ~= "dispeltyped"
                     )
                 )
             if (npOwned or anyOwned) and not skipNp then
-                local src = cand
-                cand = {}
+                local src = candidate
+                candidate = {}
                 for k, val in pairs(src) do
-                    cand[k] = val
+                    candidate[k] = val
                 end
                 owned = true
-                if cand.isFromPlayerOrPlayerPet == nil then
-                    cand.isFromPlayerOrPlayerPet = npOwned
+                if candidate.isFromPlayerOrPlayerPet == nil then
+                    candidate.isFromPlayerOrPlayerPet = npOwned
                 end
             end
-            if (prioOwned or (prioShown and class.key == "nonplayer")) and cand.isPriorityAura == nil then
+            if (prioOwned or (prioShown and classFile.key == "nonplayer")) and candidate.isPriorityAura == nil then
                 if not owned then
-                    local src = cand
-                    cand = {}
+                    local src = candidate
+                    candidate = {}
                     for k, val in pairs(src) do
-                        cand[k] = val
+                        candidate[k] = val
                     end
                     owned = true
                 end
-                cand.isPriorityAura = false
+                candidate.isPriorityAura = false
                 carried = true
             end
             -- Boss / Role / Can Apply ownership: the false booleans of the shown
             -- rows before this link, or on the Non-Player link (always first, so
             -- nothing reaches it that way) the flip set pre-scanned above.
             local bools = boolCarry
-            if class.key == "nonplayer" then
+            if classFile.key == "nonplayer" then
                 bools = flipBools
             end
             -- A dispel-type link the Hide lane empties matches nothing, so it
             -- takes no carry and keeps its key.
-            if bools and cand.includeDispelTypes and negDispelTypes then
+            if bools and candidate.includeDispelTypes and negDispelTypes then
                 local live = false
-                for T in pairs(cand.includeDispelTypes) do
+                for T in pairs(candidate.includeDispelTypes) do
                     if not negDispelTypes[T] then
                         live = true
                         break
@@ -846,99 +846,99 @@ local function BuildChain(base, isBuff, s, unitToken)
             end
             if bools then
                 for k, val in pairs(bools) do
-                    if cand[k] == nil then
+                    if candidate[k] == nil then
                         if not owned then
-                            local src = cand
-                            cand = {}
+                            local src = candidate
+                            candidate = {}
                             for sk, savedVars in pairs(src) do
-                                cand[sk] = savedVars
+                                candidate[sk] = savedVars
                             end
                             owned = true
                         end
-                        cand[k] = val
+                        candidate[k] = val
                         carried = true
                     end
                 end
             end
-            if class.key == "nonplayer" and flipTypes then
+            if classFile.key == "nonplayer" and flipTypes then
                 if not owned then
-                    local src = cand
-                    cand = {}
+                    local src = candidate
+                    candidate = {}
                     for k, val in pairs(src) do
-                        cand[k] = val
+                        candidate[k] = val
                     end
                     owned = true
                 end
-                cand.excludeDispelTypes = flipTypes
+                candidate.excludeDispelTypes = flipTypes
                 carried = true
             end
-            if shownTypes and not cand.includeDispelTypes and cand.excludeDispelTypes == nil then
+            if shownTypes and not candidate.includeDispelTypes and candidate.excludeDispelTypes == nil then
                 if not owned then
-                    local src = cand
-                    cand = {}
+                    local src = candidate
+                    candidate = {}
                     for k, val in pairs(src) do
-                        cand[k] = val
+                        candidate[k] = val
                     end
                     owned = true
                 end
                 -- Never mutated after this (MergeDispelTypes builds new sets),
                 -- so later links may share it.
-                cand.excludeDispelTypes = shownTypes
+                candidate.excludeDispelTypes = shownTypes
                 carried = true
             end
-            if shownTypes and cand.includeDispelTypes then
-                local inc = cand.includeDispelTypes
+            if shownTypes and candidate.includeDispelTypes then
+                local included = candidate.includeDispelTypes
                 local m
                 for T in pairs(shownTypes) do
-                    if inc[T] then
-                        m = m or MergeDispelTypes(nil, inc)
+                    if included[T] then
+                        m = m or MergeDispelTypes(nil, included)
                         m[T] = nil
                     end
                 end
                 if m then
-                    local src = cand
-                    cand = {}
+                    local src = candidate
+                    candidate = {}
                     for k, val in pairs(src) do
-                        cand[k] = val
+                        candidate[k] = val
                     end
-                    cand.includeDispelTypes = m
+                    candidate.includeDispelTypes = m
                 end
             end
-            cand = NegCand(cand)
-            local itemLink = { key = LaneKey(class.key, tokens, cand, carried), tokens = tokens, cand = cand }
+            candidate = NegCand(candidate)
+            local itemLink = { key = LaneKey(classFile.key, tokenList, candidate, carried), tokens = tokenList, cand = candidate }
             -- Stealable buffs are the player's own steal/purge targets: glow too.
-            if glowOn and class.key == "steal" then
+            if glowOn and classFile.key == "steal" then
                 itemLink.key = itemLink.key .. ":glow"
                 itemLink.glow = true
             end
-            chain[#chain + 1] = itemLink
+            filterChain[#filterChain + 1] = itemLink
             -- Important on non-player frames covers BOTH importance concepts (the
             -- unit's hostility is dynamic -- a target can be an ally or an enemy): a
             -- second group adds the nameplate-importance flag, partitioned against the
             -- primary isPriorityAura group (see PRIORITY_NONPLAYER_CAND). The nonplayer
             -- handoff never applies here (that class is player-frame only, so npOwned
             -- is always false off-player).
-            if class.key == "priority" and unitToken ~= "player" then
+            if classFile.key == "priority" and unitToken ~= "player" then
                 local pnp = NegCand(PRIORITY_NONPLAYER_CAND)
-                chain[#chain + 1] = { key = LaneKey("prioritynp", tokens, pnp), tokens = tokens, cand = pnp }
+                filterChain[#filterChain + 1] = { key = LaneKey("prioritynp", tokenList, pnp), tokens = tokenList, cand = pnp }
             end
-            if class.key == "nonplayer" then
+            if classFile.key == "nonplayer" then
                 npOwned = true
             end
-            if class.key == "anyplayer" then
+            if classFile.key == "anyplayer" then
                 anyOwned = true
             end
-            if class.key == "priority" then
+            if classFile.key == "priority" then
                 prioOwned = true
             end
             if boolOwner then
                 boolCarry = boolCarry or {}
-                for k, val in pairs(class.cand) do
+                for k, val in pairs(classFile.cand) do
                     boolCarry[k] = not val
                 end
             end
-            if class.cand.includeDispelTypes and class.key ~= "dispeltyped" then
-                shownTypes = MergeDispelTypes(shownTypes, class.cand.includeDispelTypes)
+            if classFile.cand.includeDispelTypes and classFile.key ~= "dispeltyped" then
+                shownTypes = MergeDispelTypes(shownTypes, classFile.cand.includeDispelTypes)
             end
         end
     end
@@ -952,8 +952,8 @@ local function BuildChain(base, isBuff, s, unitToken)
     -- not while the Hide lane removes the Dispellable class (nothing to glow).
     if (lanesActive or glowOn) and unitToken ~= "player" then
         local hasPositive = false
-        for index = 1, #chain do
-            if not chain[index].hidden then
+        for index = 1, #filterChain do
+            if not filterChain[index].hidden then
                 hasPositive = true
                 break
             end
@@ -961,32 +961,32 @@ local function BuildChain(base, isBuff, s, unitToken)
         if not hasPositive then
             local notPurge = "!" .. PurgeGlow.TOKEN
             local split = glowOn
-            for n = 1, #negations do
-                if negations[n] == notPurge then
+            for n = 1, #negList do
+                if negList[n] == notPurge then
                     split = false
                 end
             end
-            local cand = NegCand(nil)
+            local candidate = NegCand(nil)
             if split then
-                local gT, rT = { base, PurgeGlow.TOKEN }, { base, notPurge }
-                for n = 1, #negations do
-                    gT[#gT + 1] = negations[n]
-                    rT[#rT + 1] = negations[n]
+                local gT, rT = { baseSet, PurgeGlow.TOKEN }, { baseSet, notPurge }
+                for n = 1, #negList do
+                    gT[#gT + 1] = negList[n]
+                    rT[#rT + 1] = negList[n]
                 end
-                chain[#chain + 1] =
-                    { key = LaneKey("pglow", gT, cand), tokens = gT, cand = cand, glow = true }
-                chain[#chain + 1] = { key = LaneKey("prest", rT, cand), tokens = rT, cand = cand }
+                filterChain[#filterChain + 1] =
+                    { key = LaneKey("pglow", gT, candidate), tokens = gT, cand = candidate, glow = true }
+                filterChain[#filterChain + 1] = { key = LaneKey("prest", rT, candidate), tokens = rT, cand = candidate }
             elseif lanesActive then
-                local allTokens = { base }
-                for n = 1, #negations do
-                    allTokens[#allTokens + 1] = negations[n]
+                local allTokens = { baseSet }
+                for n = 1, #negList do
+                    allTokens[#allTokens + 1] = negList[n]
                 end
-                chain[#chain + 1] =
-                    { key = LaneKey("nall", allTokens, cand), tokens = allTokens, cand = cand }
+                filterChain[#filterChain + 1] =
+                    { key = LaneKey("nall", allTokens, candidate), tokens = allTokens, cand = candidate }
             end
         end
     end
-    return chain
+    return filterChain
 end
 
 -- One-shot lane split for the player frame's two-lane filter dropdowns (stamp on
@@ -1004,21 +1004,21 @@ local function EnsurePlayerAuraLanes(s)
         s.buffFilters = nil
     end
     if s.debuffShowAll ~= false then
-        local neg
+        local negated
         local function Move(entries)
             for index = 1, #entries do
-                local class = entries[index]
-                if not class.buffOnly and s["debuff" .. class.skey] == true then
-                    neg = neg or {}
-                    neg[class.skey] = true
-                    s["debuff" .. class.skey] = nil
+                local classFile = entries[index]
+                if not classFile.buffOnly and s["debuff" .. classFile.skey] == true then
+                    negated = negated or {}
+                    negated[classFile.skey] = true
+                    s["debuff" .. classFile.skey] = nil
                 end
             end
         end
         Move(TOKEN_CLASSES)
         Move(CANDIDATE_CLASSES)
-        if neg then
-            s.debuffNegClasses = neg
+        if negated then
+            s.debuffNegClasses = negated
         end
     end
 end
@@ -1074,7 +1074,7 @@ local function PlayerBuffChain(s)
             end
         end
     end
-    local chain = {}
+    local filterChain = {}
     local dur = s.buffHasDuration == true
     -- All Buffs and Has Duration are mutually exclusive broad-content modes (the
     -- options setters enforce it): either one builds the catch-all -- Has Duration's is
@@ -1089,7 +1089,7 @@ local function PlayerBuffChain(s)
         bl = s.buffBlacklist
     end
     if broad then
-        local cand
+        local candidate
         local ex
         if s.buffNegFilters then
             for filterId in pairs(s.buffNegFilters) do
@@ -1114,24 +1114,24 @@ local function PlayerBuffChain(s)
             end
         end
         if ex then
-            cand = { excludeSpellIDs = ex }
+            candidate = { excludeSpellIDs = ex }
         end
         if dur then
-            cand = cand or {}
-            cand.maxDuration = math.huge
+            candidate = candidate or {}
+            candidate.maxDuration = math.huge
         end
-        chain[#chain + 1] = { key = "pball|" .. CandFP(cand), tokens = { "HELPFUL" }, cand = cand }
+        filterChain[#filterChain + 1] = { key = "pball|" .. CandFP(candidate), tokens = { "HELPFUL" }, cand = candidate }
     end
-    local inc, n
+    local included, n
     if s.buffSpells then
         for index = 1, #s.buffSpells do
             local ident = s.buffSpells[index]
-            inc = inc or {}
-            if not inc[ident] then
-                inc[ident] = true
+            included = included or {}
+            if not included[ident] then
+                included[ident] = true
                 n = (n or 0) + 1
             end
-            ExpandBuffFamily(inc, ident)
+            ExpandBuffFamily(included, ident)
         end
     end
     if not broad and s.buffFilters then
@@ -1140,12 +1140,12 @@ local function PlayerBuffChain(s)
             if frame and frame.spells then
                 for ident, enabled in pairs(frame.spells) do
                     if enabled and not mod.PAB_OtherClientSpell(frame, ident) then
-                        inc = inc or {}
-                        if not inc[ident] then
-                            inc[ident] = true
+                        included = included or {}
+                        if not included[ident] then
+                            included[ident] = true
                             n = (n or 0) + 1
                         end
-                        ExpandBuffFamily(inc, ident, frame.spells)
+                        ExpandBuffFamily(included, ident, frame.spells)
                     end
                 end
             end
@@ -1153,7 +1153,7 @@ local function PlayerBuffChain(s)
     end
     -- Add-mode hide lane: drop hidden filters' spells from the union. Direct
     -- Extra Spells (s.buffSpells) win over the hide lane.
-    if not broad and inc and s.buffNegFilters then
+    if not broad and included and s.buffNegFilters then
         local direct
         if s.buffSpells then
             direct = {}
@@ -1178,28 +1178,28 @@ local function PlayerBuffChain(s)
         end
         for ident in pairs(hide) do
             if not (direct and direct[ident]) then
-                inc[ident] = nil
+                included[ident] = nil
             end
         end
-        if next(inc) == nil then
-            inc = nil
+        if next(included) == nil then
+            included = nil
         end
     end
-    if inc then
-        local cand = { includeSpellIDs = inc }
+    if included then
+        local candidate = { includeSpellIDs = included }
         if dur then
-            cand.maxDuration = math.huge
+            candidate.maxDuration = math.huge
         end
         if bl then
             local m = {}
             for ident in pairs(bl) do
                 m[ident] = true
             end
-            cand.excludeSpellIDs = m
+            candidate.excludeSpellIDs = m
         end
-        chain[#chain + 1] = { key = "pbsp|" .. CandFP(cand), tokens = { "HELPFUL" }, cand = cand }
+        filterChain[#filterChain + 1] = { key = "pbsp|" .. CandFP(candidate), tokens = { "HELPFUL" }, cand = candidate }
     end
-    return chain
+    return filterChain
 end
 
 -- Show-lane rows the player frame's Debuff Filter dropdown offers ([skey] = true,
@@ -1245,54 +1245,54 @@ local function PlayerDebuffMatch(s)
     if not vocab then
         return nil
     end
-    local neg = s.debuffNegClasses
+    local negated = s.debuffNegClasses
     local picks = 0
-    local tokens = { "HARMFUL" }
-    local cand, hideBool = {}, nil
-    local inc, exc, typedShown, playerTok, clash, dispTok
+    local tokenList = { "HARMFUL" }
+    local candidate, hideBool = {}, nil
+    local included, exc, typedShown, playerTok, clash, dispTok
     for index = 1, #TOKEN_CLASSES do
-        local class = TOKEN_CLASSES[index]
-        if not class.buffOnly then
-            if vocab[class.skey] and s["debuff" .. class.skey] == true then
+        local classFile = TOKEN_CLASSES[index]
+        if not classFile.buffOnly then
+            if vocab[classFile.skey] and s["debuff" .. classFile.skey] == true then
                 picks = picks + 1
-                tokens[#tokens + 1] = class.token
-                if class.key == "castbyme" then
+                tokenList[#tokenList + 1] = classFile.token
+                if classFile.key == "castbyme" then
                     playerTok = true
                 end
-                if class.key == "dispellable" then
+                if classFile.key == "dispellable" then
                     dispTok = true
                 end
-            elseif neg and neg[class.skey] == true then
-                tokens[#tokens + 1] = class.neg or ("!" .. class.token)
+            elseif negated and negated[classFile.skey] == true then
+                tokenList[#tokenList + 1] = classFile.neg or ("!" .. classFile.token)
             end
         end
     end
     for index = 1, #CANDIDATE_CLASSES do
-        local class = CANDIDATE_CLASSES[index]
-        local cc = class.cand
-        if cc and not class.buffOnly then
-            if vocab[class.skey] and s["debuff" .. class.skey] == true then
+        local classFile = CANDIDATE_CLASSES[index]
+        local classColor = classFile.cand
+        if classColor and not classFile.buffOnly then
+            if vocab[classFile.skey] and s["debuff" .. classFile.skey] == true then
                 picks = picks + 1
-                if class.key == "dispeltyped" then
-                    typedShown = cc.includeDispelTypes
-                elseif cc.includeDispelTypes then
-                    inc = MergeDispelTypes(inc, cc.includeDispelTypes)
+                if classFile.key == "dispeltyped" then
+                    typedShown = classColor.includeDispelTypes
+                elseif classColor.includeDispelTypes then
+                    included = MergeDispelTypes(included, classColor.includeDispelTypes)
                 else
-                    for k, val in pairs(cc) do
+                    for k, val in pairs(classColor) do
                         -- Two picks on one field (stale data only: the setters keep
                         -- Non-Player and From Any Player exclusive) never match.
-                        if cand[k] ~= nil and cand[k] ~= val then
+                        if candidate[k] ~= nil and candidate[k] ~= val then
                             clash = true
                         end
-                        cand[k] = val
+                        candidate[k] = val
                     end
                 end
-            elseif neg and neg[class.skey] == true then
-                if cc.includeDispelTypes then
-                    exc = MergeDispelTypes(exc, cc.includeDispelTypes)
+            elseif negated and negated[classFile.skey] == true then
+                if classColor.includeDispelTypes then
+                    exc = MergeDispelTypes(exc, classColor.includeDispelTypes)
                 else
                     hideBool = hideBool or {}
-                    for k, val in pairs(cc) do
+                    for k, val in pairs(classColor) do
                         if type(val) == "boolean" then
                             hideBool[k] = not val
                         end
@@ -1306,27 +1306,27 @@ local function PlayerDebuffMatch(s)
     end
     if hideBool then
         for k, val in pairs(hideBool) do
-            if cand[k] == nil then
-                cand[k] = val
+            if candidate[k] == nil then
+                candidate[k] = val
             end
         end
     end
     -- Dispels alone = every type; ANDed onto shown types it changes nothing.
-    if typedShown and not inc then
-        inc = MergeDispelTypes(nil, typedShown)
+    if typedShown and not included then
+        included = MergeDispelTypes(nil, typedShown)
     end
-    if inc then
+    if included then
         if exc then
             for T in pairs(exc) do
-                inc[T] = nil
+                included[T] = nil
             end
         end
-        if next(inc) == nil then
+        if next(included) == nil then
             clash = true
         end
-        cand.includeDispelTypes = inc
+        candidate.includeDispelTypes = included
     elseif exc then
-        cand.excludeDispelTypes = exc
+        candidate.excludeDispelTypes = exc
         -- Dispellable By You passes only debuffs of a dispellable type, so
         -- hiding all five leaves it nothing.
         if dispTok and exc.Magic and exc.Curse and exc.Disease and exc.Poison and exc.Bleed then
@@ -1335,20 +1335,20 @@ local function PlayerDebuffMatch(s)
     end
     -- PLAYER (Cast By You: you or your pet) inside isFromPlayerOrPlayerPet = false
     -- (a shown Non-Player, or a hidden From Any Player) is always empty.
-    if playerTok and cand.isFromPlayerOrPlayerPet == false then
+    if playerTok and candidate.isFromPlayerOrPlayerPet == false then
         clash = true
     end
     if clash then
         return true, nil
     end
-    if next(cand) == nil then
-        cand = nil
+    if next(candidate) == nil then
+        candidate = nil
     end
     return true,
         {
-            key = "pdand|" .. table.concat(tokens, "") .. "|" .. CandFP(cand),
-            tokens = tokens,
-            cand = cand,
+            key = "pdand|" .. table.concat(tokenList, "") .. "|" .. CandFP(candidate),
+            tokens = tokenList,
+            cand = candidate,
         }
 end
 
@@ -1407,55 +1407,55 @@ local function PlayerDebuffChain(s)
         end
         return BuildChain("HARMFUL", false, s, "player")
     end
-    local chain, negations = {}, {}
+    local filterChain, negList = {}, {}
     local subCand, excludeDispelTypes, npOwned
-    local function Checked(class)
-        if class.buffOnly then
+    local function Checked(classFile)
+        if classFile.buffOnly then
             return false
         end
-        local neg = s.debuffNegClasses
-        return neg ~= nil and neg[class.skey] == true
+        local negated = s.debuffNegClasses
+        return negated ~= nil and negated[classFile.skey] == true
     end
     for index = 1, #TOKEN_CLASSES do
-        local class = TOKEN_CLASSES[index]
-        if Checked(class) then
-            local tokens = { "HARMFUL", class.token }
-            for n = 1, #negations do
-                tokens[#tokens + 1] = negations[n]
+        local classFile = TOKEN_CLASSES[index]
+        if Checked(classFile) then
+            local tokenList = { "HARMFUL", classFile.token }
+            for n = 1, #negList do
+                tokenList[#tokenList + 1] = negList[n]
             end
-            chain[#chain + 1] = {
-                key = class.key .. "|" .. table.concat(tokens, ""),
-                tokens = tokens,
+            filterChain[#filterChain + 1] = {
+                key = classFile.key .. "|" .. table.concat(tokenList, ""),
+                tokens = tokenList,
                 hidden = true,
             }
-            negations[#negations + 1] = class.neg or ("!" .. class.token)
+            negList[#negList + 1] = classFile.neg or ("!" .. classFile.token)
         end
     end
     for index = 1, #CANDIDATE_CLASSES do
-        local class = CANDIDATE_CLASSES[index]
-        local cc = class.cand
-        if Checked(class) and cc then
-            local forward = cc.includeDispelTypes ~= nil or cc.isFromPlayerOrPlayerPet ~= nil
+        local classFile = CANDIDATE_CLASSES[index]
+        local classColor = classFile.cand
+        if Checked(classFile) and classColor then
+            local forward = classColor.includeDispelTypes ~= nil or classColor.isFromPlayerOrPlayerPet ~= nil
             if forward then
-                local tokens = { "HARMFUL" }
-                for n = 1, #negations do
-                    tokens[#tokens + 1] = negations[n]
+                local tokenList = { "HARMFUL" }
+                for n = 1, #negList do
+                    tokenList[#tokenList + 1] = negList[n]
                 end
-                chain[#chain + 1] = {
-                    key = class.key .. "|" .. table.concat(tokens, ""),
-                    tokens = tokens,
-                    cand = cc,
+                filterChain[#filterChain + 1] = {
+                    key = classFile.key .. "|" .. table.concat(tokenList, ""),
+                    tokens = tokenList,
+                    cand = classColor,
                     hidden = true,
                 }
-                if cc.includeDispelTypes then
-                    excludeDispelTypes = cc.includeDispelTypes
+                if classColor.includeDispelTypes then
+                    excludeDispelTypes = classColor.includeDispelTypes
                 end
-                if cc.isFromPlayerOrPlayerPet == false then
+                if classColor.isFromPlayerOrPlayerPet == false then
                     npOwned = true
                 end
             else
                 subCand = subCand or {}
-                for k, val in pairs(cc) do
+                for k, val in pairs(classColor) do
                     if type(val) == "boolean" then
                         subCand[k] = not val
                     end
@@ -1472,28 +1472,28 @@ local function PlayerDebuffChain(s)
             ex[ident] = true
         end
     end
-    local cand = { excludeSpellIDs = ex }
+    local candidate = { excludeSpellIDs = ex }
     if subCand then
         for k, val in pairs(subCand) do
-            cand[k] = val
+            candidate[k] = val
         end
     end
     if excludeDispelTypes then
-        cand.excludeDispelTypes = excludeDispelTypes
+        candidate.excludeDispelTypes = excludeDispelTypes
     end
     if npOwned then
-        cand.isFromPlayerOrPlayerPet = true
+        candidate.isFromPlayerOrPlayerPet = true
     end
     local allTokens = { "HARMFUL" }
-    for n = 1, #negations do
-        allTokens[#allTokens + 1] = negations[n]
+    for n = 1, #negList do
+        allTokens[#allTokens + 1] = negList[n]
     end
-    chain[#chain + 1] = {
-        key = "pdall|" .. table.concat(allTokens, "") .. "|" .. CandFP(cand),
+    filterChain[#filterChain + 1] = {
+        key = "pdall|" .. table.concat(allTokens, "") .. "|" .. CandFP(candidate),
         tokens = allTokens,
-        cand = cand,
+        cand = candidate,
     }
-    return chain
+    return filterChain
 end
 
 -- An element's chain. Has Duration (s.debuffHasDuration on every unit,
@@ -1507,76 +1507,76 @@ end
 -- (they render nothing) and Tracked Auras include links (explicit always-show
 -- spells) keep their payload. A narrowed link's key gains "|dur", so the
 -- variant declares fresh and the plain one parks at 0.
-local function ChainFor(unitToken, base, s)
-    local isBuff = base == "HELPFUL"
-    local chain
-    if unitToken == "player" and isBuff then
+local function ChainFor(unitToken, baseSet, s)
+    local buffSide = baseSet == "HELPFUL"
+    local filterChain
+    if unitToken == "player" and buffSide then
         return PlayerBuffChain(s)
     elseif unitToken == "player" then
-        chain = PlayerDebuffChain(s)
+        filterChain = PlayerDebuffChain(s)
     else
-        chain = BuildChain(base, isBuff, s, unitToken)
+        filterChain = BuildChain(baseSet, buffSide, s, unitToken)
     end
     local dur
-    if isBuff then
+    if buffSide then
         dur = s.buffDurOnly == true
     else
         dur = s.debuffHasDuration == true
     end
     if not dur then
-        return chain
+        return filterChain
     end
     -- Non-player buffs with nothing shown or hidden run the plain show-all
     -- group (ApplyGroupConfig); narrowed, it becomes an explicit link.
-    if isBuff and #chain == 0 then
-        chain[1] = { key = "all", tokens = { base } }
+    if buffSide and #filterChain == 0 then
+        filterChain[1] = { key = "all", tokens = { baseSet } }
     end
     -- Show All's catch-all is what shows the Tracked Auras there (no include
     -- links); narrowed, they get one include link of their own, from any
     -- caster as the catch-all showed them, at any duration.
-    if not isBuff and unitToken ~= "player" and DebuffFilterMode(s) == "all" and HasActiveIncludes(s) then
+    if not buffSide and unitToken ~= "player" and DebuffFilterMode(s) == "all" and HasActiveIncludes(s) then
         local m = {}
         for ident, val in pairs(s.debuffInclude) do
             if val then
                 m[ident] = true
             end
         end
-        chain[#chain + 1] = {
+        filterChain[#filterChain + 1] = {
             key = "incall|" .. CandFP({ includeSpellIDs = m }),
             tokens = { "HARMFUL" },
             cand = { includeSpellIDs = m, excludeSpellIDs = {} },
             inc = true,
         }
     end
-    for index = 1, #chain do
-        local c = chain[index]
+    for index = 1, #filterChain do
+        local c = filterChain[index]
         if not (c.hidden or c.inc) then
-            local cand = { maxDuration = math.huge }
+            local candidate = { maxDuration = math.huge }
             if c.cand then
                 for k, val in pairs(c.cand) do
-                    cand[k] = val
+                    candidate[k] = val
                 end
-                if cand.maxDuration == nil then
-                    cand.maxDuration = math.huge
+                if candidate.maxDuration == nil then
+                    candidate.maxDuration = math.huge
                 end
             end
-            chain[index] = {
+            filterChain[index] = {
                 key = c.key .. "|dur",
                 tokens = c.tokens,
-                cand = cand,
+                cand = candidate,
                 glow = c.glow,
                 mine = c.mine,
                 important = c.important,
             }
         end
     end
-    return chain
+    return filterChain
 end
 
-local function ChainSignature(chain)
+local function ChainSignature(filterChain)
     local sig = {}
-    for index = 1, #chain do
-        sig[index] = chain[index].key
+    for index = 1, #filterChain do
+        sig[index] = filterChain[index].key
     end
     return table.concat(sig, ",")
 end
@@ -1717,8 +1717,8 @@ local function SettingsFor(unitToken)
     if not saved then
         return nil
     end
-    local key = unitToken:match("^boss%d+$") and "boss" or unitToken
-    return saved.profile[key]
+    local auraKey = unitToken:match("^boss%d+$") and "boss" or unitToken
+    return saved.profile[auraKey]
 end
 -- What the containers read for a unit (the pet's view, another unit's own
 -- table): the pet's lazy build and the options preview read the same.
@@ -1757,16 +1757,16 @@ local EXPLICIT_GROWTH = {
     down = { "RIGHT", "DOWN" },
 }
 
-local function ResolveLayout(anchor, growth)
-    anchor = anchor or "topleft"
-    local ia = ANCHOR_IA[anchor] or "BOTTOMLEFT"
-    local fp = ANCHOR_FP[anchor] or ANCHOR_FP.topleft
+local function ResolveLayout(anchorFrame, growth)
+    anchorFrame = anchorFrame or "topleft"
+    local ia = ANCHOR_IA[anchorFrame] or "BOTTOMLEFT"
+    local filterPass = ANCHOR_FP[anchorFrame] or ANCHOR_FP.topleft
     local g
     if growth and growth ~= "auto" then
         g = EXPLICIT_GROWTH[growth]
     end
-    g = g or AUTO_GROWTH[anchor] or AUTO_GROWTH.topleft
-    return ia, fp[1], fp[2], fp[3], g[1], g[2]
+    g = g or AUTO_GROWTH[anchorFrame] or AUTO_GROWTH.topleft
+    return ia, filterPass[1], filterPass[2], filterPass[3], g[1], g[2]
 end
 
 -- Column cap from the growth SETTING string: a per-row cap below maxCount
@@ -1840,17 +1840,17 @@ end
 -- (visibility is handled by AuraKit via SetShown). Text color is likewise
 -- change-guarded via CK() fingerprints (d.ufDurColor/d.ufStackColor) --
 -- SetTextColor costs real time too, same reasoning as the font guard above.
-local function ApplyUFText(btnFrame, skinData, style)
-    if style.auraBorderAboveEffects or skinData.ufBorderAboveEffects then
+local function ApplyUFText(btnFrame, skinData, look)
+    if look.auraBorderAboveEffects or skinData.ufBorderAboveEffects then
         -- Only owned art/text hosts move; the restricted button is untouched.
         -- Stock styles hide the border instead of restoring its level.
         local level = skinData.borderHost:GetFrameLevel()
-        if style.auraBorderAboveEffects then
+        if look.auraBorderAboveEffects then
             skinData.ufBorderBaseLevel = level
             level = math.max(level, (skinData.buttonFrameLevel or 1) + 20)
             skinData.borderHost:SetFrameLevel(level)
         else
-            if not style.border and skinData.ufBorderBaseLevel then
+            if not look.border and skinData.ufBorderBaseLevel then
                 level = skinData.ufBorderBaseLevel
                 skinData.borderHost:SetFrameLevel(level)
             end
@@ -1859,16 +1859,16 @@ local function ApplyUFText(btnFrame, skinData, style)
         skinData.dispelHolder:SetFrameLevel(level + 4)
         skinData.stackCarrier:SetFrameLevel(level + 5)
         skinData.akDispelLvl = level
-        skinData.ufBorderAboveEffects = style.auraBorderAboveEffects or nil
+        skinData.ufBorderAboveEffects = look.auraBorderAboveEffects or nil
     end
-    local filePath = style.fontPath or FALLBACK_FONT
+    local filePath = look.fontPath or FALLBACK_FONT
     if skinData.duration then
-        local fontKey = filePath .. "|" .. (style.cdTextSize or 10)
+        local fontKey = filePath .. "|" .. (look.cdTextSize or 10)
         if skinData.ufDurFont ~= fontKey then
             skinData.ufDurFont = fontKey
-            CludesUI.ApplyIconTextFont(skinData.duration, filePath, style.cdTextSize or 10, "unitFrames")
+            CludesUI.ApplyIconTextFont(skinData.duration, filePath, look.cdTextSize or 10, "unitFrames")
         end
-        local c = style.cdTextColor
+        local c = look.cdTextColor
         local cKey = CK(c)
         if skinData.ufDurColor ~= cKey then
             skinData.ufDurColor = cKey
@@ -1878,10 +1878,10 @@ local function ApplyUFText(btnFrame, skinData, style)
         -- button as the relative frame is policed by the 12.1 button access
         -- restriction while auras are secret; unchanged offsets must make
         -- zero button-involving calls so restyles stay live in-instance.
-        local aKey = (style.cdOffX or 0) .. "|" .. (style.cdOffY or 0)
+        local aKey = (look.cdOffX or 0) .. "|" .. (look.cdOffY or 0)
         if skinData.ufDurAnchor ~= aKey then
             skinData.duration:ClearAllPoints()
-            skinData.duration:SetPoint("CENTER", btnFrame, "CENTER", style.cdOffX or 0, style.cdOffY or 0)
+            skinData.duration:SetPoint("CENTER", btnFrame, "CENTER", look.cdOffX or 0, look.cdOffY or 0)
             skinData.ufDurAnchor = aKey
         end
         -- Duration formatter options are registered once when an AuraKit button
@@ -1891,11 +1891,11 @@ local function ApplyUFText(btnFrame, skinData, style)
         -- UF styles never set durationShowSeconds -- plus the threshold), so
         -- untouched configs compare equal to the creation stamp and never
         -- rebind: zero cost while the feature is off.
-        local wantFmt = "b" .. tostring(style.durationPrecisionThreshold or 0)
+        local wantFmt = "b" .. tostring(look.durationPrecisionThreshold or 0)
         if skinData.durationFmtS ~= wantFmt then
             local AK = CludesUI.AuraKit
             local options =
-                AK.BuildDurationTextOpts(AK.GetDurationFormatter(nil, style.durationPrecisionThreshold))
+                AK.BuildDurationTextOpts(AK.GetDurationFormatter(nil, look.durationPrecisionThreshold))
             local success = AK.SetDurationTextSafe(btnFrame, skinData.duration, options)
             if success then
                 skinData.durationFmtS = wantFmt
@@ -1903,29 +1903,29 @@ local function ApplyUFText(btnFrame, skinData, style)
         end
     end
     if skinData.stack then
-        local fontKey = filePath .. "|" .. (style.stackSize or 14)
+        local fontKey = filePath .. "|" .. (look.stackSize or 14)
         if skinData.ufStackFont ~= fontKey then
             skinData.ufStackFont = fontKey
-            CludesUI.ApplyIconTextFont(skinData.stack, filePath, style.stackSize or 14, "unitFrames")
+            CludesUI.ApplyIconTextFont(skinData.stack, filePath, look.stackSize or 14, "unitFrames")
         end
-        local c = style.stackColor
+        local c = look.stackColor
         local cKey = CK(c)
         if skinData.ufStackColor ~= cKey then
             skinData.ufStackColor = cKey
             skinData.stack:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
         end
-        local sp = STACK_POINTS[style.stackPos or "bottomright"] or STACK_POINTS.bottomright
-        local sKey = sp[1] .. "|" .. (sp[2] + (style.stackOffX or 0)) .. "|" .. (style.stackOffY or 0)
+        local sp = STACK_POINTS[look.stackPos or "bottomright"] or STACK_POINTS.bottomright
+        local sKey = sp[1] .. "|" .. (sp[2] + (look.stackOffX or 0)) .. "|" .. (look.stackOffY or 0)
         if skinData.ufStackAnchor ~= sKey then
             skinData.stack:ClearAllPoints()
-            skinData.stack:SetPoint(sp[1], btnFrame, sp[1], sp[2] + (style.stackOffX or 0), style.stackOffY or 0)
+            skinData.stack:SetPoint(sp[1], btnFrame, sp[1], sp[2] + (look.stackOffX or 0), look.stackOffY or 0)
             skinData.ufStackAnchor = sKey
         end
     end
 end
 
-local function StyleKey(unitToken, base)
-    return "uf:" .. unitToken .. ":" .. base
+local function StyleKey(unitToken, baseSet)
+    return "uf:" .. unitToken .. ":" .. baseSet
 end
 
 -- Settings fingerprints (same discipline as the RF containers file): every
@@ -1954,28 +1954,28 @@ end
 -- hashing its scalar output covers every input, including the boss-simple sizing and
 -- scale). Constant cooldown/cancel fields are omitted; every user-configurable border
 -- scalar must participate so layer-only edits schedule an immediate AuraKit restyle.
-local function StyleTableFP(st, font)
-    local tc = st.texCoord
-    local b = st.border
+local function StyleTableFP(state, font)
+    local tc = state.texCoord
+    local b = state.border
     return FP(
         font,
-        st.width,
-        st.height,
+        state.width,
+        state.height,
         tc[1],
         tc[2],
         tc[3],
         tc[4],
-        st.hideDurationText,
-        st.durationPrecisionThreshold,
-        st.cdTextSize,
-        CK(st.cdTextColor),
-        st.cdOffX,
-        st.cdOffY,
-        st.stackSize,
-        CK(st.stackColor),
-        st.stackPos,
-        st.stackOffX,
-        st.stackOffY,
+        state.hideDurationText,
+        state.durationPrecisionThreshold,
+        state.cdTextSize,
+        CK(state.cdTextColor),
+        state.cdOffX,
+        state.cdOffY,
+        state.stackSize,
+        CK(state.stackColor),
+        state.stackPos,
+        state.stackOffX,
+        state.stackOffY,
         b and b.texture,
         b and b.size,
         b and b.edgePx,
@@ -1990,14 +1990,14 @@ local function StyleTableFP(st, font)
         b and b.behind,
         b and b.behindUnitFrame,
         b and b.unitFrameLevel,
-        st.auraBorderAboveEffects,
-        st.noTooltips,
-        st.blizzBorder,
-        st.dispelBorder,
+        state.auraBorderAboveEffects,
+        state.noTooltips,
+        state.blizzBorder,
+        state.dispelBorder,
         -- Textured Dispel Ring (the ring's art key) and Use Dispel Colors (the
         -- palette fingerprint the colour map was built from).
-        st.dispelBorderTexture,
-        st.dispelColorFP
+        state.dispelBorderTexture,
+        state.dispelColorFP
     )
 end
 
@@ -2007,49 +2007,49 @@ end
 -- pass re-sets each active group's filter string). Used at creation and by
 -- the additive reload path (AddAuraGroup on an existing container is
 -- combat-legal -- probe T1/T1b).
-local function DeclareElementGroup(boxHolder, declared, styleKey, key, tokens, cand)
+local function DeclareElementGroup(boxHolder, declared, styleKey, auraKey, tokenList, candidate)
     -- A declaration cut short after the engine registered the group (the
     -- client watchdog) left it unrecorded here: record it rather than add it
     -- again (a duplicate key asserts). The cut can also skip storing its
     -- layout, which the config pass sets on every active group.
-    if boxHolder:HasAuraGroup(key) then
-        declared[key] = { cand = cand or false }
+    if boxHolder:HasAuraGroup(auraKey) then
+        declared[auraKey] = { cand = candidate or false }
         return
     end
     AK.AddGroupToContainer(boxHolder, {
-        key = key,
-        filter = tokens,
+        key = auraKey,
+        filter = tokenList,
         maxFrameCount = 0,
         style = styleKey,
         -- Candidates ride the declaration too: chain keys that embed a candidate
         -- fingerprint bring a changed payload here as a fresh variant, and the
         -- config pass live-sets candidates on top (the shared debuff excludes).
-        candidateFilters = cand or nil,
+        candidateFilters = candidate or nil,
     })
-    declared[key] = { cand = cand or false }
+    declared[auraKey] = { cand = candidate or false }
 end
 
 -- Explicit either/or (never `cond and a or b`: a falsy setting must not fall
 -- through to the other element's key).
-local function Pick(isBuff, a, b)
-    if isBuff then
+local function Pick(buffSide, a, b)
+    if buffSide then
         return a
     end
     return b
 end
 
 -- Boss "simple" side display: returns whether it is on and which side.
-local function BossSimple(unitToken, base, s)
+local function BossSimple(unitToken, baseSet, s)
     if not unitToken:match("^boss") then
         return false, "none"
     end
-    local mode
-    if base == "HELPFUL" then
-        mode = mod.GetBossSimpleBuffMode and mod.GetBossSimpleBuffMode(s) or "none"
+    local modeName
+    if baseSet == "HELPFUL" then
+        modeName = mod.GetBossSimpleBuffMode and mod.GetBossSimpleBuffMode(s) or "none"
     else
-        mode = mod.GetBossSimpleDebuffMode and mod.GetBossSimpleDebuffMode(s) or "none"
+        modeName = mod.GetBossSimpleDebuffMode and mod.GetBossSimpleDebuffMode(s) or "none"
     end
-    return mode ~= "none", mode
+    return modeName ~= "none", modeName
 end
 
 -- Whether one element of a unit shows: buffs unless Buff Display is None,
@@ -2058,16 +2058,16 @@ end
 -- Display renders them. The one test the build stepper, the reload's group
 -- declaration and the config pass share: an element that is off declares no
 -- groups (each is an eager engine batch) until a reload sees it on.
-local function SideOn(unitToken, base, s)
-    if base == "HELPFUL" then
-        if s.showBuffs ~= false or BossSimple(unitToken, base, s) then
+local function SideOn(unitToken, baseSet, s)
+    if baseSet == "HELPFUL" then
+        if s.showBuffs ~= false or BossSimple(unitToken, baseSet, s) then
             return true
         end
         return s.debuffAnchorBuffs == true
             and not unitToken:match("^boss")
             and (s.debuffAnchor or "none") ~= "none"
     end
-    return (s.debuffAnchor or "none") ~= "none" or (BossSimple(unitToken, base, s))
+    return (s.debuffAnchor or "none") ~= "none" or (BossSimple(unitToken, baseSet, s))
 end
 mod.UF_AuraSideOn = SideOn
 
@@ -2078,27 +2078,27 @@ mod.UF_AuraSideOn = SideOn
 local WeaponCells = {}
 
 -- On = the buff row is in a broad mode, which declares the cells.
-function WeaponCells.On(unitToken, base, s)
+function WeaponCells.On(unitToken, baseSet, s)
     return unitToken == "player"
-        and base == "HELPFUL"
-        and SideOn(unitToken, base, s)
+        and baseSet == "HELPFUL"
+        and SideOn(unitToken, baseSet, s)
         and (s.buffShowAll ~= false or s.buffHasDuration == true)
 end
 
 -- Shown = the cells render on the player buff row: the engine cannot
 -- undeclare them, so once declared (AnchorContainer stamps the container)
 -- they stay after a switch out of the broad modes until the next /reload.
-function WeaponCells.Shown(unitToken, base, s)
-    if WeaponCells.On(unitToken, base, s) then
+function WeaponCells.Shown(unitToken, baseSet, s)
+    if WeaponCells.On(unitToken, baseSet, s) then
         return true
     end
     local record = registry.player
     return unitToken == "player"
-        and base == "HELPFUL"
+        and baseSet == "HELPFUL"
         and WeaponCells.declared ~= nil
         and record ~= nil
         and record.buffs == WeaponCells.declared
-        and SideOn(unitToken, base, s)
+        and SideOn(unitToken, baseSet, s)
 end
 
 -- Player Aura Bars' count (all three slots: AK declares them all here).
@@ -2147,10 +2147,10 @@ function WeaponCells.Sync(wanted, n)
 end
 
 -- Element pixel size; boss simple mode matches the frame's bar-stack height.
-local function ElementSize(unitToken, base, s)
-    local isBuff = (base == "HELPFUL")
-    local size = Pick(isBuff, s.buffSize, s.debuffSize) or 22
-    local simpleOn = BossSimple(unitToken, base, s)
+local function ElementSize(unitToken, baseSet, s)
+    local buffSide = (baseSet == "HELPFUL")
+    local size = Pick(buffSide, s.buffSize, s.debuffSize) or 22
+    local simpleOn = BossSimple(unitToken, baseSet, s)
     local Pix = CludesUI.PP
     local m = Pix.mult or 1
     if simpleOn then
@@ -2167,7 +2167,7 @@ local function ElementSize(unitToken, base, s)
         -- non-pixel-perfect scale.
         size = Pix.FromPixels(Pix.ToPixels(size))
     end
-    local cropped = Pick(isBuff, s.buffCropIcons, s.debuffCropIcons)
+    local cropped = Pick(buffSide, s.buffCropIcons, s.debuffCropIcons)
     local hgt = size
     if cropped then
         hgt = math.floor(size / m * AURA_CROP_HEIGHT + 0.5) * m
@@ -2180,13 +2180,13 @@ end
 -- it reads.
 local PlayerDispelPalette
 
-local function BuildStyle(unitToken, base, s, unitFrame)
-    local isBuff = (base == "HELPFUL")
-    local size, hgt, cropped = ElementSize(unitToken, base, s)
-    local p = Pick(isBuff, "buff", "debuff")
+local function BuildStyle(unitToken, baseSet, s, unitFrame)
+    local buffSide = (baseSet == "HELPFUL")
+    local size, hgt, cropped = ElementSize(unitToken, baseSet, s)
+    local p = Pick(buffSide, "buff", "debuff")
 
     -- Boss simple side displays read their own cooldown-text keys.
-    local simpleOn = BossSimple(unitToken, base, s)
+    local simpleOn = BossSimple(unitToken, baseSet, s)
     local showCdKey, cdSizeKey = p .. "ShowCooldownText", p .. "CooldownTextSize"
     local cdSizeDefault = 10
     if simpleOn then
@@ -2200,7 +2200,7 @@ local function BuildStyle(unitToken, base, s, unitFrame)
     local blizz = mod.UF_Blizz and mod.UF_Blizz() or false
     local border, dispel, blizzBorder, dispelTex, dcMap, dcFP
     if blizz then
-        if not isBuff then
+        if not buffSide then
             dispel = true
             blizzBorder = true
         end
@@ -2232,10 +2232,10 @@ local function BuildStyle(unitToken, base, s, unitFrame)
         -- dispel type, in its own colours or, with the player's Use Dispel
         -- Colors, in the Dispel Colors palette handed over as
         -- customDispelColorMap (below). No aura data is read either way.
-        dispel = (not isBuff and s.debuffDispelBorder) and true or nil
+        dispel = (not buffSide and s.debuffDispelBorder) and true or nil
         -- Buffs on target/focus/boss (opt-in): the same engine ring, tinted by
         -- the buff's dispel type (Magic blue). Untyped buffs get no ring.
-        if isBuff and unitToken ~= "player" and s.buffDispelBorder == true then
+        if buffSide and unitToken ~= "player" and s.buffDispelBorder == true then
             dispel = true
         end
         -- Textured Dispel Ring (per-unit, player/target/focus): AuraKit draws the ring
@@ -2253,7 +2253,7 @@ local function BuildStyle(unitToken, base, s, unitFrame)
         -- the player frame's aura look (its view hands the key on only then).
         if
             dispel
-            and not isBuff
+            and not buffSide
             and (unitToken == "player" or unitToken == "pet")
             and s.debuffDispelUsePalette == true
         then
@@ -2270,7 +2270,7 @@ local function BuildStyle(unitToken, base, s, unitFrame)
             cropped,
             size,
             hgt,
-            blizz and 0 or Pick(isBuff, s.buffIconZoom, s.debuffIconZoom)
+            blizz and 0 or Pick(buffSide, s.buffIconZoom, s.debuffIconZoom)
         ),
         border = border,
         blizzBorder = blizzBorder,
@@ -2290,12 +2290,12 @@ local function BuildStyle(unitToken, base, s, unitFrame)
         stackPos = s[p .. "StackTextPosition"],
         stackOffX = s[p .. "StackTextOffsetX"] or 0,
         stackOffY = s[p .. "StackTextOffsetY"] or 0,
-        cancelButtons = (unitToken == "player" and isBuff) and "RightButtonUp" or nil,
+        cancelButtons = (unitToken == "player" and buffSide) and "RightButtonUp" or nil,
         -- Show Tooltip For -> Buffs & Debuffs (per-unit, default on). Motion
         -- goes off with the tooltips; clicks (player buff cancel) unaffected.
         noTooltips = (s.showAuraTooltips == false) or nil,
         dispelBorder = dispel,
-        dispelHelpful = (isBuff and dispel) or nil,
+        dispelHelpful = (buffSide and dispel) or nil,
         dispelBorderTexture = dispelTex,
         dispelColorMap = dcMap,
         dispelColorFP = dcFP,
@@ -2322,9 +2322,9 @@ end
 -- The glow families the menu offers: Pixel, the flipbooks and Blizzard Border.
 PurgeGlow.NEED = { ants = true, flip = true, stealable = true }
 
-function PurgeGlow.Extra(btnFrame, skinData, style)
-    ApplyUFText(btnFrame, skinData, style)
-    if not style.purgeSpec then
+function PurgeGlow.Extra(btnFrame, skinData, look)
+    ApplyUFText(btnFrame, skinData, look)
+    if not look.purgeSpec then
         return
     end
     local Glows = CludesUI.Glows
@@ -2334,7 +2334,7 @@ function PurgeGlow.Extra(btnFrame, skinData, style)
         -- window for parenting a new frame to it. Just below the text carrier.
         owner = CreateFrame("Frame", nil, btnFrame)
         owner:SetAllPoints(btnFrame)
-        if style.auraBorderAboveEffects then
+        if look.auraBorderAboveEffects then
             owner:SetFrameLevel(skinData.cooldown:GetFrameLevel() + 5)
         elseif skinData.stackCarrier then
             owner:SetFrameLevel(skinData.stackCarrier:GetFrameLevel() - 1)
@@ -2343,7 +2343,7 @@ function PurgeGlow.Extra(btnFrame, skinData, style)
         end
         owner:EnableMouse(false)
         skinData.ufPurgeGlow = owner
-        Glows.PrewarmEngineHost(owner, style.width, style.height, PurgeGlow.NEED)
+        Glows.PrewarmEngineHost(owner, look.width, look.height, PurgeGlow.NEED)
     end
     -- Bound once: the button runs the glow's animations itself (12.1.5),
     -- Blizzard playing them while it shows a buff and stopping them when it
@@ -2356,7 +2356,7 @@ function PurgeGlow.Extra(btnFrame, skinData, style)
     -- button carries the glow. Unbound (no API), the animations play while
     -- hidden too, so only buttons the group can ever show run one.
     if skinData.ufPurgeBound or CludesUI.AuraKit.ButtonCanShow(btnFrame) then
-        Glows.StartSpecGlow(owner, style.purgeSpec, style.width, style.height, "engine")
+        Glows.StartSpecGlow(owner, look.purgeSpec, look.width, look.height, "engine")
     elseif owner._cuiGlowActive then
         Glows.StopGlow(owner)
     end
@@ -2365,7 +2365,7 @@ end
 -- Unset color = "default" mode: the suite's default look (gold).
 function PurgeGlow.Spec(s)
     local c = s.buffPurgeGlowColor
-    local mode = s.buffPurgeGlowColorMode or (c and "custom" or "default")
+    local modeName = s.buffPurgeGlowColorMode or (c and "custom" or "default")
     local bgc = s.buffPurgeGlowBackgroundColor
     local specInfo = {
         style = s.buffPurgeGlow,
@@ -2377,10 +2377,10 @@ function PurgeGlow.Spec(s)
         bgG = bgc and bgc.g,
         bgB = bgc and bgc.b,
     }
-    specInfo.r, specInfo.g, specInfo.b = CludesUI.Glows.ResolveColor(mode, c and c.r, c and c.g, c and c.b)
+    specInfo.r, specInfo.g, specInfo.b = CludesUI.Glows.ResolveColor(modeName, c and c.r, c and c.g, c and c.b)
     -- Class mode: the palette colour this spec (and Register's print) holds,
     -- for the colours-changed hook below the reload.
-    if mode == "class" then
+    if modeName == "class" then
         PurgeGlow.ccR, PurgeGlow.ccG, PurgeGlow.ccB = specInfo.r, specInfo.g, specInfo.b
     end
     return specInfo
@@ -2394,23 +2394,23 @@ function PurgeGlow.Register(unitToken, s, widget, font)
     if not PurgeGlow.On(unitToken, s) then
         return
     end
-    local key = PurgeGlow.StyleKey(unitToken)
-    local style = BuildStyle(unitToken, "HELPFUL", s, widget)
+    local auraKey = PurgeGlow.StyleKey(unitToken)
+    local look = BuildStyle(unitToken, "HELPFUL", s, widget)
     local sp = PurgeGlow.Spec(s)
-    style.purgeSpec = sp
-    style.applyExtra = PurgeGlow.Extra
-    local val = StyleTableFP(style, font)
+    look.purgeSpec = sp
+    look.applyExtra = PurgeGlow.Extra
+    local val = StyleTableFP(look, font)
         .. "|"
         .. FP(sp.style, sp.r, sp.g, sp.b, sp.lines, sp.thickness, sp.speed, sp.bg, sp.bgR, sp.bgG, sp.bgB)
-    local st = ufFP[key]
-    if not st then
-        st = {}
-        ufFP[key] = st
+    local state = ufFP[auraKey]
+    if not state then
+        state = {}
+        ufFP[auraKey] = state
     end
-    if st.style ~= val then
-        st.style = val
-        AK.styles[key] = style
-        AK.RestyleSoon(key)
+    if state.style ~= val then
+        state.style = val
+        AK.styles[auraKey] = look
+        AK.RestyleSoon(auraKey)
     end
 end
 
@@ -2596,7 +2596,7 @@ end
 -- Merged buffs ride the debuff anchor with the debuff container below them
 -- (above for upward growth); otherwise a bottom-anchored debuff stack wins
 -- over a bottom-anchored buff stack. Nothing below: the visible art's bottom.
-local function PointBlizzAuraBlock(widget, unitToken, s, isBuff, boxHolder, ia, xOff, merged, gY)
+local function PointBlizzAuraBlock(widget, unitToken, s, buffSide, boxHolder, ia, xOff, merged, gY)
     if not (CB_FRAME_NAMES[unitToken] and mod.UF_BlizzAuraBlock and mod.UF_BlizzAuraBlock(widget)) then
         return
     end
@@ -2615,7 +2615,7 @@ local function PointBlizzAuraBlock(widget, unitToken, s, isBuff, boxHolder, ia, 
     end
     if lowestIsBuff == nil then
         mod.UF_BlizzAuraBlockBottom(widget, nil)
-    elseif boxHolder and lowestIsBuff == isBuff then
+    elseif boxHolder and lowestIsBuff == buffSide then
         local corner = (ia and ia:find("RIGHT", 1, true)) and "BOTTOMRIGHT" or "BOTTOMLEFT"
         mod.UF_BlizzAuraBlockBottom(widget, boxHolder, corner, -(xOff or 0))
     end
@@ -2628,27 +2628,27 @@ end
 -- reanchorOnly (the footprint-watcher re-anchor path): re-run ONLY the geometry --
 -- SetPoint + aura-block point -- and skip the one-time weapon-enchant declaration
 -- below, which must not be re-issued every settle frame (the engine has no unregister).
-local function AnchorContainer(boxHolder, widget, unitToken, base, s, buffContainer, reanchorOnly)
-    local isBuff = (base == "HELPFUL")
+local function AnchorContainer(boxHolder, widget, unitToken, baseSet, s, buffContainer, reanchorOnly)
+    local buffSide = (baseSet == "HELPFUL")
 
     -- Boss simple side display: forced side anchoring flush with the frame
     -- top, growing away from the chosen edge, own offsets, no castbar push.
-    local simpleOn, simpleMode = BossSimple(unitToken, base, s)
+    local simpleOn, simpleMode = BossSimple(unitToken, baseSet, s)
     if simpleOn then
-        local ia, fp
+        local ia, filterPass
         if simpleMode == "right" then
-            ia, fp = "TOPLEFT", "TOPRIGHT"
+            ia, filterPass = "TOPLEFT", "TOPRIGHT"
         else
-            ia, fp = "TOPRIGHT", "TOPLEFT"
+            ia, filterPass = "TOPRIGHT", "TOPLEFT"
         end
         local offX, offY
-        if isBuff then
+        if buffSide then
             offX, offY = mod.GetBossSimpleBuffOffset(s)
         else
             offX, offY = mod.GetBossSimpleDebuffOffset(s)
         end
         boxHolder:ClearAllPoints()
-        boxHolder:SetPoint(ia, widget, fp, offX or 0, offY or 0)
+        boxHolder:SetPoint(ia, widget, filterPass, offX or 0, offY or 0)
         AK.SetContainerAnchor(boxHolder, ia)
         local gX = "LEFT"
         if simpleMode == "right" then
@@ -2658,9 +2658,9 @@ local function AnchorContainer(boxHolder, widget, unitToken, base, s, buffContai
         return simpleMode
     end
 
-    local anchor = Pick(isBuff, s.buffAnchor, s.debuffAnchor)
-    if anchor == nil then
-        anchor = Pick(isBuff, "topleft", "none")
+    local anchorFrame = Pick(buffSide, s.buffAnchor, s.debuffAnchor)
+    if anchorFrame == nil then
+        anchorFrame = Pick(buffSide, "topleft", "none")
     end
 
     -- Anchor Buffs with Debuffs (per-unit debuffAnchorBuffs, non-boss):
@@ -2673,23 +2673,23 @@ local function AnchorContainer(boxHolder, widget, unitToken, base, s, buffContai
     local merged = s.debuffAnchorBuffs == true
         and not unitToken:match("^boss")
         and (s.debuffAnchor or "none") ~= "none"
-    local mergedBuff = merged and isBuff
+    local mergedBuff = merged and buffSide
     if mergedBuff then
-        anchor = s.debuffAnchor
+        anchorFrame = s.debuffAnchor
     end
-    if anchor == "none" then
+    if anchorFrame == "none" then
         -- Player buffs hidden: the weapon enchants ride this container (see
         -- the declaration below), so ApplyGroupConfig's SetShown(false) takes
         -- them down with it -- nothing to retire here.
-        PointBlizzAuraBlock(widget, unitToken, s, isBuff, nil, nil, nil, merged, nil)
-        return anchor
+        PointBlizzAuraBlock(widget, unitToken, s, buffSide, nil, nil, nil, merged, nil)
+        return anchorFrame
     end
 
-    local growth = Pick(isBuff, s.buffGrowth, s.debuffGrowth)
+    local growth = Pick(buffSide, s.buffGrowth, s.debuffGrowth)
     if mergedBuff then
         growth = s.debuffGrowth
     end
-    local ia, fp, ox, oy, gX, gY = ResolveLayout(anchor, growth)
+    local ia, filterPass, ox, oy, gX, gY = ResolveLayout(anchorFrame, growth)
 
     -- Blizzard Style: the frame is the stock box with transparent padding round
     -- the art, so the anchors move in to the visible art's edges; and on the
@@ -2701,14 +2701,14 @@ local function AnchorContainer(boxHolder, widget, unitToken, base, s, buffContai
         vl, vr, vt, vb = mod.UF_BlizzVis(widget)
     end
     if vl then
-        if anchor == "topleft" or anchor == "bottomleft" or anchor == "left" then
+        if anchorFrame == "topleft" or anchorFrame == "bottomleft" or anchorFrame == "left" then
             ox = ox + vl
-        elseif anchor == "topright" or anchor == "bottomright" or anchor == "right" then
+        elseif anchorFrame == "topright" or anchorFrame == "bottomright" or anchorFrame == "right" then
             ox = ox - vr
         end
-        if anchor == "topleft" or anchor == "topright" then
+        if anchorFrame == "topleft" or anchorFrame == "topright" then
             oy = oy - vt
-        elseif anchor == "bottomleft" or anchor == "bottomright" then
+        elseif anchorFrame == "bottomleft" or anchorFrame == "bottomright" then
             oy = oy + vb
         end
     end
@@ -2728,7 +2728,7 @@ local function AnchorContainer(boxHolder, widget, unitToken, base, s, buffContai
     -- oUF-element anchor path has always been bottom-only; this matches it.
     if
         showCb
-        and (anchor == "bottomleft" or anchor == "bottomright")
+        and (anchorFrame == "bottomleft" or anchorFrame == "bottomright")
         and not (vl and CB_FRAME_NAMES[unitToken] and mod.UF_LayoutAspectOK and mod.UF_LayoutAspectOK())
         and CastbarBelowFrame(unitToken, widget)
     then
@@ -2745,7 +2745,7 @@ local function AnchorContainer(boxHolder, widget, unitToken, base, s, buffContai
     -- ResourceStackBelowFrame. CfgFP leaves this value out: a stack footprint change
     -- re-runs this anchor through the re-anchor Resource Bars arms (further down).
     if
-        (anchor == "bottomleft" or anchor == "bottomright")
+        (anchorFrame == "bottomleft" or anchorFrame == "bottomright")
         and not (vl and CB_FRAME_NAMES[unitToken] and mod.UF_LayoutAspectOK and mod.UF_LayoutAspectOK())
     then
         local resReserve = ResourceStackBelowFrame(unitToken, widget)
@@ -2754,15 +2754,15 @@ local function AnchorContainer(boxHolder, widget, unitToken, base, s, buffContai
         end
     end
 
-    local offX = Pick(isBuff, s.buffOffsetX, s.debuffOffsetX) or 0
-    local offY = Pick(isBuff, s.buffOffsetY, s.debuffOffsetY) or 0
+    local offX = Pick(buffSide, s.buffOffsetX, s.debuffOffsetX) or 0
+    local offY = Pick(buffSide, s.buffOffsetY, s.debuffOffsetY) or 0
     if mergedBuff then
         offX = s.debuffOffsetX or 0
         offY = s.debuffOffsetY or 0
     end
 
     boxHolder:ClearAllPoints()
-    if merged and not isBuff and buffContainer then
+    if merged and not buffSide and buffContainer then
         -- Ride the buff container: horizontal side from the layout anchor,
         -- vertical side from the wrap direction, one debuff line-gap
         -- between the blocks. Debuffs never share a row with buffs.
@@ -2782,7 +2782,7 @@ local function AnchorContainer(boxHolder, widget, unitToken, base, s, buffContai
         local gap = Pix.FromPixels(s.debuffSpacingY or 1)
         boxHolder:SetPoint(vert .. horiz, buffContainer, relVert .. horiz, 0, gap * gapSign)
         AK.SetContainerAnchor(boxHolder, vert .. horiz)
-        PointBlizzAuraBlock(widget, unitToken, s, isBuff, boxHolder, ia, ox + offX, merged, gY)
+        PointBlizzAuraBlock(widget, unitToken, s, buffSide, boxHolder, ia, ox + offX, merged, gY)
     else
         -- Side anchors ("left"/"right") pin the container's vertical CENTER to
         -- the frame's LEFT/RIGHT point -- a center-class axis. An odd-physical-
@@ -2797,13 +2797,13 @@ local function AnchorContainer(boxHolder, widget, unitToken, base, s, buffContai
         -- Reading our own frame's live geometry is legal under aura
         -- restriction; nil (pre-layout window) keeps the raw offset and a
         -- later anchor pass corrects it.
-        if anchor == "left" or anchor == "right" then
+        if anchorFrame == "left" or anchorFrame == "right" then
             local Pix = CludesUI.PP
             if Pix and Pix.SnapCenterForDim and Pix.SnapForES then
                 local es = boxHolder:GetEffectiveScale()
                 local _, fcY = widget:GetCenter()
                 if fcY then
-                    local _, iconH = ElementSize(unitToken, base, s)
+                    local _, iconH = ElementSize(unitToken, baseSet, s)
                     local rawY = fcY + oy + cbOff + offY
                     offY = offY + (Pix.SnapCenterForDim(rawY, iconH, es) - rawY)
                 end
@@ -2813,16 +2813,16 @@ local function AnchorContainer(boxHolder, widget, unitToken, base, s, buffContai
                 -- lands every icon's vertical edges on partial pixels -- same
                 -- bleed as the parity case, on the left/right borders. Integer
                 -- icon widths keep the far edge whole once this edge is.
-                local fx = (anchor == "left") and widget:GetLeft() or widget:GetRight()
+                local fx = (anchorFrame == "left") and widget:GetLeft() or widget:GetRight()
                 if fx then
                     local rawX = fx + ox + offX
                     offX = offX + (Pix.SnapForES(rawX, es) - rawX)
                 end
             end
         end
-        boxHolder:SetPoint(ia, widget, fp, ox + offX, oy + cbOff + offY)
+        boxHolder:SetPoint(ia, widget, filterPass, ox + offX, oy + cbOff + offY)
         AK.SetContainerAnchor(boxHolder, ia)
-        PointBlizzAuraBlock(widget, unitToken, s, isBuff, boxHolder, ia, ox + offX, merged, gY)
+        PointBlizzAuraBlock(widget, unitToken, s, buffSide, boxHolder, ia, ox + offX, merged, gY)
         -- Weapon enchants are not auras: the engine's own item-enchantment
         -- source renders them as a layout group flowed AHEAD of the aura
         -- groups on this container (see AK.AddItemEnchantmentsToContainer),
@@ -2832,9 +2832,9 @@ local function AnchorContainer(boxHolder, widget, unitToken, base, s, buffContai
         -- mode (this pass re-runs on a chain change and when the row turns
         -- on), and -- the engine has no addon-facing unregister -- kept until
         -- the next /reload should the row or the mode turn off again.
-        if not reanchorOnly and WeaponCells.On(unitToken, base, s) then
+        if not reanchorOnly and WeaponCells.On(unitToken, baseSet, s) then
             local Pix = CludesUI.PP
-            local wid, hgt = ElementSize(unitToken, base, s)
+            local wid, hgt = ElementSize(unitToken, baseSet, s)
             local gap = Pix.FromPixels(s.buffSpacingX or 1)
             local lineGap = Pix.FromPixels(s.buffSpacingY or 1)
             local placement = CustomAuraContainerItemEnchantmentPlacement
@@ -2869,7 +2869,7 @@ local function AnchorContainer(boxHolder, widget, unitToken, base, s, buffContai
     end
     AK.SetContainerGrowth(boxHolder, FlowDir(gX), FlowDir(gY))
 
-    return anchor
+    return anchorFrame
 end
 
 ------------------------------------------------------------------------------
@@ -2925,8 +2925,8 @@ end
 -- flip). The unit change events ride the always-on unitWatcher instead, so a
 -- target swap runs the gate before its one aura re-parse.
 function IncGate.Sync()
-    local st, pw = IncGate.state, PurgeGlow.watch
-    local wantT, wantF = st.target or pw.target, st.focus or pw.focus
+    local state, pw = IncGate.state, PurgeGlow.watch
+    local wantT, wantF = state.target or pw.target, state.focus or pw.focus
     local sig = (wantT and 1 or 0) + (wantF and 2 or 0)
     if IncGate.sig == sig then
         return
@@ -2960,19 +2960,19 @@ function IncGate.Store(unitToken, keyList, num)
     if unitToken ~= "target" and unitToken ~= "focus" then
         return false
     end
-    local st = IncGate.state
+    local state = IncGate.state
     local g
     if keyList then
-        g = st[unitToken]
+        g = state[unitToken]
         local parked = IncGate.Answer(unitToken)
         if not g then
             g = {}
-            st[unitToken] = g
+            state[unitToken] = g
         end
         g.keys, g.num = keyList, num
         g.parked = parked
     else
-        st[unitToken] = nil
+        state[unitToken] = nil
     end
     IncGate.Sync()
     return g ~= nil and g.parked
@@ -3100,12 +3100,12 @@ function PurgeGlow.SetWatch(unitToken, enabled)
     IncGate.Sync()
 end
 
-local function ApplyGroupConfig(boxHolder, unitToken, base, s, chain, declared)
+local function ApplyGroupConfig(boxHolder, unitToken, baseSet, s, filterChain, declared)
     local Pix = CludesUI.PP
-    local isBuff = (base == "HELPFUL")
-    local anyClass = #chain > 0
+    local buffSide = (baseSet == "HELPFUL")
+    local anyClass = #filterChain > 0
 
-    local simpleOn = BossSimple(unitToken, base, s)
+    local simpleOn = BossSimple(unitToken, baseSet, s)
 
     -- Anchor Buffs with Debuffs: the merge owns buff visibility (Buff
     -- Display reads None while the stack renders the buffs), and the buff
@@ -3114,20 +3114,20 @@ local function ApplyGroupConfig(boxHolder, unitToken, base, s, chain, declared)
         and not unitToken:match("^boss")
         and (s.debuffAnchor or "none") ~= "none"
 
-    local isShown = SideOn(unitToken, base, s)
+    local isShown = SideOn(unitToken, baseSet, s)
 
     local num = 0
     if isShown then
-        num = Pick(isBuff, s.maxBuffs or 4, s.maxDebuffs or 28)
+        num = Pick(buffSide, s.maxBuffs or 4, s.maxDebuffs or 28)
     end
 
-    local size, hgt = ElementSize(unitToken, base, s)
+    local size, hgt = ElementSize(unitToken, baseSet, s)
     local spX, spY
     if unitToken:match("^boss") then
         -- Boss uses a single spacing value (its simple-display key when the
         -- simple mode is active).
         local sp
-        if isBuff then
+        if buffSide then
             sp = mod.GetBossBuffSpacing(s, simpleOn)
         else
             sp = mod.GetBossDebuffSpacing(s, simpleOn)
@@ -3135,27 +3135,27 @@ local function ApplyGroupConfig(boxHolder, unitToken, base, s, chain, declared)
         spX = Pix.FromPixels(sp or 1)
         spY = spX
     else
-        spX = Pix.FromPixels(Pick(isBuff, s.buffSpacingX, s.debuffSpacingX) or 1)
-        spY = Pix.FromPixels(Pick(isBuff, s.buffSpacingY, s.debuffSpacingY) or 1)
+        spX = Pix.FromPixels(Pick(buffSide, s.buffSpacingX, s.debuffSpacingX) or 1)
+        spY = Pix.FromPixels(Pick(buffSide, s.buffSpacingY, s.debuffSpacingY) or 1)
     end
 
-    local growth = Pick(isBuff, s.buffGrowth, s.debuffGrowth)
+    local growth = Pick(buffSide, s.buffGrowth, s.debuffGrowth)
     if simpleOn then
         growth = "auto"
     end
-    if mergedAB and isBuff then
+    if mergedAB and buffSide then
         growth = s.debuffGrowth
     end
-    local maxPerRow = Pick(isBuff, s.buffMaxPerRow, s.debuffMaxPerRow)
+    local maxPerRow = Pick(buffSide, s.buffMaxPerRow, s.debuffMaxPerRow)
     -- Max Important lets the important links grow past Max Count, so a Max
     -- Per Row between the two caps sizes the row from Max Important (an
     -- unset Per Row, one equal to Max Count or one at or above Max
     -- Important keeps the Max Count rule).
     local capMax = num
-    local mi = (not isBuff) and s.maxImportantDebuffs or nil
+    local mi = (not buffSide) and s.maxImportantDebuffs or nil
     if num > 0 and mi and maxPerRow and maxPerRow > num and mi > maxPerRow then
-        for index = 1, #chain do
-            if chain[index].important then
+        for index = 1, #filterChain do
+            if filterChain[index].important then
                 capMax = mi
                 break
             end
@@ -3166,15 +3166,15 @@ local function ApplyGroupConfig(boxHolder, unitToken, base, s, chain, declared)
     -- size to every row, so only a single-row cap over at most one shown
     -- group (which never overflows it) widens by the cells showing; a grid
     -- or several groups keep the cells in their rows.
-    local cellsOn = WeaponCells.Shown(unitToken, base, s)
+    local cellsOn = WeaponCells.Shown(unitToken, baseSet, s)
     local cellN = cellsOn and WeaponCells.Count() or 0
-    if unitToken == "player" and isBuff then
+    if unitToken == "player" and buffSide then
         WeaponCells.Sync(cellsOn, cellN)
     end
     if cellN > 0 and oneRow then
         local groups = 0
-        for index = 1, #chain do
-            if not chain[index].hidden then
+        for index = 1, #filterChain do
+            if not filterChain[index].hidden then
                 groups = groups + 1
             end
         end
@@ -3187,8 +3187,8 @@ local function ApplyGroupConfig(boxHolder, unitToken, base, s, chain, declared)
     -- Candidate filters: (debuffs) the always-hide and Hide Exhaustion
     -- excludes. Caster scope rides the chain links' own PLAYER tokens, never
     -- this table.
-    local cand = nil
-    if not isBuff then
+    local candidate = nil
+    if not buffSide then
         local ex = {}
         for ident in pairs(ALWAYS_HIDE_DEBUFFS) do
             ex[ident] = true
@@ -3213,8 +3213,8 @@ local function ApplyGroupConfig(boxHolder, unitToken, base, s, chain, declared)
         local uinc = s.debuffInclude
         if uinc then
             local incLink = false
-            for index = 1, #chain do
-                if chain[index].inc then
+            for index = 1, #filterChain do
+                if filterChain[index].inc then
                     incLink = true
                     break
                 end
@@ -3233,8 +3233,8 @@ local function ApplyGroupConfig(boxHolder, unitToken, base, s, chain, declared)
                 end
             end
         end
-        cand = cand or {}
-        cand.excludeSpellIDs = ex
+        candidate = candidate or {}
+        candidate.excludeSpellIDs = ex
     end
 
     -- No groupSpacing: the engine trails every element with elementSpacing,
@@ -3253,8 +3253,8 @@ local function ApplyGroupConfig(boxHolder, unitToken, base, s, chain, declared)
     local glowKeys, glowLayout
     if num > 0 then
         if anyClass then
-            for index = 1, #chain do
-                local c = chain[index]
+            for index = 1, #filterChain do
+                local c = filterChain[index]
                 isActive[c.key] = c.cand or false
                 tokensOf[c.key] = c.tokens
                 if c.glow then
@@ -3277,7 +3277,7 @@ local function ApplyGroupConfig(boxHolder, unitToken, base, s, chain, declared)
                     impKeys[c.key] = true
                 end
             end
-        elseif isBuff and unitToken ~= "player" then
+        elseif buffSide and unitToken ~= "player" then
             -- Non-player buffs keep the legacy show-all fallback (no classes =
             -- everything). Player elements run the PAB content model (an empty
             -- chain = add mode with nothing selected = show nothing), and
@@ -3289,7 +3289,7 @@ local function ApplyGroupConfig(boxHolder, unitToken, base, s, chain, declared)
     -- Tracked Auras include groups park while a target/focus can be assisted
     -- (IncGate above); the debuff element owns the unit's gate state.
     local incPark = false
-    if not isBuff then
+    if not buffSide then
         incPark = IncGate.Store(unitToken, incKeys, num)
     end
     -- Only Tracked Auras (the chain is nothing but include links) narrows
@@ -3298,8 +3298,8 @@ local function ApplyGroupConfig(boxHolder, unitToken, base, s, chain, declared)
     -- hostile restores from the chain.
     if incPark then
         local anyC, mineC, onlyInc = nil, nil, true
-        for index = 1, #chain do
-            local c = chain[index]
+        for index = 1, #filterChain do
+            local c = filterChain[index]
             if not c.inc then
                 onlyInc = false
                 break
@@ -3353,7 +3353,7 @@ local function ApplyGroupConfig(boxHolder, unitToken, base, s, chain, declared)
             if toks and boxHolder.SetAuraGroupFilterString then
                 boxHolder:SetAuraGroupFilterString(eff, AK.Filter(unpack(toks)))
             end
-            local groupCand = cand
+            local groupCand = candidate
             -- Candidate-class groups carry their defining booleans on top of the shared
             -- candidates (fresh table: setter securecopies). Read from the CURRENT
             -- chain (active), not the declared registry: the Non-Player handoff changes
@@ -3362,8 +3362,8 @@ local function ApplyGroupConfig(boxHolder, unitToken, base, s, chain, declared)
             local ac = isActive[eff]
             if ac then
                 groupCand = {}
-                if cand then
-                    for k, val in pairs(cand) do
+                if candidate then
+                    for k, val in pairs(candidate) do
                         groupCand[k] = val
                     end
                 end
@@ -3411,15 +3411,15 @@ end
 -- (computed values like ElementSize and the pixel-scaled spacings capture
 -- scale changes implicitly). The chain composition is covered separately by
 -- entry.sig; a sig change swaps the container and forces this pass anyway.
-local function CfgFP(unitToken, base, s, widget)
+local function CfgFP(unitToken, baseSet, s, widget)
     local Pix = CludesUI.PP
-    local isBuff = (base == "HELPFUL")
-    local size, hgt = ElementSize(unitToken, base, s)
-    local simpleOn, simpleMode = BossSimple(unitToken, base, s)
+    local buffSide = (baseSet == "HELPFUL")
+    local size, hgt = ElementSize(unitToken, baseSet, s)
+    local simpleOn, simpleMode = BossSimple(unitToken, baseSet, s)
     local spX, spY
     if unitToken:match("^boss") then
         local sp
-        if isBuff then
+        if buffSide then
             sp = mod.GetBossBuffSpacing(s, simpleOn)
         else
             sp = mod.GetBossDebuffSpacing(s, simpleOn)
@@ -3427,12 +3427,12 @@ local function CfgFP(unitToken, base, s, widget)
         spX = Pix.FromPixels(sp or 1)
         spY = spX
     else
-        spX = Pix.FromPixels(Pick(isBuff, s.buffSpacingX, s.debuffSpacingX) or 1)
-        spY = Pix.FromPixels(Pick(isBuff, s.buffSpacingY, s.debuffSpacingY) or 1)
+        spX = Pix.FromPixels(Pick(buffSide, s.buffSpacingX, s.debuffSpacingX) or 1)
+        spY = Pix.FromPixels(Pick(buffSide, s.buffSpacingY, s.debuffSpacingY) or 1)
     end
     local sOffX, sOffY = 0, 0
     if simpleOn then
-        if isBuff then
+        if buffSide then
             sOffX, sOffY = mod.GetBossSimpleBuffOffset(s)
         else
             sOffX, sOffY = mod.GetBossSimpleDebuffOffset(s)
@@ -3450,7 +3450,7 @@ local function CfgFP(unitToken, base, s, widget)
     -- merge flag or buff visibility flips. Off (the default), the extra
     -- slots are constant nils so no existing fingerprint ever moves.
     local mAB = s.debuffAnchorBuffs == true
-    local fp = FP(
+    local filterPass = FP(
         size,
         hgt,
         spX,
@@ -3459,14 +3459,14 @@ local function CfgFP(unitToken, base, s, widget)
         simpleMode,
         sOffX,
         sOffY,
-        Pick(isBuff, s.buffAnchor, s.debuffAnchor),
-        Pick(isBuff, s.buffGrowth, s.debuffGrowth),
-        Pick(isBuff, s.buffOffsetX, s.debuffOffsetX),
-        Pick(isBuff, s.buffOffsetY, s.debuffOffsetY),
+        Pick(buffSide, s.buffAnchor, s.debuffAnchor),
+        Pick(buffSide, s.buffGrowth, s.debuffGrowth),
+        Pick(buffSide, s.buffOffsetX, s.debuffOffsetX),
+        Pick(buffSide, s.buffOffsetY, s.debuffOffsetY),
         showCb,
         cbH,
-        Pick(isBuff, s.maxBuffs, s.maxDebuffs),
-        Pick(isBuff, s.buffMaxPerRow, s.debuffMaxPerRow),
+        Pick(buffSide, s.maxBuffs, s.maxDebuffs),
+        Pick(buffSide, s.buffMaxPerRow, s.debuffMaxPerRow),
         s.showBuffs,
         mAB,
         mAB and s.debuffAnchor or nil,
@@ -3491,23 +3491,23 @@ local function CfgFP(unitToken, base, s, widget)
     )
     -- Hide Exhaustion (debuffs; nil = on) feeds ApplyGroupConfig's excludes.
     -- Marked only while off, so a default fingerprint stays as it was.
-    if not isBuff and s.debuffHideExhaustion == false then
-        fp = fp .. "|lx0"
+    if not buffSide and s.debuffHideExhaustion == false then
+        filterPass = filterPass .. "|lx0"
     end
     -- Max Important (Important or Own) caps the important-from-others links in
     -- ApplyGroupConfig. Marked only while set, so a default fingerprint stays.
-    if not isBuff and s.maxImportantDebuffs then
-        fp = fp .. "|mi" .. s.maxImportantDebuffs
+    if not buffSide and s.maxImportantDebuffs then
+        filterPass = filterPass .. "|mi" .. s.maxImportantDebuffs
     end
     -- Weapon enchant cells widen the player buff row (ApplyGroupConfig).
     -- Marked only while some show, so a default fingerprint stays.
-    if WeaponCells.Shown(unitToken, base, s) then
+    if WeaponCells.Shown(unitToken, baseSet, s) then
         local n = WeaponCells.Count()
         if n > 0 then
-            fp = fp .. "|we" .. n
+            filterPass = filterPass .. "|we" .. n
         end
     end
-    return fp
+    return filterPass
 end
 
 ------------------------------------------------------------------------------
@@ -3588,31 +3588,31 @@ do
         if not p then
             return nil, nil
         end
-        local fp = ""
+        local filterPass = ""
         for index = 1, #DISPEL_SLOTS do
-            local slot = DISPEL_SLOTS[index]
-            local c = p[slot.colorKey]
-            fp = fp
+            local slotIndex = DISPEL_SLOTS[index]
+            local c = p[slotIndex.colorKey]
+            filterPass = filterPass
                 .. string.format(
                     "%.3f,%.3f,%.3f;",
-                    (c and c.r) or slot.fallback[1],
-                    (c and c.g) or slot.fallback[2],
-                    (c and c.b) or slot.fallback[3]
+                    (c and c.r) or slotIndex.fallback[1],
+                    (c and c.g) or slotIndex.fallback[2],
+                    (c and c.b) or slotIndex.fallback[3]
                 )
         end
-        if memoFP ~= fp then
+        if memoFP ~= filterPass then
             local map = {}
             for index = 1, #DISPEL_SLOTS do
-                local slot = DISPEL_SLOTS[index]
-                local c = p[slot.colorKey]
-                map[DISPEL_TYPE_TOKENS[slot.key]] = CreateColor(
-                    (c and c.r) or slot.fallback[1],
-                    (c and c.g) or slot.fallback[2],
-                    (c and c.b) or slot.fallback[3],
+                local slotIndex = DISPEL_SLOTS[index]
+                local c = p[slotIndex.colorKey]
+                map[DISPEL_TYPE_TOKENS[slotIndex.key]] = CreateColor(
+                    (c and c.r) or slotIndex.fallback[1],
+                    (c and c.g) or slotIndex.fallback[2],
+                    (c and c.b) or slotIndex.fallback[3],
                     1
                 )
             end
-            memoFP, memoMap = fp, map
+            memoFP, memoMap = filterPass, map
         end
         return memoMap, memoFP
     end
@@ -3636,54 +3636,54 @@ local GRADIENT_SHARP_TEXTURE = "Interface\\AddOns\\CludesUI\\media\\textures\\gr
 -- layout changes stay owned by the separator. Copies belong to the aura slot
 -- (engine visibility); the options preview tints its separators in place.
 -- Keep state outside the slot button, as with the border and outer ring copies.
-local function ApplyDispelSeparatorCopy(hostFrame, status, key, seam, color)
-    local copy = status[key]
+local function ApplyDispelSeparatorCopy(hostFrame, status, auraKey, seam, color)
+    local duplicate = status[auraKey]
     local source = seam and seam._tex
     if not (source and seam:IsShown() and source:IsShown()) then
-        if copy then
-            copy.host:Hide()
+        if duplicate then
+            duplicate.host:Hide()
         end
         return
     end
-    if not copy then
+    if not duplicate then
         local owner = CreateFrame("Frame", nil, hostFrame)
         local texture = owner:CreateTexture(nil, "OVERLAY", nil, 7)
         texture:SetAllPoints(owner)
         owner:SetAllPoints(source)
-        copy = { host = owner, tex = texture, source = source }
-        status[key] = copy
+        duplicate = { host = owner, tex = texture, source = source }
+        status[auraKey] = duplicate
     end
-    if copy.source ~= source then
-        copy.host:ClearAllPoints()
-        copy.host:SetAllPoints(source)
-        copy.source = source
+    if duplicate.source ~= source then
+        duplicate.host:ClearAllPoints()
+        duplicate.host:SetAllPoints(source)
+        duplicate.source = source
     end
-    copy.host:SetFrameStrata(seam:GetFrameStrata())
-    copy.host:SetFrameLevel(seam:GetFrameLevel() + 1)
-    copy.tex:SetTexture(source:GetTexture())
-    copy.tex:SetTexCoord(source:GetTexCoord())
-    copy.tex:SetVertexColor(color.r, color.g, color.b, 1)
-    copy.host:Show()
+    duplicate.host:SetFrameStrata(seam:GetFrameStrata())
+    duplicate.host:SetFrameLevel(seam:GetFrameLevel() + 1)
+    duplicate.tex:SetTexture(source:GetTexture())
+    duplicate.tex:SetTexCoord(source:GetTexCoord())
+    duplicate.tex:SetVertexColor(color.r, color.g, color.b, 1)
+    duplicate.host:Show()
 end
 
 -- applyExtra for dispel slots: builds/updates the overlay texture from the
 -- style (mode, color, opacity, health refs). Runs at init and every Restyle.
-local function ApplyDispelSlotStyle(btnFrame, skinData, style)
-    local health = style.healthFrame
+local function ApplyDispelSlotStyle(btnFrame, skinData, look)
+    local health = look.healthFrame
     if not health then
         return
     end
 
     -- Overlay set only: the decoration set never draws one. Still created on
     -- the first run (the creation window) even under Overlay None.
-    if not skinData.overlay and style.fillSet then
+    if not skinData.overlay and look.fillSet then
         -- Sublevel 2+level (3..7): higher-priority types get the higher
         -- sublevel, since every slot shares one frame level (see below).
-        skinData.overlay = btnFrame:CreateTexture(nil, "ARTWORK", nil, 2 + (style.level or 1))
+        skinData.overlay = btnFrame:CreateTexture(nil, "ARTWORK", nil, 2 + (look.level or 1))
     end
     local texture = skinData.overlay
-    local c = style.color
-    local alpha = (style.opacity or 100) / 100
+    local c = look.color
+    local alpha = (look.opacity or 100) / 100
 
     -- Change-guarded, stamped AFTER the call: SetFrameLevel on the slot
     -- button is denied while auras are secret (12.1 access restriction).
@@ -3704,23 +3704,23 @@ local function ApplyDispelSlotStyle(btnFrame, skinData, style)
 
     if not texture then
         -- Decoration set: no overlay texture.
-    elseif style.mode == "none" then
+    elseif look.mode == "none" then
         -- Overlay None; the overlay set's container is hidden then anyway.
         texture:ClearAllPoints()
         texture:Hide()
-    elseif style.mode == "gradient" or style.mode == "gradient_sharp" or style.mode == "gradient_reverse" then
+    elseif look.mode == "gradient" or look.mode == "gradient_sharp" or look.mode == "gradient_reverse" then
         texture:ClearAllPoints()
         texture:Show()
         texture:SetAllPoints(health)
-        texture:SetTexture(style.mode == "gradient" and GRADIENT_TEXTURE or GRADIENT_SHARP_TEXTURE)
+        texture:SetTexture(look.mode == "gradient" and GRADIENT_TEXTURE or GRADIENT_SHARP_TEXTURE)
         -- Gradient Sharp Reverse: the sharp texture flipped vertically (bottom-up).
-        if style.mode == "gradient_reverse" then
+        if look.mode == "gradient_reverse" then
             texture:SetTexCoord(0, 1, 1, 0)
         else
             texture:SetTexCoord(0, 1, 0, 1)
         end
         texture:SetVertexColor(c.r, c.g, c.b, alpha)
-    elseif style.mode == "fill" then
+    elseif look.mode == "fill" then
         texture:ClearAllPoints()
         texture:Show()
         local fillTex = health.GetStatusBarTexture and health:GetStatusBarTexture()
@@ -3753,8 +3753,8 @@ local function ApplyDispelSlotStyle(btnFrame, skinData, style)
     -- no fixed order, as on Raid Frames. The secret-safe renderer needs no size
     -- reads and no scripts (scripts never run under a slot button). State lives
     -- in d, never on the button.
-    local callback = style.customBorder
-    local uf = style.unitFrame
+    local callback = look.customBorder
+    local uf = look.unitFrame
     local ub = callback and uf and uf.unifiedBorder
     if ub then
         if not skinData.ufCbHost then
@@ -3821,7 +3821,7 @@ local function ApplyDispelSlotStyle(btnFrame, skinData, style)
             skinData.ufRingAnchor = ring
         end
         skinData.ufRingOn = true
-        owner:SetFrameLevel(edge:GetFrameLevel() + (style.ringLift or 1))
+        owner:SetFrameLevel(edge:GetFrameLevel() + (look.ringLift or 1))
         local art = ring:GetTexture()
         if skinData.ufRingArt ~= art then
             skinData.ufRingTex:SetTexture(art)
@@ -3845,7 +3845,7 @@ local function ApplyDispelSlotStyle(btnFrame, skinData, style)
     -- Frames parity). Only the live twin carries style.icon. health+LIFT+level
     -- (frame+21..+25) draws it over the border and the texts (frame+20), in
     -- the Magic > ... > Bleed order, at most level with the raid marker.
-    local ic = style.icon
+    local ic = look.icon
     if ic then
         if not skinData.ufIconHost then
             local owner = CreateFrame("Frame", nil, btnFrame)
@@ -3855,7 +3855,7 @@ local function ApplyDispelSlotStyle(btnFrame, skinData, style)
             skinData.ufIconHost = owner
         end
         local owner = skinData.ufIconHost
-        owner:SetFrameLevel(health:GetFrameLevel() + TypeIcons.LIFT + (style.level or 1))
+        owner:SetFrameLevel(health:GetFrameLevel() + TypeIcons.LIFT + (look.level or 1))
         skinData.ufIconTex:SetAtlas(ic.atlas)
         owner:SetSize(ic.size, ic.size)
         owner:ClearAllPoints()
@@ -3879,7 +3879,7 @@ end
 -- applyExtra: the cell's icon host, made on the first run (the creation window,
 -- the only one that may anchor to the cell), with its type's art at the stacked
 -- icons' level.
-function TypeIcons.ApplyCell(btnFrame, skinData, style)
+function TypeIcons.ApplyCell(btnFrame, skinData, look)
     local owner = skinData.ufRowIconHost
     if not owner then
         owner = CreateFrame("Frame", nil, btnFrame)
@@ -3889,10 +3889,10 @@ function TypeIcons.ApplyCell(btnFrame, skinData, style)
         skinData.ufRowIconTex:SetAllPoints(owner)
         skinData.ufRowIconHost = owner
     end
-    skinData.ufRowIconTex:SetAtlas(style.atlas)
-    local health = style.healthFrame
+    skinData.ufRowIconTex:SetAtlas(look.atlas)
+    local health = look.healthFrame
     if health then
-        owner:SetFrameLevel(health:GetFrameLevel() + TypeIcons.LIFT + (style.level or 1))
+        owner:SetFrameLevel(health:GetFrameLevel() + TypeIcons.LIFT + (look.level or 1))
     end
 end
 
@@ -3907,17 +3907,17 @@ function TypeIcons.CreateRow(widget, record)
         record.dispelIcons = boxHolder
     end
     for index = 1, #DISPEL_SLOTS do
-        local slot = DISPEL_SLOTS[index]
-        local cand = { includeDispelTypes = { [DISPEL_TYPE_TOKENS[slot.key]] = true } }
+        local slotIndex = DISPEL_SLOTS[index]
+        local candidate = { includeDispelTypes = { [DISPEL_TYPE_TOKENS[slotIndex.key]] = true } }
         for t = 1, 2 do
-            local key = (t == 1) and slot.key or (slot.key .. "_byme")
-            if not boxHolder:HasAuraGroup(key) then
+            local auraKey = (t == 1) and slotIndex.key or (slotIndex.key .. "_byme")
+            if not boxHolder:HasAuraGroup(auraKey) then
                 AK.AddGroupToContainer(boxHolder, {
-                    key = key,
+                    key = auraKey,
                     maxFrameCount = 0,
-                    candidateFilters = cand,
+                    candidateFilters = candidate,
                     filter = (t == 1) and { "HARMFUL" } or { "HARMFUL", "RAID_PLAYER_DISPELLABLE" },
-                    style = TypeIcons.StyleKey(slot.key),
+                    style = TypeIcons.StyleKey(slotIndex.key),
                 })
             end
         end
@@ -3948,12 +3948,12 @@ function TypeIcons.LayoutRow(widget, record, p)
     local layout = { elementWidth = size, elementHeight = size, elementSpacing = gap, lineSpacing = gap }
     local byMe = p.dispelOverlayByMe == true
     for index = 1, #DISPEL_SLOTS do
-        local key = DISPEL_SLOTS[index].key
-        local byMeLive = byMe and not TokenBlindDispelSlot(key)
-        boxHolder:SetAuraGroupLayout(key, layout)
-        boxHolder:SetAuraGroupLayout(key .. "_byme", layout)
-        AK.SetGroupCap(boxHolder, key, byMeLive and 0 or 1)
-        AK.SetGroupCap(boxHolder, key .. "_byme", byMeLive and 1 or 0)
+        local auraKey = DISPEL_SLOTS[index].key
+        local byMeLive = byMe and not TokenBlindDispelSlot(auraKey)
+        boxHolder:SetAuraGroupLayout(auraKey, layout)
+        boxHolder:SetAuraGroupLayout(auraKey .. "_byme", layout)
+        AK.SetGroupCap(boxHolder, auraKey, byMeLive and 0 or 1)
+        AK.SetGroupCap(boxHolder, auraKey .. "_byme", byMeLive and 1 or 0)
     end
 end
 
@@ -3984,7 +3984,7 @@ local function BuildDispelStyles(widget)
     if not p then
         return false
     end
-    local mode = p.dispelOverlay or "none"
+    local modeName = p.dispelOverlay or "none"
     -- "Only Dispellable by You": slot filters are fixed at declaration and
     -- containers are never swapped (engine buttons leak), so BOTH filter
     -- variants exist as slots from creation and the INACTIVE variant is
@@ -4018,21 +4018,21 @@ local function BuildDispelStyles(widget)
         or nil
     local rowSize = p.dispelIconSize or 16
     for index = 1, #DISPEL_SLOTS do
-        local slot = DISPEL_SLOTS[index]
+        local slotIndex = DISPEL_SLOTS[index]
         -- A type the engine token can never match keeps using the PLAIN slot in
         -- "by me" mode: its by-me twin stays dark and would swallow the setting
         -- entirely.
-        local tokenBlind = TokenBlindDispelSlot(slot.key)
+        local tokenBlind = TokenBlindDispelSlot(slotIndex.key)
         local byMeLive = byMe and not tokenBlind
-        local colour = p[slot.colorKey]
+        local colour = p[slotIndex.colorKey]
         local color = {
-            r = colour and colour.r or slot.fallback[1],
-            g = colour and colour.g or slot.fallback[2],
-            b = colour and colour.b or slot.fallback[3],
+            r = colour and colour.r or slotIndex.fallback[1],
+            g = colour and colour.g or slotIndex.fallback[2],
+            b = colour and colour.b or slotIndex.fallback[3],
         }
         local iconTex = iconCorner
                 and {
-                    atlas = slot.atlas,
+                    atlas = slotIndex.atlas,
                     corner = iconCorner,
                     size = p.dispelIconSize or 16,
                     offX = p.dispelIconOffsetX or 0,
@@ -4042,15 +4042,15 @@ local function BuildDispelStyles(widget)
         -- Plain twin, then the by-me twin. The overlay, the border copy and the
         -- type icon ride the live twin only; the inactive one draws nothing.
         for t = 1, 2 do
-            local key = (t == 1) and slot.key or (slot.key .. "_byme")
+            local auraKey = (t == 1) and slotIndex.key or (slotIndex.key .. "_byme")
             local live = (t == 2) == byMeLive
-            AK.styles[DispelStyleKey(key)] = {
+            AK.styles[DispelStyleKey(auraKey)] = {
                 width = 1,
                 height = 1,
                 noRegions = true,
                 mode = "none",
                 color = color,
-                level = slot.level,
+                level = slotIndex.level,
                 healthFrame = widget.Health,
                 unitFrame = widget,
                 customBorder = live and customBorder or nil,
@@ -4058,27 +4058,27 @@ local function BuildDispelStyles(widget)
                 icon = live and iconTex or nil,
                 applyExtra = ApplyDispelSlotStyle,
             }
-            AK.styles[DispelStyleKey(key, true)] = {
+            AK.styles[DispelStyleKey(auraKey, true)] = {
                 width = 1,
                 height = 1,
                 noRegions = true,
                 fillSet = true,
-                mode = mode,
+                mode = modeName,
                 color = color,
                 opacity = live and op or 0,
-                level = slot.level,
+                level = slotIndex.level,
                 healthFrame = widget.Health,
                 applyExtra = ApplyDispelSlotStyle,
             }
         end
         -- The Growth Direction row's cells for this type (both twins).
-        AK.styles[TypeIcons.StyleKey(slot.key)] = {
+        AK.styles[TypeIcons.StyleKey(slotIndex.key)] = {
             width = rowSize,
             height = rowSize,
             noRegions = true,
             noTooltips = true,
-            atlas = slot.atlas,
-            level = slot.level,
+            atlas = slotIndex.atlas,
+            level = slotIndex.level,
             healthFrame = widget.Health,
             applyExtra = TypeIcons.ApplyCell,
         }
@@ -4109,7 +4109,7 @@ local function CreateDispelSet(widget, record, fillTex)
 
     local n = 0
     for index = 1, #DISPEL_SLOTS do
-        local slot = DISPEL_SLOTS[index]
+        local slotIndex = DISPEL_SLOTS[index]
         local function ParkSlot(slotButton)
             -- Park the slot button on the health bar center (the overlay textures
             -- anchor to the health bar independently). Anchored HERE, inside the
@@ -4121,10 +4121,10 @@ local function CreateDispelSet(widget, record, fillTex)
         n = n + 1
         if n > (record[addsField] or 0) then
             AK.AddSlotToContainer(boxHolder, {
-                key = slot.key,
+                key = slotIndex.key,
                 filter = { "HARMFUL" },
-                candidateFilters = { includeDispelTypes = { [DISPEL_TYPE_TOKENS[slot.key]] = true } },
-                style = DispelStyleKey(slot.key, fillTex),
+                candidateFilters = { includeDispelTypes = { [DISPEL_TYPE_TOKENS[slotIndex.key]] = true } },
+                style = DispelStyleKey(slotIndex.key, fillTex),
                 extraInit = ParkSlot,
             })
             record[addsField] = n
@@ -4136,10 +4136,10 @@ local function CreateDispelSet(widget, record, fillTex)
         n = n + 1
         if n > (record[addsField] or 0) then
             AK.AddSlotToContainer(boxHolder, {
-                key = slot.key .. "_byme",
+                key = slotIndex.key .. "_byme",
                 filter = { "HARMFUL", "RAID_PLAYER_DISPELLABLE" },
-                candidateFilters = { includeDispelTypes = { [DISPEL_TYPE_TOKENS[slot.key]] = true } },
-                style = DispelStyleKey(slot.key .. "_byme", fillTex),
+                candidateFilters = { includeDispelTypes = { [DISPEL_TYPE_TOKENS[slotIndex.key]] = true } },
+                style = DispelStyleKey(slotIndex.key .. "_byme", fillTex),
                 extraInit = ParkSlot,
             })
             record[addsField] = n
@@ -4191,7 +4191,7 @@ local function DispelFP(p, widget)
     -- dimensions follow the source texture anchors without a restyle.
     local s = p.player
     local callback = p.dispelCustomBorder == true and s ~= nil
-    local fp = FP(
+    local filterPass = FP(
         p.dispelOverlay,
         p.dispelOverlayOpacity,
         p.dispelOverlayByMe == true,
@@ -4233,7 +4233,7 @@ local function DispelFP(p, widget)
     )
     -- Type Icon Position: marked only while on, so an off print stays as it was.
     if p.showDispelIcons == true then
-        fp = fp
+        filterPass = filterPass
             .. "|ti|"
             .. FP(
                 p.dispelIconPosition,
@@ -4247,9 +4247,9 @@ local function DispelFP(p, widget)
     -- the overlay must stay under the absorbs at hpBar+1.
     local health = widget and widget.Health
     if health then
-        fp = fp .. "|hl|" .. health:GetFrameLevel()
+        filterPass = filterPass .. "|hl|" .. health:GetFrameLevel()
     end
-    return fp
+    return filterPass
 end
 
 local function ReloadDispelSlots(widget, record)
@@ -4266,12 +4266,12 @@ local function ReloadDispelSlots(widget, record)
         ufFP.dispel = val
         BuildDispelStyles(widget)
         for index = 1, #DISPEL_SLOTS do
-            local key = DISPEL_SLOTS[index].key
-            AK.RestyleSoon(DispelStyleKey(key))
-            AK.RestyleSoon(DispelStyleKey(key .. "_byme"))
-            AK.RestyleSoon(DispelStyleKey(key, true))
-            AK.RestyleSoon(DispelStyleKey(key .. "_byme", true))
-            AK.RestyleSoon(TypeIcons.StyleKey(key))
+            local auraKey = DISPEL_SLOTS[index].key
+            AK.RestyleSoon(DispelStyleKey(auraKey))
+            AK.RestyleSoon(DispelStyleKey(auraKey .. "_byme"))
+            AK.RestyleSoon(DispelStyleKey(auraKey, true))
+            AK.RestyleSoon(DispelStyleKey(auraKey .. "_byme", true))
+            AK.RestyleSoon(TypeIcons.StyleKey(auraKey))
         end
         if record.dispelIconsBuilt then
             TypeIcons.LayoutRow(widget, record, p)
@@ -4299,8 +4299,8 @@ end
 -- actually flips. No combat gate: the restyle routes through AK.RestyleSoon,
 -- whose worker defers secrecy-denied writes to the restriction-lift re-queue.
 do
-    local _, class = UnitClass("player")
-    if class == "SHAMAN" then
+    local _, classFile = UnitClass("player")
+    if classFile == "SHAMAN" then
         local ev = CreateFrame("Frame")
         ev:RegisterEvent("TRAIT_CONFIG_UPDATED")
         ev:RegisterEvent("SPELLS_CHANGED")
@@ -4366,24 +4366,24 @@ function mod.UF_ReloadAuraContainers(widget, unitToken)
     record.cfgDirty = nil
 
     local anyOn = false
-    for base, field in pairs({ HELPFUL = "buffs", HARMFUL = "debuffs" }) do
-        local key = StyleKey(unitToken, base)
-        local st = ufFP[key]
-        if not st then
-            st = {}
-            ufFP[key] = st
+    for baseSet, field in pairs({ HELPFUL = "buffs", HARMFUL = "debuffs" }) do
+        local auraKey = StyleKey(unitToken, baseSet)
+        local state = ufFP[auraKey]
+        if not state then
+            state = {}
+            ufFP[auraKey] = state
         end
 
         -- Restyle only when the built style actually differs; the deferred
         -- time-sliced restyler spreads the button decoration work out.
-        local style = BuildStyle(unitToken, base, s, record.frame)
-        local styleV = StyleTableFP(style, font)
-        if st.style ~= styleV then
-            st.style = styleV
-            AK.styles[key] = style
-            AK.RestyleSoon(key)
+        local look = BuildStyle(unitToken, baseSet, s, record.frame)
+        local styleV = StyleTableFP(look, font)
+        if state.style ~= styleV then
+            state.style = styleV
+            AK.styles[auraKey] = look
+            AK.RestyleSoon(auraKey)
         end
-        if base == "HELPFUL" and unitToken ~= "player" then
+        if baseSet == "HELPFUL" and unitToken ~= "player" then
             PurgeGlow.Register(unitToken, s, record.frame, font)
             PurgeGlow.SetWatch(unitToken, PurgeGlow.On(unitToken, s))
         end
@@ -4393,8 +4393,8 @@ function mod.UF_ReloadAuraContainers(widget, unitToken)
         -- probe T1/T1b), and the config pass zeroes whatever fell out of the active
         -- set. The old swap path permanently leaked a 10-button batch per group per
         -- toggle (engine frames are never freed).
-        local chain = ChainFor(unitToken, base, s)
-        local sig = ChainSignature(chain)
+        local filterChain = ChainFor(unitToken, baseSet, s)
+        local sig = ChainSignature(filterChain)
         local force = forceCfg
         local boxHolder = record[field]
         local declared = (record.groups and record.groups[field]) or {}
@@ -4404,7 +4404,7 @@ function mod.UF_ReloadAuraContainers(widget, unitToken)
         -- UNIT_AURA). Additive declaration requires the REAL registry:
         -- declaring into a fallback table would lose track and double-declare
         -- next change.
-        local enabled = SideOn(unitToken, base, s)
+        local enabled = SideOn(unitToken, baseSet, s)
         if enabled then
             anyOn = true
         end
@@ -4418,13 +4418,13 @@ function mod.UF_ReloadAuraContainers(widget, unitToken)
             -- "all" link is declared with the chain). Purgeable Buff Glow
             -- splits a hostile unit's buffs into links, so that row declares
             -- its catch-all on the first friendly unit (once per session).
-            if not declared.all and #chain == 0 then
-                DeclareElementGroup(boxHolder, declared, key, "all", { base }, nil)
+            if not declared.all and #filterChain == 0 then
+                DeclareElementGroup(boxHolder, declared, auraKey, "all", { baseSet }, nil)
             end
-            for index = 1, #chain do
-                local c = chain[index]
+            for index = 1, #filterChain do
+                local c = filterChain[index]
                 if not declared[c.key] then
-                    local sk = key
+                    local sk = auraKey
                     if c.glow then
                         sk = PurgeGlow.StyleKey(unitToken)
                     end
@@ -4438,11 +4438,11 @@ function mod.UF_ReloadAuraContainers(widget, unitToken)
         end
 
         if boxHolder then
-            local cfgV = CfgFP(unitToken, base, s, widget)
-            if force or st.cfg ~= cfgV then
-                st.cfg = cfgV
-                AnchorContainer(boxHolder, widget, unitToken, base, s, record.buffs) -- self-skips on anchor "none"
-                ApplyGroupConfig(boxHolder, unitToken, base, s, chain, declared)
+            local cfgV = CfgFP(unitToken, baseSet, s, widget)
+            if force or state.cfg ~= cfgV then
+                state.cfg = cfgV
+                AnchorContainer(boxHolder, widget, unitToken, baseSet, s, record.buffs) -- self-skips on anchor "none"
+                ApplyGroupConfig(boxHolder, unitToken, baseSet, s, filterChain, declared)
             end
         end
     end
@@ -4770,12 +4770,12 @@ local function BuildUnitContainers(widget, unitToken)
         -- fingerprints too: the final-stage reload would otherwise queue a
         -- restyle of buttons that were decorated from these exact tables.
         local font = (CludesUI.GetFontPath("unitFrames")) or ""
-        for _, base in ipairs({ "HELPFUL", "HARMFUL" }) do
-            local key = StyleKey(unitToken, base)
-            local style = BuildStyle(unitToken, base, s, widget)
-            AK.styles[key] = style
-            ufFP[key] = { style = StyleTableFP(style, font) }
-            if base == "HELPFUL" and unitToken ~= "player" then
+        for _, baseSet in ipairs({ "HELPFUL", "HARMFUL" }) do
+            local auraKey = StyleKey(unitToken, baseSet)
+            local look = BuildStyle(unitToken, baseSet, s, widget)
+            AK.styles[auraKey] = look
+            ufFP[auraKey] = { style = StyleTableFP(look, font) }
+            if baseSet == "HELPFUL" and unitToken ~= "player" then
                 PurgeGlow.Register(unitToken, s, widget, font)
             end
         end
@@ -4802,20 +4802,20 @@ local function BuildUnitContainers(widget, unitToken)
     -- atom), for the elements that are on (SideOn, re-read every atom): an
     -- element that is off declares nothing until a reload sees it on.
     for e = 1, 2 do
-        local base, field = ELEMENT_ORDER[e][1], ELEMENT_ORDER[e][2]
-        if SideOn(unitToken, base, s) then
-            local chain = ChainFor(unitToken, base, s)
+        local baseSet, field = ELEMENT_ORDER[e][1], ELEMENT_ORDER[e][2]
+        if SideOn(unitToken, baseSet, s) then
+            local filterChain = ChainFor(unitToken, baseSet, s)
             local declared = record.groups[field]
-            local styleKey = StyleKey(unitToken, base)
+            local styleKey = StyleKey(unitToken, baseSet)
             -- The plain catch-all only for an empty chain, where it is the
             -- group that shows or, showing nothing, still gives the container
             -- its layout aspect (see the reload's declaration).
-            if not declared.all and #chain == 0 then
-                DeclareElementGroup(record[field], declared, styleKey, "all", { base }, nil)
+            if not declared.all and #filterChain == 0 then
+                DeclareElementGroup(record[field], declared, styleKey, "all", { baseSet }, nil)
                 return "again"
             end
-            for index = 1, #chain do
-                local c = chain[index]
+            for index = 1, #filterChain do
+                local c = filterChain[index]
                 if not declared[c.key] then
                     local sk = styleKey
                     if c.glow then

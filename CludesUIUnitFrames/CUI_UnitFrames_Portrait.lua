@@ -31,11 +31,11 @@ end
 -- such a unit (PlayerModel:SetUnit needs the identity), so the 3D lanes
 -- stand down for it. An answer that cannot be read counts as withheld.
 local ShouldUnitIdentityBeSecret = C_Secrets and C_Secrets.ShouldUnitIdentityBeSecret
-local function IdentityHidden(unit)
+local function IdentityHidden(unitId)
     if not ShouldUnitIdentityBeSecret then
         return false
     end
-    local hidden = ShouldUnitIdentityBeSecret(unit)
+    local hidden = ShouldUnitIdentityBeSecret(unitId)
     return issecretvalue(hidden) or hidden == true
 end
 
@@ -45,8 +45,8 @@ local CLASS_FULL_COORDS = CludesUI.CLASS_ICON_SPRITE_COORDS
 
 -- Apply a class icon from the sprite sheet. mirror = true swaps the cell's
 -- left/right coords (Mirror Portrait); the coords are written on every paint.
-local function ApplyClassIconTexture(texture, classToken, style, mirror)
-    local coords = CLASS_FULL_COORDS[classToken]
+local function ApplyClassIconTexture(texture, classFile, style, mirror)
+    local coords = CLASS_FULL_COORDS[classFile]
     if not coords then
         return false
     end
@@ -69,8 +69,8 @@ end
 -- re-asserts file and coords. Returns false when there is no class to paint.
 -- mirror = true (Mirror Portrait) flips both lanes: the reset before SetAtlas
 -- is the flipped one, and the sprite cell's left/right coords swap.
-function mod.UF_PaintClassIcon(texture, unit, style, mirror)
-    local _, ct = UnitClass(unit)
+function mod.UF_PaintClassIcon(texture, unitId, style, mirror)
+    local _, ct = UnitClass(unitId)
     if issecretvalue(ct) then
         if mirror then
             texture:SetTexCoord(1, 0, 0, 1)
@@ -118,12 +118,12 @@ end
 -- true when the live unit needs the other object, plus the resolved fallback
 -- for a non-player. A model on a frame not set to Class is a genuine 3D
 -- portrait. No unit, no swap.
-function mod.UF_ClassFallbackNeedsSwap(widget, unit)
+function mod.UF_ClassFallbackNeedsSwap(widget, unitId)
     local p = widget.Portrait
-    if not (unit and p and (p.isClass or p.is2D == false)) then
+    if not (unitId and p and (p.isClass or p.is2D == false)) then
         return false
     end
-    local uKey = UnitToSettingsKey(widget._cuiBaseUnit or unit)
+    local uKey = UnitToSettingsKey(widget._cuiBaseUnit or unitId)
     local s = uKey and saved.profile[uKey]
     if p.isClass then
         -- Not opted in: the fallback is "2d" and the class object stays.
@@ -133,10 +133,10 @@ function mod.UF_ClassFallbackNeedsSwap(widget, unit)
     elseif ((s and s.portraitMode) or saved.profile.portraitMode or "2d") ~= "class" then
         return false
     end
-    if not UnitExists(unit) then
+    if not UnitExists(unitId) then
         return false
     end
-    local fb = not UnitIsPlayer(unit) and mod.UF_ClassFallback(s) or nil
+    local fb = not UnitIsPlayer(unitId) and mod.UF_ClassFallback(s) or nil
     if p.isClass then
         return fb == "3d", fb
     end
@@ -279,114 +279,114 @@ do
     -- onReady(guid) lets the portrait repaint its flip. Secret GUIDs are not
     -- cached. The model is our own frame, so its fields are ours to use.
     local verdict, verdictCount = {}, 0
-    local function Release(model)
-        model._mirPending, model._mirReady = nil, nil
+    local function Release(modelFrame)
+        modelFrame._mirPending, modelFrame._mirReady = nil, nil
         -- Shown = a 3D portrait now owns the model: leave it loaded.
-        if not model:IsShown() then
-            model:ClearModel()
+        if not modelFrame:IsShown() then
+            modelFrame:ClearModel()
         end
-        model:SetKeepModelOnHide(false)
+        modelFrame:SetKeepModelOnHide(false)
     end
-    local function Store(key, val)
-        if verdict[key] == nil then
+    local function Store(styleKey, val)
+        if verdict[styleKey] == nil then
             if verdictCount >= 500 then
                 wipe(verdict)
                 verdictCount = 0
             end
             verdictCount = verdictCount + 1
         end
-        verdict[key] = val
+        verdict[styleKey] = val
     end
-    local function Resolve(model, key)
-        local val = GetMirrorAngle(model:GetModelFileID()) ~= nil
-        local ready = model._mirReady
-        Release(model)
-        Store(key, val)
+    local function Resolve(modelFrame, styleKey)
+        local val = GetMirrorAngle(modelFrame:GetModelFileID()) ~= nil
+        local ready = modelFrame._mirReady
+        Release(modelFrame)
+        Store(styleKey, val)
         if ready then
-            ready(key)
+            ready(styleKey)
         end
         return val
     end
-    local function OnModelLoaded(model)
-        local key = model._mirPending
-        if not key then
+    local function OnModelLoaded(modelFrame)
+        local styleKey = modelFrame._mirPending
+        if not styleKey then
             return
         end
-        if model:IsShown() then
-            Release(model)
+        if modelFrame:IsShown() then
+            Release(modelFrame)
             return
         end
-        Resolve(model, key)
+        Resolve(modelFrame, styleKey)
     end
-    function mod.UF_CanMirrorPortrait2D(model, unit, onReady)
+    function mod.UF_CanMirrorPortrait2D(modelFrame, unitId, onReady)
         -- No model for a unit whose identity is withheld: its portrait stays
         -- unflipped, and the model is left as it is.
-        if IdentityHidden(unit) then
+        if IdentityHidden(unitId) then
             return false
         end
         -- IDs may be secret: only type() and issecretvalue() ever test them.
-        local unitGuid = UnitGUID(unit)
-        local key = (not issecretvalue(unitGuid)) and unitGuid or nil
-        if key then
-            local val = verdict[key]
+        local unitGuid = UnitGUID(unitId)
+        local styleKey = (not issecretvalue(unitGuid)) and unitGuid or nil
+        if styleKey then
+            local val = verdict[styleKey]
             if val ~= nil then
                 return val
             end
             -- This unit's load is still in flight: take the answer if it is in.
-            if model._mirPending == key then
-                if type(model:GetModelFileID()) == "nil" then
+            if modelFrame._mirPending == styleKey then
+                if type(modelFrame:GetModelFileID()) == "nil" then
                     return false
                 end
-                model._mirReady = nil
-                return Resolve(model, key)
+                modelFrame._mirReady = nil
+                return Resolve(modelFrame, styleKey)
             end
         end
-        if model._mirPending then
-            Release(model)
+        if modelFrame._mirPending then
+            Release(modelFrame)
         end
-        model:SetKeepModelOnHide(true)
-        model:ClearModel()
-        model:SetUnit(unit)
-        local ident = model:GetModelFileID()
-        if type(ident) == "nil" and key and onReady then
-            model._mirPending, model._mirReady = key, onReady
-            if not model._mirHooked then
-                model._mirHooked = true
-                model:HookScript("OnModelLoaded", OnModelLoaded)
+        modelFrame:SetKeepModelOnHide(true)
+        modelFrame:ClearModel()
+        modelFrame:SetUnit(unitId)
+        local ident = modelFrame:GetModelFileID()
+        if type(ident) == "nil" and styleKey and onReady then
+            modelFrame._mirPending, modelFrame._mirReady = styleKey, onReady
+            if not modelFrame._mirHooked then
+                modelFrame._mirHooked = true
+                modelFrame:HookScript("OnModelLoaded", OnModelLoaded)
             end
             return false
         end
         local val = GetMirrorAngle(ident) ~= nil
-        Release(model)
-        if key and type(ident) ~= "nil" then
-            Store(key, val)
+        Release(modelFrame)
+        if styleKey and type(ident) ~= "nil" then
+            Store(styleKey, val)
         end
         return val
     end
-    function mod.UF_ForgetPortraitMirror(unit)
-        local unitGuid = UnitGUID(unit)
+    function mod.UF_ForgetPortraitMirror(unitId)
+        local unitGuid = UnitGUID(unitId)
         if not issecretvalue(unitGuid) and unitGuid and verdict[unitGuid] ~= nil then
             verdict[unitGuid] = nil
             verdictCount = verdictCount - 1
         end
     end
 
-    function mod.UF_ApplyPortraitRotation(model, mirror)
-        local angle = mirror and GetMirrorAngle(model:GetModelFileID())
+    function mod.UF_ApplyPortraitRotation(modelFrame, mirror)
+        local angle = mirror and GetMirrorAngle(modelFrame:GetModelFileID())
         if not angle then
             -- Clear the previous target's transform when switching to a creature,
             -- losing the model ID, showing a question mark, or disabling mirroring.
-            if model._portraitMirrored then
-                model:SetViewTranslation(0, 0)
-                model:SetRotation(0, false)
-                model._portraitMirrored = nil
+            if modelFrame._portraitMirrored then
+                modelFrame:SetViewTranslation(0, 0)
+                modelFrame:SetRotation(0, false)
+                modelFrame._portraitMirrored = nil
             end
             return
         end
         -- Reapply after every model reload, even when the angle has not changed.
-        model:SetViewTranslation(15, 0)
-        model:SetRotation(math.rad(angle), false)
-        model._portraitMirrored = true
+        modelFrame:SetViewTranslation(15, 0)
+        modelFrame:SetRotation(math.rad(angle), false)
+        modelFrame._portraitMirrored = true
     end
 end
 
@@ -412,41 +412,41 @@ do
             m:SetAlpha(CludesUI.UIScaledAlpha(a))
         end
     end
-    function mod.UF_SetModelAlpha(model, a)
-        mirrored[model] = a
+    function mod.UF_SetModelAlpha(modelFrame, a)
+        mirrored[modelFrame] = a
         if not listening then
             listening = true
             CludesUI.OnUIAlphaChanged(Reapply)
         end
-        model:SetAlpha(CludesUI.UIScaledAlpha(a))
+        modelFrame:SetAlpha(CludesUI.UIScaledAlpha(a))
     end
 end
 
 local PortraitOverride -- forward declaration; painter registrations below the definition
 local SwapPortraitMode -- forward declaration; the portrait painter swaps through it
 function PortraitOverride(self, evt, evtUnit, fallback)
-    local element = self.Portrait
-    if not element then
+    local portrait = self.Portrait
+    if not portrait then
         return
     end
     local u = self._cuiUnit
     if not u then
         return
     end
-    if element.PreUpdate then
-        element:PreUpdate(u)
+    if portrait.PreUpdate then
+        portrait:PreUpdate(u)
     end
-    local isAvailable = UnitIsConnected(u) and UnitIsVisible(u)
+    local available = UnitIsConnected(u) and UnitIsVisible(u)
     local unitGuid = UnitGUID(u)
     local changed
-    if issecretvalue(unitGuid) or issecretvalue(element.guid) then
+    if issecretvalue(unitGuid) or issecretvalue(portrait.guid) then
         changed = true
     else
-        changed = element.guid ~= unitGuid
+        changed = portrait.guid ~= unitGuid
     end
-    local isModel = element:IsObjectType("PlayerModel")
-    local hasStateChanged = changed
-        or element.state ~= isAvailable
+    local isModel = portrait:IsObjectType("PlayerModel")
+    local changed = changed
+        or portrait.state ~= available
         or evt == "UNIT_PORTRAIT_UPDATE"
         -- 3D portraits must reload on model changes. The opted-in 2D mirror
         -- eligibility check below also uses this event; ordinary 2D art uses
@@ -484,26 +484,26 @@ function PortraitOverride(self, evt, evtUnit, fallback)
         local us = uk and saved.profile[uk]
         if us and us.portraitMirror and not mod.UF_Blizz() then
             mod.UF_ForgetPortraitMirror(u)
-            hasStateChanged = true
+            changed = true
         end
     end
     -- Blank-model recovery is only needed when no other change requires a paint.
     -- Show can run before assets stream in; PORTRAITS_UPDATED retries a still-
     -- blank model without reloading one that is already populated.
-    if not hasStateChanged and evt == "PORTRAITS_UPDATED" and isModel and element.GetModelFileID then
-        local modelFileID = element:GetModelFileID()
-        hasStateChanged = not issecretvalue(modelFileID) and modelFileID == nil
+    if not changed and evt == "PORTRAITS_UPDATED" and isModel and portrait.GetModelFileID then
+        local modelFileID = portrait:GetModelFileID()
+        changed = not issecretvalue(modelFileID) and modelFileID == nil
     end
-    if hasStateChanged then
+    if changed then
         if isModel then
             -- A model refuses a unit whose identity the game withholds (an
             -- enemy inside an instance), and the refused call leaves nothing
             -- to draw: that unit's 2D portrait stands in on the backdrop's 2D
             -- texture, and the model comes back with the next unit it can show.
-            local stand = element.backdrop and element.backdrop._2d
-            if stand and isAvailable and IdentityHidden(u) then
-                element:ClearModel()
-                element:Hide()
+            local stand = portrait.backdrop and portrait.backdrop._2d
+            if stand and available and IdentityHidden(u) then
+                portrait:ClearModel()
+                portrait:Hide()
                 SetPortraitTexture(stand, u, stand._blizzNoMask)
                 if stand.PostUpdate then
                     stand:PostUpdate(u)
@@ -513,25 +513,25 @@ function PortraitOverride(self, evt, evtUnit, fallback)
                 if stand then
                     stand:Hide()
                 end
-                element:Show()
-                if not isAvailable then
-                    element:SetCamDistanceScale(0.25)
-                    element:SetPortraitZoom(0)
-                    element:SetPosition(0, 0, 0.25)
-                    element:ClearModel()
-                    element:SetModel([[Interface\Buttons\TalkToMeQuestionMark.m2]])
+                portrait:Show()
+                if not available then
+                    portrait:SetCamDistanceScale(0.25)
+                    portrait:SetPortraitZoom(0)
+                    portrait:SetPosition(0, 0, 0.25)
+                    portrait:ClearModel()
+                    portrait:SetModel([[Interface\Buttons\TalkToMeQuestionMark.m2]])
                 else
                     local uKey3d = UnitToSettingsKey(self._cuiBaseUnit or u)
                     local uS3d = uKey3d and saved.profile[uKey3d]
                     local camScale = ((uS3d and uS3d.portrait3dZoom) or 100) / 100
-                    element:ClearModel()
-                    element:SetUnit(u)
-                    element:SetPortraitZoom(1)
-                    element:SetPosition(0, 0, 0)
-                    element:SetCamDistanceScale(camScale)
+                    portrait:ClearModel()
+                    portrait:SetUnit(u)
+                    portrait:SetPortraitZoom(1)
+                    portrait:SetPosition(0, 0, 0)
+                    portrait:SetCamDistanceScale(camScale)
                 end
             end
-        elseif element.isClass then
+        elseif portrait.isClass then
             -- Class sprite lane: the engine painter is the single portrait
             -- dispatch, so class mode paints here too. SetPortraitTexture on
             -- this element would stamp portrait art through the sprite
@@ -545,59 +545,59 @@ function PortraitOverride(self, evt, evtUnit, fallback)
             -- 2D texture, as Blizzard's own class portraits do. UnitIsPlayer
             -- is never secret. The frame's fallback (ns.UF_ClassFallback) can
             -- be nothing at all, available or not ("3d" swaps before the paint).
-            local npcTex = element.backdrop and element.backdrop._2d
+            local npcIcon = portrait.backdrop and portrait.backdrop._2d
             local fb
-            if npcTex and not UnitIsPlayer(u) then
+            if npcIcon and not UnitIsPlayer(u) then
                 fb = fallback
                 if not fb then
                     local uKeyF = UnitToSettingsKey(self._cuiBaseUnit or u)
                     fb = mod.UF_ClassFallback(uKeyF and saved.profile[uKeyF])
                 end
             end
-            if fb and (isAvailable or fb == "none") then
-                element:Hide()
+            if fb and (available or fb == "none") then
+                portrait:Hide()
                 if fb == "none" then
                     -- Hidden here: a previous unit's 2D art would stay visible.
-                    npcTex:Hide()
+                    npcIcon:Hide()
                 else
-                    SetPortraitTexture(npcTex, u, npcTex._blizzNoMask)
-                    if npcTex.PostUpdate then
-                        npcTex:PostUpdate(u)
+                    SetPortraitTexture(npcIcon, u, npcIcon._blizzNoMask)
+                    if npcIcon.PostUpdate then
+                        npcIcon:PostUpdate(u)
                     end
-                    npcTex:Show()
+                    npcIcon:Show()
                 end
             else
-                if npcTex then
-                    npcTex:Hide()
+                if npcIcon then
+                    npcIcon:Hide()
                 end
-                element:Show()
+                portrait:Show()
                 local uKeyC = UnitToSettingsKey(self._cuiBaseUnit or u)
                 local uSC = uKeyC and saved.profile[uKeyC]
                 -- Mirror Portrait flips the class art (never under a stock
                 -- style); the question-mark fallback always reads unflipped.
                 if
                     not (
-                        isAvailable
+                        available
                         and mod.UF_PaintClassIcon(
-                            element,
+                            portrait,
                             u,
                             (uSC and uSC.classThemeStyle) or "modern",
                             uSC and uSC.portraitMirror and not mod.UF_Blizz()
                         )
                     )
                 then
-                    element:SetTexCoord(0.15, 0.85, 0.15, 0.85)
-                    element:SetTexture([[Interface\Icons\INV_Misc_QuestionMark]])
+                    portrait:SetTexCoord(0.15, 0.85, 0.15, 0.85)
+                    portrait:SetTexture([[Interface\Icons\INV_Misc_QuestionMark]])
                 end
             end
         else
-            if isAvailable then
+            if available then
                 -- Third argument: skip the client's own round crop (nil off
                 -- the Blizzard Style; set by the style's portrait pass on the
                 -- player frame, whose stock mask is not a circle).
-                SetPortraitTexture(element, u, element._blizzNoMask)
+                SetPortraitTexture(portrait, u, portrait._blizzNoMask)
             else
-                element:SetTexture([[Interface\Icons\INV_Misc_QuestionMark]])
+                portrait:SetTexture([[Interface\Icons\INV_Misc_QuestionMark]])
             end
         end
         -- Recovery-preserving stamp: an UNAVAILABLE paint (fallback art --
@@ -605,26 +605,26 @@ function PortraitOverride(self, evt, evtUnit, fallback)
         -- the gate skips every later same-guid trigger and the fallback is
         -- what sticks (vehicle swaps lost the portrait this way). Leaving
         -- the guid unstamped makes the next trigger a guid-change repaint.
-        element.guid = isAvailable and unitGuid or nil
-        element.state = isAvailable
+        portrait.guid = available and unitGuid or nil
+        portrait.state = available
     end
-    if hasStateChanged and element.PostUpdate then
-        return element:PostUpdate(u, hasStateChanged)
+    if changed and portrait.PostUpdate then
+        return portrait:PostUpdate(u, changed)
     end
 end
 
 -- Portraits: PortraitOverride was already the complete painter (GUID/state
 -- gated 2D/3D handling); the engine becomes its event source. Raid target
 -- icon: index lookup straight onto the icon texture.
-mod.Engine.SetPainter("portrait", function(widget, unit, evt)
+mod.Engine.SetPainter("portrait", function(widget, unitId, evt)
     if widget.Portrait and mod.Engine.ElementOn(widget, "Portrait") then
         -- Class art frames: a 3D non-player fallback is a real mode swap, made
         -- before the paint so both read the same unit (no 2D flash between).
-        local swap, fb = mod.UF_ClassFallbackNeedsSwap(widget, unit)
+        local swap, fb = mod.UF_ClassFallbackNeedsSwap(widget, unitId)
         if swap then
             SwapPortraitMode(widget, true)
         end
-        PortraitOverride(widget, evt or "ForceUpdate", unit, fb)
+        PortraitOverride(widget, evt or "ForceUpdate", unitId, fb)
     end
 end)
 -- Element ForceUpdate stamp: the settings code refreshes portraits through
@@ -663,27 +663,27 @@ function mod.UF_RefreshPortraitMirror(unitKey)
         end
     end
 end
-mod.Engine.SetPainter("raidicon", function(widget, unit)
+mod.Engine.SetPainter("raidicon", function(widget, unitId)
     if not mod.Engine.ElementOn(widget, "RaidTargetIndicator") then
         return
     end
-    local element = widget.RaidTargetIndicator
-    if not element then
+    local portrait = widget.RaidTargetIndicator
+    if not portrait then
         return
     end
     -- The styles create the icon as a bare texture; the marker SHEET must be
     -- assigned before SetRaidTargetIconTexture's texcoords can render (the
     -- old element wiring auto-assigned it on enable -- same file the
     -- nameplate markers use).
-    if not element:GetTexture() then
-        element:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
+    if not portrait:GetTexture() then
+        portrait:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
     end
-    local index = UnitExists(unit) and GetRaidTargetIndex(unit) or nil
+    local index = UnitExists(unitId) and GetRaidTargetIndex(unitId) or nil
     if index then
-        SetRaidTargetIconTexture(element, index)
-        element:Show()
+        SetRaidTargetIconTexture(portrait, index)
+        portrait:Show()
     else
-        element:Hide()
+        portrait:Hide()
     end
 end)
 
@@ -691,7 +691,7 @@ end)
 -- table, the castbar owner backref, the channel set derived from the widgets
 -- the style actually built, the matching Blizzard-frame suppression, and the
 -- first full paint.
-function mod.UF_AttachEngineFrame(widget, unit, polled)
+function mod.UF_AttachEngineFrame(widget, unitId, polled)
     widget.colors = mod.Colors
     -- Smoothing defaults the old element wiring seeded on enable: painters
     -- pass element.smoothing into every SetValue/SetTimerDuration, and the
@@ -707,53 +707,53 @@ function mod.UF_AttachEngineFrame(widget, unit, polled)
     if widget.Castbar and not widget.Castbar.smoothing then
         widget.Castbar.smoothing = IMMEDIATE
     end
-    local channels = {}
+    local channelList = {}
     if widget.Health then
-        channels[#channels + 1] = "health"
+        channelList[#channelList + 1] = "health"
     end
     if widget.Power then
-        channels[#channels + 1] = "power"
+        channelList[#channelList + 1] = "power"
     end
-    channels[#channels + 1] = "text"
+    channelList[#channelList + 1] = "text"
     if widget.HealthPrediction then
-        channels[#channels + 1] = "absorb"
+        channelList[#channelList + 1] = "absorb"
     end
     if widget.Portrait then
-        channels[#channels + 1] = "portrait"
+        channelList[#channelList + 1] = "portrait"
         mod.UF_StampPortraitForceUpdate(widget)
     end
     if widget.Castbar then
         widget.Castbar.__owner = widget
-        channels[#channels + 1] = "castbar"
+        channelList[#channelList + 1] = "castbar"
     end
     if widget.RaidTargetIndicator then
-        channels[#channels + 1] = "raidicon"
+        channelList[#channelList + 1] = "raidicon"
     end
     if polled then
-        mod.Engine.AttachPolled(widget, unit, channels)
+        mod.Engine.AttachPolled(widget, unitId, channelList)
     else
-        mod.Engine.Attach(widget, unit, channels)
+        mod.Engine.Attach(widget, unitId, channelList)
     end
     -- Opt-in heal prediction joins its channel here when the unit has it on.
-    if widget.HealthPrediction and mod.UF_HEAL_PRED_UNITS[unit] then
-        mod.UF_HealPredApply(widget, unit, GetSettingsForUnit(unit))
+    if widget.HealthPrediction and mod.UF_HEAL_PRED_UNITS[unitId] then
+        mod.UF_HealPredApply(widget, unitId, GetSettingsForUnit(unitId))
     end
     -- Opt-in Blizzard Glow Line: built and joined only when on.
     if widget.HealthPrediction then
-        mod.UF_AbsorbGlowApply(widget, unit)
+        mod.UF_AbsorbGlowApply(widget, unitId)
     end
     -- Opt-in max health reduction: built and joined only when its style is on.
     if widget.HealthPrediction then
-        mod.UF_MaxHpApply(widget, unit)
+        mod.UF_MaxHpApply(widget, unitId)
     end
     -- The player's power value channel: joined while the frame is visible and
     -- shows the value, so it also follows the frame's show and hide.
-    if unit == "player" and widget.Power then
+    if unitId == "player" and widget.Power then
         widget:HookScript("OnShow", mod.UF_PowerValSync)
         widget:HookScript("OnHide", mod.UF_PowerValSync)
         mod.UF_PowerValSync(widget)
     end
-    mod.Engine.HideBlizzardUnitFrame(unit)
+    mod.Engine.HideBlizzardUnitFrame(unitId)
     mod.Engine.RepaintAll(widget, "Spawn")
 end
 
@@ -1068,13 +1068,13 @@ function mod.UF_PaintPortraitDragonFor(unitKey)
     end
 end
 
-function mod.UF_PortraitDragonEvent(_, evt, unit)
+function mod.UF_PortraitDragonEvent(_, evt, unitId)
     if evt == "PLAYER_TARGET_CHANGED" then
         mod.UF_PaintPortraitDragonFor("target")
     elseif evt == "PLAYER_FOCUS_CHANGED" then
         mod.UF_PaintPortraitDragonFor("focus")
     elseif evt == "UNIT_CLASSIFICATION_CHANGED" then
-        mod.UF_PaintPortraitDragonFor(unit)
+        mod.UF_PaintPortraitDragonFor(unitId)
     else
         mod.UF_PaintPortraitDragonFor("target")
         mod.UF_PaintPortraitDragonFor("focus")
@@ -1157,10 +1157,10 @@ end
 -- Border Style, ring size, host width and height, pixel grid) and its tint on
 -- the colour (border r, g, b, alpha), so the per-target class-colour re-run
 -- only compares. The Portrait Dragon is its own pass (ns.UF_PortraitDragon).
-function mod.UF_PortraitExtras(owner, s, shape)
-    local round = s and mod.UF_ROUND_SHAPES[shape]
+function mod.UF_PortraitExtras(owner, s, shapeKey)
+    local round = s and mod.UF_ROUND_SHAPES[shapeKey]
     local ringKey = (round and s.detachedPortraitOuterRing) or "none"
-    local ring = owner._outerRing
+    local ringTex = owner._outerRing
     if ringKey ~= "none" then
         local texKey = s.borderTexture or "solid"
         local scale = s.detachedPortraitOuterRingScale or 118
@@ -1172,67 +1172,67 @@ function mod.UF_PortraitExtras(owner, s, shape)
             hgt = 46
         end
         local mult = Pix.mult
-        if not ring then
-            ring = owner:CreateTexture(nil, "OVERLAY", nil, 1)
-            owner._outerRing = ring
+        if not ringTex then
+            ringTex = owner:CreateTexture(nil, "OVERLAY", nil, 1)
+            owner._outerRing = ringTex
         end
         if
-            ring._key ~= ringKey
-            or ring._tex ~= texKey
-            or ring._scale ~= scale
-            or ring._w ~= wid
-            or ring._h ~= hgt
-            or ring._mult ~= mult
+            ringTex._key ~= ringKey
+            or ringTex._tex ~= texKey
+            or ringTex._scale ~= scale
+            or ringTex._w ~= wid
+            or ringTex._h ~= hgt
+            or ringTex._mult ~= mult
         then
-            ring._key, ring._tex, ring._scale = ringKey, texKey, scale
-            ring._w, ring._h, ring._mult = wid, hgt, mult
+            ringTex._key, ringTex._tex, ringTex._scale = ringKey, texKey, scale
+            ringTex._w, ringTex._h, ringTex._mult = wid, hgt, mult
             local filePath = mod.UF_OuterRingPath(ringKey, texKey)
-            ring._path = filePath
+            ringTex._path = filePath
             if filePath then
-                ring:SetTexture(filePath)
+                ringTex:SetTexture(filePath)
                 local ext = (scale - 100) / 200
                 local ox, oy = wid * ext - 4, hgt * ext - 4
-                ring:ClearAllPoints()
-                Pix.Point(ring, "TOPLEFT", owner, "TOPLEFT", -ox, oy)
-                Pix.Point(ring, "BOTTOMRIGHT", owner, "BOTTOMRIGHT", ox, -oy)
+                ringTex:ClearAllPoints()
+                Pix.Point(ringTex, "TOPLEFT", owner, "TOPLEFT", -ox, oy)
+                Pix.Point(ringTex, "BOTTOMRIGHT", owner, "BOTTOMRIGHT", ox, -oy)
             end
         end
-        if ring._path then
+        if ringTex._path then
             local bc = s.borderColor
             local region, g, b = 0, 0, 0
             if bc then
                 region, g, b = bc.r, bc.g, bc.b
             end
             local a = s.borderAlpha or 1
-            if ring._r ~= region or ring._g ~= g or ring._b ~= b or ring._a ~= a then
-                ring._r, ring._g, ring._b, ring._a = region, g, b, a
-                ring:SetVertexColor(region, g, b, a)
+            if ringTex._r ~= region or ringTex._g ~= g or ringTex._b ~= b or ringTex._a ~= a then
+                ringTex._r, ringTex._g, ringTex._b, ringTex._a = region, g, b, a
+                ringTex:SetVertexColor(region, g, b, a)
             end
-            ring:Show()
+            ringTex:Show()
         else
-            ring:Hide()
+            ringTex:Hide()
         end
-    elseif ring then
-        ring:Hide()
+    elseif ringTex then
+        ringTex:Hide()
     end
 
-    local shadow = owner._innerShadow
+    local shadowTex = owner._innerShadow
     if round and s.detachedPortraitInnerShadow then
-        if not shadow then
+        if not shadowTex then
             -- Over the masked portrait art (ARTWORK), under the shape ring.
-            shadow = owner:CreateTexture(nil, "ARTWORK", nil, 7)
-            shadow:SetTexture(mod.UF_PORTRAIT_INNER_SHADOW)
-            shadow:SetAllPoints(owner)
-            owner._innerShadow = shadow
+            shadowTex = owner:CreateTexture(nil, "ARTWORK", nil, 7)
+            shadowTex:SetTexture(mod.UF_PORTRAIT_INNER_SHADOW)
+            shadowTex:SetAllPoints(owner)
+            owner._innerShadow = shadowTex
         end
-        local mask = owner._shapeMask
-        if mask and shadow._mask ~= mask then
-            shadow:AddMaskTexture(mask)
-            shadow._mask = mask
+        local maskTex = owner._shapeMask
+        if maskTex and shadowTex._mask ~= maskTex then
+            shadowTex:AddMaskTexture(maskTex)
+            shadowTex._mask = maskTex
         end
-        shadow:Show()
-    elseif shadow then
-        shadow:Hide()
+        shadowTex:Show()
+    elseif shadowTex then
+        shadowTex:Hide()
     end
 end
 
@@ -1256,28 +1256,28 @@ function mod.UF_SetClassPortraitPoints(texture, owner, zoom, insetX, insetY)
     end
     -- Clip only the enlarged class texture, never the portrait's decorations.
     -- Nothing is created for the default zoom or for zooming out.
-    local mask = texture._classZoomMask
+    local maskTex = texture._classZoomMask
     if clip then
-        if not mask then
-            mask = owner:CreateMaskTexture()
-            mask:SetAllPoints(owner)
+        if not maskTex then
+            maskTex = owner:CreateMaskTexture()
+            maskTex:SetAllPoints(owner)
             -- NEAREST: a bilinear 8x8 mask fades the outer 1/16 into a dark band.
-            mask:SetTexture(
+            maskTex:SetTexture(
                 "Interface\\Buttons\\WHITE8X8",
                 "CLAMPTOBLACKADDITIVE",
                 "CLAMPTOBLACKADDITIVE",
                 "NEAREST"
             )
-            texture._classZoomMask = mask
+            texture._classZoomMask = maskTex
         end
         if not texture._classZoomMasked then
-            texture:AddMaskTexture(mask)
-            mask:Show()
+            texture:AddMaskTexture(maskTex)
+            maskTex:Show()
             texture._classZoomMasked = true
         end
     elseif texture._classZoomMasked then
-        texture:RemoveMaskTexture(mask)
-        mask:Hide()
+        texture:RemoveMaskTexture(maskTex)
+        maskTex:Hide()
         texture._classZoomMasked = nil
     end
     texture:ClearAllPoints()
@@ -1300,15 +1300,15 @@ end
 -- default): the ring stays on the host and the model fills the host, drawing
 -- over the ring. host = the live backdrop or the options preview frame; model
 -- may be nil.
-local function ShapeModelEdge(length, shape, size)
+local function ShapeModelEdge(length, shapeKey, size)
     local exp = 7 - size
-    local unmasked = mod.UF_UNMASKED_RING[shape]
+    local unmasked = mod.UF_UNMASKED_RING[shapeKey]
     local inner
     if unmasked then
         local ri = unmasked - exp
         inner = ri + 9 / 128 * (length - 2 * ri)
     else
-        inner = -exp + (MASK_INSETS[shape] or 17) / 128 * (length + 2 * exp)
+        inner = -exp + (MASK_INSETS[shapeKey] or 17) / 128 * (length + 2 * exp)
     end
     local mi = (size >= 1) and 1 or 0
     local open = mi + 12 / 128 * (length - 2 * mi)
@@ -1317,7 +1317,7 @@ local function ShapeModelEdge(length, shape, size)
     end
     return open
 end
-local function LayShapeModel(owner, model, fit, shape, size)
+local function LayShapeModel(owner, modelFrame, fit, shapeKey, size)
     local ix, iy = 0, 0
     if fit then
         local wid, hgt = owner:GetWidth(), owner:GetHeight()
@@ -1327,24 +1327,24 @@ local function LayShapeModel(owner, model, fit, shape, size)
         if hgt < 1 then
             hgt = 46
         end
-        ix, iy = ShapeModelEdge(wid, shape, size), ShapeModelEdge(hgt, shape, size)
+        ix, iy = ShapeModelEdge(wid, shapeKey, size), ShapeModelEdge(hgt, shapeKey, size)
     end
-    model:ClearAllPoints()
-    Pix.Point(model, "TOPLEFT", owner, "TOPLEFT", ix, -iy)
-    Pix.Point(model, "BOTTOMRIGHT", owner, "BOTTOMRIGHT", -ix, iy)
+    modelFrame:ClearAllPoints()
+    Pix.Point(modelFrame, "TOPLEFT", owner, "TOPLEFT", ix, -iy)
+    Pix.Point(modelFrame, "BOTTOMRIGHT", owner, "BOTTOMRIGHT", -ix, iy)
 end
 -- The holder's OnSizeChanged: a host resized outside the shape pass. A hidden
 -- ring means the shape or the detached mode went away (those passes lay the
 -- model out themselves).
 local function ShapeModelResized(holderFrame)
     local owner = holderFrame._host
-    local ring = owner and owner._shapeBorderTex
-    if holderFrame._fit and ring and ring:IsShown() then
+    local ringTex = owner and owner._shapeBorderTex
+    if holderFrame._fit and ringTex and ringTex:IsShown() then
         LayShapeModel(owner, holderFrame._model, true, holderFrame._shape, holderFrame._size)
     end
 end
-function mod.UF_PortraitShapeModel(owner, ring, model, fit, shape, size)
-    fit = (fit and model and ring) and true or false
+function mod.UF_PortraitShapeModel(owner, ringTex, modelFrame, fit, shapeKey, size)
+    fit = (fit and modelFrame and ringTex) and true or false
     local holderFrame = owner._ringLift
     if fit and not holderFrame then
         holderFrame = POOL.CreateFrame("Frame", nil, owner)
@@ -1356,7 +1356,7 @@ function mod.UF_PortraitShapeModel(owner, ring, model, fit, shape, size)
         holderFrame._fit = fit or nil
         if fit then
             holderFrame._host, holderFrame._model, holderFrame._shape, holderFrame._size =
-                owner, model, shape, size
+                owner, modelFrame, shapeKey, size
             if holderFrame:GetScript("OnSizeChanged") ~= ShapeModelResized then
                 holderFrame:SetScript("OnSizeChanged", ShapeModelResized)
             end
@@ -1372,15 +1372,15 @@ function mod.UF_PortraitShapeModel(owner, ring, model, fit, shape, size)
         end
     end
     owner._ringHome = (home ~= owner) and home or nil
-    if ring then
-        local at = ring:GetParent()
+    if ringTex then
+        local at = ringTex:GetParent()
         local castOverlay = owner._castIconOverlay
         if at ~= home and not (castOverlay and at == castOverlay) then
-            ring:SetParent(home)
+            ringTex:SetParent(home)
         end
     end
-    if model then
-        LayShapeModel(owner, model, fit, shape, size)
+    if modelFrame then
+        LayShapeModel(owner, modelFrame, fit, shapeKey, size)
     end
 end
 
@@ -1389,28 +1389,28 @@ end
 --   backdrop  : the portrait backdrop frame
 --   uSettings : per-unit DB table
 --   unitToken : the unit this portrait belongs to ("player", "target", ...)
-local function ApplyDetachedPortraitShape(backdrop, uSettings, unitToken)
+local function ApplyDetachedPortraitShape(portraitBack, unitSettings, portraitUnit)
     -- Mini frames never use detached portraits.
-    local isMini = unitToken
+    local isMini = portraitUnit
         and (
-            unitToken == "pet"
-            or unitToken == "targettarget"
-            or unitToken == "focustarget"
-            or unitToken:match("^boss%d$")
+            portraitUnit == "pet"
+            or portraitUnit == "targettarget"
+            or portraitUnit == "focustarget"
+            or portraitUnit:match("^boss%d$")
         )
     local isDetached = not isMini
-        and ((uSettings and uSettings.portraitStyle) or saved.profile.portraitStyle or "attached")
+        and ((unitSettings and unitSettings.portraitStyle) or saved.profile.portraitStyle or "attached")
             == "detached"
     -- Blizzard Style: the portrait sits in the stock art's ring, never detached.
     if isDetached and mod.UF_Blizz() then
         isDetached = false
     end
-    local shape = (uSettings and uSettings.detachedPortraitShape) or "portrait"
+    local shapeKey = (unitSettings and unitSettings.detachedPortraitShape) or "portrait"
     local showBorder = true
-    local borderOpacity = ((uSettings and uSettings.detachedPortraitBorderOpacity) or 100) / 100
-    local borderColor = (uSettings and uSettings.detachedPortraitBorderColor) or { r = 0, g = 0, b = 0 }
-    local useClassColor = (uSettings and uSettings.detachedPortraitClassColor) or false
-    local rawBorderSize = (uSettings and uSettings.detachedPortraitBorderSize) or 7
+    local borderOpacity = ((unitSettings and unitSettings.detachedPortraitBorderOpacity) or 100) / 100
+    local borderColor = (unitSettings and unitSettings.detachedPortraitBorderColor) or { r = 0, g = 0, b = 0 }
+    local useClassColor = (unitSettings and unitSettings.detachedPortraitClassColor) or false
+    local rawBorderSize = (unitSettings and unitSettings.detachedPortraitBorderSize) or 7
     -- Border art is natively 7px. Scale UP by (7 - rawBorderSize) so the mask
     -- clips the inner portion, leaving rawBorderSize px visible.
     local bExp = 7 - rawBorderSize
@@ -1419,30 +1419,30 @@ local function ApplyDetachedPortraitShape(backdrop, uSettings, unitToken)
     local bR, bG, bB = borderColor.r, borderColor.g, borderColor.b
     if useClassColor then
         -- Unit Color in Dark Mode keeps the unit path below under Dark Mode.
-        local isDark = mod.UF_DarkThemeOn(uSettings)
-            and not (uSettings and uSettings.detachedPortraitUnitColorDark)
+        local isDark = mod.UF_DarkThemeOn(unitSettings)
+            and not (unitSettings and unitSettings.detachedPortraitUnitColorDark)
         if isDark then
             -- Dark mode: always the player's own class color.
-            local _, classToken = UnitClass("player")
-            if classToken then
-                local c = CludesUI.GetClassColor(classToken)
+            local _, classFile = UnitClass("player")
+            if classFile then
+                local c = CludesUI.GetClassColor(classFile)
                 if c then
                     bR, bG, bB = c.r, c.g, c.b
                 end
             end
-        elseif unitToken and UnitExists(unitToken) then
+        elseif portraitUnit and UnitExists(portraitUnit) then
             -- Non-dark: the unit's health bar color (class for players, reaction
             -- for NPCs, tapped grey).
-            local _, classToken = UnitClass(unitToken)
-            if UnitIsPlayer(unitToken) and not issecretvalue(classToken) and classToken then
-                local c = CludesUI.GetClassColor(classToken)
+            local _, classFile = UnitClass(portraitUnit)
+            if UnitIsPlayer(portraitUnit) and not issecretvalue(classFile) and classFile then
+                local c = CludesUI.GetClassColor(classFile)
                 if c then
                     bR, bG, bB = c.r, c.g, c.b
                 end
-            elseif UnitIsTapDenied and UnitIsTapDenied(unitToken) then
+            elseif UnitIsTapDenied and UnitIsTapDenied(portraitUnit) then
                 bR, bG, bB = 0.6, 0.6, 0.6
             else
-                local reaction = UnitReaction(unitToken, "player")
+                local reaction = UnitReaction(portraitUnit, "player")
                 if reaction then
                     -- Prefer oUF's reaction table (carries the custom Enemy Colors
                     -- override) so the border matches the health bar.
@@ -1455,9 +1455,9 @@ local function ApplyDetachedPortraitShape(backdrop, uSettings, unitToken)
             end
         else
             -- Fallback: player class color.
-            local _, classToken = UnitClass("player")
-            if classToken then
-                local c = CludesUI.GetClassColor(classToken)
+            local _, classFile = UnitClass("player")
+            if classFile then
+                local c = CludesUI.GetClassColor(classFile)
                 if c then
                     bR, bG, bB = c.r, c.g, c.b
                 end
@@ -1466,157 +1466,157 @@ local function ApplyDetachedPortraitShape(backdrop, uSettings, unitToken)
     end
 
     -- Background fill: Detached Background color while detached, stock grey otherwise.
-    if backdrop._bg then
-        local bgc = isDetached and uSettings and uSettings.detachedPortraitBgColor
+    if portraitBack._bg then
+        local bgc = isDetached and unitSettings and unitSettings.detachedPortraitBgColor
         if bgc then
-            backdrop._bg:SetColorTexture(bgc.r, bgc.g, bgc.b, bgc.a or 1)
+            portraitBack._bg:SetColorTexture(bgc.r, bgc.g, bgc.b, bgc.a or 1)
         else
-            backdrop._bg:SetColorTexture(0.1, 0.1, 0.1, 1)
+            portraitBack._bg:SetColorTexture(0.1, 0.1, 0.1, 1)
         end
     end
 
     -- Not detached: drop the mask and reset texture positions.
     if not isDetached then
-        if backdrop._shapeMask then
-            if backdrop._2d then
-                backdrop._2d:RemoveMaskTexture(backdrop._shapeMask)
+        if portraitBack._shapeMask then
+            if portraitBack._2d then
+                portraitBack._2d:RemoveMaskTexture(portraitBack._shapeMask)
             end
-            if backdrop._class then
-                backdrop._class:RemoveMaskTexture(backdrop._shapeMask)
+            if portraitBack._class then
+                portraitBack._class:RemoveMaskTexture(portraitBack._shapeMask)
             end
-            if backdrop._bg then
-                backdrop._bg:RemoveMaskTexture(backdrop._shapeMask)
+            if portraitBack._bg then
+                portraitBack._bg:RemoveMaskTexture(portraitBack._shapeMask)
             end
-            backdrop._shapeMask:Hide()
+            portraitBack._shapeMask:Hide()
         end
-        if backdrop._shapeBorderTex then
-            backdrop._shapeBorderTex:Hide()
+        if portraitBack._shapeBorderTex then
+            portraitBack._shapeBorderTex:Hide()
         end
-        if backdrop._sqBorderTexs then
-            for _, t in ipairs(backdrop._sqBorderTexs) do
+        if portraitBack._sqBorderTexs then
+            for _, t in ipairs(portraitBack._sqBorderTexs) do
                 t:Hide()
             end
         end
         -- Detached mode expands these for mask fill; reset to default.
-        if backdrop._2d then
-            backdrop._2d:ClearAllPoints()
-            Pix.Point(backdrop._2d, "TOPLEFT", backdrop, "TOPLEFT", 0, 0)
-            Pix.Point(backdrop._2d, "BOTTOMRIGHT", backdrop, "BOTTOMRIGHT", 0, 0)
+        if portraitBack._2d then
+            portraitBack._2d:ClearAllPoints()
+            Pix.Point(portraitBack._2d, "TOPLEFT", portraitBack, "TOPLEFT", 0, 0)
+            Pix.Point(portraitBack._2d, "BOTTOMRIGHT", portraitBack, "BOTTOMRIGHT", 0, 0)
         end
-        if backdrop._class then
-            local bh2 = backdrop:GetHeight()
-            if bh2 < 1 then
-                bh2 = 46
+        if portraitBack._class then
+            local borderH2 = portraitBack:GetHeight()
+            if borderH2 < 1 then
+                borderH2 = 46
             end
-            local classInset = math.floor(bh2 * 0.08)
+            local classInset = math.floor(borderH2 * 0.08)
             mod.UF_SetClassPortraitPoints(
-                backdrop._class,
-                backdrop,
-                uSettings and uSettings.portraitClassZoom,
+                portraitBack._class,
+                portraitBack,
+                unitSettings and unitSettings.portraitClassZoom,
                 classInset,
                 classInset
             )
         end
-        if backdrop._3d then
-            backdrop._3d:ClearAllPoints()
-            Pix.Point(backdrop._3d, "TOPLEFT", backdrop, "TOPLEFT", 0, 0)
-            Pix.Point(backdrop._3d, "BOTTOMRIGHT", backdrop, "BOTTOMRIGHT", 0, 0)
+        if portraitBack._3d then
+            portraitBack._3d:ClearAllPoints()
+            Pix.Point(portraitBack._3d, "TOPLEFT", portraitBack, "TOPLEFT", 0, 0)
+            Pix.Point(portraitBack._3d, "BOTTOMRIGHT", portraitBack, "BOTTOMRIGHT", 0, 0)
         end
-        if backdrop._outerRing or backdrop._innerShadow then
-            mod.UF_PortraitExtras(backdrop, nil)
+        if portraitBack._outerRing or portraitBack._innerShadow then
+            mod.UF_PortraitExtras(portraitBack, nil)
         end
         return
     end
 
     -- === MASK ===
-    local maskPath = shape ~= "none" and PORTRAIT_MASKS[shape] or nil
-    if shape == "none" then
+    local maskPath = shapeKey ~= "none" and PORTRAIT_MASKS[shapeKey] or nil
+    if shapeKey == "none" then
         -- Drop mask, border and background.
-        if backdrop._bg then
-            backdrop._bg:Hide()
+        if portraitBack._bg then
+            portraitBack._bg:Hide()
         end
-        if backdrop._shapeMask then
-            if backdrop._2d then
-                pcall(backdrop._2d.RemoveMaskTexture, backdrop._2d, backdrop._shapeMask)
+        if portraitBack._shapeMask then
+            if portraitBack._2d then
+                pcall(portraitBack._2d.RemoveMaskTexture, portraitBack._2d, portraitBack._shapeMask)
             end
-            if backdrop._class then
-                pcall(backdrop._class.RemoveMaskTexture, backdrop._class, backdrop._shapeMask)
+            if portraitBack._class then
+                pcall(portraitBack._class.RemoveMaskTexture, portraitBack._class, portraitBack._shapeMask)
             end
-            if backdrop._bg then
-                pcall(backdrop._bg.RemoveMaskTexture, backdrop._bg, backdrop._shapeMask)
+            if portraitBack._bg then
+                pcall(portraitBack._bg.RemoveMaskTexture, portraitBack._bg, portraitBack._shapeMask)
             end
-            backdrop._shapeMask:Hide()
+            portraitBack._shapeMask:Hide()
         end
-        if backdrop._shapeBorderTex then
-            backdrop._shapeBorderTex:Hide()
+        if portraitBack._shapeBorderTex then
+            portraitBack._shapeBorderTex:Hide()
         end
-        if backdrop._sqBorderTexs then
-            for _, t in ipairs(backdrop._sqBorderTexs) do
+        if portraitBack._sqBorderTexs then
+            for _, t in ipairs(portraitBack._sqBorderTexs) do
                 t:Hide()
             end
         end
         -- Reset content to fill the backdrop.
-        if backdrop._2d then
-            backdrop._2d:ClearAllPoints()
-            Pix.Point(backdrop._2d, "TOPLEFT", backdrop, "TOPLEFT", 0, 0)
-            Pix.Point(backdrop._2d, "BOTTOMRIGHT", backdrop, "BOTTOMRIGHT", 0, 0)
+        if portraitBack._2d then
+            portraitBack._2d:ClearAllPoints()
+            Pix.Point(portraitBack._2d, "TOPLEFT", portraitBack, "TOPLEFT", 0, 0)
+            Pix.Point(portraitBack._2d, "BOTTOMRIGHT", portraitBack, "BOTTOMRIGHT", 0, 0)
         end
-        if backdrop._class then
-            local bh2 = backdrop:GetHeight()
-            if bh2 < 1 then
-                bh2 = 46
+        if portraitBack._class then
+            local borderH2 = portraitBack:GetHeight()
+            if borderH2 < 1 then
+                borderH2 = 46
             end
-            local classInset = math.floor(bh2 * 0.08)
+            local classInset = math.floor(borderH2 * 0.08)
             mod.UF_SetClassPortraitPoints(
-                backdrop._class,
-                backdrop,
-                uSettings and uSettings.portraitClassZoom,
+                portraitBack._class,
+                portraitBack,
+                unitSettings and unitSettings.portraitClassZoom,
                 classInset,
                 classInset
             )
         end
-        if backdrop._3d then
-            backdrop._3d:ClearAllPoints()
-            Pix.Point(backdrop._3d, "TOPLEFT", backdrop, "TOPLEFT", 0, 0)
-            Pix.Point(backdrop._3d, "BOTTOMRIGHT", backdrop, "BOTTOMRIGHT", 0, 0)
+        if portraitBack._3d then
+            portraitBack._3d:ClearAllPoints()
+            Pix.Point(portraitBack._3d, "TOPLEFT", portraitBack, "TOPLEFT", 0, 0)
+            Pix.Point(portraitBack._3d, "BOTTOMRIGHT", portraitBack, "BOTTOMRIGHT", 0, 0)
         end
-        if backdrop._outerRing or backdrop._innerShadow then
-            mod.UF_PortraitExtras(backdrop, nil)
+        if portraitBack._outerRing or portraitBack._innerShadow then
+            mod.UF_PortraitExtras(portraitBack, nil)
         end
         return
     end
-    if backdrop._bg then
-        backdrop._bg:Show()
+    if portraitBack._bg then
+        portraitBack._bg:Show()
     end
     if maskPath then
-        if not backdrop._shapeMask then
-            backdrop._shapeMask = backdrop:CreateMaskTexture()
+        if not portraitBack._shapeMask then
+            portraitBack._shapeMask = portraitBack:CreateMaskTexture()
         end
         -- Inset the mask 1px when the border is visible so scaling cannot make
         -- the mask edge poke out from behind the border art.
-        backdrop._shapeMask:ClearAllPoints()
+        portraitBack._shapeMask:ClearAllPoints()
         if rawBorderSize >= 1 then
-            Pix.Point(backdrop._shapeMask, "TOPLEFT", backdrop, "TOPLEFT", 1, -1)
-            Pix.Point(backdrop._shapeMask, "BOTTOMRIGHT", backdrop, "BOTTOMRIGHT", -1, 1)
+            Pix.Point(portraitBack._shapeMask, "TOPLEFT", portraitBack, "TOPLEFT", 1, -1)
+            Pix.Point(portraitBack._shapeMask, "BOTTOMRIGHT", portraitBack, "BOTTOMRIGHT", -1, 1)
         else
-            backdrop._shapeMask:SetAllPoints(backdrop)
+            portraitBack._shapeMask:SetAllPoints(portraitBack)
         end
-        backdrop._shapeMask:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        backdrop._shapeMask:Show()
-        if backdrop._2d then
-            backdrop._2d:AddMaskTexture(backdrop._shapeMask)
+        portraitBack._shapeMask:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        portraitBack._shapeMask:Show()
+        if portraitBack._2d then
+            portraitBack._2d:AddMaskTexture(portraitBack._shapeMask)
         end
-        if backdrop._class then
-            backdrop._class:AddMaskTexture(backdrop._shapeMask)
+        if portraitBack._class then
+            portraitBack._class:AddMaskTexture(portraitBack._shapeMask)
         end
-        if backdrop._bg then
-            backdrop._bg:AddMaskTexture(backdrop._shapeMask)
+        if portraitBack._bg then
+            portraitBack._bg:AddMaskTexture(portraitBack._shapeMask)
         end
     end
 
     -- Hide legacy square border textures if this frame has them.
-    if backdrop._sqBorderTexs then
-        for _, t in ipairs(backdrop._sqBorderTexs) do
+    if portraitBack._sqBorderTexs then
+        for _, t in ipairs(portraitBack._sqBorderTexs) do
             t:Hide()
         end
     end
@@ -1628,72 +1628,72 @@ local function ApplyDetachedPortraitShape(backdrop, uSettings, unitToken)
     -- ns.UF_UNMASKED_RING (Pixels Circle) keeps its ring art outside the mask,
     -- inset from the backdrop by that many px at Size 7; each step below 7
     -- moves it 1px outward, as the size step expands every other shape's art.
-    local sbt = backdrop._shapeBorderTex
-    if not sbt then
-        sbt = backdrop:CreateTexture(nil, "OVERLAY")
-        backdrop._shapeBorderTex = sbt
+    local sideBorder = portraitBack._shapeBorderTex
+    if not sideBorder then
+        sideBorder = portraitBack:CreateTexture(nil, "OVERLAY")
+        portraitBack._shapeBorderTex = sideBorder
     end
-    local sbtMask, sbtMult = backdrop._shapeMask, Pix.mult
-    if sbt._gShape ~= shape or sbt._gExp ~= bExp or sbt._gMult ~= sbtMult or sbt._gMask ~= sbtMask then
-        sbt._gShape, sbt._gExp, sbt._gMult, sbt._gMask = shape, bExp, sbtMult, sbtMask
-        local ringInset = mod.UF_UNMASKED_RING[shape]
+    local sbtMask, sbtMult = portraitBack._shapeMask, Pix.mult
+    if sideBorder._gShape ~= shapeKey or sideBorder._gExp ~= bExp or sideBorder._gMult ~= sbtMult or sideBorder._gMask ~= sbtMask then
+        sideBorder._gShape, sideBorder._gExp, sideBorder._gMult, sideBorder._gMask = shapeKey, bExp, sbtMult, sbtMask
+        local ringInset = mod.UF_UNMASKED_RING[shapeKey]
         local off = bExp - (ringInset or 0)
-        sbt:ClearAllPoints()
-        Pix.Point(sbt, "TOPLEFT", backdrop, "TOPLEFT", -off, off)
-        Pix.Point(sbt, "BOTTOMRIGHT", backdrop, "BOTTOMRIGHT", off, -off)
+        sideBorder:ClearAllPoints()
+        Pix.Point(sideBorder, "TOPLEFT", portraitBack, "TOPLEFT", -off, off)
+        Pix.Point(sideBorder, "BOTTOMRIGHT", portraitBack, "BOTTOMRIGHT", off, -off)
         if sbtMask then
-            pcall(sbt.RemoveMaskTexture, sbt, sbtMask)
+            pcall(sideBorder.RemoveMaskTexture, sideBorder, sbtMask)
             -- Mask the border too so its inner edge is clipped.
             if not ringInset then
-                sbt:AddMaskTexture(sbtMask)
+                sideBorder:AddMaskTexture(sbtMask)
             end
         end
-        local borderPath = PORTRAIT_BORDERS[shape]
+        local borderPath = PORTRAIT_BORDERS[shapeKey]
         if borderPath then
-            sbt:SetTexture(borderPath)
+            sideBorder:SetTexture(borderPath)
         end
     end
-    if showBorder and PORTRAIT_BORDERS[shape] then
-        sbt:SetVertexColor(bR, bG, bB, borderOpacity)
-        sbt:Show()
+    if showBorder and PORTRAIT_BORDERS[shapeKey] then
+        sideBorder:SetVertexColor(bR, bG, bB, borderOpacity)
+        sideBorder:Show()
     else
-        sbt:Hide()
+        sideBorder:Hide()
     end
 
     -- === Content positioning within mask ===
     -- Scale the portrait so its visible area fills the mask opening.
     -- MASK_INSETS[shape] = px from mask edge to visible area in the 128px mask.
     -- Content expands to fill the mask; border size does not affect content.
-    local insetPx = MASK_INSETS[shape] or 17
-    local bw = backdrop:GetWidth()
-    local bh2 = backdrop:GetHeight()
+    local insetPx = MASK_INSETS[shapeKey] or 17
+    local bw = portraitBack:GetWidth()
+    local borderH2 = portraitBack:GetHeight()
     if bw < 1 then
         bw = 46
     end
-    if bh2 < 1 then
-        bh2 = 46
+    if borderH2 < 1 then
+        borderH2 = 46
     end
     local visRatio = (128 - 2 * insetPx) / 128
     local cScale = 1 / visRatio
     -- User art scale, stored as a percentage (100 = default).
-    local artScale = ((uSettings and uSettings.portraitArtScale) or 100) / 100
+    local artScale = ((unitSettings and unitSettings.portraitArtScale) or 100) / 100
     cScale = cScale * artScale
     local expand = (cScale - 1) * 0.5
     local oL = -(expand * bw)
     local oR = (expand * bw)
-    local oT = (expand * bh2)
-    local oB = -(expand * bh2)
-    if backdrop._2d then
-        backdrop._2d:ClearAllPoints()
-        Pix.Point(backdrop._2d, "TOPLEFT", backdrop, "TOPLEFT", oL, oT)
-        Pix.Point(backdrop._2d, "BOTTOMRIGHT", backdrop, "BOTTOMRIGHT", oR, oB)
+    local oT = (expand * borderH2)
+    local oB = -(expand * borderH2)
+    if portraitBack._2d then
+        portraitBack._2d:ClearAllPoints()
+        Pix.Point(portraitBack._2d, "TOPLEFT", portraitBack, "TOPLEFT", oL, oT)
+        Pix.Point(portraitBack._2d, "BOTTOMRIGHT", portraitBack, "BOTTOMRIGHT", oR, oB)
     end
-    if backdrop._class then
-        local classInset = math.floor(bh2 * 0.08)
+    if portraitBack._class then
+        local classInset = math.floor(borderH2 * 0.08)
         mod.UF_SetClassPortraitPoints(
-            backdrop._class,
-            backdrop,
-            uSettings and uSettings.portraitClassZoom,
+            portraitBack._class,
+            portraitBack,
+            unitSettings and unitSettings.portraitClassZoom,
             classInset + oL,
             classInset - oT
         )
@@ -1701,12 +1701,12 @@ local function ApplyDetachedPortraitShape(backdrop, uSettings, unitToken)
     -- 3D Portrait Below Border (off by default): a 3D portrait sits inside
     -- the ring and under it; off, it fills the backdrop and draws over the
     -- ring (art scale is not applied to 3D: camera zoom is fixed).
-    local artMode = (uSettings and uSettings.portraitMode) or saved.profile.portraitMode or "2d"
-    local below = artMode == "3d" and uSettings ~= nil and uSettings.portrait3dBelowBorder == true
-    mod.UF_PortraitShapeModel(backdrop, sbt, backdrop._3d, below, shape, rawBorderSize)
+    local artMode = (unitSettings and unitSettings.portraitMode) or saved.profile.portraitMode or "2d"
+    local below = artMode == "3d" and unitSettings ~= nil and unitSettings.portrait3dBelowBorder == true
+    mod.UF_PortraitShapeModel(portraitBack, sideBorder, portraitBack._3d, below, shapeKey, rawBorderSize)
 
     -- Outer Ring / Inner Shadow (round shapes); nothing built while off.
-    mod.UF_PortraitExtras(backdrop, uSettings, shape)
+    mod.UF_PortraitExtras(portraitBack, unitSettings, shapeKey)
 end
 -- Whether a frame shows its portrait, the frame layout's rule: a stock style
 -- always carries one, otherwise Portrait Mode and Show Portrait decide. An
@@ -1719,14 +1719,14 @@ function mod.UF_PortraitShown(s)
     local pStyle = (s and s.portraitStyle) or saved.profile.portraitStyle or "attached"
     return pStyle ~= "none" and not (s and s.showPortrait == false)
 end
-local function CreatePortrait(widget, side, frameHeight, unit)
+local function CreatePortrait(widget, side, frameHeight, unitId)
     local portraitHeight = frameHeight or 46
-    local uKey = UnitToSettingsKey(unit)
-    local uSettings = uKey and saved.profile[uKey]
-    local portraitStyle = (uSettings and uSettings.portraitStyle) or saved.profile.portraitStyle or "attached"
+    local uKey = UnitToSettingsKey(unitId)
+    local unitSettings = uKey and saved.profile[uKey]
+    local portraitStyle = (unitSettings and unitSettings.portraitStyle) or saved.profile.portraitStyle or "attached"
     -- Mini frames never use detached portraits.
-    local isMiniP = unit
-        and (unit == "pet" or unit == "targettarget" or unit == "focustarget" or unit:match("^boss%d$"))
+    local isMiniP = unitId
+        and (unitId == "pet" or unitId == "targettarget" or unitId == "focustarget" or unitId:match("^boss%d$"))
     if isMiniP and portraitStyle == "detached" then
         portraitStyle = "attached"
     end
@@ -1738,9 +1738,9 @@ local function CreatePortrait(widget, side, frameHeight, unit)
     local isAttached = (portraitStyle == "attached")
 
     -- Per-unit size/offset adjustments.
-    local pSizeAdj = (uSettings and uSettings.portraitSize) or 0
-    local pXOff = (uSettings and uSettings.portraitX) or 0
-    local pYOff = (uSettings and uSettings.portraitY) or 0
+    local pSizeAdj = (unitSettings and unitSettings.portraitSize) or 0
+    local pXOff = (unitSettings and unitSettings.portraitX) or 0
+    local pYOff = (unitSettings and unitSettings.portraitY) or 0
     local baseHeight = portraitHeight
     if not isAttached and not isInside and portraitStyle ~= "none" then
         pSizeAdj = pSizeAdj + 10
@@ -1755,75 +1755,75 @@ local function CreatePortrait(widget, side, frameHeight, unit)
     local effectiveSide = side
     local isInside = (side == "insideleft" or side == "insideright" or side == "insidecenter")
     if isAttached and (side == "top" or isInside) then
-        effectiveSide = (unit == "player") and "left" or "right"
+        effectiveSide = (unitId == "player") and "left" or "right"
         isInside = false
     end
 
-    local backdrop = CreateFrame("Frame", nil, widget)
-    backdrop:SetFrameStrata(widget:GetFrameStrata())
-    backdrop:SetFrameLevel(widget:GetFrameLevel() + 1)
+    local portraitBack = CreateFrame("Frame", nil, widget)
+    portraitBack:SetFrameStrata(widget:GetFrameStrata())
+    portraitBack:SetFrameLevel(widget:GetFrameLevel() + 1)
     if isInside then
         -- Inside: portrait fills frame height, width = adjusted portrait size.
-        Pix.Size(backdrop, adjustedHeight, portraitHeight)
+        Pix.Size(portraitBack, adjustedHeight, portraitHeight)
     else
-        Pix.Size(backdrop, adjustedHeight, adjustedHeight)
+        Pix.Size(portraitBack, adjustedHeight, adjustedHeight)
     end
-    backdrop:SetClipsChildren(false)
+    portraitBack:SetClipsChildren(false)
 
-    local bgTex = backdrop:CreateTexture(nil, "BACKGROUND")
-    Pix.Point(bgTex, "TOPLEFT", backdrop, "TOPLEFT", 0, 0)
-    Pix.Point(bgTex, "BOTTOMRIGHT", backdrop, "BOTTOMRIGHT", 0, 0)
+    local bgTex = portraitBack:CreateTexture(nil, "BACKGROUND")
+    Pix.Point(bgTex, "TOPLEFT", portraitBack, "TOPLEFT", 0, 0)
+    Pix.Point(bgTex, "BOTTOMRIGHT", portraitBack, "BOTTOMRIGHT", 0, 0)
     bgTex:SetColorTexture(0.1, 0.1, 0.1, 1)
     if isInside then
         bgTex:Hide()
     end
-    backdrop._bg = bgTex
+    portraitBack._bg = bgTex
 
     if portraitStyle == "none" then
         -- Disabled: anchor the (hidden) backdrop to the frame corner, avoiding any
         -- dependency on frame.Health which may not exist yet.
-        Pix.Point(backdrop, "TOPLEFT", widget, "TOPLEFT", 0, 0)
+        Pix.Point(portraitBack, "TOPLEFT", widget, "TOPLEFT", 0, 0)
     elseif isInside then
         -- Inside: overlays the health bar. Anchored to the frame initially;
         -- ReloadFrames re-anchors to frame.Health once layout resolves.
-        backdrop._isInside = true
-        backdrop:SetFrameLevel(widget:GetFrameLevel() + 3)
-        Pix.Point(backdrop, "TOPLEFT", widget, "TOPLEFT", pXOff, pYOff)
+        portraitBack._isInside = true
+        portraitBack:SetFrameLevel(widget:GetFrameLevel() + 3)
+        Pix.Point(portraitBack, "TOPLEFT", widget, "TOPLEFT", pXOff, pYOff)
     elseif isAttached then
         if effectiveSide == "left" then
-            Pix.Point(backdrop, "TOPLEFT", widget, "TOPLEFT", 0, 0)
+            Pix.Point(portraitBack, "TOPLEFT", widget, "TOPLEFT", 0, 0)
         else
-            Pix.Point(backdrop, "TOPRIGHT", widget, "TOPRIGHT", 0, 0)
+            Pix.Point(portraitBack, "TOPRIGHT", widget, "TOPRIGHT", 0, 0)
         end
     else
         -- Detached: float outside the health bar edge.
         if effectiveSide == "top" then
-            backdrop:SetPoint("BOTTOM", widget.Health or widget, "TOP", pXOff, 15 + pYOff)
+            portraitBack:SetPoint("BOTTOM", widget.Health or widget, "TOP", pXOff, 15 + pYOff)
         elseif effectiveSide == "left" then
-            backdrop:SetPoint("TOPRIGHT", widget.Health or widget, "TOPLEFT", -15 + pXOff, pYOff)
+            portraitBack:SetPoint("TOPRIGHT", widget.Health or widget, "TOPLEFT", -15 + pXOff, pYOff)
         else
-            backdrop:SetPoint("TOPLEFT", widget.Health or widget, "TOPRIGHT", 15 + pXOff, pYOff)
+            portraitBack:SetPoint("TOPLEFT", widget.Health or widget, "TOPRIGHT", 15 + pXOff, pYOff)
         end
         -- Raise a detached portrait above border/text/power.
-        backdrop:SetFrameLevel(widget:GetFrameLevel() + 15)
+        portraitBack:SetFrameLevel(widget:GetFrameLevel() + 15)
     end
 
     -- 2D and class theme textures are eager; the 3D PlayerModel is deferred until
     -- 3D display or an enabled 2D mirror lookup needs it.
-    local model3D = nil
+    local modelView = nil
 
     local function EnsureModel3D()
-        if model3D then
-            return model3D
+        if modelView then
+            return modelView
         end
-        model3D = CreateFrame("PlayerModel", nil, backdrop)
-        Pix.Point(model3D, "TOPLEFT", backdrop, "TOPLEFT", 0, 0)
-        Pix.Point(model3D, "BOTTOMRIGHT", backdrop, "BOTTOMRIGHT", 0, 0)
-        model3D:SetCamera(0)
-        local camScale = ((uSettings and uSettings.portrait3dZoom) or 100) / 100
-        model3D:SetCamDistanceScale(camScale)
+        modelView = CreateFrame("PlayerModel", nil, portraitBack)
+        Pix.Point(modelView, "TOPLEFT", portraitBack, "TOPLEFT", 0, 0)
+        Pix.Point(modelView, "BOTTOMRIGHT", portraitBack, "BOTTOMRIGHT", 0, 0)
+        modelView:SetCamera(0)
+        local camScale = ((unitSettings and unitSettings.portrait3dZoom) or 100) / 100
+        modelView:SetCamDistanceScale(camScale)
         -- Re-apply zoom and orientation after SetUnit resets the camera.
-        model3D.PostUpdate = function(self)
+        modelView.PostUpdate = function(self)
             -- The frame engine does not assign an __owner to portraits.
             local u = widget._cuiBaseUnit or widget._cuiUnit
             if not u then
@@ -1835,17 +1835,17 @@ local function CreatePortrait(widget, side, frameHeight, unit)
             self:SetCamDistanceScale(cs)
             mod.UF_ApplyPortraitRotation(self, self.state and us and us.portraitMirror and not mod.UF_Blizz())
         end
-        model3D:Hide()
-        backdrop._3d = model3D
-        return model3D
+        modelView:Hide()
+        portraitBack._3d = modelView
+        return modelView
     end
-    backdrop._ensureModel3D = EnsureModel3D
+    portraitBack._ensureModel3D = EnsureModel3D
 
-    local tex2D = backdrop:CreateTexture(nil, "ARTWORK")
-    Pix.Point(tex2D, "TOPLEFT", backdrop, "TOPLEFT", 0, 0)
-    Pix.Point(tex2D, "BOTTOMRIGHT", backdrop, "BOTTOMRIGHT", 0, 0)
-    tex2D:SetTexCoord(0.15, 0.85, 0.15, 0.85)
-    tex2D:Hide()
+    local flatTex = portraitBack:CreateTexture(nil, "ARTWORK")
+    Pix.Point(flatTex, "TOPLEFT", portraitBack, "TOPLEFT", 0, 0)
+    Pix.Point(flatTex, "BOTTOMRIGHT", portraitBack, "BOTTOMRIGHT", 0, 0)
+    flatTex:SetTexCoord(0.15, 0.85, 0.15, 0.85)
+    flatTex:Hide()
     -- A 2D mirror lookup that finished loading after the paint: repaint the flip
     -- when the frame still shows that unit.
     local function MirrorReady(unitGuid)
@@ -1857,39 +1857,39 @@ local function CreatePortrait(widget, side, frameHeight, unit)
         if issecretvalue(g) or g ~= unitGuid then
             return
         end
-        tex2D:PostUpdate(u)
+        flatTex:PostUpdate(u)
     end
 
     -- Class theme icon: painted by the engine portrait painter's class lane
     -- (element.isClass); this creation-time paint only seeds art before the
     -- first dispatch.
-    local texClass = backdrop:CreateTexture(nil, "ARTWORK")
+    local texClass = portraitBack:CreateTexture(nil, "ARTWORK")
     local classInset = math.floor(portraitHeight * 0.08)
     mod.UF_SetClassPortraitPoints(
         texClass,
-        backdrop,
-        uSettings and uSettings.portraitClassZoom,
+        portraitBack,
+        unitSettings and unitSettings.portraitClassZoom,
         classInset,
         classInset
     )
     texClass:SetAlpha(0.8)
-    if unit and UnitIsPlayer(unit) then
+    if unitId and UnitIsPlayer(unitId) then
         mod.UF_PaintClassIcon(
             texClass,
-            unit,
-            (uSettings and uSettings.classThemeStyle) or "modern",
-            uSettings and uSettings.portraitMirror and not mod.UF_Blizz()
+            unitId,
+            (unitSettings and unitSettings.classThemeStyle) or "modern",
+            unitSettings and unitSettings.portraitMirror and not mod.UF_Blizz()
         )
     end
     texClass:Hide()
 
-    backdrop._3d = model3D
-    backdrop._2d = tex2D
-    backdrop._class = texClass
+    portraitBack._3d = modelView
+    portraitBack._2d = flatTex
+    portraitBack._class = texClass
 
     local mode
     do
-        mode = (uSettings and uSettings.portraitMode) or saved.profile.portraitMode or "2d"
+        mode = (unitSettings and unitSettings.portraitMode) or saved.profile.portraitMode or "2d"
         -- Blizzard Style masks the 2D art: a 3D model cannot be masked, and
         -- the portrait is never off.
         if (mode == "3d" or mode == "none") and mod.UF_Blizz() then
@@ -1899,22 +1899,22 @@ local function CreatePortrait(widget, side, frameHeight, unit)
     -- portraitStyle/portraitMode "none" hides the backdrop but keeps the structure
     -- alive so ReloadFrames can show it again without a /reload.
     if portraitStyle == "none" or mode == "none" then
-        backdrop:Hide()
+        portraitBack:Hide()
         -- tex2D is a minimal placeholder so frame.Portrait is non-nil and carries a
         -- backdrop reference; it stays hidden with the backdrop.
-        tex2D.backdrop = backdrop
-        tex2D.is2D = true
-        return tex2D
+        flatTex.backdrop = portraitBack
+        flatTex.is2D = true
+        return flatTex
     end
     local isActive
     if mode == "class" then
         texClass:Show()
-        tex2D:Hide()
+        flatTex:Hide()
         isActive = texClass
         isActive.isClass = true
     elseif mode == "2d" then
-        tex2D:Show()
-        isActive = tex2D
+        flatTex:Show()
+        isActive = flatTex
         isActive.is2D = true
     else
         local m3d = EnsureModel3D()
@@ -1922,12 +1922,12 @@ local function CreatePortrait(widget, side, frameHeight, unit)
         isActive = m3d
         isActive.is2D = false
     end
-    isActive.backdrop = backdrop
+    isActive.backdrop = portraitBack
 
     -- SetPortraitTexture resets snapping and anchor points, so re-disable pixel
     -- snap and re-anchor after every portrait repaint (PortraitOverride). hasStateChanged
     -- is set only by the 2D lane's call (the class lane's NPC paint passes none).
-    tex2D.PostUpdate = function(self, u, hasStateChanged)
+    flatTex.PostUpdate = function(self, u, changed)
         UnsnapTex(self)
         self:ClearAllPoints()
         -- When detached, ApplyDetachedPortraitShape uses expanded offsets for mask
@@ -1936,11 +1936,11 @@ local function CreatePortrait(widget, side, frameHeight, unit)
         local uS2 = uKey2 and saved.profile[uKey2]
         local isDetNow = ((uS2 and uS2.portraitStyle) or saved.profile.portraitStyle or "attached")
             == "detached"
-        if isDetNow and backdrop then
+        if isDetNow and portraitBack then
             local shape2 = (uS2 and uS2.detachedPortraitShape) or "portrait"
             local insetPx2 = MASK_INSETS[shape2] or 17
-            local bw2 = backdrop:GetWidth()
-            local bh3 = backdrop:GetHeight()
+            local bw2 = portraitBack:GetWidth()
+            local bh3 = portraitBack:GetHeight()
             if bw2 < 1 then
                 bw2 = 46
             end
@@ -1952,11 +1952,11 @@ local function CreatePortrait(widget, side, frameHeight, unit)
             local artS2 = ((uS2 and uS2.portraitArtScale) or 100) / 100
             cS2 = cS2 * artS2
             local exp2 = (cS2 - 1) * 0.5
-            Pix.Point(self, "TOPLEFT", backdrop, "TOPLEFT", -(exp2 * bw2), exp2 * bh3)
-            Pix.Point(self, "BOTTOMRIGHT", backdrop, "BOTTOMRIGHT", exp2 * bw2, -(exp2 * bh3))
+            Pix.Point(self, "TOPLEFT", portraitBack, "TOPLEFT", -(exp2 * bw2), exp2 * bh3)
+            Pix.Point(self, "BOTTOMRIGHT", portraitBack, "BOTTOMRIGHT", exp2 * bw2, -(exp2 * bh3))
         else
-            Pix.Point(self, "TOPLEFT", backdrop, "TOPLEFT", 0, 0)
-            Pix.Point(self, "BOTTOMRIGHT", backdrop, "BOTTOMRIGHT", 0, 0)
+            Pix.Point(self, "TOPLEFT", portraitBack, "TOPLEFT", 0, 0)
+            Pix.Point(self, "BOTTOMRIGHT", portraitBack, "BOTTOMRIGHT", 0, 0)
         end
         -- Mirror Portrait: the crop survives repaints, so it is written only
         -- when the flip state changes (the first on-to-off pass restores the
@@ -1966,7 +1966,7 @@ local function CreatePortrait(widget, side, frameHeight, unit)
             uS2
             and uS2.portraitMirror
             and not mod.UF_Blizz()
-            and not (hasStateChanged and self.state == false)
+            and not (changed and self.state == false)
             and mod.UF_CanMirrorPortrait2D(EnsureModel3D(), u, MirrorReady)
         )
                 and true
@@ -1981,7 +1981,7 @@ local function CreatePortrait(widget, side, frameHeight, unit)
         end
     end
 
-    ApplyDetachedPortraitShape(backdrop, uSettings, unit)
+    ApplyDetachedPortraitShape(portraitBack, unitSettings, unitId)
 
     return isActive
 end
@@ -2002,18 +2002,18 @@ function SwapPortraitMode(widget, painting)
 
     local wantMode
     do
-        local unit = widget._cuiUnit or widget:GetAttribute("unit")
+        local unitId = widget._cuiUnit or widget:GetAttribute("unit")
         -- The frame's own settings: a vehicle's live token has none.
-        local uKey = UnitToSettingsKey(widget._cuiBaseUnit or unit)
+        local uKey = UnitToSettingsKey(widget._cuiBaseUnit or unitId)
         local s = uKey and saved.profile[uKey]
         wantMode = (s and s.portraitMode) or saved.profile.portraitMode or "2d"
         -- A non-player on Class art takes the model when its fallback is 3D
         -- ("none" stays on the class object: the class lane draws nothing).
         if
             wantMode == "class"
-            and unit
-            and UnitExists(unit)
-            and not UnitIsPlayer(unit)
+            and unitId
+            and UnitExists(unitId)
+            and not UnitIsPlayer(unitId)
             and mod.UF_ClassFallback(s) == "3d"
         then
             wantMode = "3d"

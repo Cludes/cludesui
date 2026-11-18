@@ -91,11 +91,11 @@ local function ApplyAbsorbStyle(absorbBar, style, prefs)
     -- New fill object + tiling state: re-derive rotation (stretch styles rotate
     -- on a vertical bar, tiled ones must not).
     mod.ApplyFillRotation(absorbBar)
-    local fw = absorbBar._forward
-    if fw then
-        fw:SetStatusBarTexture(texture)
-        fw:SetStatusBarColor(ac.r, ac.g, ac.b, alpha)
-        local fwFill = fw:GetStatusBarTexture()
+    local fillW = absorbBar._forward
+    if fillW then
+        fillW:SetStatusBarTexture(texture)
+        fillW:SetStatusBarColor(ac.r, ac.g, ac.b, alpha)
+        local fwFill = fillW:GetStatusBarTexture()
         if fwFill then
             fwFill:SetDrawLayer("ARTWORK", 1)
             fwFill:SetHorizTile(tiled)
@@ -104,7 +104,7 @@ local function ApplyAbsorbStyle(absorbBar, style, prefs)
                 fwFill:AddMaskTexture(mask)
             end
         end
-        mod.ApplyFillRotation(fw)
+        mod.ApplyFillRotation(fillW)
     end
     -- New fill object: the glow lines that ride it re-seat (built only once
     -- the Blizzard Glow Line was turned on).
@@ -180,34 +180,34 @@ end
 -- Called from the live-update path on a reverse/vertical fill toggle.
 -- `settingsOverride` lets the creation path pass the settings table it already
 -- holds, for frames whose ._cuiUnit is not resolvable yet.
-local function UpdateAbsorbBarReverseFill(widget, isReversed, settingsOverride)
+local function UpdateAbsorbBarReverseFill(widget, reversed, settingsOverride)
     if not widget or not widget.HealthPrediction then
         return
     end
-    local ab = widget.HealthPrediction.damageAbsorb
-    if not ab then
+    local absorbBar = widget.HealthPrediction.damageAbsorb
+    if not absorbBar then
         return
     end
-    local fw = ab._forward
-    local curClip = ab._curClip
-    local missClip = ab._missClip
-    local hpBar = ab._hpBar
-    if not (fw and curClip and missClip and hpBar) then
+    local fillW = absorbBar._forward
+    local nowClip = absorbBar._curClip
+    local missClip = absorbBar._missClip
+    local healthBar = absorbBar._hpBar
+    if not (fillW and nowClip and missClip and healthBar) then
         return
     end
-    local hpTex = hpBar:GetStatusBarTexture()
-    if not hpTex then
+    local healthTex = healthBar:GetStatusBarTexture()
+    if not healthTex then
         return
     end
 
-    ab._isReversed = isReversed and true or false
+    absorbBar._isReversed = reversed and true or false
 
     -- Placement (mirrors the raid frames Absorbs section):
     --   overlay = backfill into the filled health from the HP edge (default)
     --   right   = full bar, fill from the frame's right edge
     --   left    = full bar, fill from the frame's left edge
     local s = settingsOverride or GetSettingsForUnit(widget._cuiUnit)
-    local absorbMode = (s and s.absorbEdgeMode) or "overlay"
+    local absorbStyle = (s and s.absorbEdgeMode) or "overlay"
     local healMode = (s and s.healAbsorbEdgeMode) or "overlay"
     -- Overshield "From Left" (overlay placement only): the excess grows from
     -- the bar's ORIGIN edge (left; right when reverse-filled; bottom/top on
@@ -227,7 +227,7 @@ local function UpdateAbsorbBarReverseFill(widget, isReversed, settingsOverride)
     -- exceeding current health past the fill edge instead of losing it. Its
     -- clip starts exactly at the fill edge: the 1px seal into the fill would
     -- double that pixel over the backfill.
-    local orFull = absorbMode == "overlayReverseFull"
+    local orFull = absorbStyle == "overlayReverseFull"
 
     -- Vertical fill: the whole HP cluster rotates with the health bar. Every anchor
     -- below is the horizontal layout with its axis swapped -- the health fill's RIGHT
@@ -235,11 +235,11 @@ local function UpdateAbsorbBarReverseFill(widget, isReversed, settingsOverride)
     -- fill flips it to BOTTOM. Edge modes keep their key names: "right" = far edge of
     -- the fill axis (top when vertical), "left" = near edge (bottom when vertical).
     local isVert = (s and s.healthVerticalFill) and true or false
-    ab._isVert = isVert
-    local ha = ab._healAbsorb
-    local healClip = ab._healClip
+    absorbBar._isVert = isVert
+    local healAbsorb = absorbBar._healAbsorb
+    local healCut = absorbBar._healClip
     -- Indexed, not ipairs: ha can be nil and ipairs would stop at the hole.
-    local axisBars = { ab, fw, ha }
+    local axisBars = { absorbBar, fillW, healAbsorb }
     for index = 1, 3 do
         local barFrame = axisBars[index]
         if barFrame then
@@ -248,135 +248,135 @@ local function UpdateAbsorbBarReverseFill(widget, isReversed, settingsOverride)
         end
     end
 
-    curClip:ClearAllPoints()
+    nowClip:ClearAllPoints()
     missClip:ClearAllPoints()
-    ab:ClearAllPoints()
-    fw:ClearAllPoints()
+    absorbBar:ClearAllPoints()
+    fillW:ClearAllPoints()
 
     if isVert then
         -- missClip + forward bar use the overlay layout (from the origin edge in
         -- Overlay Reverse (Full)); in the other modes the backfill shows the
         -- absorb and the Override hides fw.
-        if isReversed then
-            missClip:SetPoint("TOPLEFT", hpTex, "BOTTOMLEFT", 0, orFull and 0 or 1)
-            missClip:SetPoint("BOTTOMRIGHT", hpBar, "BOTTOMRIGHT", 0, 0)
-            fw:SetReverseFill(true)
+        if reversed then
+            missClip:SetPoint("TOPLEFT", healthTex, "BOTTOMLEFT", 0, orFull and 0 or 1)
+            missClip:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+            fillW:SetReverseFill(true)
             if orFull then
-                fw:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-                fw:SetPoint("TOPRIGHT", hpBar, "TOPRIGHT", 0, 0)
+                fillW:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+                fillW:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
             else
-                fw:SetPoint("TOPLEFT", hpTex, "BOTTOMLEFT", 0, 0)
-                fw:SetPoint("TOPRIGHT", hpTex, "BOTTOMRIGHT", 0, 0)
+                fillW:SetPoint("TOPLEFT", healthTex, "BOTTOMLEFT", 0, 0)
+                fillW:SetPoint("TOPRIGHT", healthTex, "BOTTOMRIGHT", 0, 0)
             end
         else
-            missClip:SetPoint("BOTTOMLEFT", hpTex, "TOPLEFT", 0, orFull and 0 or -1)
-            missClip:SetPoint("TOPRIGHT", hpBar, "TOPRIGHT", 0, 0)
-            fw:SetReverseFill(false)
+            missClip:SetPoint("BOTTOMLEFT", healthTex, "TOPLEFT", 0, orFull and 0 or -1)
+            missClip:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
+            fillW:SetReverseFill(false)
             if orFull then
-                fw:SetPoint("BOTTOMLEFT", hpBar, "BOTTOMLEFT", 0, 0)
-                fw:SetPoint("BOTTOMRIGHT", hpBar, "BOTTOMRIGHT", 0, 0)
+                fillW:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
+                fillW:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
             else
-                fw:SetPoint("BOTTOMLEFT", hpTex, "TOPLEFT", 0, 0)
-                fw:SetPoint("BOTTOMRIGHT", hpTex, "TOPRIGHT", 0, 0)
+                fillW:SetPoint("BOTTOMLEFT", healthTex, "TOPLEFT", 0, 0)
+                fillW:SetPoint("BOTTOMRIGHT", healthTex, "TOPRIGHT", 0, 0)
             end
         end
 
         -- Shield absorb placement.
-        if absorbMode == "right" or absorbMode == "left" then
-            curClip:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-            curClip:SetPoint("BOTTOMRIGHT", hpBar, "BOTTOMRIGHT", 0, 0)
-            if absorbMode == "left" then
-                ab:SetReverseFill(false)
-                ab:SetPoint("BOTTOMLEFT", hpBar, "BOTTOMLEFT", 0, 0)
-                ab:SetPoint("BOTTOMRIGHT", hpBar, "BOTTOMRIGHT", 0, 0)
+        if absorbStyle == "right" or absorbStyle == "left" then
+            nowClip:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+            nowClip:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+            if absorbStyle == "left" then
+                absorbBar:SetReverseFill(false)
+                absorbBar:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
+                absorbBar:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
             else
-                ab:SetReverseFill(true)
-                ab:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-                ab:SetPoint("TOPRIGHT", hpBar, "TOPRIGHT", 0, 0)
+                absorbBar:SetReverseFill(true)
+                absorbBar:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+                absorbBar:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
             end
-        elseif absorbMode == "overlayReverse" or orFull then
+        elseif absorbStyle == "overlayReverse" or orFull then
             -- Overlay Reverse: the WHOLE absorb fills from the health fill's
             -- leading edge back INTO the fill; the filled-region clip masks
             -- any excess past empty, so shields larger than current health
             -- never escape the fill (fw hidden by the Override, like the edge
             -- modes; Full draws that excess through fw instead).
             -- Axis-swapped for vertical, mirrored for reversed fill.
-            if isReversed then
-                curClip:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-                curClip:SetPoint("BOTTOMRIGHT", hpTex, "BOTTOMRIGHT", 0, 0)
-                ab:SetReverseFill(false)
-                ab:SetPoint("BOTTOMLEFT", hpTex, "BOTTOMLEFT", 0, 0)
-                ab:SetPoint("BOTTOMRIGHT", hpTex, "BOTTOMRIGHT", 0, 0)
+            if reversed then
+                nowClip:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+                nowClip:SetPoint("BOTTOMRIGHT", healthTex, "BOTTOMRIGHT", 0, 0)
+                absorbBar:SetReverseFill(false)
+                absorbBar:SetPoint("BOTTOMLEFT", healthTex, "BOTTOMLEFT", 0, 0)
+                absorbBar:SetPoint("BOTTOMRIGHT", healthTex, "BOTTOMRIGHT", 0, 0)
             else
-                curClip:SetPoint("BOTTOMLEFT", hpBar, "BOTTOMLEFT", 0, 0)
-                curClip:SetPoint("TOPRIGHT", hpTex, "TOPRIGHT", 0, 0)
-                ab:SetReverseFill(true)
-                ab:SetPoint("TOPLEFT", hpTex, "TOPLEFT", 0, 0)
-                ab:SetPoint("TOPRIGHT", hpTex, "TOPRIGHT", 0, 0)
+                nowClip:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
+                nowClip:SetPoint("TOPRIGHT", healthTex, "TOPRIGHT", 0, 0)
+                absorbBar:SetReverseFill(true)
+                absorbBar:SetPoint("TOPLEFT", healthTex, "TOPLEFT", 0, 0)
+                absorbBar:SetPoint("TOPRIGHT", healthTex, "TOPRIGHT", 0, 0)
             end
-        elseif isReversed then
-            curClip:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-            curClip:SetPoint("BOTTOMRIGHT", hpTex, "BOTTOMRIGHT", 0, 0)
+        elseif reversed then
+            nowClip:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+            nowClip:SetPoint("BOTTOMRIGHT", healthTex, "BOTTOMRIGHT", 0, 0)
             if osFromLeft then
-                ab:SetReverseFill(true)
-                ab:SetPoint("BOTTOMLEFT", hpTex, "BOTTOMLEFT", 0, 0)
-                ab:SetPoint("BOTTOMRIGHT", hpTex, "BOTTOMRIGHT", 0, 0)
+                absorbBar:SetReverseFill(true)
+                absorbBar:SetPoint("BOTTOMLEFT", healthTex, "BOTTOMLEFT", 0, 0)
+                absorbBar:SetPoint("BOTTOMRIGHT", healthTex, "BOTTOMRIGHT", 0, 0)
             else
-                ab:SetReverseFill(false)
-                ab:SetPoint("BOTTOMLEFT", hpBar, "BOTTOMLEFT", 0, 0)
-                ab:SetPoint("BOTTOMRIGHT", hpBar, "BOTTOMRIGHT", 0, 0)
+                absorbBar:SetReverseFill(false)
+                absorbBar:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
+                absorbBar:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
             end
         else
-            curClip:SetPoint("BOTTOMLEFT", hpBar, "BOTTOMLEFT", 0, 0)
-            curClip:SetPoint("TOPRIGHT", hpTex, "TOPRIGHT", 0, 0)
+            nowClip:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
+            nowClip:SetPoint("TOPRIGHT", healthTex, "TOPRIGHT", 0, 0)
             if osFromLeft then
-                ab:SetReverseFill(false)
-                ab:SetPoint("TOPLEFT", hpTex, "TOPLEFT", 0, 0)
-                ab:SetPoint("TOPRIGHT", hpTex, "TOPRIGHT", 0, 0)
+                absorbBar:SetReverseFill(false)
+                absorbBar:SetPoint("TOPLEFT", healthTex, "TOPLEFT", 0, 0)
+                absorbBar:SetPoint("TOPRIGHT", healthTex, "TOPRIGHT", 0, 0)
             else
-                ab:SetReverseFill(true)
-                ab:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-                ab:SetPoint("TOPRIGHT", hpBar, "TOPRIGHT", 0, 0)
+                absorbBar:SetReverseFill(true)
+                absorbBar:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+                absorbBar:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
             end
         end
 
         -- Heal absorb placement (own clip frame, same rules).
-        if healClip then
-            healClip:ClearAllPoints()
+        if healCut then
+            healCut:ClearAllPoints()
             if healMode == "right" or healMode == "left" then
-                healClip:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-                healClip:SetPoint("BOTTOMRIGHT", hpBar, "BOTTOMRIGHT", 0, 0)
-            elseif isReversed then
-                healClip:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-                healClip:SetPoint("BOTTOMRIGHT", hpTex, "BOTTOMRIGHT", 0, 0)
+                healCut:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+                healCut:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+            elseif reversed then
+                healCut:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+                healCut:SetPoint("BOTTOMRIGHT", healthTex, "BOTTOMRIGHT", 0, 0)
             else
-                healClip:SetPoint("BOTTOMLEFT", hpBar, "BOTTOMLEFT", 0, 0)
-                healClip:SetPoint("TOPRIGHT", hpTex, "TOPRIGHT", 0, 0)
+                healCut:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
+                healCut:SetPoint("TOPRIGHT", healthTex, "TOPRIGHT", 0, 0)
             end
         end
-        if ha then
-            ha:ClearAllPoints()
+        if healAbsorb then
+            healAbsorb:ClearAllPoints()
             if healMode == "right" then
-                ha:SetReverseFill(true)
-                ha:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-                ha:SetPoint("TOPRIGHT", hpBar, "TOPRIGHT", 0, 0)
+                healAbsorb:SetReverseFill(true)
+                healAbsorb:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+                healAbsorb:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
             elseif healMode == "left" then
-                ha:SetReverseFill(false)
-                ha:SetPoint("BOTTOMLEFT", hpBar, "BOTTOMLEFT", 0, 0)
-                ha:SetPoint("BOTTOMRIGHT", hpBar, "BOTTOMRIGHT", 0, 0)
-            elseif isReversed then
-                ha:SetReverseFill(false)
-                ha:SetPoint("BOTTOMLEFT", hpTex, "BOTTOMLEFT", 0, 0)
-                ha:SetPoint("BOTTOMRIGHT", hpTex, "BOTTOMRIGHT", 0, 0)
+                healAbsorb:SetReverseFill(false)
+                healAbsorb:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
+                healAbsorb:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+            elseif reversed then
+                healAbsorb:SetReverseFill(false)
+                healAbsorb:SetPoint("BOTTOMLEFT", healthTex, "BOTTOMLEFT", 0, 0)
+                healAbsorb:SetPoint("BOTTOMRIGHT", healthTex, "BOTTOMRIGHT", 0, 0)
             else
-                ha:SetReverseFill(true)
-                ha:SetPoint("TOPLEFT", hpTex, "TOPLEFT", 0, 0)
-                ha:SetPoint("TOPRIGHT", hpTex, "TOPRIGHT", 0, 0)
+                healAbsorb:SetReverseFill(true)
+                healAbsorb:SetPoint("TOPLEFT", healthTex, "TOPLEFT", 0, 0)
+                healAbsorb:SetPoint("TOPRIGHT", healthTex, "TOPRIGHT", 0, 0)
             end
         end
-        if ab._predOn then
-            mod.UF_AnchorHealPred(ab)
-            mod.UF_HealPredLayout(ab)
+        if absorbBar._predOn then
+            mod.UF_AnchorHealPred(absorbBar)
+            mod.UF_HealPredLayout(absorbBar)
         end
         return
     end
@@ -384,131 +384,131 @@ local function UpdateAbsorbBarReverseFill(widget, isReversed, settingsOverride)
     -- missClip + forward bar use the overlay layout (from the origin edge in
     -- Overlay Reverse (Full)); in the other modes the backfill shows the
     -- absorb and the Override hides fw.
-    if isReversed then
-        missClip:SetPoint("TOPRIGHT", hpTex, "TOPLEFT", orFull and 0 or 1, 0)
-        missClip:SetPoint("BOTTOMLEFT", hpBar, "BOTTOMLEFT", 0, 0)
-        fw:SetReverseFill(true)
+    if reversed then
+        missClip:SetPoint("TOPRIGHT", healthTex, "TOPLEFT", orFull and 0 or 1, 0)
+        missClip:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
+        fillW:SetReverseFill(true)
         if orFull then
-            fw:SetPoint("TOPRIGHT", hpBar, "TOPRIGHT", 0, 0)
-            fw:SetPoint("BOTTOMRIGHT", hpBar, "BOTTOMRIGHT", 0, 0)
+            fillW:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
+            fillW:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
         else
-            fw:SetPoint("TOPRIGHT", hpTex, "TOPLEFT", 0, 0)
-            fw:SetPoint("BOTTOMRIGHT", hpTex, "BOTTOMLEFT", 0, 0)
+            fillW:SetPoint("TOPRIGHT", healthTex, "TOPLEFT", 0, 0)
+            fillW:SetPoint("BOTTOMRIGHT", healthTex, "BOTTOMLEFT", 0, 0)
         end
     else
-        missClip:SetPoint("TOPLEFT", hpTex, "TOPRIGHT", orFull and 0 or -1, 0)
-        missClip:SetPoint("BOTTOMRIGHT", hpBar, "BOTTOMRIGHT", 0, 0)
-        fw:SetReverseFill(false)
+        missClip:SetPoint("TOPLEFT", healthTex, "TOPRIGHT", orFull and 0 or -1, 0)
+        missClip:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+        fillW:SetReverseFill(false)
         if orFull then
-            fw:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-            fw:SetPoint("BOTTOMLEFT", hpBar, "BOTTOMLEFT", 0, 0)
+            fillW:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+            fillW:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
         else
-            fw:SetPoint("TOPLEFT", hpTex, "TOPRIGHT", 0, 0)
-            fw:SetPoint("BOTTOMLEFT", hpTex, "BOTTOMRIGHT", 0, 0)
+            fillW:SetPoint("TOPLEFT", healthTex, "TOPRIGHT", 0, 0)
+            fillW:SetPoint("BOTTOMLEFT", healthTex, "BOTTOMRIGHT", 0, 0)
         end
     end
 
     -- Shield absorb placement
-    if absorbMode == "right" or absorbMode == "left" then
+    if absorbStyle == "right" or absorbStyle == "left" then
         -- Full bar: clip covers the whole health bar, backfill anchors to the
         -- chosen frame edge (absolute, independent of reverse fill).
-        curClip:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-        curClip:SetPoint("BOTTOMRIGHT", hpBar, "BOTTOMRIGHT", 0, 0)
-        if absorbMode == "left" then
-            ab:SetReverseFill(false)
-            ab:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-            ab:SetPoint("BOTTOMLEFT", hpBar, "BOTTOMLEFT", 0, 0)
+        nowClip:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+        nowClip:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+        if absorbStyle == "left" then
+            absorbBar:SetReverseFill(false)
+            absorbBar:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+            absorbBar:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
         else
-            ab:SetReverseFill(true)
-            ab:SetPoint("TOPRIGHT", hpBar, "TOPRIGHT", 0, 0)
-            ab:SetPoint("BOTTOMRIGHT", hpBar, "BOTTOMRIGHT", 0, 0)
+            absorbBar:SetReverseFill(true)
+            absorbBar:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
+            absorbBar:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
         end
-    elseif absorbMode == "overlayReverse" or orFull then
+    elseif absorbStyle == "overlayReverse" or orFull then
         -- Overlay Reverse: the WHOLE absorb fills from the health fill's
         -- leading edge back INTO the fill; the filled-region clip masks any
         -- excess past empty (fw hidden by the Override, like the edge modes;
         -- Full draws that excess through fw instead).
-        if isReversed then
-            curClip:SetPoint("TOPRIGHT", hpBar, "TOPRIGHT", 0, 0)
-            curClip:SetPoint("BOTTOMLEFT", hpTex, "BOTTOMLEFT", 0, 0)
-            ab:SetReverseFill(false)
-            ab:SetPoint("TOPLEFT", hpTex, "TOPLEFT", 0, 0)
-            ab:SetPoint("BOTTOMLEFT", hpTex, "BOTTOMLEFT", 0, 0)
+        if reversed then
+            nowClip:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
+            nowClip:SetPoint("BOTTOMLEFT", healthTex, "BOTTOMLEFT", 0, 0)
+            absorbBar:SetReverseFill(false)
+            absorbBar:SetPoint("TOPLEFT", healthTex, "TOPLEFT", 0, 0)
+            absorbBar:SetPoint("BOTTOMLEFT", healthTex, "BOTTOMLEFT", 0, 0)
         else
-            curClip:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-            curClip:SetPoint("BOTTOMRIGHT", hpTex, "BOTTOMRIGHT", 0, 0)
-            ab:SetReverseFill(true)
-            ab:SetPoint("TOPRIGHT", hpTex, "TOPRIGHT", 0, 0)
-            ab:SetPoint("BOTTOMRIGHT", hpTex, "BOTTOMRIGHT", 0, 0)
+            nowClip:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+            nowClip:SetPoint("BOTTOMRIGHT", healthTex, "BOTTOMRIGHT", 0, 0)
+            absorbBar:SetReverseFill(true)
+            absorbBar:SetPoint("TOPRIGHT", healthTex, "TOPRIGHT", 0, 0)
+            absorbBar:SetPoint("BOTTOMRIGHT", healthTex, "BOTTOMRIGHT", 0, 0)
         end
-    elseif isReversed then
-        curClip:SetPoint("TOPRIGHT", hpBar, "TOPRIGHT", 0, 0)
-        curClip:SetPoint("BOTTOMLEFT", hpTex, "BOTTOMLEFT", 0, 0)
+    elseif reversed then
+        nowClip:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
+        nowClip:SetPoint("BOTTOMLEFT", healthTex, "BOTTOMLEFT", 0, 0)
         if osFromLeft then
-            ab:SetReverseFill(true)
-            ab:SetPoint("TOPLEFT", hpTex, "TOPLEFT", 0, 0)
-            ab:SetPoint("BOTTOMLEFT", hpTex, "BOTTOMLEFT", 0, 0)
+            absorbBar:SetReverseFill(true)
+            absorbBar:SetPoint("TOPLEFT", healthTex, "TOPLEFT", 0, 0)
+            absorbBar:SetPoint("BOTTOMLEFT", healthTex, "BOTTOMLEFT", 0, 0)
         else
-            ab:SetReverseFill(false)
-            ab:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-            ab:SetPoint("BOTTOMLEFT", hpBar, "BOTTOMLEFT", 0, 0)
+            absorbBar:SetReverseFill(false)
+            absorbBar:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+            absorbBar:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
         end
     else
-        curClip:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-        curClip:SetPoint("BOTTOMRIGHT", hpTex, "BOTTOMRIGHT", 0, 0)
+        nowClip:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+        nowClip:SetPoint("BOTTOMRIGHT", healthTex, "BOTTOMRIGHT", 0, 0)
         if osFromLeft then
-            ab:SetReverseFill(false)
-            ab:SetPoint("TOPRIGHT", hpTex, "TOPRIGHT", 0, 0)
-            ab:SetPoint("BOTTOMRIGHT", hpTex, "BOTTOMRIGHT", 0, 0)
+            absorbBar:SetReverseFill(false)
+            absorbBar:SetPoint("TOPRIGHT", healthTex, "TOPRIGHT", 0, 0)
+            absorbBar:SetPoint("BOTTOMRIGHT", healthTex, "BOTTOMRIGHT", 0, 0)
         else
-            ab:SetReverseFill(true)
-            ab:SetPoint("TOPRIGHT", hpBar, "TOPRIGHT", 0, 0)
-            ab:SetPoint("BOTTOMRIGHT", hpBar, "BOTTOMRIGHT", 0, 0)
+            absorbBar:SetReverseFill(true)
+            absorbBar:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
+            absorbBar:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
         end
     end
 
     -- Heal absorb placement, independent of shield absorb. It has its OWN clip
     -- frame (ab._healClip) so right/left span the full bar (filled + missing
     -- health) while overlay stays clipped to filled health.
-    if healClip then
-        healClip:ClearAllPoints()
+    if healCut then
+        healCut:ClearAllPoints()
         if healMode == "right" or healMode == "left" then
-            healClip:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-            healClip:SetPoint("BOTTOMRIGHT", hpBar, "BOTTOMRIGHT", 0, 0)
-        elseif isReversed then
-            healClip:SetPoint("TOPRIGHT", hpBar, "TOPRIGHT", 0, 0)
-            healClip:SetPoint("BOTTOMLEFT", hpTex, "BOTTOMLEFT", 0, 0)
+            healCut:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+            healCut:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
+        elseif reversed then
+            healCut:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
+            healCut:SetPoint("BOTTOMLEFT", healthTex, "BOTTOMLEFT", 0, 0)
         else
-            healClip:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-            healClip:SetPoint("BOTTOMRIGHT", hpTex, "BOTTOMRIGHT", 0, 0)
+            healCut:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+            healCut:SetPoint("BOTTOMRIGHT", healthTex, "BOTTOMRIGHT", 0, 0)
         end
     end
-    if ha then
-        ha:ClearAllPoints()
+    if healAbsorb then
+        healAbsorb:ClearAllPoints()
         if healMode == "right" then
-            ha:SetReverseFill(true)
-            ha:SetPoint("TOPRIGHT", hpBar, "TOPRIGHT", 0, 0)
-            ha:SetPoint("BOTTOMRIGHT", hpBar, "BOTTOMRIGHT", 0, 0)
+            healAbsorb:SetReverseFill(true)
+            healAbsorb:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
+            healAbsorb:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
         elseif healMode == "left" then
-            ha:SetReverseFill(false)
-            ha:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-            ha:SetPoint("BOTTOMLEFT", hpBar, "BOTTOMLEFT", 0, 0)
+            healAbsorb:SetReverseFill(false)
+            healAbsorb:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+            healAbsorb:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
         else
             -- Overlay: eat into the filled health from the HP edge, mirrored for
             -- reverse-filled health bars.
-            ha:SetReverseFill(not isReversed)
-            if isReversed then
-                ha:SetPoint("TOPLEFT", hpTex, "TOPLEFT", 0, 0)
-                ha:SetPoint("BOTTOMLEFT", hpTex, "BOTTOMLEFT", 0, 0)
+            healAbsorb:SetReverseFill(not reversed)
+            if reversed then
+                healAbsorb:SetPoint("TOPLEFT", healthTex, "TOPLEFT", 0, 0)
+                healAbsorb:SetPoint("BOTTOMLEFT", healthTex, "BOTTOMLEFT", 0, 0)
             else
-                ha:SetPoint("TOPRIGHT", hpTex, "TOPRIGHT", 0, 0)
-                ha:SetPoint("BOTTOMRIGHT", hpTex, "BOTTOMRIGHT", 0, 0)
+                healAbsorb:SetPoint("TOPRIGHT", healthTex, "TOPRIGHT", 0, 0)
+                healAbsorb:SetPoint("BOTTOMRIGHT", healthTex, "BOTTOMRIGHT", 0, 0)
             end
         end
     end
-    if ab._predOn then
-        mod.UF_AnchorHealPred(ab)
-        mod.UF_HealPredLayout(ab)
+    if absorbBar._predOn then
+        mod.UF_AnchorHealPred(absorbBar)
+        mod.UF_HealPredLayout(absorbBar)
     end
 end
 
@@ -540,14 +540,14 @@ mod.UF_HEAL_PRED_UNITS = { player = true, target = true, focus = true }
 -- Anchors both segments at the health fill's leading edge, in the fill
 -- direction (reverse and vertical fill included), the others' segment
 -- starting where the player's ends.
-function mod.UF_AnchorHealPred(ab)
-    local my, other = ab._predMy, ab._predOther
-    local hpTex = ab._hpBar and ab._hpBar:GetStatusBarTexture()
-    if not (my and hpTex) then
+function mod.UF_AnchorHealPred(absorbBar)
+    local my, other = absorbBar._predMy, absorbBar._predOther
+    local healthTex = absorbBar._hpBar and absorbBar._hpBar:GetStatusBarTexture()
+    if not (my and healthTex) then
         return
     end
     local myTex = my:GetStatusBarTexture()
-    local isVert, isRev = ab._isVert and true or false, ab._isReversed and true or false
+    local isVert, isRev = absorbBar._isVert and true or false, absorbBar._isReversed and true or false
     for index = 1, 2 do
         local barFrame = (index == 1) and my or other
         barFrame:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
@@ -567,22 +567,22 @@ function mod.UF_AnchorHealPred(ab)
     else
         a1, b1, a2, b2 = "TOPLEFT", "TOPRIGHT", "BOTTOMLEFT", "BOTTOMRIGHT"
     end
-    my:SetPoint(a1, hpTex, b1, 0, 0)
-    my:SetPoint(a2, hpTex, b2, 0, 0)
+    my:SetPoint(a1, healthTex, b1, 0, 0)
+    my:SetPoint(a2, healthTex, b2, 0, 0)
     other:SetPoint(a1, myTex, b1, 0, 0)
     other:SetPoint(a2, myTex, b2, 0, 0)
 end
 
-function mod.UF_NewHealPredBar(ab)
-    local barFrame = CreateFrame("StatusBar", nil, ab._missClip)
+function mod.UF_NewHealPredBar(absorbBar)
+    local barFrame = CreateFrame("StatusBar", nil, absorbBar._missClip)
     barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     local fillTex = barFrame:GetStatusBarTexture()
-    if fillTex and ab._absorbMask then
-        fillTex:AddMaskTexture(ab._absorbMask)
+    if fillTex and absorbBar._absorbMask then
+        fillTex:AddMaskTexture(absorbBar._absorbMask)
     end
     barFrame:SetMinMaxValues(0, 1)
     barFrame:SetValue(0)
-    barFrame:SetFrameLevel(ab._hpBar:GetFrameLevel() + 1)
+    barFrame:SetFrameLevel(absorbBar._hpBar:GetFrameLevel() + 1)
     barFrame:Hide()
     return barFrame
 end
@@ -592,12 +592,12 @@ end
 -- pass). Both apply only while the segments sit inside the bar (Overheal 0).
 -- A texture swap makes new fills, so this runs after every swap, parent
 -- change and art pass.
-function mod.UF_HealPredMasks(ab)
-    local inside = (ab._predOver or 0) == 0
-    local edge = ab._absorbMask
-    local shape = ab._hpBar._blizzMask
+function mod.UF_HealPredMasks(absorbBar)
+    local inside = (absorbBar._predOver or 0) == 0
+    local edge = absorbBar._absorbMask
+    local shape = absorbBar._hpBar._blizzMask
     for index = 1, 2 do
-        local barFrame = (index == 1) and ab._predMy or ab._predOther
+        local barFrame = (index == 1) and absorbBar._predMy or absorbBar._predOther
         local fillTex = barFrame:GetStatusBarTexture()
         if fillTex then
             if edge then
@@ -608,7 +608,7 @@ function mod.UF_HealPredMasks(ab)
             end
             if shape then
                 pcall(fillTex.RemoveMaskTexture, fillTex, shape)
-                if inside and ab._blizzMaskOn then
+                if inside and absorbBar._blizzMaskOn then
                     fillTex:AddMaskTexture(shape)
                 end
             end
@@ -619,47 +619,47 @@ end
 -- Size and the Overheal holder: both follow the health bar's size and fill
 -- axis. Runs from the style pass, the absorb re-anchor pass and the health
 -- bar's OnSizeChanged.
-function mod.UF_HealPredLayout(ab)
-    local hp = ab._hpBar
-    local wid, hgt = hp:GetWidth(), hp:GetHeight()
-    ab._predMy:SetSize(wid, hgt)
-    ab._predOther:SetSize(wid, hgt)
-    local over = ab._predOver or 0
-    local holderFrame = ab._predHolder
+function mod.UF_HealPredLayout(absorbBar)
+    local health = absorbBar._hpBar
+    local wid, hgt = health:GetWidth(), health:GetHeight()
+    absorbBar._predMy:SetSize(wid, hgt)
+    absorbBar._predOther:SetSize(wid, hgt)
+    local over = absorbBar._predOver or 0
+    local holderFrame = absorbBar._predHolder
     if over > 0 and holderFrame then
-        local ext = (ab._isVert and hgt or wid) * over / 100
+        local ext = (absorbBar._isVert and hgt or wid) * over / 100
         local l, region, t, b = 0, 0, 0, 0
-        if ab._isVert then
-            if ab._isReversed then
+        if absorbBar._isVert then
+            if absorbBar._isReversed then
                 b = -ext
             else
                 t = ext
             end
-        elseif ab._isReversed then
+        elseif absorbBar._isReversed then
             l = -ext
         else
             region = ext
         end
         holderFrame:ClearAllPoints()
-        holderFrame:SetPoint("TOPLEFT", hp, "TOPLEFT", l, t)
-        holderFrame:SetPoint("BOTTOMRIGHT", hp, "BOTTOMRIGHT", region, b)
+        holderFrame:SetPoint("TOPLEFT", health, "TOPLEFT", l, t)
+        holderFrame:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", region, b)
     end
 end
 
 -- The healpred channel's painter: values only, no style work.
 function mod.UF_PaintHealPred(widget, unitToken)
-    local ab = widget.HealthPrediction.damageAbsorb
-    if not ab._predOn then
+    local absorbBar = widget.HealthPrediction.damageAbsorb
+    if not absorbBar._predOn then
         return
     end
-    local calc = ab._predCalc
-    UnitGetDetailedHealPrediction(unitToken, "player", calc)
-    local _, mine, others = calc:GetIncomingHeals()
-    local maxHealth = UnitHealthMax(unitToken) or 0
-    local my, other = ab._predMy, ab._predOther
-    my:SetMinMaxValues(0, maxHealth)
-    other:SetMinMaxValues(0, maxHealth)
-    my:SetValue(mine)
+    local calculator = absorbBar._predCalc
+    UnitGetDetailedHealPrediction(unitToken, "player", calculator)
+    local _, myHeals, others = calculator:GetIncomingHeals()
+    local healthMax = UnitHealthMax(unitToken) or 0
+    local my, other = absorbBar._predMy, absorbBar._predOther
+    my:SetMinMaxValues(0, healthMax)
+    other:SetMinMaxValues(0, healthMax)
+    my:SetValue(myHeals)
     other:SetValue(others)
 end
 mod.Engine.SetPainter("healpred", mod.UF_PaintHealPred)
@@ -668,9 +668,9 @@ mod.Engine.SetPainter("healpred", mod.UF_PaintHealPred)
 -- Idempotent; runs at spawn and on every settings reload, after the health
 -- texture is applied. Off tears down to hidden bars and no channel.
 function mod.UF_HealPredApply(widget, unitKey, s)
-    local hpe = widget.HealthPrediction
-    local ab = hpe and hpe.damageAbsorb
-    if not (ab and ab._missClip) then
+    local healthEnd = widget.HealthPrediction
+    local absorbBar = healthEnd and healthEnd.damageAbsorb
+    if not (absorbBar and absorbBar._missClip) then
         return
     end
     local enabled = mod.UF_HEAL_PRED_UNITS[unitKey]
@@ -681,43 +681,43 @@ function mod.UF_HealPredApply(widget, unitKey, s)
             and true
         or false
     if not enabled then
-        if ab._predOn then
-            ab._predOn = false
-            ab._predMy:Hide()
-            ab._predOther:Hide()
+        if absorbBar._predOn then
+            absorbBar._predOn = false
+            absorbBar._predMy:Hide()
+            absorbBar._predOther:Hide()
             mod.Engine.SetChannelOn(widget, "healpred", false)
         end
         return
     end
-    local hp = ab._hpBar
-    if not ab._predMy then
-        ab._predMy = mod.UF_NewHealPredBar(ab)
-        ab._predOther = mod.UF_NewHealPredBar(ab)
-        local calc = CreateUnitHealPredictionCalculator()
+    local health = absorbBar._hpBar
+    if not absorbBar._predMy then
+        absorbBar._predMy = mod.UF_NewHealPredBar(absorbBar)
+        absorbBar._predOther = mod.UF_NewHealPredBar(absorbBar)
+        local calculator = CreateUnitHealPredictionCalculator()
         -- Every clamp reads maximum health, never current health, so the clip
         -- does the missing-health cut and no health event is needed; heal
         -- absorbs reduce the drawn heal (their own event is routed).
         local modes = Enum and Enum.UnitIncomingHealClampMode
-        if calc.SetIncomingHealClampMode and modes then
-            calc:SetIncomingHealClampMode(modes.MaximumHealth)
+        if calculator.SetIncomingHealClampMode and modes then
+            calculator:SetIncomingHealClampMode(modes.MaximumHealth)
         end
         local haClamp = Enum and Enum.UnitHealAbsorbClampMode
-        if calc.SetHealAbsorbClampMode and haClamp then
-            calc:SetHealAbsorbClampMode(haClamp.MaximumHealth)
+        if calculator.SetHealAbsorbClampMode and haClamp then
+            calculator:SetHealAbsorbClampMode(haClamp.MaximumHealth)
         end
         local haMode = Enum and Enum.UnitHealAbsorbMode
-        if calc.SetHealAbsorbMode and haMode then
-            calc:SetHealAbsorbMode(haMode.ReducedByIncomingHeals)
+        if calculator.SetHealAbsorbMode and haMode then
+            calculator:SetHealAbsorbMode(haMode.ReducedByIncomingHeals)
         end
-        ab._predCalc = calc
+        absorbBar._predCalc = calculator
         -- Our own health bar; returns at once while the option is off.
-        hp:HookScript("OnSizeChanged", function()
-            if ab._predOn then
-                mod.UF_HealPredLayout(ab)
+        health:HookScript("OnSizeChanged", function()
+            if absorbBar._predOn then
+                mod.UF_HealPredLayout(absorbBar)
             end
         end)
     end
-    local my, other = ab._predMy, ab._predOther
+    local my, other = absorbBar._predMy, absorbBar._predOther
     -- Texture (s.healPredTexture): "health" (default) follows the frame's own
     -- health bar, read off its fill so every texture path (per frame, profile,
     -- donor, Blizzard Style) matches; "flat" is a plain fill; anything else is a
@@ -726,15 +726,15 @@ function mod.UF_HealPredApply(widget, unitKey, s)
     local texKey = s.healPredTexture or "health"
     local filePath
     if texKey == "health" then
-        local hFill = hp:GetStatusBarTexture()
+        local hFill = health:GetStatusBarTexture()
         filePath = hFill and hFill:GetTexture()
     elseif texKey ~= "flat" then
         filePath = CludesUI.ResolveTexturePath(healthBarTextures, texKey, nil)
     end
     filePath = filePath or "Interface\\Buttons\\WHITE8X8"
-    local retex = ab._predTexPath ~= filePath
+    local retex = absorbBar._predTexPath ~= filePath
     if retex then
-        ab._predTexPath = filePath
+        absorbBar._predTexPath = filePath
         for index = 1, 2 do
             local barFrame = (index == 1) and my or other
             barFrame:SetStatusBarTexture(filePath)
@@ -746,34 +746,34 @@ function mod.UF_HealPredApply(widget, unitKey, s)
     end
     -- While off, the re-anchor pass skips the bars, so turning on re-seats
     -- them for the current fill axis.
-    if retex or not ab._predOn then
-        mod.UF_AnchorHealPred(ab)
+    if retex or not absorbBar._predOn then
+        mod.UF_AnchorHealPred(absorbBar)
     end
     -- Overheal: how far past full health the bars may run (0 = stop at the
     -- end). The health bar sits inside the frame's bar clip, so running past
     -- its end takes a holder outside it, parented to the unit frame; the masks
     -- come off there. Layout places the holder.
     local over = tonumber(s.healPredOverheal) or 0
-    local relayout = (not ab._predOn) or ab._predOver ~= over
-    if retex or ab._predOver ~= over then
-        ab._predOver = over
-        local hostFrame = ab._missClip
+    local relayout = (not absorbBar._predOn) or absorbBar._predOver ~= over
+    if retex or absorbBar._predOver ~= over then
+        absorbBar._predOver = over
+        local hostFrame = absorbBar._missClip
         if over > 0 then
-            local holderFrame = ab._predHolder
+            local holderFrame = absorbBar._predHolder
             if not holderFrame then
                 holderFrame = CreateFrame("Frame", nil, widget)
                 holderFrame:SetClipsChildren(true)
-                ab._predHolder = holderFrame
+                absorbBar._predHolder = holderFrame
             end
-            holderFrame:SetFrameLevel(hp:GetFrameLevel() + 1)
+            holderFrame:SetFrameLevel(health:GetFrameLevel() + 1)
             hostFrame = holderFrame
         end
         for index = 1, 2 do
             local barFrame = (index == 1) and other or my
             barFrame:SetParent(hostFrame)
-            barFrame:SetFrameLevel(hp:GetFrameLevel() + index)
+            barFrame:SetFrameLevel(health:GetFrameLevel() + index)
         end
-        mod.UF_HealPredMasks(ab)
+        mod.UF_HealPredMasks(absorbBar)
     end
     local alpha = (s.healPredOpacity or 60) / 100
     local mc = s.healPredColor or mod.UF_HEAL_PRED_MY
@@ -782,11 +782,11 @@ function mod.UF_HealPredApply(widget, unitKey, s)
     other:SetStatusBarColor(oc.r, oc.g, oc.b, alpha)
     -- While on, the re-anchor pass and the size hook keep the layout current.
     if relayout then
-        mod.UF_HealPredLayout(ab)
+        mod.UF_HealPredLayout(absorbBar)
     end
     my:Show()
     other:Show()
-    ab._predOn = true
+    absorbBar._predOn = true
     mod.Engine.SetChannelOn(widget, "healpred", true)
     if widget:IsShown() then
         mod.UF_PaintHealPred(widget, widget._cuiUnit)
@@ -822,19 +822,19 @@ function mod.UF_ApplyMaxHealthStyle(barFrame, style, s, mask)
 end
 
 -- The loss sits at the bar's far end, on whichever fill axis the health bar uses.
-function mod.UF_OrientMaxHealth(barFrame, isReversed, isVert)
+function mod.UF_OrientMaxHealth(barFrame, reversed, isVert)
     barFrame:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
-    barFrame:SetReverseFill(not isReversed)
+    barFrame:SetReverseFill(not reversed)
     mod.ApplyFillRotation(barFrame)
 end
 
 -- The maxhp channel's painter. The API returns a plain fraction of the maximum
 -- (never secret, never nil); only loss is drawn, as on Blizzard's frames.
 function mod.UF_PaintMaxHp(widget, unitToken)
-    local hpe = widget.HealthPrediction
-    local ab = hpe and hpe.damageAbsorb
-    local barFrame = ab and ab._maxHp
-    if not (barFrame and ab._maxHpOn) then
+    local healthEnd = widget.HealthPrediction
+    local absorbBar = healthEnd and healthEnd.damageAbsorb
+    local barFrame = absorbBar and absorbBar._maxHp
+    if not (barFrame and absorbBar._maxHpOn) then
         return
     end
     local pct = GetUnitTotalModifiedMaxHealthPercent(unitToken)
@@ -850,9 +850,9 @@ mod.Engine.SetPainter("maxhp", mod.UF_PaintMaxHp)
 -- Style pass + channel sync for one frame (unitKey = its unit token); runs at
 -- spawn and on every settings reload, after the absorb bars' fill axis is set.
 function mod.UF_MaxHpApply(widget, unitKey)
-    local hpe = widget.HealthPrediction
-    local ab = hpe and hpe.damageAbsorb
-    if not (ab and ab._hpBar and saved) then
+    local healthEnd = widget.HealthPrediction
+    local absorbBar = healthEnd and healthEnd.damageAbsorb
+    if not (absorbBar and absorbBar._hpBar and saved) then
         return
     end
     local s
@@ -865,28 +865,28 @@ function mod.UF_MaxHpApply(widget, unitKey)
         s = GetSettingsForUnit(unitKey)
     end
     local style = (s and s.maxHealthStyle) or "none"
-    local barFrame = ab._maxHp
+    local barFrame = absorbBar._maxHp
     if style == "none" then
-        if ab._maxHpOn then
-            ab._maxHpOn = false
+        if absorbBar._maxHpOn then
+            absorbBar._maxHpOn = false
             barFrame:Hide()
             mod.Engine.SetChannelOn(widget, "maxhp", false)
         end
         return
     end
     if not barFrame then
-        barFrame = CreateFrame("StatusBar", nil, ab._hpBar)
-        barFrame:SetAllPoints(ab._hpBar)
-        barFrame:SetFrameLevel(ab._hpBar:GetFrameLevel() + 2)
+        barFrame = CreateFrame("StatusBar", nil, absorbBar._hpBar)
+        barFrame:SetAllPoints(absorbBar._hpBar)
+        barFrame:SetFrameLevel(absorbBar._hpBar:GetFrameLevel() + 2)
         barFrame:SetMinMaxValues(0, 1)
         barFrame._bg = barFrame:CreateTexture(nil, "ARTWORK", nil, 2)
         barFrame:Hide()
-        ab._maxHp = barFrame
+        absorbBar._maxHp = barFrame
     end
-    mod.UF_ApplyMaxHealthStyle(barFrame, style, s, ab._absorbMask)
-    mod.UF_OrientMaxHealth(barFrame, ab._isReversed, ab._isVert)
-    if not ab._maxHpOn then
-        ab._maxHpOn = true
+    mod.UF_ApplyMaxHealthStyle(barFrame, style, s, absorbBar._absorbMask)
+    mod.UF_OrientMaxHealth(barFrame, absorbBar._isReversed, absorbBar._isVert)
+    if not absorbBar._maxHpOn then
+        absorbBar._maxHpOn = true
         mod.Engine.SetChannelOn(widget, "maxhp", true)
     end
     mod.UF_PaintMaxHp(widget, widget._cuiUnit or unitKey)
@@ -952,10 +952,10 @@ mod.UF_PaintAbsorbGlow = CludesUI.AbsorbGlow.Paint
 -- up (without one there is nothing to flip; the absorb paint that cleared
 -- it already did).
 mod.Engine.SetPainter("absglow", function(widget, unitToken)
-    local hpe = widget.HealthPrediction
-    local ab = hpe and hpe.damageAbsorb
-    if ab and ab._glowOn and widget._absActive then
-        mod.UF_AbsorbGlowFlip(ab, unitToken)
+    local healthEnd = widget.HealthPrediction
+    local absorbBar = healthEnd and healthEnd.damageAbsorb
+    if absorbBar and absorbBar._glowOn and widget._absActive then
+        mod.UF_AbsorbGlowFlip(absorbBar, unitToken)
     end
 end)
 
@@ -965,9 +965,9 @@ end)
 -- only when one of their inputs (placement, overshield anchor, fill
 -- direction, art) changed; a change repaints the frame at once.
 function mod.UF_AbsorbGlowApply(widget, unitToken)
-    local hpe = widget.HealthPrediction
-    local ab = hpe and hpe.damageAbsorb
-    if not (ab and ab._forward) then
+    local healthEnd = widget.HealthPrediction
+    local absorbBar = healthEnd and healthEnd.damageAbsorb
+    if not (absorbBar and absorbBar._forward) then
         return
     end
     local s
@@ -981,8 +981,8 @@ function mod.UF_AbsorbGlowApply(widget, unitToken)
     local enabled = s
         and s.absorbGlowLine == true
         and (s.showPlayerAbsorb or "none") ~= "none"
-        and not ab._isVert
-    local rev = ab._isReversed and true or false
+        and not absorbBar._isVert
+    local rev = absorbBar._isReversed and true or false
     local ge, anc
     if enabled then
         local em = s.absorbEdgeMode or "overlay"
@@ -1002,19 +1002,19 @@ function mod.UF_AbsorbGlowApply(widget, unitToken)
         end
     end
     if not enabled then
-        if ab._glowOn then
-            ab._glowOn = false
-            ab._glow.host:Hide()
+        if absorbBar._glowOn then
+            absorbBar._glowOn = false
+            absorbBar._glow.host:Hide()
             mod.Engine.SetChannelOn(widget, "absglow", false)
         end
         return
     end
-    local g = ab._glow or mod.UF_BuildAbsorbGlow(ab)
+    local g = absorbBar._glow or mod.UF_BuildAbsorbGlow(absorbBar)
     local art = mod.UF_GLOW_LINE_ART[s.absorbGlowLineTexture] or mod.UF_GLOW_LINE_ART.blizzard
-    local changed = not ab._glowOn
+    local changed = not absorbBar._glowOn
     if g.ge ~= ge or g.anc ~= anc or g.rev ~= rev then
         g.ge, g.anc, g.rev = ge, anc, rev
-        mod.UF_AbsorbGlowAnchor(ab)
+        mod.UF_AbsorbGlowAnchor(absorbBar)
         if ge == 3 then
             g.edgeHost:SetAlpha(1)
         end
@@ -1037,11 +1037,11 @@ function mod.UF_AbsorbGlowApply(widget, unitToken)
     if not changed then
         return
     end
-    ab._glowOn = true
+    absorbBar._glowOn = true
     g.host:Show()
     mod.Engine.SetChannelOn(widget, "absglow", ge ~= 3 and g.calc ~= nil)
-    if widget:IsShown() and widget._cuiUnit and hpe.Override then
-        hpe.Override(widget, "ForceUpdate", widget._cuiUnit)
+    if widget:IsShown() and widget._cuiUnit and healthEnd.Override then
+        healthEnd.Override(widget, "ForceUpdate", widget._cuiUnit)
     end
 end
 
@@ -1060,60 +1060,60 @@ end
 -- against the Absorb Bar, derived from its POSITION (not its live visibility, so
 -- they never shift). "*Right" fills from the right edge. `absorbLevel` is the
 -- absorb-overlay frame level (inside strips render at +1).
-mod.UF_ApplyStripBarLayout = function(stripBar, hp, position, height, absorbLevel, absorbPos, absorbHeight)
-    if not stripBar or not hp then
+mod.UF_ApplyStripBarLayout = function(stripeBar, health, position, height, absorbLevel, absorbPlace, absorbHeight)
+    if not stripeBar or not health then
         return
     end
-    stripBar:ClearAllPoints()
-    stripBar:SetHeight(Pix.Scale(height or 4))
-    local insideLevel = (absorbLevel or (hp:GetFrameLevel() + 1)) + 1
+    stripeBar:ClearAllPoints()
+    stripeBar:SetHeight(Pix.Scale(height or 4))
+    local insideLevel = (absorbLevel or (health:GetFrameLevel() + 1)) + 1
     if position == "aboveAbsorb" then
-        absorbPos = absorbPos or "none"
+        absorbPlace = absorbPlace or "none"
         local leftPoint, rightPoint, yOff = "TOPLEFT", "TOPRIGHT", 0
-        if absorbPos == "aboveRight" or absorbPos == "aboveLeft" then
+        if absorbPlace == "aboveRight" or absorbPlace == "aboveLeft" then
             yOff = Pix.Scale(absorbHeight or 4)
-        elseif absorbPos == "bottomRight" or absorbPos == "bottomLeft" then
+        elseif absorbPlace == "bottomRight" or absorbPlace == "bottomLeft" then
             leftPoint, rightPoint = "BOTTOMLEFT", "BOTTOMRIGHT"
             yOff = Pix.Scale(absorbHeight or 4)
         end
-        stripBar:SetReverseFill(
-            absorbPos ~= "aboveLeft" and absorbPos ~= "topLeft" and absorbPos ~= "bottomLeft"
+        stripeBar:SetReverseFill(
+            absorbPlace ~= "aboveLeft" and absorbPlace ~= "topLeft" and absorbPlace ~= "bottomLeft"
         )
-        stripBar:SetPoint("BOTTOMLEFT", hp, leftPoint, 0, yOff)
-        stripBar:SetPoint("BOTTOMRIGHT", hp, rightPoint, 0, yOff)
-        stripBar:SetFrameLevel(insideLevel)
+        stripeBar:SetPoint("BOTTOMLEFT", health, leftPoint, 0, yOff)
+        stripeBar:SetPoint("BOTTOMRIGHT", health, rightPoint, 0, yOff)
+        stripeBar:SetFrameLevel(insideLevel)
     elseif position == "belowAbsorb" then
-        absorbPos = absorbPos or "none"
-        if absorbPos == "bottomRight" or absorbPos == "bottomLeft" then
-            stripBar:SetReverseFill(absorbPos == "bottomRight")
-            stripBar:SetPoint("TOPLEFT", hp, "BOTTOMLEFT", 0, 0)
-            stripBar:SetPoint("TOPRIGHT", hp, "BOTTOMRIGHT", 0, 0)
-            stripBar:SetFrameLevel(insideLevel)
+        absorbPlace = absorbPlace or "none"
+        if absorbPlace == "bottomRight" or absorbPlace == "bottomLeft" then
+            stripeBar:SetReverseFill(absorbPlace == "bottomRight")
+            stripeBar:SetPoint("TOPLEFT", health, "BOTTOMLEFT", 0, 0)
+            stripeBar:SetPoint("TOPRIGHT", health, "BOTTOMRIGHT", 0, 0)
+            stripeBar:SetFrameLevel(insideLevel)
             return
         end
         local yOff = 0
-        if absorbPos == "topRight" or absorbPos == "topLeft" then
+        if absorbPlace == "topRight" or absorbPlace == "topLeft" then
             yOff = -Pix.Scale(absorbHeight or 4)
         end
-        stripBar:SetReverseFill(absorbPos ~= "aboveLeft" and absorbPos ~= "topLeft")
-        stripBar:SetPoint("TOPLEFT", hp, "TOPLEFT", 0, yOff)
-        stripBar:SetPoint("TOPRIGHT", hp, "TOPRIGHT", 0, yOff)
-        stripBar:SetFrameLevel(insideLevel)
+        stripeBar:SetReverseFill(absorbPlace ~= "aboveLeft" and absorbPlace ~= "topLeft")
+        stripeBar:SetPoint("TOPLEFT", health, "TOPLEFT", 0, yOff)
+        stripeBar:SetPoint("TOPRIGHT", health, "TOPRIGHT", 0, yOff)
+        stripeBar:SetFrameLevel(insideLevel)
     elseif position == "topRight" or position == "topLeft" then
-        stripBar:SetReverseFill(position == "topRight")
-        stripBar:SetPoint("TOPLEFT", hp, "TOPLEFT", 0, 0)
-        stripBar:SetPoint("TOPRIGHT", hp, "TOPRIGHT", 0, 0)
-        stripBar:SetFrameLevel(insideLevel)
+        stripeBar:SetReverseFill(position == "topRight")
+        stripeBar:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
+        stripeBar:SetPoint("TOPRIGHT", health, "TOPRIGHT", 0, 0)
+        stripeBar:SetFrameLevel(insideLevel)
     elseif position == "bottomRight" or position == "bottomLeft" then
-        stripBar:SetReverseFill(position == "bottomRight")
-        stripBar:SetPoint("BOTTOMLEFT", hp, "BOTTOMLEFT", 0, 0)
-        stripBar:SetPoint("BOTTOMRIGHT", hp, "BOTTOMRIGHT", 0, 0)
-        stripBar:SetFrameLevel(insideLevel)
+        stripeBar:SetReverseFill(position == "bottomRight")
+        stripeBar:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 0, 0)
+        stripeBar:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
+        stripeBar:SetFrameLevel(insideLevel)
     else
-        stripBar:SetReverseFill(position == "aboveRight")
-        stripBar:SetPoint("BOTTOMLEFT", hp, "TOPLEFT", 0, 0)
-        stripBar:SetPoint("BOTTOMRIGHT", hp, "TOPRIGHT", 0, 0)
-        stripBar:SetFrameLevel(hp:GetFrameLevel() + 3)
+        stripeBar:SetReverseFill(position == "aboveRight")
+        stripeBar:SetPoint("BOTTOMLEFT", health, "TOPLEFT", 0, 0)
+        stripeBar:SetPoint("BOTTOMRIGHT", health, "TOPRIGHT", 0, 0)
+        stripeBar:SetFrameLevel(health:GetFrameLevel() + 3)
     end
 end
 
@@ -1136,8 +1136,8 @@ do
                 for frame in pairs(armed) do
                     any = true
                     if (nowTime - (frame._absPaintAt or 0)) > 0.45 then
-                        local hp = frame.HealthPrediction
-                        local shade = hp and hp.Override
+                        local health = frame.HealthPrediction
+                        local shade = health and health.Override
                         if shade then
                             shade(frame, "CUI_AbsorbBelt", frame._cuiUnit)
                         end
@@ -1169,129 +1169,129 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
         return
     end
 
-    local hpBar = widget.Health
+    local healthBar = widget.Health
 
     -- Mask texture: constrains absorb rendering to exact health bar bounds at the
     -- GPU level, preventing the subpixel bleed where absorb textures extend 1px
     -- outside the health bar at some frame positions.
-    local absorbMask = hpBar:CreateMaskTexture()
-    absorbMask:SetAllPoints(hpBar)
+    local absorbMask = healthBar:CreateMaskTexture()
+    absorbMask:SetAllPoints(healthBar)
     absorbMask:SetTexture("Interface\\Buttons\\WHITE8X8")
 
     -- Reverse fill: when health fills right-to-left, mirror all absorb anchors.
-    local isReversed = prefs.healthReverseFill and true or false
+    local reversed = prefs.healthReverseFill and true or false
 
     -- Current HP clip: bounds the backfill bar to the filled health area.
-    local curClip = CreateFrame("Frame", nil, hpBar)
-    if isReversed then
-        curClip:SetPoint("TOPRIGHT", hpBar, "TOPRIGHT", 0, 0)
-        curClip:SetPoint("BOTTOMLEFT", hpBar:GetStatusBarTexture(), "BOTTOMLEFT", 0, 0)
+    local nowClip = CreateFrame("Frame", nil, healthBar)
+    if reversed then
+        nowClip:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
+        nowClip:SetPoint("BOTTOMLEFT", healthBar:GetStatusBarTexture(), "BOTTOMLEFT", 0, 0)
     else
-        curClip:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-        curClip:SetPoint("BOTTOMRIGHT", hpBar:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
+        nowClip:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+        nowClip:SetPoint("BOTTOMRIGHT", healthBar:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
     end
-    curClip:SetClipsChildren(true)
+    nowClip:SetClipsChildren(true)
 
     -- Missing HP clip: bounds the forward bar to the empty health area.
-    local missClip = CreateFrame("Frame", nil, hpBar)
-    if isReversed then
-        missClip:SetPoint("TOPRIGHT", hpBar:GetStatusBarTexture(), "TOPLEFT", 1, 0)
-        missClip:SetPoint("BOTTOMLEFT", hpBar, "BOTTOMLEFT", 0, 0)
+    local missClip = CreateFrame("Frame", nil, healthBar)
+    if reversed then
+        missClip:SetPoint("TOPRIGHT", healthBar:GetStatusBarTexture(), "TOPLEFT", 1, 0)
+        missClip:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
     else
-        missClip:SetPoint("TOPLEFT", hpBar:GetStatusBarTexture(), "TOPRIGHT", -1, 0)
-        missClip:SetPoint("BOTTOMRIGHT", hpBar, "BOTTOMRIGHT", 0, 0)
+        missClip:SetPoint("TOPLEFT", healthBar:GetStatusBarTexture(), "TOPRIGHT", -1, 0)
+        missClip:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
     end
     missClip:SetClipsChildren(true)
 
     -- Backfill bar (overflow): grows into filled health from the edge.
-    local backfillBar = CreateFrame("StatusBar", nil, curClip)
-    backfillBar:SetStatusBarTexture(ABSORB_SHIELD_TEX)
-    local bfFill = backfillBar:GetStatusBarTexture()
+    local backFill = CreateFrame("StatusBar", nil, nowClip)
+    backFill:SetStatusBarTexture(ABSORB_SHIELD_TEX)
+    local bfFill = backFill:GetStatusBarTexture()
     if bfFill then
         bfFill:SetDrawLayer("ARTWORK", 1)
         bfFill:AddMaskTexture(absorbMask)
     end
-    backfillBar:SetStatusBarColor(1, 1, 1, 0.8)
-    backfillBar:SetReverseFill(not isReversed)
-    if isReversed then
-        backfillBar:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-        backfillBar:SetPoint("BOTTOMLEFT", hpBar, "BOTTOMLEFT", 0, 0)
+    backFill:SetStatusBarColor(1, 1, 1, 0.8)
+    backFill:SetReverseFill(not reversed)
+    if reversed then
+        backFill:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+        backFill:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
     else
-        backfillBar:SetPoint("TOPRIGHT", hpBar, "TOPRIGHT", 0, 0)
-        backfillBar:SetPoint("BOTTOMRIGHT", hpBar, "BOTTOMRIGHT", 0, 0)
+        backFill:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
+        backFill:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
     end
-    backfillBar:SetWidth(hpBar:GetWidth())
-    backfillBar:SetHeight(hpBar:GetHeight())
-    backfillBar:SetFrameLevel(hpBar:GetFrameLevel() + 1)
-    backfillBar:Hide()
+    backFill:SetWidth(healthBar:GetWidth())
+    backFill:SetHeight(healthBar:GetHeight())
+    backFill:SetFrameLevel(healthBar:GetFrameLevel() + 1)
+    backFill:Hide()
 
     -- Forward bar (primary): grows into missing health from the HP edge.
-    local forwardBar = CreateFrame("StatusBar", nil, missClip)
-    forwardBar:SetStatusBarTexture(ABSORB_SHIELD_TEX)
-    local fwFill = forwardBar:GetStatusBarTexture()
+    local frontBar = CreateFrame("StatusBar", nil, missClip)
+    frontBar:SetStatusBarTexture(ABSORB_SHIELD_TEX)
+    local fwFill = frontBar:GetStatusBarTexture()
     if fwFill then
         fwFill:SetDrawLayer("ARTWORK", 1)
         fwFill:AddMaskTexture(absorbMask)
     end
-    forwardBar:SetStatusBarColor(1, 1, 1, 0.8)
-    forwardBar:SetReverseFill(isReversed)
-    if isReversed then
-        forwardBar:SetPoint("TOPRIGHT", hpBar:GetStatusBarTexture(), "TOPLEFT", 0, 0)
-        forwardBar:SetPoint("BOTTOMRIGHT", hpBar:GetStatusBarTexture(), "BOTTOMLEFT", 0, 0)
+    frontBar:SetStatusBarColor(1, 1, 1, 0.8)
+    frontBar:SetReverseFill(reversed)
+    if reversed then
+        frontBar:SetPoint("TOPRIGHT", healthBar:GetStatusBarTexture(), "TOPLEFT", 0, 0)
+        frontBar:SetPoint("BOTTOMRIGHT", healthBar:GetStatusBarTexture(), "BOTTOMLEFT", 0, 0)
     else
-        forwardBar:SetPoint("TOPLEFT", hpBar:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
-        forwardBar:SetPoint("BOTTOMLEFT", hpBar:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
+        frontBar:SetPoint("TOPLEFT", healthBar:GetStatusBarTexture(), "TOPRIGHT", 0, 0)
+        frontBar:SetPoint("BOTTOMLEFT", healthBar:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
     end
-    forwardBar:SetWidth(hpBar:GetWidth())
-    forwardBar:SetHeight(hpBar:GetHeight())
-    forwardBar:SetFrameLevel(hpBar:GetFrameLevel() + 1)
-    forwardBar:Hide()
+    frontBar:SetWidth(healthBar:GetWidth())
+    frontBar:SetHeight(healthBar:GetHeight())
+    frontBar:SetFrameLevel(healthBar:GetFrameLevel() + 1)
+    frontBar:Hide()
 
     -- Heal absorb bar: overlays filled-health in red, reverse-filling from the health
     -- texture edge inward. Has its OWN clip frame (not the shield's curClip) so
     -- placement is independent: overlay clips to filled health, right/left span the
     -- FULL bar. Bounds set per healAbsorbEdgeMode in UpdateAbsorbBarReverseFill.
-    local healClip = CreateFrame("Frame", nil, hpBar)
-    if isReversed then
-        healClip:SetPoint("TOPRIGHT", hpBar, "TOPRIGHT", 0, 0)
-        healClip:SetPoint("BOTTOMLEFT", hpBar:GetStatusBarTexture(), "BOTTOMLEFT", 0, 0)
+    local healCut = CreateFrame("Frame", nil, healthBar)
+    if reversed then
+        healCut:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
+        healCut:SetPoint("BOTTOMLEFT", healthBar:GetStatusBarTexture(), "BOTTOMLEFT", 0, 0)
     else
-        healClip:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-        healClip:SetPoint("BOTTOMRIGHT", hpBar:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
+        healCut:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+        healCut:SetPoint("BOTTOMRIGHT", healthBar:GetStatusBarTexture(), "BOTTOMRIGHT", 0, 0)
     end
-    healClip:SetClipsChildren(true)
-    local healAbsorbBar = CreateFrame("StatusBar", nil, healClip)
-    healAbsorbBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    healAbsorbBar._absorbMask = absorbMask
-    local haFill = healAbsorbBar:GetStatusBarTexture()
+    healCut:SetClipsChildren(true)
+    local healAbsorbFill = CreateFrame("StatusBar", nil, healCut)
+    healAbsorbFill:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    healAbsorbFill._absorbMask = absorbMask
+    local haFill = healAbsorbFill:GetStatusBarTexture()
     if haFill then
         haFill:SetDrawLayer("ARTWORK", 2)
         haFill:AddMaskTexture(absorbMask)
     end
-    healAbsorbBar:SetStatusBarColor(0.8, 0.15, 0.15, 0.65)
-    healAbsorbBar:SetReverseFill(not isReversed)
-    if isReversed then
-        healAbsorbBar:SetPoint("TOPLEFT", hpBar, "TOPLEFT", 0, 0)
-        healAbsorbBar:SetPoint("BOTTOMLEFT", hpBar, "BOTTOMLEFT", 0, 0)
+    healAbsorbFill:SetStatusBarColor(0.8, 0.15, 0.15, 0.65)
+    healAbsorbFill:SetReverseFill(not reversed)
+    if reversed then
+        healAbsorbFill:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
+        healAbsorbFill:SetPoint("BOTTOMLEFT", healthBar, "BOTTOMLEFT", 0, 0)
     else
-        healAbsorbBar:SetPoint("TOPRIGHT", hpBar, "TOPRIGHT", 0, 0)
-        healAbsorbBar:SetPoint("BOTTOMRIGHT", hpBar, "BOTTOMRIGHT", 0, 0)
+        healAbsorbFill:SetPoint("TOPRIGHT", healthBar, "TOPRIGHT", 0, 0)
+        healAbsorbFill:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
     end
-    healAbsorbBar:SetWidth(hpBar:GetWidth())
-    healAbsorbBar:SetHeight(hpBar:GetHeight())
-    healAbsorbBar:SetFrameLevel(hpBar:GetFrameLevel() + 1)
-    healAbsorbBar:Hide()
+    healAbsorbFill:SetWidth(healthBar:GetWidth())
+    healAbsorbFill:SetHeight(healthBar:GetHeight())
+    healAbsorbFill:SetFrameLevel(healthBar:GetFrameLevel() + 1)
+    healAbsorbFill:Hide()
 
     -- Black backing behind the heal-absorb texture (opacity via healAbsorbBgOpacity),
     -- drawn UNDER the fill (ARTWORK sublevel 1 < fill's 2), masked and anchored to the
     -- fill texture by the first paint, so it tracks the secret heal-absorb amount.
-    local haBg = healAbsorbBar:CreateTexture(nil, "ARTWORK", nil, 1)
+    local haBg = healAbsorbFill:CreateTexture(nil, "ARTWORK", nil, 1)
     haBg:SetColorTexture(0, 0, 0, 0.15)
     if absorbMask then
         haBg:AddMaskTexture(absorbMask)
     end
     haBg:Hide()
-    healAbsorbBar._bg = haBg
+    healAbsorbFill._bg = haBg
 
     -- Absorb Bar + Heal Absorb Bar: separate strips (mirrors Raid Frames) at a
     -- configurable position, parented to the frame so "above" positions can sit
@@ -1300,44 +1300,44 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
     absorbTopBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     absorbTopBar:SetStatusBarColor(1, 1, 1, 1)
     absorbTopBar:SetReverseFill(true)
-    absorbTopBar:SetPoint("BOTTOMLEFT", hpBar, "TOPLEFT", 0, 0)
-    absorbTopBar:SetPoint("BOTTOMRIGHT", hpBar, "TOPRIGHT", 0, 0)
+    absorbTopBar:SetPoint("BOTTOMLEFT", healthBar, "TOPLEFT", 0, 0)
+    absorbTopBar:SetPoint("BOTTOMRIGHT", healthBar, "TOPRIGHT", 0, 0)
     absorbTopBar:SetHeight(4)
-    absorbTopBar:SetFrameLevel(hpBar:GetFrameLevel() + 3)
+    absorbTopBar:SetFrameLevel(healthBar:GetFrameLevel() + 3)
     absorbTopBar:Hide()
 
     local healAbsorbTopBar = CreateFrame("StatusBar", nil, widget)
     healAbsorbTopBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     healAbsorbTopBar:SetStatusBarColor(200 / 255, 29 / 255, 29 / 255, 1)
     healAbsorbTopBar:SetReverseFill(true)
-    healAbsorbTopBar:SetPoint("BOTTOMLEFT", hpBar, "TOPLEFT", 0, 0)
-    healAbsorbTopBar:SetPoint("BOTTOMRIGHT", hpBar, "TOPRIGHT", 0, 0)
+    healAbsorbTopBar:SetPoint("BOTTOMLEFT", healthBar, "TOPLEFT", 0, 0)
+    healAbsorbTopBar:SetPoint("BOTTOMRIGHT", healthBar, "TOPRIGHT", 0, 0)
     healAbsorbTopBar:SetHeight(4)
-    healAbsorbTopBar:SetFrameLevel(hpBar:GetFrameLevel() + 3)
+    healAbsorbTopBar:SetFrameLevel(healthBar:GetFrameLevel() + 3)
     healAbsorbTopBar:Hide()
 
     -- Attach extras to the backfill (main) bar so anything referencing
     -- HealthPrediction.damageAbsorb can hide/show both segments together.
-    backfillBar._forward = forwardBar
-    backfillBar._healAbsorb = healAbsorbBar
-    backfillBar._topBar = absorbTopBar
-    backfillBar._healTopBar = healAbsorbTopBar
-    backfillBar._hpBar = hpBar
-    backfillBar._curClip = curClip
-    backfillBar._healClip = healClip
-    backfillBar._missClip = missClip
-    backfillBar._absorbMask = absorbMask
-    backfillBar._isReversed = isReversed
+    backFill._forward = frontBar
+    backFill._healAbsorb = healAbsorbFill
+    backFill._topBar = absorbTopBar
+    backFill._healTopBar = healAbsorbTopBar
+    backFill._hpBar = healthBar
+    backFill._curClip = nowClip
+    backFill._healClip = healCut
+    backFill._missClip = missClip
+    backFill._absorbMask = absorbMask
+    backFill._isReversed = reversed
 
     -- Raise the power bar above the absorb overlay.
     local power = widget and widget.Power
     if power then
-        power:SetFrameLevel(math.max(power:GetFrameLevel(), hpBar:GetFrameLevel() + 2))
+        power:SetFrameLevel(math.max(power:GetFrameLevel(), healthBar:GetFrameLevel() + 2))
     end
 
-    backfillBar:HookScript("OnHide", function()
-        forwardBar:Hide()
-        healAbsorbBar:Hide()
+    backFill:HookScript("OnHide", function()
+        frontBar:Hide()
+        healAbsorbFill:Hide()
     end)
 
     -- Named local so profilers attribute this hot painter (it traced as the
@@ -1409,13 +1409,13 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
         end
 
         local element = self.HealthPrediction
-        local ab = element.damageAbsorb
-        if not ab then
+        local absorbBar = element.damageAbsorb
+        if not absorbBar then
             return
         end
-        local fw = ab._forward
-        local hp = ab._hpBar
-        if not hp then
+        local fillW = absorbBar._forward
+        local health = absorbBar._hpBar
+        if not health then
             return
         end
 
@@ -1432,28 +1432,28 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
             bossAbsorbOff = saved.profile.boss and saved.profile.boss.showAbsorbs == false
             s = saved.profile.target or s
         end
-        local ha = ab._healAbsorb
-        local topBar = ab._topBar
-        local healTopBar = ab._healTopBar
+        local healAbsorb = absorbBar._healAbsorb
+        local overBar = absorbBar._topBar
+        local healOverBar = absorbBar._healTopBar
         local barPos = mod.UF_GetAbsorbBarPos(s)
-        local barOn = topBar and barPos ~= "none"
+        local barOn = overBar and barPos ~= "none"
         local healBarPos = mod.UF_GetHealAbsorbBarPos(s)
-        local healBarOn = healTopBar and healBarPos ~= "none"
+        local healBarOn = healOverBar and healBarPos ~= "none"
         local shieldOff = s and (not s.showPlayerAbsorb or s.showPlayerAbsorb == "none")
         local healOff = (((s and s.healAbsorbStyle) or "clean") == "none")
         if bossAbsorbOff or (shieldOff and healOff and not barOn and not healBarOn) then
-            ab:Hide()
-            if fw then
-                fw:Hide()
+            absorbBar:Hide()
+            if fillW then
+                fillW:Hide()
             end
-            if ha then
-                ha:Hide()
+            if healAbsorb then
+                healAbsorb:Hide()
             end
-            if topBar then
-                topBar:Hide()
+            if overBar then
+                overBar:Hide()
             end
-            if healTopBar then
-                healTopBar:Hide()
+            if healOverBar then
+                healOverBar:Hide()
             end
             -- Nothing draws a shield here, but the arm/disarm derivation still
             -- runs (as below): an absorb event armed this frame above, and a
@@ -1481,7 +1481,7 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
         -- (0, maxHealth) range that clamps oversized shields visually, so a
         -- detailed-prediction calculator adds fetches without changing a pixel.
         -- The gate block above may have fetched the shield total already.
-        local maxHealth = UnitHealthMax(updUnit) or 0
+        local healthMax = UnitHealthMax(updUnit) or 0
         local absorbAmt = shieldAmt or (UnitGetTotalAbsorbs and UnitGetTotalAbsorbs(updUnit)) or 0
 
         -- Lean-flag derivation + belt stamp (mirror of Raid Frames): a
@@ -1502,7 +1502,7 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
             mod.UF_AbDisarm(self)
         end
 
-        local hpW, hpH = hp:GetWidth(), hp:GetHeight()
+        local hpW, hpH = health:GetWidth(), health:GetHeight()
         -- Identical-state short-circuit (RF's memo, ported): chatter
         -- events with unchanged values skip the whole paint below.
         -- Identity/settings paints bypass the skip; any secret input
@@ -1512,85 +1512,85 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
         -- that edge reads a CHANGED amount (memo miss) -- the arm/disarm
         -- derivation and the paint stamp above already ran, so a belt
         -- pass over unchanged plain values has nothing left to move.
-        if isSecD and (isSecD(absorbAmt) or isSecD(maxHealth) or isSecD(haAmtD)) then
-            ab._mAbs = nil
+        if isSecD and (isSecD(absorbAmt) or isSecD(healthMax) or isSecD(haAmtD)) then
+            absorbBar._mAbs = nil
         elseif
             evt ~= "ForceUpdate"
             and evt ~= "Resettle"
-            and ab._mAbs == absorbAmt
-            and ab._mHeal == haAmtD
-            and ab._mMax == maxHealth
-            and ab._mW == hpW
-            and ab._mH == hpH
+            and absorbBar._mAbs == absorbAmt
+            and absorbBar._mHeal == haAmtD
+            and absorbBar._mMax == healthMax
+            and absorbBar._mW == hpW
+            and absorbBar._mH == hpH
         then
             return
         else
-            ab._mAbs, ab._mHeal, ab._mMax = absorbAmt, haAmtD, maxHealth
-            ab._mW, ab._mH = hpW, hpH
+            absorbBar._mAbs, absorbBar._mHeal, absorbBar._mMax = absorbAmt, haAmtD, healthMax
+            absorbBar._mW, absorbBar._mH = hpW, hpH
         end
         -- Bars track the health-bar size; size-gated (sizes never secret).
-        if ab._szW ~= hpW or ab._szH ~= hpH then
-            ab._szW = hpW
-            ab._szH = hpH
-            ab:SetWidth(hpW)
-            ab:SetHeight(hpH)
-            if fw then
-                fw:SetWidth(hpW)
-                fw:SetHeight(hpH)
+        if absorbBar._szW ~= hpW or absorbBar._szH ~= hpH then
+            absorbBar._szW = hpW
+            absorbBar._szH = hpH
+            absorbBar:SetWidth(hpW)
+            absorbBar:SetHeight(hpH)
+            if fillW then
+                fillW:SetWidth(hpW)
+                fillW:SetHeight(hpH)
             end
         end
 
         -- Strip bars (mirrors Raid Frames): independent of the overlay styles.
-        if topBar then
+        if overBar then
             if barOn then
                 local bc = (s and s.absorbBarColor) or COLOR_WHITE
                 local bh = (s and s.absorbBarHeight) or 4
                 -- Re-layout only on position/height change (no SetPoint churn).
-                if topBar._lpPos ~= barPos or topBar._lpH ~= bh then
-                    topBar._lpPos = barPos
-                    topBar._lpH = bh
-                    mod.UF_ApplyStripBarLayout(topBar, hp, barPos, bh, ab:GetFrameLevel())
+                if overBar._lpPos ~= barPos or overBar._lpH ~= bh then
+                    overBar._lpPos = barPos
+                    overBar._lpH = bh
+                    mod.UF_ApplyStripBarLayout(overBar, health, barPos, bh, absorbBar:GetFrameLevel())
                 end
-                topBar:SetStatusBarColor(bc.r, bc.g, bc.b, bc.a or 1)
-                topBar:SetMinMaxValues(0, maxHealth)
-                topBar:SetValue(absorbAmt)
-                topBar:Show()
+                overBar:SetStatusBarColor(bc.r, bc.g, bc.b, bc.a or 1)
+                overBar:SetMinMaxValues(0, healthMax)
+                overBar:SetValue(absorbAmt)
+                overBar:Show()
             else
-                topBar:Hide()
+                overBar:Hide()
             end
         end
-        if healTopBar then
+        if healOverBar then
             if healBarOn then
                 local hbc = (s and s.healAbsorbBarColor) or DEF_HEAL_ABSORB_BAR_COLOR
                 local hbh = (s and s.healAbsorbBarHeight) or 4
                 local abh = (s and s.absorbBarHeight) or 4
                 -- Re-layout only when its or the Absorb Bar's position/height changes.
                 if
-                    healTopBar._lpPos ~= healBarPos
-                    or healTopBar._lpH ~= hbh
-                    or healTopBar._lpAP ~= barPos
-                    or healTopBar._lpAH ~= abh
+                    healOverBar._lpPos ~= healBarPos
+                    or healOverBar._lpH ~= hbh
+                    or healOverBar._lpAP ~= barPos
+                    or healOverBar._lpAH ~= abh
                 then
-                    healTopBar._lpPos = healBarPos
-                    healTopBar._lpH = hbh
-                    healTopBar._lpAP = barPos
-                    healTopBar._lpAH = abh
+                    healOverBar._lpPos = healBarPos
+                    healOverBar._lpH = hbh
+                    healOverBar._lpAP = barPos
+                    healOverBar._lpAH = abh
                     mod.UF_ApplyStripBarLayout(
-                        healTopBar,
-                        hp,
+                        healOverBar,
+                        health,
                         healBarPos,
                         hbh,
-                        ab:GetFrameLevel(),
+                        absorbBar:GetFrameLevel(),
                         barPos,
                         abh
                     )
                 end
-                healTopBar:SetStatusBarColor(hbc.r, hbc.g, hbc.b, hbc.a or 1)
-                healTopBar:SetMinMaxValues(0, maxHealth)
-                healTopBar:SetValue(haAmtD)
-                healTopBar:Show()
+                healOverBar:SetStatusBarColor(hbc.r, hbc.g, hbc.b, hbc.a or 1)
+                healOverBar:SetMinMaxValues(0, healthMax)
+                healOverBar:SetValue(haAmtD)
+                healOverBar:Show()
             else
-                healTopBar:Hide()
+                healOverBar:Hide()
             end
         end
 
@@ -1598,7 +1598,7 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
         -- applies the saved placement on the first update. Fill AXIS belongs in the
         -- key too: the settings-apply path already re-anchors on a Vertical Fill
         -- toggle, but this keeps it self-healing if the axis changes another way.
-        local absorbMode = (s and s.absorbEdgeMode) or "overlay"
+        local absorbStyle = (s and s.absorbEdgeMode) or "overlay"
         -- Overshield mode (three-way; nil falls back to the legacy
         -- showOvershield boolean). Joins the edge key: "fromleft"
         -- re-anchors the backfill in UpdateAbsorbBarReverseFill.
@@ -1612,22 +1612,22 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
         local healEdgeMode = (s and s.healAbsorbEdgeMode) or "overlay"
         local vertFill = (s and s.healthVerticalFill) and true or false
         if
-            ab._ekAbs ~= absorbMode
-            or ab._ekHeal ~= healEdgeMode
-            or ab._ekVert ~= vertFill
-            or ab._ekOs ~= osMode
+            absorbBar._ekAbs ~= absorbStyle
+            or absorbBar._ekHeal ~= healEdgeMode
+            or absorbBar._ekVert ~= vertFill
+            or absorbBar._ekOs ~= osMode
         then
-            ab._ekAbs, ab._ekHeal = absorbMode, healEdgeMode
-            ab._ekVert, ab._ekOs = vertFill, osMode
-            UpdateAbsorbBarReverseFill(self, ab._isReversed)
+            absorbBar._ekAbs, absorbBar._ekHeal = absorbStyle, healEdgeMode
+            absorbBar._ekVert, absorbBar._ekOs = vertFill, osMode
+            UpdateAbsorbBarReverseFill(self, absorbBar._isReversed)
         end
 
         -- Shield (damage) absorb segments render only when enabled; style
         -- "none" hides them and falls through to the independent heal absorb.
         if shieldOff then
-            ab:Hide()
-            if fw then
-                fw:Hide()
+            absorbBar:Hide()
+            if fillW then
+                fillW:Hide()
             end
         else
             -- Re-apply the absorb style only when the setting changes, never on
@@ -1635,9 +1635,9 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
             -- bar visible even at zero absorb. Opacity/color edits re-apply via
             -- ReloadFrames' direct call.
             local absStyle = s and s.showPlayerAbsorb
-            if absStyle and absStyle ~= "none" and ab._lastAbsStyle ~= absStyle then
-                ab._lastAbsStyle = absStyle
-                ApplyAbsorbStyle(ab, absStyle, s)
+            if absStyle and absStyle ~= "none" and absorbBar._lastAbsStyle ~= absStyle then
+                absorbBar._lastAbsStyle = absStyle
+                ApplyAbsorbStyle(absorbBar, absStyle, s)
             end
 
             -- Show Overshield (three-way, resolved above as osMode):
@@ -1647,93 +1647,93 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
             -- by the anchor pass). Right/left edge modes draw the WHOLE
             -- absorb through ab (fw hidden below) and are untouched.
             local abValue = absorbAmt
-            if osMode == "never" and absorbMode == "overlay" then
+            if osMode == "never" and absorbStyle == "overlay" then
                 abValue = 0
             end
 
             -- Both bars get the raw absorb value and the normal maxHealth; the clip
             -- frames do "min(absorb,curHealth)" and "max(0,absorb-curHealth)"
             -- visually, so no Lua arithmetic touches the (possibly secret) absorb.
-            ab:SetMinMaxValues(0, maxHealth)
-            ab:SetValue(abValue)
-            ab:Show()
+            absorbBar:SetMinMaxValues(0, healthMax)
+            absorbBar:SetValue(abValue)
+            absorbBar:Show()
 
-            if fw then
-                fw:SetMinMaxValues(0, maxHealth)
-                fw:SetValue(absorbAmt)
-                fw:Show()
+            if fillW then
+                fillW:SetMinMaxValues(0, healthMax)
+                fillW:SetValue(absorbAmt)
+                fillW:Show()
                 -- Edge modes and Overlay Reverse: the backfill shows the
                 -- absorb, so the forward bar is not needed (Overlay Reverse
                 -- (Full) draws its excess through it).
-                if absorbMode ~= "overlay" and absorbMode ~= "overlayReverseFull" then
-                    fw:Hide()
+                if absorbStyle ~= "overlay" and absorbStyle ~= "overlayReverseFull" then
+                    fillW:Hide()
                 end
             end
             -- Blizzard Glow Line (opt-in; see ns.UF_AbsorbGlowApply).
-            if ab._glowOn then
-                mod.UF_PaintAbsorbGlow(ab, updUnit, absorbAmt, hpH)
+            if absorbBar._glowOn then
+                mod.UF_PaintAbsorbGlow(absorbBar, updUnit, absorbAmt, hpH)
             end
         end
 
         -- Heal absorb: overlay eating into filled health. The value can be a secret
         -- number in 12.0+, so never compare it in Lua. Feed it directly to
         -- StatusBar:SetValue and let the bar render zero width when the value is 0.
-        if ha then
+        if healAbsorb then
             local haStyle = (s and s.healAbsorbStyle) or "clean"
             if haStyle == "none" then
-                ha:Hide()
+                healAbsorb:Hide()
             else
                 -- Re-style only when one of the style's inputs changes
                 -- (component compares: no key string per paint).
                 local hc = (s and s.healAbsorbColor) or DEF_HEAL_ABSORB_COLOR
                 local hcR, hcG, hcB = hc.r or 0.8, hc.g or 0.15, hc.b or 0.15
                 local haOp = (s and s.healAbsorbOpacity) or 65
-                local hbg = ha._bg
+                local healthBg = healAbsorb._bg
                 if
-                    ha._hsStyle ~= haStyle
-                    or ha._hsOp ~= haOp
-                    or ha._hsR ~= hcR
-                    or ha._hsG ~= hcG
-                    or ha._hsB ~= hcB
+                    healAbsorb._hsStyle ~= haStyle
+                    or healAbsorb._hsOp ~= haOp
+                    or healAbsorb._hsR ~= hcR
+                    or healAbsorb._hsG ~= hcG
+                    or healAbsorb._hsB ~= hcB
                 then
-                    ha._hsStyle, ha._hsOp = haStyle, haOp
-                    ha._hsR, ha._hsG, ha._hsB = hcR, hcG, hcB
-                    ApplyHealAbsorbStyle(ha, haStyle, s)
+                    healAbsorb._hsStyle, healAbsorb._hsOp = haStyle, haOp
+                    healAbsorb._hsR, healAbsorb._hsG, healAbsorb._hsB = hcR, hcG, hcB
+                    ApplyHealAbsorbStyle(healAbsorb, haStyle, s)
                     -- After the retexture, re-seat the backing's fill anchor.
-                    if hbg then
-                        hbg._fillAnchored = nil
+                    if healthBg then
+                        healthBg._fillAnchored = nil
                     end
                 end
                 -- Sized with the health bar, size-gated like the shield bars.
-                if ha._szW ~= hpW or ha._szH ~= hpH then
-                    ha._szW = hpW
-                    ha._szH = hpH
-                    ha:SetWidth(hpW)
-                    ha:SetHeight(hpH)
+                if healAbsorb._szW ~= hpW or healAbsorb._szH ~= hpH then
+                    healAbsorb._szW = hpW
+                    healAbsorb._szH = hpH
+                    healAbsorb:SetWidth(hpW)
+                    healAbsorb:SetHeight(hpH)
                 end
-                ha:SetMinMaxValues(0, maxHealth)
-                ha:SetValue(haAmtD)
-                ha:Show()
+                healAbsorb:SetMinMaxValues(0, healthMax)
+                healAbsorb:SetValue(haAmtD)
+                healAbsorb:Show()
                 -- Black backing under the fill: its opacity is written when it
                 -- changes, and it anchors to the fill texture once (that region
                 -- follows the fill through every SetValue).
-                if hbg then
+                if healthBg then
                     local bgA = ((s and s.healAbsorbBgOpacity) or 15) / 100
-                    if hbg._bgA ~= bgA then
-                        hbg._bgA = bgA
-                        hbg:SetColorTexture(0, 0, 0, bgA)
+                    if healthBg._bgA ~= bgA then
+                        healthBg._bgA = bgA
+                        healthBg:SetColorTexture(0, 0, 0, bgA)
                     end
-                    if not hbg._fillAnchored then
-                        hbg._fillAnchored = true
-                        hbg:SetAllPoints(ha:GetStatusBarTexture())
+                    if not healthBg._fillAnchored then
+                        healthBg._fillAnchored = true
+                        healthBg:SetAllPoints(healAbsorb:GetStatusBarTexture())
                     end
-                    hbg:Show()
+                    healthBg:Show()
                 end
             end
         end
     end
     widget.HealthPrediction = {
-        damageAbsorb = backfillBar,
+        damageAbsorb = backFill,
         Override = UF_AbsorbOverride,
     }
 
@@ -1741,9 +1741,9 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
     -- re-anchor pass so a vertical-fill frame starts correct without waiting for
     -- the first settings apply. `settings` is passed through because frame._cuiUnit is
     -- not resolvable this early on every frame.
-    UpdateAbsorbBarReverseFill(widget, isReversed, prefs)
+    UpdateAbsorbBarReverseFill(widget, reversed, prefs)
 
-    return backfillBar
+    return backFill
 end
 
 Inner.ApplyAbsorbStyle, Inner.UpdateAbsorbBarReverseFill = ApplyAbsorbStyle, UpdateAbsorbBarReverseFill

@@ -181,13 +181,13 @@ do
     -- (off only, never turned back on): the health and mana bars' hover, and
     -- the aura container, which re-parses while shown. InitializeFrames also
     -- suppresses its target-of-target child (ns.UF_TargetMenuOwner).
-    local function KeepTargetMenuOwner(tf)
+    local function KeepTargetMenuOwner(targetFrame)
         local holderFrame = CreateFrame("Frame", nil, UIParent)
         holderFrame:SetAlpha(0)
-        homeParent[tf] = holderFrame
-        HandleFrame(tf, false, true)
-        tf:EnableMouse(false)
-        local main = tf.TargetFrameContent and tf.TargetFrameContent.TargetFrameContentMain
+        homeParent[targetFrame] = holderFrame
+        HandleFrame(targetFrame, false, true)
+        targetFrame:EnableMouse(false)
+        local main = targetFrame.TargetFrameContent and targetFrame.TargetFrameContent.TargetFrameContentMain
         local barList = main and main.HealthBarsContainer
         if barList and barList.HealthBar then
             barList.HealthBar:EnableMouseMotion(false)
@@ -195,11 +195,11 @@ do
         if main and main.ManaBar then
             main.ManaBar:EnableMouseMotion(false)
         end
-        local auras = tf.GetAuraContainer and tf:GetAuraContainer()
+        local auras = targetFrame.GetAuraContainer and targetFrame:GetAuraContainer()
         if auras then
             auras:Hide()
         end
-        CludesUI.SetEditModeChildInert(tf.Selection, true)
+        CludesUI.SetEditModeChildInert(targetFrame.Selection, true)
         mod.UF_TargetMenuOwner = true
     end
 
@@ -1538,7 +1538,7 @@ local SOLID_BACKDROP = { bgFile = "Interface\\Buttons\\WHITE8X8" }
 local cachedFontPath = (CludesUI.GetFontPath("unitFrames"))
     or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 local cachedFontPaths = {} -- per-unit font cache
-local function ResolveFontPath(unitKey)
+local function ResolveFontPath(unitName)
     local gPath = CludesUI.GetFontPath("unitFrames")
         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
     cachedFontPath = gPath
@@ -1547,9 +1547,9 @@ local function ResolveFontPath(unitKey)
     end
 end
 
-local function GetSelectedFont(unitKey)
-    if unitKey and cachedFontPaths[unitKey] then
-        return cachedFontPaths[unitKey]
+local function GetSelectedFont(unitName)
+    if unitName and cachedFontPaths[unitName] then
+        return cachedFontPaths[unitName]
     end
     return cachedFontPath
 end
@@ -1636,48 +1636,48 @@ local function UnitToSettingsKey(unitToken)
     return nil
 end
 
-local function ApplyHealthBarTexture(health, unitKey, texKeyOverride)
-    if not health then
+local function ApplyHealthBarTexture(healthBar, unitName, texKeyOverride)
+    if not healthBar then
         return
     end
     local texKey = texKeyOverride
     if not texKey then
-        local s = unitKey and saved.profile[unitKey]
+        local s = unitName and saved.profile[unitName]
         texKey = (s and s.healthBarTexture) or saved.profile.healthBarTexture or "none"
     end
     local filePath = CludesUI.ResolveTexturePath(healthBarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
-    health:SetStatusBarTexture(filePath)
-    local hFill = health:GetStatusBarTexture()
+    healthBar:SetStatusBarTexture(filePath)
+    local hFill = healthBar:GetStatusBarTexture()
     if hFill then
         UnsnapTex(hFill)
     end
     -- The swap replaced the fill object; re-derive rotation for the bar's axis.
-    mod.ApplyFillRotation(health)
+    mod.ApplyFillRotation(healthBar)
 
     -- Power bar: same texture. Walk up from health to find the oUF frame
     -- (health may be parented to a clip container, not the oUF frame directly).
-    local widget = health:GetParent()
+    local widget = healthBar:GetParent()
     if widget and not widget.Power and widget:GetParent() then
         widget = widget:GetParent()
     end
-    local power = widget and widget.Power
-    if power then
+    local powerBar = widget and widget.Power
+    if powerBar then
         if filePath then
-            power:SetStatusBarTexture(filePath)
+            powerBar:SetStatusBarTexture(filePath)
         else
-            power:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
+            powerBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
         end
-        local pFill = power:GetStatusBarTexture()
+        local pFill = powerBar:GetStatusBarTexture()
         if pFill then
             UnsnapTex(pFill)
         end
     end
     -- Textured Background (does nothing for a frame that never turned it on).
-    mod.UF_TexBgApply(health, unitKey, texKey, power)
+    mod.UF_TexBgApply(healthBar, unitName, texKey, powerBar)
     -- Blizzard Style: the swaps above replaced the fill objects, so the stock
     -- masks are seated again on the new fills. The textures themselves stay
     -- the user's choice, so every colour renders exactly as picked.
-    if widget and widget.Health == health and mod.UF_Blizz() then
+    if widget and widget.Health == healthBar and mod.UF_Blizz() then
         mod.UF_ApplyBlizzBarArt(widget)
     end
 end
@@ -1715,14 +1715,14 @@ do
     local MINI = { targettarget = true, focustarget = true, pet = true, boss = true }
 
     -- A mini frame follows its donor while its Bar Texture is Inherit.
-    function mod.UF_TexBgOn(unitKey)
-        local s = unitKey and saved.profile[unitKey]
+    function mod.UF_TexBgOn(unitName)
+        local s = unitName and saved.profile[unitName]
         if not s then
             return false
         end
         local own = s.healthBarTexture
-        if MINI[unitKey] and (own == nil or own == "inherit") then
-            local skinData = mod.GetMiniDonorSettings(unitKey)
+        if MINI[unitName] and (own == nil or own == "inherit") then
+            local skinData = mod.GetMiniDonorSettings(unitName)
             return (skinData and skinData.textureBg) == true
         end
         return s.textureBg == true
@@ -1747,9 +1747,9 @@ do
 
     -- The health and power backgrounds' texture paths (nil = flat), shared with the
     -- options preview: health while its fill is opaque, power while its fill is 100.
-    function mod.UF_TexBgPaths(unitKey, s, texKey)
+    function mod.UF_TexBgPaths(unitName, s, texKey)
         local filePath = s
-            and mod.UF_TexBgOn(unitKey)
+            and mod.UF_TexBgOn(unitName)
             and CludesUI.ResolveTexturePath(healthBarTextures, texKey or "none", nil)
         if not filePath then
             return nil, nil
@@ -1820,12 +1820,12 @@ do
 
     -- The full-size health layer (built once), turned with a vertical fill as the
     -- fill is (ns.ApplyFillRotation); also the options preview's.
-    function mod.UF_TexBgLayer(health, filePath, vertical)
-        local layer = health._cuiBgTex
+    function mod.UF_TexBgLayer(healthBar, filePath, vertical)
+        local layer = healthBar._cuiBgTex
         if not layer then
-            layer = health:CreateTexture(nil, "BACKGROUND", nil, 2)
-            layer:SetAllPoints(health)
-            health._cuiBgTex = layer
+            layer = healthBar:CreateTexture(nil, "BACKGROUND", nil, 2)
+            layer:SetAllPoints(healthBar)
+            healthBar._cuiBgTex = layer
         end
         if layer._cuiPath ~= filePath then
             layer:SetTexture(filePath)
@@ -1840,54 +1840,54 @@ do
         return layer
     end
 
-    local function SetHealthLayer(health, s, filePath)
-        local backdrop = health.bg
+    local function SetHealthLayer(healthBar, s, filePath)
+        local backdrop = healthBar.bg
         if not backdrop then
             return
         end
         if filePath then
             TexM = TexM or { SetColorTexture = backdrop.SetColorTexture, SetAlpha = backdrop.SetAlpha }
-            local fillTex = health:GetStatusBarTexture()
+            local fillTex = healthBar:GetStatusBarTexture()
             local tiled = fillTex and (fillTex:GetHorizTile() or fillTex:GetVertTile())
             local layer =
-                mod.UF_TexBgLayer(health, filePath, s.healthVerticalFill and not mod.UF_Blizz() and not tiled)
+                mod.UF_TexBgLayer(healthBar, filePath, s.healthVerticalFill and not mod.UF_Blizz() and not tiled)
             backdrop._cuiBgTex = layer
             backdrop.SetColorTexture, backdrop.SetAlpha = PaintHealth, AlphaHealth
             layer:SetAlpha(backdrop:GetAlpha())
         elseif backdrop.SetAlpha == AlphaHealth then
             backdrop.SetColorTexture, backdrop.SetAlpha = nil, nil
-            health._cuiBgTex:Hide()
+            healthBar._cuiBgTex:Hide()
         end
     end
 
     -- From ApplyHealthBarTexture (health and power share the frame's texture) and
     -- the Dark Mode refresher below (Dark Mode Fill decides the health rule there).
-    function mod.UF_TexBgApply(health, unitKey, texKey, power)
-        if not mod.UF_TexBgOn(unitKey) and not health._cuiTexBgSeen then
+    function mod.UF_TexBgApply(healthBar, unitName, texKey, powerBar)
+        if not mod.UF_TexBgOn(unitName) and not healthBar._cuiTexBgSeen then
             return
         end
-        health._cuiTexBgSeen, health._cuiTexBgUnit, health._cuiTexBgKey = true, unitKey, texKey
-        local s = saved.profile[unitKey]
-        local hPath, pPath = mod.UF_TexBgPaths(unitKey, s, texKey)
-        SetHealthLayer(health, s, hPath)
-        if power and power.bg then
-            mod.UF_TexBgTint(power.bg, pPath)
+        healthBar._cuiTexBgSeen, healthBar._cuiTexBgUnit, healthBar._cuiTexBgKey = true, unitName, texKey
+        local s = saved.profile[unitName]
+        local hPath, pPath = mod.UF_TexBgPaths(unitName, s, texKey)
+        SetHealthLayer(healthBar, s, hPath)
+        if powerBar and powerBar.bg then
+            mod.UF_TexBgTint(powerBar.bg, pPath)
         end
     end
 
     -- From ns.ApplyCastBarTexture, before it applies the fill.
-    function mod.UF_TexBgCast(castbar, texKey)
-        local owner = castbar:GetParent()
+    function mod.UF_TexBgCast(castBar, texKey)
+        local owner = castBar:GetParent()
         local backdrop = owner and owner._bgTex
         if not backdrop or (not saved.profile.castTextureBg and not backdrop._cuiTexPath) then
             return
         end
-        local ownerFrame = castbar.__owner
+        local ownerFrame = castBar.__owner
         local key = ownerFrame and UnitToSettingsKey(ownerFrame._cuiUnit)
         local s = key and saved.profile[key]
-        mod.UF_TexBgTint(backdrop, mod.UF_TexBgCastPath(s, texKey, castbar._blizzCast))
+        mod.UF_TexBgTint(backdrop, mod.UF_TexBgCastPath(s, texKey, castBar._blizzCast))
         -- Repaint now: the reload paints this bg before the textures are applied.
-        if s and not castbar._blizzCast then
+        if s and not castBar._blizzCast then
             local c = s.castBgColor
             backdrop:SetColorTexture(c and c.r or 0, c and c.g or 0, c and c.b or 0, s.castBgAlpha or 0.5)
         end
@@ -1897,14 +1897,14 @@ end
 -- Cast bars reuse the unit's health bar texture. The cast bar stacks three textures
 -- over the fill bounds (base fill + cast tint + shielded tint, all WHITE8X8 by
 -- default), so apply to each. On ns to avoid the Lua 200-local cap.
-mod.ApplyCastBarTexture = function(castbar, texKey)
-    if not castbar then
+mod.ApplyCastBarTexture = function(castBar, texKey)
+    if not castBar then
         return
     end
-    mod.UF_TexBgCast(castbar, texKey)
+    mod.UF_TexBgCast(castBar, texKey)
     -- Blizzard Style: the stock cast fill art stays (set by the post-pass).
-    if castbar._blizzCast then
-        mod.UF_SetBlizzCastFill(castbar, castbar.channeling and "channel" or "cast")
+    if castBar._blizzCast then
+        mod.UF_SetBlizzCastFill(castBar, castBar.channeling and "channel" or "cast")
         return
     end
     -- A cast bar texture of its own (the Textures page row) overrides the
@@ -1917,28 +1917,28 @@ mod.ApplyCastBarTexture = function(castbar, texKey)
         -- The "Blizzard" fill: the vanilla cast bar's own texture (the same
         -- entry the Resource Bars cast bar offers), tinted by the bar's
         -- colours like any file; the cast tint rides the same art.
-        castbar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-        local fillTex = castbar:GetStatusBarTexture()
+        castBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+        local fillTex = castBar:GetStatusBarTexture()
         if fillTex then
             fillTex:SetAtlas("UI-CastingBar-Fill", true)
             fillTex:SetHorizTile(false)
             UnsnapTex(fillTex)
         end
-        if castbar.castTintLayer then
-            castbar.castTintLayer:SetAtlas("UI-CastingBar-Fill", true)
+        if castBar.castTintLayer then
+            castBar.castTintLayer:SetAtlas("UI-CastingBar-Fill", true)
         end
         return
     end
     local filePath =
         CludesUI.ResolveTexturePath(healthBarTextures, texKey or "none", "Interface\\Buttons\\WHITE8X8")
-    castbar:SetStatusBarTexture(filePath)
-    local fillTex = castbar:GetStatusBarTexture()
+    castBar:SetStatusBarTexture(filePath)
+    local fillTex = castBar:GetStatusBarTexture()
     if fillTex then
         fillTex:SetHorizTile(false)
         UnsnapTex(fillTex)
     end
-    if castbar.castTintLayer then
-        castbar.castTintLayer:SetTexture(filePath)
+    if castBar.castTintLayer then
+        castBar.castTintLayer:SetTexture(filePath)
     end
     -- The shield tint keeps its creation WHITE8X8: 12.1 renders the loose
     -- statusbar art BLANK on plain overlay textures (negative synthetic
@@ -1966,32 +1966,32 @@ end
 -- value", which aborts the whole styling pass mid-way and leaves the cast bar
 -- unanchored at screen centre. We write every one of these alphas ourselves, so
 -- owning the state costs one boolean and removes the comparison entirely.
-mod.ApplyCastFillOpacity = function(castbar, prefs)
+mod.ApplyCastFillOpacity = function(castBar, prefs)
     local op = (prefs and prefs.castFillOpacity) or 100
-    local bgHost = castbar:GetParent()
+    local bgHost = castBar:GetParent()
     local bgTex = bgHost and bgHost._bgTex
     if op >= 100 then
-        if castbar._fillOpApplied then
-            castbar._fillOpApplied = nil
-            castbar._fillOp = nil
+        if castBar._fillOpApplied then
+            castBar._fillOpApplied = nil
+            castBar._fillOp = nil
             if bgTex then
                 bgTex:ClearAllPoints()
                 bgTex:SetAllPoints(bgHost)
             end
             -- Mid-cast restore: the tint's active/idle state comes from our own
             -- flag, never from reading the widget back (see _castTintOn).
-            if castbar.castTintLayer and castbar._castTintOn then
-                castbar.castTintLayer:SetAlpha(1)
+            if castBar.castTintLayer and castBar._castTintOn then
+                castBar.castTintLayer:SetAlpha(1)
             end
         end
         return
     end
-    castbar._fillOpApplied = true
-    castbar._fillOp = op / 100
-    local texture = castbar:GetStatusBarTexture()
+    castBar._fillOpApplied = true
+    castBar._fillOp = op / 100
+    local texture = castBar:GetStatusBarTexture()
     if bgTex and texture then
         bgTex:ClearAllPoints()
-        if castbar.GetReverseFill and castbar:GetReverseFill() then
+        if castBar.GetReverseFill and castBar:GetReverseFill() then
             bgTex:SetPoint("TOPLEFT", bgHost, "TOPLEFT", 0, 0)
             bgTex:SetPoint("BOTTOMRIGHT", texture, "BOTTOMLEFT", 0, 0)
         else
@@ -2000,33 +2000,33 @@ mod.ApplyCastFillOpacity = function(castbar, prefs)
         end
     end
     -- Mid-cast application: retune the tint if it is currently active.
-    if castbar.castTintLayer and castbar._castTintOn then
-        castbar.castTintLayer:SetAlpha(op / 100)
+    if castBar.castTintLayer and castBar._castTintOn then
+        castBar.castTintLayer:SetAlpha(op / 100)
     end
 end
 
 -------------------------------------------------------------------------------
 --  Health Bar Opacity -- controls the overall alpha of the health bar fill
 -------------------------------------------------------------------------------
-local function ApplyHealthBarAlpha(health, unitKey)
-    if not health then
+local function ApplyHealthBarAlpha(healthBar, unitName)
+    if not healthBar then
         return
     end
-    local s = unitKey and saved.profile[unitKey]
+    local s = unitName and saved.profile[unitName]
     local opacity = s and (s.healthBarOpacity or 90) or 90
     -- Old profiles stored opacity as a 0-1 float instead of a 0-100 int.
     if opacity <= 1.0 then
         opacity = opacity * 100
     end
     local fillA = opacity / 100
-    local fillTex = health:GetStatusBarTexture()
+    local fillTex = healthBar:GetStatusBarTexture()
     -- With a gradient active the opacity is baked into the gradient endpoints,
     -- so region alpha must stay 1 to avoid double-dimming.
     if fillTex then
         fillTex:SetAlpha((s and s.gradientEnabled) and 1 or fillA)
     end
-    if health.bg then
-        health.bg:SetAlpha((s and (s.customBgAlpha or 100) or 100) / 100)
+    if healthBar.bg then
+        healthBar.bg:SetAlpha((s and (s.customBgAlpha or 100) or 100) / 100)
     end
 end
 
@@ -2037,54 +2037,54 @@ end
 -- ONLY the empty portion (reverse-fill aware) so the translucent fill shows the world.
 -- At 100 it returns to full-size only if previously re-anchored (_bgOpAnchored), so
 -- untouched profiles never see an anchor write.
-mod.AnchorPowerBg = function(power, opacity)
-    local backdrop = power and power.bg
-    local texture = power and power.GetStatusBarTexture and power:GetStatusBarTexture()
+mod.AnchorPowerBg = function(powerBar, opacity)
+    local backdrop = powerBar and powerBar.bg
+    local texture = powerBar and powerBar.GetStatusBarTexture and powerBar:GetStatusBarTexture()
     if not backdrop or not texture then
         return
     end
     if (opacity or 100) >= 100 then
-        if power._bgOpAnchored then
-            power._bgOpAnchored = nil
+        if powerBar._bgOpAnchored then
+            powerBar._bgOpAnchored = nil
             backdrop:ClearAllPoints()
-            Pix.Point(backdrop, "TOPLEFT", power, "TOPLEFT", 0, 0)
-            Pix.Point(backdrop, "BOTTOMRIGHT", power, "BOTTOMRIGHT", 0, 0)
+            Pix.Point(backdrop, "TOPLEFT", powerBar, "TOPLEFT", 0, 0)
+            Pix.Point(backdrop, "BOTTOMRIGHT", powerBar, "BOTTOMRIGHT", 0, 0)
         end
         return
     end
-    power._bgOpAnchored = true
+    powerBar._bgOpAnchored = true
     backdrop:ClearAllPoints()
-    if power.GetReverseFill and power:GetReverseFill() then
-        backdrop:SetPoint("TOPLEFT", power, "TOPLEFT", 0, 0)
+    if powerBar.GetReverseFill and powerBar:GetReverseFill() then
+        backdrop:SetPoint("TOPLEFT", powerBar, "TOPLEFT", 0, 0)
         backdrop:SetPoint("BOTTOMRIGHT", texture, "BOTTOMLEFT", 0, 0)
     else
         backdrop:SetPoint("TOPLEFT", texture, "TOPRIGHT", 0, 0)
-        backdrop:SetPoint("BOTTOMRIGHT", power, "BOTTOMRIGHT", 0, 0)
+        backdrop:SetPoint("BOTTOMRIGHT", powerBar, "BOTTOMRIGHT", 0, 0)
     end
 end
 
-local function ApplyPowerBarAlpha(power, unitKey)
-    if not power then
+local function ApplyPowerBarAlpha(powerBar, unitName)
+    if not powerBar then
         return
     end
-    local s = unitKey and saved.profile[unitKey]
+    local s = unitName and saved.profile[unitName]
     local opacity = s and (s.powerBarOpacity or 100) or 100
     -- Old profiles stored opacity as a 0-1 float instead of a 0-100 int.
     if opacity <= 1.0 then
         opacity = opacity * 100
     end
     local fillA = opacity / 100
-    local fillTex = power:GetStatusBarTexture()
+    local fillTex = powerBar:GetStatusBarTexture()
     -- Gradient bakes opacity into its endpoints, so keep region alpha at 1 then.
     if fillTex then
         fillTex:SetAlpha((s and s.powerGradientEnabled) and 1 or fillA)
     end
-    if power.bg then
-        power.bg:SetAlpha((s and (s.customPowerBgAlpha or 100) or 100) / 100)
+    if powerBar.bg then
+        powerBar.bg:SetAlpha((s and (s.customPowerBgAlpha or 100) or 100) / 100)
     end
     -- Below 100 the bg retreats to the empty portion so the translucent fill
     -- shows the world (matches the health/cast bar Fill Opacity model).
-    mod.AnchorPowerBg(power, opacity)
+    mod.AnchorPowerBg(powerBar, opacity)
 end
 
 -------------------------------------------------------------------------------
@@ -2099,49 +2099,49 @@ local DARK_HEALTH_R, DARK_HEALTH_G, DARK_HEALTH_B = 0x11 / 255, 0x11 / 255, 0x11
 -- with reverse fill (normal empties RIGHT, reverse empties LEFT) -- anchoring the
 -- wrong side collapses the bg to zero width whenever the bar isn't full. Relational
 -- anchor, so the edge tracks the fill as health changes.
-local function AnchorHealthBg(health)
-    local backdrop = health and health.bg
-    local texture = health and health.GetStatusBarTexture and health:GetStatusBarTexture()
+local function AnchorHealthBg(healthBar)
+    local backdrop = healthBar and healthBar.bg
+    local texture = healthBar and healthBar.GetStatusBarTexture and healthBar:GetStatusBarTexture()
     if not backdrop or not texture then
         return
     end
-    local reversed = health.GetReverseFill and health:GetReverseFill()
+    local reversed = healthBar.GetReverseFill and healthBar:GetReverseFill()
     -- Vertical fill empties at the TOP (BOTTOM when reversed); read the axis off
     -- the bar itself so this needs no settings lookup.
-    local vert = health.GetOrientation and health:GetOrientation() == "VERTICAL"
+    local vert = healthBar.GetOrientation and healthBar:GetOrientation() == "VERTICAL"
     -- The anchors bind to the fill texture's EDGE, which the engine moves with
     -- every SetValue -- they are live and never need re-pushing per paint
     -- (this ran per health event). Re-anchor only when an actual input moved:
     -- the texture OBJECT (retexture replaces it) or the axis/direction.
     local aKey = (vert and "V" or "H") .. (reversed and "R" or "N")
-    if health._bgAnchorTex == texture and health._bgAnchorKey == aKey then
+    if healthBar._bgAnchorTex == texture and healthBar._bgAnchorKey == aKey then
         return
     end
-    health._bgAnchorTex = texture
-    health._bgAnchorKey = aKey
+    healthBar._bgAnchorTex = texture
+    healthBar._bgAnchorKey = aKey
     backdrop:ClearAllPoints()
     if vert then
         if reversed then
             backdrop:SetPoint("TOPLEFT", texture, "BOTTOMLEFT", 0, 0)
-            backdrop:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
+            backdrop:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
         else
-            backdrop:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
+            backdrop:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
             backdrop:SetPoint("BOTTOMRIGHT", texture, "TOPRIGHT", 0, 0)
         end
     elseif reversed then
-        backdrop:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
+        backdrop:SetPoint("TOPLEFT", healthBar, "TOPLEFT", 0, 0)
         backdrop:SetPoint("BOTTOMRIGHT", texture, "BOTTOMLEFT", 0, 0)
     else
         backdrop:SetPoint("TOPLEFT", texture, "TOPRIGHT", 0, 0)
-        backdrop:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
+        backdrop:SetPoint("BOTTOMRIGHT", healthBar, "BOTTOMRIGHT", 0, 0)
     end
 end
 
-local function ClassColorSourceUnit(unitKey, unitToken)
-    if unitKey == "pet" then
+local function ClassColorSourceUnit(unitName, unitToken)
+    if unitName == "pet" then
         return "player"
     end
-    return unitToken or unitKey
+    return unitToken or unitName
 end
 
 -------------------------------------------------------------------------------
@@ -2181,13 +2181,13 @@ do
         if classicCurve then
             return classicCurve
         end
-        local curve = C_CurveUtil.CreateColorCurve()
-        curve:SetType(Enum.LuaCurveType.Linear)
-        curve:AddPoint(0, CreateColor(1, 0, 0, 1))
-        curve:AddPoint(0.5, CreateColor(1, 1, 0, 1))
-        curve:AddPoint(1, CreateColor(0, 1, 0, 1))
-        classicCurve = curve
-        return curve
+        local colorCurve = C_CurveUtil.CreateColorCurve()
+        colorCurve:SetType(Enum.LuaCurveType.Linear)
+        colorCurve:AddPoint(0, CreateColor(1, 0, 0, 1))
+        colorCurve:AddPoint(0.5, CreateColor(1, 1, 0, 1))
+        colorCurve:AddPoint(1, CreateColor(0, 1, 0, 1))
+        classicCurve = colorCurve
+        return colorCurve
     end
 
     -- Custom Dynamic: the Classic path with the unit's three chosen stops.
@@ -2200,7 +2200,7 @@ do
     local d0r, d0g, d0b, d50r, d50g, d50b, d100r, d100g, d100b
     local function GetDynamicCurve(s)
         local c0 = s.dynamicColor0 or DEF0
-        local c50 = s.dynamicColor50 or DEF50
+        local midColor = s.dynamicColor50 or DEF50
         local c100 = s.dynamicColor100 or DEF100
         if
             not (
@@ -2208,9 +2208,9 @@ do
                 and d0r == c0.r
                 and d0g == c0.g
                 and d0b == c0.b
-                and d50r == c50.r
-                and d50g == c50.g
-                and d50b == c50.b
+                and d50r == midColor.r
+                and d50g == midColor.g
+                and d50b == midColor.b
                 and d100r == c100.r
                 and d100g == c100.g
                 and d100b == c100.b
@@ -2219,10 +2219,10 @@ do
             dynCurve = C_CurveUtil.CreateColorCurve()
             dynCurve:SetType(Enum.LuaCurveType.Linear)
             dynCurve:AddPoint(0, CreateColor(c0.r, c0.g, c0.b, 1))
-            dynCurve:AddPoint(0.5, CreateColor(c50.r, c50.g, c50.b, 1))
+            dynCurve:AddPoint(0.5, CreateColor(midColor.r, midColor.g, midColor.b, 1))
             dynCurve:AddPoint(1, CreateColor(c100.r, c100.g, c100.b, 1))
             d0r, d0g, d0b = c0.r, c0.g, c0.b
-            d50r, d50g, d50b = c50.r, c50.g, c50.b
+            d50r, d50g, d50b = midColor.r, midColor.g, midColor.b
             d100r, d100g, d100b = c100.r, c100.g, c100.b
         end
         return dynCurve
@@ -2237,42 +2237,42 @@ do
     local r0r, r0g, r0b, r50r, r50g, r50b
     local function GetClassReactiveCurve(s, classToken)
         local c0 = s.dynamicColor0 or DEF0
-        local c50 = s.dynamicColor50 or DEF50
+        local midColor = s.dynamicColor50 or DEF50
         if
             not (
                 r0r == c0.r
                 and r0g == c0.g
                 and r0b == c0.b
-                and r50r == c50.r
-                and r50g == c50.g
-                and r50b == c50.b
+                and r50r == midColor.r
+                and r50g == midColor.g
+                and r50b == midColor.b
             )
         then
             wipe(reactiveCurves)
             r0r, r0g, r0b = c0.r, c0.g, c0.b
-            r50r, r50g, r50b = c50.r, c50.g, c50.b
+            r50r, r50g, r50b = midColor.r, midColor.g, midColor.b
         end
-        local cc = CludesUI.GetClassColor(classToken) or GRAY
+        local classColor = CludesUI.GetClassColor(classToken) or GRAY
         local e = reactiveCurves[classToken]
-        if not (e and e.r == cc.r and e.g == cc.g and e.b == cc.b) then
-            local curve = C_CurveUtil.CreateColorCurve()
-            curve:SetType(Enum.LuaCurveType.Linear)
+        if not (e and e.r == classColor.r and e.g == classColor.g and e.b == classColor.b) then
+            local colorCurve = C_CurveUtil.CreateColorCurve()
+            colorCurve:SetType(Enum.LuaCurveType.Linear)
             -- Front-loaded class return: fully reactive at 40% health, and the
             -- 0.75 stop already carries 75% class weight so identity snaps back
             -- quickly (40->75% climbs 0->75% class, 75->100% eases in the rest).
-            curve:AddPoint(0, CreateColor(c0.r, c0.g, c0.b, 1))
-            curve:AddPoint(0.4, CreateColor(c50.r, c50.g, c50.b, 1))
-            curve:AddPoint(
+            colorCurve:AddPoint(0, CreateColor(c0.r, c0.g, c0.b, 1))
+            colorCurve:AddPoint(0.4, CreateColor(midColor.r, midColor.g, midColor.b, 1))
+            colorCurve:AddPoint(
                 0.75,
                 CreateColor(
-                    c50.r + (cc.r - c50.r) * 0.75,
-                    c50.g + (cc.g - c50.g) * 0.75,
-                    c50.b + (cc.b - c50.b) * 0.75,
+                    midColor.r + (classColor.r - midColor.r) * 0.75,
+                    midColor.g + (classColor.g - midColor.g) * 0.75,
+                    midColor.b + (classColor.b - midColor.b) * 0.75,
                     1
                 )
             )
-            curve:AddPoint(1, CreateColor(cc.r, cc.g, cc.b, 1))
-            e = { curve = curve, r = cc.r, g = cc.g, b = cc.b }
+            colorCurve:AddPoint(1, CreateColor(classColor.r, classColor.g, classColor.b, 1))
+            e = { curve = colorCurve, r = classColor.r, g = classColor.g, b = classColor.b }
             reactiveCurves[classToken] = e
         end
         return e.curve
@@ -2300,82 +2300,82 @@ do
         if not (C_CurveUtil and UnitHealthPercent) then
             return false
         end
-        local curve
+        local colorCurve
         if mode == "classic" then
-            curve = GetClassicCurve()
+            colorCurve = GetClassicCurve()
         elseif mode == "customDynamic" then
-            curve = GetDynamicCurve(s)
+            colorCurve = GetDynamicCurve(s)
         elseif mode == "classReactive" then
             local _, classToken = UnitClass(unitToken)
             if not classToken or issecretvalue(classToken) then
                 return false
             end
-            curve = GetClassReactiveCurve(s, classToken)
+            colorCurve = GetClassReactiveCurve(s, classToken)
         else
             return false
         end
-        local color = UnitHealthPercent(unitToken, true, curve)
-        if not (color and color.GetRGB) then
+        local rgb = UnitHealthPercent(unitToken, true, colorCurve)
+        if not (rgb and rgb.GetRGB) then
             return false
         end
-        local region, g, b = color:GetRGB()
+        local region, g, b = rgb:GetRGB()
         return true, region, g, b, issecretvalue(region)
     end
 
     -- Clean-number twins for the options previews, where the health percent is a
     -- known fake (0-1) rather than a secret. These MUST match the curves above
     -- or the designer teaches a color the live bar never shows.
-    function mod.UF_ResolveDynamicColor(s, pct01)
+    function mod.UF_ResolveDynamicColor(s, fraction)
         local c0 = s.dynamicColor0 or DEF0
-        local c50 = s.dynamicColor50 or DEF50
+        local midColor = s.dynamicColor50 or DEF50
         local c100 = s.dynamicColor100 or DEF100
-        if pct01 >= 0.5 then
-            local t = (pct01 - 0.5) * 2
-            return c50.r + (c100.r - c50.r) * t, c50.g + (c100.g - c50.g) * t, c50.b + (c100.b - c50.b) * t
+        if fraction >= 0.5 then
+            local t = (fraction - 0.5) * 2
+            return midColor.r + (c100.r - midColor.r) * t, midColor.g + (c100.g - midColor.g) * t, midColor.b + (c100.b - midColor.b) * t
         end
-        local t = pct01 * 2
-        return c0.r + (c50.r - c0.r) * t, c0.g + (c50.g - c0.g) * t, c0.b + (c50.b - c0.b) * t
+        local t = fraction * 2
+        return c0.r + (midColor.r - c0.r) * t, c0.g + (midColor.g - c0.g) * t, c0.b + (midColor.b - c0.b) * t
     end
 
-    function mod.UF_ResolveClassicColor(pct01)
-        if pct01 >= 0.5 then
-            local t = (pct01 - 0.5) * 2
+    function mod.UF_ResolveClassicColor(fraction)
+        if fraction >= 0.5 then
+            local t = (fraction - 0.5) * 2
             return 1 - t, 1, 0
         end
-        return 1, pct01 * 2, 0
+        return 1, fraction * 2, 0
     end
 
-    function mod.UF_ResolveClassReactiveColor(s, classToken, pct01)
-        local cc = (classToken and CludesUI.GetClassColor(classToken)) or GRAY
+    function mod.UF_ResolveClassReactiveColor(s, classToken, fraction)
+        local classColor = (classToken and CludesUI.GetClassColor(classToken)) or GRAY
         local c0 = s.dynamicColor0 or DEF0
-        local c50 = s.dynamicColor50 or DEF50
-        if pct01 >= 0.4 then
+        local midColor = s.dynamicColor50 or DEF50
+        if fraction >= 0.4 then
             local wid
-            if pct01 >= 0.75 then
-                wid = 0.75 + (pct01 - 0.75)
+            if fraction >= 0.75 then
+                wid = 0.75 + (fraction - 0.75)
             else
-                wid = (pct01 - 0.4) / 0.35 * 0.75
+                wid = (fraction - 0.4) / 0.35 * 0.75
             end
-            return c50.r + (cc.r - c50.r) * wid, c50.g + (cc.g - c50.g) * wid, c50.b + (cc.b - c50.b) * wid
+            return midColor.r + (classColor.r - midColor.r) * wid, midColor.g + (classColor.g - midColor.g) * wid, midColor.b + (classColor.b - midColor.b) * wid
         end
-        local t = pct01 / 0.4
-        return c0.r + (c50.r - c0.r) * t, c0.g + (c50.g - c0.g) * t, c0.b + (c50.b - c0.b) * t
+        local t = fraction / 0.4
+        return c0.r + (midColor.r - c0.r) * t, c0.g + (midColor.g - c0.g) * t, c0.b + (midColor.b - c0.b) * t
     end
 
     -- One entry point for every preview surface: resolves whichever dynamic mode
     -- `s` is on at a FAKE percent, or nil when the unit is on a flat fill.
-    function mod.UF_PreviewDynamicColor(s, pct01)
+    function mod.UF_PreviewDynamicColor(s, fraction)
         local mode = s and s.healthColorMode
         if not mode or mode == "none" then
             return nil
         end
         if mode == "classic" then
-            return mod.UF_ResolveClassicColor(pct01)
+            return mod.UF_ResolveClassicColor(fraction)
         elseif mode == "customDynamic" then
-            return mod.UF_ResolveDynamicColor(s, pct01)
+            return mod.UF_ResolveDynamicColor(s, fraction)
         elseif mode == "classReactive" then
             local _, ct = UnitClass("player")
-            return mod.UF_ResolveClassReactiveColor(s, ct, pct01)
+            return mod.UF_ResolveClassReactiveColor(s, ct, fraction)
         end
         return nil
     end
@@ -2401,17 +2401,17 @@ local function UF_SecretSafeHealthColor(self, evt, unitToken)
     end
     local element = self.Health
 
-    local color
+    local rgb
     if element.colorDisconnected and not UnitIsConnected(unitToken) then
-        color = self.colors.disconnected
+        rgb = self.colors.disconnected
     elseif element.colorTapped and not UnitPlayerControlled(unitToken) and UnitIsTapDenied(unitToken) then
-        color = self.colors.tapped
+        rgb = self.colors.tapped
     elseif
         element.colorThreat
         and not UnitPlayerControlled(unitToken)
         and UnitThreatSituation("player", unitToken)
     then
-        color = self.colors.threat[UnitThreatSituation("player", unitToken)]
+        rgb = self.colors.threat[UnitThreatSituation("player", unitToken)]
     elseif
         (element.colorClass and (UnitIsPlayer(unitToken) or UnitInPartyIsAI(unitToken)))
         or (element.colorClassNPC and not (UnitIsPlayer(unitToken) or UnitInPartyIsAI(unitToken)))
@@ -2429,36 +2429,36 @@ local function UF_SecretSafeHealthColor(self, evt, unitToken)
             local success, region, g, b = CludesUI.GetClassColorForRestrictedUnit(unitToken, class)
             if success then
                 SECRET_CLASS_COLOR:SetRGB(region, g, b)
-                color = SECRET_CLASS_COLOR
+                rgb = SECRET_CLASS_COLOR
             elseif C_ClassColor and C_ClassColor.GetClassColor then
-                color = C_ClassColor.GetClassColor(class)
+                rgb = C_ClassColor.GetClassColor(class)
             end
         else
-            color = class and self.colors.class[class]
+            rgb = class and self.colors.class[class]
         end
-        if not color then
+        if not rgb then
             -- Unreadable class: fall to the tiers the lib chain would have hit
             -- had the class branch not matched.
             if element.colorReaction and UnitReaction(unitToken, "player") then
-                color = self.colors.reaction[UnitReaction(unitToken, "player")]
+                rgb = self.colors.reaction[UnitReaction(unitToken, "player")]
             elseif element.colorHealth then
-                color = self.colors.health
+                rgb = self.colors.health
             end
         end
     elseif element.colorReaction and UnitReaction(unitToken, "player") then
-        color = self.colors.reaction[UnitReaction(unitToken, "player")]
+        rgb = self.colors.reaction[UnitReaction(unitToken, "player")]
     elseif element.colorSmooth and element.values and self.colors.health:GetCurve() then
-        color = element.values:EvaluateCurrentHealthPercent(self.colors.health:GetCurve())
+        rgb = element.values:EvaluateCurrentHealthPercent(self.colors.health:GetCurve())
     elseif element.colorHealth then
-        color = self.colors.health
+        rgb = self.colors.health
     end
 
-    if color then
-        element:SetStatusBarColor(color:GetRGB())
+    if rgb then
+        element:SetStatusBarColor(rgb:GetRGB())
     end
 
     if element.PostUpdateColor then
-        element:PostUpdateColor(unitToken, color)
+        element:PostUpdateColor(unitToken, rgb)
     end
 end
 
@@ -2466,39 +2466,39 @@ end
 -- paint (see the PostUpdateColor call at the tail of the non-dark branch). It is
 -- passed by every caller that has it; Health elements never get `__owner`
 -- (only aura elements do), so there is no fallback to recover it from.
-local function ApplyDarkTheme(health, unitToken)
-    if not health then
+local function ApplyDarkTheme(healthBar, unitToken)
+    if not healthBar then
         return
     end
     -- TEMPORARY (see UF_SecretSafeHealthColor). Idempotent: this function
     -- re-runs on settings changes and re-assigning is harmless.
-    health.UpdateColor = UF_SecretSafeHealthColor
-    local isDark = mod.UF_DarkThemeOn(health._cuiUnitKey and saved.profile[health._cuiUnitKey])
+    healthBar.UpdateColor = UF_SecretSafeHealthColor
+    local isDark = mod.UF_DarkThemeOn(healthBar._cuiUnitKey and saved.profile[healthBar._cuiUnitKey])
     if isDark then
-        health.colorClass = false
-        health.colorClassPet = false
-        health.colorReaction = false
-        health.colorTapped = false
-        health.colorDisconnected = false
+        healthBar.colorClass = false
+        healthBar.colorClassPet = false
+        healthBar.colorReaction = false
+        healthBar.colorTapped = false
+        healthBar.colorDisconnected = false
         -- Fill/background from the global per-profile Dark Mode palette.
         local dfr, dfg, dfb, dfa = CludesUI.GetDarkModeFill()
         local dbr, dbg, dbb, dba = CludesUI.GetDarkModeBg()
-        health:SetStatusBarColor(dfr, dfg, dfb)
-        local darkFillTex = health:GetStatusBarTexture()
+        healthBar:SetStatusBarColor(dfr, dfg, dfb)
+        local darkFillTex = healthBar:GetStatusBarTexture()
         if darkFillTex then
             darkFillTex:SetAlpha(dfa)
         end
-        if health.bg then
-            AnchorHealthBg(health)
+        if healthBar.bg then
+            AnchorHealthBg(healthBar)
             -- Background opacity rides the texture alpha; region alpha stays 1 so
             -- the two never multiply into a double-darkened background.
-            health.bg:SetColorTexture(dbr, dbg, dbb, dba)
-            health.bg:SetAlpha(1)
+            healthBar.bg:SetColorTexture(dbr, dbg, dbb, dba)
+            healthBar.bg:SetAlpha(1)
         end
         -- Re-apply dark color after oUF's class-color attempt and re-anchor bg to the
         -- fill edge. Alpha is NOT re-applied: SetStatusBarColor(r,g,b) with 3 args
         -- preserves texture alpha, so ApplyHealthBarAlpha's value survives oUF recolors.
-        health.PostUpdateColor = function(self)
+        healthBar.PostUpdateColor = function(self)
             local fr, fg, fb = CludesUI.GetDarkModeFill()
             self:SetStatusBarColor(fr, fg, fb)
             if self.bg then
@@ -2506,48 +2506,48 @@ local function ApplyDarkTheme(health, unitToken)
             end
         end
     else
-        health.colorClass = true
-        health.colorReaction = true
-        health.colorTapped = true
-        health.colorDisconnected = true
-        local unitKey = health._cuiUnitKey
-        local unitSettings = unitKey and saved.profile[unitKey]
-        health.colorClassPet = false
-        if unitKey == "pet" then
-            health.colorClass = false
+        healthBar.colorClass = true
+        healthBar.colorReaction = true
+        healthBar.colorTapped = true
+        healthBar.colorDisconnected = true
+        local unitName = healthBar._cuiUnitKey
+        local unitSettings = unitName and saved.profile[unitName]
+        healthBar.colorClassPet = false
+        if unitName == "pet" then
+            healthBar.colorClass = false
             if unitSettings and unitSettings.healthClassColored then
-                health.colorReaction = false
-                health.colorTapped = false
-                health.colorDisconnected = false
+                healthBar.colorReaction = false
+                healthBar.colorTapped = false
+                healthBar.colorDisconnected = false
                 local _, ct = UnitClass("player")
-                local cc = ct and not issecretvalue(ct) and CludesUI.GetClassColor(ct)
-                if cc then
-                    health:SetStatusBarColor(cc.r, cc.g, cc.b)
+                local classColor = ct and not issecretvalue(ct) and CludesUI.GetClassColor(ct)
+                if classColor then
+                    healthBar:SetStatusBarColor(classColor.r, classColor.g, classColor.b)
                 end
             end
         end
-        local customFill = unitSettings and unitSettings.customFillColor
+        local fillRGB = unitSettings and unitSettings.customFillColor
         local customBg = unitSettings and unitSettings.customBgColor
-        if customFill then
+        if fillRGB then
             -- Custom fill overrides class coloring; skipped when class color is on.
             if not (unitSettings and unitSettings.healthClassColored) then
-                health.colorClass = false
-                health.colorReaction = false
-                health.colorTapped = false
-                health.colorDisconnected = false
-                health:SetStatusBarColor(customFill.r, customFill.g, customFill.b)
+                healthBar.colorClass = false
+                healthBar.colorReaction = false
+                healthBar.colorTapped = false
+                healthBar.colorDisconnected = false
+                healthBar:SetStatusBarColor(fillRGB.r, fillRGB.g, fillRGB.b)
             end
         end
         -- Tint bg to 20% of the class/reaction color, or use the custom bg color.
         -- Alpha is NOT re-applied: SetStatusBarColor(r,g,b) preserves texture
         -- alpha through oUF recolors.
-        health.PostUpdateColor = function(self, unitToken, color)
+        healthBar.PostUpdateColor = function(self, unitToken, rgb)
             local uKey = self._cuiUnitKey
-            local uSettings = uKey and saved.profile[uKey]
-            local cFill = uSettings and uSettings.customFillColor
-            local cBg = uSettings and uSettings.customBgColor
-            local classColored = uSettings and uSettings.healthClassColored
-            local bgClassColored = uSettings and uSettings.bgClassColored
+            local unitSettings = uKey and saved.profile[uKey]
+            local customFillRGB = unitSettings and unitSettings.customFillColor
+            local cBg = unitSettings and unitSettings.customBgColor
+            local classColored = unitSettings and unitSettings.healthClassColored
+            local bgByClass = unitSettings and unitSettings.bgClassColored
             -- Base fill color (custom, or oUF's class/reaction color); gradient
             -- applies additively when enabled, otherwise flat.
             -- haveBase/baseSecret are PLAIN booleans standing in for bR: on an
@@ -2559,39 +2559,39 @@ local function ApplyDarkTheme(health, unitToken)
             -- reaction): the whole point is that the fill tracks damage taken. It
             -- does not displace the spatial Gradient below -- it becomes that
             -- gradient's start color, so the two compose.
-            local haveDyn, dR, dG, dB, dSecret = mod.UF_DynamicHealthColor(unitToken, uSettings)
+            local haveDyn, dR, dG, dB, dSecret = mod.UF_DynamicHealthColor(unitToken, unitSettings)
             if haveDyn then
                 bR, bG, bB = dR, dG, dB
                 haveBase, baseSecret = true, dSecret
-            elseif cFill and not classColored then
-                bR, bG, bB = cFill.r, cFill.g, cFill.b
+            elseif customFillRGB and not classColored then
+                bR, bG, bB = customFillRGB.r, customFillRGB.g, customFillRGB.b
                 haveBase = true
             elseif classColored and uKey == "pet" then
                 local _, ct = UnitClass("player")
-                local cc = ct and not issecretvalue(ct) and CludesUI.GetClassColor(ct)
-                if cc then
-                    bR, bG, bB = cc.r, cc.g, cc.b
+                local classColor = ct and not issecretvalue(ct) and CludesUI.GetClassColor(ct)
+                if classColor then
+                    bR, bG, bB = classColor.r, classColor.g, classColor.b
                     haveBase = true
                 end
-            elseif color and color.GetRGB then
-                bR, bG, bB = color:GetRGB()
+            elseif rgb and rgb.GetRGB then
+                bR, bG, bB = rgb:GetRGB()
                 haveBase = true
                 baseSecret = issecretvalue(bR)
             end
             -- Texture:SetGradient is SecretArguments="AllowedWhenUntainted", so a secret
             -- color cannot go through it from here at all. The flat color the health
             -- element already applied is correct, so a restricted unit keeps a flat bar.
-            if uSettings and uSettings.gradientEnabled and haveBase and not baseSecret then
-                local gc = uSettings.gradientColor
+            if unitSettings and unitSettings.gradientEnabled and haveBase and not baseSecret then
+                local gc = unitSettings.gradientColor
                 -- A gradient overrides region alpha, so Bar Opacity is baked into
                 -- the gradient endpoint alphas instead of SetAlpha.
-                local ga = uSettings.healthBarOpacity or 90
+                local ga = unitSettings.healthBarOpacity or 90
                 if ga > 1.0 then
                     ga = ga / 100
                 end
                 ApplyBarGradient(
                     self:GetStatusBarTexture(),
-                    uSettings.gradientDir or "HORIZONTAL",
+                    unitSettings.gradientDir or "HORIZONTAL",
                     bR,
                     bG,
                     bB,
@@ -2610,13 +2610,13 @@ local function ApplyDarkTheme(health, unitToken)
                 self:SetStatusBarColor(bR, bG, bB)
             elseif classColored and uKey == "pet" and haveBase then
                 self:SetStatusBarColor(bR, bG, bB)
-            elseif cFill and not classColored then
-                self:SetStatusBarColor(cFill.r, cFill.g, cFill.b)
+            elseif customFillRGB and not classColored then
+                self:SetStatusBarColor(customFillRGB.r, customFillRGB.g, customFillRGB.b)
             end
             if self.bg then
                 AnchorHealthBg(self)
                 local bgClassOk, bgClassR, bgClassG, bgClassB
-                if bgClassColored then
+                if bgByClass then
                     local classUnit = ClassColorSourceUnit(uKey, unitToken or self._cuiUnit or uKey)
                     bgClassOk, bgClassR, bgClassG, bgClassB = mod.ResolveBgClassColor(classUnit)
                 end
@@ -2625,10 +2625,10 @@ local function ApplyDarkTheme(health, unitToken)
                     self.bg:SetColorTexture(bgClassR, bgClassG, bgClassB, 1)
                 elseif cBg then
                     self.bg:SetColorTexture(cBg.r, cBg.g, cBg.b, 1)
-                elseif cFill and not classColored then
-                    self.bg:SetColorTexture(cFill.r * 0.2, cFill.g * 0.2, cFill.b * 0.2, 1)
-                elseif color and color.GetRGB then
-                    local region, g, b = color:GetRGB()
+                elseif customFillRGB and not classColored then
+                    self.bg:SetColorTexture(customFillRGB.r * 0.2, customFillRGB.g * 0.2, customFillRGB.b * 0.2, 1)
+                elseif rgb and rgb.GetRGB then
+                    local region, g, b = rgb:GetRGB()
                     -- SetColorTexture takes secrets; the multiply does not, and there is no
                     -- C-side blend to darken one with. So a restricted unit's background
                     -- degrades to the default dark rather than throwing on the tint.
@@ -2643,26 +2643,26 @@ local function ApplyDarkTheme(health, unitToken)
                 end
             end
         end
-        if health.bg then
+        if healthBar.bg then
             -- PostUpdateColor re-applies this so it survives texture swaps.
-            AnchorHealthBg(health)
-            local bgClassColored = unitSettings and unitSettings.bgClassColored
+            AnchorHealthBg(healthBar)
+            local bgByClass = unitSettings and unitSettings.bgClassColored
             local bgClassOk, bgClassR, bgClassG, bgClassB
-            if bgClassColored then
+            if bgByClass then
                 local classUnit =
-                    ClassColorSourceUnit(unitKey, unitKey or (health.__owner and health.__owner._cuiUnit))
+                    ClassColorSourceUnit(unitName, unitName or (healthBar.__owner and healthBar.__owner._cuiUnit))
                 bgClassOk, bgClassR, bgClassG, bgClassB = mod.ResolveBgClassColor(classUnit)
             end
             if bgClassOk then
                 -- Full class color; PostUpdateColor keeps it correct on updates.
-                health.bg:SetColorTexture(bgClassR, bgClassG, bgClassB, 1)
+                healthBar.bg:SetColorTexture(bgClassR, bgClassG, bgClassB, 1)
             elseif customBg then
-                health.bg:SetColorTexture(customBg.r, customBg.g, customBg.b, 1)
-            elseif customFill then
-                health.bg:SetColorTexture(customFill.r * 0.2, customFill.g * 0.2, customFill.b * 0.2, 1)
+                healthBar.bg:SetColorTexture(customBg.r, customBg.g, customBg.b, 1)
+            elseif fillRGB then
+                healthBar.bg:SetColorTexture(fillRGB.r * 0.2, fillRGB.g * 0.2, fillRGB.b * 0.2, 1)
             else
                 -- No custom colors: default dark bg (#111).
-                health.bg:SetColorTexture(DARK_HEALTH_R, DARK_HEALTH_G, DARK_HEALTH_B, 1)
+                healthBar.bg:SetColorTexture(DARK_HEALTH_R, DARK_HEALTH_G, DARK_HEALTH_B, 1)
             end
         end
         -- Converge the SETUP paint with the REPAINT paint. Everything above only
@@ -2679,8 +2679,8 @@ local function ApplyDarkTheme(health, unitToken)
         -- health event, so one extra call here is free. A nil `color` just means
         -- the class/reaction tier contributes nothing, which is right at setup --
         -- the element has not resolved one yet.
-        if health.PostUpdateColor then
-            health:PostUpdateColor(unitToken, nil)
+        if healthBar.PostUpdateColor then
+            healthBar:PostUpdateColor(unitToken, nil)
         end
     end
 end
@@ -2757,9 +2757,9 @@ end
 --- True when the unit has no CludesUI frame at all -- the enabledFrames flag, which
 --- only the "Enable X Frame" toggles write now that Visibility no longer touches it.
 --- On ns for the 200-locals cap.
-function mod.VisUnitDisabled(profile, unitKey)
+function mod.VisUnitDisabled(profile, unitName)
     local ef = profile and profile.enabledFrames
-    return (ef and ef[unitKey] == false) or false
+    return (ef and ef[unitName] == false) or false
 end
 
 function mod.GetUnitFrameSource(unitToken)
