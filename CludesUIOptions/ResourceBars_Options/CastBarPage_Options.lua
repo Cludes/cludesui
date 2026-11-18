@@ -667,10 +667,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             )
             Pix.Point(borderSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
             -- Disable swatch when border size is 0
-            local borderSwatchBlock = CreateFrame("Frame", nil, borderSwatch)
-            borderSwatchBlock:SetAllPoints()
-            borderSwatchBlock:SetFrameLevel(borderSwatch:GetFrameLevel() + 10)
-            borderSwatchBlock:EnableMouse(true)
+            local borderSwatchBlock = CludesUI.NewSwatchBlocker(borderSwatch)
             borderSwatchBlock:SetScript("OnEnter", function()
                 if CludesUI.BlizzStyle.Get("castbar") then
                     CludesUI.ShowWidgetTooltip(
@@ -1783,10 +1780,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, getFunc, setFunc, true, 20)
         Pix.Point(colorSwatch, "RIGHT", region._control, "LEFT", -12, 0)
 
-        local block = CreateFrame("Frame", nil, colorSwatch)
-        block:SetAllPoints()
-        block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-        block:EnableMouse(true)
+        local block = CludesUI.NewSwatchBlocker(colorSwatch)
         block:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip(disabledTooltip))
         end)

@@ -1850,10 +1850,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
         end)
         rangeSwatch:SetAlpha(RangeDisabled() and 0.3 or 1)
 
-        local rangeBlock = CreateFrame("Frame", nil, rangeSwatch)
-        rangeBlock:SetAllPoints()
-        rangeBlock:SetFrameLevel(rangeSwatch:GetFrameLevel() + 10)
-        rangeBlock:EnableMouse(true)
+        local rangeBlock = CludesUI.NewSwatchBlocker(rangeSwatch)
         rangeBlock:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(rangeSwatch, CludesUI.DisabledTooltip("Out of Range Coloring"))
         end)
@@ -1891,10 +1888,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
         local function SwipeDisabled()
             return (ABAR.db.profile.cdSwipeAlpha or 80) == 0
         end
-        local block = CreateFrame("Frame", nil, colorSwatch)
-        block:SetAllPoints()
-        block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-        block:EnableMouse(true)
+        local block = CludesUI.NewSwatchBlocker(colorSwatch)
         block:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(
                 colorSwatch,

@@ -2448,10 +2448,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 colorSwatch:SetPoint("RIGHT", region, "RIGHT", -20, 0)
                 region._lastInline = colorSwatch
                 -- Dimming alone leaves the swatch clickable; this blocks it.
-                local swatchBlock = CreateFrame("Frame", nil, colorSwatch)
-                swatchBlock:SetAllPoints()
-                swatchBlock:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                swatchBlock:EnableMouse(true)
+                local swatchBlock = CludesUI.NewSwatchBlocker(colorSwatch)
                 swatchBlock:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(colorSwatch, FB_DISABLED_TIP)
                 end)

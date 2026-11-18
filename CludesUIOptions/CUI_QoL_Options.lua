@@ -1494,10 +1494,7 @@ CludesUI.AtOptionsLogin(function()
             local fpsBlocks = {}
             for _, e in ipairs(fpsTips) do
                 local sw = e[1]
-                local block = CreateFrame("Frame", nil, sw)
-                block:SetAllPoints()
-                block:SetFrameLevel(sw:GetFrameLevel() + 10)
-                block:EnableMouse(true)
+                local block = CludesUI.NewSwatchBlocker(sw)
                 block:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip("Show FPS Counter"))
                 end)
@@ -1739,10 +1736,7 @@ CludesUI.AtOptionsLogin(function()
             leftRgn._lastInline = durSwatch
 
             -- Disabled overlay for swatch when durability warning is off
-            local durSwBlock = CreateFrame("Frame", nil, durSwatch)
-            durSwBlock:SetAllPoints()
-            durSwBlock:SetFrameLevel(durSwatch:GetFrameLevel() + 10)
-            durSwBlock:EnableMouse(true)
+            local durSwBlock = CludesUI.NewSwatchBlocker(durSwatch)
             durSwBlock:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(durSwatch, CludesUI.DisabledTooltip("Low Durability Warning"))
             end)
@@ -1815,10 +1809,7 @@ CludesUI.AtOptionsLogin(function()
             end)
 
             -- Blocking overlay for eye when durability warning is off
-            local eyeBlock = CreateFrame("Frame", nil, eyeBtn)
-            eyeBlock:SetAllPoints()
-            eyeBlock:SetFrameLevel(eyeBtn:GetFrameLevel() + 10)
-            eyeBlock:EnableMouse(true)
+            local eyeBlock = CludesUI.NewSwatchBlocker(eyeBtn)
             eyeBlock:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(eyeBtn, CludesUI.DisabledTooltip("Low Durability Warning"))
             end)
@@ -2312,10 +2303,7 @@ CludesUI.AtOptionsLogin(function()
             local ssBlocks = {}
             for _, e in ipairs(ssTips) do
                 local sw = e[1]
-                local block = CreateFrame("Frame", nil, sw)
-                block:SetAllPoints()
-                block:SetFrameLevel(sw:GetFrameLevel() + 10)
-                block:EnableMouse(true)
+                local block = CludesUI.NewSwatchBlocker(sw)
                 block:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip("Secondary Stat Display"))
                 end)
@@ -3100,10 +3088,7 @@ CludesUI.AtOptionsLogin(function()
             Pix.Point(chSwatch, "RIGHT", leftRgn._lastInline or leftRgn._control, "LEFT", -8, 0)
             leftRgn._lastInline = chSwatch
 
-            local chSwBlock = CreateFrame("Frame", nil, chSwatch)
-            chSwBlock:SetAllPoints()
-            chSwBlock:SetFrameLevel(chSwatch:GetFrameLevel() + 10)
-            chSwBlock:EnableMouse(true)
+            local chSwBlock = CludesUI.NewSwatchBlocker(chSwatch)
             chSwBlock:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(chSwatch, CludesUI.DisabledTooltip("Character Crosshair"))
             end)
@@ -3185,10 +3170,7 @@ CludesUI.AtOptionsLogin(function()
             Pix.Point(mcSwatch, "RIGHT", leftRgn._control, "LEFT", -12, 0)
             leftRgn._lastInline = mcSwatch
 
-            local mcBlock = CreateFrame("Frame", nil, mcSwatch)
-            mcBlock:SetAllPoints()
-            mcBlock:SetFrameLevel(mcSwatch:GetFrameLevel() + 10)
-            mcBlock:EnableMouse(true)
+            local mcBlock = CludesUI.NewSwatchBlocker(mcSwatch)
             mcBlock:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(mcSwatch, CludesUI.DisabledTooltip("Color Out of Range"))
             end)

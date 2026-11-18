@@ -729,10 +729,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                 colorSwatch:HookScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                local block = CreateFrame("Frame", nil, colorSwatch)
-                block:SetAllPoints()
-                block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                block:EnableMouse(true)
+                local block = CludesUI.NewSwatchBlocker(colorSwatch)
                 block:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(colorSwatch, TEXT_ROWS_TIP)
                 end)
@@ -1287,10 +1284,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                 -- The slider's own "disabled" already blocks clicks on itself; the
                 -- swatch is a manual inline extra, so it needs the same click-block
                 -- overlay the ActionBars range-colour swatch uses.
-                local readyColorBlock = CreateFrame("Frame", nil, colorSwatch)
-                readyColorBlock:SetAllPoints()
-                readyColorBlock:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                readyColorBlock:EnableMouse(true)
+                local readyColorBlock = CludesUI.NewSwatchBlocker(colorSwatch)
                 readyColorBlock:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(
                         colorSwatch,

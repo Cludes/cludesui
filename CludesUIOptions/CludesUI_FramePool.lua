@@ -3025,3 +3025,14 @@ function CludesUI.AddPreviewEye(region, store, field, what, onToggle)
     end)
     return eye
 end
+
+-- A mouse-catching cover over a colour swatch (or any control), ten levels
+-- above it: shown, it blocks clicks on a control that cannot be edited right
+-- now. It starts shown; the caller hides or shows it with its state.
+function CludesUI.NewSwatchBlocker(control)
+    local cover = Pool.CreateFrame("Frame", nil, control)
+    cover:SetAllPoints()
+    cover:SetFrameLevel(control:GetFrameLevel() + 10)
+    cover:EnableMouse(true)
+    return cover
+end

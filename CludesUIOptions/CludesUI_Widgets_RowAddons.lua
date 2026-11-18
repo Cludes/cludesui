@@ -1229,10 +1229,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 return false
             end
             if options.disabled or sc.disabled then
-                local swatchBlock = CreateFrame("Frame", nil, colorSwatch)
-                swatchBlock:SetAllPoints()
-                swatchBlock:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                swatchBlock:EnableMouse(true)
+                local swatchBlock = CludesUI.NewSwatchBlocker(colorSwatch)
                 swatchBlock:SetScript("OnEnter", function()
                     local source = (sc.disabledTooltip ~= nil) and sc or options
                     local tipText = ResolveDisabledTip(source)

@@ -333,10 +333,7 @@ local function BuildTotemSection(hostFrame, posY, S)
             )
             Pix.Point(borderSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
             -- Disable swatch when border size is 0
-            local borderSwatchBlock = CreateFrame("Frame", nil, borderSwatch)
-            borderSwatchBlock:SetAllPoints()
-            borderSwatchBlock:SetFrameLevel(borderSwatch:GetFrameLevel() + 10)
-            borderSwatchBlock:EnableMouse(true)
+            local borderSwatchBlock = CludesUI.NewSwatchBlocker(borderSwatch)
             borderSwatchBlock:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(
                     borderSwatch,

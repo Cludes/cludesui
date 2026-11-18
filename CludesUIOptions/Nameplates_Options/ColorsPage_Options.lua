@@ -2280,10 +2280,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 return ownReq
             end,
         }
-        local block = CreateFrame("Frame", nil, colorSwatch)
-        block:SetAllPoints()
-        block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-        block:EnableMouse(true)
+        local block = CludesUI.NewSwatchBlocker(colorSwatch)
         block:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.ResolveDisabledTip(tipCfg))
         end)

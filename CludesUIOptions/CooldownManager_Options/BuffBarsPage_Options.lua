@@ -3985,10 +3985,7 @@ local function InitBuffBarsPage(
             Pix.Point(swatch, "RIGHT", regionFrame._lastInline or regionFrame._control, "LEFT", -8, 0)
             regionFrame._lastInline = swatch
 
-            local block = CreateFrame("Frame", nil, swatch)
-            block:SetAllPoints()
-            block:SetFrameLevel(swatch:GetFrameLevel() + 10)
-            block:EnableMouse(true)
+            local block = CludesUI.NewSwatchBlocker(swatch)
             block:SetScript("OnEnter", function()
                 local bd = SelectedTBB()
                 local tip = (prefix == "name" and bd and bd.verticalOrientation) and VERTICAL_NAME_TIP
@@ -4675,10 +4672,7 @@ local function InitBuffBarsPage(
                 20
             )
             Pix.Point(gradSwatch, "RIGHT", fillSwatch, "LEFT", -4, 0)
-            local gradBlock = CreateFrame("Frame", nil, gradSwatch)
-            gradBlock:SetAllPoints()
-            gradBlock:SetFrameLevel(gradSwatch:GetFrameLevel() + 10)
-            gradBlock:EnableMouse(true)
+            local gradBlock = CludesUI.NewSwatchBlocker(gradSwatch)
             gradBlock:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(
                     gradSwatch,

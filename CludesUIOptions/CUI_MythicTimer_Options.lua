@@ -350,10 +350,7 @@ CludesUI.AtOptionsLogin(function()
         -- A cover that swallows clicks on a swatch while it is unavailable and
         -- names the requirement on hover (tip: text, or a function giving it).
         local function Cover(sw, tip)
-            local cover = CreateFrame("Frame", nil, sw)
-            cover:SetAllPoints()
-            cover:SetFrameLevel(sw:GetFrameLevel() + 10)
-            cover:EnableMouse(true)
+            local cover = CludesUI.NewSwatchBlocker(sw)
             cover:SetScript("OnEnter", function()
                 local text = tip
                 if type(text) == "function" then

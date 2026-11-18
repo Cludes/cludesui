@@ -4101,10 +4101,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 region._control = cbDD
                 region._lastInline = nil
                 CludesUI.RegisterWidgetRefresh(cbRefresh)
-                local buffFilterBlock = CreateFrame("Frame", nil, cbDD)
-                buffFilterBlock:SetAllPoints()
-                buffFilterBlock:SetFrameLevel(cbDD:GetFrameLevel() + 10)
-                buffFilterBlock:EnableMouse(true)
+                local buffFilterBlock = CludesUI.NewSwatchBlocker(cbDD)
                 buffFilterBlock:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(cbDD, CludesUI.DisabledTooltip("Buffs", "displayed"))
                 end)

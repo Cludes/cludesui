@@ -1310,10 +1310,7 @@ function BlizzStyle.BlockInline(key, widget, dimAlpha)
         return false
     end
     widget:SetAlpha(dimAlpha or 0.3)
-    local block = CreateFrame("Frame", nil, widget)
-    block:SetAllPoints()
-    block:SetFrameLevel(widget:GetFrameLevel() + 10)
-    block:EnableMouse(true)
+    local block = CludesUI.NewSwatchBlocker(widget)
     local labelText = BlizzStyle.Label(key)
     block:SetScript("OnEnter", function()
         CludesUI.ShowWidgetTooltip(widget, CludesUI.DisabledTooltip(labelText, "disabled"))

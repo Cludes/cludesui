@@ -796,10 +796,7 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = colorSwatch
         -- Blocking overlay: non-clickable + tooltip unless Fill Color is Custom.
-        local block = CreateFrame("Frame", nil, colorSwatch)
-        block:SetAllPoints()
-        block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-        block:EnableMouse(true)
+        local block = CludesUI.NewSwatchBlocker(colorSwatch)
         block:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(colorSwatch, "Only available with Custom fill color")
         end)

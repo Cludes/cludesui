@@ -2788,10 +2788,7 @@ CludesUI.AtOptionsLogin(function()
             Pix.Point(kbSwatch, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
             rgn._lastInline = kbSwatch
 
-            local swatchBlock = CreateFrame("Frame", nil, kbSwatch)
-            swatchBlock:SetAllPoints()
-            swatchBlock:SetFrameLevel(kbSwatch:GetFrameLevel() + 10)
-            swatchBlock:EnableMouse(true)
+            local swatchBlock = CludesUI.NewSwatchBlocker(kbSwatch)
             swatchBlock:SetScript("OnEnter", function()
                 local tipText = OffTip()
                 if tipText then

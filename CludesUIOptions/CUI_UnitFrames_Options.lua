@@ -532,10 +532,7 @@ function mod.UF_CastBorderRows(W, hostFrame, posY, getS, onChange, matchKey, syn
         CludesUI.PanelPP.Point(sw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         CludesUI.HoverTip(sw, "Border")
         rgn._lastInline = sw
-        local block = CreateFrame("Frame", nil, sw)
-        block:SetAllPoints()
-        block:SetFrameLevel(sw:GetFrameLevel() + 10)
-        block:EnableMouse(true)
+        local block = CludesUI.NewSwatchBlocker(sw)
         block:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(
                 sw,
@@ -1009,10 +1006,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, posY, B, onChange)
         CludesUI.PanelPP.Point(sw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
         CludesUI.HoverTip(sw, "Border")
         rgn._lastInline = sw
-        local block = CreateFrame("Frame", nil, sw)
-        block:SetAllPoints()
-        block:SetFrameLevel(sw:GetFrameLevel() + 10)
-        block:EnableMouse(true)
+        local block = CludesUI.NewSwatchBlocker(sw)
         block:SetScript("OnEnter", function()
             local req = Inheriting() and NEEDS_STYLE or "This option requires a Border Size above 0."
             CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip(req))

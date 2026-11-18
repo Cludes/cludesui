@@ -918,10 +918,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                     -- Overlay greys out and blocks the swatch while disabled
                     if conf.disabled or sc.disabled then
-                        local swatchBlock = CreateFrame("Frame", nil, colorSwatch)
-                        swatchBlock:SetAllPoints()
-                        swatchBlock:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                        swatchBlock:EnableMouse(true)
+                        local swatchBlock = CludesUI.NewSwatchBlocker(colorSwatch)
                         swatchBlock:SetScript("OnEnter", function()
                             local source = (sc.disabledTooltip ~= nil) and sc or conf
                             local tipText = ResolveDisabledTip(source)
@@ -1484,10 +1481,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             anchorX = anchorX - 24 - SWATCH_GAP
 
             if sc.disabled then
-                local swatchBlock = CreateFrame("Frame", nil, colorSwatch)
-                swatchBlock:SetAllPoints()
-                swatchBlock:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                swatchBlock:EnableMouse(true)
+                local swatchBlock = CludesUI.NewSwatchBlocker(colorSwatch)
                 if sc.disabledTooltip then
                     swatchBlock:SetScript("OnEnter", function()
                         ShowWidgetTooltip(colorSwatch, sc.disabledTooltip)

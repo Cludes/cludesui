@@ -546,10 +546,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 20
             )
             Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
-            local block = CreateFrame("Frame", nil, colorSwatch)
-            block:SetAllPoints()
-            block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-            block:EnableMouse(true)
+            local block = CludesUI.NewSwatchBlocker(colorSwatch)
             block:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(
                     colorSwatch,

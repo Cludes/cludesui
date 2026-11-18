@@ -1022,10 +1022,7 @@ CludesUI.AtOptionsLogin(function()
                         )
                         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                         region._lastInline = colorSwatch
-                        local swatchBlock = CreateFrame("Frame", nil, colorSwatch)
-                        swatchBlock:SetAllPoints()
-                        swatchBlock:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                        swatchBlock:EnableMouse(true)
+                        local swatchBlock = CludesUI.NewSwatchBlocker(colorSwatch)
                         swatchBlock:SetScript("OnEnter", function()
                             CludesUI.ShowWidgetTooltip(
                                 colorSwatch,

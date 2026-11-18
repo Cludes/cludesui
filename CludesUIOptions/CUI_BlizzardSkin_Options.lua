@@ -3600,10 +3600,7 @@ CludesUI.AtOptionsLogin(function()
         colorSwatch:HookScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        local block = CreateFrame("Frame", nil, colorSwatch)
-        block:SetAllPoints()
-        block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-        block:EnableMouse(true)
+        local block = CludesUI.NewSwatchBlocker(colorSwatch)
         block:SetScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(
                 colorSwatch,
@@ -5934,10 +5931,7 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI.PanelPP.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
                 region._lastInline = colorSwatch
                 -- No border to colour at size 0: dimmed and blocked.
-                local block = CreateFrame("Frame", nil, colorSwatch)
-                block:SetAllPoints()
-                block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                block:EnableMouse(true)
+                local block = CludesUI.NewSwatchBlocker(colorSwatch)
                 block:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(
                         colorSwatch,

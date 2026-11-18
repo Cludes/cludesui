@@ -4804,10 +4804,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
             rgn._lastInline = colorSwatch
             -- Blocking overlay: disabled for "none" and the pre-colored
             -- "Large Outlined Stripes" heal styles (their texture is not tinted).
-            local swatchBlock = CreateFrame("Frame", nil, colorSwatch)
-            swatchBlock:SetAllPoints()
-            swatchBlock:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-            swatchBlock:EnableMouse(true)
+            local swatchBlock = CludesUI.NewSwatchBlocker(colorSwatch)
             swatchBlock:Hide()
             local function UpdateHealAbsorbSwatchVis()
                 local st = SValSupported("healAbsorbStyle", "clean")
@@ -5052,10 +5049,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
             end, false, 20)
             colorSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
             rgn._lastInline = colorSwatch
-            local swatchBlock = CreateFrame("Frame", nil, colorSwatch)
-            swatchBlock:SetAllPoints()
-            swatchBlock:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-            swatchBlock:EnableMouse(true)
+            local swatchBlock = CludesUI.NewSwatchBlocker(colorSwatch)
             swatchBlock:Hide()
             local function UpdateMaxHealthSwatchVis()
                 local st = SValSupported("maxHealthStyle", "none")
