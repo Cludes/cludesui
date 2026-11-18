@@ -221,9 +221,9 @@ end
 
 -- The window's onChange: the total for the amount, Buy only with one to buy.
 local function ShowCost(qty)
-    local d = dialog
-    d._extra:SetText(CludesUI.Lf("Total: %s", CostText(d._index, d._info, qty / d._step)))
-    local buy = d._buttons.buy
+    local skinData = dialog
+    skinData._extra:SetText(CludesUI.Lf("Total: %s", CostText(skinData._index, skinData._info, qty / skinData._step)))
+    local buy = skinData._buttons.buy
     buy:SetEnabled(qty > 0)
     buy:SetAlpha(qty > 0 and 1 or 0.3)
 end
@@ -231,33 +231,33 @@ end
 -- Re-reads the item after a merchant repaint (paging, the Buyback tab, stock
 -- or money changes) and closes the window once its button moved on.
 local function Refresh()
-    local d = dialog
-    local index, ownerFrame = d._index, d._owner
+    local skinData = dialog
+    local index, ownerFrame = skinData._index, skinData._owner
     local details = (MerchantFrame.selectedTab or 1) == 1 and C_MerchantFrame.GetItemInfo(index)
     if
         not details
-        or GetMerchantItemID(index) ~= d._itemID
+        or GetMerchantItemID(index) ~= skinData._itemID
         or not ownerFrame:IsVisible()
         or ownerFrame:GetID() ~= index
     then
-        d:Hide()
+        skinData:Hide()
         return
     end
-    d._info = details
+    skinData._info = details
     local step = max(details.stackCount, 1)
-    d:SetRange(step, MaxBundles(index, details, d._itemID, step, d._stackSize) * step, d._chunk)
-    if d._eb:HasFocus() and d._eb:GetNumber() <= d._max then
-        ShowCost(d:Current())
+    skinData:SetRange(step, MaxBundles(index, details, skinData._itemID, step, skinData._stackSize) * step, skinData._chunk)
+    if skinData._eb:HasFocus() and skinData._eb:GetNumber() <= skinData._max then
+        ShowCost(skinData:Current())
     else
-        d:SetValue(d:Current())
+        skinData:SetValue(skinData:Current())
     end
 end
 
 local function DoBuy()
-    local d = dialog
-    local qty = d:Current()
-    local index, itemId, step, chunk, details = d._index, d._itemID, d._step, d._chunk, d._info
-    d:Hide()
+    local skinData = dialog
+    local qty = skinData:Current()
+    local index, itemId, step, chunk, details = skinData._index, skinData._itemID, skinData._step, skinData._chunk, skinData._info
+    skinData:Hide()
     if qty < step then
         return
     end
@@ -306,11 +306,11 @@ end
 
 -- +1 Stack: up to the next full stack, at least one more purchase.
 local function NextStack()
-    local d = dialog
-    local current = d:Current()
-    local num = (floor(current / d._stackSize) + 1) * d._stackSize
-    if floor(num / d._step) * d._step <= current then
-        num = current + d._step
+    local skinData = dialog
+    local current = skinData:Current()
+    local num = (floor(current / skinData._stackSize) + 1) * skinData._stackSize
+    if floor(num / skinData._step) * skinData._step <= current then
+        num = current + skinData._step
     end
     return num
 end
@@ -329,9 +329,9 @@ end
 
 -- Max's tooltip: what the bags, the money and the stock each allow.
 local function MaxTip()
-    local d, lim = dialog, limits
-    local topY = floor(d._max / d._step)
-    local t = CludesUI.Lf("You can buy: %s", Accent(d._max))
+    local skinData, lim = dialog, limits
+    local topY = floor(skinData._max / skinData._step)
+    local t = CludesUI.Lf("You can buy: %s", Accent(skinData._max))
         .. "\n"
         .. CludesUI.Lf("You can fit: %s", LimitAmount(lim.fit, topY))
     if lim.afford ~= math.huge then
@@ -346,37 +346,37 @@ end
 -- +1 Stack's tooltip: where a click takes the amount, the stack size, and the
 -- room left in the partial stacks already in the bags.
 local function StackTip()
-    local d = dialog
-    local num = floor(min(NextStack(), d._max) / d._step) * d._step
+    local skinData = dialog
+    local num = floor(min(NextStack(), skinData._max) / skinData._step) * skinData._step
     local t = CludesUI.Lf("+1 Stack goes to: %s", Accent(max(num, 0)))
         .. "\n"
-        .. CludesUI.Lf("Stack size: %d", d._stackSize)
+        .. CludesUI.Lf("Stack size: %d", skinData._stackSize)
     if limits.partial > 0 then
         t = t .. "\n" .. CludesUI.Lf("Room in partial stacks: %d", limits.partial)
     end
     return t
 end
 
-local function AddStack(b)
+local function AddStack(button)
     dialog:SetValue(NextStack())
     -- The tooltip under the cursor follows the new amount.
-    if b:IsMouseOver() then
-        CUI.ShowWidgetTooltip(b, StackTip, TIP_OPTS)
+    if button:IsMouseOver() then
+        CUI.ShowWidgetTooltip(button, StackTip, TIP_OPTS)
     end
 end
 
 -- Blizzard Skins+' look on the shared quantity window: the theme's surface,
 -- border, close button and edit box, popup buttons in the theme's font.
 local SKIN = {
-    frame = function(d)
-        Skin.SolidTex(d, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, 1):SetAllPoints()
-        Skin.AddBorder(d)
+    frame = function(skinData)
+        Skin.SolidTex(skinData, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, 1):SetAllPoints()
+        Skin.AddBorder(skinData)
     end,
     font = function(fontStr, size)
         Skin.Font(fontStr, nil, nil, nil, size)
     end,
     button = function(hostFrame, wid, hgt, labelText)
-        local b = CUI.MakePopupButton(
+        local button = CUI.MakePopupButton(
             hostFrame,
             "CENTER",
             hostFrame,
@@ -401,15 +401,15 @@ local SKIN = {
             0.6,
             true
         )
-        b:SetSize(wid, hgt)
-        b:ClearAllPoints()
-        Skin.Font(b._lbl, nil, nil, nil, 12)
-        b._lbl:SetText(labelText)
-        return b
+        button:SetSize(wid, hgt)
+        button:ClearAllPoints()
+        Skin.Font(button._lbl, nil, nil, nil, 12)
+        button._lbl:SetText(labelText)
+        return button
     end,
-    editBox = function(eb)
-        eb:SetFont(Theme.fontPath, 12, Theme.fontFlag or "")
-        Skin.EditBox(eb)
+    editBox = function(editField)
+        editField:SetFont(Theme.fontPath, 12, Theme.fontFlag or "")
+        Skin.EditBox(editField)
     end,
     close = function(close)
         close:SetSize(18, 18)
@@ -516,9 +516,9 @@ local function TakeOver(btnFrame)
     dialog._stackSize = max(C_Item.GetItemMaxStackSizeByID(itemId) or maxStack or step, 1)
     dialog._eb:SetText(tostring(step))
     -- Buy wears the accent, read on every open (it can change at any time).
-    local b = dialog._buttons
+    local button = dialog._buttons
     local ACC = CUI.CLUDES_GREEN
-    b.buy._setColors(
+    button.buy._setColors(
         ACC.r,
         ACC.g,
         ACC.b,
@@ -536,9 +536,9 @@ local function TakeOver(btnFrame)
         ACC.b,
         1
     )
-    b.buy._resetAnim()
-    b.max._resetAnim()
-    b.stack._resetAnim()
+    button.buy._resetAnim()
+    button.max._resetAnim()
+    button.stack._resetAnim()
     dialog:Open(btnFrame)
     Refresh()
     if dialog:IsShown() then

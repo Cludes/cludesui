@@ -111,7 +111,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
         )
         local texture = saved[prefixText .. "BorderTexture"] or "solid"
         -- Exact Border Size (the <prefix>BorderThicknessPx companion); nil = the legacy step above, unchanged.
-        local px = CludesUI.BorderPx(saved[prefixText .. "BorderThicknessPx"], size, texture)
+        local pixel = CludesUI.BorderPx(saved[prefixText .. "BorderThicknessPx"], size, texture)
         CludesUI.ApplyBorderStyle(
             payload.configBorder,
             size,
@@ -127,7 +127,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
             "blizzardSkin",
             key,
             nil,
-            px
+            pixel
         )
     end
     CludesUI._applyBlizzardConfiguredBorder = _applyConfiguredBorder
@@ -527,14 +527,14 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
         if psf and psf.IsInspecting and psf:IsInspecting() then
             return true
         end
-        local f = InspectFrame
-        if f then
-            if f:IsShown() then
+        local frame = InspectFrame
+        if frame then
+            if frame:IsShown() then
                 return true
             end
             -- Blizzard keeps .unit on a window that never opened and shows it on any
             -- later matching INSPECT_READY, so never ask for that person ourselves.
-            local u = f.unit
+            local u = frame.unit
             if u and not (_isSecret and _isSecret(u)) then
                 local g = UnitGUID(u)
                 if g and not (_isSecret and _isSecret(g)) and g == unitGuid then
@@ -705,16 +705,16 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
             end
         end
         local labelText = CludesUI.L("Targeting:")
-        local tName, r, g, b
+        local tName, region, g, b
         if UnitExists(tu) then
             if UnitIsUnit(tu, "player") then
                 tName = CludesUI.L("You")
-                r, g, b = 0.1, 1, 0.1
+                region, g, b = 0.1, 1, 0.1
             else
                 local num = UnitName(tu)
                 if num and not (_isSecret and _isSecret(num)) then
                     tName = num
-                    r, g, b = 0.9, 0.9, 0.9
+                    region, g, b = 0.9, 0.9, 0.9
                     if UnitIsPlayer(tu) then
                         local _, castFrame = UnitClass(tu)
                         local cc = castFrame
@@ -722,7 +722,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                             and _RAID_CC
                             and _RAID_CC[castFrame]
                         if cc then
-                            r, g, b = cc.r, cc.g, cc.b
+                            region, g, b = cc.r, cc.g, cc.b
                         end
                     else
                         local reaction = UnitReaction and UnitReaction(tu, "player")
@@ -731,7 +731,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                             and FACTION_BAR_COLORS
                             and FACTION_BAR_COLORS[reaction]
                         if fc then
-                            r, g, b = fc.r, fc.g, fc.b
+                            region, g, b = fc.r, fc.g, fc.b
                         end
                     end
                 end
@@ -745,7 +745,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                 if lineR then
                     if tName then
                         lineR:SetText(tName)
-                        lineR:SetTextColor(r, g, b)
+                        lineR:SetTextColor(region, g, b)
                     else
                         -- Target dropped mid-hover: blank the value, keep the row.
                         lineR:SetText("-")
@@ -756,7 +756,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
             end
         end
         if tName then
-            tt:AddDoubleLine(labelText, tName, 1, 1, 1, r, g, b)
+            tt:AddDoubleLine(labelText, tName, 1, 1, 1, region, g, b)
         end
     end
 
@@ -982,19 +982,19 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
             and not (UnitIsWildBattlePet(unitToken) or UnitIsBattlePetCompanion(unitToken))
         then
             local lvl = known or UnitEffectiveLevel(unitToken)
-            local r, g, b
+            local region, g, b
             if saved.tooltipLevelColor then
-                r, g, b = CludesUI.GetLevelColor(unitToken, lvl, true)
+                region, g, b = CludesUI.GetLevelColor(unitToken, lvl, true)
             end
-            if r then
-                hex = CludesUI.ColorText("%0", r, g, b)
+            if region then
+                hex = CludesUI.ColorText("%0", region, g, b)
             end
             -- Compact line: "90 Tauren" for players, "90 Elite Humanoid" for NPCs.
             local player = UnitIsPlayer(unitToken)
             if saved.tooltipCompactLevel and not (_isSecret and (_isSecret(lvl) or _isSecret(player))) then
                 local parts = _compactParts
                 wipe(parts)
-                parts[1] = CludesUI.ColorText(lvl > 0 and lvl or "??", r, g, b)
+                parts[1] = CludesUI.ColorText(lvl > 0 and lvl or "??", region, g, b)
                 if player then
                     parts[2] = UnitRace(unitToken)
                 else
@@ -1089,9 +1089,9 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
         -- Class and plain name from the authoritative GUID, with a live-token fallback. Non-players get no additions (GetPlayerInfoByGUID returns no class for non-player GUIDs, matching stock hover).
         local classFile, pname, prealm
         if GetPlayerInfoByGUID then
-            local _, eClass, _, _, _, num, r = GetPlayerInfoByGUID(unitGuid)
+            local _, eClass, _, _, _, num, region = GetPlayerInfoByGUID(unitGuid)
             if eClass and not (_isSecret and _isSecret(eClass)) then
-                classFile, pname, prealm = eClass, num, r
+                classFile, pname, prealm = eClass, num, region
             end
         end
         if not classFile and unitToken then
@@ -1205,11 +1205,11 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                 local sColor = C_ChallengeMode
                     and C_ChallengeMode.GetDungeonScoreRarityColor
                     and C_ChallengeMode.GetDungeonScoreRarityColor(score)
-                local r, g, b = 1, 1, 1
+                local region, g, b = 1, 1, 1
                 if sColor then
-                    r, g, b = sColor.r, sColor.g, sColor.b
+                    region, g, b = sColor.r, sColor.g, sColor.b
                 end
-                tt:AddDoubleLine(CludesUI.L("M+ Score:"), score, 1, 1, 1, r, g, b)
+                tt:AddDoubleLine(CludesUI.L("M+ Score:"), score, 1, 1, 1, region, g, b)
             end
         end
         -- Mount name from the live helpful aura MountJournal recognizes. Opt-in (default off); per-GUID cached so refresh ticks on an unmounted player never re-walk the aura list.
@@ -1227,9 +1227,9 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                 mountName = cached.name
                 mountCollected = cached.collected
             else
-                local nm, col = _getMountedAuraName(unitToken)
+                local nm, colour = _getMountedAuraName(unitToken)
                 mountName = nm or false
-                mountCollected = col
+                mountCollected = colour
                 -- Expired entries are dropped, so only the last few seconds of hovers stay
                 -- cached and this loop stays tiny; this player's stale entry is refreshed
                 -- in place rather than replaced.
@@ -1370,8 +1370,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                 _nameL1 = _G.GameTooltipTextLeft1
             end
             if _nameL1 then
-                local r, g, b = _getElementColor()
-                _nameL1:SetTextColor(r, g, b)
+                local region, g, b = _getElementColor()
+                _nameL1:SetTextColor(region, g, b)
             end
         end
         if
@@ -1475,10 +1475,10 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
     local function _styleFlush()
         _styleArmed = false
         for i = #_stylePending, 1, -1 do
-            local f = _stylePending[i]
+            local frame = _stylePending[i]
             _stylePending[i] = nil
             -- _menuSkinFrame re-checks IsForbidden and the enable toggle.
-            _menuSkinFrame(f)
+            _menuSkinFrame(frame)
         end
     end
     local function _onStyleGenerate(menuFrame)
@@ -1519,11 +1519,11 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
             return
         end
         for i = 1, _select("#", popup:GetRegions()) do
-            local r = _select(i, popup:GetRegions())
-            if r and r:IsObjectType("Texture") and not GetFFD(r).owned then
-                r:SetTexture(nil)
-                if r.SetAtlas then
-                    r:SetAtlas("")
+            local region = _select(i, popup:GetRegions())
+            if region and region:IsObjectType("Texture") and not GetFFD(region).owned then
+                region:SetTexture(nil)
+                if region.SetAtlas then
+                    region:SetAtlas("")
                 end
             end
         end
@@ -1558,13 +1558,13 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
         for _, button in ipairs(popupBtns) do
             if button and not GetFFD(button).skinned then
                 GetFFD(button).skinned = true
-                local regions = { button:GetRegions() }
-                for jdx = 1, #regions do
-                    local r = regions[jdx]
-                    if r and r:IsObjectType("Texture") and r ~= button:GetFontString() then
-                        r:SetTexture(nil)
-                        if r.SetAtlas then
-                            r:SetAtlas("")
+                local regionList = { button:GetRegions() }
+                for jdx = 1, #regionList do
+                    local region = regionList[jdx]
+                    if region and region:IsObjectType("Texture") and region ~= button:GetFontString() then
+                        region:SetTexture(nil)
+                        if region.SetAtlas then
+                            region:SetAtlas("")
                         end
                     end
                 end
@@ -1573,10 +1573,10 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                 GetFFD(btnBg).owned = true
                 GetFFD(button).bg = btnBg
                 -- 10% white wash; the HIGHLIGHT layer only renders while the button is enabled and hovered.
-                local hov = button:CreateTexture(nil, "HIGHLIGHT")
-                hov:SetColorTexture(1, 1, 1, 0.1)
-                hov:SetAllPoints()
-                GetFFD(hov).owned = true
+                local hoverTex = button:CreateTexture(nil, "HIGHLIGHT")
+                hoverTex:SetColorTexture(1, 1, 1, 0.1)
+                hoverTex:SetAllPoints()
+                GetFFD(hoverTex).owned = true
 
                 -- Mirror Blizzard's enabled/disabled state so buttons visibly dim when locked out (e.g. Release in boss combat).
                 local function _cuiRefreshEnabled(self)
@@ -1588,8 +1588,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                             if _elementColorMode() == "native" then
                                 fontStr:SetTextColor(1, 1, 1, 1)
                             else
-                                local r, g, b = _getElementColor()
-                                fontStr:SetTextColor(r, g, b, 1)
+                                local region, g, b = _getElementColor()
+                                fontStr:SetTextColor(region, g, b, 1)
                             end
                         else
                             fontStr:SetTextColor(0.4, 0.4, 0.4, 1)
@@ -1636,28 +1636,28 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                 func(b)
             end
         end
-        local eb = popup.editBox or (popup.GetName and _G[popup:GetName() .. "EditBox"])
-        if eb and not GetFFD(eb).skinned then
-            GetFFD(eb).skinned = true
-            local regions = { eb:GetRegions() }
-            for jdx = 1, #regions do
-                local r = regions[jdx]
-                if r and r:IsObjectType("Texture") then
-                    r:SetTexture(nil)
-                    if r.SetAtlas then
-                        r:SetAtlas("")
+        local editField = popup.editBox or (popup.GetName and _G[popup:GetName() .. "EditBox"])
+        if editField and not GetFFD(editField).skinned then
+            GetFFD(editField).skinned = true
+            local regionList = { editField:GetRegions() }
+            for jdx = 1, #regionList do
+                local region = regionList[jdx]
+                if region and region:IsObjectType("Texture") then
+                    region:SetTexture(nil)
+                    if region.SetAtlas then
+                        region:SetAtlas("")
                     end
                 end
             end
             -- Midnight edit boxes carry their art on a NineSlice child.
-            if eb.NineSlice and eb.NineSlice.SetAlpha then
-                eb.NineSlice:SetAlpha(0)
+            if editField.NineSlice and editField.NineSlice.SetAlpha then
+                editField.NineSlice:SetAlpha(0)
             end
             -- 6px left padding: box edge extends, text stays put.
             if CludesUI._WSkinPadInput then
-                CludesUI._WSkinPadInput(eb)
+                CludesUI._WSkinPadInput(editField)
             end
-            local ebBg = eb:CreateTexture(nil, "BACKGROUND", nil, -6)
+            local ebBg = editField:CreateTexture(nil, "BACKGROUND", nil, -6)
             ebBg:SetAllPoints()
             ebBg:SetColorTexture(0.05, 0.05, 0.05, 0.9)
             GetFFD(ebBg).owned = true
@@ -1670,7 +1670,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                 _PP = CludesUI and CludesUI.PP
             end
             if _PP and _PP.CreateBorder then
-                _PP.CreateBorder(eb, borderR, borderG, borderB, 0.5, 1, "OVERLAY", 7)
+                _PP.CreateBorder(editField, borderR, borderG, borderB, 0.5, 1, "OVERLAY", 7)
             end
         end
     end
@@ -1711,8 +1711,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
 
     -- Addon-owned overlay 3px outside the button, built once per button on first glow; state lives in FFD, never on the Blizzard frame.
     local function _resGlowGet(button)
-        local d = GetFFD(button)
-        if not d.resGlow then
+        local skinData = GetFFD(button)
+        if not skinData.resGlow then
             local shade = CreateFrame("Frame", nil, button)
             shade:SetPoint("TOPLEFT", button, "TOPLEFT", -3, 3)
             shade:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 3, -3)
@@ -1731,10 +1731,10 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
             pulse:SetToAlpha(0.15)
             pulse:SetDuration(0.7)
             pulse:SetSmoothing("IN_OUT")
-            d.resGlow = shade
-            d.resGlowAG = ag
+            skinData.resGlow = shade
+            skinData.resGlowAG = ag
         end
-        return d.resGlow, d.resGlowAG
+        return skinData.resGlow, skinData.resGlowAG
     end
 
     local function _resGlowStart(button)
@@ -1760,11 +1760,11 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
 
     -- Raw FFD read (not GetFFD): stopping must never allocate state for a button that never glowed.
     local function _resGlowStop(button)
-        local d = button and FFD[button]
-        local shade = d and d.resGlow
+        local skinData = button and FFD[button]
+        local shade = skinData and skinData.resGlow
         if shade then
-            if d.resGlowAG then
-                d.resGlowAG:Stop()
+            if skinData.resGlowAG then
+                skinData.resGlowAG:Stop()
             end
             shade:Hide()
         end
@@ -1827,9 +1827,9 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
     end
 
     do
-        local f = CreateFrame("Frame")
-        f:RegisterEvent("PLAYER_LOGIN")
-        f:SetScript("OnEvent", function(self)
+        local frame = CreateFrame("Frame")
+        frame:RegisterEvent("PLAYER_LOGIN")
+        frame:SetScript("OnEvent", function(self)
             self:UnregisterAllEvents()
             -- customTooltips is the master for ALL CUI tooltip handling (visual reskin
             -- AND data additions); off leaves tooltips alone, matching the grayed-out
@@ -1898,11 +1898,11 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
         local _, classFile = UnitClass("player")
         local cc = classFile and _RAID_CC and _RAID_CC[classFile]
         local name = UnitName("player") or ""
-        local title = (not on or posX.tooltipPlayerTitles) and UnitPVPName("player")
-        if title and _isSecret and _isSecret(title) then
-            title = nil
+        local titleText = (not on or posX.tooltipPlayerTitles) and UnitPVPName("player")
+        if titleText and _isSecret and _isSecret(titleText) then
+            titleText = nil
         end
-        local line1 = (title and title ~= "") and title or name
+        local line1 = (titleText and titleText ~= "") and titleText or name
         if posX.tooltipAFKTag then
             line1 = line1 .. " " .. GRAY_FONT_COLOR:WrapTextInColorCode(CHAT_FLAG_AFK)
         end
@@ -1924,16 +1924,16 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
         if _isSecret and _isSecret(lvl) then
             lvl = 0
         end
-        local r, g, b
+        local region, g, b
         if posX.tooltipLevelColor and CludesUI.GetLevelColor then
-            r, g, b = CludesUI.GetLevelColor("player", lvl, true)
+            region, g, b = CludesUI.GetLevelColor("player", lvl, true)
         end
         if posX.tooltipCompactLevel then
-            _pvLine(tt, CludesUI.ColorText(lvl, r, g, b) .. " " .. race)
+            _pvLine(tt, CludesUI.ColorText(lvl, region, g, b) .. " " .. race)
         else
             local textValue = UNIT_TYPE_LEVEL_TEMPLATE:format(lvl, race)
-            if r then
-                textValue = textValue:gsub("%d+", CludesUI.ColorText("%0", r, g, b), 1)
+            if region then
+                textValue = textValue:gsub("%d+", CludesUI.ColorText("%0", region, g, b), 1)
             end
             _pvLine(tt, textValue)
         end
@@ -2108,8 +2108,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
     -- dims, as the live popups wait for the reload.
     local _pp = {} -- f, place
 
-    local function _ppButton(f, textValue)
-        local b = CreateFrame("Button", nil, f)
+    local function _ppButton(frame, textValue)
+        local b = CreateFrame("Button", nil, frame)
         b:SetSize(128, 21)
         b:EnableMouse(false)
         b:SetNormalTexture("Interface\\Buttons\\UI-DialogBox-Button-Up")
@@ -2120,22 +2120,22 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
     end
 
     local function _ppPaint()
-        local f = _pp.f
-        if not f then
+        local frame = _pp.f
+        if not frame then
             return
         end
         if _pp.place then
-            _pp.place(f)
+            _pp.place(frame)
         end
         local on = _pmEnabled()
-        f:Show()
+        frame:Show()
         if on then
-            _popupSkin(f)
+            _popupSkin(frame)
         end
-        _resGlowRefresh(f)
-        f:SetAlpha((on or not GetFFD(f).bg) and 1 or 0.3)
+        _resGlowRefresh(frame)
+        frame:SetAlpha((on or not GetFFD(frame).bg) and 1 or 0.3)
         if _pp.place then
-            _pp.place(f, f:GetWidth(), f:GetHeight())
+            _pp.place(frame, frame:GetWidth(), frame:GetHeight())
         end
     end
 
@@ -2148,30 +2148,30 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
 
     -- Same contract as ShowTooltipPreview. Named: _popupSkin builds child names from it.
     function CludesUI.ShowPopupPreview(hostFrame, place)
-        local f = _pp.f
-        if not f then
-            f = CreateFrame("Frame", "CludesUIPopupPreview", hostFrame)
-            f.which = "RESURRECT"
-            local backdrop = f:CreateTexture(nil, "BACKGROUND")
+        local frame = _pp.f
+        if not frame then
+            frame = CreateFrame("Frame", "CludesUIPopupPreview", hostFrame)
+            frame.which = "RESURRECT"
+            local backdrop = frame:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAtlas("UI-DialogBox-Background-Dark")
             backdrop:SetAllPoints()
-            f.text = f:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-            f.text:SetWidth(290)
-            f.text:SetPoint("TOP", f, "TOP", 0, -16)
-            f.text:SetText(RESURRECT_REQUEST:format(UnitName("player") or ""))
-            f.button1 = _ppButton(f, ACCEPT)
-            f.button1:SetPoint("BOTTOMRIGHT", f, "BOTTOM", -6, 16)
-            f.button2 = _ppButton(f, DECLINE)
-            f.button2:SetPoint("BOTTOMLEFT", f, "BOTTOM", 6, 16)
-            f:SetSize(320, 16 + f.text:GetStringHeight() + 16 + 21 + 16)
-            _pp.f = f
+            frame.text = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+            frame.text:SetWidth(290)
+            frame.text:SetPoint("TOP", frame, "TOP", 0, -16)
+            frame.text:SetText(RESURRECT_REQUEST:format(UnitName("player") or ""))
+            frame.button1 = _ppButton(frame, ACCEPT)
+            frame.button1:SetPoint("BOTTOMRIGHT", frame, "BOTTOM", -6, 16)
+            frame.button2 = _ppButton(frame, DECLINE)
+            frame.button2:SetPoint("BOTTOMLEFT", frame, "BOTTOM", 6, 16)
+            frame:SetSize(320, 16 + frame.text:GetStringHeight() + 16 + 21 + 16)
+            _pp.f = frame
         end
-        f:SetParent(hostFrame)
-        f:SetFrameStrata(hostFrame:GetFrameStrata())
-        f:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
+        frame:SetParent(hostFrame)
+        frame:SetFrameStrata(hostFrame:GetFrameStrata())
+        frame:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
         _pp.place = place
         _ppPaint()
-        return f
+        return frame
     end
 
     -- Mirror the tooltip skin onto the ENGINE aura tooltip (AuraButtonTooltip,
@@ -2204,7 +2204,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
             -- allows; insets keep the fill on the tooltip.
             if size > 0 then
                 local texture = saved.tooltipBorderTexture or "solid"
-                local px = CludesUI.BorderPx(saved.tooltipBorderThicknessPx, size, texture)
+                local pixel = CludesUI.BorderPx(saved.tooltipBorderThicknessPx, size, texture)
                 local edgeFile = CludesUI.ResolveBorderTexture(texture)
                 local edge, ox, oy, sx, sy
                 if edgeFile then
@@ -2217,12 +2217,12 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                         saved.tooltipBorderShiftY,
                         "blizzardSkin",
                         key,
-                        px
+                        pixel
                     )
                 else
                     -- Solid: the PP line, (px or size) whole pixels inside the tooltip.
                     edgeFile = "Interface\\Buttons\\WHITE8X8"
-                    edge, ox, oy, sx, sy = (px or size) * CludesUI.PP.mult, 0, 0, 0, 0
+                    edge, ox, oy, sx, sy = (pixel or size) * CludesUI.PP.mult, 0, 0, 0, 0
                 end
                 details.backdropInfo.edgeFile = edgeFile
                 details.backdropInfo.edgeSize = edge
@@ -2278,16 +2278,16 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
             for _, widget in ipairs({ popup, dialog }) do
                 if widget then
                     for i = 1, _select("#", widget:GetRegions()) do
-                        local r = _select(i, widget:GetRegions())
+                        local region = _select(i, widget:GetRegions())
                         if
-                            r
-                            and r:IsObjectType("Texture")
-                            and not GetFFD(r).owned
-                            and not keepTextures[r]
+                            region
+                            and region:IsObjectType("Texture")
+                            and not GetFFD(region).owned
+                            and not keepTextures[region]
                         then
-                            r:SetTexture(nil)
-                            if r.SetAtlas then
-                                r:SetAtlas("")
+                            region:SetTexture(nil)
+                            if region.SetAtlas then
+                                region:SetAtlas("")
                             end
                         end
                     end
@@ -2306,9 +2306,9 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
             closeBtn = closeBtn or _G.LFGDungeonReadyDialogCloseButton
             if closeBtn then
                 for i = 1, _select("#", closeBtn:GetRegions()) do
-                    local r = _select(i, closeBtn:GetRegions())
-                    if r and r:IsObjectType("Texture") and not GetFFD(r).owned then
-                        r:SetAlpha(0)
+                    local region = _select(i, closeBtn:GetRegions())
+                    if region and region:IsObjectType("Texture") and not GetFFD(region).owned then
+                        region:SetAlpha(0)
                     end
                 end
                 if not GetFFD(closeBtn).icon then
@@ -2358,16 +2358,16 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                     local button = dialog[btnName]
                     if button then
                         -- Named Left/Middle/Right textures are swapped by C++ on mouse down, so SetTexture alone does not stick.
-                        local regions = { button:GetRegions() }
-                        for jdx = 1, #regions do
-                            local r = regions[jdx]
+                        local regionList = { button:GetRegions() }
+                        for jdx = 1, #regionList do
+                            local region = regionList[jdx]
                             if
-                                r
-                                and r:IsObjectType("Texture")
-                                and not GetFFD(r).owned
-                                and r ~= button:GetFontString()
+                                region
+                                and region:IsObjectType("Texture")
+                                and not GetFFD(region).owned
+                                and region ~= button:GetFontString()
                             then
-                                r:SetAlpha(0)
+                                region:SetAlpha(0)
                             end
                         end
                         if button.Left then
@@ -2400,10 +2400,10 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                             GetFFD(btnBg).owned = true
                             GetFFD(button).bg = btnBg
                             -- 10% white wash; marked owned so the every-show re-strip above leaves it alone.
-                            local hov = button:CreateTexture(nil, "HIGHLIGHT")
-                            hov:SetColorTexture(1, 1, 1, 0.1)
-                            hov:SetAllPoints()
-                            GetFFD(hov).owned = true
+                            local hoverTex = button:CreateTexture(nil, "HIGHLIGHT")
+                            hoverTex:SetColorTexture(1, 1, 1, 0.1)
+                            hoverTex:SetAllPoints()
+                            GetFFD(hoverTex).owned = true
                         end
                         -- Colors re-applied every show.
                         local c = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
@@ -2418,8 +2418,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                             if _elementColorMode() == "native" then
                                 fontStr:SetTextColor(1, 1, 1, 1)
                             else
-                                local r, g, b = _getElementColor()
-                                fontStr:SetTextColor(r, g, b, 1)
+                                local region, g, b = _getElementColor()
+                                fontStr:SetTextColor(region, g, b, 1)
                             end
                         end
                     end
@@ -2513,8 +2513,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                     type = "callback",
                     fn = function()
                         if GetFFD(timerBar).style then
-                            local r, g, b = CludesUI.GetAccentColor()
-                            timerBar:SetStatusBarColor(r, g, b, 0.75)
+                            local region, g, b = CludesUI.GetAccentColor()
+                            timerBar:SetStatusBarColor(region, g, b, 0.75)
                         end
                     end,
                 })
@@ -2588,11 +2588,11 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
             end
             -- Textures re-stripped every show.
             for i = 1, _select("#", status:GetRegions()) do
-                local r = _select(i, status:GetRegions())
-                if r and r:IsObjectType("Texture") and not GetFFD(r).owned then
-                    r:SetTexture(nil)
-                    if r.SetAtlas then
-                        r:SetAtlas("")
+                local region = _select(i, status:GetRegions())
+                if region and region:IsObjectType("Texture") and not GetFFD(region).owned then
+                    region:SetTexture(nil)
+                    if region.SetAtlas then
+                        region:SetAtlas("")
                     end
                 end
             end
@@ -2642,16 +2642,16 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
             if not button then
                 return
             end
-            local regions = { button:GetRegions() }
-            for jdx = 1, #regions do
-                local r = regions[jdx]
+            local regionList = { button:GetRegions() }
+            for jdx = 1, #regionList do
+                local region = regionList[jdx]
                 if
-                    r
-                    and r:IsObjectType("Texture")
-                    and not GetFFD(r).owned
-                    and r ~= button:GetFontString()
+                    region
+                    and region:IsObjectType("Texture")
+                    and not GetFFD(region).owned
+                    and region ~= button:GetFontString()
                 then
-                    r:SetAlpha(0)
+                    region:SetAlpha(0)
                 end
             end
             if button.Left then
@@ -2679,10 +2679,10 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                 btnBg:SetAllPoints()
                 GetFFD(btnBg).owned = true
                 GetFFD(button).bg = btnBg
-                local hov = button:CreateTexture(nil, "HIGHLIGHT")
-                hov:SetColorTexture(1, 1, 1, 0.1)
-                hov:SetAllPoints()
-                GetFFD(hov).owned = true
+                local hoverTex = button:CreateTexture(nil, "HIGHLIGHT")
+                hoverTex:SetColorTexture(1, 1, 1, 0.1)
+                hoverTex:SetAllPoints()
+                GetFFD(hoverTex).owned = true
             end
             local c = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
                 or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
@@ -2695,8 +2695,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                 if _elementColorMode() == "native" then
                     fontStr:SetTextColor(1, 1, 1, 1)
                 else
-                    local r, g, b = _getElementColor()
-                    fontStr:SetTextColor(r, g, b, 1)
+                    local region, g, b = _getElementColor()
+                    fontStr:SetTextColor(region, g, b, 1)
                 end
             end
         end
@@ -2712,11 +2712,11 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                 return
             end
             for i = 1, _select("#", popup:GetRegions()) do
-                local r = _select(i, popup:GetRegions())
-                if r and r:IsObjectType("Texture") and not GetFFD(r).owned then
-                    r:SetTexture(nil)
-                    if r.SetAtlas then
-                        r:SetAtlas("")
+                local region = _select(i, popup:GetRegions())
+                if region and region:IsObjectType("Texture") and not GetFFD(region).owned then
+                    region:SetTexture(nil)
+                    if region.SetAtlas then
+                        region:SetAtlas("")
                     end
                 end
             end

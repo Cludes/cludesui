@@ -48,11 +48,11 @@ do
         if qkb.Bg then
             qkb.Bg:SetAlpha(0)
         end
-        local regions = { qkb:GetRegions() }
-        for idx = 1, #regions do
-            local r = regions[idx]
-            if r and r:IsObjectType("Texture") and not GetFFD(r).owned then
-                r:SetAlpha(0)
+        local regionList = { qkb:GetRegions() }
+        for idx = 1, #regionList do
+            local region = regionList[idx]
+            if region and region:IsObjectType("Texture") and not GetFFD(region).owned then
+                region:SetAlpha(0)
             end
         end
 
@@ -93,8 +93,8 @@ do
 
         local btnNames = { "OkayButton", "CancelButton", "DefaultsButton" }
         -- Native mode leaves button text un-recolored.
-        local er, eg, eb = CludesUI._getPopupMenuButtonTextColor()
-        local ACC = { r = er, g = eg, b = eb }
+        local er, eg, editField = CludesUI._getPopupMenuButtonTextColor()
+        local ACC = { r = er, g = eg, b = editField }
         local useAccent = (CludesUI._getPopupMenuElementMode() ~= "native") and ACC
         for _, name in ipairs(btnNames) do
             local button = qkb[name]
@@ -102,14 +102,14 @@ do
                 GetFFD(button).skinned = true
                 local regions2 = { button:GetRegions() }
                 for jdx = 1, #regions2 do
-                    local r = regions2[jdx]
+                    local region = regions2[jdx]
                     if
-                        r
-                        and r:IsObjectType("Texture")
-                        and not GetFFD(r).owned
-                        and r ~= button:GetFontString()
+                        region
+                        and region:IsObjectType("Texture")
+                        and not GetFFD(region).owned
+                        and region ~= button:GetFontString()
                     then
-                        r:SetAlpha(0)
+                        region:SetAlpha(0)
                     end
                 end
                 if button.Left then
@@ -243,16 +243,16 @@ do
             local button = dialog[btnName]
             if button then
                 -- Re-stripped every show; Blizzard re-applies the art.
-                local regions = { button:GetRegions() }
-                for jdx = 1, #regions do
-                    local r = regions[jdx]
+                local regionList = { button:GetRegions() }
+                for jdx = 1, #regionList do
+                    local region = regionList[jdx]
                     if
-                        r
-                        and r:IsObjectType("Texture")
-                        and not GetFFD(r).owned
-                        and r ~= button:GetFontString()
+                        region
+                        and region:IsObjectType("Texture")
+                        and not GetFFD(region).owned
+                        and region ~= button:GetFontString()
                     then
-                        r:SetAlpha(0)
+                        region:SetAlpha(0)
                     end
                 end
                 if button.Left then
@@ -276,8 +276,8 @@ do
                             end)
                         end
                     end
-                    local er, eg, eb = CludesUI._getPopupMenuButtonTextColor()
-                    local ACC = { r = er, g = eg, b = eb }
+                    local er, eg, editField = CludesUI._getPopupMenuButtonTextColor()
+                    local ACC = { r = er, g = eg, b = editField }
                     local useAccent = _accentOn() and ACC
                     local btnBg = button:CreateTexture(nil, "BACKGROUND", nil, -6)
                     btnBg:SetAllPoints()
@@ -292,8 +292,8 @@ do
                     end
                 end
                 -- Text accent re-applied every show.
-                local er, eg, eb = CludesUI._getPopupMenuButtonTextColor()
-                local ACC = { r = er, g = eg, b = eb }
+                local er, eg, editField = CludesUI._getPopupMenuButtonTextColor()
+                local ACC = { r = er, g = eg, b = editField }
                 local useAccent = _accentOn() and ACC
                 local fontStr = button:GetFontString()
                 if fontStr and useAccent then
@@ -303,9 +303,9 @@ do
         end
     end
 
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("ADDON_LOADED")
-    f:SetScript("OnEvent", function(self, _, addon)
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("ADDON_LOADED")
+    frame:SetScript("OnEvent", function(self, _, addon)
         if _G.LFGListInviteDialog then
             self:UnregisterAllEvents()
             _G.LFGListInviteDialog:HookScript("OnShow", SkinPremadeInvite)
@@ -357,11 +357,11 @@ do
 
         local desc = _G.LFGListApplicationDialogDescription
         if desc then
-            local regions = { desc:GetRegions() }
-            for idx = 1, #regions do
-                local r = regions[idx]
-                if r and r:IsObjectType("Texture") and not GetFFD(r).owned then
-                    r:SetAlpha(0)
+            local regionList = { desc:GetRegions() }
+            for idx = 1, #regionList do
+                local region = regionList[idx]
+                if region and region:IsObjectType("Texture") and not GetFFD(region).owned then
+                    region:SetAlpha(0)
                 end
             end
             if desc.NineSlice then
@@ -384,16 +384,16 @@ do
             local button = dialog[btnName]
             if button and not GetFFD(button).skinned then
                 GetFFD(button).skinned = true
-                local regions = { button:GetRegions() }
-                for jdx = 1, #regions do
-                    local r = regions[jdx]
+                local regionList = { button:GetRegions() }
+                for jdx = 1, #regionList do
+                    local region = regionList[jdx]
                     if
-                        r
-                        and r:IsObjectType("Texture")
-                        and not GetFFD(r).owned
-                        and r ~= button:GetFontString()
+                        region
+                        and region:IsObjectType("Texture")
+                        and not GetFFD(region).owned
+                        and region ~= button:GetFontString()
                     then
-                        r:SetAlpha(0)
+                        region:SetAlpha(0)
                     end
                 end
                 if button.Left then
@@ -415,8 +415,8 @@ do
                         end)
                     end
                 end
-                local er, eg, eb = CludesUI._getPopupMenuButtonTextColor()
-                local ACC = { r = er, g = eg, b = eb }
+                local er, eg, editField = CludesUI._getPopupMenuButtonTextColor()
+                local ACC = { r = er, g = eg, b = editField }
                 local useAccent = _accentOn() and ACC
                 local btnBg = button:CreateTexture(nil, "BACKGROUND", nil, -6)
                 btnBg:SetAllPoints()
@@ -437,9 +437,9 @@ do
         end
     end
 
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("ADDON_LOADED")
-    f:SetScript("OnEvent", function(self, _, addon)
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("ADDON_LOADED")
+    frame:SetScript("OnEvent", function(self, _, addon)
         if _G.LFGListApplicationDialog then
             self:UnregisterAllEvents()
             _G.LFGListApplicationDialog:HookScript("OnShow", SkinApplicationDialog)
@@ -453,9 +453,9 @@ end
 --  Runs once on PLAYER_LOGIN so GameMenuFrame is available.
 -------------------------------------------------------------------------------
 do
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("PLAYER_LOGIN")
-    f:SetScript("OnEvent", function(self)
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("PLAYER_LOGIN")
+    frame:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
         if not GameMenuFrame then
             return
@@ -467,11 +467,11 @@ do
 
         local RS = CludesUI.RESKIN
 
-        local regions = { GameMenuFrame:GetRegions() }
-        for idx = 1, #regions do
-            local r = regions[idx]
-            if r and r:IsObjectType("Texture") then
-                r:SetAlpha(0)
+        local regionList = { GameMenuFrame:GetRegions() }
+        for idx = 1, #regionList do
+            local region = regionList[idx]
+            if region and region:IsObjectType("Texture") then
+                region:SetAlpha(0)
             end
         end
         if GameMenuFrame.NineSlice then
@@ -485,15 +485,15 @@ do
         if header then
             local regions2 = { header:GetRegions() }
             for idx = 1, #regions2 do
-                local r = regions2[idx]
-                if r and r:IsObjectType("Texture") then
-                    r:SetAlpha(0)
+                local region = regions2[idx]
+                if region and region:IsObjectType("Texture") then
+                    region:SetAlpha(0)
                 end
             end
             local headerText = header.Text or (header.GetRegions and select(1, header:GetRegions()))
             if headerText and headerText.SetTextColor then
-                local r, g, b = CludesUI._getPopupMenuButtonTextColor()
-                headerText:SetTextColor(r, g, b, 1)
+                local region, g, button = CludesUI._getPopupMenuButtonTextColor()
+                headerText:SetTextColor(region, g, button, 1)
                 local cuiFont = CludesUI.GetFontPath("blizzardSkin") or "Fonts\\FRIZQT__.TTF"
                 local _, hSize = headerText:GetFont()
                 headerText:SetFont(cuiFont, hSize or 16, "")
@@ -505,24 +505,24 @@ do
         gmBg:SetAllPoints()
         gmBg:SetColorTexture(RS.BG_R, RS.BG_G, RS.BG_B, RS.QT_ALPHA)
         local function ApplyButtonStyle(button)
-            local d = GetFFD(button)
+            local skinData = GetFFD(button)
             -- Blizzard's pooled buttons keep skin data in this addon's FFD; CUI's two custom
             -- Game Menu buttons are created by the parent addon and keep theirs in ITS FFD. Fall back to that store so live option changes also reach the CludesUI button.
-            if not d.gameMenuInset and CludesUI._GetFFD then
-                d = CludesUI._GetFFD(button)
+            if not skinData.gameMenuInset and CludesUI._GetFFD then
+                skinData = CludesUI._GetFFD(button)
             end
-            if not d.gameMenuInset then
+            if not skinData.gameMenuInset then
                 return
             end
             local c = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
                 or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
-            d.gameMenuButtonBg:SetColorTexture(c.r, c.g, c.b, c.a == nil and 0.8 or c.a)
-            CludesUI._applyBlizzardConfiguredBorder(d.gameMenuInset, "popupMenuButton", 1)
+            skinData.gameMenuButtonBg:SetColorTexture(c.r, c.g, c.b, c.a == nil and 0.8 or c.a)
+            CludesUI._applyBlizzardConfiguredBorder(skinData.gameMenuInset, "popupMenuButton", 1)
             local fontStr = button:GetFontString()
             -- Native mode keeps Blizzard's own gold on our dark inset.
             if fontStr and CludesUI._getPopupMenuElementMode() ~= "native" then
-                local r, g, b = CludesUI._getPopupMenuButtonTextColor()
-                fontStr:SetTextColor(r, g, b, 1)
+                local region, g, button = CludesUI._getPopupMenuButtonTextColor()
+                fontStr:SetTextColor(region, g, button, 1)
             end
         end
         local function ApplyMenuStyle()
@@ -552,9 +552,9 @@ do
                     GetFFD(menuBtn).skinned = true
                     local regions2 = { menuBtn:GetRegions() }
                     for jdx = 1, #regions2 do
-                        local r = regions2[jdx]
-                        if r and r:IsObjectType("Texture") and r ~= menuBtn:GetFontString() then
-                            r:SetAlpha(0)
+                        local region = regions2[jdx]
+                        if region and region:IsObjectType("Texture") and region ~= menuBtn:GetFontString() then
+                            region:SetAlpha(0)
                         end
                     end
                     if menuBtn.Left then

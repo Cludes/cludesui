@@ -54,7 +54,7 @@ local function SkinEnabled()
 end
 
 -- Unlike WSkin.AddBorder: OVERLAY/7 strips at the default container level.
-local function AddBorder(widget, r, g, b, a)
+local function AddBorder(widget, region, g, b, a)
     if GetFFD(widget).border then
         return
     end
@@ -62,7 +62,7 @@ local function AddBorder(widget, r, g, b, a)
     if Pix and Pix.CreateBorder then
         Pix.CreateBorder(
             widget,
-            r or Theme.brdR,
+            region or Theme.brdR,
             g or Theme.brdG,
             b or Theme.brdB,
             a or Theme.brdA,
@@ -85,43 +85,43 @@ end
 local function Restrip()
     for widget, keep in pairs(_restrip) do
         if widget and not widget:IsForbidden() then
-            local k = (type(keep) == "table") and keep or nil
-            local d = FFD[widget]
+            local keyName = (type(keep) == "table") and keep or nil
+            local skinData = FFD[widget]
             -- Protect every texture we created ourselves: the backdrop pieces,
             -- the hover highlight, and state bars. Without this the re-strip
             -- pass zeroes our own hover/selection art along with Blizzard's.
-            if d then
-                k = k or {}
-                if d.bg then
-                    k[d.bg] = true
+            if skinData then
+                keyName = keyName or {}
+                if skinData.bg then
+                    keyName[skinData.bg] = true
                 end
-                if d.bgOverlay then
-                    k[d.bgOverlay] = true
+                if skinData.bgOverlay then
+                    keyName[skinData.bgOverlay] = true
                 end
-                if d.topBar then
-                    k[d.topBar] = true
+                if skinData.topBar then
+                    keyName[skinData.topBar] = true
                 end
-                if d.hover then
-                    k[d.hover] = true
+                if skinData.hover then
+                    keyName[skinData.hover] = true
                 end
-                if d.selWash then
-                    k[d.selWash] = true
+                if skinData.selWash then
+                    keyName[skinData.selWash] = true
                 end
-                if d.leftWash then
-                    k[d.leftWash] = true
+                if skinData.leftWash then
+                    keyName[skinData.leftWash] = true
                 end
-                if d.leftSep then
-                    k[d.leftSep] = true
+                if skinData.leftSep then
+                    keyName[skinData.leftSep] = true
                 end
             end
             -- AdoptShell's Modern flat backdrop (the style's only background)
             -- lives in the ENGINE's table.
             local ed = EngineFFD[widget]
             if ed and ed.modernBg then
-                k = k or {}
-                k[ed.modernBg] = true
+                keyName = keyName or {}
+                keyName[ed.modernBg] = true
             end
-            FadeRegions(widget, k)
+            FadeRegions(widget, keyName)
         end
     end
 end
@@ -137,22 +137,22 @@ local function SkinAtlasPanel(widget)
     if not widget or widget:IsForbidden() then
         return
     end
-    local d = GetFFD(widget)
+    local skinData = GetFFD(widget)
     local keep = {}
-    if d.bg then
-        keep[d.bg] = true
+    if skinData.bg then
+        keep[skinData.bg] = true
     end
-    if d.bgOverlay then
-        keep[d.bgOverlay] = true
+    if skinData.bgOverlay then
+        keep[skinData.bgOverlay] = true
     end
-    if d.topBar then
-        keep[d.topBar] = true
+    if skinData.topBar then
+        keep[skinData.topBar] = true
     end
-    if d.leftWash then
-        keep[d.leftWash] = true
+    if skinData.leftWash then
+        keep[skinData.leftWash] = true
     end
-    if d.leftSep then
-        keep[d.leftSep] = true
+    if skinData.leftSep then
+        keep[skinData.leftSep] = true
     end
     local ed = EngineFFD[widget]
     if ed and ed.modernBg then
@@ -160,15 +160,15 @@ local function SkinAtlasPanel(widget)
     end
     FadeRegions(widget, keep)
     Register(widget, true)
-    if not d.bg then
+    if not skinData.bg then
         local backdrop = widget:CreateTexture(nil, "BACKGROUND", nil, -8)
         backdrop:SetTexture("Interface\\AddOns\\CludesUI\\media\\modern_blizz.png")
         backdrop:SetAllPoints(widget)
-        d.bg = backdrop
+        skinData.bg = backdrop
         local overlayFrame = widget:CreateTexture(nil, "BACKGROUND", nil, -7)
         overlayFrame:SetColorTexture(0, 0, 0, 0.62)
         overlayFrame:SetAllPoints(widget)
-        d.bgOverlay = overlayFrame
+        skinData.bgOverlay = overlayFrame
 
         -- Black top bar behind the window title, matching the engine shell's
         -- strip. Sits above both style backdrops (-8/-7/-6) and below content.
@@ -177,7 +177,7 @@ local function SkinAtlasPanel(widget)
         topBar:SetPoint("TOPLEFT")
         topBar:SetPoint("TOPRIGHT")
         topBar:SetHeight(25)
-        d.topBar = topBar
+        skinData.topBar = topBar
 
         local BASE_L, BASE_R, BASE_T, BASE_B = 0.25, 1, 0, 0.75
         local BASE_U, BASE_V = BASE_R - BASE_L, BASE_B - BASE_T
@@ -217,7 +217,7 @@ local function SkinAtlasPanel(widget)
     -- Register with the window-style system so the Modern flat backdrop can
     -- live-swap in for the atlas when the user picks Modern for this window.
     if mod.WSkin and mod.WSkin.AdoptShell then
-        mod.WSkin.AdoptShell("lfg", widget, d.bg, d.bgOverlay)
+        mod.WSkin.AdoptShell("lfg", widget, skinData.bg, skinData.bgOverlay)
     end
 end
 
@@ -228,22 +228,22 @@ local function SkinPanel(widget, options)
         return
     end
     options = options or {}
-    local d = GetFFD(widget)
+    local skinData = GetFFD(widget)
     local keep = {}
-    if d.bg then
-        keep[d.bg] = true
+    if skinData.bg then
+        keep[skinData.bg] = true
     end
     FadeRegions(widget, keep)
     Register(widget, true)
-    if not d.bg and not options.noBg then
-        local r, g, b, a = Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA
+    if not skinData.bg and not options.noBg then
+        local region, g, b, a = Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA
         if options.inset then
-            r, g, b, a = Theme.insetR, Theme.insetG, Theme.insetB, Theme.insetA
+            region, g, b, a = Theme.insetR, Theme.insetG, Theme.insetB, Theme.insetA
         end
         local backdrop = widget:CreateTexture(nil, "BACKGROUND", nil, -7)
-        backdrop:SetColorTexture(r, g, b, a)
+        backdrop:SetColorTexture(region, g, b, a)
         backdrop:SetAllPoints(widget)
-        d.bg = backdrop
+        skinData.bg = backdrop
     end
     if not options.noBorder then
         AddBorder(widget)
@@ -272,18 +272,18 @@ local function SkinButton(button, keepKeys)
     if not button or button:IsForbidden() then
         return
     end
-    local d = GetFFD(button)
-    if d.skinned then
+    local skinData = GetFFD(button)
+    if skinData.skinned then
         return
     end
-    d.skinned = true
+    skinData.skinned = true
 
     local keep = {}
     if keepKeys then
-        for _, k in ipairs(keepKeys) do
-            local r = button[k]
-            if r then
-                keep[r] = true
+        for _, keyName in ipairs(keepKeys) do
+            local region = button[keyName]
+            if region then
+                keep[region] = true
             end
         end
     end
@@ -300,21 +300,21 @@ local function SkinButton(button, keepKeys)
             t:SetAlpha(0)
         end
     end
-    for _, k in ipairs({ "Left", "Middle", "Right", "LeftSeparator", "RightSeparator" }) do
-        local r = button[k]
-        if r and not keep[r] and r.SetAlpha then
-            r:SetAlpha(0)
+    for _, keyName in ipairs({ "Left", "Middle", "Right", "LeftSeparator", "RightSeparator" }) do
+        local region = button[keyName]
+        if region and not keep[region] and region.SetAlpha then
+            region:SetAlpha(0)
         end
     end
 
-    local fill = SolidTex(button, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
-    fill:SetAllPoints(button)
-    d.bg = fill
+    local fillTex = SolidTex(button, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
+    fillTex:SetAllPoints(button)
+    skinData.bg = fillTex
     AddBorder(button)
 
     local hover = SolidTex(button, "HIGHLIGHT", 1, 1, 1, 0.1)
     hover:SetAllPoints(button)
-    d.hover = hover
+    skinData.hover = hover
 
     -- Button labels keep Blizzard's font (no-font widget policy).
     Register(button, keep)
@@ -327,8 +327,8 @@ local function LiftButton(button)
     if not button or button:IsForbidden() then
         return
     end
-    local d = GetFFD(button)
-    if d.lifted then
+    local skinData = GetFFD(button)
+    if skinData.lifted then
         return
     end
     local num = button:GetNumPoints() or 0
@@ -343,7 +343,7 @@ local function LiftButton(button)
         end
         pts[idx] = { p, rel, rp, posX or 0, (posY or 0) + 5 }
     end
-    d.lifted = true
+    skinData.lifted = true
     button:ClearAllPoints()
     for idx = 1, #pts do
         local t = pts[idx]
@@ -352,25 +352,25 @@ local function LiftButton(button)
 end
 
 -- Search / input box -> flat block, keep the magnifier + clear button art.
-local function SkinEditBox(eb)
-    if not eb or eb:IsForbidden() then
+local function SkinEditBox(editField)
+    if not editField or editField:IsForbidden() then
         return
     end
-    local d = GetFFD(eb)
-    if d.bg then
+    local skinData = GetFFD(editField)
+    if skinData.bg then
         return
     end
-    FadeRegions(eb)
-    for _, k in ipairs({ "Left", "Right", "Middle" }) do
-        local r = eb[k]
-        if r and r.SetAlpha then
-            r:SetAlpha(0)
+    FadeRegions(editField)
+    for _, keyName in ipairs({ "Left", "Right", "Middle" }) do
+        local region = editField[keyName]
+        if region and region.SetAlpha then
+            region:SetAlpha(0)
         end
     end
-    local fill = SolidTex(eb, "BACKGROUND", 0.02, 0.02, 0.02, 1)
-    fill:SetAllPoints(eb)
-    d.bg = fill
-    AddBorder(eb, 0.25, 0.25, 0.25, 1)
+    local fillTex = SolidTex(editField, "BACKGROUND", 0.02, 0.02, 0.02, 1)
+    fillTex:SetAllPoints(editField)
+    skinData.bg = fillTex
+    AddBorder(editField, 0.25, 0.25, 0.25, 1)
 end
 
 -- Checkbox -> the guild-roster "Show Offline Members" treatment: strip ALL
@@ -382,16 +382,16 @@ local function SkinCheckbox(cb)
     if not cb or cb:IsForbidden() then
         return
     end
-    local d = GetFFD(cb)
-    if d.skinned then
+    local skinData = GetFFD(cb)
+    if skinData.skinned then
         return
     end
-    d.skinned = true
-    local regions = { cb:GetRegions() }
-    for idx = 1, #regions do
-        local r = regions[idx]
-        if r and r.IsObjectType and r:IsObjectType("Texture") and r.SetTexture then
-            r:SetTexture("")
+    skinData.skinned = true
+    local regionList = { cb:GetRegions() }
+    for idx = 1, #regionList do
+        local region = regionList[idx]
+        if region and region.IsObjectType and region:IsObjectType("Texture") and region.SetTexture then
+            region:SetTexture("")
         end
     end
     for _, g in ipairs({
@@ -409,17 +409,17 @@ local function SkinCheckbox(cb)
     local boxF = CreateFrame("Frame", nil, cb)
     boxF:SetSize(14, 14)
     boxF:SetPoint("LEFT", cb, "LEFT", 4, 0)
-    local fill = SolidTex(boxF, "BACKGROUND", 0.02, 0.02, 0.02, 1)
-    fill:SetAllPoints(boxF)
-    d.bg = fill
+    local fillTex = SolidTex(boxF, "BACKGROUND", 0.02, 0.02, 0.02, 1)
+    fillTex:SetAllPoints(boxF)
+    skinData.bg = fillTex
     AddBorder(boxF, 0.25, 0.25, 0.25, 1)
     local tick = boxF:CreateTexture(nil, "OVERLAY")
     tick:SetPoint("TOPLEFT", 3, -3)
     tick:SetPoint("BOTTOMRIGHT", -3, 3)
     tick:SetColorTexture(Theme.accR, Theme.accG, Theme.accB, 1)
-    local wash = SolidTex(boxF, "ARTWORK", 1, 1, 1, 0.1)
-    wash:SetAllPoints(boxF)
-    wash:Hide()
+    local washTex = SolidTex(boxF, "ARTWORK", 1, 1, 1, 0.1)
+    washTex:SetAllPoints(boxF)
+    washTex:Hide()
     local hovering = false
     local function updState()
         local checked = cb:GetChecked()
@@ -432,13 +432,13 @@ local function SkinCheckbox(cb)
                 tick:Show()
                 tick:SetAlphaFromBoolean(checked, 1, 0)
             end
-            wash:SetShown(hovering)
+            washTex:SetShown(hovering)
             return
         end
         checked = checked and true or false
         tick:SetAlpha(1)
         tick:SetShown(checked)
-        wash:SetShown(hovering or checked)
+        washTex:SetShown(hovering or checked)
     end
     cb:HookScript("OnEnter", function()
         hovering = true
@@ -459,19 +459,19 @@ local function SkinDropdown(dropdown)
     if not dropdown or dropdown:IsForbidden() then
         return
     end
-    local d = GetFFD(dropdown)
-    if d.skinned then
+    local skinData = GetFFD(dropdown)
+    if skinData.skinned then
         return
     end
-    d.skinned = true
+    skinData.skinned = true
     FadeRegions(dropdown)
     -- Legacy UIDropDownMenu textures, if present.
     local name = dropdown.GetName and dropdown:GetName()
     if name then
         for _, suffix in ipairs({ "Left", "Middle", "Right" }) do
-            local r = _G[name .. suffix]
-            if r and r.SetAlpha then
-                r:SetAlpha(0)
+            local region = _G[name .. suffix]
+            if region and region.SetAlpha then
+                region:SetAlpha(0)
             end
         end
     end
@@ -481,21 +481,21 @@ local function SkinDropdown(dropdown)
     if dropdown.Texture then
         dropdown.Texture:SetAlpha(0)
     end
-    local fill = SolidTex(dropdown, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
-    fill:SetAllPoints(dropdown)
-    d.bg = fill
+    local fillTex = SolidTex(dropdown, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
+    fillTex:SetAllPoints(dropdown)
+    skinData.bg = fillTex
     AddBorder(dropdown, 0.25, 0.25, 0.25, 1)
     -- Slight lighten on hover.
     local hover = SolidTex(dropdown, "HIGHLIGHT", 1, 1, 1, 0.05)
     hover:SetAllPoints(dropdown)
-    d.hover = hover
+    skinData.hover = hover
     -- Our own arrow on the right (Blizzard's is faded with the rest).
     -- Sized to the atlas's native 62x44 aspect.
-    local arrow = dropdown:CreateTexture(nil, "OVERLAY")
-    arrow:SetAtlas("Azerite-PointingArrow")
-    arrow:SetSize(14, 10)
-    arrow:SetPoint("RIGHT", dropdown, "RIGHT", -6, 0)
-    d.arrow = arrow
+    local arrowTex = dropdown:CreateTexture(nil, "OVERLAY")
+    arrowTex:SetAtlas("Azerite-PointingArrow")
+    arrowTex:SetSize(14, 10)
+    arrowTex:SetPoint("RIGHT", dropdown, "RIGHT", -6, 0)
+    skinData.arrow = arrowTex
 end
 
 -- MinimalScrollBar -> strip track/arrows; the thumb becomes a slim 5px white
@@ -504,13 +504,13 @@ local function SkinScrollBar(scrollBar)
     if not scrollBar or scrollBar:IsForbidden() then
         return
     end
-    local d = GetFFD(scrollBar)
-    if d.skinned then
+    local skinData = GetFFD(scrollBar)
+    if skinData.skinned then
         return
     end
-    d.skinned = true
-    for _, k in ipairs({ "Back", "Forward" }) do
-        local b = scrollBar[k]
+    skinData.skinned = true
+    for _, keyName in ipairs({ "Back", "Forward" }) do
+        local b = scrollBar[keyName]
         if b then
             FadeRegions(b)
             if b.Texture then
@@ -538,73 +538,73 @@ local SkinCloseButton = Skin.CloseButton
 
 -- PVEFrame bottom tab -> CharacterSheet tab pattern (bg + accent underline when
 -- active). Visuals driven by UpdateTabVisuals (reads PVEFrame.selectedTab).
-local function SkinTab(tab)
-    if not tab or tab:IsForbidden() then
+local function SkinTab(tabBtn)
+    if not tabBtn or tabBtn:IsForbidden() then
         return
     end
-    local d = GetFFD(tab)
-    if d.bg then
+    local skinData = GetFFD(tabBtn)
+    if skinData.bg then
         return
     end
-    local regions = { tab:GetRegions() }
-    for jdx = 1, #regions do
-        local r = regions[jdx]
-        if r and r:IsObjectType("Texture") then
-            r:SetTexture("")
-            if r.SetAtlas then
-                r:SetAtlas("")
+    local regionList = { tabBtn:GetRegions() }
+    for jdx = 1, #regionList do
+        local region = regionList[jdx]
+        if region and region:IsObjectType("Texture") then
+            region:SetTexture("")
+            if region.SetAtlas then
+                region:SetAtlas("")
             end
         end
     end
-    for _, k in ipairs({ "Left", "Middle", "Right", "LeftDisabled", "MiddleDisabled", "RightDisabled" }) do
-        if tab[k] then
-            tab[k]:SetTexture("")
+    for _, keyName in ipairs({ "Left", "Middle", "Right", "LeftDisabled", "MiddleDisabled", "RightDisabled" }) do
+        if tabBtn[keyName] then
+            tabBtn[keyName]:SetTexture("")
         end
     end
-    local highlight = tab.GetHighlightTexture and tab:GetHighlightTexture()
+    local highlight = tabBtn.GetHighlightTexture and tabBtn:GetHighlightTexture()
     if highlight then
         highlight:SetTexture("")
     end
 
-    d.bg = SolidTex(tab, "BACKGROUND", 0.068, 0.056, 0.052, 1)
-    d.bg:SetAllPoints()
+    skinData.bg = SolidTex(tabBtn, "BACKGROUND", 0.068, 0.056, 0.052, 1)
+    skinData.bg:SetAllPoints()
 
-    local activeHL = tab:CreateTexture(nil, "ARTWORK", nil, -6)
+    local activeHL = tabBtn:CreateTexture(nil, "ARTWORK", nil, -6)
     activeHL:SetAllPoints()
     activeHL:SetColorTexture(1, 1, 1, 0.02)
     activeHL:SetBlendMode("ADD")
     activeHL:Hide()
-    d.activeHL = activeHL
+    skinData.activeHL = activeHL
 
-    local blizLabel = tab.GetFontString and tab:GetFontString()
+    local blizLabel = tabBtn.GetFontString and tabBtn:GetFontString()
     local labelText = (blizLabel and blizLabel:GetText()) or ""
     if blizLabel then
         blizLabel:SetTextColor(0, 0, 0, 0)
     end
-    if tab.SetPushedTextOffset then
-        tab:SetPushedTextOffset(0, 0)
+    if tabBtn.SetPushedTextOffset then
+        tabBtn:SetPushedTextOffset(0, 0)
     end
 
-    local label = tab:CreateFontString(nil, "OVERLAY")
+    local label = tabBtn:CreateFontString(nil, "OVERLAY")
     label:SetFont(Theme.fontPath, 11, "")
-    label:SetPoint("CENTER", tab, "CENTER", 0, 0)
+    label:SetPoint("CENTER", tabBtn, "CENTER", 0, 0)
     label:SetText(labelText)
-    d.label = label
-    hooksecurefunc(tab, "SetText", function(_, newText)
-        if newText and d.label then
-            d.label:SetText(newText)
+    skinData.label = label
+    hooksecurefunc(tabBtn, "SetText", function(_, newText)
+        if newText and skinData.label then
+            skinData.label:SetText(newText)
         end
     end)
 
-    local underline = tab:CreateTexture(nil, "OVERLAY", nil, 6)
+    local underline = tabBtn:CreateTexture(nil, "OVERLAY", nil, 6)
     if CUI and CUI.PanelPP and CUI.PanelPP.DisablePixelSnap then
         CUI.PanelPP.DisablePixelSnap(underline)
         underline:SetHeight(CUI.PanelPP.mult or 1)
     else
         underline:SetHeight(1)
     end
-    underline:SetPoint("BOTTOMLEFT", tab, "BOTTOMLEFT", 0, 0)
-    underline:SetPoint("BOTTOMRIGHT", tab, "BOTTOMRIGHT", 0, 0)
+    underline:SetPoint("BOTTOMLEFT", tabBtn, "BOTTOMLEFT", 0, 0)
+    underline:SetPoint("BOTTOMRIGHT", tabBtn, "BOTTOMRIGHT", 0, 0)
     -- Color + visibility follow the Blizzard Window Skins "Global Options"
     -- accent-bar setting; the window-skin engine recolors registered
     -- underlines on option edits and accent changes.
@@ -620,7 +620,7 @@ local function SkinTab(tab)
         CUI.RegAccent({ type = "solid", obj = underline, a = 1 })
     end
     underline:Hide()
-    d.underline = underline
+    skinData.underline = underline
 end
 
 local _gfLooksHooked = false
@@ -629,18 +629,18 @@ local _gfLooksHooked = false
 -- is anchored to PVEFrame, so without this it persists onto the Mythic+ tab
 -- (which has no rail). Gate its visibility on a rail-owning frame being shown.
 local function UpdateRailZone()
-    local d = PVEFrame and FFD[PVEFrame]
-    if not d then
+    local skinData = PVEFrame and FFD[PVEFrame]
+    if not skinData then
         return
     end
     local show = (GroupFinderFrame and GroupFinderFrame:IsShown())
         or (_G.PVPUIFrame and _G.PVPUIFrame:IsShown())
         or false
-    if d.leftWash then
-        d.leftWash:SetShown(show and true or false)
+    if skinData.leftWash then
+        skinData.leftWash:SetShown(show and true or false)
     end
-    if d.leftSep then
-        d.leftSep:SetShown(show and true or false)
+    if skinData.leftSep then
+        skinData.leftSep:SetShown(show and true or false)
     end
 end
 
@@ -652,18 +652,18 @@ local function UpdateTabVisuals()
     local sel = PVEFrame.selectedTab or 1
     local barsOn = not (mod.WSkin and mod.WSkin.AccentBarShown) or mod.WSkin.AccentBarShown()
     for idx = 1, 4 do
-        local tab = _G["PVEFrameTab" .. idx]
-        local d = tab and FFD[tab]
-        if d then
+        local tabBtn = _G["PVEFrameTab" .. idx]
+        local skinData = tabBtn and FFD[tabBtn]
+        if skinData then
             local isActive = (sel == idx)
-            if d.label then
-                d.label:SetTextColor(1, 1, 1, isActive and 1 or 0.5)
+            if skinData.label then
+                skinData.label:SetTextColor(1, 1, 1, isActive and 1 or 0.5)
             end
-            if d.underline then
-                d.underline:SetShown(isActive and barsOn)
+            if skinData.underline then
+                skinData.underline:SetShown(isActive and barsOn)
             end
-            if d.activeHL then
-                d.activeHL:SetShown(isActive)
+            if skinData.activeHL then
+                skinData.activeHL:SetShown(isActive)
             end
         end
     end
@@ -686,8 +686,8 @@ end
 -- Re-apply a rail button's converted anchors from its stored spec. Chained
 -- buttons hang off the previous button; the chain root pins to the rail wash.
 local function ApplyRailAnchors(button)
-    local d = FFD[button]
-    local a = d and d.railAnchors
+    local skinData = FFD[button]
+    local a = skinData and skinData.railAnchors
     if not a then
         return
     end
@@ -705,37 +705,37 @@ local function SkinCategoryButton(button, options)
     if not button or button:IsForbidden() then
         return
     end
-    local d = GetFFD(button)
-    d.isRail = true
+    local skinData = GetFFD(button)
+    skinData.isRail = true
     -- Full-width cards: pin both side edges to the rail-column wash so every
     -- card runs edge-to-edge (offset guesses always left a gap against the
     -- stock insets). One-shot per button, retries until laid out. The chain
     -- root keeps its exact vertical seat; chained buttons keep their vertical
     -- gap (closed 10px) and ride the 12px-taller previous button down.
-    if not d.railWide then
+    if not skinData.railWide then
         local hgt = button:GetHeight()
         local pd = PVEFrame and FFD[PVEFrame]
-        local wash = pd and pd.leftWash
-        if hgt and hgt > 10 and wash and button:GetTop() and wash:GetTop() then
-            d.railWide = true
+        local washTex = pd and pd.leftWash
+        if hgt and hgt > 10 and washTex and button:GetTop() and washTex:GetTop() then
+            skinData.railWide = true
             button:SetHeight(hgt + 12)
             local p, rel, rp, posX, posY = button:GetPoint(1)
             if p and rel and FFD[rel] and FFD[rel].isRail then
-                d.railAnchors = { rel = rel, y = (posY or 0) + 10 }
+                skinData.railAnchors = { rel = rel, y = (posY or 0) + 10 }
             else
-                d.railAnchors = { wash = wash, y = button:GetTop() - wash:GetTop() }
+                skinData.railAnchors = { wash = washTex, y = button:GetTop() - washTex:GetTop() }
             end
             ApplyRailAnchors(button)
             -- Blizzard re-anchors these buttons from its own layout passes
             -- (the PvP rail re-seats on every show), stomping a one-shot
             -- conversion: re-assert ours synchronously, reentry-guarded.
             hooksecurefunc(button, "SetPoint", function()
-                if d.inPin then
+                if skinData.inPin then
                     return
                 end
-                d.inPin = true
+                skinData.inPin = true
                 ApplyRailAnchors(button)
-                d.inPin = false
+                skinData.inPin = false
             end)
         end
     end
@@ -774,17 +774,17 @@ local function SkinCategoryButton(button, options)
             end
         end
     end
-    if d.skinned then
+    if skinData.skinned then
         return
     end
-    d.skinned = true
+    skinData.skinned = true
 
     local keep = {}
     -- D&R buttons use lowercase keys (icon/ring); the PvP queue buttons use
     -- capitalized ones (Icon/Ring). Same template family otherwise.
-    local icon = button.icon or button.Icon
-    if icon then
-        keep[icon] = true
+    local iconTex = button.icon or button.Icon
+    if iconTex then
+        keep[iconTex] = true
     end
     if button.bgGlow then
         button.bgGlow:SetAlpha(0)
@@ -819,7 +819,7 @@ local function SkinCategoryButton(button, options)
     -- VISIBLE art reads edge-to-edge (user-measured offsets).
     cardFrame:SetPoint("TOPLEFT", button, "TOPLEFT", -6, -2)
     cardFrame:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 2, 2)
-    d.bg = cardFrame
+    skinData.bg = cardFrame
 
     -- Hover + active wash: subtle white clamped 3px inside the card rect
     -- (the card atlas bakes in soft transparent edges, so a wash on the full
@@ -827,14 +827,14 @@ local function SkinCategoryButton(button, options)
     local hover = SolidTex(button, "HIGHLIGHT", 1, 1, 1, 0.05)
     hover:SetPoint("TOPLEFT", cardFrame, "TOPLEFT", 3, -3)
     hover:SetPoint("BOTTOMRIGHT", cardFrame, "BOTTOMRIGHT", -3, 3)
-    d.hover = hover
+    skinData.hover = hover
 
     -- Held on while this category is selected.
     local selWash = SolidTex(button, "ARTWORK", 1, 1, 1, 0.05)
     selWash:SetPoint("TOPLEFT", cardFrame, "TOPLEFT", 3, -3)
     selWash:SetPoint("BOTTOMRIGHT", cardFrame, "BOTTOMRIGHT", -3, 3)
     selWash:Hide()
-    d.selWash = selWash
+    skinData.selWash = selWash
 
     -- Re-derive the selection visuals after Blizzard's own click handler has
     -- processed the category change.
@@ -890,9 +890,9 @@ local function UpdateCategorySelection()
     local sel = ResolveRailSelection(CategoryButton, _gfSelIndex, _G.GroupFinderFrame)
     for idx = 1, 4 do
         local button = CategoryButton(idx)
-        local d = button and FFD[button]
-        if d and d.selWash then
-            d.selWash:SetShown((sel == idx or sel == button) and true or false)
+        local skinData = button and FFD[button]
+        if skinData and skinData.selWash then
+            skinData.selWash:SetShown((sel == idx or sel == button) and true or false)
         end
     end
 end
@@ -939,37 +939,37 @@ local function Skin_PVEFrame()
     -- Rail zone: 10% black wash over the LEFT sidebar column + a
     -- 1-physical-px divider on its right edge, between the rail tabs and the
     -- content. Rides the left inset's rect (the definitive rail column).
-    local d = GetFFD(PVEFrame)
-    if not d.leftWash then
-        local px = 1
+    local skinData = GetFFD(PVEFrame)
+    if not skinData.leftWash then
+        local pixel = 1
         local PPx = CUI and CUI.PP
         local es = PVEFrame:GetEffectiveScale()
         if PPx and PPx.perfect and es and es > 0 then
-            px = PPx.perfect / es
+            pixel = PPx.perfect / es
         end
-        local wash = PVEFrame:CreateTexture(nil, "BACKGROUND", nil, -6)
-        wash:SetColorTexture(0, 0, 0, 0.1)
+        local washTex = PVEFrame:CreateTexture(nil, "BACKGROUND", nil, -6)
+        washTex:SetColorTexture(0, 0, 0, 0.1)
         if leftInset then
-            wash:SetAllPoints(leftInset)
+            washTex:SetAllPoints(leftInset)
         else
-            wash:SetPoint("TOPLEFT", PVEFrame, "TOPLEFT", 7, -62)
-            wash:SetPoint("BOTTOMRIGHT", PVEFrame, "BOTTOMLEFT", 206, 7)
+            washTex:SetPoint("TOPLEFT", PVEFrame, "TOPLEFT", 7, -62)
+            washTex:SetPoint("BOTTOMRIGHT", PVEFrame, "BOTTOMLEFT", 206, 7)
         end
-        d.leftWash = wash
+        skinData.leftWash = washTex
         local sep = PVEFrame:CreateTexture(nil, "ARTWORK")
         sep:SetColorTexture(0.15, 0.15, 0.15, 1)
-        sep:SetWidth(px)
-        sep:SetPoint("TOPLEFT", wash, "TOPRIGHT", 0, 0)
-        sep:SetPoint("BOTTOMLEFT", wash, "BOTTOMRIGHT", 0, 0)
-        d.leftSep = sep
+        sep:SetWidth(pixel)
+        sep:SetPoint("TOPLEFT", washTex, "TOPRIGHT", 0, 0)
+        sep:SetPoint("BOTTOMLEFT", washTex, "BOTTOMRIGHT", 0, 0)
+        skinData.leftSep = sep
     end
 
     local pveTabs = {}
     for idx = 1, 4 do
-        local tab = _G["PVEFrameTab" .. idx]
-        if tab then
-            SkinTab(tab)
-            pveTabs[#pveTabs + 1] = tab
+        local tabBtn = _G["PVEFrameTab" .. idx]
+        if tabBtn then
+            SkinTab(tabBtn)
+            pveTabs[#pveTabs + 1] = tabBtn
         end
     end
     if mod.WSkin and mod.WSkin.NormalizeTabRow then
@@ -1025,17 +1025,17 @@ local function SkinLFGCategoryButton(button)
         return
     end
     SkinButton(button)
-    local d = GetFFD(button)
-    if not d.selWash then
+    local skinData = GetFFD(button)
+    if not skinData.selWash then
         -- ARTWORK below the button label (sublevel -1) and above the fill.
         local selWash = SolidTex(button, "ARTWORK", 1, 1, 1, 0.05, -1)
         selWash:SetAllPoints(button)
         selWash:Hide()
-        d.selWash = selWash
+        skinData.selWash = selWash
     end
     -- Match the sidebar rail: hover + active both 0.05 white.
-    if d.hover then
-        d.hover:SetColorTexture(1, 1, 1, 0.05)
+    if skinData.hover then
+        skinData.hover:SetColorTexture(1, 1, 1, 0.05)
     end
 end
 
@@ -1057,9 +1057,9 @@ local function UpdateLFGCategorySelection()
         return
     end
     for _, button in ipairs(CS.CategoryButtons) do
-        local d = FFD[button]
-        if d and d.selWash then
-            d.selWash:SetShown(IsLFGCategorySelected(CS, button) and true or false)
+        local skinData = FFD[button]
+        if skinData and skinData.selWash then
+            skinData.selWash:SetShown(IsLFGCategorySelected(CS, button) and true or false)
         end
     end
 end
@@ -1093,10 +1093,10 @@ local function Skin_LFGList()
                     return
                 end
                 SkinLFGCategoryButton(b)
-                local d = FFD[b]
-                if d and d.selWash then
+                local skinData = FFD[b]
+                if skinData and skinData.selWash then
                     local sel = (cs.selectedCategory == categoryID) and (cs.selectedFilters == filters)
-                    d.selWash:SetShown(sel and true or false)
+                    skinData.selWash:SetShown(sel and true or false)
                 end
             end)
         end
@@ -1163,13 +1163,13 @@ local function Skin_LFGList()
         if EC.Description then
             SkinEditBox(EC.Description)
         end
-        for _, k in ipairs({ "GroupDropdown", "ActivityDropdown", "PlayStyleDropdown" }) do
-            if EC[k] then
-                SkinDropdown(EC[k])
+        for _, keyName in ipairs({ "GroupDropdown", "ActivityDropdown", "PlayStyleDropdown" }) do
+            if EC[keyName] then
+                SkinDropdown(EC[keyName])
             end
         end
-        for _, k in ipairs({ "ItemLevel", "MythicPlusRating", "PVPRating", "PvpItemLevel", "VoiceChat" }) do
-            local req = EC[k]
+        for _, keyName in ipairs({ "ItemLevel", "MythicPlusRating", "PVPRating", "PvpItemLevel", "VoiceChat" }) do
+            local req = EC[keyName]
             if req then
                 if req.EditBox then
                     SkinEditBox(req.EditBox)
@@ -1179,9 +1179,9 @@ local function Skin_LFGList()
                 end
             end
         end
-        for _, k in ipairs({ "PrivateGroup", "CrossFactionGroup" }) do
-            if EC[k] and EC[k].CheckButton then
-                SkinCheckbox(EC[k].CheckButton)
+        for _, keyName in ipairs({ "PrivateGroup", "CrossFactionGroup" }) do
+            if EC[keyName] and EC[keyName].CheckButton then
+                SkinCheckbox(EC[keyName].CheckButton)
             end
         end
     end
@@ -1213,14 +1213,14 @@ local function Skin_LFGList()
         if AV.AutoAcceptButton then
             SkinCheckbox(AV.AutoAcceptButton)
         end
-        for _, k in ipairs({
+        for _, keyName in ipairs({
             "NameColumnHeader",
             "RoleColumnHeader",
             "ItemLevelColumnHeader",
             "RatingColumnHeader",
         }) do
-            if AV[k] then
-                SkinButton(AV[k])
+            if AV[keyName] then
+                SkinButton(AV[keyName])
             end
         end
         if AV.ScrollBar then
@@ -1271,9 +1271,9 @@ local function FadeRaidFinderArt()
         if rb.SetAtlas then
             rb:SetAtlas("")
         end
-        local rd = GetFFD(rb)
-        if not rd.alphaGuarded then
-            rd.alphaGuarded = true
+        local regionData = GetFFD(rb)
+        if not regionData.alphaGuarded then
+            regionData.alphaGuarded = true
             hooksecurefunc(rb, "SetAlpha", function(t)
                 if _rbGuard then
                     return
@@ -1380,19 +1380,19 @@ local function RewardQualityColor(button)
     if quality == nil or issecretvalue(quality) or type(quality) ~= "number" then
         return
     end
-    local col = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality]
-    if not (col and col.r) then
+    local colour = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality]
+    if not (colour and colour.r) then
         return
     end
     -- Achromatic qualities (poor grey, common white) are not a cue -- they read
     -- as a colored border that happens to be grey. Same chroma test the engine
     -- applies when it reads a ring, so the two surfaces agree on what counts.
-    local hi = math.max(col.r, col.g, col.b)
-    local lo = math.min(col.r, col.g, col.b)
+    local hi = math.max(colour.r, colour.g, colour.b)
+    local lo = math.min(colour.r, colour.g, colour.b)
     if (hi - lo) <= 0.1 then
         return
     end
-    return col.r, col.g, col.b
+    return colour.r, colour.g, colour.b
 end
 
 -- One reward tile, treated exactly like a quest reward: strip the rings and the
@@ -1414,13 +1414,13 @@ local function SkinRewardTile(button)
     if not (wsk and wsk.SquareIcon and button.Icon) then
         return
     end
-    local r, g, b = RewardQualityColor(button)
-    if r then
+    local region, g, b = RewardQualityColor(button)
+    if region then
         -- Crop first, and only border what actually cropped: SquareIcon leaves a
         -- masked icon fully native, and a square border round something the mask
         -- renders as a different shape is worse than no border.
         if wsk.SquareIcon(button.Icon, nil) and wsk.QualityBorder then
-            wsk.QualityBorder(button, button.Icon, r, g, b)
+            wsk.QualityBorder(button, button.Icon, region, g, b)
         end
     else
         -- No rarity worth showing: let the engine draw its black edge.
@@ -1462,20 +1462,20 @@ local function SquareDungeonIcons()
         return
     end
     for idx = 1, #icons do
-        local f = icons[idx]
-        if f and not f:IsForbidden() and f.Icon then
+        local frame = icons[idx]
+        if frame and not frame:IsForbidden() and frame.Icon then
             wipe(_iconKeep)
-            _iconKeep[f.Icon] = true
-            FadeRegions(f, _iconKeep)
-            f.Icon:ClearAllPoints()
-            f.Icon:SetAllPoints(f)
+            _iconKeep[frame.Icon] = true
+            FadeRegions(frame, _iconKeep)
+            frame.Icon:ClearAllPoints()
+            frame.Icon:SetAllPoints(frame)
             local wsk = mod.WSkin
             if wsk and wsk.SquareIcon then
-                if wsk.SquareIcon(f.Icon, nil) and wsk.QualityBorder then
-                    wsk.QualityBorder(f, f.Icon, 0, 0, 0)
+                if wsk.SquareIcon(frame.Icon, nil) and wsk.QualityBorder then
+                    wsk.QualityBorder(frame, frame.Icon, 0, 0, 0)
                 end
-            elseif f.Icon.SetTexCoord then
-                f.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            elseif frame.Icon.SetTexCoord then
+                frame.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
             end
         end
     end
@@ -1536,9 +1536,9 @@ local function UpdatePVPCategorySelection()
     local sel = ResolveRailSelection(PVPCategoryButton, _pvpSel, _G.PVPQueueFrame)
     for idx = 1, 4 do
         local button = PVPCategoryButton(idx)
-        local d = button and FFD[button]
-        if d and d.selWash then
-            d.selWash:SetShown((sel == idx or sel == button) and true or false)
+        local skinData = button and FFD[button]
+        if skinData and skinData.selWash then
+            skinData.selWash:SetShown((sel == idx or sel == button) and true or false)
         end
     end
 end
@@ -1814,15 +1814,15 @@ local function RestoreAppRoles(dialog)
     _restoringRoles = true
     pcall(function()
         local saved = CludesUIDB.lfgSavedRoles
-        local function apply(button, wanted)
+        local function applyFn(button, wanted)
             local cb = button and button.CheckButton
             if cb and cb:IsEnabled() then
                 cb:SetChecked(wanted and true or false)
             end
         end
-        apply(dialog.TankButton, saved.tank)
-        apply(dialog.HealerButton, saved.healer)
-        apply(dialog.DamagerButton, saved.damager)
+        applyFn(dialog.TankButton, saved.tank)
+        applyFn(dialog.HealerButton, saved.healer)
+        applyFn(dialog.DamagerButton, saved.damager)
         -- Re-run Blizzard's role update so the Sign Up button reflects our
         -- restored selection. The reentry guard stops our own hook recursing.
         if LFGListApplicationDialog_UpdateRoles then

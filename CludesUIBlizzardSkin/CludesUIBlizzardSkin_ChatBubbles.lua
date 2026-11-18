@@ -198,11 +198,11 @@ end
 -- string raises (CUI_Chat_EditBox.lua's OnEditBoxPreSendText carries the same note), so the
 -- compare runs under pcall. type() reports a secret's underlying type, so a secret string
 -- still reaches the guarded compare.
-local function SafeEq(a, b)
-    if type(a) ~= "string" or type(b) ~= "string" then
+local function SafeEq(a, button)
+    if type(a) ~= "string" or type(button) ~= "string" then
         return false
     end
-    _cmpA, _cmpB, _cmpEq = a, b, false
+    _cmpA, _cmpB, _cmpEq = a, button, false
     local success = pcall(RawEq)
     _cmpA, _cmpB = nil, nil
     return success and _cmpEq == true
@@ -428,55 +428,55 @@ local function NewBubble()
     -- nameplates they sit among render below this, which is the point -- ours has to cover
     -- the balloon it replaces. Accepted cost: MEDIUM also carries the action bars and the
     -- chat panel, which a bubble can briefly cover.
-    local f = CreateFrame("Frame", nil, UIParent)
-    f:SetFrameStrata("HIGH")
-    f:SetFrameLevel(150)
-    f:EnableMouse(false)
-    f:Hide()
+    local frame = CreateFrame("Frame", nil, UIParent)
+    frame:SetFrameStrata("HIGH")
+    frame:SetFrameLevel(150)
+    frame:EnableMouse(false)
+    frame:Hide()
 
-    f.bg = f:CreateTexture(nil, "BACKGROUND")
-    f.bg:SetTexture(WHITE)
-    f.bg:SetAllPoints(f)
+    frame.bg = frame:CreateTexture(nil, "BACKGROUND")
+    frame.bg:SetTexture(WHITE)
+    frame.bg:SetAllPoints(frame)
 
-    f.text = f:CreateFontString(nil, "ARTWORK")
+    frame.text = frame:CreateFontString(nil, "ARTWORK")
     -- A font before anything else touches this FontString: SetText on one that has none
     -- raises "Font not set" and drops the string, so the first line on every freshly built
     -- frame would come up blank. Show sets the text before Layout, which is what picks the
     -- configured font, because Layout measures that text to size the bubble. Whatever is set
     -- here therefore only ever has to be valid, not right. Both texts show other players'
     -- writing, so every font they take is a font family (BubbleFont), never a plain SetFont.
-    BubbleFont(f.text, "Fonts\\FRIZQT__.TTF", 12, "")
-    f.text:SetJustifyH("CENTER")
-    f.text:SetJustifyV("MIDDLE")
-    f.text:SetWordWrap(true)
+    BubbleFont(frame.text, "Fonts\\FRIZQT__.TTF", 12, "")
+    frame.text:SetJustifyH("CENTER")
+    frame.text:SetJustifyV("MIDDLE")
+    frame.text:SetWordWrap(true)
     -- SetWordWrap alone only breaks at spaces, so a single token wider than the bubble is
     -- truncated with an ellipsis instead of wrapping. Blizzard's own bubble sets this too
     -- (ChatBubbleTemplates.xml calls SetNonSpaceWrap(true) on its String), and the guard is
     -- the shape this codebase already uses for the pair (CludesUIDataBars.lua).
-    if f.text.SetNonSpaceWrap then
-        f.text:SetNonSpaceWrap(true)
+    if frame.text.SetNonSpaceWrap then
+        frame.text:SetNonSpaceWrap(true)
     end
-    f.text:SetPoint("CENTER", f, "CENTER", 0, 0)
+    frame.text:SetPoint("CENTER", frame, "CENTER", 0, 0)
 
-    f.name = f:CreateFontString(nil, "ARTWORK")
-    BubbleFont(f.name, "Fonts\\FRIZQT__.TTF", 10, "")
-    f.name:SetJustifyH("RIGHT")
-    f.name:SetWordWrap(false)
-    f.name:Hide()
+    frame.name = frame:CreateFontString(nil, "ARTWORK")
+    BubbleFont(frame.name, "Fonts\\FRIZQT__.TTF", 10, "")
+    frame.name:SetJustifyH("RIGHT")
+    frame.name:SetWordWrap(false)
+    frame.name:Hide()
 
-    return f
+    return frame
 end
 
 -- Hides ours and hands the chrome back, so the next speaker on this recycled frame, whose
 -- channel we may not draw, gets Blizzard's balloon. The binding stays for a re-show.
 local function ReleaseBlizz(outer)
-    local f = ours[outer]
-    if not f then
+    local frame = ours[outer]
+    if not frame then
         return
     end
     ours[outer] = nil
-    f:ClearAllPoints()
-    f:Hide()
+    frame:ClearAllPoints()
+    frame:Hide()
     local childFrame = BlizzParts(outer)
     SetBlizzAlpha(childFrame, 1)
 end
@@ -490,93 +490,93 @@ end
 -- Appearance and geometry in ONE pass, never separately: font size, padding and max width all
 -- feed the measurement, so restyling a live bubble without re-measuring leaves its text
 -- clipped inside a frame still sized for the old settings.
-local function Layout(f, conf)
+local function Layout(frame, conf)
     -- One place decides what a missing setting is worth.
-    local d = DEFAULTS
+    local skinData = DEFAULTS
 
-    local bgc = conf.bgColor or d.bgColor
-    f.bg:SetVertexColor(
+    local bgc = conf.bgColor or skinData.bgColor
+    frame.bg:SetVertexColor(
         (bgc and bgc.r) or 0,
         (bgc and bgc.g) or 0,
         (bgc and bgc.b) or 0,
-        conf.background == false and 0 or (conf.bgAlpha or d.bgAlpha or 0)
+        conf.background == false and 0 or (conf.bgAlpha or skinData.bgAlpha or 0)
     )
 
-    local bc = conf.borderColor or d.borderColor
+    local bc = conf.borderColor or skinData.borderColor
     local br, backdrop, bb = (bc and bc.r) or 0, (bc and bc.g) or 0, (bc and bc.b) or 0
     local ba = (bc and bc.a) or 1
-    local size = conf.borderSize or d.borderSize or 0
+    local size = conf.borderSize or skinData.borderSize or 0
     if size > 0 then
-        Pix.CreateBorder(f, br, backdrop, bb, ba, size, "OVERLAY", 7)
-        Pix.UpdateBorder(f, size, br, backdrop, bb, ba)
-        Pix.ShowBorder(f)
+        Pix.CreateBorder(frame, br, backdrop, bb, ba, size, "OVERLAY", 7)
+        Pix.UpdateBorder(frame, size, br, backdrop, bb, ba)
+        Pix.ShowBorder(frame)
     else
-        Pix.HideBorder(f)
+        Pix.HideBorder(frame)
     end
 
-    local fontKey = conf.font or d.font
+    local fontKey = conf.font or skinData.font
     local filePath = fontKey ~= "__global" and CUI.ResolveFontName(fontKey)
     filePath = filePath or CUI.GetFontPath() or "Fonts\\FRIZQT__.TTF"
-    local outline = conf.outline or d.outline
+    local outline = conf.outline or skinData.outline
     local flag
     if outline == "__global" then
         flag = CUI.GetFontOutlineFlag() or ""
     else
         flag = CUI.OutlineFlagForMode(outline)
     end
-    local fontSize = conf.fontSize or d.fontSize or 12
-    BubbleFont(f.text, filePath, fontSize, flag)
-    local tc = conf.textColor or d.textColor
+    local fontSize = conf.fontSize or skinData.fontSize or 12
+    BubbleFont(frame.text, filePath, fontSize, flag)
+    local tc = conf.textColor or skinData.textColor
     local tr, tg, tb = (tc and tc.r) or 1, (tc and tc.g) or 1, (tc and tc.b) or 1
     -- Blizzard's own colour when it was asked for AND we managed to read it; the configured
     -- one otherwise, so a bubble whose colour would not come back is still readable.
-    if conf.followBlizzardColor == true and f.blizzR then
-        tr, tg, tb = f.blizzR, f.blizzG, f.blizzB
+    if conf.followBlizzardColor == true and frame.blizzR then
+        tr, tg, tb = frame.blizzR, frame.blizzG, frame.blizzB
     end
-    f.text:SetTextColor(tr, tg, tb, 1)
+    frame.text:SetTextColor(tr, tg, tb, 1)
 
     -- Name row: reserves its height on the anchored edge so the two never overlap; the
     -- offsets then move the name freely from there.
     local nameW, nameH = 0, 0
     local nameList = conf.showName
-    if f.speaker and type(nameList) == "table" and nameList[f.channel] == true then
-        local nameSize = conf.nameFontSize or d.nameFontSize
-        BubbleFont(f.name, filePath, nameSize, flag)
-        f.name:SetTextColor(tr, tg, tb, 0.8)
-        f.name:SetText(f.speaker)
-        nameW = Pix.Scale(f.name:GetUnboundedStringWidth()) + Pix.mult
+    if frame.speaker and type(nameList) == "table" and nameList[frame.channel] == true then
+        local nameSize = conf.nameFontSize or skinData.nameFontSize
+        BubbleFont(frame.name, filePath, nameSize, flag)
+        frame.name:SetTextColor(tr, tg, tb, 0.8)
+        frame.name:SetText(frame.speaker)
+        nameW = Pix.Scale(frame.name:GetUnboundedStringWidth()) + Pix.mult
         nameH = nameSize + 2
-        f.name:Show()
+        frame.name:Show()
     else
-        f.name:Hide()
+        frame.name:Hide()
     end
 
     -- Config numbers that end up as frame geometry go through the pixel grid. maxWidth is a
     -- real width (it clamps the FontString), so it is snapped before the measurement.
-    local padding = conf.padding or d.padding or 0
-    local maxWidth = Pix.Scale(conf.maxWidth or d.maxWidth or 260)
+    local padding = conf.padding or skinData.padding or 0
+    local maxWidth = Pix.Scale(conf.maxWidth or skinData.maxWidth or 260)
 
     -- Three lines, not one: a secret string cannot be measured, and a single-line fallback
     -- cuts a wrapped sentence off. MeasureText leaves the FontString at the width it measured
     -- against, so the frame only has to wrap padding around the result.
-    local wid, hgt = MeasureText(f.text, maxWidth, fontSize * 1.4 * 3)
+    local wid, hgt = MeasureText(frame.text, maxWidth, fontSize * 1.4 * 3)
     if nameW > maxWidth then
         nameW = maxWidth
     end
     if nameW > wid then
         wid = nameW
     end
-    local anchor = conf.nameAnchor or d.nameAnchor
+    local anchor = conf.nameAnchor or skinData.nameAnchor
     local bottom = anchor:find("BOTTOM") ~= nil
     local nx = anchor:find("LEFT") and padding or (anchor:find("RIGHT") and -padding or 0)
     local ny = bottom and padding or -padding
-    f.name:SetWidth(nameW)
-    f.name:SetJustifyH(anchor:find("LEFT") and "LEFT" or (anchor:find("RIGHT") and "RIGHT" or "CENTER"))
-    f.name:ClearAllPoints()
-    Pix.Point(f.name, anchor, f, anchor, nx + (conf.nameOffsetX or 0), ny + (conf.nameOffsetY or 0))
-    f.text:ClearAllPoints()
-    f.text:SetPoint("CENTER", f, "CENTER", 0, bottom and nameH / 2 or -nameH / 2)
-    Pix.Size(f, wid + padding * 2, hgt + nameH + padding * 2)
+    frame.name:SetWidth(nameW)
+    frame.name:SetJustifyH(anchor:find("LEFT") and "LEFT" or (anchor:find("RIGHT") and "RIGHT" or "CENTER"))
+    frame.name:ClearAllPoints()
+    Pix.Point(frame.name, anchor, frame, anchor, nx + (conf.nameOffsetX or 0), ny + (conf.nameOffsetY or 0))
+    frame.text:ClearAllPoints()
+    frame.text:SetPoint("CENTER", frame, "CENTER", 0, bottom and nameH / 2 or -nameH / 2)
+    Pix.Size(frame, wid + padding * 2, hgt + nameH + padding * 2)
 end
 
 local _anchorFrame, _anchorTo, _anchorOff
@@ -598,11 +598,11 @@ end
 -- Answers whether the frame ended up anchored. A false here is not cosmetic: ClearAllPoints has
 -- already run, so a caller that carried on would leave a shown frame with no point at all and,
 -- in Claim's case, blank Blizzard's chrome behind it. Both callers hand the bubble back instead.
-local function Anchor(f, conf)
-    local d = DEFAULTS
-    local off = conf.offsetY or d.offsetY or 0
-    f:ClearAllPoints()
-    _anchorFrame, _anchorTo, _anchorOff = f, childOf[f.outer] or f.outer, off
+local function Anchor(frame, conf)
+    local skinData = DEFAULTS
+    local off = conf.offsetY or skinData.offsetY or 0
+    frame:ClearAllPoints()
+    _anchorFrame, _anchorTo, _anchorOff = frame, childOf[frame.outer] or frame.outer, off
     local success = pcall(RawAnchor)
     _anchorFrame, _anchorTo = nil, nil
     return success
@@ -642,28 +642,28 @@ local function Draw(outer, childFrame, fontStr, textValue, line)
         return
     end
 
-    local f = overlayFrame[outer]
-    if not f then
-        f = NewBubble()
-        overlayFrame[outer] = f
+    local frame = overlayFrame[outer]
+    if not frame then
+        frame = NewBubble()
+        overlayFrame[outer] = frame
     end
-    f.outer = outer
-    ours[outer] = f
-    f.blizzR, f.blizzG, f.blizzB = BlizzTextColor(fontStr)
-    f.speaker, f.channel = line.speaker, line.channel
-    f.text:SetText(textValue)
+    frame.outer = outer
+    ours[outer] = frame
+    frame.blizzR, frame.blizzG, frame.blizzB = BlizzTextColor(fontStr)
+    frame.speaker, frame.channel = line.speaker, line.channel
+    frame.text:SetText(textValue)
     -- Shown at alpha 0 BEFORE Layout, never after: font geometry on a HIDDEN frame is wrong
     -- (the shared tooltip measures the same way for the same reason), and a wrapped line
     -- would land in a frame sized for one.
-    f:SetAlpha(0)
-    f:Show()
-    Layout(f, conf)
+    frame:SetAlpha(0)
+    frame:Show()
+    Layout(frame, conf)
     -- Before the chrome is blanked: a claim that cannot anchor leaves Blizzard's bubble drawing.
-    if not Anchor(f, conf) then
+    if not Anchor(frame, conf) then
         ReleaseBlizz(outer)
         return
     end
-    f:SetAlpha(1)
+    frame:SetAlpha(1)
 
     SetBlizzAlpha(childFrame, 0)
 end
@@ -1217,12 +1217,12 @@ function CB.RefreshStyle()
     if not conf then
         return
     end
-    for _, f in pairs(ours) do
-        Layout(f, conf)
+    for _, frame in pairs(ours) do
+        Layout(frame, conf)
         -- Same hand-back as in Draw. Clearing the key of the entry we are standing on is
         -- allowed during a pairs traversal, which is what ReleaseAll has always relied on.
-        if not Anchor(f, conf) then
-            ReleaseBlizz(f.outer)
+        if not Anchor(frame, conf) then
+            ReleaseBlizz(frame.outer)
         end
     end
 end
@@ -1265,8 +1265,8 @@ function CB.Refresh()
     -- A channel just switched off hands its drawn bubbles straight back to Blizzard. Clearing
     -- the entry being visited is allowed during pairs (ReleaseAll relies on it too).
     local conf = Cfg()
-    for outer, f in pairs(ours) do
-        if conf[f.channel] ~= true then
+    for outer, frame in pairs(ours) do
+        if conf[frame.channel] ~= true then
             ReleaseBlizz(outer)
         end
     end

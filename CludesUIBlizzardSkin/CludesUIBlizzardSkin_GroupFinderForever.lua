@@ -85,42 +85,42 @@ do
     -- column (Variable, which can show the guild), the entry tooltip's leader and
     -- member names (Name) and the group's comment (Comment).
     local WRITING_KEYS = { "Name", "GuildName", "Variable", "Comment" }
-    local function ShowsWriting(fr, fontStr)
+    local function ShowsWriting(found, fontStr)
         for idx = 1, #WRITING_KEYS do
-            if fr[WRITING_KEYS[idx]] == fontStr then
+            if found[WRITING_KEYS[idx]] == fontStr then
                 return true
             end
         end
         return false
     end
 
-    local function FadeLFGArt(fr, depth)
-        if depth > 5 or not fr or fr:IsForbidden() then
+    local function FadeLFGArt(found, depth)
+        if depth > 5 or not found or found:IsForbidden() then
             return
         end
-        if depth > 0 and Skin.IsForeignFrame(fr) then
+        if depth > 0 and Skin.IsForeignFrame(found) then
             return
         end
-        local regions = { fr:GetRegions() }
-        for idx = 1, #regions do
-            local r = regions[idx]
+        local regionList = { found:GetRegions() }
+        for idx = 1, #regionList do
+            local region = regionList[idx]
             -- Result rows' class and role icons carry secret atlases in instances.
-            local a = r.GetAtlas and CludesUI.PlainString(r:GetAtlas())
+            local a = region.GetAtlas and CludesUI.PlainString(region:GetAtlas())
             if a then
                 local la = a:lower()
                 for _, wid in ipairs(LFG_FADE) do
                     if la:find(wid, 1, true) then
-                        r:SetAlpha(0)
+                        region:SetAlpha(0)
                         break
                     end
                 end
                 -- The gold ring behind a role glyph goes a neutral grey; the glyph stays.
                 if la:find("roleicon", 1, true) and la:find("background", 1, true) then
-                    r:SetVertexColor(0.32, 0.32, 0.34)
+                    region:SetVertexColor(0.32, 0.32, 0.34)
                 end
             end
         end
-        local children = { fr:GetChildren() }
+        local children = { found:GetChildren() }
         for idx = 1, #children do
             FadeLFGArt(children[idx], depth + 1)
         end
@@ -128,26 +128,26 @@ do
 
     -- House font on the window's text. Buttons and edit boxes keep Blizzard's font;
     -- browse rows get theirs from SkinBrowseFrame.
-    local function ApplyFont(fr, depth)
-        if depth > 9 or not fr or fr:IsForbidden() then
+    local function ApplyFont(found, depth)
+        if depth > 9 or not found or found:IsForbidden() then
             return
         end
         if depth > 0 then
-            if fr:IsObjectType("Button") or fr:IsObjectType("EditBox") then
+            if found:IsObjectType("Button") or found:IsObjectType("EditBox") then
                 return
             end
-            if Skin.IsForeignFrame(fr) then
+            if Skin.IsForeignFrame(found) then
                 return
             end
         end
-        local regions = { fr:GetRegions() }
-        for idx = 1, #regions do
-            local r = regions[idx]
-            if r:GetObjectType() == "FontString" then
-                FontOnce(r)
+        local regionList = { found:GetRegions() }
+        for idx = 1, #regionList do
+            local region = regionList[idx]
+            if region:GetObjectType() == "FontString" then
+                FontOnce(region)
             end
         end
-        local children = { fr:GetChildren() }
+        local children = { found:GetChildren() }
         for idx = 1, #children do
             ApplyFont(children[idx], depth + 1)
         end
@@ -161,18 +161,18 @@ do
         if not row or row:IsForbidden() then
             return
         end
-        local d = GetFFD(row)
-        if d.skinned then
+        local skinData = GetFFD(row)
+        if skinData.skinned then
             return
         end
-        d.skinned = true
+        skinData.skinned = true
         local backdrop, highlight, sel = row.ResultBG, row.Highlight, row.Selected
         if row.CategoryLabel then
             if backdrop then
                 backdrop:SetAlpha(0)
-                local fill = row:CreateTexture(nil, "BACKGROUND")
-                fill:SetColorTexture(0.08, 0.08, 0.08, 0.92)
-                fill:SetAllPoints(backdrop)
+                local fillTex = row:CreateTexture(nil, "BACKGROUND")
+                fillTex:SetColorTexture(0.08, 0.08, 0.08, 0.92)
+                fillTex:SetAllPoints(backdrop)
             end
             if highlight then
                 highlight:SetColorTexture(1, 1, 1, 0.05)
@@ -190,11 +190,11 @@ do
         if sel then
             sel:SetColorTexture(1, 1, 1, 0.15)
         end
-        local regions = { row:GetRegions() }
-        for idx = 1, #regions do
-            local r = regions[idx]
-            if r:GetObjectType() == "FontString" then
-                FontOnce(r, ShowsWriting(row, r))
+        local regionList = { row:GetRegions() }
+        for idx = 1, #regionList do
+            local region = regionList[idx]
+            if region:GetObjectType() == "FontString" then
+                FontOnce(region, ShowsWriting(row, region))
             end
         end
     end
@@ -204,16 +204,16 @@ do
         if not row or row:IsForbidden() then
             return
         end
-        local d = GetFFD(row)
-        if d.skinned then
+        local skinData = GetFFD(row)
+        if skinData.skinned then
             return
         end
-        d.skinned = true
-        local regions = { row:GetRegions() }
-        for idx = 1, #regions do
-            local r = regions[idx]
-            if r:GetObjectType() == "FontString" then
-                FontOnce(r, ShowsWriting(row, r))
+        skinData.skinned = true
+        local regionList = { row:GetRegions() }
+        for idx = 1, #regionList do
+            local region = regionList[idx]
+            if region:GetObjectType() == "FontString" then
+                FontOnce(region, ShowsWriting(row, region))
             end
         end
     end
@@ -222,23 +222,23 @@ do
     -- divider, so the last partial row overhangs the footer. Measured once the list
     -- is laid out, then re-asserted on each repaint pass.
     local function ClampBrowseBottom(scrollBar)
-        local sd = GetFFD(scrollBar)
-        if not sd.clampPt then
-            local bf = _G.LFGBrowseFrame
-            if not bf then
+        local partData = GetFFD(scrollBar)
+        if not partData.clampPt then
+            local subFrame = _G.LFGBrowseFrame
+            if not subFrame then
                 return
             end
             local line
-            local regions = { bf:GetRegions() }
-            for idx = 1, #regions do
-                local r = regions[idx]
-                local a = r.GetAtlas and r:GetAtlas()
+            local regionList = { subFrame:GetRegions() }
+            for idx = 1, #regionList do
+                local region = regionList[idx]
+                local a = region.GetAtlas and region:GetAtlas()
                 if
                     a
                     and a:lower():find("scrollline", 1, true)
-                    and (not line or (r:GetTop() or 0) < (line:GetTop() or 0))
+                    and (not line or (region:GetTop() or 0) < (line:GetTop() or 0))
                 then
-                    line = r
+                    line = region
                 end
             end
             local target = line and line:GetTop()
@@ -249,12 +249,12 @@ do
             for idx = 1, scrollBar:GetNumPoints() do
                 local p, rel, rp, posX, posY = scrollBar:GetPoint(idx)
                 if p and p:find("BOTTOM", 1, true) and posY then
-                    sd.clampPt = { p, rel, rp, posX, posY + (target - current) }
+                    partData.clampPt = { p, rel, rp, posX, posY + (target - current) }
                     break
                 end
             end
         end
-        local c = sd.clampPt
+        local c = partData.clampPt
         if c then
             scrollBar:SetPoint(c[1], c[2], c[3], c[4], c[5])
         end
@@ -262,21 +262,21 @@ do
 
     -- The group-entry tooltip is its own frame, not a GameTooltip, so the tooltip
     -- skin never reaches it: same look on every show, plus the house font.
-    local function FontTip(fr, depth)
-        if depth > 4 or not fr then
+    local function FontTip(found, depth)
+        if depth > 4 or not found then
             return
         end
-        if depth > 0 and Skin.IsForeignFrame(fr) then
+        if depth > 0 and Skin.IsForeignFrame(found) then
             return
         end
-        local regions = { fr:GetRegions() }
-        for idx = 1, #regions do
-            local r = regions[idx]
-            if r:GetObjectType() == "FontString" then
-                FontOnce(r, ShowsWriting(fr, r))
+        local regionList = { found:GetRegions() }
+        for idx = 1, #regionList do
+            local region = regionList[idx]
+            if region:GetObjectType() == "FontString" then
+                FontOnce(region, ShowsWriting(found, region))
             end
         end
-        local children = { fr:GetChildren() }
+        local children = { found:GetChildren() }
         for idx = 1, #children do
             FontTip(children[idx], depth + 1)
         end
@@ -290,49 +290,49 @@ do
     end
 
     -- Checkboxes in the List Self view (roles, Show All Level Ranges, dungeon rows).
-    local function SkinChecksIn(fr, depth)
-        if depth > 6 or not fr or fr:IsForbidden() then
+    local function SkinChecksIn(found, depth)
+        if depth > 6 or not found or found:IsForbidden() then
             return
         end
-        if depth > 0 and Skin.IsForeignFrame(fr) then
+        if depth > 0 and Skin.IsForeignFrame(found) then
             return
         end
-        if fr:IsObjectType("CheckButton") then
-            Skin.Checkbox(fr, CHECK_OPTS)
+        if found:IsObjectType("CheckButton") then
+            Skin.Checkbox(found, CHECK_OPTS)
         end
-        local children = { fr:GetChildren() }
+        local children = { found:GetChildren() }
         for idx = 1, #children do
             SkinChecksIn(children[idx], depth + 1)
         end
     end
     -- A pooled dungeon row, once (a pooled frame keeps its template).
     local function SkinActivityRow(row)
-        local d = GetFFD(row)
-        if d.checksSkinned then
+        local skinData = GetFFD(row)
+        if skinData.checksSkinned then
             return
         end
-        d.checksSkinned = true
+        skinData.checksSkinned = true
         SkinChecksIn(row, 0)
     end
 
     -- 1px border hugging a tile's content (its Icon, else its largest visible art).
     local function BorderContent(button)
-        local d = GetFFD(button)
-        if d.contentBorder then
+        local skinData = GetFFD(button)
+        if skinData.contentBorder then
             return
         end
         local anchor = button.Icon
         if not anchor then
             local best, bestArea
-            local regions = { button:GetRegions() }
-            for idx = 1, #regions do
-                local r = regions[idx]
-                if r:GetObjectType() == "Texture" and r:IsShown() and (r:GetAlpha() or 0) > 0.1 then
-                    local atl = r.GetAtlas and r:GetAtlas()
+            local regionList = { button:GetRegions() }
+            for idx = 1, #regionList do
+                local region = regionList[idx]
+                if region:GetObjectType() == "Texture" and region:IsShown() and (region:GetAlpha() or 0) > 0.1 then
+                    local atl = region.GetAtlas and region:GetAtlas()
                     if not (atl and atl:lower():find("background", 1, true)) then
-                        local area = (r:GetWidth() or 0) * (r:GetHeight() or 0)
+                        local area = (region:GetWidth() or 0) * (region:GetHeight() or 0)
                         if area > 0 and (not bestArea or area > bestArea) then
-                            best, bestArea = r, area
+                            best, bestArea = region, area
                         end
                     end
                 end
@@ -340,36 +340,36 @@ do
             anchor = best
         end
         anchor = anchor or button
-        local host = CreateFrame("Frame", nil, button)
-        host:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, 0)
-        host:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT", 0, 0)
-        Skin.AddBorder(host)
-        d.contentBorder = host
+        local owner = CreateFrame("Frame", nil, button)
+        owner:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, 0)
+        owner:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT", 0, 0)
+        Skin.AddBorder(owner)
+        skinData.contentBorder = owner
     end
     -- Category tiles (the wide buttons only).
-    local function BorderTiles(fr, depth)
-        if depth > 5 or not fr or fr:IsForbidden() then
+    local function BorderTiles(found, depth)
+        if depth > 5 or not found or found:IsForbidden() then
             return
         end
-        if depth > 0 and Skin.IsForeignFrame(fr) then
+        if depth > 0 and Skin.IsForeignFrame(found) then
             return
         end
-        if fr:GetObjectType() == "Button" and (fr:GetWidth() or 0) >= 100 then
-            BorderContent(fr)
+        if found:GetObjectType() == "Button" and (found:GetWidth() or 0) >= 100 then
+            BorderContent(found)
         end
-        local children = { fr:GetChildren() }
+        local children = { found:GetChildren() }
         for idx = 1, #children do
             BorderTiles(children[idx], depth + 1)
         end
     end
 
     local function Skin_LFGVanilla()
-        local f = _G.LFGParentFrame
-        if not f then
+        local frame = _G.LFGParentFrame
+        if not frame then
             return
         end
-        Skin.Shell("lfg", f)
-        Skin.RemovePortrait(f)
+        Skin.Shell("lfg", frame)
+        Skin.RemovePortrait(frame)
         -- The big animated eye in the portrait slot is a button of its own (no
         -- portrait key) that Blizzard shows on every open: gone by alpha, with
         -- the mouse off so the invisible 64 px HIGH-strata button catches no
@@ -379,18 +379,18 @@ do
             eye:SetAlpha(0)
             eye:EnableMouse(false)
         end
-        Skin.CommonChrome(f, "LFGParentFrame")
-        FadeLFGArt(f, 0)
+        Skin.CommonChrome(frame, "LFGParentFrame")
+        FadeLFGArt(frame, 0)
         -- The List Self role header's art runs a few pixels past the divider
         -- line at the inset's top; a mask ends it on the line, so the header and
         -- the body meet there (the art keeps its size and coordinates).
         local lf = _G.LFGListingFrame
         local roles, inset = lf and lf.RolesSection, lf and lf.Inset
         if roles and inset and not GetFFD(roles).mask then
-            local regions = { roles:GetRegions() }
-            for idx = 1, #regions do
-                local r = regions[idx]
-                local a = r.GetAtlas and r:GetAtlas()
+            local regionList = { roles:GetRegions() }
+            for idx = 1, #regionList do
+                local region = regionList[idx]
+                local a = region.GetAtlas and region:GetAtlas()
                 if a and a:lower() == "groupfinder-roles-background" then
                     local mask = roles:CreateMaskTexture()
                     mask:SetTexture(
@@ -398,10 +398,10 @@ do
                         "CLAMPTOBLACKADDITIVE",
                         "CLAMPTOBLACKADDITIVE"
                     )
-                    mask:SetPoint("TOPLEFT", r, "TOPLEFT")
-                    mask:SetPoint("RIGHT", r, "RIGHT")
+                    mask:SetPoint("TOPLEFT", region, "TOPLEFT")
+                    mask:SetPoint("RIGHT", region, "RIGHT")
                     mask:SetPoint("BOTTOM", inset, "TOP")
-                    r:AddMaskTexture(mask)
+                    region:AddMaskTexture(mask)
                     GetFFD(roles).mask = mask
                     break
                 end
@@ -410,23 +410,23 @@ do
         for _, vn in ipairs(FILL_VIEWS) do
             local val = _G[vn]
             if val then
-                local regions = { val:GetRegions() }
-                for idx = 1, #regions do
-                    local r = regions[idx]
+                local regionList = { val:GetRegions() }
+                for idx = 1, #regionList do
+                    local region = regionList[idx]
                     if
-                        r:GetObjectType() == "Texture"
-                        and not r:GetAtlas()
-                        and r:GetDrawLayer() == "BACKGROUND"
+                        region:GetObjectType() == "Texture"
+                        and not region:GetAtlas()
+                        and region:GetDrawLayer() == "BACKGROUND"
                     then
-                        r:SetAlpha(0)
+                        region:SetAlpha(0)
                     end
                 end
             end
         end
-        local title = (f.TitleContainer and f.TitleContainer.TitleText) or _G.LFGParentFrameTitleText
-        if title then
-            Skin.Font(title)
-            Skin.White(title)
+        local titleText = (frame.TitleContainer and frame.TitleContainer.TitleText) or _G.LFGParentFrameTitleText
+        if titleText then
+            Skin.Font(titleText)
+            Skin.White(titleText)
         end
 
         for _, num in ipairs(DROPDOWNS) do
@@ -445,10 +445,10 @@ do
             Skin.Dropdown(av.VoiceChatDropdown)
         end
         for _, num in ipairs(BUTTONS) do
-            local b = _G[num]
-            if b then
-                Skin.Button(b)
-                Skin.WhiteButtonLabel(b)
+            local button = _G[num]
+            if button then
+                Skin.Button(button)
+                Skin.WhiteButtonLabel(button)
             end
         end
         -- The browser's refresh button: the house glyph, as on retail.
@@ -487,7 +487,7 @@ do
 
         -- Side view tabs.
         for _, tn in ipairs(SIDE_TABS) do
-            Skin.SideTab(f[tn])
+            Skin.SideTab(frame[tn])
         end
 
         -- "More details" comment box: its border is loose BACKGROUND textures on the
@@ -496,15 +496,15 @@ do
         local cmt = _G.LFGListingComment
         if cmt then
             local cd = GetFFD(cmt)
-            local regions = { cmt:GetRegions() }
-            for idx = 1, #regions do
-                local r = regions[idx]
+            local regionList = { cmt:GetRegions() }
+            for idx = 1, #regionList do
+                local region = regionList[idx]
                 if
-                    r ~= cd.commentFill
-                    and r:GetObjectType() == "Texture"
-                    and r:GetDrawLayer() == "BACKGROUND"
+                    region ~= cd.commentFill
+                    and region:GetObjectType() == "Texture"
+                    and region:GetDrawLayer() == "BACKGROUND"
                 then
-                    r:SetAlpha(0)
+                    region:SetAlpha(0)
                 end
             end
             if not cd.commentFill then
@@ -531,7 +531,7 @@ do
         if _G.LFGListingFrameCategoryView then
             BorderTiles(_G.LFGListingFrameCategoryView, 0)
         end
-        ApplyFont(f, 0)
+        ApplyFont(frame, 0)
 
         local scrollBar = _G.LFGBrowseFrameScrollBox
         if scrollBar and scrollBar.ForEachFrame then
@@ -539,11 +539,11 @@ do
             scrollBar:SetClipsChildren(true)
             ClampBrowseBottom(scrollBar)
             scrollBar:ForEachFrame(SkinBrowseFrame)
-            local sd = GetFFD(scrollBar)
-            if not sd.hooked then
-                sd.hooked = true
+            local partData = GetFFD(scrollBar)
+            if not partData.hooked then
+                partData.hooked = true
                 hooksecurefunc(scrollBar, "Update", function()
-                    if not sd.clampPt then
+                    if not partData.clampPt then
                         ClampBrowseBottom(scrollBar)
                     end
                     scrollBar:ForEachFrame(SkinBrowseFrame)
@@ -553,9 +553,9 @@ do
 
         local tipText = _G.LFGBrowseSearchEntryTooltip
         if tipText then
-            local td = GetFFD(tipText)
-            if not td.hooked then
-                td.hooked = true
+            local titleData = GetFFD(tipText)
+            if not titleData.hooked then
+                titleData.hooked = true
                 tipText:HookScript("OnShow", SkinLFGTooltip)
             end
             if tipText:IsShown() then
@@ -564,15 +564,15 @@ do
         end
 
         -- Repaint (debounced) on the window's show and on each view swap.
-        local d = GetFFD(f)
-        if not d.hooked then
-            d.hooked = true
+        local skinData = GetFFD(frame)
+        if not skinData.hooked then
+            skinData.hooked = true
             local repaint = Skin.Debounce(function()
-                if f:IsVisible() then
+                if frame:IsVisible() then
                     Skin_LFGVanilla()
                 end
             end)
-            Skin.HookShow(f, repaint)
+            Skin.HookShow(frame, repaint)
             for _, vn in ipairs(SHOW_VIEWS) do
                 local val = _G[vn]
                 if val then

@@ -237,12 +237,12 @@ local function SeatSocketWindow()
     if socketWindowSeated then
         return true
     end
-    local f = _G.ItemSocketingFrame
-    if not (f and _G.SetUIPanelAttribute) then
+    local frame = _G.ItemSocketingFrame
+    if not (frame and _G.SetUIPanelAttribute) then
         return false
     end
     socketWindowSeated = true
-    _G.SetUIPanelAttribute(f, "pushable", 3)
+    _G.SetUIPanelAttribute(frame, "pushable", 3)
     return true
 end
 
@@ -253,10 +253,10 @@ end
 -- made invisible: when it cannot be hidden (combat) it stays on screen so the
 -- player can close it by hand.
 local function SafeCloseSession()
-    local f = _G.ItemSocketingFrame
-    if f and f:IsShown() then
+    local frame = _G.ItemSocketingFrame
+    if frame and frame:IsShown() then
         if not InCombatLockdown() and HideUIPanel then
-            HideUIPanel(f)
+            HideUIPanel(frame)
         end
     elseif CloseSocketFn then
         -- No window on screen: close the bare session directly.
@@ -398,15 +398,15 @@ local function PaintStatLetters(button, gemLink)
 end
 
 local function PaintFilledIcon(button, gemLink)
-    local icon = button.icon
+    local iconTex = button.icon
     -- Clear atlas / color-texture mode before applying a fileID.
-    if icon.SetAtlas then
-        icon:SetAtlas(nil)
+    if iconTex.SetAtlas then
+        iconTex:SetAtlas(nil)
     end
-    icon:SetColorTexture(0, 0, 0, 0)
-    icon:SetTexture(nil)
-    if icon.SetVertexColor then
-        icon:SetVertexColor(1, 1, 1, 1)
+    iconTex:SetColorTexture(0, 0, 0, 0)
+    iconTex:SetTexture(nil)
+    if iconTex.SetVertexColor then
+        iconTex:SetVertexColor(1, 1, 1, 1)
     end
 
     local texture
@@ -420,16 +420,16 @@ local function PaintFilledIcon(button, gemLink)
             texture = GetIconByID(iid)
         end
     end
-    icon:SetTexture(texture)
+    iconTex:SetTexture(texture)
     button:SetAlpha(1)
 
     -- Rarity border (default silver; upgrades async once item data loads).
     local rarity = 2
     local known = false
     if C_Item and C_Item.GetItemInfo then
-        local _, _, r = C_Item.GetItemInfo(gemLink)
-        if r then
-            rarity = r
+        local _, _, region = C_Item.GetItemInfo(gemLink)
+        if region then
+            rarity = region
             known = true
         end
     end
@@ -456,16 +456,16 @@ local function PaintFilledIcon(button, gemLink)
 end
 
 local function PaintEmptyIcon(button)
-    local icon = button.icon
-    if icon.SetAtlas then
-        icon:SetAtlas(nil)
+    local iconTex = button.icon
+    if iconTex.SetAtlas then
+        iconTex:SetAtlas(nil)
     end
-    icon:SetColorTexture(0, 0, 0, 0)
-    icon:SetTexture(nil)
-    if icon.SetVertexColor then
-        icon:SetVertexColor(1, 1, 1, 1)
+    iconTex:SetColorTexture(0, 0, 0, 0)
+    iconTex:SetTexture(nil)
+    if iconTex.SetVertexColor then
+        iconTex:SetVertexColor(1, 1, 1, 1)
     end
-    icon:SetTexture(EMPTY_SOCKET_TEX)
+    iconTex:SetTexture(EMPTY_SOCKET_TEX)
     if STOCK then
         button:SetAlpha(1)
         if button.qualityBorder then
@@ -516,10 +516,10 @@ local function SlotButtonFor(slotID)
     if not slotButtons then
         slotButtons = {}
         for _, n in ipairs(SLOT_BUTTON_NAMES) do
-            local b = _G["Character" .. n .. "Slot"]
+            local button = _G["Character" .. n .. "Slot"]
             -- Keyed by the button's own inventory ID, never a hardcoded pairing.
-            if b and b.GetID then
-                slotButtons[b:GetID()] = b
+            if button and button.GetID then
+                slotButtons[button:GetID()] = button
             end
         end
     end
@@ -570,9 +570,9 @@ local function CreatePanelIcon(hostFrame)
     local button = CreateFrame("Button", nil, hostFrame)
     button:SetSize(SIZE, SIZE)
 
-    local icon = button:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints(button)
-    button.icon = icon
+    local iconTex = button:CreateTexture(nil, "ARTWORK")
+    iconTex:SetAllPoints(button)
+    button.icon = iconTex
 
     if STOCK then
         -- Blizzard's item-button look: the icon uncropped, a quality-tinted
@@ -582,22 +582,22 @@ local function CreatePanelIcon(hostFrame)
         qb:SetTexture("Interface\\Common\\WhiteIconFrame")
         qb:Hide()
         button.qualityBorder = qb
-        local hov = button:CreateTexture(nil, "HIGHLIGHT")
-        hov:SetAllPoints(button)
-        hov:SetTexture("Interface\\Buttons\\ButtonHilight-Square")
-        hov:SetBlendMode("ADD")
+        local hoverTex = button:CreateTexture(nil, "HIGHLIGHT")
+        hoverTex:SetAllPoints(button)
+        hoverTex:SetTexture("Interface\\Buttons\\ButtonHilight-Square")
+        hoverTex:SetBlendMode("ADD")
     else
         -- Standard icon zoom: crop the baked-in dark edge ring off icon art.
-        icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
+        iconTex:SetTexCoord(0.05, 0.95, 0.05, 0.95)
 
         if Pix and Pix.CreateBorder then
             Pix.CreateBorder(button, 1, 1, 1, 0.4, 1, "OVERLAY", 7)
         end
 
         -- Hover wash
-        local hov = button:CreateTexture(nil, "HIGHLIGHT")
-        hov:SetAllPoints(button)
-        hov:SetColorTexture(1, 1, 1, 0.1)
+        local hoverTex = button:CreateTexture(nil, "HIGHLIGHT")
+        hoverTex:SetAllPoints(button)
+        hoverTex:SetColorTexture(1, 1, 1, 0.1)
     end
 
     return button
@@ -738,8 +738,8 @@ RebuildSockets = function()
     for i = #sockets, 1, -1 do
         sockets[i] = nil
     end
-    for k in pairs(relevantItems) do
-        relevantItems[k] = nil
+    for keyName in pairs(relevantItems) do
+        relevantItems[keyName] = nil
     end
 
     if GetItemNumSockets and GetItemGemFn then
@@ -978,15 +978,15 @@ local function AcquireGemRow(i)
     row = CreateFrame("Button", nil, flyout)
     row:SetHeight(ROW_H)
 
-    local icon = row:CreateTexture(nil, "ARTWORK")
-    icon:SetSize(ROW_H - 2, ROW_H - 2)
-    icon:SetPoint("LEFT", row, "LEFT", 2, 0)
-    row.icon = icon
+    local iconTex = row:CreateTexture(nil, "ARTWORK")
+    iconTex:SetSize(ROW_H - 2, ROW_H - 2)
+    iconTex:SetPoint("LEFT", row, "LEFT", 2, 0)
+    row.icon = iconTex
 
     local fontFile = (CludesUI.GetFontPath("blizzardSkin")) or STANDARD_TEXT_FONT
     local labelText = row:CreateFontString(nil, "OVERLAY")
     labelText:SetFont(fontFile, 11, "")
-    labelText:SetPoint("LEFT", icon, "RIGHT", 5, 0)
+    labelText:SetPoint("LEFT", iconTex, "RIGHT", 5, 0)
     labelText:SetJustifyH("LEFT")
     row.label = labelText
 
@@ -997,14 +997,14 @@ local function AcquireGemRow(i)
     total:SetTextColor(0.7, 0.7, 0.7)
     row.count = total
 
-    local hov = row:CreateTexture(nil, "HIGHLIGHT")
-    hov:SetAllPoints(row)
+    local hoverTex = row:CreateTexture(nil, "HIGHLIGHT")
+    hoverTex:SetAllPoints(row)
     if STOCK then
         -- Blizzard's menu row highlight.
-        hov:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
-        hov:SetBlendMode("ADD")
+        hoverTex:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+        hoverTex:SetBlendMode("ADD")
     else
-        hov:SetColorTexture(1, 1, 1, 0.1)
+        hoverTex:SetColorTexture(1, 1, 1, 0.1)
     end
 
     row:SetScript("OnEnter", function(self)
@@ -1658,8 +1658,8 @@ local function OnPaperDollShow()
     gemDirty = true
     -- Fresh open: allow one new data-load request per equipped gem, so a
     -- load that failed last time gets retried.
-    for k in pairs(socketLoadRequested) do
-        socketLoadRequested[k] = nil
+    for keyName in pairs(socketLoadRequested) do
+        socketLoadRequested[keyName] = nil
     end
     RebuildSockets()
 end

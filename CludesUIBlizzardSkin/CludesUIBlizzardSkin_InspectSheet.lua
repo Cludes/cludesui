@@ -66,26 +66,26 @@ local slotGridMap = {
 -- client never frees frames or font strings, so recreating them on every
 -- pass would grow the widget count for the rest of the session.
 local function CUI_ClearSlotLabels(slot)
-    local d = GetFFD(slot)
-    if d.iLvlText then
-        d.iLvlText:Hide()
-        d.cachedILvlText = d.iLvlText
-        d.iLvlText = nil
+    local skinData = GetFFD(slot)
+    if skinData.iLvlText then
+        skinData.iLvlText:Hide()
+        skinData.cachedILvlText = skinData.iLvlText
+        skinData.iLvlText = nil
     end
-    if d.enchantText then
-        d.enchantText:Hide()
-        d.cachedEnchantText = d.enchantText
-        d.enchantText = nil
+    if skinData.enchantText then
+        skinData.enchantText:Hide()
+        skinData.cachedEnchantText = skinData.enchantText
+        skinData.enchantText = nil
     end
-    if d.enchantHoverFrame then
-        d.enchantHoverFrame:Hide()
-        d.cachedEnchantHover = d.enchantHoverFrame
-        d.enchantHoverFrame = nil
+    if skinData.enchantHoverFrame then
+        skinData.enchantHoverFrame:Hide()
+        skinData.cachedEnchantHover = skinData.enchantHoverFrame
+        skinData.enchantHoverFrame = nil
     end
-    if d.upgradeText then
-        d.upgradeText:Hide()
-        d.cachedUpgradeText = d.upgradeText
-        d.upgradeText = nil
+    if skinData.upgradeText then
+        skinData.upgradeText:Hide()
+        skinData.cachedUpgradeText = skinData.upgradeText
+        skinData.upgradeText = nil
     end
 end
 
@@ -778,9 +778,9 @@ local function SkinInspectSheet()
             slot:Show()
 
             -- Hide ALL unnamed Texturen in den Slots (die Dekoration)
-            local regions = { slot:GetRegions() }
-            for idx = 1, #regions do
-                local regionFrame = regions[idx]
+            local regionList = { slot:GetRegions() }
+            for idx = 1, #regionList do
+                local regionFrame = regionList[idx]
                 if regionFrame and regionFrame:IsObjectType("Texture") then
                     local regionName = regionFrame:GetName()
                     -- Hide nur unnamed Texturen (nicht die Icon)
@@ -1005,13 +1005,13 @@ local function SkinInspectSheet()
 
     local inspTabs = {}
     for idx = 1, 3 do
-        local tab = _G["InspectFrameTab" .. idx]
-        if tab then
-            inspTabs[#inspTabs + 1] = tab
+        local tabBtn = _G["InspectFrameTab" .. idx]
+        if tabBtn then
+            inspTabs[#inspTabs + 1] = tabBtn
             -- Remove Blizzard textures
-            local regions = { tab:GetRegions() }
-            for jdx = 1, #regions do
-                local regionFrame = regions[jdx]
+            local regionList = { tabBtn:GetRegions() }
+            for jdx = 1, #regionList do
+                local regionFrame = regionList[jdx]
                 if regionFrame and regionFrame:IsObjectType("Texture") then
                     regionFrame:SetTexture("")
                     if regionFrame.SetAtlas then
@@ -1020,75 +1020,75 @@ local function SkinInspectSheet()
                 end
             end
 
-            if tab.Left then
-                tab.Left:SetTexture("")
+            if tabBtn.Left then
+                tabBtn.Left:SetTexture("")
             end
-            if tab.Middle then
-                tab.Middle:SetTexture("")
+            if tabBtn.Middle then
+                tabBtn.Middle:SetTexture("")
             end
-            if tab.Right then
-                tab.Right:SetTexture("")
+            if tabBtn.Right then
+                tabBtn.Right:SetTexture("")
             end
-            if tab.LeftDisabled then
-                tab.LeftDisabled:SetTexture("")
+            if tabBtn.LeftDisabled then
+                tabBtn.LeftDisabled:SetTexture("")
             end
-            if tab.MiddleDisabled then
-                tab.MiddleDisabled:SetTexture("")
+            if tabBtn.MiddleDisabled then
+                tabBtn.MiddleDisabled:SetTexture("")
             end
-            if tab.RightDisabled then
-                tab.RightDisabled:SetTexture("")
+            if tabBtn.RightDisabled then
+                tabBtn.RightDisabled:SetTexture("")
             end
 
-            local highlight = tab:GetHighlightTexture()
+            local highlight = tabBtn:GetHighlightTexture()
             if highlight then
                 highlight:SetTexture("")
             end
 
             -- Add custom background (matches character sheet tab color)
-            if not GetFFD(tab).bg then
-                GetFFD(tab).bg = tab:CreateTexture(nil, "BACKGROUND")
-                GetFFD(tab).bg:SetAllPoints()
-                GetFFD(tab).bg:SetColorTexture(0.043, 0.031, 0.027, 1)
+            if not GetFFD(tabBtn).bg then
+                GetFFD(tabBtn).bg = tabBtn:CreateTexture(nil, "BACKGROUND")
+                GetFFD(tabBtn).bg:SetAllPoints()
+                GetFFD(tabBtn).bg:SetColorTexture(0.043, 0.031, 0.027, 1)
             else
-                GetFFD(tab).bg:Show()
-                GetFFD(tab).bg:SetColorTexture(0.043, 0.031, 0.027, 1)
+                GetFFD(tabBtn).bg:Show()
+                GetFFD(tabBtn).bg:SetColorTexture(0.043, 0.031, 0.027, 1)
             end
 
             -- Add active highlight
-            if not GetFFD(tab).activeHL then
-                local activeHL = tab:CreateTexture(nil, "ARTWORK", nil, -6)
+            if not GetFFD(tabBtn).activeHL then
+                local activeHL = tabBtn:CreateTexture(nil, "ARTWORK", nil, -6)
                 activeHL:SetAllPoints()
                 activeHL:SetColorTexture(1, 1, 1, 0.02)
                 activeHL:SetBlendMode("ADD")
                 activeHL:Hide()
-                GetFFD(tab).activeHL = activeHL
+                GetFFD(tabBtn).activeHL = activeHL
             else
                 -- The Blizzard-texture strip loop above clears EVERY one of the
                 -- tab's texture regions, including this one, on each re-skin
                 -- (inspect re-skins on every INSPECT_READY as data streams in).
                 -- Restore the fill, or the active-tab highlight blanks out --
                 -- the same reason the background is re-colored above.
-                GetFFD(tab).activeHL:SetColorTexture(1, 1, 1, 0.02)
-                GetFFD(tab).activeHL:SetBlendMode("ADD")
+                GetFFD(tabBtn).activeHL:SetColorTexture(1, 1, 1, 0.02)
+                GetFFD(tabBtn).activeHL:SetBlendMode("ADD")
             end
 
             -- Replace Blizzard label with custom font
-            local blizLabel = tab:GetFontString()
+            local blizLabel = tabBtn:GetFontString()
             local labelText = blizLabel and blizLabel:GetText() or ("Tab " .. idx)
             if blizLabel then
                 blizLabel:SetTextColor(0, 0, 0, 0)
             end
-            tab:SetPushedTextOffset(0, 0)
+            tabBtn:SetPushedTextOffset(0, 0)
 
-            if not GetFFD(tab).label then
-                local label = tab:CreateFontString(nil, "OVERLAY")
+            if not GetFFD(tabBtn).label then
+                local label = tabBtn:CreateFontString(nil, "OVERLAY")
                 label:SetFont(fontFile, 9, nil)
-                label:SetPoint("CENTER", tab, "CENTER", 0, 0)
+                label:SetPoint("CENTER", tabBtn, "CENTER", 0, 0)
                 label:SetJustifyH("CENTER")
                 label:SetText(labelText)
-                GetFFD(tab).label = label
+                GetFFD(tabBtn).label = label
 
-                hooksecurefunc(tab, "SetText", function(_, newText)
+                hooksecurefunc(tabBtn, "SetText", function(_, newText)
                     if newText and label then
                         label:SetText(newText)
                     end
@@ -1096,24 +1096,24 @@ local function SkinInspectSheet()
             end
 
             -- Add underline for active tab
-            if not GetFFD(tab).underline then
-                local underline = tab:CreateTexture(nil, "OVERLAY", nil, 6)
+            if not GetFFD(tabBtn).underline then
+                local underline = tabBtn:CreateTexture(nil, "OVERLAY", nil, 6)
                 if CludesUI and CludesUI.PanelPP and CludesUI.PanelPP.DisablePixelSnap then
                     CludesUI.PanelPP.DisablePixelSnap(underline)
                     underline:SetHeight(CludesUI.PanelPP.mult or 1)
                 else
                     underline:SetHeight(1)
                 end
-                underline:SetPoint("BOTTOMLEFT", tab, "BOTTOMLEFT", 0, 0)
-                underline:SetPoint("BOTTOMRIGHT", tab, "BOTTOMRIGHT", 0, 0)
+                underline:SetPoint("BOTTOMLEFT", tabBtn, "BOTTOMLEFT", 0, 0)
+                underline:SetPoint("BOTTOMRIGHT", tabBtn, "BOTTOMRIGHT", 0, 0)
                 underline:SetColorTexture(ACC.r or 0.51, ACC.g or 0.784, ACC.b or 1, 1)
                 CludesUI.RegAccent({ type = "solid", obj = underline, a = 1 })
                 underline:Hide()
-                GetFFD(tab).underline = underline
+                GetFFD(tabBtn).underline = underline
             else
                 -- Same strip-loop restore as activeHL above: re-apply the accent
                 -- fill so the active-tab underline does not blank out on re-skin.
-                GetFFD(tab).underline:SetColorTexture(ACC.r or 0.51, ACC.g or 0.784, ACC.b or 1, 1)
+                GetFFD(tabBtn).underline:SetColorTexture(ACC.r or 0.51, ACC.g or 0.784, ACC.b or 1, 1)
             end
         end
     end
@@ -1149,21 +1149,21 @@ local function SkinInspectSheet()
         ApplyTabVisibility(isTab1)
 
         for idx = 1, 3 do
-            local tab = _G["InspectFrameTab" .. idx]
-            if tab then
+            local tabBtn = _G["InspectFrameTab" .. idx]
+            if tabBtn then
                 local isActive = (widget.selectedTab or 1) == idx
                 -- Ensure background is always visible
-                if GetFFD(tab).bg then
-                    GetFFD(tab).bg:Show()
+                if GetFFD(tabBtn).bg then
+                    GetFFD(tabBtn).bg:Show()
                 end
-                if GetFFD(tab).label then
-                    GetFFD(tab).label:SetTextColor(1, 1, 1, isActive and 1 or 0.5)
+                if GetFFD(tabBtn).label then
+                    GetFFD(tabBtn).label:SetTextColor(1, 1, 1, isActive and 1 or 0.5)
                 end
-                if GetFFD(tab).underline then
-                    GetFFD(tab).underline:SetShown(isActive)
+                if GetFFD(tabBtn).underline then
+                    GetFFD(tabBtn).underline:SetShown(isActive)
                 end
-                if GetFFD(tab).activeHL then
-                    GetFFD(tab).activeHL:SetShown(isActive)
+                if GetFFD(tabBtn).activeHL then
+                    GetFFD(tabBtn).activeHL:SetShown(isActive)
                 end
             end
         end

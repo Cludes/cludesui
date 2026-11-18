@@ -36,28 +36,28 @@ do
     -- Content pages the tabs swap between; each repaints the window when shown.
     local PAGES = { "RewardTrackPage", "ChallengesPage" }
 
-    local function FadeArt(fr, depth)
-        if depth > 5 or not fr or fr:IsForbidden() then
+    local function FadeArt(found, depth)
+        if depth > 5 or not found or found:IsForbidden() then
             return
         end
-        if depth > 0 and Skin.IsForeignFrame(fr) then
+        if depth > 0 and Skin.IsForeignFrame(found) then
             return
         end
-        local regions = { fr:GetRegions() }
-        for idx = 1, #regions do
-            local r = regions[idx]
-            local a = r.GetAtlas and r:GetAtlas()
+        local regionList = { found:GetRegions() }
+        for idx = 1, #regionList do
+            local region = regionList[idx]
+            local a = region.GetAtlas and region:GetAtlas()
             if a then
                 local la = a:lower()
                 for _, wid in ipairs(FADE) do
                     if la:find(wid, 1, true) then
-                        r:SetAlpha(0)
+                        region:SetAlpha(0)
                         break
                     end
                 end
             end
         end
-        local children = { fr:GetChildren() }
+        local children = { found:GetChildren() }
         for idx = 1, #children do
             FadeArt(children[idx], depth + 1)
         end
@@ -65,21 +65,21 @@ do
 
     -- House font on every FontString under a page (the reward-track points, labels
     -- and progress), refreshed on each show.
-    local function FontKids(fr, depth)
-        if depth > 4 or not fr or fr:IsForbidden() then
+    local function FontKids(found, depth)
+        if depth > 4 or not found or found:IsForbidden() then
             return
         end
-        if depth > 0 and Skin.IsForeignFrame(fr) then
+        if depth > 0 and Skin.IsForeignFrame(found) then
             return
         end
-        local regions = { fr:GetRegions() }
-        for idx = 1, #regions do
-            local r = regions[idx]
-            if r:GetObjectType() == "FontString" then
-                Skin.Font(r)
+        local regionList = { found:GetRegions() }
+        for idx = 1, #regionList do
+            local region = regionList[idx]
+            if region:GetObjectType() == "FontString" then
+                Skin.Font(region)
             end
         end
-        local children = { fr:GetChildren() }
+        local children = { found:GetChildren() }
         for idx = 1, #children do
             FontKids(children[idx], depth + 1)
         end
@@ -89,30 +89,30 @@ do
     -- window, and this gate keeps the show hooks below inert too when the card is
     -- switched to Blizz Default before the reload.
     local Skin_LegacySystem = Skin.WindowCallback("legacysystem", function()
-        local f = _G.LegacySystemFrame
-        if not f then
+        local frame = _G.LegacySystemFrame
+        if not frame then
             return
         end
-        Skin.Shell("legacysystem", f)
-        Skin.RemovePortrait(f)
-        Skin.CommonChrome(f, "LegacySystemFrame")
+        Skin.Shell("legacysystem", frame)
+        Skin.RemovePortrait(frame)
+        Skin.CommonChrome(frame, "LegacySystemFrame")
         -- The window's own file-texture backdrop, which the shell does not catch.
         if _G.LegacySystemFrameBg then
             _G.LegacySystemFrameBg:SetAlpha(0)
         end
-        FadeArt(f, 0)
-        Skin.CloseButton(f.CloseButton or _G.LegacySystemFrameCloseButton)
-        local title = (f.TitleContainer and f.TitleContainer.TitleText) or _G.LegacySystemFrameTitleText
-        if title then
-            Skin.Font(title)
-            Skin.White(title)
+        FadeArt(frame, 0)
+        Skin.CloseButton(frame.CloseButton or _G.LegacySystemFrameCloseButton)
+        local titleText = (frame.TitleContainer and frame.TitleContainer.TitleText) or _G.LegacySystemFrameTitleText
+        if titleText then
+            Skin.Font(titleText)
+            Skin.White(titleText)
         end
         for _, tn in ipairs(SIDE_TABS) do
-            Skin.SideTab(f[tn])
+            Skin.SideTab(frame[tn])
         end
         for _, pn in ipairs(PAGES) do
-            if f[pn] then
-                FontKids(f[pn], 0)
+            if frame[pn] then
+                FontKids(frame[pn], 0)
             end
         end
     end)
@@ -120,15 +120,15 @@ do
     -- Re-skin on show and when a tab swaps a content page in (HookShow hooks each
     -- frame once).
     local function InstallHooks()
-        local f = _G.LegacySystemFrame
-        if not f then
+        local frame = _G.LegacySystemFrame
+        if not frame then
             return
         end
         local repaint = Skin.Debounce(Skin_LegacySystem)
-        Skin.HookShow(f, repaint)
+        Skin.HookShow(frame, repaint)
         for _, pn in ipairs(PAGES) do
-            if f[pn] then
-                Skin.HookShow(f[pn], repaint)
+            if frame[pn] then
+                Skin.HookShow(frame[pn], repaint)
             end
         end
     end

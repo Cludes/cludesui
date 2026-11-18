@@ -47,20 +47,20 @@ end
 -- One-time cell chrome: a box frame of ours with the theme border, the cell
 -- background behind the icon, and the highlight turned into a white wash.
 local function EnsureChrome(button)
-    local d = GetFFD(button)
-    if d.box then
-        return d
+    local skinData = GetFFD(button)
+    if skinData.box then
+        return skinData
     end
     local box = CreateFrame("Frame", nil, button)
     box:SetAllPoints(button)
     box:EnableMouse(false)
     Skin.AddBorder(box)
     OURS[box] = true
-    d.box = box
+    skinData.box = box
     local backdrop = button:CreateTexture(nil, "BACKGROUND", nil, -8)
     backdrop:SetColorTexture(Theme.bgR, Theme.bgG, Theme.bgB, CELL_BG_A)
     backdrop:SetAllPoints(button)
-    d.bg = backdrop
+    skinData.bg = backdrop
     local highlight = button.GetHighlightTexture and button:GetHighlightTexture()
     if highlight and highlight.SetColorTexture then
         highlight:SetColorTexture(1, 1, 1, 0.1)
@@ -68,24 +68,24 @@ local function EnsureChrome(button)
             highlight:SetTexCoord(0, 1, 0, 1)
         end
     end
-    return d
+    return skinData
 end
 
 -- The keyring's frame art sits in its child frames (a NineSlice border built
 -- after the first pass): fade their textures, walking Blizzard's own frames only.
-local function FadeKeyRingArt(f, depth)
-    if not f or depth > 4 or (f.IsForbidden and f:IsForbidden()) then
+local function FadeKeyRingArt(frame, depth)
+    if not frame or depth > 4 or (frame.IsForbidden and frame:IsForbidden()) then
         return
     end
-    local children = { f:GetChildren() }
+    local children = { frame:GetChildren() }
     for idx = 1, #children do
         local c = children[idx]
-        if c and not OURS[c] and not Skin.IsForeignFrame(c, f) then
-            local regions = { c:GetRegions() }
-            for jdx = 1, #regions do
-                local r = regions[jdx]
-                if r and r.GetObjectType and r:GetObjectType() == "Texture" then
-                    r:SetAlpha(0)
+        if c and not OURS[c] and not Skin.IsForeignFrame(c, frame) then
+            local regionList = { c:GetRegions() }
+            for jdx = 1, #regionList do
+                local region = regionList[jdx]
+                if region and region.GetObjectType and region:GetObjectType() == "Texture" then
+                    region:SetAlpha(0)
                 end
             end
             FadeKeyRingArt(c, depth + 1)
@@ -95,12 +95,12 @@ end
 
 -- Per pass: icon crop, bevel art, masks and the border colour (bag quality).
 local function PaintBag(button)
-    local d = FFD[button]
-    if not (d and d.box) then
+    local skinData = FFD[button]
+    if not (skinData and skinData.box) then
         return
     end
     local isKeyRing = (button == _G.KeyRingButton)
-    local icon = button.icon or (button.GetName and _G[button:GetName() .. "IconTexture"])
+    local iconTex = button.icon or (button.GetName and _G[button:GetName() .. "IconTexture"])
     local nt = (button.GetNormalTexture and button:GetNormalTexture()) or button.NormalTexture
     if isKeyRing then
         -- Its glyph can live on the NormalTexture, under its own SquareMask.
@@ -113,36 +113,36 @@ local function PaintBag(button)
             end
         end
         FadeKeyRingArt(button, 1)
-        if not (icon and icon.GetTexture and icon:GetTexture()) then
-            icon = nt
+        if not (iconTex and iconTex.GetTexture and iconTex:GetTexture()) then
+            iconTex = nt
         end
     end
-    if icon and icon.SetTexCoord then
-        icon:SetTexCoord(ICON_CROP, 1 - ICON_CROP, ICON_CROP, 1 - ICON_CROP)
+    if iconTex and iconTex.SetTexCoord then
+        iconTex:SetTexCoord(ICON_CROP, 1 - ICON_CROP, ICON_CROP, 1 - ICON_CROP)
     end
     -- The bevel NormalTexture fades, except while it is the keyring glyph.
-    if nt and nt ~= icon then
+    if nt and nt ~= iconTex then
         nt:SetAlpha(0)
     end
     if button.IconBorder then
         button.IconBorder:SetAlpha(0)
     end
-    local regions = { button:GetRegions() }
-    for idx = 1, #regions do
-        local r = regions[idx]
-        local kind = r and r.GetObjectType and r:GetObjectType()
+    local regionList = { button:GetRegions() }
+    for idx = 1, #regionList do
+        local region = regionList[idx]
+        local kind = region and region.GetObjectType and region:GetObjectType()
         if kind == "MaskTexture" then
             -- pcall: a texture the mask is not on may reject the removal.
-            if icon and icon.RemoveMaskTexture then
-                pcall(icon.RemoveMaskTexture, icon, r)
+            if iconTex and iconTex.RemoveMaskTexture then
+                pcall(iconTex.RemoveMaskTexture, iconTex, region)
             end
-            if nt and nt ~= icon and nt.RemoveMaskTexture then
-                pcall(nt.RemoveMaskTexture, nt, r)
+            if nt and nt ~= iconTex and nt.RemoveMaskTexture then
+                pcall(nt.RemoveMaskTexture, nt, region)
             end
         elseif kind == "Texture" then
-            local atlas = r.GetAtlas and r:GetAtlas()
+            local atlas = region.GetAtlas and region:GetAtlas()
             if atlas and atlas:lower():find("iconframe", 1, true) then
-                r:SetAlpha(0)
+                region:SetAlpha(0)
             end
         end
     end
@@ -150,15 +150,15 @@ local function PaintBag(button)
     local ident = button.GetID and button:GetID()
     local itemId = ident and ident > 0 and GetInventoryItemID("player", ident)
     local q = itemId and C_Item.GetItemQualityByID(itemId)
-    local r, g, b
+    local region, g, button
     if q and q >= 2 then
-        r, g, b = C_Item.GetItemQualityColor(q)
+        region, g, button = C_Item.GetItemQualityColor(q)
     end
     local Pix = BorderPP()
-    if r then
-        Pix.SetBorderColor(d.box, r, g, b, 1)
+    if region then
+        Pix.SetBorderColor(skinData.box, region, g, button, 1)
     else
-        Pix.SetBorderColor(d.box, Theme.brdR, Theme.brdG, Theme.brdB, Theme.brdA)
+        Pix.SetBorderColor(skinData.box, Theme.brdR, Theme.brdG, Theme.brdB, Theme.brdA)
     end
 end
 
@@ -166,15 +166,15 @@ local function FadeFrameArt(widget)
     if not widget then
         return
     end
-    local regions = { widget:GetRegions() }
-    for idx = 1, #regions do
-        local r = regions[idx]
-        local atlas = r and r.GetAtlas and r:GetAtlas()
+    local regionList = { widget:GetRegions() }
+    for idx = 1, #regionList do
+        local region = regionList[idx]
+        local atlas = region and region.GetAtlas and region:GetAtlas()
         if atlas then
             local la = atlas:lower()
             for _, wanted in ipairs(FRAME_ATLASES) do
                 if la:find(wanted, 1, true) then
-                    r:SetAlpha(0)
+                    region:SetAlpha(0)
                     break
                 end
             end
@@ -206,9 +206,9 @@ local function Skin_BagBar()
     end
     hooked = true
     -- Bag changes: quality borders and icon crops follow the equipped bags.
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("BAG_UPDATE_DELAYED")
-    f:SetScript("OnEvent", Skin.Debounce(PaintAll))
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("BAG_UPDATE_DELAYED")
+    frame:SetScript("OnEvent", Skin.Debounce(PaintAll))
     -- The keyring rebuilds its art in its own texture update (bag updates and
     -- zone-ins): repaint it right after.
     local kr = _G.KeyRingButton

@@ -619,8 +619,8 @@ do
         if not sample and CludesUI._repaintTooltipPreview then
             CludesUI._repaintTooltipPreview()
         end
-        local bar = sample or GameTooltipStatusBar
-        if not bar or not (styled or sample) then
+        local barFrame = sample or GameTooltipStatusBar
+        if not barFrame or not (styled or sample) then
             return
         end
         local saved = CludesUIDB
@@ -632,15 +632,15 @@ do
             end
             filePath = CludesUI.ResolveTexturePath(texLookup, key, "Interface\\Buttons\\WHITE8X8")
         end
-        bar:SetStatusBarTexture(filePath)
-        bar:SetHeight(saved and saved.tooltipHealthStripHeight or 3)
+        barFrame:SetStatusBarTexture(filePath)
+        barFrame:SetHeight(saved and saved.tooltipHealthStripHeight or 3)
     end
 
     if GameTooltipStatusBar then
         -- Re-assert alpha 0 each time Blizzard shows the bar so it can never flash back into view (SetAlpha doesn't call Show, so no recursion).
-        hooksecurefunc(GameTooltipStatusBar, "Show", function(bar)
+        hooksecurefunc(GameTooltipStatusBar, "Show", function(barFrame)
             if _healthStripHidden() then
-                bar:SetAlpha(0)
+                barFrame:SetAlpha(0)
             end
         end)
         CludesUI._applyTooltipHealthStrip()

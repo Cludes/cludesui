@@ -659,7 +659,7 @@ end
 -- UI styles frame the column as one box (the Resource Bars' Border Around All
 -- look), so the rim sits outside the column only. Above and below differ
 -- slightly; each side takes half of their sum. 0,0 with no frame (modern).
-local function ArtOverhang(chrome, k)
+local function ArtOverhang(chrome, keyName)
     if chrome == "blizzard" then
         local C = BLIZZ_CHROME
         return PPSnap((C.rimT + C.rimB) / 2), PPSnap(C.rimX)
@@ -668,7 +668,7 @@ local function ArtOverhang(chrome, k)
         if not CF then
             return 0, 0
         end
-        local padW, padH = CF.Pad(k)
+        local padW, padH = CF.Pad(keyName)
         return PPSnap(padH / 2), PPSnap(padW / 2)
     end
     return 0, 0
@@ -705,7 +705,7 @@ local function ComputeLayout(p)
     local classic = p.vigorStyle == "gems"
     local style = mod.EDR_Style()
     local chrome = style ~= "cui" and style or nil
-    local k = chrome == "classic" and ClassicFrameK(p) or 1
+    local keyName = chrome == "classic" and ClassicFrameK(p) or 1
 
     local rowList = {}
     if p.showSpeed ~= false then
@@ -718,20 +718,20 @@ local function ComputeLayout(p)
         rowList[#rowList + 1] = "sw"
     end
 
-    local ov, padX = ArtOverhang(chrome, k)
+    local ov, padX = ArtOverhang(chrome, keyName)
     local colH = StackHeight(p, rowList, ov)
     local colW = #rowList > 0 and (p.width + 2 * padX) or 0
 
-    local icon = p.showWhirlingSurge ~= false
+    local iconTex = p.showWhirlingSurge ~= false
     local iconSize = 0
-    if icon then
+    if iconTex then
         iconSize = p.iconSize
         if not iconSize then
             -- Every bar of the style, shown or not.
             iconSize = StackHeight(p, classic and STYLE_ROWS_GEMS or STYLE_ROWS_BARS, ov)
         end
     end
-    local clusterW = colW + (icon and ((colW > 0 and p.gap or 0) + iconSize) or 0)
+    local clusterW = colW + (iconTex and ((colW > 0 and p.gap or 0) + iconSize) or 0)
     local clusterH = max(colH, iconSize)
 
     local scale = p.classicScale or 1
@@ -748,14 +748,14 @@ local function ComputeLayout(p)
         rows = rowList,
         classic = classic,
         chrome = chrome,
-        frameK = k,
+        frameK = keyName,
         ov = ov,
         scale = scale,
         colH = colH,
         colW = colW,
         padX = padX,
         colY = PPSnap((clusterH - colH) / 2),
-        icon = icon,
+        icon = iconTex,
         iconSize = iconSize,
         iconY = PPSnap((clusterH - iconSize) / 2),
         clusterW = clusterW,
@@ -783,9 +783,9 @@ local function ApplyFont(fontStr, size)
     fontStr:SetFont(font, size or 12, flag)
 end
 
-local function CreateSolidTexture(hostFrame, layer, sublevel, r, g, b, a)
+local function CreateSolidTexture(hostFrame, layer, sublevel, region, g, button, a)
     local texture = hostFrame:CreateTexture(nil, layer or "BACKGROUND", nil, sublevel or 0)
-    texture:SetColorTexture(r or 0, g or 0, b or 0, a or 1)
+    texture:SetColorTexture(region or 0, g or 0, button or 0, a or 1)
     texture:SetSnapToPixelGrid(false)
     texture:SetTexelSnappingBias(0)
     return texture
@@ -829,12 +829,12 @@ local function ApplyBordersAll(S, L)
     local c = p.borderColor
     -- The Blizzard and Classic WoW UI bar styles draw their own frames instead.
     local thick = L.chrome and 0 or (p.borderThickness or 0)
-    for _, f in ipairs(S.bordered) do
+    for _, frame in ipairs(S.bordered) do
         if thick > 0 then
-            Pix.UpdateBorder(f, thick, c.r, c.g, c.b, c.a)
-            Pix.ShowBorder(f)
+            Pix.UpdateBorder(frame, thick, c.r, c.g, c.b, c.a)
+            Pix.ShowBorder(frame)
         else
-            Pix.HideBorder(f)
+            Pix.HideBorder(frame)
         end
     end
 
@@ -872,20 +872,20 @@ local function ApplyBordersAll(S, L)
             end
         end
         -- Re-snap so the updated hide flags take effect immediately.
-        for _, f in ipairs(S.bordered) do
-            Pix.SetBorderSize(f, thick)
+        for _, frame in ipairs(S.bordered) do
+            Pix.SetBorderSize(frame, thick)
         end
     end
 end
 
 local function CreateSpeedBar(hostFrame)
-    local f = CreateFrame("StatusBar", nil, hostFrame)
-    f:SetMinMaxValues(0, 1)
-    f:SetValue(0)
-    f:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-    f.bg = CreateSolidTexture(f, "BACKGROUND", 0)
-    f.bg:SetAllPoints(f)
-    f.tick = CreateSolidTexture(f, "OVERLAY", 5)
+    local frame = CreateFrame("StatusBar", nil, hostFrame)
+    frame:SetMinMaxValues(0, 1)
+    frame:SetValue(0)
+    frame:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
+    frame.bg = CreateSolidTexture(frame, "BACKGROUND", 0)
+    frame.bg:SetAllPoints(frame)
+    frame.tick = CreateSolidTexture(frame, "OVERLAY", 5)
     -- The pip stacks/icon nest their bar textures one parent level deeper
     -- than the speed bar itself (stackFrame -> pip, wsIcon -> tex/cd), and
     -- frame level always outranks draw layer across frames. A plain OVERLAY
@@ -893,45 +893,45 @@ local function CreateSpeedBar(hostFrame)
     -- content, so give the text its own frame raised well above every level
     -- used anywhere in this HUD (same pattern as CreateWhirlingSurgeIcon's
     -- textFrame).
-    f.textFrame = CreateFrame("Frame", nil, f)
-    f.textFrame:SetAllPoints(f)
-    f.textFrame:SetFrameLevel(f:GetFrameLevel() + 10)
-    f.text = f.textFrame:CreateFontString(nil, "OVERLAY")
-    return f
+    frame.textFrame = CreateFrame("Frame", nil, frame)
+    frame.textFrame:SetAllPoints(frame)
+    frame.textFrame:SetFrameLevel(frame:GetFrameLevel() + 10)
+    frame.text = frame.textFrame:CreateFontString(nil, "OVERLAY")
+    return frame
 end
 
 local function CreateStackFrame(hostFrame, pipCount)
-    local f = CreateFrame("Frame", nil, hostFrame)
-    f.pips = {}
+    local frame = CreateFrame("Frame", nil, hostFrame)
+    frame.pips = {}
     for idx = 1, pipCount do
-        local pip = CreateFrame("StatusBar", nil, f)
+        local pip = CreateFrame("StatusBar", nil, frame)
         pip:SetMinMaxValues(0, 1)
         pip:SetValue(0)
         pip:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
         pip.bg = CreateSolidTexture(pip, "BACKGROUND", 0)
         pip.bg:SetAllPoints(pip)
-        f.pips[idx] = pip
+        frame.pips[idx] = pip
     end
-    return f
+    return frame
 end
 
 local function CreateWhirlingSurgeIcon(hostFrame)
-    local f = CreateFrame("Frame", nil, hostFrame)
-    f.tex = f:CreateTexture(nil, "ARTWORK")
-    f.tex:SetAllPoints(f)
+    local frame = CreateFrame("Frame", nil, hostFrame)
+    frame.tex = frame:CreateTexture(nil, "ARTWORK")
+    frame.tex:SetAllPoints(frame)
     local details = C_Spell.GetSpellInfo(SPELL.WHIRLING_SURGE)
     local iconFile = details and details.iconID or 135860
-    f.tex:SetTexture(iconFile)
-    f.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    f.cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
-    f.cd:SetAllPoints(f)
-    f.cd:SetDrawEdge(false)
-    f.cd:SetHideCountdownNumbers(true)
-    f.textFrame = CreateFrame("Frame", nil, f)
-    f.textFrame:SetAllPoints(f)
-    f.textFrame:SetFrameLevel(f.cd:GetFrameLevel() + 1)
-    f.text = f.textFrame:CreateFontString(nil, "OVERLAY")
-    return f
+    frame.tex:SetTexture(iconFile)
+    frame.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    frame.cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
+    frame.cd:SetAllPoints(frame)
+    frame.cd:SetDrawEdge(false)
+    frame.cd:SetHideCountdownNumbers(true)
+    frame.textFrame = CreateFrame("Frame", nil, frame)
+    frame.textFrame:SetAllPoints(frame)
+    frame.textFrame:SetFrameLevel(frame.cd:GetFrameLevel() + 1)
+    frame.text = frame.textFrame:CreateFontString(nil, "OVERLAY")
+    return frame
 end
 
 -- Inner bevel over a Blizzard-style row: gradient strips darkening the long
@@ -951,7 +951,7 @@ local function LayoutBevel(shade, wid, hgt)
         shade.strips = sh
     end
     local a = max(2, floor(hgt * 0.2))
-    local b = max(1, floor(hgt * 0.1))
+    local button = max(1, floor(hgt * 0.1))
     local e = max(2, floor(wid * 0.15))
     for idx = 1, 4 do
         sh[idx]:ClearAllPoints()
@@ -963,7 +963,7 @@ local function LayoutBevel(shade, wid, hgt)
     sh[2]:SetGradient("VERTICAL", SHADE_BOTTOM, SHADE_CLEAR)
     sh[2]:SetPoint("BOTTOMLEFT")
     sh[2]:SetPoint("BOTTOMRIGHT")
-    sh[2]:SetHeight(b)
+    sh[2]:SetHeight(button)
     sh[3]:SetGradient("HORIZONTAL", SHADE_END, SHADE_CLEAR)
     sh[3]:SetPoint("TOPLEFT")
     sh[3]:SetPoint("BOTTOMLEFT")
@@ -996,18 +996,18 @@ end
 -- round off), which keeps the row inside the panel rim's rounded corners, and
 -- the bevel over the row (above the pips and their borders, under the speed
 -- text at +10). Built on first use; hidden and un-clipped in the other styles.
-local function ApplyRowChrome(host, chrome, wid, hgt)
+local function ApplyRowChrome(owner, chrome, wid, hgt)
     local on = chrome == "blizzard"
-    local shade = host._edrShade
+    local shade = owner._edrShade
     if on and not shade then
-        shade = CreateFrame("Frame", nil, host)
-        shade:SetAllPoints(host)
-        shade:SetFrameLevel(host:GetFrameLevel() + 9)
-        host._edrShade = shade
+        shade = CreateFrame("Frame", nil, owner)
+        shade:SetAllPoints(owner)
+        shade:SetFrameLevel(owner:GetFrameLevel() + 9)
+        owner._edrShade = shade
         if C_Texture.GetAtlasInfo(BLIZZ_CHROME.fill) then
-            host._edrMask = host:CreateMaskTexture()
-            host._edrMask:SetAtlas(BLIZZ_CHROME.fill)
-            host._edrMask:SetAllPoints(host)
+            owner._edrMask = owner:CreateMaskTexture()
+            owner._edrMask:SetAtlas(BLIZZ_CHROME.fill)
+            owner._edrMask:SetAllPoints(owner)
         end
     end
     if not shade then
@@ -1017,16 +1017,16 @@ local function ApplyRowChrome(host, chrome, wid, hgt)
     if on then
         LayoutBevel(shade, wid, hgt)
     end
-    local mask = on and host._edrMask or nil
-    if host.pips then
-        for idx = 1, #host.pips do
-            local pip = host.pips[idx]
+    local mask = on and owner._edrMask or nil
+    if owner.pips then
+        for idx = 1, #owner.pips do
+            local pip = owner.pips[idx]
             MaskTex(pip:GetStatusBarTexture(), mask)
             MaskTex(pip.bg, mask)
         end
     else
-        MaskTex(host:GetStatusBarTexture(), mask)
-        MaskTex(host.bg, mask)
+        MaskTex(owner:GetStatusBarTexture(), mask)
+        MaskTex(owner.bg, mask)
     end
     if shade.strips then
         for idx = 1, #shade.strips do
@@ -1095,94 +1095,94 @@ local PANEL_PIECES = {
 -- the modern style.
 local function ApplyColumnChrome(S, L, geo, wid, gap, spacing)
     local root = S.root
-    local col = root._edrCol
+    local colour = root._edrCol
     local chrome = L.chrome
     if not chrome or #geo == 0 then
-        if col then
-            col:Hide()
+        if colour then
+            colour:Hide()
         end
         return
     end
-    if not col then
-        col = CreateFrame("Frame", nil, root)
-        col:EnableMouse(false)
+    if not colour then
+        colour = CreateFrame("Frame", nil, root)
+        colour:EnableMouse(false)
         -- Art over every row's fill, pips and borders; under the speed text.
-        col.art = CreateFrame("Frame", nil, col)
-        col.art:EnableMouse(false)
-        col.art:SetAllPoints(col)
-        col.seps = {}
-        root._edrCol = col
+        colour.art = CreateFrame("Frame", nil, colour)
+        colour.art:EnableMouse(false)
+        colour.art:SetAllPoints(colour)
+        colour.seps = {}
+        root._edrCol = colour
     end
     -- Under the rows (the panel is their backdrop); the art level above them.
     local rowLevel = S.speed:GetFrameLevel()
-    col:SetFrameLevel(max(0, rowLevel - 1))
-    col.art:SetFrameLevel(rowLevel + 9)
+    colour:SetFrameLevel(max(0, rowLevel - 1))
+    colour.art:SetFrameLevel(rowLevel + 9)
 
     local first, last = geo[1], geo[#geo]
-    col:ClearAllPoints()
-    col:SetPoint("BOTTOMLEFT", root, "BOTTOMLEFT", first.x, first.y)
-    col:SetSize(wid, last.y + last.h - first.y)
-    col:Show()
+    colour:ClearAllPoints()
+    colour:SetPoint("BOTTOMLEFT", root, "BOTTOMLEFT", first.x, first.y)
+    colour:SetSize(wid, last.y + last.h - first.y)
+    colour:Show()
 
     -- Blizzard panel.
-    local details = chrome == "blizzard" and not col.panel and C_Texture.GetAtlasInfo(BLIZZ_CHROME.bg)
+    local details = chrome == "blizzard" and not colour.panel and C_Texture.GetAtlasInfo(BLIZZ_CHROME.bg)
     if details then
-        col.panel = {}
+        colour.panel = {}
         local file = details.file or details.filename
-        local l, r, t, b =
+        local l, region, t, button =
             details.leftTexCoord, details.rightTexCoord, details.topTexCoord, details.bottomTexCoord
         for _, pc in ipairs(PANEL_PIECES) do
-            local texture = pc[5] and col:CreateTexture(nil, "BACKGROUND", nil, -2)
-                or col.art:CreateTexture(nil, "OVERLAY", nil, 0)
+            local texture = pc[5] and colour:CreateTexture(nil, "BACKGROUND", nil, -2)
+                or colour.art:CreateTexture(nil, "OVERLAY", nil, 0)
             texture:SetSnapToPixelGrid(false)
             texture:SetTexelSnappingBias(0)
             texture:SetTexture(file)
             texture:SetTexCoord(
-                l + (r - l) * pc[1] / 132,
-                l + (r - l) * pc[2] / 132,
-                t + (b - t) * pc[3] / 19,
-                t + (b - t) * pc[4] / 19
+                l + (region - l) * pc[1] / 132,
+                l + (region - l) * pc[2] / 132,
+                t + (button - t) * pc[3] / 19,
+                t + (button - t) * pc[4] / 19
             )
             local p1, p2 = pc[6], pc[7]
-            texture:SetPoint("TOPLEFT", col, p1[1], p1[2], p1[3])
-            texture:SetPoint("BOTTOMRIGHT", col, p2[1], p2[2], p2[3])
-            col.panel[#col.panel + 1] = texture
+            texture:SetPoint("TOPLEFT", colour, p1[1], p1[2], p1[3])
+            texture:SetPoint("BOTTOMRIGHT", colour, p2[1], p2[2], p2[3])
+            colour.panel[#colour.panel + 1] = texture
         end
     end
-    if col.panel then
-        for idx = 1, #col.panel do
-            col.panel[idx]:SetShown(chrome == "blizzard")
+    if colour.panel then
+        for idx = 1, #colour.panel do
+            colour.panel[idx]:SetShown(chrome == "blizzard")
         end
     end
 
     -- Classic WoW UI frame.
     local CF = CludesUI.ClassicFrame
-    if chrome == "classic" and CF and not col.classic then
-        col.classic = CF.Create(col.art, "OVERLAY", 2)
+    if chrome == "classic" and CF and not colour.classic then
+        colour.classic = CF.Create(colour.art, "OVERLAY", 2)
     end
-    if col.classic then
-        CF.SetShown(col.classic, chrome == "classic")
+    if colour.classic then
+        CF.SetShown(colour.classic, chrome == "classic")
         if chrome == "classic" then
-            CF.Seat(col.classic, col, L.frameK, false)
+            CF.Seat(colour.classic, colour, L.frameK, false)
         end
     end
 
     -- Dividers, one physical pixel thick, snapped to whole pixels.
     local PPdr = CludesUI.PP
-    local px = ((PPdr and PPdr.perfect) or 1) / col:GetEffectiveScale()
+    local pixel = ((PPdr and PPdr.perfect) or 1) / colour:GetEffectiveScale()
     local function Centre(span)
-        return floor(((span - px) / 2) / px + 0.5) * px
+        return floor(((span - pixel) / 2) / pixel + 0.5) * pixel
     end
     local num = 0
     local function Sep(posX, posY, sw, sh)
         num = num + 1
-        local t = col.seps[num]
+        local t = colour.seps[num]
         if not t then
-            t = col.art:CreateTexture(nil, "OVERLAY", nil, 3)
+            t = colour.art:CreateTexture(nil, "OVERLAY", nil, 3)
             t:SetColorTexture(0, 0, 0, 1)
             t:SetSnapToPixelGrid(false)
             t:SetTexelSnappingBias(0)
-            col.seps[num] = t
+            colour.seps[num] = t
         end
         t:ClearAllPoints()
         t:SetPoint("BOTTOMLEFT", root, "BOTTOMLEFT", posX, posY)
@@ -1192,18 +1192,18 @@ local function ApplyColumnChrome(S, L, geo, wid, gap, spacing)
     for idx, g in ipairs(geo) do
         if idx > 1 then
             local below = geo[idx - 1]
-            Sep(g.x, below.y + below.h + Centre(gap), wid, px)
+            Sep(g.x, below.y + below.h + Centre(gap), wid, pixel)
         end
         local row = g.key == "sky" and S.stack or g.key == "sw" and S.sw
         if row then
             for jdx = 1, #row.pips - 1 do
                 local pip = row.pips[jdx]
-                Sep(g.x + pip._edrX + pip._edrW + Centre(spacing), g.y, px, g.h)
+                Sep(g.x + pip._edrX + pip._edrW + Centre(spacing), g.y, pixel, g.h)
             end
         end
     end
-    for idx = num + 1, #col.seps do
-        col.seps[idx]:Hide()
+    for idx = num + 1, #colour.seps do
+        colour.seps[idx]:Hide()
     end
 end
 
@@ -1211,66 +1211,66 @@ end
 -- mask and rounded swipe; Classic WoW UI = the vanilla slot ring; modern = the
 -- plain cropped square. The cooldown text is lifted above any frame.
 local function ApplyIconArt(S, chrome)
-    local f = S.icon
-    if chrome and not f.artFrame then
-        f.artFrame = CreateFrame("Frame", nil, f)
-        f.artFrame:SetAllPoints(f)
-        f.artFrame:SetFrameLevel(f.cd:GetFrameLevel() + 1)
-        f.textFrame:SetFrameLevel(f.cd:GetFrameLevel() + 2)
+    local frame = S.icon
+    if chrome and not frame.artFrame then
+        frame.artFrame = CreateFrame("Frame", nil, frame)
+        frame.artFrame:SetAllPoints(frame)
+        frame.artFrame:SetFrameLevel(frame.cd:GetFrameLevel() + 1)
+        frame.textFrame:SetFrameLevel(frame.cd:GetFrameLevel() + 2)
     end
-    if chrome == "blizzard" and not f.blizzFrame then
-        f.blizzFrame = f.artFrame:CreateTexture(nil, "OVERLAY")
-        f.blizzFrame:SetAtlas(BLIZZ_ICON.frame)
-        f.blizzFrame:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-        f.blizzMask = f:CreateMaskTexture()
-        f.blizzMask:SetAtlas(BLIZZ_ICON.mask, false, nil, nil, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        f.blizzMask:SetPoint("CENTER", f.tex, "CENTER")
+    if chrome == "blizzard" and not frame.blizzFrame then
+        frame.blizzFrame = frame.artFrame:CreateTexture(nil, "OVERLAY")
+        frame.blizzFrame:SetAtlas(BLIZZ_ICON.frame)
+        frame.blizzFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+        frame.blizzMask = frame:CreateMaskTexture()
+        frame.blizzMask:SetAtlas(BLIZZ_ICON.mask, false, nil, nil, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        frame.blizzMask:SetPoint("CENTER", frame.tex, "CENTER")
         -- The mask art has transparent padding around its rounded square, so it
         -- is sized from its own atlas (scaled like the icon), not to the icon.
         local details = C_Texture.GetAtlasInfo(BLIZZ_ICON.mask)
-        f.blizzMaskW = details and details.width or BLIZZ_ICON.iconSize
-        f.blizzMaskH = details and details.height or BLIZZ_ICON.iconSize
+        frame.blizzMaskW = details and details.width or BLIZZ_ICON.iconSize
+        frame.blizzMaskH = details and details.height or BLIZZ_ICON.iconSize
     end
-    if chrome == "classic" and not f.classicRing then
-        f.classicRing = f.artFrame:CreateTexture(nil, "OVERLAY")
-        f.classicRing:SetTexture(BLIZZ_ICON.ring)
-        f.classicRing:SetSnapToPixelGrid(false)
-        f.classicRing:SetTexelSnappingBias(0)
+    if chrome == "classic" and not frame.classicRing then
+        frame.classicRing = frame.artFrame:CreateTexture(nil, "OVERLAY")
+        frame.classicRing:SetTexture(BLIZZ_ICON.ring)
+        frame.classicRing:SetSnapToPixelGrid(false)
+        frame.classicRing:SetTexelSnappingBias(0)
     end
 
-    local size = f:GetHeight()
-    if f.blizzFrame then
+    local size = frame:GetHeight()
+    if frame.blizzFrame then
         local on = chrome == "blizzard"
-        f.blizzFrame:SetShown(on)
+        frame.blizzFrame:SetShown(on)
         if on then
             local s = size / BLIZZ_ICON.iconSize
-            f.blizzFrame:SetSize(BLIZZ_ICON.frameW * s, BLIZZ_ICON.frameH * s)
-            f.blizzMask:SetSize(f.blizzMaskW * s, f.blizzMaskH * s)
+            frame.blizzFrame:SetSize(BLIZZ_ICON.frameW * s, BLIZZ_ICON.frameH * s)
+            frame.blizzMask:SetSize(frame.blizzMaskW * s, frame.blizzMaskH * s)
         end
-        if on ~= (f.blizzMasked or false) then
+        if on ~= (frame.blizzMasked or false) then
             if on then
-                f.tex:AddMaskTexture(f.blizzMask)
-                f.cd:SetSwipeTexture(BLIZZ_ICON.swipe)
+                frame.tex:AddMaskTexture(frame.blizzMask)
+                frame.cd:SetSwipeTexture(BLIZZ_ICON.swipe)
             else
-                f.tex:RemoveMaskTexture(f.blizzMask)
-                f.cd:SetSwipeTexture("")
+                frame.tex:RemoveMaskTexture(frame.blizzMask)
+                frame.cd:SetSwipeTexture("")
             end
-            f.blizzMasked = on
+            frame.blizzMasked = on
         end
     end
-    if f.classicRing then
+    if frame.classicRing then
         local on = chrome == "classic"
-        f.classicRing:SetShown(on)
+        frame.classicRing:SetShown(on)
         if on then
-            f.classicRing:ClearAllPoints()
-            f.classicRing:SetPoint("CENTER", f, "CENTER", 0, -size / 36)
-            f.classicRing:SetSize(size * 66 / 36, size * 66 / 36)
+            frame.classicRing:ClearAllPoints()
+            frame.classicRing:SetPoint("CENTER", frame, "CENTER", 0, -size / 36)
+            frame.classicRing:SetSize(size * 66 / 36, size * 66 / 36)
         end
     end
     if chrome == "blizzard" then
-        f.tex:SetTexCoord(0, 1, 0, 1)
+        frame.tex:SetTexCoord(0, 1, 0, 1)
     else
-        f.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        frame.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     end
 end
 
@@ -1324,30 +1324,30 @@ local function CreateClassicCell(hostFrame)
     cell.bg:SetPoint("CENTER")
     SetClassicArt(cell.bg, "background", C.bgW, C.bgH)
 
-    local bar = CreateFrame("StatusBar", nil, cell)
-    bar:SetOrientation("VERTICAL")
-    bar:SetMinMaxValues(0, 1)
-    bar:SetValue(0)
-    bar:SetPoint("CENTER")
-    bar:SetSize(C.fillW, C.fillH)
-    bar:SetFrameLevel(cell:GetFrameLevel() + 1)
-    cell.bar = bar
+    local barFrame = CreateFrame("StatusBar", nil, cell)
+    barFrame:SetOrientation("VERTICAL")
+    barFrame:SetMinMaxValues(0, 1)
+    barFrame:SetValue(0)
+    barFrame:SetPoint("CENTER")
+    barFrame:SetSize(C.fillW, C.fillH)
+    barFrame:SetFrameLevel(cell:GetFrameLevel() + 1)
+    cell.bar = barFrame
     cell.fillAtlas = ClassicAtlas("fill")
     cell.fillFullAtlas = ClassicAtlas("fillfull")
     if cell.fillAtlas then
-        bar:SetStatusBarTexture(cell.fillAtlas)
+        barFrame:SetStatusBarTexture(cell.fillAtlas)
     end
     cell.isFull = false
 
     local flipAtlas = ClassicAtlas("fill_flipbook")
     if flipAtlas then
-        cell.flip = bar:CreateTexture(nil, "OVERLAY")
-        cell.flip:SetAllPoints(bar)
+        cell.flip = barFrame:CreateTexture(nil, "OVERLAY")
+        cell.flip:SetAllPoints(barFrame)
         cell.flip:SetAtlas(flipAtlas)
         cell.flip:Hide()
-        cell.flipMask = bar:CreateMaskTexture()
+        cell.flipMask = barFrame:CreateMaskTexture()
         cell.flipMask:SetAtlas("AlphaMask2", true, nil, nil, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        cell.flipMask:SetPoint("TOP", bar:GetStatusBarTexture(), "TOP", 0, 0)
+        cell.flipMask:SetPoint("TOP", barFrame:GetStatusBarTexture(), "TOP", 0, 0)
         cell.flip:AddMaskTexture(cell.flipMask)
         cell.flipAnim = cell.flip:CreateAnimationGroup()
         cell.flipAnim:SetLooping("REPEAT")
@@ -1366,7 +1366,7 @@ local function CreateClassicCell(hostFrame)
     cell.spark = ov:CreateTexture(nil, "OVERLAY")
     cell.spark:SetBlendMode("ADD")
     SetClassicArt(cell.spark, "spark", C.sparkW, C.sparkH)
-    cell.spark:SetPoint("CENTER", bar:GetStatusBarTexture(), "TOP", 0, 0)
+    cell.spark:SetPoint("CENTER", barFrame:GetStatusBarTexture(), "TOP", 0, 0)
     cell.spark:Hide()
     local maskAtlas = ClassicAtlas("mask")
     if maskAtlas then
@@ -1408,31 +1408,31 @@ local function EnsureClassicFrame(S)
         return S.classic
     end
     local C = CLASSIC
-    local f = CreateFrame("Frame", nil, S.root)
-    f:SetSize(CLASSIC_W, CLASSIC_H)
+    local frame = CreateFrame("Frame", nil, S.root)
+    frame:SetSize(CLASSIC_W, CLASSIC_H)
 
-    f.decorL = f:CreateTexture(nil, "ARTWORK")
-    SetClassicArt(f.decorL, "decor", C.decorW, C.decorH)
-    f.decorL:SetTexCoord(1, 0, 0, 1)
-    f.decorL:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -C.decorTop)
-    f.decorR = f:CreateTexture(nil, "ARTWORK")
-    SetClassicArt(f.decorR, "decor", C.decorW, C.decorH)
-    f.decorR:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, -C.decorTop)
+    frame.decorL = frame:CreateTexture(nil, "ARTWORK")
+    SetClassicArt(frame.decorL, "decor", C.decorW, C.decorH)
+    frame.decorL:SetTexCoord(1, 0, 0, 1)
+    frame.decorL:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -C.decorTop)
+    frame.decorR = frame:CreateTexture(nil, "ARTWORK")
+    SetClassicArt(frame.decorR, "decor", C.decorW, C.decorH)
+    frame.decorR:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, -C.decorTop)
 
-    f.cells = {}
+    frame.cells = {}
     local posX = C.decorW + C.edgePad
     for idx = 1, SKYRIDING_PIPS do
-        local cell = CreateClassicCell(f)
-        cell:SetPoint("TOPLEFT", f, "TOPLEFT", posX, 0)
+        local cell = CreateClassicCell(frame)
+        cell:SetPoint("TOPLEFT", frame, "TOPLEFT", posX, 0)
         -- Level above the decor so the end gems overlap the wings, as they did.
-        cell:SetFrameLevel(f:GetFrameLevel() + 1)
+        cell:SetFrameLevel(frame:GetFrameLevel() + 1)
         cell.bar:SetFrameLevel(cell:GetFrameLevel() + 1)
         cell.overlay:SetFrameLevel(cell:GetFrameLevel() + 2)
-        f.cells[idx] = cell
+        frame.cells[idx] = cell
         posX = posX + C.cellW
     end
-    S.classic = f
-    return f
+    S.classic = frame
+    return frame
 end
 
 -------------------------------------------------------------------------------
@@ -1446,17 +1446,17 @@ local function LayoutPips(widget, pipCount, width, height, spacing)
     -- "extra spacing between charges and Whirling Surge" report, reproducible at UI
     -- scales where that leftover doesn't round away to ~0).
     local PPdr = CludesUI and CludesUI.PP
-    local px = (PPdr and PPdr.mult and PPdr.mult > 0) and PPdr.mult or 1
+    local pixel = (PPdr and PPdr.mult and PPdr.mult > 0) and PPdr.mult or 1
     local widthAvail = max(0, width - (pipCount - 1) * spacing)
     -- If the whole row doesn't span even one physical pixel (a very small bar at a low
     -- UI Scale, where px itself is large), snapping to whole physical-pixel units would
     -- floor every pip to 0 width -- pips vanishing entirely is worse than the sub-pixel
     -- gap this fix targets. Fall back to plain UI-unit distribution (pre-fix behavior)
     -- in that degenerate case so pips stay visible, just not perfectly pixel-snapped.
-    if widthAvail < px then
-        px = 1
+    if widthAvail < pixel then
+        pixel = 1
     end
-    local totalUnits = floor(widthAvail / px + 1e-6)
+    local totalUnits = floor(widthAvail / pixel + 1e-6)
     -- Cumulative boundary = floor(totalUnits * i / pipCount), not a fixed
     -- remainder lumped onto the first N pips. The two pip rows (6 and 3
     -- charges) share the same widthAvail and pipCount is an exact multiple
@@ -1468,7 +1468,7 @@ local function LayoutPips(widget, pipCount, width, height, spacing)
     local prevBoundary = 0
     for idx = 1, pipCount do
         local boundary = floor(totalUnits * idx / pipCount + 1e-6)
-        local thisW = (boundary - prevBoundary) * px
+        local thisW = (boundary - prevBoundary) * pixel
         prevBoundary = boundary
         local pip = widget.pips[idx]
         pip:ClearAllPoints()
@@ -1532,9 +1532,9 @@ local function LayoutSet(S, p, L)
     for _, key in ipairs(L.rows) do
         inLayout[key] = true
     end
-    for key, f in pairs(rowFrames) do
+    for key, frame in pairs(rowFrames) do
         if not inLayout[key] then
-            f:Hide()
+            frame:Hide()
         end
     end
     local spacing = p.stackSpacing
@@ -1542,14 +1542,14 @@ local function LayoutSet(S, p, L)
     local posY = L.colY + L.ov
     local geo = {}
     for idx, key in ipairs(L.rows) do
-        local f = rowFrames[key]
+        local frame = rowFrames[key]
         local hgt = p[ROW_FIELD[key]]
         local rx, ry = clusterX + L.padX, posY
         geo[idx] = { key = key, x = rx, y = ry, h = hgt }
-        f:Show()
-        f:ClearAllPoints()
-        f:SetPoint("BOTTOMLEFT", S.root, "BOTTOMLEFT", rx, ry)
-        f:SetSize(p.width, hgt)
+        frame:Show()
+        frame:ClearAllPoints()
+        frame:SetPoint("BOTTOMLEFT", S.root, "BOTTOMLEFT", rx, ry)
+        frame:SetSize(p.width, hgt)
         if key == "sky" then
             LayoutPips(S.stack, SKYRIDING_PIPS, p.width, hgt, spacing)
         elseif key == "sw" then
@@ -1559,30 +1559,30 @@ local function LayoutSet(S, p, L)
     end
     ApplyColumnChrome(S, L, geo, p.width, p.gap, spacing)
 
-    local icon = S.icon
+    local iconTex = S.icon
     if L.icon then
-        icon:Show()
-        icon:ClearAllPoints()
-        icon:SetPoint(
+        iconTex:Show()
+        iconTex:ClearAllPoints()
+        iconTex:SetPoint(
             "BOTTOMLEFT",
             S.root,
             "BOTTOMLEFT",
             clusterX + L.colW + (L.colW > 0 and p.gap or 0),
             L.iconY
         )
-        icon:SetSize(L.iconSize, L.iconSize)
+        iconTex:SetSize(L.iconSize, L.iconSize)
     else
-        icon:Hide()
+        iconTex:Hide()
     end
     ApplyIconArt(S, L.chrome)
 
     if L.classic then
-        local f = EnsureClassicFrame(S)
-        f:Show()
-        f:SetScale(L.scale)
-        f:ClearAllPoints()
+        local frame = EnsureClassicFrame(S)
+        frame:Show()
+        frame:SetScale(L.scale)
+        frame:ClearAllPoints()
         -- Offsets on a scaled frame are in its own units.
-        f:SetPoint("TOPLEFT", S.root, "TOPLEFT", PPSnap((L.totalW - L.classicW) / 2) / L.scale, 0)
+        frame:SetPoint("TOPLEFT", S.root, "TOPLEFT", PPSnap((L.totalW - L.classicW) / 2) / L.scale, 0)
     elseif S.classic then
         S.classic:Hide()
     end
@@ -1596,7 +1596,7 @@ local function PaintSet(S, p, L)
         p.barTexture or "none",
         "Interface\\Buttons\\WHITE8x8"
     )
-    local speed, stack, sw, icon = S.speed, S.stack, S.sw, S.icon
+    local speed, stack, sw, iconTex = S.speed, S.stack, S.sw, S.icon
     speed:SetStatusBarTexture(texPath)
     for idx = 1, SKYRIDING_PIPS do
         stack.pips[idx]:SetStatusBarTexture(texPath)
@@ -1641,17 +1641,17 @@ local function PaintSet(S, p, L)
         pip.bg:SetColorTexture(p.secondWindBg.r, p.secondWindBg.g, p.secondWindBg.b, p.secondWindBg.a)
     end
 
-    ApplyFont(icon.text, p.whirlingSurgeText.size)
-    icon.text:ClearAllPoints()
-    icon.text:SetPoint(
+    ApplyFont(iconTex.text, p.whirlingSurgeText.size)
+    iconTex.text:ClearAllPoints()
+    iconTex.text:SetPoint(
         p.whirlingSurgeText.justify or "CENTER",
-        icon,
+        iconTex,
         p.whirlingSurgeText.justify or "CENTER",
         p.whirlingSurgeText.offsetX or 0,
         p.whirlingSurgeText.offsetY or 0
     )
-    icon.text:SetJustifyH(p.whirlingSurgeText.justify or "CENTER")
-    icon.text:SetShown(p.whirlingSurgeText.enabled ~= false)
+    iconTex.text:SetJustifyH(p.whirlingSurgeText.justify or "CENTER")
+    iconTex.text:SetShown(p.whirlingSurgeText.enabled ~= false)
 
     ApplyBordersAll(S, L)
 
@@ -1906,9 +1906,9 @@ function RegisterUnlockElements()
                 end
                 local newTotalH = PPSnap(hgt)
                 local classicPart = L.classic and (L.classicH + p.gap) or 0
-                local k = max(8, newTotalH - classicPart) / L.clusterH
+                local keyName = max(8, newTotalH - classicPart) / L.clusterH
                 if L.icon and p.iconSize then
-                    p.iconSize = max(16, min(80, floor(L.iconSize * k + 0.5)))
+                    p.iconSize = max(16, min(80, floor(L.iconSize * keyName + 0.5)))
                 end
                 local rowList = L.rows
                 if #rowList == 0 then
@@ -1930,7 +1930,7 @@ function RegisterUnlockElements()
                 -- the bar. The CludesUI bars filling the whole cluster take
                 -- the exact pixel-snapped height, as they always have.
                 local whole = L.colH == L.clusterH
-                local colTarget = whole and (newTotalH - classicPart) or L.colH * k
+                local colTarget = whole and (newTotalH - classicPart) or L.colH * keyName
                 local targetSum = colTarget - (#rowList - 1) * p.gap - 2 * L.ov
                 if L.chrome or L.classic or not whole then
                     targetSum = floor(targetSum + 0.5)
@@ -1938,24 +1938,24 @@ function RegisterUnlockElements()
                 targetSum = max(loSum, targetSum)
 
                 local oldSum = 0
-                for _, b in ipairs(barList) do
-                    b.old = p[b.field]
-                    oldSum = oldSum + b.old
+                for _, button in ipairs(barList) do
+                    button.old = p[button.field]
+                    oldSum = oldSum + button.old
                 end
                 if oldSum <= 0 then
                     -- Corrupted/legacy profile (e.g. hand-edited SavedVariables)
                     -- with every shown height at/under zero: reset to defaults so
                     -- the control self-heals instead of silently no-op'ing forever.
-                    for _, b in ipairs(barList) do
-                        p[b.field] = DB_DEFAULTS.profile[b.field]
+                    for _, button in ipairs(barList) do
+                        p[button.field] = DB_DEFAULTS.profile[button.field]
                     end
                     Rebuild()
                     return
                 end
 
                 local scale = targetSum / oldSum
-                for _, b in ipairs(barList) do
-                    b.new = max(b.lo, min(b.hi, floor(b.old * scale + 0.5)))
+                for _, button in ipairs(barList) do
+                    button.new = max(button.lo, min(button.hi, floor(button.old * scale + 0.5)))
                 end
 
                 -- A bar already at its min/max absorbs none of a further shrink/grow,
@@ -1965,17 +1965,17 @@ function RegisterUnlockElements()
                 -- (bounded to one pass per bar so this always terminates).
                 for _ = 1, #barList do
                     local sum = 0
-                    for _, b in ipairs(barList) do
-                        sum = sum + b.new
+                    for _, button in ipairs(barList) do
+                        sum = sum + button.new
                     end
                     local leftover = targetSum - sum
                     if leftover == 0 then
                         break
                     end
                     local openBars = {}
-                    for _, b in ipairs(barList) do
-                        if (leftover > 0 and b.new < b.hi) or (leftover < 0 and b.new > b.lo) then
-                            openBars[#openBars + 1] = b
+                    for _, button in ipairs(barList) do
+                        if (leftover > 0 and button.new < button.hi) or (leftover < 0 and button.new > button.lo) then
+                            openBars[#openBars + 1] = button
                         end
                     end
                     if #openBars == 0 then
@@ -1989,17 +1989,17 @@ function RegisterUnlockElements()
                         -- remainder to just the first bar with headroom rather
                         -- than rounding a fractional share up and applying it
                         -- to all of them, which would overshoot the target.
-                        local b = openBars[1]
-                        b.new = max(b.lo, min(b.hi, b.new + leftover))
+                        local button = openBars[1]
+                        button.new = max(button.lo, min(button.hi, button.new + leftover))
                     else
-                        for _, b in ipairs(openBars) do
-                            b.new = max(b.lo, min(b.hi, b.new + share))
+                        for _, button in ipairs(openBars) do
+                            button.new = max(button.lo, min(button.hi, button.new + share))
                         end
                     end
                 end
 
-                for _, b in ipairs(barList) do
-                    p[b.field] = b.new
+                for _, button in ipairs(barList) do
+                    p[button.field] = button.new
                 end
                 Rebuild()
             end,

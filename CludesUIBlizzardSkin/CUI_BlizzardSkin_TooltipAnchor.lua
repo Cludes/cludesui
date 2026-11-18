@@ -19,9 +19,9 @@ end
 --  UberTooltips CVar enforcement (only if user has manually set it in CUI)
 -------------------------------------------------------------------------------
 do
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("PLAYER_LOGIN")
-    f:SetScript("OnEvent", function(self)
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("PLAYER_LOGIN")
+    frame:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
         if not CludesUIDB then
             CludesUIDB = {}
@@ -231,9 +231,9 @@ do
         end
     end
 
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("PLAYER_LOGIN")
-    f:SetScript("OnEvent", function(self)
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("PLAYER_LOGIN")
+    frame:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
         CludesUI._applyTooltipCursorAnchor()
     end)
@@ -303,8 +303,8 @@ do
         if not c or not c.GetLeft then
             return
         end
-        local l, b = c:GetLeft(), c:GetBottom()
-        if not l or not b then
+        local l, button = c:GetLeft(), c:GetBottom()
+        if not l or not button then
             return
         end
         local wid, ch = c:GetWidth() or 0, c:GetHeight() or 0
@@ -312,18 +312,18 @@ do
         if us <= 0 then
             return
         end
-        local r = (c:GetEffectiveScale() or us) / us
+        local region = (c:GetEffectiveScale() or us) / us
         -- Blizzard pins the tooltip's corner to the container corner nearest the
         -- closest screen corner. Find that point, then park our box so ITS
         -- matching corner sits exactly there; an idle container may be
         -- collapsed to a sliver (corners coincide), still correct.
         local uw, uh = UIParent:GetWidth(), UIParent:GetHeight()
-        local ccx = (l + wid / 2) * r - uw / 2
-        local ccy = (b + ch / 2) * r - uh / 2
-        local px = (ccx < 0) and (l * r) or ((l + wid) * r)
-        local py = (ccy < 0) and (b * r) or ((b + ch) * r)
+        local ccx = (l + wid / 2) * region - uw / 2
+        local ccy = (button + ch / 2) * region - uh / 2
+        local pixel = (ccx < 0) and (l * region) or ((l + wid) * region)
+        local py = (ccy < 0) and (button * region) or ((button + ch) * region)
         prof.tooltipFixedPos = {
-            centerX = px + ((ccx < 0) and (FIXED_W / 2) or (-FIXED_W / 2)) - uw / 2,
+            centerX = pixel + ((ccx < 0) and (FIXED_W / 2) or (-FIXED_W / 2)) - uw / 2,
             centerY = py + ((ccy < 0) and (FIXED_H / 2) or (-FIXED_H / 2)) - uh / 2,
         }
     end
@@ -347,10 +347,10 @@ do
     -- growth always runs INTO the screen (and the box). Growth Direction, when set, forces the vertical component -- the same rule its own enforcement block applies, so the two never fight.
     local function CornerFor(af)
         local cx, cy = -350, -150
-        local l, b = af:GetLeft(), af:GetBottom()
-        if l and b then
+        local l, button = af:GetLeft(), af:GetBottom()
+        if l and button then
             cx = l + (af:GetWidth() or 0) / 2 - UIParent:GetWidth() / 2
-            cy = b + (af:GetHeight() or 0) / 2 - UIParent:GetHeight() / 2
+            cy = button + (af:GetHeight() or 0) / 2 - UIParent:GetHeight() / 2
         else
             local prof = ActiveProfile()
             local place = prof and prof.tooltipFixedPos

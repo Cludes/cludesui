@@ -75,7 +75,7 @@ local BLIZZ_CLASS_ICONS = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE
 local SHELL_ART = "Interface\\AddOns\\CludesUI\\media\\modern_blizz.png"
 
 local ev = CreateFrame("Frame")
-local panelFrame, title, emptyNote
+local panelFrame, titleText, emptyNote
 local bgArt, bgShade, bgFlat -- the CludesUI look's backdrop layers
 local rowList = {}
 local dirty = true -- the shown list needs a repaint
@@ -117,12 +117,12 @@ local function Roster()
     if type(saved) ~= "table" then
         return nil
     end
-    local r = saved.mailAltRoster
-    if type(r) ~= "table" then
-        r = {}
-        saved.mailAltRoster = r
+    local region = saved.mailAltRoster
+    if type(region) ~= "table" then
+        region = {}
+        saved.mailAltRoster = region
     end
-    return r
+    return region
 end
 
 local function Hidden()
@@ -197,9 +197,9 @@ local function ConnectedRealms()
     local entries = C_AutoComplete.GetAutoCompleteRealms()
     if type(entries) == "table" then
         for idx = 1, #entries do
-            local r = PlainString(entries[idx])
-            if r then
-                set[r] = true
+            local region = PlainString(entries[idx])
+            if region then
+                set[region] = true
             end
         end
     end
@@ -210,29 +210,29 @@ local function ConnectedRealms()
     return set
 end
 
-local function ByName(a, b)
-    local ea, eb = sortRoster[a], sortRoster[b]
-    if ea.name ~= eb.name then
-        return strcmputf8i(ea.name, eb.name) < 0
+local function ByName(a, button)
+    local ea, editField = sortRoster[a], sortRoster[button]
+    if ea.name ~= editField.name then
+        return strcmputf8i(ea.name, editField.name) < 0
     end
-    if ea.realmKey ~= eb.realmKey then
-        return ea.realmKey < eb.realmKey
+    if ea.realmKey ~= editField.realmKey then
+        return ea.realmKey < editField.realmKey
     end
-    return a < b
+    return a < button
 end
-local function ByLevel(a, b)
-    local la, lb = sortRoster[a].level or 0, sortRoster[b].level or 0
+local function ByLevel(a, button)
+    local la, lb = sortRoster[a].level or 0, sortRoster[button].level or 0
     if la ~= lb then
         return la > lb
     end
-    return ByName(a, b)
+    return ByName(a, button)
 end
-local function ByRecent(a, b)
-    local sa, scrollBar = sortRoster[a].seen or 0, sortRoster[b].seen or 0
+local function ByRecent(a, button)
+    local sa, scrollBar = sortRoster[a].seen or 0, sortRoster[button].seen or 0
     if sa ~= scrollBar then
         return sa > scrollBar
     end
-    return ByName(a, b)
+    return ByName(a, button)
 end
 local SORTS = { recent = ByRecent, level = ByLevel, name = ByName }
 
@@ -316,11 +316,11 @@ local function RowClick(self, btnFrame)
 end
 
 local function NewRow(idx)
-    local r = CreateFrame("Button", nil, panelFrame)
-    r._mailAltRow = true
-    r:SetHeight(ROW_H)
-    r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    local highlight = r:CreateTexture(nil, "HIGHLIGHT")
+    local region = CreateFrame("Button", nil, panelFrame)
+    region._mailAltRow = true
+    region:SetHeight(ROW_H)
+    region:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    local highlight = region:CreateTexture(nil, "HIGHLIGHT")
     highlight:SetAllPoints()
     if blizzLook then
         highlight:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
@@ -329,30 +329,30 @@ local function NewRow(idx)
     else
         highlight:SetColorTexture(1, 1, 1, 0.08)
     end
-    local icon = r:CreateTexture(nil, "ARTWORK")
-    icon:SetSize(ICON_SIZE, ICON_SIZE)
-    icon:SetPoint("LEFT", r, "LEFT", 6, 0)
-    local lvl = r:CreateFontString(nil, "OVERLAY", blizzLook and "GameFontDisableSmall" or nil)
-    local name = r:CreateFontString(nil, "OVERLAY", blizzLook and "GameFontHighlightSmall" or nil)
+    local iconTex = region:CreateTexture(nil, "ARTWORK")
+    iconTex:SetSize(ICON_SIZE, ICON_SIZE)
+    iconTex:SetPoint("LEFT", region, "LEFT", 6, 0)
+    local lvl = region:CreateFontString(nil, "OVERLAY", blizzLook and "GameFontDisableSmall" or nil)
+    local name = region:CreateFontString(nil, "OVERLAY", blizzLook and "GameFontHighlightSmall" or nil)
     if not blizzLook then
         Skin.Font(lvl, 0.6, 0.6, 0.6, 11)
         -- A character's name: a font family, which draws the scripts the font lacks
         Skin.FontFamily(name, nil, nil, nil, 12)
     end
-    lvl:SetPoint("RIGHT", r, "RIGHT", -6, 0)
+    lvl:SetPoint("RIGHT", region, "RIGHT", -6, 0)
     lvl:SetJustifyH("RIGHT")
-    name:SetPoint("LEFT", icon, "RIGHT", 5, 0)
+    name:SetPoint("LEFT", iconTex, "RIGHT", 5, 0)
     name:SetPoint("RIGHT", lvl, "LEFT", -4, 0)
     name:SetJustifyH("LEFT")
     name:SetWordWrap(false)
-    r._icon, r._name, r._lvl = icon, name, lvl
-    r:SetScript("OnClick", RowClick)
-    r:SetScript("OnEnter", RowEnter)
-    r:SetScript("OnLeave", RowLeave)
-    r:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", inset, -(topH + LIST_PAD + (idx - 1) * ROW_H))
-    r:SetPoint("TOPRIGHT", panelFrame, "TOPRIGHT", -inset, -(topH + LIST_PAD + (idx - 1) * ROW_H))
-    rowList[idx] = r
-    return r
+    region._icon, region._name, region._lvl = iconTex, name, lvl
+    region:SetScript("OnClick", RowClick)
+    region:SetScript("OnEnter", RowEnter)
+    region:SetScript("OnLeave", RowLeave)
+    region:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", inset, -(topH + LIST_PAD + (idx - 1) * ROW_H))
+    region:SetPoint("TOPRIGHT", panelFrame, "TOPRIGHT", -inset, -(topH + LIST_PAD + (idx - 1) * ROW_H))
+    rowList[idx] = region
+    return region
 end
 
 local function DressIcon(texture, class)
@@ -380,9 +380,9 @@ end
 local function ReplayHover()
     local foci = GetMouseFoci()
     for idx = 1, #foci do
-        local f = foci[idx]
-        if f and f._mailAltRow and f:IsVisible() then
-            RowEnter(f)
+        local frame = foci[idx]
+        if frame and frame._mailAltRow and frame:IsVisible() then
+            RowEnter(frame)
             return
         end
     end
@@ -414,7 +414,7 @@ local function Build()
         topH, inset, gap = BLIZZ_TOP, BLIZZ_INSET, BLIZZ_GAP
         panelFrame = CreateFrame("Frame", "CludesUIMailAltList", SendMailFrame, "DefaultPanelTemplate")
         panelFrame:SetTitleOffsets(6, -6)
-        title = panelFrame:GetTitleText()
+        titleText = panelFrame:GetTitleText()
     else
         topH, inset, gap = CUI_TOP, CUI_INSET, CUI_GAP
         panelFrame = CreateFrame("Frame", "CludesUIMailAltList", SendMailFrame)
@@ -436,13 +436,13 @@ local function Build()
         band:SetPoint("TOPRIGHT")
         band:SetHeight(topH)
         Skin.AddBorder(panelFrame)
-        title = panelFrame:CreateFontString(nil, "OVERLAY")
-        Skin.Font(title, 1, 1, 1, 12)
-        title:SetPoint("CENTER", band, "CENTER", 0, 0)
+        titleText = panelFrame:CreateFontString(nil, "OVERLAY")
+        Skin.Font(titleText, 1, 1, 1, 12)
+        titleText:SetPoint("CENTER", band, "CENTER", 0, 0)
         PaintBackdrop()
         Skin.OnStylesChanged(PaintBackdrop)
     end
-    title:SetText(CludesUI.L("Alts"))
+    titleText:SetText(CludesUI.L("Alts"))
     panelFrame:SetWidth(PANEL_W)
     panelFrame:SetClampedToScreen(true)
     -- It hangs outside the window: a click on its empty parts stays off the world.
@@ -471,30 +471,30 @@ Paint = function()
     for idx = 1, num do
         local unitGuid = isShown[idx]
         local e = roster[unitGuid]
-        local r = rowList[idx] or NewRow(idx)
+        local region = rowList[idx] or NewRow(idx)
         local foreign = e.realmKey ~= own
         -- Any mail reaches this realm or a connected one, either faction;
         -- another realm takes Warbound items only and shows dimmed.
         local limited = not realms[e.realmKey]
-        r._guid, r._foreign, r._limited = unitGuid, foreign, limited
+        region._guid, region._foreign, region._limited = unitGuid, foreign, limited
         -- Mail addresses another realm's character as "Name-Realm".
-        r._target = foreign and (e.name .. "-" .. e.realmKey) or e.name
-        DressIcon(r._icon, e.class)
+        region._target = foreign and (e.name .. "-" .. e.realmKey) or e.name
+        DressIcon(region._icon, e.class)
         local c = CUI.GetClassColor(e.class)
-        r._name:SetText(foreign and (e.name .. FOREIGN_SERVER_LABEL) or e.name)
-        r._name:SetTextColor(c.r, c.g, c.b)
-        r._lvl:SetText(e.level or "")
-        r:SetAlpha(limited and LIMITED_ALPHA or 1)
-        r:Show()
+        region._name:SetText(foreign and (e.name .. FOREIGN_SERVER_LABEL) or e.name)
+        region._name:SetTextColor(c.r, c.g, c.b)
+        region._lvl:SetText(e.level or "")
+        region:SetAlpha(limited and LIMITED_ALPHA or 1)
+        region:Show()
     end
     local ownerFrame = CUI._WidgetTooltipOwner()
     for idx = num + 1, #rowList do
-        local r = rowList[idx]
-        if ownerFrame == r then
+        local region = rowList[idx]
+        if ownerFrame == region then
             CUI.HideWidgetTooltip(true)
         end
-        r:Hide()
-        r._guid, r._target, r._limited = nil, nil, nil
+        region:Hide()
+        region._guid, region._target, region._limited = nil, nil, nil
     end
     local hgt
     if num > 0 then
@@ -520,13 +520,13 @@ Paint = function()
     end
 end
 
-local function ScreenRect(f)
-    local s = f:GetEffectiveScale()
-    local l, r, t, b = f:GetLeft(), f:GetRight(), f:GetTop(), f:GetBottom()
-    if not (l and r and t and b) or IsSecret(l) or IsSecret(r) or IsSecret(t) or IsSecret(b) then
+local function ScreenRect(frame)
+    local s = frame:GetEffectiveScale()
+    local l, region, t, button = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
+    if not (l and region and t and button) or IsSecret(l) or IsSecret(region) or IsSecret(t) or IsSecret(button) then
         return nil
     end
-    return l * s, r * s, t * s, b * s
+    return l * s, region * s, t * s, button * s
 end
 
 local function Anchor(to, side)
@@ -746,20 +746,20 @@ function mod.MailAlts.Entries()
         end
     end
     local own = GetRealmName()
-    sort(result, function(a, b)
-        if a.realm ~= b.realm then
+    sort(result, function(a, button)
+        if a.realm ~= button.realm then
             if a.realm == own then
                 return true
             end
-            if b.realm == own then
+            if button.realm == own then
                 return false
             end
-            return strcmputf8i(a.realm, b.realm) < 0
+            return strcmputf8i(a.realm, button.realm) < 0
         end
-        if a.name ~= b.name then
-            return strcmputf8i(a.name, b.name) < 0
+        if a.name ~= button.name then
+            return strcmputf8i(a.name, button.name) < 0
         end
-        return a.guid < b.guid
+        return a.guid < button.guid
     end)
     return result
 end
