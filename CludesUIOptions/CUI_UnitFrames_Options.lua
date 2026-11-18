@@ -1340,6 +1340,21 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         local Pix = CludesUI.PanelPP
+        -- Hangs a unit preview in the content header at height fy (its buff
+        -- row's top padding above, in the preview's own scale), draws it, and
+        -- returns the height 20 below it, past any buff row and the top of its
+        -- details.
+        local function SeatUnitPreview(preview, heading, fy)
+            local scale = preview._previewScale or 1
+            local oy = (fy - (preview._buffTopPad or 0)) / scale
+            preview._headerDropdownOY = math.abs(fy)
+            preview:ClearAllPoints()
+            Pix.Point(preview, "TOP", heading, "TOP", 0, oy)
+            preview._lastOY = oy
+            preview:Update()
+            local drawnH = preview:GetHeight() * preview:GetScale()
+            return fy - drawnH - (preview._buffExtra or 0) - (preview._detTopExtra or 0) - 20
+        end
         local saved = mod.db
         local frameList = mod.frames
         local ReloadFrames = mod.ReloadFrames
@@ -3489,17 +3504,7 @@ initFrame:SetScript("OnEvent", function(self)
                 local side = unitSide[optionState.selectedUnit] or "left"
                 local preview = mod.UFO_BuildUnitPreview(heading, optionState.selectedUnit, side)
                 activePreview = preview
-                local previewScale = preview._previewScale or 1
-                local initBuffTopPad = preview._buffTopPad or 0
-                preview._headerDropdownOY = math.abs(fy)
-                preview:ClearAllPoints()
-                Pix.Point(preview, "TOP", heading, "TOP", 0, (fy - initBuffTopPad) / previewScale)
-                preview._lastOY = (fy - initBuffTopPad) / previewScale
-                preview:Update()
-                local previewH = preview:GetHeight() * preview:GetScale()
-                local buffExtra = preview._buffExtra or 0
-                local detTopExtra = preview._detTopExtra or 0
-                fy = fy - previewH - buffExtra - detTopExtra - 20
+                fy = SeatUnitPreview(preview, heading, fy)
 
                 displayHeaderFixedH = 20 + DD_H + 20 + 20
                 if preview then
@@ -3840,17 +3845,7 @@ initFrame:SetScript("OnEvent", function(self)
                 local side = unitSide[selectedMiniUnit] or "left"
                 local preview = mod.UFO_BuildUnitPreview(heading, selectedMiniUnit, side)
                 activePreview = preview
-                local previewScale = preview._previewScale or 1
-                local initBuffTopPad = preview._buffTopPad or 0
-                preview._headerDropdownOY = math.abs(fy)
-                preview:ClearAllPoints()
-                Pix.Point(preview, "TOP", heading, "TOP", 0, (fy - initBuffTopPad) / previewScale)
-                preview._lastOY = (fy - initBuffTopPad) / previewScale
-                preview:Update()
-                local previewH = preview:GetHeight() * preview:GetScale()
-                local buffExtra = preview._buffExtra or 0
-                local detTopExtra = preview._detTopExtra or 0
-                fy = fy - previewH - buffExtra - detTopExtra - 20
+                fy = SeatUnitPreview(preview, heading, fy)
                 miniHeaderFixedH = 20 + DD_H + 20 + 20
                 if preview then
                     preview._headerFixedH = miniHeaderFixedH
@@ -3993,17 +3988,7 @@ initFrame:SetScript("OnEvent", function(self)
                 local side = unitSide.boss or "right"
                 local preview = mod.UFO_BuildUnitPreview(heading, "boss", side)
                 activePreview = preview
-                local previewScale = preview._previewScale or 1
-                local initBuffTopPad = preview._buffTopPad or 0
-                preview._headerDropdownOY = math.abs(fy)
-                preview:ClearAllPoints()
-                Pix.Point(preview, "TOP", heading, "TOP", 0, (fy - initBuffTopPad) / previewScale)
-                preview._lastOY = (fy - initBuffTopPad) / previewScale
-                preview:Update()
-                local previewH = preview:GetHeight() * preview:GetScale()
-                local buffExtra = preview._buffExtra or 0
-                local detTopExtra = preview._detTopExtra or 0
-                fy = fy - previewH - buffExtra - detTopExtra - 20
+                fy = SeatUnitPreview(preview, heading, fy)
                 preview._headerFixedH = 20 + 20
                 return math.abs(fy)
             end
