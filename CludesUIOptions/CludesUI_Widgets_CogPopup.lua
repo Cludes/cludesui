@@ -578,6 +578,28 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end)
                 return dis
             end
+            -- A row's dimmed caption, centred in a row rowH tall at the current
+            -- height, with a hover tooltip over it when the row has one.
+            local function RowLabel(row, rowH)
+                local caption = MakeFont(popFrame, 11, nil, 1, 1, 1)
+                caption:SetAlpha(0.6)
+                caption:SetText(CludesUI.L(row.label))
+                caption:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - rowH / 2 - 1)
+                if row.tooltip then
+                    local hit = CreateFrame("Frame", nil, popFrame)
+                    hit:SetPoint("TOPLEFT", caption, "TOPLEFT", -2, 2)
+                    hit:SetPoint("BOTTOMRIGHT", caption, "BOTTOMRIGHT", 2, -2)
+                    hit:SetFrameLevel(popFrame:GetFrameLevel() + 3)
+                    hit:EnableMouse(true)
+                    hit:SetScript("OnEnter", function()
+                        CludesUI.ShowWidgetTooltip(caption, row.tooltip)
+                    end)
+                    hit:SetScript("OnLeave", function()
+                        CludesUI.HideWidgetTooltip()
+                    end)
+                end
+                return caption
+            end
             for idx, row in ipairs(rowList) do
                 local col = colStart[idx]
                 if col then
@@ -604,24 +626,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
                 if row.type == "slider" then
                     local srow = PixelizeSliderCfg(row)
-                    local labelFS = MakeFont(popFrame, 11, nil, 1, 1, 1)
-                    labelFS:SetAlpha(0.6)
-                    labelFS:SetText(CludesUI.L(row.label))
-                    labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - ROW_H / 2 - 1)
-
-                    if row.tooltip then
-                        local hitFrame = CreateFrame("Frame", nil, popFrame)
-                        hitFrame:SetPoint("TOPLEFT", labelFS, "TOPLEFT", -2, 2)
-                        hitFrame:SetPoint("BOTTOMRIGHT", labelFS, "BOTTOMRIGHT", 2, -2)
-                        hitFrame:SetFrameLevel(popFrame:GetFrameLevel() + 3)
-                        hitFrame:EnableMouse(true)
-                        hitFrame:SetScript("OnEnter", function()
-                            CludesUI.ShowWidgetTooltip(labelFS, row.tooltip)
-                        end)
-                        hitFrame:SetScript("OnLeave", function()
-                            CludesUI.HideWidgetTooltip()
-                        end)
-                    end
+                    local labelFS = RowLabel(row, ROW_H)
 
                     local track, valBox, updateVisual = BuildSliderCore(
                         popFrame,
@@ -673,24 +678,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     }
                     curY = curY - ROW_H
                 elseif row.type == "toggle" then
-                    local labelFS = MakeFont(popFrame, 11, nil, 1, 1, 1)
-                    labelFS:SetAlpha(0.6)
-                    labelFS:SetText(CludesUI.L(row.label))
-                    labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - TOGGLE_ROW_H / 2 - 1)
-
-                    if row.tooltip then
-                        local hitFrame = CreateFrame("Frame", nil, popFrame)
-                        hitFrame:SetPoint("TOPLEFT", labelFS, "TOPLEFT", -2, 2)
-                        hitFrame:SetPoint("BOTTOMRIGHT", labelFS, "BOTTOMRIGHT", 2, -2)
-                        hitFrame:SetFrameLevel(popFrame:GetFrameLevel() + 3)
-                        hitFrame:EnableMouse(true)
-                        hitFrame:SetScript("OnEnter", function()
-                            CludesUI.ShowWidgetTooltip(labelFS, row.tooltip)
-                        end)
-                        hitFrame:SetScript("OnLeave", function()
-                            CludesUI.HideWidgetTooltip()
-                        end)
-                    end
+                    local labelFS = RowLabel(row, TOGGLE_ROW_H)
 
                     local cogToggle, _, cogSnap = BuildToggleControl(
                         popFrame,
@@ -929,24 +917,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     }
                     curY = curY - TOGGLE_ROW_H
                 elseif row.type == "colorpicker" then
-                    local labelFS = MakeFont(popFrame, 11, nil, 1, 1, 1)
-                    labelFS:SetAlpha(0.6)
-                    labelFS:SetText(CludesUI.L(row.label))
-                    labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - ROW_H / 2 - 1)
-
-                    if row.tooltip then
-                        local hitFrame = CreateFrame("Frame", nil, popFrame)
-                        hitFrame:SetPoint("TOPLEFT", labelFS, "TOPLEFT", -2, 2)
-                        hitFrame:SetPoint("BOTTOMRIGHT", labelFS, "BOTTOMRIGHT", 2, -2)
-                        hitFrame:SetFrameLevel(popFrame:GetFrameLevel() + 3)
-                        hitFrame:EnableMouse(true)
-                        hitFrame:SetScript("OnEnter", function()
-                            CludesUI.ShowWidgetTooltip(labelFS, row.tooltip)
-                        end)
-                        hitFrame:SetScript("OnLeave", function()
-                            CludesUI.HideWidgetTooltip()
-                        end)
-                    end
+                    local labelFS = RowLabel(row, ROW_H)
 
                     local cpSwatch, cpUpdate = BuildColorSwatch(
                         popFrame,
@@ -1130,24 +1101,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     }
                     curY = curY - ROW_H
                 elseif row.type == "input" then
-                    local labelFS = MakeFont(popFrame, 11, nil, 1, 1, 1)
-                    labelFS:SetAlpha(0.6)
-                    labelFS:SetText(CludesUI.L(row.label))
-                    labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - ROW_H / 2 - 1)
-
-                    if row.tooltip then
-                        local hitFrame = CreateFrame("Frame", nil, popFrame)
-                        hitFrame:SetPoint("TOPLEFT", labelFS, "TOPLEFT", -2, 2)
-                        hitFrame:SetPoint("BOTTOMRIGHT", labelFS, "BOTTOMRIGHT", 2, -2)
-                        hitFrame:SetFrameLevel(popFrame:GetFrameLevel() + 3)
-                        hitFrame:EnableMouse(true)
-                        hitFrame:SetScript("OnEnter", function()
-                            CludesUI.ShowWidgetTooltip(labelFS, row.tooltip)
-                        end)
-                        hitFrame:SetScript("OnLeave", function()
-                            CludesUI.HideWidgetTooltip()
-                        end)
-                    end
+                    local labelFS = RowLabel(row, ROW_H)
 
                     local inputW = row.inputWidth or 80
                     local SAVE_W = 34
