@@ -1241,102 +1241,48 @@ CludesUI.AtOptionsLogin(function()
                 posY = posY - hgt
             end
 
-            local function FontColorSwatch(isActive)
-                local key = isActive and "tabFontColorActive" or "tabFontColor"
-                local fallback = isActive and { r = 1, g = 1, b = 1, a = 1 }
-                    or { r = 1, g = 1, b = 1, a = 0.65 }
-                if isActive then
-                    local function SetMode(mode)
-                        Set("tabFontColorActiveMode", mode)
-                        if CHAT.ApplyTabAppearance then
-                            CHAT.ApplyTabAppearance()
-                        end
-                        CludesUI:RefreshPage()
-                    end
-                    return {
-                        {
-                            tooltip = "Custom Color",
-                            hasAlpha = true,
-                            getValue = function()
-                                local c = Cfg(key) or fallback
-                                return c.r, c.g, c.b, c.a == nil and fallback.a or c.a
-                            end,
-                            setValue = function(r, g, b, a)
-                                Set(key, { r = r, g = g, b = b, a = a })
-                                Set("tabFontColorActiveMode", "custom")
-                                if CHAT.ApplyTabAppearance then
-                                    CHAT.ApplyTabAppearance()
-                                end
-                            end,
-                            onClick = function(self)
-                                if (Cfg("tabFontColorActiveMode") or "custom") ~= "custom" then
-                                    SetMode("custom")
-                                    return
-                                end
-                                if self._eabOrigClick then
-                                    self._eabOrigClick(self)
-                                end
-                            end,
-                            refreshAlpha = function()
-                                return (Cfg("tabFontColorActiveMode") or "custom") == "custom" and 1 or 0.3
-                            end,
-                        },
-                        {
-                            tooltip = "Accent Color",
-                            hasAlpha = false,
-                            getValue = function()
-                                return CludesUI.GetAccentColor()
-                            end,
-                            setValue = function() end,
-                            onClick = function()
-                                SetMode("accent")
-                            end,
-                            refreshAlpha = function()
-                                return (Cfg("tabFontColorActiveMode") or "custom") == "accent" and 1 or 0.3
-                            end,
-                        },
-                        {
-                            tooltip = "Class Color",
-                            hasAlpha = false,
-                            getValue = function()
-                                local _, class = UnitClass("player")
-                                local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                                return c and c.r or 1, c and c.g or 1, c and c.b or 1
-                            end,
-                            setValue = function() end,
-                            onClick = function()
-                                SetMode("class")
-                            end,
-                            refreshAlpha = function()
-                                return (Cfg("tabFontColorActiveMode") or "custom") == "class" and 1 or 0.3
-                            end,
-                        },
-                    }
+            -- A tab colour's three swatches: Custom (the colour in key; when the
+            -- picker offers no alpha, the stored alpha is kept), Accent and
+            -- Class. modeKey records which is in use (unset = Custom); the
+            -- unused ones rest dimmed, and clicking one switches to it.
+            local function TabModeSwatches(key, modeKey, fallback, withAlpha)
+                local function Mode()
+                    return Cfg(modeKey) or "custom"
                 end
-                local function SetMode(mode)
-                    Set("tabFontColorMode", mode)
+                local function ApplyTabs()
                     if CHAT.ApplyTabAppearance then
                         CHAT.ApplyTabAppearance()
                     end
+                end
+                local function SetMode(mode)
+                    Set(modeKey, mode)
+                    ApplyTabs()
                     CludesUI:RefreshPage()
+                end
+                local function Lit(mode)
+                    return function()
+                        return Mode() == mode and 1 or 0.3
+                    end
                 end
                 return {
                     {
                         tooltip = "Custom Color",
-                        hasAlpha = true,
+                        hasAlpha = withAlpha,
                         getValue = function()
                             local c = Cfg(key) or fallback
                             return c.r, c.g, c.b, c.a == nil and fallback.a or c.a
                         end,
                         setValue = function(r, g, b, a)
-                            Set(key, { r = r, g = g, b = b, a = a })
-                            Set("tabFontColorMode", "custom")
-                            if CHAT.ApplyTabAppearance then
-                                CHAT.ApplyTabAppearance()
+                            if not withAlpha then
+                                local c = Cfg(key) or fallback
+                                a = c.a == nil and fallback.a or c.a
                             end
+                            Set(key, { r = r, g = g, b = b, a = a })
+                            Set(modeKey, "custom")
+                            ApplyTabs()
                         end,
                         onClick = function(self)
-                            if (Cfg("tabFontColorMode") or "custom") ~= "custom" then
+                            if Mode() ~= "custom" then
                                 SetMode("custom")
                                 return
                             end
@@ -1344,9 +1290,7 @@ CludesUI.AtOptionsLogin(function()
                                 self._eabOrigClick(self)
                             end
                         end,
-                        refreshAlpha = function()
-                            return (Cfg("tabFontColorMode") or "custom") == "custom" and 1 or 0.3
-                        end,
+                        refreshAlpha = Lit("custom"),
                     },
                     {
                         tooltip = "Accent Color",
@@ -1358,9 +1302,7 @@ CludesUI.AtOptionsLogin(function()
                         onClick = function()
                             SetMode("accent")
                         end,
-                        refreshAlpha = function()
-                            return (Cfg("tabFontColorMode") or "custom") == "accent" and 1 or 0.3
-                        end,
+                        refreshAlpha = Lit("accent"),
                     },
                     {
                         tooltip = "Class Color",
@@ -1374,11 +1316,25 @@ CludesUI.AtOptionsLogin(function()
                         onClick = function()
                             SetMode("class")
                         end,
-                        refreshAlpha = function()
-                            return (Cfg("tabFontColorMode") or "custom") == "class" and 1 or 0.3
-                        end,
+                        refreshAlpha = Lit("class"),
                     },
                 }
+            end
+            local function FontColorSwatch(isActive)
+                if isActive then
+                    return TabModeSwatches(
+                        "tabFontColorActive",
+                        "tabFontColorActiveMode",
+                        { r = 1, g = 1, b = 1, a = 1 },
+                        true
+                    )
+                end
+                return TabModeSwatches(
+                    "tabFontColor",
+                    "tabFontColorMode",
+                    { r = 1, g = 1, b = 1, a = 0.65 },
+                    true
+                )
             end
             _, hgt = W:DualRow(
                 hostFrame,
@@ -1420,77 +1376,12 @@ CludesUI.AtOptionsLogin(function()
                     }
                 end
                 local function ActiveTabBgSwatches()
-                    local key = "tabBackgroundColorActive"
-                    local modeKey = "tabBackgroundColorActiveMode"
-                    local fallback = TAB_BG_FALLBACK[true]
-                    local function SetMode(mode)
-                        Set(modeKey, mode)
-                        if CHAT.ApplyTabAppearance then
-                            CHAT.ApplyTabAppearance()
-                        end
-                        CludesUI:RefreshPage()
-                    end
-                    return {
-                        {
-                            tooltip = "Custom Color",
-                            hasAlpha = false,
-                            getValue = function()
-                                local c = Cfg(key) or fallback
-                                return c.r, c.g, c.b, c.a == nil and fallback.a or c.a
-                            end,
-                            setValue = function(r, g, b)
-                                local c = Cfg(key) or fallback
-                                local a = c.a == nil and fallback.a or c.a
-                                Set(key, { r = r, g = g, b = b, a = a })
-                                Set(modeKey, "custom")
-                                if CHAT.ApplyTabAppearance then
-                                    CHAT.ApplyTabAppearance()
-                                end
-                            end,
-                            onClick = function(self)
-                                if (Cfg(modeKey) or "custom") ~= "custom" then
-                                    SetMode("custom")
-                                    return
-                                end
-                                if self._eabOrigClick then
-                                    self._eabOrigClick(self)
-                                end
-                            end,
-                            refreshAlpha = function()
-                                return (Cfg(modeKey) or "custom") == "custom" and 1 or 0.3
-                            end,
-                        },
-                        {
-                            tooltip = "Accent Color",
-                            hasAlpha = false,
-                            getValue = function()
-                                return CludesUI.GetAccentColor()
-                            end,
-                            setValue = function() end,
-                            onClick = function()
-                                SetMode("accent")
-                            end,
-                            refreshAlpha = function()
-                                return (Cfg(modeKey) or "custom") == "accent" and 1 or 0.3
-                            end,
-                        },
-                        {
-                            tooltip = "Class Color",
-                            hasAlpha = false,
-                            getValue = function()
-                                local _, class = UnitClass("player")
-                                local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                                return c and c.r or 1, c and c.g or 1, c and c.b or 1
-                            end,
-                            setValue = function() end,
-                            onClick = function()
-                                SetMode("class")
-                            end,
-                            refreshAlpha = function()
-                                return (Cfg(modeKey) or "custom") == "class" and 1 or 0.3
-                            end,
-                        },
-                    }
+                    return TabModeSwatches(
+                        "tabBackgroundColorActive",
+                        "tabBackgroundColorActiveMode",
+                        TAB_BG_FALLBACK[true],
+                        false
+                    )
                 end
                 local tabBgRow
                 tabBgRow, hgt = W:DualRow(hostFrame, posY, {
