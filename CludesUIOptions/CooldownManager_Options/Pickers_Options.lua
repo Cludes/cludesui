@@ -1568,255 +1568,148 @@ local function ShowBuffToCDPicker(anchor, targetBarKey, onChanged, onPicked)
     dropMenu:Show()
 end
 
--- Simple numeric "timer" popup for custom Active State on preset icons.
--- onConfirm(seconds) fires only when a positive number is entered.
-local function ShowDurationPopup(currentVal, onConfirm)
-    local environ = mod._CDMO_OptEnv
-    local FONT_PATH, GetCDMOptOutline = environ.FONT_PATH, environ.GetCDMOptOutline
-    local popupName = "CUI_CDM_DurationPopup"
-    local dialog = _G[popupName]
+-- The one-number popups (a title, a grey hint, the entry box, Save and
+-- Cancel). spec gives the popup's global name, its height (default 150),
+-- the digits allowed, its default title and hint (a caller may pass its own,
+-- already localized; both are set on every show), decorate(dialog, box) for
+-- anything drawn between the box and the buttons, and accept(n), which takes
+-- the typed number (nil when empty) and returns whether to save and what to
+-- hand onConfirm. Enter saves as Save does; Escape, Cancel or a click on the
+-- dimmer close without saving.
+local function ShowValuePopup(spec, current, onConfirm, title, hint)
+    local dialog = _G[spec.name]
     if not dialog then
+        local env = mod._CDMO_OptEnv
         local dimmer
-        dialog, dimmer = NewEntryDialog(popupName, 300, 150)
-        dialog._dimmer = dimmer
-
-        local title = NewDialogTitle(dialog, CludesUI.L("Active State Duration"))
-
-        local hint = dialog:CreateFontString(nil, "OVERLAY")
-        hint:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        hint:SetPoint("TOP", title, "BOTTOM", 0, -6)
-        hint:SetTextColor(0.7, 0.7, 0.7, 0.85)
-        hint:SetText(CludesUI.L("Seconds the active state shows after use"))
-
-        local durBox = NewEntryBox(dialog, 5)
-        durBox:SetPoint("TOP", hint, "BOTTOM", 0, -12)
-        dialog._durBox = durBox
-
-        local okBtn = NewDialogButton(dialog, "Save", true)
-
-        local cancelBtn = NewDialogButton(dialog, "Cancel", false)
-        cancelBtn:SetScript("OnClick", function()
-            dimmer:Hide()
-        end)
-        dialog._cancelBtn = cancelBtn
-
-        local function Commit()
-            local val = tonumber(durBox:GetText())
-            if val and val > 0 then
-                dimmer:Hide()
-                if dialog._onConfirm then
-                    dialog._onConfirm(val)
-                end
-            end
-        end
-        okBtn:SetScript("OnClick", Commit)
-        durBox:SetScript("OnEnterPressed", Commit)
-        durBox:SetScript("OnEscapePressed", function()
-            dimmer:Hide()
-        end)
-    end
-    dialog._onConfirm = onConfirm
-    dialog._durBox:SetText(currentVal and tostring(currentVal) or "")
-    mod.PadPopupOpen(dialog._dimmer, dialog, dialog._cancelBtn) -- controller cursor
-    dialog._dimmer:Show()
-    dialog._durBox:SetFocus()
-    dialog._durBox:HighlightText()
-end
-
--- Numeric popup for an opacity percent (1-100). Titled for the "Lower Alpha
--- (On CD)" cooldown-state effect unless the caller passes its own title and
--- hint (already localized), e.g. the Blackout glow opacity. Both texts are
--- set on every show. Mirrors ShowDurationPopup's look; onConfirm receives
--- the integer percent.
-local function ShowAlphaPopup(currentPct, onConfirm, title, hint)
-    local environ = mod._CDMO_OptEnv
-    local FONT_PATH, GetCDMOptOutline = environ.FONT_PATH, environ.GetCDMOptOutline
-    local popupName = "CUI_CDM_AlphaPopup"
-    local dialog = _G[popupName]
-    if not dialog then
-        local dimmer
-        dialog, dimmer = NewEntryDialog(popupName, 300, 150)
+        dialog, dimmer = NewEntryDialog(spec.name, 300, spec.height or 150)
         dialog._dimmer = dimmer
 
         local titleFS = NewDialogTitle(dialog)
         dialog._title = titleFS
 
         local hintFS = dialog:CreateFontString(nil, "OVERLAY")
-        hintFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
+        hintFS:SetFont(env.FONT_PATH, 11, env.GetCDMOptOutline())
         hintFS:SetPoint("TOP", titleFS, "BOTTOM", 0, -6)
         hintFS:SetTextColor(0.7, 0.7, 0.7, 0.85)
         dialog._hint = hintFS
 
-        local box = NewEntryBox(dialog, 3)
+        local box = NewEntryBox(dialog, spec.maxLetters)
         box:SetPoint("TOP", hintFS, "BOTTOM", 0, -12)
         dialog._box = box
-
-        local okBtn = NewDialogButton(dialog, "Save", true)
-
-        local cancelBtn = NewDialogButton(dialog, "Cancel", false)
-        cancelBtn:SetScript("OnClick", function()
-            dimmer:Hide()
-        end)
-        dialog._cancelBtn = cancelBtn
-
-        local function Commit()
-            local val = tonumber(box:GetText())
-            if val and val >= 1 and val <= 100 then
-                dimmer:Hide()
-                if dialog._onConfirm then
-                    dialog._onConfirm(math.floor(val))
-                end
-            end
+        if spec.decorate then
+            spec.decorate(dialog, box)
         end
-        okBtn:SetScript("OnClick", Commit)
-        box:SetScript("OnEnterPressed", Commit)
-        box:SetScript("OnEscapePressed", function()
-            dimmer:Hide()
-        end)
-    end
-    dialog._onConfirm = onConfirm
-    dialog._title:SetText(title or CludesUI.L("Lower Alpha"))
-    dialog._hint:SetText(hint or CludesUI.L("Icon opacity while on cooldown (1-100%)"))
-    dialog._box:SetText(currentPct and tostring(currentPct) or "")
-    mod.PadPopupOpen(dialog._dimmer, dialog, dialog._cancelBtn) -- controller cursor
-    dialog._dimmer:Show()
-    dialog._box:SetFocus()
-    dialog._box:HighlightText()
-end
 
--- Numeric popup for a per-spell seconds setting (0-59; 0 turns it off):
--- titled for Threshold Seconds (the boundary below which Threshold Color /
--- Threshold Decimals apply) unless the caller passes its own title and hint
--- (already localized), e.g. Also Show Below. Both texts are set on every
--- show. Mirrors ShowAlphaPopup; onConfirm receives the integer seconds.
-local function ShowThresholdSecondsPopup(currentVal, onConfirm, title, hint)
-    local environ = mod._CDMO_OptEnv
-    local FONT_PATH, GetCDMOptOutline = environ.FONT_PATH, environ.GetCDMOptOutline
-    local popupName = "CUI_CDM_ThresholdSecondsPopup"
-    local dialog = _G[popupName]
-    if not dialog then
-        local dimmer
-        dialog, dimmer = NewEntryDialog(popupName, 300, 150)
-        dialog._dimmer = dimmer
-
-        local title = NewDialogTitle(dialog)
-        dialog._title = title
-
-        local hint = dialog:CreateFontString(nil, "OVERLAY")
-        hint:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        hint:SetPoint("TOP", title, "BOTTOM", 0, -6)
-        hint:SetTextColor(0.7, 0.7, 0.7, 0.85)
-        dialog._hint = hint
-
-        local box = NewEntryBox(dialog, 2)
-        box:SetPoint("TOP", hint, "BOTTOM", 0, -12)
-        dialog._box = box
-
-        local okBtn = NewDialogButton(dialog, "Save", true)
-
+        local saveBtn = NewDialogButton(dialog, "Save", true)
         local cancelBtn = NewDialogButton(dialog, "Cancel", false)
-        cancelBtn:SetScript("OnClick", function()
+        local function Close()
             dimmer:Hide()
-        end)
-        dialog._cancelBtn = cancelBtn
-
-        local function Commit()
-            local val = tonumber(box:GetText())
-            if val and val >= 0 and val <= 59 then
-                dimmer:Hide()
-                if dialog._onConfirm then
-                    dialog._onConfirm(math.floor(val))
-                end
-            end
         end
-        okBtn:SetScript("OnClick", Commit)
-        box:SetScript("OnEnterPressed", Commit)
-        box:SetScript("OnEscapePressed", function()
-            dimmer:Hide()
-        end)
-    end
-    dialog._onConfirm = onConfirm
-    dialog._title:SetText(title or CludesUI.L("Threshold Seconds"))
-    dialog._hint:SetText(hint or CludesUI.L("Seconds left when threshold text starts (0 = off)"))
-    dialog._box:SetText(currentVal and tostring(currentVal) or "")
-    mod.PadPopupOpen(dialog._dimmer, dialog, dialog._cancelBtn) -- controller cursor
-    dialog._dimmer:Show()
-    dialog._box:SetFocus()
-    dialog._box:HighlightText()
-end
-
--- Per-spell "Custom Icon" popup: a texture fileID that permanently replaces
--- this spell's bar icon, including every form it transforms into; empty/0
--- removes the override. Mirrors ShowThresholdSecondsPopup, plus a live
--- preview of the typed ID (empty/invalid = question-mark fallback, so a
--- typo is visible before saving). onConfirm gets the integer fileID or nil
--- for remove. On ns (not a page-scope local): Lua 5.1 200-local cap.
-mod.ShowCDMCustomIconPopup = function(currentID, onConfirm)
-    local environ = mod._CDMO_OptEnv
-    local FONT_PATH, GetCDMOptOutline = environ.FONT_PATH, environ.GetCDMOptOutline
-    local popupName = "CUI_CDM_CustomIconPopup"
-    local dialog = _G[popupName]
-    if not dialog then
-        local dimmer
-        dialog, dimmer = NewEntryDialog(popupName, 300, 196)
-        dialog._dimmer = dimmer
-
-        local title = NewDialogTitle(dialog, CludesUI.L("Custom Icon"))
-
-        local hint = dialog:CreateFontString(nil, "OVERLAY")
-        hint:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        hint:SetPoint("TOP", title, "BOTTOM", 0, -6)
-        hint:SetTextColor(0.7, 0.7, 0.7, 0.85)
-        hint:SetText(CludesUI.L("Icon ID always shown for this spell (empty removes)"))
-
-        local box = NewEntryBox(dialog, 9)
-        box:SetPoint("TOP", hint, "BOTTOM", 0, -12)
-        dialog._box = box
-
-        -- Live preview of the typed ID (question mark for empty/unknown;
-        -- fires via OnTextChanged, including the SetText on reopen below).
-        local prev = dialog:CreateTexture(nil, "ARTWORK")
-        prev:SetSize(30, 30)
-        prev:SetPoint("TOP", box, "BOTTOM", 0, -10)
-        prev:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        prev:SetTexture(134400)
-        dialog._prev = prev
-        box:SetScript("OnTextChanged", function(b)
-            local ident = tonumber(b:GetText())
-            prev:SetTexture((ident and ident > 0) and ident or 134400)
-        end)
-
-        local okBtn = NewDialogButton(dialog, "Save", true)
-
-        local cancelBtn = NewDialogButton(dialog, "Cancel", false)
-        cancelBtn:SetScript("OnClick", function()
-            dimmer:Hide()
-        end)
+        cancelBtn:SetScript("OnClick", Close)
         dialog._cancelBtn = cancelBtn
 
-        local function Commit()
-            local val = tonumber(box:GetText())
+        local function Save()
+            local accepted, value = spec.accept(tonumber(box:GetText()))
+            if not accepted then
+                return
+            end
             dimmer:Hide()
             if dialog._onConfirm then
-                if val and val > 0 then
-                    dialog._onConfirm(math.floor(val))
-                else
-                    dialog._onConfirm(nil) -- empty or 0 = remove
-                end
+                dialog._onConfirm(value)
             end
         end
-        okBtn:SetScript("OnClick", Commit)
-        box:SetScript("OnEnterPressed", Commit)
-        box:SetScript("OnEscapePressed", function()
-            dimmer:Hide()
-        end)
+        saveBtn:SetScript("OnClick", Save)
+        box:SetScript("OnEnterPressed", Save)
+        box:SetScript("OnEscapePressed", Close)
     end
     dialog._onConfirm = onConfirm
-    dialog._box:SetText(currentID and tostring(currentID) or "")
+    dialog._title:SetText(title or CludesUI.L(spec.title))
+    dialog._hint:SetText(hint or CludesUI.L(spec.hint))
+    dialog._box:SetText(current and tostring(current) or "")
     mod.PadPopupOpen(dialog._dimmer, dialog, dialog._cancelBtn) -- controller cursor
     dialog._dimmer:Show()
     dialog._box:SetFocus()
     dialog._box:HighlightText()
+end
+
+-- How long a preset icon's custom Active State shows: any positive seconds.
+local DURATION_POPUP = {
+    name = "CUI_CDM_DurationPopup",
+    maxLetters = 5,
+    title = "Active State Duration",
+    hint = "Seconds the active state shows after use",
+    accept = function(n)
+        return n ~= nil and n > 0, n
+    end,
+}
+local function ShowDurationPopup(currentVal, onConfirm)
+    ShowValuePopup(DURATION_POPUP, currentVal, onConfirm)
+end
+
+-- An opacity percent, 1 to 100, whole: the "Lower Alpha (On CD)" effect's
+-- by default, or the caller's (the Blackout glow opacity, for one).
+local ALPHA_POPUP = {
+    name = "CUI_CDM_AlphaPopup",
+    maxLetters = 3,
+    title = "Lower Alpha",
+    hint = "Icon opacity while on cooldown (1-100%)",
+    accept = function(n)
+        return n ~= nil and n >= 1 and n <= 100, n and math.floor(n)
+    end,
+}
+local function ShowAlphaPopup(currentPct, onConfirm, title, hint)
+    ShowValuePopup(ALPHA_POPUP, currentPct, onConfirm, title, hint)
+end
+
+-- Whole seconds, 0 to 59 (0 turns it off): Threshold Seconds, the point
+-- below which Threshold Color and Threshold Decimals apply, by default, or
+-- the caller's (Also Show Below, for one).
+local THRESHOLD_POPUP = {
+    name = "CUI_CDM_ThresholdSecondsPopup",
+    maxLetters = 2,
+    title = "Threshold Seconds",
+    hint = "Seconds left when threshold text starts (0 = off)",
+    accept = function(n)
+        return n ~= nil and n >= 0 and n <= 59, n and math.floor(n)
+    end,
+}
+local function ShowThresholdSecondsPopup(currentVal, onConfirm, title, hint)
+    ShowValuePopup(THRESHOLD_POPUP, currentVal, onConfirm, title, hint)
+end
+
+-- A spell's Custom Icon: the texture fileID shown for it in every form it
+-- takes. Always saves: a positive ID as a whole number, empty or 0 as nil
+-- (the override removed). Under the box, a preview of the typed ID (the
+-- question mark while it is empty or not a usable ID), so a typo shows
+-- before saving. On mod rather than a page local: the 200-local cap.
+local QUESTION_MARK_ICON = 134400
+local CUSTOM_ICON_POPUP = {
+    name = "CUI_CDM_CustomIconPopup",
+    height = 196,
+    maxLetters = 9,
+    title = "Custom Icon",
+    hint = "Icon ID always shown for this spell (empty removes)",
+    decorate = function(dialog, box)
+        local preview = dialog:CreateTexture(nil, "ARTWORK")
+        preview:SetSize(30, 30)
+        preview:SetPoint("TOP", box, "BOTTOM", 0, -10)
+        preview:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        preview:SetTexture(QUESTION_MARK_ICON)
+        dialog._prev = preview
+        box:SetScript("OnTextChanged", function(b)
+            local id = tonumber(b:GetText())
+            preview:SetTexture((id and id > 0) and id or QUESTION_MARK_ICON)
+        end)
+    end,
+    accept = function(n)
+        if n and n > 0 then
+            return true, math.floor(n)
+        end
+        return true, nil
+    end,
+}
+mod.ShowCDMCustomIconPopup = function(currentID, onConfirm)
+    ShowValuePopup(CUSTOM_ICON_POPUP, currentID, onConfirm)
 end
 
 -- Used by CUI_CooldownManager_Options.lua and SpellPicker_Options.lua
