@@ -451,11 +451,11 @@ B.KINDS = {
 }
 B.KIND = {}
 local BY_CMD = {}
-for _, k in ipairs(B.KINDS) do
-    if k.key then
-        B.KIND[k.key] = k
-        if k.cmd ~= "" and k.key ~= "chat" then
-            BY_CMD[k.cmd] = k
+for _, keyName in ipairs(B.KINDS) do
+    if keyName.key then
+        B.KIND[keyName.key] = keyName
+        if keyName.cmd ~= "" and keyName.key ~= "chat" then
+            BY_CMD[keyName.cmd] = keyName
         end
     end
 end
@@ -690,8 +690,8 @@ end
 function B.FirstSpell(m)
     for _, l in ipairs(m.lines or {}) do
         if l.kind == "cast" or l.kind == "use" then
-            for _, v in ipairs(l.variants) do
-                local s = strtrim(v.arg or "")
+            for _, value in ipairs(l.variants) do
+                local s = strtrim(value.arg or "")
                 if s ~= "" and not tonumber(s) then
                     return s
                 end
@@ -703,29 +703,29 @@ end
 -------------------------------------------------------------------------------
 --  Model -> text
 -------------------------------------------------------------------------------
-local function CondParts(v)
+local function CondParts(value)
     local parts = {}
-    if v.target and v.target ~= "" then
-        parts[#parts + 1] = "@" .. v.target
+    if value.target and value.target ~= "" then
+        parts[#parts + 1] = "@" .. value.target
     end
     for _, d in ipairs(B.CONDS) do
-        local posX = v.conds and v.conds[d.key]
+        local posX = value.conds and value.conds[d.key]
         if posX == 1 then
             parts[#parts + 1] = d.key
         elseif posX == 2 then
             parts[#parts + 1] = "no" .. d.key
         end
     end
-    if v.stance and v.stance ~= "" then
-        parts[#parts + 1] = "stance:" .. v.stance
+    if value.stance and value.stance ~= "" then
+        parts[#parts + 1] = "stance:" .. value.stance
     end
-    for _, p in ipairs(v.params or {}) do
+    for _, p in ipairs(value.params or {}) do
         local val = strtrim(p.value or "")
         if val ~= "" then
             parts[#parts + 1] = (p.no and "no" or "") .. p.key .. ":" .. val
         end
     end
-    local posX = strtrim(v.extra or "")
+    local posX = strtrim(value.extra or "")
     if posX ~= "" then
         parts[#parts + 1] = posX
     end
@@ -768,12 +768,12 @@ function B.LineText(l)
     end
 
     local segs = {}
-    for idx, v in ipairs(l.variants) do
+    for idx, value in ipairs(l.variants) do
         if idx > 1 and not K.multi then
             break
         end
-        local b = K.conds and Bracket(CondParts(v)) or ""
-        local a = K.arg and strtrim(v.arg or "") or ""
+        local b = K.conds and Bracket(CondParts(value)) or ""
+        local a = K.arg and strtrim(value.arg or "") or ""
         local seg = b
         if a ~= "" then
             seg = (b ~= "" and (b .. " ") or "") .. a
@@ -803,39 +803,39 @@ end
 -------------------------------------------------------------------------------
 --  Text -> model
 -------------------------------------------------------------------------------
-local function ParseConds(s, v)
+local function ParseConds(s, value)
     local rest = {}
     for raw in s:gmatch("[^,]+") do
         local tok = strtrim(raw)
         local noKey = tok:sub(1, 2) == "no" and tok:sub(3)
         local pKey = tok:match("^(%a+):")
         local npKey = noKey and noKey:match("^(%a+):")
-        if tok:sub(1, 1) == "@" and v.target == "" then
-            v.target = tok:sub(2)
+        if tok:sub(1, 1) == "@" and value.target == "" then
+            value.target = tok:sub(2)
         elseif COND_KEY[tok] then
-            v.conds[tok] = 1
+            value.conds[tok] = 1
         elseif noKey and COND_KEY[noKey] then
-            v.conds[noKey] = 2
-        elseif pKey == "stance" and v.stance == "" then
-            v.stance = tok:sub(8)
+            value.conds[noKey] = 2
+        elseif pKey == "stance" and value.stance == "" then
+            value.stance = tok:sub(8)
         elseif tok:match("^%a+:.+$") and (B.PARAM[pKey] or (npKey and B.PARAM[npKey])) then
             local no = not B.PARAM[pKey]
             local key, val = (no and noKey or tok):match("^(%a+):(.+)$")
-            v.params[#v.params + 1] = { key = key, value = val, no = no }
+            value.params[#value.params + 1] = { key = key, value = val, no = no }
         else
             rest[#rest + 1] = tok
         end
     end
-    v.extra = table.concat(rest, ",")
+    value.extra = table.concat(rest, ",")
 end
 
-local function ParseSeg(seg, v)
+local function ParseSeg(seg, value)
     local conds, a = seg:match("^%[([^%]]*)%]%s*(.*)$")
     if conds then
-        ParseConds(conds, v)
-        v.arg = a
+        ParseConds(conds, value)
+        value.arg = a
     else
-        v.arg = seg
+        value.arg = seg
     end
 end
 
@@ -869,20 +869,20 @@ function B.ParseLine(textValue)
             if K.key == "chat" then
                 l.chan = chan
             end
-            local v = l.variants[1]
+            local value = l.variants[1]
             if K.arg == "spells" then
                 local conds, after = rest:match("^%[([^%]]*)%]%s*(.*)$")
                 if conds then
-                    ParseConds(conds, v)
+                    ParseConds(conds, value)
                     rest = after
                 end
                 local r, after2 = rest:match("^reset=(%S+)%s*(.*)$")
                 if r and K.reset then
                     l.reset, rest = r, after2
                 end
-                v.arg = rest
+                value.arg = rest
             elseif not K.conds then
-                v.arg = rest
+                value.arg = rest
             elseif K.multi then
                 l.variants = {}
                 for rawSeg in (rest .. ";"):gmatch("(.-);") do
@@ -894,7 +894,7 @@ function B.ParseLine(textValue)
                     l.variants[1] = B.NewVariant()
                 end
             else
-                ParseSeg(rest, v)
+                ParseSeg(rest, value)
             end
         end
     end
@@ -1204,13 +1204,13 @@ function MM.Diff(snap, write)
     local N, Inner, T = snap.n, snap.i, snap.b
     local first, last = 1, a
     for _ = 1, 2 do
-        for k = first, last do
-            local name, icon, body = GetMacroInfo(k)
-            if N[k] ~= name or Inner[k] ~= icon or T[k] ~= body then
+        for keyName = first, last do
+            local name, icon, body = GetMacroInfo(keyName)
+            if N[keyName] ~= name or Inner[keyName] ~= icon or T[keyName] ~= body then
                 if not write then
                     return true
                 end
-                diff, N[k], Inner[k], T[k] = true, name, icon, body
+                diff, N[keyName], Inner[keyName], T[keyName] = true, name, icon, body
             end
         end
         first, last = MM.MAX_ACCOUNT + 1, MM.MAX_ACCOUNT + c

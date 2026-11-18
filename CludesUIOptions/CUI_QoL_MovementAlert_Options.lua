@@ -186,20 +186,20 @@ local function ShowAddSpellPopup(onAdded)
     local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
     if not addSpellPopup then
-        local dimmer = CreateFrame("Frame", nil, UIParent)
-        dimmer:SetFrameStrata("FULLSCREEN_DIALOG")
-        dimmer:SetAllPoints(UIParent)
-        dimmer:EnableMouse(true)
-        dimmer:Hide()
-        local dimTex = dimmer:CreateTexture(nil, "BACKGROUND")
+        local shade = CreateFrame("Frame", nil, UIParent)
+        shade:SetFrameStrata("FULLSCREEN_DIALOG")
+        shade:SetAllPoints(UIParent)
+        shade:EnableMouse(true)
+        shade:Hide()
+        local dimTex = shade:CreateTexture(nil, "BACKGROUND")
         dimTex:SetAllPoints()
         dimTex:SetColorTexture(0, 0, 0, 0.25)
 
-        local dialog = CreateFrame("Frame", nil, dimmer)
+        local dialog = CreateFrame("Frame", nil, shade)
         dialog:SetSize(240, 150)
         dialog:SetPoint("CENTER", CludesUI._mainFrame or UIParent, "CENTER", 0, 60)
         dialog:SetFrameStrata("FULLSCREEN_DIALOG")
-        dialog:SetFrameLevel(dimmer:GetFrameLevel() + 10)
+        dialog:SetFrameLevel(shade:GetFrameLevel() + 10)
         dialog:EnableMouse(true)
         local backdrop = dialog:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
@@ -261,7 +261,7 @@ local function ShowAddSpellPopup(onAdded)
                 return
             end
             sidBox:SetText("")
-            dimmer:Hide()
+            shade:Hide()
             if dialog._onAdded then
                 dialog._onAdded(ident)
             end
@@ -272,13 +272,13 @@ local function ShowAddSpellPopup(onAdded)
             self:ClearFocus()
         end)
 
-        dimmer:SetScript("OnMouseDown", function(self)
+        shade:SetScript("OnMouseDown", function(self)
             if not dialog:IsMouseOver() then
                 self:Hide()
             end
         end)
 
-        dialog._dimmer = dimmer
+        dialog._dimmer = shade
         addSpellPopup = dialog
     end
 
@@ -301,20 +301,20 @@ local function ShowCustomTextPopup(titleText, initial, onSave)
     local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
     if not customTextPopup then
-        local dimmer = CreateFrame("Frame", nil, UIParent)
-        dimmer:SetFrameStrata("FULLSCREEN_DIALOG")
-        dimmer:SetAllPoints(UIParent)
-        dimmer:EnableMouse(true)
-        dimmer:Hide()
-        local dimTex = dimmer:CreateTexture(nil, "BACKGROUND")
+        local shade = CreateFrame("Frame", nil, UIParent)
+        shade:SetFrameStrata("FULLSCREEN_DIALOG")
+        shade:SetAllPoints(UIParent)
+        shade:EnableMouse(true)
+        shade:Hide()
+        local dimTex = shade:CreateTexture(nil, "BACKGROUND")
         dimTex:SetAllPoints()
         dimTex:SetColorTexture(0, 0, 0, 0.25)
 
-        local dialog = CreateFrame("Frame", nil, dimmer)
+        local dialog = CreateFrame("Frame", nil, shade)
         dialog:SetSize(260, 150)
         dialog:SetPoint("CENTER", CludesUI._mainFrame or UIParent, "CENTER", 0, 60)
         dialog:SetFrameStrata("FULLSCREEN_DIALOG")
-        dialog:SetFrameLevel(dimmer:GetFrameLevel() + 10)
+        dialog:SetFrameLevel(shade:GetFrameLevel() + 10)
         dialog:EnableMouse(true)
         local backdrop = dialog:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
@@ -333,20 +333,20 @@ local function ShowCustomTextPopup(titleText, initial, onSave)
         labelFS:SetTextColor(0.7, 0.7, 0.7, 1)
         labelFS:SetText(CludesUI.L("Custom Alert Text (empty = ability name)"))
 
-        local box = CreateFrame("EditBox", nil, dialog)
-        box:SetSize(212, 28)
-        box:SetPoint("TOPLEFT", labelFS, "BOTTOMLEFT", 0, -4)
-        box:SetAutoFocus(false)
-        box:SetMaxLetters(40)
-        box:SetFont(FONT, 13, "")
-        box:SetTextColor(1, 1, 1, 0.9)
-        box:SetJustifyH("LEFT")
-        box:SetTextInsets(6, 6, 0, 0)
-        local boxBg = box:CreateTexture(nil, "BACKGROUND")
+        local boxFrame = CreateFrame("EditBox", nil, dialog)
+        boxFrame:SetSize(212, 28)
+        boxFrame:SetPoint("TOPLEFT", labelFS, "BOTTOMLEFT", 0, -4)
+        boxFrame:SetAutoFocus(false)
+        boxFrame:SetMaxLetters(40)
+        boxFrame:SetFont(FONT, 13, "")
+        boxFrame:SetTextColor(1, 1, 1, 0.9)
+        boxFrame:SetJustifyH("LEFT")
+        boxFrame:SetTextInsets(6, 6, 0, 0)
+        local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
         boxBg:SetAllPoints()
         boxBg:SetColorTexture(0.060, 0.049, 0.037, 1)
-        CludesUI.MakeRoundedBorder(box, 1, 1, 1, 0.12, boxBg)
-        dialog._box = box
+        CludesUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.12, boxBg)
+        dialog._box = boxFrame
 
         local ar, ag, ab = CludesUI.GetAccentColor()
         local saveBtn = CreateFrame("Button", nil, dialog)
@@ -363,24 +363,24 @@ local function ShowCustomTextPopup(titleText, initial, onSave)
         saveLbl:SetText(CludesUI.L("Save"))
 
         local function Commit()
-            dimmer:Hide()
+            shade:Hide()
             if dialog._onSave then
                 dialog._onSave(dialog._box:GetText() or "")
             end
         end
         saveBtn:SetScript("OnClick", Commit)
-        box:SetScript("OnEnterPressed", Commit)
-        box:SetScript("OnEscapePressed", function()
-            dimmer:Hide()
+        boxFrame:SetScript("OnEnterPressed", Commit)
+        boxFrame:SetScript("OnEscapePressed", function()
+            shade:Hide()
         end)
 
-        dimmer:SetScript("OnMouseDown", function(self)
+        shade:SetScript("OnMouseDown", function(self)
             if not dialog:IsMouseOver() then
                 self:Hide()
             end
         end)
 
-        dialog._dimmer = dimmer
+        dialog._dimmer = shade
         customTextPopup = dialog
     end
 
@@ -402,13 +402,13 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
     local ma = MA()
     -- Row accessors over ma: a key read (or its default) and written.
     local function MaField(key)
-        return function(v)
-            ma[key] = v
+        return function(value)
+            ma[key] = value
         end
     end
     local function MaFieldThen(key)
-        return function(v)
-            ma[key] = v
+        return function(value)
+            ma[key] = value
             Refresh()
         end
     end
@@ -420,13 +420,13 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
     if not ma then
         return 0
     end
-    local posY = yOffset
-    local _, hgt, heading
+    local cursorY = yOffset
+    local _, height, heading
 
     hostFrame._showRowDivider = true
 
-    _, hgt = W:Spacer(hostFrame, posY, 12)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 12)
+    cursorY = cursorY - height
 
     -- Activate / Deactivate Movement Preview -- centered wide button matching
     -- the Boss Frames preview button. Loops a fake cooldown through the real
@@ -439,7 +439,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             or CludesUI.L("Activate Movement Preview")
     end
     local previewBtnFrame
-    previewBtnFrame, hgt = W:WideButton(hostFrame, PreviewLabel(), posY, function()
+    previewBtnFrame, height = W:WideButton(hostFrame, PreviewLabel(), cursorY, function()
         if not CludesUI._MovementAlertPreview then
             return
         end
@@ -448,7 +448,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             previewBtnLbl:SetText(PreviewLabel())
         end
     end)
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         -- The button the row was built with and its label, the SHOWN ones: a
         -- pooled row also holds the hidden children and regions an earlier
@@ -488,14 +488,14 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         end)
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 8)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 8)
+    cursorY = cursorY - height
 
     -------------------------------------------------------------------------
     --  MOVEMENT COOLDOWN ALERT
     -------------------------------------------------------------------------
-    heading, hgt = W:SectionHeader(hostFrame, "MOVEMENT COOLDOWN ALERT", posY)
-    posY = posY - hgt
+    heading, height = W:SectionHeader(hostFrame, "MOVEMENT COOLDOWN ALERT", cursorY)
+    cursorY = cursorY - height
 
     -- Off = no class checked at all (enabledClasses nil), the Totem Bar
     -- convention -- the page stays configurable while ANY class is checked;
@@ -511,7 +511,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
     })
 
     local enableRow
-    enableRow, hgt = W:DualRow(hostFrame, posY, {
+    enableRow, height = W:DualRow(hostFrame, cursorY, {
         type = "label",
         text = "Enable Movement Alerts",
         tooltip = "Shows the checked classes' mobility spell(s) counting down on cooldown. Nothing checked = feature disabled. Use Layout Mode to reposition/resize.",
@@ -527,12 +527,12 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         end,
         setValue = MaFieldThen("combatOnly"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Enabled-classes checkbox dropdown (same widget/storage convention as
     -- the Resource Bars Totem Bar): nothing checked = zero-cost disabled.
     if not CludesUI._prebuilding then
-        local leftRgn = enableRow._leftRegion
+        local leftRegion = enableRow._leftRegion
         local classItems = {}
         for _, castFrame in ipairs(CLASS_ORDER) do
             -- WoW Forever lists only the classes it has.
@@ -544,11 +544,11 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 classItems[#classItems + 1] = { key = castFrame, label = "|c" .. hex .. name .. "|r" }
             end
         end
-        local cbDD, cbDDRefresh
-        cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-            leftRgn,
+        local checkDrop, cbDDRefresh
+        checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+            leftRegion,
             210,
-            leftRgn:GetFrameLevel() + 2,
+            leftRegion:GetFrameLevel() + 2,
             classItems,
             function(key)
                 return ma.enabledClasses and ma.enabledClasses[key] or false
@@ -564,7 +564,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 if not next(ma.enabledClasses) then
                     ma.enabledClasses = nil
                 end
-                local ddMenu = cbDD._ddMenu
+                local ddMenu = checkDrop._ddMenu
                 if ddMenu then
                     for _, scrollFrame in ipairs({ ddMenu:GetChildren() }) do
                         local sc = scrollFrame.GetScrollChild and scrollFrame:GetScrollChild()
@@ -587,8 +587,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             8,
             false
         )
-        Pix.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
-        leftRgn._control = cbDD
+        Pix.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
+        leftRegion._control = checkDrop
         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
     end
 
@@ -661,7 +661,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
     end
 
     local dmRow
-    dmRow, hgt = W:DualRow(hostFrame, posY, {
+    dmRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Display Mode",
         values = DISPLAY_MODE_VALUES,
@@ -701,7 +701,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         getValue = MaFieldOr("barTexture", "none"),
         setValue = MaFieldThen("barTexture"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Bar settings cog on the Bar Texture slot: Show Icon on Bar lives here.
     if not CludesUI._prebuilding then
@@ -740,10 +740,10 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
     -- resize cog, then the Custom + Class color swatch pair. The swatches
     -- (the Use Class Color replacement) only apply to Text and Bar modes.
     if not CludesUI._prebuilding then
-        local leftRgn = dmRow._leftRegion
+        local leftRegion = dmRow._leftRegion
 
         -- Resize cog (nearest the control): Text Size / Icon Size, each gated to its mode.
-        CludesUI.BuildInlineCog(leftRgn, {
+        CludesUI.BuildInlineCog(leftRegion, {
             title = "Display Size",
             rows = {
                 -- Never disabled: sizes the free text, the bar's number, and
@@ -800,17 +800,17 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             disabledTooltip = "Select an Enabled Class",
         })
 
-        local dmAnchor = leftRgn._lastInline or leftRgn._control
+        local dmAnchor = leftRegion._lastInline or leftRegion._control
 
         -- Class Colored swatch (nearest the cog)
         local dmClassSwatch, dmUpdateClassSwatch = CludesUI.BuildColorSwatch(
-            leftRgn,
-            leftRgn:GetFrameLevel() + 5,
+            leftRegion,
+            leftRegion:GetFrameLevel() + 5,
             function()
                 local _, class = UnitClass("player")
-                local cc = class and CludesUI.GetClassColor(class)
-                if cc then
-                    return cc.r, cc.g, cc.b
+                local classColor = class and CludesUI.GetClassColor(class)
+                if classColor then
+                    return classColor.r, classColor.g, classColor.b
                 end
                 return 1, 1, 1
             end,
@@ -832,8 +832,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         -- Custom Colored swatch (left of the class swatch): opens the picker;
         -- clicking while class color is active switches back to custom first.
         local dmSwatch, dmUpdateSwatch = CludesUI.BuildColorSwatch(
-            leftRgn,
-            leftRgn:GetFrameLevel() + 5,
+            leftRegion,
+            leftRegion:GetFrameLevel() + 5,
             function()
                 return ma.textColorR or 1, ma.textColorG or 1, ma.textColorB or 1
             end,
@@ -845,7 +845,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             20
         )
         Pix.Point(dmSwatch, "RIGHT", dmClassSwatch, "LEFT", -8, 0)
-        leftRgn._lastInline = dmSwatch
+        leftRegion._lastInline = dmSwatch
         local dmOrigClick = dmSwatch:GetScript("OnClick")
         dmSwatch:SetScript("OnClick", function(self, ...)
             if DMSwatchesDisabled() then
@@ -880,7 +880,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
     -- view over the old maTtsEnabled/maTtsVoiceID keys. It speaks the
     -- ability name (or its per-spell Custom Text); volume lives in the cog.
     local ttsRow
-    ttsRow, hgt = W:DualRow(hostFrame, posY, {
+    ttsRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Sound",
         values = sndValues,
@@ -917,14 +917,14 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             CludesUI:RefreshPage()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     if not CludesUI._prebuilding then
-        local leftRgn = ttsRow._rightRegion
+        local leftRegion = ttsRow._rightRegion
         local function TtsCogOff()
             return maOff() or not ma.maTtsEnabled
         end
-        CludesUI.BuildInlineCog(leftRgn, {
+        CludesUI.BuildInlineCog(leftRegion, {
             title = "Text-to-Speech Settings",
             rows = {
                 {
@@ -943,15 +943,15 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         })
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 16)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 16)
+    cursorY = cursorY - height
 
     -------------------------------------------------------------------------
     --  TRACKED SPELLS
     -------------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "TRACKED SPELLS", posY)
-    posY = posY - hgt
-    posY = posY - 6
+    _, height = W:SectionHeader(hostFrame, "TRACKED SPELLS", cursorY)
+    cursorY = cursorY - height
+    cursorY = cursorY - 6
 
     -- 4-column checkbox grid (same visual system as the AuraBuffReminders Auras
     -- section): class-colored spell name left, checkbox right, no ids. Lists every
@@ -1008,7 +1008,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     for i = 1, #preset.ids do
                         cellIds[i] = preset.ids[i]
                     end
-                    local item = {
+                    local entry = {
                         label = details.name,
                         classToken = preset.class,
                         spellId = primary,
@@ -1028,8 +1028,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                             end
                         end,
                     }
-                    byClassName[dupKey] = item
-                    itemList[#itemList + 1] = item
+                    byClassName[dupKey] = entry
+                    itemList[#itemList + 1] = entry
                 end
             end
         end
@@ -1070,7 +1070,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         for row = 0, totalRows - 1 do
             local rowFrame = CreateFrame("Frame", nil, hostFrame)
             Pix.Size(rowFrame, totalW, GRID_ROW_H)
-            Pix.Point(rowFrame, "TOPLEFT", hostFrame, "TOPLEFT", GRID_PAD, posY - row * GRID_ROW_H)
+            Pix.Point(rowFrame, "TOPLEFT", hostFrame, "TOPLEFT", GRID_PAD, cursorY - row * GRID_ROW_H)
             rowFrame._skipRowDivider = true
             CludesUI.RowBg(rowFrame, hostFrame)
 
@@ -1089,8 +1089,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
 
             for col = 0, GRID_COLS - 1 do
                 local position = row * GRID_COLS + col + 1
-                local item = itemList[position]
-                if not item then
+                local entry = itemList[position]
+                if not entry then
                     break
                 end
 
@@ -1098,7 +1098,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 cell:SetSize(colW, GRID_ROW_H)
                 cell:SetPoint("TOPLEFT", rowFrame, "TOPLEFT", col * colW, 0)
 
-                if item.addButton then
+                if entry.addButton then
                     -- Keybind-button style (dropdown-look bg/border with the
                     -- hover brighten), centered in its grid slot.
                     local addBtn = CreateFrame("Button", nil, cell)
@@ -1150,37 +1150,37 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                         end)
                     end)
                 else
-                    local cr, cg, cb = 1, 1, 1
-                    if item.classToken then
-                        local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[item.classToken]
-                        if cc then
-                            cr, cg, cb = cc.r, cc.g, cc.b
+                    local cr, cg, checkBtn = 1, 1, 1
+                    if entry.classToken then
+                        local classColor = RAID_CLASS_COLORS and RAID_CLASS_COLORS[entry.classToken]
+                        if classColor then
+                            cr, cg, checkBtn = classColor.r, classColor.g, classColor.b
                         end
                     end
 
-                    local labelText = CludesUI.MakeFont(cell, 13, nil, cr, cg, cb)
+                    local labelText = CludesUI.MakeFont(cell, 13, nil, cr, cg, checkBtn)
                     labelText:SetPoint("LEFT", cell, "LEFT", GRID_SIDE_PAD, 0)
                     labelText:SetWidth(colW - GRID_SIDE_PAD * 2 - GRID_BOX_SZ - 6)
                     labelText:SetJustifyH("LEFT")
                     labelText:SetMaxLines(2)
-                    labelText:SetText(item.label)
+                    labelText:SetText(entry.label)
 
-                    local box = CreateFrame("Frame", nil, cell)
-                    box:SetSize(GRID_BOX_SZ, GRID_BOX_SZ)
-                    box:SetPoint("RIGHT", cell, "RIGHT", -GRID_SIDE_PAD, 0)
-                    local boxBg = box:CreateTexture(nil, "BACKGROUND")
+                    local boxFrame = CreateFrame("Frame", nil, cell)
+                    boxFrame:SetSize(GRID_BOX_SZ, GRID_BOX_SZ)
+                    boxFrame:SetPoint("RIGHT", cell, "RIGHT", -GRID_SIDE_PAD, 0)
+                    local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
                     boxBg:SetAllPoints()
                     boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
                     if boxBg.SetSnapToPixelGrid then
                         boxBg:SetSnapToPixelGrid(false)
                         boxBg:SetTexelSnappingBias(0)
                     end
-                    local boxBrd = CludesUI.MakeRoundedBorder(box, 0.224, 0.215, 0.207, 0.6, boxBg)
-                    local check = box:CreateTexture(nil, "ARTWORK")
-                    check:SetPoint("TOPLEFT", box, "TOPLEFT", 3, -3)
-                    check:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -3, 3)
+                    local boxBrd = CludesUI.MakeRoundedBorder(boxFrame, 0.224, 0.215, 0.207, 0.6, boxBg)
+                    local check = boxFrame:CreateTexture(nil, "ARTWORK")
+                    check:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", 3, -3)
+                    check:SetPoint("BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", -3, 3)
                     check:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
-                    CludesUI.RoundBody(box, check, 1)
+                    CludesUI.RoundBody(boxFrame, check, 1)
                     if check.SetSnapToPixelGrid then
                         check:SetSnapToPixelGrid(false)
                         check:SetTexelSnappingBias(0)
@@ -1200,15 +1200,15 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                         if not ec then
                             return true
                         end
-                        if item.classToken then
-                            return not ec[item.classToken]
+                        if entry.classToken then
+                            return not ec[entry.classToken]
                         end
                         return false
                     end
 
                     local function ApplyVisual()
                         local dis = CellDisabled()
-                        local on = item.getVal()
+                        local on = entry.getVal()
                         if on then
                             check:Show()
                             boxBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.15)
@@ -1218,10 +1218,10 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                         end
                         if dis then
                             labelText:SetAlpha(0.3)
-                            box:SetAlpha(0.4)
+                            boxFrame:SetAlpha(0.4)
                         else
                             labelText:SetAlpha(on and 1 or 0.5)
-                            box:SetAlpha(1)
+                            boxFrame:SetAlpha(1)
                         end
                     end
                     ApplyVisual()
@@ -1231,10 +1231,10 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                             return
                         end
                         if mouseButton == "RightButton" then
-                            local shade = ma.spellOverrides[item.spellId]
-                            ShowCustomTextPopup(item.label, shade and shade.customText or "", function(txt)
-                                for i = 1, #item.ids do
-                                    local ident = item.ids[i]
+                            local shade = ma.spellOverrides[entry.spellId]
+                            ShowCustomTextPopup(entry.label, shade and shade.customText or "", function(txt)
+                                for i = 1, #entry.ids do
+                                    local ident = entry.ids[i]
                                     ma.spellOverrides[ident] = ma.spellOverrides[ident] or {}
                                     ma.spellOverrides[ident].customText = (txt ~= "") and txt or nil
                                 end
@@ -1245,7 +1245,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                             end)
                             return
                         end
-                        item.setVal(not item.getVal())
+                        entry.setVal(not entry.getVal())
                         ApplyVisual()
                         GridChanged()
                     end)
@@ -1257,7 +1257,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                             )
                             return
                         end
-                        if not item.getVal() then
+                        if not entry.getVal() then
                             labelText:SetAlpha(0.8)
                         end
                         CludesUI.ShowWidgetTooltip(cell, CludesUI.L("Right-Click to set custom alert text."))
@@ -1269,7 +1269,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
 
                     CludesUI.RegisterWidgetRefresh(ApplyVisual)
 
-                    if item.custom then
+                    if entry.custom then
                         local delBtn = CreateFrame("Button", nil, cell)
                         delBtn:SetSize(12, 12)
                         delBtn:SetPoint("TOPRIGHT", cell, "TOPRIGHT", -4, -4)
@@ -1285,7 +1285,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                             delIcon:SetAlpha(0.4)
                         end)
                         delBtn:SetScript("OnClick", function()
-                            ma.spellOverrides[item.spellId] = nil
+                            ma.spellOverrides[entry.spellId] = nil
                             GridChanged()
                             CludesUI:RefreshPage(true)
                         end)
@@ -1293,17 +1293,17 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 end
             end
         end
-        posY = posY - totalRows * GRID_ROW_H
+        cursorY = cursorY - totalRows * GRID_ROW_H
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 16)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 16)
+    cursorY = cursorY - height
 
     -------------------------------------------------------------------------
     --  EXTRA TRACKING
     -------------------------------------------------------------------------
-    heading, hgt = W:SectionHeader(hostFrame, "EXTRA TRACKING", posY)
-    posY = posY - hgt
+    heading, height = W:SectionHeader(hostFrame, "EXTRA TRACKING", cursorY)
+    cursorY = cursorY - height
 
     -- The two sibling trackers' master toggles, each carrying its full settings cog.
     local function tsOff()
@@ -1320,7 +1320,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
     )
 
     local extraRow
-    extraRow, hgt = W:DualRow(hostFrame, posY, {
+    extraRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Enable Time Spiral Tracker",
         tooltip = "Flashes a banner whenever a tracked mobility spell's cooldown is proc-reset. Use Layout Mode to reposition/resize.",
@@ -1351,14 +1351,14 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             CludesUI:RefreshPage()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Time Spiral settings cog (left slot)
     if not CludesUI._prebuilding then
-        local leftRgn = extraRow._leftRegion
+        local leftRegion = extraRow._leftRegion
         local sndValues2, sndOrder2 = CludesUI.BuildSoundDropdownValues()
         local ttsValues2, ttsOrder2 = TTSVoiceDropdownValues()
-        CludesUI.BuildInlineCog(leftRgn, {
+        CludesUI.BuildInlineCog(leftRegion, {
             title = "Time Spiral Settings",
             minWidth = 300,
             rows = {
@@ -1570,10 +1570,10 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         })
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
-    return math.abs(posY)
+    return math.abs(cursorY)
 end
 
 _G._CUI_BuildMovementAlertPage = BuildMovementAlertPage

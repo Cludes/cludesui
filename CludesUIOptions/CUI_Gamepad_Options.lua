@@ -194,7 +194,7 @@ local NOTE_ROW_H = 34
 -- The intro: chrome only, so the search index pass (which builds the page
 -- with CludesUI._prebuilding set) skips it but still steps past its space.
 -- A sized host with one TOPLEFT point, as the search geometry expects.
-local function BuildIntro(hostFrame, posY)
+local function BuildIntro(hostFrame, cursorY)
     if CludesUI._prebuilding then
         return
     end
@@ -202,7 +202,7 @@ local function BuildIntro(hostFrame, posY)
     local pad = CludesUI.CONTENT_PAD
     local host = CreateFrame("Frame", nil, hostFrame)
     PP.Size(host, hostFrame:GetWidth() - pad * 2, 44)
-    PP.Point(host, "TOPLEFT", hostFrame, "TOPLEFT", pad, posY - 20)
+    PP.Point(host, "TOPLEFT", hostFrame, "TOPLEFT", pad, cursorY - 20)
     local text = CludesUI.MakeFont(host, 14, nil, 1, 1, 1, 0.65)
     text:SetPoint("TOPLEFT", host, "TOPLEFT", 0, -2)
     text:SetPoint("TOPRIGHT", host, "TOPRIGHT", 0, -2)
@@ -213,7 +213,7 @@ end
 
 -- Swaps the row's stand-in dropdown for the checklist of bars, and adds the
 -- note under it. Returns the new y.
-local function BuildBarChecklist(hostFrame, row, posY, mod)
+local function BuildBarChecklist(hostFrame, row, cursorY, mod)
     local region = row._leftRegion
     if region._control then
         region._control:Hide()
@@ -231,29 +231,29 @@ local function BuildBarChecklist(hostFrame, row, posY, mod)
     region._lastInline = nil
     CludesUI.RegisterWidgetRefresh(refresh)
     -- Chrome only (no search entry).
-    return CludesUI.BuildNoteRow(hostFrame, posY, "Hidden bars still show in Quick Keybind mode so you can bind them.")
+    return CludesUI.BuildNoteRow(hostFrame, cursorY, "Hidden bars still show in Quick Keybind mode so you can bind them.")
 end
 
 -- Builds the page into hostFrame from yOffset down; returns its height.
 function _G._CUI_BuildGamepadPage(page, hostFrame, yOffset)
     local W = CludesUI.Widgets
-    local posY = yOffset
-    local _, row, hgt
+    local cursorY = yOffset
+    local _, row, height
 
     hostFrame._showRowDivider = true
 
-    BuildIntro(hostFrame, posY)
-    posY = posY - 48
+    BuildIntro(hostFrame, cursorY)
+    cursorY = cursorY - 48
 
     -- Action bars. The row is built as a stand-in dropdown (rows only build
     -- plain widgets) so it carries the label, the tooltip and the disabled
     -- state while Action Bars is not loaded; with it loaded, the checklist
     -- takes the dropdown's place.
-    _, hgt = W:SectionHeader(hostFrame, "ACTION BARS", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "ACTION BARS", cursorY)
+    cursorY = cursorY - height
 
     local actionBars = ActionBars()
-    row, hgt = W:DualRow(hostFrame, posY, {
+    row, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Hide Action Bars",
         tooltip = Wording(
@@ -271,28 +271,28 @@ function _G._CUI_BuildGamepadPage(page, hostFrame, yOffset)
         end,
         disabledTooltip = "Action Bars",
     }, CludesUI.BlankRowCfg())
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     if actionBars then
         if CludesUI._prebuilding then
             -- The index pass steps past the note so the rows below index
             -- where they really sit.
-            posY = posY - NOTE_ROW_H
+            cursorY = cursorY - NOTE_ROW_H
         else
-            posY = BuildBarChecklist(hostFrame, row, posY, actionBars)
+            cursorY = BuildBarChecklist(hostFrame, row, cursorY, actionBars)
         end
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     -- Cast bars.
-    _, hgt = W:SectionHeader(hostFrame, "CAST BARS", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "CAST BARS", cursorY)
+    cursorY = cursorY - height
 
-    _, hgt = W:DualRow(hostFrame, posY, CastBarToggle(CAST_BARS[1]), CastBarToggle(CAST_BARS[2]))
-    posY = posY - hgt
+    _, height = W:DualRow(hostFrame, cursorY, CastBarToggle(CAST_BARS[1]), CastBarToggle(CAST_BARS[2]))
+    cursorY = cursorY - height
 
     -- The page framework takes the content height as a positive number.
-    return math.abs(posY)
+    return math.abs(cursorY)
 end

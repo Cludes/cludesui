@@ -30,8 +30,8 @@ _G._CUI_TravelHeaderBuilder = HeaderBuilder
 _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
     local W = CludesUI.Widgets
     local FT = CludesUI._FlightTimer
-    local posY = yOffset
-    local _, hgt, heading
+    local cursorY = yOffset
+    local _, height, heading
     hostFrame._showRowDivider = true
 
     CludesUI:SetContentHeader(HeaderBuilder)
@@ -45,8 +45,8 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
     end
     -- Row setters over Set: the key written with the row's value.
     local function SetRow(key)
-        return function(v)
-            Set(key, v)
+        return function(value)
+            Set(key, value)
         end
     end
 
@@ -131,14 +131,14 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  GENERAL
     ---------------------------------------------------------------------------
-    heading, hgt = W:SectionHeader(hostFrame, "FLIGHT TIMER", posY)
-    posY = posY - hgt
+    heading, height = W:SectionHeader(hostFrame, "FLIGHT TIMER", cursorY)
+    cursorY = cursorY - height
     CludesUI.BuildSectionUnlockJump(
         heading,
         { key = "CUI_FlightTimer", disabled = off, disabledTooltip = "Flight Timer" }
     )
 
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Enable Flight Timer",
         tooltip = "Shows a bar with the time left while you ride a flight path.",
@@ -163,20 +163,20 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
             FT.Cfg().fade = val
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     ---------------------------------------------------------------------------
     --  LAYOUT
     ---------------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "LAYOUT", cursorY)
+    cursorY = cursorY - height
 
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         {
             type = "slider",
             text = "Width",
@@ -205,16 +205,16 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
             setValue = SetRow("trackHeight"),
         }
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     ---------------------------------------------------------------------------
     --  DISPLAY
     ---------------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
+    cursorY = cursorY - height
 
     local texValues, texOrder = {}, {}
     do
@@ -230,9 +230,9 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
 
     local borderValues, borderOrder = CludesUI.GetBorderTextureDropdown()
     local borderRow
-    borderRow, hgt = W:DualRow(
+    borderRow, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         {
             type = "dropdown",
             text = "Border Style",
@@ -288,7 +288,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
             end,
         })
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         local offsetX, offsetY = BorderOffsets("borderTexture")
         CludesUI.BuildInlineCog(borderRow._leftRegion, {
@@ -353,7 +353,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         }, { disabled = off, disabledTooltip = "Flight Timer" })
     end
 
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Bar Texture",
         values = texValues,
@@ -376,10 +376,10 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         end,
         setValue = SetRow("bgTexture"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     local colorRow
-    colorRow, hgt = W:DualRow(hostFrame, posY, {
+    colorRow, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Fill Color",
         min = 0,
@@ -409,7 +409,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
             Set("bgA", val / 100)
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineSwatches(colorRow._leftRegion, {
             {
@@ -447,9 +447,9 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                 tooltip = "Class Colored",
                 getValue = function()
                     local _, class = UnitClass("player")
-                    local cc = class and CludesUI.GetClassColor(class)
-                    if cc then
-                        return cc.r, cc.g, cc.b, 1
+                    local classColor = class and CludesUI.GetClassColor(class)
+                    if classColor then
+                        return classColor.r, classColor.g, classColor.b, 1
                     end
                     return 1, 1, 1, 1
                 end,
@@ -479,7 +479,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
     end
 
     local textRow
-    textRow, hgt = W:DualRow(hostFrame, posY, {
+    textRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Time",
         disabled = off,
@@ -506,7 +506,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
             FT.Cfg().showTotal = val
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     CludesUI.BuildInlineCog(textRow._leftRegion, {
         title = "Time Text Settings",
         rows = TextCogRows("time"),
@@ -518,7 +518,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
     })
 
     local exitRow
-    exitRow, hgt = W:DualRow(hostFrame, posY, {
+    exitRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Names",
         disabled = off,
@@ -544,7 +544,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
             CludesUI:RefreshPage()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     CludesUI.BuildInlineCog(exitRow._leftRegion, {
         title = "Name Text Settings",
         rows = TextCogRows("dest"),
@@ -594,7 +594,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
     })
 
     local separatorRow
-    separatorRow, hgt = W:DualRow(hostFrame, posY, {
+    separatorRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show End Caps",
         tooltip = "The dots at the two ends of the track.",
@@ -618,7 +618,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
             CludesUI:RefreshPage()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     CludesUI.BuildInlineCog(separatorRow._rightRegion, {
         title = "Separator Settings",
         disabled = function()
@@ -655,7 +655,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
     })
 
     local sparkRow
-    sparkRow, hgt = W:DualRow(hostFrame, posY, {
+    sparkRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Spark",
         tooltip = "Shows a Pixels glow line at the moving end of the bar fill.",
@@ -669,7 +669,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
             CludesUI:RefreshPage()
         end,
     }, CludesUI.BlankRowCfg())
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineSwatches(sparkRow._leftRegion, {
             {
@@ -690,5 +690,5 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         }, { disabled = off, disabledTooltip = "Flight Timer" })
     end
 
-    return math.abs(posY)
+    return math.abs(cursorY)
 end

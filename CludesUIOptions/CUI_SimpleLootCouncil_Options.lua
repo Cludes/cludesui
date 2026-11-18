@@ -24,13 +24,13 @@ CludesUI.AtLogin(function()
                     return
                 end
                 local W, Pix, PAD = CludesUI.Widgets, CludesUI.PanelPP, CludesUI.CONTENT_PAD
-                local posY, _, hgt = yOffset
+                local cursorY, _, hgt = yOffset
                 CludesUI:ClearContentHeader()
                 if not CludesUI.IsSearchPrebuild() then
                     hostFrame._showRowDivider = true
                 end
-                _, hgt = W:SectionHeader(hostFrame, CludesUI.L("OLDER STANDALONE ADDON"), posY)
-                posY = posY - hgt
+                _, hgt = W:SectionHeader(hostFrame, CludesUI.L("OLDER STANDALONE ADDON"), cursorY)
+                cursorY = cursorY - hgt
                 local row = CreateFrame("Frame", nil, hostFrame)
                 row._skipRowDivider = true
                 local labelText = CludesUI.MakeFont(row, 12, nil, 1, 1, 1)
@@ -45,9 +45,9 @@ CludesUI.AtLogin(function()
                     )
                 )
                 Pix.Size(row, hostFrame:GetWidth() - PAD * 2, 54)
-                Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", PAD, posY)
-                posY = posY - 54
-                _, hgt = W:DualRow(hostFrame, posY, {
+                Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", PAD, cursorY)
+                cursorY = cursorY - 54
+                _, hgt = W:DualRow(hostFrame, cursorY, {
                     type = "button",
                     text = CludesUI.L("Disable and Reload"),
                     noCapture = true,
@@ -55,8 +55,8 @@ CludesUI.AtLogin(function()
                         CludesUI.RequestReload(nil, nil, mod.DisableStandalone)
                     end,
                 }, CludesUI.BlankRowCfg())
-                posY = posY - hgt
-                return math.abs(posY)
+                cursorY = cursorY - hgt
+                return math.abs(cursorY)
             end,
         })
         return
@@ -159,7 +159,7 @@ CludesUI.AtLogin(function()
     end
 
     local function Cfg(row)
-        local conf = {
+        local rowConf = {
             type = row.type,
             text = row.text,
             tooltip = row.tooltip,
@@ -181,13 +181,13 @@ CludesUI.AtLogin(function()
             local _, reason = locked()
             return reason
         end
-        conf.getValue = function()
+        rowConf.getValue = function()
             if LockReason() then
                 return (locked())
             end
             return row.getValue()
         end
-        conf.setValue = function(value)
+        rowConf.setValue = function(value)
             if not LockReason() then
                 row.setValue(value)
             end
@@ -195,14 +195,14 @@ CludesUI.AtLogin(function()
         end
 
         if disabled then
-            conf.disabled = function()
+            rowConf.disabled = function()
                 return disabled() ~= nil
             end
-            conf.disabledTooltip = disabled
+            rowConf.disabledTooltip = disabled
 
-            conf.rawTooltip = true
+            rowConf.rawTooltip = true
         end
-        return conf
+        return rowConf
     end
 
     local CHECKS_W = 230
@@ -264,9 +264,9 @@ CludesUI.AtLogin(function()
         end
         local tips = MultiselectTips()[row.id]
         local itemList = {}
-        for idx, item in ipairs(row.items) do
-            local tipText = item.tooltip or (tips and tips[item.key])
-            itemList[idx] = { key = item.key, label = item.text, tooltip = tipText }
+        for idx, entry in ipairs(row.items) do
+            local tipText = entry.tooltip or (tips and tips[entry.key])
+            itemList[idx] = { key = entry.key, label = entry.text, tooltip = tipText }
         end
         return itemList
     end
@@ -280,8 +280,8 @@ CludesUI.AtLogin(function()
             measure:Hide()
         end
         local widest = 0
-        for _, item in ipairs(itemList) do
-            measure:SetText(item.label or "")
+        for _, entry in ipairs(itemList) do
+            measure:SetText(entry.label or "")
             widest = math.max(widest, math.ceil(measure:GetStringWidth() or 0))
         end
         return widest + CHECKS_PAD
@@ -338,41 +338,41 @@ CludesUI.AtLogin(function()
     end
 
     local function StyledTag(hostFrame, width, onClick, make)
-        local btn = (make or CreateFrame)("Button", nil, hostFrame)
-        CludesUI.PanelPP.Size(btn, width, 24)
-        btn:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
-        local _, border, labelText = CludesUI.MakeStyledButton(btn, "", 11, CludesUI.WB_COLOURS)
+        local button = (make or CreateFrame)("Button", nil, hostFrame)
+        CludesUI.PanelPP.Size(button, width, 24)
+        button:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
+        local _, border, labelText = CludesUI.MakeStyledButton(button, "", 11, CludesUI.WB_COLOURS)
 
         local function Edge()
-            local c = btn.tone
+            local c = button.tone
             if c then
                 border:SetColor(c[1], c[2], c[3], 1)
             end
         end
-        function btn:SetTone(c)
-            btn.tone = c
+        function button:SetTone(c)
+            button.tone = c
             Edge()
         end
-        btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-        btn:SetScript("OnClick", function(_, btnFrame)
+        button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+        button:SetScript("OnClick", function(_, btnFrame)
             CludesUI.HideWidgetTooltip()
             onClick(btnFrame)
         end)
-        local hoverOn, hoverOff = btn:GetScript("OnEnter"), btn:GetScript("OnLeave")
-        btn:SetScript("OnEnter", function(b)
+        local hoverOn, hoverOff = button:GetScript("OnEnter"), button:GetScript("OnLeave")
+        button:SetScript("OnEnter", function(b)
             hoverOn(b)
             Edge()
             if b.tip then
                 CludesUI.ShowWidgetTooltip(b, b.tip)
             end
         end)
-        btn:SetScript("OnLeave", function(b)
+        button:SetScript("OnLeave", function(b)
             hoverOff(b)
             Edge()
             CludesUI.HideWidgetTooltip()
         end)
-        btn.Label = labelText
-        return btn
+        button.Label = labelText
+        return button
     end
 
     local SUG_ROW_H = 26
@@ -583,8 +583,8 @@ CludesUI.AtLogin(function()
     local function WidenLinkPopup(url)
         local host = CludesUI.OverlayParent and CludesUI.OverlayParent() or UIParent
         for _, dialog in ipairs({ host:GetChildren() }) do
-            local box = dialog._eb
-            if box and dialog:IsShown() and box.GetText and box:GetText() == url then
+            local boxFrame = dialog._eb
+            if boxFrame and dialog:IsShown() and boxFrame.GetText and boxFrame:GetText() == url then
                 if not linkMeasure then
                     linkMeasure = UIParent:CreateFontString(nil, "OVERLAY")
                     linkMeasure:SetFontObject(GameFontHighlight)
@@ -594,13 +594,13 @@ CludesUI.AtLogin(function()
                 if type(width) ~= "number" or (issecretvalue and issecretvalue(width)) then
                     return
                 end
-                local boxW, popW = box:GetWidth(), dialog:GetWidth()
-                box:SetWidth(math.max(boxW, math.ceil(width) + 24))
+                local boxW, popW = boxFrame:GetWidth(), dialog:GetWidth()
+                boxFrame:SetWidth(math.max(boxW, math.ceil(width) + 24))
                 dialog:SetWidth(math.max(popW, math.ceil(width) + 64))
                 if not dialog._slcWidened then
                     dialog._slcWidened = true
                     dialog:HookScript("OnHide", function()
-                        box:SetWidth(boxW)
+                        boxFrame:SetWidth(boxW)
                         dialog:SetWidth(popW)
                     end)
                 end
@@ -660,9 +660,9 @@ CludesUI.AtLogin(function()
             bannerDesc = FindText(main, 6, CludesUI.L(MODULE_DESC))
             bannerDescText = bannerDesc and bannerDesc:GetText()
             if bannerDesc and bannerDesc.GetPoint then
-                local anchorPoint, rel, relPoint, posX, posY = bannerDesc:GetPoint(1)
+                local anchorPoint, rel, relPoint, posX, cursorY = bannerDesc:GetPoint(1)
                 if anchorPoint then
-                    bannerDescAnchor = { anchorPoint, rel, relPoint, posX or 0, posY or 0 }
+                    bannerDescAnchor = { anchorPoint, rel, relPoint, posX or 0, cursorY or 0 }
                 end
             end
         end
@@ -762,14 +762,14 @@ CludesUI.AtLogin(function()
         local PAD = CludesUI.CONTENT_PAD
 
         local prebuild = CludesUI.IsSearchPrebuild()
-        local posY = yOffset
+        local cursorY = yOffset
         local _, hgt
 
         CludesUI:ClearContentHeader()
 
         local slc = SLC()
         if not slc then
-            return math.abs(posY)
+            return math.abs(cursorY)
         end
 
         if not prebuild then
@@ -830,10 +830,10 @@ CludesUI.AtLogin(function()
         local function Row(height)
             local row = CreateFrame("Frame", nil, hostFrame)
             Pix.Size(row, Width(), height)
-            Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", PAD + colX, posY)
+            Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", PAD + colX, cursorY)
             row._skipRowDivider = true
             CludesUI.RowBg(row, hostFrame)
-            posY = posY - height
+            cursorY = cursorY - height
             return row
         end
 
@@ -853,8 +853,8 @@ CludesUI.AtLogin(function()
             end
             local height = math.max(34, math.ceil(textH) + 20)
             Pix.Size(row, Width(), height)
-            Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", PAD + colX, posY)
-            posY = posY - height
+            Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", PAD + colX, cursorY)
+            cursorY = cursorY - height
             return labelText
         end
 
@@ -872,14 +872,14 @@ CludesUI.AtLogin(function()
         local faint = S.ColorStart(S.Flatten(S.color.textFaint))
 
         local pending, lastRightId
-        local function Place(conf, decorate, ident, dependsOn)
+        local function Place(rowConf, decorate, ident, dependsOn)
             if not pending then
-                pending = { cfg = conf, decorate = decorate, id = ident, dependsOn = dependsOn }
+                pending = { cfg = rowConf, decorate = decorate, id = ident, dependsOn = dependsOn }
                 return
             end
             local widget
-            widget, hgt = W:DualRow(hostFrame, posY, pending.cfg, conf)
-            posY = posY - hgt
+            widget, hgt = W:DualRow(hostFrame, cursorY, pending.cfg, rowConf)
+            cursorY = cursorY - hgt
             if not prebuild then
                 if pending.decorate then
                     pending.decorate(widget._leftRegion)
@@ -897,14 +897,14 @@ CludesUI.AtLogin(function()
             end
             local widget
             if pending.dependsOn and pending.dependsOn == lastRightId then
-                widget, hgt = W:DualRow(hostFrame, posY, CludesUI.BlankRowCfg(), pending.cfg)
-                posY = posY - hgt
+                widget, hgt = W:DualRow(hostFrame, cursorY, CludesUI.BlankRowCfg(), pending.cfg)
+                cursorY = cursorY - hgt
                 if not prebuild and pending.decorate then
                     pending.decorate(widget._rightRegion)
                 end
             else
-                widget, hgt = W:DualRow(hostFrame, posY, pending.cfg, CludesUI.BlankRowCfg())
-                posY = posY - hgt
+                widget, hgt = W:DualRow(hostFrame, cursorY, pending.cfg, CludesUI.BlankRowCfg())
+                cursorY = cursorY - hgt
                 if not prebuild and pending.decorate then
                     pending.decorate(widget._leftRegion)
                 end
@@ -938,26 +938,26 @@ CludesUI.AtLogin(function()
         end
 
         if withTools then
-            _, hgt = W:SectionHeader(hostFrame, T["Tools"]:upper(), posY)
-            posY = posY - hgt
+            _, hgt = W:SectionHeader(hostFrame, T["Tools"]:upper(), cursorY)
+            cursorY = cursorY - hgt
             for idx = 1, #actions, 2 do
                 local a, b = actions[idx], actions[idx + 1]
-                _, hgt = W:WideDualButton(hostFrame, a.text, b and b.text, posY, Open(a), b and Open(b))
-                posY = posY - hgt
+                _, hgt = W:WideDualButton(hostFrame, a.text, b and b.text, cursorY, Open(a), b and Open(b))
+                cursorY = cursorY - hgt
             end
         end
 
         local councilCols
         if not withStatus then
         elseif prebuild then
-            _, hgt = W:WideDualButton(hostFrame, main.openText, main.historyText, posY)
-            posY = posY - hgt
-            posY = posY - 32
+            _, hgt = W:WideDualButton(hostFrame, main.openText, main.historyText, cursorY)
+            cursorY = cursorY - hgt
+            cursorY = cursorY - 32
         else
-            _, hgt = W:Spacer(hostFrame, posY, 10)
-            posY = posY - hgt
+            _, hgt = W:Spacer(hostFrame, cursorY, 10)
+            cursorY = cursorY - hgt
             local cards
-            posY, cards = CludesUI.BuildActionCardRow(hostFrame, posY, {
+            cursorY, cards = CludesUI.BuildActionCardRow(hostFrame, cursorY, {
                 {
                     icon = ICON_OPEN,
                     title = main.openText,
@@ -987,8 +987,8 @@ CludesUI.AtLogin(function()
                 end
             end)
 
-            _, hgt = W:Spacer(hostFrame, posY, 14)
-            posY = posY - hgt
+            _, hgt = W:Spacer(hostFrame, cursorY, 14)
+            cursorY = cursorY - hgt
 
             local full = hostFrame:GetWidth() - PAD * 2
             councilCols = CouncilColumns(full)
@@ -998,15 +998,15 @@ CludesUI.AtLogin(function()
 
             local block = CreateFrame("Frame", nil, hostFrame)
             Pix.Size(block, full, height)
-            Pix.Point(block, "TOPLEFT", hostFrame, "TOPLEFT", PAD, posY)
+            Pix.Point(block, "TOPLEFT", hostFrame, "TOPLEFT", PAD, cursorY)
             block._skipRowDivider = true
             CludesUI.RowBg(block, hostFrame)
-            posY = posY - height
+            cursorY = cursorY - height
 
             local itemLink = CreateFrame("Button", nil, hostFrame)
             itemLink._isSpacer = true
             itemLink:SetSize(hostFrame:GetWidth(), 20)
-            itemLink:SetPoint("TOP", hostFrame, "TOP", 0, posY - 15)
+            itemLink:SetPoint("TOP", hostFrame, "TOP", 0, cursorY - 15)
             local textValue = itemLink:CreateFontString(nil, "OVERLAY")
             textValue:SetFont(CludesUI.GetFontPath() or "Fonts\\FRIZQT__.TTF", 15, "")
             textValue:SetTextColor(1, 1, 1, 0.75)
@@ -1029,7 +1029,7 @@ CludesUI.AtLogin(function()
                     WidenLinkPopup(STANDALONE_URL)
                 end
             end)
-            posY = posY - 32
+            cursorY = cursorY - 32
 
             local statusTags = Schema.Row("statusTags")
             local activeTag = StyledTag(block, 90, function(btnFrame)
@@ -1262,16 +1262,16 @@ CludesUI.AtLogin(function()
                     if regionFrame._label then
                         regionFrame._label:SetText("")
                     end
-                    local box = regionFrame._control
-                    if box then
-                        box:ClearAllPoints()
-                        Pix.Point(box, "LEFT", regionFrame, "LEFT", 20, 0)
+                    local boxFrame = regionFrame._control
+                    if boxFrame then
+                        boxFrame:ClearAllPoints()
+                        Pix.Point(boxFrame, "LEFT", regionFrame, "LEFT", 20, 0)
 
-                        box:SetMaxLetters(specInfo.maxLetters)
+                        boxFrame:SetMaxLetters(specInfo.maxLetters)
                         if focusResponse == index then
                             focusResponse = nil
-                            box:SetFocus()
-                            box:HighlightText()
+                            boxFrame:SetFocus()
+                            boxFrame:HighlightText()
                         end
                     end
 
@@ -1289,7 +1289,7 @@ CludesUI.AtLogin(function()
                     local colorSwatch = regionFrame._lastInline
 
                     local auto
-                    if box and colorSwatch and colorSwatch ~= box then
+                    if boxFrame and colorSwatch and colorSwatch ~= boxFrame then
                         auto = CreateFrame("Button", nil, regionFrame)
                         auto.slcAutoroll = true
                         local check, _, _, apply =
@@ -1329,7 +1329,7 @@ CludesUI.AtLogin(function()
                         OnRefresh(Paint)
                         Paint()
                         auto:ClearAllPoints()
-                        Pix.Point(auto, "LEFT", box, "RIGHT", 8, 0)
+                        Pix.Point(auto, "LEFT", boxFrame, "RIGHT", 8, 0)
                         colorSwatch:ClearAllPoints()
                         Pix.Point(colorSwatch, "LEFT", auto, "RIGHT", 8, 0)
                     end
@@ -1362,13 +1362,13 @@ CludesUI.AtLogin(function()
                             rawTooltip = true,
                         }
                     )
-                    if delete and colorSwatch and colorSwatch ~= box then
+                    if delete and colorSwatch and colorSwatch ~= boxFrame then
                         delete:ClearAllPoints()
                         Pix.Point(delete, "LEFT", colorSwatch, "RIGHT", 8, 0)
                     end
 
-                    if box and colorSwatch and delete and colorSwatch ~= box then
-                        local sum = box:GetWidth()
+                    if boxFrame and colorSwatch and delete and colorSwatch ~= boxFrame then
+                        local sum = boxFrame:GetWidth()
                             + 8
                             + (auto and (auto:GetWidth() + 8) or 0)
                             + colorSwatch:GetWidth()
@@ -1376,8 +1376,8 @@ CludesUI.AtLogin(function()
                             + delete:GetWidth()
                         local room = regionFrame:GetWidth()
                         if type(sum) == "number" and type(room) == "number" and room > sum then
-                            box:ClearAllPoints()
-                            Pix.Point(box, "LEFT", regionFrame, "LEFT", math.floor((room - sum) / 2), 0)
+                            boxFrame:ClearAllPoints()
+                            Pix.Point(boxFrame, "LEFT", regionFrame, "LEFT", math.floor((room - sum) / 2), 0)
                         end
                     end
                 end)
@@ -1470,24 +1470,24 @@ CludesUI.AtLogin(function()
             end)
 
             Note(specInfo.hint())
-            local box = AddBox(Row(50), math.min(260, Width() - 20 - 8 - 90 - 20), specInfo.addText())
+            local boxFrame = AddBox(Row(50), math.min(260, Width() - 20 - 8 - 90 - 20), specInfo.addText())
 
             local function AddTyped()
                 CloseSuggestions()
-                local name = box:GetText():trim()
+                local name = boxFrame:GetText():trim()
                 if name == "" then
                     return
                 end
 
                 if TryPride(name) then
-                    box:SetText("")
-                    box:ClearFocus()
+                    boxFrame:SetText("")
+                    boxFrame:ClearFocus()
                     return
                 end
                 if specInfo.add(name) then
-                    box:SetText("")
+                    boxFrame:SetText("")
                 end
-                box:ClearFocus()
+                boxFrame:ClearFocus()
                 councilDirty = true
                 Invalidate()
             end
@@ -1577,7 +1577,7 @@ CludesUI.AtLogin(function()
                 if entry then
                     CloseSuggestions()
                     isShown = {}
-                    Fill(box, entry)
+                    Fill(boxFrame, entry)
                 else
                     AddTyped()
                 end
@@ -1671,12 +1671,12 @@ CludesUI.AtLogin(function()
             local count = math.min(#ranks, specInfo.maxRows)
             local viewH = math.min(count, RANK_VISIBLE) * RANK_ROW_H
             if prebuild then
-                posY = posY - viewH
+                cursorY = cursorY - viewH
             elseif count > 0 then
                 local scrollFrame = CreateFrame("ScrollFrame", nil, hostFrame)
                 Pix.Size(scrollFrame, Width(), viewH)
-                Pix.Point(scrollFrame, "TOPLEFT", hostFrame, "TOPLEFT", PAD + colX, posY)
-                posY = posY - viewH
+                Pix.Point(scrollFrame, "TOPLEFT", hostFrame, "TOPLEFT", PAD + colX, cursorY)
+                cursorY = cursorY - viewH
                 local list = CreateFrame("Frame", nil, scrollFrame)
                 Pix.Size(list, Width(), count * RANK_ROW_H)
                 scrollFrame:SetScrollChild(list)
@@ -1695,13 +1695,13 @@ CludesUI.AtLogin(function()
                     Pix.Size(row, Width(), RANK_ROW_H)
                     Pix.Point(row, "TOPLEFT", list, "TOPLEFT", 0, -(index - 1) * RANK_ROW_H)
                     CludesUI.RowBg(row, list)
-                    local btn = CreateFrame("Button", nil, row)
-                    btn:SetAllPoints(row)
-                    local box, _, _, apply = CludesUI.BuildCheckboxControl(btn, row:GetFrameLevel() + 1)
-                    Pix.Point(box, "LEFT", btn, "LEFT", 20, 0)
-                    local labelText = CludesUI.MakeFont(btn, 14, nil, 1, 1, 1)
-                    labelText:SetPoint("LEFT", box, "RIGHT", 10, 0)
-                    labelText:SetPoint("RIGHT", btn, "RIGHT", -20, 0)
+                    local button = CreateFrame("Button", nil, row)
+                    button:SetAllPoints(row)
+                    local boxFrame, _, _, apply = CludesUI.BuildCheckboxControl(button, row:GetFrameLevel() + 1)
+                    Pix.Point(boxFrame, "LEFT", button, "LEFT", 20, 0)
+                    local labelText = CludesUI.MakeFont(button, 14, nil, 1, 1, 1)
+                    labelText:SetPoint("LEFT", boxFrame, "RIGHT", 10, 0)
+                    labelText:SetPoint("RIGHT", button, "RIGHT", -20, 0)
                     labelText:SetJustifyH("LEFT")
                     labelText:SetWordWrap(false)
                     labelText:SetText(RankText(name))
@@ -1709,15 +1709,15 @@ CludesUI.AtLogin(function()
                     local function Paint()
                         apply(specInfo.isEmpowered(name) and true or false, hovering)
                     end
-                    btn:SetScript("OnEnter", function()
+                    button:SetScript("OnEnter", function()
                         hovering = true
                         Paint()
                     end)
-                    btn:SetScript("OnLeave", function()
+                    button:SetScript("OnLeave", function()
                         hovering = false
                         Paint()
                     end)
-                    btn:SetScript("OnClick", function()
+                    button:SetScript("OnClick", function()
                         specInfo.setEmpowered(name, not specInfo.isEmpowered(name))
                         Paint()
 
@@ -1738,22 +1738,22 @@ CludesUI.AtLogin(function()
             local GAP = 20
             local full = hostFrame:GetWidth() - PAD * 2
             local half = math.floor((full - GAP) / 2)
-            local topY = posY
+            local topY = cursorY
             colX, colW = 0, half
             custom.council(councilSpec)
-            local leftEnd = posY
-            posY = topY
+            local leftEnd = cursorY
+            cursorY = topY
             colX = half + GAP
             custom.councilRanks(rankSpec)
-            local rightEnd = posY
+            local rightEnd = cursorY
             colX, colW = 0, nil
-            posY = math.min(leftEnd, rightEnd)
+            cursorY = math.min(leftEnd, rightEnd)
             if not prebuild then
                 local rule = hostFrame:CreateTexture(nil, "ARTWORK")
                 rule:SetColorTexture(1, 1, 1, 0.08)
                 rule:SetWidth(1)
                 rule:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", PAD + half + GAP / 2, topY - 4)
-                rule:SetPoint("BOTTOMLEFT", hostFrame, "TOPLEFT", PAD + half + GAP / 2, posY + 4)
+                rule:SetPoint("BOTTOMLEFT", hostFrame, "TOPLEFT", PAD + half + GAP / 2, cursorY + 4)
             end
         end
 
@@ -1851,9 +1851,9 @@ CludesUI.AtLogin(function()
 
         local sections = PageSections(Schema, pageName)
         for _, section in ipairs(sections) do
-            _, hgt = W:SectionHeader(hostFrame, section.title:upper(), posY)
-            posY = posY - hgt
-            local rowsTop = posY
+            _, hgt = W:SectionHeader(hostFrame, section.title:upper(), cursorY)
+            cursorY = cursorY - hgt
+            local rowsTop = cursorY
             for _, row in ipairs(section.rows) do
                 if row.hidden and row.hidden() then
                 elseif row.type == "checks" or row.type == "multiselect" then
@@ -1876,21 +1876,21 @@ CludesUI.AtLogin(function()
                 (section.id == "council" or section.id == "master" or section.id == "voting")
                 and section.locked
                 and not prebuild
-                and posY < rowsTop
+                and cursorY < rowsTop
             then
-                LockCover(rowsTop, posY, reason or Schema.LootMasterLockReason(), function()
+                LockCover(rowsTop, cursorY, reason or Schema.LootMasterLockReason(), function()
                     return section.locked() ~= nil
                 end)
             end
 
-            if section.id == "responses" and not prebuild and posY < rowsTop then
+            if section.id == "responses" and not prebuild and cursorY < rowsTop then
                 local specInfo = Schema.Row("responses")
-                LockCover(rowsTop, posY, specInfo.sessionLockedText, specInfo.sessionLocked)
+                LockCover(rowsTop, cursorY, specInfo.sessionLockedText, specInfo.sessionLocked)
             end
         end
 
         if prebuild then
-            return math.abs(posY)
+            return math.abs(cursorY)
         end
 
         local function Shape()
@@ -1944,7 +1944,7 @@ CludesUI.AtLogin(function()
             ShowBanner()
         end
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     CludesUI:RegisterModule(ADDON_NAME, {

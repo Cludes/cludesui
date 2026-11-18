@@ -212,7 +212,7 @@ local function CogOwnerGone()
     return g ~= cogPopupOwnerGen or not ownerFrame:IsVisible()
 end
 
-local function BuildDisplayLayout(hostFrame, posY, context)
+local function BuildDisplayLayout(hostFrame, cursorY, context)
     local environ = mod._NPO_OptEnv
     local DB, DBVal, defaultSet, GetNPOptOutline =
         environ.DB, environ.DBVal, environ.defaults, environ.GetNPOptOutline
@@ -226,7 +226,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
         context.SetElementAtPosition,
         context.SetTextElementAtSlot
     local W = context.W
-    local _, hgt
+    local _, height
     -- This build of the page (the serial moves after every page pass; page reuse
     -- keeps one wrapper, so the wrapper cannot tell two builds apart).
     local buildSerial = CludesUI._pageBuildSerial or 0
@@ -235,9 +235,9 @@ local function BuildDisplayLayout(hostFrame, posY, context)
     --  STYLE
     -----------------------------------------------------------------------
     local styleHeader
-    styleHeader, hgt = W:SectionHeader(hostFrame, "STYLE", posY)
-    posY = posY - hgt
-    posY = CludesUI.BlizzStyle.Note(hostFrame, posY, "nameplates")
+    styleHeader, height = W:SectionHeader(hostFrame, "STYLE", cursorY)
+    cursorY = cursorY - height
+    cursorY = CludesUI.BlizzStyle.Note(hostFrame, cursorY, "nameplates")
 
     local function RefreshAllTextures()
         mod.RefreshAllSettings()
@@ -254,9 +254,9 @@ local function BuildDisplayLayout(hostFrame, posY, context)
     -- Row 1: Border (None/Basic/Custom) | Border Size. Pure VIEW over showBorder + customBorderEnabled: None=off, Basic=standard border, Custom=custom border engine (reveals the Custom Border row below via page rebuild; None/Basic collapse it).
     -- Both stock styles gate both slots: they draw their own art (the stock background, the vanilla border sheets) and stand every CUI border down.
     local borderStyleRow
-    borderStyleRow, hgt = W:DualRow(
+    borderStyleRow, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         CludesUI.BlizzStyle.Gate("nameplates", {
             type = "segmented",
             text = "Border",
@@ -318,7 +318,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
             end,
         })
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Corner Radius (CludesUI_RoundedCorners.lua): an inline cog on the
     -- border size control. The stock styles keep every plate square, and so
     -- does Wrap Around Castbar (the plates stand rounding down while it is on).
@@ -390,7 +390,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
     end
     -- Inline cog on the Border region: opt-in "Wrap Around Castbar" (beside the control; the colour swatch sits left of it); dimmed only for "None" mode (wrap applies to both Basic and Custom).
     if not CludesUI._prebuilding then
-        local leftRgn = borderStyleRow._leftRegion
+        local leftRegion = borderStyleRow._leftRegion
         local function wrapCogOff()
             -- Only "None" disables it; Basic and Custom both support the wrap.
             -- Neither stock style has an CUI border to wrap: Blizzard Style
@@ -475,7 +475,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
                 end,
             }
         end
-        CludesUI.BuildInlineCog(leftRgn, {
+        CludesUI.BuildInlineCog(leftRegion, {
             disabled = wrapCogOff,
             disabledTooltip = "This option requires a Border to be selected",
             title = "Castbar Border",
@@ -485,7 +485,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
 
     -- Inline swatch on the Border dropdown: standard (Basic) border color, dimmed unless mode is Basic.
     if not CludesUI._prebuilding then
-        local leftRgn = borderStyleRow._leftRegion
+        local leftRegion = borderStyleRow._leftRegion
         local function isBorderOff()
             -- Off for None and Custom (standard border/color is inert then) -- only Basic uses it.
             if CludesUI.BlizzStyle.Get("nameplates") then
@@ -510,15 +510,15 @@ local function BuildDisplayLayout(hostFrame, posY, context)
             UpdatePreview()
         end
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
-            leftRgn,
-            leftRgn:GetFrameLevel() + 5,
+            leftRegion,
+            leftRegion:GetFrameLevel() + 5,
             borderColorGet,
             borderColorSet,
             nil,
             20
         )
-        Pix.Point(colorSwatch, "RIGHT", leftRgn._lastInline or leftRgn._control, "LEFT", -8, 0)
-        leftRgn._lastInline = colorSwatch
+        Pix.Point(colorSwatch, "RIGHT", leftRegion._lastInline or leftRegion._control, "LEFT", -8, 0)
+        leftRegion._lastInline = colorSwatch
         CludesUI.RegisterWidgetRefresh(function()
             local off = isBorderOff()
             colorSwatch:SetAlpha(off and 0.15 or 1)
@@ -537,7 +537,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
     -- is no plate to fill; the if-body scopes its locals.
     if CludesUI.BlizzStyle.Active("nameplates") == "classic" then
         local classicPlateRow
-        classicPlateRow, hgt = W:DualRow(hostFrame, posY, {
+        classicPlateRow, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Level Size",
             min = 0,
@@ -568,7 +568,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
                 UpdatePreview()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Reached by the preview's click navigation (the level in the
         -- border's plate scrolls here), which is built further down.
         hostFrame._classicPlateRow = classicPlateRow
@@ -626,9 +626,9 @@ local function BuildDisplayLayout(hostFrame, posY, context)
         -- Custom Border Style dropdown (+ options cog) | Custom Border Size (+ color swatch)
         local cbTexValues, cbTexOrder = CludesUI.GetBorderTextureDropdown()
         local customBorderRow
-        customBorderRow, hgt = W:DualRow(
+        customBorderRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.BlizzStyle.Gate("nameplates", {
                 type = "dropdown",
                 text = "Custom Border Style",
@@ -688,7 +688,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
                 })
             )
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Width Offset | Height Offset: the textured border's outward offsets, shown only while a
         -- textured style is selected (Solid has none). Built during prebuild too so the y advance matches.
@@ -726,24 +726,24 @@ local function BuildDisplayLayout(hostFrame, posY, context)
                         UpdatePreview()
                     end,
                 })
-                _, hgt = W:DualRow(
+                _, height = W:DualRow(
                     hostFrame,
-                    posY,
+                    cursorY,
                     CludesUI.BlizzStyle.Gate("nameplates", ocfgL),
                     CludesUI.BlizzStyle.Gate("nameplates", ocfgR)
                 )
-                posY = posY - hgt
+                cursorY = cursorY - height
             end
         end
 
         -- Inline "Border Options" cog on the Custom Border Style region (shifts + Show Behind)
         if not CludesUI._prebuilding then
-            local leftRgn = customBorderRow._leftRegion
+            local leftRegion = customBorderRow._leftRegion
             -- Shift offsets only apply to textured styles (row only exists when Custom is selected, so no enable gate needed).
             local function cbCogOff()
                 return (DBVal("customBorderTexture") or defaultSet.customBorderTexture) == "solid"
             end
-            CludesUI.BuildInlineCog(leftRgn, {
+            CludesUI.BuildInlineCog(leftRegion, {
                 disabled = cbCogOff,
                 disabledTooltip = "This option requires a textured border style",
                 title = "Border Options",
@@ -817,10 +817,10 @@ local function BuildDisplayLayout(hostFrame, posY, context)
         -- cast spell icon. A cog, not a row: both are niche, and the whole block exists
         -- only while Border = Custom. The if-body scopes its locals (builder budget).
         if not CludesUI._prebuilding then
-            local rightRgn = customBorderRow._rightRegion
-            CludesUI.BuildInlineCog(rightRgn, {
+            local rightRegion = customBorderRow._rightRegion
+            CludesUI.BuildInlineCog(rightRegion, {
                 title = "Icon Borders",
-                captureRegion = rightRgn,
+                captureRegion = rightRegion,
                 rows = {
                     {
                         type = "toggle",
@@ -894,7 +894,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
 
         -- Inline color swatch (with alpha) on the Custom Border Size region
         if not CludesUI._prebuilding then
-            local rightRgn = customBorderRow._rightRegion
+            local rightRegion = customBorderRow._rightRegion
             local cbColGet = function()
                 local c = (DB() and DB().customBorderColor) or defaultSet.customBorderColor
                 return c.r, c.g, c.b, (DBVal("customBorderAlpha") or defaultSet.customBorderAlpha or 1)
@@ -908,15 +908,15 @@ local function BuildDisplayLayout(hostFrame, posY, context)
                 UpdatePreview()
             end
             local cbSwatch, cbUpdateSwatch = CludesUI.BuildColorSwatch(
-                rightRgn,
-                rightRgn:GetFrameLevel() + 5,
+                rightRegion,
+                rightRegion:GetFrameLevel() + 5,
                 cbColGet,
                 cbColSet,
                 true,
                 20
             )
-            Pix.Point(cbSwatch, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
-            rightRgn._lastInline = cbSwatch
+            Pix.Point(cbSwatch, "RIGHT", rightRegion._lastInline or rightRegion._control, "LEFT", -8, 0)
+            rightRegion._lastInline = cbSwatch
             CludesUI.RegisterWidgetRefresh(function()
                 cbUpdateSwatch()
             end)
@@ -955,14 +955,14 @@ local function BuildDisplayLayout(hostFrame, posY, context)
     -- Append SharedMedia statusbar textures after a divider (mirrors Bar Texture). SM keys ("sm:") were added to the shared health-bar tables by AppendSharedMediaTextures; resolution flows via ns.ResolveOverlayTexPath -> health-bar lookup, so SM keys paint correctly here.
     do
         local sepAdded = false
-        for _, k in ipairs(hbtOrder) do
-            if k ~= "---" and k:find("^sm:") then
+        for _, keyName in ipairs(hbtOrder) do
+            if keyName ~= "---" and keyName:find("^sm:") then
                 if not sepAdded then
                     absorbStyleOrder[#absorbStyleOrder + 1] = "---"
                     sepAdded = true
                 end
-                absorbStyleOrder[#absorbStyleOrder + 1] = k
-                absorbStyleValues[k] = hbtValues[k]
+                absorbStyleOrder[#absorbStyleOrder + 1] = keyName
+                absorbStyleValues[keyName] = hbtValues[keyName]
             end
         end
         -- Preview swatch behind each menu row resolves exactly like the render path: NP_ABSORB_STYLE_TEX for blizzard/striped/clean, then ns.ResolveOverlayTexPath for stripe overlays/SM keys.
@@ -977,9 +977,9 @@ local function BuildDisplayLayout(hostFrame, posY, context)
         }
     end
     local bgHoverRow
-    bgHoverRow, hgt = W:DualRow(
+    bgHoverRow, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         mod.NP_BlizzOnlyGate({
             type = "slider",
             text = "Background",
@@ -1017,10 +1017,10 @@ local function BuildDisplayLayout(hostFrame, posY, context)
             end,
         }
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Inline color swatch on Background (left region)
     if not CludesUI._prebuilding then
-        local leftRgn = bgHoverRow._leftRegion
+        local leftRegion = bgHoverRow._leftRegion
         local cbColorGet = function()
             local c = (DB() and DB().bgColor) or defaultSet.bgColor
             return c.r, c.g, c.b
@@ -1034,9 +1034,9 @@ local function BuildDisplayLayout(hostFrame, posY, context)
             UpdatePreview()
         end
         local cbSwatch, cbUpdateSwatch =
-            CludesUI.BuildColorSwatch(leftRgn, leftRgn:GetFrameLevel() + 5, cbColorGet, cbColorSet, nil, 20)
-        Pix.Point(cbSwatch, "RIGHT", leftRgn._control, "LEFT", -12, 0)
-        leftRgn._lastInline = cbSwatch
+            CludesUI.BuildColorSwatch(leftRegion, leftRegion:GetFrameLevel() + 5, cbColorGet, cbColorSet, nil, 20)
+        Pix.Point(cbSwatch, "RIGHT", leftRegion._control, "LEFT", -12, 0)
+        leftRegion._lastInline = cbSwatch
         CludesUI.RegisterWidgetRefresh(function()
             cbUpdateSwatch()
         end)
@@ -1138,13 +1138,13 @@ local function BuildDisplayLayout(hostFrame, posY, context)
         local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
         local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
         local region = bgHoverRow._rightRegion
-        local eyeBtn = CreateFrame("Button", nil, region)
-        eyeBtn:SetSize(26, 26)
-        eyeBtn:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-        region._lastInline = eyeBtn
-        eyeBtn:SetFrameLevel(region:GetFrameLevel() + 5)
-        CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-        local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
+        local eyeButton = CreateFrame("Button", nil, region)
+        eyeButton:SetSize(26, 26)
+        eyeButton:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+        region._lastInline = eyeButton
+        eyeButton:SetFrameLevel(region:GetFrameLevel() + 5)
+        CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+        local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
         local function RefreshAbsorbEye()
             if optionState.showAbsorbPreview then
@@ -1154,24 +1154,24 @@ local function BuildDisplayLayout(hostFrame, posY, context)
             end
         end
         RefreshAbsorbEye()
-        eyeBtn:SetScript("OnClick", function()
+        eyeButton:SetScript("OnClick", function()
             optionState.showAbsorbPreview = not optionState.showAbsorbPreview
             RefreshAbsorbEye()
             UpdatePreview()
         end)
-        eyeBtn:SetScript("OnEnter", function(self)
+        eyeButton:SetScript("OnEnter", function(self)
             CludesUI.SetGlyphAlpha(self, 0.7)
         end)
-        eyeBtn:SetScript("OnLeave", function(self)
+        eyeButton:SetScript("OnLeave", function(self)
             CludesUI.SetGlyphAlpha(self, 0.4)
         end)
     end
 
     -- Row 3: Bar Texture | Cast Bar Texture -- share the same texture set (CUI built-ins + SharedMedia) and resolve identically; Bar Texture drives the health bar, Cast Bar Texture drives the cast bar.
     local texRow
-    texRow, hgt = W:DualRow(
+    texRow, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         -- Bar Texture stays live under Blizzard Style: the health fill is the
         -- user's own texture under the stock background art.
         {
@@ -1203,7 +1203,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
             end,
         })
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Textured Background cogs on the two texture dropdowns, greyed while
     -- Blizzard Style draws its stock backgrounds (as Global Settings > Textures).
     if not CludesUI._prebuilding then
@@ -1234,7 +1234,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
     -- to set to Level. Not built on any other look.
     if CludesUI.BlizzStyle.Forever("nameplates") then
         local foreverBoxRow
-        foreverBoxRow, hgt = W:DualRow(hostFrame, posY, {
+        foreverBoxRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Level Box",
             tooltip = "Shows the level box right of the health bar; with it off, Left Text can show the level instead.",
@@ -1247,20 +1247,20 @@ local function BuildDisplayLayout(hostFrame, posY, context)
                 UpdatePreview()
             end,
         }, CludesUI.BlankRowCfg())
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Reached by the preview's click navigation (the level box).
         hostFrame._foreverBoxRow = foreverBoxRow
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     -----------------------------------------------------------------------
     --  CORE POSITIONS
     -----------------------------------------------------------------------
     local coreHeader
-    coreHeader, hgt = W:SectionHeader(hostFrame, "CORE POSITIONS", posY)
-    posY = posY - hgt
+    coreHeader, height = W:SectionHeader(hostFrame, "CORE POSITIONS", cursorY)
+    cursorY = cursorY - height
 
     -- Subtitle hint next to the section header's title (the header's own label:
     -- a page built again keeps its earlier dresses' font strings, idle, among
@@ -1268,11 +1268,11 @@ local function BuildDisplayLayout(hostFrame, posY, context)
     do
         local region = coreHeader._label
         if region and CludesUI.EnKey(region:GetText()) == "CORE POSITIONS" then
-            local sub = coreHeader:CreateFontString(nil, "OVERLAY")
-            sub:SetFont(region:GetFont())
-            sub:SetTextColor(1, 1, 1, 0.25)
-            sub:SetText(CludesUI.L("(one slot per element)"))
-            sub:SetPoint("LEFT", region, "RIGHT", 6, 0)
+            local subMenu = coreHeader:CreateFontString(nil, "OVERLAY")
+            subMenu:SetFont(region:GetFont())
+            subMenu:SetTextColor(1, 1, 1, 0.25)
+            subMenu:SetText(CludesUI.L("(one slot per element)"))
+            subMenu:SetPoint("LEFT", region, "RIGHT", 6, 0)
         end
     end
 
@@ -1349,30 +1349,30 @@ local function BuildDisplayLayout(hostFrame, posY, context)
         questtext = "Shows quest progress such as 2/6 on quest mobs.",
     }
 
-    local function CoreHas(place, k)
-        if k == "debuffs" then
+    local function CoreHas(place, keyName)
+        if keyName == "debuffs" then
             return DBVal("debuffSlot") == place
         end
-        if k == "buffs" then
+        if keyName == "buffs" then
             return DBVal("buffSlot") == place
         end
-        if k == "ccs" then
+        if keyName == "ccs" then
             return DBVal("ccSlot") == place
                 or (DBVal("debuffIncludeCC") == true and DBVal("debuffSlot") == place)
         end
-        if k == "raidmarker" then
+        if keyName == "raidmarker" then
             return DBVal("raidMarkerPos") == place
         end
-        if k == "rare" then
+        if keyName == "rare" then
             return DBVal("classificationSlot") == place and not DBVal("classificationHideRare")
         end
-        if k == "quest" then
+        if keyName == "quest" then
             return DBVal("classificationSlot") == place and mod.NP_QuestIconOn(DB())
         end
-        if k == "questtext" then
+        if keyName == "questtext" then
             return mod.NP_GetQuestTextSlot(DB()) == place
         end
-        if k == "faction" then
+        if keyName == "faction" then
             -- While Rare/Quest + Faction is on, a leftover faction slot is ignored.
             if DBVal("classificationIncludeFaction") == true then
                 return DBVal("classificationSlot") == place
@@ -1390,11 +1390,11 @@ local function BuildDisplayLayout(hostFrame, posY, context)
         local source = DBVal(place .. "SlotOrder")
         if type(source) == "string" then
             local qtAfterQuest = not string.find("," .. source .. ",", ",questtext,", 1, true)
-            for k in string.gmatch(source, "[^,]+") do
-                if CORE_LABEL[k] and not seen[k] then
-                    seen[k] = true
-                    keyList[#keyList + 1] = k
-                    if k == "quest" and qtAfterQuest then
+            for keyName in string.gmatch(source, "[^,]+") do
+                if CORE_LABEL[keyName] and not seen[keyName] then
+                    seen[keyName] = true
+                    keyList[#keyList + 1] = keyName
+                    if keyName == "quest" and qtAfterQuest then
                         seen.questtext = true
                         keyList[#keyList + 1] = "questtext"
                     end
@@ -1402,10 +1402,10 @@ local function BuildDisplayLayout(hostFrame, posY, context)
             end
         end
         for idx = 1, #CORE_ORDER do
-            local k = CORE_ORDER[idx]
-            if not seen[k] then
-                seen[k] = true
-                keyList[#keyList + 1] = k
+            local keyName = CORE_ORDER[idx]
+            if not seen[keyName] then
+                seen[keyName] = true
+                keyList[#keyList + 1] = keyName
             end
         end
         return keyList
@@ -1419,15 +1419,15 @@ local function BuildDisplayLayout(hostFrame, posY, context)
         DB()[place .. "SlotOrder"] = s
     end
 
-    local function CoreSet(place, k, val)
+    local function CoreSet(place, keyName, val)
         local saved = DB()
         -- The Elite/Rare and Quest Indicators and Quest Objective Text are the
         -- view's inputs: the view settles into its own keys before any of them
         -- changes, so what the slots show stays as it was.
-        if k == "rare" or k == "quest" or k == "questtext" then
+        if keyName == "rare" or keyName == "quest" or keyName == "questtext" then
             mod.NP_MaterializeQuestText(saved)
         end
-        if k == "debuffs" then
+        if keyName == "debuffs" then
             if val then
                 local old = DBVal("debuffSlot")
                 local merged = DBVal("debuffIncludeCC") == true
@@ -1452,7 +1452,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
                 saved.debuffSlot = "none"
                 saved.debuffIncludeCC = false
             end
-        elseif k == "ccs" then
+        elseif keyName == "ccs" then
             if val then
                 if DBVal("debuffSlot") == place then
                     saved.debuffIncludeCC = true
@@ -1469,21 +1469,21 @@ local function BuildDisplayLayout(hostFrame, posY, context)
                     saved.ccSlot = "none"
                 end
             end
-        elseif k == "buffs" then
+        elseif keyName == "buffs" then
             if val then
                 saved.buffSlot = place
             elseif DBVal("buffSlot") == place then
                 saved.buffSlot = "none"
             end
-        elseif k == "raidmarker" then
+        elseif keyName == "raidmarker" then
             if val then
                 saved.raidMarkerPos = place
             elseif DBVal("raidMarkerPos") == place then
                 saved.raidMarkerPos = "none"
             end
-        elseif k == "rare" or k == "quest" then
-            local hideKey = (k == "rare") and "classificationHideRare" or "classificationHideQuest"
-            local otherKey = (k == "rare") and "classificationHideQuest" or "classificationHideRare"
+        elseif keyName == "rare" or keyName == "quest" then
+            local hideKey = (keyName == "rare") and "classificationHideRare" or "classificationHideQuest"
+            local otherKey = (keyName == "rare") and "classificationHideQuest" or "classificationHideRare"
             if val then
                 local old = DBVal("classificationSlot")
                 if old ~= place then
@@ -1519,7 +1519,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
             else
                 saved[hideKey] = true
             end
-        elseif k == "faction" then
+        elseif keyName == "faction" then
             if val then
                 if DBVal("classificationSlot") == place then
                     saved.classificationIncludeFaction = true
@@ -1536,7 +1536,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
                     saved.factionSlot = "none"
                 end
             end
-        elseif k == "questtext" then
+        elseif keyName == "questtext" then
             if val then
                 saved.questTextSlot = place
             elseif mod.NP_GetQuestTextSlot(saved) == place then
@@ -1546,8 +1546,8 @@ local function BuildDisplayLayout(hostFrame, posY, context)
     end
 
     local function InstallCoreCB(region, place)
-        local ctrl = region._control
-        local ddW = ctrl and ctrl:GetWidth() or 0
+        local control = region._control
+        local ddW = control and control:GetWidth() or 0
         if ddW < 50 then
             ddW = 170
         end
@@ -1556,22 +1556,22 @@ local function BuildDisplayLayout(hostFrame, posY, context)
         local itemList = {}
         local keyList = CoreOrderKeys(place)
         for idx = 1, #keyList do
-            local k = keyList[idx]
-            itemList[idx] = { key = k, label = CORE_LABEL[k], tooltip = CORE_TIP[k] }
+            local keyName = keyList[idx]
+            itemList[idx] = { key = keyName, label = CORE_LABEL[keyName], tooltip = CORE_TIP[keyName] }
         end
-        local cbDD, cbDDRefresh = CludesUI.BuildReorderCBDropdown(
+        local checkDrop, cbDDRefresh = CludesUI.BuildReorderCBDropdown(
             region,
             ddW,
             region:GetFrameLevel() + 2,
             itemList,
-            function(k)
-                return CoreHas(place, k)
+            function(keyName)
+                return CoreHas(place, keyName)
             end,
-            function(k, val)
-                CoreSet(place, k, val)
+            function(keyName, val)
+                CoreSet(place, keyName, val)
                 -- The quest scan's caches are built for the quest elements
                 -- shown: dropped, and every plate's indicators run again.
-                if k == "rare" or k == "quest" or k == "questtext" then
+                if keyName == "rare" or keyName == "quest" or keyName == "questtext" then
                     mod.RefreshQuestObjective()
                 end
                 RefreshAllSlots()
@@ -1589,16 +1589,16 @@ local function BuildDisplayLayout(hostFrame, posY, context)
             }
         )
         local p1, rel, p2, ax, ay
-        if ctrl then
-            p1, rel, p2, ax, ay = ctrl:GetPoint(1)
-            ctrl:Hide()
+        if control then
+            p1, rel, p2, ax, ay = control:GetPoint(1)
+            control:Hide()
         end
         if p1 then
-            cbDD:SetPoint(p1, rel, p2, ax, ay)
+            checkDrop:SetPoint(p1, rel, p2, ax, ay)
         else
-            Pix.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
+            Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
         end
-        region._control = cbDD
+        region._control = checkDrop
         region._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
     end
@@ -2404,7 +2404,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
             local p = cogPopup
             local rowH = p._SLIDER_H
             local gap = p._GAP
-            local hgt = p._TOP_PAD
+            local height = p._TOP_PAD
                 + p._TITLE_H
                 + p._TITLE_GAP
                 + gap
@@ -2412,26 +2412,26 @@ local function BuildDisplayLayout(hostFrame, posY, context)
                 + gap
                 + rowH -- Y
             if hasSize then
-                hgt = hgt + gap + rowH
+                height = height + gap + rowH
             end
             if hasWidth then
-                hgt = hgt + gap + rowH
+                height = height + gap + rowH
             end
             -- The toggle, Wrap, Name Format and Strata rows each occupy their own row.
             if hasToggle then
-                hgt = hgt + gap + p._TOGGLE_ROW_H
+                height = height + gap + p._TOGGLE_ROW_H
             end
             if hasWrap then
-                hgt = hgt + gap + p._TOGGLE_ROW_H
+                height = height + gap + p._TOGGLE_ROW_H
             end
             if hasDropdown2 then
-                hgt = hgt + gap + p._TOGGLE_ROW_H
+                height = height + gap + p._TOGGLE_ROW_H
             end
             if hasStrata then
-                hgt = hgt + gap + p._TOGGLE_ROW_H
+                height = height + gap + p._TOGGLE_ROW_H
             end
-            hgt = hgt + p._TOP_PAD
-            cogPopup:SetHeight(hgt)
+            height = height + p._TOP_PAD
+            cogPopup:SetHeight(height)
         end
 
         -- Anchor above the icon
@@ -2563,8 +2563,8 @@ local function BuildDisplayLayout(hostFrame, posY, context)
         PVP_ORDER = { "dim", "only", "ignore" },
         STYLE_VALUES = {},
     }
-    for _, k in ipairs(CludesUI.FACTION_ART_ORDER) do
-        CoreCog.STYLE_VALUES[k] = CludesUI.FACTION_ART_LABELS[k]
+    for _, keyName in ipairs(CludesUI.FACTION_ART_ORDER) do
+        CoreCog.STYLE_VALUES[keyName] = CludesUI.FACTION_ART_LABELS[keyName]
     end
     -- The first aura row in the slot's order that is a row of its own (Crowd
     -- Control inside the debuff row is that row's): the row the Auras section
@@ -2582,18 +2582,18 @@ local function BuildDisplayLayout(hostFrame, posY, context)
     -- An Auras section value (field: "size" or a key of CoreCog.AURA's rows),
     -- read from the slot's first aura row.
     function CoreCog.AuraGet(place, field)
-        local k = CoreCog.FirstAura(place)
+        local keyName = CoreCog.FirstAura(place)
         if field == "size" then
-            return mod.NP_ElementSize(k, DB())
+            return mod.NP_ElementSize(keyName, DB())
         end
-        return DBVal(CoreCog.AURA[k][field])
+        return DBVal(CoreCog.AURA[keyName][field])
     end
     -- Written to every aura row the slot holds.
     function CoreCog.AuraSet(place, field, val)
         local saved = DB()
-        for k, a in pairs(CoreCog.AURA) do
-            if CoreHas(place, k) then
-                saved[(field == "size") and mod.NP_CORE_SIZE_KEY[k] or a[field]] = val
+        for keyName, a in pairs(CoreCog.AURA) do
+            if CoreHas(place, keyName) then
+                saved[(field == "size") and mod.NP_CORE_SIZE_KEY[keyName] or a[field]] = val
             end
         end
     end
@@ -2610,9 +2610,9 @@ local function BuildDisplayLayout(hostFrame, posY, context)
             RefreshAllSlots()
             UpdatePreview()
         end
-        local function Lacks(k)
+        local function Lacks(keyName)
             return function()
-                return not CoreHas(posKey, k)
+                return not CoreHas(posKey, keyName)
             end
         end
         local function SizeRow(elem)
@@ -3000,11 +3000,11 @@ local function BuildDisplayLayout(hostFrame, posY, context)
             end
         end
         local function UpdLink()
-            local k = LinkKind()
-            itemLink:SetShown(k ~= nil)
-            if k then
+            local keyName = LinkKind()
+            itemLink:SetShown(keyName ~= nil)
+            if keyName then
                 -- CC slots track only CC, so the link says so.
-                lfs:SetText(CludesUI.L(k == "cc" and "Edit Tracked CC" or "Edit Tracked Auras"))
+                lfs:SetText(CludesUI.L(keyName == "cc" and "Edit Tracked CC" or "Edit Tracked Auras"))
                 itemLink:SetSize(lfs:GetStringWidth() + 6, 16)
             end
         end
@@ -3015,9 +3015,9 @@ local function BuildDisplayLayout(hostFrame, posY, context)
             lfs:SetAlpha(0.85)
         end)
         itemLink:SetScript("OnClick", function()
-            local k = LinkKind()
-            if k then
-                ShowFilterPopup(k)
+            local keyName = LinkKind()
+            if keyName then
+                ShowFilterPopup(keyName)
             end
         end)
         CludesUI.RegisterWidgetRefresh(UpdLink)
@@ -3028,7 +3028,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
     hostFrame._showRowDivider = true
 
     -- Row 1: Top | Right
-    coreRow1, hgt = W:DualRow(hostFrame, posY, {
+    coreRow1, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Top",
         values = coreElementValues,
@@ -3063,7 +3063,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
         rawTooltip = true,
         labelOnlyDisabled = true,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         InstallCoreCB(coreRow1._leftRegion, "top")
         InstallCoreCB(coreRow1._rightRegion, "right")
@@ -3072,7 +3072,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
     end
 
     -- Row 2: Left | Top Right
-    coreRow2, hgt = W:DualRow(hostFrame, posY, {
+    coreRow2, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Left",
         values = coreElementValues,
@@ -3107,7 +3107,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
         rawTooltip = true,
         labelOnlyDisabled = true,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         InstallCoreCB(coreRow2._leftRegion, "left")
         InstallCoreCB(coreRow2._rightRegion, "topright")
@@ -3116,7 +3116,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
     end
 
     -- Row 3: Top Left | Bottom
-    coreRow3, hgt = W:DualRow(hostFrame, posY, {
+    coreRow3, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Top Left",
         values = coreElementValues,
@@ -3151,7 +3151,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
         rawTooltip = true,
         labelOnlyDisabled = true,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         InstallCoreCB(coreRow3._leftRegion, "topleft")
         InstallCoreCB(coreRow3._rightRegion, "bottom")
@@ -3189,11 +3189,11 @@ local function BuildDisplayLayout(hostFrame, posY, context)
         local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
         local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
         local EYE_SLOTS = { "top", "right", "left", "topright", "topleft", "bottom" }
-        local eyeBtn = CreateFrame("Button", nil, hostFrame)
-        eyeBtn:SetSize(26, 26)
-        eyeBtn:SetFrameLevel(hostFrame:GetFrameLevel() + 10)
-        CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-        local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
+        local eyeButton = CreateFrame("Button", nil, hostFrame)
+        eyeButton:SetSize(26, 26)
+        eyeButton:SetFrameLevel(hostFrame:GetFrameLevel() + 10)
+        CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+        local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
         local function PreviewShown()
             return optionState.showRaidMarkerPreview
@@ -3204,7 +3204,7 @@ local function BuildDisplayLayout(hostFrame, posY, context)
             eyeTex:SetTexture(PreviewShown() and EYE_INVISIBLE or EYE_VISIBLE)
         end
         RefreshIcon()
-        eyeBtn:SetScript("OnClick", function()
+        eyeButton:SetScript("OnClick", function()
             local show = not PreviewShown()
             optionState.showRaidMarkerPreview = show
             optionState.showClassificationPreview = show
@@ -3212,11 +3212,11 @@ local function BuildDisplayLayout(hostFrame, posY, context)
             RefreshIcon()
             UpdatePreview()
         end)
-        eyeBtn:SetScript("OnEnter", function(self)
+        eyeButton:SetScript("OnEnter", function(self)
             CludesUI.SetGlyphAlpha(self, 0.7)
             CludesUI.ShowWidgetTooltip(self, "Show/Hide on Preview", { width = 155 })
         end)
-        eyeBtn:SetScript("OnLeave", function(self)
+        eyeButton:SetScript("OnLeave", function(self)
             CludesUI.SetGlyphAlpha(self, 0.4)
             CludesUI.HideWidgetTooltip()
         end)
@@ -3231,38 +3231,38 @@ local function BuildDisplayLayout(hostFrame, posY, context)
                 then
                     local details = posToRegion[place]
                     local region = details[1][details[2]]
-                    eyeBtn:ClearAllPoints()
-                    eyeBtn:SetParent(region)
-                    eyeBtn:SetPoint("RIGHT", EyeAnchor(region), "LEFT", -8, 0)
-                    eyeBtn:SetFrameLevel(region:GetFrameLevel() + 5)
-                    eyeBtn:Show()
+                    eyeButton:ClearAllPoints()
+                    eyeButton:SetParent(region)
+                    eyeButton:SetPoint("RIGHT", EyeAnchor(region), "LEFT", -8, 0)
+                    eyeButton:SetFrameLevel(region:GetFrameLevel() + 5)
+                    eyeButton:Show()
                     return
                 end
             end
-            eyeBtn:Hide()
+            eyeButton:Hide()
         end
         _refreshCoreEyePos()
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     -----------------------------------------------------------------------
     --  CORE TEXT POSITIONS
     -----------------------------------------------------------------------
     local coreTextHeader
-    coreTextHeader, hgt = W:SectionHeader(hostFrame, "CORE TEXT POSITIONS", posY)
-    posY = posY - hgt
+    coreTextHeader, height = W:SectionHeader(hostFrame, "CORE TEXT POSITIONS", cursorY)
+    cursorY = cursorY - height
 
     -- Subtitle hint next to the section header's title (same style as Core Positions)
     do
         local region = coreTextHeader._label
         if region and CludesUI.EnKey(region:GetText()) == "CORE TEXT POSITIONS" then
-            local sub = coreTextHeader:CreateFontString(nil, "OVERLAY")
-            sub:SetFont(region:GetFont())
-            sub:SetTextColor(1, 1, 1, 0.25)
-            sub:SetText(CludesUI.L("(one per slot)"))
-            sub:SetPoint("LEFT", region, "RIGHT", 6, 0)
+            local subMenu = coreTextHeader:CreateFontString(nil, "OVERLAY")
+            subMenu:SetFont(region:GetFont())
+            subMenu:SetTextColor(1, 1, 1, 0.25)
+            subMenu:SetText(CludesUI.L("(one per slot)"))
+            subMenu:SetPoint("LEFT", region, "RIGHT", 6, 0)
         end
     end
 
@@ -3622,8 +3622,8 @@ local function BuildDisplayLayout(hostFrame, posY, context)
 
     -- A combined health text cannot sit Left or Right while a name is centered
     -- on the health bar (the texts would overlap).
-    local function COMBO_VS_CENTER_NAME(k)
-        if mod.IsComboHealthText(k) and mod.IsNameElement(DBVal("textSlotCenter")) then
+    local function COMBO_VS_CENTER_NAME(keyName)
+        if mod.IsComboHealthText(keyName) and mod.IsNameElement(DBVal("textSlotCenter")) then
             return "Disabled when the Name/Level text is centered on the health bar due to overlapping text"
         end
     end
@@ -3773,24 +3773,24 @@ local function BuildDisplayLayout(hostFrame, posY, context)
             CludesUI._NotifySettingWrite(region, snap)
         end
     end
-    for k = 1, #cells, 2 do
+    for keyName = 1, #cells, 2 do
         local row
-        row, hgt = W:DualRow(hostFrame, posY, CellCfg(cells[k]), CellCfg(cells[k + 1]))
-        posY = posY - hgt
-        FinishCell(row, "_leftRegion", cells[k])
-        FinishCell(row, "_rightRegion", cells[k + 1])
+        row, height = W:DualRow(hostFrame, cursorY, CellCfg(cells[keyName]), CellCfg(cells[keyName + 1]))
+        cursorY = cursorY - height
+        FinishCell(row, "_leftRegion", cells[keyName])
+        FinishCell(row, "_rightRegion", cells[keyName + 1])
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
-    posY = mod.NPO_BuildCoreTextColoring(hostFrame, posY, W)
+    cursorY = mod.NPO_BuildCoreTextColoring(hostFrame, cursorY, W)
     -- The structure this build shows, for the cached page's restore check.
     if not CludesUI._prebuilding then
         optionState._npTextFP = mod.NPO_TextStructureFP()
     end
 
-    return posY,
+    return cursorY,
         styleHeader,
         coreHeader,
         coreRow1,

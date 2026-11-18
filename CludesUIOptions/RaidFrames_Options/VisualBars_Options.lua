@@ -55,7 +55,7 @@ local function StopAnimEyesOnHide()
     end
 end
 
-local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
+local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     local environ = mod._RFO_OptEnv
     local AbbreviateNumbers, absorbStyleOrder, absorbStyleValues, saved =
         environ.AbbreviateNumbers, environ.absorbStyleOrder, environ.absorbStyleValues, environ.db
@@ -73,22 +73,22 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
     end
     -- Row setters over SSet: the key written with the row's value.
     local function SSetRow(key)
-        return function(v)
-            SSet(key, v)
+        return function(value)
+            SSet(key, value)
         end
     end
     local SWrite = environ.SWrite
     local TexBgRowCfg = environ.TexBgRowCfg
-    local _, hgt
+    local _, height
     local row
     local _secY -- section start tracker
     -------------------------------------------------------------------
     --  HEALTH BAR
     -------------------------------------------------------------------
-    _secY = posY
+    _secY = cursorY
     local healthHeader
-    healthHeader, hgt = W:SectionHeader(hostFrame, "HEALTH BAR", posY)
-    posY = posY - hgt
+    healthHeader, height = W:SectionHeader(hostFrame, "HEALTH BAR", cursorY)
+    cursorY = cursorY - height
 
     -- Eyeball: animate health bars (damage/healing simulation); built on raid + party pages, reads the active frame set via ns.PvActiveFrames().
     if not CludesUI._prebuilding then
@@ -167,9 +167,9 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                             end
 
                             -- The texts following health (Custom texts reading it included).
-                            local pv = f._pv
-                            if pv then
-                                pv.hpPct = st.current
+                            local preview = f._pv
+                            if preview then
+                                preview.hpPct = st.current
                                 mod.RF_TextPreviewTick(f, "hp")
                             end
 
@@ -201,31 +201,31 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                 break
             end
         end
-        local eyeBtn = CreateFrame("Button", nil, healthHeader)
-        eyeBtn:SetSize(24, 24)
+        local eyeButton = CreateFrame("Button", nil, healthHeader)
+        eyeButton:SetSize(24, 24)
         if headerLabel then
-            eyeBtn:SetPoint("LEFT", headerLabel, "RIGHT", 5, 0)
+            eyeButton:SetPoint("LEFT", headerLabel, "RIGHT", 5, 0)
         else
-            eyeBtn:SetPoint("LEFT", healthHeader, "BOTTOMLEFT", 85, 8)
+            eyeButton:SetPoint("LEFT", healthHeader, "BOTTOMLEFT", 85, 8)
         end
-        eyeBtn:SetFrameLevel(healthHeader:GetFrameLevel() + 5)
-        CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-        local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
+        eyeButton:SetFrameLevel(healthHeader:GetFrameLevel() + 5)
+        CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+        local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
         local function RefreshHealthEye()
             if IsPreviewOff() then
                 eyeTex:SetTexture(EYE_VISIBLE)
-                CludesUI.SetGlyphAlpha(eyeBtn, 0.15)
+                CludesUI.SetGlyphAlpha(eyeButton, 0.15)
                 return
             end
             eyeTex:SetTexture(mod._healthAnimActive and EYE_INVISIBLE or EYE_VISIBLE)
-            CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
+            CludesUI.SetGlyphAlpha(eyeButton, 0.4)
         end
         RefreshHealthEye()
         EYE.refreshHealthEye = RefreshHealthEye
         mod._stopHealthAnim = StopHealthAnim
         mod._startHealthAnim = StartHealthAnim
-        eyeBtn:SetScript("OnClick", function()
+        eyeButton:SetScript("OnClick", function()
             if IsPreviewOff() then
                 return
             end
@@ -245,7 +245,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                 mod.PvRefresh()
             end
         end)
-        eyeBtn:SetScript("OnEnter", function(self)
+        eyeButton:SetScript("OnEnter", function(self)
             if IsPreviewOff() then
                 CludesUI.ShowWidgetTooltip(self, "Enable preview to use")
                 return
@@ -256,7 +256,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                 mod._healthAnimActive and "Stop health bar effects" or "Preview health bar effects"
             )
         end)
-        eyeBtn:SetScript("OnLeave", function(self)
+        eyeButton:SetScript("OnLeave", function(self)
             if not IsPreviewOff() then
                 CludesUI.SetGlyphAlpha(self, 0.4)
             end
@@ -300,7 +300,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                 })
             end
             eyeHintTip:ClearAllPoints()
-            eyeHintTip:SetPoint("TOP", eyeBtn, "BOTTOM", 0, -14)
+            eyeHintTip:SetPoint("TOP", eyeButton, "BOTTOM", 0, -14)
             mod._rfEyeHintTip = eyeHintTip
             if not eyeHintTip:IsShown() then
                 CludesUI.ShowTipCallout(eyeHintTip)
@@ -309,7 +309,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
     end -- health eyeball
 
     local texRow
-    texRow, hgt = W:DualRow(hostFrame, posY, {
+    texRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Health Bar Texture",
         values = hbtValues,
@@ -358,9 +358,9 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
             },
         })
     end
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    row, hgt = W:DualRow(hostFrame, posY, {
+    row, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Fill Color",
         values = healthColorValues,
@@ -387,7 +387,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         getValue = SValRow("bgDarkness", 50),
         setValue = SSetRow("bgDarkness"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Fill Color's "dark" choice IS the Dark Mode condition's input, so lock the dropdown while a Dark Mode conditional is being edited -- else the override could capture a mode change that flips its own condition.
     if CludesUI.SpecOverrides_AttachEditLock and not CludesUI._prebuilding then
         CludesUI.SpecOverrides_AttachEditLock(
@@ -502,9 +502,9 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         -- Class swatch shows the player's class color and is not editable.
         local bgClassSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
             local _, ct = UnitClass("player")
-            local cc = ct and CludesUI.GetClassColor(ct)
-            if cc then
-                return cc.r, cc.g, cc.b, 1
+            local classColor = ct and CludesUI.GetClassColor(ct)
+            if classColor then
+                return classColor.r, classColor.g, classColor.b, 1
             end
             return 1, 1, 1, 1
         end, function() end, false, 20)
@@ -589,7 +589,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
     local editTargets = CludesUI._prebuilding and {} or mod._editTargets
 
     local healPredRow
-    healPredRow, hgt = W:DualRow(hostFrame, posY, {
+    healPredRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Heal Prediction",
         getValue = SValRow("healPrediction", false),
@@ -610,7 +610,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         getValue = SValRow("healPredOpacity", 75),
         setValue = SSetRow("healPredOpacity"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     editTargets.healPrediction = healPredRow
     if not CludesUI._prebuilding then
         local region = healPredRow._leftRegion
@@ -663,7 +663,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
     end
 
     local smoothThreatRow
-    smoothThreatRow, hgt = W:DualRow(hostFrame, posY, {
+    smoothThreatRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Smooth Health Bars",
         getValue = SValRow("smoothBars", true),
@@ -677,7 +677,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         getValue = SValRow("threatBorderSize", 2),
         setValue = SSetRow("threatBorderSize"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     editTargets.threat = smoothThreatRow
     editTargets.animateBars = smoothThreatRow
     -- Cog on Threat Borders: Color Custom Borders recolors the frame's own border in
@@ -721,11 +721,11 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
     -------------------------------------------------------------------
     local absorbsHeader
     if onSection then
-        onSection("healthBar", _secY, posY)
+        onSection("healthBar", _secY, cursorY)
     end
-    _secY = posY
-    absorbsHeader, hgt = W:SectionHeader(hostFrame, "ABSORBS", posY)
-    posY = posY - hgt
+    _secY = cursorY
+    absorbsHeader, height = W:SectionHeader(hostFrame, "ABSORBS", cursorY)
+    cursorY = cursorY - height
 
     -- Eyeball: toggle shield/heal-absorb effects on the preview frames.
     if not CludesUI._prebuilding then
@@ -739,16 +739,16 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                 break
             end
         end
-        local eyeBtn = CreateFrame("Button", nil, absorbsHeader)
-        eyeBtn:SetSize(24, 24)
+        local eyeButton = CreateFrame("Button", nil, absorbsHeader)
+        eyeButton:SetSize(24, 24)
         if abLabel then
-            eyeBtn:SetPoint("LEFT", abLabel, "RIGHT", 5, 0)
+            eyeButton:SetPoint("LEFT", abLabel, "RIGHT", 5, 0)
         else
-            eyeBtn:SetPoint("LEFT", absorbsHeader, "BOTTOMLEFT", 85, 8)
+            eyeButton:SetPoint("LEFT", absorbsHeader, "BOTTOMLEFT", 85, 8)
         end
-        eyeBtn:SetFrameLevel(absorbsHeader:GetFrameLevel() + 5)
-        CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-        local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
+        eyeButton:SetFrameLevel(absorbsHeader:GetFrameLevel() + 5)
+        CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+        local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
 
         -- On ns so the preview renderer can read it.
@@ -759,15 +759,15 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         local function RefreshAbsorbEye()
             if IsPreviewOff() then
                 eyeTex:SetTexture(EYE_VISIBLE)
-                CludesUI.SetGlyphAlpha(eyeBtn, 0.15)
+                CludesUI.SetGlyphAlpha(eyeButton, 0.15)
                 return
             end
             eyeTex:SetTexture(mod._absorbsPreviewVisible and EYE_INVISIBLE or EYE_VISIBLE)
-            CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
+            CludesUI.SetGlyphAlpha(eyeButton, 0.4)
         end
         EYE.refreshAbsorbEye = RefreshAbsorbEye
         RefreshAbsorbEye()
-        eyeBtn:SetScript("OnClick", function()
+        eyeButton:SetScript("OnClick", function()
             if IsPreviewOff() then
                 return
             end
@@ -784,7 +784,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                 mod.PvRefresh()
             end
         end)
-        eyeBtn:SetScript("OnEnter", function(self)
+        eyeButton:SetScript("OnEnter", function(self)
             if IsPreviewOff() then
                 CludesUI.ShowWidgetTooltip(self, "Enable preview to use")
                 return
@@ -796,7 +796,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                     or "Show shield effects on preview"
             )
         end)
-        eyeBtn:SetScript("OnLeave", function(self)
+        eyeButton:SetScript("OnLeave", function(self)
             if not IsPreviewOff() then
                 CludesUI.SetGlyphAlpha(self, 0.4)
             end
@@ -805,7 +805,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
     end -- absorbs eyeball
 
     local absorbRow
-    absorbRow, hgt = W:DualRow(hostFrame, posY, {
+    absorbRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Absorb Style",
         values = absorbStyleValues,
@@ -849,7 +849,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         getValue = SValRow("absorbOpacity", 90),
         setValue = SSetRow("absorbOpacity"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     editTargets.absorbs = absorbRow
     -- Inline cog: absorb placement (overlay / right edge / left edge)
     do
@@ -1007,7 +1007,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         return SVal("absorbBarEnabled", false) and "aboveRight" or "none"
     end
     local absorbBarRow
-    absorbBarRow, hgt = W:DualRow(hostFrame, posY, {
+    absorbBarRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Absorb Bar",
         values = {
@@ -1041,7 +1041,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         getValue = SValRow("absorbBarHeight", 4),
         setValue = SSetRow("absorbBarHeight"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         local region = absorbBarRow._leftRegion
         CludesUI.BuildInlineCog(region, {
@@ -1104,7 +1104,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
     end
 
     local healAbsorbRow
-    healAbsorbRow, hgt = W:DualRow(hostFrame, posY, {
+    healAbsorbRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Heal Absorb Style",
         values = absorbStyleValues,
@@ -1132,7 +1132,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         getValue = SValRow("healAbsorbOpacity", 75),
         setValue = SSetRow("healAbsorbOpacity"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     editTargets.healAbsorbs = healAbsorbRow
     -- Inline cog: heal absorb placement (independent of shield absorb)
     do
@@ -1240,7 +1240,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
             return SGet("healAbsorbBarPosition") or "none"
         end
         local healAbsorbBarRow
-        healAbsorbBarRow, hgt = W:DualRow(hostFrame, posY, {
+        healAbsorbBarRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Heal Absorb Bar",
             values = {
@@ -1283,7 +1283,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
             getValue = SValRow("healAbsorbBarHeight", 4),
             setValue = SSetRow("healAbsorbBarHeight"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             local region = healAbsorbBarRow._rightRegion
             local colorSwatch = CludesUI.BuildColorSwatch(
@@ -1356,7 +1356,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
     -- Max Health Texture (+cog+swatch) | Max Health Opacity. Styles mirror Heal Absorb plus "Max Health Stripes" first; no placement control, overlay is always right-anchored.
     do
         local maxHealthRow
-        maxHealthRow, hgt = W:DualRow(hostFrame, posY, {
+        maxHealthRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Max Health Style",
             values = absorbStyleValues,
@@ -1379,7 +1379,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
             getValue = SValRow("maxHealthOpacity", 100),
             setValue = SSetRow("maxHealthOpacity"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Cog carries backing opacity only; placement is fixed right-side.
         if not CludesUI._prebuilding then
             local region = maxHealthRow._leftRegion
@@ -1441,11 +1441,11 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
     -------------------------------------------------------------------
     local powerHeader
     if onSection then
-        onSection("absorbs", _secY, posY)
+        onSection("absorbs", _secY, cursorY)
     end
-    _secY = posY
-    powerHeader, hgt = W:SectionHeader(hostFrame, "POWER BAR", posY)
-    posY = posY - hgt
+    _secY = cursorY
+    powerHeader, height = W:SectionHeader(hostFrame, "POWER BAR", cursorY)
+    cursorY = cursorY - height
 
     -- Power bar animation: same pattern as health, serves raid + party.
     if not CludesUI._prebuilding then
@@ -1519,9 +1519,9 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                                 f._power:SetValue(st.current)
                             end
                             -- The texts following power (Custom texts reading it included).
-                            local pv = f._pv
-                            if pv then
-                                pv.ppPct = st.current
+                            local preview = f._pv
+                            if preview then
+                                preview.ppPct = st.current
                                 mod.RF_TextPreviewTick(f, "pp")
                             end
                         end
@@ -1537,30 +1537,30 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                 break
             end
         end
-        local eyeBtn = CreateFrame("Button", nil, powerHeader)
-        eyeBtn:SetSize(24, 24)
+        local eyeButton = CreateFrame("Button", nil, powerHeader)
+        eyeButton:SetSize(24, 24)
         if pwLabel then
-            eyeBtn:SetPoint("LEFT", pwLabel, "RIGHT", 5, 0)
+            eyeButton:SetPoint("LEFT", pwLabel, "RIGHT", 5, 0)
         else
-            eyeBtn:SetPoint("LEFT", powerHeader, "BOTTOMLEFT", 85, 8)
+            eyeButton:SetPoint("LEFT", powerHeader, "BOTTOMLEFT", 85, 8)
         end
-        eyeBtn:SetFrameLevel(powerHeader:GetFrameLevel() + 5)
-        CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-        local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
+        eyeButton:SetFrameLevel(powerHeader:GetFrameLevel() + 5)
+        CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+        local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
         local function RefreshPowerEye()
             if IsPreviewOff() then
                 eyeTex:SetTexture(EYE_VISIBLE)
-                CludesUI.SetGlyphAlpha(eyeBtn, 0.15)
+                CludesUI.SetGlyphAlpha(eyeButton, 0.15)
                 return
             end
             eyeTex:SetTexture(mod._powerAnimActive and EYE_INVISIBLE or EYE_VISIBLE)
-            CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
+            CludesUI.SetGlyphAlpha(eyeButton, 0.4)
         end
         EYE.refreshPowerEye = RefreshPowerEye
         mod._stopPowerAnim = StopPowerAnim
         RefreshPowerEye()
-        eyeBtn:SetScript("OnClick", function()
+        eyeButton:SetScript("OnClick", function()
             if IsPreviewOff() then
                 return
             end
@@ -1577,7 +1577,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
             end
             RefreshPowerEye()
         end)
-        eyeBtn:SetScript("OnEnter", function(self)
+        eyeButton:SetScript("OnEnter", function(self)
             if IsPreviewOff() then
                 CludesUI.ShowWidgetTooltip(self, "Enable preview to use")
                 return
@@ -1588,7 +1588,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                 mod._powerAnimActive and "Stop power animation" or "Animate power bars"
             )
         end)
-        eyeBtn:SetScript("OnLeave", function(self)
+        eyeButton:SetScript("OnLeave", function(self)
             if not IsPreviewOff() then
                 CludesUI.SetGlyphAlpha(self, 0.4)
             end
@@ -1618,9 +1618,9 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
             { healer = "powerShowForHealer", tank = "powerShowForTank", dps = "powerShowForDPS" }
         -- Party Frames kit: the stock mana bar always shows at the stock
         -- size, so this row (and its cog) hides on the Party page.
-        row, hgt = W:DualRow(
+        row, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             mod.RF_PartyKitGate({
                 type = "dropdown",
                 text = "Show Power Bar For",
@@ -1645,7 +1645,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                 setValue = SSetRow("powerHeight"),
             })
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Cog: uniform icon anchoring. Greyed + blocked while no role shows a power bar (nothing to ignore then).
         do
             local region = row._rightRegion
@@ -1676,24 +1676,24 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
             if region._control then
                 region._control:Hide()
             end
-            local cbDD = CludesUI.BuildVisOptsCBDropdown(
+            local checkDrop = CludesUI.BuildVisOptsCBDropdown(
                 region,
                 170,
                 region:GetFrameLevel() + 2,
                 showForItems,
-                function(k)
-                    return SVal(showForKeyMap[k], true)
+                function(keyName)
+                    return SVal(showForKeyMap[keyName], true)
                 end,
-                function(k, val)
-                    SSet(showForKeyMap[k], val)
+                function(keyName, val)
+                    SSet(showForKeyMap[keyName], val)
                     if mod.UpdatePowerEventRegistration then
                         mod.UpdatePowerEventRegistration()
                     end
                     CludesUI:RefreshPage()
                 end
             )
-            Pix.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
-            region._control = cbDD
+            Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+            region._control = checkDrop
             region._lastInline = nil
         end
     end
@@ -1706,11 +1706,11 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
     local pwBorderStyleOrder = { "cui", "divider", "border" }
     -- Classic WoW UI draws the stock health/power divider in place of the
     -- power border (Blizzard Style has none, so the row stays there).
-    local function PwClassicGate(conf)
+    local function PwClassicGate(rowConf)
         if CludesUI.BlizzStyle and CludesUI.BlizzStyle.Active("raidframes") == "classic" then
-            return CludesUI.BlizzStyle.Gate("raidframes", conf)
+            return CludesUI.BlizzStyle.Gate("raidframes", rowConf)
         end
-        return conf
+        return rowConf
     end
     local pwBdrRow
     local function CanMatchPowerBorder()
@@ -1757,9 +1757,9 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
             setValue = SSetRow("powerBorderSize"),
         }
     end
-    pwBdrRow, hgt = W:DualRow(
+    pwBdrRow, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         mod.RF_PartyKitGate(PwClassicGate({
             type = "dropdown",
             text = "Border Style",
@@ -1777,7 +1777,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         })),
         mod.RF_PartyKitGate(PwClassicGate(pwSizeCfg))
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(pwBdrRow._leftRegion, {
             disabled = function()
@@ -1872,7 +1872,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
     end
 
     local pwBgRow
-    pwBgRow, hgt = W:DualRow(hostFrame, posY, {
+    pwBgRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Smooth Power Bars",
         disabled = function()
@@ -1894,7 +1894,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         getValue = SValRow("powerBgDarkness", 70),
         setValue = SSetRow("powerBgDarkness"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Power bg Custom + Power Colored swatch pair: clicking either toggles powerBgPowerColored, the inactive one dims (mirrors the health bg).
     if not CludesUI._prebuilding then
         local region = pwBgRow._rightRegion
@@ -1967,16 +1967,16 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
     --  TEXT DISPLAY
     -------------------------------------------------------------------
     if onSection then
-        onSection("powerBar", _secY, posY)
+        onSection("powerBar", _secY, cursorY)
     end
-    _secY = posY
-    _, hgt = W:SectionHeader(hostFrame, "TEXT DISPLAY", posY)
-    posY = posY - hgt
+    _secY = cursorY
+    _, height = W:SectionHeader(hostFrame, "TEXT DISPLAY", cursorY)
+    cursorY = cursorY - height
 
-    posY = mod.RFO_BuildTextDisplay(
+    cursorY = mod.RFO_BuildTextDisplay(
         W,
         hostFrame,
-        posY,
+        cursorY,
         { page = CludesUI._buildingPage, party = optionState._partyCtx }
     )
     -- The Name Format also shapes the Top Name Bar, so it has a row of its own,
@@ -1989,7 +1989,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         local values, sequence, getValue = CludesUI.NameFormatMenu(function()
             return SVal("nameFormat", "full")
         end, Set)
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Name Format",
             values = values,
@@ -1997,13 +1997,13 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
             getValue = getValue,
             setValue = Set,
         }, CludesUI.BlankRowCfg())
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
     if onSection then
-        onSection("textDisplay", _secY, posY)
+        onSection("textDisplay", _secY, cursorY)
     end
-    _secY = posY
-    return posY, CustomBorderOff, CustomBorderOffTip
+    _secY = cursorY
+    return cursorY, CustomBorderOff, CustomBorderOffTip
 end
 
 -- Used by CUI_RaidFrames_Options.lua

@@ -45,18 +45,18 @@ function mod.RF_OptPartyKit()
     return CludesUI._buildingPage == PAGE_PARTY and mod.RF_PartyKit ~= nil and mod.RF_PartyKit() and true
         or false
 end
-function mod.RF_PartyKitGate(conf)
-    if not conf or not mod.RF_OptPartyKit() then
-        return conf
+function mod.RF_PartyKitGate(rowConf)
+    if not rowConf or not mod.RF_OptPartyKit() then
+        return rowConf
     end
-    conf.disabled = function()
+    rowConf.disabled = function()
         return true
     end
-    conf.disabledTooltip = "Frame Style: Party Frames"
-    conf.requireState = "disabled"
-    conf.rawTooltip = nil
-    conf._blizzGated = true
-    return conf
+    rowConf.disabledTooltip = "Frame Style: Party Frames"
+    rowConf.requireState = "disabled"
+    rowConf.rawTooltip = nil
+    rowConf._blizzGated = true
+    return rowConf
 end
 
 -- Move Frames button of a Free Move group (Friendly Boss, Extra Frames, Pet Frames): toggles its
@@ -124,16 +124,16 @@ end
 -- the Art Style alone (2D or class art). `PSSet` is the Party page's setter
 -- (the full party pass, for the box-width changes); every other setting
 -- takes the light path. Returns the new y.
-function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
+function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
     local db = mod.db
     local kit = mod.RF_OptPartyKit() -- build time only (the page rebuilds)
-    local _, hgt
-    local function PV(k, d)
-        local v = db.profile[k]
-        if v == nil then
+    local _, height
+    local function PV(keyName, d)
+        local value = db.profile[keyName]
+        if value == nil then
             return d
         end
-        return v
+        return value
     end
     -- A row getter over PV: the key's value, or the default given.
     local function PVRow(key, default)
@@ -152,14 +152,14 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
             mod.ShowPartyPreview()
         end
     end
-    local function PtSet(k, v)
-        db.profile[k] = v
+    local function PtSet(keyName, value)
+        db.profile[keyName] = value
         Refresh()
     end
     -- Row setters over PtSet: the key written with the row's value.
     local function PtSetRow(key)
-        return function(v)
-            PtSet(key, v)
+        return function(value)
+            PtSet(key, value)
         end
     end
     local function RunWidgetRefresh()
@@ -176,18 +176,18 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
         return side == "insideleft" or side == "insideright" or side == "insidecenter"
     end
 
-    _, hgt = W:SectionHeader(hostFrame, "PORTRAIT", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "PORTRAIT", cursorY)
+    cursorY = cursorY - height
 
     -- An Art Style pick, with the side effects of leaving and entering 3D
     -- (Inside positions and the None shape are 3D only).
-    local function SetArt(v)
+    local function SetArt(value)
         local p = db.profile
-        p.partyPortraitMode = v
-        if v == "3d" and p.partyPortraitStyle == "detached" then
+        p.partyPortraitMode = value
+        if value == "3d" and p.partyPortraitStyle == "detached" then
             p.partyPortraitShape = "none"
         end
-        if v ~= "3d" then
+        if value ~= "3d" then
             if p.partyPortraitShape == "none" then
                 p.partyPortraitShape = "portrait"
             end
@@ -245,9 +245,9 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
     -- Row 1: Portrait Mode | Art Style. A mode change can widen the frame
     -- (the full party pass) and shows or hides the rows below (a rebuild).
     local modeRow
-    modeRow, hgt = W:DualRow(
+    modeRow, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         mod.RF_PartyKitGate({
             type = "dropdown",
             text = "Portrait Mode",
@@ -260,23 +260,23 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 end
                 return PV("partyPortraitStyle", "none")
             end,
-            setValue = function(v)
+            setValue = function(value)
                 local p = db.profile
                 local prev = p.partyPortraitStyle or "none"
-                if v == prev then
+                if value == prev then
                     return
                 end
-                if v == "detached" and (p.partyPortraitMode or "2d") == "3d" then
+                if value == "detached" and (p.partyPortraitMode or "2d") == "3d" then
                     p.partyPortraitShape = "none"
                 end
-                if v ~= "detached" then
+                if value ~= "detached" then
                     p.partyPortraitSize = 0
                     local sd = p.partyPortraitSide
                     if sd == "top" or IsInside(sd) then
                         p.partyPortraitSide = "left"
                     end
                 end
-                PSSet("partyPortraitStyle", v)
+                PSSet("partyPortraitStyle", value)
                 CludesUI:RefreshPage(true)
             end,
         }),
@@ -291,11 +291,11 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
             disabledTooltip = "Portrait Mode is set to None",
             rawTooltip = true,
             -- A model cannot take the stock socket's round mask.
-            itemDisabled = function(v)
-                return kit and v == "3d"
+            itemDisabled = function(value)
+                return kit and value == "3d"
             end,
-            itemDisabledTooltip = function(v)
-                if v == "3d" then
+            itemDisabledTooltip = function(value)
+                if value == "3d" then
                     return "Frame Style: Party Frames"
                 end
             end,
@@ -310,9 +310,9 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 end
                 return m
             end,
-            setValue = function(v)
+            setValue = function(value)
                 if
-                    v == "3d"
+                    value == "3d"
                     and PV("partyPortraitMode", "2d") ~= "3d"
                     and not (CludesUIDB and CludesUIDB.dismissed3DWarning)
                 then
@@ -335,12 +335,12 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                     })
                     return
                 end
-                SetArt(v)
+                SetArt(value)
                 RunWidgetRefresh()
             end,
         }
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Portrait Settings (Detached only): Clickable Portrait, Background Color.
     CludesUI.BuildInlineCog(modeRow._leftRegion, {
         title = "Portrait Settings",
@@ -363,8 +363,8 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 label = "Clickable Portrait",
                 tooltip = "Clicking or hovering the detached portrait acts like clicking or hovering the frame's bars.",
                 get = PVRow("partyPortraitClickable", false),
-                set = function(v)
-                    PtSet("partyPortraitClickable", v or nil)
+                set = function(value)
+                    PtSet("partyPortraitClickable", value or nil)
                 end,
             },
             {
@@ -392,12 +392,12 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
     })
 
     if kit or PV("partyPortraitStyle", "none") == "none" then
-        return posY
+        return cursorY
     end
 
     -- Row 2: Size | Position.
     local sizePosRow
-    sizePosRow, hgt = W:DualRow(hostFrame, posY, {
+    sizePosRow, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Size",
         min = -50,
@@ -423,12 +423,12 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
             insidecenter = "Inside Center",
         },
         order = { "left", "right", "top", "insideleft", "insideright", "insidecenter" },
-        itemDisabled = function(v)
+        itemDisabled = function(value)
             local st = PV("partyPortraitStyle", "none")
-            if v == "top" and st == "attached" then
+            if value == "top" and st == "attached" then
                 return true
             end
-            if IsInside(v) then
+            if IsInside(value) then
                 if PV("partyPortraitMode", "2d") ~= "3d" then
                     return true
                 end
@@ -438,11 +438,11 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
             end
             return false
         end,
-        itemDisabledTooltip = function(v)
-            if v == "top" then
+        itemDisabledTooltip = function(value)
+            if value == "top" then
                 return "Top position is only available in Detached mode"
             end
-            if IsInside(v) then
+            if IsInside(value) then
                 if PV("partyPortraitMode", "2d") ~= "3d" then
                     return "Inside positions require 3D Art Style"
                 end
@@ -450,12 +450,12 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
             end
         end,
         getValue = PVRow("partyPortraitSide", "left"),
-        setValue = function(v)
-            PtSet("partyPortraitSide", v)
+        setValue = function(value)
+            PtSet("partyPortraitSide", value)
             CludesUI:RefreshPage()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     CludesUI.BuildInlineCog(sizePosRow._leftRegion, {
         title = "Portrait Zoom",
         rows = {
@@ -524,12 +524,12 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
     })
 
     if PV("partyPortraitStyle", "none") ~= "detached" then
-        return posY
+        return cursorY
     end
 
     -- Row 3 (Detached): Shape | Shape Border (custom colour or class coloured).
     local shapeRow
-    shapeRow, hgt = W:DualRow(hostFrame, posY, {
+    shapeRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Shape",
         values = {
@@ -543,11 +543,11 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
             shield = "Shield",
         },
         order = { "none", "portrait", "circle", "square", "csquare", "diamond", "hexagon", "shield" },
-        itemDisabled = function(v)
-            return v == "none" and PV("partyPortraitMode", "2d") ~= "3d"
+        itemDisabled = function(value)
+            return value == "none" and PV("partyPortraitMode", "2d") ~= "3d"
         end,
-        itemDisabledTooltip = function(v)
-            if v == "none" then
+        itemDisabledTooltip = function(value)
+            if value == "none" then
                 return "None shape requires 3D Art Style"
             end
         end,
@@ -603,7 +603,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
             },
         },
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     CludesUI.BuildInlineCog(shapeRow._rightRegion, {
         title = "Shape Border Settings",
         rows = {
@@ -627,7 +627,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
             },
         },
     })
-    return posY
+    return cursorY
 end
 
 -- Party page PARTY TARGETS section (every style, not kit-gated): Enable |
@@ -635,16 +635,16 @@ end
 -- Width | Height and Position (offsets cog). Party-only keys on db.profile;
 -- each setter takes the runtime's own light path (restyle, layout or the
 -- include edge), never a party reload. Returns the new y.
-function mod.RF_BuildPartyTargets(hostFrame, posY, W)
+function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
     local db = mod.db
     local BLANK = CludesUI.BlankRowCfg
-    local _, hgt, row
-    local function PV(k, d)
-        local v = db.profile[k]
-        if v == nil then
+    local _, height, row
+    local function PV(keyName, d)
+        local value = db.profile[keyName]
+        if value == nil then
             return d
         end
-        return v
+        return value
     end
     -- A row getter over PV: the key's value, or the default given.
     local function PVRow(key, default)
@@ -659,33 +659,33 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
         end
     end
     -- Colour and background: the fingerprint-gated restyle and repaint.
-    local function PtSet(k, v)
-        db.profile[k] = v
+    local function PtSet(keyName, value)
+        db.profile[keyName] = value
         mod.PT_Refresh()
         Preview()
     end
     -- Row setters over PtSet: the key written with the row's value.
     local function PtSetRow(key)
-        return function(v)
-            PtSet(key, v)
+        return function(value)
+            PtSet(key, value)
         end
     end
     -- Size, side and offsets: the delta-gated layout (combat-deferred).
-    local function LaySet(k, v)
-        db.profile[k] = v
+    local function LaySet(keyName, value)
+        db.profile[keyName] = value
         mod._PT_Layout()
         Preview()
     end
     local DARK_TIP =
         "Not available in Dark Mode. Dark Mode colors can be adjusted in Global Settings -> Colors."
 
-    _, hgt = W:SectionHeader(hostFrame, "PARTY TARGETS", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "PARTY TARGETS", cursorY)
+    cursorY = cursorY - height
 
     -- Row 1: Enable | Include Own Target. The rows below are HIDDEN while
     -- off, so the flip rebuilds the page.
     local on = db.profile.partyShowTargets == true -- build time (the page rebuilds)
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Enable Party Targets",
         tooltip = "Show a smaller secure target button beside each party frame. Left-click a button to target that party member's current target.",
@@ -698,12 +698,12 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
         getValue = function()
             return db.profile.partyShowTargets or false
         end,
-        setValue = CludesUI.SectionToggleSetValue(function(v)
-            if v and db.profile.partyCompactMode and mod.PT_AlongStack(db.profile, true) then
+        setValue = CludesUI.SectionToggleSetValue(function(value)
+            if value and db.profile.partyCompactMode and mod.PT_AlongStack(db.profile, true) then
                 return
             end
-            db.profile.partyShowTargets = v
-            mod.PT_SetEnabled(v)
+            db.profile.partyShowTargets = value
+            mod.PT_SetEnabled(value)
             Preview()
         end),
     }, on and {
@@ -719,29 +719,29 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
         getValue = function()
             return db.profile.partyTargetIncludeSelf or false
         end,
-        setValue = function(v)
-            db.profile.partyTargetIncludeSelf = v
-            mod.PT_SetIncludeSelf(v)
+        setValue = function(value)
+            db.profile.partyTargetIncludeSelf = value
+            mod.PT_SetIncludeSelf(value)
             Preview()
         end,
     } or BLANK())
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     if not on then
-        return posY
+        return cursorY
     end
 
     -- Row 2: Fill Color | Background (the Health Bar row's controls on the
     -- target frames' own keys).
-    row, hgt = W:DualRow(hostFrame, posY, {
+    row, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Fill Color",
         values = { class = "Class Color", dark = "Dark Mode", classic = "Classic", custom = "Custom Color" },
         order = { "class", "dark", "classic", "custom" },
         tooltip = "Class Color uses the class color for players and the reaction color for NPCs.",
         getValue = PVRow("partyTargetHealthColorMode", "class"),
-        setValue = function(v)
-            PtSet("partyTargetHealthColorMode", v)
+        setValue = function(value)
+            PtSet("partyTargetHealthColorMode", value)
             CludesUI:RefreshPage()
         end,
     }, {
@@ -758,7 +758,7 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
         getValue = PVRow("partyTargetBgDarkness", 50),
         setValue = PtSetRow("partyTargetBgDarkness"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Custom fill swatch: live only in Custom mode, dimmed and blocked otherwise.
     if not CludesUI._prebuilding then
         local region = row._leftRegion
@@ -799,9 +799,9 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
         -- Class swatch shows the player's class color and is not editable.
         local bgClassSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
             local _, ct = UnitClass("player")
-            local cc = ct and CludesUI.GetClassColor(ct)
-            if cc then
-                return cc.r, cc.g, cc.b, 1
+            local classColor = ct and CludesUI.GetClassColor(ct)
+            if classColor then
+                return classColor.r, classColor.g, classColor.b, 1
             end
             return 1, 1, 1, 1
         end, function() end, false, 20)
@@ -875,15 +875,15 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
     end
 
     -- Row 3: Width | Height (absolute, not scaled with the party frames).
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Width",
         min = 20,
         max = 300,
         step = 1,
         getValue = PVRow("partyTargetWidth", 70),
-        setValue = function(v)
-            LaySet("partyTargetWidth", v)
+        setValue = function(value)
+            LaySet("partyTargetWidth", value)
         end,
     }, {
         type = "slider",
@@ -892,39 +892,39 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
         max = 150,
         step = 1,
         getValue = PVRow("partyTargetHeight", 33),
-        setValue = function(v)
-            LaySet("partyTargetHeight", v)
+        setValue = function(value)
+            LaySet("partyTargetHeight", value)
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Row 4: Position (+ offsets cog). Shows the side the frames actually
     -- take (the Horizontal Frames setter's refresh re-reads it); a pick of
     -- the side an unset Position shows (the kit's move included) is stored
     -- as unset, so it keeps following the layout and the frame style.
     -- Under the Party Frames kit the stacked frames' buff side is taken.
-    row, hgt = W:DualRow(hostFrame, posY, {
+    row, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Position",
         tooltip = "Right by default, or Bottom with Horizontal Frames. With Frame Style: Party Frames, the side holding the buffs is not available.",
         values = { top = "Top", bottom = "Bottom", left = "Left", right = "Right" },
         order = { "top", "bottom", "left", "right" },
-        itemDisabled = function(v)
+        itemDisabled = function(value)
             local p = db.profile
-            if p.partyCompactMode and mod.PT_PositionAlongStack(v, p.partyHorizontal) then
+            if p.partyCompactMode and mod.PT_PositionAlongStack(value, p.partyHorizontal) then
                 return true
             end
             if p.partyHorizontal or not mod.RF_PartyKit() then
                 return false
             end
             local m = mod.RF_KitBuffMode(p)
-            return (m == "RIGHT" and v == "right") or (m == "LEFT" and v == "left")
+            return (m == "RIGHT" and value == "right") or (m == "LEFT" and value == "left")
         end,
-        itemDisabledTooltip = function(v)
-            if db.profile.partyCompactMode and mod.PT_PositionAlongStack(v, db.profile.partyHorizontal) then
+        itemDisabledTooltip = function(value)
+            if db.profile.partyCompactMode and mod.PT_PositionAlongStack(value, db.profile.partyHorizontal) then
                 return "Compact Mode"
             end
-            if v == "left" or v == "right" then
+            if value == "left" or value == "right" then
                 return "Frame Style: Party Frames"
             end
         end,
@@ -932,14 +932,14 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
         getValue = function()
             return mod.PT_ShownSide()
         end,
-        setValue = function(v)
-            if db.profile.partyCompactMode and mod.PT_PositionAlongStack(v, db.profile.partyHorizontal) then
+        setValue = function(value)
+            if db.profile.partyCompactMode and mod.PT_PositionAlongStack(value, db.profile.partyHorizontal) then
                 return
             end
-            LaySet("partyTargetPosition", (v ~= mod.PT_ShownSide(true)) and v or nil)
+            LaySet("partyTargetPosition", (value ~= mod.PT_ShownSide(true)) and value or nil)
         end,
     }, BLANK())
-    posY = posY - hgt
+    cursorY = cursorY - height
     CludesUI.BuildInlineCog(row._leftRegion, {
         title = "Target Position Offsets",
         rows = {
@@ -950,8 +950,8 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
                 max = 100,
                 step = 1,
                 get = PVRow("partyTargetOffsetX", 0),
-                set = function(v)
-                    LaySet("partyTargetOffsetX", v)
+                set = function(value)
+                    LaySet("partyTargetOffsetX", value)
                 end,
             },
             {
@@ -961,13 +961,13 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
                 max = 100,
                 step = 1,
                 get = PVRow("partyTargetOffsetY", 0),
-                set = function(v)
-                    LaySet("partyTargetOffsetY", v)
+                set = function(value)
+                    LaySet("partyTargetOffsetY", value)
                 end,
             },
         },
     })
-    return posY
+    return cursorY
 end
 
 CludesUI.AtLogin(function()
@@ -1030,9 +1030,9 @@ CludesUI.AtLogin(function()
                 and PARTY_KEY_SECTION[key]
                 and IsPartySectionCustom(PARTY_KEY_SECTION[key])
             then
-                local pv = db.profile["party_" .. key]
-                if pv ~= nil then
-                    return pv
+                local preview = db.profile["party_" .. key]
+                if preview ~= nil then
+                    return preview
                 end
             end
             return db.profile[key]
@@ -1058,14 +1058,14 @@ CludesUI.AtLogin(function()
                 and PARTY_KEY_SECTION[key]
                 and IsPartySectionCustom(PARTY_KEY_SECTION[key])
             then
-                local pv = db.profile["party_" .. key]
-                if pv ~= nil then
-                    return pv
+                local preview = db.profile["party_" .. key]
+                if preview ~= nil then
+                    return preview
                 end
             end
-            local v = db.profile[key]
-            if v ~= nil then
-                return v
+            local value = db.profile[key]
+            if value ~= nil then
+                return value
             end
             return default
         end
@@ -1170,13 +1170,13 @@ CludesUI.AtLogin(function()
                 section = "INDICATORS",
                 highlight = "Missing Buffs",
                 desc = MissingGlowDesc(function(key, default)
-                    local v = db.profile[key]
-                    if v == nil then
+                    local value = db.profile[key]
+                    if value == nil then
                         return default
                     end
-                    return v
-                end, function(key, v)
-                    db.profile[key] = v
+                    return value
+                end, function(key, value)
+                    db.profile[key] = value
                 end),
             })
         end
@@ -1310,17 +1310,17 @@ CludesUI.AtLogin(function()
             )
             local smNames = mod.healthBarTextureNames or {}
             local smKeys = {}
-            for _, k in ipairs(mod.healthBarTextureOrder or {}) do
-                if type(k) == "string" and k:find("^sm:") then
-                    smKeys[#smKeys + 1] = k
-                    absorbStyleValues[k] = smNames[k] or k
+            for _, keyName in ipairs(mod.healthBarTextureOrder or {}) do
+                if type(keyName) == "string" and keyName:find("^sm:") then
+                    smKeys[#smKeys + 1] = keyName
+                    absorbStyleValues[keyName] = smNames[keyName] or keyName
                 end
             end
             if #smKeys > 0 then
                 for _, ord in ipairs({ absorbStyleOrder, healAbsorbStyleOrder, maxHealthStyleOrder }) do
                     ord[#ord + 1] = "---"
-                    for _, k in ipairs(smKeys) do
-                        ord[#ord + 1] = k
+                    for _, keyName in ipairs(smKeys) do
+                        ord[#ord + 1] = keyName
                     end
                 end
             end
@@ -1371,11 +1371,11 @@ CludesUI.AtLogin(function()
         -- plain RIGHT run there (same self-heal as ns._RFEffectiveGrowth in the
         -- runtime). Report what actually renders instead of showing a value the
         -- merged grid ignores.
-        local function ReadGroupGrowth(v)
-            if v == "DOWNRIGHT" and SVal("mergeGroups", false) then
+        local function ReadGroupGrowth(value)
+            if value == "DOWNRIGHT" and SVal("mergeGroups", false) then
                 return "RIGHT"
             end
-            return v
+            return value
         end
 
         -- ns._RFGrowthIsVertical is the runtime module's single source of truth for
@@ -1448,18 +1448,18 @@ CludesUI.AtLogin(function()
         end
 
         -- Builds the "Preview Mode" row at the top of a page; returns the new y.
-        local function BuildPreviewModeRow(hostFrame, posY)
+        local function BuildPreviewModeRow(hostFrame, cursorY)
             local ROW_H = 50
             local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
             local contentPad = CludesUI.CONTENT_PAD or 45
             -- The tab this row belongs to (the page being built sets the context first).
             local pvCtx = optionState._partyCtx and "party" or "raid"
 
-            posY = posY - 10
+            cursorY = cursorY - 10
             local modeRow = CreateFrame("Frame", nil, hostFrame)
             Pix.Size(modeRow, hostFrame:GetWidth() - contentPad * 2, ROW_H)
-            Pix.Point(modeRow, "TOPLEFT", hostFrame, "TOPLEFT", contentPad, posY)
-            posY = posY - ROW_H
+            Pix.Point(modeRow, "TOPLEFT", hostFrame, "TOPLEFT", contentPad, cursorY)
+            cursorY = cursorY - ROW_H
 
             local modeLabel = modeRow:CreateFontString(nil, "OVERLAY")
             CludesUI.ApplyModuleFont(modeLabel, fontFile, 14, "raidFrames")
@@ -1473,7 +1473,7 @@ CludesUI.AtLogin(function()
                 none = "No Preview",
             }
             local previewModeOrder = { "real", "overlay", "none" }
-            local ddCtrl, ddLbl = CludesUI.BuildDropdownControl(
+            local ddCtrl, dropCaption = CludesUI.BuildDropdownControl(
                 modeRow,
                 180,
                 modeRow:GetFrameLevel() + 2,
@@ -1482,12 +1482,12 @@ CludesUI.AtLogin(function()
                 function()
                     return db.profile.previewMode or "overlay"
                 end,
-                function(v)
-                    db.profile.previewMode = v
+                function(value)
+                    db.profile.previewMode = value
                     -- Apply to whichever preview the current tab owns.
                     local page = CludesUI:GetActivePage()
                     if page == PAGE_PARTY then
-                        if v == "none" then
+                        if value == "none" then
                             if mod.HidePartyPreview then
                                 mod.HidePartyPreview()
                             end
@@ -1509,7 +1509,7 @@ CludesUI.AtLogin(function()
                     end
                     for _, e in pairs(pvModeDropdowns) do
                         if PvEntryLive(e) then
-                            e.lbl:SetText(previewModeValues[v] or v)
+                            e.lbl:SetText(previewModeValues[value] or value)
                         end
                     end
                     CludesUI:RefreshPage()
@@ -1524,7 +1524,7 @@ CludesUI.AtLogin(function()
                     d = {}
                     pvModeDropdowns[pvCtx] = d
                 end
-                d.lbl, d.ctrl, d.gen = ddLbl, ddCtrl, PoolGen(ddCtrl)
+                d.lbl, d.ctrl, d.gen = dropCaption, ddCtrl, PoolGen(ddCtrl)
             end
 
             -- Override-preview chrome lives on a SEPARATE gold border host: the control's own border is re-asserted by its hover scripts, so never recolor it directly (same pattern as the overrides UI slot marks).
@@ -1549,13 +1549,13 @@ CludesUI.AtLogin(function()
             end
 
             mod._previewMode = db.profile.previewMode or "overlay"
-            return posY
+            return cursorY
         end
 
         ---------------------------------------------------------------------------
         --  Visual settings sections (shared by raid + party pages)
         ---------------------------------------------------------------------------
-        local function BuildVisualSections(hostFrame, posY, W, onSection)
+        local function BuildVisualSections(hostFrame, cursorY, W, onSection)
             -- Eyeball handles are per-context (raid vs party) so the two page builds don't clobber each other's eye-icon refreshers. Animation start/stop stay on ns: one shared ticker resolves the active preview at call time via ns.PvActiveFrames.
             local _eyeCtx = optionState._partyCtx and "party" or "raid"
             mod._eye = mod._eye or {}
@@ -1565,18 +1565,18 @@ CludesUI.AtLogin(function()
             -- TEXT DISPLAY) and VisualIndicators_Options.lua (INDICATORS .. RANGE & TOOLTIP);
             -- Dispels reuses the Health Bar custom-border gates.
             local CustomBorderOff, CustomBorderOffTip
-            posY, CustomBorderOff, CustomBorderOffTip =
-                mod.RFO_BuildVisualBars(hostFrame, posY, W, onSection, EYE)
-            posY = mod.RFO_BuildVisualIndicators(
+            cursorY, CustomBorderOff, CustomBorderOffTip =
+                mod.RFO_BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
+            cursorY = mod.RFO_BuildVisualIndicators(
                 hostFrame,
-                posY,
+                cursorY,
                 W,
                 onSection,
                 EYE,
                 CustomBorderOff,
                 CustomBorderOffTip
             )
-            return posY
+            return cursorY
         end
 
         ---------------------------------------------------------------------------
@@ -1718,25 +1718,25 @@ CludesUI.AtLogin(function()
                 row:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", PAD, cy)
                 row:SetFrameLevel(panelFrame:GetFrameLevel() + 1)
 
-                local cb = CreateFrame("CheckButton", nil, row)
-                cb:SetSize(18, 18)
-                cb:SetPoint("LEFT", row, "LEFT", 0, 0)
+                local checkBtn = CreateFrame("CheckButton", nil, row)
+                checkBtn:SetSize(18, 18)
+                checkBtn:SetPoint("LEFT", row, "LEFT", 0, 0)
 
-                local cbBg = cb:CreateTexture(nil, "BACKGROUND")
+                local cbBg = checkBtn:CreateTexture(nil, "BACKGROUND")
                 cbBg:SetAllPoints()
                 cbBg:SetColorTexture(0.15, 0.15, 0.15, 1)
-                CludesUI.MakeBorder(cb, 1, 1, 1, 0.2, Pix)
+                CludesUI.MakeBorder(checkBtn, 1, 1, 1, 0.2, Pix)
 
-                local checkMark = cb:CreateTexture(nil, "OVERLAY")
+                local checkMark = checkBtn:CreateTexture(nil, "OVERLAY")
                 checkMark:SetSize(12, 12)
                 checkMark:SetPoint("CENTER")
                 checkMark:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 1)
-                checks[#checks + 1] = cb
+                checks[#checks + 1] = checkBtn
                 checks[#checks + 1] = checkMark
 
                 local function Refresh()
-                    local v = getVal()
-                    checkMark:SetShown(v)
+                    local value = getVal()
+                    checkMark:SetShown(value)
                 end
                 Refresh()
 
@@ -1753,11 +1753,11 @@ CludesUI.AtLogin(function()
                     end
                 end
 
-                cb:SetScript("OnClick", DoToggle)
+                checkBtn:SetScript("OnClick", DoToggle)
 
                 -- Label is clickable and toggles the checkbox.
                 local lblBtn = CreateFrame("Button", nil, row)
-                lblBtn:SetPoint("LEFT", cb, "RIGHT", 8, 0)
+                lblBtn:SetPoint("LEFT", checkBtn, "RIGHT", 8, 0)
                 lblBtn:SetPoint("RIGHT", row, "RIGHT", -50, 0)
                 lblBtn:SetHeight(ROW_H)
                 lblBtn:SetScript("OnClick", DoToggle)
@@ -1834,7 +1834,7 @@ CludesUI.AtLogin(function()
 
                 cy = cy - ROW_H
                 allRefreshFns[#allRefreshFns + 1] = Refresh
-                return cb, Refresh, row
+                return checkBtn, Refresh, row
             end
 
             local nonIndicatorRows = {}
@@ -1905,8 +1905,8 @@ CludesUI.AtLogin(function()
             do
                 local _, _, r = CheckboxRow("Animate Bars", function()
                     return testState.animateBars
-                end, function(v)
-                    testState.animateBars = v
+                end, function(value)
+                    testState.animateBars = value
                 end, { page = PAGE_MAIN, key = "animateBars" })
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
@@ -1914,8 +1914,8 @@ CludesUI.AtLogin(function()
             do
                 local _, _, r = CheckboxRow("Absorbs", function()
                     return testState.absorbs
-                end, function(v)
-                    testState.absorbs = v
+                end, function(value)
+                    testState.absorbs = value
                 end, { page = PAGE_MAIN, key = "absorbs" })
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
@@ -1923,8 +1923,8 @@ CludesUI.AtLogin(function()
             do
                 local _, _, r = CheckboxRow("Healing Absorbs", function()
                     return testState.healAbsorbs
-                end, function(v)
-                    testState.healAbsorbs = v
+                end, function(value)
+                    testState.healAbsorbs = value
                 end, { page = PAGE_MAIN, key = "healAbsorbs" })
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
@@ -1932,8 +1932,8 @@ CludesUI.AtLogin(function()
             do
                 local _, _, r = CheckboxRow("Heal Prediction", function()
                     return testState.healPrediction
-                end, function(v)
-                    testState.healPrediction = v
+                end, function(value)
+                    testState.healPrediction = value
                 end, { page = PAGE_MAIN, key = "healPrediction" })
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
@@ -1941,8 +1941,8 @@ CludesUI.AtLogin(function()
             do
                 local _, _, r = CheckboxRow("Threat Indicator", function()
                     return testState.threat
-                end, function(v)
-                    testState.threat = v
+                end, function(value)
+                    testState.threat = value
                 end, { page = PAGE_MAIN, key = "threat" })
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
@@ -1950,8 +1950,8 @@ CludesUI.AtLogin(function()
             do
                 local _, _, r = CheckboxRow("Reduced Max Health", function()
                     return testState.reducedMaxHealth
-                end, function(v)
-                    testState.reducedMaxHealth = v
+                end, function(value)
+                    testState.reducedMaxHealth = value
                 end, { page = PAGE_MAIN, key = "absorbs" })
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
             end
@@ -1964,8 +1964,8 @@ CludesUI.AtLogin(function()
             do
                 local _, _, r = CheckboxRow("Dispels", function()
                     return testState.dispels
-                end, function(v)
-                    testState.dispels = v
+                end, function(value)
+                    testState.dispels = value
                     mod._applyTestState()
                 end, { page = PAGE_MAIN })
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
@@ -1974,8 +1974,8 @@ CludesUI.AtLogin(function()
             do
                 local _, _, r = CheckboxRow("Debuffs", function()
                     return testState.debuffs
-                end, function(v)
-                    testState.debuffs = v
+                end, function(value)
+                    testState.debuffs = value
                     mod._applyTestState()
                 end, { page = PAGE_DM })
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
@@ -1984,8 +1984,8 @@ CludesUI.AtLogin(function()
             do
                 local _, _, r = CheckboxRow("Defensives & Externals", function()
                     return testState.defensives
-                end, function(v)
-                    testState.defensives = v
+                end, function(value)
+                    testState.defensives = value
                     mod._applyTestState()
                 end, { page = PAGE_BUFFS })
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
@@ -1994,8 +1994,8 @@ CludesUI.AtLogin(function()
             do
                 local _, _, r = CheckboxRow("Configured Buffs", function()
                     return testState.buffs
-                end, function(v)
-                    testState.buffs = v
+                end, function(value)
+                    testState.buffs = value
                     mod._applyTestState()
                 end, { page = PAGE_BUFFS })
                 nonIndicatorRows[#nonIndicatorRows + 1] = r
@@ -2015,9 +2015,9 @@ CludesUI.AtLogin(function()
 
             CheckboxRow("Show All", function()
                 return testState.indicators
-            end, function(v)
-                testState.indicators = v
-                SetNonIndicatorRowsEnabled(not v)
+            end, function(value)
+                testState.indicators = value
+                SetNonIndicatorRowsEnabled(not value)
                 mod._applyTestState()
             end, { page = PAGE_MAIN })
 
@@ -2278,8 +2278,8 @@ CludesUI.AtLogin(function()
                 get = function()
                     return read("textureBg", false) == true
                 end,
-                set = function(v)
-                    write("textureBg", v and true or false)
+                set = function(value)
+                    write("textureBg", value and true or false)
                 end,
             }
         end

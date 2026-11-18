@@ -244,7 +244,7 @@ end
 
 -- One column per preview value, centred on the header: the number small,
 -- and the result in the accent under it. Returns the result strings.
-local function BuildPreview(heading, posY)
+local function BuildPreview(heading, cursorY)
     local PP = CludesUI.PanelPP
     local accent = CludesUI.CLUDES_GREEN
     local count = #PREVIEW_VALUES
@@ -253,9 +253,9 @@ local function BuildPreview(heading, posY)
         local posX = (i - (count + 1) / 2) * PREVIEW_COLUMN_W
         local number = CludesUI.MakeFont(heading, 11, nil, 1, 1, 1, 0.4)
         number:SetText(BreakUpLargeNumbers(value))
-        PP.Point(number, "TOP", heading, "TOP", posX, posY)
+        PP.Point(number, "TOP", heading, "TOP", posX, cursorY)
         local result = CludesUI.MakeFont(heading, 20, nil, accent.r, accent.g, accent.b, 1)
-        PP.Point(result, "TOP", heading, "TOP", posX, posY - 16)
+        PP.Point(result, "TOP", heading, "TOP", posX, cursorY - 16)
         results[i] = result
     end
     return results
@@ -326,15 +326,15 @@ end
 local function BuildHeader(heading)
     local PP = CludesUI.PanelPP
     local L = CludesUI.L
-    local posY = -16
+    local cursorY = -16
 
     local tabs, tabsH, refreshTabs = BuildTypeTabs(heading)
     tabs:SetFrameLevel(heading:GetFrameLevel() + 5)
-    PP.Point(tabs, "TOP", heading, "TOP", 0, posY)
-    posY = posY - tabsH - 20
+    PP.Point(tabs, "TOP", heading, "TOP", 0, cursorY)
+    cursorY = cursorY - tabsH - 20
 
-    local results = BuildPreview(heading, posY)
-    posY = posY - 58
+    local results = BuildPreview(heading, cursorY)
+    cursorY = cursorY - 58
 
     -- Precision: its (i) names the modules the type covers and how it cuts.
     -- The label is centred on the dropdown, and the (i) sits 3px lower to
@@ -354,7 +354,7 @@ local function BuildHeader(heading)
         end,
         info = { dy = -3 },
     })
-    PP.Point(precisionDropdown, "TOPRIGHT", heading, "TOP", -20, posY)
+    PP.Point(precisionDropdown, "TOPRIGHT", heading, "TOP", -20, cursorY)
     precisionLabel:SetPoint("RIGHT", precisionDropdown, "LEFT", -(12 + 12 + 5), 0)
 
     local thresholdLabel, thresholdDropdown = BuildHeaderSetting(heading, {
@@ -371,10 +371,10 @@ local function BuildHeader(heading)
             SetTypeSetting(shownType, "threshold", value)
         end,
     })
-    thresholdLabel:SetPoint("TOPLEFT", heading, "TOP", 20, posY - 8)
+    thresholdLabel:SetPoint("TOPLEFT", heading, "TOP", 20, cursorY - 8)
     thresholdDropdown:SetPoint("LEFT", thresholdLabel, "RIGHT", 12, 0)
     local thresholdLock = BuildThresholdLock(heading, thresholdLabel, thresholdDropdown)
-    posY = posY - 46
+    cursorY = cursorY - 46
 
     RefreshHeader = function()
         local valueType = shownType
@@ -396,7 +396,7 @@ local function BuildHeader(heading)
     end
     RefreshHeader()
 
-    return math.abs(posY)
+    return math.abs(cursorY)
 end
 
 function _G._CUI_NumberFormatHeaderBuilder()
@@ -492,10 +492,10 @@ end
 -- (last, so hiding it moves nothing) and re-aimed and shown or hidden on
 -- every refresh (a type pick, a cache restore). The inline search leaves
 -- it alone: clearing a search shows every row it collected.
-local function BuildOverrideNote(hostFrame, posY)
+local function BuildOverrideNote(hostFrame, cursorY)
     local active, note, module, page, section, setting = Override(shownType)
     local row
-    posY, row = CludesUI.BuildLinkRow(hostFrame, posY, note, module, page, section, setting, { warn = true })
+    cursorY, row = CludesUI.BuildLinkRow(hostFrame, cursorY, note, module, page, section, setting, { warn = true })
     row._searchIgnore = true
     row:SetShown(active)
     CludesUI.RegisterWidgetRefresh(function()
@@ -503,28 +503,28 @@ local function BuildOverrideNote(hostFrame, posY)
         row:Relink(text, m, p, s, hl)
         row:SetShown(on)
     end)
-    return posY
+    return cursorY
 end
 
 -- Builds the page into hostFrame from yOffset down; returns its height.
 function _G._CUI_BuildNumberFormatPage(pageName, hostFrame, yOffset)
     local W = CludesUI.Widgets
-    local posY = yOffset
-    local _, hgt
+    local cursorY = yOffset
+    local _, height
 
     CludesUI:SetContentHeader(BuildHeader)
     RegisterHeaderSearch(shownType)
 
     hostFrame._showRowDivider = true
 
-    _, hgt = W:SectionHeader(hostFrame, "UNITS (GLOBAL)", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "UNITS (GLOBAL)", cursorY)
+    cursorY = cursorY - height
 
-    _, hgt = W:DualRow(hostFrame, posY, LetterCaseRow(), UnitStyleRow())
-    posY = posY - hgt
+    _, height = W:DualRow(hostFrame, cursorY, LetterCaseRow(), UnitStyleRow())
+    cursorY = cursorY - height
 
-    posY = BuildOverrideNote(hostFrame, posY)
+    cursorY = BuildOverrideNote(hostFrame, cursorY)
 
     -- The page framework takes the content height as a positive number.
-    return math.abs(posY)
+    return math.abs(cursorY)
 end

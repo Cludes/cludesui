@@ -28,12 +28,12 @@ end
 -- tooltip (req, raw), and enableRow(y, sizeCfg, RefreshTotem) -> row, h: the
 -- first row, whose left slot turns the bar on and whose right slot is sizeCfg
 -- (Icon Size). mapIcon / mapTimer: the preview's click mapping keys.
-local function BuildTotemSection(hostFrame, posY, S)
+local function BuildTotemSection(hostFrame, cursorY, S)
     local environ = mod._CURB_OptEnv
     local DB = environ.DB
     local _clickMappings = environ._clickMappings
     local W = CludesUI.Widgets
-    local _, hgt
+    local _, height
 
     local function T()
         local p = DB()
@@ -58,8 +58,8 @@ local function BuildTotemSection(hostFrame, posY, S)
     local req, raw = S.req, S.raw
 
     local section
-    section, hgt = W:SectionHeader(hostFrame, S.title, posY)
-    posY = posY - hgt
+    section, height = W:SectionHeader(hostFrame, S.title, cursorY)
+    cursorY = cursorY - height
     CludesUI.BuildSectionUnlockJump(
         section,
         { key = S.unlockKey, disabled = totemOff, disabledTooltip = req, rawTooltip = raw }
@@ -67,7 +67,7 @@ local function BuildTotemSection(hostFrame, posY, S)
 
     -- Row 1: the section's on switch | Icon Size (+ spacing cog)
     local row1
-    row1, hgt = S.enableRow(posY, {
+    row1, height = S.enableRow(cursorY, {
         type = "slider",
         text = "Icon Size",
         min = 16,
@@ -89,7 +89,7 @@ local function BuildTotemSection(hostFrame, posY, S)
             RefreshTotem()
         end,
     }, RefreshTotem)
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Spacing cog on Icon Size (right region)
     if not CludesUI._prebuilding then
@@ -122,7 +122,7 @@ local function BuildTotemSection(hostFrame, posY, S)
 
     -- Row 2: Timer Size | Show Timer
     local timerRow
-    timerRow, hgt = W:DualRow(hostFrame, posY, {
+    timerRow, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Timer Size",
         min = 6,
@@ -162,15 +162,15 @@ local function BuildTotemSection(hostFrame, posY, S)
             CludesUI:RefreshPage()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Row 3: Border Style | Border Size (+ inline swatch + offset cog)
     do
         local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
         local bsRow
-        bsRow, hgt = W:DualRow(
+        bsRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             {
                 type = "dropdown",
                 text = "Border Style",
@@ -245,7 +245,7 @@ local function BuildTotemSection(hostFrame, posY, S)
                 end,
             })
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Width Offset | Height Offset: own row while a textured style is selected.
         do
             local t = T()
@@ -295,8 +295,8 @@ local function BuildTotemSection(hostFrame, posY, S)
                         CludesUI:RefreshPage()
                     end,
                 })
-                _, hgt = W:DualRow(hostFrame, posY, ocfgL, ocfgR)
-                posY = posY - hgt
+                _, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
+                cursorY = cursorY - height
             end
         end
 
@@ -304,7 +304,7 @@ local function BuildTotemSection(hostFrame, posY, S)
         -- pre-build (it indexes nothing, and the row is a stand-in there)
         if not CludesUI._prebuilding then
             local region = bsRow._rightRegion
-            local ctrl = region._control
+            local control = region._control
             local Pix = CludesUI.PP
             local borderSwatch, updateBorderSwatch = CludesUI.BuildColorSwatch(
                 region,
@@ -331,7 +331,7 @@ local function BuildTotemSection(hostFrame, posY, S)
                 true,
                 20
             )
-            Pix.Point(borderSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            Pix.Point(borderSwatch, "RIGHT", control, "LEFT", -8, 0)
             -- Disable swatch when border size is 0
             local borderSwatchBlock = CludesUI.NewSwatchBlocker(borderSwatch)
             borderSwatchBlock:SetScript("OnEnter", function()
@@ -471,7 +471,7 @@ local function BuildTotemSection(hostFrame, posY, S)
     -- Row 4: Frame Strata | Orientation
     local tmStrataValues = CludesUI.FRAME_STRATA_LABELS
     local tmStrataOrder = CludesUI.FRAME_STRATA_ORDER_BASE
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Frame Strata",
         tooltip = "Controls the order that overlapping elements display in. Set higher to show above other elements.",
@@ -513,7 +513,7 @@ local function BuildTotemSection(hostFrame, posY, S)
             RefreshTotem()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Click mappings for the preview's hit overlays (never from a hidden pre-build)
     if not CludesUI._prebuilding then
@@ -521,7 +521,7 @@ local function BuildTotemSection(hostFrame, posY, S)
         _clickMappings[S.mapTimer] = { section = section, target = timerRow, slotSide = "left" }
     end
 
-    return posY
+    return cursorY
 end
 
 -- Totem Bar options page
@@ -529,8 +529,8 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
     local environ = mod._CURB_OptEnv
     local DB, Pix = environ.DB, environ.PP
     local W = CludesUI.Widgets
-    local posY = yOffset
-    local _, hgt
+    local cursorY = yOffset
+    local _, height
     local forever = CludesUI.IS_FOREVER
 
     hostFrame._showRowDivider = true
@@ -545,7 +545,7 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
 
     -- Blizzard's active totems (every class list). On WoW Forever it is the first
     -- of two totem bar sections.
-    posY = BuildTotemSection(hostFrame, posY, {
+    cursorY = BuildTotemSection(hostFrame, cursorY, {
         title = forever and "ACTIVE TOTEM BAR" or "LAYOUT",
         key = "totemBar",
         unlockKey = "ERB_TotemBar",
@@ -578,12 +578,12 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
 
             -- Class dropdown on left region
             if not CludesUI._prebuilding then
-                local leftRgn = row1._leftRegion
-                local cbDD, cbDDRefresh
-                cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                    leftRgn,
+                local leftRegion = row1._leftRegion
+                local checkDrop, cbDDRefresh
+                checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                    leftRegion,
                     210,
-                    leftRgn:GetFrameLevel() + 2,
+                    leftRegion:GetFrameLevel() + 2,
                     classItems,
                     function(key)
                         local p = DB()
@@ -611,7 +611,7 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
                                 p.totemBar.enabledClasses = nil
                             end
                         end
-                        local ddMenu = cbDD._ddMenu
+                        local ddMenu = checkDrop._ddMenu
                         if ddMenu then
                             for _, scrollFrame in ipairs({ ddMenu:GetChildren() }) do
                                 local sc = scrollFrame.GetScrollChild and scrollFrame:GetScrollChild()
@@ -631,9 +631,9 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
                     8,
                     false
                 )
-                CludesUI.PanelPP.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
-                leftRgn._control = cbDD
-                leftRgn._lastInline = nil
+                CludesUI.PanelPP.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
+                leftRegion._control = checkDrop
+                leftRegion._lastInline = nil
                 CludesUI.RegisterWidgetRefresh(cbDDRefresh)
             end
             return row1, rh
@@ -644,9 +644,9 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
     -- element slots, Totemic Recall), reskinned and owned by Unlock Mode.
     -- Shamans only (the runtime file loads for no other class).
     if mod.ERB_HasCallTotemSection() then
-        _, hgt = W:Spacer(hostFrame, posY, 16)
-        posY = posY - hgt
-        posY = BuildTotemSection(hostFrame, posY, {
+        _, height = W:Spacer(hostFrame, cursorY, 16)
+        cursorY = cursorY - height
+        cursorY = BuildTotemSection(hostFrame, cursorY, {
             title = "CALL TOTEM BAR",
             key = "callTotemBar",
             unlockKey = "ERB_CallTotemBar",
@@ -683,5 +683,5 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
         })
     end
 
-    return math.abs(posY)
+    return math.abs(cursorY)
 end

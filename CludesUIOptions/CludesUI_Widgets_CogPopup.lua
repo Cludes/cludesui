@@ -433,12 +433,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 local posX, band = 0, nil
                 POPUP_W = 0
                 for ci, col in ipairs(cols) do
-                    local hgt = col.title and (HDR_H + HDR_GAP) or 0
+                    local height = col.title and (HDR_H + HDR_GAP) or 0
                     for idx = col.first, col.last do
                         if idx > col.first then
-                            hgt = hgt + GAP
+                            height = height + GAP
                         end
-                        hgt = hgt + RowH(rowList[idx])
+                        height = height + RowH(rowList[idx])
                     end
                     if (ci - 1) % perBand == 0 then
                         if band then
@@ -454,8 +454,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     if posX > POPUP_W then
                         POPUP_W = posX
                     end
-                    if hgt > band.h then
-                        band.h = hgt
+                    if height > band.h then
+                        band.h = height
                     end
                 end
                 totalH = totalH + band.h
@@ -555,13 +555,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local ca, COL_W = popFrame, POPUP_W
             -- A dropdown-height row's disabled overlay (row.disabled set): dims the row,
             -- blocks it and explains the lock; the refresh shows it while disabled.
-            local function RowDisabledOverlay(row, posY)
+            local function RowDisabledOverlay(row, cursorY)
                 if not row.disabled then
                     return nil
                 end
                 local dis = CreateFrame("Frame", nil, popFrame)
-                dis:SetPoint("TOPLEFT", ca, "TOPLEFT", 1, posY)
-                dis:SetPoint("TOPRIGHT", ca, "TOPRIGHT", -1, posY)
+                dis:SetPoint("TOPLEFT", ca, "TOPLEFT", 1, cursorY)
+                dis:SetPoint("TOPRIGHT", ca, "TOPRIGHT", -1, cursorY)
                 dis:SetHeight(DROPDOWN_ROW_H)
                 dis:SetFrameLevel(popFrame:GetFrameLevel() + 10)
                 dis:EnableMouse(true)
@@ -740,7 +740,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
                     -- Cog-popup dropdowns render 10% smaller than the panel dropdowns.
                     local DD_SCALE = 0.9
-                    local ddBtn, ddLbl = BuildDropdownControl(
+                    local dropdownBtn, dropCaption = BuildDropdownControl(
                         popFrame,
                         row.ddWidth or COG_DD_W,
                         popFrame:GetFrameLevel() + 2,
@@ -755,10 +755,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         end,
                         row.itemDisabled
                     )
-                    ddBtn:SetScale(DD_SCALE)
-                    ddBtn:ClearAllPoints()
+                    dropdownBtn:SetScale(DD_SCALE)
+                    dropdownBtn:ClearAllPoints()
                     -- Offsets divided by DD_SCALE so the scaled control still lands flush-right and vertically centered: SetScale multiplies a frame's own anchor offsets by its scale.
-                    ddBtn:SetPoint(
+                    dropdownBtn:SetPoint(
                         "RIGHT",
                         ca,
                         "TOPRIGHT",
@@ -766,11 +766,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         (curY - DROPDOWN_ROW_H / 2) / DD_SCALE
                     )
                     if row.tooltip then
-                        ddBtn._ttText = row.tooltip
-                        ddBtn._ttOpts = row.tooltipOpts
+                        dropdownBtn._ttText = row.tooltip
+                        dropdownBtn._ttOpts = row.tooltipOpts
                     end
                     -- Propagate popup scale and the 10% reduction to the lazily-built menu so the open list matches the shrunk control.
-                    ddBtn:HookScript("OnClick", function(self)
+                    dropdownBtn:HookScript("OnClick", function(self)
                         if self._ddMenu then
                             if not self._ddMenu._cogScaled then
                                 self._ddMenu:SetScale(ppScale * DD_SCALE)
@@ -787,11 +787,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
                     rowWidgets[#rowWidgets + 1] = {
                         type = "dropdown",
-                        btn = ddBtn,
-                        lbl = ddLbl,
+                        btn = dropdownBtn,
+                        lbl = dropCaption,
                         get = row.get,
                         values = row.values,
-                        refresh = ddBtn._ddRefresh,
+                        refresh = dropdownBtn._ddRefresh,
                         disOverlay = ddDis,
                         disCheck = row.disabled,
                     }
@@ -803,15 +803,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - DROPDOWN_ROW_H / 2 - 1)
 
                     local itemList = type(row.items) == "function" and row.items() or row.items or {}
-                    local ddBtn, refresh
-                    ddBtn, refresh = CludesUI.BuildReorderCBDropdown(
+                    local dropdownBtn, refresh
+                    dropdownBtn, refresh = CludesUI.BuildReorderCBDropdown(
                         popFrame,
                         row.ddWidth or COG_DD_W,
                         popFrame:GetFrameLevel() + 2,
                         itemList,
                         row.get,
-                        function(k, val, sequence)
-                            row.set(k, val, sequence)
+                        function(keyName, val, sequence)
+                            row.set(keyName, val, sequence)
                             if popFrame._refresh then
                                 popFrame._refresh()
                             end
@@ -822,9 +822,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             grip = row.grip,
                             openOrder = row.openOrder,
                             tail = row.tail,
-                            onTail = function(k)
+                            onTail = function(keyName)
                                 if row.onTail then
-                                    row.onTail(k, ddBtn)
+                                    row.onTail(keyName, dropdownBtn)
                                 end
                             end,
                             tailSelected = row.tailSelected,
@@ -836,16 +836,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         }
                     )
                     local DD_SCALE = 0.9
-                    ddBtn:SetScale(DD_SCALE)
-                    ddBtn:ClearAllPoints()
-                    ddBtn:SetPoint(
+                    dropdownBtn:SetScale(DD_SCALE)
+                    dropdownBtn:ClearAllPoints()
+                    dropdownBtn:SetPoint(
                         "RIGHT",
                         ca,
                         "TOPRIGHT",
                         -SIDE_PAD / DD_SCALE,
                         (curY - DROPDOWN_ROW_H / 2) / DD_SCALE
                     )
-                    ddBtn:HookScript("OnClick", function(self)
+                    dropdownBtn:HookScript("OnClick", function(self)
                         if self._ddMenu then
                             self._ddMenu:SetFrameStrata(popFrame:GetFrameStrata())
                             self._ddMenu:SetFrameLevel(popFrame:GetFrameLevel() + 30)
@@ -855,7 +855,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
                     rowWidgets[#rowWidgets + 1] = {
                         type = "reordercheck",
-                        btn = ddBtn,
+                        btn = dropdownBtn,
                         refresh = refresh,
                         disOverlay = rcDis,
                         disCheck = row.disabled,
@@ -1138,27 +1138,27 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         end)
                     end
 
-                    local box = CreateFrame("EditBox", nil, popFrame)
-                    box:SetSize(inputW, ROW_H - 4)
+                    local boxFrame = CreateFrame("EditBox", nil, popFrame)
+                    boxFrame:SetSize(inputW, ROW_H - 4)
                     if commitOnBlur then
-                        box:SetPoint("RIGHT", ca, "TOPRIGHT", -SIDE_PAD, curY - ROW_H / 2)
+                        boxFrame:SetPoint("RIGHT", ca, "TOPRIGHT", -SIDE_PAD, curY - ROW_H / 2)
                     else
-                        box:SetPoint("RIGHT", saveBtn, "LEFT", -SAVE_GAP, 0)
+                        boxFrame:SetPoint("RIGHT", saveBtn, "LEFT", -SAVE_GAP, 0)
                     end
-                    box:SetAutoFocus(false)
-                    box:SetFont(EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 11, "")
-                    box:SetTextColor(1, 1, 1, POPUP_INPUT_A)
-                    box:SetJustifyH(row.inputJustify or "CENTER")
+                    boxFrame:SetAutoFocus(false)
+                    boxFrame:SetFont(EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 11, "")
+                    boxFrame:SetTextColor(1, 1, 1, POPUP_INPUT_A)
+                    boxFrame:SetJustifyH(row.inputJustify or "CENTER")
                     if row.inputJustify == "LEFT" then
-                        box:SetTextInsets(6, 6, 0, 0)
+                        boxFrame:SetTextInsets(6, 6, 0, 0)
                     end
-                    local boxBg = SolidTex(box, "BACKGROUND", 0.12, 0.12, 0.12, 0.8)
+                    local boxBg = SolidTex(boxFrame, "BACKGROUND", 0.12, 0.12, 0.12, 0.8)
                     boxBg:SetAllPoints()
-                    CludesUI.RoundBody(box, boxBg)
-                    box:SetText(row.get and row.get() or "")
+                    CludesUI.RoundBody(boxFrame, boxBg)
+                    boxFrame:SetText(row.get and row.get() or "")
                     -- Left-aligned text that overflows shows its start, not its end.
                     if row.inputJustify == "LEFT" then
-                        box:SetCursorPosition(0)
+                        boxFrame:SetCursorPosition(0)
                     end
 
                     local _committing = false -- guard ClearFocus -> OnEditFocusLost reentry
@@ -1167,9 +1167,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             return
                         end
                         _committing = true
-                        box:ClearFocus()
+                        boxFrame:ClearFocus()
                         if row.set then
-                            row.set(box:GetText())
+                            row.set(boxFrame:GetText())
                         end
                         if popFrame._refresh then
                             popFrame._refresh()
@@ -1190,10 +1190,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         _committing = false
                     end
 
-                    box:SetScript("OnEnterPressed", function(self)
+                    boxFrame:SetScript("OnEnterPressed", function(self)
                         ApplyInput()
                     end)
-                    box:SetScript("OnEscapePressed", function(self)
+                    boxFrame:SetScript("OnEscapePressed", function(self)
                         -- Cancel: guard + restore BEFORE ClearFocus -- in commitOnBlur mode ClearFocus fires OnEditFocusLost, which would otherwise SAVE the discarded text.
                         _committing = true
                         self:SetText(row.get and row.get() or "")
@@ -1204,7 +1204,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         _committing = false
                     end)
                     if commitOnBlur then
-                        box:SetScript("OnEditFocusLost", function()
+                        boxFrame:SetScript("OnEditFocusLost", function()
                             ApplyInput()
                         end)
                     else
@@ -1236,7 +1236,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
                     rowWidgets[#rowWidgets + 1] = {
                         type = "input",
-                        box = box,
+                        box = boxFrame,
                         get = row.get,
                         disOverlay = inputDis,
                         disCheck = row.disabled,
@@ -1277,12 +1277,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 elseif row.type == "reorder" then
                     -- Full-width dropdown button opening a drag-to-reorder menu (hint label + draggable rows), matching the raid/party "Sort By" reorder section.
                     local RR_W = COL_W - SIDE_PAD * 2
-                    local ddBtn = CreateFrame("Button", nil, popFrame)
-                    ddBtn:SetSize(RR_W, DROPDOWN_ROW_H - 2)
-                    ddBtn:SetPoint("TOP", ca, "TOPLEFT", COL_W / 2, curY - 1)
-                    ddBtn:SetFrameLevel(popFrame:GetFrameLevel() + 2)
+                    local dropdownBtn = CreateFrame("Button", nil, popFrame)
+                    dropdownBtn:SetSize(RR_W, DROPDOWN_ROW_H - 2)
+                    dropdownBtn:SetPoint("TOP", ca, "TOPLEFT", COL_W / 2, curY - 1)
+                    dropdownBtn:SetFrameLevel(popFrame:GetFrameLevel() + 2)
                     local rBg = SolidTex(
-                        ddBtn,
+                        dropdownBtn,
                         "BACKGROUND",
                         CludesUI.DD_BG_R,
                         CludesUI.DD_BG_G,
@@ -1290,17 +1290,17 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         CludesUI.DD_BG_A
                     )
                     rBg:SetAllPoints()
-                    local rBrd = CludesUI.MakeRoundedBorder(ddBtn, 1, 1, 1, CludesUI.DD_BRD_A, rBg)
-                    local rLbl = MakeFont(ddBtn, 12, nil, 1, 1, 1)
+                    local rBrd = CludesUI.MakeRoundedBorder(dropdownBtn, 1, 1, 1, CludesUI.DD_BRD_A, rBg)
+                    local rLbl = MakeFont(dropdownBtn, 12, nil, 1, 1, 1)
                     rLbl:SetAlpha(CludesUI.DD_TXT_A)
                     rLbl:SetJustifyH("LEFT")
                     rLbl:SetWordWrap(false)
                     rLbl:SetMaxLines(1)
-                    rLbl:SetPoint("LEFT", ddBtn, "LEFT", 8, 0)
+                    rLbl:SetPoint("LEFT", dropdownBtn, "LEFT", 8, 0)
                     rLbl:SetText(CludesUI.L(row.label))
-                    local rArrow = MakeDropdownArrow(ddBtn, 12, Pix)
+                    local rArrow = MakeDropdownArrow(dropdownBtn, 12, Pix)
                     rLbl:SetPoint("RIGHT", rArrow, "LEFT", -5, 0)
-                    ddBtn:SetScript("OnEnter", function()
+                    dropdownBtn:SetScript("OnEnter", function()
                         rBg:SetColorTexture(
                             CludesUI.DD_BG_R,
                             CludesUI.DD_BG_G,
@@ -1310,7 +1310,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         rBrd:SetColor(1, 1, 1, CludesUI.DD_BRD_HA)
                         rLbl:SetAlpha(CludesUI.DD_TXT_HA)
                     end)
-                    ddBtn:SetScript("OnLeave", function()
+                    dropdownBtn:SetScript("OnLeave", function()
                         rBg:SetColorTexture(
                             CludesUI.DD_BG_R,
                             CludesUI.DD_BG_G,
@@ -1333,7 +1333,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     dropMenu:Hide()
                     -- Controller cursor: Cancel clicks the button (it toggles the list closed).
                     if CludesUI.PadCP() then
-                        dropMenu.CloseButton = ddBtn
+                        dropMenu.CloseButton = dropdownBtn
                     end
                     local mBg2 = SolidTex(
                         dropMenu,
@@ -1345,19 +1345,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     )
                     mBg2:SetAllPoints()
                     CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, CludesUI.DD_BRD_A, mBg2, nil, true)
-                    dropMenu:SetPoint("TOPLEFT", ddBtn, "BOTTOMLEFT", 0, -2)
-                    ddBtn._ddMenu = dropMenu -- popup click-outside ignores menu interaction
+                    dropMenu:SetPoint("TOPLEFT", dropdownBtn, "BOTTOMLEFT", 0, -2)
+                    dropdownBtn._ddMenu = dropMenu -- popup click-outside ignores menu interaction
 
                     -- Declared before OnShow so its OnUpdate can suppress the click-away dismiss while a row is being dragged.
                     local dragRow, dsY, isDragging = nil, nil, false
 
                     dropMenu:SetScript("OnShow", function(self)
-                        self:SetScale(ddBtn:GetEffectiveScale() / UIParent:GetEffectiveScale())
+                        self:SetScale(dropdownBtn:GetEffectiveScale() / UIParent:GetEffectiveScale())
                         self:SetScript("OnUpdate", function(m)
                             if isDragging then
                                 return
                             end -- never dismiss mid-drag
-                            if not ddBtn:IsMouseOver() and not m:IsMouseOver() then
+                            if not dropdownBtn:IsMouseOver() and not m:IsMouseOver() then
                                 if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then
                                     m:Hide()
                                 end
@@ -1368,7 +1368,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         self:SetScript("OnUpdate", nil)
                         -- Controller cursor: back onto the button (a no-op once the popup hid it too).
                         if CludesUI.PadCursorShown() then
-                            CludesUI.PadFocus(ddBtn)
+                            CludesUI.PadFocus(dropdownBtn)
                         end
                     end)
 
@@ -1612,7 +1612,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     Populate()
                     CludesUI.TrackOverlay(dropMenu)
 
-                    ddBtn:SetScript("OnClick", function()
+                    dropdownBtn:SetScript("OnClick", function()
                         if dropMenu:IsShown() then
                             dropMenu:Hide()
                         else
@@ -1655,7 +1655,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
                     rowWidgets[#rowWidgets + 1] = {
                         type = "reorder",
-                        btn = ddBtn,
+                        btn = dropdownBtn,
                         menu = dropMenu,
                         disOverlay = reorderDis,
                         disCheck = row.disabled,

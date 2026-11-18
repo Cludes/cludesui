@@ -102,19 +102,19 @@ CludesUI.AtLogin(function()
         return (t and t[idx]) or mod.PULL_DEFAULTS[idx]
     end
 
-    local function PullSet(idx, v)
+    local function PullSet(idx, value)
         local t = Cfg("pullTimes")
         if not t then
             return
         end
-        t[idx] = v
+        t[idx] = value
         Refresh()
     end
 
     local function BuildPage(page, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt, heading
+        local cursorY = yOffset
+        local _, height, heading
 
         CludesUI:ClearContentHeader()
 
@@ -127,8 +127,8 @@ CludesUI.AtLogin(function()
         end
 
         -- GENERAL
-        heading, hgt = W:SectionHeader(hostFrame, "GENERAL", posY)
-        posY = posY - hgt
+        heading, height = W:SectionHeader(hostFrame, "GENERAL", cursorY)
+        cursorY = cursorY - height
         -- The Show as choice decides which shell has a mover: the Compact
         -- Band, the Markers window alone, or the Group & Pull window (which
         -- is also the One Window shell and the first of Two Windows).
@@ -152,7 +152,7 @@ CludesUI.AtLogin(function()
         -- built at all (no frames, events, bindings or unlock rows), which is
         -- why there is no separate Enable toggle.
         local kbRow
-        kbRow, hgt = W:DualRow(hostFrame, posY, {
+        kbRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Show Raid Tools",
             tooltip = "A raid control panel with ready check, pull timer and raid markers. In a raid it only shows while you are the leader or an assistant, since none of its buttons work without that; in a party it always shows.",
@@ -166,13 +166,13 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return Cfg("mode") or "never"
             end,
-            setValue = function(v)
-                Set("mode", v)
+            setValue = function(value)
+                Set("mode", value)
                 Refresh()
                 CludesUI:RefreshPage()
             end,
         }, { type = "label", text = "Toggle Raid Tools" })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Keybind button in the label's slot -- the exact Toggle Action Bar
         -- Visibility arrangement from Action Bars: profile-stored key, click
@@ -180,8 +180,8 @@ CludesUI.AtLogin(function()
         -- an override binding on the secure toggle button, so pressing it
         -- works in combat; only the (re)binding itself waits for combat end.
         if not CludesUI._prebuilding then
-            local rgn = kbRow._rightRegion
-            local kbBtn, refresh = CludesUI.BuildKeybindButton(rgn, {
+            local region = kbRow._rightRegion
+            local kbBtn, refresh = CludesUI.BuildKeybindButton(region, {
                 w = 126,
                 h = 29,
                 level = 4,
@@ -190,29 +190,29 @@ CludesUI.AtLogin(function()
                 end,
                 -- Spec Overrides: the slot is read before the write (a write
                 -- that rebuilds the page dresses this region again).
-                set = function(v)
-                    local snap = CludesUI._SOAttribution(rgn)
-                    Set("toggleKey", v or false)
+                set = function(value)
+                    local snap = CludesUI._SOAttribution(region)
+                    Set("toggleKey", value or false)
                     Refresh()
-                    CludesUI._NotifySettingWrite(rgn, snap)
+                    CludesUI._NotifySettingWrite(region, snap)
                 end,
                 disabled = Disabled,
                 disabledTip = "Show Raid Tools",
                 tooltip = "Toggles the Raid Tools panels, in or out of combat.\n\nLeft-click to set a keybind.\nRight-click to unbind.",
             })
-            CludesUI.PanelPP.Point(kbBtn, "RIGHT", rgn, "RIGHT", -20, 0)
+            CludesUI.PanelPP.Point(kbBtn, "RIGHT", region, "RIGHT", -20, 0)
             CludesUI.RegisterWidgetRefresh(refresh)
 
             -- Spec Overrides capture: bespoke widget, so its SLOT opts in with a
             -- synthetic accessor (the label cfg carries no get/set of its own).
-            CludesUI.AddCaptureAccessor(rgn, {
+            CludesUI.AddCaptureAccessor(region, {
                 type = "keybind",
                 text = "Toggle Raid Tools",
                 getValue = function()
                     return Cfg("toggleKey")
                 end,
-                setValue = function(v)
-                    Set("toggleKey", v)
+                setValue = function(value)
+                    Set("toggleKey", value)
                     Refresh()
                     refresh()
                 end,
@@ -220,7 +220,7 @@ CludesUI.AtLogin(function()
         end
 
         -- Row 2: collapsed-when-shown default | window composition.
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Default to Collapsed When Shown",
             tooltip = "Full-window modes only. Shows start as a small icon, and the keybind switches between the icon and the full windows.",
@@ -228,8 +228,8 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return Cfg("collapsedIcon") ~= false
             end,
-            setValue = function(v)
-                Set("collapsedIcon", v)
+            setValue = function(value)
+                Set("collapsedIcon", value)
                 Refresh()
             end,
         }, {
@@ -248,16 +248,16 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return ShowAsVal()
             end,
-            setValue = function(v)
-                Set("showAs", v)
+            setValue = function(value)
+                Set("showAs", value)
                 Refresh()
                 CludesUI:RefreshPage()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Row 3: one scale for every layout | legacy menu grow direction.
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Window Scale",
             min = 0.5,
@@ -267,8 +267,8 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return Cfg("scale") or 1
             end,
-            setValue = function(v)
-                Set("scale", v)
+            setValue = function(value)
+                Set("scale", value)
                 Refresh()
             end,
         }, {
@@ -286,20 +286,20 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return Cfg("growDir") or "downright"
             end,
-            setValue = function(v)
-                Set("growDir", v)
+            setValue = function(value)
+                Set("growDir", value)
                 Refresh()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- QUICK FIRE
         -- An explicitly enabled, empty-by-default set of world-marker binds.
-        _, hgt = W:SectionHeader(hostFrame, "QUICK FIRE", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "QUICK FIRE", cursorY)
+        cursorY = cursorY - height
 
         local qfEnableRow
-        qfEnableRow, hgt = W:DualRow(hostFrame, posY, {
+        qfEnableRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Quick Fire",
             tooltip = "Adds three optional world-marker keybinds that remain usable in combat. Place drops the first free marker at the cursor in Star to Skull order; Undo removes the last marker placed through Quick Fire; Clear removes all world markers. Every binding starts empty. Marker changes made elsewhere during combat are picked up afterward.",
@@ -307,22 +307,22 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return Cfg("quickFire") == true
             end,
-            setValue = function(v)
-                Set("quickFire", v)
+            setValue = function(value)
+                Set("quickFire", value)
                 Refresh()
                 CludesUI:RefreshPage()
             end,
         }, { type = "label", text = "Place World Marker" })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         local qfKeysRow
-        qfKeysRow, hgt = W:DualRow(
+        qfKeysRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             { type = "label", text = "Undo Last Marker" },
             { type = "label", text = "Clear All Markers" }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if not CludesUI._prebuilding then
             local Pix = CludesUI.PanelPP
@@ -336,9 +336,9 @@ CludesUI.AtLogin(function()
                     get = function()
                         return Cfg(key)
                     end,
-                    set = function(v)
+                    set = function(value)
                         local snap = CludesUI._SOAttribution(regionFrame)
-                        Set(key, v or false)
+                        Set(key, value or false)
                         Refresh()
                         CludesUI._NotifySettingWrite(regionFrame, snap)
                     end,
@@ -355,8 +355,8 @@ CludesUI.AtLogin(function()
                     getValue = function()
                         return Cfg(key)
                     end,
-                    setValue = function(v)
-                        Set(key, v)
+                    setValue = function(value)
+                        Set(key, value)
                         Refresh()
                         refresh()
                     end,
@@ -373,8 +373,8 @@ CludesUI.AtLogin(function()
         -- One switch per optional action. Ready Check has none: it is the
         -- reason the panel exists. Turning a button off closes the gap it
         -- leaves -- the survivors re-flow across the rows.
-        _, hgt = W:SectionHeader(hostFrame, "GROUP BUTTONS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "GROUP BUTTONS", cursorY)
+        cursorY = cursorY - height
 
         local function ButtonToggle(key, textValue, tooltip, disabled)
             return {
@@ -385,16 +385,16 @@ CludesUI.AtLogin(function()
                 getValue = function()
                     return Cfg(key) ~= false
                 end,
-                setValue = function(v)
-                    Set(key, v)
+                setValue = function(value)
+                    Set(key, value)
                     Refresh()
                 end,
             }
         end
 
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             ButtonToggle(
                 "showRoleCheck",
                 "Show Role Check",
@@ -408,10 +408,10 @@ CludesUI.AtLogin(function()
                 FullPanelButtonDisabled
             )
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             ButtonToggle(
                 "showDisband",
                 "Show Disband",
@@ -438,28 +438,28 @@ CludesUI.AtLogin(function()
                     getValue = function()
                         return Cfg("showBuffCheck") == true
                     end,
-                    setValue = function(v)
-                        Set("showBuffCheck", v)
+                    setValue = function(value)
+                        Set("showBuffCheck", value)
                         Refresh()
                     end,
                 }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- RAID BUFF CHECK (retail only)
         if not CludesUI.IS_FOREVER then
-            _, hgt = W:SectionHeader(hostFrame, "RAID BUFF CHECK", posY)
-            posY = posY - hgt
+            _, height = W:SectionHeader(hostFrame, "RAID BUFF CHECK", cursorY)
+            cursorY = cursorY - height
 
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Raid Buff Check",
                 tooltip = "A window of each group member's flask, food, augment and vantus runes and missing raid buffs.",
                 getValue = function()
                     return Cfg("buffCheck") == true
                 end,
-                setValue = function(v)
-                    Set("buffCheck", v)
+                setValue = function(value)
+                    Set("buffCheck", value)
                     Refresh()
                     CludesUI:RefreshPage()
                 end,
@@ -472,17 +472,17 @@ CludesUI.AtLogin(function()
                 getValue = function()
                     return Cfg("buffCheckOnReady") ~= false
                 end,
-                setValue = function(v)
-                    Set("buffCheckOnReady", v)
+                setValue = function(value)
+                    Set("buffCheckOnReady", value)
                     Refresh()
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end -- not IS_FOREVER
 
         -- PULL TIMER
-        _, hgt = W:SectionHeader(hostFrame, "PULL TIMER", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "PULL TIMER", cursorY)
+        cursorY = cursorY - height
 
         local PULL_LABELS = { "First Timer", "Second Timer", "Third Timer" }
         local PULL_TIP =
@@ -499,18 +499,18 @@ CludesUI.AtLogin(function()
                 getValue = function()
                     return PullGet(idx)
                 end,
-                setValue = function(v)
-                    PullSet(idx, v)
+                setValue = function(value)
+                    PullSet(idx, value)
                 end,
             }
         end
 
-        _, hgt = W:DualRow(hostFrame, posY, PullSlider(1), PullSlider(2))
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, PullSlider(3), { type = "spacer" })
-        posY = posY - hgt
+        _, height = W:DualRow(hostFrame, cursorY, PullSlider(1), PullSlider(2))
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, PullSlider(3), { type = "spacer" })
+        cursorY = cursorY - height
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     _G._CUI_BuildRaidToolsPage = BuildPage

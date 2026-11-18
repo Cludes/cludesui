@@ -48,9 +48,9 @@ local _ownCat = {}
 local function OwnBarCatalogue(key, includeExtras)
     local c = _ownCat[key]
     if not c then
-        local tex, nameList, sequence = CludesUI.BuildBarTextureTables(includeExtras)
-        CludesUI.AppendSharedMediaTextures(nameList, sequence, nil, tex)
-        c = { lookup = tex, names = nameList, order = sequence }
+        local texture, nameList, sequence = CludesUI.BuildBarTextureTables(includeExtras)
+        CludesUI.AppendSharedMediaTextures(nameList, sequence, nil, texture)
+        c = { lookup = texture, names = nameList, order = sequence }
         _ownCat[key] = c
     end
     return c
@@ -84,17 +84,17 @@ end
 -- style lists (the absorb-style pattern shared by UF, RF and NP).
 local function AppendSmTail(values, orders, moduleNames, moduleOrder)
     local smKeys = {}
-    for _, k in ipairs(moduleOrder or {}) do
-        if type(k) == "string" and k:find("^sm:") then
-            smKeys[#smKeys + 1] = k
-            values[k] = (moduleNames and moduleNames[k]) or k
+    for _, keyName in ipairs(moduleOrder or {}) do
+        if type(keyName) == "string" and keyName:find("^sm:") then
+            smKeys[#smKeys + 1] = keyName
+            values[keyName] = (moduleNames and moduleNames[keyName]) or keyName
         end
     end
     if #smKeys > 0 then
         for _, ord in ipairs(orders) do
             ord[#ord + 1] = "---"
-            for _, k in ipairs(smKeys) do
-                ord[#ord + 1] = k
+            for _, keyName in ipairs(smKeys) do
+                ord[#ord + 1] = keyName
             end
         end
     end
@@ -106,10 +106,10 @@ end
 
 local BLANK, LinkRow, NoteRow = CludesUI.BlankRowCfg, CludesUI.BuildLinkRow, CludesUI.BuildNoteRow
 
-local function DisabledTile(hostFrame, posY, W, tile)
+local function DisabledTile(hostFrame, cursorY, W, tile)
     return NoteRow(
         hostFrame,
-        posY,
+        cursorY,
         CludesUI.Lf("Enable %1$s to edit its texture settings.", CludesUI.L(tile.display))
     )
 end
@@ -141,10 +141,10 @@ end
 --  Per-module card content builders
 -------------------------------------------------------------------------------
 
-local function TileActionBars(hostFrame, posY, W, tile)
+local function TileActionBars(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then
-        return DisabledTile(hostFrame, posY, W, tile)
+        return DisabledTile(hostFrame, cursorY, W, tile)
     end
     local ABAR = mod.EAB
     CludesUI.AppendSharedMediaTextures(
@@ -178,47 +178,47 @@ local function TileActionBars(hostFrame, posY, W, tile)
                 local s = barList and barList[barId]
                 return (s and s.barTexture) or "none"
             end,
-            setValue = function(v)
+            setValue = function(value)
                 local barList = ABAR and ABAR.db and ABAR.db.profile and ABAR.db.profile.bars
                 local s = barList and barList[barId]
                 if not s then
                     return
                 end
-                s.barTexture = v
+                s.barTexture = value
                 if mod.ApplyDataBarLayout then
                     mod.ApplyDataBarLayout(barId)
                 end
             end,
         }
     end
-    local _, hgt = W:DualRow(
+    local _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         barTexCfg("XP Bar Texture", "XPBar"),
         barTexCfg("Reputation Bar Texture", "RepBar")
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- WoW Forever has no House Favor bar: its row is not built there.
     if not CludesUI.IS_FOREVER then
-        _, hgt = W:DualRow(hostFrame, posY, barTexCfg("House Favor Bar Texture", "FavorBar"), BLANK())
-        posY = posY - hgt
+        _, height = W:DualRow(hostFrame, cursorY, barTexCfg("House Favor Bar Texture", "FavorBar"), BLANK())
+        cursorY = cursorY - height
     end -- not IS_FOREVER
-    posY = LinkRow(
+    cursorY = LinkRow(
         hostFrame,
-        posY,
+        cursorY,
         "Bar & Button Border Styles",
         tile.folder,
         "Bar Display",
         nil,
         "Border Style"
     )
-    return posY
+    return cursorY
 end
 
-local function TileNameplates(hostFrame, posY, W, tile)
+local function TileNameplates(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then
-        return DisabledTile(hostFrame, posY, W, tile)
+        return DisabledTile(hostFrame, cursorY, W, tile)
     end
     local function saved()
         return mod.db and mod.db.profile
@@ -259,12 +259,12 @@ local function TileNameplates(hostFrame, posY, W, tile)
                 local p = saved()
                 return (p and p[key]) or DEF[key] or "none"
             end,
-            setValue = function(v)
+            setValue = function(value)
                 local p = saved()
                 if not p then
                     return
                 end
-                p[key] = v
+                p[key] = value
                 NPTexApply()
             end,
         }
@@ -346,15 +346,15 @@ local function TileNameplates(hostFrame, posY, W, tile)
         return mod.healthBarTextures and mod.healthBarTextures[key]
     end
     local ovtValues, ovtOrder = {}, {}
-    for _, k in ipairs(STRIPE_ORDER) do
-        ovtValues[k] = STRIPE_NAMES[k]
-        ovtOrder[#ovtOrder + 1] = k
+    for _, keyName in ipairs(STRIPE_ORDER) do
+        ovtValues[keyName] = STRIPE_NAMES[keyName]
+        ovtOrder[#ovtOrder + 1] = keyName
     end
     ovtOrder[#ovtOrder + 1] = "---"
-    for _, k in ipairs(hbtOrder) do
-        ovtOrder[#ovtOrder + 1] = k
-        if k ~= "---" then
-            ovtValues[k] = hbtValues[k]
+    for _, keyName in ipairs(hbtOrder) do
+        ovtOrder[#ovtOrder + 1] = keyName
+        if keyName ~= "---" then
+            ovtValues[keyName] = hbtValues[keyName]
         end
     end
     ovtValues._menuOpts = { itemHeight = 28, background = OverlayBg }
@@ -362,16 +362,16 @@ local function TileNameplates(hostFrame, posY, W, tile)
     hovValues.none = "None"
     hovOrder[1] = "none"
     hovOrder[2] = "---"
-    for _, k in ipairs(STRIPE_ORDER) do
-        hovValues[k] = STRIPE_NAMES[k]
-        hovOrder[#hovOrder + 1] = k
+    for _, keyName in ipairs(STRIPE_ORDER) do
+        hovValues[keyName] = STRIPE_NAMES[keyName]
+        hovOrder[#hovOrder + 1] = keyName
     end
     hovOrder[#hovOrder + 1] = "---"
-    for _, k in ipairs(hbtOrder) do
-        if k ~= "none" then
-            hovOrder[#hovOrder + 1] = k
-            if k ~= "---" then
-                hovValues[k] = hbtValues[k]
+    for _, keyName in ipairs(hbtOrder) do
+        if keyName ~= "none" then
+            hovOrder[#hovOrder + 1] = keyName
+            if keyName ~= "---" then
+                hovValues[keyName] = hbtValues[keyName]
             end
         end
     end
@@ -387,12 +387,12 @@ local function TileNameplates(hostFrame, posY, W, tile)
                 local p = saved()
                 return (p and p[key]) or DEF[key]
             end,
-            setValue = function(v)
+            setValue = function(value)
                 local p = saved()
                 if not p then
                     return
                 end
-                p[key] = v
+                p[key] = value
                 local func = mod[applyName]
                 if func then
                     func()
@@ -403,14 +403,14 @@ local function TileNameplates(hostFrame, posY, W, tile)
         }
     end
 
-    local _, texRow, hgt
-    texRow, hgt = W:DualRow(
+    local _, texRow, height
+    texRow, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         texCfg("Bar Texture", "healthBarTexture"),
         texCfg("Cast Bar Texture", "castBarTexture")
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Textured Background cogs.
     local function Row(kind)
         return function()
@@ -420,7 +420,7 @@ local function TileNameplates(hostFrame, posY, W, tile)
     end
     TexBgCog(texRow._leftRegion, Row("health"), "nameplates")
     TexBgCog(texRow._rightRegion, Row("cast"), "nameplates")
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Absorb Style",
         values = absorbStyleValues,
@@ -429,44 +429,44 @@ local function TileNameplates(hostFrame, posY, W, tile)
             local p = saved()
             return (p and p.absorbStyle) or "blizzard"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = saved()
             if not p then
                 return
             end
-            p.absorbStyle = v
+            p.absorbStyle = value
             p.absorbAlpha = math.floor(
-                (((mod.NP_ABSORB_STYLE_ALPHA and mod.NP_ABSORB_STYLE_ALPHA[v]) or 0.8) * 100) + 0.5
+                (((mod.NP_ABSORB_STYLE_ALPHA and mod.NP_ABSORB_STYLE_ALPHA[value]) or 0.8) * 100) + 0.5
             )
             if mod.ApplyAbsorbStyleAll then
                 mod.ApplyAbsorbStyleAll()
             end
         end,
     }, overlayCfg("Hover Texture", "hoverOverlayTexture", "RefreshHoverEffect"))
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         overlayCfg("Target Texture", "targetOverlayTexture", "RefreshAllSettings"),
         overlayCfg("Focus Texture", "focusOverlayTexture", "RefreshAllSettings")
     )
-    posY = posY - hgt
-    posY = LinkRow(
+    cursorY = cursorY - height
+    cursorY = LinkRow(
         hostFrame,
-        posY,
+        cursorY,
         "Custom Border Style",
         tile.folder,
         "Display",
         "STYLE",
         "Custom Border Style"
     )
-    return posY
+    return cursorY
 end
 
-local function TileUnitFrames(hostFrame, posY, W, tile)
+local function TileUnitFrames(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then
-        return DisabledTile(hostFrame, posY, W, tile)
+        return DisabledTile(hostFrame, cursorY, W, tile)
     end
     local function saved()
         return mod.db and mod.db.profile
@@ -523,12 +523,12 @@ local function TileUnitFrames(hostFrame, posY, W, tile)
                 local ut, p = unitTable(u), saved()
                 return (ut and ut.healthBarTexture) or (p and p.healthBarTexture) or "none"
             end,
-            setValue = function(v)
+            setValue = function(value)
                 local ut = unitTable(u)
                 if not ut then
                     return
                 end
-                ut.healthBarTexture = v
+                ut.healthBarTexture = value
                 UFReload()
             end,
         }
@@ -543,13 +543,13 @@ local function TileUnitFrames(hostFrame, posY, W, tile)
                 local ut = unitTable(u)
                 return (ut and ut.showPlayerAbsorb) or "none"
             end,
-            setValue = function(v)
+            setValue = function(value)
                 local ut = unitTable(u)
                 if not ut then
                     return
                 end
-                ut.absorbOpacity = (v == "clean") and 30 or 90
-                ut.showPlayerAbsorb = v
+                ut.absorbOpacity = (value == "clean") and 30 or 90
+                ut.showPlayerAbsorb = value
                 UFReload()
             end,
         }
@@ -564,13 +564,13 @@ local function TileUnitFrames(hostFrame, posY, W, tile)
                 local ut = unitTable(u)
                 return (ut and ut.healAbsorbStyle) or "clean"
             end,
-            setValue = function(v)
+            setValue = function(value)
                 local ut = unitTable(u)
                 if not ut then
                     return
                 end
-                ut.healAbsorbOpacity = (v == "clean") and 50 or 75
-                ut.healAbsorbStyle = v
+                ut.healAbsorbOpacity = (value == "clean") and 50 or 75
+                ut.healAbsorbStyle = value
                 UFReload()
             end,
         }
@@ -595,12 +595,12 @@ local function TileUnitFrames(hostFrame, posY, W, tile)
             local p = saved()
             return (p and p.castBarTexture) or "inherit"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = saved()
             if not p then
                 return
             end
-            p.castBarTexture = v
+            p.castBarTexture = value
             UFReload()
         end,
     }
@@ -608,16 +608,16 @@ local function TileUnitFrames(hostFrame, posY, W, tile)
         CludesUI.BlizzStyle.Gate("unitframes", castTexCfg)
     end
     local _, focusRow, castRow
-    local ptRow, hgt = W:DualRow(hostFrame, posY, barTexCfg("player"), barTexCfg("target"))
-    posY = posY - hgt
-    focusRow, hgt = W:DualRow(hostFrame, posY, barTexCfg("focus"), absorbCfg("player"))
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, absorbCfg("target"), absorbCfg("focus"))
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, healAbsorbCfg("player"), healAbsorbCfg("target"))
-    posY = posY - hgt
-    castRow, hgt = W:DualRow(hostFrame, posY, healAbsorbCfg("focus"), castTexCfg)
-    posY = posY - hgt
+    local ptRow, height = W:DualRow(hostFrame, cursorY, barTexCfg("player"), barTexCfg("target"))
+    cursorY = cursorY - height
+    focusRow, height = W:DualRow(hostFrame, cursorY, barTexCfg("focus"), absorbCfg("player"))
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, absorbCfg("target"), absorbCfg("focus"))
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, healAbsorbCfg("player"), healAbsorbCfg("target"))
+    cursorY = cursorY - height
+    castRow, height = W:DualRow(hostFrame, cursorY, healAbsorbCfg("focus"), castTexCfg)
+    cursorY = cursorY - height
     -- Textured Background cogs (u nil: the cast bars' row).
     local environ = mod._UFO_OptEnv
     local function Row(u)
@@ -632,31 +632,31 @@ local function TileUnitFrames(hostFrame, posY, W, tile)
     TexBgCog(ptRow._rightRegion, Row("target"))
     TexBgCog(focusRow._leftRegion, Row("focus"))
     TexBgCog(castRow._rightRegion, Row(), "unitframes")
-    posY = LinkRow(
+    cursorY = LinkRow(
         hostFrame,
-        posY,
+        cursorY,
         "Pet, Target-of-Target & Boss Bar Textures",
         tile.folder,
         "Mini Frames",
         "DISPLAY",
         "Bar Texture"
     )
-    posY = LinkRow(
+    cursorY = LinkRow(
         hostFrame,
-        posY,
+        cursorY,
         "Frame, Power & Aura Border Styles",
         tile.folder,
         "Main Frames",
         "DISPLAY",
         "Border Style"
     )
-    return posY
+    return cursorY
 end
 
-local function TileRaidFrames(hostFrame, posY, W, tile)
+local function TileRaidFrames(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then
-        return DisabledTile(hostFrame, posY, W, tile)
+        return DisabledTile(hostFrame, cursorY, W, tile)
     end
     local function saved()
         return mod.db and mod.db.profile
@@ -774,8 +774,8 @@ local function TileRaidFrames(hostFrame, posY, W, tile)
 
     -- Mirrors write the RAID keys (same as the Raid tab); the Party tab's
     -- unsynced party_ variants stay in the module and are linked below.
-    local _, texRow, hgt
-    texRow, hgt = W:DualRow(hostFrame, posY, {
+    local _, texRow, height
+    texRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Health Bar Texture",
         values = hbtValues,
@@ -784,12 +784,12 @@ local function TileRaidFrames(hostFrame, posY, W, tile)
             local p = saved()
             return (p and p.healthBarTexture) or "atrocity"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = saved()
             if not p then
                 return
             end
-            p.healthBarTexture = v
+            p.healthBarTexture = value
             if mod._BumpAbsorbGen then
                 mod._BumpAbsorbGen()
             end
@@ -804,42 +804,42 @@ local function TileRaidFrames(hostFrame, posY, W, tile)
             local p = saved()
             return (p and p.absorbStyle) or "none"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = saved()
             if not p then
                 return
             end
             -- Blizzard Glow Line follows the pick (see the Raid & Party Frames page).
-            if v == "blizzardModern" then
+            if value == "blizzardModern" then
                 p.absorbGlowLine = true
             elseif p.absorbStyle == "blizzardModern" then
                 p.absorbGlowLine = false
             end
-            p.absorbStyle = v
-            if v == "clean" then
+            p.absorbStyle = value
+            if value == "clean" then
                 p.absorbOpacity = 30
-            elseif v ~= "blizzardModern" then
+            elseif value ~= "blizzardModern" then
                 p.absorbOpacity = 90
             end
             RFReload()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Textured Background cog: the Raid tab's row on the raid keys, as this card writes.
     local function RaidRead(key, default)
         local p = saved()
-        local v = p and p[key]
-        if v == nil then
+        local value = p and p[key]
+        if value == nil then
             return default
         end
-        return v
+        return value
     end
-    local function RaidWrite(key, v)
+    local function RaidWrite(key, value)
         local p = saved()
         if not p then
             return
         end
-        p[key] = v
+        p[key] = value
         if mod._BumpAbsorbGen then
             mod._BumpAbsorbGen()
         end
@@ -849,7 +849,7 @@ local function TileRaidFrames(hostFrame, posY, W, tile)
         local environ = mod._RFO_OptEnv
         return environ and environ.TexBgRowCfg(RaidRead, RaidWrite)
     end)
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Heal Absorb Style",
         values = absorbStyleValues,
@@ -858,13 +858,13 @@ local function TileRaidFrames(hostFrame, posY, W, tile)
             local p = saved()
             return (p and p.healAbsorbStyle) or "clean"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = saved()
             if not p then
                 return
             end
-            p.healAbsorbStyle = v
-            p.healAbsorbOpacity = (v == "clean") and 50 or 75
+            p.healAbsorbStyle = value
+            p.healAbsorbOpacity = (value == "clean") and 50 or 75
             RFReload()
         end,
     }, {
@@ -876,60 +876,60 @@ local function TileRaidFrames(hostFrame, posY, W, tile)
             local p = saved()
             return (p and p.maxHealthStyle) or "maxHealthStripes"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = saved()
             if not p then
                 return
             end
-            p.maxHealthStyle = v
+            p.maxHealthStyle = value
             RFReload()
         end,
     })
-    posY = posY - hgt
-    posY = LinkRow(
+    cursorY = cursorY - height
+    cursorY = LinkRow(
         hostFrame,
-        posY,
+        cursorY,
         "Party-Specific Textures",
         tile.folder,
         "Party",
         "HEALTH BAR",
         "Health Bar Texture"
     )
-    posY =
-        LinkRow(hostFrame, posY, "Frame Border Style", tile.folder, "Frames", "FRAME DISPLAY", "Border Style")
-    return posY
+    cursorY =
+        LinkRow(hostFrame, cursorY, "Frame Border Style", tile.folder, "Frames", "FRAME DISPLAY", "Border Style")
+    return cursorY
 end
 
-local function TileCooldownManager(hostFrame, posY, W, tile)
+local function TileCooldownManager(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then
-        return DisabledTile(hostFrame, posY, W, tile)
+        return DisabledTile(hostFrame, cursorY, W, tile)
     end
-    posY = LinkRow(
+    cursorY = LinkRow(
         hostFrame,
-        posY,
+        cursorY,
         "Tracking Bar Texture & Border (per bar)",
         tile.folder,
         "Tracking Bars",
         "BAR LAYOUT",
         "Bar Texture"
     )
-    posY = LinkRow(
+    cursorY = LinkRow(
         hostFrame,
-        posY,
+        cursorY,
         "Icon Border Styles (per bar)",
         tile.folder,
         "CDM Bars",
         "ICON DISPLAY",
         "Border Style"
     )
-    return posY
+    return cursorY
 end
 
-local function TileResourceBars(hostFrame, posY, W, tile)
+local function TileResourceBars(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then
-        return DisabledTile(hostFrame, posY, W, tile)
+        return DisabledTile(hostFrame, cursorY, W, tile)
     end
     local function saved()
         return _G._CURB_AceDB and _G._CURB_AceDB.profile
@@ -965,7 +965,7 @@ local function TileResourceBars(hostFrame, posY, W, tile)
     -- page's cached build when that starts or ends, so reading the flag at build time holds.
     local p0 = saved()
     local split = p0 and p0.splitTex == true
-    local barTexRow, hgt = W:DualRow(hostFrame, posY, {
+    local barTexRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Bar Texture",
         values = barValues,
@@ -976,12 +976,12 @@ local function TileResourceBars(hostFrame, posY, W, tile)
             local p = saved()
             return (p and p.general and p.general.barTexture) or "none"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = saved()
             if not (p and p.general) then
                 return
             end
-            p.general.barTexture = v
+            p.general.barTexture = value
             RBApply()
         end,
     }, {
@@ -993,19 +993,19 @@ local function TileResourceBars(hostFrame, posY, W, tile)
             local p = saved()
             return (p and p.castBar and p.castBar.texture) or "none"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = saved()
             if not (p and p.castBar) then
                 return
             end
-            p.castBar.texture = v
+            p.castBar.texture = value
             RBApply()
             if CludesUI.NotifyElementResized then
                 CludesUI.NotifyElementResized("ERB_CastBar")
             end
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Textured Background cogs.
     local environ = mod._CURB_OptEnv
     local function Row(kind)
@@ -1017,15 +1017,15 @@ local function TileResourceBars(hostFrame, posY, W, tile)
     TexBgCog(barTexRow._rightRegion, Row("cast"), "castbar")
     if split then
         local function BarRow(textValue, barId)
-            local v, o =
+            local value, o =
                 CopyBarDD(_G._CURB_BarTextureNames, _G._CURB_BarTextureOrder, _G._CURB_BarTextures, false)
-            v.__match = "Match Main Texture"
+            value.__match = "Match Main Texture"
             table.insert(o, 1, "---")
             table.insert(o, 1, "__match")
             return {
                 type = "dropdown",
                 text = textValue,
-                values = v,
+                values = value,
                 order = o,
                 getValue = function()
                     local p = saved()
@@ -1046,16 +1046,16 @@ local function TileResourceBars(hostFrame, posY, W, tile)
             }
         end
         local _
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             BarRow("Health Bar Texture", "health"),
             BarRow("Power Bar Texture", "primary")
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
     local gcdTexRow
-    gcdTexRow, hgt = W:DualRow(hostFrame, posY, {
+    gcdTexRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "GCD Bar Texture",
         values = gcdValues,
@@ -1064,36 +1064,36 @@ local function TileResourceBars(hostFrame, posY, W, tile)
             local p = saved()
             return (p and p.gcdBar and p.gcdBar.texture) or "none"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = saved()
             if not (p and p.gcdBar) then
                 return
             end
-            p.gcdBar.texture = v
+            p.gcdBar.texture = value
             RBApply()
             if CludesUI.NotifyElementResized then
                 CludesUI.NotifyElementResized("ERB_GCDBar")
             end
         end,
     }, BLANK())
-    posY = posY - hgt
+    cursorY = cursorY - height
     TexBgCog(gcdTexRow._leftRegion, Row("gcd"))
-    posY = LinkRow(
+    cursorY = LinkRow(
         hostFrame,
-        posY,
+        cursorY,
         "Border Styles (per bar)",
         tile.folder,
         "Class, Power and Health Bars",
         nil,
         "Border Style"
     )
-    return posY
+    return cursorY
 end
 
-local function TileChat(hostFrame, posY, W, tile)
+local function TileChat(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then
-        return DisabledTile(hostFrame, posY, W, tile)
+        return DisabledTile(hostFrame, cursorY, W, tile)
     end
     local CHAT = mod.ECHAT
     local function saved()
@@ -1106,7 +1106,7 @@ local function TileChat(hostFrame, posY, W, tile)
     if BS and BS.Get("chat") then
         return NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf(
                 "%1$s is active: chat keeps Blizzard's own background and tab art.",
                 CludesUI.L(BS.Label("chat"))
@@ -1121,7 +1121,7 @@ local function TileChat(hostFrame, posY, W, tile)
         CopyBarDD(mod.chatBgTextureNames, mod.chatBgTextureOrder, mod.chatBgTextures, true)
     local tabValues, tabOrder =
         CopyBarDD(mod.chatBgTextureNames, mod.chatBgTextureOrder, mod.chatBgTextures, true)
-    local _, hgt = W:DualRow(hostFrame, posY, {
+    local _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Background Texture",
         values = btValues,
@@ -1131,12 +1131,12 @@ local function TileChat(hostFrame, posY, W, tile)
             local p = saved()
             return (p and p.bgTexture) or "none"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = saved()
             if not p then
                 return
             end
-            p.bgTexture = v
+            p.bgTexture = value
             if CHAT and CHAT.ApplyBackground then
                 CHAT.ApplyBackground()
             end
@@ -1151,27 +1151,27 @@ local function TileChat(hostFrame, posY, W, tile)
             local p = saved()
             return (p and p.tabBackgroundTexture) or "none"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = saved()
             if not p then
                 return
             end
-            p.tabBackgroundTexture = v
+            p.tabBackgroundTexture = value
             if CHAT and CHAT.ApplyTabAppearance then
                 CHAT.ApplyTabAppearance()
             end
         end,
     })
-    posY = posY - hgt
-    posY =
-        LinkRow(hostFrame, posY, "Panel & Tab Border Styles", tile.folder, "Chat", "DISPLAY", "Border Style")
-    return posY
+    cursorY = cursorY - height
+    cursorY =
+        LinkRow(hostFrame, cursorY, "Panel & Tab Border Styles", tile.folder, "Chat", "DISPLAY", "Border Style")
+    return cursorY
 end
 
-local function TileQoL(hostFrame, posY, W, tile)
+local function TileQoL(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then
-        return DisabledTile(hostFrame, posY, W, tile)
+        return DisabledTile(hostFrame, cursorY, W, tile)
     end
     -- Movement alert bar texture: module-owned registered tables.
     local mt = CludesUI._MovementBarTextures
@@ -1190,13 +1190,13 @@ local function TileQoL(hostFrame, posY, W, tile)
                 local ma = d and d.profile and d.profile.movementAlert
                 return (ma and ma.barTexture) or "none"
             end,
-            setValue = function(v)
+            setValue = function(value)
                 local d = _G._CUI_MovementAlert_DB and _G._CUI_MovementAlert_DB()
                 local ma = d and d.profile and d.profile.movementAlert
                 if not ma then
                     return
                 end
-                ma.barTexture = v
+                ma.barTexture = value
                 if CludesUI._applyMovementAlert then
                     CludesUI._applyMovementAlert()
                 end
@@ -1232,12 +1232,12 @@ local function TileQoL(hostFrame, posY, W, tile)
             local p = cursorDB()
             return (p and p.texture) or "ring_normal"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = cursorDB()
             if not p then
                 return
             end
-            p.texture = v
+            p.texture = value
             if _G._CUCL_Apply then
                 _G._CUCL_Apply()
             end
@@ -1261,13 +1261,13 @@ local function TileQoL(hostFrame, posY, W, tile)
             local g = p and p.gcd
             return (g and g.ringTex) or "light"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = cursorDB()
             local g = p and p.gcd
             if not g then
                 return
             end
-            g.ringTex = v
+            g.ringTex = value
             if _G._CUCL_ApplyGCDCircle then
                 _G._CUCL_ApplyGCDCircle()
             end
@@ -1286,13 +1286,13 @@ local function TileQoL(hostFrame, posY, W, tile)
             local c = p and p.castCircle
             return (c and c.ringTex) or "normal"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = cursorDB()
             local c = p and p.castCircle
             if not c then
                 return
             end
-            c.ringTex = v
+            c.ringTex = value
             if _G._CUCL_ApplyCastCircle then
                 _G._CUCL_ApplyCastCircle()
             end
@@ -1302,17 +1302,17 @@ local function TileQoL(hostFrame, posY, W, tile)
         end,
     }
 
-    local _, hgt = W:DualRow(hostFrame, posY, maCfg or BLANK(), cursorCfg)
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, gcdRingCfg, castRingCfg)
-    posY = posY - hgt
-    return posY
+    local _, height = W:DualRow(hostFrame, cursorY, maCfg or BLANK(), cursorCfg)
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, gcdRingCfg, castRingCfg)
+    cursorY = cursorY - height
+    return cursorY
 end
 
-local function TileMythicTimer(hostFrame, posY, W, tile)
+local function TileMythicTimer(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then
-        return DisabledTile(hostFrame, posY, W, tile)
+        return DisabledTile(hostFrame, cursorY, W, tile)
     end
     local function saved()
         return _G._CUMT_AceDB and _G._CUMT_AceDB.profile
@@ -1336,12 +1336,12 @@ local function TileMythicTimer(hostFrame, posY, W, tile)
                 local p = saved()
                 return (p and p[key]) or "none"
             end,
-            setValue = function(v)
+            setValue = function(value)
                 local p = saved()
                 if not p then
                     return
                 end
-                p[key] = v
+                p[key] = value
                 MTApply()
             end,
         }
@@ -1356,12 +1356,12 @@ local function TileMythicTimer(hostFrame, posY, W, tile)
                 local t = getT()
                 return (t and t.texture) or "none"
             end,
-            setValue = function(v)
+            setValue = function(value)
                 local t = getT()
                 if not t then
                     return
                 end
-                t.texture = v
+                t.texture = value
                 local func = mod[applyName]
                 if func then
                     func()
@@ -1387,41 +1387,41 @@ local function TileMythicTimer(hostFrame, posY, W, tile)
         local p = saved()
         return p and p.kickTracker
     end
-    local _, hgt = W:DualRow(
+    local _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         texCfg("Timer Bar Texture", "barTexture"),
         texCfg("Timer Background Texture", "barBgTexture")
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         texCfg("Forces Bar Texture", "enemyBarTexture"),
         texCfg("Forces Background Texture", "enemyBarBgTexture")
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         subTexCfg("Cast Bars Texture", tsb, "TSB_Refresh"),
         subTexCfg("Target Cast Bar Texture", tfbT, "TFB_Refresh")
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         subTexCfg("Focus Cast Bar Texture", tfbF, "TFB_Refresh"),
         subTexCfg("Kick Tracker Bar Texture", kt, "KT_Refresh")
     )
-    posY = posY - hgt
-    return posY
+    cursorY = cursorY - height
+    return cursorY
 end
 
-local function TileDamageMeters(hostFrame, posY, W, tile)
+local function TileDamageMeters(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then
-        return DisabledTile(hostFrame, posY, W, tile)
+        return DisabledTile(hostFrame, cursorY, W, tile)
     end
     local function saved()
         return _G._CUDM_DB and _G._CUDM_DB.profile and _G._CUDM_DB.profile.dm
@@ -1441,7 +1441,7 @@ local function TileDamageMeters(hostFrame, posY, W, tile)
     matchValues.match = "Match Damage Meters"
     table.insert(matchOrder, 1, "---")
     table.insert(matchOrder, 1, "match")
-    local _, hgt = W:DualRow(hostFrame, posY, {
+    local _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Bar Texture",
         values = dmValues,
@@ -1450,12 +1450,12 @@ local function TileDamageMeters(hostFrame, posY, W, tile)
             local p = saved()
             return (p and p.barTexture) or "none"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = saved()
             if not p then
                 return
             end
-            p.barTexture = v
+            p.barTexture = value
             if mod.RefreshMeter then
                 mod.RefreshMeter()
             end
@@ -1472,19 +1472,19 @@ local function TileDamageMeters(hostFrame, posY, W, tile)
             local p = saved()
             return (p and p.breakdownBarTexture) or "match"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = saved()
             if not p then
                 return
             end
-            p.breakdownBarTexture = v
+            p.breakdownBarTexture = value
             if mod.RefreshMeter then
                 mod.RefreshMeter()
             end
         end,
     })
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, {
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Spell History Bar Texture",
         values = matchValues,
@@ -1494,7 +1494,7 @@ local function TileDamageMeters(hostFrame, posY, W, tile)
             local sh = p and p.spellHistory
             return (sh and sh.spellHistoryBarTexture) or "match"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = saved()
             if not p then
                 return
@@ -1502,50 +1502,50 @@ local function TileDamageMeters(hostFrame, posY, W, tile)
             if not p.spellHistory then
                 p.spellHistory = {}
             end
-            p.spellHistory.spellHistoryBarTexture = v
+            p.spellHistory.spellHistoryBarTexture = value
             if mod.ApplySpellHistory then
                 mod.ApplySpellHistory()
             end
         end,
     }, BLANK())
-    posY = posY - hgt
-    posY = LinkRow(
+    cursorY = cursorY - height
+    cursorY = LinkRow(
         hostFrame,
-        posY,
+        cursorY,
         "Window & Bar Border Styles",
         tile.folder,
         "Damage Meters",
         nil,
         "Border Style"
     )
-    return posY
+    return cursorY
 end
 
-local function TileDataBars(hostFrame, posY, W, tile)
+local function TileDataBars(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then
-        return DisabledTile(hostFrame, posY, W, tile)
+        return DisabledTile(hostFrame, cursorY, W, tile)
     end
-    posY = LinkRow(
+    cursorY = LinkRow(
         hostFrame,
-        posY,
+        cursorY,
         "Bar Texture (per data bar)",
         tile.folder,
         "Info Bar",
         "BAR SETTINGS",
         "Bar Texture"
     )
-    return posY
+    return cursorY
 end
 
-local function TileBlizzardSkin(hostFrame, posY, W, tile)
+local function TileBlizzardSkin(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then
-        return DisabledTile(hostFrame, posY, W, tile)
+        return DisabledTile(hostFrame, cursorY, W, tile)
     end
     local category = OwnBarCatalogue("edr", nil)
     local values, sequence = CopyBarDD(category.names, category.order, category.lookup, true)
-    local _, hgt = W:DualRow(hostFrame, posY, {
+    local _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Dragonriding Bar Texture",
         values = values,
@@ -1554,37 +1554,37 @@ local function TileBlizzardSkin(hostFrame, posY, W, tile)
             local p = mod.edrDB and mod.edrDB.profile
             return (p and p.barTexture) or "none"
         end,
-        setValue = function(v)
+        setValue = function(value)
             local p = mod.edrDB and mod.edrDB.profile
             if not p then
                 return
             end
-            p.barTexture = v
+            p.barTexture = value
             if mod.edrRedraw then
                 mod.edrRedraw()
             end
         end,
     }, BLANK())
-    posY = posY - hgt
-    posY = LinkRow(
+    cursorY = cursorY - height
+    cursorY = LinkRow(
         hostFrame,
-        posY,
+        cursorY,
         "Popup & Tooltip Border Styles",
         tile.folder,
         "Tooltips, Menus & Popups",
         nil,
         "Border Style"
     )
-    return posY
+    return cursorY
 end
 
-local function TileMinimap(hostFrame, posY, W, tile)
+local function TileMinimap(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     if not mod then
-        return DisabledTile(hostFrame, posY, W, tile)
+        return DisabledTile(hostFrame, cursorY, W, tile)
     end
-    posY = LinkRow(hostFrame, posY, "Minimap Border Style", tile.folder, "Minimap", "DISPLAY", "Border Style")
-    return posY
+    cursorY = LinkRow(hostFrame, cursorY, "Minimap Border Style", tile.folder, "Minimap", "DISPLAY", "Border Style")
+    return cursorY
 end
 
 -------------------------------------------------------------------------------
@@ -1633,8 +1633,8 @@ end
 
 local TX_GLYPH_TEX = "Interface\\AddOns\\CludesUI\\media\\textures\\melli.tga"
 
-local function BuildTexCard(hostFrame, posY, W, tile)
-    return CludesUI.BuildModuleCard(hostFrame, posY, W, tile, {
+local function BuildTexCard(hostFrame, cursorY, W, tile)
+    return CludesUI.BuildModuleCard(hostFrame, cursorY, W, tile, {
         enabled = NS(tile.folder) ~= nil,
         expanded = _txExpanded,
         descW = 560,
@@ -1692,8 +1692,8 @@ end
 function _G._CUI_BuildTexturesPage(page, hostFrame, yOffset)
     local W = CludesUI.Widgets
     local Pix = CludesUI.PanelPP
-    local posY = yOffset
-    local _, hgt
+    local cursorY = yOffset
+    local _, height
 
     hostFrame._showRowDivider = true
 
@@ -1706,7 +1706,7 @@ function _G._CUI_BuildTexturesPage(page, hostFrame, yOffset)
     Pix.Size(introHost, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, 44)
     -- 10px breathing room above; the host's slack below is trimmed the same
     -- amount so the section title sits tighter under the text.
-    introHost:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY - 20)
+    introHost:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY - 20)
     local intro = CludesUI.MakeFont(introHost, 14, nil, 1, 1, 1, 0.65)
     intro:SetPoint("TOPLEFT", introHost, "TOPLEFT", 0, -2)
     intro:SetPoint("TOPRIGHT", introHost, "TOPRIGHT", 0, -2)
@@ -1717,15 +1717,15 @@ function _G._CUI_BuildTexturesPage(page, hostFrame, yOffset)
             .. "\n"
             .. CludesUI.L("These are the same settings found on each module's own pages, not separate ones.")
     )
-    posY = posY - 48
+    cursorY = cursorY - 48
 
-    _, hgt = W:SectionHeader(hostFrame, "MODULE TEXTURES", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "MODULE TEXTURES", cursorY)
+    cursorY = cursorY - height
 
     for _, tile in ipairs(BuildTileList()) do
-        posY = BuildTexCard(hostFrame, posY, W, tile)
+        cursorY = BuildTexCard(hostFrame, cursorY, W, tile)
     end
 
     -- Framework contract: return the positive total content height.
-    return math.abs(posY)
+    return math.abs(cursorY)
 end

@@ -52,9 +52,9 @@ CludesUI.AtOptionsLogin(function()
     -- { values, order } for a dropdown, from one of the module's {id, label} lists.
     local function Choices(entries)
         local values, sequence = {}, {}
-        for _, item in ipairs(entries) do
-            values[item.id] = item.label
-            sequence[#sequence + 1] = item.id
+        for _, entry in ipairs(entries) do
+            values[entry.id] = entry.label
+            sequence[#sequence + 1] = entry.id
         end
         return values, sequence
     end
@@ -121,13 +121,13 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     local function BuildFramePage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
 
         CludesUI:ClearContentHeader()
 
-        _, hgt = W:SectionHeader(hostFrame, "TEXT", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "TEXT", cursorY)
+        cursorY = cursorY - height
 
         local fontValues, fontOrder = { [GLOBAL_FONT] = "CludesUI Global Font" }, { GLOBAL_FONT }
         for _, f in ipairs(mod.FontList()) do
@@ -135,7 +135,7 @@ CludesUI.AtOptionsLogin(function()
             fontOrder[#fontOrder + 1] = f.id
         end
         local flagValues, flagOrder = Choices(K.FONT_FLAGS)
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Font",
             values = fontValues,
@@ -161,11 +161,11 @@ CludesUI.AtOptionsLogin(function()
                 mod.RefreshAllFonts()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Slider(
                 "Name Size",
                 "nameFontSize",
@@ -185,22 +185,22 @@ CludesUI.AtOptionsLogin(function()
                 mod.RefreshAllFonts
             )
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Colour("Name Colour", "nameTextColor", mod.RefreshAllFonts),
             Colour("Health Text Colour", "hpTextColor", mod.RefreshAllFonts)
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "FRAME SIZE", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "FRAME SIZE", cursorY)
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Slider("Width", "frameWidth", K.DEFAULT_WIDTH, K.MIN_WIDTH, K.MAX_WIDTH, 5, function(val)
                 local f = Frame()
                 if f and not InCombatLockdown() then
@@ -217,13 +217,13 @@ CludesUI.AtOptionsLogin(function()
                 mod.RestyleAuraButtons()
             end)
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "CO-TANK DEBUFFS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "CO-TANK DEBUFFS", cursorY)
+        cursorY = cursorY - height
 
         local filterValues, filterOrder = Choices(K.DEBUFF_FILTER_MODES)
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Co-Tank Debuffs",
             tooltip = "The row of harmful effects on your co-tank.",
@@ -249,11 +249,11 @@ CludesUI.AtOptionsLogin(function()
                 mod.RefreshDebuffFilter()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Slider(
                 "Debuff Icons",
                 "maxDebuffs",
@@ -281,11 +281,11 @@ CludesUI.AtOptionsLogin(function()
                 mod.RefreshDebuffSpacing
             )
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Slider(
                 "Highlight at Stacks",
                 "stackHighlightAt",
@@ -298,11 +298,11 @@ CludesUI.AtOptionsLogin(function()
             ),
             Colour("Highlight Colour", "stackHighlightColor", IconsChanged)
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Toggle(
                 "Alert Text at That Stack Count",
                 "stackBanner",
@@ -311,11 +311,11 @@ CludesUI.AtOptionsLogin(function()
             ),
             Toggle("Colour Borders by Debuff Type", "debuffTypeBorders", IconsChanged)
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Toggle("Hide Icon Tooltips in Combat", "hideTooltipsInCombat", IconsChanged),
             Slider(
                 "Defensive Icons",
@@ -336,15 +336,15 @@ CludesUI.AtOptionsLogin(function()
                 "Your co-tank's active defensive cooldowns. 0 hides the row."
             )
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "EXTERNALS ON YOU", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "EXTERNALS ON YOU", cursorY)
+        cursorY = cursorY - height
 
         local EXT = mod.EXT
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             {
                 type = "toggle",
                 text = "Show Externals on You",
@@ -368,11 +368,11 @@ CludesUI.AtOptionsLogin(function()
                 "How many externals the row can show at once. 0 hides it."
             )
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Slider("Icon Size", "extSize", EXT.DEFAULT_SIZE, EXT.MIN_SIZE, EXT.MAX_SIZE, 1, function()
                 mod.RefreshExternals()
                 mod.RestyleAuraButtons()
@@ -387,15 +387,15 @@ CludesUI.AtOptionsLogin(function()
                 mod.RefreshExternals
             )
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "ICON LABELS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "ICON LABELS", cursorY)
+        cursorY = cursorY - height
 
         local posValues, posOrder = Choices(K.STACK_COUNT_POSITIONS)
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Slider(
                 "Stack Count Size",
                 "stackCountSize",
@@ -420,11 +420,11 @@ CludesUI.AtOptionsLogin(function()
                 end,
             }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Slider(
                 "Stack Count Nudge X",
                 "stackCountNudgeX",
@@ -444,11 +444,11 @@ CludesUI.AtOptionsLogin(function()
                 mod.RefreshAllIconSettings
             )
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             {
                 type = "segmented",
                 text = "Timer Position",
@@ -473,11 +473,11 @@ CludesUI.AtOptionsLogin(function()
                 "0 hides the timer on the icon. 10 is full size."
             )
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Slider(
                 "Above-Icon Timer Size",
                 "timerTextSize",
@@ -489,23 +489,23 @@ CludesUI.AtOptionsLogin(function()
             ),
             EMPTY
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Colour("Stack Count Colour", "stackCountColor", mod.RefreshAllFonts),
             Colour("Timer Colour", "timerTextColor", mod.RefreshAllFonts)
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "PRIVATE AURAS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "PRIVATE AURAS", cursorY)
+        cursorY = cursorY - height
 
         local growValues, growOrder = Choices(K.PRIVATE_AURA_GROW_DIRECTIONS)
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Slider(
                 "Private Aura Slots",
                 "maxPrivateAuras",
@@ -540,11 +540,11 @@ CludesUI.AtOptionsLogin(function()
                 end
             )
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             {
                 type = "dropdown",
                 text = "Grow Direction",
@@ -568,11 +568,11 @@ CludesUI.AtOptionsLogin(function()
                 mod.RefreshPrivateAuraSpacing
             )
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Slider(
                 "Border Scale",
                 "privateAuraBorderScale",
@@ -593,9 +593,9 @@ CludesUI.AtOptionsLogin(function()
                 mod.RefreshPrivateAuraGrow
             )
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     ---------------------------------------------------------------------------
@@ -607,12 +607,12 @@ CludesUI.AtOptionsLogin(function()
     end
 
     -- One alert: a switch on the left, its stack threshold on the right.
-    local function AlertRow(W, hostFrame, posY, labelText, key, tooltip)
+    local function AlertRow(W, hostFrame, cursorY, labelText, key, tooltip)
         local function Entry()
             local alerts = DB().spellAlerts
             return alerts and alerts[key]
         end
-        local _, hgt = W:DualRow(hostFrame, posY, {
+        local _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = labelText,
             tooltip = tooltip,
@@ -644,22 +644,22 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         })
-        return hgt
+        return height
     end
 
     local function BuildAlertsPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
         local saved = DB()
 
         CludesUI:ClearContentHeader()
         mod.SpellData.SeedDefaults(saved)
 
-        _, hgt = W:SectionHeader(hostFrame, "ALERT", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "ALERT", cursorY)
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "input",
             text = "Alert Text",
             inputWidth = 170,
@@ -684,9 +684,9 @@ CludesUI.AtOptionsLogin(function()
                 mod.Alert:SetTextSize(Round(val))
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "labeledButton",
             text = "Try the Alert",
             buttonText = "Test",
@@ -723,16 +723,16 @@ CludesUI.AtOptionsLogin(function()
                 Rebuild()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         local custom = mod.SpellData.CustomAlerts(saved)
         if #custom > 0 then
-            _, hgt = W:SectionHeader(hostFrame, "YOUR ALERTS", posY)
-            posY = posY - hgt
+            _, height = W:SectionHeader(hostFrame, "YOUR ALERTS", cursorY)
+            cursorY = cursorY - height
             for _, record in ipairs(custom) do
                 local name = mod.Alert.SpellName(record.id) or ("Spell " .. record.id)
-                posY = posY - AlertRow(W, hostFrame, posY, name, record.key, "Spell ID " .. record.id)
-                _, hgt = W:DualRow(hostFrame, posY, {
+                cursorY = cursorY - AlertRow(W, hostFrame, cursorY, name, record.key, "Spell ID " .. record.id)
+                _, height = W:DualRow(hostFrame, cursorY, {
                     type = "labeledButton",
                     text = "Remove " .. name,
                     buttonText = "Remove",
@@ -746,21 +746,21 @@ CludesUI.AtOptionsLogin(function()
                         Rebuild()
                     end,
                 }, EMPTY)
-                posY = posY - hgt
+                cursorY = cursorY - height
             end
         end
 
         for _, raid in ipairs(mod.SpellData.raids) do
-            _, hgt = W:SectionHeader(hostFrame, raid.name:upper(), posY)
-            posY = posY - hgt
+            _, height = W:SectionHeader(hostFrame, raid.name:upper(), cursorY)
+            cursorY = cursorY - height
             for _, boss in ipairs(raid.bosses) do
                 for _, spell in ipairs(boss.spells) do
                     local labelText = boss.name .. ": " .. spell.name
-                    posY = posY
+                    cursorY = cursorY
                         - AlertRow(
                             W,
                             hostFrame,
-                            posY,
+                            cursorY,
                             labelText,
                             spell.id,
                             (spell.note and (spell.note .. ". ") or "") .. "Spell ID " .. spell.id
@@ -769,7 +769,7 @@ CludesUI.AtOptionsLogin(function()
             end
         end
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     ---------------------------------------------------------------------------
@@ -777,15 +777,15 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     local function BuildToolsPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
 
         CludesUI:ClearContentHeader()
 
-        _, hgt = W:SectionHeader(hostFrame, "FRAME", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "FRAME", cursorY)
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Test Mode",
             tooltip = "Shows the frame on yourself with sample debuffs, so you can set it up without a co-tank. Not available in combat.",
@@ -813,9 +813,9 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Click-Through",
             tooltip = "The frame ignores the mouse. Not available in combat.",
@@ -846,17 +846,17 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "CO-TANK", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "CO-TANK", cursorY)
+        cursorY = cursorY - height
 
         local pinned = DB().pinnedTank
         local found = mod.FindCoTank()
         local foundName = found and UnitName(found)
         local status = pinned and ("Pinned: " .. pinned)
             or ("Auto-detect: " .. ((type(foundName) == "string" and foundName) or "none found"))
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "input",
             text = "Pin a Co-Tank by Name",
             inputWidth = 170,
@@ -889,9 +889,9 @@ CludesUI.AtOptionsLogin(function()
                 Rebuild()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     ---------------------------------------------------------------------------

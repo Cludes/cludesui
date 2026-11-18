@@ -570,7 +570,7 @@ local SLOT_KEYS = {
     unitframes = {
         stamps = { "stockCastTextureSeeded", "classicTextureSeeded", "stockCombatSeededStyle" },
         keys = function()
-            local k = {
+            local keyName = {
                 "castBarTexture",
                 "healthBarTexture",
                 "player.combatIndicatorStyle",
@@ -580,10 +580,10 @@ local SLOT_KEYS = {
             local units = uf and uf.UF_TEXTURE_UNITS
             if units then
                 for idx = 1, #units do
-                    k[#k + 1] = units[idx] .. ".healthBarTexture"
+                    keyName[#keyName + 1] = units[idx] .. ".healthBarTexture"
                 end
             end
-            return k
+            return keyName
         end,
         seededBy = function(key)
             if key == "castBarTexture" then
@@ -956,10 +956,10 @@ local function SwapSlots(m, p, specInfo, from, to)
                 base = {}
                 local by = specInfo.seededBy
                 for idx = 1, #keyList do
-                    local k = keyList[idx]
-                    local st = by and by(k)
+                    local keyName = keyList[idx]
+                    local st = by and by(keyName)
                     if not (st == true or (st and PathGet(p, st))) then
-                        base[k] = PathGet(p, k)
+                        base[keyName] = PathGet(p, keyName)
                     end
                 end
                 slots.cui = base
@@ -1030,10 +1030,10 @@ local function InferredStockStyle()
     for idx = 1, #MODULES do
         local m = MODULES[idx]
         if NS(m.folder) ~= nil then
-            local k = BaseKey(m.get())
-            if k == "blizzard" then
+            local keyName = BaseKey(m.get())
+            if keyName == "blizzard" then
                 b = b + 1
-            elseif k == "classic" then
+            elseif keyName == "classic" then
                 c = c + 1
             end
         end
@@ -1214,21 +1214,21 @@ end
 -- The rendered style never changes during a session, so gating a row is a
 -- build-time decision: when a stock style is active the row is disabled
 -- with the standard requirement tooltip naming it. Returns cfg for inline use.
-function BlizzStyle.Gate(key, conf, keepRow)
-    if not conf or not BlizzStyle.Get(key) then
-        return conf
+function BlizzStyle.Gate(key, rowConf, keepRow)
+    if not rowConf or not BlizzStyle.Get(key) then
+        return rowConf
     end
-    conf.disabled = function()
+    rowConf.disabled = function()
         return true
     end
-    conf.disabledTooltip = BlizzStyle.Label(key)
-    conf.requireState = "disabled"
-    conf.rawTooltip = nil
-    conf._blizzGated = true
+    rowConf.disabledTooltip = BlizzStyle.Label(key)
+    rowConf.requireState = "disabled"
+    rowConf.rawTooltip = nil
+    rowConf._blizzGated = true
     -- keepRow: an inline control hung on this slot (a cog) still works under
     -- the style, so the row must stay on the page even if fully gated.
-    conf._blizzKeepRow = keepRow or nil
-    return conf
+    rowConf._blizzKeepRow = keepRow or nil
+    return rowConf
 end
 
 -- Classic WoW UI: a bar's Border Size slider, which sizes the vanilla frame
@@ -1260,21 +1260,21 @@ end
 -- A slot's gate state: nil = blank (no control: nil, spacer, empty label),
 -- true = gated for the active style (a multiSwatch counts when every swatch
 -- is), false = a live control.
-local function SlotGated(conf)
-    if not conf then
+local function SlotGated(rowConf)
+    if not rowConf then
         return nil
     end
-    local t = conf.type
-    if t == "spacer" or (t == "label" and (conf.text == nil or conf.text == "")) then
+    local t = rowConf.type
+    if t == "spacer" or (t == "label" and (rowConf.text == nil or rowConf.text == "")) then
         return nil
     end
-    if conf._blizzGated then
+    if rowConf._blizzGated then
         return true
     end
-    if t == "multiSwatch" and conf.swatches then
-        local num = #conf.swatches
+    if t == "multiSwatch" and rowConf.swatches then
+        local num = #rowConf.swatches
         for idx = 1, num do
-            if not conf.swatches[idx]._blizzGated then
+            if not rowConf.swatches[idx]._blizzGated then
                 return false
             end
         end
@@ -1324,22 +1324,22 @@ end
 -- Banner row under a section header: explains why rows are disabled and
 -- links back to the Style page. Adds nothing (returns y unchanged) while
 -- the module renders the CludesUI look, so existing pages are untouched.
-function BlizzStyle.Note(hostFrame, posY, key)
+function BlizzStyle.Note(hostFrame, cursorY, key)
     local m = BY_KEY[key]
     -- The latched rendering state, like Gate: a profile whose flags differ
     -- from the running look (reload declined) must not banner live rows.
     if not m or m.active() == "cui" then
-        return posY
+        return cursorY
     end
     local ROW_H = 40
     -- The search prebuild only indexes rows: same y advance, no frames.
     if CludesUI._prebuilding then
-        return posY - ROW_H
+        return cursorY - ROW_H
     end
     local Pix = CludesUI.PanelPP
     local row = CreateFrame("Frame", nil, hostFrame)
     Pix.Size(row, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, ROW_H)
-    Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY)
+    Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
     row._skipRowDivider = true
     CludesUI.RowBg(row, hostFrame)
 
@@ -1363,7 +1363,7 @@ function BlizzStyle.Note(hostFrame, posY, key)
     CludesUI.MakeStyledButton(button, "Open Style", 11, CludesUI.WB_COLOURS, function()
         CludesUI:NavigateToElementSettings(GLOBAL_KEY, PAGE_STYLE)
     end)
-    return posY - ROW_H
+    return cursorY - ROW_H
 end
 
 -- Reload prompt: the flags are written only on confirm, right before the
@@ -1426,7 +1426,7 @@ end
 
 function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
     local Pix = CludesUI.PanelPP
-    local posY = yOffset
+    local cursorY = yOffset
 
     -- Header: the first-install picker's look cards (three; four with WoW
     -- Forever on that client; CludesUI_StyleCards.lua), each one Apply
@@ -1448,7 +1448,7 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
         local ACC = CludesUI.CLUDES_GREEN
         local host = CreateFrame("Frame", nil, hostFrame)
         Pix.Size(host, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, HERO_H)
-        host:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY - 20)
+        host:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY - 20)
 
         local eyebrow = host:CreateFontString(nil, "OVERLAY")
         eyebrow:SetFont(FONT, 13, "")
@@ -1528,10 +1528,10 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
             local refreshers, applyBtn = {}, nil
             local function RefreshPicks()
                 -- A profile switch can make a pick match its module again.
-                for k, s in pairs(pending) do
-                    local m = BY_KEY[k]
+                for keyName, s in pairs(pending) do
+                    local m = BY_KEY[keyName]
                     if not m or s == m.get() then
-                        pending[k] = nil
+                        pending[keyName] = nil
                     end
                 end
                 for idx = 1, #refreshers do
@@ -1621,8 +1621,8 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
             end)
         end
     end
-    posY = posY - 20 - (hasHero and (HERO_H + 20) or 0)
+    cursorY = cursorY - 20 - (hasHero and (HERO_H + 20) or 0)
 
     -- Framework contract: return the positive total content height.
-    return math.abs(posY)
+    return math.abs(cursorY)
 end

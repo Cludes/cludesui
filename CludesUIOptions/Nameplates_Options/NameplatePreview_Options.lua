@@ -144,8 +144,8 @@ local function ChainPreview(cx)
                     end
                 end
             end
-            local k = #isShown
-            if k > 0 then
+            local keyName = #isShown
+            if keyName > 0 then
                 local s = DBVal(place .. "SlotElementSpacing")
                 if type(s) ~= "number" then
                     s = nil
@@ -170,7 +170,7 @@ local function ChainPreview(cx)
                 local centred = (place == "top" or place == "bottom")
                 local pivot = 1
                 if centred then
-                    for i = 1, k do
+                    for i = 1, keyName do
                         if isShown[i].row then
                             pivot = i
                             break
@@ -232,7 +232,7 @@ local function ChainPreview(cx)
                         end
                     end
                 end
-                for i = pivot + 1, k do
+                for i = pivot + 1, keyName do
                     Place(isShown[i], i - 1, Outer(isShown[i - 1], dir), dir)
                 end
                 if centred then
@@ -244,11 +244,11 @@ local function ChainPreview(cx)
                     end
                 end
                 if side then
-                    for i = k, 1, -1 do
+                    for i = keyName, 1, -1 do
                         local m = isShown[i]
-                        local posY, hgt = m.base, m.row and m.row.h or m.sz
-                        if posY < a1 and a0 < posY + hgt then
-                            cx.sideEnd[place] = { frame = Outer(m, dir), y = posY, h = hgt }
+                        local cursorY, height = m.base, m.row and m.row.h or m.sz
+                        if cursorY < a1 and a0 < cursorY + height then
+                            cx.sideEnd[place] = { frame = Outer(m, dir), y = cursorY, h = height }
                             break
                         end
                     end
@@ -778,9 +778,9 @@ local function BuildNameplatePreview(hostFrame, parentW)
     popFrame._totSampleColor = function(slotKey, r, g, b)
         if slotKey and mod.NP_SlotColorMode(slotKey, DB()) == "class" then
             local _, ct = UnitClass("player")
-            local cc = ct and CludesUI.GetClassColor(ct)
-            if cc then
-                return cc.r, cc.g, cc.b
+            local classColor = ct and CludesUI.GetClassColor(ct)
+            if classColor then
+                return classColor.r, classColor.g, classColor.b
             end
         end
         return r, g, b
@@ -1022,11 +1022,11 @@ local function BuildNameplatePreview(hostFrame, parentW)
         -- (ns.NP_ApplyForeverLevelBox), with a level 60 at an even match.
         if previewGlow.forever and success(B.lvlBg) then
             local L = mod.NP_FOREVER_LVL
-            local box = previewGlow.fvBox
-            if not box then
+            local boxFrame = previewGlow.fvBox
+            if not boxFrame then
                 -- The live box's own frame; the mock paints its text.
-                box = mod.NP_BuildForeverLevelBox(health)
-                local fontStr = box._fs
+                boxFrame = mod.NP_BuildForeverLevelBox(health)
+                local fontStr = boxFrame._fs
                 -- Font BEFORE any SetText: a FontString with no font raises.
                 SetPVFont(fontStr, FONT_PATH, L.font, GetNPOptOutline())
                 fontStr:SetText("60")
@@ -1036,23 +1036,23 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 else
                     fontStr:SetTextColor(1, 0.82, 0, 1)
                 end
-                if box._sel then
-                    box._sel:SetVertexColor(L.target[1], L.target[2], L.target[3])
+                if boxFrame._sel then
+                    boxFrame._sel:SetVertexColor(L.target[1], L.target[2], L.target[3])
                 end
-                previewGlow.fvBox = box
+                previewGlow.fvBox = boxFrame
                 -- Exposed for the click-navigation hit overlays (built
                 -- after the first pf:Update()); the overlay hides with it.
-                popFrame._fvLevelBox = box
+                popFrame._fvLevelBox = boxFrame
             end
             local bh = health:GetHeight() + L.pad
-            box:SetSize(L.w, bh)
-            SetPVFont(box._fs, FONT_PATH, mod.NP_ForeverLevelFont(bh), GetNPOptOutline())
+            boxFrame:SetSize(L.w, bh)
+            SetPVFont(boxFrame._fs, FONT_PATH, mod.NP_ForeverLevelFont(bh), GetNPOptOutline())
             -- Its target border rides the ring's preview toggle.
-            if box._sel then
-                box._sel:SetShown(optionState.showTargetGlowPreview and true or false)
+            if boxFrame._sel then
+                boxFrame._sel:SetShown(optionState.showTargetGlowPreview and true or false)
             end
             -- Show Level Box, as live.
-            box:SetShown(mod.NP_ForeverBoxOn())
+            boxFrame:SetShown(mod.NP_ForeverBoxOn())
         end
     end
     -- Classic WoW UI: the vanilla borders over the mock, as the live plates
@@ -1388,36 +1388,36 @@ local function BuildNameplatePreview(hostFrame, parentW)
         -- 1px edges and the inset are reset by every Update pass, so they are overridden
         -- on every pass.
         local function paint(f, enabled, lvlAdd, iconTex)
-            local cb = f._pvCustomBorder
+            local checkBtn = f._pvCustomBorder
             if enabled then
-                if not cb then
-                    cb = CreateFrame("Frame", nil, f)
-                    cb:SetAllPoints(f)
-                    f._pvCustomBorder = cb
+                if not checkBtn then
+                    checkBtn = CreateFrame("Frame", nil, f)
+                    checkBtn:SetAllPoints(f)
+                    f._pvCustomBorder = checkBtn
                 end
                 local lvl = f:GetFrameLevel() + lvlAdd
-                local es = cb:GetEffectiveScale()
+                local es = checkBtn:GetEffectiveScale()
                 if
-                    not cb:IsShown()
-                    or cb:GetFrameLevel() ~= lvl
-                    or cb._sES ~= es
-                    or cb._sMult ~= sMult
-                    or cb._sTex ~= sTex
-                    or cb._sPath ~= sPath
-                    or cb._sSz ~= sSz
-                    or cb._sPx ~= sPx
-                    or cb._sR ~= sR
-                    or cb._sG ~= sG
-                    or cb._sB ~= sB
-                    or cb._sA ~= sA
-                    or cb._sOX ~= sOX
-                    or cb._sOY ~= sOY
-                    or cb._sSX ~= sSX
-                    or cb._sSY ~= sSY
+                    not checkBtn:IsShown()
+                    or checkBtn:GetFrameLevel() ~= lvl
+                    or checkBtn._sES ~= es
+                    or checkBtn._sMult ~= sMult
+                    or checkBtn._sTex ~= sTex
+                    or checkBtn._sPath ~= sPath
+                    or checkBtn._sSz ~= sSz
+                    or checkBtn._sPx ~= sPx
+                    or checkBtn._sR ~= sR
+                    or checkBtn._sG ~= sG
+                    or checkBtn._sB ~= sB
+                    or checkBtn._sA ~= sA
+                    or checkBtn._sOX ~= sOX
+                    or checkBtn._sOY ~= sOY
+                    or checkBtn._sSX ~= sSX
+                    or checkBtn._sSY ~= sSY
                 then
-                    cb:SetFrameLevel(lvl)
+                    checkBtn:SetFrameLevel(lvl)
                     CludesUI.ApplyBorderStyle(
-                        cb,
+                        checkBtn,
                         sSz,
                         sR,
                         sG,
@@ -1433,15 +1433,15 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         nil,
                         sPx
                     )
-                    cb._sES, cb._sMult, cb._sTex, cb._sPath = es, sMult, sTex, sPath
-                    cb._sSz, cb._sPx = sSz, sPx
-                    cb._sR, cb._sG, cb._sB, cb._sA = sR, sG, sB, sA
-                    cb._sOX, cb._sOY, cb._sSX, cb._sSY = sOX, sOY, sSX, sSY
+                    checkBtn._sES, checkBtn._sMult, checkBtn._sTex, checkBtn._sPath = es, sMult, sTex, sPath
+                    checkBtn._sSz, checkBtn._sPx = sSz, sPx
+                    checkBtn._sR, checkBtn._sG, checkBtn._sB, checkBtn._sA = sR, sG, sB, sA
+                    checkBtn._sOX, checkBtn._sOY, checkBtn._sSX, checkBtn._sSY = sOX, sOY, sSX, sSY
                 end
                 local e = f._cuiIconEdges
                 if e then
-                    for k = 1, #e do
-                        e[k]:Hide()
+                    for keyName = 1, #e do
+                        e[keyName]:Hide()
                     end
                 end
                 if iconTex then
@@ -1449,10 +1449,10 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     iconTex:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
                     iconTex:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
                 end
-            elseif cb and cb:IsShown() then
+            elseif checkBtn and checkBtn:IsShown() then
                 -- Off through ApplyBorderStyle(frame, 0), so no UI scale re-apply revives it.
-                CludesUI.ApplyBorderStyle(cb, 0)
-                cb:Hide()
+                CludesUI.ApplyBorderStyle(checkBtn, 0)
+                checkBtn:Hide()
             end
         end
         previewGlow.iconBorders = function(customOn, showIcon)
@@ -1886,9 +1886,9 @@ local function BuildNameplatePreview(hostFrame, parentW)
         -- Here: text health+10/+11, auras +9, raised auras +13 (hit overlays +15).
         do
             local hl = health:GetFrameLevel()
-            for k = 1, 3 do
-                local entries = (k == 1 and debuffs) or (k == 2 and buffs) or ccs
-                local slotVal = (k == 1 and debuffSlotVal) or (k == 2 and buffSlotVal) or ccSlotVal
+            for keyName = 1, 3 do
+                local entries = (keyName == 1 and debuffs) or (keyName == 2 and buffs) or ccs
+                local slotVal = (keyName == 1 and debuffSlotVal) or (keyName == 2 and buffSlotVal) or ccSlotVal
                 local lvl = hl + ((slotVal ~= "none" and DBVal(slotVal .. "SlotRaiseStrata")) and 13 or 9)
                 for i = 1, #entries do
                     local f = entries[i]
@@ -1970,11 +1970,11 @@ local function BuildNameplatePreview(hostFrame, parentW)
         -- The full-size icon pushes an element beside it only where their spans
         -- meet, as live during a cast (ns.NP_FullIconPush; the preview always
         -- shows its cast bar): the element centres on the bar plus y, sz tall.
-        local function FullPush(side, posY, sz)
+        local function FullPush(side, cursorY, sz)
             if previewGlow.classic or not (showIcon and fullSize) or (side == "right") ~= onRight then
                 return 0
             end
-            local mid = barH / 2 + posY
+            local mid = barH / 2 + cursorY
             local castBottom = (DBVal("castBarOffsetY") or defaultSet.castBarOffsetY) - castH
             return mod.NP_MeetsFullIcon(mid - sz / 2, mid + sz / 2, barH, castBottom) and (barH + castH) or 0
         end
@@ -2201,17 +2201,17 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 end
             else
                 local posX = DBVal(place .. "SlotXOffset") or 0
-                local posY = DBVal(place .. "SlotYOffset") or 0
+                local cursorY = DBVal(place .. "SlotYOffset") or 0
                 local fontStr = qt.fs
                 local textSize = mod.NP_QuestTextSize(DB())
                 SetPVFont(fontStr, fontFile, textSize, npOutline)
                 local counterW = math.max(math.ceil(fontStr:GetStringWidth() or 0), 1)
                 local counterH = math.max(math.ceil(fontStr:GetStringHeight() or 0), 1)
-                local wid, hgt = counterW, counterH
+                local wid, height = counterW, counterH
                 if DBVal("showQuestObjectiveTypeIcon") == true then
                     local scale = DBVal("questObjectiveTypeIconScale") or 100
                     local textX, iconX, iconSize
-                    wid, hgt, textX, iconX, iconSize =
+                    wid, height, textX, iconX, iconSize =
                         mod.NP_QuestTypeIconLayout(counterW, counterH, textSize, scale)
                     local icon = qt.icon
                     if not icon then
@@ -2236,17 +2236,17 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         qt.icon:Hide()
                     end
                 end
-                f:SetSize(wid, hgt)
+                f:SetSize(wid, height)
                 if place == "top" then
-                    f:SetPoint("BOTTOM", health, "TOP", posX, debuffY + cpPush + posY)
+                    f:SetPoint("BOTTOM", health, "TOP", posX, debuffY + cpPush + cursorY)
                 elseif place == "left" then
                     local sideOff = DBVal("sideAuraXOffset") or defaultSet.sideAuraXOffset
                     f:SetPoint(
                         "RIGHT",
                         health,
                         "LEFT",
-                        -sideOff - castIconLeftPush - FullPush("left", posY, hgt) + posX,
-                        posY
+                        -sideOff - castIconLeftPush - FullPush("left", cursorY, height) + posX,
+                        cursorY
                     )
                 elseif place == "right" then
                     local sideOff = DBVal("sideAuraXOffset") or defaultSet.sideAuraXOffset
@@ -2254,8 +2254,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         "LEFT",
                         health,
                         "RIGHT",
-                        sideOff + castIconRightPush + FullPush("right", posY, hgt) + posX,
-                        posY
+                        sideOff + castIconRightPush + FullPush("right", cursorY, height) + posX,
+                        cursorY
                     )
                 elseif place == "topleft" then
                     f:SetPoint(
@@ -2263,7 +2263,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         health,
                         "TOPLEFT",
                         posX,
-                        2 + cpPush + mod.NP_TopCornerLift("topleft", DB()) + posY
+                        2 + cpPush + mod.NP_TopCornerLift("topleft", DB()) + cursorY
                     )
                 elseif place == "topright" then
                     f:SetPoint(
@@ -2271,12 +2271,12 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         health,
                         "TOPRIGHT",
                         posX,
-                        2 + cpPush + mod.NP_TopCornerLift("topright", DB()) + posY
+                        2 + cpPush + mod.NP_TopCornerLift("topright", DB()) + cursorY
                     )
                 elseif place == "bottom" then
-                    f:SetPoint("TOP", cast, "BOTTOM", posX, -2 + posY)
+                    f:SetPoint("TOP", cast, "BOTTOM", posX, -2 + cursorY)
                 end
-                qt.x, qt.y, qt.w, qt.h, qt.shown = posX, posY, wid, hgt, true
+                qt.x, qt.y, qt.w, qt.h, qt.shown = posX, cursorY, wid, height, true
                 f:Show()
             end
         end
@@ -2383,7 +2383,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         end
 
         -- Helper: position a health-related element in a bar slot
-        local function PlaceHealthInBar(element, anchor, point, xOff, yOff, fontSize, cr, cg, cb, slotKey)
+        local function PlaceHealthInBar(element, anchor, point, xOff, yOff, fontSize, cr, cg, checkBtn, slotKey)
             yOff = yOff or 0
             local namesUnit
             local dec = slotKey and DBVal(slotKey .. "PctDecimal") == true
@@ -2395,26 +2395,26 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         or (dec and pctStrDec or pctStr)
                 )
                 hpText:SetPoint(point, health, anchor, xOff, yOff)
-                hpText:SetTextColor(cr, cg, cb, 1)
+                hpText:SetTextColor(cr, cg, checkBtn, 1)
                 hpText:Show()
             elseif element == "healthNumber" then
                 SetPVFont(hpNumber, fontFile, fontSize, npOutline)
                 hpNumber:SetParent(healthTextFrame)
                 hpNumber:SetText(hpNumStr)
                 hpNumber:SetPoint(point, health, anchor, xOff, yOff)
-                hpNumber:SetTextColor(cr, cg, cb, 1)
+                hpNumber:SetTextColor(cr, cg, checkBtn, 1)
                 hpNumber:Show()
             elseif mod.IsComboHealthText(element) then
                 SetPVFont(hpText, fontFile, fontSize, npOutline)
                 hpText:SetParent(healthTextFrame)
                 mod.SetCombinedHealthText(hpText, element, dec and pctStrDec or pctStr, hpNumStr, hpMaxStr)
                 hpText:SetPoint(point, health, anchor, xOff, yOff)
-                hpText:SetTextColor(cr, cg, cb, 1)
+                hpText:SetTextColor(cr, cg, checkBtn, 1)
                 hpText:Show()
             elseif element == "level" or element == "targetOfTarget" then
                 local fontStr = (element == "level") and lvlText or popFrame._totFS
                 if fontStr ~= lvlText then
-                    cr, cg, cb = popFrame._totSampleColor(slotKey, cr, cg, cb)
+                    cr, cg, checkBtn = popFrame._totSampleColor(slotKey, cr, cg, checkBtn)
                 end
                 SetPVFont(fontStr, fontFile, fontSize, npOutline)
                 if fontStr ~= lvlText then
@@ -2422,7 +2422,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 end
                 fontStr:SetParent(healthTextFrame)
                 fontStr:SetPoint(point, health, anchor, xOff, yOff)
-                fontStr:SetTextColor(cr, cg, cb, 1)
+                fontStr:SetTextColor(cr, cg, checkBtn, 1)
                 fontStr:Show()
             elseif element == "custom" then
                 local fontStr = popFrame._customFS[slotKey]
@@ -2430,7 +2430,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 fontStr:SetParent(healthTextFrame)
                 namesUnit = popFrame._pvCustom(fontStr, slotKey)
                 fontStr:SetPoint(point, health, anchor, xOff, yOff)
-                fontStr:SetTextColor(cr, cg, cb, 1)
+                fontStr:SetTextColor(cr, cg, checkBtn, 1)
                 fontStr:Show()
             end
             -- Per-slot Width % + Wrap mirrors runtime. At 100% (default) the FontString stays UNCONSTRAINED (SetWidth 0): a width box on a single-point-anchored FontString ignores SetJustifyH and drifts to centre, so only impose one below 100%.
@@ -2474,7 +2474,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         end
 
         -- Helper: position a health-related element in the top slot
-        local function PlaceHealthOnTop(element, txOff, tyOff, fontSize, cr, cg, cb, slotKey)
+        local function PlaceHealthOnTop(element, txOff, tyOff, fontSize, cr, cg, checkBtn, slotKey)
             txOff = txOff or 0
             tyOff = tyOff or 0
             local namesUnit
@@ -2487,26 +2487,26 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 )
                 hpText:SetParent(topTextFrame)
                 hpText:SetPoint("BOTTOM", health, "TOP", txOff, 4 + nameYOff + cpPush + tyOff)
-                hpText:SetTextColor(cr, cg, cb, 1)
+                hpText:SetTextColor(cr, cg, checkBtn, 1)
                 hpText:Show()
             elseif element == "healthNumber" then
                 SetPVFont(hpNumber, fontFile, fontSize, npOutline)
                 hpNumber:SetText(hpNumStr)
                 hpNumber:SetParent(topTextFrame)
                 hpNumber:SetPoint("BOTTOM", health, "TOP", txOff, 4 + nameYOff + cpPush + tyOff)
-                hpNumber:SetTextColor(cr, cg, cb, 1)
+                hpNumber:SetTextColor(cr, cg, checkBtn, 1)
                 hpNumber:Show()
             elseif mod.IsComboHealthText(element) then
                 SetPVFont(hpText, fontFile, fontSize, npOutline)
                 mod.SetCombinedHealthText(hpText, element, dec and pctStrDec or pctStr, hpNumStr, hpMaxStr)
                 hpText:SetParent(topTextFrame)
                 hpText:SetPoint("BOTTOM", health, "TOP", txOff, 4 + nameYOff + cpPush + tyOff)
-                hpText:SetTextColor(cr, cg, cb, 1)
+                hpText:SetTextColor(cr, cg, checkBtn, 1)
                 hpText:Show()
             elseif element == "level" or element == "targetOfTarget" then
                 local fontStr = (element == "level") and lvlText or popFrame._totFS
                 if fontStr ~= lvlText then
-                    cr, cg, cb = popFrame._totSampleColor(slotKey, cr, cg, cb)
+                    cr, cg, checkBtn = popFrame._totSampleColor(slotKey, cr, cg, checkBtn)
                 end
                 SetPVFont(fontStr, fontFile, fontSize, npOutline)
                 if fontStr ~= lvlText then
@@ -2514,7 +2514,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 end
                 fontStr:SetParent(topTextFrame)
                 fontStr:SetPoint("BOTTOM", health, "TOP", txOff, 4 + nameYOff + cpPush + tyOff)
-                fontStr:SetTextColor(cr, cg, cb, 1)
+                fontStr:SetTextColor(cr, cg, checkBtn, 1)
                 fontStr:Show()
             elseif element == "custom" then
                 local fontStr = popFrame._customFS[slotKey]
@@ -2522,7 +2522,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 namesUnit = popFrame._pvCustom(fontStr, slotKey)
                 fontStr:SetParent(topTextFrame)
                 fontStr:SetPoint("BOTTOM", health, "TOP", txOff, 4 + nameYOff + cpPush + tyOff)
-                fontStr:SetTextColor(cr, cg, cb, 1)
+                fontStr:SetTextColor(cr, cg, checkBtn, 1)
                 fontStr:Show()
             end
             -- Per-slot Width % + Wrap mirrors runtime. Top slot is centered and stays unconstrained at 100% (see PlaceHealthInBar for why a width box mis-positions the text).
@@ -2599,7 +2599,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
             fontSize,
             cr,
             cg,
-            cb,
+            checkBtn,
             nameSlotKey
         )
             txOff = txOff or 0
@@ -2644,7 +2644,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 end
                 nameFS:SetWidth(math.max((barW - usedWidth - pvNameMarkerReserve) * pvNameWPct / 100, 20))
             end
-            nameFS:SetTextColor(cr, cg, cb, 1)
+            nameFS:SetTextColor(cr, cg, checkBtn, 1)
             nameFS:Show()
         end
 
@@ -3135,7 +3135,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         local ccTPos = DBVal("ccTimerPosition") or atPos
 
         -- Helper: apply timer position to a duration text fontstring
-        local function ApplyTimerPos(durText, auraFrame, place, size, posX, posY, color)
+        local function ApplyTimerPos(durText, auraFrame, place, size, posX, cursorY, color)
             if place == "none" then
                 durText:Hide()
                 return
@@ -3145,19 +3145,19 @@ local function BuildNameplatePreview(hostFrame, parentW)
             durText:SetTextColor(color.r, color.g, color.b, 1)
             durText:ClearAllPoints()
             if place == "center" then
-                durText:SetPoint("CENTER", auraFrame, "CENTER", posX, posY)
+                durText:SetPoint("CENTER", auraFrame, "CENTER", posX, cursorY)
                 durText:SetJustifyH("CENTER")
             elseif place == "topright" then
-                durText:SetPoint("TOPRIGHT", auraFrame, "TOPRIGHT", 3 + posX, 4 + posY)
+                durText:SetPoint("TOPRIGHT", auraFrame, "TOPRIGHT", 3 + posX, 4 + cursorY)
                 durText:SetJustifyH("RIGHT")
             elseif place == "bottomleft" then
-                durText:SetPoint("BOTTOMLEFT", auraFrame, "BOTTOMLEFT", -3 + posX, -4 + posY)
+                durText:SetPoint("BOTTOMLEFT", auraFrame, "BOTTOMLEFT", -3 + posX, -4 + cursorY)
                 durText:SetJustifyH("LEFT")
             elseif place == "bottomright" then
-                durText:SetPoint("BOTTOMRIGHT", auraFrame, "BOTTOMRIGHT", 3 + posX, -4 + posY)
+                durText:SetPoint("BOTTOMRIGHT", auraFrame, "BOTTOMRIGHT", 3 + posX, -4 + cursorY)
                 durText:SetJustifyH("RIGHT")
             else
-                durText:SetPoint("TOPLEFT", auraFrame, "TOPLEFT", -3 + posX, 4 + posY)
+                durText:SetPoint("TOPLEFT", auraFrame, "TOPLEFT", -3 + posX, 4 + cursorY)
                 durText:SetJustifyH("LEFT")
             end
         end
@@ -3349,8 +3349,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
             local rightExtent = castIconRightPush + FullPush("right", 0, arrowH)
             -- One element on `side`, centred on the bar plus y, sz tall, reaching
             -- `reach` past the bar's edge.
-            local function add(side, posY, sz, reach)
-                if math.abs(posY) >= (sz + arrowH) / 2 then
+            local function add(side, cursorY, sz, reach)
+                if math.abs(cursorY) >= (sz + arrowH) / 2 then
                     return
                 end
                 if side == "left" then
@@ -3362,18 +3362,18 @@ local function BuildNameplatePreview(hostFrame, parentW)
             -- Aura slots (debuffs, buffs, ccs): a row spans its Y offset up by one
             -- icon, sits past Classic WoW UI's border art and steps out for the
             -- full-size spell icon where it meets it, as live.
-            local function addAuraSide(slotVal, total, sz, hgt, sp, xOff, yOff)
+            local function addAuraSide(slotVal, total, sz, height, sp, xOff, yOff)
                 if slotVal ~= "left" and slotVal ~= "right" then
                     return
                 end
-                local posY = yOff + hgt / 2 - barH / 2
+                local cursorY = yOff + height / 2 - barH / 2
                 add(
                     slotVal,
-                    posY,
-                    hgt,
+                    cursorY,
+                    height,
                     sideOff
                         + mod.NP_ClassicSide(slotVal)
-                        + FullPush(slotVal, posY, hgt)
+                        + FullPush(slotVal, cursorY, height)
                         + (total - 1) * sp
                         + sz
                         + ((slotVal == "left") and -xOff or xOff)
@@ -3393,17 +3393,17 @@ local function BuildNameplatePreview(hostFrame, parentW)
             -- Side icons (raid marker, classification, Quest Objective Text,
             -- faction), each past its own cast icon push; w: the element's width
             -- (sz, its height, when nil).
-            local function addIcon(side, posY, sz, xOff, wid)
+            local function addIcon(side, cursorY, sz, xOff, wid)
                 if side ~= "left" and side ~= "right" then
                     return
                 end
                 add(
                     side,
-                    posY,
+                    cursorY,
                     sz,
                     sideOff
                         + ((side == "left") and castIconLeftPush or castIconRightPush)
-                        + FullPush(side, posY, sz)
+                        + FullPush(side, cursorY, sz)
                         + (wid or sz)
                         + ((side == "left") and -xOff or xOff)
                 )
@@ -3647,8 +3647,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 if useClassColors then
                     cpColor = CP.CLASS_COLORS[playerClass] or CP.DEFAULT_COLOR
                 else
-                    local cc = (DB() and DB().classPowerCustomColor) or defaultSet.classPowerCustomColor
-                    cpColor = { cc.r, cc.g, cc.b }
+                    local classColor = (DB() and DB().classPowerCustomColor) or defaultSet.classPowerCustomColor
+                    cpColor = { classColor.r, classColor.g, classColor.b }
                 end
 
                 local cpBgCol = (DB() and DB().classPowerBgColor) or defaultSet.classPowerBgColor

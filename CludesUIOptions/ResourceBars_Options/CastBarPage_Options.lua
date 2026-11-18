@@ -24,8 +24,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         environ.ShuffleCastBarIcons, environ.UpdateCastBarPreview, environ._castBarPreviewBuilder
     local TexBgRowCfg = environ.TexBgRowCfg
     local W = CludesUI.Widgets
-    local posY = yOffset
-    local _, hgt
+    local cursorY = yOffset
+    local _, height
 
     hostFrame._showRowDivider = true
 
@@ -111,8 +111,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     end
 
     local castSection
-    castSection, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
-    posY = posY - hgt
+    castSection, height = W:SectionHeader(hostFrame, "LAYOUT", cursorY)
+    cursorY = cursorY - height
     CludesUI.BuildSectionUnlockJump(
         castSection,
         { key = "ERB_CastBar", disabled = castOff, disabledTooltip = "Player Cast Bar" }
@@ -124,7 +124,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
 
     -- Row 1: Enable Player Cast Bar | Frame Strata
     local castEnableRow
-    castEnableRow, hgt = W:DualRow(hostFrame, posY, {
+    castEnableRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Enable Player Cast Bar",
         getValue = Getter("enabled"),
@@ -140,14 +140,14 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         getValue = Getter("frameStrata", "MEDIUM"),
         setValue = Setter("frameStrata"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- (No position cog here: the cast bar is positioned via Unlock Mode; the old X/Y offset cog wrote anchor keys the runtime never reads.)
 
     -- Row 2: Height | Width (sync icons push to power + health bars)
     local classSizeRow
     local cbhDis, cbhTip, cbhRaw = CludesUI.MatchGuard("ERB_CastBar", "Height", castOff, "Player Cast Bar")
     local cbwDis, cbwTip, cbwRaw = CludesUI.MatchGuard("ERB_CastBar", "Width", castOff, "Player Cast Bar")
-    classSizeRow, hgt = W:DualRow(hostFrame, posY, {
+    classSizeRow, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Height",
         min = 1,
@@ -170,11 +170,11 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         getValue = Getter("width", 220),
         setValue = Setter("width"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Row 3: Show Spell Icon (cog: side, divider, size, offsets) | Show Spark
     local iconRow
-    iconRow, hgt = W:DualRow(hostFrame, posY, {
+    iconRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Spell Icon",
         disabled = castOff,
@@ -192,7 +192,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         getValue = Getter("showSpark"),
         setValue = Setter("showSpark"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Inline cog on Show Spell Icon
     if not CludesUI._prebuilding then
         local region = iconRow._leftRegion
@@ -327,11 +327,11 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         if not p then
                             return true
                         end
-                        local cb = p.castBar
+                        local checkBtn = p.castBar
                         return IconOnPortrait()
-                            or not cb.showIconDivider
+                            or not checkBtn.showIconDivider
                             or CludesUI.BlizzStyle.Get("castbar")
-                            or not CludesUI.GetBorderCompanion(cb.borderTexture, "sepV")
+                            or not CludesUI.GetBorderCompanion(checkBtn.borderTexture, "sepV")
                     end,
                     disabledTooltip = function()
                         if IconOnPortrait() then
@@ -377,7 +377,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     end
 
     -- Row 4: Always Show
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Always Show",
         tooltip = "Keep the cast bar visible (sitting empty) when you are not casting, instead of hiding it.",
@@ -408,23 +408,23 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             RefreshCast()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:Spacer(hostFrame, posY, 16)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 16)
+    cursorY = cursorY - height
 
     local displaySection
-    displaySection, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
-    posY = posY - hgt
-    posY = CludesUI.BlizzStyle.Note(hostFrame, posY, "castbar")
+    displaySection, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
+    cursorY = cursorY - height
+    cursorY = CludesUI.BlizzStyle.Note(hostFrame, cursorY, "castbar")
 
     -- Row: Cast Bar Border Style dropdown (+ inline offset cog)
     do
         local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
         local cbBsRow
-        cbBsRow, hgt = W:DualRow(
+        cbBsRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.BlizzStyle.Gate("castbar", {
                 type = "dropdown",
                 text = "Border Style",
@@ -511,12 +511,12 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     })
                 )
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Width Offset | Height Offset: own row while a textured style is selected (stock styles gate it away).
         do
             local p = DB()
-            local tex = p and p.castBar.borderTexture or "solid"
-            if tex ~= "solid" and tex ~= "" then
+            local texture = p and p.castBar.borderTexture or "solid"
+            if texture ~= "solid" and texture ~= "" then
                 local function step()
                     local p = DB()
                     return p and (p.castBar.borderSize or 0) or 0
@@ -560,20 +560,20 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         CludesUI:RefreshPage()
                     end,
                 })
-                _, hgt = W:DualRow(
+                _, height = W:DualRow(
                     hostFrame,
-                    posY,
+                    cursorY,
                     CludesUI.BlizzStyle.Gate("castbar", ocfgL),
                     CludesUI.BlizzStyle.Gate("castbar", ocfgR)
                 )
-                posY = posY - hgt
+                cursorY = cursorY - height
             end
         end
         -- Inline border color swatch on Border slider (right region); none
         -- under Classic WoW UI, whose slider sizes the vanilla frame.
         if not CludesUI._prebuilding and CludesUI.BlizzStyle.Active("castbar") ~= "classic" then
             local region = cbBsRow._rightRegion
-            local ctrl = region._control
+            local control = region._control
             local borderSwatch, updateBorderSwatch = CludesUI.BuildColorSwatch(
                 region,
                 cbBsRow:GetFrameLevel() + 3,
@@ -596,7 +596,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 true,
                 20
             )
-            Pix.Point(borderSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            Pix.Point(borderSwatch, "RIGHT", control, "LEFT", -8, 0)
             -- Disable swatch when border size is 0
             local borderSwatchBlock = CludesUI.NewSwatchBlocker(borderSwatch)
             borderSwatchBlock:SetScript("OnEnter", function()
@@ -820,8 +820,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             })
             local function UpdateCogVis()
                 local p = DB()
-                local tex = p and p.castBar.borderTexture or "solid"
-                if tex == "solid" or CludesUI.BlizzStyle.Get("castbar") then
+                local texture = p and p.castBar.borderTexture or "solid"
+                if texture == "solid" or CludesUI.BlizzStyle.Get("castbar") then
                     cogBtn:Hide()
                 else
                     cogBtn:Show()
@@ -834,9 +834,9 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
 
     -- Row 2: Fill Color (opacity slider + cog: gradient + inline swatches) | Background
     local castColorRow
-    castColorRow, hgt = W:DualRow(
+    castColorRow, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         {
             type = "slider",
             text = "Fill Color",
@@ -875,7 +875,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             end,
         })
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
     local castFillBlizz = CludesUI.BlizzStyle.Active("castbar") == "blizzard"
     -- Inline cog on Fill Color: the gradient and the channel / uninterruptible
     -- color overrides (not under Blizzard Style, whose fill art is stock) and Out
@@ -1053,8 +1053,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 local p = DB()
                 if not p then
                     local _, castFrame = UnitClass("player")
-                    local cc = CLASS_COLORS[castFrame]
-                    return cc and cc[1] or 1, cc and cc[2] or 0.70, cc and cc[3] or 0, 1
+                    local classColor = CLASS_COLORS[castFrame]
+                    return classColor and classColor[1] or 1, classColor and classColor[2] or 0.70, classColor and classColor[3] or 0, 1
                 end
                 return p.castBar.fillR, p.castBar.fillG, p.castBar.fillB, 1
             end,
@@ -1094,9 +1094,9 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             tooltip = "Class Colored",
             getValue = function()
                 local _, class = UnitClass("player")
-                local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                if cc then
-                    return cc.r, cc.g, cc.b, 1
+                local classColor = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+                if classColor then
+                    return classColor.r, classColor.g, classColor.b, 1
                 end
                 return 1, 0.70, 0, 1
             end,
@@ -1131,7 +1131,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     -- Inline color swatch on Background (right region)
     if not CludesUI._prebuilding then
         local region = castColorRow._rightRegion
-        local ctrl = region._control
+        local control = region._control
         local bgSwatch, bgUpdateSwatch = CludesUI.BuildColorSwatch(
             region,
             castColorRow:GetFrameLevel() + 3,
@@ -1150,7 +1150,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             nil,
             20
         )
-        Pix.Point(bgSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+        Pix.Point(bgSwatch, "RIGHT", control, "LEFT", -8, 0)
         local function UpdateBgSwatch()
             local p = DB()
             -- Gated with the Background slider beside it: Blizzard Style
@@ -1191,7 +1191,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         CludesUI.BlizzStyle.Gate("castbar", castTexCfg)
     end
     local textRow
-    textRow, hgt = W:DualRow(hostFrame, posY, castTexCfg, {
+    textRow, height = W:DualRow(hostFrame, cursorY, castTexCfg, {
         type = "dropdown",
         text = "Spell Text",
         disabled = castOff,
@@ -1220,7 +1220,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             CludesUI:RefreshPage()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Inline cog on Bar Texture: Textured Background (greyed while the cast bar
     -- is off, and under Blizzard Style, whose own background art stays).
     if not CludesUI._prebuilding then
@@ -1329,7 +1329,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     end
     -- Row 4: Duration Text (cog RESIZE: timer size + x/y) | Show Total Duration
     local timerRow
-    timerRow, hgt = W:DualRow(hostFrame, posY, {
+    timerRow, height = W:DualRow(hostFrame, cursorY, {
         type = "segmented",
         text = "Duration Text",
         disabled = castOff,
@@ -1369,7 +1369,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         getValue = Getter("showTotalDuration"),
         setValue = Setter("showTotalDuration"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Inline cog (RESIZE) on Duration Text for timer size + x/y
     if not CludesUI._prebuilding then
         local region = timerRow._leftRegion
@@ -1450,7 +1450,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
 
     -- Row 5: Craft Batches, plus Show Spell Rank (spell ranks exist only on WoW Forever)
     -- Craft Batches is stored as fullCraftTime (text) and mergeCrafts (bar + text).
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Craft Batches",
         tooltip = "How the cast bar shows a batch of crafts.",
@@ -1491,11 +1491,11 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             p.castBar.showSpellRank = val
         end,
     } or CludesUI.BlankRowCfg())
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- MARKS section
-    _, hgt = W:SectionHeader(hostFrame, "TICK MARKERS", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "TICK MARKERS", cursorY)
+    cursorY = cursorY - height
 
     local marksOff = function()
         local p = DB()
@@ -1540,7 +1540,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
 
     -- Marks Row 1: Enable Tick Markers (master) | Channel Ticks (+ color)
     local marksRow1
-    marksRow1, hgt = W:DualRow(hostFrame, posY, {
+    marksRow1, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Enable Tick Markers",
         disabled = castOff,
@@ -1567,7 +1567,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         getValue = Getter("showTickMarks"),
         setValue = Setter("showTickMarks", true),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     AttachInlineSwatch(marksRow1._rightRegion, function()
         local p = DB()
@@ -1594,7 +1594,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
 
     -- Marks Row 2: Last Tick (+ color) | Colored Empowered Stages
     local marksRow2
-    marksRow2, hgt = W:DualRow(hostFrame, posY, {
+    marksRow2, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Last Tick",
         tooltip = "Highlights the final damage tick. Requires a supported channeled spell.",
@@ -1611,7 +1611,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         getValue = Getter("coloredEmpowerStages"),
         setValue = Setter("coloredEmpowerStages"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     AttachInlineSwatch(marksRow2._leftRegion, function()
         local p = DB()
@@ -1637,8 +1637,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     end, "Last Tick")
 
     -- LATENCY section
-    _, hgt = W:SectionHeader(hostFrame, "LATENCY", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "LATENCY", cursorY)
+    cursorY = cursorY - height
 
     local latOff = function()
         local p = DB()
@@ -1647,7 +1647,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
 
     -- Latency Row 1: Enable Latency Overlay (+ color) | Show Latency Text
     local latRow1
-    latRow1, hgt = W:DualRow(hostFrame, posY, {
+    latRow1, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Enable Latency Overlay",
         tooltip = "Shows a colored overlay at the end of the cast bar representing your network latency for each spell. Helps you time spell queuing.",
@@ -1664,7 +1664,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         getValue = Getter("latencyShowText"),
         setValue = Setter("latencyShowText"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     AttachInlineSwatch(latRow1._leftRegion, function()
         local p = DB()
@@ -1695,5 +1695,5 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         _clickMappings.castTimer = { section = displaySection, target = timerRow, slotSide = "left" }
     end
 
-    return math.abs(posY)
+    return math.abs(cursorY)
 end

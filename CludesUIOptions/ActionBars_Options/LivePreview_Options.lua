@@ -210,7 +210,7 @@ local function BuildLivePreview(hostFrame, yOff)
         end
         icon:ClearAllPoints()
         icon:SetAllPoints(bf)
-        local wid, hgt = bf:GetSize()
+        local wid, height = bf:GetSize()
         if classic then
             if record.blizzMask then
                 record.blizzMask:Hide()
@@ -228,8 +228,8 @@ local function BuildLivePreview(hostFrame, yOff)
             cring:SetTexture(filled and art.slot or art.empty)
             cring:SetTexCoord(0, 1, 0, 1)
             cring:ClearAllPoints()
-            cring:SetPoint("CENTER", bf, "CENTER", 0, -hgt / 36)
-            cring:SetSize(66 * wid / 36, 66 * hgt / 36)
+            cring:SetPoint("CENTER", bf, "CENTER", 0, -height / 36)
+            cring:SetSize(66 * wid / 36, 66 * height / 36)
             cring:Show()
             return
         end
@@ -252,13 +252,13 @@ local function BuildLivePreview(hostFrame, yOff)
         if blizzMaskInfo == nil then
             blizzMaskInfo = C_Texture.GetAtlasInfo("UI-HUD-ActionBar-IconFrame-Mask") or false
         end
-        local sx, sy = wid / 45, hgt / 45
+        local sx, sy = wid / 45, height / 45
         mask:ClearAllPoints()
         mask:SetPoint("CENTER", icon, "CENTER", 0, 0)
         if blizzMaskInfo then
             mask:SetSize(blizzMaskInfo.width * sx, blizzMaskInfo.height * sy)
         else
-            mask:SetSize(wid, hgt)
+            mask:SetSize(wid, height)
         end
         mask:Show()
         local ring = record.blizzRing
@@ -373,9 +373,9 @@ local function BuildLivePreview(hostFrame, yOff)
         if useClassColor then
             local _, ct = UnitClass("player")
             if ct then
-                local cc = RAID_CLASS_COLORS[ct]
-                if cc then
-                    shapeBrdR, shapeBrdG, shapeBrdB = cc.r, cc.g, cc.b
+                local classColor = RAID_CLASS_COLORS[ct]
+                if classColor then
+                    shapeBrdR, shapeBrdG, shapeBrdB = classColor.r, classColor.g, classColor.b
                 end
             end
         end
@@ -628,13 +628,13 @@ local function BuildLivePreview(hostFrame, yOff)
 
                         if brdOn and brdIsSolid then
                             -- Solid: 4 texture strips
-                            local cr, cg, cb, ca = brdColor.r, brdColor.g, brdColor.b, brdColor.a
+                            local cr, cg, checkBtn, ca = brdColor.r, brdColor.g, brdColor.b, brdColor.a
                             if useClassColor then
                                 local _, ct2 = UnitClass("player")
                                 if ct2 then
                                     local cc2 = RAID_CLASS_COLORS[ct2]
                                     if cc2 then
-                                        cr, cg, cb = cc2.r, cc2.g, cc2.b
+                                        cr, cg, checkBtn = cc2.r, cc2.g, cc2.b
                                     end
                                 end
                             end
@@ -643,7 +643,7 @@ local function BuildLivePreview(hostFrame, yOff)
                             local onePx = CludesUI.PP.perfect / bf:GetEffectiveScale()
                             local sz = math.max(onePx, math.floor((brdPx or brdSize) + 0.5) * onePx)
 
-                            bT:SetColorTexture(cr, cg, cb, ca)
+                            bT:SetColorTexture(cr, cg, checkBtn, ca)
                             UnsnapTex(bT)
                             bT:SetHeight(sz)
                             bT:ClearAllPoints()
@@ -651,7 +651,7 @@ local function BuildLivePreview(hostFrame, yOff)
                             Pix.Point(bT, "TOPRIGHT", bf, "TOPRIGHT", 0, 0)
                             bT:Show()
 
-                            bB:SetColorTexture(cr, cg, cb, ca)
+                            bB:SetColorTexture(cr, cg, checkBtn, ca)
                             UnsnapTex(bB)
                             bB:SetHeight(sz)
                             bB:ClearAllPoints()
@@ -659,7 +659,7 @@ local function BuildLivePreview(hostFrame, yOff)
                             Pix.Point(bB, "BOTTOMRIGHT", bf, "BOTTOMRIGHT", 0, 0)
                             bB:Show()
 
-                            bL:SetColorTexture(cr, cg, cb, ca)
+                            bL:SetColorTexture(cr, cg, checkBtn, ca)
                             UnsnapTex(bL)
                             bL:SetWidth(sz)
                             bL:ClearAllPoints()
@@ -667,7 +667,7 @@ local function BuildLivePreview(hostFrame, yOff)
                             Pix.Point(bL, "BOTTOMLEFT", bB, "TOPLEFT", 0, 0)
                             bL:Show()
 
-                            bR:SetColorTexture(cr, cg, cb, ca)
+                            bR:SetColorTexture(cr, cg, checkBtn, ca)
                             UnsnapTex(bR)
                             bR:SetWidth(sz)
                             bR:ClearAllPoints()
@@ -748,17 +748,17 @@ local function BuildLivePreview(hostFrame, yOff)
                                     edgeSize = edgeSize,
                                     insets = { left = 0, right = 0, top = 0, bottom = 0 },
                                 })
-                                local cr, cg, cb, ca = brdColor.r, brdColor.g, brdColor.b, brdColor.a or 1
+                                local cr, cg, checkBtn, ca = brdColor.r, brdColor.g, brdColor.b, brdColor.a or 1
                                 if useClassColor then
                                     local _, ct2 = UnitClass("player")
                                     if ct2 then
                                         local cc2 = RAID_CLASS_COLORS[ct2]
                                         if cc2 then
-                                            cr, cg, cb = cc2.r, cc2.g, cc2.b
+                                            cr, cg, checkBtn = cc2.r, cc2.g, cc2.b
                                         end
                                     end
                                 end
-                                bdPv:SetBackdropBorderColor(cr, cg, cb, ca)
+                                bdPv:SetBackdropBorderColor(cr, cg, checkBtn, ca)
                                 bdPv:Show()
                             end
                         else

@@ -566,13 +566,13 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     local function BuildGeneralPage(page, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
 
         hostFrame._showRowDivider = true
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
 
         -------------------------------------------------------------------
         --  Optimized graphics CVar table + buttons (above all sections)
@@ -733,9 +733,9 @@ CludesUI.AtOptionsLogin(function()
                 "macroFactory",
             }
             local savedQoL = {}
-            for _, k in ipairs(qolKeys) do
-                if CludesUIDB[k] ~= nil then
-                    savedQoL[k] = CludesUIDB[k]
+            for _, keyName in ipairs(qolKeys) do
+                if CludesUIDB[keyName] ~= nil then
+                    savedQoL[keyName] = CludesUIDB[keyName]
                 end
             end
             -- Game settings, not CUI ones: the record of the settings from
@@ -756,12 +756,12 @@ CludesUI.AtOptionsLogin(function()
                 if not CludesUIDB.global then
                     CludesUIDB.global = {}
                 end
-                for k, val in pairs(savedFriends) do
-                    CludesUIDB.global[k] = val
+                for keyName, val in pairs(savedFriends) do
+                    CludesUIDB.global[keyName] = val
                 end
             end
-            for k, val in pairs(savedQoL) do
-                CludesUIDB[k] = val
+            for keyName, val in pairs(savedQoL) do
+                CludesUIDB[keyName] = val
             end
         end
 
@@ -895,8 +895,8 @@ CludesUI.AtOptionsLogin(function()
         -------------------------------------------------------------------
         --  DISPLAY
         -------------------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
+        cursorY = cursorY - height
 
         local themeValues = {}
         for _, name in ipairs(CludesUI.THEME_ORDER) do
@@ -905,7 +905,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- Row 1: CUI Options Theme | UI Accent Color (the accent follows the theme)
         local themeRow
-        themeRow, hgt = W:DualRow(hostFrame, posY, {
+        themeRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "CUI Options Theme",
             tooltip = "The look of this options window: its frame art and colours.",
@@ -980,11 +980,11 @@ CludesUI.AtOptionsLogin(function()
                 },
             },
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Inline color swatch on CUI Options Theme (left region)
         if not CludesUI._prebuilding then
-            local rightRgn = themeRow._leftRegion -- the theme dropdown's slot
+            local rightRegion = themeRow._leftRegion -- the theme dropdown's slot
             local function isCustomColorOff()
                 return CludesUI.GetActiveTheme() ~= "Custom Color"
             end
@@ -1005,9 +1005,9 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
             local tcSwatch, tcUpdateSwatch =
-                CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5, tcGet, tcSet, nil, 20)
-            Pix.Point(tcSwatch, "RIGHT", rightRgn._control, "LEFT", -12, 0)
-            rightRgn._lastInline = tcSwatch
+                CludesUI.BuildColorSwatch(rightRegion, rightRegion:GetFrameLevel() + 5, tcGet, tcSet, nil, 20)
+            Pix.Point(tcSwatch, "RIGHT", rightRegion._control, "LEFT", -12, 0)
+            rightRegion._lastInline = tcSwatch
             CludesUI.RegisterWidgetRefresh(function()
                 local off = isCustomColorOff()
                 tcSwatch:SetAlpha(off and 0.15 or 1)
@@ -1120,7 +1120,7 @@ CludesUI.AtOptionsLogin(function()
         end
 
         -- Row 2: UI Scale | CUI Options Language
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "UI Scale",
             min = 0.40,
@@ -1178,7 +1178,7 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         }, langCfg)
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Row 3: CUI Buttons (merged button toggles) | Disable Sync Icons (+ cog)
         -- "CUI Buttons" merges the Pause Menu, Unlock Mode Menu and Minimap
@@ -1197,7 +1197,7 @@ CludesUI.AtOptionsLogin(function()
             { key = "minimap", label = "Show Minimap Button" },
         }
         local cuiBtnRow
-        cuiBtnRow, hgt = W:DualRow(hostFrame, posY, {
+        cuiBtnRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "CUI Buttons",
             tooltip = "Toggle CludesUI's optional buttons: the Escape menu buttons and the minimap button.",
@@ -1221,37 +1221,37 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- CUI Buttons checkbox-dropdown (left region)
         if not CludesUI._prebuilding then
             local region = cuiBtnRow._leftRegion
             if region._control then
                 region._control:Hide()
             end
-            local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
                 region,
                 210,
                 region:GetFrameLevel() + 2,
                 cuiBtnItems,
-                function(k)
-                    if k == "pause" then
+                function(keyName)
+                    if keyName == "pause" then
                         return CludesUIDB and CludesUIDB.hideGameMenuButton or false
-                    elseif k == "unlock" then
+                    elseif keyName == "unlock" then
                         return not CludesUIDB or CludesUIDB.hideUnlockMenuButton ~= false
-                    elseif k == "minimap" then
+                    elseif keyName == "minimap" then
                         return not (CludesUIDB and CludesUIDB.showMinimapButton == false)
                     end
                     return false
                 end,
-                function(k, val)
+                function(keyName, val)
                     if not CludesUIDB then
                         CludesUIDB = {}
                     end
-                    if k == "pause" then
+                    if keyName == "pause" then
                         CludesUIDB.hideGameMenuButton = val
-                    elseif k == "unlock" then
+                    elseif keyName == "unlock" then
                         CludesUIDB.hideUnlockMenuButton = val
-                    elseif k == "minimap" then
+                    elseif keyName == "minimap" then
                         CludesUIDB.showMinimapButton = val
                         if val then
                             CludesUI.ShowMinimapButton()
@@ -1261,8 +1261,8 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end
             )
-            Pix.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
-            region._control = cbDD
+            Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+            region._control = checkDrop
             region._lastInline = nil
             CludesUI.RegisterWidgetRefresh(cbDDRefresh)
         end
@@ -1289,13 +1289,13 @@ CludesUI.AtOptionsLogin(function()
             })
         end
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "UNLOCK MODE", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "UNLOCK MODE", cursorY)
+        cursorY = cursorY - height
         local pointAnchorRow
-        pointAnchorRow, hgt = W:DualRow(hostFrame, posY, {
+        pointAnchorRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Point Anchoring",
             tooltip = "Show nine source points after clicking Anchor in Layout Mode. Choose a source point, then a target point. Turning this off hides the handles and preserves saved point anchors.",
@@ -1323,7 +1323,7 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineSwatches(pointAnchorRow._leftRegion, {
                 {
@@ -1363,13 +1363,13 @@ CludesUI.AtOptionsLogin(function()
                 disabledTooltip = "Point Anchoring",
             })
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "COMBAT", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "COMBAT", cursorY)
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Max Camera Distance",
             tooltip = "How far the camera can zoom out.",
@@ -1394,9 +1394,9 @@ CludesUI.AtOptionsLogin(function()
                 SetGfxCVar("ResampleAlwaysSharpen", val and "1" or "0")
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Cast Actions on Key Down",
             tooltip = "Keybinds respond on key down instead of key up. This helps make your abilities feel more responsive.",
@@ -1423,7 +1423,7 @@ CludesUI.AtOptionsLogin(function()
                 SetCVarSafe("SpellQueueWindow", val)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         local FCT_FONT_DIR = "Interface\\AddOns\\CludesUI\\media\\fonts\\"
         local fctFontValues = {
@@ -1534,8 +1534,8 @@ CludesUI.AtOptionsLogin(function()
             "Fonts\\skurri.ttf",
         }
         for idx = #fctFontOrder, 2, -1 do
-            local k = fctFontOrder[idx]
-            if k ~= "---" and not CludesUI.CombatTextFontCoversLocale(k) then
+            local keyName = fctFontOrder[idx]
+            if keyName ~= "---" and not CludesUI.CombatTextFontCoversLocale(keyName) then
                 table.remove(fctFontOrder, idx)
             end
         end
@@ -1562,7 +1562,7 @@ CludesUI.AtOptionsLogin(function()
         local healTip = CludesUI.DisabledTooltip("Healing")
         local fxTip = CludesUI.DisabledTooltip("Target Effects")
         local COMBAT_TEXT = {}
-        for _, item in ipairs({
+        for _, entry in ipairs({
             { key = "floatingCombatTextCombatDamage_v2", label = "Damage" },
             {
                 key = "floatingCombatTextCombatLogPeriodicSpells_v2",
@@ -1602,12 +1602,12 @@ CludesUI.AtOptionsLogin(function()
                 excludeFromSummaryFn = FxOff,
             },
         }) do
-            if C_CVar.GetCVarInfo(item.key) then
-                COMBAT_TEXT[#COMBAT_TEXT + 1] = item
+            if C_CVar.GetCVarInfo(entry.key) then
+                COMBAT_TEXT[#COMBAT_TEXT + 1] = entry
             end
         end
         local combatTextRow
-        combatTextRow, hgt = W:DualRow(hostFrame, posY, { type = "label", text = "Combat Text" }, {
+        combatTextRow, height = W:DualRow(hostFrame, cursorY, { type = "label", text = "Combat Text" }, {
             type = "dropdown",
             text = "Combat Text Font",
             tooltip = "WARNING: This feature requires you to re-log or restart WoW to take effect.",
@@ -1642,10 +1642,10 @@ CludesUI.AtOptionsLogin(function()
                 })
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             local region = combatTextRow._leftRegion
-            local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
                 region,
                 210,
                 region:GetFrameLevel() + 2,
@@ -1657,8 +1657,8 @@ CludesUI.AtOptionsLogin(function()
                     SetCVarSafe(key, val and "1" or "0")
                 end
             )
-            Pix.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
-            region._control = cbDD
+            Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+            region._control = checkDrop
             region._lastInline = nil
             CludesUI.RegisterWidgetRefresh(cbDDRefresh)
             CludesUI.BuildInlineCog(region, {
@@ -1711,7 +1711,7 @@ CludesUI.AtOptionsLogin(function()
         -- Row 4: Round Timer Seconds Down | Prevent Swiftmend Icon Dim. Every
         -- timer keeps the formatter it was given (AuraKit reads the setting
         -- once), so a change waits for a reload.
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Round Timer Seconds Down",
             tooltip = "Timer seconds round down like Blizzard's buff frame, so a timer reads 0 in its last second. Off, it reads 1 until it ends.",
@@ -1729,20 +1729,20 @@ CludesUI.AtOptionsLogin(function()
                 })
             end,
         }, swiftmendCfg)
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
 
         -------------------------------------------------------------------
         --  MAINTENANCE: the account-wide actions, kept at the foot of the page
         --  so they are at hand without being the first thing on it.
         -------------------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, "MAINTENANCE", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "MAINTENANCE", cursorY)
+        cursorY = cursorY - height
         do
             local restore = HasGfxBackup()
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "labeledButton",
                 text = restore and "Restore My Graphics Settings" or "Optimize My FPS and Graphics",
                 buttonText = restore and "Restore" or "Optimize",
@@ -1768,8 +1768,8 @@ CludesUI.AtOptionsLogin(function()
                 tooltip = "Every graphics setting Optimize My FPS and Graphics changes, and why.",
                 onClick = ShowOptimizeInfo,
             })
-            posY = posY - hgt
-            _, hgt = W:DualRow(hostFrame, posY, {
+            cursorY = cursorY - height
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "labeledButton",
                 text = "Reset CUI Module Settings",
                 buttonText = "Reset",
@@ -1788,11 +1788,11 @@ CludesUI.AtOptionsLogin(function()
                 tooltip = "Revert CUI's changes to your game settings, turn it off for every character and reload. Your profiles are kept.",
                 onClick = ConfirmUninstall,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
 
         -------------------------------------------------------------------
         --  DEVELOPER -- both toggles are duplicated in Quality of Life
@@ -1804,10 +1804,10 @@ CludesUI.AtOptionsLogin(function()
             and C_AddOns.IsAddOnLoaded("CludesUIQoL")
             and C_AddOns.IsAddOnLoaded("CludesUIBlizzardSkin")
         if not _devDupesAvailable then
-            _, hgt = W:SectionHeader(hostFrame, "DEVELOPER", posY)
-            posY = posY - hgt
+            _, height = W:SectionHeader(hostFrame, "DEVELOPER", cursorY)
+            cursorY = cursorY - height
 
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Suppress Lua Errors",
                 tooltip = "Turns off the game's own Lua error pop-ups. Error addons such as BugSack still catch them.",
@@ -1833,13 +1833,13 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
-            _, hgt = W:Spacer(hostFrame, posY, 20)
-            posY = posY - hgt
+            _, height = W:Spacer(hostFrame, cursorY, 20)
+            cursorY = cursorY - height
         end
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     ---------------------------------------------------------------------------
@@ -2081,7 +2081,7 @@ CludesUI.AtOptionsLogin(function()
 
     -- Builds the centered mode toggle, returning the vertical space used. Plain local closure on purpose: no widget row, no capture config, no saved state.
     -- The shared segmented control draws it, so it looks like every other segment switch.
-    local function BuildOverridesModeToggle(hostFrame, posY)
+    local function BuildOverridesModeToggle(hostFrame, cursorY)
         -- Wider than the Raid Frames pair (162): "Conditional Overrides" is a longer label than "Custom Buff Display" and must not clip.
         local BTN_W, BTN_H = 180, 31
         local seg = CludesUI.BuildSegmentedControl({
@@ -2103,7 +2103,7 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI:RefreshPage(true)
             end,
         })
-        seg:SetPoint("TOP", hostFrame, "TOP", 0, posY - 14)
+        seg:SetPoint("TOP", hostFrame, "TOP", 0, cursorY - 14)
         seg:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
         -- 14 above + 15 below the buttons.
         return BTN_H + 29
@@ -2115,12 +2115,12 @@ CludesUI.AtOptionsLogin(function()
 
     local function BuildFullExportPage(hostFrame, yOffset)
         local PAD = CludesUI.CONTENT_PAD or 40
-        local posY = yOffset - 10
+        local cursorY = yOffset - 10
         local width = hostFrame:GetWidth() - PAD * 2
 
         -- Warning card (red-bordered, full width).
         local warn = CreateFrame("Frame", nil, hostFrame)
-        warn:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", PAD, posY)
+        warn:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", PAD, cursorY)
         warn:SetWidth(width)
         warn:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
         local wbg = CludesUI.SolidTex(warn, "BACKGROUND", 0.10, 0.04, 0.04, 0.55)
@@ -2137,13 +2137,13 @@ CludesUI.AtOptionsLogin(function()
             )
         )
         warn:SetHeight((wtext:GetStringHeight() or 40) + 28)
-        posY = posY - warn:GetHeight() - 40
+        cursorY = cursorY - warn:GetHeight() - 40
 
         -- Centered export button.
         local BTN_W, BTN_H = 300, 38
         local button = CreateFrame("Button", nil, hostFrame)
         button:SetSize(BTN_W, BTN_H)
-        button:SetPoint("TOP", hostFrame, "TOP", 0, posY)
+        button:SetPoint("TOP", hostFrame, "TOP", 0, cursorY)
         button:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
         local DARK_BG = CludesUI.DARK_BG
         local bbg = CludesUI.SolidTex(button, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, 0.92)
@@ -2177,21 +2177,21 @@ CludesUI.AtOptionsLogin(function()
                 })
             end
         end)
-        posY = posY - BTN_H - 20
+        cursorY = cursorY - BTN_H - 20
 
-        return -posY + 40
+        return -cursorY + 40
     end
 
     -- Runs the toggle, then the selected mode's builder. Builders return total content height measured from the ORIGINAL page top (they
     -- accumulate from the startY handed in), so the toggle's space is already included.
     local function BuildOverridesPage(hostFrame, yOffset)
-        local posY = yOffset - BuildOverridesModeToggle(hostFrame, yOffset)
+        local cursorY = yOffset - BuildOverridesModeToggle(hostFrame, yOffset)
         if (CludesUI._overridesTabMode or "spec") == "cond" then
             if CludesUI.Conditions_BuildListPage then
-                return CludesUI.Conditions_BuildListPage(hostFrame, posY)
+                return CludesUI.Conditions_BuildListPage(hostFrame, cursorY)
             end
         elseif CludesUI.SpecOverrides_BuildListPage then
-            return CludesUI.SpecOverrides_BuildListPage(hostFrame, posY)
+            return CludesUI.SpecOverrides_BuildListPage(hostFrame, cursorY)
         end
         return 200
     end

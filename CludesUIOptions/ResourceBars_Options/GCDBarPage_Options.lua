@@ -23,8 +23,8 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
     local UpdateGCDPreview = environ.UpdateGCDPreview
     local TexBgRowCfg = environ.TexBgRowCfg
     local W = CludesUI.Widgets
-    local posY = yOffset
-    local _, hgt
+    local cursorY = yOffset
+    local _, height
 
     hostFrame._showRowDivider = true
 
@@ -105,8 +105,8 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
     end
 
     local _sec
-    _sec, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
-    posY = posY - hgt
+    _sec, height = W:SectionHeader(hostFrame, "LAYOUT", cursorY)
+    cursorY = cursorY - height
     CludesUI.BuildSectionUnlockJump(
         _sec,
         { key = "ERB_GCDBar", disabled = gcdOff, disabledTooltip = "GCD Bar" }
@@ -118,7 +118,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
 
     -- Row: Enable GCD Bar (+ position cog) | Frame Strata
     local enableRow
-    enableRow, hgt = W:DualRow(hostFrame, posY, {
+    enableRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Enable GCD Bar",
         tooltip = "Shows a bar that fills over the global cooldown.",
@@ -135,7 +135,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         getValue = Getter("frameStrata", "MEDIUM"),
         setValue = Setter("frameStrata"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Inline position cog (X/Y + unlock) on Enable
     if not CludesUI._prebuilding then
         local region = enableRow._leftRegion
@@ -223,7 +223,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
     local ghDis, ghTip, ghRaw = mod.OrientedMatchGuard("ERB_GCDBar", "Height", gcdOri, gcdOff, "GCD Bar")
     local gwDis, gwTip, gwRaw = mod.OrientedMatchGuard("ERB_GCDBar", "Width", gcdOri, gcdOff, "GCD Bar")
     local sizeRow
-    sizeRow, hgt = W:DualRow(hostFrame, posY, {
+    sizeRow, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Height",
         min = 1,
@@ -246,10 +246,10 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         getValue = Getter("width", 220),
         setValue = Setter("width"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Row: Orientation | Instance Only
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Orientation",
         disabled = gcdOff,
@@ -272,11 +272,11 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         getValue = Getter("instanceOnly"),
         setValue = Setter("instanceOnly"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Row: Only Instant Casts | Always Show (+ idle fill cog)
     local gcdShowRow
-    gcdShowRow, hgt = W:DualRow(hostFrame, posY, {
+    gcdShowRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Only Instant Casts",
         tooltip = "Only show the GCD bar for instant-cast abilities. While hard-casting or channeling a spell, the bar stays hidden (the cast bar already shows that progress).",
@@ -293,7 +293,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         getValue = Getter("alwaysShow"),
         setValue = Setter("alwaysShow"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Inline cog on Always Show: idle fill appearance
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(gcdShowRow._rightRegion, {
@@ -324,19 +324,19 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         })
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 16)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 16)
+    cursorY = cursorY - height
 
-    _sec, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
-    posY = posY - hgt
+    _sec, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
+    cursorY = cursorY - height
 
     -- Row: Border Style | Border Size (+ inline color swatch + offset cog)
     do
         local btValues, btOrder = CludesUI.GetBorderTextureDropdown()
         local bsRow
-        bsRow, hgt = W:DualRow(
+        bsRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             {
                 type = "dropdown",
                 text = "Border Style",
@@ -406,12 +406,12 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 end,
             })
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Width Offset | Height Offset: own row while a textured style is selected.
         do
             local p = DB()
-            local tex = p and p.gcdBar.borderTexture or "solid"
-            if tex ~= "solid" and tex ~= "" then
+            local texture = p and p.gcdBar.borderTexture or "solid"
+            if texture ~= "solid" and texture ~= "" then
                 local function step()
                     local p = DB()
                     return p and (p.gcdBar.borderSize or 0) or 0
@@ -455,15 +455,15 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         CludesUI:RefreshPage()
                     end,
                 })
-                _, hgt = W:DualRow(hostFrame, posY, ocfgL, ocfgR)
-                posY = posY - hgt
+                _, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
+                cursorY = cursorY - height
             end
         end
         -- Border color swatch on the size slider (right region); none in the
         -- search pre-build (it indexes nothing, and the row is a stand-in there)
         if not CludesUI._prebuilding then
             local region = bsRow._rightRegion
-            local ctrl = region._control
+            local control = region._control
             local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
                 region,
                 bsRow:GetFrameLevel() + 3,
@@ -486,7 +486,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 true,
                 20
             )
-            Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            Pix.Point(colorSwatch, "RIGHT", control, "LEFT", -8, 0)
             local block = CludesUI.NewSwatchBlocker(colorSwatch)
             block:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(
@@ -700,8 +700,8 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             })
             local function UpdateCogVis()
                 local p = DB()
-                local tex = p and p.gcdBar.borderTexture or "solid"
-                if tex == "solid" then
+                local texture = p and p.gcdBar.borderTexture or "solid"
+                if texture == "solid" then
                     cogBtn:Hide()
                 else
                     cogBtn:Show()
@@ -714,7 +714,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
 
     -- Row: Color (gradient end / custom / class + gradient cog) | Background (+ bg swatch)
     local colorRow
-    colorRow, hgt = W:DualRow(hostFrame, posY, {
+    colorRow, height = W:DualRow(hostFrame, cursorY, {
         type = "multiSwatch",
         text = "Color",
         disabled = gcdOff,
@@ -747,8 +747,8 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     local p = DB()
                     if not p then
                         local _, castFrame = UnitClass("player")
-                        local cc = CLASS_COLORS[castFrame]
-                        return cc and cc[1] or 1, cc and cc[2] or 0.70, cc and cc[3] or 0, 1
+                        local classColor = CLASS_COLORS[castFrame]
+                        return classColor and classColor[1] or 1, classColor and classColor[2] or 0.70, classColor and classColor[3] or 0, 1
                     end
                     return p.gcdBar.fillR, p.gcdBar.fillG, p.gcdBar.fillB, p.gcdBar.fillA
                 end,
@@ -788,9 +788,9 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 tooltip = "Class Colored",
                 getValue = function()
                     local _, class = UnitClass("player")
-                    local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                    if cc then
-                        return cc.r, cc.g, cc.b, 1
+                    local classColor = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+                    if classColor then
+                        return classColor.r, classColor.g, classColor.b, 1
                     end
                     return 1, 0.70, 0, 1
                 end,
@@ -831,7 +831,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             RefreshGCD()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Gradient cog on Color
     if not CludesUI._prebuilding then
         local region = colorRow._leftRegion
@@ -885,7 +885,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
     -- Background color swatch on the Background slider (right region)
     if not CludesUI._prebuilding then
         local region = colorRow._rightRegion
-        local ctrl = region._control
+        local control = region._control
         local bgSwatch, bgUpdateSwatch = CludesUI.BuildColorSwatch(
             region,
             colorRow:GetFrameLevel() + 3,
@@ -904,7 +904,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             nil,
             20
         )
-        Pix.Point(bgSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+        Pix.Point(bgSwatch, "RIGHT", control, "LEFT", -8, 0)
         local function UpdateBgSwatch()
             local p = DB()
             if not p or not p.gcdBar.enabled then
@@ -924,7 +924,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
 
     -- Row: Bar Texture | Show Spark
     local gcdTexRow
-    gcdTexRow, hgt = W:DualRow(hostFrame, posY, {
+    gcdTexRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Bar Texture",
         disabled = gcdOff,
@@ -942,7 +942,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         getValue = Getter("showSpark"),
         setValue = Setter("showSpark"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Inline cog on Bar Texture: Textured Background (greyed with the dropdown).
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(gcdTexRow._leftRegion, {
@@ -954,7 +954,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
     end
 
     -- Row: Deplete Fill (left half only)
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Deplete Fill",
         tooltip = "Start the bar full and drain it as the global cooldown elapses, instead of filling it up.",
@@ -963,12 +963,12 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         getValue = Getter("depleteFill"),
         setValue = Setter("depleteFill"),
     }, { type = "spacer" })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Click mapping for the preview's hit overlay (never from a hidden pre-build)
     if not CludesUI._prebuilding then
         _clickMappings.gcdBar = { section = layoutSection, target = sizeRow }
     end
 
-    return math.abs(posY)
+    return math.abs(cursorY)
 end

@@ -61,15 +61,15 @@ CludesUI.AtOptionsLogin(function()
 
     local function BuildPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
 
         CludesUI:ClearContentHeader()
 
-        _, hgt = W:SectionHeader(hostFrame, "GRAPH", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "GRAPH", cursorY)
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "labeledButton",
             text = "Season Graph",
             buttonText = "Open",
@@ -97,25 +97,25 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         local tiers = mod.TIERS or {}
         if #tiers > 0 then
-            _, hgt = W:DualRow(
+            _, height = W:DualRow(
                 hostFrame,
-                posY,
+                cursorY,
                 LineToggle(tiers[1]),
                 tiers[2] and LineToggle(tiers[2]) or { type = "label", text = "" }
             )
-            posY = posY - hgt
+            cursorY = cursorY - height
         end
 
-        _, hgt = W:SectionHeader(hostFrame, "MESSAGES", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "MESSAGES", cursorY)
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Toggle(
                 "Distance to the Lines After a Key",
                 "chat",
@@ -129,9 +129,9 @@ CludesUI.AtOptionsLogin(function()
                 true
             )
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     CludesUI:RegisterModule(ADDON_NAME, {

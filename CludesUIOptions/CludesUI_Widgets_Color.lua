@@ -44,20 +44,20 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -------------------------------------------------------------------------------
     --  HSV RGB Conversion Helpers
     -------------------------------------------------------------------------------
-    local function HSVtoRGB(hgt, s, val)
+    local function HSVtoRGB(height, s, val)
         local c = val * s
-        local posX = c * (1 - math.abs((hgt / 60) % 2 - 1))
+        local posX = c * (1 - math.abs((height / 60) % 2 - 1))
         local m = val - c
         local r, g, b
-        if hgt < 60 then
+        if height < 60 then
             r, g, b = c, posX, 0
-        elseif hgt < 120 then
+        elseif height < 120 then
             r, g, b = posX, c, 0
-        elseif hgt < 180 then
+        elseif height < 180 then
             r, g, b = 0, c, posX
-        elseif hgt < 240 then
+        elseif height < 240 then
             r, g, b = 0, posX, c
-        elseif hgt < 300 then
+        elseif height < 300 then
             r, g, b = posX, 0, c
         else
             r, g, b = c, 0, posX
@@ -69,19 +69,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local mx = math.max(r, g, b)
         local mn = math.min(r, g, b)
         local d = mx - mn
-        local hgt, s, val
+        local height, s, val
         val = mx
         s = (mx == 0) and 0 or (d / mx)
         if d == 0 then
-            hgt = 0
+            height = 0
         elseif mx == r then
-            hgt = 60 * (((g - b) / d) % 6)
+            height = 60 * (((g - b) / d) % 6)
         elseif mx == g then
-            hgt = 60 * (((b - r) / d) + 2)
+            height = 60 * (((b - r) / d) + 2)
         else
-            hgt = 60 * (((r - g) / d) + 4)
+            height = 60 * (((r - g) / d) + 4)
         end
-        return hgt, s, val
+        return height, s, val
     end
 
     -------------------------------------------------------------------------------
@@ -389,21 +389,21 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         chR:SetSize(ARM, 1)
         chR:SetColorTexture(1, 1, 1, 0.9)
 
-        UpdateSVPadHue = function(hgt)
-            local r, g, b = HSVtoRGB(hgt, 1, 1)
+        UpdateSVPadHue = function(height)
+            local r, g, b = HSVtoRGB(height, 1, 1)
             svHue:SetColorTexture(r, g, b, 1)
         end
         UpdateSVCrosshair = function(s, val)
             local posX = s * SV_SIZE
-            local posY = -(1 - val) * SV_SIZE
+            local cursorY = -(1 - val) * SV_SIZE
             chT:ClearAllPoints()
-            chT:SetPoint("BOTTOM", svPad, "TOPLEFT", posX, posY + 2)
+            chT:SetPoint("BOTTOM", svPad, "TOPLEFT", posX, cursorY + 2)
             chB:ClearAllPoints()
-            chB:SetPoint("TOP", svPad, "TOPLEFT", posX, posY - 2)
+            chB:SetPoint("TOP", svPad, "TOPLEFT", posX, cursorY - 2)
             chL:ClearAllPoints()
-            chL:SetPoint("RIGHT", svPad, "TOPLEFT", posX - 2, posY)
+            chL:SetPoint("RIGHT", svPad, "TOPLEFT", posX - 2, cursorY)
             chR:ClearAllPoints()
-            chR:SetPoint("LEFT", svPad, "TOPLEFT", posX + 2, posY)
+            chR:SetPoint("LEFT", svPad, "TOPLEFT", posX + 2, cursorY)
         end
 
         local svDragging = false
@@ -483,9 +483,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         hueInd:SetSize(BAR_W + 4, 2)
         hueInd:SetColorTexture(1, 1, 1, 1)
 
-        UpdateHueIndicator = function(hgt)
+        UpdateHueIndicator = function(height)
             hueInd:ClearAllPoints()
-            hueInd:SetPoint("CENTER", hueBar, "TOPLEFT", BAR_W / 2, -(hgt / 360) * SV_SIZE)
+            hueInd:SetPoint("CENTER", hueBar, "TOPLEFT", BAR_W / 2, -(height / 360) * SV_SIZE)
         end
 
         local hueDragging = false
@@ -1047,16 +1047,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local pw = dialog:GetWidth()
             local ph = dialog:GetHeight()
             local posX = cx - pw * 0.5
-            local posY = cy - 30 -- popup top 30px below the cursor
+            local cursorY = cy - 30 -- popup top 30px below the cursor
             -- Flip above the cursor if that would drop below the options window
             local mainFrame = CludesUI._mainFrame
             if mainFrame and mainFrame:IsShown() then
                 local mBot = mainFrame:GetBottom()
-                if mBot and (posY - ph) < mBot then
-                    posY = cy + 30 + ph -- popup bottom 30px above the cursor
+                if mBot and (cursorY - ph) < mBot then
+                    cursorY = cy + 30 + ph -- popup bottom 30px above the cursor
                 end
             end
-            dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", posX, posY)
+            dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", posX, cursorY)
             CludesUI._colorPickerOpen = true
             RefreshSwatchRows()
             dialog:Show()
@@ -1163,9 +1163,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             -- returns true while the swatch is still that dress (the caller then
             -- paints it); once it is not, nothing is painted and the frame is not
             -- named (it may hold another slot now).
-            local function Write(cr, cg, cb, ca)
+            local function Write(cr, cg, checkBtn, ca)
                 local same = SameDress()
-                userSet(cr, cg, cb, ca)
+                userSet(cr, cg, checkBtn, ca)
                 CludesUI._NotifySettingWrite(same and parentFrame or nil, openSlot)
                 CludesUI._settingsChanged = true
                 return same and SameDress()
@@ -1175,12 +1175,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 if not dialog then
                     return
                 end
-                local cr, cg, cb = dialog:GetColorRGB()
+                local cr, cg, checkBtn = dialog:GetColorRGB()
                 local ca = hasAlpha and dialog:GetColorAlpha() or 1
                 if SameDress() then
-                    sFill:SetColorTexture(cr, cg, cb, ca)
+                    sFill:SetColorTexture(cr, cg, checkBtn, ca)
                 end
-                if Write(cr, cg, cb, ca) then
+                if Write(cr, cg, checkBtn, ca) then
                     UpdateSwatch()
                 end
             end
@@ -1280,8 +1280,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local classSwatch
         if options.hasClassColor then
             classSwatch = BuildColorSwatch(parentFrame, baseLevel, function()
-                local cc = CludesUI.GetClassColor(CludesUI._playerClass)
-                return cc.r, cc.g, cc.b, 1
+                local classColor = CludesUI.GetClassColor(CludesUI._playerClass)
+                return classColor.r, classColor.g, classColor.b, 1
             end, function() end, options.hasAlpha, options.overrideSize)
             classSwatch:SetScript("OnClick", function()
                 options.setMode("class")

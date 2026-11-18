@@ -149,7 +149,7 @@ local BLANK, LinkRow, NoteRow = CludesUI.BlankRowCfg, CludesUI.BuildLinkRow, Clu
 
 local NS = CludesUI.ModuleNS
 
-local function TileActionBars(hostFrame, posY, W, tile)
+local function TileActionBars(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
     local function barList()
         local ABAR = mod and mod.EAB
@@ -180,26 +180,26 @@ local function TileActionBars(hostFrame, posY, W, tile)
             end,
         }
     end
-    local _, hgt
+    local _, height
     if mod then
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             ModuleOutlineCfg(tile.folder, tile.display),
             dataBarCfg("XP Bar Text Size", "XPBar")
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- WoW Forever has no House Favor bar: its slot is blank there.
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             dataBarCfg("Reputation Bar Text Size", "RepBar"),
             CludesUI.IS_FOREVER and BLANK() or dataBarCfg("House Favor Bar Text Size", "FavorBar")
         )
-        posY = posY - hgt
-        posY = LinkRow(
+        cursorY = cursorY - height
+        cursorY = LinkRow(
             hostFrame,
-            posY,
+            cursorY,
             "Keybind, Macro, Charges & Cooldown Text (per bar)",
             tile.folder,
             "Bar Display",
@@ -207,26 +207,26 @@ local function TileActionBars(hostFrame, posY, W, tile)
             "Keybind Text Size"
         )
     else
-        _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-        posY = posY - hgt
-        posY = NoteRow(
+        _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        cursorY = cursorY - height
+        cursorY = NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
-    return posY
+    return cursorY
 end
 
-local function TileNameplates(hostFrame, posY, W, tile)
+local function TileNameplates(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    local _, hgt
+    local _, height
     if not mod then
-        _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-        posY = posY - hgt
+        _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        cursorY = cursorY - height
         return NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
@@ -264,9 +264,9 @@ local function TileNameplates(hostFrame, posY, W, tile)
             end,
         }
     end
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         ModuleOutlineCfg(tile.folder, tile.display),
         size(
             "Friendly Name Size (Bar Mode)",
@@ -277,50 +277,50 @@ local function TileNameplates(hostFrame, posY, W, tile)
             "RefreshFriendlyNameTextSize"
         )
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Friendly Name Size (Name Only)", "friendlyNameSize", 8, 30, 15, "RefreshFriendlyNameSize"),
         size("Friendly NPC Name Size", "friendlyNPCNameSize", 6, 30, 13, "RefreshAllNPCOverlays")
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Top Text Size", "textSlotTopSize", 6, 30, 10),
         size("Center Text Size", "textSlotCenterSize", 6, 30, 10)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Left Text Size", "textSlotLeftSize", 6, 30, 10),
         size("Right Text Size", "textSlotRightSize", 6, 30, 10)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Top Left Text Size", "textSlotTopLeftSize", 6, 30, 10),
         size("Top Right Text Size", "textSlotTopRightSize", 6, 30, 10)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Bottom Left Text Size", "textSlotBottomLeftSize", 6, 30, 10),
         size("Bottom Right Text Size", "textSlotBottomRightSize", 6, 30, 10)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Cast Name Size", "castNameSize", 6, 20, 10),
         size("Cast Timer Size", "castTimerSize", 6, 20, 10)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, size("Cast Target Size", "castTargetSize", 6, 20, 10), {
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, size("Cast Target Size", "castTargetSize", 6, 20, 10), {
         type = "slider",
         text = "Aura Stacks Size",
         min = 6,
@@ -344,74 +344,74 @@ local function TileNameplates(hostFrame, posY, W, tile)
             end
         end,
     })
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Buff Duration Size", "buffDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize"),
         size("Debuff Duration Size", "debuffDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize")
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("CC Duration Size", "ccDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize"),
         size("Focus Letter Size", "focusLetterSize", 6, 40, 18)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Distance Text Size", "rangeTextSize", 6, 32, 11, "RangeText_Refresh"),
         size("Quest Objective Text Size", "questObjectiveTextSize", 6, 24, 14, "RefreshQuestObjective")
     )
-    posY = posY - hgt
-    return posY
+    cursorY = cursorY - height
+    return cursorY
 end
 
-local function TileUnitFrames(hostFrame, posY, W, tile)
+local function TileUnitFrames(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    local _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-    posY = posY - hgt
+    local _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+    cursorY = cursorY - height
     if mod then
-        posY = LinkRow(
+        cursorY = LinkRow(
             hostFrame,
-            posY,
+            cursorY,
             "Player, Target & Focus Text Sizes (per unit)",
             tile.folder,
             "Main Frames",
             "HEALTH BAR"
         )
-        posY = LinkRow(
+        cursorY = LinkRow(
             hostFrame,
-            posY,
+            cursorY,
             "Pet & Target-of-Target Text Sizes (per unit)",
             tile.folder,
             "Mini Frames",
             "HEALTH BAR"
         )
-        posY = LinkRow(hostFrame, posY, "Boss Frames Text Sizes", tile.folder, "Boss Frames", "HEALTH BAR")
-        posY =
-            LinkRow(hostFrame, posY, "Player Aura Bars Text (per bar)", tile.folder, "Player Aura Bars", nil)
+        cursorY = LinkRow(hostFrame, cursorY, "Boss Frames Text Sizes", tile.folder, "Boss Frames", "HEALTH BAR")
+        cursorY =
+            LinkRow(hostFrame, cursorY, "Player Aura Bars Text (per bar)", tile.folder, "Player Aura Bars", nil)
     else
-        posY = NoteRow(
+        cursorY = NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
-    return posY
+    return cursorY
 end
 
-local function TileRaidFrames(hostFrame, posY, W, tile)
+local function TileRaidFrames(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    local _, hgt
+    local _, height
     if not mod then
-        _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-        posY = posY - hgt
+        _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        cursorY = cursorY - height
         return NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
@@ -447,35 +447,35 @@ local function TileRaidFrames(hostFrame, posY, W, tile)
             end,
         }
     end
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         ModuleOutlineCfg(tile.folder, tile.display),
         size("Name Size", "nameSize", 6, 26, 10)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Health Text Size", "healthTextSize", 6, 26, 9),
         size("Power Text Size", "powerTextSize", 6, 26, 8)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Heal Absorb Text Size", "healAbsorbTextSize", 6, 26, 9),
         size("Status Text Size", "statusTextSize", 6, 30, 14)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Group Number Size", "groupNumberSize", 6, 30, 10),
         size("Top Name Bar Text Size", "topNameBarTextSize", 6, 30, 11)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, {
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Healer Mana Text Size",
         min = 8,
@@ -502,54 +502,54 @@ local function TileRaidFrames(hostFrame, posY, W, tile)
             end
         end,
     }, size("Level Size", "levelTextSize", 6, 26, 10))
-    posY = posY - hgt
-    posY = LinkRow(hostFrame, posY, "Party-Specific Text Sizes", tile.folder, "Party", "TEXT DISPLAY")
-    posY = LinkRow(hostFrame, posY, "Buff Manager Text (per indicator)", tile.folder, "Buff Manager", nil)
-    posY = LinkRow(hostFrame, posY, "Debuff Manager Text (per tile)", tile.folder, "Debuff Manager", nil)
-    return posY
+    cursorY = cursorY - height
+    cursorY = LinkRow(hostFrame, cursorY, "Party-Specific Text Sizes", tile.folder, "Party", "TEXT DISPLAY")
+    cursorY = LinkRow(hostFrame, cursorY, "Buff Manager Text (per indicator)", tile.folder, "Buff Manager", nil)
+    cursorY = LinkRow(hostFrame, cursorY, "Debuff Manager Text (per tile)", tile.folder, "Debuff Manager", nil)
+    return cursorY
 end
 
-local function TileCooldownManager(hostFrame, posY, W, tile)
+local function TileCooldownManager(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    local _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-    posY = posY - hgt
+    local _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+    cursorY = cursorY - height
     if mod then
-        posY = LinkRow(
+        cursorY = LinkRow(
             hostFrame,
-            posY,
+            cursorY,
             "Icon Duration, Stack & Keybind Text (per bar)",
             tile.folder,
             "CDM Bars",
             "ICON DISPLAY",
             "Duration Size"
         )
-        posY = LinkRow(
+        cursorY = LinkRow(
             hostFrame,
-            posY,
+            cursorY,
             "Tracking Bar Name, Timer & Stacks Text (per bar)",
             tile.folder,
             "Tracking Bars",
             "BAR LAYOUT"
         )
     else
-        posY = NoteRow(
+        cursorY = NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
-    return posY
+    return cursorY
 end
 
-local function TileResourceBars(hostFrame, posY, W, tile)
+local function TileResourceBars(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    local _, hgt
+    local _, height
     if not mod then
-        _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-        posY = posY - hgt
+        _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        cursorY = cursorY - height
         return NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
@@ -584,41 +584,41 @@ local function TileResourceBars(hostFrame, posY, W, tile)
             end,
         }
     end
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         ModuleOutlineCfg(tile.folder, tile.display),
         size("Health Text Size", "health", "textSize", 8, 24, 11)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Power Text Size", "primary", "textSize", 8, 24, 11),
         size("Class Resource Text Size", "secondary", "textSize", 8, 24, 11)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Cast Bar Text Size", "castBar", "spellTextSize", 8, 24, 11),
         size("Cast Bar Timer Size", "castBar", "timerSize", 8, 24, 11)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, size("Totem Timer Size", "totemBar", "timerSize", 6, 24, 11), BLANK())
-    posY = posY - hgt
-    return posY
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, size("Totem Timer Size", "totemBar", "timerSize", 6, 24, 11), BLANK())
+    cursorY = cursorY - height
+    return cursorY
 end
 
-local function TileAuraBuffReminders(hostFrame, posY, W, tile)
+local function TileAuraBuffReminders(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    local _, hgt
+    local _, height
     if not mod then
-        _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-        posY = posY - hgt
+        _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        cursorY = cursorY - height
         return NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
@@ -626,9 +626,9 @@ local function TileAuraBuffReminders(hostFrame, posY, W, tile)
         return _G._CUABR_AceDB and _G._CUABR_AceDB.profile
     end
     local nameFontValues, nameFontOrder = CludesUI.BuildFontDropdownData()
-    _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Name Font",
         values = nameFontValues,
@@ -668,8 +668,8 @@ local function TileAuraBuffReminders(hostFrame, posY, W, tile)
             end
         end,
     })
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, {
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Item Count Font",
         values = nameFontValues,
@@ -709,8 +709,8 @@ local function TileAuraBuffReminders(hostFrame, posY, W, tile)
             end
         end,
     })
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, {
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Mana Warning Font",
         values = nameFontValues,
@@ -750,19 +750,19 @@ local function TileAuraBuffReminders(hostFrame, posY, W, tile)
             end
         end,
     })
-    posY = posY - hgt
-    return posY
+    cursorY = cursorY - height
+    return cursorY
 end
 
-local function TileQoL(hostFrame, posY, W, tile)
+local function TileQoL(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    local _, hgt
+    local _, height
     if not mod then
-        _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-        posY = posY - hgt
+        _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        cursorY = cursorY - height
         return NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
@@ -851,8 +851,8 @@ local function TileQoL(hostFrame, posY, W, tile)
     -- last slot.
     local FOREVER = CludesUI.IS_FOREVER
     local slots = {}
-    local function add(conf)
-        slots[#slots + 1] = conf
+    local function add(rowConf)
+        slots[#slots + 1] = rowConf
     end
     add(ModuleOutlineCfg(tile.folder, tile.display))
     add(gsize("Map Coordinates Text Size", "mapCoordsTextSize", 8, 24, 12, "_applyMapCoords"))
@@ -990,21 +990,21 @@ local function TileQoL(hostFrame, posY, W, tile)
         end,
     })
     for i = 1, #slots, 2 do
-        _, hgt = W:DualRow(hostFrame, posY, slots[i], slots[i + 1] or BLANK())
-        posY = posY - hgt
+        _, height = W:DualRow(hostFrame, cursorY, slots[i], slots[i + 1] or BLANK())
+        cursorY = cursorY - height
     end
-    return posY
+    return cursorY
 end
 
-local function TileChat(hostFrame, posY, W, tile)
+local function TileChat(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    local _, hgt
+    local _, height
     if not mod then
-        _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-        posY = posY - hgt
+        _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        cursorY = cursorY - height
         return NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
@@ -1027,7 +1027,7 @@ local function TileChat(hostFrame, posY, W, tile)
             reload = true,
         })
     end
-    _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), {
+    _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), {
         type = "dropdown",
         text = "Chat Font",
         values = fontValues,
@@ -1045,8 +1045,8 @@ local function TileChat(hostFrame, posY, W, tile)
             ChatReload("Font changed. A UI reload is needed to apply the new font.")
         end,
     })
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, {
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Chat Outline Mode",
         values = {
@@ -1099,19 +1099,19 @@ local function TileChat(hostFrame, posY, W, tile)
             end
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Blizzard Style shows Blizzard's own chat tabs (their stock font), so the
     -- tab font row hides there; Classic's painted tabs still use it.
     local BS = CludesUI.BlizzStyle
-    local function TabFontGate(conf)
+    local function TabFontGate(rowConf)
         if BS and BS.Active("chat") == "blizzard" then
-            BS.Gate("chat", conf)
+            BS.Gate("chat", rowConf)
         end
-        return conf
+        return rowConf
     end
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         TabFontGate({
             type = "dropdown",
             text = "Tab Font",
@@ -1160,8 +1160,8 @@ local function TileChat(hostFrame, posY, W, tile)
             end,
         })
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, {
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Edit Box Font",
         values = ebValues,
@@ -1210,19 +1210,19 @@ local function TileChat(hostFrame, posY, W, tile)
             end
         end,
     })
-    posY = posY - hgt
-    return posY
+    cursorY = cursorY - height
+    return cursorY
 end
 
-local function TileMythicTimer(hostFrame, posY, W, tile)
+local function TileMythicTimer(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    local _, hgt
+    local _, height
     if not mod then
-        _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-        posY = posY - hgt
+        _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        cursorY = cursorY - height
         return NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
@@ -1301,7 +1301,7 @@ local function TileMythicTimer(hostFrame, posY, W, tile)
         return p and p.kickTracker
     end
     local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
-    _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), {
+    _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), {
         type = "dropdown",
         text = "Timer Font",
         tooltip = "Typeface for the M+ timer clock. Every other Mythic+ text uses the module font.",
@@ -1320,96 +1320,96 @@ local function TileMythicTimer(hostFrame, posY, W, tile)
             MTApply()
         end,
     })
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Title Size", "titleSize", 8, 24, 16),
         size("Affix Size", "affixSize", 6, 20, 12)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Timer Size", "timerTextSize", 10, 32, 20),
         size("Objectives Size", "objectivesSize", 8, 20, 12)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("+3 Threshold Text Size", "thresholdPlusThreeSize", 6, 20, 12, "thresholdSize"),
         size("+2 Threshold Text Size", "thresholdPlusTwoSize", 6, 20, 12, "thresholdSize")
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("+1 Threshold Text Size", "thresholdPlusOneSize", 6, 20, 12, "thresholdSize"),
         size("Enemy Forces Text Size", "enemyForcesTextSize", 8, 24, 12, "objectivesSize")
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         subSize("Cast Bars Name Size", tsb, 6, 20, 10, "nameSize", "TSB_Refresh"),
         subSize("Cast Bars Timer Size", tsb, 6, 20, 10, "timerSize", "TSB_Refresh")
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         subSize("Cast Bars Target Size", tsb, 6, 20, 10, "targetSize", "TSB_Refresh"),
         subSize("Target Cast Bar Name Size", tfbT, 6, 22, 11, "nameSize", "TFB_Refresh")
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         subSize("Target Cast Bar Timer Size", tfbT, 6, 22, 11, "timerSize", "TFB_Refresh"),
         subSize("Target Cast Bar Target Size", tfbT, 6, 20, 10, "targetSize", "TFB_Refresh")
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         subSize("Focus Cast Bar Name Size", tfbF, 6, 22, 11, "nameSize", "TFB_Refresh"),
         subSize("Focus Cast Bar Timer Size", tfbF, 6, 22, 11, "timerSize", "TFB_Refresh")
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         subSize("Focus Cast Bar Target Size", tfbF, 6, 20, 10, "targetSize", "TFB_Refresh"),
         subSize("Kick Tracker Timer Size", kt, 6, 24, 11, "timerSize", "KT_Refresh")
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         subSize("Kick Tracker Bar Name Size", kt, 6, 24, 11, "barNameSize", "KT_Refresh"),
         subSize("Kick Tracker Bar Timer Size", kt, 6, 24, 11, "barTimerSize", "KT_Refresh")
     )
-    posY = posY - hgt
-    return posY
+    cursorY = cursorY - height
+    return cursorY
 end
 
-local function TileDamageMeters(hostFrame, posY, W, tile)
+local function TileDamageMeters(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    local _, hgt
+    local _, height
     if not mod then
-        _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-        posY = posY - hgt
+        _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        cursorY = cursorY - height
         return NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
     local function saved()
         return _G._CUDM_DB and _G._CUDM_DB.profile and _G._CUDM_DB.profile.dm
     end
-    _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), {
+    _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), {
         type = "slider",
         text = "Header Text Size",
         min = 8,
@@ -1430,7 +1430,7 @@ local function TileDamageMeters(hostFrame, posY, W, tile)
             end
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     local function barSize(labelText, key)
         return {
             type = "slider",
@@ -1454,14 +1454,14 @@ local function TileDamageMeters(hostFrame, posY, W, tile)
             end,
         }
     end
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         barSize("Bar Left Text Size", "leftFontSize"),
         barSize("Bar Right Text Size", "rightFontSize")
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, {
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Standalone Timer Size",
         min = 10,
@@ -1503,19 +1503,19 @@ local function TileDamageMeters(hostFrame, posY, W, tile)
             end
         end,
     })
-    posY = posY - hgt
-    return posY
+    cursorY = cursorY - height
+    return cursorY
 end
 
-local function TileBags(hostFrame, posY, W, tile)
+local function TileBags(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    local _, hgt
+    local _, height
     if not mod then
-        _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-        posY = posY - hgt
+        _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        cursorY = cursorY - height
         return NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
@@ -1551,9 +1551,9 @@ local function TileBags(hostFrame, posY, W, tile)
             end,
         }
     end
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         ModuleOutlineCfg(tile.folder, tile.display),
         size("Category Title Size", "bagCatTitleSize", 8, 16, 11, function()
             if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
@@ -1561,24 +1561,24 @@ local function TileBags(hostFrame, posY, W, tile)
             end
         end)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Item Count Text Size", "bagCountFontSize", 8, 16, 11, TextSizes),
         size("Item Level Text Size", "itemlevelFontSize", 8, 16, 12, TextSizes)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Set Name Text Size", "bagSetNameFontSize", 7, 14, 9, TextSizes),
         size("BoE / Warbound Text Size", "bagBindTypeFontSize", 8, 16, 11, TextSizes)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("List Text Size", "bagListFontSize", 8, 16, 11, function()
             if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                 _G.CUI_Bags:RefreshInventory()
@@ -1589,19 +1589,19 @@ local function TileBags(hostFrame, posY, W, tile)
         end),
         BLANK()
     )
-    posY = posY - hgt
-    return posY
+    cursorY = cursorY - height
+    return cursorY
 end
 
-local function TileMinimap(hostFrame, posY, W, tile)
+local function TileMinimap(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    local _, hgt
+    local _, height
     if not mod then
-        _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-        posY = posY - hgt
+        _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        cursorY = cursorY - height
         return NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
@@ -1657,41 +1657,41 @@ local function TileMinimap(hostFrame, posY, W, tile)
             end,
         }
     end
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         ModuleOutlineCfg(tile.folder, tile.display),
         size("FPS Text Size", "fpsTextSize", 8, 30, 12)
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Difficulty Text Size", "diffTextSize", 8, 24, 12),
         scale("Clock Scale", "clockScale", 1.15, "_CUBS_ClockBg")
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         scale("Zone Text Scale", "locationScale", 1.15, "_CUBS_LocationBg"),
         scale("Coordinates Scale", "coordsScale", 1.0, "_CUBS_CoordFrame")
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, scale("FPS/MS Scale", "fpsScale", 1.0, "_CUBS_FpsBg"), BLANK())
-    posY = posY - hgt
-    return posY
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, scale("FPS/MS Scale", "fpsScale", 1.0, "_CUBS_FpsBg"), BLANK())
+    cursorY = cursorY - height
+    return cursorY
 end
 
-local function TileQuestTracker(hostFrame, posY, W, tile)
+local function TileQuestTracker(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    local _, hgt
+    local _, height
     if not mod then
-        _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-        posY = posY - hgt
+        _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        cursorY = cursorY - height
         return NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
@@ -1701,7 +1701,7 @@ local function TileQuestTracker(hostFrame, posY, W, tile)
     if BS and BS.Get("questtracker") then
         return NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf(
                 "%1$s is active: the tracker keeps Blizzard's own text.",
                 CludesUI.L(BS.Label("questtracker"))
@@ -1751,7 +1751,7 @@ local function TileQuestTracker(hostFrame, posY, W, tile)
         }
     end
     local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
-    _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), {
+    _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), {
         type = "dropdown",
         text = "Quest Tracker Font",
         tooltip = "Typeface for the quest tracker. This module-local pick wins over the module font override above.",
@@ -1776,42 +1776,42 @@ local function TileQuestTracker(hostFrame, posY, W, tile)
             FontReload()
         end,
     })
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         size("Header Font Size", "headerFontSize", 13),
         size("Title Font Size", "titleFontSize", 12)
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
     if mod.UseCustomTracker and mod.UseCustomTracker() then
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             size("Objective Font Size", "objectiveFontSize", 10),
             size("Zone Header Font Size", "customZoneFontSize", 13)
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
     else
-        _, hgt = W:DualRow(hostFrame, posY, size("Objective Font Size", "objectiveFontSize", 10), BLANK())
-        posY = posY - hgt
+        _, height = W:DualRow(hostFrame, cursorY, size("Objective Font Size", "objectiveFontSize", 10), BLANK())
+        cursorY = cursorY - height
     end
-    return posY
+    return cursorY
 end
 
-local function TileBlizzardSkin(hostFrame, posY, W, tile)
+local function TileBlizzardSkin(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    local _, hgt
+    local _, height
     if not mod then
-        _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-        posY = posY - hgt
+        _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+        cursorY = cursorY - height
         return NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
-    _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), {
+    _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), {
         type = "slider",
         text = "Tooltip Font Size Scale",
         min = 0.7,
@@ -1830,7 +1830,7 @@ local function TileBlizzardSkin(hostFrame, posY, W, tile)
             CludesUIDB.tooltipFontScale = val
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     local enchSizeCfg = {
         type = "slider",
         text = "Enchant Text Size",
@@ -1852,7 +1852,7 @@ local function TileBlizzardSkin(hostFrame, posY, W, tile)
     }
     -- WoW Forever has no skyriding (the Dragon Riding HUD never loads there),
     -- so the enchant size sits alone in the last row.
-    _, hgt = W:DualRow(hostFrame, posY, enchSizeCfg, CludesUI.IS_FOREVER and BLANK() or {
+    _, height = W:DualRow(hostFrame, cursorY, enchSizeCfg, CludesUI.IS_FOREVER and BLANK() or {
         type = "slider",
         text = "Dragonriding Speed Text Size",
         min = 6,
@@ -1873,18 +1873,18 @@ local function TileBlizzardSkin(hostFrame, posY, W, tile)
             end
         end,
     })
-    posY = posY - hgt
-    return posY
+    cursorY = cursorY - height
+    return cursorY
 end
 
-local function TileDataBars(hostFrame, posY, W, tile)
+local function TileDataBars(hostFrame, cursorY, W, tile)
     local mod = NS(tile.folder)
-    local _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-    posY = posY - hgt
+    local _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+    cursorY = cursorY - height
     if mod then
-        posY = LinkRow(
+        cursorY = LinkRow(
             hostFrame,
-            posY,
+            cursorY,
             "Text Scale (per data bar)",
             tile.folder,
             "Info Bar",
@@ -1892,26 +1892,26 @@ local function TileDataBars(hostFrame, posY, W, tile)
             "Text Scale"
         )
     else
-        posY = NoteRow(
+        cursorY = NoteRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.Lf("Enable %1$s to edit its text settings.", CludesUI.L(tile.display))
         )
     end
-    return posY
+    return cursorY
 end
 
-local function TileFontOnly(hostFrame, posY, W, tile)
-    local _, hgt = W:DualRow(hostFrame, posY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
-    return posY - hgt
+local function TileFontOnly(hostFrame, cursorY, W, tile)
+    local _, height = W:DualRow(hostFrame, cursorY, ModuleOutlineCfg(tile.folder, tile.display), BLANK())
+    return cursorY - height
 end
 
 -- Combat and world text: engine globals that only apply at login, plus the
 -- floating combat text scale CVar. The font pickers stay on their original
 -- pages (curated list + logout flow); this card mirrors the size and links
 -- to the rest.
-local function TileCombatText(hostFrame, posY, W, tile)
-    local _, hgt = W:DualRow(hostFrame, posY, {
+local function TileCombatText(hostFrame, cursorY, W, tile)
+    local _, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Combat Text Size",
         min = 0.5,
@@ -1928,17 +1928,17 @@ local function TileCombatText(hostFrame, posY, W, tile)
             CludesUI.SetCVar("WorldTextScale_v2", val)
         end,
     }, BLANK())
-    posY = posY - hgt
-    posY = LinkRow(
+    cursorY = cursorY - height
+    cursorY = LinkRow(
         hostFrame,
-        posY,
+        cursorY,
         "Combat Text Font (logout required)",
         GLOBAL_KEY,
         "General",
         "COMBAT",
         "Combat Text Font"
     )
-    return posY
+    return cursorY
 end
 
 -------------------------------------------------------------------------------
@@ -2017,8 +2017,8 @@ end
 --  Font card (adapted from the Window Skins card pattern)
 -------------------------------------------------------------------------------
 
-local function BuildFontCard(hostFrame, posY, W, tile)
-    return CludesUI.BuildModuleCard(hostFrame, posY, W, tile, {
+local function BuildFontCard(hostFrame, cursorY, W, tile)
+    return CludesUI.BuildModuleCard(hostFrame, cursorY, W, tile, {
         enabled = (not tile.folder) or NS(tile.folder) ~= nil,
         expanded = _ftExpanded,
         descW = 440,
@@ -2118,8 +2118,8 @@ end
 function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
     local W = CludesUI.Widgets
     local Pix = CludesUI.PanelPP
-    local posY = yOffset
-    local _, hgt
+    local cursorY = yOffset
+    local _, height
 
     hostFrame._showRowDivider = true
 
@@ -2135,8 +2135,8 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
     -------------------------------------------------------------------
     --  GLOBAL FONT section (moved from the old Fonts & Colors page)
     -------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "GLOBAL FONT", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "GLOBAL FONT", cursorY)
+    cursorY = cursorY - height
 
     -- Glyph-restricted locales (CJK, Cyrillic): most bundled fonts are Latin-only and cannot render the script, so the picker
     -- offers "System Default" plus external SharedMedia fonts (which may carry the right glyphs).
@@ -2213,7 +2213,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
 
     -- Global Font (+ cog: Apply to All Game Text) | Outline Mode
     local globalFontRow
-    globalFontRow, hgt = W:DualRow(hostFrame, posY, {
+    globalFontRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Global Font",
         values = fontDropValues,
@@ -2266,7 +2266,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
             FontReload()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(globalFontRow._leftRegion, {
             title = "Global Font",
@@ -2294,7 +2294,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
     -- export/import), drops the SLUG token from every outline (body/icon/aura
     -- text, Outline Mode itself). Off by default; needs reload.
     local oitRow
-    oitRow, hgt = W:DualRow(hostFrame, posY, {
+    oitRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Outline Icon Text",
         tooltip = "Forces a crisp outline on icon text (stack counts, durations, keybinds). Uncheck a module to make its icon text follow the Outline Mode setting above instead.",
@@ -2316,7 +2316,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
             FontReload()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         local oitItems = {
             { key = "actionBars", label = "Action Bars Icons" },
@@ -2329,17 +2329,17 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
         if region._control then
             region._control:Hide()
         end
-        local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
             region,
             220,
             region:GetFrameLevel() + 2,
             oitItems,
-            function(k)
+            function(keyName)
                 local f = CludesUI.GetFontsDB()
                 local t = (f and f.outlineIconText) or (CludesUIDB and CludesUIDB.outlineIconText)
-                return not (t and t[k] == false)
+                return not (t and t[keyName] == false)
             end,
-            function(k, val)
+            function(keyName, val)
                 -- Per-profile (rides profile export); seed from the legacy account-global table on first write so other modules' choices carry over.
                 local f = CludesUI.GetFontsDB()
                 if type(f.outlineIconText) ~= "table" then
@@ -2352,13 +2352,13 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
                     end
                     f.outlineIconText = t
                 end
-                f.outlineIconText[k] = val and true or false
+                f.outlineIconText[keyName] = val and true or false
                 -- Reload prompt from setFn, NOT an onChanged callback: a non-nil onChanged re-anchors the open CB dropdown menu absolutely (for page rebuilds), visibly shifting it.
                 FontReload()
             end
         )
-        Pix.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
-        region._control = cbDD
+        Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+        region._control = checkDrop
         region._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
     end
@@ -2373,17 +2373,17 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
         nameFontValues[NAME_FONT_DEFAULT] = { text = "Blizzard Default", font = "Fonts\\FRIZQT__.TTF" }
         nameFontOrder[1] = NAME_FONT_DEFAULT
         nameFontOrder[2] = "---"
-        for _, k in ipairs(fontDropOrder) do
+        for _, keyName in ipairs(fontDropOrder) do
             -- Skip the Blizzard Default sentinel: this list's own "__default"
             -- entry means "leave the engine's name font untouched", which is
             -- the same visual result with the correct do-nothing semantics.
             -- Collapse the separator that followed it so no doubled divider.
-            if k ~= CludesUI.BLIZZARD_FONT_KEY then
-                if k ~= "---" or nameFontOrder[#nameFontOrder] ~= "---" then
-                    nameFontOrder[#nameFontOrder + 1] = k
+            if keyName ~= CludesUI.BLIZZARD_FONT_KEY then
+                if keyName ~= "---" or nameFontOrder[#nameFontOrder] ~= "---" then
+                    nameFontOrder[#nameFontOrder + 1] = keyName
                 end
-                if k ~= "---" then
-                    nameFontValues[k] = fontDropValues[k]
+                if keyName ~= "---" then
+                    nameFontValues[keyName] = fontDropValues[keyName]
                 end
             end
         end
@@ -2400,7 +2400,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
     -- immediately for a typed value.
     do
         local gtsPending
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Name Font",
             -- Coloured inline rather than via tooltipOpts.color, which would tint the explanation red along with the warning.
@@ -2455,11 +2455,11 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     -------------------------------------------------------------------
     --  MODULE FONTS -- one expandable card per module. The header dropdown
@@ -2475,7 +2475,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
     Pix.Size(introHost, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, 44)
     -- 10px breathing room above; the host's slack below is trimmed the same
     -- amount so the section title sits tighter under the text.
-    introHost:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY - 10)
+    introHost:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY - 10)
     local intro = CludesUI.MakeFont(introHost, 14, nil, 1, 1, 1, 0.65)
     intro:SetPoint("TOPLEFT", introHost, "TOPLEFT", 0, -2)
     intro:SetPoint("TOPRIGHT", introHost, "TOPRIGHT", 0, -2)
@@ -2486,16 +2486,16 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
             .. "\n"
             .. CludesUI.L("These are the same settings found on each module's own pages, not separate ones.")
     )
-    posY = posY - 48
+    cursorY = cursorY - 48
 
-    _, hgt = W:SectionHeader(hostFrame, "MODULE FONTS", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "MODULE FONTS", cursorY)
+    cursorY = cursorY - height
 
     for _, tile in ipairs(BuildTileList()) do
-        posY = BuildFontCard(hostFrame, posY, W, tile)
+        cursorY = BuildFontCard(hostFrame, cursorY, W, tile)
     end
 
     -- Framework contract: return the positive total content height
     -- (contentFrame:SetHeight consumes it), never the final negative y.
-    return math.abs(posY)
+    return math.abs(cursorY)
 end

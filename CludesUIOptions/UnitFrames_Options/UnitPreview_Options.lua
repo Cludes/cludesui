@@ -1661,9 +1661,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
     combatIndHolder:SetAllPoints(popFrame)
     combatIndHolder:SetFrameLevel(popFrame:GetFrameLevel() + 20)
     local function IndicatorTex(sublevel)
-        local tex = combatIndHolder:CreateTexture(nil, "OVERLAY", nil, sublevel)
-        tex:Hide()
-        return tex
+        local texture = combatIndHolder:CreateTexture(nil, "OVERLAY", nil, sublevel)
+        texture:Hide()
+        return texture
     end
     local combatInd = IndicatorTex(7)
     combatInd:SetSize(24, 24)
@@ -2833,8 +2833,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             local pvUsePowerColor = s.powerPercentPowerColor ~= false
             if pvUsePowerColor and s.powerClassColored then
                 local _, ct = UnitClass("player")
-                local cc = CludesUI.GetClassColor(ct)
-                pvPfR, pvPfG, pvPfB = cc.r, cc.g, cc.b
+                local classColor = CludesUI.GetClassColor(ct)
+                pvPfR, pvPfG, pvPfB = classColor.r, classColor.g, classColor.b
             elseif pvUsePowerColor then
                 local _, pToken = UnitPowerType("player")
                 local details = CludesUI.GetPowerColor(pToken or "MANA")
@@ -4874,14 +4874,14 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
     end
     -- Also purge any orphaned previews (parent set to nil by ClearContentHeaderInner)
     -- and every entry whose frame was dressed again for another unit (this one included)
-    for k, pv in pairs(allPreviews) do
-        if pv and pv._pvUnit ~= k then
-            allPreviews[k] = nil
-        elseif pv and pv ~= popFrame and not pv:GetParent() then
-            if pv._disabledOverlay then
-                pv._disabledOverlay:Hide()
+    for keyName, preview in pairs(allPreviews) do
+        if preview and preview._pvUnit ~= keyName then
+            allPreviews[keyName] = nil
+        elseif preview and preview ~= popFrame and not preview:GetParent() then
+            if preview._disabledOverlay then
+                preview._disabledOverlay:Hide()
             end
-            allPreviews[k] = nil
+            allPreviews[keyName] = nil
         end
     end
     allPreviews[unitKey] = popFrame

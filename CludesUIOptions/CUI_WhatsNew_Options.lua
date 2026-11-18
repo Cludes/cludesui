@@ -40,7 +40,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
     -- This page is a free-form feed, not a DualRow split layout.
     hostFrame._showRowDivider = nil
 
-    local posY = yOffset
+    local cursorY = yOffset
     local totalW = hostFrame:GetWidth() - PAD * 2
     local CARD_GAP = 14
 
@@ -114,9 +114,9 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
     end
 
     -- Tier 1: clickable hero card -- dark fill, faint border, green top accent, title + wrapping description, hover lift.
-    local function MakeHeroCard(posX, cy, wid, hgt, record)
+    local function MakeHeroCard(posX, cy, wid, height, record)
         local cardFrame = CreateFrame("Button", nil, hostFrame)
-        Pix.Size(cardFrame, wid, hgt)
+        Pix.Size(cardFrame, wid, height)
         Pix.Point(cardFrame, "TOPLEFT", hostFrame, "TOPLEFT", posX, cy)
         cardFrame:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
 
@@ -395,15 +395,15 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
     local patches = CludesUI._WHATSNEW_PATCHES
     if not patches or #patches == 0 then
         local none = MakeFont(hostFrame, 13, nil, 1, 1, 1, 0.5)
-        Pix.Point(none, "TOPLEFT", hostFrame, "TOPLEFT", PAD, posY - 20)
+        Pix.Point(none, "TOPLEFT", hostFrame, "TOPLEFT", PAD, cursorY - 20)
         none:SetText(CludesUI.L("No patch notes yet."))
-        return math.abs(posY) + 60
+        return math.abs(cursorY) + 60
     end
 
     -- Intro hint: centered, with 20px of breathing room above and below.
-    posY = posY - 20
+    cursorY = cursorY - 20
     local hint = MakeFont(hostFrame, 14, nil, 1, 1, 1, 0.5)
-    Pix.Point(hint, "TOP", hostFrame, "TOP", 0, posY)
+    Pix.Point(hint, "TOP", hostFrame, "TOP", 0, cursorY)
     hint:SetJustifyH("CENTER")
     hint:SetText(CludesUI.L("Click any new feature to go directly to the setting"))
 
@@ -412,22 +412,22 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         local BOX = 14
         local row = CreateFrame("Button", nil, hostFrame)
         row:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
-        local box = CreateFrame("Frame", nil, row)
-        Pix.Size(box, BOX, BOX)
-        Pix.Point(box, "LEFT", row, "LEFT", 0, 0)
-        local boxBg = box:CreateTexture(nil, "BACKGROUND")
+        local boxFrame = CreateFrame("Frame", nil, row)
+        Pix.Size(boxFrame, BOX, BOX)
+        Pix.Point(boxFrame, "LEFT", row, "LEFT", 0, 0)
+        local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
         boxBg:SetAllPoints()
         boxBg:SetColorTexture(0.088, 0.098, 0.111, 1)
-        local boxBrd = CludesUI.MakeRoundedBorder(box, 1, 1, 1, 0.25, boxBg)
-        local check = box:CreateTexture(nil, "ARTWORK")
-        Pix.Point(check, "TOPLEFT", box, "TOPLEFT", 3, -3)
-        Pix.Point(check, "BOTTOMRIGHT", box, "BOTTOMRIGHT", -3, 3)
-        CludesUI.RoundBody(box, check, 1)
+        local boxBrd = CludesUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.25, boxBg)
+        local check = boxFrame:CreateTexture(nil, "ARTWORK")
+        Pix.Point(check, "TOPLEFT", boxFrame, "TOPLEFT", 3, -3)
+        Pix.Point(check, "BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", -3, 3)
+        CludesUI.RoundBody(boxFrame, check, 1)
         local labelFS = MakeFont(row, 12, nil, 1, 1, 1, 0.5)
-        Pix.Point(labelFS, "LEFT", box, "RIGHT", 7, 0)
+        Pix.Point(labelFS, "LEFT", boxFrame, "RIGHT", 7, 0)
         labelFS:SetText(CludesUI.L("New Patch Reminder Dot"))
         row:SetSize(BOX + 10 + (labelFS:GetStringWidth() or 130), 20)
-        Pix.Point(row, "TOPRIGHT", hostFrame, "TOPRIGHT", -PAD, posY + 2)
+        Pix.Point(row, "TOPRIGHT", hostFrame, "TOPRIGHT", -PAD, cursorY + 2)
         local function Paint()
             local on = not (CludesUIDB and CludesUIDB.patchDotDisabled)
             check:SetShown(on)
@@ -467,7 +467,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         end)
     end
 
-    posY = posY - math.ceil(hint:GetStringHeight() or 14) - 20
+    cursorY = cursorY - math.ceil(hint:GetStringHeight() or 14) - 20
 
     -- A patch card's content sits inset from the card's edges.
     local INSET = 16
@@ -580,7 +580,7 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
             end,
         }
         local newest = pi == 1
-        posY = CludesUI.BuildModuleCard(hostFrame, posY, W, tile, {
+        cursorY = CludesUI.BuildModuleCard(hostFrame, cursorY, W, tile, {
             enabled = true,
             expanded = whatsNewOpen,
             descW = 560,
@@ -617,5 +617,5 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         end
     end
 
-    return math.abs(posY) + 20
+    return math.abs(cursorY) + 20
 end

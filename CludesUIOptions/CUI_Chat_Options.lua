@@ -31,8 +31,8 @@ CludesUI.AtOptionsLogin(function()
         end
         return {}
     end
-    local function Cfg(k)
-        return DB()[k]
+    local function Cfg(keyName)
+        return DB()[keyName]
     end
     -- Row getters over Cfg: a key's value (or a default), or whether it is true.
     local function CfgOr(key, default)
@@ -45,8 +45,8 @@ CludesUI.AtOptionsLogin(function()
             return Cfg(key) == true
         end
     end
-    local function Set(k, val)
-        DB()[k] = val
+    local function Set(keyName, val)
+        DB()[keyName] = val
     end
 
     local function RefreshAll()
@@ -64,8 +64,8 @@ CludesUI.AtOptionsLogin(function()
     local function BuildPage(pageName, hostFrame, yOffset)
         local W = CludesUI.Widgets
         local Pix = CludesUI.PP
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
 
         if CludesUI.ClearContentHeader then
             CludesUI:ClearContentHeader()
@@ -88,7 +88,7 @@ CludesUI.AtOptionsLogin(function()
         -- typography come back; every other stock gate stays.
         local FV = STOCK and BS.Forever("chat")
         if isTabs and STOCK then
-            posY = BS.Note(hostFrame, posY, "chat")
+            cursorY = BS.Note(hostFrame, cursorY, "chat")
             if BS.Active("chat") == "blizzard" and not FV then
                 isTabs = false
             end
@@ -100,15 +100,15 @@ CludesUI.AtOptionsLogin(function()
 
             -- -- DISPLAY -----------------------------------------------------------
             local heading
-            heading, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
-            posY = posY - hgt
+            heading, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
+            cursorY = cursorY - height
             CludesUI.BuildSectionUnlockJump(heading, { key = "ECHAT_MainChat" })
             if BS then
-                posY = BS.Note(hostFrame, posY, "chat")
+                cursorY = BS.Note(hostFrame, cursorY, "chat")
             end
 
             -- Row 1: Visibility (one control; no mouseover for chat frames) | Lock Main Chat Size
-            _, hgt = CludesUI.BuildVisibilityRow(W, hostFrame, posY, {
+            _, height = CludesUI.BuildVisibilityRow(W, hostFrame, cursorY, {
                 getStore = DB,
                 legacyKey = "visibility",
                 caps = { partyIncludesRaid = false, noMouseover = true, luaDragonriding = true },
@@ -134,7 +134,7 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Row 2: Background Opacity (+ inline color swatch) | Background
             -- Texture (Unit Frames bar texture catalogue incl. SharedMedia, with
@@ -163,7 +163,7 @@ CludesUI.AtOptionsLogin(function()
                     }
                 end
                 local bgRow
-                bgRow, hgt = W:DualRow(hostFrame, posY, {
+                bgRow, height = W:DualRow(hostFrame, cursorY, {
                     type = "slider",
                     text = "Background Opacity",
                     min = 0,
@@ -188,7 +188,7 @@ CludesUI.AtOptionsLogin(function()
                 })
                 if not CludesUI._prebuilding then
                     local region = bgRow._leftRegion
-                    local ctrl = region._control
+                    local control = region._control
                     local bgSwatch, bgSwatchRefresh = CludesUI.BuildColorSwatch(
                         region,
                         bgRow:GetFrameLevel() + 3,
@@ -204,19 +204,19 @@ CludesUI.AtOptionsLogin(function()
                         false,
                         20
                     )
-                    Pix.Point(bgSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+                    Pix.Point(bgSwatch, "RIGHT", control, "LEFT", -8, 0)
                     CludesUI.RegisterWidgetRefresh(function()
                         bgSwatchRefresh()
                     end)
                 end
-                posY = posY - hgt
+                cursorY = cursorY - height
             end -- not STOCK or FV
 
             -- Row 3: Font (+ cog: Outline Mode) | Font Size
             do
                 local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
                 local fontRow
-                fontRow, hgt = W:DualRow(hostFrame, posY, {
+                fontRow, height = W:DualRow(hostFrame, cursorY, {
                     type = "dropdown",
                     text = "Font",
                     values = fontValues,
@@ -293,7 +293,7 @@ CludesUI.AtOptionsLogin(function()
                     })
                 end
             end
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Outer panel border. Without the extended background, visible tabs get
             -- matching individual borders instead of outlining empty tab-strip space.
@@ -301,9 +301,9 @@ CludesUI.AtOptionsLogin(function()
             if not STOCK then
                 local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
                 local borderRow
-                borderRow, hgt = W:DualRow(
+                borderRow, height = W:DualRow(
                     hostFrame,
-                    posY,
+                    cursorY,
                     {
                         type = "dropdown",
                         text = "Border Style",
@@ -369,7 +369,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                     })
                 )
-                posY = posY - hgt
+                cursorY = cursorY - height
 
                 -- Width Offset | Height Offset: a textured style's outward offsets in their
                 -- own row (Solid has none). Same registry row the panel renders with:
@@ -410,8 +410,8 @@ CludesUI.AtOptionsLogin(function()
                                 end
                             end,
                         })
-                        _, hgt = W:DualRow(hostFrame, posY, ocfgL, ocfgR)
-                        posY = posY - hgt
+                        _, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
+                        cursorY = cursorY - height
                     end
                 end
 
@@ -491,7 +491,7 @@ CludesUI.AtOptionsLogin(function()
                 -- Accent, custom, and class-color selectors beside Border Size.
                 if not CludesUI._prebuilding then
                     local region = borderRow._rightRegion
-                    local ctrl = region._control
+                    local control = region._control
                     local function ApplyMode(mode)
                         Set("panelBorderColorMode", mode)
                         if CHAT.ApplyExtendedBackground then
@@ -512,7 +512,7 @@ CludesUI.AtOptionsLogin(function()
                         false,
                         20
                     )
-                    Pix.Point(classSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+                    Pix.Point(classSwatch, "RIGHT", control, "LEFT", -8, 0)
                     classSwatch:SetScript("OnClick", function()
                         ApplyMode("class")
                     end)
@@ -595,7 +595,7 @@ CludesUI.AtOptionsLogin(function()
             -- for a reload; a kind this client has no art for draws Slim
             -- (CludesUI.ForeverBorderKind). Odd last slot of the section.
             if FV then
-                _, hgt = W:DualRow(hostFrame, posY, {
+                _, height = W:DualRow(hostFrame, cursorY, {
                     type = "dropdown",
                     text = "Border Style",
                     tooltip = "WoW Forever's frame round the chat panel, input box, tabs and sidebar buttons. Slim Textured uses Blizzard's current art; a style whose art this client lacks draws Slim. Applies after a UI reload.",
@@ -619,15 +619,15 @@ CludesUI.AtOptionsLogin(function()
                         })
                     end,
                 }, CludesUI.BlankRowCfg())
-                posY = posY - hgt
+                cursorY = cursorY - height
             end
 
             -- -- IDLE FADE ---------------------------------------------------------
-            _, hgt = W:SectionHeader(hostFrame, "IDLE FADE", posY)
-            posY = posY - hgt
+            _, height = W:SectionHeader(hostFrame, "IDLE FADE", cursorY)
+            cursorY = cursorY - height
 
             -- Row 1: Enable Idle Fade | Fade Delay
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Enable Idle Fade",
                 getValue = function()
@@ -661,10 +661,10 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Row 2 (odd last slot): Fade Strength | (empty)
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Fade Strength",
                 min = 0,
@@ -682,15 +682,15 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end,
             }, { type = "label", text = "" })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end -- isChat
 
         -- -- SIDEBAR -----------------------------------------------------------
         if isSidebar then
-            _, hgt = W:SectionHeader(hostFrame, "SIDEBAR", posY)
-            posY = posY - hgt
+            _, height = W:SectionHeader(hostFrame, "SIDEBAR", cursorY)
+            cursorY = cursorY - height
             if STOCK then
-                posY = BS.Note(hostFrame, posY, "chat")
+                cursorY = BS.Note(hostFrame, cursorY, "chat")
             end
 
             -- Row 1: Sidebar Visibility (+ cog) | Sidebar Background
@@ -723,15 +723,15 @@ CludesUI.AtOptionsLogin(function()
                     "showVoice",
                     "showSettings",
                 }
-            for _, k in ipairs(sidebarOrderedKeys) do
-                sidebarIconItems[#sidebarIconItems + 1] = { key = k, label = SIDEBAR_ICON_LABELS[k] }
+            for _, keyName in ipairs(sidebarOrderedKeys) do
+                sidebarIconItems[#sidebarIconItems + 1] = { key = keyName, label = SIDEBAR_ICON_LABELS[keyName] }
             end
             sidebarIconItems[#sidebarIconItems + 1] =
                 { key = "showScroll", label = "Scroll to Bottom", fixed = true }
             local sidebarRow
-            sidebarRow, hgt = W:DualRow(
+            sidebarRow, height = W:DualRow(
                 hostFrame,
-                posY,
+                cursorY,
                 {
                     type = "dropdown",
                     text = "Sidebar Visibility",
@@ -747,11 +747,11 @@ CludesUI.AtOptionsLogin(function()
                 },
                 -- Classic WoW UI and WoW Forever draw nothing behind the column;
                 -- Blizzard Style's column backdrop follows this toggle.
-                (function(conf)
+                (function(rowConf)
                     if STOCK and (BS.Active("chat") == "classic" or FV) then
-                        BS.Gate("chat", conf)
+                        BS.Gate("chat", rowConf)
                     end
-                    return conf
+                    return rowConf
                 end)({
                     type = "toggle",
                     text = "Hide Sidebar Background",
@@ -784,10 +784,10 @@ CludesUI.AtOptionsLogin(function()
                     },
                 })
             end
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             local sidebarLayoutRow
-            sidebarLayoutRow, hgt = W:DualRow(hostFrame, posY, {
+            sidebarLayoutRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Sidebar Width",
                 min = 30,
@@ -849,10 +849,10 @@ CludesUI.AtOptionsLogin(function()
                     },
                 })
             end
-            posY = posY - hgt
+            cursorY = cursorY - height
 
-            _, hgt = W:SectionHeader(hostFrame, "ICONS", posY)
-            posY = posY - hgt
+            _, height = W:SectionHeader(hostFrame, "ICONS", cursorY)
+            cursorY = cursorY - height
 
             -- Row 2: Sidebar Icons Color | (empty)
             local function MakeIconColorSwatches()
@@ -910,9 +910,9 @@ CludesUI.AtOptionsLogin(function()
                 }
             end
             local iconOptionsRow
-            iconOptionsRow, hgt = W:DualRow(
+            iconOptionsRow, height = W:DualRow(
                 hostFrame,
-                posY,
+                cursorY,
                 -- The stock styles keep the stock column art (no tint).
                 CludesUI.BlizzStyle.Gate(
                     "chat",
@@ -930,24 +930,24 @@ CludesUI.AtOptionsLogin(function()
                 }
             )
             if not CludesUI._prebuilding then
-                local rightRgn = iconOptionsRow._rightRegion
-                if rightRgn._control then
-                    rightRgn._control:Hide()
+                local rightRegion = iconOptionsRow._rightRegion
+                if rightRegion._control then
+                    rightRegion._control:Hide()
                 end
                 local pendingIconReload = false
-                local cbDD, cbDDRefresh = CludesUI.BuildReorderCBDropdown(
-                    rightRgn,
+                local checkDrop, cbDDRefresh = CludesUI.BuildReorderCBDropdown(
+                    rightRegion,
                     210,
-                    rightRgn:GetFrameLevel() + 2,
+                    rightRegion:GetFrameLevel() + 2,
                     sidebarIconItems,
-                    function(k)
-                        return Cfg(k) ~= false
+                    function(keyName)
+                        return Cfg(keyName) ~= false
                     end,
-                    function(k, val)
-                        if val and CHAT.SidebarIconExists and not CHAT.SidebarIconExists(k) then
+                    function(keyName, val)
+                        if val and CHAT.SidebarIconExists and not CHAT.SidebarIconExists(keyName) then
                             pendingIconReload = true
                         end
-                        Set(k, val)
+                        Set(keyName, val)
                         if CHAT.ApplySidebarIcons then
                             CHAT.ApplySidebarIcons()
                         end
@@ -976,16 +976,16 @@ CludesUI.AtOptionsLogin(function()
                         end,
                     }
                 )
-                CludesUI.PanelPP.Point(cbDD, "RIGHT", rightRgn, "RIGHT", -20, 0)
-                rightRgn._control = cbDD
-                rightRgn._lastInline = nil
+                CludesUI.PanelPP.Point(checkDrop, "RIGHT", rightRegion, "RIGHT", -20, 0)
+                rightRegion._control = checkDrop
+                rightRegion._lastInline = nil
                 CludesUI.RegisterWidgetRefresh(cbDDRefresh)
             end
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Row 3: Sidebar Icon Size (+ cog: Icon Spacing) | Free Move Icons
             local sizeRow
-            sizeRow, hgt = W:DualRow(hostFrame, posY, {
+            sizeRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Sidebar Icon Size",
                 min = 0.5,
@@ -1072,10 +1072,10 @@ CludesUI.AtOptionsLogin(function()
                 UpdateResetVis()
                 CludesUI.RegisterWidgetRefresh(UpdateResetVis)
             end
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Row 4: Scroll Button on Chat Panel | (empty)
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Scroll Button on Chat Panel",
                 tooltip = "Anchors the Scroll to Bottom button to the bottom-right corner of the chat panel instead of the sidebar.",
@@ -1090,7 +1090,7 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end,
             }, { type = "label", text = "" })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end -- isSidebar
 
         if isTabs then
@@ -1098,10 +1098,10 @@ CludesUI.AtOptionsLogin(function()
             -- bronze tab) paint at Blizzard's tab geometry: only the
             -- TYPOGRAPHY section applies there.
             if not STOCK then
-                _, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
-                posY = posY - hgt
+                _, height = W:SectionHeader(hostFrame, "LAYOUT", cursorY)
+                cursorY = cursorY - height
 
-                _, hgt = W:DualRow(hostFrame, posY, {
+                _, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Tabs Inside Chat Panel",
                     tooltip = "Places the tabs inside one continuous chat panel background, including the sidebar when visible.",
@@ -1135,9 +1135,9 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end,
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
 
-                _, hgt = W:DualRow(hostFrame, posY, {
+                _, height = W:DualRow(hostFrame, cursorY, {
                     type = "slider",
                     text = "Tab Height",
                     min = 18,
@@ -1164,14 +1164,14 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end,
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
             end -- not STOCK (LAYOUT)
 
-            _, hgt = W:SectionHeader(hostFrame, "TYPOGRAPHY", posY)
-            posY = posY - hgt
+            _, height = W:SectionHeader(hostFrame, "TYPOGRAPHY", cursorY)
+            cursorY = cursorY - height
             do
                 local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
-                _, hgt = W:DualRow(hostFrame, posY, {
+                _, height = W:DualRow(hostFrame, cursorY, {
                     type = "dropdown",
                     text = "Tab Font",
                     values = fontValues,
@@ -1203,7 +1203,7 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end,
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
             end
 
             -- A tab colour's three swatches: Custom (the colour in key; when the
@@ -1301,17 +1301,17 @@ CludesUI.AtOptionsLogin(function()
                     true
                 )
             end
-            _, hgt = W:DualRow(
+            _, height = W:DualRow(
                 hostFrame,
-                posY,
+                cursorY,
                 { type = "multiSwatch", text = "Tab Font Color", swatches = FontColorSwatch(false) },
                 { type = "multiSwatch", text = "Tab Font Color Active", swatches = FontColorSwatch(true) }
             )
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             if not STOCK then
-                _, hgt = W:SectionHeader(hostFrame, "APPEARANCE", posY)
-                posY = posY - hgt
+                _, height = W:SectionHeader(hostFrame, "APPEARANCE", cursorY)
+                cursorY = cursorY - height
                 -- The inactive background is a single custom color picker. The
                 -- active background uses the common Custom, Accent, Class order;
                 -- both reuse the existing color tables without new defaults.
@@ -1349,7 +1349,7 @@ CludesUI.AtOptionsLogin(function()
                     )
                 end
                 local tabBgRow
-                tabBgRow, hgt = W:DualRow(hostFrame, posY, {
+                tabBgRow, height = W:DualRow(hostFrame, cursorY, {
                     type = "multiSwatch",
                     text = "Tab Background Color",
                     swatches = InactiveTabBgSwatches(),
@@ -1391,7 +1391,7 @@ CludesUI.AtOptionsLogin(function()
                     AttachTabBgOpacityCog(tabBgRow._leftRegion, false)
                     AttachTabBgOpacityCog(tabBgRow._rightRegion, true)
                 end
-                posY = posY - hgt
+                cursorY = cursorY - height
 
                 local function UnderlineMode()
                     local mode = Cfg("activeUnderlineColorMode") or "accent"
@@ -1497,7 +1497,7 @@ CludesUI.AtOptionsLogin(function()
                     }
                 end
                 local underlineRow
-                underlineRow, hgt = W:DualRow(hostFrame, posY, {
+                underlineRow, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Active Underline",
                     getValue = function()
@@ -1526,16 +1526,16 @@ CludesUI.AtOptionsLogin(function()
                 if not CludesUI._prebuilding then
                     CludesUI.BuildInlineSwatches(underlineRow._leftRegion, UnderlineSwatches())
                 end
-                posY = posY - hgt
+                cursorY = cursorY - height
 
                 -- (No tab idle-fade section: the per-tab fade layer was removed
                 -- 2026-07-20 -- Blizzard's own tab alpha machinery always won and
                 -- the setting visibly did nothing. Tabs fade with the chat panel
                 -- via the dock; see _ApplyAlpha in CUI_Chat_Visibility.lua.)
 
-                _, hgt = W:SectionHeader(hostFrame, "BORDER", posY)
-                posY = posY - hgt
-                _, hgt = W:DualRow(hostFrame, posY, {
+                _, height = W:SectionHeader(hostFrame, "BORDER", cursorY)
+                cursorY = cursorY - height
+                _, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Sync Border with Chat Panel",
                     tooltip = "For tabs outside the chat panel, uses the chat panel's border style and color instead of separate tab border settings.",
@@ -1555,7 +1555,7 @@ CludesUI.AtOptionsLogin(function()
                         CludesUI:RefreshPage()
                     end,
                 }, { type = "label", text = "" })
-                posY = posY - hgt
+                cursorY = cursorY - height
                 local syncTabs = function()
                     return Cfg("syncTabBorder") ~= false
                 end
@@ -1570,9 +1570,9 @@ CludesUI.AtOptionsLogin(function()
                 end
                 local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
                 local borderRow
-                borderRow, hgt = W:DualRow(
+                borderRow, height = W:DualRow(
                     hostFrame,
-                    posY,
+                    cursorY,
                     {
                         type = "dropdown",
                         text = "Border Style",
@@ -1644,7 +1644,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                     })
                 )
-                posY = posY - hgt
+                cursorY = cursorY - height
 
                 -- Width Offset | Height Offset: a textured tab style's outward offsets in
                 -- their own row (Solid has none). Same registry row a tab renders with
@@ -1688,8 +1688,8 @@ CludesUI.AtOptionsLogin(function()
                                 end
                             end,
                         })
-                        _, hgt = W:DualRow(hostFrame, posY, ocfgL, ocfgR)
-                        posY = posY - hgt
+                        _, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
+                        cursorY = cursorY - height
                     end
                 end
 
@@ -1753,7 +1753,7 @@ CludesUI.AtOptionsLogin(function()
                 end
 
                 if not CludesUI._prebuilding then
-                    local region, ctrl = borderRow._rightRegion, borderRow._rightRegion._control
+                    local region, control = borderRow._rightRegion, borderRow._rightRegion._control
                     local function SetMode(mode)
                         if tabBordersDisabled() then
                             return
@@ -1774,7 +1774,7 @@ CludesUI.AtOptionsLogin(function()
                         false,
                         20
                     )
-                    Pix.Point(classSw, "RIGHT", ctrl, "LEFT", -8, 0)
+                    Pix.Point(classSw, "RIGHT", control, "LEFT", -8, 0)
                     classSw:SetScript("OnClick", function()
                         SetMode("class")
                     end)
@@ -1835,7 +1835,7 @@ CludesUI.AtOptionsLogin(function()
 
                 -- Row: Active Tab Border (+ inline color swatch)
                 local activeBorderRow
-                activeBorderRow, hgt = W:DualRow(hostFrame, posY, {
+                activeBorderRow, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Active Tab Border",
                     tooltip = "Gives the selected tab its own border color.",
@@ -1884,14 +1884,14 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI.RegisterWidgetRefresh(RefreshActiveSwatch)
                     RefreshActiveSwatch()
                 end
-                posY = posY - hgt
+                cursorY = cursorY - height
             end -- not STOCK (APPEARANCE, BORDER)
         end -- isTabs
 
         if isChat then
             -- -- INPUT FIELD -------------------------------------------------------
-            _, hgt = W:SectionHeader(hostFrame, "INPUT FIELD", posY)
-            posY = posY - hgt
+            _, height = W:SectionHeader(hostFrame, "INPUT FIELD", cursorY)
+            cursorY = cursorY - height
 
             -- Stock styles keep Blizzard's own input box, its height and place.
             -- WoW Forever's box is ours, always below: its height alone.
@@ -1911,9 +1911,9 @@ CludesUI.AtOptionsLogin(function()
                     end,
                 }
                 if FV then
-                    _, hgt = W:DualRow(hostFrame, posY, ebHeightCfg, CludesUI.BlankRowCfg())
+                    _, height = W:DualRow(hostFrame, cursorY, ebHeightCfg, CludesUI.BlankRowCfg())
                 else
-                    _, hgt = W:DualRow(hostFrame, posY, {
+                    _, height = W:DualRow(hostFrame, cursorY, {
                         type = "toggle",
                         text = "Input on Top",
                         getValue = CfgOr("inputOnTop", false),
@@ -1925,14 +1925,14 @@ CludesUI.AtOptionsLogin(function()
                         end,
                     }, ebHeightCfg)
                 end
-                posY = posY - hgt
+                cursorY = cursorY - height
             end -- not STOCK or FV
 
             do
                 local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
                 fontValues.__chat = "Chat Font"
                 table.insert(fontOrder, 1, "__chat")
-                _, hgt = W:DualRow(hostFrame, posY, {
+                _, height = W:DualRow(hostFrame, cursorY, {
                     type = "dropdown",
                     text = "Edit Box Font",
                     values = fontValues,
@@ -1967,16 +1967,16 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end,
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
             end
 
             -- -- EXTRAS ------------------------------------------------------------
-            _, hgt = W:SectionHeader(hostFrame, "EXTRAS", posY)
-            posY = posY - hgt
+            _, height = W:SectionHeader(hostFrame, "EXTRAS", cursorY)
+            cursorY = cursorY - height
 
             -- Row 1: Remember Last Chat Lines (+ cog: Max Lines) | Hide Tooltip on Hover
             local histRow
-            histRow, hgt = W:DualRow(hostFrame, posY, {
+            histRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Remember Last Chat Lines",
                 tooltip = "Saves the most recent lines per chat tab (per character), except Blizzard's combat log window, so they reappear after /reload or relog. Stored separately from layout profiles.",
@@ -2016,7 +2016,7 @@ CludesUI.AtOptionsLogin(function()
                     },
                 })
             end
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Sound dropdown: shallow-copy the runtime tables so _menuOpts
             -- (preview icon) doesn't pollute the shared tables.
@@ -2024,8 +2024,8 @@ CludesUI.AtOptionsLogin(function()
             local whisperSoundPaths = CHAT.WHISPER_SOUND_PATHS or {}
             local whisperSoundNames = CHAT.WHISPER_SOUND_NAMES or { none = "Blizzard Default", mute = "None" }
             local whisperSoundOrder = CHAT.WHISPER_SOUND_ORDER or { "none", "mute" }
-            for k, val in pairs(whisperSoundNames) do
-                whisperSoundValues[k] = val
+            for keyName, val in pairs(whisperSoundNames) do
+                whisperSoundValues[keyName] = val
             end
             whisperSoundValues._menuOpts = {
                 itemHeight = 26,
@@ -2076,7 +2076,7 @@ CludesUI.AtOptionsLogin(function()
                 BS.Gate("chat", hideBordersCfg)
             end
             local extrasBorderRow
-            extrasBorderRow, hgt = W:DualRow(hostFrame, posY, hideBordersCfg, {
+            extrasBorderRow, height = W:DualRow(hostFrame, cursorY, hideBordersCfg, {
                 type = "dropdown",
                 text = "Whisper Sound",
                 tooltip = "Blizzard Default keeps the game's whisper sound. Any other sound replaces it, and None plays no sound.",
@@ -2090,7 +2090,7 @@ CludesUI.AtOptionsLogin(function()
             })
             if not CludesUI._prebuilding then
                 local region = extrasBorderRow._leftRegion
-                local ctrl = region._control
+                local control = region._control
                 local function SetInnerMode(mode)
                     if Cfg("hideBorders") then
                         return
@@ -2130,7 +2130,7 @@ CludesUI.AtOptionsLogin(function()
                     true,
                     20
                 )
-                Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+                Pix.Point(colorSwatch, "RIGHT", control, "LEFT", -8, 0)
                 -- Accent mode swatch sits left of the custom one (select-mode-
                 -- first convention, matching the tab border color trio).
                 local accentSw, refreshAccent = CludesUI.BuildColorSwatch(
@@ -2181,7 +2181,7 @@ CludesUI.AtOptionsLogin(function()
                     BS.BlockInline("chat", accentSw)
                 end
             end
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Row 3: Timestamp All Messages | Timestamps
             do
@@ -2207,7 +2207,7 @@ CludesUI.AtOptionsLogin(function()
                     "%H:%M ",
                     "%H:%M:%S ",
                 }
-                _, hgt = W:DualRow(hostFrame, posY, {
+                _, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Timestamp All Messages",
                     tooltip = "Adds timestamps to system messages, loot, achievements, and addon messages, not just player chat.",
@@ -2240,11 +2240,11 @@ CludesUI.AtOptionsLogin(function()
                     end,
                 })
             end
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Row 4: Shortened Channel Names (+ Use Letters cog) | Class Colored Names
             local abbrevRow
-            abbrevRow, hgt = W:DualRow(hostFrame, posY, {
+            abbrevRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Shortened Channel Names",
                 tooltip = "Abbreviates channel prefixes, like [Party] to [P] and [Guild] to [G]; world channels show their number.",
@@ -2303,10 +2303,10 @@ CludesUI.AtOptionsLogin(function()
                     },
                 })
             end
-            posY = posY - hgt
+            cursorY = cursorY - height
         end -- isChat
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     _G._CUBS_BuildChatPage = BuildPage

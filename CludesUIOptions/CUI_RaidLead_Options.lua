@@ -26,15 +26,15 @@ CludesUI.AtOptionsLogin(function()
 
     local function BuildPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
 
         CludesUI:ClearContentHeader()
 
-        _, hgt = W:SectionHeader(hostFrame, "RAID GROUPS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "RAID GROUPS", cursorY)
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "labeledButton",
             text = "Sort by Role",
             buttonText = "Sort",
@@ -49,9 +49,9 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Two balanced halves for split runs. Each kind is dealt out in turn, so both sides get the same mix.",
             onClick = Run("split"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "labeledButton",
             text = "Put Everyone Back",
             buttonText = "Undo",
@@ -66,19 +66,19 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Stops a sort that is under way. Players already moved stay where they are.",
             onClick = Run("stop"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "label",
             text = "Melee and ranged are told apart by class, which is a guess for Druids, Shamans and Hunters. Results print in chat.",
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "INVITES", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "INVITES", cursorY)
+        cursorY = cursorY - height
 
         local inv = mod.InviteSettings()
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "input",
             text = "Roster",
             inputWidth = 220,
@@ -100,9 +100,9 @@ CludesUI.AtOptionsLogin(function()
                 mod.InviteList()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "input",
             text = "Assistants",
             inputWidth = 220,
@@ -123,9 +123,9 @@ CludesUI.AtOptionsLogin(function()
                 mod.PromoteList(false)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Promote Assistants When They Join",
             tooltip = "While you lead the raid, everyone on the assistants list is promoted as they join.",
@@ -136,13 +136,13 @@ CludesUI.AtOptionsLogin(function()
                 inv.autoPromote = val and true or false
             end,
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "READY CHECK", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "READY CHECK", cursorY)
+        cursorY = cursorY - height
 
         local rc = mod.ReadyCheckSettings()
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Gear and Cooldown Check",
             tooltip = "On every ready check, CludesUI users report their durability, item level, missing enchants and raid cooldowns that are not ready. The leader and assistants see a list.",
@@ -165,9 +165,9 @@ CludesUI.AtOptionsLogin(function()
                 rc.minDurability = math.floor(val + 0.5)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "labeledButton",
             text = "See Your Own Report",
             buttonText = "Show",
@@ -187,12 +187,12 @@ CludesUI.AtOptionsLogin(function()
                 rc.consumables = val and true or false
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "BREAK TIMER", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "BREAK TIMER", cursorY)
+        cursorY = cursorY - height
         local bt = mod.BreakSettings()
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Break Timers",
             tooltip = "When the leader or an assistant starts a break, a bar counts it down for every CludesUI user in the group. Move it in Layout Mode.",
@@ -212,8 +212,8 @@ CludesUI.AtOptionsLogin(function()
                 bt.sound = val and true or false
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "labeledButton",
             text = "Start a Break",
             buttonText = "5 min",
@@ -231,12 +231,12 @@ CludesUI.AtOptionsLogin(function()
                 mod.StartBreak(0)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "KICK ROTATION", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "KICK ROTATION", cursorY)
+        cursorY = cursorY - height
         local ks = mod.KickSettings()
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Kick Rotation",
             tooltip = "Shows whose interrupt is next. The order comes from an intstart / intend block in the boss's note (one line of names per rotation), or the Kick Order below for other fights. Each cast of the tracked unit moves the turn on.",
@@ -259,8 +259,8 @@ CludesUI.AtOptionsLogin(function()
                 ks.unit = val
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "input",
             text = "Kick Order",
             inputWidth = 160,
@@ -283,8 +283,8 @@ CludesUI.AtOptionsLogin(function()
                 mod.PreviewKicks()
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Sound on Your Turn",
             getValue = function()
@@ -294,12 +294,12 @@ CludesUI.AtOptionsLogin(function()
                 ks.sound = val and true or false
             end,
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "VERSIONS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "VERSIONS", cursorY)
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "labeledButton",
             text = "Check CludesUI Versions",
             buttonText = "Check",
@@ -309,9 +309,9 @@ CludesUI.AtOptionsLogin(function()
                 mod.VersionCheck()
             end,
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     ---------------------------------------------------------------------------
@@ -327,15 +327,15 @@ CludesUI.AtOptionsLogin(function()
 
     local function BuildTrackingPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
         local im, pace = mod.ImmunitySettings(), mod.PaceSettings()
 
         CludesUI:ClearContentHeader()
 
-        _, hgt = W:SectionHeader(hostFrame, "IMMUNITIES ON YOU", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:SectionHeader(hostFrame, "IMMUNITIES ON YOU", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Immunities on You",
             tooltip = "Icons for Divine Shield, Blessing of Protection, Blessing of Spellwarding, Ice Block, Aspect of the Turtle and Cloak of Shadows while they are on you. Works in combat. Move it in Layout Mode.",
@@ -360,13 +360,13 @@ CludesUI.AtOptionsLogin(function()
                 mod.RefreshImmunities()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         local extra = {}
         for _, ident in ipairs(im.extra) do
             local num = C_Spell.GetSpellName(ident)
             extra[#extra + 1] = (type(num) == "string" and num or "Spell") .. " (" .. ident .. ")"
         end
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "input",
             text = "Add an Immunity",
             inputStyle = "popup",
@@ -395,17 +395,17 @@ CludesUI.AtOptionsLogin(function()
                 Refresh()
             end,
         } or { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "AURA GLOWS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "AURA GLOWS", cursorY)
+        cursorY = cursorY - height
         local ag = mod.AuraGlowSettings()
         local glowNames = {}
         for _, ident in ipairs(ag.spells) do
             local num = C_Spell.GetSpellName(ident)
             glowNames[#glowNames + 1] = (type(num) == "string" and num or "Spell") .. " (" .. ident .. ")"
         end
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Aura Glows",
             tooltip = "While an aura you add here is on you, its icon shows with a glowing border and its time. Works in boss fights. Changes apply out of combat. Move it in Layout Mode.",
@@ -430,8 +430,8 @@ CludesUI.AtOptionsLogin(function()
                 mod.RebuildAuraGlows()
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "input",
             text = "Add an Aura",
             inputStyle = "popup",
@@ -459,16 +459,16 @@ CludesUI.AtOptionsLogin(function()
                 Refresh()
             end,
         } or { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "GROUP HELPERS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "GROUP HELPERS", cursorY)
+        cursorY = cursorY - height
         local hs = mod.HelperSettings()
         local function HSet(key, val)
             hs[key] = val and true or false
             mod.RefreshHelpers()
         end
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Feast and Cauldron Alerts",
             tooltip = "A chat line naming who dropped a feast, cauldron, Soulwell or repair bot. Only drops by CludesUI users are seen: the game shows addons no one else's casts.",
@@ -488,8 +488,8 @@ CludesUI.AtOptionsLogin(function()
                 HSet("dropSound", val)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Gateway Usable",
             tooltip = "Gateway usable shows while you are close enough to a warlock's Demonic Gateway to click it. Move it in Layout Mode.",
@@ -510,11 +510,11 @@ CludesUI.AtOptionsLogin(function()
                 HSet("stats", val)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "BOSS PACE", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:SectionHeader(hostFrame, "BOSS PACE", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Boss Pace",
             tooltip = "A bar with the boss's health and a marker for where it should be to kill it in your target time: green while ahead, red while behind. The pace is a straight line, so phases and intermissions throw it off. Move it in Layout Mode.",
@@ -542,9 +542,9 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         for idx, t in ipairs(pace.targets) do
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "input",
                 text = t.boss .. ": Target Kill Time",
                 inputWidth = 80,
@@ -569,8 +569,8 @@ CludesUI.AtOptionsLogin(function()
                     mod.StartPace(t.boss, t.seconds)
                 end,
             })
-            posY = posY - hgt
-            _, hgt = W:DualRow(hostFrame, posY, {
+            cursorY = cursorY - height
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "labeledButton",
                 text = "Remove " .. t.boss,
                 buttonText = "Remove",
@@ -580,14 +580,14 @@ CludesUI.AtOptionsLogin(function()
                     Refresh()
                 end,
             }, { type = "label", text = "" })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end
 
         if mod.TimelineSettings then
             local tl = mod.TimelineSettings()
-            _, hgt = W:SectionHeader(hostFrame, "BOSS TIMELINES", posY)
-            posY = posY - hgt
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:SectionHeader(hostFrame, "BOSS TIMELINES", cursorY)
+            cursorY = cursorY - height
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Upcoming Ability Bars",
                 tooltip = "During a Midnight raid boss, the next abilities as countdown bars, coloured by kind of mechanic. Each phase runs from when it really began, read from the boss's timeline; phases still to come are estimates, shown faded. Move them in Layout Mode.",
@@ -608,8 +608,8 @@ CludesUI.AtOptionsLogin(function()
                     tl.alerts = val and true or false
                 end,
             })
-            posY = posY - hgt
-            _, hgt = W:DualRow(hostFrame, posY, {
+            cursorY = cursorY - height
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Only My Role",
                 tooltip = "Bars and the timeline window show only the mechanics for your role: raid damage and soaks for healers, tankbusters and frontals for tanks.",
@@ -630,8 +630,8 @@ CludesUI.AtOptionsLogin(function()
                     tl.tts = val and true or false
                 end,
             })
-            posY = posY - hgt
-            _, hgt = W:DualRow(hostFrame, posY, {
+            cursorY = cursorY - height
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Bars Shown",
                 min = 3,
@@ -658,8 +658,8 @@ CludesUI.AtOptionsLogin(function()
                     tl.ahead = math.floor(val + 0.5)
                 end,
             })
-            posY = posY - hgt
-            _, hgt = W:DualRow(hostFrame, posY, {
+            cursorY = cursorY - height
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "labeledButton",
                 text = "Boss Timeline Window",
                 buttonText = "Open",
@@ -679,22 +679,22 @@ CludesUI.AtOptionsLogin(function()
                     tl.phaseChat = val and true or false
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     local function BuildNicknamesPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
 
         CludesUI:ClearContentHeader()
 
-        _, hgt = W:SectionHeader(hostFrame, "NICKNAMES", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:SectionHeader(hostFrame, "NICKNAMES", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "input",
             text = "Your Nickname",
             inputWidth = 160,
@@ -718,8 +718,8 @@ CludesUI.AtOptionsLogin(function()
                 CludesUIDB.cuiNicknamesOff = not val or nil
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "labeledButton",
             text = "Paste Nicknames",
             buttonText = "Paste",
@@ -735,9 +735,9 @@ CludesUI.AtOptionsLogin(function()
                 end, "Nicknames", "One Character=Nickname per line")
             end,
         }, { type = "label", text = "Known nicknames: " .. mod.NicknameCount() })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     ---------------------------------------------------------------------------
@@ -769,16 +769,16 @@ CludesUI.AtOptionsLogin(function()
 
     local function BuildRemindersPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
         local r = mod.ReminderSettings()
 
         CludesUI:ClearContentHeader()
 
-        _, hgt = W:SectionHeader(hostFrame, "REMINDERS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "REMINDERS", cursorY)
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Encounter Reminders",
             tooltip = "When a boss is pulled, its note's lines for you appear before their time with a countdown. Move them in Layout Mode.",
@@ -799,9 +799,9 @@ CludesUI.AtOptionsLogin(function()
                 r.acceptShared = val and true or false
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Show Seconds Before",
             min = 1,
@@ -827,14 +827,14 @@ CludesUI.AtOptionsLogin(function()
                 mod.ApplyReminderLook()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         local soundValues, soundOrder = { [""] = "None" }, { "" }
         for _, f in ipairs(mod.SOUND_FILES) do
             soundValues[f] = f:gsub("%.%a+$", ""):gsub("(%l)(%u)", "%1 %2")
             soundOrder[#soundOrder + 1] = f
         end
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Speak Reminders",
             tooltip = "Reads each reminder aloud with the game's text to speech voice.",
@@ -859,12 +859,12 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "BOSS NOTES", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "BOSS NOTES", cursorY)
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "input",
             text = "Add a Boss",
             inputStyle = "popup",
@@ -886,12 +886,12 @@ CludesUI.AtOptionsLogin(function()
             type = "label",
             text = "Lines are {time:1:30} then the text. Names on a line make it theirs; {tank}, {healer}, {dps} and {everyone} work too.",
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         for idx, note in ipairs(r.notes) do
-            _, hgt = W:SectionHeader(hostFrame, note.boss:upper() .. "  -  " .. Summary(note.text), posY)
-            posY = posY - hgt
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:SectionHeader(hostFrame, note.boss:upper() .. "  -  " .. Summary(note.text), cursorY)
+            cursorY = cursorY - height
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "labeledButton",
                 text = "Paste or Replace the Note",
                 buttonText = "Paste",
@@ -921,8 +921,8 @@ CludesUI.AtOptionsLogin(function()
                     )
                 end,
             })
-            posY = posY - hgt
-            _, hgt = W:DualRow(hostFrame, posY, {
+            cursorY = cursorY - height
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "labeledButton",
                 text = "Send to the Group",
                 buttonText = "Send",
@@ -941,17 +941,17 @@ CludesUI.AtOptionsLogin(function()
                     Redraw()
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end
 
         local sharedAny = next(mod.sharedNotes)
         if sharedAny then
-            _, hgt = W:SectionHeader(hostFrame, "SENT BY THE RAID LEADER (THIS SESSION)", posY)
-            posY = posY - hgt
+            _, height = W:SectionHeader(hostFrame, "SENT BY THE RAID LEADER (THIS SESSION)", cursorY)
+            cursorY = cursorY - height
             for boss, s in pairs(mod.sharedNotes) do
-                _, hgt = W:DualRow(
+                _, height = W:DualRow(
                     hostFrame,
-                    posY,
+                    cursorY,
                     { type = "label", text = boss .. ", from " .. s.from .. ": " .. Summary(s.text) },
                     {
                         type = "labeledButton",
@@ -964,11 +964,11 @@ CludesUI.AtOptionsLogin(function()
                         end,
                     }
                 )
-                posY = posY - hgt
+                cursorY = cursorY - height
             end
         end
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     ---------------------------------------------------------------------------
@@ -1003,16 +1003,16 @@ CludesUI.AtOptionsLogin(function()
 
     local function BuildSoundsPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
         local entries = mod.RaidLeadDB().sounds
 
         CludesUI:ClearContentHeader()
 
-        _, hgt = W:SectionHeader(hostFrame, "AURA SOUNDS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "AURA SOUNDS", cursorY)
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "input",
             text = "Add a Spell ID",
             inputStyle = "popup",
@@ -1032,13 +1032,13 @@ CludesUI.AtOptionsLogin(function()
                 Rebuild()
             end,
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         for idx, e in ipairs(entries) do
             local name = SpellName(e.id)
-            _, hgt = W:SectionHeader(hostFrame, name:upper(), posY)
-            posY = posY - hgt
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:SectionHeader(hostFrame, name:upper(), cursorY)
+            cursorY = cursorY - height
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Play a Sound for " .. name,
                 tooltip = "Spell ID " .. e.id,
@@ -1062,8 +1062,8 @@ CludesUI.AtOptionsLogin(function()
                     mod.RebuildAuraSounds()
                 end,
             })
-            posY = posY - hgt
-            _, hgt = W:DualRow(hostFrame, posY, {
+            cursorY = cursorY - height
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = "Sound",
                 values = soundValues,
@@ -1086,10 +1086,10 @@ CludesUI.AtOptionsLogin(function()
                     Rebuild()
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     CludesUI:RegisterModule(ADDON_NAME, {

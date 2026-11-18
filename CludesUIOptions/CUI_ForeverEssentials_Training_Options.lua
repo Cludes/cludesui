@@ -15,15 +15,15 @@ local COMING_LEVELS = 6 -- how many coming levels the page lists
 
 function _G._CUI_BuildForeverTrainingPage(_, hostFrame, yOffset)
     local W = CludesUI.Widgets
-    local posY = yOffset
-    local _, hgt
+    local cursorY = yOffset
+    local _, height
     local s = mod.TrainingSettings()
 
     CludesUI:ClearContentHeader()
 
-    _, hgt = W:SectionHeader(hostFrame, "TRAINING PLANNER", posY)
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:SectionHeader(hostFrame, "TRAINING PLANNER", cursorY)
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Message on Level Up",
         tooltip = "When you level up, a chat line says how many new spells your trainer has for you and what they cost.",
@@ -38,7 +38,7 @@ function _G._CUI_BuildForeverTrainingPage(_, hostFrame, yOffset)
         text = "Base prices, before rep discount",
         tooltip = "Prices are the trainer's base prices. A reputation discount at the trainer makes the real bill a little lower.",
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     local plan = mod.TrainingPlan()
 
@@ -67,36 +67,36 @@ function _G._CUI_BuildForeverTrainingPage(_, hostFrame, yOffset)
                 end
                 return { type = "label", text = textValue, tooltip = textValue }
             end
-            _, hgt = W:DualRow(hostFrame, posY, Slot(entries[idx]), Slot(entries[idx + 1]))
-            posY = posY - hgt
+            _, height = W:DualRow(hostFrame, cursorY, Slot(entries[idx]), Slot(entries[idx + 1]))
+            cursorY = cursorY - height
         end
     end
 
-    _, hgt = W:SectionHeader(
+    _, height = W:SectionHeader(
         hostFrame,
         ("TRAIN NOW  -  %d SPELL%s, %s"):format(
             #plan.now,
             #plan.now == 1 and "" or "S",
             mod.TrainingMoney(plan.nowCost)
         ),
-        posY
+        cursorY
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
     if #plan.now == 0 then
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             { type = "label", text = "Nothing to train right now." },
             { type = "label", text = "" }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
     else
         List(plan.now, true)
     end
 
     if #plan.blocked > 0 then
-        _, hgt = W:SectionHeader(hostFrame, "WAITING ON A TALENT OR QUEST", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "WAITING ON A TALENT OR QUEST", cursorY)
+        cursorY = cursorY - height
         List(plan.blocked, true)
     end
 
@@ -107,10 +107,10 @@ function _G._CUI_BuildForeverTrainingPage(_, hostFrame, yOffset)
         for _, e in ipairs(entries) do
             cost = cost + e.cost
         end
-        _, hgt = W:SectionHeader(hostFrame, ("LEVEL %d  -  %s"):format(lvl, mod.TrainingMoney(cost)), posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, ("LEVEL %d  -  %s"):format(lvl, mod.TrainingMoney(cost)), cursorY)
+        cursorY = cursorY - height
         List(entries, false)
     end
 
-    return math.abs(posY)
+    return math.abs(cursorY)
 end

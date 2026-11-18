@@ -38,9 +38,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- the first build, shown only while it measures, as a new one was).
     local measureFS
 
-    local function BuildSegmentedControl(conf)
+    local function BuildSegmentedControl(rowConf)
         local ACCENT = CLUDES_GREEN
-        local SEG_H = conf.height or 28
+        local SEG_H = rowConf.height or 28
         local FONT_SZ = 13
         local SEG_PAD = 22
         local PILL_BG = { 0.125, 0.125, 0.137 } -- #202023
@@ -50,7 +50,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local ACTIVE_R, ACTIVE_G, ACTIVE_B = ACCENT.r, ACCENT.g, ACCENT.b
         local BG_HOVER_BOOST = 0.04 -- 4% brightness on hover for background
 
-        local numKeys = #conf.keys
+        local numKeys = #rowConf.keys
 
         local tmpFS = measureFS
         if tmpFS then
@@ -62,8 +62,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         tmpFS:SetFont(CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF", FONT_SZ, "")
         local segWidths, textW = {}, {}
         local pillW = 0
-        for _, key in ipairs(conf.keys) do
-            tmpFS:SetText(CludesUI.L(conf.labels[key] or key))
+        for _, key in ipairs(rowConf.keys) do
+            tmpFS:SetText(CludesUI.L(rowConf.labels[key] or key))
             textW[key] = math.ceil(tmpFS:GetStringWidth())
             local wid = textW[key] + SEG_PAD * 2
             segWidths[key] = wid
@@ -73,15 +73,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         -- Square mode: a box with rounded corners. Its segments sit BOX_PAD inside
         -- one outline, BOX_GAP apart; the checked one carries a rounded marker.
-        local SQUARE = conf.square and true or false
+        local SQUARE = rowConf.square and true or false
         local BOX_PAD, BOX_GAP = 2, 2
         local boxExtra = SQUARE and (BOX_PAD * 2 + BOX_GAP * (numKeys - 1)) or 0
 
-        if not conf.autoWidth then
-            pillW = conf.width - boxExtra
+        if not rowConf.autoWidth then
+            pillW = rowConf.width - boxExtra
             local baseW = math.floor(pillW / numKeys)
             local remainder = pillW - baseW * numKeys
-            for position, key in ipairs(conf.keys) do
+            for position, key in ipairs(rowConf.keys) do
                 segWidths[key] = baseW + (position <= remainder and 1 or 0)
                 -- A long translated label widens its segment instead of overflowing it.
                 segWidths[key] = math.max(segWidths[key], textW[key] + 16)
@@ -90,18 +90,18 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         local capW = SQUARE and 0 or SEG_H
         if not SQUARE then
-            segWidths[conf.keys[1]] = math.floor(segWidths[conf.keys[1]] - capW)
-            segWidths[conf.keys[numKeys]] = math.floor(segWidths[conf.keys[numKeys]] - capW)
+            segWidths[rowConf.keys[1]] = math.floor(segWidths[rowConf.keys[1]] - capW)
+            segWidths[rowConf.keys[numKeys]] = math.floor(segWidths[rowConf.keys[numKeys]] - capW)
         end
         pillW = 0
-        for _, key in ipairs(conf.keys) do
+        for _, key in ipairs(rowConf.keys) do
             pillW = pillW + segWidths[key]
         end
         -- Account for 1px overlap between adjacent segments
         local overlapTotal = SQUARE and 0 or (numKeys - 1) * 1
         local totalW = pillW + capW * 2 - overlapTotal + boxExtra
 
-        local widget = CreateFrame("Frame", nil, conf.parent)
+        local widget = CreateFrame("Frame", nil, rowConf.parent)
         widget:SetSize(totalW, SEG_H)
 
         local pillBody = CreateFrame("Frame", nil, widget)
@@ -168,19 +168,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         Pix.Point(capLeftBtn, "RIGHT", pillBody, "LEFT", 0, 0)
         capLeftBtn:SetFrameLevel(pillBody:GetFrameLevel() + 4)
         capLeftBtn:SetScript("OnClick", function()
-            local key = conf.keys[1]
-            if conf.isDisabled and conf.isDisabled(key) then
+            local key = rowConf.keys[1]
+            if rowConf.isDisabled and rowConf.isDisabled(key) then
                 return
             end
-            if conf.onToggle then
-                conf.onToggle(key)
+            if rowConf.onToggle then
+                rowConf.onToggle(key)
             end
         end)
         capLeftBtn:SetScript("OnEnter", function()
-            local key = conf.keys[1]
-            if conf.isDisabled and conf.isDisabled(key) then
-                if conf.disabledTip then
-                    local tipText = conf.disabledTip(key)
+            local key = rowConf.keys[1]
+            if rowConf.isDisabled and rowConf.isDisabled(key) then
+                if rowConf.disabledTip then
+                    local tipText = rowConf.disabledTip(key)
                     if tipText then
                         ShowWidgetTooltip(capLeftBtn, tipText)
                     end
@@ -205,19 +205,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         Pix.Point(capRightBtn, "LEFT", pillBody, "RIGHT", 0, 0)
         capRightBtn:SetFrameLevel(pillBody:GetFrameLevel() + 4)
         capRightBtn:SetScript("OnClick", function()
-            local key = conf.keys[numKeys]
-            if conf.isDisabled and conf.isDisabled(key) then
+            local key = rowConf.keys[numKeys]
+            if rowConf.isDisabled and rowConf.isDisabled(key) then
                 return
             end
-            if conf.onToggle then
-                conf.onToggle(key)
+            if rowConf.onToggle then
+                rowConf.onToggle(key)
             end
         end)
         capRightBtn:SetScript("OnEnter", function()
-            local key = conf.keys[numKeys]
-            if conf.isDisabled and conf.isDisabled(key) then
-                if conf.disabledTip then
-                    local tipText = conf.disabledTip(key)
+            local key = rowConf.keys[numKeys]
+            if rowConf.isDisabled and rowConf.isDisabled(key) then
+                if rowConf.disabledTip then
+                    local tipText = rowConf.disabledTip(key)
                     if tipText then
                         ShowWidgetTooltip(capRightBtn, tipText)
                     end
@@ -245,7 +245,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local BASE_LEVEL = pillBody:GetFrameLevel() + 3
         local CHECKED_LEVEL = BASE_LEVEL + 1 -- checked segments draw on top
 
-        for i, key in ipairs(conf.keys) do
+        for i, key in ipairs(rowConf.keys) do
             local thisW = segWidths[key]
 
             local button = CreateFrame("Button", nil, pillBody)
@@ -320,7 +320,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 lblOfsX = capW / 2
             end
             labelFS:SetPoint("CENTER", lblOfsX, 0)
-            labelFS:SetText(CludesUI.L(conf.labels[key] or key))
+            labelFS:SetText(CludesUI.L(rowConf.labels[key] or key))
 
             segments[i] = {
                 key = key,
@@ -338,18 +338,18 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             btnByKey[key] = button
 
             button:SetScript("OnClick", function()
-                if conf.isDisabled and conf.isDisabled(key) then
+                if rowConf.isDisabled and rowConf.isDisabled(key) then
                     return
                 end
-                if conf.onToggle then
-                    conf.onToggle(key)
+                if rowConf.onToggle then
+                    rowConf.onToggle(key)
                 end
             end)
 
             button:SetScript("OnEnter", function()
-                if conf.isDisabled and conf.isDisabled(key) then
-                    if conf.disabledTip then
-                        local tipText = conf.disabledTip(key)
+                if rowConf.isDisabled and rowConf.isDisabled(key) then
+                    if rowConf.disabledTip then
+                        local tipText = rowConf.disabledTip(key)
                         if tipText then
                             ShowWidgetTooltip(button, tipText)
                         end
@@ -404,12 +404,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- RefreshAll
         -------------------------------------------------------------------
         local function RefreshAll()
-            local eyeKey = conf.getEyeball and conf.getEyeball()
+            local eyeKey = rowConf.getEyeball and rowConf.getEyeball()
             local hoverIdx = widget._hoverIdx
 
             for position, seg in ipairs(segments) do
-                local disabled = conf.isDisabled and conf.isDisabled(seg.key)
-                local checked = conf.getChecked(seg.key)
+                local disabled = rowConf.isDisabled and rowConf.isDisabled(seg.key)
+                local checked = rowConf.getChecked(seg.key)
                 local isHover = (hoverIdx == position)
 
                 -- Label color
@@ -485,12 +485,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
 
             -- Cap borders & fills: match adjacent segment's state (checked/disabled/hover)
-            local firstKey = conf.keys[1]
-            local lastKey = conf.keys[numKeys]
-            local firstDisabled = conf.isDisabled and conf.isDisabled(firstKey)
-            local lastDisabled = conf.isDisabled and conf.isDisabled(lastKey)
-            local firstChecked = conf.getChecked(firstKey) and not firstDisabled
-            local lastChecked = conf.getChecked(lastKey) and not lastDisabled
+            local firstKey = rowConf.keys[1]
+            local lastKey = rowConf.keys[numKeys]
+            local firstDisabled = rowConf.isDisabled and rowConf.isDisabled(firstKey)
+            local lastDisabled = rowConf.isDisabled and rowConf.isDisabled(lastKey)
+            local firstChecked = rowConf.getChecked(firstKey) and not firstDisabled
+            local lastChecked = rowConf.getChecked(lastKey) and not lastDisabled
             local firstHover = (hoverIdx == 1) and not firstDisabled
             local lastHover = (hoverIdx == numKeys) and not lastDisabled
 
@@ -549,8 +549,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local hoverIdx = widget._hoverIdx
             local allDisabled = true
             for position, seg in ipairs(segments) do
-                local disabled = conf.isDisabled and conf.isDisabled(seg.key)
-                local checked = conf.getChecked(seg.key)
+                local disabled = rowConf.isDisabled and rowConf.isDisabled(seg.key)
+                local checked = rowConf.getChecked(seg.key)
                 local boost = (hoverIdx == position) and BG_HOVER_BOOST or 0
                 if disabled then
                     seg.lbl:SetTextColor(1, 1, 1, 0.20)

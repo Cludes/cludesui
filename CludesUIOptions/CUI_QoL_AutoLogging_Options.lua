@@ -119,8 +119,8 @@ local function ScaleRow(store, tooltip, applied, extra)
             applied(val / 100)
         end,
     }
-    for k, v in pairs(extra or {}) do
-        row[k] = v
+    for keyName, value in pairs(extra or {}) do
+        row[keyName] = value
     end
     return row
 end
@@ -292,11 +292,11 @@ local function TriggersChecklist(region, Pix)
         region._control:Hide()
     end
     local function Get(key)
-        local v = Logging()[key]
-        if v == nil then
+        local value = Logging()[key]
+        if value == nil then
             return LOG_DEFAULTS[key]
         end
-        return v
+        return value
     end
     local list, refresh = CludesUI.BuildVisOptsCBDropdown(
         region,
@@ -361,11 +361,11 @@ local function LoggingSection(W, host, y)
             text = "Warcraft Recorder Compatibility",
             tooltip = "Delays stopping combat logging by 30 seconds after leaving an instance. Recommended for Warcraft Recorder compatibility.",
             getValue = function()
-                local v = Logging().delaystop
-                if v == nil then
+                local value = Logging().delaystop
+                if value == nil then
                     return LOG_DEFAULTS.delaystop
                 end
-                return v
+                return value
             end,
             setValue = function(val)
                 Logging().delaystop = val

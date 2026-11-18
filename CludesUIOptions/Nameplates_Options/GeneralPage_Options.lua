@@ -19,8 +19,8 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 -- A row half's slider label, for a "(Percent)" suffix beside it: the half's own
 -- label (a page built again keeps its earlier dresses' font strings, idle,
 -- among the half's regions).
-local function SliderLabel(rgn, textValue)
-    local labelText = rgn._label
+local function SliderLabel(region, textValue)
+    local labelText = region._label
     if labelText and labelText.GetText and CludesUI.EnKey(labelText:GetText()) == textValue then
         return labelText
     end
@@ -56,8 +56,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     local SECTION_FRIENDLY, SECTION_MISC, UpdatePreview =
         environ.SECTION_FRIENDLY, environ.SECTION_MISC, environ.UpdatePreview
     local W = CludesUI.Widgets
-    local posY = yOffset
-    local _, hgt
+    local cursorY = yOffset
+    local _, height
 
     -- No preview on General tab
     CludesUI:ClearContentHeader()
@@ -68,8 +68,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     -----------------------------------------------------------------------
     --  FRIENDLY NAMEPLATES
     -----------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, SECTION_FRIENDLY, posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, SECTION_FRIENDLY, cursorY)
+    cursorY = cursorY - height
 
     local function friendlyPlayersOff()
         return DBVal("showFriendlyPlayers") == false
@@ -87,7 +87,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     end
 
     local friendlyRow
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show CUI Friendly Player Nameplates",
         tooltip = "When disabled, CUI relinquishes full control of friendly player nameplates to Blizzard. Use Blizzard's own Nameplate settings (Esc > Options > Nameplates) to control them.",
@@ -176,7 +176,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         disabledTooltip = "Show CUI Friendly Player Nameplates",
     })
     friendlyRow = _
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     ---------------------------------------------------------------
     --  Friendly Player cog popup (size, health text, class colours, target border)
@@ -357,7 +357,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     --  Name Only inline swatches (White + Class Color) mirror the Target Arrows double-swatch pattern: classColorFriendly picks the active swatch (inactive dims); neither opens a picker (White fixed, Class = player's class color). Both gray out when Name Only is off.
     ---------------------------------------------------------------
     if not CludesUI._prebuilding then
-        local rightRgn = friendlyRow._rightRegion
+        local rightRegion = friendlyRow._rightRegion
         local whiteSwatch, updateWhite, classSwatch, updateClass
         local function refreshNameSwatches()
             if updateWhite then
@@ -394,8 +394,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         end
         -- White swatch: fixed white, not editable; clicking only selects the non-class-colored mode (default OnClick picker replaced below).
         whiteSwatch, updateWhite = CludesUI.BuildColorSwatch(
-            rightRgn,
-            rightRgn:GetFrameLevel() + 5,
+            rightRegion,
+            rightRegion:GetFrameLevel() + 5,
             function()
                 return 1, 1, 1
             end,
@@ -403,7 +403,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             nil,
             20
         )
-        Pix.Point(whiteSwatch, "RIGHT", rightRgn._control, "LEFT", -8, 0)
+        Pix.Point(whiteSwatch, "RIGHT", rightRegion._control, "LEFT", -8, 0)
         whiteSwatch:SetScript("OnClick", function()
             if nameOnlyOff() then
                 return
@@ -413,13 +413,13 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         CludesUI.HoverTip(whiteSwatch, "White")
         -- Class color swatch: player's class color; selects class-colored mode.
         classSwatch, updateClass = CludesUI.BuildColorSwatch(
-            rightRgn,
-            rightRgn:GetFrameLevel() + 5,
+            rightRegion,
+            rightRegion:GetFrameLevel() + 5,
             function()
                 local _, ct = UnitClass("player")
-                local cc = ct and C_ClassColor and C_ClassColor.GetClassColor(ct)
-                if cc then
-                    return cc.r, cc.g, cc.b
+                local classColor = ct and C_ClassColor and C_ClassColor.GetClassColor(ct)
+                if classColor then
+                    return classColor.r, classColor.g, classColor.b
                 end
                 return 1, 1, 1
             end,
@@ -428,7 +428,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             20
         )
         Pix.Point(classSwatch, "RIGHT", whiteSwatch, "LEFT", -8, 0)
-        rightRgn._lastInline = classSwatch
+        rightRegion._lastInline = classSwatch
         classSwatch:SetScript("OnClick", function()
             if nameOnlyOff() then
                 return
@@ -484,9 +484,9 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                 hasAlpha = false,
                 getValue = function()
                     local _, ct = UnitClass("player")
-                    local cc = ct and C_ClassColor and C_ClassColor.GetClassColor(ct)
-                    if cc then
-                        return cc.r, cc.g, cc.b
+                    local classColor = ct and C_ClassColor and C_ClassColor.GetClassColor(ct)
+                    if classColor then
+                        return classColor.r, classColor.g, classColor.b
                     end
                     return 1, 1, 1
                 end,
@@ -509,7 +509,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     end
 
     local subtitleRow
-    subtitleRow, hgt = W:DualRow(hostFrame, posY, {
+    subtitleRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Subtitle Text",
         tooltip = "Show the player's title inline with their name, and/or their guild on a line below it, on friendly nameplates.",
@@ -540,7 +540,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         end,
         swatches = MakeGuildColorSwatches(),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Subtitle Text inline cog: Name Text Settings, headed by the friendly Name
     -- Format (a friendly player's name, in both modes), so the cog opens
@@ -612,7 +612,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     end
 
     local npcRow
-    npcRow, hgt = W:DualRow(hostFrame, posY, {
+    npcRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Friendly NPC Nameplates",
         getValue = DBValIs("showFriendlyNPCs"),
@@ -645,7 +645,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         end,
         tooltip = "Adjusts the size of friendly player names shown in Name Only mode. Default is 15.",
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Cog popup for NPC nameplate settings (Show NPC Titles)
     do
@@ -665,8 +665,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             return (DBVal("raidMarkerPos") or defaultSet.raidMarkerPos) == "none"
         end
 
-        local rgn = npcRow._leftRegion
-        local button = CludesUI.BuildInlineCog(rgn, {
+        local region = npcRow._leftRegion
+        local button = CludesUI.BuildInlineCog(region, {
             chain = false,
             disabled = npcCogOff,
             disabledTooltip = function()
@@ -793,7 +793,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             npcSwatch:SetAlpha(off and 0.3 or 1)
             npcSwatch:SetMouseClickEnabled(not off)
         end
-        npcSwatch, updateNpcSwatch = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+        npcSwatch, updateNpcSwatch = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
             local c = DBVal("friendlyNPCColor") or defaultSet.friendlyNPCColor
             return c.r, c.g, c.b
         end, function(r, g, b)
@@ -801,8 +801,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             mod.RefreshFriendlyColors()
             refreshNpcSwatch()
         end, nil, 20)
-        Pix.Point(npcSwatch, "RIGHT", button or rgn._control, "LEFT", -8, 0)
-        rgn._lastInline = npcSwatch
+        Pix.Point(npcSwatch, "RIGHT", button or region._control, "LEFT", -8, 0)
+        region._lastInline = npcSwatch
         local origNpcClick = npcSwatch:GetScript("OnClick")
         npcSwatch:SetScript("OnClick", function(self, ...)
             if npcColorOff() then
@@ -828,7 +828,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         refreshNpcSwatch()
     end
 
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Friendly Names Not Clickable",
         tooltip = "Make friendly player and NPC nameplates click-through so their names never block your mouse or cause accidental friendly targeting.\n\nUse this when friendly names get in the way of clicking the world or the enemy nameplates behind them.",
@@ -849,7 +849,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         end,
         tooltip = "Toggle visibility of enemy pet nameplates.",
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Inline DIRECTIONS cog on Friendly Name Size: name-only vertical distance
     if not CludesUI._prebuilding then
@@ -877,17 +877,17 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         })
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     -----------------------------------------------------------------------
     --  ENEMY NAMEPLATE SPACING
     -----------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, SECTION_ENEMY_NP, posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, SECTION_ENEMY_NP, cursorY)
+    cursorY = cursorY - height
 
     local stackingRow
-    stackingRow, hgt = W:DualRow(hostFrame, posY, {
+    stackingRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Stacking Nameplates",
         values = { __placeholder = "..." },
@@ -912,13 +912,13 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         end,
         tooltip = "Adjusts the vertical spacing between stacked nameplates. 100% = default, lower = tighter, higher = more spread.",
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Replace the placeholder dropdown with a multi-select checkbox dropdown; Enemy and Friendly stacking are independent toggles over the Midnight stacking bitfield. Friendly locks out while CUI isn't managing friendly plates (Blizzard owns that bit then).
     if not CludesUI._prebuilding then
-        local leftRgn = stackingRow._leftRegion
-        if leftRgn._control then
-            leftRgn._control:Hide()
+        local leftRegion = stackingRow._leftRegion
+        if leftRegion._control then
+            leftRegion._control:Hide()
         end
         local stackItems = {
             { key = "enemy", label = "Enemy Nameplates" },
@@ -930,45 +930,45 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                 end,
             },
         }
-        local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-            leftRgn,
+        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+            leftRegion,
             170,
-            leftRgn:GetFrameLevel() + 2,
+            leftRegion:GetFrameLevel() + 2,
             stackItems,
-            function(k)
-                if k == "enemy" then
+            function(keyName)
+                if keyName == "enemy" then
                     return DBVal("stackingEnabled") ~= false
                 end
-                if k == "friendly" then
+                if keyName == "friendly" then
                     return DBVal("stackingFriendly") == true
                 end
                 return false
             end,
-            function(k, val)
-                if k == "enemy" then
+            function(keyName, val)
+                if keyName == "enemy" then
                     DB().stackingEnabled = val
-                elseif k == "friendly" then
+                elseif keyName == "friendly" then
                     DB().stackingFriendly = val
                 end
                 mod.RefreshStackingMotion()
             end
         )
-        Pix.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
-        leftRgn._control = cbDD
-        cbDD:HookScript("OnEnter", function()
+        Pix.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
+        leftRegion._control = checkDrop
+        checkDrop:HookScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(
-                cbDD,
+                checkDrop,
                 "Choose which nameplates stack vertically instead of overlapping."
             )
         end)
-        cbDD:HookScript("OnLeave", function()
+        checkDrop:HookScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
     end
 
     local hitboxRow
-    hitboxRow, hgt = W:DualRow(hostFrame, posY, {
+    hitboxRow, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Hitbox Size X",
         min = 50,
@@ -997,29 +997,29 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         end,
         tooltip = "Increases the clickable hitbox height of enemy nameplates. 100% = matches bar height. Increase to make nameplates easier to click.",
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Eyeball toggle on Hitbox Size X: translucent overlay on real enemy nameplates marking the clickable area, for visual slider tuning; runtime-only, auto-hides when the panel closes. None in the search pre-build: it indexes nothing, and the row is a stand-in there.
     if not CludesUI._prebuilding then
         local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
         local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-        local leftRgn = hitboxRow._leftRegion
-        local eyeBtn, eyeTex = CludesUI.NewInlineEye(leftRgn)
+        local leftRegion = hitboxRow._leftRegion
+        local eyeButton, eyeTex = CludesUI.NewInlineEye(leftRegion)
         local function RefreshEyeIcon()
             eyeTex:SetTexture(mod._hitboxOverlayShown and EYE_INVISIBLE or EYE_VISIBLE)
         end
         RefreshEyeIcon()
-        eyeBtn:SetScript("OnClick", function()
+        eyeButton:SetScript("OnClick", function()
             if mod.SetHitboxOverlayShown then
                 mod.SetHitboxOverlayShown(not mod._hitboxOverlayShown)
             end
             RefreshEyeIcon()
         end)
-        eyeBtn:SetScript("OnEnter", function(self)
+        eyeButton:SetScript("OnEnter", function(self)
             CludesUI.SetGlyphAlpha(self, 0.7)
             CludesUI.ShowWidgetTooltip(self, "Show/Hide Hitbox Overlay", { width = 175 })
         end)
-        eyeBtn:SetScript("OnLeave", function(self)
+        eyeButton:SetScript("OnLeave", function(self)
             CludesUI.SetGlyphAlpha(self, 0.4)
             CludesUI.HideWidgetTooltip()
         end)
@@ -1101,19 +1101,19 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             }
         end
         for idx = 1, #cvarRows, 2 do
-            _, hgt = W:DualRow(hostFrame, posY, cvarRows[idx], cvarRows[idx + 1] or CludesUI.BlankRowCfg())
-            posY = posY - hgt
+            _, height = W:DualRow(hostFrame, cursorY, cvarRows[idx], cvarRows[idx + 1] or CludesUI.BlankRowCfg())
+            cursorY = cursorY - height
         end
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     -----------------------------------------------------------------------
     --  EXTRA AURA OPTIONS
     -----------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, SECTION_AURA, posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, SECTION_AURA, cursorY)
+    cursorY = cursorY - height
 
     local maxDbfOriginal = DBVal("maxDebuffs") or defaultSet.maxDebuffs
     local maxDbfPendingPopup
@@ -1155,7 +1155,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         tooltip = "Maximum number of debuff icons shown on enemy nameplates.",
     }
     local debuffRow1
-    debuffRow1, hgt = W:DualRow(hostFrame, posY, maxDbfCfg, {
+    debuffRow1, height = W:DualRow(hostFrame, cursorY, maxDbfCfg, {
         type = "toggle",
         text = "Show Buff / Debuff Tooltips",
         tooltip = "Show the spell tooltip when you hover a buff or debuff icon on a nameplate.\n\nWhile the cursor is over an icon, the plate behind it will not highlight or take mouseover targeting.",
@@ -1167,7 +1167,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             end
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     local GO = CludesUI.GlowOptions
 
@@ -1175,9 +1175,9 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     -- Style with its color swatches and cog, the preview in the right half.
     local panDesc = npPandemicGlowDesc
     local panRow
-    panRow, hgt = W:DualRow(
+    panRow, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         GO.DropdownSpec(
             panDesc,
             "Pandemic Glow Style",
@@ -1185,7 +1185,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         ),
         { type = "label", text = "Pandemic Glow Preview" }
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
     GO.AttachInline(panRow._leftRegion, panDesc)
 
     if not CludesUI._prebuilding then
@@ -1209,14 +1209,14 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                 break
             end
         end
-        local rightRgn = panRow._rightRegion
+        local rightRegion = panRow._rightRegion
         GO.BuildPreview(
-            rightRgn,
+            rightRegion,
             panDesc,
-            { anchor = rightRgn, point = "RIGHT", relPoint = "RIGHT", x = -20, icon = icon }
+            { anchor = rightRegion, point = "RIGHT", relPoint = "RIGHT", x = -20, icon = icon }
         )
         -- The preview's label dims with it while no glow is picked.
-        local previewLabel = rightRgn._label
+        local previewLabel = rightRegion._label
         local function DimPreviewLabel()
             previewLabel:SetAlpha(GO.Renders(panDesc) and 1 or 0.3)
         end
@@ -1286,8 +1286,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         end,
     }
     local dispelGlowRow
-    dispelGlowRow, hgt = W:DualRow(hostFrame, posY, buffFilterDropdown, dispelGlowDropdown)
-    posY = posY - hgt
+    dispelGlowRow, height = W:DualRow(hostFrame, cursorY, buffFilterDropdown, dispelGlowDropdown)
+    cursorY = cursorY - height
 
     GO.AttachInline(dispelGlowRow._rightRegion, dispelDesc)
 
@@ -1316,21 +1316,21 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         })
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     -----------------------------------------------------------------------
     --  TARGET AND FOCUS EFFECTS
     -----------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "TARGET AND FOCUS EFFECTS", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "TARGET AND FOCUS EFFECTS", cursorY)
+    cursorY = cursorY - height
 
     local function hashLineOff()
         return not (DBVal("hashLineEnabled"))
     end
 
     local row
-    row, hgt = W:DualRow(hostFrame, posY, {
+    row, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Hash Line on Target at Percent",
         getValue = DBValOr("hashLineEnabled", false),
@@ -1357,7 +1357,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             UpdatePreview()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Add "(Percent)" suffix in smaller, dimmer text next to the slider label
     if not CludesUI._prebuilding then
@@ -1392,16 +1392,16 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             RefreshAllPlates()
             UpdatePreview()
         end
-        local leftRgn = row._leftRegion
+        local leftRegion = row._leftRegion
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
-            leftRgn,
-            leftRgn:GetFrameLevel() + 5,
+            leftRegion,
+            leftRegion:GetFrameLevel() + 5,
             hashColorGet,
             hashColorSet,
             nil,
             20
         )
-        Pix.Point(colorSwatch, "RIGHT", leftRgn._control, "LEFT", -12, 0)
+        Pix.Point(colorSwatch, "RIGHT", leftRegion._control, "LEFT", -12, 0)
         -- Gray out swatch when hash line is off
         CludesUI.RegisterWidgetRefresh(function()
             local off = hashLineOff()
@@ -1415,7 +1415,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
 
     -- Row 2: Scale Target Nameplate | Non-Target Opacity
     local tfScaleRow
-    tfScaleRow, hgt = W:DualRow(hostFrame, posY, {
+    tfScaleRow, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Scale Target Nameplate",
         trackWidth = 110,
@@ -1448,7 +1448,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             CludesUI:RefreshPage() -- update the cog disabled state
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- "(Percent)" suffix on the target scale slider
     if not CludesUI._prebuilding then
         local leftFrame = tfScaleRow._leftRegion
@@ -1508,8 +1508,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         local function ntOff()
             return (DBVal("nonTargetAlpha") or 100) >= 100 and (DBVal("outOfCombatAlpha") or 100) >= 100
         end
-        local rgn = tfScaleRow._rightRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = tfScaleRow._rightRegion
+        CludesUI.BuildInlineCog(region, {
             disabled = ntOff,
             disabledTooltip = "This option requires Non-Target Opacity or Out of Combat Opacity to be below 100",
             title = "Non-Target Opacity",
@@ -1562,7 +1562,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         return DBVal("focusLetterEnabled") ~= true
     end
     local tfFocusRow
-    tfFocusRow, hgt = W:DualRow(hostFrame, posY, {
+    tfFocusRow, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Focus Cast Height",
         trackWidth = 110,
@@ -1588,7 +1588,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             CludesUI:RefreshPage()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- "(Percent)" suffix on Focus Cast Height
     if not CludesUI._prebuilding then
         local leftFrame = tfFocusRow._leftRegion
@@ -1607,8 +1607,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     end
 
     if not CludesUI._prebuilding then
-        local rgn = tfFocusRow._rightRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = tfFocusRow._rightRegion
+        CludesUI.BuildInlineCog(region, {
             disabled = focusLetterOff,
             disabledTooltip = "Focus Letter",
             title = "Focus Letter",
@@ -1675,7 +1675,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         return DBVal("rangeTextEnabled") ~= true
     end
     local tfRangeRow
-    tfRangeRow, hgt = W:DualRow(hostFrame, posY, {
+    tfRangeRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Distance to Target Text (Range)",
         tooltip = "Shows the approximate distance to your current target on its nameplate as a range bracket, e.g. 15+ when the target is 15-20 yards away.",
@@ -1688,11 +1688,11 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             CludesUI:RefreshPage()
         end,
     }, { type = "label", text = "" })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- RESIZE cog: text size + X/Y offsets (mirrors the raid-marker cog), beside the toggle
     if not CludesUI._prebuilding then
-        local rgn = tfRangeRow._leftRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = tfRangeRow._leftRegion
+        CludesUI.BuildInlineCog(region, {
             disabled = tfRangeOff,
             disabledTooltip = "Distance to Target Text (Range)",
             title = "Distance Text",
@@ -1746,7 +1746,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     end
     -- Inline color swatch (default light orange), left of the cog
     if not CludesUI._prebuilding then
-        local rgn = tfRangeRow._leftRegion
+        local region = tfRangeRow._leftRegion
         local rangeColorGet = function()
             local c = (DB() and DB().rangeTextColor) or defaultSet.rangeTextColor
             return c.r, c.g, c.b
@@ -1758,9 +1758,9 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             end
         end
         local colorSwatch, updateSwatch =
-            CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, rangeColorGet, rangeColorSet, nil, 20)
-        Pix.Point(colorSwatch, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-        rgn._lastInline = colorSwatch
+            CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, rangeColorGet, rangeColorSet, nil, 20)
+        Pix.Point(colorSwatch, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+        region._lastInline = colorSwatch
         CludesUI.RegisterWidgetRefresh(function()
             local off = tfRangeOff()
             colorSwatch:SetAlpha(off and 0.15 or 1)
@@ -1771,18 +1771,18 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         colorSwatch:EnableMouse(not tfRangeOff())
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     -----------------------------------------------------------------------
     --  EXTRAS
     -----------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, SECTION_MISC, posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, SECTION_MISC, cursorY)
+    cursorY = cursorY - height
 
     -- Row 1: Scale Nameplate on Cast | Hide Enemy Name While Casting
     local exCastRow
-    exCastRow, hgt = W:DualRow(hostFrame, posY, {
+    exCastRow, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Scale Nameplate On Cast",
         trackWidth = 110,
@@ -1807,7 +1807,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             UpdatePreview()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- "(Percent)" suffix on the cast scale slider
     if not CludesUI._prebuilding then
         local leftFrame = exCastRow._leftRegion
@@ -1827,7 +1827,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
 
     -- Row 2: Name Raid Marker (target marker shown directly before the enemy name; size lives on inline cog) | Experimental: Cast Lockout as CC Icon.
     local nameRaidMarkerRow
-    nameRaidMarkerRow, hgt = W:DualRow(hostFrame, posY, {
+    nameRaidMarkerRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Name Raid Marker",
         tooltip = "Shows the target marker directly before the enemy name text. Uses its own size and does not use the Core Positions raid marker slot.",
@@ -1848,14 +1848,14 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             RefreshAllAuras()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     if not CludesUI._prebuilding then
         local function nameRaidMarkerOff()
             return DBVal("nameRaidMarkerEnabled") ~= true
         end
-        local rgn = nameRaidMarkerRow._leftRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = nameRaidMarkerRow._leftRegion
+        CludesUI.BuildInlineCog(region, {
             disabled = nameRaidMarkerOff,
             disabledTooltip = "Name Raid Marker",
             title = "Name Raid Marker",
@@ -1880,9 +1880,9 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     end
 
     -- Row 3: Out of Combat Opacity | Line of Sight Opacity
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         {
             type = "slider",
             text = "Out of Combat Opacity",
@@ -1918,11 +1918,11 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             end,
         }
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Row 4: Range Check (custom cutoff in the inline cog) | Out of Range Opacity
     local rangeCheckRow
-    rangeCheckRow, hgt = W:DualRow(hostFrame, posY, {
+    rangeCheckRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Range Check",
         values = { disabled = "Disabled", auto = "Auto (Class/Spec)", custom = "Custom" },
@@ -1983,15 +1983,15 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             end
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Inline cog on Range Check: the custom cutoff lives here.
     if not CludesUI._prebuilding then
         local function customOff()
             return (DBVal("outOfRangeMode") or defaultSet.outOfRangeMode) ~= "custom"
         end
-        local rgn = rangeCheckRow._leftRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = rangeCheckRow._leftRegion
+        CludesUI.BuildInlineCog(region, {
             disabled = customOff,
             disabledTooltip = "Range Check: Custom",
             title = "Range Check",
@@ -2020,7 +2020,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     end
 
     -- Row 5: Execute Pulse Glow | Hide Enemy Nameplates out of Combat
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Execute Pulse Glow",
         tooltip = "Pulses a red glow on enemy nameplates below 30% health.",
@@ -2041,7 +2041,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             end
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Row 6: the class option, if any, built only when there is one. Hide Copies
     -- of Blood Plague (Blood Death Knight only) and Show Sunder Armor (WoW Forever
@@ -2083,11 +2083,11 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         end
     end
     if classCfg then
-        _, hgt = W:DualRow(hostFrame, posY, classCfg, CludesUI.BlankRowCfg())
-        posY = posY - hgt
+        _, height = W:DualRow(hostFrame, cursorY, classCfg, CludesUI.BlankRowCfg())
+        cursorY = cursorY - height
     end
 
-    return math.abs(posY)
+    return math.abs(cursorY)
 end
 
 -- Used by CUI_Nameplates_Options.lua

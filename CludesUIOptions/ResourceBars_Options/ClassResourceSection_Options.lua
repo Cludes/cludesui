@@ -33,10 +33,10 @@ mod.ERB_BlizzArtBlockRegions = function(regions)
         if on and not blocks then
             blocks = {}
             for idx = 1, #regions do
-                local rgn = regions[idx]
-                local b = CreateFrame("Frame", nil, rgn)
+                local region = regions[idx]
+                local b = CreateFrame("Frame", nil, region)
                 b:SetAllPoints()
-                b:SetFrameLevel(rgn:GetFrameLevel() + 50)
+                b:SetFrameLevel(region:GetFrameLevel() + 50)
                 b:EnableMouse(true)
                 b:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(
@@ -67,7 +67,7 @@ end
 -- secondary table. The Guardian/Prot special-bar rows show in both modes for the
 -- relevant spec (global storage). The Hide-Power cog is Simple-only. The Threshold &
 -- Hash Lines row hosts the shared editor (env.BuildThresholdSettingsButton).
-function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
+function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
     local environ = mod._CURB_OptEnv
     local DB, Pix, SmoothRefresh, RefreshClass =
         environ.DB, environ.PP, environ.SmoothRefresh, environ.RefreshClass
@@ -108,8 +108,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
         end,
     }, { __index = CludesUI.Widgets })
 
-    local _, hgt
-    local function conf()
+    local _, height
+    local function rowConf()
         return context.cfg()
     end
     -- A row's getter and setter for one key of this section's settings: the
@@ -118,7 +118,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
     -- and, with alsoPage, rebuilds the page.
     local function ConfGetter(key, default)
         return function()
-            local c = conf()
+            local c = rowConf()
             if default == nil then
                 return c and c[key]
             end
@@ -127,7 +127,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
     end
     local function ConfSetter(key, after, alsoPage)
         return function(val)
-            local c = conf()
+            local c = rowConf()
             if not c then
                 return
             end
@@ -139,20 +139,20 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
         end
     end
     local function classOff()
-        local c = conf()
+        local c = rowConf()
         return not (c and c.enabled)
     end
 
     local heading
-    heading, hgt = W:SectionHeader(hostFrame, "CLASS RESOURCE BAR", posY)
-    posY = posY - hgt
+    heading, height = W:SectionHeader(hostFrame, "CLASS RESOURCE BAR", cursorY)
+    cursorY = cursorY - height
     -- Move in Unlock Mode on the title; handed back so the page's preview eye sits after it.
     local unlockJump = CludesUI.BuildSectionUnlockJump(
         heading,
         { key = "ERB_ClassResource", disabled = classOff, disabledTooltip = "Class Resource" }
     )
 
-    local _advTop = posY -- content top; also used by the Simple override overlay
+    local _advTop = cursorY -- content top; also used by the Simple override overlay
     -- Guardian Ironfur + Prot Ignore Pain special bars stay global at runtime (stored on
     -- DB().secondary, not per-spec); the row shows for the active spec.
     -- Retail only: WoW Forever has none of these specs.
@@ -171,7 +171,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 local p = DB()
                 return p and not p.secondary.guardianIronfurBar
             end
-            local _, hh = W:DualRow(hostFrame, posY, {
+            local _, hh = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Guardian Druid Ironfur Bar",
                 tooltip = "Replaces the class resource bar with an Ironfur tracker. Each Ironfur cast adds a hash line that slides from right to left as its buff decays. Duration is talent-aware (Ursoc's Endurance and Guardian of Elune).",
@@ -207,7 +207,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     CludesUI:RefreshPage()
                 end,
             })
-            posY = posY - hh
+            cursorY = cursorY - hh
         end
         local function _IsProtWarrior()
             local _, castFrame = UnitClass("player")
@@ -233,7 +233,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
             local ipHashTip =
                 "Draws a hash line that resets to the right edge when you cast Ignore Pain and slides left as the buff runs out."
             local ipRow
-            ipRow, hgt = W:DualRow(hostFrame, posY, {
+            ipRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Prot Warrior Ignore Pain Bar",
                 tooltip = ipBarTip,
@@ -272,9 +272,9 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     CludesUI:RefreshPage()
                 end,
             })
-            posY = posY - hgt
-            local function IPControlTip(rgn, tipText)
-                local c = rgn and rgn._control
+            cursorY = cursorY - height
+            local function IPControlTip(region, tipText)
+                local c = region and region._control
                 if not c or not c.HookScript then
                     return
                 end
@@ -301,7 +301,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
             local ssBarTip =
                 "Shows Sweeping Strikes charges on the resource bar; Unit Frames and the personal Nameplate show them regardless."
             local ssRow
-            ssRow, hgt = W:DualRow(hostFrame, posY, {
+            ssRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Arms Warrior Sweeping Strikes Bar",
                 tooltip = ssBarTip,
@@ -319,22 +319,22 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     CludesUI:RefreshPage()
                 end,
             }, { type = "label", text = "" })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end
     end
 
     -- Row 1: Show Class Resource | Orientation
     local classEnableRow
-    classEnableRow, hgt = W:DualRow(hostFrame, posY, {
+    classEnableRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Class Resource",
         getValue = ConfGetter("enabled"),
         -- Rows below Row 1 are hidden while off, so the flip must force the full rebuild
         setValue = CludesUI.DependentSetValue(function()
-            local c = conf()
+            local c = rowConf()
             return c and c.enabled
         end, function(val)
-            local c = conf()
+            local c = rowConf()
             if not c then
                 return
             end
@@ -350,7 +350,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
         values = { HORIZONTAL = "Horizontal", VERTICAL_UP = "Vertical Up", VERTICAL_DOWN = "Vertical Down" },
         order = { "HORIZONTAL", "VERTICAL_UP", "VERTICAL_DOWN" },
         getValue = function()
-            local c = conf()
+            local c = rowConf()
             if not c then
                 return "HORIZONTAL"
             end
@@ -362,13 +362,13 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
         end,
         setValue = ConfSetter("pipOrientation", SmoothRefresh, true),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Class Resource cog: Simple only (Hide Power Bar if Resource is a row of
     -- the Bar Display page's BAR SHIFTING section)
     if not context.advanced then
         if not CludesUI._prebuilding then
-            local rgn = classEnableRow._leftRegion
-            CludesUI.BuildInlineCog(rgn, {
+            local region = classEnableRow._leftRegion
+            CludesUI.BuildInlineCog(region, {
                 disabled = classOff,
                 disabledTooltip = "Class Resource",
                 title = "Class Resource",
@@ -381,7 +381,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         tooltip = "Draws the class resource bar above the health, power and GCD bar borders.",
                         get = ConfGetter("raiseLevel", false),
                         set = function(val)
-                            local c = conf()
+                            local c = rowConf()
                             if not c then
                                 return
                             end
@@ -396,7 +396,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
     end
     -- Chains left of the Class Resource cog in Simple mode (rgn._lastInline), or of the toggle itself in Advanced
     if not CludesUI._prebuilding then
-        AddFormBarBtn(classEnableRow._leftRegion, conf, RebuildClass)
+        AddFormBarBtn(classEnableRow._leftRegion, rowConf, RebuildClass)
     end
 
     -- Everything below Row 1 is hidden entirely while the bar is off. classColorRow is
@@ -408,7 +408,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
         -- Orientation-aware: this bar has its OWN orientation key and its renderer treats
         -- anything not HORIZONTAL as vertical, so the value is normalized before the shared helper sees it.
         local function classOri()
-            local c = conf()
+            local c = rowConf()
             local o = (c and c.pipOrientation) or "HORIZONTAL"
             return o ~= "HORIZONTAL" and "VERTICAL_UP" or "HORIZONTAL"
         end
@@ -418,7 +418,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
         local chDis, chTip, chRaw = classGuard("Height")
         local cwDis, cwTip, cwRaw = classGuard("Width")
         local classSizeRow
-        classSizeRow, hgt = W:DualRow(hostFrame, posY, {
+        classSizeRow, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Height",
             min = 1,
@@ -441,14 +441,14 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
             getValue = ConfGetter("pipWidth", 214),
             setValue = ConfSetter("pipWidth", SmoothRefresh, true),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not context.advanced and context.syncRows then
             context.syncRows.classHeight = classSizeRow._leftRegion
             context.syncRows.classWidth = classSizeRow._rightRegion
             if not CludesUI._prebuilding then
-                local rgn = classSizeRow._leftRegion
+                local region = classSizeRow._leftRegion
                 CludesUI.BuildSyncIcon({
-                    region = rgn,
+                    region = region,
                     tooltip = "Apply Height to all Bars",
                     onClick = function()
                         local p = DB()
@@ -479,9 +479,9 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 })
             end
             if not CludesUI._prebuilding then
-                local rgn = classSizeRow._rightRegion
+                local region = classSizeRow._rightRegion
                 CludesUI.BuildSyncIcon({
-                    region = rgn,
+                    region = region,
                     tooltip = "Apply Width to all Bars",
                     onClick = function()
                         local p = DB()
@@ -517,9 +517,9 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
         do
             local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
             local classBsRow
-            classBsRow, hgt = W:DualRow(
+            classBsRow, height = W:DualRow(
                 hostFrame,
-                posY,
+                cursorY,
                 CludesUI.BlizzStyle.Gate("resourcebars", {
                     type = "dropdown",
                     text = "Border Style",
@@ -529,7 +529,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     order = texOrder,
                     getValue = ConfGetter("borderTexture", "solid"),
                     setValue = function(val)
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -557,7 +557,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 }),
                 mod.ERB_ClassicBorderRow()
                         and mod.ERB_ClassicBorderSizeCfg(
-                            conf,
+                            rowConf,
                             classOff,
                             "Class Resource",
                             RebuildClass,
@@ -570,25 +570,25 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             disabled = classOff,
                             disabledTooltip = "Class Resource",
                             getStep = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return c and c.borderSize or 1
                             end,
                             setStep = function(val)
-                                local c = conf()
+                                local c = rowConf()
                                 if c then
                                     c.borderSize = val
                                 end
                             end,
                             getTex = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return c and c.borderTexture or "solid"
                             end,
                             getPx = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return c and c.borderSizePx
                             end,
                             setPx = function(val)
-                                local c = conf()
+                                local c = rowConf()
                                 if c then
                                     c.borderSizePx = val
                                 end
@@ -600,14 +600,14 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         })
                     )
             )
-            posY = posY - hgt
+            cursorY = cursorY - height
             -- Width Offset | Height Offset: own row while a textured style is selected (stock styles gate it away).
             do
-                local c = conf()
+                local c = rowConf()
                 local texture = c and c.borderTexture or "solid"
                 if texture ~= "solid" and texture ~= "" then
                     local function step()
-                        local c = conf()
+                        local c = rowConf()
                         return c and c.borderSize or 1
                     end
                     local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
@@ -615,31 +615,31 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         disabled = classOff,
                         disabledTooltip = "Class Resource",
                         getTex = function()
-                            local c = conf()
+                            local c = rowConf()
                             return c and c.borderTexture or "solid"
                         end,
                         getStep = step,
                         getSizeKey = step,
                         getPx = function()
-                            local c = conf()
+                            local c = rowConf()
                             return c and c.borderSizePx
                         end,
                         getX = function()
-                            local c = conf()
+                            local c = rowConf()
                             return c and c.borderTextureOffset
                         end,
                         setX = function(val)
-                            local c = conf()
+                            local c = rowConf()
                             if c then
                                 c.borderTextureOffset = val
                             end
                         end,
                         getY = function()
-                            local c = conf()
+                            local c = rowConf()
                             return c and c.borderTextureOffsetY
                         end,
                         setY = function(val)
-                            local c = conf()
+                            local c = rowConf()
                             if c then
                                 c.borderTextureOffsetY = val
                             end
@@ -649,21 +649,21 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             CludesUI:RefreshPage()
                         end,
                     })
-                    _, hgt = W:DualRow(
+                    _, height = W:DualRow(
                         hostFrame,
-                        posY,
+                        cursorY,
                         CludesUI.BlizzStyle.Gate("resourcebars", ocfgL),
                         CludesUI.BlizzStyle.Gate("resourcebars", ocfgR)
                     )
-                    posY = posY - hgt
+                    cursorY = cursorY - height
                 end
             end
             if not context.advanced and context.syncRows then
                 context.syncRows.classBorder = classBsRow._rightRegion
             end
             if not CludesUI._prebuilding and not mod.ERB_ClassicBorderRow() then
-                local rgn = classBsRow._rightRegion
-                local ctrl = rgn._control
+                local region = classBsRow._rightRegion
+                local control = region._control
                 -- Corner Radius (CludesUI_RoundedCorners.lua): an inline cog on the
                 -- border size control. The stock styles keep the bars square.
                 if not CludesUI._prebuilding then
@@ -674,7 +674,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             if classOff() or CludesUI.BlizzStyle.Get("resourcebars") then
                                 return true
                             end
-                            local c = conf()
+                            local c = rowConf()
                             return not CludesUI.RoundedStyleOK(c and c.borderTexture)
                         end,
                         disabledTooltip = function()
@@ -700,10 +700,10 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                                 set = ConfSetter("cornerRadius", RebuildClass),
                             },
                         }, function()
-                            local c = conf()
+                            local c = rowConf()
                             return c and c.cornerMask
                         end, function(val)
-                            local c = conf()
+                            local c = rowConf()
                             if not c then
                                 return
                             end
@@ -713,17 +713,17 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     })
                 end
                 local borderSwatch, updateBorderSwatch = CludesUI.BuildColorSwatch(
-                    rgn,
+                    region,
                     classBsRow:GetFrameLevel() + 3,
                     function()
-                        local c = conf()
+                        local c = rowConf()
                         return (c and c.borderR or 0),
                             (c and c.borderG or 0),
                             (c and c.borderB or 0),
                             (c and c.borderA or 1)
                     end,
                     function(r, g, b, a)
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -734,16 +734,16 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     true,
                     20
                 )
-                Pix.Point(borderSwatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -8, 0)
-                rgn._lastInline = borderSwatch -- left of the Corner Radius cog
+                Pix.Point(borderSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
+                region._lastInline = borderSwatch -- left of the Corner Radius cog
                 CludesUI.RegisterWidgetRefresh(function()
                     updateBorderSwatch()
                 end)
             end
             if not CludesUI._prebuilding then
-                local rgn = classBsRow._leftRegion
+                local region = classBsRow._leftRegion
                 local sepValues, sepOrder = mod.ERB_SeparatorArtValues(true)
-                local cogBtn = CludesUI.BuildInlineCog(rgn, {
+                local cogBtn = CludesUI.BuildInlineCog(region, {
                     title = "Border Options",
                     rows = {
                         {
@@ -753,7 +753,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             max = 10,
                             step = 1,
                             get = function()
-                                local c = conf()
+                                local c = rowConf()
                                 if not c then
                                     return 0
                                 end
@@ -769,7 +769,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                                 return dsx
                             end,
                             set = function(val)
-                                local c = conf()
+                                local c = rowConf()
                                 if not c then
                                     return
                                 end
@@ -785,7 +785,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             max = 10,
                             step = 1,
                             get = function()
-                                local c = conf()
+                                local c = rowConf()
                                 if not c then
                                     return 0
                                 end
@@ -801,7 +801,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                                 return dsy
                             end,
                             set = function(val)
-                                local c = conf()
+                                local c = rowConf()
                                 if not c then
                                     return
                                 end
@@ -815,7 +815,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             label = "Show Behind",
                             get = ConfGetter("borderBehind", false),
                             set = function(val)
-                                local c = conf()
+                                local c = rowConf()
                                 if not c then
                                     return
                                 end
@@ -834,7 +834,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             step = 1,
                             tooltip = "Grows the border past the bar's top edge on screen without resizing the bar.",
                             disabled = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return (c and c.borderOnPips and not mod.IsBarTypeSecondary()) and true
                                     or false
                             end,
@@ -851,7 +851,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             step = 1,
                             tooltip = "Grows the border past the bar's bottom edge on screen without resizing the bar.",
                             disabled = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return (c and c.borderOnPips and not mod.IsBarTypeSecondary()) and true
                                     or false
                             end,
@@ -868,7 +868,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             step = 1,
                             tooltip = "Grows the border past the bar's left edge on screen without resizing the bar.",
                             disabled = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return (c and c.borderOnPips and not mod.IsBarTypeSecondary()) and true
                                     or false
                             end,
@@ -885,7 +885,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             step = 1,
                             tooltip = "Grows the border past the bar's right edge on screen without resizing the bar.",
                             disabled = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return (c and c.borderOnPips and not mod.IsBarTypeSecondary()) and true
                                     or false
                             end,
@@ -904,14 +904,14 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             order = sepOrder,
                             tooltip = "Draws separator lines along the bar edge and between the pips.",
                             get = function()
-                                local c = conf()
+                                local c = rowConf()
                                 if not (c and c.edgeSep) then
                                     return "none"
                                 end
                                 return c.edgeSepArt or "match"
                             end,
                             set = function(val)
-                                local c = conf()
+                                local c = rowConf()
                                 if not c then
                                     return
                                 end
@@ -930,16 +930,16 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             label = "Horizontal Separator",
                             tooltip = "Draws the line along the bar's bottom edge.",
                             disabled = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return not (c and c.edgeSep)
                             end,
                             disabledTooltip = "Separators",
                             get = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return c and c.edgeSepH ~= false
                             end,
                             set = function(val)
-                                local c = conf()
+                                local c = rowConf()
                                 if not c then
                                     return
                                 end
@@ -955,11 +955,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             max = 50,
                             step = 1,
                             disabled = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return not (c and c.edgeSep and c.edgeSepH ~= false)
                             end,
                             disabledTooltip = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return (c and c.edgeSep) and "Horizontal Separator" or "Separators"
                             end,
                             get = ConfGetter("edgeSepY", 0),
@@ -970,26 +970,26 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             label = "Vertical Separators",
                             tooltip = "Draws a line in each gap between the pips.",
                             disabled = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return (not (c and c.edgeSep)) or mod.IsBarTypeSecondary()
                             end,
                             disabledTooltip = function()
-                                local c = conf()
+                                local c = rowConf()
                                 if not (c and c.edgeSep) then
                                     return "Separators"
                                 end
                                 return "This option applies to pip and rune resources only."
                             end,
                             rawTooltip = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return (c and c.edgeSep) and true or false
                             end,
                             get = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return c and c.edgeSepV ~= false
                             end,
                             set = function(val)
-                                local c = conf()
+                                local c = rowConf()
                                 if not c then
                                     return
                                 end
@@ -1001,7 +1001,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     },
                 })
                 local function UpdateCogVis()
-                    local c = conf()
+                    local c = rowConf()
                     local texture = c and c.borderTexture or "solid"
                     if texture == "solid" or mod.ERB_ClassicBorderRow() then
                         cogBtn:Hide()
@@ -1145,9 +1145,9 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
             -- Pip Border cog on Border Style (left region): per-pip borders
             -- instead of one border around the whole bar.
             if not CludesUI._prebuilding then
-                local rgn = classBsRow._leftRegion
-                local lastInline = rgn._lastInline or rgn._control
-                local cogBtn = CludesUI.BuildInlineCog(rgn, {
+                local region = classBsRow._leftRegion
+                local lastInline = region._lastInline or region._control
+                local cogBtn = CludesUI.BuildInlineCog(region, {
                     title = "Pip Border",
                     rows = {
                         {
@@ -1165,7 +1165,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             label = "Background on individual pips",
                             tooltip = "Draws the class resource background inside each pip so the gaps between pips stay clear.",
                             disabled = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return (not (c and c.borderOnPips)) or mod.IsBarTypeSecondary()
                             end,
                             disabledTooltip = function()
@@ -1179,7 +1179,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             end,
                             get = ConfGetter("pipBgOnPips", false),
                             set = function(val)
-                                local c = conf()
+                                local c = rowConf()
                                 if not c then
                                     return
                                 end
@@ -1196,10 +1196,10 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 -- Position only: the texture-style dropdown adds/removes its own
                 -- inline elements, so the cog re-seats beside whichever is last.
                 local function UpdateCogPos()
-                    local c = conf()
+                    local c = rowConf()
                     local texture = c and c.borderTexture or "solid"
                     if texture == "solid" then
-                        Pix.Point(cogBtn, "RIGHT", rgn._control, "LEFT", -8, 0)
+                        Pix.Point(cogBtn, "RIGHT", region._control, "LEFT", -8, 0)
                     else
                         Pix.Point(cogBtn, "RIGHT", lastInline, "LEFT", -8, 0)
                     end
@@ -1214,7 +1214,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
         -- gapColorEnabled toggle activates a gap-only fill layer (gapR/G/B/A).
         do
             local classGapRow
-            classGapRow, hgt = W:DualRow(hostFrame, posY, {
+            classGapRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 pixel = true,
                 text = "Bar Spacing",
@@ -1234,11 +1234,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 disabled = classOff,
                 disabledTooltip = "Class Resource",
                 getValue = function()
-                    local c = conf()
+                    local c = rowConf()
                     return math.floor(((c and c.bgA) or 0.1) * 100 + 0.5)
                 end,
                 setValue = function(val)
-                    local c = conf()
+                    local c = rowConf()
                     if not c then
                         return
                     end
@@ -1247,23 +1247,23 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     CludesUI:RefreshPage()
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
             -- Bar Spacing inline enable toggle + gap-color swatch
             if not CludesUI._prebuilding then
-                local rgn = classGapRow._leftRegion
-                local ctrl = rgn._control
+                local region = classGapRow._leftRegion
+                local control = region._control
                 local gapSwatch, updateGapSwatch = CludesUI.BuildColorSwatch(
-                    rgn,
+                    region,
                     classGapRow:GetFrameLevel() + 3,
                     function()
-                        local c = conf()
+                        local c = rowConf()
                         return (c and c.gapR or 0),
                             (c and c.gapG or 0),
                             (c and c.gapB or 0),
                             (c and c.gapA or 1)
                     end,
                     function(r, g, b, a)
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -1274,8 +1274,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     true,
                     20
                 )
-                Pix.Point(gapSwatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -8, 0)
-                rgn._lastInline = gapSwatch
+                Pix.Point(gapSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
+                region._lastInline = gapSwatch
                 CludesUI.RegisterWidgetRefresh(function()
                     updateGapSwatch()
                 end)
@@ -1287,7 +1287,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     CludesUI.HideWidgetTooltip()
                 end)
                 local function UpdateGapSwatchState()
-                    local c = conf()
+                    local c = rowConf()
                     if c and c.gapColorEnabled then
                         gapSwatch:SetAlpha(1)
                         gapBlock:Hide()
@@ -1299,10 +1299,10 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 CludesUI.RegisterWidgetRefresh(UpdateGapSwatchState)
                 UpdateGapSwatchState()
                 CludesUI.BuildInlineToggle({
-                    region = rgn,
+                    region = region,
                     getValue = ConfGetter("gapColorEnabled"),
                     setValue = function(val)
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -1314,17 +1314,17 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
             end
             -- Empty Bar Overlay inline color swatch (RGB only)
             if not CludesUI._prebuilding then
-                local rgn = classGapRow._rightRegion
-                local ctrl = rgn._control
+                local region = classGapRow._rightRegion
+                local control = region._control
                 local ovSwatch, updateOvSwatch = CludesUI.BuildColorSwatch(
-                    rgn,
+                    region,
                     classGapRow:GetFrameLevel() + 3,
                     function()
-                        local c = conf()
+                        local c = rowConf()
                         return (c and c.bgR or 1), (c and c.bgG or 1), (c and c.bgB or 1), 1
                     end,
                     function(r, g, b)
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -1335,7 +1335,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     false,
                     20
                 )
-                Pix.Point(ovSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+                Pix.Point(ovSwatch, "RIGHT", control, "LEFT", -8, 0)
                 CludesUI.RegisterWidgetRefresh(function()
                     updateOvSwatch()
                 end)
@@ -1344,7 +1344,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
 
         -- Row 4: (Sync) Opacity | Fill Color
         local classBorderRow
-        classBorderRow, hgt = W:DualRow(hostFrame, posY, {
+        classBorderRow, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Opacity",
             min = 0,
@@ -1353,11 +1353,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
             disabled = classOff,
             disabledTooltip = "Class Resource",
             getValue = function()
-                local c = conf()
+                local c = rowConf()
                 return math.floor(((c and c.barAlpha) or 1) * 100 + 0.5)
             end,
             setValue = function(val)
-                local c = conf()
+                local c = rowConf()
                 if not c then
                     return
                 end
@@ -1376,11 +1376,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
             disabled = classOff,
             disabledTooltip = "Class Resource",
             getValue = function()
-                local c = conf()
+                local c = rowConf()
                 return (c and c.fillOpacity) or 100
             end,
             setValue = function(val)
-                local c = conf()
+                local c = rowConf()
                 if not c then
                     return
                 end
@@ -1389,11 +1389,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 SmoothRefresh()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Fill Color inline cog: Charged Combo Point color
         if not CludesUI._prebuilding then
-            local rgn = classBorderRow._rightRegion
-            CludesUI.BuildInlineCog(rgn, {
+            local region = classBorderRow._rightRegion
+            CludesUI.BuildInlineCog(region, {
                 disabled = classOff,
                 disabledTooltip = "Class Resource",
                 title = "Fill Settings",
@@ -1403,7 +1403,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         label = "Darken Partially Filled Resources",
                         tooltip = "Makes partially filled Soul Shards and Essence darker than completed ones.",
                         get = function()
-                            local c = conf()
+                            local c = rowConf()
                             return c and c.darkenPartialPips ~= false
                         end,
                         set = ConfSetter("darkenPartialPips", RefreshClass),
@@ -1413,19 +1413,19 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         label = "Charged Color",
                         hasAlpha = false,
                         get = function()
-                            local c = conf()
+                            local c = rowConf()
                             if not c then
                                 return 0.44, 0.77, 1.00, 1
                             end
                             return c.chargedR or 0.44, c.chargedG or 0.77, c.chargedB or 1.00, c.chargedA or 1
                         end,
-                        set = function(cr, cg, cb, ca)
-                            local c = conf()
+                        set = function(cr, cg, checkBtn, ca)
+                            local c = rowConf()
                             if not c then
                                 return
                             end
                             c.chargedR, c.chargedG = cr, cg
-                            c.chargedB, c.chargedA = cb, ca
+                            c.chargedB, c.chargedA = checkBtn, ca
                             RebuildClass()
                             SmoothRefresh()
                         end,
@@ -1441,14 +1441,14 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     tooltip = "Custom Colored",
                     hasAlpha = false,
                     getValue = function()
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return 0xDB / 255, 0xCF / 255, 0x37 / 255, 1
                         end
                         return c.fillR, c.fillG, c.fillB, 1
                     end,
                     setValue = function(r, g, b)
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -1457,7 +1457,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         SmoothRefresh()
                     end,
                     onClick = function(self)
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -1479,7 +1479,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         end
                     end,
                     refreshAlpha = function()
-                        local c = conf()
+                        local c = rowConf()
                         local inCustom = c and not c.resourceColored and (c.classColored == false)
                         return inCustom and 1 or 0.3
                     end,
@@ -1488,15 +1488,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     tooltip = "Class Colored",
                     getValue = function()
                         local _, class = UnitClass("player")
-                        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                        if cc then
-                            return cc.r, cc.g, cc.b, 1
+                        local classColor = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+                        if classColor then
+                            return classColor.r, classColor.g, classColor.b, 1
                         end
                         return 1, 0.82, 0, 1
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -1506,7 +1506,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local c = conf()
+                        local c = rowConf()
                         local isClassMode = c and not c.resourceColored and (c.classColored ~= false)
                         return isClassMode and 1 or 0.3
                     end,
@@ -1526,15 +1526,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             end
                         end
                         local _, class = UnitClass("player")
-                        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                        if cc then
-                            return cc.r, cc.g, cc.b, 1
+                        local classColor = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+                        if classColor then
+                            return classColor.r, classColor.g, classColor.b, 1
                         end
                         return 1, 0.82, 0, 1
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -1544,18 +1544,18 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local c = conf()
+                        local c = rowConf()
                         return (c and c.resourceColored) and 1 or 0.3
                     end,
                 },
             }, {
                 size = 20,
                 disabled = function()
-                    local c = conf()
+                    local c = rowConf()
                     return (not c) or not c.enabled or c.darkTheme
                 end,
                 disabledTooltip = function()
-                    local c = conf()
+                    local c = rowConf()
                     if c and c.darkTheme then
                         return "This option requires Class Resource Bar Dark Mode to be off. Dark Mode colors can be adjusted in Global Settings -> Colors."
                     end
@@ -1566,9 +1566,9 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
         if not context.advanced and context.syncRows then
             context.syncRows.classOpacity = classBorderRow._leftRegion
             if not CludesUI._prebuilding then
-                local rgn = classBorderRow._leftRegion
+                local region = classBorderRow._leftRegion
                 CludesUI.BuildSyncIcon({
-                    region = rgn,
+                    region = region,
                     tooltip = "Apply Opacity to all Bars",
                     onClick = function()
                         local p = DB()
@@ -1602,10 +1602,10 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
 
         -- Out of Combat Opacity cog: dims the Class Resource bar to this alpha out of combat (100 = no fade); applied by ns.ResolveBarAlpha in UpdateVisibility, which reacts to combat.
         if not CludesUI._prebuilding then
-            local rgn = classBorderRow._leftRegion
-            CludesUI.BuildInlineCog(rgn, {
+            local region = classBorderRow._leftRegion
+            CludesUI.BuildInlineCog(region, {
                 disabled = function()
-                    local c = conf()
+                    local c = rowConf()
                     return c and not c.enabled
                 end,
                 disabledTooltip = "Class Resource",
@@ -1615,7 +1615,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         type = "toggle",
                         label = "Fade Out of Combat",
                         get = function()
-                            local c = conf()
+                            local c = rowConf()
                             return c and c.oocFadeEnabled == true
                         end,
                         set = ConfSetter("oocFadeEnabled", RefreshClass),
@@ -1627,15 +1627,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         max = 100,
                         step = 1,
                         disabled = function()
-                            local c = conf()
+                            local c = rowConf()
                             return not (c and c.oocFadeEnabled)
                         end,
                         get = function()
-                            local c = conf()
+                            local c = rowConf()
                             return math.floor(((c and c.oocAlpha) or 0.5) * 100 + 0.5)
                         end,
                         set = function(val)
-                            local c = conf()
+                            local c = rowConf()
                             if not c then
                                 return
                             end
@@ -1652,7 +1652,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
         -- cfg() without rewriting every access path; it returns nil while cfg() does, so the
         -- `if not p` guards short-circuit.
         local DB = function()
-            local c = conf()
+            local c = rowConf()
             if not c then
                 return nil
             end
@@ -1660,7 +1660,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
         end
 
         -- Row 5: Resource Text | Threshold & Hash Lines
-        classColorRow, hgt = W:DualRow(hostFrame, posY, {
+        classColorRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Resource Text",
             disabled = classOff,
@@ -1679,10 +1679,10 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 CludesUI:RefreshPage()
             end,
         }, { type = "label", text = "Threshold & Hash Lines" })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Resource Text inline cog: size + position
         if not CludesUI._prebuilding then
-            local rgn = classColorRow._leftRegion
+            local region = classColorRow._leftRegion
             local resTextRows = {
                 {
                     type = "toggle",
@@ -1835,7 +1835,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     })
                 end
             end
-            CludesUI.BuildInlineCog(rgn, {
+            CludesUI.BuildInlineCog(region, {
                 disabled = function()
                     local p = DB()
                     return not p or not p.secondary.enabled or not p.secondary.showText
@@ -1849,10 +1849,10 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
         -- Resource Text inline color swatch, left of the cog; the druid per-form
         -- button left of it
         if not CludesUI._prebuilding then
-            local rgn = classColorRow._leftRegion
-            local ctrl = rgn._control
+            local region = classColorRow._leftRegion
+            local control = region._control
             local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 classColorRow:GetFrameLevel() + 3,
                 function()
                     local p = DB()
@@ -1872,8 +1872,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 false,
                 20
             )
-            Pix.Point(colorSwatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -8, 0)
-            rgn._lastInline = colorSwatch
+            Pix.Point(colorSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
+            region._lastInline = colorSwatch
             local swatchDis = CludesUI.NewSwatchBlocker(colorSwatch)
             swatchDis:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip("Resource Text"))
@@ -1895,7 +1895,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
             end
             CludesUI.RegisterWidgetRefresh(UpdateSwatchDis)
             UpdateSwatchDis()
-            AddFormTextBtn(rgn, colorSwatch, function()
+            AddFormTextBtn(region, colorSwatch, function()
                 return DB() and DB().secondary
             end, RefreshClass)
         end
@@ -1927,12 +1927,12 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
 
             BuildThresholdSettingsButton({
                 parentRgn = settingsRgn,
-                getBarData = conf,
+                getBarData = rowConf,
                 -- The page appends an "Anchor to Cursor" row after this section, so the editor covers one row more
                 pageParent = hostFrame,
                 pageTopY = _advTop,
                 pageBotY = function()
-                    return posY
+                    return cursorY
                 end,
                 pageBotExtra = 50,
                 refreshFn = RefreshClass,
@@ -2028,7 +2028,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             return HasSpec(current(), 268)
                         end
                         local function isEnhance()
-                            local c = conf()
+                            local c = rowConf()
                             return (c and c.enhanceFiveBar == true and HasSpec(current(), 263)) and true
                                 or false
                         end
@@ -2256,7 +2256,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
             local _, playerClass = UnitClass("player")
             if playerClass == "DEATHKNIGHT" then
                 local simpleRuneRow
-                simpleRuneRow, hgt = W:DualRow(hostFrame, posY, {
+                simpleRuneRow, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Custom Recharge Color",
                     tooltip = "Choose the color of recharging runes instead of a dimmed version of the rune color.",
@@ -2273,15 +2273,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     getValue = ConfGetter("runesSimple"),
                     setValue = ConfSetter("runesSimple", RebuildClass),
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
                 -- Custom recharge color inline swatch
                 if not CludesUI._prebuilding then
-                    local rgn = simpleRuneRow._leftRegion
+                    local region = simpleRuneRow._leftRegion
                     local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
-                        rgn,
+                        region,
                         simpleRuneRow:GetFrameLevel() + 3,
                         function()
-                            local c = conf()
+                            local c = rowConf()
                             if not c then
                                 return 0.5, 0.5, 0.5, 1
                             end
@@ -2291,7 +2291,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                                 c.runesRechargeA or 1
                         end,
                         function(r, g, b, a)
-                            local c = conf()
+                            local c = rowConf()
                             if not c then
                                 return
                             end
@@ -2304,8 +2304,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         true,
                         20
                     )
-                    colorSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                    rgn._lastInline = colorSwatch
+                    colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                    region._lastInline = colorSwatch
                     local swatchBlock = CludesUI.NewSwatchBlocker(colorSwatch)
                     swatchBlock:SetScript("OnEnter", function()
                         CludesUI.ShowWidgetTooltip(
@@ -2317,7 +2317,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         CludesUI.HideWidgetTooltip()
                     end)
                     local function UpdateRechargeSwatch()
-                        local c = conf()
+                        local c = rowConf()
                         local off = not (c and c.enabled) or not c.runesCustomRecharge
                         if off then
                             colorSwatch:SetAlpha(0.3)
@@ -2338,7 +2338,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
             end
             -- Retail only: WoW Forever hunters use mana and have no BM/MM specs.
             if playerClass == "HUNTER" and not context.advanced and not CludesUI.IS_FOREVER then
-                _, hgt = W:DualRow(hostFrame, posY, {
+                _, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Show Focus as Power Bar (BM/MM)",
                     tooltip = "When enabled, BM and MM specs show Focus as the standard power bar instead of a class resource bar.",
@@ -2360,7 +2360,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         CludesUI:RefreshPage()
                     end,
                 }, { type = "label", text = "" })
-                posY = posY - hgt
+                cursorY = cursorY - height
             end
             -- Retail only: WoW Forever has no Enhancement spec.
             if playerClass == "SHAMAN" and not CludesUI.IS_FOREVER then
@@ -2369,11 +2369,11 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     return C_SpecializationInfo.GetSpecialization() == 2
                 end
                 local enhRow
-                enhRow, hgt = W:DualRow(hostFrame, posY, {
+                enhRow, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Enhance 5 Bar Style",
                     disabled = function()
-                        local c = conf()
+                        local c = rowConf()
                         return not (c and c.enabled) or not _enhSpecOK()
                     end,
                     disabledTooltip = "Requires Enhancement Shaman with Class Resource enabled.",
@@ -2381,12 +2381,12 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     getValue = ConfGetter("enhanceFiveBar"),
                     setValue = ConfSetter("enhanceFiveBar", RebuildClass, true),
                 }, { type = "label", text = "" })
-                posY = posY - hgt
+                cursorY = cursorY - height
                 -- Overflow color inline swatch
                 if not CludesUI._prebuilding then
-                    local rgn = enhRow._leftRegion
-                    local colorSwatch = CludesUI.BuildColorSwatch(rgn, enhRow:GetFrameLevel() + 3, function()
-                        local c = conf()
+                    local region = enhRow._leftRegion
+                    local colorSwatch = CludesUI.BuildColorSwatch(region, enhRow:GetFrameLevel() + 3, function()
+                        local c = rowConf()
                         if not c then
                             return 1, 0.6, 0.2, 1
                         end
@@ -2395,7 +2395,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             c.enhanceOverflowB or 0.2,
                             1
                     end, function(r, g, b)
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -2404,10 +2404,10 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         c.enhanceOverflowB = b
                         SmoothRefresh()
                     end, false, 20)
-                    colorSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-                    rgn._lastInline = colorSwatch
+                    colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                    region._lastInline = colorSwatch
                     local function UpdateEnhSwatchVis()
-                        local c = conf()
+                        local c = rowConf()
                         local off = not (c and c.enabled) or not c.enhanceFiveBar or not _enhSpecOK()
                         colorSwatch:SetAlpha(off and 0.3 or 1)
                     end
@@ -2420,13 +2420,13 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
 
     -- Simple page: cover these controls when the current spec overrides the Class Resource in Advanced, so edits here aren't silently ignored.
     if not context.advanced then
-        mod.ERB_SimpleOverrideOverlay(hostFrame, _advTop, posY, "secondary")
+        mod.ERB_SimpleOverrideOverlay(hostFrame, _advTop, cursorY, "secondary")
     end
 
     -- Blizzard Class Resource Art stands in for this bar: block the styling rows above.
     mod.ERB_BlizzArtBlockRegions(artRegions)
 
     -- Header + row frames go back so the Simple page can wire its preview click-mappings (classSection/classEnableRow, and the Resource Text row for the count-text overlay).
-    return posY, heading, classEnableRow, classColorRow, unlockJump
+    return cursorY, heading, classEnableRow, classColorRow, unlockJump
 end
 --- [class resource end]

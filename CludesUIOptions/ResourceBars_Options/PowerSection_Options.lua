@@ -16,7 +16,7 @@ end -- module disabled: no options page
 local CreateFrame = CludesUI._Pool.CreateFrame
 
 -- Shared, context-aware POWER section builder; mirrors the health one. ctx.cfg() -> power table (DB().primary Simple, per-spec override Advanced).
-function mod.ERB_BuildPowerSection(hostFrame, posY, context)
+function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
     local environ = mod._CURB_OptEnv
     local DB, Pix, Refresh, SmoothRefresh = environ.DB, environ.PP, environ.Refresh, environ.SmoothRefresh
     local RefreshPower, RebuildPower, AddFormBarBtn, AddFormTextBtn =
@@ -24,8 +24,8 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
     local BuildHashCog, BuildThresholdSettingsButton =
         environ.BuildHashCog, environ.BuildThresholdSettingsButton
     local W = CludesUI.Widgets
-    local _, hgt
-    local function conf()
+    local _, height
+    local function rowConf()
         return context.cfg()
     end
     -- A row's getter and setter for one key of this section's settings: the
@@ -34,7 +34,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
     -- and, with alsoPage, rebuilds the page.
     local function ConfGetter(key, default)
         return function()
-            local c = conf()
+            local c = rowConf()
             if default == nil then
                 return c and c[key]
             end
@@ -43,7 +43,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
     end
     local function ConfSetter(key, after, alsoPage)
         return function(val)
-            local c = conf()
+            local c = rowConf()
             if not c then
                 return
             end
@@ -55,33 +55,33 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
         end
     end
     local function powerOff()
-        local c = conf()
+        local c = rowConf()
         return not (c and c.enabled)
     end
     local powerDisTip = "Power Bar"
 
     local heading
-    heading, hgt = W:SectionHeader(hostFrame, "POWER BAR", posY)
-    posY = posY - hgt
+    heading, height = W:SectionHeader(hostFrame, "POWER BAR", cursorY)
+    cursorY = cursorY - height
     -- Move in Unlock Mode on the title; handed back so the page's preview eye sits after it.
     local unlockJump = CludesUI.BuildSectionUnlockJump(
         heading,
         { key = "ERB_Power", disabled = powerOff, disabledTooltip = powerDisTip }
     )
 
-    local _advTop = posY -- content top; also used by the Simple override overlay
+    local _advTop = cursorY -- content top; also used by the Simple override overlay
     -- Row 1: Show Power Bar | Orientation
     local powerEnableRow
-    powerEnableRow, hgt = W:DualRow(hostFrame, posY, {
+    powerEnableRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Power Bar",
         getValue = ConfGetter("enabled"),
         -- Rows below Row 1 are hidden while off, so the flip must force the full rebuild
         setValue = CludesUI.DependentSetValue(function()
-            local c = conf()
+            local c = rowConf()
             return c and c.enabled
         end, function(val)
-            local c = conf()
+            local c = rowConf()
             if not c then
                 return
             end
@@ -97,15 +97,15 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
         values = { HORIZONTAL = "Horizontal", VERTICAL_UP = "Vertical Up", VERTICAL_DOWN = "Vertical Down" },
         order = { "HORIZONTAL", "VERTICAL_UP", "VERTICAL_DOWN" },
         getValue = function()
-            local c = conf()
+            local c = rowConf()
             local p = DB()
             return (c and c.orientation) or (p and p.general.orientation) or "HORIZONTAL"
         end,
         setValue = ConfSetter("orientation", Refresh),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
-        AddFormBarBtn(powerEnableRow._leftRegion, conf, RebuildPower)
+        AddFormBarBtn(powerEnableRow._leftRegion, rowConf, RebuildPower)
     end
 
     -- Per-spec power enables live in Spec Overrides: "Show Power Bar" is captured while editing as a group.
@@ -114,7 +114,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
     if not powerOff() then
         -- Row 2: Height | Width (MatchGuard in both modes, sync icons Simple-only). Orientation-aware, as on the health bar above.
         local function powerOri()
-            local c, p = conf(), DB()
+            local c, p = rowConf(), DB()
             return (c and c.orientation) or (p and p.general and p.general.orientation)
         end
         local function guard(propKey)
@@ -123,7 +123,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
         local phDis, phTip, phRaw = guard("Height")
         local pwDis, pwTip, pwRaw = guard("Width")
         local powerSizeRow
-        powerSizeRow, hgt = W:DualRow(hostFrame, posY, {
+        powerSizeRow, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Height",
             min = 1,
@@ -146,14 +146,14 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
             getValue = ConfGetter("width", 220),
             setValue = ConfSetter("width", SmoothRefresh, true),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not context.advanced and context.syncRows then
             context.syncRows.powerHeight = powerSizeRow._leftRegion
             context.syncRows.powerWidth = powerSizeRow._rightRegion
             if not CludesUI._prebuilding then
-                local rgn = powerSizeRow._leftRegion
+                local region = powerSizeRow._leftRegion
                 CludesUI.BuildSyncIcon({
-                    region = rgn,
+                    region = region,
                     tooltip = "Apply Height to all Bars",
                     onClick = function()
                         local p = DB()
@@ -184,9 +184,9 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                 })
             end
             if not CludesUI._prebuilding then
-                local rgn = powerSizeRow._rightRegion
+                local region = powerSizeRow._rightRegion
                 CludesUI.BuildSyncIcon({
-                    region = rgn,
+                    region = region,
                     tooltip = "Apply Width to all Bars",
                     onClick = function()
                         local p = DB()
@@ -222,9 +222,9 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
         do
             local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
             local pwrBsRow
-            pwrBsRow, hgt = W:DualRow(
+            pwrBsRow, height = W:DualRow(
                 hostFrame,
-                posY,
+                cursorY,
                 CludesUI.BlizzStyle.Gate("resourcebars", {
                     type = "dropdown",
                     text = "Border Style",
@@ -234,7 +234,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                     order = texOrder,
                     getValue = ConfGetter("borderTexture", "solid"),
                     setValue = function(val)
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -262,7 +262,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                 }),
                 mod.ERB_ClassicBorderRow()
                         and mod.ERB_ClassicBorderSizeCfg(
-                            conf,
+                            rowConf,
                             powerOff,
                             powerDisTip,
                             RebuildPower,
@@ -275,25 +275,25 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                             disabled = powerOff,
                             disabledTooltip = powerDisTip,
                             getStep = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return c and c.borderSize or 1
                             end,
                             setStep = function(val)
-                                local c = conf()
+                                local c = rowConf()
                                 if c then
                                     c.borderSize = val
                                 end
                             end,
                             getTex = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return c and c.borderTexture or "solid"
                             end,
                             getPx = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return c and c.borderSizePx
                             end,
                             setPx = function(val)
-                                local c = conf()
+                                local c = rowConf()
                                 if c then
                                     c.borderSizePx = val
                                 end
@@ -305,14 +305,14 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                         })
                     )
             )
-            posY = posY - hgt
+            cursorY = cursorY - height
             -- Width Offset | Height Offset: own row while a textured style is selected (stock styles gate it away).
             do
-                local c = conf()
+                local c = rowConf()
                 local texture = c and c.borderTexture or "solid"
                 if texture ~= "solid" and texture ~= "" then
                     local function step()
-                        local c = conf()
+                        local c = rowConf()
                         return c and c.borderSize or 1
                     end
                     local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
@@ -320,31 +320,31 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                         disabled = powerOff,
                         disabledTooltip = powerDisTip,
                         getTex = function()
-                            local c = conf()
+                            local c = rowConf()
                             return c and c.borderTexture or "solid"
                         end,
                         getStep = step,
                         getSizeKey = step,
                         getPx = function()
-                            local c = conf()
+                            local c = rowConf()
                             return c and c.borderSizePx
                         end,
                         getX = function()
-                            local c = conf()
+                            local c = rowConf()
                             return c and c.borderTextureOffset
                         end,
                         setX = function(val)
-                            local c = conf()
+                            local c = rowConf()
                             if c then
                                 c.borderTextureOffset = val
                             end
                         end,
                         getY = function()
-                            local c = conf()
+                            local c = rowConf()
                             return c and c.borderTextureOffsetY
                         end,
                         setY = function(val)
-                            local c = conf()
+                            local c = rowConf()
                             if c then
                                 c.borderTextureOffsetY = val
                             end
@@ -354,18 +354,18 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                             CludesUI:RefreshPage()
                         end,
                     })
-                    _, hgt = W:DualRow(
+                    _, height = W:DualRow(
                         hostFrame,
-                        posY,
+                        cursorY,
                         CludesUI.BlizzStyle.Gate("resourcebars", ocfgL),
                         CludesUI.BlizzStyle.Gate("resourcebars", ocfgR)
                     )
-                    posY = posY - hgt
+                    cursorY = cursorY - height
                 end
             end
             if not CludesUI._prebuilding and not mod.ERB_ClassicBorderRow() then
-                local rgn = pwrBsRow._rightRegion
-                local ctrl = rgn._control
+                local region = pwrBsRow._rightRegion
+                local control = region._control
                 -- Corner Radius (CludesUI_RoundedCorners.lua): an inline cog on the
                 -- border size control. The stock styles keep the bars square.
                 if not CludesUI._prebuilding then
@@ -376,7 +376,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                             if powerOff() or CludesUI.BlizzStyle.Get("resourcebars") then
                                 return true
                             end
-                            local c = conf()
+                            local c = rowConf()
                             return not CludesUI.RoundedStyleOK(c and c.borderTexture)
                         end,
                         disabledTooltip = function()
@@ -402,10 +402,10 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                                 set = ConfSetter("cornerRadius", RebuildPower),
                             },
                         }, function()
-                            local c = conf()
+                            local c = rowConf()
                             return c and c.cornerMask
                         end, function(val)
-                            local c = conf()
+                            local c = rowConf()
                             if not c then
                                 return
                             end
@@ -415,17 +415,17 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                     })
                 end
                 local borderSwatch, updateBorderSwatch = CludesUI.BuildColorSwatch(
-                    rgn,
+                    region,
                     pwrBsRow:GetFrameLevel() + 3,
                     function()
-                        local c = conf()
+                        local c = rowConf()
                         return (c and c.borderR or 0),
                             (c and c.borderG or 0),
                             (c and c.borderB or 0),
                             (c and c.borderA or 1)
                     end,
                     function(r, g, b, a)
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -436,8 +436,8 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                     true,
                     20
                 )
-                Pix.Point(borderSwatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -8, 0)
-                rgn._lastInline = borderSwatch -- left of the Corner Radius cog
+                Pix.Point(borderSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
+                region._lastInline = borderSwatch -- left of the Corner Radius cog
                 CludesUI.RegisterWidgetRefresh(function()
                     updateBorderSwatch()
                 end)
@@ -461,9 +461,9 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                 UpdateBorderSwDis()
             end
             if not CludesUI._prebuilding then
-                local rgn = pwrBsRow._leftRegion
+                local region = pwrBsRow._leftRegion
                 local sepValues, sepOrder = mod.ERB_SeparatorArtValues(true)
-                local cogBtn = CludesUI.BuildInlineCog(rgn, {
+                local cogBtn = CludesUI.BuildInlineCog(region, {
                     title = "Border Options",
                     rows = {
                         {
@@ -473,7 +473,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                             max = 10,
                             step = 1,
                             get = function()
-                                local c = conf()
+                                local c = rowConf()
                                 if not c then
                                     return 0
                                 end
@@ -489,7 +489,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                                 return dsx
                             end,
                             set = function(val)
-                                local c = conf()
+                                local c = rowConf()
                                 if not c then
                                     return
                                 end
@@ -505,7 +505,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                             max = 10,
                             step = 1,
                             get = function()
-                                local c = conf()
+                                local c = rowConf()
                                 if not c then
                                     return 0
                                 end
@@ -521,7 +521,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                                 return dsy
                             end,
                             set = function(val)
-                                local c = conf()
+                                local c = rowConf()
                                 if not c then
                                     return
                                 end
@@ -535,7 +535,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                             label = "Show Behind",
                             get = ConfGetter("borderBehind", false),
                             set = function(val)
-                                local c = conf()
+                                local c = rowConf()
                                 if not c then
                                     return
                                 end
@@ -552,7 +552,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                             label = "Draw Above GCD Bar",
                             tooltip = "Draws the power bar's border above the GCD bar where the two overlap.",
                             disabled = function()
-                                local p, c = DB(), conf()
+                                local p, c = DB(), rowConf()
                                 return (powerOff() or not (p and p.gcdBar.enabled) or (c and c.borderBehind))
                                         and true
                                     or false
@@ -573,7 +573,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                             end,
                             get = ConfGetter("borderAboveGCD", false),
                             set = function(val)
-                                local c = conf()
+                                local c = rowConf()
                                 if not c then
                                     return
                                 end
@@ -643,14 +643,14 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                             disabled = powerOff,
                             disabledTooltip = powerDisTip,
                             get = function()
-                                local c = conf()
+                                local c = rowConf()
                                 if not (c and c.edgeSep) then
                                     return "none"
                                 end
                                 return c.edgeSepArt or "match"
                             end,
                             set = function(val)
-                                local c = conf()
+                                local c = rowConf()
                                 if not c then
                                     return
                                 end
@@ -671,7 +671,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                             max = 50,
                             step = 1,
                             disabled = function()
-                                local c = conf()
+                                local c = rowConf()
                                 return powerOff() or not (c and c.edgeSep)
                             end,
                             disabledTooltip = function()
@@ -683,7 +683,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                     },
                 })
                 local function UpdateCogVis()
-                    local c = conf()
+                    local c = rowConf()
                     local texture = c and c.borderTexture or "solid"
                     if texture == "solid" or mod.ERB_ClassicBorderRow() then
                         cogBtn:Hide()
@@ -826,7 +826,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
 
         -- Row 4: Opacity | Fill Color (gradient/custom/power-colored)
         local powerBorderRow
-        powerBorderRow, hgt = W:DualRow(hostFrame, posY, {
+        powerBorderRow, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Opacity",
             min = 0,
@@ -835,11 +835,11 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
             disabled = powerOff,
             disabledTooltip = powerDisTip,
             getValue = function()
-                local c = conf()
+                local c = rowConf()
                 return math.floor((c and c.barAlpha or 1) * 100 + 0.5)
             end,
             setValue = function(val)
-                local c = conf()
+                local c = rowConf()
                 if not c then
                     return
                 end
@@ -858,17 +858,17 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
             disabled = powerOff,
             disabledTooltip = powerDisTip,
             getValue = function()
-                local c = conf()
+                local c = rowConf()
                 return (c and c.fillOpacity) or 100
             end,
             setValue = ConfSetter("fillOpacity", RebuildPower),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
-            local rgn = powerBorderRow._rightRegion
-            CludesUI.BuildInlineCog(rgn, {
+            local region = powerBorderRow._rightRegion
+            CludesUI.BuildInlineCog(region, {
                 disabled = function()
-                    local c = conf()
+                    local c = rowConf()
                     return c and not c.enabled
                 end,
                 disabledTooltip = powerDisTip,
@@ -917,7 +917,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                     tooltip = "Gradient End Color",
                     hasAlpha = true,
                     disabled = function()
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return true
                         end
@@ -935,7 +935,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                         return not c.gradientEnabled
                     end,
                     disabledTooltip = function()
-                        local c = conf()
+                        local c = rowConf()
                         if not c or not c.enabled then
                             return powerDisTip
                         end
@@ -950,14 +950,14 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                         return "Gradient"
                     end,
                     getValue = function()
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return 0.20, 0.20, 0.80, 1
                         end
                         return c.gradientR, c.gradientG, c.gradientB, c.gradientA
                     end,
                     setValue = function(r, g, b, a)
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -969,14 +969,14 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                     tooltip = "Custom Colored",
                     hasAlpha = false,
                     getValue = function()
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return 0x23 / 255, 0x8F / 255, 0xE7 / 255, 1
                         end
                         return c.fillR, c.fillG, c.fillB, 1
                     end,
                     setValue = function(r, g, b)
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -985,7 +985,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                         SmoothRefresh()
                     end,
                     onClick = function(self)
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -1000,7 +1000,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                         end
                     end,
                     refreshAlpha = function()
-                        local c = conf()
+                        local c = rowConf()
                         local isPowerColored = not c or not c.customColored
                         return isPowerColored and 0.3 or 1
                     end,
@@ -1021,7 +1021,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -1030,7 +1030,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local c = conf()
+                        local c = rowConf()
                         local isPowerColored = not c or not c.customColored
                         return isPowerColored and 1 or 0.3
                     end,
@@ -1039,9 +1039,9 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
         end
         if not context.advanced and context.syncRows and not CludesUI._prebuilding then
             context.syncRows.powerOpacity = powerBorderRow._leftRegion
-            local rgn = powerBorderRow._leftRegion
+            local region = powerBorderRow._leftRegion
             CludesUI.BuildSyncIcon({
-                region = rgn,
+                region = region,
                 tooltip = "Apply Opacity to all Bars",
                 onClick = function()
                     local p = DB()
@@ -1074,13 +1074,13 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
 
         -- Out of Combat Opacity & Visibility cog: Fade Out of Combat dims the Power bar to this alpha out of combat (100 = no fade; ns.ResolveBarAlpha in UpdateVisibility, which reacts to combat). Show When Energy / Focus / Mana Missing show the bar at its normal opacity while that resource is below full, a rule-hidden bar and a faded one alike (ns.ERB_MissingWanted / ns.ERB_MissingLiftFloor, same pass); Mana also covers a WoW Forever druid's Mana Bar while Shapeshifted.
         if not CludesUI._prebuilding then
-            local rgn = powerBorderRow._leftRegion
+            local region = powerBorderRow._leftRegion
             local rowList = {
                 {
                     type = "toggle",
                     label = "Fade Out of Combat",
                     get = function()
-                        local c = conf()
+                        local c = rowConf()
                         return c and c.oocFadeEnabled == true
                     end,
                     set = ConfSetter("oocFadeEnabled", RefreshPower),
@@ -1092,15 +1092,15 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                     max = 100,
                     step = 1,
                     disabled = function()
-                        local c = conf()
+                        local c = rowConf()
                         return not (c and c.oocFadeEnabled)
                     end,
                     get = function()
-                        local c = conf()
+                        local c = rowConf()
                         return math.floor(((c and c.oocAlpha) or 0.5) * 100 + 0.5)
                     end,
                     set = function(val)
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -1130,7 +1130,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                     label = restLabel,
                     tooltip = restTip,
                     get = function()
-                        local c = conf()
+                        local c = rowConf()
                         return c and c.showWhenMissing == true
                     end,
                     set = ConfSetter("showWhenMissing", RefreshPower),
@@ -1154,15 +1154,15 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                             and "Shows the Power bar, or your shapeshifted mana bar, while your mana is below full, even when its Visibility setting hides it."
                         or "Shows the Power bar while your mana is below full, even when its Visibility setting hides it.",
                     get = function()
-                        local c = conf()
+                        local c = rowConf()
                         return c and c.showManaWhenMissing == true
                     end,
                     set = ConfSetter("showManaWhenMissing", RefreshPower),
                 }
             end
-            CludesUI.BuildInlineCog(rgn, {
+            CludesUI.BuildInlineCog(region, {
                 disabled = function()
-                    local c = conf()
+                    local c = rowConf()
                     return c and not c.enabled
                 end,
                 disabledTooltip = powerDisTip,
@@ -1173,7 +1173,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
 
         -- Text Color disables when the bar is off OR Power Text is None
         local function powerTextDis()
-            local c = conf()
+            local c = rowConf()
             if not c then
                 return false
             end
@@ -1183,7 +1183,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
             return c.textFormat == "none"
         end
         local function powerTextDisTip()
-            local c = conf()
+            local c = rowConf()
             if c and not c.enabled then
                 return powerDisTip
             end
@@ -1191,7 +1191,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
         end
 
         local powerTextSizeRow
-        powerTextSizeRow, hgt = W:DualRow(hostFrame, posY, {
+        powerTextSizeRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Power Text",
             disabled = powerOff,
@@ -1207,7 +1207,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
             -- WoW Forever lists no Smart Text (CludesUI.PowerTextFormat).
             order = CludesUI.PowerTextFormatOrder({ "none", "smart", "curpp", "curmaxpp", "perpp", "both" }),
             getValue = function()
-                local c = conf()
+                local c = rowConf()
                 return CludesUI.PowerTextFormat(c and c.textFormat or "none")
             end,
             setValue = ConfSetter("textFormat", RefreshPower, true),
@@ -1221,14 +1221,14 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                     tooltip = "Custom Colored",
                     hasAlpha = true,
                     getValue = function()
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return 1, 1, 1, 1
                         end
                         return c.textFillR, c.textFillG, c.textFillB, c.textFillA
                     end,
                     setValue = function(r, g, b, a)
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -1237,7 +1237,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                         SmoothRefresh()
                     end,
                     onClick = function(self)
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -1252,7 +1252,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                         end
                     end,
                     refreshAlpha = function()
-                        local c = conf()
+                        local c = rowConf()
                         local isPowerColored = c and c.textCustomColored == false
                         return isPowerColored and 0.3 or 1
                     end,
@@ -1273,7 +1273,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local c = conf()
+                        local c = rowConf()
                         if not c then
                             return
                         end
@@ -1282,18 +1282,18 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local c = conf()
+                        local c = rowConf()
                         local isPowerColored = c and c.textCustomColored == false
                         return isPowerColored and 1 or 0.3
                     end,
                 },
             },
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Row 5: Text Size | Threshold & Hash Lines
         local powerColorRow
-        powerColorRow, hgt = W:DualRow(hostFrame, posY, {
+        powerColorRow, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Text Size",
             min = 8,
@@ -1304,13 +1304,13 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
             getValue = ConfGetter("textSize", 11),
             setValue = ConfSetter("textSize", RefreshPower),
         }, { type = "label", text = "Threshold & Hash Lines" })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Power Text inline cog: percent sign, anchor, x/y offsets
         if not CludesUI._prebuilding then
-            local rgn = powerTextSizeRow._leftRegion
-            local cogBtn = CludesUI.BuildInlineCog(rgn, {
+            local region = powerTextSizeRow._leftRegion
+            local cogBtn = CludesUI.BuildInlineCog(region, {
                 disabled = function()
-                    local c = conf()
+                    local c = rowConf()
                     return c and not c.enabled
                 end,
                 disabledTooltip = "Power Bar",
@@ -1320,7 +1320,7 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                         type = "toggle",
                         label = "Show %",
                         get = function()
-                            local c = conf()
+                            local c = rowConf()
                             return (not c) or c.showPercent ~= false
                         end,
                         set = ConfSetter("showPercent", RefreshPower),
@@ -1354,18 +1354,18 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
                     },
                 },
             })
-            AddFormTextBtn(rgn, cogBtn, conf, RefreshPower)
+            AddFormTextBtn(region, cogBtn, rowConf, RefreshPower)
         end
         if not CludesUI._prebuilding then
             local powerSettingsBtn = BuildThresholdSettingsButton({
                 parentRgn = powerColorRow._rightRegion,
                 getBarData = function()
-                    return conf()
+                    return rowConf()
                 end,
                 pageParent = hostFrame,
                 pageTopY = _advTop,
                 pageBotY = function()
-                    return posY
+                    return cursorY
                 end,
                 refreshFn = function()
                     RefreshPower()
@@ -1445,8 +1445,8 @@ function mod.ERB_BuildPowerSection(hostFrame, posY, context)
 
     -- Simple page: cover these controls when the current spec overrides Power in Advanced, so edits here aren't silently ignored.
     if not context.advanced then
-        mod.ERB_SimpleOverrideOverlay(hostFrame, _advTop, posY, "primary")
+        mod.ERB_SimpleOverrideOverlay(hostFrame, _advTop, cursorY, "primary")
     end
 
-    return posY, heading, powerEnableRow, unlockJump
+    return cursorY, heading, powerEnableRow, unlockJump
 end

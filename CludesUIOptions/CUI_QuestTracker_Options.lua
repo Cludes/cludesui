@@ -33,8 +33,8 @@ CludesUI.AtOptionsLogin(function()
         end
         return {}
     end
-    local function Cfg(k)
-        return DB()[k]
+    local function Cfg(keyName)
+        return DB()[keyName]
     end
     -- Row getters over Cfg: a key's value (or a default), or whether it is true.
     local function CfgOr(key, default)
@@ -47,8 +47,8 @@ CludesUI.AtOptionsLogin(function()
             return Cfg(key) == true
         end
     end
-    local function Set(k, val)
-        DB()[k] = val
+    local function Set(keyName, val)
+        DB()[keyName] = val
     end
 
     local function RefreshAll()
@@ -70,13 +70,13 @@ CludesUI.AtOptionsLogin(function()
     end
     -- Row setters over Set: the key written with the row's value, then RefreshAll() for the Then form.
     local function SetRow(key)
-        return function(v)
-            Set(key, v)
+        return function(value)
+            Set(key, value)
         end
     end
     local function SetRowThen(key)
-        return function(v)
-            Set(key, v)
+        return function(value)
+            Set(key, value)
             RefreshAll()
         end
     end
@@ -84,8 +84,8 @@ CludesUI.AtOptionsLogin(function()
     local function BuildPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
         local Pix = CludesUI.PP
-        local posY = yOffset
-        local row, hgt
+        local cursorY = yOffset
+        local row, height
 
         if CludesUI.ClearContentHeader then
             CludesUI:ClearContentHeader()
@@ -100,7 +100,7 @@ CludesUI.AtOptionsLogin(function()
             local fontFile = CludesUI.GetFontPath() or STANDARD_TEXT_FONT
             local infoFrame = CreateFrame("Frame", nil, hostFrame)
             infoFrame:SetSize(hostFrame:GetWidth() or 400, 20)
-            infoFrame:SetPoint("TOP", hostFrame, "TOP", 0, posY - 20)
+            infoFrame:SetPoint("TOP", hostFrame, "TOP", 0, cursorY - 20)
             infoFrame._isSpacer = true
             local infoLabel = infoFrame:CreateFontString(nil, "OVERLAY")
             infoLabel:SetFont(fontFile, 15, "")
@@ -155,7 +155,7 @@ CludesUI.AtOptionsLogin(function()
                     ShowUIPanel(EditModeManagerFrame)
                 end
             end)
-            posY = posY - 68
+            cursorY = cursorY - 68
         end
 
         -- Stock styles (Blizzard Style / Classic WoW UI) keep Blizzard's own
@@ -168,8 +168,8 @@ CludesUI.AtOptionsLogin(function()
 
         -- -- CUSTOM TRACKER (WoW Forever) ------------------------------------
         if CludesUI.IS_FOREVER then
-            _, hgt = W:SectionHeader(hostFrame, "CUSTOM TRACKER", posY)
-            posY = posY - hgt
+            _, height = W:SectionHeader(hostFrame, "CUSTOM TRACKER", cursorY)
+            cursorY = cursorY - height
             local function Off()
                 return not CUSTOM
             end
@@ -178,7 +178,7 @@ CludesUI.AtOptionsLogin(function()
             -- the profile asks for (its own pick, else on under the CludesUI
             -- style alone); the tracker in use changes at the reload.
             local zoneRow
-            zoneRow, hgt = W:DualRow(hostFrame, posY, {
+            zoneRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Custom Quest Tracker",
                 tooltip = "Replaces Blizzard's tracker with CludesUI's own quest tracker, which never touches Blizzard's tracker or watch list. On by default under the CludesUI style. Requires a UI reload.",
@@ -210,7 +210,7 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI:RefreshPage()
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Zone header colour, on the Group Quests by Zone slot: Custom
             -- Colored | Accent Colored. With no pick the headers follow the
@@ -288,7 +288,7 @@ CludesUI.AtOptionsLogin(function()
                     EQT.SyncPosition()
                 end
             end
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Width",
                 min = wMin,
@@ -316,10 +316,10 @@ CludesUI.AtOptionsLogin(function()
                     ApplySize()
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Grow Direction | Scrollbar
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "segmented",
                 text = "Grow Direction",
                 tooltip = "Which way the tracker grows as quests are added. Up keeps its bottom edge in place.",
@@ -344,10 +344,10 @@ CludesUI.AtOptionsLogin(function()
                 getValue = CfgOr("customScrollbar", "always"),
                 setValue = SetRowThen("customScrollbar"),
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Quest Click | Collapse Completed Quests
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = "Quest Click",
                 tooltip = "What left-clicking a quest does. Open Quest Details shows CludesUI's own details window and works in combat. Open Quest Log works out of combat only, for quests tracked in the quest log. Ctrl-click still collapses.",
@@ -366,10 +366,10 @@ CludesUI.AtOptionsLogin(function()
                 getValue = CfgOr("customCollapseCompleted", false),
                 setValue = SetRowThen("customCollapseCompleted"),
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Quest Spacing | Objective Spacing
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Quest Spacing",
                 min = 0,
@@ -390,10 +390,10 @@ CludesUI.AtOptionsLogin(function()
                 getValue = CfgOr("customObjSpacing", 1),
                 setValue = SetRowThen("customObjSpacing"),
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Quest Focus | Wrap Quest Names
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Quest Focus",
                 tooltip = "Adds a focus button beside each quest, and Focus to its right-click menu. A focused quest gets the map waypoint.",
@@ -412,10 +412,10 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = SetRowThen("customWrapTitles"),
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Wrap Objectives | Zone Header Font Size
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Wrap Objectives",
                 tooltip = "Long objectives wrap onto more lines. Off: one line, cut short with ...",
@@ -436,10 +436,10 @@ CludesUI.AtOptionsLogin(function()
                 getValue = CfgOr("customZoneFontSize", 13),
                 setValue = SetRowThen("customZoneFontSize"),
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Quest Item Buttons | Flash Objective Updates
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Quest Item Buttons",
                 tooltip = "Adds a button beside quests that have a usable item. In combat, buttons stay where they are until combat ends.",
@@ -456,22 +456,22 @@ CludesUI.AtOptionsLogin(function()
                 getValue = CfgOr("customFlashUpdates", false),
                 setValue = SetRowThen("customFlashUpdates"),
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
-            posY = posY - 10
+            cursorY = cursorY - 10
         end
 
         -- -- DISPLAY ---------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
+        cursorY = cursorY - height
         if BS then
-            posY = BS.Note(hostFrame, posY, "questtracker")
+            cursorY = BS.Note(hostFrame, cursorY, "questtracker")
         end
 
         -- Row 1: Visibility | Hide When In Raid. The raid-hide dropdown moved up from
         -- the Background Opacity row into the slot the old Visibility Options dropdown
         -- left behind: it answers the same question the Visibility control does.
-        _, hgt = CludesUI.BuildVisibilityRow(W, hostFrame, posY, {
+        _, height = CludesUI.BuildVisibilityRow(W, hostFrame, cursorY, {
             getStore = DB,
             legacyKey = "visibility",
             caps = { partyIncludesRaid = false, luaDragonriding = true },
@@ -495,14 +495,14 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if not STOCK then
             -- Row 2: Background Opacity (slider + inline color swatch) | Show Top Line.
             -- Show Top Line moved up from the old trailing half-row to close the gap left
             -- by Hide When In Raid; both settings describe the tracker's background chrome.
             local bgRow
-            bgRow, hgt = W:DualRow(hostFrame, posY, {
+            bgRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Background Opacity",
                 min = 0,
@@ -531,7 +531,7 @@ CludesUI.AtOptionsLogin(function()
             })
             if not CludesUI._prebuilding then
                 local region = bgRow._leftRegion
-                local ctrl = region._control
+                local control = region._control
                 -- The custom tracker can hide its background until hovered.
                 if CUSTOM then
                     CludesUI.BuildInlineCog(region, {
@@ -576,16 +576,16 @@ CludesUI.AtOptionsLogin(function()
                     false,
                     20
                 )
-                Pix.Point(bgSwatch, "RIGHT", region._lastInline or ctrl, "LEFT", -8, 0)
+                Pix.Point(bgSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
                 region._lastInline = bgSwatch
                 CludesUI.RegisterWidgetRefresh(function()
                     bgSwatchRefresh()
                 end)
             end
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Row 3: Header Font Size | Title Font Size
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Header Font Size",
                 min = 8,
@@ -602,12 +602,12 @@ CludesUI.AtOptionsLogin(function()
                 getValue = CfgOr("titleFontSize", 12),
                 setValue = SetRowThen("titleFontSize"),
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Row 3b: Objective Font Size | Font
             do
                 local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
-                _, hgt = W:DualRow(hostFrame, posY, {
+                _, height = W:DualRow(hostFrame, cursorY, {
                     type = "slider",
                     text = "Objective Font Size",
                     min = 8,
@@ -638,7 +638,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                 })
             end
-            posY = posY - hgt
+            cursorY = cursorY - height
         end -- not STOCK
 
         -- Row 4: Show Quest Icons | Hide All Objectives. Both stock styles show
@@ -663,7 +663,7 @@ CludesUI.AtOptionsLogin(function()
             BS.Gate("questtracker", questIconsCfg)
         end
         if not CUSTOM then
-            _, hgt = W:DualRow(hostFrame, posY, questIconsCfg, {
+            _, height = W:DualRow(hostFrame, cursorY, questIconsCfg, {
                 type = "toggle",
                 text = "Hide All Objectives",
                 tooltip = STOCK
@@ -687,13 +687,13 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end -- not CUSTOM
 
         if not STOCK then
             -- -- COLORS ----------------------------------------------------------
-            _, hgt = W:SectionHeader(hostFrame, "COLORS", posY)
-            posY = posY - hgt
+            _, height = W:SectionHeader(hostFrame, "COLORS", cursorY)
+            cursorY = cursorY - height
 
             -- `default` must mirror the fallback in the matching Get*RGB()
             -- function in CludesUIQuestTracker_Skin.lua, or the swatch will
@@ -711,10 +711,10 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
             local function ColorSetter(keyList)
-                return function(cr, cg, cb)
+                return function(cr, cg, checkBtn)
                     Set(keyList.r, cr)
                     Set(keyList.g, cg)
-                    Set(keyList.b, cb)
+                    Set(keyList.b, checkBtn)
                     RefreshAll()
                 end
             end
@@ -735,7 +735,7 @@ CludesUI.AtOptionsLogin(function()
             local function MakeColorRow(leftLabel, leftKeys, leftDefault, rightLabel, rightKeys, rightDefault)
                 local r, rowH = W:DualRow(
                     hostFrame,
-                    posY,
+                    cursorY,
                     { type = "label", text = leftLabel },
                     { type = "label", text = rightLabel }
                 )
@@ -755,7 +755,7 @@ CludesUI.AtOptionsLogin(function()
                 -- tracker reads; its inline swatch, the Title Color, greys out
                 -- while it is on. Retail has no quest title difficulty colors.
                 local r
-                r, hgt = W:DualRow(hostFrame, posY, {
+                r, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Title Difficulty Colors",
                     tooltip = "Colors quest titles by difficulty for your level. This is the game's own option, so its quest log follows it too.",
@@ -788,7 +788,7 @@ CludesUI.AtOptionsLogin(function()
                     WireColorSwatch(r, r._rightRegion, DONE_KEYS, DONE_DEFAULT)
                 end
             else
-                _, hgt = MakeColorRow(
+                _, height = MakeColorRow(
                     "Title Color",
                     TITLE_KEYS,
                     TITLE_DEFAULT,
@@ -797,7 +797,7 @@ CludesUI.AtOptionsLogin(function()
                     DONE_DEFAULT
                 )
             end
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Header Color / Line Color: each offers Class Color, Custom Color
             -- (free RGB picker, same swatch behavior as the rows above) and
@@ -821,9 +821,9 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Class Color",
                     hasAlpha = false,
                     getValue = function()
-                        local cc = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
-                        if cc then
-                            return cc.r, cc.g, cc.b
+                        local classColor = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
+                        if classColor then
+                            return classColor.r, classColor.g, classColor.b
                         end
                         return 1.0, 1.0, 1.0
                     end,
@@ -902,7 +902,7 @@ CludesUI.AtOptionsLogin(function()
                 local hClass, hCustom, hAccent = MakeColorModeSwatches("header", { 1.0, 1.0, 1.0 })
                 local r, rowH = W:DualRow(
                     hostFrame,
-                    posY,
+                    cursorY,
                     { type = "label", text = "Focused Color" },
                     { type = "multiSwatch", text = "Header Color", swatches = { hClass, hCustom, hAccent } }
                 )
@@ -913,10 +913,10 @@ CludesUI.AtOptionsLogin(function()
                         function()
                             return (Cfg("focusR") or 0.871), (Cfg("focusG") or 0.251), (Cfg("focusB") or 1.0)
                         end,
-                        function(cr, cg, cb)
+                        function(cr, cg, checkBtn)
                             Set("focusR", cr)
                             Set("focusG", cg)
-                            Set("focusB", cb)
+                            Set("focusB", checkBtn)
                             RefreshAll()
                         end,
                         false,
@@ -927,18 +927,18 @@ CludesUI.AtOptionsLogin(function()
                         swRefresh()
                     end)
                 end
-                hgt = rowH
+                height = rowH
             end
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Line Color | Color Objectives by Progress (+ color stops cog). The
             -- objective colors are WoW Forever only; retail keeps the spacer.
             do
                 local lClass, lCustom, lAccent = MakeColorModeSwatches("line", { 1.0, 1.0, 1.0 })
                 local r
-                r, hgt = W:DualRow(
+                r, height = W:DualRow(
                     hostFrame,
-                    posY,
+                    cursorY,
                     { type = "multiSwatch", text = "Line Color", swatches = { lClass, lCustom, lAccent } },
                     FOREVER
                             and {
@@ -964,10 +964,10 @@ CludesUI.AtOptionsLogin(function()
                             get = function()
                                 return Cfg(kr) or d[1], Cfg(kg) or d[2], Cfg(kb) or d[3]
                             end,
-                            set = function(cr, cg, cb)
+                            set = function(cr, cg, checkBtn)
                                 Set(kr, cr)
                                 Set(kg, cg)
-                                Set(kb, cb)
+                                Set(kb, checkBtn)
                                 RefreshAll()
                             end,
                         }
@@ -986,11 +986,11 @@ CludesUI.AtOptionsLogin(function()
                     })
                 end
             end
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Dim Completed Objectives (+ opacity cog) | blank (WoW Forever only)
             if FOREVER then
-                row, hgt = W:DualRow(hostFrame, posY, {
+                row, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Dim Completed Objectives",
                     tooltip = "Fades objective lines that are already done.",
@@ -1019,10 +1019,10 @@ CludesUI.AtOptionsLogin(function()
                         },
                     },
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
             end
 
-            posY = posY - 10
+            cursorY = cursorY - 10
         end -- not STOCK
 
         if FOREVER then
@@ -1030,15 +1030,15 @@ CludesUI.AtOptionsLogin(function()
             -- Sorting and filters edit the watch list; filtered quests are
             -- untracked and come back once they pass again. They wait behind the
             -- Experimental Quest Tools switch, which warns before it turns on.
-            _, hgt = W:SectionHeader(hostFrame, "TRACKING", posY)
-            posY = posY - hgt
+            _, height = W:SectionHeader(hostFrame, "TRACKING", cursorY)
+            cursorY = cursorY - height
             -- The rows change nothing while the map is open (watch list edits wait
             -- for it to close, CanEditWatches), so the note says so up front.
             -- The custom tracker sorts its own list, so none of that applies there.
             if not CUSTOM then
-                posY = CludesUI.BuildNoteRow(
+                cursorY = CludesUI.BuildNoteRow(
                     hostFrame,
-                    posY,
+                    cursorY,
                     "Sorting, filtering and auto-tracking don't update while the map or quest log is open, in combat or in dungeons. Close the map to apply them.",
                     { banner = true }
                 )
@@ -1150,13 +1150,13 @@ CludesUI.AtOptionsLogin(function()
 
             if not toolsOn then
                 -- Experimental Quest Tools | Announce Progress, then the two sounds.
-                _, hgt = W:DualRow(hostFrame, posY, expCfg, announceCfg)
-                posY = posY - hgt
-                _, hgt = W:DualRow(hostFrame, posY, objSoundCfg, questSoundCfg)
-                posY = posY - hgt
+                _, height = W:DualRow(hostFrame, cursorY, expCfg, announceCfg)
+                cursorY = cursorY - height
+                _, height = W:DualRow(hostFrame, cursorY, objSoundCfg, questSoundCfg)
+                cursorY = cursorY - height
             else
                 -- Experimental Quest Tools | Sort Quests (+ completed placement cog)
-                row, hgt = W:DualRow(hostFrame, posY, expCfg, {
+                row, height = W:DualRow(hostFrame, cursorY, expCfg, {
                     type = "dropdown",
                     text = "Sort Quests",
                     tooltip = "Reorders your tracked quests; Quest Log Order lists them as your quest log does.",
@@ -1214,10 +1214,10 @@ CludesUI.AtOptionsLogin(function()
                         },
                     },
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
 
                 -- Filter Quests (+ filters cog) | Auto Track Zone Quests
-                row, hgt = W:DualRow(hostFrame, posY, {
+                row, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Filter Quests",
                     tooltip = "Untracks quests that match the filters in the cog until they no longer match.",
@@ -1253,23 +1253,23 @@ CludesUI.AtOptionsLogin(function()
                         FilterRow("filterHeaderToggle", "Show Toggle on Quests Header"),
                     },
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
 
                 -- Announce Progress | Objective Complete Sound, then Quest Complete Sound
-                _, hgt = W:DualRow(hostFrame, posY, announceCfg, objSoundCfg)
-                posY = posY - hgt
-                _, hgt = W:DualRow(hostFrame, posY, questSoundCfg, CludesUI.BlankRowCfg())
-                posY = posY - hgt
+                _, height = W:DualRow(hostFrame, cursorY, announceCfg, objSoundCfg)
+                cursorY = cursorY - height
+                _, height = W:DualRow(hostFrame, cursorY, questSoundCfg, CludesUI.BlankRowCfg())
+                cursorY = cursorY - height
             end
 
-            posY = posY - 10
+            cursorY = cursorY - 10
         end -- FOREVER
 
         -- -- EXTRAS ----------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, "EXTRAS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "EXTRAS", cursorY)
+        cursorY = cursorY - height
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Auto Accept Quests",
             getValue = CfgOr("autoAccept", false),
@@ -1374,11 +1374,11 @@ CludesUI.AtOptionsLogin(function()
                 },
             },
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Quest Item Hotkey row
         local kbRow
-        kbRow, hgt = W:DualRow(hostFrame, posY, { type = "label", text = "" }, {
+        kbRow, height = W:DualRow(hostFrame, cursorY, { type = "label", text = "" }, {
             type = "toggle",
             text = "Wowhead Quest Links",
             tooltip = "Adds a copyable Wowhead link to the right-click menu of quests in the quest tracker and quest log.",
@@ -1443,9 +1443,9 @@ CludesUI.AtOptionsLogin(function()
             Pix.Point(kbBtn, "RIGHT", region, "RIGHT", -SIDE_PAD, 0)
             CludesUI.RegisterWidgetRefresh(refresh)
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     _G._CUBS_BuildQuestTrackerPage = BuildPage

@@ -224,18 +224,18 @@ local function PabAllBarEntries()
 end
 
 -- Which PabAllBarEntries() row a given (cfg, isBuff) pair is.
-local function PabBarKeyOf(conf, isBuff)
+local function PabBarKeyOf(rowConf, isBuff)
     local s = mod.db and mod.db.profile and mod.db.profile.playerAuraBars
     if s then
-        if conf == mod.PAB_DefaultBuffsCfg(s) then
+        if rowConf == mod.PAB_DefaultBuffsCfg(s) then
             return "buffs"
         end
-        if conf == mod.PAB_DefaultDebuffsCfg(s) then
+        if rowConf == mod.PAB_DefaultDebuffsCfg(s) then
             return "debuffs"
         end
     end
-    if conf.id then
-        return (isBuff and "custombuff_" or "customdebuff_") .. conf.id
+    if rowConf.id then
+        return (isBuff and "custombuff_" or "customdebuff_") .. rowConf.id
     end
     return ""
 end
@@ -390,8 +390,8 @@ end
 -- Defined in CUI_PlayerAuraBars_Config.lua next to the cfg it
 -- reads, so this page and the unlock-mode mover label cannot drift apart. The
 -- module returns the raw English key; only the options page translates it.
-local function DefaultBuffBarName(conf)
-    return L(mod.PAB_DefaultBuffsName and mod.PAB_DefaultBuffsName(conf) or "Buffs")
+local function DefaultBuffBarName(rowConf)
+    return L(mod.PAB_DefaultBuffsName and mod.PAB_DefaultBuffsName(rowConf) or "Buffs")
 end
 
 local function BuildBuffBarSubtitle(bar)
@@ -512,11 +512,11 @@ end
 -- "Selected" plus the "Custom Spell ID" action -- no "Presets" group, there is
 -- nothing to browse. Used by BOTH the default Buffs bar and every custom buff bar
 -- (unified onto one model).
-local function BuildAssignedBuffsFields(widget, fontFile, sy, conf, apply, isDefault)
+local function BuildAssignedBuffsFields(widget, fontFile, sy, rowConf, apply, isDefault)
     -- Row accessors over conf: a key read (or its default) and written.
     local function ConfFieldGet(key)
         return function()
-            return conf[key]
+            return rowConf[key]
         end
     end
     local W = CludesUI.Widgets
@@ -600,20 +600,20 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, conf, apply, isDef
         if not mod.PAB_BuffBarHasContent then
             return true
         end
-        if not mod.PAB_BuffBarHasContent(conf, isDefault) then
+        if not mod.PAB_BuffBarHasContent(rowConf, isDefault) then
             return false
         end
         -- WoW Forever: visibleOnly counts only the Show-lane filters this client
         -- lists, so a bar whose sole content is a hidden retail preset warns.
         local visibleOnly = CludesUI.IS_FOREVER
-            and conf.filters
-            and conf.showAllBuffs == false
-            and conf.hasDuration ~= true
-            and not (conf.spells and #conf.spells > 0)
+            and rowConf.filters
+            and rowConf.showAllBuffs == false
+            and rowConf.hasDuration ~= true
+            and not (rowConf.spells and #rowConf.spells > 0)
         if not visibleOnly then
             return true
         end
-        for fid in pairs(conf.filters) do
+        for fid in pairs(rowConf.filters) do
             if not mod.PAB_HiddenPresetFilter(fid) then
                 return true
             end
@@ -623,15 +623,15 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, conf, apply, isDef
 
     -- LEFT: Filters checkbox dropdown, "Edit Filters" pinned top action.
     do
-        local rgn = ffRow._leftRegion
-        if rgn._control then
-            rgn._control:Hide()
+        local region = ffRow._leftRegion
+        if region._control then
+            region._control:Hide()
         end
         local function AllBuffsOn()
-            return conf.showAllBuffs ~= false
+            return rowConf.showAllBuffs ~= false
         end
         local function BroadOn()
-            return conf.showAllBuffs ~= false or conf.hasDuration == true
+            return rowConf.showAllBuffs ~= false or rowConf.hasDuration == true
         end
         local function FilterItems()
             local filters = DedupedFilterItems()
@@ -650,7 +650,7 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, conf, apply, isDef
                     isTopAction = true,
                     label = "Edit Blacklist",
                     lockedFn = function()
-                        return conf.showAllBuffs == false and conf.hasDuration ~= true
+                        return rowConf.showAllBuffs == false and rowConf.hasDuration ~= true
                     end,
                     lockedTooltip = function()
                         return CludesUI.DisabledTooltip("All Buffs or Has Duration", "enabled")
@@ -660,14 +660,14 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, conf, apply, isDef
                             title = "Buff Blacklist",
                             get = ConfFieldGet("blacklist"),
                             add = function(ident)
-                                conf.blacklist = conf.blacklist or {}
-                                conf.blacklist[ident] = true
+                                rowConf.blacklist = rowConf.blacklist or {}
+                                rowConf.blacklist[ident] = true
                             end,
                             remove = function(ident)
-                                if conf.blacklist then
-                                    conf.blacklist[ident] = nil
-                                    if not next(conf.blacklist) then
-                                        conf.blacklist = nil
+                                if rowConf.blacklist then
+                                    rowConf.blacklist[ident] = nil
+                                    if not next(rowConf.blacklist) then
+                                        rowConf.blacklist = nil
                                     end
                                 end
                             end,
@@ -700,33 +700,33 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, conf, apply, isDef
             return itemList
         end
         local warnClosed
-        local cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
-            rgn,
+        local checkDrop, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
+            region,
             190,
-            rgn:GetFrameLevel() + 2,
+            region:GetFrameLevel() + 2,
             FilterItems,
-            function(k, neg)
-                if k == PAB_ALL_BUFFS_KEY then
+            function(keyName, neg)
+                if keyName == PAB_ALL_BUFFS_KEY then
                     return AllBuffsOn()
                 end
-                if k == PAB_HAS_DURATION_KEY then
-                    return conf.hasDuration == true
+                if keyName == PAB_HAS_DURATION_KEY then
+                    return rowConf.hasDuration == true
                 end
                 if neg then
-                    local nf = conf.negFilters
-                    return nf and nf[k] == true
+                    local nf = rowConf.negFilters
+                    return nf and nf[keyName] == true
                 end
-                local f = conf.filters
-                return f and f[k] == true
+                local f = rowConf.filters
+                return f and f[keyName] == true
             end,
-            function(k, val, neg)
-                if k == PAB_ALL_BUFFS_KEY then
-                    conf.showAllBuffs = val
+            function(keyName, val, neg)
+                if keyName == PAB_ALL_BUFFS_KEY then
+                    rowConf.showAllBuffs = val
                     -- Mutually exclusive with Has Duration -- both are broad-content
                     -- modes. The show/hide lanes PERSIST across mode flips (the hide
                     -- lane subtracts in both modes; the show lane simply goes dormant
                     -- while broad content is on). Extra Spells stay untouched.
-                    conf.hasDuration = nil
+                    rowConf.hasDuration = nil
                     apply()
                     -- Non-force, same as every other row: the open menu
                     -- refreshes its own checks/locks in place, so a mode
@@ -734,12 +734,12 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, conf, apply, isDef
                     CludesUI:RefreshPage()
                     return
                 end
-                if k == PAB_HAS_DURATION_KEY then
-                    conf.hasDuration = val or nil
+                if keyName == PAB_HAS_DURATION_KEY then
+                    rowConf.hasDuration = val or nil
                     -- Mutually exclusive with All Buffs (a broad-content mode of its
                     -- own); lanes persist, same as All Buffs.
                     if val then
-                        conf.showAllBuffs = false
+                        rowConf.showAllBuffs = false
                     end
                     apply()
                     CludesUI:RefreshPage()
@@ -748,26 +748,26 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, conf, apply, isDef
                 -- Two-lane real-filter write: checking one lane clears the other;
                 -- emptied lane tables drop to nil (saved-variable hygiene).
                 if neg then
-                    conf.negFilters = conf.negFilters or {}
-                    conf.negFilters[k] = val or nil
-                    if not next(conf.negFilters) then
-                        conf.negFilters = nil
+                    rowConf.negFilters = rowConf.negFilters or {}
+                    rowConf.negFilters[keyName] = val or nil
+                    if not next(rowConf.negFilters) then
+                        rowConf.negFilters = nil
                     end
-                    if val and conf.filters then
-                        conf.filters[k] = nil
+                    if val and rowConf.filters then
+                        rowConf.filters[keyName] = nil
                     end
                 else
-                    conf.filters = conf.filters or {}
-                    conf.filters[k] = val or nil
-                    if val and conf.negFilters then
-                        conf.negFilters[k] = nil
-                        if not next(conf.negFilters) then
-                            conf.negFilters = nil
+                    rowConf.filters = rowConf.filters or {}
+                    rowConf.filters[keyName] = val or nil
+                    if val and rowConf.negFilters then
+                        rowConf.negFilters[keyName] = nil
+                        if not next(rowConf.negFilters) then
+                            rowConf.negFilters = nil
                         end
                     end
                 end
-                if conf.filters and not next(conf.filters) then
-                    conf.filters = nil
+                if rowConf.filters and not next(rowConf.filters) then
+                    rowConf.filters = nil
                 end
                 apply()
                 -- Non-force: runs only the registered lightweight refresh callbacks
@@ -786,13 +786,13 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, conf, apply, isDef
                 end
             end
         )
-        Pix.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-        rgn._control = cbDD
-        rgn._lastInline = nil
+        Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+        region._control = checkDrop
+        region._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbRefresh)
         warnClosed = CludesUI.AttachEmptyFilterWarn(
-            rgn,
-            cbDD,
+            region,
+            checkDrop,
             L("You are displaying NO buffs at all."),
             BuffBarHasContent
         )
@@ -802,12 +802,12 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, conf, apply, isDef
     -- doc comment above for why there is no "Presets" group here). Shares
     -- ffRow with Filters (redesign) instead of its own row.
     do
-        local rgn = ffRow._rightRegion
-        if rgn._control then
-            rgn._control:Hide()
+        local region = ffRow._rightRegion
+        if region._control then
+            region._control:Hide()
         end
         local function HasDirect(ident)
-            local sp = conf.spells
+            local sp = rowConf.spells
             if not sp then
                 return false
             end
@@ -827,8 +827,8 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, conf, apply, isDef
                 onConfirm = function(textValue)
                     local ident = tonumber(textValue or "")
                     if ident and ident > 0 and not HasDirect(ident) then
-                        conf.spells = conf.spells or {}
-                        conf.spells[#conf.spells + 1] = ident
+                        rowConf.spells = rowConf.spells or {}
+                        rowConf.spells[#rowConf.spells + 1] = ident
                         apply()
                         CludesUI:RefreshPage(true)
                     end
@@ -851,8 +851,8 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, conf, apply, isDef
             -- are excluded from Presets (adding them as extras would be
             -- redundant) -- same exclusion BM2 applies.
             local covered = {}
-            if conf.filters then
-                for fid in pairs(conf.filters) do
+            if rowConf.filters then
+                for fid in pairs(rowConf.filters) do
                     local f = mod.PAB_GetFilter and mod.PAB_GetFilter(fid)
                     if f then
                         for ident, on in pairs(f.spells) do
@@ -866,7 +866,7 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, conf, apply, isDef
             local universe = DedupedPresetSpellUniverse()
             local selected, rest = {}, {}
             local seen = {}
-            local sp = conf.spells or {}
+            local sp = rowConf.spells or {}
             for idx = 1, #sp do
                 seen[sp[idx]] = true
                 selected[#selected + 1] = SpellEntry(sp[idx])
@@ -894,28 +894,28 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, conf, apply, isDef
             end
             return itemList
         end
-        local cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
-            rgn,
+        local checkDrop, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
+            region,
             190,
-            rgn:GetFrameLevel() + 2,
+            region:GetFrameLevel() + 2,
             ExtraItems,
             HasDirect,
-            function(k, val)
-                conf.spells = conf.spells or {}
+            function(keyName, val)
+                rowConf.spells = rowConf.spells or {}
                 if val then
-                    if not HasDirect(k) then
-                        conf.spells[#conf.spells + 1] = k
+                    if not HasDirect(keyName) then
+                        rowConf.spells[#rowConf.spells + 1] = keyName
                     end
                 else
                     -- Unchecking drops the whole curated family, not just this id:
                     -- PAB_ResolveSpells expands a family from any member, so a
                     -- differently-named sibling left in the list would keep the buff
                     -- tracked behind an unchecked box. Same family = same table.
-                    local fam = mod.PAB_SPELL_FAMILY and mod.PAB_SPELL_FAMILY[k]
-                    for idx = #conf.spells, 1, -1 do
-                        local ident = conf.spells[idx]
-                        if ident == k or (fam and mod.PAB_SPELL_FAMILY[ident] == fam) then
-                            table.remove(conf.spells, idx)
+                    local fam = mod.PAB_SPELL_FAMILY and mod.PAB_SPELL_FAMILY[keyName]
+                    for idx = #rowConf.spells, 1, -1 do
+                        local ident = rowConf.spells[idx]
+                        if ident == keyName or (fam and mod.PAB_SPELL_FAMILY[ident] == fam) then
+                            table.remove(rowConf.spells, idx)
                         end
                     end
                 end
@@ -931,9 +931,9 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, conf, apply, isDef
             10,
             true
         )
-        Pix.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-        rgn._control = cbDD
-        rgn._lastInline = nil
+        Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+        region._control = checkDrop
+        region._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbRefresh)
     end
 
@@ -948,7 +948,7 @@ end
 -- both modes, see DebuffSubtractFn/BuildChain). Lanes are mutually exclusive per
 -- class and persist across mode flips. Used by BOTH the default Debuffs bar and
 -- every custom debuff bar.
-local function BuildAssignedDebuffsFields(widget, fontFile, sy, conf, apply)
+local function BuildAssignedDebuffsFields(widget, fontFile, sy, rowConf, apply)
     local W = CludesUI.Widgets
     local Pix = CludesUI.PanelPP
     local _, hh = 0, 0
@@ -982,16 +982,16 @@ local function BuildAssignedDebuffsFields(widget, fontFile, sy, conf, apply)
             setValue = function() end,
         },
         CludesUI.MaxDurationDropdown(function()
-            return conf.maxDurSec
+            return rowConf.maxDurSec
         end, function(val)
-            conf.maxDurSec = val
+            rowConf.maxDurSec = val
         end, apply)
     )
     sy = sy - hh
     do
-        local rgn = safRow._leftRegion
-        if rgn._control then
-            rgn._control:Hide()
+        local region = safRow._leftRegion
+        if region._control then
+            region._control:Hide()
         end
         local PAB_ALL_DEBUFFS_KEY = "__allDebuffs"
         local PAB_DEBUFF_HAS_DUR_KEY = "__debuffHasDuration"
@@ -999,10 +999,10 @@ local function BuildAssignedDebuffsFields(widget, fontFile, sy, conf, apply)
         local PAB_MATCH_ANY_KEY = "__matchAny"
         local PAB_MATCH_ALL_KEY = "__matchAll"
         local function AllOn()
-            return conf.showAllDebuffs ~= false
+            return rowConf.showAllDebuffs ~= false
         end
         local function MatchAll()
-            return conf.debuffMatch == "all"
+            return rowConf.debuffMatch == "all"
         end
         -- Hovering a dimmed Show box explains the dim (the lane is inert
         -- while All Debuffs already shows everything). Has Duration is an
@@ -1079,85 +1079,85 @@ local function BuildAssignedDebuffsFields(widget, fontFile, sy, conf, apply)
         end
         -- Non-Player / From Any Player share one engine field: a check in either
         -- lane clears the sibling from both lanes.
-        local function ClearExclusive(k)
-            local other = mod.PAB_ExclusiveSkey and mod.PAB_ExclusiveSkey[k]
+        local function ClearExclusive(keyName)
+            local other = mod.PAB_ExclusiveSkey and mod.PAB_ExclusiveSkey[keyName]
             if not other then
                 return
             end
-            if conf.classFilters then
-                conf.classFilters[other] = nil
-                if not next(conf.classFilters) then
-                    conf.classFilters = nil
+            if rowConf.classFilters then
+                rowConf.classFilters[other] = nil
+                if not next(rowConf.classFilters) then
+                    rowConf.classFilters = nil
                 end
             end
-            if conf.negClassFilters then
-                conf.negClassFilters[other] = nil
-                if not next(conf.negClassFilters) then
-                    conf.negClassFilters = nil
+            if rowConf.negClassFilters then
+                rowConf.negClassFilters[other] = nil
+                if not next(rowConf.negClassFilters) then
+                    rowConf.negClassFilters = nil
                 end
             end
         end
         local warnClosed
-        local cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
-            rgn,
+        local checkDrop, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
+            region,
             190,
-            rgn:GetFrameLevel() + 2,
+            region:GetFrameLevel() + 2,
             FilterItems,
-            function(k, neg)
-                if k == PAB_ALL_DEBUFFS_KEY then
+            function(keyName, neg)
+                if keyName == PAB_ALL_DEBUFFS_KEY then
                     return AllOn()
                 end
-                if k == PAB_DEBUFF_HAS_DUR_KEY then
-                    return conf.hasDuration == true
+                if keyName == PAB_DEBUFF_HAS_DUR_KEY then
+                    return rowConf.hasDuration == true
                 end
-                if k == PAB_HIDE_EXH_KEY then
-                    return conf.hideExhaustion == true
+                if keyName == PAB_HIDE_EXH_KEY then
+                    return rowConf.hideExhaustion == true
                 end
-                if k == PAB_MATCH_ANY_KEY or k == PAB_MATCH_ALL_KEY then
-                    return (k == PAB_MATCH_ALL_KEY) == MatchAll()
+                if keyName == PAB_MATCH_ANY_KEY or keyName == PAB_MATCH_ALL_KEY then
+                    return (keyName == PAB_MATCH_ALL_KEY) == MatchAll()
                 end
                 if neg then
-                    local nf = conf.negClassFilters
-                    return nf and nf[k] == true
+                    local nf = rowConf.negClassFilters
+                    return nf and nf[keyName] == true
                 end
-                local f = conf.classFilters
-                return f and f[k] == true
+                local f = rowConf.classFilters
+                return f and f[keyName] == true
             end,
-            function(k, val, neg)
-                if k == PAB_ALL_DEBUFFS_KEY then
+            function(keyName, val, neg)
+                if keyName == PAB_ALL_DEBUFFS_KEY then
                     -- Stores the raw boolean directly (nil must mean "on",
                     -- same convention as showAllBuffs). Lanes persist across
                     -- mode flips (the hide lane subtracts in both modes).
-                    conf.showAllDebuffs = val
+                    rowConf.showAllDebuffs = val
                     apply()
                     CludesUI:RefreshPage()
                     return
                 end
-                if k == PAB_DEBUFF_HAS_DUR_KEY then
+                if keyName == PAB_DEBUFF_HAS_DUR_KEY then
                     -- AND-modifier (native maxDuration on every debuff group;
                     -- permanents excluded): combines with All Debuffs or any
                     -- class-filter selection; alone it acts as the timed
                     -- catch-all (DebuffCatchAllOn).
-                    conf.hasDuration = val or nil
+                    rowConf.hasDuration = val or nil
                     apply()
                     CludesUI:RefreshPage()
                     return
                 end
-                if k == PAB_HIDE_EXH_KEY then
-                    conf.hideExhaustion = val or nil
+                if keyName == PAB_HIDE_EXH_KEY then
+                    rowConf.hideExhaustion = val or nil
                     apply()
                     CludesUI:RefreshPage()
                     return
                 end
-                if k == PAB_MATCH_ANY_KEY or k == PAB_MATCH_ALL_KEY then
+                if keyName == PAB_MATCH_ANY_KEY or keyName == PAB_MATCH_ALL_KEY then
                     -- Radio pair: the clicked row always wins (the toggled value
                     -- is ignored), so clicking the active row keeps it. nil =
                     -- Match Any keeps untouched bars byte-identical.
-                    local wanted = (k == PAB_MATCH_ALL_KEY) and "all" or nil
-                    if conf.debuffMatch == wanted then
+                    local wanted = (keyName == PAB_MATCH_ALL_KEY) and "all" or nil
+                    if rowConf.debuffMatch == wanted then
                         return
                     end
-                    conf.debuffMatch = wanted
+                    rowConf.debuffMatch = wanted
                     apply()
                     CludesUI:RefreshPage()
                     return
@@ -1165,29 +1165,29 @@ local function BuildAssignedDebuffsFields(widget, fontFile, sy, conf, apply)
                 -- Two-lane class write: checking one lane clears the other;
                 -- emptied lane tables drop to nil (saved-variable hygiene).
                 if val then
-                    ClearExclusive(k)
+                    ClearExclusive(keyName)
                 end
                 if neg then
-                    conf.negClassFilters = conf.negClassFilters or {}
-                    conf.negClassFilters[k] = val or nil
-                    if not next(conf.negClassFilters) then
-                        conf.negClassFilters = nil
+                    rowConf.negClassFilters = rowConf.negClassFilters or {}
+                    rowConf.negClassFilters[keyName] = val or nil
+                    if not next(rowConf.negClassFilters) then
+                        rowConf.negClassFilters = nil
                     end
-                    if val and conf.classFilters then
-                        conf.classFilters[k] = nil
+                    if val and rowConf.classFilters then
+                        rowConf.classFilters[keyName] = nil
                     end
                 else
-                    conf.classFilters = conf.classFilters or {}
-                    conf.classFilters[k] = val or nil
-                    if val and conf.negClassFilters then
-                        conf.negClassFilters[k] = nil
-                        if not next(conf.negClassFilters) then
-                            conf.negClassFilters = nil
+                    rowConf.classFilters = rowConf.classFilters or {}
+                    rowConf.classFilters[keyName] = val or nil
+                    if val and rowConf.negClassFilters then
+                        rowConf.negClassFilters[keyName] = nil
+                        if not next(rowConf.negClassFilters) then
+                            rowConf.negClassFilters = nil
                         end
                     end
                 end
-                if conf.classFilters and not next(conf.classFilters) then
-                    conf.classFilters = nil
+                if rowConf.classFilters and not next(rowConf.classFilters) then
+                    rowConf.classFilters = nil
                 end
                 apply()
                 -- Non-force: runs only the registered lightweight refresh
@@ -1211,23 +1211,23 @@ local function BuildAssignedDebuffsFields(widget, fontFile, sy, conf, apply)
                 end,
             }
         )
-        Pix.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-        rgn._control = cbDD
-        rgn._lastInline = nil
+        Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+        region._control = checkDrop
+        region._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbRefresh)
         warnClosed = CludesUI.AttachEmptyFilterWarn(
-            rgn,
-            cbDD,
+            region,
+            checkDrop,
             L("You are displaying NO debuffs at all."),
             function()
                 if not mod.PAB_DebuffBarHasContent then
                     return true
                 end
                 -- Match All picks that can never match together build nothing.
-                if mod.PAB_DebuffMatchEmpty and mod.PAB_DebuffMatchEmpty(conf) then
+                if mod.PAB_DebuffMatchEmpty and mod.PAB_DebuffMatchEmpty(rowConf) then
                     return false
                 end
-                return mod.PAB_DebuffBarHasContent(conf) and true or false
+                return mod.PAB_DebuffBarHasContent(rowConf) and true or false
             end
         )
     end
@@ -1242,17 +1242,17 @@ end
 -- (BuildContainerSpec doesn't care about slots vs. groups). isBuff is currently unused
 -- here (Sort Method's option set is now shared between buffs/debuffs, see
 -- SORT_METHOD_VALUES' doc comment) but kept for callers/future per-polarity fields.
-local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
+local function BuildCoreFields(widget, fontFile, sy, rowConf, apply, isBuff)
     -- Row accessors over conf: a key read (or its default) and written.
     local function ConfFieldThen(key)
-        return function(v)
-            conf[key] = v
+        return function(value)
+            rowConf[key] = value
             apply()
         end
     end
     local function ConfFieldOr(key, default)
         return function()
-            return conf[key] or default
+            return rowConf[key] or default
         end
     end
     local W = CludesUI.Widgets
@@ -1281,16 +1281,16 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
         setValue = function(val)
             -- Change the wrap direction to be a valid value from the new growth direction
             if val == "UP" or val == "DOWN" then
-                if conf.iconWrapDirection ~= "LEFT" and conf.iconWrapDirection ~= "RIGHT" then
-                    conf.iconWrapDirection = "LEFT"
+                if rowConf.iconWrapDirection ~= "LEFT" and rowConf.iconWrapDirection ~= "RIGHT" then
+                    rowConf.iconWrapDirection = "LEFT"
                 end
             elseif val == "LEFT" or val == "RIGHT" then
-                if conf.iconWrapDirection ~= "UP" and conf.iconWrapDirection ~= "DOWN" then
-                    conf.iconWrapDirection = "DOWN"
+                if rowConf.iconWrapDirection ~= "UP" and rowConf.iconWrapDirection ~= "DOWN" then
+                    rowConf.iconWrapDirection = "DOWN"
                 end
             end
 
-            conf.growDirection = val
+            rowConf.growDirection = val
             apply()
         end,
     })
@@ -1313,8 +1313,8 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
     })
     sy = sy - hh
     do
-        local rgn = sizeRow._leftRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = sizeRow._leftRegion
+        CludesUI.BuildInlineCog(region, {
             title = "Icon Size",
             rows = {
                 {
@@ -1333,8 +1333,8 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
         -- Icon Wrap: only meaningful for vertical growth (Up/Down) and horizontal growth (Left/Right) -- decides which
         -- side additional columns stack toward when Icons Per Row/Column > 1. Cog-only,
         -- no separate dropdown row, and only shown while Growth Direction is Up/Down or Left/Right.
-        local rgn = sizeRow._rightRegion
-        local cogBtn = CludesUI.BuildInlineCog(rgn, {
+        local region = sizeRow._rightRegion
+        local cogBtn = CludesUI.BuildInlineCog(region, {
             title = "Growth",
             rows = {
                 {
@@ -1345,9 +1345,9 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
                     get = ConfFieldOr("iconWrapDirection", "LEFT"),
                     set = ConfFieldThen("iconWrapDirection"),
                     itemDisabled = function(val)
-                        if conf.growDirection == "LEFT" or conf.growDirection == "RIGHT" then
+                        if rowConf.growDirection == "LEFT" or rowConf.growDirection == "RIGHT" then
                             return val == "LEFT" or val == "RIGHT"
-                        elseif conf.growDirection == "UP" or conf.growDirection == "DOWN" then
+                        elseif rowConf.growDirection == "UP" or rowConf.growDirection == "DOWN" then
                             return val == "UP" or val == "DOWN"
                         end
                         return false
@@ -1356,7 +1356,7 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
             },
         })
         local function UpdateWrapCogVisibility()
-            local dir = conf.growDirection or "LEFT"
+            local dir = rowConf.growDirection or "LEFT"
             if cogBtn then
                 cogBtn:SetShown(dir == "UP" or dir == "DOWN" or dir == "LEFT" or dir == "RIGHT")
             end
@@ -1370,21 +1370,21 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
         type = "toggle",
         text = "Duration",
         getValue = function()
-            return conf.durationShow ~= false
+            return rowConf.durationShow ~= false
         end,
         setValue = ConfFieldThen("durationShow"),
     }, {
         type = "toggle",
         text = "Stacks",
         getValue = function()
-            return conf.stackShow ~= false
+            return rowConf.stackShow ~= false
         end,
         setValue = ConfFieldThen("stackShow"),
     })
     sy = sy - hh
     do
-        local rgn = dsRow._leftRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = dsRow._leftRegion
+        CludesUI.BuildInlineCog(region, {
             title = "Duration Text",
             rows = {
                 {
@@ -1426,10 +1426,10 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
                     type = "toggle",
                     label = "Show S for Seconds",
                     get = function()
-                        return conf.durationShowSeconds == true
+                        return rowConf.durationShowSeconds == true
                     end,
                     set = function(val)
-                        conf.durationShowSeconds = val and true or nil
+                        rowConf.durationShowSeconds = val and true or nil
                         apply()
                     end,
                 },
@@ -1440,28 +1440,28 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
                     max = 90,
                     step = 1,
                     get = function()
-                        return conf.durationPrecisionThreshold and conf.durationPrecisionThreshold / 60 or 0
+                        return rowConf.durationPrecisionThreshold and rowConf.durationPrecisionThreshold / 60 or 0
                     end,
                     set = function(val)
-                        conf.durationPrecisionThreshold = val > 0 and math.floor(val * 60 + 0.5) or nil
+                        rowConf.durationPrecisionThreshold = val > 0 and math.floor(val * 60 + 0.5) or nil
                         apply()
                     end,
                 },
             },
         })
-        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(rgn, dsRow:GetFrameLevel() + 3, function()
-            return (conf.durationColorR or 1), (conf.durationColorG or 1), (conf.durationColorB or 1), 1
+        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(region, dsRow:GetFrameLevel() + 3, function()
+            return (rowConf.durationColorR or 1), (rowConf.durationColorG or 1), (rowConf.durationColorB or 1), 1
         end, function(r, g, b)
-            conf.durationColorR, conf.durationColorG, conf.durationColorB = r, g, b
+            rowConf.durationColorR, rowConf.durationColorG, rowConf.durationColorB = r, g, b
             apply()
         end, false, 20)
-        colorSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-        rgn._lastInline = colorSwatch
+        colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+        region._lastInline = colorSwatch
         CludesUI.RegisterWidgetRefresh(updateSwatch)
     end
     do
-        local rgn = dsRow._rightRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = dsRow._rightRegion
+        CludesUI.BuildInlineCog(region, {
             title = "Stacks Text",
             rows = {
                 {
@@ -1501,31 +1501,31 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
                 },
             },
         })
-        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(rgn, dsRow:GetFrameLevel() + 3, function()
-            return (conf.stackColorR or 1), (conf.stackColorG or 1), (conf.stackColorB or 1), 1
+        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(region, dsRow:GetFrameLevel() + 3, function()
+            return (rowConf.stackColorR or 1), (rowConf.stackColorG or 1), (rowConf.stackColorB or 1), 1
         end, function(r, g, b)
-            conf.stackColorR, conf.stackColorG, conf.stackColorB = r, g, b
+            rowConf.stackColorR, rowConf.stackColorG, rowConf.stackColorB = r, g, b
             apply()
         end, false, 20)
-        colorSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-        rgn._lastInline = colorSwatch
+        colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+        region._lastInline = colorSwatch
         CludesUI.RegisterWidgetRefresh(updateSwatch)
     end
 
     return sy
 end
 
-local function FontOutlineField(conf, apply)
+local function FontOutlineField(rowConf, apply)
     -- Row accessors over conf: a key read (or its default) and written.
     local function ConfFieldThen(key)
-        return function(v)
-            conf[key] = v
+        return function(value)
+            rowConf[key] = value
             apply()
         end
     end
     local function ConfFieldOr(key, default)
         return function()
-            return conf[key] or default
+            return rowConf[key] or default
         end
     end
     return {
@@ -1542,17 +1542,17 @@ end
 -- Offset | Height Offset (textured style only); Icons Per Row (+grid cog) |
 -- Spacing (+row-spacing cog); Icon Shape | Icon Zoom; remaining toggles are
 -- packed by polarity without placeholder slots.
-local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
+local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
     -- Row accessors over conf: a key read (or its default) and written.
     local function ConfFieldThen(key)
-        return function(v)
-            conf[key] = v
+        return function(value)
+            rowConf[key] = value
             apply()
         end
     end
     local function ConfFieldOr(key, default)
         return function()
-            return conf[key] or default
+            return rowConf[key] or default
         end
     end
     local W = CludesUI.Widgets
@@ -1570,23 +1570,23 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
     -- pixel count means nothing there. The Icon Shape setter rebuilds the page when
     -- the shape crosses none/custom, which swaps the control in this slot.
     local sizeCfg
-    if IsMaskShape(conf.iconShape) then
+    if IsMaskShape(rowConf.iconShape) then
         sizeCfg = {
             type = "dropdown",
             text = "Border Size",
             values = BORDER_SIZE_VALUES,
             order = BORDER_SIZE_LEVELS,
             itemDisabled = function(val)
-                return IsMaskShape(conf.iconShape) and BORDER_SIZE_SHAPE_DISABLED[val] or false
+                return IsMaskShape(rowConf.iconShape) and BORDER_SIZE_SHAPE_DISABLED[val] or false
             end,
             itemDisabledTooltip = function()
                 return "This option requires a non-custom shape to be selected"
             end,
             getValue = function()
-                return BORDER_SIZE_KEY[conf.borderSize or 1] or "thin"
+                return BORDER_SIZE_KEY[rowConf.borderSize or 1] or "thin"
             end,
             setValue = function(val)
-                conf.borderSize = BORDER_SIZE_NUM[val] or 1
+                rowConf.borderSize = BORDER_SIZE_NUM[val] or 1
                 apply()
             end,
         }
@@ -1596,19 +1596,19 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
             trackWidth = 120,
             -- The step BuildStyle renders with (cfg.borderSize or 1), as a number.
             getStep = function()
-                return conf.borderSize or 1
+                return rowConf.borderSize or 1
             end,
             setStep = function(step)
-                conf.borderSize = step
+                rowConf.borderSize = step
             end,
             getTex = function()
-                return conf.borderTexture or "solid"
+                return rowConf.borderTexture or "solid"
             end,
             getPx = function()
-                return conf.borderSizePx
+                return rowConf.borderSizePx
             end,
             setPx = function(val)
-                conf.borderSizePx = val
+                rowConf.borderSizePx = val
             end,
             apply = apply,
         })
@@ -1621,7 +1621,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
             type = "dropdown",
             text = "Border Style",
             disabled = function()
-                return IsMaskShape(conf.iconShape)
+                return IsMaskShape(rowConf.iconShape)
             end,
             disabledTooltip = "This option requires a non-custom shape to be selected",
             rawTooltip = true,
@@ -1629,22 +1629,22 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
             order = textureOrder,
             getValue = ConfFieldOr("borderTexture", "solid"),
             setValue = function(val)
-                conf.borderTexture = val
-                conf.borderTextureOffset = nil
-                conf.borderTextureOffsetY = nil
-                conf.borderTextureShiftX = nil
-                conf.borderTextureShiftY = nil
+                rowConf.borderTexture = val
+                rowConf.borderTextureOffset = nil
+                rowConf.borderTextureOffsetY = nil
+                rowConf.borderTextureShiftX = nil
+                rowConf.borderTextureShiftY = nil
                 local color, behind = CludesUI.GetBorderStyleSelectDefaults(val)
-                conf.borderR, conf.borderG, conf.borderB, conf.borderA = color.r, color.g, color.b, 1
-                conf.borderBehind = behind
+                rowConf.borderR, rowConf.borderG, rowConf.borderB, rowConf.borderA = color.r, color.g, color.b, 1
+                rowConf.borderBehind = behind
                 local defaultSize = CludesUI.GetBorderDefaultSize("unitframes", val)
                 if defaultSize then
-                    conf.borderSize = defaultSize
+                    rowConf.borderSize = defaultSize
                 end
                 -- A style pick resets the size: the exact size paired with the old
                 -- step and texture goes with it (false, never nil, once it was set).
-                if conf.borderSizePx then
-                    conf.borderSizePx = false
+                if rowConf.borderSizePx then
+                    rowConf.borderSizePx = false
                 end
                 apply()
                 -- The Width Offset | Height Offset row below exists only for a
@@ -1656,7 +1656,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
     )
     sy = sy - hh
     do
-        local rgn = styleRow._leftRegion
+        local region = styleRow._leftRegion
         local borderCogRows = {
             {
                 type = "slider",
@@ -1665,13 +1665,13 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                 max = 10,
                 step = 1,
                 get = function()
-                    if conf.borderTextureShiftX ~= nil then
-                        return conf.borderTextureShiftX
+                    if rowConf.borderTextureShiftX ~= nil then
+                        return rowConf.borderTextureShiftX
                     end
                     local _, _, posX = CludesUI.GetBorderDefaults(
                         "unitframes",
-                        conf.borderTexture or "solid",
-                        conf.borderSize or 1
+                        rowConf.borderTexture or "solid",
+                        rowConf.borderSize or 1
                     )
                     return posX
                 end,
@@ -1679,7 +1679,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                     if val == 0 then
                         val = nil
                     end
-                    conf.borderTextureShiftX = val
+                    rowConf.borderTextureShiftX = val
                     apply()
                 end,
             },
@@ -1690,13 +1690,13 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                 max = 10,
                 step = 1,
                 get = function()
-                    if conf.borderTextureShiftY ~= nil then
-                        return conf.borderTextureShiftY
+                    if rowConf.borderTextureShiftY ~= nil then
+                        return rowConf.borderTextureShiftY
                     end
                     local _, _, _, posY = CludesUI.GetBorderDefaults(
                         "unitframes",
-                        conf.borderTexture or "solid",
-                        conf.borderSize or 1
+                        rowConf.borderTexture or "solid",
+                        rowConf.borderSize or 1
                     )
                     return posY
                 end,
@@ -1704,7 +1704,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                     if val == 0 then
                         val = nil
                     end
-                    conf.borderTextureShiftY = val
+                    rowConf.borderTextureShiftY = val
                     apply()
                 end,
             },
@@ -1712,7 +1712,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                 type = "toggle",
                 label = "Show Behind",
                 get = function()
-                    return conf.borderBehind == true
+                    return rowConf.borderBehind == true
                 end,
                 set = ConfFieldThen("borderBehind"),
             },
@@ -1724,23 +1724,23 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                 label = "Textured Dispel Ring",
                 tooltip = "Draws the dispel-colored ring in this border style's shape instead of flat lines.",
                 get = function()
-                    return conf.borderDispelTextured == true
+                    return rowConf.borderDispelTextured == true
                 end,
                 set = function(val)
-                    conf.borderDispelTextured = val and true or false
+                    rowConf.borderDispelTextured = val and true or false
                     apply()
                 end,
             }
         end
-        local cogBtn = CludesUI.BuildInlineCog(rgn, {
+        local cogBtn = CludesUI.BuildInlineCog(region, {
             title = "Border Options",
             rows = borderCogRows,
         })
         local function UpdateBorderCogVisibility()
             if cogBtn then
                 cogBtn:SetShown(
-                    (conf.borderTexture or "solid") ~= "solid"
-                        and not IsMaskShape(conf.iconShape)
+                    (rowConf.borderTexture or "solid") ~= "solid"
+                        and not IsMaskShape(rowConf.iconShape)
                         and not CludesUI.BlizzStyle.Get("playerauras")
                 )
             end
@@ -1755,53 +1755,53 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
         end
         local function CopyBorderStyleTo(record)
             local target = record.cfg
-            target.borderTexture = conf.borderTexture
-            target.borderTextureOffset = conf.borderTextureOffset
-            target.borderTextureOffsetY = conf.borderTextureOffsetY
-            target.borderTextureShiftX = conf.borderTextureShiftX
-            target.borderTextureShiftY = conf.borderTextureShiftY
-            target.borderBehind = conf.borderBehind
+            target.borderTexture = rowConf.borderTexture
+            target.borderTextureOffset = rowConf.borderTextureOffset
+            target.borderTextureOffsetY = rowConf.borderTextureOffsetY
+            target.borderTextureShiftX = rowConf.borderTextureShiftX
+            target.borderTextureShiftY = rowConf.borderTextureShiftY
+            target.borderBehind = rowConf.borderBehind
             -- Textured Dispel Ring is a debuff-bar setting: it travels only from
             -- a debuff bar to debuff bars.
             if not isBuff and not record.isBuff then
-                target.borderDispelTextured = conf.borderDispelTextured
+                target.borderDispelTextured = rowConf.borderDispelTextured
             end
             target.borderR, target.borderG, target.borderB, target.borderA =
-                conf.borderR, conf.borderG, conf.borderB, conf.borderA
+                rowConf.borderR, rowConf.borderG, rowConf.borderB, rowConf.borderA
             -- Border textures and custom shape masks are mutually exclusive in
             -- the editor. A bulk style sync follows the same "last choice wins"
             -- rule as a direct selection so it cannot create a locked combination.
-            if (conf.borderTexture or "solid") ~= "solid" then
+            if (rowConf.borderTexture or "solid") ~= "solid" then
                 target.iconShape = "none"
             end
             PabApplyBarEntry(record)
         end
         CludesUI.BuildSyncIcon({
-            region = rgn,
+            region = region,
             tooltip = "Apply Border Style to all Bars",
             onClick = function()
                 for _, record in ipairs(PabAllBarEntries()) do
-                    if record.cfg ~= conf then
+                    if record.cfg ~= rowConf then
                         CopyBorderStyleTo(record)
                     end
                 end
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local texture = conf.borderTexture or "solid"
+                local texture = rowConf.borderTexture or "solid"
                 for _, record in ipairs(PabAllBarEntries()) do
                     local c = record.cfg
                     if
                         (c.borderTexture or "solid") ~= texture
-                        or c.borderTextureOffset ~= conf.borderTextureOffset
-                        or c.borderTextureOffsetY ~= conf.borderTextureOffsetY
-                        or c.borderTextureShiftX ~= conf.borderTextureShiftX
-                        or c.borderTextureShiftY ~= conf.borderTextureShiftY
-                        or (c.borderBehind == true) ~= (conf.borderBehind == true)
+                        or c.borderTextureOffset ~= rowConf.borderTextureOffset
+                        or c.borderTextureOffsetY ~= rowConf.borderTextureOffsetY
+                        or c.borderTextureShiftX ~= rowConf.borderTextureShiftX
+                        or c.borderTextureShiftY ~= rowConf.borderTextureShiftY
+                        or (c.borderBehind == true) ~= (rowConf.borderBehind == true)
                         or (
                             not isBuff
                             and not record.isBuff
-                            and (c.borderDispelTextured == true) ~= (conf.borderDispelTextured == true)
+                            and (c.borderDispelTextured == true) ~= (rowConf.borderDispelTextured == true)
                         )
                     then
                         return false
@@ -1810,13 +1810,13 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                 return true
             end,
             flashTargets = function()
-                return { rgn }
+                return { region }
             end,
             multiApply = {
                 elementKeys = keyList,
                 elementLabels = labels,
                 getCurrentKey = function()
-                    return PabBarKeyOf(conf, isBuff)
+                    return PabBarKeyOf(rowConf, isBuff)
                 end,
                 onApply = function(checkedKeys)
                     local byKey = {}
@@ -1841,34 +1841,34 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
     -- addonKey/getSizeKey mirror what BuildStyle hands AuraKit ("unitframes",
     -- sizeKey = the borderSize step), so the shown default is the drawn one.
     do
-        local tex = conf.borderTexture
-        if tex and tex ~= "" and tex ~= "solid" then
+        local texture = rowConf.borderTexture
+        if texture and texture ~= "" and texture ~= "solid" then
             local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                 addonKey = "unitframes",
                 trackWidth = 120,
                 getTex = function()
-                    return conf.borderTexture or "solid"
+                    return rowConf.borderTexture or "solid"
                 end,
                 getStep = function()
-                    return conf.borderSize or 1
+                    return rowConf.borderSize or 1
                 end,
                 getSizeKey = function()
-                    return conf.borderSize or 1
+                    return rowConf.borderSize or 1
                 end,
                 getPx = function()
-                    return conf.borderSizePx
+                    return rowConf.borderSizePx
                 end,
                 getX = function()
-                    return conf.borderTextureOffset
+                    return rowConf.borderTextureOffset
                 end,
                 setX = function(val)
-                    conf.borderTextureOffset = val
+                    rowConf.borderTextureOffset = val
                 end,
                 getY = function()
-                    return conf.borderTextureOffsetY
+                    return rowConf.borderTextureOffsetY
                 end,
                 setY = function(val)
-                    conf.borderTextureOffsetY = val
+                    rowConf.borderTextureOffsetY = val
                 end,
                 apply = apply,
             })
@@ -1891,7 +1891,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
         step = 1,
         trackWidth = 120,
         getValue = function()
-            return conf.iconsPerRow or (isBuff and 11 or 8)
+            return rowConf.iconsPerRow or (isBuff and 11 or 8)
         end,
         setValue = ConfFieldThen("iconsPerRow"),
     }, {
@@ -1906,36 +1906,36 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
     })
     sy = sy - hh
     do
-        local rgn = styleRow._rightRegion
+        local region = styleRow._rightRegion
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
-            rgn,
+            region,
             styleRow:GetFrameLevel() + 3,
             function()
-                return (conf.borderR or 0), (conf.borderG or 0), (conf.borderB or 0), (conf.borderA or 1)
+                return (rowConf.borderR or 0), (rowConf.borderG or 0), (rowConf.borderB or 0), (rowConf.borderA or 1)
             end,
             function(r, g, b, a)
-                conf.borderR, conf.borderG, conf.borderB, conf.borderA = r, g, b, a
+                rowConf.borderR, rowConf.borderG, rowConf.borderB, rowConf.borderA = r, g, b, a
                 apply()
             end,
             true,
             20
         )
-        colorSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-        rgn._lastInline = colorSwatch
+        colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+        region._lastInline = colorSwatch
         CludesUI.RegisterWidgetRefresh(updateSwatch)
     end
     do
-        local rgn = styleRow._rightRegion
+        local region = styleRow._rightRegion
         local keyList, labels = {}, {}
         for _, record in ipairs(PabAllBarEntries()) do
             keyList[#keyList + 1] = record.key
             labels[record.key] = record.label
         end
         local function CopyBorderTo(record)
-            record.cfg.borderSize = conf.borderSize
+            record.cfg.borderSize = rowConf.borderSize
             -- The exact size travels with its step, verbatim (string/false/nil);
             -- a target whose value was set is cleared with false, never nil.
-            local px = conf.borderSizePx
+            local px = rowConf.borderSizePx
             if px == nil and record.cfg.borderSizePx ~= nil then
                 px = false
             end
@@ -1949,23 +1949,23 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                 record.cfg.borderSize = BORDER_SIZE_NUM[BORDER_SIZE_DEFAULT_SHAPE]
             end
             record.cfg.borderR, record.cfg.borderG, record.cfg.borderB, record.cfg.borderA =
-                conf.borderR, conf.borderG, conf.borderB, conf.borderA
+                rowConf.borderR, rowConf.borderG, rowConf.borderB, rowConf.borderA
             PabApplyBarEntry(record)
         end
         CludesUI.BuildSyncIcon({
-            region = rgn,
+            region = region,
             tooltip = "Apply Border Size and Color to all Bars",
             onClick = function()
                 for _, record in ipairs(PabAllBarEntries()) do
-                    if record.cfg ~= conf then
+                    if record.cfg ~= rowConf then
                         CopyBorderTo(record)
                     end
                 end
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local size = conf.borderSize or 1
-                local r, g, b, a = conf.borderR or 0, conf.borderG or 0, conf.borderB or 0, conf.borderA or 1
+                local size = rowConf.borderSize or 1
+                local r, g, b, a = rowConf.borderR or 0, rowConf.borderG or 0, rowConf.borderB or 0, rowConf.borderA or 1
                 for _, record in ipairs(PabAllBarEntries()) do
                     local c = record.cfg
                     if
@@ -1974,7 +1974,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                         or (c.borderG or 0) ~= g
                         or (c.borderB or 0) ~= b
                         or (c.borderA or 1) ~= a
-                        or (c.borderSizePx or false) ~= (conf.borderSizePx or false)
+                        or (c.borderSizePx or false) ~= (rowConf.borderSizePx or false)
                     then
                         return false
                     end
@@ -1982,13 +1982,13 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                 return true
             end,
             flashTargets = function()
-                return { rgn }
+                return { region }
             end,
             multiApply = {
                 elementKeys = keyList,
                 elementLabels = labels,
                 getCurrentKey = function()
-                    return PabBarKeyOf(conf, isBuff)
+                    return PabBarKeyOf(rowConf, isBuff)
                 end,
                 onApply = function(checkedKeys)
                     local byKey = {}
@@ -2010,8 +2010,8 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
         -- Row Spacing lives here, not in Icons Per Row's cog -- it's spacing between
         -- rows, same family as Spacing (icon-to-icon gap), not a grid-size concern like
         -- Icons Per Row/ Max Rows/Max Total.
-        local rgn = rowRow._rightRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = rowRow._rightRegion
+        CludesUI.BuildInlineCog(region, {
             title = "Spacing",
             rows = {
                 -- nil = 12px default -- deliberately
@@ -2034,8 +2034,8 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
         -- branch: perRowCfg paired with a blank spacer, cog on
         -- gridRow._leftRegion -- i.e. directly on Icons Per Row's own
         -- region. Same trackWidth=120 slider + cog combo used there.
-        local rgn = rowRow._leftRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = rowRow._leftRegion
+        CludesUI.BuildInlineCog(region, {
             title = "Icons Per Row",
             rows = {
                 {
@@ -2045,7 +2045,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                     max = 10,
                     step = 1,
                     get = function()
-                        return conf.maxRows or (isBuff and 3 or 2)
+                        return rowConf.maxRows or (isBuff and 3 or 2)
                     end,
                     set = ConfFieldThen("maxRows"),
                 },
@@ -2056,7 +2056,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                     max = 40,
                     step = 1,
                     get = function()
-                        return conf.maxTotal or (isBuff and 32 or 16)
+                        return rowConf.maxTotal or (isBuff and 32 or 16)
                     end,
                     set = ConfFieldThen("maxTotal"),
                 },
@@ -2075,23 +2075,23 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
             values = SHAPE_VALUES,
             order = SHAPE_ORDER,
             itemDisabled = function(val)
-                return IsMaskShape(val) and (conf.borderTexture or "solid") ~= "solid"
+                return IsMaskShape(val) and (rowConf.borderTexture or "solid") ~= "solid"
             end,
             itemDisabledTooltip = function(val)
-                if IsMaskShape(val) and (conf.borderTexture or "solid") ~= "solid" then
+                if IsMaskShape(val) and (rowConf.borderTexture or "solid") ~= "solid" then
                     return "This option requires the Border Style to be set to Solid"
                 end
             end,
             getValue = ConfFieldOr("iconShape", "none"),
             setValue = function(val)
-                local wasShaped = IsMaskShape(conf.iconShape)
-                conf.iconShape = val
+                local wasShaped = IsMaskShape(rowConf.iconShape)
+                rowConf.iconShape = val
                 -- Entering shape mode with a now-disabled Border Size level selected:
                 -- snap to the shape default, same as Action Bars' own shape dropdown
                 -- resetting border thickness on every shape change.
-                local curKey = BORDER_SIZE_KEY[conf.borderSize or 1] or "thin"
+                local curKey = BORDER_SIZE_KEY[rowConf.borderSize or 1] or "thin"
                 if IsMaskShape(val) and BORDER_SIZE_SHAPE_DISABLED[curKey] then
-                    conf.borderSize = BORDER_SIZE_NUM[BORDER_SIZE_DEFAULT_SHAPE]
+                    rowConf.borderSize = BORDER_SIZE_NUM[BORDER_SIZE_DEFAULT_SHAPE]
                 end
                 apply()
                 -- The Border Size slots (here and in Icon Effects) hold a pixel
@@ -2113,21 +2113,21 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
             step = 0.5,
             trackWidth = 120,
             getValue = function()
-                return (conf.iconZoom or 0.055) * 100
+                return (rowConf.iconZoom or 0.055) * 100
             end,
             setValue = function(val)
-                conf.iconZoom = val / 100
+                rowConf.iconZoom = val / 100
                 apply()
             end,
         })
     )
     sy = sy - hh
     do
-        local rgn = shapeRow._leftRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = shapeRow._leftRegion
+        CludesUI.BuildInlineCog(region, {
             title = "Icon Shape",
             disabled = function()
-                return conf.iconShape ~= "cropped"
+                return rowConf.iconShape ~= "cropped"
             end,
             disabledTooltip = "This option requires Icon Shape to be set to Cropped",
             rows = {
@@ -2139,7 +2139,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                     step = 1,
                     tooltip = "How much is trimmed from the icon's top and bottom, as a percentage per side. 10% is the classic cropped look.",
                     get = function()
-                        return mod.PAB_CropPercent(conf)
+                        return mod.PAB_CropPercent(rowConf)
                     end,
                     set = ConfFieldThen("iconCropPercent"),
                 },
@@ -2155,10 +2155,10 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
         -- no shape border at those levels (and the dropdown disables them), so
         -- the sync snaps it to Strong exactly as a manual shape pick would.
         local function CopyShapeTo(record)
-            local shape = conf.iconShape
+            local shape = rowConf.iconShape
             record.cfg.iconShape = shape
             if shape == "cropped" then
-                record.cfg.iconCropPercent = mod.PAB_CropPercent(conf)
+                record.cfg.iconCropPercent = mod.PAB_CropPercent(rowConf)
             end
             if IsMaskShape(shape) then
                 record.cfg.borderTexture = "solid"
@@ -2175,25 +2175,25 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
             PabApplyBarEntry(record)
         end
         CludesUI.BuildSyncIcon({
-            region = rgn,
+            region = region,
             tooltip = "Apply Icon Shape to all Bars",
             onClick = function()
                 for _, record in ipairs(PabAllBarEntries()) do
-                    if record.cfg ~= conf then
+                    if record.cfg ~= rowConf then
                         CopyShapeTo(record)
                     end
                 end
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local shape = conf.iconShape or "none"
+                local shape = rowConf.iconShape or "none"
                 for _, record in ipairs(PabAllBarEntries()) do
                     if (record.cfg.iconShape or "none") ~= shape then
                         return false
                     end
                     if
                         shape == "cropped"
-                        and mod.PAB_CropPercent(record.cfg) ~= mod.PAB_CropPercent(conf)
+                        and mod.PAB_CropPercent(record.cfg) ~= mod.PAB_CropPercent(rowConf)
                     then
                         return false
                     end
@@ -2201,13 +2201,13 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                 return true
             end,
             flashTargets = function()
-                return { rgn }
+                return { region }
             end,
             multiApply = {
                 elementKeys = keyList,
                 elementLabels = labels,
                 getCurrentKey = function()
-                    return PabBarKeyOf(conf, isBuff)
+                    return PabBarKeyOf(rowConf, isBuff)
                 end,
                 onApply = function(checkedKeys)
                     local byKey = {}
@@ -2231,7 +2231,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
         type = "toggle",
         text = "Show Duration Swipe",
         getValue = function()
-            return conf.showSwipe ~= false
+            return rowConf.showSwipe ~= false
         end,
         setValue = ConfFieldThen("showSwipe"),
     }, {
@@ -2239,14 +2239,14 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
         text = "Show Tooltips",
         tooltip = "Show aura tooltips when hovering this bar's icons.",
         getValue = function()
-            return conf.showTooltips ~= false
+            return rowConf.showTooltips ~= false
         end,
         setValue = ConfFieldThen("showTooltips"),
     })
     sy = sy - hh
     do
-        local rgn = swipeRow._leftRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = swipeRow._leftRegion
+        CludesUI.BuildInlineCog(region, {
             title = "Duration Swipe",
             rows = {
                 -- Default on = the swipe UNCOVERS the icon as time runs out
@@ -2256,7 +2256,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                     type = "toggle",
                     label = "Reverse Swipe",
                     get = function()
-                        return conf.reverseSwipe ~= false
+                        return rowConf.reverseSwipe ~= false
                     end,
                     set = ConfFieldThen("reverseSwipe"),
                 },
@@ -2267,12 +2267,12 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
     -- Buff bars only: debuffs are never player-cancelable, so the row would
     -- be a dead switch there.
     if isBuff then
-        _, hh = W:DualRow(widget, sy, FontOutlineField(conf, apply), {
+        _, hh = W:DualRow(widget, sy, FontOutlineField(rowConf, apply), {
             type = "toggle",
             text = "Right-Click to Cancel",
             tooltip = "Right-clicking a buff icon cancels the buff. Turning this off makes the bar's icons click-through; tooltips still follow the Show Tooltips setting.",
             getValue = function()
-                return conf.rightClickCancel ~= false
+                return rowConf.rightClickCancel ~= false
             end,
             setValue = ConfFieldThen("rightClickCancel"),
         })
@@ -2298,17 +2298,17 @@ local DISPEL_ICON_POS_VALUES = {
 local DISPEL_ICON_POS_ORDER =
     { "none", "topleft", "top", "topright", "left", "center", "right", "bottomleft", "bottom", "bottomright" }
 
-local function BuildDispelColorFields(widget, fontFile, sy, conf, apply)
+local function BuildDispelColorFields(widget, fontFile, sy, rowConf, apply)
     -- Row accessors over conf: a key read (or its default) and written.
     local function ConfFieldThen(key)
-        return function(v)
-            conf[key] = v
+        return function(value)
+            rowConf[key] = value
             apply()
         end
     end
     local function ConfFieldOr(key, default)
         return function()
-            return conf[key] or default
+            return rowConf[key] or default
         end
     end
     local W = CludesUI.Widgets
@@ -2321,7 +2321,7 @@ local function BuildDispelColorFields(widget, fontFile, sy, conf, apply)
     sy = sy - hh
     do
         local function IconOn()
-            return (conf.dispelIconPosition or "none") ~= "none"
+            return (rowConf.dispelIconPosition or "none") ~= "none"
         end
         local row
         row, hh = W:DualRow(widget, sy, {
@@ -2332,14 +2332,14 @@ local function BuildDispelColorFields(widget, fontFile, sy, conf, apply)
             order = DISPEL_ICON_POS_ORDER,
             getValue = ConfFieldOr("dispelIconPosition", "none"),
             setValue = function(val)
-                conf.dispelIconPosition = val
+                rowConf.dispelIconPosition = val
                 apply()
                 CludesUI:RefreshPage()
             end,
-        }, FontOutlineField(conf, apply))
+        }, FontOutlineField(rowConf, apply))
         sy = sy - hh
-        local rgn = row._leftRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = row._leftRegion
+        CludesUI.BuildInlineCog(region, {
             disabled = function()
                 return not IconOn()
             end,
@@ -2386,18 +2386,18 @@ local function BuildDispelColorFields(widget, fontFile, sy, conf, apply)
     _, hh = W:SectionHeader(widget, "DISPEL COLORS", sy)
     sy = sy - hh
 
-    local function AddDispelSwatch(rgn, record)
-        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 3, function()
-            local c = conf[record.key]
+    local function AddDispelSwatch(region, record)
+        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 3, function()
+            local c = rowConf[record.key]
             if c then
                 return c.r or 1, c.g or 1, c.b or 1, 1
             end
             return record.fallback[1], record.fallback[2], record.fallback[3], 1
         end, function(r, g, b)
-            conf[record.key] = { r = r, g = g, b = b }
+            rowConf[record.key] = { r = r, g = g, b = b }
             apply()
         end, false, 18)
-        Pix.Point(colorSwatch, "RIGHT", rgn, "RIGHT", -20, 0)
+        Pix.Point(colorSwatch, "RIGHT", region, "RIGHT", -20, 0)
         CludesUI.RegisterWidgetRefresh(updateSwatch)
     end
     for idx = 1, #DISPEL_COLOR_ROWS, 2 do
@@ -2430,37 +2430,37 @@ end
 --  category -- see PAB_ApplyDmFx/PAB_FxBlockFor there.
 -------------------------------------------------------------------------------
 
-local function BuildFxEffects(widget, sy, conf, apply)
+local function BuildFxEffects(widget, sy, rowConf, apply)
     -- Real AuraButtons forbid driver-ticked glows (Blizzard_AuraButton.xml:
     -- ForbiddenAspects baked into the template), so the icon glow is an engine
     -- host: the shared controls offer only what renders there.
     return CludesUI.BuildIconEffects(widget, sy, {
-        entries = conf.fxList or {},
+        entries = rowConf.fxList or {},
         apply = apply,
         sizeMax = 400,
         fontKey = "unitFrames",
-        filters = function(rgn, e)
-            if rgn._control then
-                rgn._control:Hide()
+        filters = function(region, e)
+            if region._control then
+                region._control:Hide()
             end
             local itemList = mod.PAB_FxClassItems and mod.PAB_FxClassItems() or {}
-            local cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
-                rgn,
+            local checkDrop, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
+                region,
                 190,
-                rgn:GetFrameLevel() + 2,
+                region:GetFrameLevel() + 2,
                 itemList,
-                function(k)
-                    return e.filters[k] == true
+                function(keyName)
+                    return e.filters[keyName] == true
                 end,
-                function(k, val)
-                    e.filters[k] = val or nil
+                function(keyName, val)
+                    e.filters[keyName] = val or nil
                     apply()
                     CludesUI:RefreshPage()
                 end
             )
-            CludesUI.PanelPP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-            rgn._control = cbDD
-            rgn._lastInline = nil
+            CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+            region._control = checkDrop
+            region._lastInline = nil
             if cbRefresh then
                 CludesUI.RegisterWidgetRefresh(cbRefresh)
             end
@@ -2470,14 +2470,14 @@ local function BuildFxEffects(widget, sy, conf, apply)
         -- Shape keeps the None..Strong dropdown (the shape ring is on/off); the
         -- Icon Shape setter rebuilds the page on a none/custom crossing.
         borderCfg = function(e)
-            if IsMaskShape(conf.iconShape) then
+            if IsMaskShape(rowConf.iconShape) then
                 return {
                     type = "dropdown",
                     text = "Border",
                     values = BORDER_SIZE_VALUES,
                     order = BORDER_SIZE_LEVELS,
                     itemDisabled = function(val)
-                        return IsMaskShape(conf.iconShape) and BORDER_SIZE_SHAPE_DISABLED[val] or false
+                        return IsMaskShape(rowConf.iconShape) and BORDER_SIZE_SHAPE_DISABLED[val] or false
                     end,
                     itemDisabledTooltip = function()
                         return "This option requires a non-custom shape to be selected"
@@ -2493,8 +2493,8 @@ local function BuildFxEffects(widget, sy, conf, apply)
             end
         end,
         addEntry = function()
-            conf.fxList = conf.fxList or {}
-            conf.fxList[#conf.fxList + 1] = { filters = {} }
+            rowConf.fxList = rowConf.fxList or {}
+            rowConf.fxList[#rowConf.fxList + 1] = { filters = {} }
         end,
     })
 end
@@ -2602,14 +2602,14 @@ local function BuildBarTitle(widget, fontFile, name, subtitle, posY)
         title:SetTextColor(0.30, 0.79, 0.94)
     end
     title:SetText(name)
-    local sub = widget:CreateFontString(nil, "OVERLAY")
-    sub:SetFont(fontFile, 13, "")
-    sub:SetPoint("LEFT", title, "RIGHT", 4, 0)
-    sub:SetPoint("RIGHT", widget, "RIGHT", -pad, 0)
-    sub:SetJustifyH("LEFT")
-    sub:SetWordWrap(false)
-    sub:SetTextColor(0.75, 0.75, 0.75, 0.65)
-    sub:SetText("(" .. (subtitle or "") .. ")")
+    local subMenu = widget:CreateFontString(nil, "OVERLAY")
+    subMenu:SetFont(fontFile, 13, "")
+    subMenu:SetPoint("LEFT", title, "RIGHT", 4, 0)
+    subMenu:SetPoint("RIGHT", widget, "RIGHT", -pad, 0)
+    subMenu:SetJustifyH("LEFT")
+    subMenu:SetWordWrap(false)
+    subMenu:SetTextColor(0.75, 0.75, 0.75, 0.65)
+    subMenu:SetText("(" .. (subtitle or "") .. ")")
     return posY - 11 - 18 - 5
 end
 
@@ -2629,7 +2629,7 @@ local function BuildDefaultBarDetail(widget, fontFile, isBuff)
     if mod.PAB_EnsureBarEnable then
         mod.PAB_EnsureBarEnable(s)
     end
-    local conf = isBuff and mod.PAB_DefaultBuffsCfg(s) or mod.PAB_DefaultDebuffsCfg(s)
+    local rowConf = isBuff and mod.PAB_DefaultBuffsCfg(s) or mod.PAB_DefaultDebuffsCfg(s)
 
     local function ApplyBar()
         if mod.PAB_Restyle then
@@ -2643,28 +2643,28 @@ local function BuildDefaultBarDetail(widget, fontFile, isBuff)
     local scrollTop = 0
     if mod.PAB_BuildPreviewBox then
         scrollTop =
-            mod.PAB_BuildPreviewBox(widget, fontFile, 0, isBuff and "buff" or "debuff", "default", conf)
+            mod.PAB_BuildPreviewBox(widget, fontFile, 0, isBuff and "buff" or "debuff", "default", rowConf)
     end
     local body = WrapCompensatedBody(widget, scrollTop)
     local sy = 0
     sy = BuildBarTitle(
         body,
         fontFile,
-        isBuff and DefaultBuffBarName(conf) or L("Debuffs"),
+        isBuff and DefaultBuffBarName(rowConf) or L("Debuffs"),
         L("Built-in bar. Cannot be deleted"),
         sy
     )
 
     if isBuff then
-        sy = BuildAssignedBuffsFields(body, fontFile, sy, conf, ApplyBar, true)
+        sy = BuildAssignedBuffsFields(body, fontFile, sy, rowConf, ApplyBar, true)
     else
-        sy = BuildAssignedDebuffsFields(body, fontFile, sy, conf, ApplyBar)
+        sy = BuildAssignedDebuffsFields(body, fontFile, sy, rowConf, ApplyBar)
     end
-    sy = BuildCoreFields(body, fontFile, sy, conf, ApplyBar, isBuff)
-    sy = BuildDisplayFields(body, fontFile, sy, conf, ApplyBar, isBuff)
+    sy = BuildCoreFields(body, fontFile, sy, rowConf, ApplyBar, isBuff)
+    sy = BuildDisplayFields(body, fontFile, sy, rowConf, ApplyBar, isBuff)
     if not isBuff then
-        sy = BuildDispelColorFields(body, fontFile, sy, conf, ApplyBar)
-        sy = BuildFxEffects(body, sy, conf, ApplyBar)
+        sy = BuildDispelColorFields(body, fontFile, sy, rowConf, ApplyBar)
+        sy = BuildFxEffects(body, sy, rowConf, ApplyBar)
     end
     FinalizeCompensatedBody(body, sy)
 end
@@ -2869,7 +2869,7 @@ function mod.PABMP_ShowFilterEditor()
 
     -- One editor for the session: every open and every Rebuild() dresses the
     -- same dimmer again, and the frames below it come back from the pool.
-    local dimmer, dialog =
+    local shade, dialog =
         CludesUI.BuildFilterEditorShell(mod, "_pabFilterEditor", "pabFilterEditor", POPUP_W, POPUP_H)
 
     if pabFilterSel then
@@ -3439,14 +3439,14 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
     -- The rows' pill and knob, drawn texel to pixel as the settings toggle's
     -- are (CludesUI.MakePixelLayer): a stadium and a circle sized for the
     -- layer's scale, the knob one pad in from the side its state sits on.
-    local function OptionPillFit(L, k)
-        local wid, hgt = L.parent:GetSize()
-        local hp, wp = math.floor(hgt * k + 0.5), math.floor(wid * k + 0.5)
+    local function OptionPillFit(L, keyName)
+        local wid, height = L.parent:GetSize()
+        local hp, wp = math.floor(height * keyName + 0.5), math.floor(wid * keyName + 0.5)
         if hp == L.hp and wp == L.wp then
             return
         end
         L.hp, L.wp = hp, wp
-        local pad = math.max(1, math.floor(2 * k + 0.5))
+        local pad = math.max(1, math.floor(2 * keyName + 0.5))
         local d = math.max(2, hp - 2 * pad)
         -- Square, as the settings toggle is (CludesUI_Widgets.lua PX).
         L.track:SetColorTexture(1, 1, 1, 1)
@@ -4062,11 +4062,11 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
         title:SetPoint("TOPLEFT", detail, "TOPLEFT", 25, -25)
         title:SetTextColor(0.55, 0.72, 1)
         title:SetText(pabInhBar.name or (pabInhSel.kind == "buff" and L("Buff Bar") or L("Debuff Bar")))
-        local sub = detail:CreateFontString(nil, "OVERLAY")
-        sub:SetFont(fontFile, 13, "")
-        sub:SetPoint("LEFT", title, "RIGHT", 6, 0)
-        sub:SetTextColor(0.75, 0.75, 0.75, 0.65)
-        sub:SetText("(" .. CludesUI.Lf("Inherited from %1$s", gname) .. ")")
+        local subMenu = detail:CreateFontString(nil, "OVERLAY")
+        subMenu:SetFont(fontFile, 13, "")
+        subMenu:SetPoint("LEFT", title, "RIGHT", 6, 0)
+        subMenu:SetTextColor(0.75, 0.75, 0.75, 0.65)
+        subMenu:SetText("(" .. CludesUI.Lf("Inherited from %1$s", gname) .. ")")
         local details = detail:CreateFontString(nil, "OVERLAY")
         details:SetFont(fontFile, 12, "")
         details:SetPoint("TOPLEFT", detail, "TOPLEFT", 25, -58)

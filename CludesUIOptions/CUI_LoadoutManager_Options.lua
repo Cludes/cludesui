@@ -153,8 +153,8 @@ CludesUI.AtOptionsLogin(function()
 
     local function GearEntries()
         local entries, sig = {}, {}
-        for k in pairs(gearIcons) do
-            gearIcons[k] = nil
+        for keyName in pairs(gearIcons) do
+            gearIcons[keyName] = nil
         end
         for _, set in ipairs(mod.ListEquipmentSets()) do
             entries[#entries + 1] = { key = set.name, text = set.name }
@@ -177,9 +177,9 @@ CludesUI.AtOptionsLogin(function()
     -- Menu options (_menuOpts) and the no-localize flag (_noLoc) ride along
     -- in the values table and survive a refill; everything else is replaced.
     local function FillValues(values, sequence, noneText, entries)
-        for k in pairs(values) do
-            if k ~= "_menuOpts" and k ~= "_noLoc" then
-                values[k] = nil
+        for keyName in pairs(values) do
+            if keyName ~= "_menuOpts" and keyName ~= "_noLoc" then
+                values[keyName] = nil
             end
         end
         for idx = #sequence, 1, -1 do
@@ -209,7 +209,7 @@ CludesUI.AtOptionsLogin(function()
         end
         local entries, sig = entriesFn()
         FillValues(values, sequence, noneText, entries)
-        local ddBtn
+        local dropdownBtn
         local function Update()
             local e, s = entriesFn()
             if s == sig then
@@ -217,12 +217,12 @@ CludesUI.AtOptionsLogin(function()
             end
             sig = s
             FillValues(values, sequence, noneText, e)
-            if ddBtn and ddBtn._invalidateMenu then
-                ddBtn._invalidateMenu()
+            if dropdownBtn and dropdownBtn._invalidateMenu then
+                dropdownBtn._invalidateMenu()
             end
         end
         local function Attach(button)
-            ddBtn = button
+            dropdownBtn = button
         end
         return values, sequence, Update, Attach
     end
@@ -413,8 +413,8 @@ CludesUI.AtOptionsLogin(function()
     local function BuildPage(page, hostFrame, yOffset)
         local W = CludesUI.Widgets
         local Pix = CludesUI.PanelPP
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
 
         hostFrame._showRowDivider = true
         CludesUI:ClearContentHeader()
@@ -426,13 +426,13 @@ CludesUI.AtOptionsLogin(function()
         --  General: the master switch, what swaps on its own (timing on the
         --  cog), and the two ways a swap is announced
         -----------------------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, "GENERAL", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "GENERAL", cursorY)
+        cursorY = cursorY - height
 
         local swapRow
-        swapRow, hgt = W:DualRow(
+        swapRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             {
                 type = "toggle",
                 text = "Enable Loadout Manager",
@@ -461,17 +461,17 @@ CludesUI.AtOptionsLogin(function()
                 disabledTooltip = "Loadout Manager",
             }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if not CludesUI._prebuilding then
-            local rgn = swapRow._rightRegion
-            if rgn._control then
-                rgn._control:Hide()
+            local region = swapRow._rightRegion
+            if region._control then
+                region._control:Hide()
             end
-            local cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
-                rgn,
+            local checkDrop, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
+                region,
                 170,
-                rgn:GetFrameLevel() + 2,
+                region:GetFrameLevel() + 2,
                 {
                     { key = "gear", label = "Gear Sets", tooltip = "Equip the assigned gear set." },
                     {
@@ -480,11 +480,11 @@ CludesUI.AtOptionsLogin(function()
                         tooltip = "Load the assigned talent loadout.",
                     },
                 },
-                function(k)
-                    return DB()[k == "gear" and "gearEnabled" or "talentEnabled"] and true or false
+                function(keyName)
+                    return DB()[keyName == "gear" and "gearEnabled" or "talentEnabled"] and true or false
                 end,
-                function(k, val)
-                    mod.SetChannelEnabled(k, val)
+                function(keyName, val)
+                    mod.SetChannelEnabled(keyName, val)
                 end,
                 nil,
                 nil,
@@ -496,12 +496,12 @@ CludesUI.AtOptionsLogin(function()
                     disabledTooltip = "Loadout Manager",
                 }
             )
-            Pix.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-            rgn._control = cbDD
-            rgn._lastInline = nil
+            Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+            region._control = checkDrop
+            region._lastInline = nil
             CludesUI.RegisterWidgetRefresh(cbRefresh)
 
-            CludesUI.BuildInlineCog(rgn, {
+            CludesUI.BuildInlineCog(region, {
                 title = "Auto-Swap",
                 rows = {
                     {
@@ -532,7 +532,7 @@ CludesUI.AtOptionsLogin(function()
             })
         end
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Talent-Change Warning",
             tooltip = "Show DON'T MOVE while talents change.",
@@ -552,16 +552,16 @@ CludesUI.AtOptionsLogin(function()
                 DB().announce = val and true or false
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -----------------------------------------------------------------------
         --  Current location: where you are and what applies here (live)
         -----------------------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, "CURRENT LOCATION", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "CURRENT LOCATION", cursorY)
+        cursorY = cursorY - height
 
         local whereRow
-        whereRow, hgt = W:DualRow(hostFrame, posY, {
+        whereRow, height = W:DualRow(hostFrame, cursorY, {
             type = "labeledButton",
             text = "Location",
             buttonText = "Check Now",
@@ -576,7 +576,7 @@ CludesUI.AtOptionsLogin(function()
             text = "Specialization",
             tooltip = "Spec assignments win over All Specs.",
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         LiveLabel(whereRow._leftRegion, CludesUI.L("Location"), LocationText)
         LiveLabel(whereRow._rightRegion, CludesUI.L("Specialization"), function()
             local specID = mod.GetCurrentSpecID()
@@ -584,13 +584,13 @@ CludesUI.AtOptionsLogin(function()
         end)
 
         local hereRow
-        hereRow, hgt = W:DualRow(
+        hereRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             { type = "label", text = "Gear Here", tooltip = "The gear set that applies here." },
             { type = "label", text = "Talents Here", tooltip = "The talent loadout that applies here." }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
         LiveLabel(hereRow._leftRegion, CludesUI.L("Gear Here"), function()
             local gear, level, key, scope = mod.ResolveGear(mod.GetContext())
             if not gear then
@@ -610,8 +610,8 @@ CludesUI.AtOptionsLogin(function()
         -----------------------------------------------------------------------
         --  Selected loadout: what the Save buttons assign, and to which layer
         -----------------------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, "SELECTED LOADOUT", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "SELECTED LOADOUT", cursorY)
+        cursorY = cursorY - height
 
         local gearValues, gearOrder, gearUpdate, gearAttach =
             LivePicker(DIM .. CludesUI.L("No gear set") .. "|r", GearEntries, {
@@ -675,7 +675,7 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local pickRow
-        pickRow, hgt = W:DualRow(hostFrame, posY, {
+        pickRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Gear Set",
             values = gearValues,
@@ -704,7 +704,7 @@ CludesUI.AtOptionsLogin(function()
             disabledTooltip = TALENT_SCOPE,
             rawTooltip = true,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         gearAttach(pickRow._leftRegion._control)
         talentAttach(pickRow._rightRegion._control)
 
@@ -724,7 +724,7 @@ CludesUI.AtOptionsLogin(function()
         local scopeRow
         do
             local values, sequence = ScopeValues()
-            scopeRow, hgt = W:DualRow(hostFrame, posY, {
+            scopeRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = "Assign For",
                 values = values,
@@ -749,7 +749,7 @@ CludesUI.AtOptionsLogin(function()
                 disabledTooltip = PICK_FIRST,
                 rawTooltip = true,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end
 
         -- Copy cog: one button per other layer. CopyScopeFrom replaces this
@@ -808,8 +808,8 @@ CludesUI.AtOptionsLogin(function()
         --  Instances: this instance's two slots, each with Save and Clear,
         --  then every saved instance, which can be cleared from anywhere
         -----------------------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, "INSTANCES", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "INSTANCES", cursorY)
+        cursorY = cursorY - height
 
         -- The Save and Clear tips name the scope the buttons write to.
         local saveTip = CludesUI.Lf("Save the picked loadout here for %1$s.", scopeName)
@@ -817,13 +817,13 @@ CludesUI.AtOptionsLogin(function()
         local nothingTip = CludesUI.Lf("Nothing saved here for %1$s.", scopeName)
 
         local instRow
-        instRow, hgt = W:DualRow(
+        instRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             { type = "label", text = "Any Difficulty", tooltip = "This instance on any difficulty." },
             { type = "label", text = "This Difficulty", tooltip = "This instance on this difficulty only." }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         for _, perDiff in ipairs({ false, true }) do
             local regionFrame = perDiff and instRow._rightRegion or instRow._leftRegion
@@ -889,7 +889,7 @@ CludesUI.AtOptionsLogin(function()
         CludesUI.RegisterWidgetRefresh(savedUpdate)
 
         local savedRow
-        savedRow, hgt = W:DualRow(hostFrame, posY, {
+        savedRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Saved Instances",
             values = savedValues,
@@ -910,7 +910,7 @@ CludesUI.AtOptionsLogin(function()
             text = "Assignment",
             tooltip = "What the picked instance holds.",
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         savedAttach(savedRow._leftRegion._control)
 
         InlineButton(
@@ -945,8 +945,8 @@ CludesUI.AtOptionsLogin(function()
         -----------------------------------------------------------------------
         --  Content type defaults: two per row, each with Save and Clear
         -----------------------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, "CONTENT TYPE DEFAULTS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "CONTENT TYPE DEFAULTS", cursorY)
+        cursorY = cursorY - height
 
         local function TypeHalf(details)
             if not details then
@@ -1000,19 +1000,19 @@ CludesUI.AtOptionsLogin(function()
         for idx = 1, #TYPE_LAYOUT, 2 do
             local leftX, right = TYPE_INFO[TYPE_LAYOUT[idx]], TYPE_INFO[TYPE_LAYOUT[idx + 1]]
             local row
-            row, hgt = W:DualRow(hostFrame, posY, TypeHalf(leftX), TypeHalf(right))
-            posY = posY - hgt
+            row, height = W:DualRow(hostFrame, cursorY, TypeHalf(leftX), TypeHalf(right))
+            cursorY = cursorY - height
             TypeControls(row._leftRegion, leftX)
             if right then
                 TypeControls(row._rightRegion, right)
             end
         end
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
 
-        hostFrame:SetHeight(math.abs(posY - yOffset))
-        return math.abs(posY)
+        hostFrame:SetHeight(math.abs(cursorY - yOffset))
+        return math.abs(cursorY)
     end
 
     ---------------------------------------------------------------------------

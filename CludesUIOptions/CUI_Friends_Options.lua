@@ -62,11 +62,11 @@ local function Bind(key, after, default, onByDefault)
         if onByDefault then
             return s[key] ~= false
         end
-        local v = s[key]
-        if v == nil then
+        local value = s[key]
+        if value == nil then
             return default
         end
-        return v
+        return value
     end, function(value)
         local s = Settings()
         if not s then
@@ -95,11 +95,11 @@ local function BuildPage(_, host, yOffset)
 
     -- Rows that only drive our own window are gated off under a stock style.
     local BS = CludesUI.BlizzStyle
-    local function Gate(conf)
+    local function Gate(rowConf)
         if BS then
-            BS.Gate("friends", conf)
+            BS.Gate("friends", rowConf)
         end
-        return conf
+        return rowConf
     end
     -- The border rows drive this module's flat look only; with the Window
     -- Skins "Friends List" card the skin draws the frame.

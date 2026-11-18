@@ -18,11 +18,11 @@ local EDM = mod.EDM
 local function DMBlizzArt()
     return CludesUI.BlizzStyle.Active("damagemeters") == "blizzard"
 end
-local function DMBlizzGate(conf, keepRow)
+local function DMBlizzGate(rowConf, keepRow)
     if DMBlizzArt() then
-        return CludesUI.BlizzStyle.Gate("damagemeters", conf, keepRow)
+        return CludesUI.BlizzStyle.Gate("damagemeters", rowConf, keepRow)
     end
-    return conf
+    return rowConf
 end
 
 -- Page reuse: the frames this file builds go through the options frame pool
@@ -48,8 +48,8 @@ CludesUI.AtOptionsLogin(function()
         end
         return {}
     end
-    local function Cfg(k)
-        return DB()[k]
+    local function Cfg(keyName)
+        return DB()[keyName]
     end
     -- Row getters over Cfg: a key's value (or a default), or whether it is true.
     local function CfgOr(key, default)
@@ -62,13 +62,13 @@ CludesUI.AtOptionsLogin(function()
             return Cfg(key) == true
         end
     end
-    local function Set(k, val)
-        DB()[k] = val
+    local function Set(keyName, val)
+        DB()[keyName] = val
     end
     -- Row setters over Set: the key written with the row's value.
     local function SetRow(key)
-        return function(v)
-            Set(key, v)
+        return function(value)
+            Set(key, value)
         end
     end
 
@@ -140,8 +140,8 @@ CludesUI.AtOptionsLogin(function()
     local function BuildPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
         local Pix = CludesUI.PP
-        local posY = yOffset
-        local hgt, heading
+        local cursorY = yOffset
+        local height, heading
 
         if CludesUI.ClearContentHeader then
             CludesUI:ClearContentHeader()
@@ -175,22 +175,22 @@ CludesUI.AtOptionsLogin(function()
         end
 
         -- ── DISPLAY ─────────────────────────────────────────────────────
-        heading, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
-        posY = posY - hgt
+        heading, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
+        cursorY = cursorY - height
         -- Every setting here is shared by all the windows, so the one button
         -- selects window 1, which always exists (its header button is New Window).
         CludesUI.BuildSectionUnlockJump(heading, { key = "EDM_Win1" })
-        posY = CludesUI.BlizzStyle.Note(hostFrame, posY, "damagemeters")
+        cursorY = CludesUI.BlizzStyle.Note(hostFrame, cursorY, "damagemeters")
 
         -- Visibility (one control)
         local function VisApply()
             CludesUI.RequestVisibilityUpdate()
         end
         local visRow
-        visRow, hgt = CludesUI.BuildVisibilityRow(
+        visRow, height = CludesUI.BuildVisibilityRow(
             W,
             hostFrame,
-            posY,
+            cursorY,
             {
                 getStore = DB,
                 legacyKey = "visibility",
@@ -267,14 +267,14 @@ CludesUI.AtOptionsLogin(function()
             })
             unsafeCogShow = _unsafeCogShow
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Window Border Style (+ directions submenu) | Border Size (+ color)
         local windowTexValues, windowTexOrder = CludesUI.GetBorderTextureDropdown()
         local windowBorderRow
-        windowBorderRow, hgt = W:DualRow(
+        windowBorderRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.BlizzStyle.Gate("damagemeters", {
                 type = "dropdown",
                 text = "Border Style",
@@ -358,7 +358,7 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         if not CludesUI._prebuilding then
-            local region, ctrl = windowBorderRow._rightRegion, windowBorderRow._rightRegion._control
+            local region, control = windowBorderRow._rightRegion, windowBorderRow._rightRegion._control
             local colorSwatch, refreshSwatch = CludesUI.BuildColorSwatch(
                 region,
                 windowBorderRow:GetFrameLevel() + 3,
@@ -373,11 +373,11 @@ CludesUI.AtOptionsLogin(function()
                 true,
                 20
             )
-            Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            Pix.Point(colorSwatch, "RIGHT", control, "LEFT", -8, 0)
             CludesUI.RegisterWidgetRefresh(refreshSwatch)
             CludesUI.BlizzStyle.BlockInline("damagemeters", colorSwatch)
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Width Offset | Height Offset: only while a textured style is selected
         -- (a solid border has no outward offsets). Built during prebuild too so
         -- the y advance is identical whenever it is present. The window's offsets
@@ -415,13 +415,13 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     apply = ApplyWindowBrd,
                 })
-                _, hgt = W:DualRow(
+                _, height = W:DualRow(
                     hostFrame,
-                    posY,
+                    cursorY,
                     CludesUI.BlizzStyle.Gate("damagemeters", ocfgL),
                     CludesUI.BlizzStyle.Gate("damagemeters", ocfgR)
                 )
-                posY = posY - hgt
+                cursorY = cursorY - height
             end
         end
 
@@ -459,7 +459,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
             }
         local bgRow
-        bgRow, hgt = W:DualRow(hostFrame, posY, fvBorderCfg or CludesUI.BlizzStyle.Gate("damagemeters", {
+        bgRow, height = W:DualRow(hostFrame, cursorY, fvBorderCfg or CludesUI.BlizzStyle.Gate("damagemeters", {
             type = "dropdown",
             text = "Background Texture",
             values = dmTexValues,
@@ -486,7 +486,7 @@ CludesUI.AtOptionsLogin(function()
         -- Inline color swatch on Background Opacity
         do
             local region = bgRow._rightRegion
-            local ctrl = region._control
+            local control = region._control
             local bgSwatch, bgSwatchRefresh = CludesUI.BuildColorSwatch(
                 region,
                 bgRow:GetFrameLevel() + 3,
@@ -504,7 +504,7 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(bgSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            Pix.Point(bgSwatch, "RIGHT", control, "LEFT", -8, 0)
             CludesUI.RegisterWidgetRefresh(function()
                 bgSwatchRefresh()
             end)
@@ -512,11 +512,11 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI.BlizzStyle.BlockInline("damagemeters", bgSwatch)
             end
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Always Show Player | Reset Data Keybind
         local rrRow
-        rrRow, hgt = W:DualRow(hostFrame, posY, {
+        rrRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Always Show Player",
             tooltip = "This will pin your bar to the window when it is not within the visible area",
@@ -600,15 +600,15 @@ CludesUI.AtOptionsLogin(function()
                 anchorTo = kbBtn,
             })
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- ── HEADER ──────────────────────────────────────────────────────
-        _, hgt = W:SectionHeader(hostFrame, "HEADER", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "HEADER", cursorY)
+        cursorY = cursorY - height
 
         -- Row 1: Header Height | Opacity (+ inline bg color swatch)
         local hdrRow1
-        hdrRow1, hgt = W:DualRow(hostFrame, posY, {
+        hdrRow1, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Header Height",
             min = 14,
@@ -635,7 +635,7 @@ CludesUI.AtOptionsLogin(function()
         -- Inline color swatch on Opacity
         if not CludesUI._prebuilding then
             local region = hdrRow1._rightRegion
-            local ctrl = region._control
+            local control = region._control
             local hdrSwatch, hdrSwatchRefresh = CludesUI.BuildColorSwatch(
                 region,
                 hdrRow1:GetFrameLevel() + 3,
@@ -653,19 +653,19 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(hdrSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            Pix.Point(hdrSwatch, "RIGHT", control, "LEFT", -8, 0)
             CludesUI.RegisterWidgetRefresh(function()
                 hdrSwatchRefresh()
             end)
             CludesUI.BlizzStyle.BlockInline("damagemeters", hdrSwatch)
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Row 2: Header Bottom Border (+ inline swatch) | Icon Size (+ inline dual swatches)
         local hdrBorderRow
-        hdrBorderRow, hgt = W:DualRow(
+        hdrBorderRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             -- Solid-only: a 0-4 px slider view over the same numeric key (no companion).
             CludesUI.BlizzStyle.Gate("damagemeters", {
                 type = "slider",
@@ -725,7 +725,7 @@ CludesUI.AtOptionsLogin(function()
             )
         end
         if not CludesUI._prebuilding then
-            local region, ctrl = hdrBorderRow._leftRegion, hdrBorderRow._leftRegion._control
+            local region, control = hdrBorderRow._leftRegion, hdrBorderRow._leftRegion._control
             local colorSwatch, refreshSwatch = CludesUI.BuildColorSwatch(
                 region,
                 hdrBorderRow:GetFrameLevel() + 3,
@@ -740,7 +740,7 @@ CludesUI.AtOptionsLogin(function()
                 true,
                 20
             )
-            Pix.Point(colorSwatch, "RIGHT", region._lastInline or ctrl, "LEFT", -8, 0)
+            Pix.Point(colorSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
             CludesUI.RegisterWidgetRefresh(refreshSwatch)
             CludesUI.BlizzStyle.BlockInline("damagemeters", colorSwatch)
             region._lastInline = colorSwatch
@@ -748,7 +748,7 @@ CludesUI.AtOptionsLogin(function()
         -- Inline dual swatches on Icon Size: right = Custom, left = Accent
         if not CludesUI._prebuilding then
             local region = hdrBorderRow._rightRegion
-            local ctrl = region._control
+            local control = region._control
 
             -- Inline cog: icon visibility
             CludesUI.BuildInlineCog(region, {
@@ -787,7 +787,7 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(customSwatch, "RIGHT", region._lastInline or ctrl, "LEFT", -8, 0)
+            Pix.Point(customSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
             local origIconClick = customSwatch:GetScript("OnClick")
             customSwatch:SetScript("OnClick", function(self, ...)
                 if Cfg("iconColorUseAccent") then
@@ -856,11 +856,11 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI.BlizzStyle.BlockInline("damagemeters", accentSwatch)
             end
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Row 3: Top Text Size (+ inline dual swatches)
         local hdrRow2
-        hdrRow2, hgt = W:DualRow(hostFrame, posY, {
+        hdrRow2, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Text Size",
             min = 8,
@@ -875,7 +875,7 @@ CludesUI.AtOptionsLogin(function()
         -- Inline dual swatches on Text Size: right = Custom, left = Accent
         if not CludesUI._prebuilding then
             local region = hdrRow2._leftRegion
-            local ctrl = region._control
+            local control = region._control
 
             -- Inline cog: header text X/Y offset
             CludesUI.BuildInlineCog(region, {
@@ -927,7 +927,7 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(customSwatch, "RIGHT", region._lastInline or ctrl, "LEFT", -8, 0)
+            Pix.Point(customSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
             local origHdrTextClick = customSwatch:GetScript("OnClick")
             customSwatch:SetScript("OnClick", function(self, ...)
                 if Cfg("hdrTextUseAccent") ~= false then
@@ -975,16 +975,16 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.RegisterWidgetRefresh(refreshHdrText)
             refreshHdrText()
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- ── BAR DESIGN ──────────────────────────────────────────────────
-        _, hgt = W:SectionHeader(hostFrame, "BARS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "BARS", cursorY)
+        cursorY = cursorY - height
 
         -- Bar Texture | Bar Height
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             DMBlizzGate({
                 type = "dropdown",
                 text = "Bar Texture",
@@ -1012,10 +1012,10 @@ CludesUI.AtOptionsLogin(function()
                 end,
             }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Bar Color | Bar Fill Opacity
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "multiSwatch",
             text = "Color",
             swatches = {
@@ -1023,9 +1023,9 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Class Color",
                     hasAlpha = false,
                     getValue = function()
-                        local cc = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
-                        if cc then
-                            return cc.r, cc.g, cc.b
+                        local classColor = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
+                        if classColor then
+                            return classColor.r, classColor.g, classColor.b
                         end
                         return 0.96, 0.55, 0.73
                     end,
@@ -1108,10 +1108,10 @@ CludesUI.AtOptionsLogin(function()
                 Refresh()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Bar Spacing | Icon Style
-        local iconRow, hgt = W:DualRow(hostFrame, posY, {
+        local iconRow, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             pixel = true,
             text = "Spacing",
@@ -1136,7 +1136,7 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI:RefreshPage()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Icon crop and the optional seam use the existing Icon Style cog.
         if not CludesUI._prebuilding then
@@ -1200,9 +1200,9 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         local bsRow
-        bsRow, hgt = W:DualRow(
+        bsRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             CludesUI.BlizzStyle.Gate("damagemeters", {
                 type = "dropdown",
                 text = "Border Style",
@@ -1271,7 +1271,7 @@ CludesUI.AtOptionsLogin(function()
                 })
             )
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Width Offset | Height Offset: only while a textured style is selected
         -- (a solid border has no outward offsets). Built during prebuild too so
         -- the y advance is identical whenever it is present.
@@ -1306,13 +1306,13 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     apply = ApplyBrd,
                 })
-                _, hgt = W:DualRow(
+                _, height = W:DualRow(
                     hostFrame,
-                    posY,
+                    cursorY,
                     CludesUI.BlizzStyle.Gate("damagemeters", ocfgL),
                     CludesUI.BlizzStyle.Gate("damagemeters", ocfgR)
                 )
-                posY = posY - hgt
+                cursorY = cursorY - height
             end
         end
         -- Inline cog for border options (left region)
@@ -1432,7 +1432,7 @@ CludesUI.AtOptionsLogin(function()
         -- Inline color swatch on Border Size (right region)
         if not CludesUI._prebuilding then
             local region = bsRow._rightRegion
-            local ctrl = region._control
+            local control = region._control
             local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
                 region,
                 bsRow:GetFrameLevel() + 3,
@@ -1449,7 +1449,7 @@ CludesUI.AtOptionsLogin(function()
                 true,
                 20
             )
-            Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            Pix.Point(colorSwatch, "RIGHT", control, "LEFT", -8, 0)
             CludesUI.RegisterWidgetRefresh(function()
                 updateSwatch()
             end)
@@ -1461,9 +1461,9 @@ CludesUI.AtOptionsLogin(function()
         -- block is skipped at build time; the toggle's set() rebuilds the page.
         if Cfg("customIconBorder") then
             local ibsRow
-            ibsRow, hgt = W:DualRow(
+            ibsRow, height = W:DualRow(
                 hostFrame,
-                posY,
+                cursorY,
                 {
                     type = "dropdown",
                     text = "Icon Border Style",
@@ -1527,7 +1527,7 @@ CludesUI.AtOptionsLogin(function()
                     apply = ApplyIconBrd,
                 })
             )
-            posY = posY - hgt
+            cursorY = cursorY - height
             -- Width Offset | Height Offset: only while a textured style is selected
             -- (a solid border has no outward offsets). Built during prebuild too so
             -- the y advance is identical whenever it is present.
@@ -1562,8 +1562,8 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         apply = ApplyIconBrd,
                     })
-                    _, hgt = W:DualRow(hostFrame, posY, ocfgL, ocfgR)
-                    posY = posY - hgt
+                    _, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
+                    cursorY = cursorY - height
                 end
             end
             -- Inline cog for border options (left region)
@@ -1632,7 +1632,7 @@ CludesUI.AtOptionsLogin(function()
             -- Inline color swatch on Border Size (right region)
             if not CludesUI._prebuilding then
                 local region = ibsRow._rightRegion
-                local ctrl = region._control
+                local control = region._control
                 local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
                     region,
                     ibsRow:GetFrameLevel() + 3,
@@ -1652,7 +1652,7 @@ CludesUI.AtOptionsLogin(function()
                     true,
                     20
                 )
-                Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+                Pix.Point(colorSwatch, "RIGHT", control, "LEFT", -8, 0)
                 CludesUI.RegisterWidgetRefresh(function()
                     updateSwatch()
                 end)
@@ -1661,9 +1661,9 @@ CludesUI.AtOptionsLogin(function()
 
         -- Show Breakdown on Hover (+ inline cog) | Background (opacity + swatch)
         local bdRow
-        bdRow, hgt = W:DualRow(
+        bdRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             {
                 type = "toggle",
                 text = "Show Breakdown on Hover",
@@ -1692,7 +1692,7 @@ CludesUI.AtOptionsLogin(function()
         -- that player's class color. Mirrors the Left/Right Text Size swatches.
         if not CludesUI._prebuilding then
             local region = bdRow._rightRegion
-            local ctrl = region._control
+            local control = region._control
             local barBgSwatch, barBgSwatchRefresh = CludesUI.BuildColorSwatch(
                 region,
                 bdRow:GetFrameLevel() + 3,
@@ -1712,7 +1712,7 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(barBgSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            Pix.Point(barBgSwatch, "RIGHT", control, "LEFT", -8, 0)
             local origClick = barBgSwatch:GetScript("OnClick")
             barBgSwatch:SetScript("OnClick", function(self, ...)
                 if Cfg("barBgUseClassColor") then
@@ -1832,15 +1832,15 @@ CludesUI.AtOptionsLogin(function()
                 anchorTo = region._control,
             })
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- ── BAR TEXT ────────────────────────────────────────────────────
-        _, hgt = W:SectionHeader(hostFrame, "BAR TEXT", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "BAR TEXT", cursorY)
+        cursorY = cursorY - height
 
         -- Number Format | Hide Rank Numbers
         local hnRow
-        hnRow, hgt = W:DualRow(hostFrame, posY, {
+        hnRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Number Format",
             values = { [0] = "DPS", [1] = "Damage", [2] = "Damage (DPS)", [3] = "Damage | DPS" },
@@ -1887,11 +1887,11 @@ CludesUI.AtOptionsLogin(function()
             end
             suffix:SetText("(1, 2, 3)")
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Left Text Size (+ inline custom/class swatches) | Right Text Size (+ inline custom/class swatches)
         local btRow
-        btRow, hgt = W:DualRow(hostFrame, posY, {
+        btRow, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Left Text Size",
             min = 8,
@@ -1923,7 +1923,7 @@ CludesUI.AtOptionsLogin(function()
         -- Left text inline swatches
         if not CludesUI._prebuilding then
             local region = btRow._leftRegion
-            local ctrl = region._control
+            local control = region._control
 
             -- Inline cog: left text X/Y offsets (live via ns.ApplyBarTextOffsets),
             -- headed by the Name Format (players' names; in combat other players'
@@ -1990,7 +1990,7 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(customSwatch, "RIGHT", region._lastInline or ctrl, "LEFT", -8, 0)
+            Pix.Point(customSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
             local origClick = customSwatch:GetScript("OnClick")
             customSwatch:SetScript("OnClick", function(self, ...)
                 if Cfg("leftTextUseClassColor") then
@@ -2045,7 +2045,7 @@ CludesUI.AtOptionsLogin(function()
         -- Right text inline swatches
         if not CludesUI._prebuilding then
             local region = btRow._rightRegion
-            local ctrl = region._control
+            local control = region._control
 
             -- Inline cog: right text X/Y offsets (live via ns.ApplyBarTextOffsets)
             CludesUI.BuildInlineCog(region, {
@@ -2102,7 +2102,7 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(customSwatch, "RIGHT", region._lastInline or ctrl, "LEFT", -8, 0)
+            Pix.Point(customSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
             local origClick = customSwatch:GetScript("OnClick")
             customSwatch:SetScript("OnClick", function(self, ...)
                 if Cfg("rightTextUseClassColor") or Cfg("rightTextUseThreatGradient") then
@@ -2178,7 +2178,7 @@ CludesUI.AtOptionsLogin(function()
                 },
             }, { size = 20 })
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Force English Number Units (K/M/B) | (spacer)
         -- Only where the effective locale actually has its own abbreviation
@@ -2186,7 +2186,7 @@ CludesUI.AtOptionsLogin(function()
         -- CludesUI_NumberFormat.lua): every other locale already gets
         -- K/M/B and the toggle would be a no-op, so the row is skipped for them.
         if CludesUI.LocaleHasNumberAbbreviation() then
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Force English Units (K/M/B)",
                 tooltip = "Always use K/M/B instead of localized units.",
@@ -2199,12 +2199,12 @@ CludesUI.AtOptionsLogin(function()
                     Refresh()
                 end,
             }, { type = "spacer" })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end
 
         -- ── STANDALONE COMBAT TIMER ──────────────────────────────────
-        heading, hgt = W:SectionHeader(hostFrame, "STANDALONE COMBAT TIMER", posY)
-        posY = posY - hgt
+        heading, height = W:SectionHeader(hostFrame, "STANDALONE COMBAT TIMER", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(heading, {
             key = "EDM_CombatTimer",
             disabled = function()
@@ -2221,7 +2221,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- Standalone Combat Timer (with inline cog) | Timer Text Color
         local satRow
-        satRow, hgt = W:DualRow(hostFrame, posY, {
+        satRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Standalone Combat Timer",
             getValue = CfgOr("standaloneTimer", false),
@@ -2452,14 +2452,14 @@ CludesUI.AtOptionsLogin(function()
                 },
             })
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Dependent rows: hidden entirely while the timer is disabled
         -- (SectionToggleSetValue on the master rebuilds the page).
         if Cfg("standaloneTimer") then
             -- Show Out of Combat (with inline cog) | Anchor to Windows
             local oocRow
-            oocRow, hgt = W:DualRow(hostFrame, posY, {
+            oocRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Show Out of Combat",
                 tooltip = "Keep the timer visible out of combat, showing the last fight's duration.",
@@ -2512,12 +2512,12 @@ CludesUI.AtOptionsLogin(function()
                     },
                 })
             end
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- "Hold Shift+Click..." label | Lock Position & Disable Click
-            _, hgt = W:DualRow(
+            _, height = W:DualRow(
                 hostFrame,
-                posY,
+                cursorY,
                 { type = "label", text = "Hold Shift+Click to Freely Move Standalone Timer" },
                 {
                     type = "toggle",
@@ -2530,16 +2530,16 @@ CludesUI.AtOptionsLogin(function()
                     end,
                 }
             )
-            posY = posY - hgt
+            cursorY = cursorY - height
         end
 
         -- ── EXTRAS ───────────────────────────────────────────────────
-        _, hgt = W:SectionHeader(hostFrame, "EXTRAS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "EXTRAS", cursorY)
+        cursorY = cursorY - height
 
         -- Show Spell Tooltips | Show/Hide Windows Keybind (+ inline cog: what the keybind covers)
         local extrasRow
-        extrasRow, hgt = W:DualRow(hostFrame, posY, {
+        extrasRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Spell Tooltips on Hover",
             tooltip = "Show the game's spell tooltip when you hover a spell in a breakdown window.",
@@ -2589,9 +2589,9 @@ CludesUI.AtOptionsLogin(function()
                 anchorTo = kbBtn,
             })
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     ---------------------------------------------------------------------------
@@ -2624,8 +2624,8 @@ CludesUI.AtOptionsLogin(function()
     local function BuildSpellHistoryPage(page, hostFrame, yOffset)
         local W = CludesUI.Widgets
         local Pix = CludesUI.PP
-        local posY = yOffset
-        local _, hgt, heading
+        local cursorY = yOffset
+        local _, height, heading
 
         hostFrame._showRowDivider = true
 
@@ -2639,15 +2639,15 @@ CludesUI.AtOptionsLogin(function()
         -- =====================================================================
         --  ICON HISTORY
         -- =====================================================================
-        heading, hgt = W:SectionHeader(hostFrame, "ICON HISTORY", posY)
-        posY = posY - hgt
+        heading, height = W:SectionHeader(hostFrame, "ICON HISTORY", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "EDM_IconHistory", disabled = iconOff, disabledTooltip = "Icon History" }
         )
 
         -- Row 1: Enable Icon History | "Hold Shift+Click..." label
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Icon History",
             tooltip = "Shows a movable strip of recent spell icons. Shift-drag to reposition.",
@@ -2663,7 +2663,7 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI:RefreshPage()
             end,
         }, { type = "label", text = "Hold Shift+Click to Freely Move Icons" })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Row 2: Grow Direction | Visibility Options
         local SH_ICON_VIS_ITEMS = {
@@ -2682,7 +2682,7 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         local iconVisRow
-        iconVisRow, hgt = W:DualRow(hostFrame, posY, {
+        iconVisRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Grow Direction",
             tooltip = "Direction the icon strip grows as new spells are cast.",
@@ -2709,34 +2709,34 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function() end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             local region = iconVisRow._rightRegion
             if region._control then
                 region._control:Hide()
             end
-            local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
                 region,
                 210,
                 region:GetFrameLevel() + 2,
                 SH_ICON_VIS_ITEMS,
-                function(k)
-                    return SHDB()[k] or false
+                function(keyName)
+                    return SHDB()[keyName] or false
                 end,
-                function(k, val)
-                    SHDB()[k] = val
+                function(keyName, val)
+                    SHDB()[keyName] = val
                     RefreshSH()
                 end
             )
-            CludesUI.PanelPP.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
-            region._control = cbDD
+            CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+            region._control = checkDrop
             region._lastInline = nil
             CludesUI.RegisterWidgetRefresh(cbDDRefresh)
         end
 
         -- Row 3: Icon Size (+ icon zoom cog) | Max Icons
         local shSizeRow
-        shSizeRow, hgt = W:DualRow(hostFrame, posY, {
+        shSizeRow, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Icon Size",
             min = 20,
@@ -2768,7 +2768,7 @@ CludesUI.AtOptionsLogin(function()
                 RefreshSH()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Inline cog on Icon Size: Icon Zoom (shared by the icon strip and the
         -- bar window, so it stays usable whenever either display is on).
         if not CludesUI._prebuilding then
@@ -2800,7 +2800,7 @@ CludesUI.AtOptionsLogin(function()
         end
 
         -- Row 4: Icon Spacing | Opacity
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             pixel = true,
             text = "Icon Spacing",
@@ -2832,7 +2832,7 @@ CludesUI.AtOptionsLogin(function()
                 RefreshSH()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Row 5: Animation Style | Fade-Out Time
         local shAnimValues = {
@@ -2841,7 +2841,7 @@ CludesUI.AtOptionsLogin(function()
             fly = "Fly In",
         }
         local shAnimOrder = { "none", "slide", "fly" }
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Animation Style",
             disabled = iconOff,
@@ -2871,13 +2871,13 @@ CludesUI.AtOptionsLogin(function()
                 RefreshSH()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- =====================================================================
         --  BAR HISTORY
         -- =====================================================================
-        _, hgt = W:SectionHeader(hostFrame, "BAR HISTORY", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "BAR HISTORY", cursorY)
+        cursorY = cursorY - height
 
         -- Row 1: Enable Bar History | Visibility Options
         local SH_BAR_VIS_ITEMS = {
@@ -2896,7 +2896,7 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         local barVisRow
-        barVisRow, hgt = W:DualRow(hostFrame, posY, {
+        barVisRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Bar History",
             tooltip = "Shows a standalone window with spell cast history as bars. Matches your Damage Meters styling.",
@@ -2920,34 +2920,34 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function() end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             local region = barVisRow._rightRegion
             if region._control then
                 region._control:Hide()
             end
-            local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
                 region,
                 210,
                 region:GetFrameLevel() + 2,
                 SH_BAR_VIS_ITEMS,
-                function(k)
-                    return SHDB()[k] or false
+                function(keyName)
+                    return SHDB()[keyName] or false
                 end,
-                function(k, val)
-                    SHDB()[k] = val
+                function(keyName, val)
+                    SHDB()[keyName] = val
                     RefreshSH()
                 end
             )
-            CludesUI.PanelPP.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
-            region._control = cbDD
+            CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+            region._control = checkDrop
             region._lastInline = nil
             CludesUI.RegisterWidgetRefresh(cbDDRefresh)
         end
 
         -- Row 2: Background Opacity (+ inline color swatch) | Hide Top Bar
         local bgRow
-        bgRow, hgt = W:DualRow(hostFrame, posY, {
+        bgRow, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Background Opacity",
             min = 0,
@@ -2975,12 +2975,12 @@ CludesUI.AtOptionsLogin(function()
                 RefreshSH()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Background colour swatch on the opacity slider; none in the search
         -- pre-build (it indexes nothing, and the row is a stand-in there)
         if not CludesUI._prebuilding then
             local region = bgRow._leftRegion
-            local ctrl = region._control
+            local control = region._control
             local colorSwatch, swatchRefresh = CludesUI.BuildColorSwatch(
                 region,
                 bgRow:GetFrameLevel() + 3,
@@ -2996,7 +2996,7 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            Pix.Point(colorSwatch, "RIGHT", control, "LEFT", -8, 0)
             -- Blizzard Style paints the stock window art (colour unused); the
             -- classic box is tinted by this colour.
             if DMBlizzArt() then
@@ -3029,7 +3029,7 @@ CludesUI.AtOptionsLogin(function()
         end
 
         -- Row 3: Bar Height | Max Bars
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Bar Height",
             min = 12,
@@ -3061,13 +3061,13 @@ CludesUI.AtOptionsLogin(function()
                 RefreshSH()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Row 4: Bar Texture | Text Size (+ inline dual swatches)
         local textRow
-        textRow, hgt = W:DualRow(
+        textRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             DMBlizzGate({
                 type = "dropdown",
                 text = "Bar Texture",
@@ -3100,10 +3100,10 @@ CludesUI.AtOptionsLogin(function()
                 end,
             }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Row 5: Bar Color | Opacity
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "multiSwatch",
             text = "Bar Color",
             disabled = barOff,
@@ -3113,9 +3113,9 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Class Color",
                     hasAlpha = false,
                     getValue = function()
-                        local cc = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
-                        if cc then
-                            return cc.r, cc.g, cc.b
+                        local classColor = CludesUI._playerClass and CludesUI.GetClassColor(CludesUI._playerClass)
+                        if classColor then
+                            return classColor.r, classColor.g, classColor.b
                         end
                         return 0.96, 0.55, 0.73
                     end,
@@ -3203,11 +3203,11 @@ CludesUI.AtOptionsLogin(function()
                 RefreshSH()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if not CludesUI._prebuilding then
             local region = textRow._rightRegion
-            local ctrl = region._control
+            local control = region._control
 
             local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
                 region,
@@ -3228,7 +3228,7 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(customSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+            Pix.Point(customSwatch, "RIGHT", control, "LEFT", -8, 0)
             local origClick = customSwatch:GetScript("OnClick")
             customSwatch:SetScript("OnClick", function(self, ...)
                 if SHDB().textColorUseAccent then
@@ -3297,7 +3297,7 @@ CludesUI.AtOptionsLogin(function()
             refreshTextSwatches()
         end
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     CludesUI:RegisterModule("CludesUIDamageMeters", {

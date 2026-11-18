@@ -95,14 +95,14 @@ local function TipModeKey(val)
     end
     return "hidden"
 end
-local function TipModeStore(k)
-    if k == "shown" then
+local function TipModeStore(keyName)
+    if keyName == "shown" then
         return false
     end
-    if k == "hidden" then
+    if keyName == "hidden" then
         return true
     end
-    return k
+    return keyName
 end
 
 -- Page-local selection: "base" or a tile id. Reset when the page rebuilds
@@ -121,18 +121,18 @@ local function L(s)
 end
 
 -- The managers share the unit-frame aura border controls and size/offset helpers.
-function mod.RFO_AuraBorderSettings(hostFrame, posY, W, get, set, apply, disabled, dispel)
-    local function Val(k, fallback)
-        local val = get(k)
+function mod.RFO_AuraBorderSettings(hostFrame, cursorY, W, get, set, apply, disabled, dispel)
+    local function Val(keyName, fallback)
+        local val = get(keyName)
         if val ~= nil then
             return val
         end
         return fallback
     end
     local values, sequence = CludesUI.GetBorderTextureDropdown()
-    local row, hgt = W:DualRow(
+    local row, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         {
             type = "dropdown",
             text = "Border Style",
@@ -184,7 +184,7 @@ function mod.RFO_AuraBorderSettings(hostFrame, posY, W, get, set, apply, disable
             apply = apply,
         })
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         local region = row._rightRegion
         local swatch, refresh = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
@@ -274,7 +274,7 @@ function mod.RFO_AuraBorderSettings(hostFrame, posY, W, get, set, apply, disable
             requireState = "disabled",
         })
     end
-    return posY
+    return cursorY
 end
 
 -- Stable random preview swipe seeds (fraction remaining, 0.2-0.9), keyed by preview
@@ -408,14 +408,14 @@ end
 
 -- The category a Filters row edits: the two dispel rows and the two
 -- Non-Player rows are flavors of one category each.
-local function RowCat(k)
-    if k == "dispel_you" or k == "dispel_typed" then
+local function RowCat(keyName)
+    if keyName == "dispel_you" or keyName == "dispel_typed" then
         return "dispel"
     end
-    if k == "anyplayer" then
+    if keyName == "anyplayer" then
         return "nonplayer"
     end
-    return k
+    return keyName
 end
 
 -- EFFECTS section (base + grid tile panes): each effect is one DualRow --
@@ -464,38 +464,38 @@ local function BuildFilterCBDropdown(region, claim, dm)
     if region._control then
         region._control:Hide()
     end
-    local cbDD = CludesUI.BuildVisOptsCBDropdown(
+    local checkDrop = CludesUI.BuildVisOptsCBDropdown(
         region,
         190,
         region:GetFrameLevel() + 2,
         TILE_FILTER_ITEMS,
-        function(k)
-            if k == "dispel_you" then
+        function(keyName)
+            if keyName == "dispel_you" then
                 return (claim.dispel and true or false) and dm.dispelMode ~= "typed"
-            elseif k == "dispel_typed" then
+            elseif keyName == "dispel_typed" then
                 return (claim.dispel and true or false) and dm.dispelMode == "typed"
             end
-            return claim[k] and true or false
+            return claim[keyName] and true or false
         end,
-        function(k, val)
-            if k == "dispel_you" or k == "dispel_typed" then
+        function(keyName, val)
+            if keyName == "dispel_you" or keyName == "dispel_typed" then
                 if val then
                     claim.dispel = true
-                    dm.dispelMode = (k == "dispel_typed") and "typed" or "you"
+                    dm.dispelMode = (keyName == "dispel_typed") and "typed" or "you"
                 else
                     claim.dispel = false
                 end
                 DmApply()
                 return
             end
-            claim[k] = val and true or false
+            claim[keyName] = val and true or false
             DmApply()
         end,
         nil,
         12
     )
-    CludesUI.PanelPP.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
-    region._control = cbDD
+    CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+    region._control = checkDrop
     region._lastInline = nil
 end
 -- Tile filter dropdown: full two-lane parity with the base Filters dropdown
@@ -594,12 +594,12 @@ local TILE_LANE_ITEMS = {
 -- Two-lane filter write (base grid and tiles): the show lane lives in
 -- `show`, the hide lane in `owner.neg`, and the dispel / nonplayer flavors
 -- are global (dm). Checking one lane clears the other.
-local function DmSetLane(show, ownerFrame, dm, k, val, neg)
-    local category, modeKey, mode = k, nil, nil
-    if k == "dispel_you" or k == "dispel_typed" then
-        category, modeKey, mode = "dispel", "dispelMode", (k == "dispel_typed") and "typed" or "you"
-    elseif k == "nonplayer" or k == "anyplayer" then
-        category, modeKey, mode = "nonplayer", "nonplayerMode", (k == "anyplayer") and "any" or nil
+local function DmSetLane(show, ownerFrame, dm, keyName, val, neg)
+    local category, modeKey, mode = keyName, nil, nil
+    if keyName == "dispel_you" or keyName == "dispel_typed" then
+        category, modeKey, mode = "dispel", "dispelMode", (keyName == "dispel_typed") and "typed" or "you"
+    elseif keyName == "nonplayer" or keyName == "anyplayer" then
+        category, modeKey, mode = "nonplayer", "nonplayerMode", (keyName == "anyplayer") and "any" or nil
     end
     if neg and val then
         ownerFrame.neg = ownerFrame.neg or {}
@@ -720,38 +720,38 @@ local function BuildTileFiltersDD(region, t, dm)
         return t.neg ~= nil and t.neg[category] == true
     end
     local warnClosed
-    local cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
+    local checkDrop, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
         region,
         190,
         region:GetFrameLevel() + 2,
         WithOwnerHints(TileLaneItems(t), t),
-        function(k, neg)
-            if k == TILE_MATCH_ALL then
+        function(keyName, neg)
+            if keyName == TILE_MATCH_ALL then
                 return t.match == "all"
             end
-            if k == TILE_MATCH_ANY then
+            if keyName == TILE_MATCH_ANY then
                 return t.match ~= "all"
             end
-            if k == TILE_CA_ALL then
+            if keyName == TILE_CA_ALL then
                 return t.all == true
             end
-            if k == TILE_CA_DUR then
+            if keyName == TILE_CA_DUR then
                 return t.hasDuration == true
             end
-            if k == "dispel_you" then
+            if keyName == "dispel_you" then
                 if neg then
                     return NegHas("dispel") and dm.dispelMode ~= "typed"
                 end
                 return (claim.dispel and true or false) and dm.dispelMode ~= "typed"
-            elseif k == "dispel_typed" then
+            elseif keyName == "dispel_typed" then
                 if neg then
                     return NegHas("dispel") and dm.dispelMode == "typed"
                 end
                 return (claim.dispel and true or false) and dm.dispelMode == "typed"
             end
             -- Two flavors of ONE nonplayer category (global dm.nonplayerMode).
-            if k == "nonplayer" or k == "anyplayer" then
-                if (dm.nonplayerMode == "any") ~= (k == "anyplayer") then
+            if keyName == "nonplayer" or keyName == "anyplayer" then
+                if (dm.nonplayerMode == "any") ~= (keyName == "anyplayer") then
                     return false
                 end
                 if neg then
@@ -760,22 +760,22 @@ local function BuildTileFiltersDD(region, t, dm)
                 return claim.nonplayer and true or false
             end
             if neg then
-                return NegHas(k)
+                return NegHas(keyName)
             end
-            return claim[k] and true or false
+            return claim[keyName] and true or false
         end,
-        function(k, val, neg)
-            if k == TILE_MATCH_ANY or k == TILE_MATCH_ALL then
+        function(keyName, val, neg)
+            if keyName == TILE_MATCH_ANY or keyName == TILE_MATCH_ALL then
                 -- Radio pair: the clicked row wins whatever its checked state.
-                t.match = (k == TILE_MATCH_ALL) and "all" or nil
+                t.match = (keyName == TILE_MATCH_ALL) and "all" or nil
                 DmApply()
                 CludesUI:RefreshPage()
                 return
             end
-            if k == TILE_CA_ALL or k == TILE_CA_DUR then
+            if keyName == TILE_CA_ALL or keyName == TILE_CA_DUR then
                 -- Independent bits: All Debuffs = catch-all, Has Duration =
                 -- AND-modifier (combinable with All or any claims).
-                if k == TILE_CA_ALL then
+                if keyName == TILE_CA_ALL then
                     t.all = val and true or nil
                 else
                     t.hasDuration = val and true or nil
@@ -785,7 +785,7 @@ local function BuildTileFiltersDD(region, t, dm)
                 return
             end
             -- The dispel and nonplayer flavors are shared with the base grid.
-            DmSetLane(claim, t, dm, k, val, neg)
+            DmSetLane(claim, t, dm, keyName, val, neg)
             DmApply()
             -- Non-force: re-evaluates the base dropdown's empty-selection
             -- warning (tile claims count as grid content) without closing
@@ -808,8 +808,8 @@ local function BuildTileFiltersDD(region, t, dm)
             end,
         }
     )
-    CludesUI.PanelPP.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
-    region._control = cbDD
+    CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+    region._control = checkDrop
     region._lastInline = nil
     if cbRefresh then
         CludesUI.RegisterWidgetRefresh(cbRefresh)
@@ -818,7 +818,7 @@ local function BuildTileFiltersDD(region, t, dm)
     -- runtime's own test); an ordinary empty tile keeps its quiet subtitle.
     warnClosed = CludesUI.AttachEmptyFilterWarn(
         region,
-        cbDD,
+        checkDrop,
         CludesUI.L("These filters can never match together."),
         function()
             return not mod.DM_TileMatchEmpty(t)
@@ -883,8 +883,8 @@ local function BuildBaseDetailDM(widget, fontFile)
     local p = DmProfile()
     -- Row accessors over p: a key read (or its default) and written.
     local function PFieldThen(key)
-        return function(v)
-            p[key] = v
+        return function(value)
+            p[key] = value
             DmApply()
         end
     end
@@ -1218,41 +1218,41 @@ local function BuildBaseDetailDM(widget, fontFile)
             end
             return false
         end
-        local cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
             region,
             190,
             region:GetFrameLevel() + 2,
             FILTER_ITEMS,
-            function(k, neg)
-                if k == DM_ALL_KEY then
+            function(keyName, neg)
+                if keyName == DM_ALL_KEY then
                     return AllOn()
                 end
-                if k == DM_DUR_KEY then
+                if keyName == DM_DUR_KEY then
                     return dm.hasDuration == true
                 end
-                if k == DM_HIDE_EXH then
+                if keyName == DM_HIDE_EXH then
                     return p.hideLustDebuff ~= false
                 end
-                if k == DM_MATCH_ALL then
+                if keyName == DM_MATCH_ALL then
                     return dm.match == "all"
                 end
-                if k == DM_MATCH_ANY then
+                if keyName == DM_MATCH_ANY then
                     return dm.match ~= "all"
                 end
-                if k == "dispel_you" then
+                if keyName == "dispel_you" then
                     if neg then
                         return NegHas("dispel") and dm.dispelMode ~= "typed"
                     end
                     return dm.dispel == true and dm.dispelMode ~= "typed"
-                elseif k == "dispel_typed" then
+                elseif keyName == "dispel_typed" then
                     if neg then
                         return NegHas("dispel") and dm.dispelMode == "typed"
                     end
                     return dm.dispel == true and dm.dispelMode == "typed"
                 end
                 -- Two flavors of ONE nonplayer category (dm.nonplayerMode).
-                if k == "nonplayer" or k == "anyplayer" then
-                    if (dm.nonplayerMode == "any") ~= (k == "anyplayer") then
+                if keyName == "nonplayer" or keyName == "anyplayer" then
+                    if (dm.nonplayerMode == "any") ~= (keyName == "anyplayer") then
                         return false
                     end
                     if neg then
@@ -1261,12 +1261,12 @@ local function BuildBaseDetailDM(widget, fontFile)
                     return dm.nonplayer == true
                 end
                 if neg then
-                    return NegHas(k)
+                    return NegHas(keyName)
                 end
-                return dm[k] == true
+                return dm[keyName] == true
             end,
-            function(k, val, neg)
-                if k == DM_ALL_KEY then
+            function(keyName, val, neg)
+                if keyName == DM_ALL_KEY then
                     -- Lanes persist across mode flips (the hide lane subtracts in
                     -- both modes; the show lane goes dormant while All is on).
                     dm.all = val and true or false
@@ -1274,7 +1274,7 @@ local function BuildBaseDetailDM(widget, fontFile)
                     CludesUI:RefreshPage()
                     return
                 end
-                if k == DM_DUR_KEY then
+                if keyName == DM_DUR_KEY then
                     -- AND-modifier: combines with All Debuffs or any show-lane
                     -- selection; checked alone it acts as the timed catch-all.
                     dm.hasDuration = val or nil
@@ -1282,21 +1282,21 @@ local function BuildBaseDetailDM(widget, fontFile)
                     CludesUI:RefreshPage()
                     return
                 end
-                if k == DM_HIDE_EXH then
+                if keyName == DM_HIDE_EXH then
                     p.hideLustDebuff = val and true or false
                     DmApply()
                     CludesUI:RefreshPage()
                     return
                 end
-                if k == DM_MATCH_ANY or k == DM_MATCH_ALL then
+                if keyName == DM_MATCH_ANY or keyName == DM_MATCH_ALL then
                     -- Radio pair: the clicked row wins whatever its checked
                     -- state (re-clicking the active row keeps it).
-                    dm.match = (k == DM_MATCH_ALL) and "all" or nil
+                    dm.match = (keyName == DM_MATCH_ALL) and "all" or nil
                     DmApply()
                     CludesUI:RefreshPage()
                     return
                 end
-                DmSetLane(dm, dm, dm, k, val, neg)
+                DmSetLane(dm, dm, dm, keyName, val, neg)
                 DmApply()
                 -- Non-force: re-evaluates the empty-selection warning (and
                 -- any other widget refreshers) without closing the menu.
@@ -1319,15 +1319,15 @@ local function BuildBaseDetailDM(widget, fontFile)
                 end,
             }
         )
-        CludesUI.PanelPP.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
-        region._control = cbDD
+        CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+        region._control = checkDrop
         region._lastInline = nil
         if cbRefresh then
             CludesUI.RegisterWidgetRefresh(cbRefresh)
         end
         warnClosed = CludesUI.AttachEmptyFilterWarn(
             region,
-            cbDD,
+            checkDrop,
             L("You are displaying NO debuffs at all."),
             DmHasContent
         )
@@ -1460,10 +1460,10 @@ local function BuildBaseDetailDM(widget, fontFile)
     _, hh = W:SectionHeader(widget, "DISPLAY", sy)
     sy = sy - hh
 
-    sy = mod.RFO_AuraBorderSettings(widget, sy, W, function(k)
-        return p["debuffBorder" .. k]
-    end, function(k, val)
-        p["debuffBorder" .. k] = val
+    sy = mod.RFO_AuraBorderSettings(widget, sy, W, function(keyName)
+        return p["debuffBorder" .. keyName]
+    end, function(keyName, val)
+        p["debuffBorder" .. keyName] = val
     end, DmApply, nil, true)
 
     -- Row: Show Duration Text (+ cog + swatch) | Show Stacks (+ cog + swatch)
@@ -1587,8 +1587,8 @@ local function BuildBaseDetailDM(widget, fontFile)
         getValue = function()
             return TipModeKey(p.debuffHideTooltips)
         end,
-        setValue = function(k)
-            p.debuffHideTooltips = TipModeStore(k)
+        setValue = function(keyName)
+            p.debuffHideTooltips = TipModeStore(keyName)
             DmApply()
             CludesUI:RefreshPage() -- update the Use Modifier cog disabled state
         end,
@@ -1607,11 +1607,11 @@ local function BuildBaseDetailDM(widget, fontFile)
     -- mode is selected with the key still at None, the cog hover warns that
     -- tooltips will always show (the runtime degrades to plain Shown).
     do
-        local leftRgn = tipRow._leftRegion
+        local leftRegion = tipRow._leftRegion
         local function tipOff()
             return TipModeKey(p.debuffHideTooltips) ~= "modifier"
         end
-        local tipModBtn = CludesUI.BuildInlineCog(leftRgn, {
+        local tipModBtn = CludesUI.BuildInlineCog(leftRegion, {
             gap = 9,
             disabled = tipOff,
             -- Whole sentence: DisabledTooltip passes "This option..." strings through verbatim (still localized).
@@ -1648,7 +1648,7 @@ local function BuildBaseDetailDM(widget, fontFile)
             -- Persistent red bubble above the cog while Shown on Modifier is
             -- selected with no key picked (the standard empty-selection warning);
             -- the hover tooltip above keeps the explanation.
-            CludesUI.AttachEmptyFilterWarn(leftRgn, tipModBtn, L("Select a Modifier"), function()
+            CludesUI.AttachEmptyFilterWarn(leftRegion, tipModBtn, L("Select a Modifier"), function()
                 return tipOff() or (p.debuffTooltipModifier or "none") ~= "none"
             end)
         end
@@ -1680,8 +1680,8 @@ local function BuildTileDetail(widget, fontFile, t)
     end
     -- Row setters over TSet: the key written with the row's value.
     local function TSetRow(key)
-        return function(v)
-            TSet(key, v)
+        return function(value)
+            TSet(key, value)
         end
     end
 
@@ -1867,10 +1867,10 @@ local function BuildTileDetail(widget, fontFile, t)
         _, hh = W:SectionHeader(widget, "DISPLAY", sy)
         sy = sy - hh
 
-        sy = mod.RFO_AuraBorderSettings(widget, sy, W, function(k)
-            return TEff("border" .. k, "debuffBorder" .. k)
-        end, function(k, val)
-            t["border" .. k] = val
+        sy = mod.RFO_AuraBorderSettings(widget, sy, W, function(keyName)
+            return TEff("border" .. keyName, "debuffBorder" .. keyName)
+        end, function(keyName, val)
+            t["border" .. keyName] = val
         end, DmApply, nil, true)
 
         -- Row: Show Duration Text (+ cog + swatch) | Show Stacks (+ cog + swatch)
@@ -2011,8 +2011,8 @@ local function BuildTileDetail(widget, fontFile, t)
                 end
                 return TipModeKey(val)
             end,
-            setValue = function(k)
-                TSet("hideTooltips", TipModeStore(k))
+            setValue = function(keyName)
+                TSet("hideTooltips", TipModeStore(keyName))
             end,
         }, {
             type = "toggle",
@@ -2409,21 +2409,21 @@ local function DmPvClick(self)
 end
 
 function mod.DMP_RefreshPreview()
-    local pv = mod._dmPreviewFrame
-    if not (pv and pv._health and pv:IsShown()) then
+    local preview = mod._dmPreviewFrame
+    if not (preview and preview._health and preview:IsShown()) then
         return
     end
     -- Party style: the replica's party view (scaled base grid, kit keys).
-    local p = pv._bmPvS or DmProfile()
+    local p = preview._bmPvS or DmProfile()
     if not p then
         return
     end
     -- Tile icon sizes live in dmDebuff, outside the proxy's scaled keys: live
     -- party frames scale them by the party indicator scale, so does this.
-    local tileScale = pv._bmPvS and (mod._partyIndicatorScale or 1) or 1
+    local tileScale = preview._bmPvS and (mod._partyIndicatorScale or 1) or 1
     local Pix = CludesUI.PanelPP or CludesUI.PP
-    local fontFile = pv._dmFontPath or (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
-    local health = pv._health
+    local fontFile = preview._dmFontPath or (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+    local health = preview._health
     local host = (mod.RF_AnchorHost and mod.RF_AnchorHost(health, p)) or health
     local allVis = mod._dmAllVisible
     -- The EDITED view's tiles: inherited group tiles first (concrete spec
@@ -2453,15 +2453,15 @@ function mod.DMP_RefreshPreview()
     local Glows = CludesUI.Glows
 
     -- Reset pools
-    local icons = pv._dmIconPool
+    local icons = preview._dmIconPool
     if not icons then
         icons = {}
-        pv._dmIconPool = icons
+        preview._dmIconPool = icons
     end
-    local shapes = pv._dmShapePool
+    local shapes = preview._dmShapePool
     if not shapes then
         shapes = {}
-        pv._dmShapePool = shapes
+        preview._dmShapePool = shapes
     end
     for idx = 1, #icons do
         local fr = icons[idx]
@@ -2483,19 +2483,19 @@ function mod.DMP_RefreshPreview()
         fr._dmSel = nil
         fr:Hide()
     end
-    if pv._dmHC then
-        pv._dmHC:Hide()
+    if preview._dmHC then
+        preview._dmHC:Hide()
     end
-    if pv._dmGlow then
+    if preview._dmGlow then
         if Glows then
             if Glows.StopAnimatedAnts then
-                Glows.StopAnimatedAnts(pv._dmGlow)
+                Glows.StopAnimatedAnts(preview._dmGlow)
             end
-            if pv._dmGlow._cuiGlowActive and Glows.StopGlow then
-                Glows.StopGlow(pv._dmGlow)
+            if preview._dmGlow._cuiGlowActive and Glows.StopGlow then
+                Glows.StopGlow(preview._dmGlow)
             end
         end
-        pv._dmGlow:Hide()
+        preview._dmGlow:Hide()
     end
 
     local iIdx, sIdx = 0, 0
@@ -2507,7 +2507,7 @@ function mod.DMP_RefreshPreview()
             -- Live parity: aura icons render in the aura band (frame +
             -- LVL_AURA = 13), above the +8 border and the +12 text band
             -- (matches the BM preview pool and live frames).
-            fr:SetFrameLevel(pv:GetFrameLevel() + (mod.LVL_AURA or 13))
+            fr:SetFrameLevel(preview:GetFrameLevel() + (mod.LVL_AURA or 13))
             local texture = fr:CreateTexture(nil, "ARTWORK")
             texture:SetAllPoints()
             fr._tex = texture
@@ -2551,7 +2551,7 @@ function mod.DMP_RefreshPreview()
         if not fr then
             fr = CreateFrame("Frame", nil, health)
             -- Bars render in the aura band like live (BM bars ride button + LVL_AURA).
-            fr:SetFrameLevel(pv:GetFrameLevel() + (mod.LVL_AURA or 13))
+            fr:SetFrameLevel(preview:GetFrameLevel() + (mod.LVL_AURA or 13))
             local bgTex = fr:CreateTexture(nil, "BACKGROUND")
             bgTex:SetAllPoints()
             fr._bgTex = bgTex
@@ -2579,21 +2579,21 @@ function mod.DMP_RefreshPreview()
     -- (zoom/border/swipe/duration/stacks) resolve through cfg.sv: the base
     -- profile for the base grid, the tile's inherit-until-set view for a
     -- tile -- the same view the live renderer styles that tile with.
-    local function RenderRun(conf)
-        if conf.count <= 0 then
+    local function RenderRun(rowConf)
+        if rowConf.count <= 0 then
             return
         end
-        local sv = conf.sv or p
-        local anchor = string.upper(conf.pos or "center")
-        local sz = conf.size or 18
-        local gap = conf.spacing or 1
-        local dir = conf.grow or "LEFT"
+        local sv = rowConf.sv or p
+        local anchor = string.upper(rowConf.pos or "center")
+        local sz = rowConf.size or 18
+        local gap = rowConf.spacing or 1
+        local dir = rowConf.grow or "LEFT"
         local cursor = 0
         local selfPoint = anchor
         -- Grid wrap preview: >= 2 wraps lines exactly like live (base rows
         -- follow debuffWrapDirection, tiles the anchored-edge rule -- both
         -- arrive here as cfg.wrapV/cfg.wrapH from the caller).
-        local per = conf.perRow or 0
+        local per = rowConf.perRow or 0
         if per < 2 then
             per = 0
         end
@@ -2608,17 +2608,17 @@ function mod.DMP_RefreshPreview()
             -- the caller's vertical seat (cfg.vAlign -- tiles sit flush
             -- with the anchored edge, base rows hang off the point in the
             -- wrap direction).
-            selfPoint = conf.vAlign or "CENTER"
-            local lineN = conf.count
+            selfPoint = rowConf.vAlign or "CENTER"
+            local lineN = rowConf.count
             if per > 0 and per < lineN then
                 lineN = per
             end
             cursor = -((lineN - 1) * (sz + gap)) / 2
         end
         local lineStart = cursor
-        for idx = 1, conf.count do
+        for idx = 1, rowConf.count do
             local fr = GetIcon()
-            fr._dmSel = conf.selKey
+            fr._dmSel = rowConf.selKey
             fr:SetSize(sz, sz)
             fr:ClearAllPoints()
             local lineOff = 0
@@ -2632,35 +2632,35 @@ function mod.DMP_RefreshPreview()
             if dir == "RIGHT" or dir == "CENTER" then
                 gx = cursor
                 cursor = cursor + sz + gap
-                gy = (conf.wrapV == "UP") and lineOff or -lineOff
+                gy = (rowConf.wrapV == "UP") and lineOff or -lineOff
             elseif dir == "LEFT" then
                 gx = -cursor
                 cursor = cursor + sz + gap
-                gy = (conf.wrapV == "UP") and lineOff or -lineOff
+                gy = (rowConf.wrapV == "UP") and lineOff or -lineOff
             elseif dir == "DOWN" then
                 gy = -cursor
                 cursor = cursor + sz + gap
-                gx = (conf.wrapH == "LEFT") and -lineOff or lineOff
+                gx = (rowConf.wrapH == "LEFT") and -lineOff or lineOff
             elseif dir == "UP" then
                 gy = cursor
                 cursor = cursor + sz + gap
-                gx = (conf.wrapH == "LEFT") and -lineOff or lineOff
+                gx = (rowConf.wrapH == "LEFT") and -lineOff or lineOff
             end
-            fr:SetPoint(selfPoint, host, anchor, (conf.offX or 0) + gx, (conf.offY or 0) + gy)
-            if conf.color then
+            fr:SetPoint(selfPoint, host, anchor, (rowConf.offX or 0) + gx, (rowConf.offY or 0) + gy)
+            if rowConf.color then
                 -- Square grid tiles: flat color blocks instead of icons.
                 fr._tex:SetColorTexture(
-                    conf.color.r or 1,
-                    conf.color.g or 0.35,
-                    conf.color.b or 0.35,
-                    conf.color.a or 1
+                    rowConf.color.r or 1,
+                    rowConf.color.g or 0.35,
+                    rowConf.color.b or 0.35,
+                    rowConf.color.a or 1
                 )
             else
                 fr._tex:SetTexture(SampleDebuffTexture(idx))
                 local z = sv.debuffIconZoom or 0.08
                 fr._tex:SetTexCoord(z, 1 - z, z, 1 - z)
             end
-            fr:SetAlpha(conf.alpha)
+            fr:SetAlpha(rowConf.alpha)
             mod.RFC_PreviewAuraBorder(fr, fr._borderFrame, sv, "debuffBorder")
             local cd = fr._cooldown
             if cd then
@@ -2885,14 +2885,14 @@ function mod.DMP_RefreshPreview()
             elseif t.type == "healthcolor" then
                 -- Frame-wide effect: shown while selected / eyeball (BM parity)
                 if sel or allVis then
-                    local hc = pv._dmHC
+                    local hc = preview._dmHC
                     if not hc then
                         -- BM parity: ARTWORK sublevel 2 over the FILL texture
                         -- only, so it tints just the filled portion.
                         hc = health:CreateTexture(nil, "ARTWORK", nil, 2)
                         local fill = health.GetStatusBarTexture and health:GetStatusBarTexture()
                         hc:SetAllPoints(fill or health)
-                        pv._dmHC = hc
+                        preview._dmHC = hc
                     end
                     local c = t.color or { r = 1, g = 0.25, b = 0.25 }
                     mod.RF_TintOverBarFill(
@@ -2906,16 +2906,16 @@ function mod.DMP_RefreshPreview()
                     hc:Show()
                 end
             elseif t.type == "glow" then
-                if (sel or allVis) and Glows and not pv._dmGlowUsed then
-                    local gov = pv._dmGlow
+                if (sel or allVis) and Glows and not preview._dmGlowUsed then
+                    local gov = preview._dmGlow
                     if not gov then
-                        gov = CreateFrame("Frame", nil, pv)
-                        gov:SetAllPoints(pv)
+                        gov = CreateFrame("Frame", nil, preview)
+                        gov:SetAllPoints(preview)
                         -- Live parity: the frame-glow host sits at +15,
                         -- above the aura and text bands.
-                        gov:SetFrameLevel(pv:GetFrameLevel() + 15)
+                        gov:SetFrameLevel(preview:GetFrameLevel() + 15)
                         gov:EnableMouse(false)
-                        pv._dmGlow = gov
+                        preview._dmGlow = gov
                     end
                     -- Live parity: the tile's own descriptor, the same call as the slot renderer.
                     local specInfo = CludesUI.GlowOptions.Spec(TileGlowDesc(t))
@@ -2923,18 +2923,18 @@ function mod.DMP_RefreshPreview()
                     Glows.StartSpecGlow(
                         gov,
                         specInfo,
-                        pv:GetWidth() or 72,
-                        pv:GetHeight() or 72,
+                        preview:GetWidth() or 72,
+                        preview:GetHeight() or 72,
                         "engine",
                         Glows.PANEL_EXTRA
                     )
                     -- One overlay: the first qualifying glow tile wins.
-                    pv._dmGlowUsed = true
+                    preview._dmGlowUsed = true
                 end
             end
         end
     end
-    pv._dmGlowUsed = nil
+    preview._dmGlowUsed = nil
 end
 
 function mod.DMP_BuildPage(page, hostFrame, yOffset)
@@ -3397,38 +3397,38 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     ddW,
                     dialog:GetFrameLevel() + 2,
                     TILE_LANE_ITEMS,
-                    function(k, neg)
+                    function(keyName, neg)
                         if neg then
-                            return pend["neg_" .. k] and true or false
+                            return pend["neg_" .. keyName] and true or false
                         end
-                        return pend[k] and true or false
+                        return pend[keyName] and true or false
                     end,
-                    function(k, val, neg)
-                        if k == TILE_CA_ALL or k == TILE_CA_DUR then
+                    function(keyName, val, neg)
+                        if keyName == TILE_CA_ALL or keyName == TILE_CA_DUR then
                             -- Independent bits (All Debuffs / Has Duration modifier).
-                            pend[k] = val and true or nil
+                            pend[keyName] = val and true or nil
                             return
                         end
-                        if k == "dispel_you" or k == "dispel_typed" then
+                        if keyName == "dispel_you" or keyName == "dispel_typed" then
                             -- ONE dispel category (flavors mutually exclusive
                             -- across rows AND lanes, base-dropdown parity).
                             pend.dispel_you, pend.dispel_typed = nil, nil
                             pend.neg_dispel_you, pend.neg_dispel_typed = nil, nil
                             if val then
-                                pend[(neg and "neg_" or "") .. k] = true
+                                pend[(neg and "neg_" or "") .. keyName] = true
                             end
                             return
                         end
                         -- Two-lane pend write: checking one lane clears the other.
                         if neg then
-                            pend["neg_" .. k] = val and true or nil
+                            pend["neg_" .. keyName] = val and true or nil
                             if val then
-                                pend[k] = nil
+                                pend[keyName] = nil
                             end
                         else
-                            pend[k] = val and true or nil
+                            pend[keyName] = val and true or nil
                             if val then
-                                pend["neg_" .. k] = nil
+                                pend["neg_" .. keyName] = nil
                             end
                         end
                     end,
@@ -3487,9 +3487,9 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     local caAll = dialog._dmFilters[TILE_CA_ALL] and true or false
                     local caDur = dialog._dmFilters[TILE_CA_DUR] and true or false
                     local mode
-                    for k in pairs(dialog._dmFilters) do
-                        if k ~= TILE_CA_ALL and k ~= TILE_CA_DUR then
-                            local category, isNeg = k, false
+                    for keyName in pairs(dialog._dmFilters) do
+                        if keyName ~= TILE_CA_ALL and keyName ~= TILE_CA_DUR then
+                            local category, isNeg = keyName, false
                             if category:sub(1, 4) == "neg_" then
                                 category = category:sub(5)
                                 isNeg = true
@@ -3593,28 +3593,28 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         local EYE_INVIS = CludesUI.EYE_INVISIBLE_ICON
         mod._dmAllVisible = mod._dmAllVisible or false
 
-        local eyeBtn = CreateFrame("Button", nil, leftFixed)
-        eyeBtn:SetSize(26, 26)
-        eyeBtn:SetPoint("LEFT", pvFrame, "RIGHT", 18 / PV_SCALE, 0)
-        eyeBtn:SetFrameLevel(leftFixed:GetFrameLevel() + 5)
+        local eyeButton = CreateFrame("Button", nil, leftFixed)
+        eyeButton:SetSize(26, 26)
+        eyeButton:SetPoint("LEFT", pvFrame, "RIGHT", 18 / PV_SCALE, 0)
+        eyeButton:SetFrameLevel(leftFixed:GetFrameLevel() + 5)
 
-        local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
+        local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
         eyeTex:SetTexture(mod._dmAllVisible and EYE_INVIS or EYE_VIS)
-        CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
+        CludesUI.SetGlyphAlpha(eyeButton, 0.4)
 
-        eyeBtn:SetScript("OnClick", function()
+        eyeButton:SetScript("OnClick", function()
             mod._dmAllVisible = not mod._dmAllVisible
             eyeTex:SetTexture(mod._dmAllVisible and EYE_INVIS or EYE_VIS)
             if mod.DMP_RefreshPreview then
                 mod.DMP_RefreshPreview()
             end
         end)
-        eyeBtn:SetScript("OnEnter", function(self)
+        eyeButton:SetScript("OnEnter", function(self)
             CludesUI.SetGlyphAlpha(self, 0.7)
             CludesUI.ShowWidgetTooltip(self, "Toggle All Indicators")
         end)
-        eyeBtn:SetScript("OnLeave", function(self)
+        eyeButton:SetScript("OnLeave", function(self)
             CludesUI.SetGlyphAlpha(self, 0.4)
             CludesUI.HideWidgetTooltip()
         end)
@@ -3956,7 +3956,7 @@ function mod.BMP_ShowFilterEditor(show, hide)
     -- One editor for the session (the options page pool): every open and every
     -- Rebuild below dress it again; its reset is the previous dress's teardown
     -- (a keyboard capture is put back out of combat only, by the pool).
-    local dimmer, dialog =
+    local shade, dialog =
         CludesUI.BuildFilterEditorShell(mod, "_bm2FilterEditor", "bm2FilterEditor", POPUP_W, POPUP_H)
 
     -- Validate selection
@@ -4306,35 +4306,35 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
             end
             return itemList
         end
-        local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
             region,
             190,
             region:GetFrameLevel() + 2,
             FilterItems,
-            function(k, neg)
+            function(keyName, neg)
                 if neg then
-                    return ind.negFilters and ind.negFilters[k] == true
+                    return ind.negFilters and ind.negFilters[keyName] == true
                 end
-                return ind.filters and ind.filters[k] and true or false
+                return ind.filters and ind.filters[keyName] and true or false
             end,
-            function(k, val, neg)
+            function(keyName, val, neg)
                 -- Two-lane write: checking one lane clears the other.
                 if neg then
                     ind.negFilters = ind.negFilters or {}
-                    ind.negFilters[k] = val and true or nil
+                    ind.negFilters[keyName] = val and true or nil
                     if not next(ind.negFilters) then
                         ind.negFilters = nil
                     end
                     if val and ind.filters then
-                        ind.filters[k] = nil
+                        ind.filters[keyName] = nil
                     end
                 else
                     if not ind.filters then
                         ind.filters = {}
                     end
-                    ind.filters[k] = val and true or nil
+                    ind.filters[keyName] = val and true or nil
                     if val and ind.negFilters then
-                        ind.negFilters[k] = nil
+                        ind.negFilters[keyName] = nil
                         if not next(ind.negFilters) then
                             ind.negFilters = nil
                         end
@@ -4355,8 +4355,8 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
             nil,
             12
         )
-        CludesUI.PanelPP.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
-        region._control = cbDD
+        CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+        region._control = checkDrop
         region._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
     end
@@ -4479,27 +4479,27 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
             end
             return itemList
         end
-        local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
             region,
             190,
             region:GetFrameLevel() + 2,
             ExtraItems,
             HasDirect,
-            function(k, val)
+            function(keyName, val)
                 ind.spells = ind.spells or {}
                 if val then
-                    if not HasDirect(k) then
-                        ind.spells[#ind.spells + 1] = k
+                    if not HasDirect(keyName) then
+                        ind.spells[#ind.spells + 1] = keyName
                     end
                 else
                     for idx = #ind.spells, 1, -1 do
-                        if ind.spells[idx] == k then
+                        if ind.spells[idx] == keyName then
                             table.remove(ind.spells, idx)
                         end
                     end
                     -- The typed mark leaves with the entry: a later pick from
                     -- Presets keeps the curated family.
-                    mod.BM2_SetSpellExact(ind, k, false)
+                    mod.BM2_SetSpellExact(ind, keyName, false)
                 end
                 if mod.ReloadFrames then
                     mod.ReloadFrames()
@@ -4509,8 +4509,8 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
             10,
             true
         )
-        CludesUI.PanelPP.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
-        region._control = cbDD
+        CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+        region._control = checkDrop
         region._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
     end

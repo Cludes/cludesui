@@ -348,22 +348,22 @@ local function PackOK(success, ...)
     return { n = select("#", ...), ... }
 end
 -- Two values are the same: numbers within rounding, vectors (Vector2DMixin) by value.
-local function SameVal(posX, posY)
-    if posX == posY then
+local function SameVal(posX, cursorY)
+    if posX == cursorY then
         return true
     end
-    local tx, ty = type(posX), type(posY)
+    local tx, ty = type(posX), type(cursorY)
     if tx == "number" and ty == "number" then
-        return abs(posX - posY) < 0.0001
+        return abs(posX - cursorY) < 0.0001
     end
     if
         tx == "table"
         and ty == "table"
         and type(posX.GetXY) == "function"
-        and type(posY.GetXY) == "function"
+        and type(cursorY.GetXY) == "function"
     then
         local ax, ay = posX:GetXY()
-        local bx, by = posY:GetXY()
+        local bx, by = cursorY:GetXY()
         if
             type(ax) == "number"
             and type(ay) == "number"
@@ -404,16 +404,16 @@ local refusedLog
 local function RestoreKept(object, entries)
     local success = true
     for i = 1, #entries do
-        local k = entries[i]
-        local vals = k.vals
-        if Differs(vals, k.get(object)) then
-            local done, err = pcall(k.set, object, unpack(vals, 1, vals.n))
-            if not done or Differs(vals, k.get(object)) then
+        local keyName = entries[i]
+        local vals = keyName.vals
+        if Differs(vals, keyName.get(object)) then
+            local done, err = pcall(keyName.set, object, unpack(vals, 1, vals.n))
+            if not done or Differs(vals, keyName.get(object)) then
                 success = false
                 if refusedLog and #refusedLog < 50 then
                     refusedLog[#refusedLog + 1] = tostring(object:GetObjectType())
                         .. " "
-                        .. k.name
+                        .. keyName.name
                         .. (done and " changed nothing" or (" refused: " .. tostring(err)))
                 end
             end
@@ -466,8 +466,8 @@ local function CaptureRegion(reg, p)
     local c = { points = {} }
     c.layer, c.sub = reg:GetDrawLayer()
     for i = 1, reg:GetNumPoints() do
-        local pt, rel, rp, posX, posY = reg:GetPoint(i)
-        c.points[i] = { pt, rel == p or rel, rp, posX, posY }
+        local pt, rel, rp, posX, cursorY = reg:GetPoint(i)
+        c.points[i] = { pt, rel == p or rel, rp, posX, cursorY }
     end
     c.shown = reg:IsShown() and true or false
     if reg.GetBlendMode then
@@ -501,10 +501,10 @@ local function KindInfo(rec)
     local m = getmetatable(p).__index
     details = { scripts = rec.tmpl and TEMPLATE_SCRIPTS[rec.tmpl] or nil }
     local keyList
-    for k, val in pairs(p) do
-        if type(k) == "string" and k:byte(1) ~= 0 then
+    for keyName, val in pairs(p) do
+        if type(keyName) == "string" and keyName:byte(1) ~= 0 then
             keyList = keyList or {}
-            keyList[k] = val
+            keyList[keyName] = val
         end
     end
     details.keys = keyList
@@ -715,23 +715,23 @@ end
 
 -- Creation goes to the pool only on an object the pool still manages (a
 -- retired one creates as any frame does).
-local function O_CreateTexture(self, name, layer, tmpl, sub)
+local function O_CreateTexture(self, name, layer, tmpl, subMenu)
     if name ~= nil or tmpl ~= nil or CludesUI._prebuilding or not REC[self] then
-        return getmetatable(self).__index.CreateTexture(self, name, layer, tmpl, sub)
+        return getmetatable(self).__index.CreateTexture(self, name, layer, tmpl, subMenu)
     end
-    return AcquireRegion(self, "Texture", "CreateTexture", layer, sub)
+    return AcquireRegion(self, "Texture", "CreateTexture", layer, subMenu)
 end
-local function O_CreateMaskTexture(self, name, layer, tmpl, sub)
+local function O_CreateMaskTexture(self, name, layer, tmpl, subMenu)
     if name ~= nil or tmpl ~= nil or CludesUI._prebuilding or not REC[self] then
-        return getmetatable(self).__index.CreateMaskTexture(self, name, layer, tmpl, sub)
+        return getmetatable(self).__index.CreateMaskTexture(self, name, layer, tmpl, subMenu)
     end
-    return AcquireRegion(self, "MaskTexture", "CreateMaskTexture", layer, sub)
+    return AcquireRegion(self, "MaskTexture", "CreateMaskTexture", layer, subMenu)
 end
-local function O_CreateLine(self, name, layer, tmpl, sub)
+local function O_CreateLine(self, name, layer, tmpl, subMenu)
     if name ~= nil or tmpl ~= nil or CludesUI._prebuilding or not REC[self] then
-        return getmetatable(self).__index.CreateLine(self, name, layer, tmpl, sub)
+        return getmetatable(self).__index.CreateLine(self, name, layer, tmpl, subMenu)
     end
-    return AcquireRegion(self, "Line", "CreateLine", layer, sub)
+    return AcquireRegion(self, "Line", "CreateLine", layer, subMenu)
 end
 local function O_CreateFontString(self, name, layer, tmpl, ...)
     if name ~= nil or tmpl ~= nil or CludesUI._prebuilding or not REC[self] then
@@ -993,22 +993,22 @@ end
 -- hooks: the pool's own overrides, TrackOverlay's) and its host attachment keys.
 local function WipeKeys(object, rec, m, base)
     local keep = rec.attachKeys
-    for k, val in pairs(object) do
-        if type(k) == "string" and k:byte(1) ~= 0 then
-            local bv = base and base[k]
+    for keyName, val in pairs(object) do
+        if type(keyName) == "string" and keyName:byte(1) ~= 0 then
+            local bv = base and base[keyName]
             if bv ~= nil then
                 if val ~= bv then
-                    rawset(object, k, bv)
+                    rawset(object, keyName, bv)
                 end
-            elseif rawget(m, k) == nil and not (keep and keep[k]) then
-                rawset(object, k, nil)
+            elseif rawget(m, keyName) == nil and not (keep and keep[keyName]) then
+                rawset(object, keyName, nil)
             end
         end
     end
     if base then
-        for k, val in pairs(base) do
-            if rawget(object, k) == nil then
-                rawset(object, k, val)
+        for keyName, val in pairs(base) do
+            if rawget(object, keyName) == nil then
+                rawset(object, keyName, val)
             end
         end
     end
@@ -1081,10 +1081,10 @@ local Visit
 local function Parts(o, r, moved, depth)
     local km = KEPT[o]
     if km then
-        for _, k in pairs(km) do
-            local kr = REC[k]
+        for _, keyName in pairs(km) do
+            local kr = REC[keyName]
             if kr then
-                Visit(k, kr, false, true, depth)
+                Visit(keyName, kr, false, true, depth)
             end
         end
     end
@@ -1190,10 +1190,10 @@ local function PlacedByMoved(f, serial)
 end
 
 -- What a host is placed by: its first anchor's frame (the screen: UIParent).
-local function PlacedBy(hgt)
+local function PlacedBy(height)
     local isv = _G.issecretvalue
-    for i = 1, hgt:GetNumPoints() do
-        local _, rel = hgt:GetPoint(i)
+    for i = 1, height:GetNumPoints() do
+        local _, rel = height:GetPoint(i)
         if isv and isv(rel) then
             break
         end
@@ -1209,11 +1209,11 @@ end
 -- ref is UIParent or has no place itself.
 local function FreezeTo(f, ref)
     local isv = _G.issecretvalue
-    local l, b, wid, hgt = f:GetRect()
-    if isv and (isv(l) or isv(b) or isv(wid) or isv(hgt)) then
+    local l, b, wid, height = f:GetRect()
+    if isv and (isv(l) or isv(b) or isv(wid) or isv(height)) then
         return
     end
-    if not (l and b and wid and hgt) then
+    if not (l and b and wid and height) then
         return
     end
     local UIParent = _G.UIParent
@@ -1221,17 +1221,17 @@ local function FreezeTo(f, ref)
         local rl, rb, rw, rh = ref:GetRect()
         if not (isv and (isv(rl) or isv(rb) or isv(rw) or isv(rh))) and rl and rb and rw and rh then
             -- ref's corner in f's own units (each scales its own offsets)
-            local k = ref:GetEffectiveScale() / f:GetEffectiveScale()
+            local keyName = ref:GetEffectiveScale() / f:GetEffectiveScale()
             f:ClearAllPoints()
-            if pcall(f.SetPoint, f, "TOPLEFT", ref, "TOPLEFT", l - rl * k, b + hgt - (rb + rh) * k) then
-                f:SetSize(wid, hgt)
+            if pcall(f.SetPoint, f, "TOPLEFT", ref, "TOPLEFT", l - rl * keyName, b + height - (rb + rh) * keyName) then
+                f:SetSize(wid, height)
                 return
             end
         end
     end
     f:ClearAllPoints()
     f:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", l, b)
-    f:SetSize(wid, hgt)
+    f:SetSize(wid, height)
 end
 
 local function FreezeWalk(host, hrec, hostMoved)
@@ -1307,8 +1307,8 @@ local function ResetContents(object, rec, details, pass)
             ParkList(entries)
         end
         local current = rec.cur
-        for k in pairs(current) do
-            current[k] = 0
+        for keyName in pairs(current) do
+            current[keyName] = 0
         end
     end
     -- owned objects: hidden, cursors back to the start
@@ -1672,8 +1672,8 @@ local function ResetFrame(object, rec, hostFrame, pass, hidden)
         object:EnableKeyboard(details.keyboard)
     end
     if rec.pushX then
-        local posX, posY = object:GetPushedTextOffset()
-        if posX ~= rec.pushX or posY ~= rec.pushY then
+        local posX, cursorY = object:GetPushedTextOffset()
+        if posX ~= rec.pushX or cursorY ~= rec.pushY then
             object:SetPushedTextOffset(rec.pushX, rec.pushY)
         end
     end
@@ -1783,8 +1783,8 @@ local function ResetAG(ag, rec)
             end
         end
         local current = rec.cur
-        for k in pairs(current) do
-            current[k] = 0
+        for keyName in pairs(current) do
+            current[keyName] = 0
         end
     end
     -- a value the engine will not put back (an animation's smoothing): the group
@@ -1821,7 +1821,7 @@ local function RetireAG(ag)
     end
 end
 
-local function ResetRegion(object, rec, host, layer, sub)
+local function ResetRegion(object, rec, host, layer, subMenu)
     local m = getmetatable(object).__index
     if object:IsShown() then
         object:Hide()
@@ -1836,8 +1836,8 @@ local function ResetRegion(object, rec, host, layer, sub)
             ParkList(entries)
         end
         local current = rec.cur
-        for k in pairs(current) do
-            current[k] = 0
+        for keyName in pairs(current) do
+            current[keyName] = 0
         end
     end
     if object.SetToDefaults then
@@ -1866,12 +1866,12 @@ local function ResetRegion(object, rec, host, layer, sub)
         end
     end
     ForgetPixelSnap(object)
-    object:SetDrawLayer(layer, sub)
+    object:SetDrawLayer(layer, subMenu)
     if object:GetParent() ~= host then
         m.SetParent(object, host)
     end
     object:Show()
-    rec.layer, rec.sub = layer, sub
+    rec.layer, rec.sub = layer, subMenu
     rec.gen = rec.gen + 1
     rec.idle = false
 end
@@ -1962,7 +1962,7 @@ local function AcquireFrame(host, hrec, ftype, tmpl)
     return object
 end
 
-AcquireRegion = function(host, kind, method, layer, sub)
+AcquireRegion = function(host, kind, method, layer, subMenu)
     local hrec = REC[host]
     local pools = hrec.pools
     if not pools then
@@ -1978,7 +1978,7 @@ AcquireRegion = function(host, kind, method, layer, sub)
     local i = (hrec.cur[kind] or 0) + 1
     -- the draw layer a new region of this call gets (the engine default when unset)
     local nLayer = layer or "ARTWORK"
-    local nSub = (kind ~= "FontString" and tonumber(sub)) or 0
+    local nSub = (kind ~= "FontString" and tonumber(subMenu)) or 0
     local object = entries[i]
     if object then
         ResetRegion(object, REC[object], host, nLayer, nSub)
@@ -1986,7 +1986,7 @@ AcquireRegion = function(host, kind, method, layer, sub)
         if kind == "FontString" then
             object = getmetatable(host).__index.CreateFontString(host, nil, layer)
         else
-            object = getmetatable(host).__index[method](host, nil, layer, nil, sub)
+            object = getmetatable(host).__index[method](host, nil, layer, nil, subMenu)
         end
         REC[object] = {
             cls = "pooled",
@@ -2185,8 +2185,8 @@ function Pool.Begin(host)
     -- the host itself is not reset: its own engine regions stay as they are
     local named = rec.engRegs
     if named then
-        for k in pairs(named) do
-            named[k] = nil
+        for keyName in pairs(named) do
+            named[keyName] = nil
         end
     end
 end
@@ -2370,8 +2370,8 @@ function Pool._DevEndPass(host, labelText)
     -- kept frames another owner placed on this host (a section a module keeps
     -- on a page wrapper) hold pools of their own: walked too
     for _, map in pairs(KEPT) do
-        for _, k in pairs(map) do
-            local kr = REC[k]
+        for _, keyName in pairs(map) do
+            local kr = REC[keyName]
             if kr and kr.host == host then
                 DevIdleShown(kr, tostring(labelText) .. "/" .. tostring(kr.key), 0)
             end
@@ -2458,9 +2458,9 @@ function Pool._DevVerifyReset()
     -- a vector (a texture's rotation point) prints its values
     local function Fmt(val)
         if type(val) == "table" and type(val.GetXY) == "function" then
-            local posX, posY = val:GetXY()
-            if type(posX) == "number" and type(posY) == "number" then
-                return string.format("(%.3f, %.3f)", posX, posY)
+            local posX, cursorY = val:GetXY()
+            if type(posX) == "number" and type(cursorY) == "number" then
+                return string.format("(%.3f, %.3f)", posX, cursorY)
             end
         end
         return tostring(val)
@@ -2487,15 +2487,15 @@ function Pool._DevVerifyReset()
             return
         end
         for i = 2, max(ra.n, rb.n) do
-            local posX, posY = ra[i], rb[i]
+            local posX, cursorY = ra[i], rb[i]
             local same
-            if type(posX) == "number" and type(posY) == "number" then
-                same = abs(posX - posY) < 0.001
+            if type(posX) == "number" and type(cursorY) == "number" then
+                same = abs(posX - cursorY) < 0.001
             else
-                same = SameVal(posX, posY) or (ownA ~= nil and posX == ownA and posY == ownB)
+                same = SameVal(posX, cursorY) or (ownA ~= nil and posX == ownA and cursorY == ownB)
             end
             if not same then
-                Say(kind, (labelText or get) .. (i > 2 and ("#" .. (i - 1)) or ""), posX, posY)
+                Say(kind, (labelText or get) .. (i > 2 and ("#" .. (i - 1)) or ""), posX, cursorY)
                 return
             end
         end
@@ -2694,8 +2694,8 @@ function Pool._DevVerifyReset()
         { "SetVertexOffset", v = { 1, 2, 3 }, get = "GetVertexOffset", ga = { 1 } },
         {
             "AddMaskTexture",
-            v = function(hgt)
-                return hgt:CreateMaskTexture()
+            v = function(height)
+                return height:CreateMaskTexture()
             end,
             get = "GetNumMaskTextures",
         },
@@ -2734,8 +2734,8 @@ function Pool._DevVerifyReset()
         { "SetToAlpha", v = { 0.7 }, get = "GetToAlpha" },
         {
             "SetTarget",
-            v = function(hgt)
-                return hgt
+            v = function(height)
+                return height
             end,
             get = "GetTarget",
         },
@@ -2825,9 +2825,9 @@ function Pool._DevVerifyReset()
         Pool._ResetForTest(b)
         finish()
         if ftype == "ScrollFrame" then
-            local ca, cb = a:GetScrollChild(), b:GetScrollChild()
-            if ca ~= nil or (cb ~= nil and not Pool._IsPlaceholder(cb)) then
-                Say(kind, "GetScrollChild", ca, cb)
+            local ca, checkBtn = a:GetScrollChild(), b:GetScrollChild()
+            if ca ~= nil or (checkBtn ~= nil and not Pool._IsPlaceholder(checkBtn)) then
+                Say(kind, "GetScrollChild", ca, checkBtn)
             end
         end
         if roles then

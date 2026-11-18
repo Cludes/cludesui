@@ -131,10 +131,10 @@ local ADDON_DESCS = {
 }
 
 -- A texture drawn at its exact size (no snapping to the pixel grid).
-local function Unsnapped(tex)
-    if tex.SetSnapToPixelGrid then
-        tex:SetSnapToPixelGrid(false)
-        tex:SetTexelSnappingBias(0)
+local function Unsnapped(texture)
+    if texture.SetSnapToPixelGrid then
+        texture:SetSnapToPixelGrid(false)
+        texture:SetTexelSnappingBias(0)
     end
 end
 
@@ -143,24 +143,24 @@ end
 -- Returns box, tick, border, background.
 local function CheckBox(parent, exact)
     local EG = CludesUI.CLUDES_GREEN
-    local box = CreateFrame("Frame", nil, parent)
-    box:SetSize(CHK_SZ, CHK_SZ)
-    local bg = box:CreateTexture(nil, "BACKGROUND")
+    local boxFrame = CreateFrame("Frame", nil, parent)
+    boxFrame:SetSize(CHK_SZ, CHK_SZ)
+    local bg = boxFrame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(0.114, 0.106, 0.099, 1)
     if exact then
         Unsnapped(bg)
     end
-    local border = CludesUI.MakeRoundedBorder(box, 0.224, 0.215, 0.207, 0.6, bg)
-    local tick = box:CreateTexture(nil, "ARTWORK")
-    tick:SetPoint("TOPLEFT", box, "TOPLEFT", 3, -3)
-    tick:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -3, 3)
+    local border = CludesUI.MakeRoundedBorder(boxFrame, 0.224, 0.215, 0.207, 0.6, bg)
+    local tick = boxFrame:CreateTexture(nil, "ARTWORK")
+    tick:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", 3, -3)
+    tick:SetPoint("BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", -3, 3)
     tick:SetColorTexture(EG.r, EG.g, EG.b, 1)
-    CludesUI.RoundBody(box, tick, 1)
+    CludesUI.RoundBody(boxFrame, tick, 1)
     if exact then
         Unsnapped(tick)
     end
-    return box, tick, border, bg
+    return boxFrame, tick, border, bg
 end
 
 -- A module list row's look per state: name and description alpha, the tick,
@@ -175,7 +175,7 @@ local ROW_LOOK = {
 -- inactiveColor {r,g,b,a}, visuals (repaint list), onToggle(apply) after
 -- the value flips, linked() -> members, own key, display map, linkedTip(list),
 -- blockedTip (hover text on inactive rows; nil = silent).
-local function BuildAddonListRow(scrollChild, i, item, totalW, o)
+local function BuildAddonListRow(scrollChild, i, entry, totalW, o)
     local EG = CludesUI.CLUDES_GREEN
     local rowFrame = CreateFrame("Frame", nil, scrollChild)
     rowFrame:SetSize(totalW, ROW_H_A)
@@ -190,25 +190,25 @@ local function BuildAddonListRow(scrollChild, i, item, totalW, o)
     nameFs:SetPoint("RIGHT", rowFrame, "RIGHT", -(CHK_SZ + STATUS_W + SIDE_PAD * 2 + 20), 0)
     nameFs:SetJustifyH("LEFT")
     nameFs:SetWordWrap(false)
-    nameFs:SetText(CludesUI.L(item.display))
+    nameFs:SetText(CludesUI.L(entry.display))
 
     local descFs = CludesUI.MakeFont(rowFrame, 11, nil, 1, 1, 1, 0.30)
     descFs:SetPoint("TOPLEFT", nameFs, "BOTTOMLEFT", 0, -5)
     descFs:SetPoint("RIGHT", nameFs, "RIGHT", 0, 0)
     descFs:SetJustifyH("LEFT")
     descFs:SetWordWrap(false)
-    descFs:SetText(CludesUI.L(item.desc))
+    descFs:SetText(CludesUI.L(entry.desc))
 
     local statusFs = CludesUI.MakeFont(rowFrame, 11, nil, 1, 1, 1, 0.40)
     statusFs:SetPoint("RIGHT", rowFrame, "RIGHT", -SIDE_PAD, 0)
     statusFs:SetJustifyH("RIGHT")
 
     -- The box sits under the Include column header.
-    local box, tick, boxBorder, boxBg = CheckBox(rowFrame, true)
-    box:SetPoint("CENTER", rowFrame, "RIGHT", INCLUDE_CENTER_X, 0)
+    local boxFrame, tick, boxBorder, boxBg = CheckBox(rowFrame, true)
+    boxFrame:SetPoint("CENTER", rowFrame, "RIGHT", INCLUDE_CENTER_X, 0)
 
     local function ApplyRowVisual()
-        local state = not o.active and "blocked" or (item.getVal() and "included" or "skipped")
+        local state = not o.active and "blocked" or (entry.getVal() and "included" or "skipped")
         local look = ROW_LOOK[state]
         nameFs:SetAlpha(look.name)
         descFs:SetAlpha(look.desc)
@@ -261,12 +261,12 @@ local function BuildAddonListRow(scrollChild, i, item, totalW, o)
     clickBtn:SetAllPoints(rowFrame)
     clickBtn:SetFrameLevel(rowFrame:GetFrameLevel() + 2)
     clickBtn:SetScript("OnClick", function()
-        item.setVal(not item.getVal())
+        entry.setVal(not entry.getVal())
         o.onToggle(ApplyRowVisual)
     end)
     clickBtn:SetScript("OnEnter", function()
         hoverTex:Show()
-        if not item.getVal() then
+        if not entry.getVal() then
             nameFs:SetAlpha(0.75)
         end
         -- The modules this one carries along (nothing couples while layout is off).
@@ -287,7 +287,7 @@ local function BuildAddonListRow(scrollChild, i, item, totalW, o)
     end)
     clickBtn:SetScript("OnLeave", function()
         hoverTex:Hide()
-        if not item.getVal() then
+        if not entry.getVal() then
             nameFs:SetAlpha(0.50)
         end
         CludesUI.HideWidgetTooltip()
@@ -296,14 +296,14 @@ end
 
 -- Done-style button hover: label and border alpha fade 0.7 -> 1 over 0.1s.
 -- Returns reset(), which snaps the fade back to idle.
-local function MakeAccentFade(btn, lbl, brd)
+local function MakeAccentFade(button, caption, brd)
     local EG = CludesUI.CLUDES_GREEN
     local lerp = CludesUI.lerp
     local FADE = 0.1
     local t, goal = 0, 0
     local function Paint(at)
         local a = lerp(0.7, 1, at)
-        lbl:SetTextColor(EG.r, EG.g, EG.b, a)
+        caption:SetTextColor(EG.r, EG.g, EG.b, a)
         brd:SetColor(EG.r, EG.g, EG.b, a)
     end
     local function Step(self, elapsed)
@@ -321,8 +321,8 @@ local function MakeAccentFade(btn, lbl, brd)
             self:SetScript("OnUpdate", Step)
         end
     end
-    btn:SetScript("OnEnter", Toward(1))
-    btn:SetScript("OnLeave", Toward(0))
+    button:SetScript("OnEnter", Toward(1))
+    button:SetScript("OnLeave", Toward(0))
     return function()
         t, goal = 0, 0
         Paint(0)
@@ -424,16 +424,16 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     -- Plain buttons: the wide button's colours with the dropdowns' white
     -- border (rest and hover alpha).
     local PROF_BTN_COLOURS = { unpack(CludesUI.WB_COLOURS, 1, 24) }
-    for i, v in ipairs({ 1, 1, 1, CludesUI.DD_BRD_A, 1, 1, 1, CludesUI.DD_BRD_HA }) do
-        PROF_BTN_COLOURS[8 + i] = v
+    for i, value in ipairs({ 1, 1, 1, CludesUI.DD_BRD_A, 1, 1, 1, CludesUI.DD_BRD_HA }) do
+        PROF_BTN_COLOURS[8 + i] = value
     end
     -- Accent buttons: background, hover background, border, hover border and
     -- text, each the accent at a strength and alpha; white hover text.
     local ACCENT_BTN_COLOURS = {}
     for _, step in ipairs({ { 0.15, 0.85 }, { 0.22, 0.95 }, { 1, 0.35 }, { 1, 0.65 }, { 1, 0.90 } }) do
         local m = step[1]
-        for _, v in ipairs({ EG.r * m, EG.g * m, EG.b * m, step[2] }) do
-            ACCENT_BTN_COLOURS[#ACCENT_BTN_COLOURS + 1] = v
+        for _, value in ipairs({ EG.r * m, EG.g * m, EG.b * m, step[2] }) do
+            ACCENT_BTN_COLOURS[#ACCENT_BTN_COLOURS + 1] = value
         end
     end
     for _ = 1, 4 do
@@ -446,40 +446,40 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     -- A dropdown button (the profile and spec pickers): label clipped to one
     -- line left of the arrow; hover paints it with the dropdown colours.
     local function MakeDropdown(parentFrame, w, ddH, getLabel)
-        local btn = CreateFrame("Button", nil, parentFrame)
-        PP.Size(btn, w, ddH)
-        btn:SetFrameLevel(parentFrame:GetFrameLevel() + 2)
-        local bg = btn:CreateTexture(nil, "BACKGROUND")
+        local button = CreateFrame("Button", nil, parentFrame)
+        PP.Size(button, w, ddH)
+        button:SetFrameLevel(parentFrame:GetFrameLevel() + 2)
+        local bg = button:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
         bg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_A)
-        local brd = CludesUI.MakeRoundedBorder(btn, 1, 1, 1, CludesUI.DD_BRD_A, bg)
+        local brd = CludesUI.MakeRoundedBorder(button, 1, 1, 1, CludesUI.DD_BRD_A, bg)
         -- The resting alpha is the text colour's, the channel the hover
         -- colours write, so a hover and leave land back on it.
-        local lbl = CludesUI.MakeFont(btn, 13, nil, 1, 1, 1, CludesUI.DD_TXT_A)
-        lbl:SetJustifyH("LEFT")
-        lbl:SetWordWrap(false)
-        lbl:SetMaxLines(1)
-        lbl:SetPoint("LEFT", btn, "LEFT", 12, 0)
-        local arrow = CludesUI.MakeDropdownArrow(btn, 12, PP)
-        lbl:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
-        lbl:SetText(getLabel())
+        local caption = CludesUI.MakeFont(button, 13, nil, 1, 1, 1, CludesUI.DD_TXT_A)
+        caption:SetJustifyH("LEFT")
+        caption:SetWordWrap(false)
+        caption:SetMaxLines(1)
+        caption:SetPoint("LEFT", button, "LEFT", 12, 0)
+        local arrow = CludesUI.MakeDropdownArrow(button, 12, PP)
+        caption:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
+        caption:SetText(getLabel())
         -- RD_DD_COLOURS: background, hover background, border, hover border,
         -- text, hover text (four values each).
         local s = CludesUI.RD_DD_COLOURS
         local function Paint(hot)
             local o = hot and 4 or 0
-            lbl:SetTextColor(s[17 + o], s[18 + o], s[19 + o], s[20 + o])
+            caption:SetTextColor(s[17 + o], s[18 + o], s[19 + o], s[20 + o])
             brd:SetColor(s[9 + o], s[10 + o], s[11 + o], s[12 + o])
             bg:SetColorTexture(s[1 + o], s[2 + o], s[3 + o], s[4 + o])
         end
-        btn:SetScript("OnEnter", function()
+        button:SetScript("OnEnter", function()
             Paint(true)
         end)
-        btn:SetScript("OnLeave", function()
+        button:SetScript("OnLeave", function()
             Paint(false)
         end)
-        btn._getLabel = getLabel
-        return btn, lbl, bg, brd, Paint
+        button._getLabel = getLabel
+        return button, caption, bg, brd, Paint
     end
 
     -- One menu per dropdown button, kept with the button: a build that dresses
@@ -532,29 +532,29 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     -- The keybind popup (made on first use, then kept): a screen dimmer that
     -- closes it on a click outside, the profile's keybind button, a hint line.
     local function BuildKeybindPopup()
-        local dimmer = CreateFrame("Frame", nil, UIParent)
-        dimmer:SetFrameStrata("FULLSCREEN_DIALOG")
-        dimmer:SetFrameLevel(100)
-        dimmer:SetAllPoints(UIParent)
-        dimmer:EnableMouse(true)
-        dimmer:EnableMouseWheel(true)
-        dimmer:SetScript("OnMouseWheel", function() end)
-        dimmer:Hide()
-        local dimTex = dimmer:CreateTexture(nil, "BACKGROUND")
+        local shade = CreateFrame("Frame", nil, UIParent)
+        shade:SetFrameStrata("FULLSCREEN_DIALOG")
+        shade:SetFrameLevel(100)
+        shade:SetAllPoints(UIParent)
+        shade:EnableMouse(true)
+        shade:EnableMouseWheel(true)
+        shade:SetScript("OnMouseWheel", function() end)
+        shade:Hide()
+        local dimTex = shade:CreateTexture(nil, "BACKGROUND")
         dimTex:SetAllPoints()
         dimTex:SetColorTexture(0, 0, 0, 0.25)
 
-        local popup = CreateFrame("Frame", nil, dimmer)
+        local popup = CreateFrame("Frame", nil, shade)
         popup:SetFrameStrata("FULLSCREEN_DIALOG")
-        popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
+        popup:SetFrameLevel(shade:GetFrameLevel() + 10)
         popup:SetSize(320, 130)
         popup:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
         popup:EnableMouse(true)
         popup:SetClampedToScreen(true)
-        popup._dimmer = dimmer
-        dimmer:SetScript("OnMouseDown", function()
+        popup._dimmer = shade
+        shade:SetScript("OnMouseDown", function()
             if not popup:IsMouseOver() then
-                dimmer:Hide()
+                shade:Hide()
             end
         end)
 
@@ -574,8 +574,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             get = function()
                 return CludesUI.GetProfileKeybind(popup._profileName)
             end,
-            set = function(v)
-                CludesUI.SetProfileKeybind(popup._profileName, v)
+            set = function(value)
+                CludesUI.SetProfileKeybind(popup._profileName, value)
             end,
         })
         kbBtn:SetPoint("CENTER", popup, "CENTER", 0, -2)
@@ -594,11 +594,11 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         -- combat starts: a screen-wide dimmer and an armed key capture never
         -- stay up into combat.
         CludesUI:RegisterOnHide(function()
-            if dimmer:IsShown() then
-                dimmer:Hide()
+            if shade:IsShown() then
+                shade:Hide()
             end
         end)
-        CludesUI.PopupTakeKeys(popup, dimmer)
+        CludesUI.PopupTakeKeys(popup, shade)
         -- Escape closes it, unless the button is capturing (it then owns the keys).
         popup:SetScript("OnKeyDown", function(self, key)
             if InCombatLockdown() then
@@ -607,7 +607,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             local close = key == "ESCAPE" and not kbBtn:IsKeyboardEnabled()
             self:SetPropagateKeyboardInput(not close)
             if close then
-                dimmer:Hide()
+                shade:Hide()
             end
         end)
         return popup
@@ -630,8 +630,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     end
 
     -- A button's border flashes red, fading back to its resting white over 0.7s.
-    local function BuildErrorFlash(btn, brd)
-        local flashFrame = CreateFrame("Frame", nil, btn)
+    local function BuildErrorFlash(button, brd)
+        local flashFrame = CreateFrame("Frame", nil, button)
         flashFrame:Hide()
         local lerp = CludesUI.lerp
         local DUR = 0.7
@@ -761,22 +761,22 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         -- Select All (accent while everything pickable is in) | Deselect All.
         local LINK_GAP = 12
         local function Link(text)
-            local btn = CreateFrame("Button", nil, hdrFrame)
-            btn:SetFrameLevel(hdrFrame:GetFrameLevel() + 2)
-            local lbl = btn:CreateFontString(nil, "OVERLAY")
-            lbl:SetFont(FONT, 12, CludesUI.GetFontOutlineFlag())
-            lbl:SetText(CludesUI.L(text))
-            lbl:SetTextColor(1, 1, 1, 0.40)
-            lbl:SetPoint("CENTER")
-            btn:SetSize(lbl:GetStringWidth() + 4, 18)
-            return btn, lbl
+            local button = CreateFrame("Button", nil, hdrFrame)
+            button:SetFrameLevel(hdrFrame:GetFrameLevel() + 2)
+            local caption = button:CreateFontString(nil, "OVERLAY")
+            caption:SetFont(FONT, 12, CludesUI.GetFontOutlineFlag())
+            caption:SetText(CludesUI.L(text))
+            caption:SetTextColor(1, 1, 1, 0.40)
+            caption:SetPoint("CENTER")
+            button:SetSize(caption:GetStringWidth() + 4, 18)
+            return button, caption
         end
         local selAllBtn, selAllLbl = Link("Select All")
         selAllBtn:SetPoint("RIGHT", hdrFrame, "RIGHT", -(STATUS_W + LINK_GAP + SIDE_PAD), 0)
         selAllBtn:SetPoint("TOP", hdrDesc, "TOP", 0, 0)
         local function AllIn()
-            for _, item in ipairs(items) do
-                if cfg.pickable(item) and not item.getVal() then
+            for _, entry in ipairs(items) do
+                if cfg.pickable(entry) and not entry.getVal() then
                     return false
                 end
             end
@@ -800,9 +800,9 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             PaintSelectAll(false)
         end)
         selAllBtn:SetScript("OnClick", function()
-            for _, item in ipairs(items) do
-                if cfg.pickable(item) then
-                    item.setVal(true)
+            for _, entry in ipairs(items) do
+                if cfg.pickable(entry) then
+                    entry.setVal(true)
                 end
             end
             Refresh()
@@ -823,8 +823,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             deselLbl:SetTextColor(1, 1, 1, 0.40)
         end)
         deselBtn:SetScript("OnClick", function()
-            for _, item in ipairs(items) do
-                item.setVal(false)
+            for _, entry in ipairs(items) do
+                entry.setVal(false)
             end
             Refresh()
         end)
@@ -865,12 +865,12 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             offset = math.max(0, math.min(math.max(0, contentH - scrollH), offset - delta * ROW_H_A))
             scroller:SetVerticalScroll(offset)
         end)
-        for i, item in ipairs(items) do
-            local o = cfg.row(item)
+        for i, entry in ipairs(items) do
+            local o = cfg.row(entry)
             o.visuals = cfg.visuals
             -- Linked modules toggle together, so every row repaints.
             o.onToggle = Refresh
-            BuildAddonListRow(scrollChild, i, item, totalW, o)
+            BuildAddonListRow(scrollChild, i, entry, totalW, o)
         end
         return y - scrollH
     end
@@ -892,18 +892,18 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     -- A Done-style button: accent border and text on the dark background (the
     -- caller adds MakeAccentFade for the hover). Returns button, label, border.
     local function AccentButton(host, w, h, text, fontSize)
-        local btn = CreateFrame("Button", nil, host)
-        PP.Size(btn, w, h)
-        btn:SetFrameLevel(host:GetFrameLevel() + 2)
+        local button = CreateFrame("Button", nil, host)
+        PP.Size(button, w, h)
+        button:SetFrameLevel(host:GetFrameLevel() + 2)
         local DB = CludesUI.DARK_BG
-        local bg = CludesUI.SolidTex(btn, "BACKGROUND", DB.r, DB.g, DB.b, 0.92)
+        local bg = CludesUI.SolidTex(button, "BACKGROUND", DB.r, DB.g, DB.b, 0.92)
         bg:SetAllPoints()
-        local brd = CludesUI.MakeRoundedBorder(btn, EG.r, EG.g, EG.b, 0.7, bg)
-        local lbl = CludesUI.MakeFont(btn, fontSize or 12, nil, EG.r, EG.g, EG.b)
-        lbl:SetAlpha(0.7)
-        lbl:SetPoint("CENTER")
-        lbl:SetText(CludesUI.L(text))
-        return btn, lbl, brd
+        local brd = CludesUI.MakeRoundedBorder(button, EG.r, EG.g, EG.b, 0.7, bg)
+        local caption = CludesUI.MakeFont(button, fontSize or 12, nil, EG.r, EG.g, EG.b)
+        caption:SetAlpha(0.7)
+        caption:SetPoint("CENTER")
+        caption:SetText(CludesUI.L(text))
+        return button, caption, brd
     end
 
     -- The "Include:" checkbox dropdown left of a footer's button. rows: label,
@@ -912,12 +912,12 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     -- button reads Everything, Nothing Extra or the list of what is in.
     -- Returns the dropdown button and its summary refresh.
     local function IncludeDropdown(footer, nextTo, h, rows)
-        local ddBtn, ddLabelFS = MakeDropdown(footer, 190, h, function()
+        local dropdownBtn, ddLabelFS = MakeDropdown(footer, 190, h, function()
             return ""
         end)
-        PP.Point(ddBtn, "RIGHT", nextTo, "LEFT", -12, 0)
+        PP.Point(dropdownBtn, "RIGHT", nextTo, "LEFT", -12, 0)
         local incLbl = CludesUI.MakeFont(footer, 12, nil, 1, 1, 1, 0.6)
-        PP.Point(incLbl, "RIGHT", ddBtn, "LEFT", -8, 0)
+        PP.Point(incLbl, "RIGHT", dropdownBtn, "LEFT", -8, 0)
         incLbl:SetText(CludesUI.L("Include:"))
 
         local function On(def)
@@ -942,7 +942,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             end
         end
 
-        local menu = MakeDropdownMenu(ddBtn, 240)
+        local menu = MakeDropdownMenu(dropdownBtn, 240)
         menu:SetSize(240, #rows * 26 + 8)
         local marks = {}
         local function RefreshMenu()
@@ -964,12 +964,12 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             hl:SetAllPoints()
             hl:SetColorTexture(1, 1, 1, 1)
             hl:SetAlpha(0)
-            local box, tick = CheckBox(row)
-            box:SetPoint("LEFT", row, "LEFT", 6, 0)
+            local boxFrame, tick = CheckBox(row)
+            boxFrame:SetPoint("LEFT", row, "LEFT", 6, 0)
             marks[i] = tick
-            local lbl = CludesUI.MakeFont(row, 12, nil, 1, 1, 1, 0.7)
-            lbl:SetPoint("LEFT", box, "RIGHT", 8, 0)
-            lbl:SetText(CludesUI.L(def.label))
+            local caption = CludesUI.MakeFont(row, 12, nil, 1, 1, 1, 0.7)
+            caption:SetPoint("LEFT", boxFrame, "RIGHT", 8, 0)
+            caption:SetText(CludesUI.L(def.label))
             local live = def.enabled ~= false
             if not live then
                 row:SetAlpha(0.35)
@@ -988,14 +988,14 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             end)
             if live then
                 row:SetScript("OnClick", function()
-                    def.set(RefreshAll, ddBtn)
+                    def.set(RefreshAll, dropdownBtn)
                     RefreshAll()
                 end)
             end
         end
         -- HookScript: MakeDropdownMenu owns OnShow (scale, outside-click close).
         menu:HookScript("OnShow", RefreshMenu)
-        ddBtn:SetScript("OnClick", function()
+        dropdownBtn:SetScript("OnClick", function()
             RefreshSummary()
             if menu:IsShown() then
                 menu:Hide()
@@ -1005,7 +1005,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             end
         end)
         RefreshSummary()
-        return ddBtn, RefreshSummary
+        return dropdownBtn, RefreshSummary
     end
 
     -------------------------------------------------------------------
@@ -1208,17 +1208,17 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                     return selectedImports[canon] or false
                 end,
                 -- Hard-couple: (un)checking a module sets its whole connected component (anchor/size-match links), importable members only.
-                setVal = function(v)
+                setVal = function(value)
                     -- Layout OFF: relationships aren't imported, so skip the hard-couple and let each linked module be picked alone.
                     local members = includeLayoutImport and importComponents and importComponents[canon]
                     if members then
                         for f in pairs(members) do
                             if importCanImport[f] then
-                                selectedImports[f] = v or nil
+                                selectedImports[f] = value or nil
                             end
                         end
                     else
-                        selectedImports[canon] = v or nil
+                        selectedImports[canon] = value or nil
                     end
                 end,
             }
@@ -1261,20 +1261,20 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             desc = "Choose which addons to import. Any addons not included will use your active profile's settings in the new profile.",
             items = addonItems,
             footerH = FOOTER_H,
-            pickable = function(item)
-                return item.canImport
+            pickable = function(entry)
+                return entry.canImport
             end,
             refreshAll = RefreshAllImportVisuals,
             visuals = importVisuals,
             -- Not in the string (red) or not loaded here (dim).
-            row = function(item)
+            row = function(entry)
                 return {
-                    active = item.canImport,
-                    inactiveText = item.inPayload and CludesUI.L("Not Loaded") or CludesUI.L("Not Included"),
-                    inactiveColor = item.inPayload and { 1, 1, 1, 0.25 } or { 0.9, 0.2, 0.2, 0.7 },
+                    active = entry.canImport,
+                    inactiveText = entry.inPayload and CludesUI.L("Not Loaded") or CludesUI.L("Not Included"),
+                    inactiveColor = entry.inPayload and { 1, 1, 1, 0.25 } or { 0.9, 0.2, 0.2, 0.7 },
                     linked = function()
-                        return includeLayoutImport and importComponents and importComponents[item.canon],
-                            item.canon,
+                        return includeLayoutImport and importComponents and importComponents[entry.canon],
+                            entry.canon,
                             CANON_DISPLAY
                     end,
                     linkedTip = function(list)
@@ -1310,11 +1310,11 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             local aaBtn = CreateFrame("Button", nil, footerFrame)
             aaBtn:SetSize(180, 24)
             PP.Point(aaBtn, "TOPLEFT", importCountFs, "BOTTOMLEFT", 0, -8)
-            local box, mark = CheckBox(aaBtn)
-            box:SetPoint("LEFT", aaBtn, "LEFT", 0, 0)
-            local lbl = CludesUI.MakeFont(aaBtn, 12, nil, 1, 1, 1, 0.6)
-            lbl:SetPoint("LEFT", box, "RIGHT", 6, 0)
-            lbl:SetText(CludesUI.L("Auto Assign to Specs"))
+            local boxFrame, mark = CheckBox(aaBtn)
+            boxFrame:SetPoint("LEFT", aaBtn, "LEFT", 0, 0)
+            local caption = CludesUI.MakeFont(aaBtn, 12, nil, 1, 1, 1, 0.6)
+            caption:SetPoint("LEFT", boxFrame, "RIGHT", 6, 0)
+            caption:SetText(CludesUI.L("Auto Assign to Specs"))
             local function vis()
                 mark:SetShown(autoAssignImport)
             end
@@ -1390,14 +1390,14 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 get = function()
                     return includeWindowSkinsImport
                 end,
-                set = function(refresh, ddBtn)
+                set = function(refresh, dropdownBtn)
                     if includeWindowSkinsImport then
                         includeWindowSkinsImport = false
                         return
                     end
                     -- The answer is for this build of the import page: a build
                     -- that dresses the dropdown again before it comes drops it.
-                    local ddGen = PoolGen(ddBtn)
+                    local ddGen = PoolGen(dropdownBtn)
                     CludesUI:ShowConfirmPopup({
                         title = CludesUI.L("Overwrite Window & Tooltip Settings?"),
                         message = CludesUI.L(
@@ -1406,7 +1406,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                         confirmText = CludesUI.L("OK"),
                         cancelText = CludesUI.L("Cancel"),
                         onConfirm = function()
-                            if not SameDress(ddBtn, ddGen) then
+                            if not SameDress(dropdownBtn, ddGen) then
                                 return
                             end
                             includeWindowSkinsImport = true
@@ -1892,15 +1892,15 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         profLabel:SetJustifyH("LEFT")
 
         -- Active Profile dropdown
-        local ddBtn, ddLabelFS, _, _, ddPaint = MakeDropdown(rowFrame, DD_W, CTRL_H, function()
+        local dropdownBtn, ddLabelFS, _, _, ddPaint = MakeDropdown(rowFrame, DD_W, CTRL_H, function()
             return CludesUI.GetActiveProfileName()
         end)
-        CludesUI._profileDDBtn = ddBtn
+        CludesUI._profileDDBtn = dropdownBtn
         ddLabel = ddLabelFS
-        PP.Point(ddBtn, "TOPLEFT", profLabel, "BOTTOMLEFT", 0, -6)
+        PP.Point(dropdownBtn, "TOPLEFT", profLabel, "BOTTOMLEFT", 0, -6)
 
         -- Profile dropdown menu with inline rename/delete/keybind
-        local menu = MakeDropdownMenu(ddBtn, DD_W)
+        local menu = MakeDropdownMenu(dropdownBtn, DD_W)
         local X_SZ = 14
         local menuItems = {}
 
@@ -1909,7 +1909,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 itm:Hide()
             end
             local order, profiles = CludesUI.GetProfileList()
-            local mH = 4
+            local menuH = 4
             local idx = 0
             local activeName = CludesUI.GetActiveProfileName()
             local sid = CurrentSpecID()
@@ -1922,13 +1922,13 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                         itm = CreateFrame("Button", nil, menu)
                         itm:SetHeight(26)
                         itm:SetFrameLevel(menu:GetFrameLevel() + 1)
-                        local lbl = itm:CreateFontString(nil, "OVERLAY")
-                        lbl:SetFont(FONT, 13, CludesUI.GetFontOutlineFlag())
-                        lbl:SetPoint("LEFT", itm, "LEFT", 10, 0)
-                        lbl:SetPoint("RIGHT", itm, "RIGHT", -(X_SZ * 3 + 30), 0)
-                        lbl:SetJustifyH("LEFT")
-                        lbl:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                        itm._lbl = lbl
+                        local caption = itm:CreateFontString(nil, "OVERLAY")
+                        caption:SetFont(FONT, 13, CludesUI.GetFontOutlineFlag())
+                        caption:SetPoint("LEFT", itm, "LEFT", 10, 0)
+                        caption:SetPoint("RIGHT", itm, "RIGHT", -(X_SZ * 3 + 30), 0)
+                        caption:SetJustifyH("LEFT")
+                        caption:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
+                        itm._lbl = caption
                         local hl = itm:CreateTexture(nil, "ARTWORK")
                         hl:SetAllPoints()
                         hl:SetColorTexture(1, 1, 1, 1)
@@ -1942,10 +1942,10 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                             b:SetSize(X_SZ, X_SZ)
                             b:SetPoint("RIGHT", anchor, rel, x, 0)
                             b:SetFrameLevel(itm:GetFrameLevel() + 2)
-                            local tex = b:CreateTexture(nil, "OVERLAY")
-                            tex:SetAllPoints()
-                            Unsnapped(tex)
-                            tex:SetTexture(MEDIA .. "icons\\" .. file)
+                            local texture = b:CreateTexture(nil, "OVERLAY")
+                            texture:SetAllPoints()
+                            Unsnapped(texture)
+                            texture:SetTexture(MEDIA .. "icons\\" .. file)
                             b:SetAlpha(0.4)
                             icons[#icons + 1] = b
                             return b
@@ -1967,12 +1967,12 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                             end
                         end
                         itm._light = function()
-                            lbl:SetTextColor(1, 1, 1, 1)
+                            caption:SetTextColor(1, 1, 1, 1)
                             hl:SetAlpha(CludesUI.DD_ITEM_HL_A)
                             IconAlpha(0.8)
                         end
                         itm._dim = function()
-                            lbl:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
+                            caption:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
                             hl:SetAlpha(itm._isSel and CludesUI.DD_ITEM_SEL_A or 0)
                             IconAlpha(0.4)
                         end
@@ -1995,8 +1995,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                         menuItems[idx] = itm
                     end
 
-                    itm:SetPoint("TOPLEFT", menu, "TOPLEFT", 1, -mH)
-                    itm:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -1, -mH)
+                    itm:SetPoint("TOPLEFT", menu, "TOPLEFT", 1, -menuH)
+                    itm:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -1, -menuH)
                     itm._lbl:SetText(name)
                     itm._isSel = (name == activeName)
                     itm._hl:SetAlpha(itm._isSel and 0.04 or 0)
@@ -2114,10 +2114,10 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                     end
 
                     itm:Show()
-                    mH = mH + 26
+                    menuH = menuH + 26
                 end
             end
-            menu:SetHeight(mH + 4)
+            menu:SetHeight(menuH + 4)
         end
 
         -- The dropdown stays lit while its menu is open.
@@ -2128,7 +2128,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             ddPaint(true)
         end
 
-        ddBtn:SetScript("OnClick", function()
+        dropdownBtn:SetScript("OnClick", function()
             if menu:IsShown() then
                 menu:Hide()
             else
@@ -2136,15 +2136,15 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 menu:Show()
             end
         end)
-        ddBtn:SetScript("OnEnter", function()
+        dropdownBtn:SetScript("OnEnter", function()
             ActiveApplyHover()
         end)
-        ddBtn:SetScript("OnLeave", function()
+        dropdownBtn:SetScript("OnLeave", function()
             if not menu:IsShown() then
                 ActiveApplyNormal()
             end
         end)
-        ddBtn:HookScript("OnHide", function()
+        dropdownBtn:HookScript("OnHide", function()
             menu:Hide()
         end)
         menu:HookScript("OnShow", function()
@@ -2152,7 +2152,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         end)
         menu:SetScript("OnHide", function(self)
             self:SetScript("OnUpdate", nil)
-            if ddBtn:IsMouseOver() then
+            if dropdownBtn:IsMouseOver() then
                 ActiveApplyHover()
             else
                 ActiveApplyNormal()
@@ -2168,12 +2168,12 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             return fs
         end
         local function ColumnButton(caption, text, onClick)
-            local btn = CreateFrame("Button", nil, rowFrame)
-            PP.Size(btn, BTN_W, CTRL_H)
-            PP.Point(btn, "TOPLEFT", caption, "BOTTOMLEFT", 0, -6)
-            btn:SetFrameLevel(rowFrame:GetFrameLevel() + 2)
-            CludesUI.MakeStyledButton(btn, text, 11, PROF_BTN_COLOURS, onClick)
-            return btn
+            local button = CreateFrame("Button", nil, rowFrame)
+            PP.Size(button, BTN_W, CTRL_H)
+            PP.Point(button, "TOPLEFT", caption, "BOTTOMLEFT", 0, -6)
+            button:SetFrameLevel(rowFrame:GetFrameLevel() + 2)
+            CludesUI.MakeStyledButton(button, text, 11, PROF_BTN_COLOURS, onClick)
+            return button
         end
 
         -- Assign to Spec (Assign to Class on WoW Forever, which has no specs:
@@ -2319,17 +2319,17 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                     return selectedAddons[folder] or false
                 end,
                 -- Hard-couple: (un)checking a module sets its whole connected component, gated to loaded (exportable) members.
-                setVal = function(v)
+                setVal = function(value)
                     -- Layout OFF: relationships aren't exported, so skip the hard-couple and let each linked module be picked alone.
                     local members = includeLayoutExport and exportComponents and exportComponents[folder]
                     if members then
                         for f in pairs(members) do
                             if CludesUI.IsModuleAddonLoaded(f) then
-                                selectedAddons[f] = v or nil
+                                selectedAddons[f] = value or nil
                             end
                         end
                     else
-                        selectedAddons[folder] = v or nil
+                        selectedAddons[folder] = value or nil
                     end
                 end,
             }
@@ -2361,19 +2361,19 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             desc = "Choose which addons to include in your exported profile. Check everything for a full profile export.",
             items = addonItems,
             footerH = FOOTER_H,
-            pickable = function(item)
-                return item.loaded
+            pickable = function(entry)
+                return entry.loaded
             end,
             refreshAll = RefreshAllAddonVisuals,
             visuals = addonVisuals,
-            row = function(item)
+            row = function(entry)
                 return {
-                    active = item.loaded,
+                    active = entry.loaded,
                     inactiveText = CludesUI.L("Not Loaded"),
                     inactiveColor = { 1, 1, 1, 0.25 },
                     linked = function()
-                        return includeLayoutExport and exportComponents and exportComponents[item.folder],
-                            item.folder,
+                        return includeLayoutExport and exportComponents and exportComponents[entry.folder],
+                            entry.folder,
                             FOLDER_DISPLAY
                     end,
                     linkedTip = function(list)
@@ -2406,8 +2406,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         -- is checked, off for a subset), so the menu and summary recompute it
         -- on every open and hover.
         local function AllLoadedSelected()
-            for _, item in ipairs(addonItems) do
-                if item.loaded and not selectedAddons[item.folder] then
+            for _, entry in ipairs(addonItems) do
+                if entry.loaded and not selectedAddons[entry.folder] then
                     return false
                 end
             end
@@ -2469,9 +2469,9 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 end,
             }
         end
-        local ddBtn, refreshSummary = IncludeDropdown(footerFrame, exportSelBtn, EXPORT_BTN_H, rowDefs)
+        local dropdownBtn, refreshSummary = IncludeDropdown(footerFrame, exportSelBtn, EXPORT_BTN_H, rowDefs)
         -- Keep the AUTO summary honest after module toggles.
-        ddBtn:HookScript("OnEnter", refreshSummary)
+        dropdownBtn:HookScript("OnEnter", refreshSummary)
 
         MakeAccentFade(exportSelBtn, eaLbl, eaBrd)
         exportSelBtn:SetScript("OnClick", function()
@@ -2491,8 +2491,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             -- Every loaded module checked = FULL export: pass nil folders so the string is a plain full-profile string (no subset stamps),
             -- keeping import defaults and API strings identical.
             local allSelected = true
-            for _, item in ipairs(addonItems) do
-                if item.loaded and not selectedAddons[item.folder] then
+            for _, entry in ipairs(addonItems) do
+                if entry.loaded and not selectedAddons[entry.folder] then
                     allSelected = false
                     break
                 end

@@ -37,8 +37,8 @@ local function SetShown(stats, show)
     local old = CludesUI.QoLExtrasGet("secondaryStatsHidden")
     local hidden = {}
     if type(old) == "table" then
-        for k, val in pairs(old) do
-            hidden[k] = val
+        for keyName, val in pairs(old) do
+            hidden[keyName] = val
         end
     end
     for _, s in ipairs(stats) do
@@ -82,19 +82,19 @@ local function Build()
     local ACC = CludesUI.CLUDES_GREEN
 
     -- Groups wrap NUM_COLS to a line; each line is as tall as its longest group.
-    local lineTop, posY = {}, CONTENT_TOP
+    local lineTop, cursorY = {}, CONTENT_TOP
     for first = 1, #groups, NUM_COLS do
         local num = 0
         for gi = first, math.min(first + NUM_COLS - 1, #groups) do
             num = math.max(num, #groups[gi].stats)
         end
-        lineTop[#lineTop + 1] = posY
-        posY = posY + HEADER_H + num * ITEM_H + GRP_GAP
+        lineTop[#lineTop + 1] = cursorY
+        cursorY = cursorY + HEADER_H + num * ITEM_H + GRP_GAP
     end
 
     panelFrame = CreateFrame("Frame", nil, CludesUI.OverlayParent())
     panelFrame:SetFrameStrata("FULLSCREEN_DIALOG") -- above the options panel and its popups
-    panelFrame:SetSize(PAD * 2 + NUM_COLS * COL_W + (NUM_COLS - 1) * COL_GAP, posY - GRP_GAP + BOTTOM_H)
+    panelFrame:SetSize(PAD * 2 + NUM_COLS * COL_W + (NUM_COLS - 1) * COL_GAP, cursorY - GRP_GAP + BOTTOM_H)
     panelFrame:SetScale(CludesUI.GetPopupScale())
     panelFrame:SetClampedToScreen(true)
     panelFrame:EnableMouse(true)
@@ -110,9 +110,9 @@ local function Build()
     local title = CludesUI.MakeFont(panelFrame, 18, "", 1, 1, 1)
     title:SetPoint("TOP", panelFrame, "TOP", 0, -20)
     title:SetText(CludesUI.L("Stats to Show"))
-    local sub = CludesUI.MakeFont(panelFrame, 12, "", 1, 1, 1, 0.45)
-    sub:SetPoint("TOP", title, "BOTTOM", 0, -6)
-    sub:SetText(CludesUI.L("Checked stats show in the on-screen block."))
+    local subMenu = CludesUI.MakeFont(panelFrame, 12, "", 1, 1, 1, 0.45)
+    subMenu:SetPoint("TOP", title, "BOTTOM", 0, -6)
+    subMenu:SetText(CludesUI.L("Checked stats show in the on-screen block."))
 
     local all = {}
     for _, g in ipairs(groups) do
@@ -155,11 +155,11 @@ local function Build()
             local row = CreateFrame("Button", nil, panelFrame)
             row:SetSize(COL_W, ITEM_H)
             row:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", colX, grpY - HEADER_H - (jdx - 1) * ITEM_H)
-            local box, _, _, applyVisual = CludesUI.BuildCheckboxControl(row, row:GetFrameLevel() + 1)
-            box:ClearAllPoints()
-            box:SetPoint("LEFT", row, "LEFT", 0, 0)
+            local boxFrame, _, _, applyVisual = CludesUI.BuildCheckboxControl(row, row:GetFrameLevel() + 1)
+            boxFrame:ClearAllPoints()
+            boxFrame:SetPoint("LEFT", row, "LEFT", 0, 0)
             local labelFS = CludesUI.MakeFont(row, 12, "", 0.85, 0.85, 0.85)
-            labelFS:SetPoint("LEFT", box, "RIGHT", 8, 0)
+            labelFS:SetPoint("LEFT", boxFrame, "RIGHT", 8, 0)
             labelFS:SetText(CludesUI.L(s.label))
             local function Apply()
                 applyVisual(IsShown(s.key), row:IsMouseOver())

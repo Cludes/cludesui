@@ -63,8 +63,8 @@ local function Set(key, val)
 end
 -- Row setters over Set: the key written with the row's value.
 local function SetRow(key)
-    return function(v)
-        Set(key, v)
+    return function(value)
+        Set(key, value)
     end
 end
 
@@ -144,21 +144,21 @@ local function WhereItems()
     local labels = mod._MT_WHERE_LABELS
     whereItems = {}
     for idx = 1, #keyList do
-        local k = keyList[idx]
-        whereItems[idx] = { key = k, label = labels[k] or k }
+        local keyName = keyList[idx]
+        whereItems[idx] = { key = keyName, label = labels[keyName] or keyName }
     end
     return whereItems
 end
 
 -- Some entries default to true, so an unchecked entry is stored as false:
 -- a missing one would be filled back in with its default at the next login.
-local function WhereGet(k)
+local function WhereGet(keyName)
     local c = KT()
     local t = c and c.whereToShow
-    return type(t) == "table" and t[k] == true
+    return type(t) == "table" and t[keyName] == true
 end
 
-local function WhereSet(k, val)
+local function WhereSet(keyName, val)
     local c = KT()
     if not c then
         return
@@ -168,7 +168,7 @@ local function WhereSet(k, val)
         t = {}
         c.whereToShow = t
     end
-    t[k] = val and true or false
+    t[keyName] = val and true or false
     Refresh()
 end
 
@@ -310,8 +310,8 @@ end
 
 mod._KT_BuildPage = function(page, hostFrame, yOffset)
     local W = CludesUI.Widgets
-    local posY = yOffset
-    local _, row, hgt
+    local cursorY = yOffset
+    local _, row, height
 
     CludesUI:SetContentHeader(mod._KT_HeaderBuilder)
     hostFrame._showRowDivider = true
@@ -331,14 +331,14 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                 "Like all current kick trackers, this feature is experimental and may stop working if\nBlizzard decides to hotfix the workaround that makes this possible."
             )
         )
-        CludesUI.PP.Point(warn, "TOPLEFT", hostFrame, "TOPLEFT", pad, posY - 10)
-        posY = posY - 10 - math.ceil(warn:GetStringHeight()) - 2
+        CludesUI.PP.Point(warn, "TOPLEFT", hostFrame, "TOPLEFT", pad, cursorY - 10)
+        cursorY = cursorY - 10 - math.ceil(warn:GetStringHeight()) - 2
     end
 
-    _, hgt = W:SectionHeader(hostFrame, "KICK TRACKER", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "KICK TRACKER", cursorY)
+    cursorY = cursorY - height
 
-    row, hgt = W:DualRow(hostFrame, posY, {
+    row, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Enable Kick Tracker",
         tooltip = "Who in the group kicked each enemy and when their interrupt comes back, read from Blizzard's own damage meter (which must be on). Others' cooldowns follow their class, spec and talents, read before a key starts; yours follow your own talents.",
@@ -368,7 +368,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         end,
         setValue = function() end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         local region = row._rightRegion
         if region._control then
@@ -394,7 +394,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         CludesUI.RegisterWidgetRefresh(whereRefresh)
     end
 
-    row, hgt = W:DualRow(hostFrame, posY, {
+    row, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Focus Announce",
         tooltip = "Tells the party your focus marker at ready checks.",
@@ -418,7 +418,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         disabledTooltip = REQ,
         onClick = EditAnnounceText,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- The red warning on the dropdown while the nameplate icons are on with
     -- no marker set (the standard empty-selection warning), with a dismiss
     -- button beside it that waves it off for good, account-wide.
@@ -448,10 +448,10 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
 
     -- The rest of the page exists only while the feature is on.
     if On() then
-        _, hgt = W:SectionHeader(hostFrame, "NAMEPLATE ICON", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "NAMEPLATE ICON", cursorY)
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show on Nameplates",
             tooltip = "Kick icons with their cooldown on the kicked enemies' nameplates.",
@@ -471,9 +471,9 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             getValue = GetRow("iconStyle", "kick"),
             setValue = SetRow("iconStyle"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Icon Size",
             min = 16,
@@ -494,7 +494,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             getValue = GetRow("anchor", "LEFT"),
             setValue = SetPosition,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(row._rightRegion, {
                 tip = "Position Offsets",
@@ -550,7 +550,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             })
         end
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Cooldown Timer",
             tooltip = "The seconds left on the kicker's interrupt.",
@@ -576,7 +576,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             end,
             setValue = function() end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             -- Icon Effects: the checkbox dropdown over its three keys, in
             -- place of the row's placeholder dropdown.
@@ -653,7 +653,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             })
         end
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Above Overlapping Nameplates",
             tooltip = "The icons draw over every other nameplate, so an overlapping plate never hides one. When off, an icon stays inside its own nameplate, behind any plate that covers it.",
@@ -666,19 +666,19 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                 Set("aboveOverlap", val and true or false)
             end,
         }, CludesUI.BlankRowCfg())
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- The Move in Unlock Mode button on the bars' first section, built
         -- whatever Show Bars says: its disabled state explains itself.
         local heading
-        heading, hgt = W:SectionHeader(hostFrame, "BARS", posY)
-        posY = posY - hgt
+        heading, height = W:SectionHeader(hostFrame, "BARS", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "EMT_KickBars", disabled = BarsOff, disabledTooltip = REQ_BARS }
         )
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Bars",
             tooltip = "A row per group member with an interrupt: the interrupt's icon, their name on a bar in their class color, and the seconds left while it is on cooldown.",
@@ -699,9 +699,9 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             getValue = GetRow("barWidth", 200),
             setValue = SetRow("barWidth"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Bar Height",
             min = 6,
@@ -724,13 +724,13 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             getValue = GetRow("barSpacing", 2),
             setValue = SetRow("barSpacing"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         local texValues, texOrder = {}, {}
         if mod._MT_BuildBarTexDropdown then
             texValues, texOrder = mod._MT_BuildBarTexDropdown()
         end
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "segmented",
             text = "Grow Direction",
             tooltip = "Which way the rows stack.",
@@ -754,9 +754,9 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             getValue = GetRow("texture", "none"),
             setValue = SetRow("texture"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "multiSwatch",
             text = "Background Color",
             tooltip = "Behind each row: a darkened version of the member's class color, or one custom color.",
@@ -832,9 +832,9 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             getValue = GetRow("barBorderSize", 0),
             setValue = SetRow("barBorderSize"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Display Elements",
             tooltip = "The interrupt's icon, the member's name, the seconds left on the interrupt and the raid marker of the enemy they interrupted.",
@@ -859,7 +859,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                 Set("barIncludeSelf", val and true or false)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             -- Display Elements: the checkbox dropdown over its four keys, in
             -- place of the row's placeholder dropdown, and its cog beside it:
@@ -924,7 +924,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         end
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
-    hostFrame:SetHeight(math.abs(posY - yOffset))
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
+    hostFrame:SetHeight(math.abs(cursorY - yOffset))
 end

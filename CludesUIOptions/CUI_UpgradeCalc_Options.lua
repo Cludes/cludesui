@@ -32,8 +32,8 @@ end
 local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
     local W = CludesUI.Widgets
     local Pix = CludesUI.PanelPP
-    local posY = yOffset
-    local _, hgt
+    local cursorY = yOffset
+    local _, height
 
     hostFrame._showRowDivider = true
 
@@ -59,7 +59,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         local row = CreateFrame("Frame", nil, hostFrame)
         local totalW = hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2
         Pix.Size(row, totalW, ROW_H)
-        Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY)
+        Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
 
         local openBtn = CreateFrame("Button", nil, row)
         Pix.Size(openBtn, BTN_W, BTN_H)
@@ -86,7 +86,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
             end
         end)
 
-        posY = posY - ROW_H
+        cursorY = cursorY - ROW_H
     end
 
     -- Reposition hint
@@ -94,7 +94,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         local fontFile = (CludesUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
         local infoFrame = CreateFrame("Frame", nil, hostFrame)
         infoFrame:SetSize(hostFrame:GetWidth(), 20)
-        infoFrame:SetPoint("TOP", hostFrame, "TOP", 0, posY - 10)
+        infoFrame:SetPoint("TOP", hostFrame, "TOP", 0, cursorY - 10)
         infoFrame._isSpacer = true
         local line1 = infoFrame:CreateFontString(nil, "OVERLAY")
         line1:SetFont(fontFile, 15, "")
@@ -102,17 +102,17 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         line1:SetPoint("TOP", infoFrame, "TOP", 0, 0)
         line1:SetJustifyH("CENTER")
         line1:SetText(CludesUI.L("Reposition this element with Shift+Click and Drag."))
-        posY = posY - 36
+        cursorY = cursorY - 36
     end
 
     ---------------------------------------------------------------------------
     --  DISPLAY
     ---------------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
+    cursorY = cursorY - height
 
     -- Row 1: Open with Character Sheet | Window Scale
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Open with Character Sheet",
         tooltip = "Automatically opens and closes the Upgrade Calculator when the Character Sheet is opened or closed.",
@@ -138,10 +138,10 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
             end
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Row 2: Show Fully-Upgraded Items | Hide Crafted Items
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Fully-Upgraded Items",
         tooltip = "Show gear tiles for items already at their maximum item level.",
@@ -164,7 +164,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
             LiveRefresh()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Row 3: Slot Groups | Crest Rows
     local SLOT_GROUP_ITEMS = {
@@ -182,7 +182,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         { key = "Myth", label = "Myth" },
     }
 
-    local filterRow, filterRowH = W:DualRow(hostFrame, posY, {
+    local filterRow, filterRowH = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Slot Groups",
         values = { __placeholder = "..." },
@@ -202,61 +202,61 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         setValue = function() end,
     })
     if not CludesUI._prebuilding then
-        local leftRgn = filterRow._leftRegion
-        if leftRgn._control then
-            leftRgn._control:Hide()
+        local leftRegion = filterRow._leftRegion
+        if leftRegion._control then
+            leftRegion._control:Hide()
         end
-        local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-            leftRgn,
+        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+            leftRegion,
             210,
-            leftRgn:GetFrameLevel() + 2,
+            leftRegion:GetFrameLevel() + 2,
             SLOT_GROUP_ITEMS,
-            function(k)
+            function(keyName)
                 local scrollFrame = GetAddonDB().slotFilter
-                return scrollFrame == nil or scrollFrame[k] ~= false
+                return scrollFrame == nil or scrollFrame[keyName] ~= false
             end,
-            function(k, val)
+            function(keyName, val)
                 local saved = GetAddonDB()
                 saved.slotFilter = saved.slotFilter or {}
-                saved.slotFilter[k] = val
+                saved.slotFilter[keyName] = val
                 LiveRefresh()
             end
         )
-        Pix.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
-        leftRgn._control = cbDD
-        leftRgn._lastInline = nil
+        Pix.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
+        leftRegion._control = checkDrop
+        leftRegion._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
     end
     if not CludesUI._prebuilding then
-        local rightRgn = filterRow._rightRegion
-        if rightRgn._control then
-            rightRgn._control:Hide()
+        local rightRegion = filterRow._rightRegion
+        if rightRegion._control then
+            rightRegion._control:Hide()
         end
-        local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-            rightRgn,
+        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+            rightRegion,
             210,
-            rightRgn:GetFrameLevel() + 2,
+            rightRegion:GetFrameLevel() + 2,
             CREST_TRACK_ITEMS,
-            function(k)
+            function(keyName)
                 local castFrame = GetAddonDB().crestFilter
-                return castFrame == nil or castFrame[k] ~= false
+                return castFrame == nil or castFrame[keyName] ~= false
             end,
-            function(k, val)
+            function(keyName, val)
                 local saved = GetAddonDB()
                 saved.crestFilter = saved.crestFilter or {}
-                saved.crestFilter[k] = val
+                saved.crestFilter[keyName] = val
                 LiveRefresh()
             end
         )
-        Pix.Point(cbDD, "RIGHT", rightRgn, "RIGHT", -20, 0)
-        rightRgn._control = cbDD
-        rightRgn._lastInline = nil
+        Pix.Point(checkDrop, "RIGHT", rightRegion, "RIGHT", -20, 0)
+        rightRegion._control = checkDrop
+        rightRegion._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
     end
-    posY = posY - filterRowH
+    cursorY = cursorY - filterRowH
 
     -- Row 4: Show Earned/Cap Column | Show Still Available Column
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Earned / Cap Column",
         tooltip = "Show the seasonal Earned / Cap column in the crest table.",
@@ -279,7 +279,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
             LiveRefresh()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Row 5: Show Calc Button on Character Sheet | Open with Crest Upgrader.
     -- The button is a tab on the CludesUI character sheet: gated while the
@@ -306,7 +306,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         calcBtnCfg.disabledTooltip = "Character Sheet: Blizz Default"
         calcBtnCfg.requireState = "disabled"
     end
-    _, hgt = W:DualRow(hostFrame, posY, calcBtnCfg, {
+    _, height = W:DualRow(hostFrame, cursorY, calcBtnCfg, {
         type = "toggle",
         text = "Open with Crest Upgrader",
         tooltip = "Automatically opens the Upgrade Calculator when the Crest Upgrade NPC window is opened.",
@@ -317,11 +317,11 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
             GetAddonDB().openWithUpgrader = val
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:SectionHeader(hostFrame, "TOOLTIPS", posY)
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:SectionHeader(hostFrame, "TOOLTIPS", cursorY)
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Enhanced Upgrade Tooltips",
         tooltip = "Replaces the Upgrade Level line with a colored rank, track and potential item-level range, including Ascension for eligible weapons, trinkets and necklaces. Shows the upgrade currency beside it while upgrades remain. Unmatched tracks keep Blizzard's text.",
@@ -333,14 +333,14 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
             CludesUI._applyUpgradeTooltips()
         end,
     }, CludesUI.BlankRowCfg())
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
-    hostFrame:SetHeight(math.abs(posY - yOffset))
+    hostFrame:SetHeight(math.abs(cursorY - yOffset))
 
-    return math.abs(posY)
+    return math.abs(cursorY)
 end
 
 -- Open/close-with-Character-Sheet hook lives in CUI_UpgradeCalc.lua (resident
@@ -355,8 +355,8 @@ _G._CUI_ResetUpgradeCalc = function()
     CludesUI._applyUpgradeTooltips()
     if CUIUpgCalc and CUIUpgCalc.GetOptsDB then
         local options = CUIUpgCalc.GetOptsDB()
-        for k in pairs(options) do
-            options[k] = nil
+        for keyName in pairs(options) do
+            options[keyName] = nil
         end
     elseif CludesUIQoLDB then
         CludesUIQoLDB.upgradeCalcOpts = {}

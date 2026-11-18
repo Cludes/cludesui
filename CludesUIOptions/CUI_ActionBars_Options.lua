@@ -252,14 +252,14 @@ CludesUI.AtOptionsLogin(function()
         local s = target:GetEffectiveScale()
         local uiS = UIParent:GetEffectiveScale()
         local wid = (target:GetWidth() or 50) * s / uiS
-        local hgt = (target:GetHeight() or 50) * s / uiS
-        editOverlayFrame:SetSize(wid, hgt)
+        local height = (target:GetHeight() or 50) * s / uiS
+        editOverlayFrame:SetSize(wid, height)
 
         local leftX, topY = target:GetLeft(), target:GetTop()
         if leftX and topY then
             local uiH = UIParent:GetHeight()
             local cx = leftX * s / uiS + wid * 0.5
-            local cy = topY * s / uiS - hgt * 0.5
+            local cy = topY * s / uiS - height * 0.5
             editOverlayFrame:ClearAllPoints()
             editOverlayFrame:SetPoint("CENTER", UIParent, "TOPLEFT", cx, cy - uiH)
         end
@@ -387,18 +387,18 @@ CludesUI.AtOptionsLogin(function()
         return VisibilityCompat.Normalize(s)
     end
 
-    local function ApplyVisibilityKey(s, v)
+    local function ApplyVisibilityKey(s, value)
         if VisibilityCompat then
-            VisibilityCompat.ApplyMode(s, v)
+            VisibilityCompat.ApplyMode(s, value)
             return
         end
 
-        s.barVisibility = v
-        s.alwaysHidden = (v == "never")
+        s.barVisibility = value
+        s.alwaysHidden = (value == "never")
 
         local wasMouseover = s.mouseoverEnabled
-        s.mouseoverEnabled = (v == "mouseover")
-        if v == "mouseover" then
+        s.mouseoverEnabled = (value == "mouseover")
+        if value == "mouseover" then
             if not wasMouseover then
                 s._savedBarAlpha = s.mouseoverAlpha or 1
             end
@@ -408,8 +408,8 @@ CludesUI.AtOptionsLogin(function()
             s._savedBarAlpha = nil
         end
 
-        s.combatHideEnabled = (v == "out_of_combat")
-        s.combatShowEnabled = (v == "in_combat")
+        s.combatHideEnabled = (value == "out_of_combat")
+        s.combatShowEnabled = (value == "in_combat")
     end
 
     local function CopyVisibilitySettings(dst, source, dstKey)
@@ -427,8 +427,8 @@ CludesUI.AtOptionsLogin(function()
             return
         end
 
-        local v = source.barVisibility or "always"
-        dst.barVisibility = v
+        local value = source.barVisibility or "always"
+        dst.barVisibility = value
         dst.visibilityMatch = source.visibilityMatch or nil
         dst.alwaysHidden = source.alwaysHidden
         dst.mouseoverEnabled = source.mouseoverEnabled
@@ -518,34 +518,34 @@ CludesUI.AtOptionsLogin(function()
         end
         -- The checklist in `rgn` (a DualRow half built from C.Cfg), its cog
         -- and its Apply to All link.
-        function C.Build(rgn)
+        function C.Build(region)
             if CludesUI._prebuilding then
                 return
             end
-            if rgn._control then
-                rgn._control:Hide()
+            if region._control then
+                region._control:Hide()
             end
-            local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                rgn,
+            local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                region,
                 170,
-                rgn:GetFrameLevel() + 2,
+                region:GetFrameLevel() + 2,
                 { { key = "L", label = "Left Endcap" }, { key = "R", label = "Right Endcap" } },
-                function(k)
+                function(keyName)
                     local l, r = mod.AB_CapsSides(o.key())
-                    if k == "L" then
+                    if keyName == "L" then
                         return l
                     end
                     return r
                 end,
-                function(k, v)
+                function(keyName, value)
                     -- Both sides are written, the untouched one as the bar
                     -- shows it now: a written side never reads a default.
                     local s = o.store()
                     local l, r = mod.AB_CapsSides(o.key())
-                    if k == "L" then
-                        l = v and true or false
+                    if keyName == "L" then
+                        l = value and true or false
                     else
-                        r = v and true or false
+                        r = value and true or false
                     end
                     s.endCapLeft, s.endCapRight = l, r
                     o.write()
@@ -558,16 +558,16 @@ CludesUI.AtOptionsLogin(function()
                 -- Spec Overrides see each click as it happens (the slot's capture).
                 { notifyWrites = true }
             )
-            Pix.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-            rgn._control = cbDD
-            rgn._lastInline = nil
+            Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+            region._control = checkDrop
+            region._lastInline = nil
             CludesUI.RegisterWidgetRefresh(cbDDRefresh)
             -- The checklist has no disabled state of its own: grey it and
             -- block clicks on a vertical bar (the row label explains).
             local function ApplyCapsDisabled()
                 local off = C.Vertical()
-                cbDD:SetAlpha(off and 0.3 or 1)
-                cbDD:EnableMouse(not off)
+                checkDrop:SetAlpha(off and 0.3 or 1)
+                checkDrop:EnableMouse(not off)
             end
             ApplyCapsDisabled()
             CludesUI.RegisterWidgetRefresh(ApplyCapsDisabled)
@@ -592,8 +592,8 @@ CludesUI.AtOptionsLogin(function()
                     get = function()
                         return mod.AB_CapsArt(o.key())
                     end,
-                    set = function(v)
-                        o.write("endCapArt", v)
+                    set = function(value)
+                        o.write("endCapArt", value)
                     end,
                 }
             end
@@ -607,8 +607,8 @@ CludesUI.AtOptionsLogin(function()
                 get = function()
                     return mod.AB_CapsVal(o.key(), "endCapScale") or 100
                 end,
-                set = function(v)
-                    o.write("endCapScale", v)
+                set = function(value)
+                    o.write("endCapScale", value)
                 end,
             }
             rowList[#rowList + 1] = {
@@ -621,8 +621,8 @@ CludesUI.AtOptionsLogin(function()
                 get = function()
                     return mod.AB_CapsVal(o.key(), "endCapOffsetX") or 0
                 end,
-                set = function(v)
-                    o.write("endCapOffsetX", v)
+                set = function(value)
+                    o.write("endCapOffsetX", value)
                 end,
             }
             rowList[#rowList + 1] = {
@@ -634,11 +634,11 @@ CludesUI.AtOptionsLogin(function()
                 get = function()
                     return mod.AB_CapsVal(o.key(), "endCapOffsetY") or 5
                 end,
-                set = function(v)
-                    o.write("endCapOffsetY", v)
+                set = function(value)
+                    o.write("endCapOffsetY", value)
                 end,
             }
-            CludesUI.BuildInlineCog(rgn, {
+            CludesUI.BuildInlineCog(region, {
                 title = "End Cap Settings",
                 disabled = function()
                     return C.Vertical() or C.Off()
@@ -655,7 +655,7 @@ CludesUI.AtOptionsLogin(function()
 
             if o.syncKeys then
                 CludesUI.BuildSyncIcon({
-                    region = rgn,
+                    region = region,
                     tooltip = "Apply End Caps to all Bars",
                     onClick = function()
                         for _, key in ipairs(o.syncKeys) do
@@ -672,7 +672,7 @@ CludesUI.AtOptionsLogin(function()
                         return true
                     end,
                     flashTargets = function()
-                        return { rgn }
+                        return { region }
                     end,
                     multiApply = {
                         elementKeys = o.syncKeys,
@@ -693,7 +693,7 @@ CludesUI.AtOptionsLogin(function()
         return C
     end
 
-    local function BuildSharedBarSettings(hostFrame, posY)
+    local function BuildSharedBarSettings(hostFrame, cursorY)
         local W = CludesUI.Widgets
 
         ---------------------------------------------------------------
@@ -713,8 +713,8 @@ CludesUI.AtOptionsLogin(function()
             return SB()
         end
         local function SVal(key, default)
-            local v = SB()[key]
-            return v ~= nil and v or default
+            local value = SB()[key]
+            return value ~= nil and value or default
         end
         local function SSetColor(key, r, g, b, a, applyFn)
             SB()[key] = { r = r, g = g, b = b, a = a }
@@ -779,12 +779,12 @@ CludesUI.AtOptionsLogin(function()
             visOnly = visOnly,
             W = W,
         }
-        posY = mod.ABO_BuildBarVisibilityLayout(hostFrame, posY, context)
+        cursorY = mod.ABO_BuildBarVisibilityLayout(hostFrame, cursorY, context)
 
         if not visOnly then
             local classColorBorderRow
-            posY, iconsSectionHeader, textSectionHeader, keybindRow, chargesRow, classColorBorderRow =
-                mod.ABO_BuildBarAppearance(hostFrame, posY, context)
+            cursorY, iconsSectionHeader, textSectionHeader, keybindRow, chargesRow, classColorBorderRow =
+                mod.ABO_BuildBarAppearance(hostFrame, cursorY, context)
 
             -------------------------------------------------------------------
             --  CLICK NAVIGATION
@@ -857,14 +857,14 @@ CludesUI.AtOptionsLogin(function()
 
             local textOverlays = {}
             if optionState.activePreview then
-                local pv = optionState.activePreview
-                local pvButtons = pv._buttons
+                local preview = optionState.activePreview
+                local pvButtons = preview._buttons
                 local iconLevel = (
                     pvButtons[1] and pvButtons[1].frame and pvButtons[1].frame:GetFrameLevel() or 5
                 ) + 10
                 local textOnIconLevel = iconLevel + 10
                 local iconHlOpts = { hlBehindText = true }
-                for idx = 1, pv._barInfo.count do
+                for idx = 1, preview._barInfo.count do
                     local record = pvButtons[idx]
                     if record and record.frame then
                         CreateHitOverlay(record.frame, "icon", false, iconLevel, iconHlOpts)
@@ -878,17 +878,17 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end
                 end
-                pv._textOverlays = textOverlays
+                preview._textOverlays = textOverlays
             end
         end -- if not visOnly
 
-        return posY
+        return cursorY
     end
 
     local function BuildBarDisplayPage(page, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
 
         optionState.activePreview = nil
 
@@ -919,7 +919,7 @@ CludesUI.AtOptionsLogin(function()
             local DD_H = 34
             local availW = hdrW - PAD * 2
             local ddW = 350
-            local ddBtn, ddLbl = CludesUI.BuildDropdownControl(
+            local dropdownBtn, dropCaption = CludesUI.BuildDropdownControl(
                 heading,
                 ddW,
                 heading:GetFrameLevel() + 5,
@@ -928,12 +928,12 @@ CludesUI.AtOptionsLogin(function()
                 function()
                     return SelectedKey()
                 end,
-                function(v)
-                    _selectedBarKey = v
+                function(value)
+                    _selectedBarKey = value
                     -- Always force a full rebuild: visibility-only bars and StanceBar share visOnly/dataBar flags, so a conditional misses transitions.
                     -- The rebuild builds this header as well (BuildBarDisplayPage sets it), so no header is built here first.
                     CludesUI:RefreshPage(true)
-                    ShowEditOverlay(v)
+                    ShowEditOverlay(value)
                 end,
                 function(key)
                     -- Bar9/Bar10 default to Hidden visibility but must stay selectable so they can be configured -- never show the disabled effect.
@@ -948,14 +948,14 @@ CludesUI.AtOptionsLogin(function()
             -- The Quick Keybind Mode key button sits KB_GAP left of the
             -- dropdown, and the two are centred as one block.
             local KB_GAP = 5
-            Pix.Point(ddBtn, "TOP", heading, "TOP", (DD_H + KB_GAP) / 2, fy)
-            ddBtn:SetHeight(DD_H)
+            Pix.Point(dropdownBtn, "TOP", heading, "TOP", (DD_H + KB_GAP) / 2, fy)
+            dropdownBtn:SetHeight(DD_H)
 
             -- Quick Keybind Mode: a square key button in the dropdown's style.
             do
                 local kbBtn = CreateFrame("Button", nil, heading)
                 Pix.Size(kbBtn, DD_H, DD_H)
-                Pix.Point(kbBtn, "RIGHT", ddBtn, "LEFT", -KB_GAP, 0)
+                Pix.Point(kbBtn, "RIGHT", dropdownBtn, "LEFT", -KB_GAP, 0)
                 kbBtn:SetFrameLevel(heading:GetFrameLevel() + 5)
                 CludesUI.MakeStyledButton(kbBtn, "", 13, CludesUI.RD_DD_COLOURS, function()
                     if InCombatLockdown() then
@@ -1035,9 +1035,9 @@ CludesUI.AtOptionsLogin(function()
         -------------------------------------------------------------------
         --  Build shared settings (single mode)
         -------------------------------------------------------------------
-        posY = BuildSharedBarSettings(hostFrame, posY)
+        cursorY = BuildSharedBarSettings(hostFrame, cursorY)
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     -- Bar Animations page (ActionBars_Options\AnimationsPage_Options.lua). Called

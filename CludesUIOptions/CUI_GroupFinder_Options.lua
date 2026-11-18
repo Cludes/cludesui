@@ -26,11 +26,11 @@ CludesUI.AtLogin(function()
     end
     local function APGet(key, default)
         local c = APCfg()
-        local v = c and c[key]
-        if v == nil then
+        local value = c and c[key]
+        if value == nil then
             return default
         end
-        return v
+        return value
     end
     local function APSet(key, val)
         local c = APCfg()
@@ -51,8 +51,8 @@ CludesUI.AtLogin(function()
 
     local function BuildSearchPage(page, hostFrame, yOffset)
         local W = CUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
 
         -- sample groups up top, drawn as the list draws them
         if mod.OwnListPreviewBuild then
@@ -70,10 +70,10 @@ CludesUI.AtLogin(function()
         local function QuickOn()
             return CludesUIDB and CludesUIDB.quickSignup and true or false
         end
-        _, hgt = W:SectionHeader(hostFrame, "GENERAL", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "GENERAL", cursorY)
+        cursorY = cursorY - height
         local bgRow
-        bgRow, hgt = W:DualRow(hostFrame, posY, {
+        bgRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Group Finder",
             disabled = function()
@@ -85,21 +85,21 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return mod.Enabled()
             end,
-            setValue = function(v)
-                v = v and true or false
-                if v == mod.Enabled() then
+            setValue = function(value)
+                value = value and true or false
+                if value == mod.Enabled() then
                     return
                 end
                 -- only saved once the reload's confirmed
                 CUI:ShowConfirmPopup({
-                    title = v and "Enable Group Finder" or "Disable Group Finder",
-                    message = v and "Your UI will reload to turn on the Group Finder."
+                    title = value and "Enable Group Finder" or "Disable Group Finder",
+                    message = value and "Your UI will reload to turn on the Group Finder."
                         or "Your UI will reload to turn off the Group Finder.",
                     confirmText = "Reload Now",
                     cancelText = "Cancel",
                     reload = true,
                     onConfirm = function()
-                        mod.SetEnabled(v)
+                        mod.SetEnabled(value)
                     end,
                     onCancel = function()
                         CUI:RefreshPage()
@@ -114,16 +114,16 @@ CludesUI.AtLogin(function()
             step = 5,
             tooltip = "How opaque the Dungeons & Raids window background is. The swatch sets its tint.",
             getValue = BgOpacity,
-            setValue = function(v)
+            setValue = function(value)
                 local was = BgOpacity() == 0
-                mod.SetWindowLook("windowBgOpacity", v)
+                mod.SetWindowLook("windowBgOpacity", value)
                 -- the swatch greys out at 0
-                if was ~= (v == 0) then
+                if was ~= (value == 0) then
                     CUI:RefreshPage()
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CUI._prebuilding then
             CUI.BuildInlineSwatches(bgRow._rightRegion, {
                 {
@@ -148,9 +148,9 @@ CludesUI.AtLogin(function()
         end
         -- both account-wide
         local noteRow
-        noteRow, hgt = W:DualRow(
+        noteRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             -- one dropdown over the account-wide quickSignup switch and this
             -- profile's click count
             {
@@ -170,12 +170,12 @@ CludesUI.AtLogin(function()
                     end
                     return mod.OwnListGet("signupClicks")
                 end,
-                setValue = function(v)
-                    if v == "disabled" then
+                setValue = function(value)
+                    if value == "disabled" then
                         CludesUIDB.quickSignup = false
                     else
                         CludesUIDB.quickSignup = true
-                        mod.SetOwnListValue("signupClicks", v)
+                        mod.SetOwnListValue("signupClicks", value)
                     end
                     if CUI._applyQuickSignup then
                         CUI._applyQuickSignup()
@@ -189,8 +189,8 @@ CludesUI.AtLogin(function()
                 getValue = function()
                     return CludesUIDB and CludesUIDB.persistSignupNote or false
                 end,
-                setValue = function(v)
-                    CludesUIDB.persistSignupNote = v
+                setValue = function(value)
+                    CludesUIDB.persistSignupNote = value
                     if CUI._applyPersistSignupNote then
                         CUI._applyPersistSignupNote()
                     end
@@ -198,7 +198,7 @@ CludesUI.AtLogin(function()
                 end,
             }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CUI._prebuilding then
             CUI.BuildInlineCog(noteRow._rightRegion, {
                 gap = 9,
@@ -226,59 +226,59 @@ CludesUI.AtLogin(function()
                 end,
             })
         end
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Cancel Oldest Application",
             tooltip = "At the application limit, clicking a group cancels your oldest pending application so you can sign up.",
             getValue = function()
                 return mod.Cfg().cancelOldest == true
             end,
-            setValue = function(v)
-                mod.Cfg().cancelOldest = v and true or false
+            setValue = function(value)
+                mod.Cfg().cancelOldest = value and true or false
             end,
         }, CUI.BlankRowCfg())
-        posY = posY - hgt
+        cursorY = cursorY - height
         if PGFLoaded() then
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "label",
                 text = CUI.COLOR_CODES.ERROR
                     .. CludesUI.L("Premade Groups Filter is loaded. Disable it to use the Group Finder.")
                     .. "|r",
             }, CUI.BlankRowCfg())
-            posY = posY - hgt
+            cursorY = cursorY - height
         end
 
-        posY = AddListSections(hostFrame, posY)
+        cursorY = AddListSections(hostFrame, cursorY)
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        hostFrame:SetHeight(math.abs(posY - yOffset))
-        return math.abs(posY - yOffset)
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        hostFrame:SetHeight(math.abs(cursorY - yOffset))
+        return math.abs(cursorY - yOffset)
     end
 
     -- applications page, reset buttons with it
     local function BuildAppsPage(hostFrame, yOffset)
         local W = CUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
         if CUI.ClearContentHeader then
             CUI:ClearContentHeader()
         end
         hostFrame._showRowDivider = true
-        posY = AddAppsSections(hostFrame, posY)
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        hostFrame:SetHeight(math.abs(posY - yOffset))
-        return math.abs(posY - yOffset)
+        cursorY = AddAppsSections(hostFrame, cursorY)
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        hostFrame:SetHeight(math.abs(cursorY - yOffset))
+        return math.abs(cursorY - yOffset)
     end
 
     -- results list, display, the applicant list
-    function AddListSections(hostFrame, posY)
+    function AddListSections(hostFrame, cursorY)
         local W = CUI.Widgets
-        local _, hgt
-        _, hgt = W:SectionHeader(hostFrame, "RESULTS LIST", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        local _, height
+        _, height = W:SectionHeader(hostFrame, "RESULTS LIST", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Title Text Size",
             min = 8,
@@ -288,8 +288,8 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return mod.OwnListSize("titleSize")
             end,
-            setValue = function(v)
-                mod.SetOwnListSize("titleSize", v)
+            setValue = function(value)
+                mod.SetOwnListSize("titleSize", value)
             end,
         }, {
             type = "slider",
@@ -301,12 +301,12 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return mod.OwnListSize("lineSize")
             end,
-            setValue = function(v)
-                mod.SetOwnListSize("lineSize", v)
+            setValue = function(value)
+                mod.SetOwnListSize("lineSize", value)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Dungeon / Raid Text Size",
             min = 8,
@@ -316,8 +316,8 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return mod.OwnListSize("nameSize")
             end,
-            setValue = function(v)
-                mod.SetOwnListSize("nameSize", v)
+            setValue = function(value)
+                mod.SetOwnListSize("nameSize", value)
             end,
         }, {
             type = "toggle",
@@ -326,15 +326,15 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return mod.Cfg().nameColors == true
             end,
-            setValue = function(v)
-                mod.Cfg().nameColors = v and true or false
+            setValue = function(value)
+                mod.Cfg().nameColors = value and true or false
                 if mod.Redecorate then
                     mod.Redecorate()
                 end
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Row Height",
             min = 20,
@@ -344,8 +344,8 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return mod.OwnListRowHeight()
             end,
-            setValue = function(v)
-                mod.SetOwnListRowHeight(v)
+            setValue = function(value)
+                mod.SetOwnListRowHeight(value)
             end,
         }, {
             type = "toggle",
@@ -354,11 +354,11 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return mod.OwnListGet("appsFirst") ~= false
             end,
-            setValue = function(v)
-                mod.SetOwnListValue("appsFirst", v and true or false)
+            setValue = function(value)
+                mod.SetOwnListValue("appsFirst", value and true or false)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- status color: a checklist, one color each
         local LINE_ITEMS = {
             { key = "lineDelisted", label = "Delisted", tooltip = "The group was delisted." },
@@ -371,9 +371,9 @@ CludesUI.AtLogin(function()
             },
         }
         local lineRow
-        lineRow, hgt = W:DualRow(
+        lineRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             -- placeholder, the checklist replaces it
             {
                 type = "dropdown",
@@ -395,18 +395,18 @@ CludesUI.AtLogin(function()
                 getValue = function()
                     return mod.OwnListGet("visibility")
                 end,
-                setValue = function(v)
-                    if v == mod.OwnListGet("visibility") then
+                setValue = function(value)
+                    if value == mod.OwnListGet("visibility") then
                         return
                     end
-                    mod.SetOwnListValue("visibility", v)
+                    mod.SetOwnListValue("visibility", value)
                     if mod.DimFiltersChanged then
                         mod.DimFiltersChanged()
                     end
                 end,
             }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CUI._prebuilding then
             local region = lineRow._leftRegion
             if region._control then
@@ -420,8 +420,8 @@ CludesUI.AtLogin(function()
                 function(key)
                     return mod.OwnListGet(key) ~= false
                 end,
-                function(key, v)
-                    mod.SetOwnListValue(key, v and true or false)
+                function(key, value)
+                    mod.SetOwnListValue(key, value and true or false)
                 end
             )
             CUI.PanelPP.Point(dropdown, "RIGHT", region, "RIGHT", -20, 0)
@@ -458,8 +458,8 @@ CludesUI.AtLogin(function()
                         get = function()
                             return mod.OwnListGet("statusStyle") == "row" and "row" or "underline"
                         end,
-                        set = function(v)
-                            mod.SetOwnListValue("statusStyle", v)
+                        set = function(value)
+                            mod.SetOwnListValue("statusStyle", value)
                         end,
                     },
                     Picker("lineDelisted", "Delisted Color"),
@@ -470,7 +470,7 @@ CludesUI.AtLogin(function()
             })
         end
         local rioRow
-        rioRow, hgt = W:DualRow(hostFrame, posY, {
+        rioRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Raider.IO Rating Colors",
             tooltip = "Color the leader's rating with Raider.IO's score colors. Otherwise, use the game's rating colors.",
@@ -481,8 +481,8 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return mod.Cfg().rioRatingColors ~= false
             end,
-            setValue = function(v)
-                mod.Cfg().rioRatingColors = v and true or false
+            setValue = function(value)
+                mod.Cfg().rioRatingColors = value and true or false
                 if mod.Redecorate then
                     mod.Redecorate()
                 end
@@ -494,11 +494,11 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return mod.Cfg().classTooltip ~= false
             end,
-            setValue = function(v)
-                mod.Cfg().classTooltip = v and true or false
+            setValue = function(value)
+                mod.Cfg().classTooltip = value and true or false
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CUI._prebuilding then
             -- the rating text shows with the game's colors too, so the cog stays
             -- open without Raider.IO
@@ -515,20 +515,20 @@ CludesUI.AtLogin(function()
                         get = function()
                             return mod.OwnListSize("scoreSize")
                         end,
-                        set = function(v)
-                            mod.SetOwnListSize("scoreSize", v)
+                        set = function(value)
+                            mod.SetOwnListSize("scoreSize", value)
                         end,
                     },
                 },
             })
         end
 
-        _, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
+        cursorY = cursorY - height
         local function Circle()
             return mod.OwnListGet("iconShape") ~= "square"
         end
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "segmented",
             text = "Icon Shape",
             tooltip = "The member and specialization icon shape.",
@@ -537,8 +537,8 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return mod.OwnListGet("iconShape")
             end,
-            setValue = function(v)
-                mod.SetOwnListValue("iconShape", v)
+            setValue = function(value)
+                mod.SetOwnListValue("iconShape", value)
                 CUI:RefreshPage(true)
             end,
         }, {
@@ -551,17 +551,17 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return tonumber(mod.Cfg().iconSize) or mod.DEFAULTS.iconSize
             end,
-            setValue = function(v)
-                mod.Cfg().iconSize = v
+            setValue = function(value)
+                mod.Cfg().iconSize = value
                 if mod.Redecorate then
                     mod.Redecorate()
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         local texValues, texOrder = CUI.GetBorderTextureDropdown()
         local borderRow
-        borderRow, hgt = W:DualRow(hostFrame, posY, {
+        borderRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Border Style",
             tooltip = "The border around square icons.",
@@ -572,10 +572,10 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return mod.OwnListGet("borderTexture")
             end,
-            setValue = function(v)
+            setValue = function(value)
                 -- a new style starts on its own color
                 mod.SetOwnListValue("borderColor", nil)
-                mod.SetOwnListValue("borderTexture", v)
+                mod.SetOwnListValue("borderTexture", value)
                 CUI:RefreshPage(true)
             end,
         }, {
@@ -588,11 +588,11 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return tonumber(mod.OwnListGet("borderSize")) or 0
             end,
-            setValue = function(v)
-                mod.SetOwnListValue("borderSize", v)
+            setValue = function(value)
+                mod.SetOwnListValue("borderSize", value)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         do
             -- border color swatch
             local region = borderRow and borderRow._rightRegion
@@ -615,7 +615,7 @@ CludesUI.AtLogin(function()
                 CUI.RegisterWidgetRefresh(update)
             end
         end
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Missing Role Icons",
             tooltip = "When there is a missing role, add an icon to show you which one.",
@@ -624,8 +624,8 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return mod.OwnListGet("missingIcons")
             end,
-            setValue = function(v)
-                mod.SetOwnListValue("missingIcons", v)
+            setValue = function(value)
+                mod.SetOwnListValue("missingIcons", value)
                 if mod.Redecorate then
                     mod.Redecorate()
                 end -- blizzard's list too
@@ -637,39 +637,39 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return mod.Cfg().extraRowArt == true
             end,
-            setValue = function(v)
-                mod.Cfg().extraRowArt = v and true or false
+            setValue = function(value)
+                mod.Cfg().extraRowArt = value and true or false
                 if mod.GFRetagRows then
                     mod.GFRetagRows()
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         local function Shown(key, default)
-            local v = mod.Cfg()[key]
-            if v == nil then
-                v = mod.DEFAULTS[key]
+            local value = mod.Cfg()[key]
+            if value == nil then
+                value = mod.DEFAULTS[key]
             end
-            if v == nil then
-                v = default
+            if value == nil then
+                value = default
             end
-            return v and true or false
+            return value and true or false
         end
-        local function SetShown(key, v)
-            mod.Cfg()[key] = v and true or false
+        local function SetShown(key, value)
+            mod.Cfg()[key] = value and true or false
             if mod.Redecorate then
                 mod.Redecorate()
             end
         end
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Specialization",
             tooltip = "Shows each member's specialization icon in place of the game's class and role icons. Off, the game's own icons stay.",
             getValue = function()
                 return Shown("specIcons")
             end,
-            setValue = function(v)
-                SetShown("specIcons", v)
+            setValue = function(value)
+                SetShown("specIcons", value)
             end,
         }, {
             type = "toggle",
@@ -678,14 +678,14 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return Shown("leaderCrown")
             end,
-            setValue = function(v)
-                SetShown("leaderCrown", v)
+            setValue = function(value)
+                SetShown("leaderCrown", value)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- the third line: playstyle and region tag (rows already drawn take them now)
-        local function SetLine(key, v)
-            mod.Cfg()[key] = v and true or false
+        local function SetLine(key, value)
+            mod.Cfg()[key] = value and true or false
             if mod.Redecorate then
                 mod.Redecorate()
             end
@@ -704,20 +704,20 @@ CludesUI.AtLogin(function()
                 getValue = function()
                     return Shown("extraRegionTags", true)
                 end,
-                setValue = function(v)
-                    SetLine("extraRegionTags", v)
+                setValue = function(value)
+                    SetLine("extraRegionTags", value)
                 end,
             }
         end
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Leader Rating",
             tooltip = "Shows the group leader's Mythic+ rating next to the role icons.",
             getValue = function()
                 return Shown("leaderRating")
             end,
-            setValue = function(v)
-                SetShown("leaderRating", v)
+            setValue = function(value)
+                SetShown("leaderRating", value)
             end,
         }, {
             type = "toggle",
@@ -726,11 +726,11 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return Shown("extraShowPlaystyle", true)
             end,
-            setValue = function(v)
-                SetLine("extraShowPlaystyle", v)
+            setValue = function(value)
+                SetLine("extraShowPlaystyle", value)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         local notesCfg = {
             type = "toggle",
             text = "Show Group Notes",
@@ -738,35 +738,35 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return mod.OwnListGet("groupNotes") == true
             end,
-            setValue = function(v)
-                mod.SetOwnListValue("groupNotes", v and true or false)
+            setValue = function(value)
+                mod.SetOwnListValue("groupNotes", value and true or false)
             end,
         }
         if tagsCfg then
-            _, hgt = W:DualRow(hostFrame, posY, tagsCfg, notesCfg)
+            _, height = W:DualRow(hostFrame, cursorY, tagsCfg, notesCfg)
         else
-            _, hgt = W:DualRow(hostFrame, posY, notesCfg, CUI.BlankRowCfg())
+            _, height = W:DualRow(hostFrame, cursorY, notesCfg, CUI.BlankRowCfg())
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- the filter's dungeon / raid squares
-        local function SetSquares(key, v)
-            mod.Cfg()[key] = v and true or false
+        local function SetSquares(key, value)
+            mod.Cfg()[key] = value and true or false
             if mod.Search_Layout then
                 mod.Search_Layout()
             end
         end
-        _, hgt = W:SectionHeader(hostFrame, "DUNGEON / RAID ROW", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:SectionHeader(hostFrame, "DUNGEON / RAID ROW", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Dungeon Names",
             tooltip = "Each dungeon square shows the dungeon's short name (e.g. KR for Kings' Rest).",
             getValue = function()
                 return mod.Cfg().dungeonAbbr == true
             end,
-            setValue = function(v)
-                SetSquares("dungeonAbbr", v)
+            setValue = function(value)
+                SetSquares("dungeonAbbr", value)
             end,
         }, {
             type = "toggle",
@@ -775,11 +775,11 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return mod.Cfg().dungeonScore == true
             end,
-            setValue = function(v)
-                SetSquares("dungeonScore", v)
+            setValue = function(value)
+                SetSquares("dungeonScore", value)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- what Hide Applicant Info hides (the profile's streamer* keys)
         local HIDE_INFO_ITEMS = {
@@ -802,12 +802,12 @@ CludesUI.AtLogin(function()
             { key = "streamerSpec", label = "Specialization", tooltip = "Removes the spec column." },
             { key = "streamerNote", label = "Note", tooltip = "Hides each applicant's note." },
         }
-        _, hgt = W:SectionHeader(hostFrame, "APPLICANT LIST", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "APPLICANT LIST", cursorY)
+        cursorY = cursorY - height
         local applicantRow
-        applicantRow, hgt = W:DualRow(
+        applicantRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             {
                 type = "slider",
                 text = "Applicant Row Height",
@@ -818,8 +818,8 @@ CludesUI.AtLogin(function()
                 getValue = function()
                     return mod.OwnListGet("applicantRowHeight") or 36
                 end,
-                setValue = function(v)
-                    mod.SetOwnListValue("applicantRowHeight", v)
+                setValue = function(value)
+                    mod.SetOwnListValue("applicantRowHeight", value)
                 end,
             },
             -- placeholder, the checklist replaces it
@@ -835,7 +835,7 @@ CludesUI.AtLogin(function()
                 setValue = function() end,
             }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CUI._prebuilding then
             local region = applicantRow._rightRegion
             if region._control then
@@ -849,8 +849,8 @@ CludesUI.AtLogin(function()
                 function(key)
                     return mod.OwnListGet(key) == true
                 end,
-                function(key, v)
-                    mod.SetOwnListValue(key, v and true or false)
+                function(key, value)
+                    mod.SetOwnListValue(key, value and true or false)
                 end
             )
             CUI.PanelPP.Point(dropdown, "RIGHT", region, "RIGHT", -20, 0)
@@ -858,19 +858,19 @@ CludesUI.AtLogin(function()
             region._lastInline = nil
             CUI.RegisterWidgetRefresh(ddRefresh)
         end
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Class Colored Role Icons",
             tooltip = "Each applicant's role icons take their class color, in place of the role's blue, green or red.",
             getValue = function()
                 return mod.OwnListGet("roleClassColors") == true
             end,
-            setValue = function(v)
-                mod.SetOwnListValue("roleClassColors", v and true or false)
+            setValue = function(value)
+                mod.SetOwnListValue("roleClassColors", value and true or false)
             end,
         }, CUI.BlankRowCfg())
-        posY = posY - hgt
-        return posY
+        cursorY = cursorY - height
+        return cursorY
     end
 
     local function ResetMessage(scope)
@@ -883,15 +883,15 @@ CludesUI.AtLogin(function()
         return CludesUI.L("Reset the character application counts to zero?")
     end
 
-    AddAppsSections = function(hostFrame, posY)
+    AddAppsSections = function(hostFrame, cursorY)
         local W = CUI.Widgets
-        local _, hgt
+        local _, height
 
-        _, hgt = W:SectionHeader(hostFrame, "M+ APPLICATIONS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "M+ APPLICATIONS", cursorY)
+        cursorY = cursorY - height
 
         local scopeValues = { session = "Session", character = "Character", account = "Account" }
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Applications in Group Finder",
             tooltip = "A bar at the top of the Dungeons & Raids sidebar that counts your Mythic+ application results.",
@@ -900,8 +900,8 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return APGet("enabled", false) == true
             end,
-            setValue = function(v)
-                APSet("enabled", v and true or false)
+            setValue = function(value)
+                APSet("enabled", value and true or false)
                 CUI:RefreshPage()
             end,
         }, {
@@ -915,11 +915,11 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return APGet("scope", "character")
             end,
-            setValue = function(v)
-                APSet("scope", v)
+            setValue = function(value)
+                APSet("scope", value)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- application visibility: which results show on the bar (all on when unset)
         local VIS_LABEL = "Application Visibility"
@@ -976,9 +976,9 @@ CludesUI.AtLogin(function()
             end,
         }
         local visRow
-        visRow, hgt = W:DualRow(
+        visRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             -- placeholder, the checklist replaces it
             {
                 type = "dropdown",
@@ -1003,12 +1003,12 @@ CludesUI.AtLogin(function()
                 getValue = function()
                     return APGet("texture", "none")
                 end,
-                setValue = function(v)
-                    APSet("texture", v)
+                setValue = function(value)
+                    APSet("texture", value)
                 end,
             }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if not CUI._prebuilding then
             local region = visRow._leftRegion
@@ -1023,8 +1023,8 @@ CludesUI.AtLogin(function()
                 function(key)
                     return APGet(key, true) == true
                 end,
-                function(key, v)
-                    APSet(key, v and true or false)
+                function(key, value)
+                    APSet(key, value and true or false)
                 end,
                 nil,
                 nil,
@@ -1039,7 +1039,7 @@ CludesUI.AtLogin(function()
             CUI.RegisterWidgetRefresh(visDDRefresh)
         end
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Title",
             tooltip = 'The "M+ Applications" title above the bar.',
@@ -1048,14 +1048,14 @@ CludesUI.AtLogin(function()
             getValue = function()
                 return APGet("showTitle", true) ~= false
             end,
-            setValue = function(v)
-                APSet("showTitle", v and true or false)
+            setValue = function(value)
+                APSet("showTitle", value and true or false)
             end,
         }, CUI.BlankRowCfg())
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "RESET APPLICATION COUNTS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "RESET APPLICATION COUNTS", cursorY)
+        cursorY = cursorY - height
         local function Reset(labelText, scope)
             return function()
                 CUI:ShowConfirmPopup({
@@ -1079,20 +1079,20 @@ CludesUI.AtLogin(function()
                 { disabled = true, tooltip = tipText },
             }
         end
-        _, hgt = W:WideTripleButton(
+        _, height = W:WideTripleButton(
             hostFrame,
             "Reset Session",
             "Reset Character",
             "Reset Account",
-            posY,
+            cursorY,
             Reset("Reset Session", "session"),
             Reset("Reset Character", "character"),
             Reset("Reset Account", "account"),
             nil,
             offOpts
         )
-        posY = posY - hgt
-        return posY
+        cursorY = cursorY - height
+        return cursorY
     end
 
     CUI:RegisterModule(ADDON_NAME, {

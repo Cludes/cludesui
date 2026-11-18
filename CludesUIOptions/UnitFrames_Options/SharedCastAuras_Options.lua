@@ -22,8 +22,8 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 -- A cast text's sync icon: its size (default when unset), its colour when the
 -- selected frame has one of its own, and fitKey's toggle when given. Frames
 -- agree when sizes and toggles match and both colours match or both are unset.
-local function CastTextSync(rgn, label, sizeKey, sizeDefault, colorKey, fitKey)
-    mod.UFO_UnitSync(rgn, label, {
+local function CastTextSync(region, label, sizeKey, sizeDefault, colorKey, fitKey)
+    mod.UFO_UnitSync(region, label, {
         self = true,
         copy = function(t, from)
             t[sizeKey] = from[sizeKey] or sizeDefault
@@ -50,7 +50,7 @@ local function CastTextSync(rgn, label, sizeKey, sizeDefault, colorKey, fitKey)
     })
 end
 
-function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
+function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
     local environ = mod._UFO_OptEnv
     local GROUP_UNIT_ORDER, Pix, RegisterWidgetRefresh, ReloadAndUpdate =
         environ.GROUP_UNIT_ORDER, environ.PP, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
@@ -61,8 +61,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         context.W, context.SGetSupported, context.SSetSupported, context.SVal
     -- Row setters over SSetSupported: the key written with the row's value, then ReloadAndUpdate() and UpdatePreview() for the Then form.
     local function SSetSupportedRowThen(key)
-        return function(v)
-            SSetSupported(key, v)
+        return function(value)
+            SSetSupported(key, value)
             ReloadAndUpdate()
             UpdatePreview()
         end
@@ -74,14 +74,14 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
             return SValSupported(key, default)
         end
     end
-    local hgt
+    local height
 
     -------------------------------------------------------------------
     --  CAST BAR
     -------------------------------------------------------------------
     local sharedCastHeader
-    sharedCastHeader, hgt = W:SectionHeader(hostFrame, "CAST BAR", posY)
-    posY = posY - hgt
+    sharedCastHeader, height = W:SectionHeader(hostFrame, "CAST BAR", cursorY)
+    cursorY = cursorY - height
 
     -- Helper: get/set castbar visibility per unit
     local function GetCastbarEnabled(unitKey)
@@ -103,17 +103,17 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
     local function GetCastbarHeight()
         local u = optionState.selectedUnit
         if u == "player" then
-            local v = UNIT_DB_MAP.player().playerCastbarHeight or 0
-            return (v <= 0) and 14 or v
+            local value = UNIT_DB_MAP.player().playerCastbarHeight or 0
+            return (value <= 0) and 14 or value
         else
             return UNIT_DB_MAP[u]().castbarHeight or 14
         end
     end
-    local function SetCastbarHeight(v)
+    local function SetCastbarHeight(value)
         if optionState.selectedUnit == "player" then
-            UNIT_DB_MAP.player().playerCastbarHeight = v
+            UNIT_DB_MAP.player().playerCastbarHeight = value
         else
-            UNIT_DB_MAP[optionState.selectedUnit]().castbarHeight = v
+            UNIT_DB_MAP[optionState.selectedUnit]().castbarHeight = value
         end
     end
 
@@ -144,7 +144,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         -- through the panel's own widget path; a transparent button over the row
         -- click-throughs to Resource & Cast Bars > Cast Bar (accent "click here").
         local hintRow
-        hintRow, hgt = W:DualRow(hostFrame, posY, { type = "label", text = hintText }, nil) -- cui-style: allow dualrow-nil
+        hintRow, height = W:DualRow(hostFrame, cursorY, { type = "label", text = hintText }, nil) -- cui-style: allow dualrow-nil
         if not CludesUI._prebuilding then
             -- Labels are single-line by default; wrap this hint inside the full-width
             -- row so "click here" stays on screen.
@@ -172,7 +172,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                 CludesUI.HideWidgetTooltip()
             end)
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     -- Row 1: Show Cast Bar (toggle + fill swatch) | Height (slider). This row and
@@ -183,7 +183,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
     local cbhDis, cbhTip, cbhRaw = CludesUI.MatchGuard(cbKey, "Height", function()
         return not GetCastbarEnabled(optionState.selectedUnit)
     end, "Show Cast Bar")
-    sharedCastRow1, hgt = W:DualRow(hostFrame, posY, {
+    sharedCastRow1, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Cast Bar",
         getValue = function()
@@ -193,8 +193,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         -- so the toggle flip forces the full rebuild.
         setValue = CludesUI.DependentSetValue(function()
             return GetCastbarEnabled(optionState.selectedUnit)
-        end, function(v)
-            SetCastbarEnabled(optionState.selectedUnit, v)
+        end, function(value)
+            SetCastbarEnabled(optionState.selectedUnit, value)
             ReloadAndUpdate()
             UpdatePreview()
             CludesUI:RefreshPage()
@@ -209,23 +209,23 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         disabledTooltip = cbhTip,
         rawTooltip = cbhRaw,
         getValue = GetCastbarHeight,
-        setValue = function(v)
-            SetCastbarHeight(v)
+        setValue = function(value)
+            SetCastbarHeight(value)
             ReloadAndUpdate()
             UpdatePreview()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Sync icon: Show Cast Bar + Fill Color (left region)
     if not CludesUI._prebuilding then
-        local rgn = sharedCastRow1._leftRegion
+        local region = sharedCastRow1._leftRegion
         local isKickUnit = optionState.selectedUnit == "target" or optionState.selectedUnit == "focus"
         CludesUI.BuildSyncIcon({
-            region = rgn,
+            region = region,
             tooltip = isKickUnit and "Apply Show Cast Bar and Cast Color to Target and Focus"
                 or "Apply Show Cast Bar and Fill Color to all Frames",
             onClick = function()
-                local v = GetCastbarEnabled(optionState.selectedUnit)
+                local value = GetCastbarEnabled(optionState.selectedUnit)
                 local c = UNIT_DB_MAP[optionState.selectedUnit]().castbarFillColor
                 local readyC = isKickUnit
                     and UNIT_DB_MAP[optionState.selectedUnit]().castbarInterruptReadyColor
@@ -233,7 +233,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     and UNIT_DB_MAP[optionState.selectedUnit]().castbarUninterruptibleColor
                 local keyList = isKickUnit and { "target", "focus" } or GROUP_UNIT_ORDER
                 for _, key in ipairs(keyList) do
-                    SetCastbarEnabled(key, v)
+                    SetCastbarEnabled(key, value)
                     if c then
                         UNIT_DB_MAP[key]().castbarFillColor = { r = c.r, g = c.g, b = c.b }
                     end
@@ -250,7 +250,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
-                local v = GetCastbarEnabled(optionState.selectedUnit)
+                local value = GetCastbarEnabled(optionState.selectedUnit)
                 local c = UNIT_DB_MAP[optionState.selectedUnit]().castbarFillColor
                 local readyC = isKickUnit
                     and UNIT_DB_MAP[optionState.selectedUnit]().castbarInterruptReadyColor
@@ -258,7 +258,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     and UNIT_DB_MAP[optionState.selectedUnit]().castbarUninterruptibleColor
                 local keyList = isKickUnit and { "target", "focus" } or GROUP_UNIT_ORDER
                 for _, key in ipairs(keyList) do
-                    if GetCastbarEnabled(key) ~= v then
+                    if GetCastbarEnabled(key) ~= value then
                         return false
                     end
                     local kc = UNIT_DB_MAP[key]().castbarFillColor
@@ -291,7 +291,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                 return true
             end,
             flashTargets = function()
-                return { rgn }
+                return { region }
             end,
             multiApply = {
                 elementKeys = GROUP_UNIT_ORDER,
@@ -300,14 +300,14 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     return optionState.selectedUnit
                 end,
                 onApply = function(checkedKeys)
-                    local v = GetCastbarEnabled(optionState.selectedUnit)
+                    local value = GetCastbarEnabled(optionState.selectedUnit)
                     local c = UNIT_DB_MAP[optionState.selectedUnit]().castbarFillColor
                     local readyC = isKickUnit
                         and UNIT_DB_MAP[optionState.selectedUnit]().castbarInterruptReadyColor
                     local unintC = isKickUnit
                         and UNIT_DB_MAP[optionState.selectedUnit]().castbarUninterruptibleColor
                     for _, key in ipairs(checkedKeys) do
-                        SetCastbarEnabled(key, v)
+                        SetCastbarEnabled(key, value)
                         if c then
                             UNIT_DB_MAP[key]().castbarFillColor = { r = c.r, g = c.g, b = c.b }
                         end
@@ -330,21 +330,21 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
     -- (target/focus only). Deliberately outside the Show Cast Bar sync icon:
     -- these are per-unit detail settings.
     if not CludesUI._prebuilding then
-        local rgn = sharedCastRow1._leftRegion
+        local region = sharedCastRow1._leftRegion
         local cogRows = {
             {
                 type = "toggle",
                 label = "Hide When Idle",
                 tooltip = "Only show the cast bar while a cast is in progress; hide it the rest of the time.",
                 get = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().castbarHideWhenInactive
-                    if v == nil then
+                    local value = UNIT_DB_MAP[optionState.selectedUnit]().castbarHideWhenInactive
+                    if value == nil then
                         return true
                     end
-                    return v
+                    return value
                 end,
-                set = function(v)
-                    UNIT_DB_MAP[optionState.selectedUnit]().castbarHideWhenInactive = v
+                set = function(value)
+                    UNIT_DB_MAP[optionState.selectedUnit]().castbarHideWhenInactive = value
                     ReloadAndUpdate()
                     UpdatePreview()
                 end,
@@ -359,8 +359,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                 get = function()
                     return UNIT_DB_MAP[optionState.selectedUnit]().castFillOpacity or 100
                 end,
-                set = function(v)
-                    UNIT_DB_MAP[optionState.selectedUnit]().castFillOpacity = v
+                set = function(value)
+                    UNIT_DB_MAP[optionState.selectedUnit]().castFillOpacity = value
                     ReloadAndUpdate()
                     UpdatePreview()
                 end,
@@ -375,8 +375,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                 get = function()
                     return saved.profile.raiseCastbarStrata ~= false
                 end,
-                set = function(v)
-                    saved.profile.raiseCastbarStrata = v
+                set = function(value)
+                    saved.profile.raiseCastbarStrata = value
                     ReloadAndUpdate()
                 end,
             },
@@ -387,11 +387,11 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                 label = "Show Kick Ready Mid-Cast Tick",
                 tooltip = "Shows a small white tick mark on the cast bar at the point where the cast will be when your interrupt comes off cooldown.",
                 get = function()
-                    local v = SGetSupported("castbarKickTickEnabled")
-                    if v == nil then
+                    local value = SGetSupported("castbarKickTickEnabled")
+                    if value == nil then
                         return true
                     end
-                    return v
+                    return value
                 end,
                 set = SSetSupportedRowThen("castbarKickTickEnabled"),
             }
@@ -400,14 +400,14 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                 label = "Show Kick Ready Mid-Cast Bar",
                 tooltip = "When your interrupt is on cooldown now but will be ready before the enemy cast finishes, color the part of the cast bar during which your interrupt will be available. The color clears the instant your interrupt comes off cooldown.",
                 get = function()
-                    local v = SGetSupported("castbarInterruptMidCastEnabled")
-                    if v == nil then
+                    local value = SGetSupported("castbarInterruptMidCastEnabled")
+                    if value == nil then
                         return false
                     end
-                    return v
+                    return value
                 end,
-                set = function(v)
-                    SSetSupported("castbarInterruptMidCastEnabled", v)
+                set = function(value)
+                    SSetSupported("castbarInterruptMidCastEnabled", value)
                     ReloadAndUpdate()
                     UpdatePreview()
                     -- Refresh so the inline Mid-Cast swatch greys/ungreys at once;
@@ -432,23 +432,23 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
             get = function()
                 return UNIT_DB_MAP[optionState.selectedUnit]().castBorderCustom == true
             end,
-            set = function(v)
-                UNIT_DB_MAP[optionState.selectedUnit]().castBorderCustom = v
+            set = function(value)
+                UNIT_DB_MAP[optionState.selectedUnit]().castBorderCustom = value
                 ReloadAndUpdate()
                 CludesUI.ReapplyMatchPads(optionState.selectedUnit .. "Castbar")
                 CludesUI:RefreshPage(true)
             end,
         }
-        CludesUI.BuildInlineCog(rgn, {
+        CludesUI.BuildInlineCog(region, {
             title = "Cast Bar",
             rows = cogRows,
         })
     end
     -- Inline cast color swatch(es) on Show Cast Bar
     if not CludesUI._prebuilding then
-        local leftRgn = sharedCastRow1._leftRegion
+        local leftRegion = sharedCastRow1._leftRegion
         local function AddCastColorSwatch(tooltip, colorKey, fallback, disabledFn)
-            local sw, updateSw = CludesUI.BuildColorSwatch(leftRgn, leftRgn:GetFrameLevel() + 5, function()
+            local sw, updateSw = CludesUI.BuildColorSwatch(leftRegion, leftRegion:GetFrameLevel() + 5, function()
                 local c = SGetSupported(colorKey)
                 c = c or fallback
                 return c.r, c.g, c.b, 1
@@ -457,14 +457,14 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                 ReloadAndUpdate()
                 UpdatePreview()
             end, false, 20)
-            Pix.Point(sw, "RIGHT", leftRgn._lastInline or leftRgn._control, "LEFT", -8, 0)
+            Pix.Point(sw, "RIGHT", leftRegion._lastInline or leftRegion._control, "LEFT", -8, 0)
             sw:SetScript("OnEnter", function(self)
                 CludesUI.ShowWidgetTooltip(self, tooltip)
             end)
             sw:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            leftRgn._lastInline = sw
+            leftRegion._lastInline = sw
             -- Optional disabled gate: grey (0.3) + non-interactive when disabledFn
             -- is true; used by the default-off Interrupt Ready Mid-Cast swatch so
             -- it tracks its enable toggle in the cog.
@@ -510,8 +510,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
     end
     -- Sync icon: Cast Bar Height (right region)
     if not CludesUI._prebuilding then
-        local rgn = sharedCastRow1._rightRegion
-        mod.UFO_UnitSync(rgn, "Cast Bar Height", {
+        local region = sharedCastRow1._rightRegion
+        mod.UFO_UnitSync(region, "Cast Bar Height", {
             self = true,
             copy = function(t, _, unit)
                 t[unit == "player" and "playerCastbarHeight" or "castbarHeight"] = GetCastbarHeight()
@@ -531,17 +531,17 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         -- Row 2: Show Icon | Bar Background (opacity slider + inline color swatch)
         local function GetShowIcon()
             if optionState.selectedUnit == "player" then
-                local v = UNIT_DB_MAP.player().showPlayerCastIcon
-                if v == nil then
+                local value = UNIT_DB_MAP.player().showPlayerCastIcon
+                if value == nil then
                     return true
                 end
-                return v
+                return value
             else
-                local v = UNIT_DB_MAP[optionState.selectedUnit]().showCastIcon
-                if v == nil then
+                local value = UNIT_DB_MAP[optionState.selectedUnit]().showCastIcon
+                if value == nil then
                     return true
                 end
-                return v
+                return value
             end
         end
         local function SetShowIcon(val)
@@ -551,12 +551,12 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                 UNIT_DB_MAP[optionState.selectedUnit]().showCastIcon = val
             end
         end
-        castRow2, hgt = W:DualRow(hostFrame, posY, {
+        castRow2, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Icon",
             getValue = GetShowIcon,
-            setValue = function(v)
-                SetShowIcon(v)
+            setValue = function(value)
+                SetShowIcon(value)
                 ReloadAndUpdate()
                 UpdatePreview()
             end,
@@ -569,27 +569,27 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
             getValue = function()
                 return math.floor(SValSupported("castBgAlpha", 0.5) * 100 + 0.5)
             end,
-            setValue = function(v)
-                UNIT_DB_MAP[optionState.selectedUnit]().castBgAlpha = v / 100
+            setValue = function(value)
+                UNIT_DB_MAP[optionState.selectedUnit]().castBgAlpha = value / 100
                 ReloadAndUpdate()
                 UpdatePreview()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Sync icon: Show Icon (left)
         if not CludesUI._prebuilding then
-            local rgn = castRow2._leftRegion
-            mod.UFO_UnitSync(rgn, "Show Icon", {
+            local region = castRow2._leftRegion
+            mod.UFO_UnitSync(region, "Show Icon", {
                 self = true,
                 copy = function(t, _, unit)
                     t[unit == "player" and "showPlayerCastIcon" or "showCastIcon"] = GetShowIcon()
                 end,
                 same = function(t, _, unit)
-                    local v = t[unit == "player" and "showPlayerCastIcon" or "showCastIcon"]
-                    if v == nil then
-                        v = true
+                    local value = t[unit == "player" and "showPlayerCastIcon" or "showCastIcon"]
+                    if value == nil then
+                        value = true
                     end
-                    return v == GetShowIcon()
+                    return value == GetShowIcon()
                 end,
             })
         end
@@ -598,14 +598,14 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         -- "Show Icon on Portrait", additive Offset X/Y nudges. Operates on the
         -- selected unit. An icon on the portrait greys the bar-side placement rows.
         if not CludesUI._prebuilding then
-            local rgn = castRow2._leftRegion
+            local region = castRow2._leftRegion
             local function IconOnPortrait()
                 return mod.UF_CastIconOnPortrait(
                     optionState.selectedUnit,
                     UNIT_DB_MAP[optionState.selectedUnit]()
                 )
             end
-            CludesUI.BuildInlineCog(rgn, {
+            CludesUI.BuildInlineCog(region, {
                 title = "Cast Icon",
                 rows = {
                     {
@@ -621,8 +621,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                         get = function()
                             return UNIT_DB_MAP[optionState.selectedUnit]().castIconBorder == true
                         end,
-                        set = function(v)
-                            UNIT_DB_MAP[optionState.selectedUnit]().castIconBorder = v
+                        set = function(value)
+                            UNIT_DB_MAP[optionState.selectedUnit]().castIconBorder = value
                             ReloadAndUpdate()
                             UpdatePreview()
                         end,
@@ -652,11 +652,11 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                             end
                             return UNIT_DB_MAP[optionState.selectedUnit]().castbarIconInWidth ~= false
                         end,
-                        set = function(v)
+                        set = function(value)
                             if optionState.selectedUnit == "player" then
-                                UNIT_DB_MAP.player().playerCastbarIconInWidth = v
+                                UNIT_DB_MAP.player().playerCastbarIconInWidth = value
                             else
-                                UNIT_DB_MAP[optionState.selectedUnit]().castbarIconInWidth = v
+                                UNIT_DB_MAP[optionState.selectedUnit]().castbarIconInWidth = value
                             end
                             ReloadAndUpdate()
                             UpdatePreview()
@@ -678,8 +678,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                         get = function()
                             return UNIT_DB_MAP[optionState.selectedUnit]().castBorderWrapIcon == true
                         end,
-                        set = function(v)
-                            UNIT_DB_MAP[optionState.selectedUnit]().castBorderWrapIcon = v
+                        set = function(value)
+                            UNIT_DB_MAP[optionState.selectedUnit]().castBorderWrapIcon = value
                             ReloadAndUpdate()
                             UpdatePreview()
                             CludesUI.ReapplyMatchPads(optionState.selectedUnit .. "Castbar")
@@ -710,8 +710,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                         get = function()
                             return UNIT_DB_MAP[optionState.selectedUnit]().castIconSeparator == true
                         end,
-                        set = function(v)
-                            UNIT_DB_MAP[optionState.selectedUnit]().castIconSeparator = v
+                        set = function(value)
+                            UNIT_DB_MAP[optionState.selectedUnit]().castIconSeparator = value
                             ReloadAndUpdate()
                             UpdatePreview()
                         end,
@@ -729,11 +729,11 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                             end
                             return UNIT_DB_MAP[optionState.selectedUnit]().castbarIconRight == true
                         end,
-                        set = function(v)
+                        set = function(value)
                             if optionState.selectedUnit == "player" then
-                                UNIT_DB_MAP.player().playerCastbarIconRight = v
+                                UNIT_DB_MAP.player().playerCastbarIconRight = value
                             else
-                                UNIT_DB_MAP[optionState.selectedUnit]().castbarIconRight = v
+                                UNIT_DB_MAP[optionState.selectedUnit]().castbarIconRight = value
                             end
                             ReloadAndUpdate()
                             UpdatePreview()
@@ -770,11 +770,11 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                             end
                             return UNIT_DB_MAP[optionState.selectedUnit]().castbarIconOnPortrait == true
                         end,
-                        set = function(v)
+                        set = function(value)
                             if optionState.selectedUnit == "player" then
-                                UNIT_DB_MAP.player().playerCastbarIconOnPortrait = v
+                                UNIT_DB_MAP.player().playerCastbarIconOnPortrait = value
                             else
-                                UNIT_DB_MAP[optionState.selectedUnit]().castbarIconOnPortrait = v
+                                UNIT_DB_MAP[optionState.selectedUnit]().castbarIconOnPortrait = value
                             end
                             ReloadAndUpdate()
                             UpdatePreview()
@@ -795,11 +795,11 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                             end
                             return UNIT_DB_MAP[optionState.selectedUnit]().castIconOffsetX or 0
                         end,
-                        set = function(v)
+                        set = function(value)
                             if optionState.selectedUnit == "player" then
-                                UNIT_DB_MAP.player().playerCastIconOffsetX = v
+                                UNIT_DB_MAP.player().playerCastIconOffsetX = value
                             else
-                                UNIT_DB_MAP[optionState.selectedUnit]().castIconOffsetX = v
+                                UNIT_DB_MAP[optionState.selectedUnit]().castIconOffsetX = value
                             end
                             ReloadAndUpdate()
                             UpdatePreview()
@@ -820,11 +820,11 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                             end
                             return UNIT_DB_MAP[optionState.selectedUnit]().castIconOffsetY or 0
                         end,
-                        set = function(v)
+                        set = function(value)
                             if optionState.selectedUnit == "player" then
-                                UNIT_DB_MAP.player().playerCastIconOffsetY = v
+                                UNIT_DB_MAP.player().playerCastIconOffsetY = value
                             else
-                                UNIT_DB_MAP[optionState.selectedUnit]().castIconOffsetY = v
+                                UNIT_DB_MAP[optionState.selectedUnit]().castIconOffsetY = value
                             end
                             ReloadAndUpdate()
                             UpdatePreview()
@@ -835,7 +835,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         end
         -- Inline swatch on Bar Background; defaults to the cast bar's hardcoded black.
         if not CludesUI._prebuilding then
-            local rgn = castRow2._rightRegion
+            local region = castRow2._rightRegion
             local bgSwGet = function()
                 local c = UNIT_DB_MAP[optionState.selectedUnit]().castBgColor
                 if c then
@@ -849,16 +849,16 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                 UpdatePreview()
             end
             local bgSw, bgSwUpdate =
-                CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, bgSwGet, bgSwSet, false, 20)
-            Pix.Point(bgSw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = bgSw
+                CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, bgSwGet, bgSwSet, false, 20)
+            Pix.Point(bgSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+            region._lastInline = bgSw
             RegisterWidgetRefresh(function()
                 bgSwUpdate()
             end)
         end
         -- Sync icon: Bar Background (right) -- background color + opacity
         if not CludesUI._prebuilding then
-            local rgn = castRow2._rightRegion
+            local region = castRow2._rightRegion
             local function ApplyCastBgTo(keyList)
                 local source = UNIT_DB_MAP[optionState.selectedUnit]()
                 local bc = source.castBgColor or { r = 0, g = 0, b = 0 }
@@ -873,7 +873,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
             end
-            mod.UFO_UnitSync(rgn, "Bar Background", {
+            mod.UFO_UnitSync(region, "Bar Background", {
                 applyTo = ApplyCastBgTo,
                 isSynced = function()
                     local source = UNIT_DB_MAP[optionState.selectedUnit]()
@@ -907,19 +907,19 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         -- pushing same-side text. Size/X/Y live in each row's cog. Defaults: Name Left, Target Right, Duration Right.
         local castTextPosValues = { none = "None", left = "Left", right = "Right", center = "Center" }
         local castTextPosOrder = { "none", "left", "right", "center" }
-        castTextRow, hgt = W:DualRow(hostFrame, posY, {
+        castTextRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Spell Name",
             values = castTextPosValues,
             order = castTextPosOrder,
             getValue = SValSupportedRow("castSpellNameSide", "left"),
-            setValue = function(v)
+            setValue = function(value)
                 local s = UNIT_DB_MAP[optionState.selectedUnit]()
-                s.castSpellNameSide = v
+                s.castSpellNameSide = value
                 if
-                    v ~= "none"
+                    value ~= "none"
                     and (s.showCastTarget ~= false)
-                    and (s.castSpellTargetSide or "right") == v
+                    and (s.castSpellTargetSide or "right") == value
                 then
                     s.showCastTarget = false
                 end
@@ -938,20 +938,20 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                 end
                 return SValSupported("castDurationSide", "right")
             end,
-            setValue = function(v)
+            setValue = function(value)
                 local s = UNIT_DB_MAP[optionState.selectedUnit]()
-                if v == "none" then
+                if value == "none" then
                     s.showCastDuration = false
                 else
                     s.showCastDuration = true
-                    s.castDurationSide = v
+                    s.castDurationSide = value
                 end
                 ReloadAndUpdate()
                 UpdatePreview()
                 CludesUI:RefreshPage()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Inline cog on Spell Name Size: X/Y offsets (+ target/focus combine)
         if not CludesUI._prebuilding then
             local snCogRgn = castTextRow._leftRegion
@@ -988,8 +988,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     label = "Show Full Spell Name",
                     tooltip = "Long spell names shrink to fit beside the duration instead of being cut off.",
                     get = SValSupportedRow("castFitSpellName", false),
-                    set = function(v)
-                        SSetSupported("castFitSpellName", v)
+                    set = function(value)
+                        SSetSupported("castFitSpellName", value)
                         ReloadAndUpdate()
                     end,
                 },
@@ -1000,8 +1000,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     label = "Combine Spell Name and Target",
                     tooltip = "Appends the cast target to the spell name (Spell Name - Target), class colored, and disables the separate Spell Target display.",
                     get = SValSupportedRow("castCombineNameTarget", false),
-                    set = function(v)
-                        SSetSupported("castCombineNameTarget", v)
+                    set = function(value)
+                        SSetSupported("castCombineNameTarget", value)
                         ReloadAndUpdate()
                         UpdatePreview()
                         -- Grey/ungrey the Spell Name dropdown immediately.
@@ -1067,8 +1067,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     label = "Full Craft Time",
                     tooltip = "While crafting several items at once, the duration shows the time left for the whole batch and the spell name shows the craft count.",
                     get = SValSupportedRow("castFullCraftTime", false),
-                    set = function(v)
-                        SSetSupported("castFullCraftTime", v)
+                    set = function(value)
+                        SSetSupported("castFullCraftTime", value)
                         ReloadAndUpdate()
                     end,
                 }
@@ -1096,9 +1096,9 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
 
         -- Sync icons: Spell Name Size + Color (left) and Duration Size + Color (right)
         if not CludesUI._prebuilding then
-            local rgn = castTextRow._leftRegion
+            local region = castTextRow._leftRegion
             CastTextSync(
-                rgn,
+                region,
                 "Spell Name Size, Color and Show Full Spell Name",
                 "castSpellNameSize",
                 11,
@@ -1107,12 +1107,12 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
             )
         end
         if not CludesUI._prebuilding then
-            local rgn = castTextRow._rightRegion
-            CastTextSync(rgn, "Duration Size and Color", "castDurationSize", 10, "castDurationColor")
+            local region = castTextRow._rightRegion
+            CastTextSync(region, "Duration Size and Color", "castDurationSize", 10, "castDurationColor")
         end
 
         -- Row 4: Spell Target (position dropdown + cog + swatch) | Reverse Fill
-        castTargetRow, hgt = W:DualRow(hostFrame, posY, {
+        castTargetRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Spell Target",
             values = castTextPosValues,
@@ -1134,14 +1134,14 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                 end
                 return SValSupported("castSpellTargetSide", "right")
             end,
-            setValue = function(v)
+            setValue = function(value)
                 local s = UNIT_DB_MAP[optionState.selectedUnit]()
-                if v == "none" then
+                if value == "none" then
                     s.showCastTarget = false
                 else
                     s.showCastTarget = true
-                    s.castSpellTargetSide = v
-                    if (s.castSpellNameSide or "left") == v then
+                    s.castSpellTargetSide = value
+                    if (s.castSpellNameSide or "left") == value then
                         s.castSpellNameSide = "none"
                     end
                 end
@@ -1155,7 +1155,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
             getValue = SValSupportedRow("castReverseFill", false),
             setValue = SSetSupportedRowThen("castReverseFill"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Inline cog on Spell Target Size: toggle + X/Y offsets
         if not CludesUI._prebuilding then
             local tgCogRgn = castTargetRow._leftRegion
@@ -1210,9 +1210,9 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
 
         -- Sync icons: Spell Target Size + Color (left)
         if not CludesUI._prebuilding then
-            local rgn = castTargetRow._leftRegion
+            local region = castTargetRow._leftRegion
             CastTextSync(
-                rgn,
+                region,
                 "Spell Target Size and Color",
                 "castSpellTargetSize",
                 11,
@@ -1222,11 +1222,11 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         -- Custom Border Style rows (the Cast Bar cog's opt-in), inside the Show
         -- Cast Bar gate and ahead of the Classic-only Border Size row.
         if SVal("castBorderCustom", false) == true then
-            posY = posY
+            cursorY = cursorY
                 - mod.UF_CastBorderRows(
                     W,
                     hostFrame,
-                    posY,
+                    cursorY,
                     function()
                         return UNIT_DB_MAP[optionState.selectedUnit]()
                     end,
@@ -1264,7 +1264,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         local classicH, classicRow = mod.UF_ClassicCastBorderRow(
             W,
             hostFrame,
-            posY,
+            cursorY,
             function()
                 return UNIT_DB_MAP[optionState.selectedUnit]()
             end,
@@ -1288,33 +1288,33 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
             optionState.selectedUnit .. "Castbar",
             impGlowCfg
         )
-        posY = posY - classicH
+        cursorY = cursorY - classicH
         if impGlowCfg then
             local impGlowRow, impGlowSide = classicRow, "_rightRegion"
             if not impGlowRow then
-                impGlowRow, hgt =
-                    W:DualRow(hostFrame, posY, impGlowCfg, { type = "label", text = "Glow Color" })
-                posY = posY - hgt
+                impGlowRow, height =
+                    W:DualRow(hostFrame, cursorY, impGlowCfg, { type = "label", text = "Glow Color" })
+                cursorY = cursorY - height
                 impGlowSide = "_leftRegion"
             end
             if not CludesUI._prebuilding then
-                local rgn = impGlowRow[impGlowSide]
+                local region = impGlowRow[impGlowSide]
                 -- Color swatches (in the free right half when there is one), the
                 -- Pixel Glow cog and a small preview.
                 local GO = CludesUI.GlowOptions
                 GO.AttachInline(
-                    rgn,
+                    region,
                     impGlowDesc,
                     impGlowSide == "_leftRegion" and impGlowRow._rightRegion or nil
                 )
-                local pv = GO.BuildPreview(
-                    rgn,
+                local preview = GO.BuildPreview(
+                    region,
                     impGlowDesc,
-                    { width = 40, height = 14, anchor = rgn._lastInline or rgn._control, x = -12 }
+                    { width = 40, height = 14, anchor = region._lastInline or region._control, x = -12 }
                 )
-                if pv then
-                    pv:SetFrameLevel(rgn:GetFrameLevel() + 5)
-                    rgn._lastInline = pv
+                if preview then
+                    preview:SetFrameLevel(region:GetFrameLevel() + 5)
+                    region._lastInline = preview
                 end
 
                 -- Sync icon: apply glow settings to the other kick unit (target <-> focus)
@@ -1334,26 +1334,26 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     end
                     return a == b
                 end
-                mod.UFO_UnitSync(rgn, "Important Cast Glow", {
+                mod.UFO_UnitSync(region, "Important Cast Glow", {
                     units = { "target", "focus" },
                     noMenu = true,
                     copy = function(t, from)
-                        for _, k in ipairs(GLOW_KEYS) do
-                            t[k] = from[k]
+                        for _, keyName in ipairs(GLOW_KEYS) do
+                            t[keyName] = from[keyName]
                         end
-                        for _, k in ipairs(GLOW_COLOR_KEYS) do
-                            local c = from[k]
-                            t[k] = c and { r = c.r, g = c.g, b = c.b } or nil
+                        for _, keyName in ipairs(GLOW_COLOR_KEYS) do
+                            local c = from[keyName]
+                            t[keyName] = c and { r = c.r, g = c.g, b = c.b } or nil
                         end
                     end,
                     same = function(t, from)
-                        for _, k in ipairs(GLOW_KEYS) do
-                            if t[k] ~= from[k] then
+                        for _, keyName in ipairs(GLOW_KEYS) do
+                            if t[keyName] ~= from[keyName] then
                                 return false
                             end
                         end
-                        for _, k in ipairs(GLOW_COLOR_KEYS) do
-                            if not colEq(t[k], from[k]) then
+                        for _, keyName in ipairs(GLOW_COLOR_KEYS) do
+                            if not colEq(t[keyName], from[keyName]) then
                                 return false
                             end
                         end
@@ -1364,7 +1364,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         end
     end -- close Cast Bar hidden-while-disabled gate
 
-    return posY, sharedCastHeader, sharedCastRow1, castRow2, castTextRow, castTargetRow
+    return cursorY, sharedCastHeader, sharedCastRow1, castRow2, castTextRow, castTargetRow
 end
 
 -- Aura cog rows a frame's buff and debuff rows share (target, focus, player
@@ -1392,8 +1392,8 @@ function mod.UFO_AuraSettingsRows(kind, get, set, maxMax, maxDefault, afterMax, 
             get = function()
                 return get(growthKey, "auto")
             end,
-            set = function(v)
-                set(growthKey, v)
+            set = function(value)
+                set(growthKey, value)
             end,
         },
         {
@@ -1406,8 +1406,8 @@ function mod.UFO_AuraSettingsRows(kind, get, set, maxMax, maxDefault, afterMax, 
             get = function()
                 return get(maxKey, maxDefault)
             end,
-            set = function(v)
-                set(maxKey, v)
+            set = function(value)
+                set(maxKey, value)
             end,
         },
     }
@@ -1423,8 +1423,8 @@ function mod.UFO_AuraSettingsRows(kind, get, set, maxMax, maxDefault, afterMax, 
         get = function()
             return get(perRowKey, nil) or get(maxKey, maxDefault)
         end,
-        set = function(v)
-            set(perRowKey, v)
+        set = function(value)
+            set(perRowKey, value)
         end,
     }
     rowList[#rowList + 1] = {
@@ -1433,8 +1433,8 @@ function mod.UFO_AuraSettingsRows(kind, get, set, maxMax, maxDefault, afterMax, 
         get = function()
             return get(cropKey, false)
         end,
-        set = function(v)
-            set(cropKey, v)
+        set = function(value)
+            set(cropKey, value)
         end,
     }
     return rowList
@@ -1461,8 +1461,8 @@ function mod.UFO_MaxImportantRow(getS, apply, maxMax, maxDefault)
             local s = getS()
             return s.maxImportantDebuffs or s.maxDebuffs or maxDefault
         end,
-        set = function(v)
-            getS().maxImportantDebuffs = v
+        set = function(value)
+            getS().maxImportantDebuffs = value
             apply()
         end,
     }
@@ -1483,8 +1483,8 @@ function mod.UFO_AuraPositionRows(kind, get, set)
             get = function()
                 return get(offXKey, 0)
             end,
-            set = function(v)
-                set(offXKey, v)
+            set = function(value)
+                set(offXKey, value)
             end,
         },
         {
@@ -1496,8 +1496,8 @@ function mod.UFO_AuraPositionRows(kind, get, set)
             get = function()
                 return get(offYKey, 0)
             end,
-            set = function(v)
-                set(offYKey, v)
+            set = function(value)
+                set(offYKey, value)
             end,
         },
         {
@@ -1510,8 +1510,8 @@ function mod.UFO_AuraPositionRows(kind, get, set)
             get = function()
                 return get(spXKey, 1)
             end,
-            set = function(v)
-                set(spXKey, v)
+            set = function(value)
+                set(spXKey, value)
             end,
         },
         {
@@ -1524,14 +1524,14 @@ function mod.UFO_AuraPositionRows(kind, get, set)
             get = function()
                 return get(spYKey, 1)
             end,
-            set = function(v)
-                set(spYKey, v)
+            set = function(value)
+                set(spYKey, value)
             end,
         },
     }
 end
 
-function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
+function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
     local environ = mod._UFO_OptEnv
     local AttachDebuffModeWarn, DebuffModeDropdownCfg, Pix =
         environ.AttachDebuffModeWarn, environ.DebuffModeDropdownCfg, environ.PP
@@ -1546,8 +1546,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
     local SSetSupported, SVal, SValSupported = context.SSetSupported, context.SVal, context.SValSupported
     -- Row setters over SSetSupported: the key written with the row's value.
     local function SSetSupportedRow(key)
-        return function(v)
-            SSetSupported(key, v)
+        return function(value)
+            SSetSupported(key, value)
         end
     end
     -- A row getter over SValSupported: the key's value, or the default given.
@@ -1558,18 +1558,18 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
     end
     -- Row setters over SSetSupported: the key written with the row's value.
     local function SSetSupportedRow(key)
-        return function(v)
-            SSetSupported(key, v)
+        return function(value)
+            SSetSupported(key, value)
         end
     end
-    local _, hgt
+    local _, height
 
     local sharedBuffDebuffHeader
     -------------------------------------------------------------------
     --  BUFFS AND DEBUFFS
     -------------------------------------------------------------------
-    sharedBuffDebuffHeader, hgt = W:SectionHeader(hostFrame, "BUFFS AND DEBUFFS", posY)
-    posY = posY - hgt
+    sharedBuffDebuffHeader, height = W:SectionHeader(hostFrame, "BUFFS AND DEBUFFS", cursorY)
+    cursorY = cursorY - height
 
     -- When Buff/Debuff Display is "none", everything in that column is disabled.
     local function BuffDisabled()
@@ -1592,8 +1592,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
     -- keys the merge always used (debuffAnchorBuffs=true + showBuffs=false), so old
     -- cog-toggle profiles read back identically. Shared anchor tables serve three other dropdowns, hence the per-site copy.
     local buffDispValues = { ["anchor_debuffs"] = "Anchor to Debuffs" }
-    for k, v in pairs(buffAnchorValues) do
-        buffDispValues[k] = v
+    for keyName, value in pairs(buffAnchorValues) do
+        buffDispValues[keyName] = value
     end
     local buffDispOrder = {}
     for idx = 1, #buffAnchorOrder do
@@ -1601,10 +1601,10 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
     end
     buffDispOrder[#buffDispOrder + 1] = "anchor_debuffs"
     buffDispValues._menuOpts = {
-        onItemHover = function(key, item)
-            if key == "anchor_debuffs" and item then
+        onItemHover = function(key, entry)
+            if key == "anchor_debuffs" and entry then
                 CludesUI.ShowWidgetTooltip(
-                    item,
+                    entry,
                     "Buffs join the debuff stack as its first rows; debuffs continue on the next row and move as buff rows change."
                 )
             end
@@ -1618,16 +1618,16 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
 
     -- Buffs: Location | Icon Size + inline directions cog (X/Y)
     local sharedAddRow2
-    sharedAddRow2, hgt = W:DualRow(hostFrame, posY, {
+    sharedAddRow2, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Buff Display",
         values = buffDispValues,
         order = buffDispOrder,
-        itemDisabled = function(v)
-            return v == "anchor_debuffs" and DebuffDisabled()
+        itemDisabled = function(value)
+            return value == "anchor_debuffs" and DebuffDisabled()
         end,
-        itemDisabledTooltip = function(v)
-            if v == "anchor_debuffs" then
+        itemDisabledTooltip = function(value)
+            if value == "anchor_debuffs" then
                 return "Requires a Debuff Display"
             end
         end,
@@ -1648,19 +1648,19 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
         -- the None <-> shown flip forces the full rebuild.
         setValue = CludesUI.DependentSetValue(function()
             return not BuffDisabled()
-        end, function(v)
+        end, function(value)
             local s = UNIT_DB_MAP[optionState.selectedUnit]()
-            if v == "anchor_debuffs" then
+            if value == "anchor_debuffs" then
                 -- Same stored shape the old cog toggle wrote: the
                 -- merge owns visibility, Buff Display stores None.
                 s.debuffAnchorBuffs = true
                 s.showBuffs = false
-            elseif v == "none" then
+            elseif value == "none" then
                 s.showBuffs = false
                 s.debuffAnchorBuffs = nil
             else
                 s.showBuffs = true
-                SwapAuraSlot(s, "buffAnchor", v)
+                SwapAuraSlot(s, "buffAnchor", value)
                 -- Choosing a standalone Buff Display exits the
                 -- merged mode (which forces this dropdown to None).
                 s.debuffAnchorBuffs = nil
@@ -1680,7 +1680,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
         getValue = SValSupportedRow("buffSize", 22),
         setValue = SSetSupportedRow("buffSize"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     SApplySupport(sharedAddRow2._leftRegion, "showBuffs")
     -- Sync icon: Buffs Location (left)
     if not CludesUI._prebuilding then
@@ -1711,7 +1711,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
     -- Cog on Buffs Location: the shared settings rows, then Icon Zoom and
     -- Dispel Type Borders
     if not CludesUI._prebuilding then
-        local leftRgn = sharedAddRow2._leftRegion
+        local leftRegion = sharedAddRow2._leftRegion
         local buffCogRows = mod.UFO_AuraSettingsRows(
             "buff",
             SValSupported,
@@ -1757,7 +1757,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             end,
             set = SSetSupportedRow("buffDispelBorder"),
         }
-        CludesUI.BuildInlineCog(leftRgn, {
+        CludesUI.BuildInlineCog(leftRegion, {
             disabled = BuffDisabled,
             disabledTooltip = "Buff Display",
             title = "Buff Settings",
@@ -1766,8 +1766,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
     end
     -- Directions cog on Buff Icon Size (X/Y offsets, spacing)
     if not CludesUI._prebuilding then
-        local rightRgn = sharedAddRow2._rightRegion
-        CludesUI.BuildInlineCog(rightRgn, {
+        local rightRegion = sharedAddRow2._rightRegion
+        CludesUI.BuildInlineCog(rightRegion, {
             disabled = BuffDisabled,
             disabledTooltip = "Buff Display",
             title = "Buff Position",
@@ -1786,7 +1786,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             return BuffDisabled() and "Buff Display" or "Show Cooldown Text"
         end
         local sharedBuffRow2
-        sharedBuffRow2, hgt = W:DualRow(hostFrame, posY, {
+        sharedBuffRow2, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Buff Duration Size",
             min = 6,
@@ -1808,11 +1808,11 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             getValue = SValSupportedRow("buffStackTextSize", 14),
             setValue = SSetSupportedRow("buffStackTextSize"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Directions cog on Buff Duration Size (X/Y offsets) -- disabled with the row
         if not CludesUI._prebuilding then
-            local leftRgn = sharedBuffRow2._leftRegion
-            CludesUI.BuildInlineCog(leftRgn, {
+            local leftRegion = sharedBuffRow2._leftRegion
+            CludesUI.BuildInlineCog(leftRegion, {
                 disabled = buffDurOff,
                 disabledTooltip = buffDurTip,
                 title = "Duration Text",
@@ -1842,11 +1842,11 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         max = 90,
                         step = 1,
                         get = function()
-                            local v = SValSupported("buffCooldownTextPrecision", nil)
-                            return v and v / 60 or 0
+                            local value = SValSupported("buffCooldownTextPrecision", nil)
+                            return value and value / 60 or 0
                         end,
-                        set = function(v)
-                            SSetSupported("buffCooldownTextPrecision", v > 0 and v * 60 or nil)
+                        set = function(value)
+                            SSetSupported("buffCooldownTextPrecision", value > 0 and value * 60 or nil)
                         end,
                     },
                 },
@@ -1865,8 +1865,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
         end
         -- Directions cog on Buff Stack Size (X/Y offsets)
         if not CludesUI._prebuilding then
-            local rightRgn = sharedBuffRow2._rightRegion
-            CludesUI.BuildInlineCog(rightRgn, {
+            local rightRegion = sharedBuffRow2._rightRegion
+            CludesUI.BuildInlineCog(rightRegion, {
                 disabled = BuffDisabled,
                 disabledTooltip = "Buff Display",
                 title = "Stack Position",
@@ -1910,7 +1910,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
 
     -- Debuffs: Location | Icon Size + inline directions cog (X/Y)
     local sharedAddRow3
-    sharedAddRow3, hgt = W:DualRow(hostFrame, posY, {
+    sharedAddRow3, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Debuff Display",
         values = buffAnchorValues,
@@ -1921,8 +1921,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
         -- None <-> shown flip forces the full rebuild.
         setValue = CludesUI.DependentSetValue(function()
             return not DebuffDisabled()
-        end, function(v)
-            SwapAuraSlot(UNIT_DB_MAP[optionState.selectedUnit](), "debuffAnchor", v)
+        end, function(value)
+            SwapAuraSlot(UNIT_DB_MAP[optionState.selectedUnit](), "debuffAnchor", value)
             ReloadAndUpdate()
             UpdatePreview()
             CludesUI:RefreshPage()
@@ -1938,11 +1938,11 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
         getValue = SValSupportedRow("debuffSize", 22),
         setValue = SSetSupportedRow("debuffSize"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Cog on Debuffs Location: the shared settings rows, then Icon Zoom,
     -- Dispel Type Borders and (player) Use Dispel Colors
     if not CludesUI._prebuilding then
-        local leftRgn = sharedAddRow3._leftRegion
+        local leftRegion = sharedAddRow3._leftRegion
         local maxImpRow
         if optionState.selectedUnit ~= "player" then
             maxImpRow = mod.UFO_MaxImportantRow(SDB, function()
@@ -2013,13 +2013,13 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                     return SValSupported("debuffDispelUsePalette", false) == true
                 end,
                 -- RefreshPage (fast path) so the Dispel Colors swatches track it.
-                set = function(v)
-                    SSetSupported("debuffDispelUsePalette", v)
+                set = function(value)
+                    SSetSupported("debuffDispelUsePalette", value)
                     CludesUI:RefreshPage()
                 end,
             }
         end
-        CludesUI.BuildInlineCog(leftRgn, {
+        CludesUI.BuildInlineCog(leftRegion, {
             disabled = DebuffDisabled,
             disabledTooltip = "Debuff Display",
             title = "Debuff Settings",
@@ -2028,8 +2028,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
     end
     -- Directions cog on Debuff Icon Size (X/Y offsets, spacing)
     if not CludesUI._prebuilding then
-        local rightRgn = sharedAddRow3._rightRegion
-        CludesUI.BuildInlineCog(rightRgn, {
+        local rightRegion = sharedAddRow3._rightRegion
+        CludesUI.BuildInlineCog(rightRegion, {
             disabled = DebuffDisabled,
             disabledTooltip = "Debuff Display",
             title = "Debuff Position",
@@ -2048,7 +2048,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             return DebuffDisabled() and "Debuff Display" or "Show Cooldown Text"
         end
         local sharedDebuffRow2
-        sharedDebuffRow2, hgt = W:DualRow(hostFrame, posY, {
+        sharedDebuffRow2, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Debuff Duration Size",
             min = 6,
@@ -2070,11 +2070,11 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             getValue = SValSupportedRow("debuffStackTextSize", 14),
             setValue = SSetSupportedRow("debuffStackTextSize"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Directions cog on Debuff Duration Size (X/Y offsets) -- disabled with the row
         if not CludesUI._prebuilding then
-            local leftRgn = sharedDebuffRow2._leftRegion
-            CludesUI.BuildInlineCog(leftRgn, {
+            local leftRegion = sharedDebuffRow2._leftRegion
+            CludesUI.BuildInlineCog(leftRegion, {
                 disabled = debuffDurOff,
                 disabledTooltip = debuffDurTip,
                 title = "Duration Text",
@@ -2104,11 +2104,11 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         max = 90,
                         step = 1,
                         get = function()
-                            local v = SValSupported("debuffCooldownTextPrecision", nil)
-                            return v and v / 60 or 0
+                            local value = SValSupported("debuffCooldownTextPrecision", nil)
+                            return value and value / 60 or 0
                         end,
-                        set = function(v)
-                            SSetSupported("debuffCooldownTextPrecision", v > 0 and v * 60 or nil)
+                        set = function(value)
+                            SSetSupported("debuffCooldownTextPrecision", value > 0 and value * 60 or nil)
                         end,
                     },
                 },
@@ -2127,8 +2127,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
         end
         -- Directions cog on Debuff Stack Size (X/Y offsets)
         if not CludesUI._prebuilding then
-            local rightRgn = sharedDebuffRow2._rightRegion
-            CludesUI.BuildInlineCog(rightRgn, {
+            local rightRegion = sharedDebuffRow2._rightRegion
+            CludesUI.BuildInlineCog(rightRegion, {
                 disabled = DebuffDisabled,
                 disabledTooltip = "Debuff Display",
                 title = "Stack Position",
@@ -2180,9 +2180,9 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
         then
             local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
             local auraBorderRow
-            auraBorderRow, hgt = W:DualRow(
+            auraBorderRow, height = W:DualRow(
                 hostFrame,
-                posY,
+                cursorY,
                 CludesUI.BlizzStyle.Gate("unitframes", {
                     type = "dropdown",
                     text = "Border Style",
@@ -2191,10 +2191,10 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                     getValue = function()
                         return SVal("auraBorderTexture", "solid")
                     end,
-                    setValue = function(v)
-                        local color, behind, behindUnitFrame = CludesUI.GetBorderStyleSelectDefaults(v)
+                    setValue = function(value)
+                        local color, behind, behindUnitFrame = CludesUI.GetBorderStyleSelectDefaults(value)
                         local s = SDB()
-                        s.auraBorderTexture = v
+                        s.auraBorderTexture = value
                         s.auraBorderTextureOffset = nil
                         s.auraBorderTextureOffsetY = nil
                         s.auraBorderTextureShiftX = nil
@@ -2205,7 +2205,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         s.auraBorderG = color.g
                         s.auraBorderB = color.b
                         s.auraBorderA = 1
-                        local defSz = CludesUI.GetBorderDefaultSize("unitframes", v)
+                        local defSz = CludesUI.GetBorderDefaultSize("unitframes", value)
                         if defSz then
                             s.auraBorderSize = defSz
                         end
@@ -2237,8 +2237,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         getPx = function()
                             return SGet("auraBorderSizePx")
                         end,
-                        setPx = function(v)
-                            SDB().auraBorderSizePx = v
+                        setPx = function(value)
+                            SDB().auraBorderSizePx = value
                         end,
                         apply = function()
                             ReloadAndUpdate()
@@ -2247,7 +2247,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                     })
                 )
             )
-            posY = posY - hgt
+            cursorY = cursorY - height
             -- Width Offset | Height Offset: a textured aura border's outward offsets
             -- (a Solid border has none).
             do
@@ -2270,33 +2270,33 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         getX = function()
                             return SGet("auraBorderTextureOffset")
                         end,
-                        setX = function(v)
-                            SDB().auraBorderTextureOffset = v
+                        setX = function(value)
+                            SDB().auraBorderTextureOffset = value
                         end,
                         getY = function()
                             return SGet("auraBorderTextureOffsetY")
                         end,
-                        setY = function(v)
-                            SDB().auraBorderTextureOffsetY = v
+                        setY = function(value)
+                            SDB().auraBorderTextureOffsetY = value
                         end,
                         apply = function()
                             ReloadAndUpdate()
                             UpdatePreview()
                         end,
                     })
-                    _, hgt = W:DualRow(
+                    _, height = W:DualRow(
                         hostFrame,
-                        posY,
+                        cursorY,
                         CludesUI.BlizzStyle.Gate("unitframes", ocfgL),
                         CludesUI.BlizzStyle.Gate("unitframes", ocfgR)
                     )
-                    posY = posY - hgt
+                    cursorY = cursorY - height
                 end
             end
 
             if not CludesUI._prebuilding then
-                local rgn = auraBorderRow._leftRegion
-                local cogBtn = CludesUI.BuildInlineCog(rgn, {
+                local region = auraBorderRow._leftRegion
+                local cogBtn = CludesUI.BuildInlineCog(region, {
                     title = "Border Options",
                     rows = {
                         {
@@ -2306,9 +2306,9 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                             max = 10,
                             step = 1,
                             get = function()
-                                local v = SGet("auraBorderTextureShiftX")
-                                if v ~= nil then
-                                    return v
+                                local value = SGet("auraBorderTextureShiftX")
+                                if value ~= nil then
+                                    return value
                                 end
                                 local _, _, sx = CludesUI.GetBorderDefaults(
                                     "unitframes",
@@ -2317,8 +2317,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                                 )
                                 return sx
                             end,
-                            set = function(v)
-                                SSetSupported("auraBorderTextureShiftX", v == 0 and nil or v)
+                            set = function(value)
+                                SSetSupported("auraBorderTextureShiftX", value == 0 and nil or value)
                             end,
                         },
                         {
@@ -2328,9 +2328,9 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                             max = 10,
                             step = 1,
                             get = function()
-                                local v = SGet("auraBorderTextureShiftY")
-                                if v ~= nil then
-                                    return v
+                                local value = SGet("auraBorderTextureShiftY")
+                                if value ~= nil then
+                                    return value
                                 end
                                 local _, _, _, sy = CludesUI.GetBorderDefaults(
                                     "unitframes",
@@ -2339,8 +2339,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                                 )
                                 return sy
                             end,
-                            set = function(v)
-                                SSetSupported("auraBorderTextureShiftY", v == 0 and nil or v)
+                            set = function(value)
+                                SSetSupported("auraBorderTextureShiftY", value == 0 and nil or value)
                             end,
                         },
                         {
@@ -2392,9 +2392,9 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             end
 
             if not CludesUI._prebuilding then
-                local rgn = auraBorderRow._rightRegion
+                local region = auraBorderRow._rightRegion
                 local colorSwatch, refreshSwatch = CludesUI.BuildColorSwatch(
-                    rgn,
+                    region,
                     auraBorderRow:GetFrameLevel() + 3,
                     function()
                         return SVal("auraBorderR", 0),
@@ -2414,7 +2414,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                     true,
                     20
                 )
-                Pix.Point(colorSwatch, "RIGHT", rgn._control, "LEFT", -8, 0)
+                Pix.Point(colorSwatch, "RIGHT", region._control, "LEFT", -8, 0)
                 CludesUI.RegisterWidgetRefresh(refreshSwatch)
             end
         end
@@ -2504,7 +2504,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                 )
             end
             local filterRow
-            filterRow, hgt = W:DualRow(hostFrame, posY, {
+            filterRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = unitLabel .. " Buff Filter",
                 values = { __placeholder = "..." },
@@ -2514,13 +2514,13 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                 end,
                 setValue = function() end,
             }, debuffSlot)
-            posY = posY - hgt
+            cursorY = cursorY - height
             -- Gray out + block a CB-dropdown when its column's Display is "none".
-            local function ApplyFilterDisabled(cbDD, labelText, isOff)
+            local function ApplyFilterDisabled(checkDrop, labelText, isOff)
                 local function refresh()
                     local off = isOff()
-                    cbDD:SetAlpha(off and 0.3 or 1)
-                    cbDD:EnableMouse(not off)
+                    checkDrop:SetAlpha(off and 0.3 or 1)
+                    checkDrop:EnableMouse(not off)
                     if labelText then
                         labelText:SetAlpha(off and 0.3 or 1)
                     end
@@ -2534,11 +2534,11 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             -- a divider, then shared PAB_Filters entries. Checked filters SUBTRACT
             -- while All Buffs is on, ADD with it off; toggling clears selection. Other units keep the class-checkbox model.
             if not CludesUI._prebuilding then
-                local rgn = filterRow._leftRegion
-                if rgn._control then
-                    rgn._control:Hide()
+                local region = filterRow._leftRegion
+                if region._control then
+                    region._control:Hide()
                 end
-                local cbDD, cbRefresh
+                local checkDrop, cbRefresh
                 if optionState.selectedUnit == "player" then
                     -- The registry list needs the curated presets present
                     -- (idempotent; PAB may be disabled).
@@ -2679,32 +2679,32 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         mod.UF_EnsurePlayerAuraLanes(ps)
                     end
                     local warnClosed
-                    cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
-                        rgn,
+                    checkDrop, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
+                        region,
                         210,
-                        rgn:GetFrameLevel() + 2,
+                        region:GetFrameLevel() + 2,
                         FilterItems,
-                        function(k, neg)
-                            if k == ALL_KEY then
+                        function(keyName, neg)
+                            if keyName == ALL_KEY then
                                 return ps.buffShowAll ~= false
                             end
-                            if k == DUR_KEY then
+                            if keyName == DUR_KEY then
                                 return ps.buffHasDuration == true
                             end
                             if neg then
                                 local nf = ps.buffNegFilters
-                                return nf and nf[k] == true
+                                return nf and nf[keyName] == true
                             end
-                            return ps.buffFilters and ps.buffFilters[k] == true
+                            return ps.buffFilters and ps.buffFilters[keyName] == true
                         end,
-                        function(k, v, neg)
-                            if k == ALL_KEY then
+                        function(keyName, value, neg)
+                            if keyName == ALL_KEY then
                                 -- Written unconditionally (Player Aura Bars parity): the
                                 -- Show lane is locked while a broad mode is on, so a
                                 -- no-empty guard here would make the toggle impossible to
                                 -- turn off. AttachEmptyFilterWarn below owns the feedback
                                 -- for the resulting empty selection instead.
-                                ps.buffShowAll = v
+                                ps.buffShowAll = value
                                 -- Mutually exclusive with Has Duration (both are broad-content
                                 -- modes). Lanes persist across mode flips (the hide lane
                                 -- subtracts in both modes).
@@ -2713,11 +2713,11 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                                 CludesUI:RefreshPage()
                                 return
                             end
-                            if k == DUR_KEY then
-                                ps.buffHasDuration = v or nil
+                            if keyName == DUR_KEY then
+                                ps.buffHasDuration = value or nil
                                 -- Mutually exclusive with All Buffs (its own broad-content
                                 -- mode); lanes persist.
-                                if v then
+                                if value then
                                     ps.buffShowAll = false
                                 end
                                 ReloadAndUpdate()
@@ -2728,18 +2728,18 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                             -- emptied lane tables drop to nil (saved-variable hygiene).
                             if neg then
                                 ps.buffNegFilters = ps.buffNegFilters or {}
-                                ps.buffNegFilters[k] = v or nil
+                                ps.buffNegFilters[keyName] = value or nil
                                 if not next(ps.buffNegFilters) then
                                     ps.buffNegFilters = nil
                                 end
-                                if v and ps.buffFilters then
-                                    ps.buffFilters[k] = nil
+                                if value and ps.buffFilters then
+                                    ps.buffFilters[keyName] = nil
                                 end
                             else
                                 ps.buffFilters = ps.buffFilters or {}
-                                ps.buffFilters[k] = v or nil
-                                if v and ps.buffNegFilters then
-                                    ps.buffNegFilters[k] = nil
+                                ps.buffFilters[keyName] = value or nil
+                                if value and ps.buffNegFilters then
+                                    ps.buffNegFilters[keyName] = nil
                                     if not next(ps.buffNegFilters) then
                                         ps.buffNegFilters = nil
                                     end
@@ -2768,8 +2768,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                     -- old silent block. A Buff Display of None already dims the whole
                     -- control, so it is not warned about a second time.
                     warnClosed = CludesUI.AttachEmptyFilterWarn(
-                        rgn,
-                        cbDD,
+                        region,
+                        checkDrop,
                         CludesUI.L("You are displaying NO buffs at all."),
                         function()
                             return BuffDisabled()
@@ -2779,64 +2779,64 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         end
                     )
                 else
-                    cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
-                        rgn,
+                    checkDrop, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
+                        region,
                         210,
-                        rgn:GetFrameLevel() + 2,
+                        region:GetFrameLevel() + 2,
                         buffFilterItems,
-                        function(k, neg)
-                            if k == "__hasDuration" then
+                        function(keyName, neg)
+                            if keyName == "__hasDuration" then
                                 return SDB().buffDurOnly == true
                             end
                             if neg then
                                 local m = SDB().buffNegClasses
-                                local sk = BUFF_NEG_SKEYS[k]
+                                local sk = BUFF_NEG_SKEYS[keyName]
                                 return m ~= nil and sk ~= nil and m[sk] == true
                             end
-                            return SValSupported(BUFF_FILTER_KEYS[k], false)
+                            return SValSupported(BUFF_FILTER_KEYS[keyName], false)
                         end,
-                        function(k, v, neg)
+                        function(keyName, value, neg)
                             local saved = SDB()
-                            if k == "__hasDuration" then
+                            if keyName == "__hasDuration" then
                                 -- Not buffHasDuration: that is the player's broad
                                 -- mode, which copies can have left on this unit.
-                                saved.buffDurOnly = v or nil
+                                saved.buffDurOnly = value or nil
                                 ReloadAndUpdate()
                                 UpdatePreview()
                                 return
                             end
-                            local sk = BUFF_NEG_SKEYS[k]
+                            local sk = BUFF_NEG_SKEYS[keyName]
                             if neg then
                                 if not sk then
                                     return
                                 end
                                 saved.buffNegClasses = saved.buffNegClasses or {}
-                                saved.buffNegClasses[sk] = v and true or nil
+                                saved.buffNegClasses[sk] = value and true or nil
                                 if not next(saved.buffNegClasses) then
                                     saved.buffNegClasses = nil
                                 end
-                                if v then
-                                    saved[BUFF_FILTER_KEYS[k]] = nil
+                                if value then
+                                    saved[BUFF_FILTER_KEYS[keyName]] = nil
                                 end
                                 ReloadAndUpdate()
                                 UpdatePreview()
                                 return
                             end
-                            if v and sk and saved.buffNegClasses then
+                            if value and sk and saved.buffNegClasses then
                                 saved.buffNegClasses[sk] = nil
                                 if not next(saved.buffNegClasses) then
                                     saved.buffNegClasses = nil
                                 end
                             end
-                            SSetSupported(BUFF_FILTER_KEYS[k], v)
+                            SSetSupported(BUFF_FILTER_KEYS[keyName], value)
                         end
                     )
                 end
-                Pix.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-                rgn._control = cbDD
-                rgn._lastInline = nil
+                Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+                region._control = checkDrop
+                region._lastInline = nil
                 RegisterWidgetRefresh(cbRefresh)
-                ApplyFilterDisabled(cbDD, rgn._label, BuffDisabled)
+                ApplyFilterDisabled(checkDrop, region._label, BuffDisabled)
 
                 -- Purgeable Buff Glow (target/focus): inline cog beside the Buff
                 -- Filter. The glow styles whichever purgeable buffs the filter
@@ -2849,7 +2849,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                     local pgRows = GO.PopupRows(pgDesc, "Glow Style")
                     pgRows[1].tooltip =
                         "Glows the buffs you can purge or spellsteal. Glowing buffs lead the row and have their own Max Buffs count."
-                    CludesUI.BuildInlineCog(rgn, {
+                    CludesUI.BuildInlineCog(region, {
                         title = "Purgeable Buffs",
                         tip = "Glow the buffs you can purge or spellsteal",
                         -- Greys out with the Buff Display (None = no buffs to glow).
@@ -2866,11 +2866,11 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             -- rows view the SAME legacy per-class keys (s.debuff<SKey>) the old dropdown
             -- wrote. Target/focus built their mode dropdown in the DualRow above.
             if optionState.selectedUnit == "player" and not CludesUI._prebuilding then
-                local rgn = filterRow._rightRegion
-                if rgn._control then
-                    rgn._control:Hide()
+                local region = filterRow._rightRegion
+                if region._control then
+                    region._control:Hide()
                 end
-                local cbDD, cbRefresh
+                local checkDrop, cbRefresh
                 do
                     local ps = UNIT_DB_MAP[optionState.selectedUnit]()
                     local ALL_KEY, DUR_KEY = "__allDebuffs", "__debuffHasDuration"
@@ -2974,8 +2974,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                     end
                     -- Non-Player / From Any Player share one engine field: a check
                     -- in either lane clears the sibling from both lanes.
-                    local function ClearExclusive(k)
-                        local other = mod.PAB_ExclusiveSkey and mod.PAB_ExclusiveSkey[k]
+                    local function ClearExclusive(keyName)
+                        local other = mod.PAB_ExclusiveSkey and mod.PAB_ExclusiveSkey[keyName]
                         if not other then
                             return
                         end
@@ -2991,33 +2991,33 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         mod.UF_EnsurePlayerAuraLanes(ps)
                     end
                     local warnClosed
-                    cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
-                        rgn,
+                    checkDrop, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
+                        region,
                         210,
-                        rgn:GetFrameLevel() + 2,
+                        region:GetFrameLevel() + 2,
                         FilterItems,
-                        function(k, neg)
-                            if k == ALL_KEY then
+                        function(keyName, neg)
+                            if keyName == ALL_KEY then
                                 return AllOn()
                             end
-                            if k == DUR_KEY then
+                            if keyName == DUR_KEY then
                                 return ps.debuffHasDuration == true
                             end
-                            if k == HIDE_EXH_KEY then
+                            if keyName == HIDE_EXH_KEY then
                                 return ps.debuffHideExhaustion ~= false
                             end
-                            if k == "__matchAny" or k == "__matchAll" then
-                                return (k == "__matchAll") == (ps.debuffFilterMatch == "all")
+                            if keyName == "__matchAny" or keyName == "__matchAll" then
+                                return (keyName == "__matchAll") == (ps.debuffFilterMatch == "all")
                             end
                             if neg then
                                 local m = ps.debuffNegClasses
-                                return m ~= nil and m[k] == true
+                                return m ~= nil and m[keyName] == true
                             end
-                            return ps["debuff" .. k] == true
+                            return ps["debuff" .. keyName] == true
                         end,
-                        function(k, v, neg)
-                            if k == HIDE_EXH_KEY then
-                                if v then
+                        function(keyName, value, neg)
+                            if keyName == HIDE_EXH_KEY then
+                                if value then
                                     ps.debuffHideExhaustion = nil
                                 else
                                     ps.debuffHideExhaustion = false
@@ -3026,11 +3026,11 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                                 CludesUI:RefreshPage()
                                 return
                             end
-                            if k == "__matchAny" or k == "__matchAll" then
+                            if keyName == "__matchAny" or keyName == "__matchAll" then
                                 -- Radio: the clicked row wins whatever its checked
                                 -- state was (re-clicking the active row keeps it).
                                 local wanted
-                                if k == "__matchAll" then
+                                if keyName == "__matchAll" then
                                     wanted = "all"
                                 end
                                 if ps.debuffFilterMatch == wanted then
@@ -3041,7 +3041,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                                 CludesUI:RefreshPage()
                                 return
                             end
-                            if k == ALL_KEY then
+                            if keyName == ALL_KEY then
                                 -- Written unconditionally (Player Aura Bars parity): the
                                 -- Show lane is locked while All Debuffs is on, so a
                                 -- no-empty guard here would make the toggle impossible to
@@ -3050,37 +3050,37 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                                 -- Lanes persist across mode flips (the hide lane
                                 -- subtracts in both modes; the show lane goes dormant
                                 -- while All Debuffs is on).
-                                ps.debuffShowAll = v
+                                ps.debuffShowAll = value
                                 ReloadAndUpdate()
                                 CludesUI:RefreshPage()
                                 return
                             end
-                            if k == DUR_KEY then
+                            if keyName == DUR_KEY then
                                 -- AND-modifier (never locks the Show lane): combines
                                 -- with All Debuffs or the Show picks; alone it is the
                                 -- timed catch-all.
-                                ps.debuffHasDuration = v or nil
+                                ps.debuffHasDuration = value or nil
                                 ReloadAndUpdate()
                                 CludesUI:RefreshPage()
                                 return
                             end
                             -- Two-lane class write: checking one lane clears the other.
-                            if v then
-                                ClearExclusive(k)
+                            if value then
+                                ClearExclusive(keyName)
                             end
                             if neg then
                                 ps.debuffNegClasses = ps.debuffNegClasses or {}
-                                ps.debuffNegClasses[k] = v or nil
+                                ps.debuffNegClasses[keyName] = value or nil
                                 if not next(ps.debuffNegClasses) then
                                     ps.debuffNegClasses = nil
                                 end
-                                if v then
-                                    ps["debuff" .. k] = nil
+                                if value then
+                                    ps["debuff" .. keyName] = nil
                                 end
                             else
-                                ps["debuff" .. k] = v or nil
-                                if v and ps.debuffNegClasses then
-                                    ps.debuffNegClasses[k] = nil
+                                ps["debuff" .. keyName] = value or nil
+                                if value and ps.debuffNegClasses then
+                                    ps.debuffNegClasses[keyName] = nil
                                     if not next(ps.debuffNegClasses) then
                                         ps.debuffNegClasses = nil
                                     end
@@ -3116,8 +3116,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                     -- control, so it is not warned about a second time. Match All picks
                     -- that can never match together count as empty (the engine test).
                     warnClosed = CludesUI.AttachEmptyFilterWarn(
-                        rgn,
-                        cbDD,
+                        region,
+                        checkDrop,
                         CludesUI.L("You are displaying NO debuffs at all."),
                         function()
                             return DebuffDisabled()
@@ -3130,11 +3130,11 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         end
                     )
                 end
-                Pix.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-                rgn._control = cbDD
-                rgn._lastInline = nil
+                Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+                region._control = checkDrop
+                region._lastInline = nil
                 RegisterWidgetRefresh(cbRefresh)
-                ApplyFilterDisabled(cbDD, rgn._label, DebuffDisabled)
+                ApplyFilterDisabled(checkDrop, region._label, DebuffDisabled)
             end
             -- Target/focus: Only Tracked Auras with an empty list renders
             -- nothing, so the mode dropdown carries the standard empty warning.
@@ -3157,8 +3157,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                             get = function()
                                 return SDB().debuffHasDuration == true
                             end,
-                            set = function(v)
-                                SDB().debuffHasDuration = v or nil
+                            set = function(value)
+                                SDB().debuffHasDuration = value or nil
                                 ReloadAndUpdate()
                             end,
                         },
@@ -3220,7 +3220,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             return "This option requires a Border Size above 0."
         end
         local dispelRow
-        dispelRow, hgt = W:DualRow(hostFrame, posY, {
+        dispelRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Dispel Overlay",
             values = dispelOverlayValues,
@@ -3230,8 +3230,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             end,
             -- RefreshPage (fast path) so the Dispel Colors disabled
             -- state tracks the overlay selection live.
-            setValue = function(v)
-                saved.profile.dispelOverlay = v
+            setValue = function(value)
+                saved.profile.dispelOverlay = value
                 DispelRefresh()
                 CludesUI:RefreshPage()
             end,
@@ -3326,12 +3326,12 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                 },
             },
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Inline eyeball: preview a magic dispel overlay on the top player preview.
         if not CludesUI._prebuilding then
-            local rgn = dispelRow._leftRegion
+            local region = dispelRow._leftRegion
             CludesUI.AddPreviewEye(
-                rgn,
+                region,
                 optionState,
                 "showDispelOverlayPreview",
                 "dispel overlay",
@@ -3340,8 +3340,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
         end
         -- Inline cog on Dispel Overlay: Overlay Opacity
         if not CludesUI._prebuilding then
-            local rgn = dispelRow._leftRegion
-            CludesUI.BuildInlineCog(rgn, {
+            local region = dispelRow._leftRegion
+            CludesUI.BuildInlineCog(region, {
                 title = "Dispel Overlay",
                 rows = {
                     {
@@ -3353,8 +3353,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         get = function()
                             return saved.profile.dispelOverlayOpacity or 100
                         end,
-                        set = function(v)
-                            saved.profile.dispelOverlayOpacity = v
+                        set = function(value)
+                            saved.profile.dispelOverlayOpacity = value
                             DispelRefresh()
                         end,
                     },
@@ -3370,8 +3370,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                             return saved.profile.dispelCustomBorder == true
                         end,
                         -- RefreshPage (fast path) so the Dispel Colors disabled state tracks it.
-                        set = function(v)
-                            saved.profile.dispelCustomBorder = v and true or false
+                        set = function(value)
+                            saved.profile.dispelCustomBorder = value and true or false
                             DispelRefresh()
                             CludesUI:RefreshPage()
                         end,
@@ -3385,11 +3385,11 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
         -- Dispellable by You, out of the overlay cog since it narrows the
         -- overlay, the icon and the border copies alike.
         local iconPosOrder = { "none" }
-        for idx, k in ipairs(CludesUI.POSITION_GRID_ORDER) do
-            iconPosOrder[idx + 1] = k
+        for idx, keyName in ipairs(CludesUI.POSITION_GRID_ORDER) do
+            iconPosOrder[idx + 1] = keyName
         end
         local iconRow
-        iconRow, hgt = W:DualRow(hostFrame, posY, {
+        iconRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Type Icon Position",
             values = CludesUI.POSITION_GRID_VALUES_NONE,
@@ -3401,13 +3401,13 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                 end
                 return p.dispelIconPosition or "right"
             end,
-            setValue = function(v)
+            setValue = function(value)
                 local p = saved.profile
-                if v == "none" then
+                if value == "none" then
                     p.showDispelIcons = false
                 else
                     p.showDispelIcons = true
-                    p.dispelIconPosition = v
+                    p.dispelIconPosition = value
                 end
                 -- RefreshPage (fast path) so the cog's disabled state follows.
                 DispelRefresh()
@@ -3420,12 +3420,12 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             getValue = function()
                 return saved.profile.dispelOverlayByMe == true
             end,
-            setValue = function(v)
-                saved.profile.dispelOverlayByMe = v and true or false
+            setValue = function(value)
+                saved.profile.dispelOverlayByMe = value and true or false
                 DispelRefresh()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(iconRow._leftRegion, {
                 disabled = function()
@@ -3443,8 +3443,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         get = function()
                             return saved.profile.dispelIconSize or 16
                         end,
-                        set = function(v)
-                            saved.profile.dispelIconSize = v
+                        set = function(value)
+                            saved.profile.dispelIconSize = value
                             DispelRefresh()
                         end,
                     },
@@ -3456,8 +3456,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         get = function()
                             return saved.profile.dispelIconGrowth or "none"
                         end,
-                        set = function(v)
-                            saved.profile.dispelIconGrowth = v
+                        set = function(value)
+                            saved.profile.dispelIconGrowth = value
                             DispelRefresh()
                         end,
                     },
@@ -3470,8 +3470,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         get = function()
                             return saved.profile.dispelIconOffsetX or 0
                         end,
-                        set = function(v)
-                            saved.profile.dispelIconOffsetX = v
+                        set = function(value)
+                            saved.profile.dispelIconOffsetX = value
                             DispelRefresh()
                         end,
                     },
@@ -3484,8 +3484,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         get = function()
                             return saved.profile.dispelIconOffsetY or 0
                         end,
-                        set = function(v)
-                            saved.profile.dispelIconOffsetY = v
+                        set = function(value)
+                            saved.profile.dispelIconOffsetY = value
                             DispelRefresh()
                         end,
                     },
@@ -3496,8 +3496,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
 
     AddAuraBorderSettings()
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
-    return posY, sharedBuffDebuffHeader, sharedAddRow2, sharedAddRow3
+    return cursorY, sharedBuffDebuffHeader, sharedAddRow2, sharedAddRow3
 end

@@ -29,11 +29,11 @@ end
 function mod.NP_BlizzOnly()
     return CludesUI.BlizzStyle.Active("nameplates") == "blizzard"
 end
-function mod.NP_BlizzOnlyGate(conf)
+function mod.NP_BlizzOnlyGate(rowConf)
     if mod.NP_BlizzOnly() then
-        return CludesUI.BlizzStyle.Gate("nameplates", conf)
+        return CludesUI.BlizzStyle.Gate("nameplates", rowConf)
     end
-    return conf
+    return rowConf
 end
 
 -------------------------------------------------------------------------------
@@ -231,9 +231,9 @@ CludesUI.AtOptionsLogin(function()
     -- show callback reach it from any page, and the Display page's cache restore
     -- updates it when it shows again.
     local function UpdatePreview()
-        local pv = optionState.activePreview
-        if pv and pv.Update and pv:IsVisible() then
-            pv:Update()
+        local preview = optionState.activePreview
+        if preview and preview.Update and preview:IsVisible() then
+            preview:Update()
         end
     end
 
@@ -317,8 +317,8 @@ CludesUI.AtOptionsLogin(function()
                     get = function()
                         return DBVal("dispelGlowUseTypeColor") or false
                     end,
-                    set = function(v)
-                        DB().dispelGlowUseTypeColor = v
+                    set = function(value)
+                        DB().dispelGlowUseTypeColor = value
                         RefreshAuraGlows()
                         CludesUI:RefreshPage()
                     end,
@@ -333,12 +333,12 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         local function CastBarGlowDesc(prefixText)
-            local k = CludesUI.Glows.FlatKeys(prefixText)
+            local keyName = CludesUI.Glows.FlatKeys(prefixText)
             return {
                 view = mod.NP_GLOW_VIEW,
                 host = "bar",
                 caps = { mode = true, params = true, bg = true },
-                defaultColor = defaultSet[k.color],
+                defaultColor = defaultSet[keyName.color],
                 isOff = function()
                     return DBVal(prefixText) ~= true
                 end,
@@ -346,9 +346,9 @@ CludesUI.AtOptionsLogin(function()
                 get = function(f)
                     local d = DB()
                     if f == "style" then
-                        return d[k.style] or defaultSet[k.style] or 1
+                        return d[keyName.style] or defaultSet[keyName.style] or 1
                     elseif f == "mode" then
-                        return d[k.mode] or "custom"
+                        return d[keyName.mode] or "custom"
                     end
                     return GO.FlatGet(d, prefixText, f, defaultSet)
                 end,
@@ -359,10 +359,10 @@ CludesUI.AtOptionsLogin(function()
                             d[prefixText] = false
                         else
                             d[prefixText] = true
-                            d[k.style] = a
+                            d[keyName.style] = a
                         end
                     elseif f == "mode" then
-                        d[k.mode] = a
+                        d[keyName.mode] = a
                     else
                         GO.FlatSet(d, prefixText, f, a, b2, c2)
                     end
@@ -467,8 +467,8 @@ CludesUI.AtOptionsLogin(function()
 
     local function BuildDisplayPage(pageName, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
 
         -- Set content header with preview centered above nameplate preview
         _displayHeaderBuilder = function(headerParent, headerW)
@@ -721,19 +721,19 @@ CludesUI.AtOptionsLogin(function()
         }
         local styleHeader, coreHeader, coreRow1, coreRow2, coreRow3, coreTextHeader, textSlotCells
         local textFirstRow
-        posY, styleHeader, coreHeader, coreRow1, coreRow2, coreRow3, coreTextHeader, textSlotCells, textFirstRow, context.ShowCogPopup, context.CogPopupOpen, context.RefreshAllTextures =
-            mod.NPO_BuildDisplayLayout(hostFrame, posY, context)
+        cursorY, styleHeader, coreHeader, coreRow1, coreRow2, coreRow3, coreTextHeader, textSlotCells, textFirstRow, context.ShowCogPopup, context.CogPopupOpen, context.RefreshAllTextures =
+            mod.NPO_BuildDisplayLayout(hostFrame, cursorY, context)
         local healthBarHeader, healthBarHeightRow, castBarHeightRow, showCastIconRow, castTimerRow
         local tfxHeader, targetGlowRow, classResourceHeader, classResourceSection, generalTextHeader
         local auraDurPosRow, auraTimerStackRow, spellNameRow
-        posY, healthBarHeader, healthBarHeightRow, castBarHeightRow, showCastIconRow, castTimerRow, tfxHeader, targetGlowRow, classResourceHeader, classResourceSection, generalTextHeader, auraDurPosRow, auraTimerStackRow, spellNameRow =
-            mod.NPO_BuildDisplayBars(hostFrame, posY, context)
+        cursorY, healthBarHeader, healthBarHeightRow, castBarHeightRow, showCastIconRow, castTimerRow, tfxHeader, targetGlowRow, classResourceHeader, classResourceSection, generalTextHeader, auraDurPosRow, auraTimerStackRow, spellNameRow =
+            mod.NPO_BuildDisplayBars(hostFrame, cursorY, context)
 
         -- The search pre-build indexes rows only. The click navigation below
         -- rewires the live preview's hit overlays, which a hidden build of
         -- this page must leave alone.
         if CludesUI._prebuilding then
-            return math.abs(posY)
+            return math.abs(cursorY)
         end
 
         -----------------------------------------------------------------------
@@ -1006,32 +1006,32 @@ CludesUI.AtOptionsLogin(function()
         -- Create hit overlays for all interactive preview elements
         local textOverlays = {} -- collect text overlays for size refresh
         if optionState.activePreview then
-            local pv = optionState.activePreview
+            local preview = optionState.activePreview
             -- Icon overlays need to be above the icon frames (health:GetFrameLevel() + 9, or + 13 with Raise Strata)
-            local iconLevel = (pv._health and pv._health:GetFrameLevel() or 20) + 15
+            local iconLevel = (preview._health and preview._health:GetFrameLevel() or 20) + 15
             -- Text overlays on icons need to be above the icon overlays
             local textOnIconLevel = iconLevel + 10
             -- Aura icons (all debuffs, buffs, ccs)
             local iconHlOpts = { hlBehindText = true }
-            if pv._ccs then
-                for i = 1, #pv._ccs do
-                    if pv._ccs[i] then
-                        CreateHitOverlay(pv._ccs[i], "ccIcon", false, iconLevel, iconHlOpts)
-                        if pv._ccs[i].durationText then
+            if preview._ccs then
+                for i = 1, #preview._ccs do
+                    if preview._ccs[i] then
+                        CreateHitOverlay(preview._ccs[i], "ccIcon", false, iconLevel, iconHlOpts)
+                        if preview._ccs[i].durationText then
                             local shade =
-                                CreateHitOverlay(pv._ccs[i].durationText, "ccDuration", true, textOnIconLevel)
+                                CreateHitOverlay(preview._ccs[i].durationText, "ccDuration", true, textOnIconLevel)
                             textOverlays[#textOverlays + 1] = shade
                         end
                     end
                 end
             end
-            if pv._buffs then
-                for i = 1, #pv._buffs do
-                    if pv._buffs[i] then
-                        CreateHitOverlay(pv._buffs[i], "buffIcon", false, iconLevel, iconHlOpts)
-                        if pv._buffs[i].durationText then
+            if preview._buffs then
+                for i = 1, #preview._buffs do
+                    if preview._buffs[i] then
+                        CreateHitOverlay(preview._buffs[i], "buffIcon", false, iconLevel, iconHlOpts)
+                        if preview._buffs[i].durationText then
                             local shade = CreateHitOverlay(
-                                pv._buffs[i].durationText,
+                                preview._buffs[i].durationText,
                                 "buffDuration",
                                 true,
                                 textOnIconLevel
@@ -1041,22 +1041,22 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end
             end
-            if pv._debuffs then
-                for i = 1, #pv._debuffs do
-                    if pv._debuffs[i] then
-                        CreateHitOverlay(pv._debuffs[i], "debuffIcon", false, iconLevel, iconHlOpts)
-                        if pv._debuffs[i].durationText then
+            if preview._debuffs then
+                for i = 1, #preview._debuffs do
+                    if preview._debuffs[i] then
+                        CreateHitOverlay(preview._debuffs[i], "debuffIcon", false, iconLevel, iconHlOpts)
+                        if preview._debuffs[i].durationText then
                             local shade = CreateHitOverlay(
-                                pv._debuffs[i].durationText,
+                                preview._debuffs[i].durationText,
                                 "debuffDuration",
                                 true,
                                 textOnIconLevel
                             )
                             textOverlays[#textOverlays + 1] = shade
                         end
-                        if pv._debuffs[i].stackText then
+                        if preview._debuffs[i].stackText then
                             local shade =
-                                CreateHitOverlay(pv._debuffs[i].stackText, "auraStack", true, textOnIconLevel)
+                                CreateHitOverlay(preview._debuffs[i].stackText, "auraStack", true, textOnIconLevel)
                             textOverlays[#textOverlays + 1] = shade
                         end
                     end
@@ -1064,16 +1064,16 @@ CludesUI.AtOptionsLogin(function()
             end
             -- Cast icon overlay (separate from cast bar navigates to Show Spell Icon row)
             local castOverlayLevel
-            if pv._cast then
-                castOverlayLevel = pv._cast:GetFrameLevel() + 20
-                local cc = CludesUI.CLUDES_GREEN
+            if preview._cast then
+                castOverlayLevel = preview._cast:GetFrameLevel() + 20
+                local classColor = CludesUI.CLUDES_GREEN
                 -- Cast icon overlay
-                if pv._castIconFrame then
-                    local iconOv = CreateFrame("Button", nil, pv._cast:GetParent())
-                    iconOv:SetAllPoints(pv._castIconFrame)
+                if preview._castIconFrame then
+                    local iconOv = CreateFrame("Button", nil, preview._cast:GetParent())
+                    iconOv:SetAllPoints(preview._castIconFrame)
                     iconOv:SetFrameLevel(castOverlayLevel)
                     iconOv:RegisterForClicks("LeftButtonDown")
-                    local ioBrd = CludesUI.PP.CreateBorder(iconOv, cc.r, cc.g, cc.b, 1, 2, "OVERLAY", 7)
+                    local ioBrd = CludesUI.PP.CreateBorder(iconOv, classColor.r, classColor.g, classColor.b, 1, 2, "OVERLAY", 7)
                     ioBrd:Hide()
                     iconOv:SetScript("OnEnter", function()
                         ioBrd:Show()
@@ -1086,11 +1086,11 @@ CludesUI.AtOptionsLogin(function()
                     end)
                 end
                 -- Cast bar overlay (bar only, not icon)
-                local castOverlay = CreateFrame("Button", nil, pv._cast:GetParent())
-                castOverlay:SetAllPoints(pv._cast)
+                local castOverlay = CreateFrame("Button", nil, preview._cast:GetParent())
+                castOverlay:SetAllPoints(preview._cast)
                 castOverlay:SetFrameLevel(castOverlayLevel)
                 castOverlay:RegisterForClicks("LeftButtonDown")
-                local coBrd = CludesUI.PP.CreateBorder(castOverlay, cc.r, cc.g, cc.b, 1, 2, "OVERLAY", 7)
+                local coBrd = CludesUI.PP.CreateBorder(castOverlay, classColor.r, classColor.g, classColor.b, 1, 2, "OVERLAY", 7)
                 coBrd:Hide()
                 castOverlay:SetScript("OnEnter", function()
                     coBrd:Show()
@@ -1104,26 +1104,26 @@ CludesUI.AtOptionsLogin(function()
             end
             -- Cast spell name and target text (above the cast bar overlay)
             local castTextLevel = (castOverlayLevel or 30) + 5
-            if pv._castNameFS and pv._castNameFS:IsShown() then
-                local shade = CreateHitOverlay(pv._castNameFS, "castName", true, castTextLevel)
+            if preview._castNameFS and preview._castNameFS:IsShown() then
+                local shade = CreateHitOverlay(preview._castNameFS, "castName", true, castTextLevel)
                 textOverlays[#textOverlays + 1] = shade
             end
-            if pv._castTargetFS and pv._castTargetFS:IsShown() then
-                local shade = CreateHitOverlay(pv._castTargetFS, "castTarget", true, castTextLevel)
+            if preview._castTargetFS and preview._castTargetFS:IsShown() then
+                local shade = CreateHitOverlay(preview._castTargetFS, "castTarget", true, castTextLevel)
                 textOverlays[#textOverlays + 1] = shade
             end
-            if pv._castTimerFS and pv._castTimerFS:IsShown() then
-                local shade = CreateHitOverlay(pv._castTimerFS, "castTimer", true, castTextLevel)
+            if preview._castTimerFS and preview._castTimerFS:IsShown() then
+                local shade = CreateHitOverlay(preview._castTimerFS, "castTimer", true, castTextLevel)
                 textOverlays[#textOverlays + 1] = shade
             end
             -- Enemy name text
-            if pv._nameFS then
-                local shade = CreateHitOverlay(pv._nameFS, "enemyName", true)
+            if preview._nameFS then
+                local shade = CreateHitOverlay(preview._nameFS, "enemyName", true)
                 textOverlays[#textOverlays + 1] = shade
             end
             -- Health text
-            if pv._hpText then
-                local shade = CreateHitOverlay(pv._hpText, "healthText", true)
+            if preview._hpText then
+                local shade = CreateHitOverlay(preview._hpText, "healthText", true)
                 textOverlays[#textOverlays + 1] = shade
             end
             -- Health #, standalone level and Target of Target: each on its own font
@@ -1134,7 +1134,7 @@ CludesUI.AtOptionsLogin(function()
                 _lvlText = "levelText",
                 _totFS = "targetOfTarget",
             }) do
-                local fontStr = pv[fsKey]
+                local fontStr = preview[fsKey]
                 if fontStr then
                     local shade = CreateHitOverlay(fontStr, mapKey, true)
                     shade._syncFS = fontStr
@@ -1143,8 +1143,8 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
             -- Custom texts: one font string per position, shown while it holds one.
-            if pv._customFS then
-                for slotKey, fontStr in pairs(pv._customFS) do
+            if preview._customFS then
+                for slotKey, fontStr in pairs(preview._customFS) do
                     local shade = CreateHitOverlay(fontStr, "custom_" .. slotKey, true)
                     shade._syncFS = fontStr
                     shade:SetShown(fontStr:IsShown())
@@ -1152,69 +1152,69 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
             -- Classic WoW UI: the level in the health border's plate
-            if pv._classicLevel then
-                local shade = CreateHitOverlay(pv._classicLevel, "classicLevel", true)
+            if preview._classicLevel then
+                local shade = CreateHitOverlay(preview._classicLevel, "classicLevel", true)
                 textOverlays[#textOverlays + 1] = shade
             end
             -- WoW Forever: the level box (its child, so it hides with it)
-            if pv._fvLevelBox then
-                CreateHitOverlay(pv._fvLevelBox, "foreverLevelBox")
+            if preview._fvLevelBox then
+                CreateHitOverlay(preview._fvLevelBox, "foreverLevelBox")
             end
             -- Health bar
-            if pv._health then
-                CreateHitOverlay(pv._health, "healthBar")
+            if preview._health then
+                CreateHitOverlay(preview._health, "healthBar")
             end
             -- Raid marker
             local raidOverlay
-            if pv._raidFrame then
-                raidOverlay = CreateHitOverlay(pv._raidFrame, "raidMarker")
+            if preview._raidFrame then
+                raidOverlay = CreateHitOverlay(preview._raidFrame, "raidMarker")
                 if not optionState.showRaidMarkerPreview then
                     raidOverlay:Hide()
                 end
             end
             -- Rare/elite icon
             local classOverlay
-            if pv._classIcon then
-                classOverlay = CreateHitOverlay(pv._classIcon, "classIcon")
+            if preview._classIcon then
+                classOverlay = CreateHitOverlay(preview._classIcon, "classIcon")
                 if not optionState.showClassificationPreview then
                     classOverlay:Hide()
                 end
             end
             -- Faction badge: shown and hidden with the badge by the preview update.
-            if pv._factionIcon then
-                pv._factionOverlay = CreateHitOverlay(pv._factionIcon, "factionIcon")
-                pv._factionOverlay:SetShown(pv._factionIcon:IsShown())
+            if preview._factionIcon then
+                preview._factionOverlay = CreateHitOverlay(preview._factionIcon, "factionIcon")
+                preview._factionOverlay:SetShown(preview._factionIcon:IsShown())
             end
             -- Quest Objective Text sample (its child, so it shows and hides with it)
-            if pv._questTextFrame then
-                CreateHitOverlay(pv._questTextFrame, "questText")
+            if preview._questTextFrame then
+                CreateHitOverlay(preview._questTextFrame, "questText")
             end
             -- Class resource pips wrapper button spanning all visible pips
             local cpOverlay
-            if pv._cpPips then
+            if preview._cpPips then
                 local firstVis, lastVis
-                for i = 1, pv._cpMax do
-                    if pv._cpPips[i] and pv._cpPips[i]:IsShown() then
+                for i = 1, preview._cpMax do
+                    if preview._cpPips[i] and preview._cpPips[i]:IsShown() then
                         if not firstVis then
-                            firstVis = pv._cpPips[i]
+                            firstVis = preview._cpPips[i]
                         end
-                        lastVis = pv._cpPips[i]
+                        lastVis = preview._cpPips[i]
                     end
                 end
                 -- Bar-type resource: use the bar frame as anchor
-                local useBar = (not firstVis) and pv._cpBar and pv._cpBar:IsShown()
-                local anchorFirst = firstVis or (useBar and pv._cpBar)
-                local anchorLast = lastVis or (useBar and pv._cpBar)
+                local useBar = (not firstVis) and preview._cpBar and preview._cpBar:IsShown()
+                local anchorFirst = firstVis or (useBar and preview._cpBar)
+                local anchorLast = lastVis or (useBar and preview._cpBar)
                 if anchorFirst and anchorLast then
-                    local cpBtn = CreateFrame("Button", nil, pv)
+                    local cpBtn = CreateFrame("Button", nil, preview)
                     cpBtn:SetPoint("TOPLEFT", anchorFirst, "TOPLEFT", -2, 2)
                     cpBtn:SetPoint("BOTTOMRIGHT", anchorLast, "BOTTOMRIGHT", 2, -2)
-                    cpBtn:SetFrameLevel((pv._health and pv._health:GetFrameLevel() or 20) + 15)
+                    cpBtn:SetFrameLevel((preview._health and preview._health:GetFrameLevel() or 20) + 15)
                     cpBtn:RegisterForClicks("LeftButtonDown")
-                    local cc = CludesUI.CLUDES_GREEN
+                    local classColor = CludesUI.CLUDES_GREEN
                     local function MkCPHL()
                         local t = cpBtn:CreateTexture(nil, "OVERLAY", nil, 7)
-                        t:SetColorTexture(cc.r, cc.g, cc.b, 1)
+                        t:SetColorTexture(classColor.r, classColor.g, classColor.b, 1)
                         if t.SetSnapToPixelGrid then
                             t:SetSnapToPixelGrid(false)
                             t:SetTexelSnappingBias(0)
@@ -1271,20 +1271,20 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
             -- Sync overlay visibility with preview toggles
-            pv._raidOverlay = raidOverlay
-            pv._classOverlay = classOverlay
+            preview._raidOverlay = raidOverlay
+            preview._classOverlay = classOverlay
             -- Target arrows wrapper button spanning both arrow textures
             local arrowOverlay
-            if pv._arrows then
-                local arrowBtn = CreateFrame("Button", nil, pv)
-                arrowBtn:SetPoint("TOPLEFT", pv._arrows.left, "TOPLEFT", -2, 2)
-                arrowBtn:SetPoint("BOTTOMRIGHT", pv._arrows.right, "BOTTOMRIGHT", 2, -2)
-                arrowBtn:SetFrameLevel((pv._health and pv._health:GetFrameLevel() or 20) + 15)
+            if preview._arrows then
+                local arrowBtn = CreateFrame("Button", nil, preview)
+                arrowBtn:SetPoint("TOPLEFT", preview._arrows.left, "TOPLEFT", -2, 2)
+                arrowBtn:SetPoint("BOTTOMRIGHT", preview._arrows.right, "BOTTOMRIGHT", 2, -2)
+                arrowBtn:SetFrameLevel((preview._health and preview._health:GetFrameLevel() or 20) + 15)
                 arrowBtn:RegisterForClicks("LeftButtonDown")
-                local cc = CludesUI.CLUDES_GREEN
+                local classColor = CludesUI.CLUDES_GREEN
                 local function MkAHL()
                     local t = arrowBtn:CreateTexture(nil, "OVERLAY", nil, 7)
-                    t:SetColorTexture(cc.r, cc.g, cc.b, 1)
+                    t:SetColorTexture(classColor.r, classColor.g, classColor.b, 1)
                     if t.SetSnapToPixelGrid then
                         t:SetSnapToPixelGrid(false)
                         t:SetTexelSnappingBias(0)
@@ -1295,12 +1295,12 @@ CludesUI.AtOptionsLogin(function()
                 local aPx = SnapPreview(2)
                 local alt = MkAHL()
                 alt:SetHeight(aPx)
-                alt:SetPoint("TOPLEFT", pv._arrows.left, -2, 2)
-                alt:SetPoint("TOPRIGHT", pv._arrows.left, 2, 2)
+                alt:SetPoint("TOPLEFT", preview._arrows.left, -2, 2)
+                alt:SetPoint("TOPRIGHT", preview._arrows.left, 2, 2)
                 local alb = MkAHL()
                 alb:SetHeight(aPx)
-                alb:SetPoint("BOTTOMLEFT", pv._arrows.left, -2, -2)
-                alb:SetPoint("BOTTOMRIGHT", pv._arrows.left, 2, -2)
+                alb:SetPoint("BOTTOMLEFT", preview._arrows.left, -2, -2)
+                alb:SetPoint("BOTTOMRIGHT", preview._arrows.left, 2, -2)
                 local all = MkAHL()
                 all:SetWidth(aPx)
                 all:SetPoint("TOPLEFT", alt, "BOTTOMLEFT")
@@ -1312,12 +1312,12 @@ CludesUI.AtOptionsLogin(function()
                 -- Highlight on right arrow
                 local art = MkAHL()
                 art:SetHeight(aPx)
-                art:SetPoint("TOPLEFT", pv._arrows.right, -2, 2)
-                art:SetPoint("TOPRIGHT", pv._arrows.right, 2, 2)
+                art:SetPoint("TOPLEFT", preview._arrows.right, -2, 2)
+                art:SetPoint("TOPRIGHT", preview._arrows.right, 2, 2)
                 local arb = MkAHL()
                 arb:SetHeight(aPx)
-                arb:SetPoint("BOTTOMLEFT", pv._arrows.right, -2, -2)
-                arb:SetPoint("BOTTOMRIGHT", pv._arrows.right, 2, -2)
+                arb:SetPoint("BOTTOMLEFT", preview._arrows.right, -2, -2)
+                arb:SetPoint("BOTTOMRIGHT", preview._arrows.right, 2, -2)
                 local arl = MkAHL()
                 arl:SetWidth(aPx)
                 arl:SetPoint("TOPLEFT", art, "BOTTOMLEFT")
@@ -1348,17 +1348,17 @@ CludesUI.AtOptionsLogin(function()
                     NavigateToSetting("targetArrows")
                 end)
                 -- Only show when arrows are visible
-                if not pv._arrows.left:IsShown() then
+                if not preview._arrows.left:IsShown() then
                     arrowBtn:Hide()
                 end
                 arrowOverlay = arrowBtn
             end
-            pv._arrowOverlay = arrowOverlay
+            preview._arrowOverlay = arrowOverlay
             -- Store text overlays for size refresh on preview update
-            pv._textOverlays = textOverlays
+            preview._textOverlays = textOverlays
         end
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     ---------------------------------------------------------------------------
@@ -1380,23 +1380,23 @@ CludesUI.AtOptionsLogin(function()
     local castFillUsed = {}
     local function NextCastFill()
         for _ = 1, 50 do
-            local v = 0.40 + math.random() * 0.20
+            local value = 0.40 + math.random() * 0.20
             local success = true
             for _, prev in ipairs(castFillUsed) do
-                if math.abs(v - prev) < 0.05 then
+                if math.abs(value - prev) < 0.05 then
                     success = false
                     break
                 end
             end
             if success then
-                castFillUsed[#castFillUsed + 1] = v
-                return v
+                castFillUsed[#castFillUsed + 1] = value
+                return value
             end
         end
         -- fallback if somehow can't find a valid value
-        local v = 0.40 + math.random() * 0.20
-        castFillUsed[#castFillUsed + 1] = v
-        return v
+        local value = 0.40 + math.random() * 0.20
+        castFillUsed[#castFillUsed + 1] = value
+        return value
     end
 
     -- Shared preview bar list and lazy builder (used by both Display and Colors pages).
@@ -1438,9 +1438,9 @@ CludesUI.AtOptionsLogin(function()
             local r = EnsureBuilt()
             if r and r.UpdateColor then
                 if _colorOverrideFn then
-                    local cr, cg, cb = _colorOverrideFn()
+                    local cr, cg, checkBtn = _colorOverrideFn()
                     if cr and r._health then
-                        r._health:SetStatusBarColor(cr, cg, cb, 1)
+                        r._health:SetStatusBarColor(cr, cg, checkBtn, 1)
                         return
                     end
                 end
@@ -1540,8 +1540,8 @@ CludesUI.AtOptionsLogin(function()
             get = function()
                 return DBVal(key) == true
             end,
-            set = function(v)
-                DB()[key] = v and true or false
+            set = function(value)
+                DB()[key] = value and true or false
                 apply()
             end,
         })
@@ -1703,8 +1703,8 @@ CludesUI.AtOptionsLogin(function()
                 local sA = old._specAssignments
                 local sCA = old._color_specAssignments
                 local sDP = old._specDefaultPreset
-                for k in pairs(old) do
-                    old[k] = nil
+                for keyName in pairs(old) do
+                    old[keyName] = nil
                 end
                 if pD and next(pD) then
                     old._presets = pD
@@ -1760,8 +1760,8 @@ CludesUI.AtOptionsLogin(function()
                 local sA = _db._specAssignments
                 local sCA = _db._color_specAssignments
                 local sDP = _db._specDefaultPreset
-                for k in pairs(_db) do
-                    _db[k] = nil
+                for keyName in pairs(_db) do
+                    _db[keyName] = nil
                 end
                 if pD and next(pD) then
                     _db._presets = pD

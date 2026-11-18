@@ -32,15 +32,15 @@ end
 
 _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
     local W = CludesUI.Widgets
-    local posY = yOffset
-    local _, hgt, heading
+    local cursorY = yOffset
+    local _, height, heading
 
     -- Info text (top of page, matching bags pattern)
     do
         local fontFile = (CludesUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
         local infoFrame = CreateFrame("Frame", nil, hostFrame)
         infoFrame:SetSize(hostFrame:GetWidth(), 34)
-        infoFrame:SetPoint("TOP", hostFrame, "TOP", 0, posY - 10)
+        infoFrame:SetPoint("TOP", hostFrame, "TOP", 0, cursorY - 10)
         infoFrame._isSpacer = true
         local line1 = infoFrame:CreateFontString(nil, "OVERLAY")
         line1:SetFont(fontFile, 15, "")
@@ -64,11 +64,11 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
         line3:SetText(
             CludesUI.L("Shift + Scroll to permanently zoom a panel. Ctrl + Scroll for a temporary zoom.")
         )
-        posY = posY - 70
+        cursorY = cursorY - 70
     end
 
     -- Reset All button
-    _, hgt = W:WideButton(hostFrame, "Reset All Positions & Zoom", posY, function()
+    _, height = W:WideButton(hostFrame, "Reset All Positions & Zoom", cursorY, function()
         CludesUI:ShowConfirmPopup({
             title = "Reset Shifter Positions & Zoom",
             message = "This will reset all saved panel positions and zoom levels and reload your UI.",
@@ -82,13 +82,13 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
             end,
         })
     end)
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     ---------------------------------------------------------------------------
     --  SHIFTER
     ---------------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "SHIFTER", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "SHIFTER", cursorY)
+    cursorY = cursorY - height
 
     hostFrame._showRowDivider = true
 
@@ -118,7 +118,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
     end
 
     -- Row 1: Enable Shifter | Reset Specific Window
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Enable Shifter",
         getValue = function()
@@ -165,10 +165,10 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
             })
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Row 2: Move windows without shift
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Move Windows Without Shift",
         tooltip = "When enabled, left-click dragging a window will save its position without needing to hold Shift. Ctrl+drag still does a temporary move.",
@@ -179,13 +179,13 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
             Account().shifterNoShift = val
         end,
     }, { type = "label", text = "" })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     ---------------------------------------------------------------------------
     --  LOOT WINDOWS
     ---------------------------------------------------------------------------
-    heading, hgt = W:SectionHeader(hostFrame, "LOOT WINDOWS", posY)
-    posY = posY - hgt
+    heading, height = W:SectionHeader(hostFrame, "LOOT WINDOWS", cursorY)
+    cursorY = cursorY - height
 
     local function lootUnlockOff()
         return not (CludesUIDB and CludesUIDB.shifterLootUnlock)
@@ -197,7 +197,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
         disabledTooltip = "Move Loot Windows in Layout Mode",
     })
 
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Move Loot Windows in Layout Mode",
         tooltip = "Adds Bonus Roll, Group Loot, and Alert Toast movers to Layout Mode.",
@@ -230,13 +230,13 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
             Account().shifterLootHideOverlays = val
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     ---------------------------------------------------------------------------
     --  BLIZZARD TOP BAR EVENT TEXT
     ---------------------------------------------------------------------------
-    heading, hgt = W:SectionHeader(hostFrame, "BLIZZARD TOP BAR EVENT TEXT", posY)
-    posY = posY - hgt
+    heading, height = W:SectionHeader(hostFrame, "BLIZZARD TOP BAR EVENT TEXT", cursorY)
+    cursorY = cursorY - height
 
     local function topBarUnlockOff()
         return not (CludesUIDB and CludesUIDB.shifterTopBarUnlock)
@@ -247,7 +247,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
         disabledTooltip = "Move Top Bar Event Text in Layout Mode",
     })
 
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Move Top Bar Event Text in Layout Mode",
         tooltip = "Adds a mover for Blizzard's top-center event text and widgets (scenario, event, and encounter bars).",
@@ -280,13 +280,13 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
             Account().shifterTopBarHideOverlay = val
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     ---------------------------------------------------------------------------
     --  BATTLEGROUND FRAMES
     ---------------------------------------------------------------------------
-    heading, hgt = W:SectionHeader(hostFrame, "BATTLEGROUND FRAMES", posY)
-    posY = posY - hgt
+    heading, height = W:SectionHeader(hostFrame, "BATTLEGROUND FRAMES", cursorY)
+    cursorY = cursorY - height
 
     local function battlegroundUnlockOff()
         return not (CludesUIDB and CludesUIDB.shifterBattlegroundUnlock)
@@ -298,7 +298,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
         disabledTooltip = "Move Battleground Frames in Layout Mode",
     })
 
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Move Battleground Frames in Layout Mode",
         tooltip = "Adds movers for the battleground flag carriers and the capture bar to Layout Mode.",
@@ -328,7 +328,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
             Account().shifterBattlegroundHideOverlays = val
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    return math.abs(posY)
+    return math.abs(cursorY)
 end

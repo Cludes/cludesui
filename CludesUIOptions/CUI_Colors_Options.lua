@@ -64,8 +64,8 @@ local GRADIENT_DIR_ORDER = { "HORIZONTAL", "HORIZONTAL_REV", "VERTICAL", "VERTIC
 
 function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
     local W = CludesUI.Widgets
-    local posY = yOffset
-    local _, hgt
+    local cursorY = yOffset
+    local _, height
     local MakeFont = CludesUI.MakeFont
     -- Swatches read/write the EFFECTIVE palette, resolved per section (per-profile
     -- -> the active profile's own; global -> that section's source profile's). Every
@@ -126,8 +126,8 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
 
             for col = 0, GRID_COLS - 1 do
                 local position = row * GRID_COLS + col + 1
-                local item = itemList[position]
-                if not item then
+                local entry = itemList[position]
+                if not entry then
                     break
                 end
 
@@ -136,31 +136,31 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                 cell:SetPoint("TOPLEFT", rowFrame, "TOPLEFT", col * colW, 0)
 
                 -- Class-colored label (or white for power colors)
-                local cr, cg, cb = 1, 1, 1
-                if item.classToken then
-                    local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[item.classToken]
-                    if cc then
-                        cr, cg, cb = cc.r, cc.g, cc.b
+                local cr, cg, checkBtn = 1, 1, 1
+                if entry.classToken then
+                    local classColor = RAID_CLASS_COLORS and RAID_CLASS_COLORS[entry.classToken]
+                    if classColor then
+                        cr, cg, checkBtn = classColor.r, classColor.g, classColor.b
                     end
                 end
-                local labelText = MakeFont(cell, 13, nil, cr, cg, cb)
+                local labelText = MakeFont(cell, 13, nil, cr, cg, checkBtn)
                 labelText:SetPoint("LEFT", cell, "LEFT", GRID_SIDE_PAD, 0)
-                labelText:SetText(item.label)
+                labelText:SetText(entry.label)
 
                 -- Color swatch (right side)
                 local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
                     cell,
                     cell:GetFrameLevel() + 2,
                     function()
-                        local c = item.getColor()
+                        local c = entry.getColor()
                         return c.r, c.g, c.b, 1
                     end,
                     function(r, g, b)
-                        local c = item.getColor()
+                        local c = entry.getColor()
                         c.r = r
                         c.g = g
                         c.b = b
-                        item.setColor(c)
+                        entry.setColor(c)
                         local rl = CludesUI._widgetRefreshList
                         if rl then
                             for i2 = 1, #rl do
@@ -193,7 +193,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                     CludesUI.HideWidgetTooltip()
                 end)
                 undoBtn:SetScript("OnClick", function()
-                    item.resetFn()
+                    entry.resetFn()
                     CludesUI.ApplyColorsToOUF()
                     updateSwatch()
                     local rl = CludesUI._widgetRefreshList
@@ -215,8 +215,8 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
     --  Resource Bars (RB ignores the opacity sliders). "Darken" sliders
     --  blacken class/power/class-resource colours inside the colour getters, reaching every module with no extra wiring.
     -------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "DARK MODE", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "DARK MODE", cursorY)
+    cursorY = cursorY - height
     do
         local DM_DEF = CludesUI.DEFAULT_DARK_MODE
 
@@ -262,7 +262,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
         -- Row 1: Dark Mode (checkbox dropdown) | Color Darkening (slider
         -- dropdown: the class / resource / power / BG power darken amounts).
         local dmRow
-        dmRow, hgt = W:DualRow(hostFrame, posY, {
+        dmRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Dark Mode",
             tooltip = "Turns Dark Mode on or off for each module.",
@@ -283,13 +283,13 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
             end,
             setValue = function() end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Row 2: Dark Mode Fill | Background -- each an opacity slider with its
         -- colour as an inline swatch (Resource Bars use the colours but ignore
         -- the opacity).
         local fillRow
-        fillRow, hgt = W:DualRow(hostFrame, posY, {
+        fillRow, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Dark Mode Fill",
             min = 0,
@@ -326,14 +326,14 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                 CludesUI.RefreshDarkMode()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if not CludesUI._prebuilding then
             local region = dmRow._leftRegion
             if region._control then
                 region._control:Hide()
             end
-            local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
                 region,
                 210,
                 region:GetFrameLevel() + 2,
@@ -353,8 +353,8 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                     CludesUI:RefreshPage()
                 end
             )
-            Pix.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
-            region._control = cbDD
+            Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+            region._control = checkDrop
             region._lastInline = nil
             CludesUI.RegisterWidgetRefresh(cbDDRefresh)
 
@@ -421,8 +421,8 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
         end
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     -------------------------------------------------------------------
     --  Colour sections. Each opens with its own "Apply to All Profiles" |
@@ -439,7 +439,7 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
     end
     local _colorGates = {} -- { section, top, bot } per section grid
     local function SectionSourceRow(section)
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Apply to All Profiles",
             tooltip = "Share this section's colors across profiles.",
@@ -471,15 +471,15 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                 CludesUI:RefreshPage()
             end,
         })
-        posY = posY - hgt
-        _colorGates[#_colorGates + 1] = { section = section, top = posY }
+        cursorY = cursorY - height
+        _colorGates[#_colorGates + 1] = { section = section, top = cursorY }
     end
 
     -------------------------------------------------------------------
     --  CLASS COLORS section
     -------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "CLASS COLORS", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "CLASS COLORS", cursorY)
+    cursorY = cursorY - height
     SectionSourceRow("class")
 
     local classItems = {}
@@ -510,18 +510,18 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
         }
     end
 
-    hgt = BuildColorGrid(hostFrame, posY, classItems)
-    posY = posY - hgt
-    _colorGates[#_colorGates].bot = posY
+    height = BuildColorGrid(hostFrame, cursorY, classItems)
+    cursorY = cursorY - height
+    _colorGates[#_colorGates].bot = cursorY
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     -------------------------------------------------------------------
     --  POWER COLORS section
     -------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "POWER COLORS", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "POWER COLORS", cursorY)
+    cursorY = cursorY - height
     SectionSourceRow("power")
 
     local POWER_ORDER = {
@@ -560,19 +560,19 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
         }
     end
 
-    hgt = BuildColorGrid(hostFrame, posY, powerItems)
-    posY = posY - hgt
-    _colorGates[#_colorGates].bot = posY
+    height = BuildColorGrid(hostFrame, cursorY, powerItems)
+    cursorY = cursorY - height
+    _colorGates[#_colorGates].bot = cursorY
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     -------------------------------------------------------------------
     --  CLASS RESOURCE COLORS section -- standalone swatches mirroring the
     --  POWER COLORS pattern, saved under the "classResource" custom-colors category (not yet consumed).
     -------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "CLASS RESOURCE COLORS", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "CLASS RESOURCE COLORS", cursorY)
+    cursorY = cursorY - height
     SectionSourceRow("classResource")
     do
         -- Order + labels only; defaults live in the shared DEFAULT_CLASS_RESOURCE_COLORS, the source the resource bar's "Class Resource
@@ -611,13 +611,13 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                 end,
             }
         end
-        hgt = BuildColorGrid(hostFrame, posY, resourceItems)
+        height = BuildColorGrid(hostFrame, cursorY, resourceItems)
     end
-    posY = posY - hgt
-    _colorGates[#_colorGates].bot = posY
+    cursorY = cursorY - height
+    _colorGates[#_colorGates].bot = cursorY
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     -- Colour-edit gate: a GLOBAL-mode section takes its palette from ONE profile, so its editing is blocked while viewing any other. ONE
     -- overlay PER SECTION, sized to that section's grid, judged by that section's own setting. Always created; a shared refresh callback
@@ -671,5 +671,5 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
         CludesUI.RegisterWidgetRefresh(UpdateColorGate)
     end
 
-    return math.abs(posY)
+    return math.abs(cursorY)
 end

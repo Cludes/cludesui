@@ -210,9 +210,9 @@ function mod.UF_CoreTextRows(prefixText, contentDefault, get, set, rowList)
 end
 
 -- Keep the unit-frame settings and inline controls; only the list changes.
-function mod.UFO_BuildTextSlots(W, hostFrame, posY, options)
-    local header, headerH = W:SectionHeader(hostFrame, "CORE TEXT POSITIONS", posY)
-    posY = posY - headerH
+function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
+    local header, headerH = W:SectionHeader(hostFrame, "CORE TEXT POSITIONS", cursorY)
+    cursorY = cursorY - headerH
     hostFrame._ufTextHeader = header
     local slots, sequence, values = options.slots, {}, {}
     local byKey, cells, targets = {}, {}, {}
@@ -422,8 +422,8 @@ function mod.UFO_BuildTextSlots(W, hostFrame, posY, options)
         end
     end
     for idx = 1, #cells, 2 do
-        local row, hgt = W:DualRow(hostFrame, posY, Config(cells[idx]), Config(cells[idx + 1]))
-        posY = posY - hgt
+        local row, height = W:DualRow(hostFrame, cursorY, Config(cells[idx]), Config(cells[idx + 1]))
+        cursorY = cursorY - height
         Finish(row, "_leftRegion", cells[idx])
         Finish(row, "_rightRegion", cells[idx + 1])
     end
@@ -445,7 +445,7 @@ function mod.UFO_BuildTextSlots(W, hostFrame, posY, options)
             return false
         end
     end
-    return posY, firstRow
+    return cursorY, firstRow
 end
 
 function mod.UFO_TextClickTarget(hostFrame, key, section, fallback)

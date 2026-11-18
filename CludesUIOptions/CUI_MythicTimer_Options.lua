@@ -26,8 +26,8 @@ local PAGE_KT = "Kick Tracker"
 local CreateFrame = CludesUI._Pool.CreateFrame
 
 -- A length on a frame's physical pixel grid (onePx: one pixel in its units).
-local function PvSnap(v, onePx)
-    return math.floor(v / onePx + 0.5) * onePx
+local function PvSnap(value, onePx)
+    return math.floor(value / onePx + 0.5) * onePx
 end
 
 CludesUI.AtOptionsLogin(function()
@@ -107,8 +107,8 @@ CludesUI.AtOptionsLogin(function()
     end
     -- Stores the value and re-applies the timer; repaint also redraws the page.
     local function Keep(key, repaint)
-        return function(v)
-            Set(key, v)
+        return function(value)
+            Set(key, value)
             Refresh()
             if repaint then
                 CludesUI:RefreshPage()
@@ -297,12 +297,12 @@ CludesUI.AtOptionsLogin(function()
 
     -- The timer's sample run on or off. The Quest Tracker steps aside while
     -- it shows, so the two never overlap.
-    local function _setPreview(v)
-        Set("showPreview", v)
+    local function _setPreview(value)
+        Set("showPreview", value)
         Refresh()
         local suppress = _G._CUQT_SetSuppressed
         if suppress then
-            suppress("MTimerPreview", v == true)
+            suppress("MTimerPreview", value == true)
         end
     end
 
@@ -326,8 +326,8 @@ CludesUI.AtOptionsLogin(function()
 
         local W = CludesUI.Widgets
         local Pix = CludesUI.PP
-        local posY = yOffset
-        local _, row, hgt, heading
+        local cursorY = yOffset
+        local _, row, height, heading
 
         if CludesUI.ClearContentHeader then
             CludesUI:ClearContentHeader()
@@ -413,8 +413,8 @@ CludesUI.AtOptionsLogin(function()
         )
 
         -- DISPLAY
-        heading, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
-        posY = posY - hgt
+        heading, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(heading, {
             key = "EMT_MythicTimer",
             disabled = ModOff,
@@ -424,14 +424,14 @@ CludesUI.AtOptionsLogin(function()
         local alignAllValues = { LEFT = "Left", RIGHT = "Right" }
         local alignAllOrder = { "LEFT", "RIGHT" }
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Mythic+ Timer",
             tooltip = "The Mythic+ timer window in keys.",
             getValue = NotOff("enabled"),
-            setValue = function(v)
-                Set("enabled", v and true or false)
-                if not v and Cfg("showPreview") == true then
+            setValue = function(value)
+                Set("enabled", value and true or false)
+                if not value and Cfg("showPreview") == true then
                     _setPreview(false)
                 end
                 Refresh()
@@ -444,15 +444,15 @@ CludesUI.AtOptionsLogin(function()
             values = alignAllValues,
             order = alignAllOrder,
             getValue = Or("alignAllText", "RIGHT"),
-            setValue = function(v)
-                Set("alignAllText", v)
+            setValue = function(value)
+                Set("alignAllText", value)
                 if _G._CUMT_RebuildStandalone then
                     _G._CUMT_RebuildStandalone()
                 end
                 Refresh()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- The preview eye on the enable toggle: a sample run in the timer
         -- window while the page is open (off again when the panel closes,
         -- _installPreviewAutoOff). None in the search pre-build.
@@ -467,8 +467,8 @@ CludesUI.AtOptionsLogin(function()
             glyph:SetAllPoints()
             local TIP = { width = 175 }
             -- Resting strength: faint while the timer is off.
-            local function Rest(btn)
-                CludesUI.SetGlyphAlpha(btn, ModOff() and 0.15 or 0.4)
+            local function Rest(button)
+                CludesUI.SetGlyphAlpha(button, ModOff() and 0.15 or 0.4)
             end
             local function Paint()
                 -- The icon files are named backwards: EYE_INVISIBLE_ICON draws the open eye.
@@ -500,7 +500,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- Scale + Background Opacity: side-by-side dual row.
         local scaleRow
-        scaleRow, hgt = W:DualRow(hostFrame, posY, {
+        scaleRow, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Scale",
             disabled = ModOff,
@@ -524,17 +524,17 @@ CludesUI.AtOptionsLogin(function()
             getValue = function()
                 return (Cfg("standaloneAlpha") or 0) * 100
             end,
-            setValue = function(v)
-                Set("standaloneAlpha", v / 100)
+            setValue = function(value)
+                Set("standaloneAlpha", value / 100)
                 Refresh()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Inline RESIZE cog on Scale: Frame Width slider
         if not CludesUI._prebuilding then
-            local leftRgn = scaleRow._leftRegion
-            CludesUI.BuildInlineCog(leftRgn, {
+            local leftRegion = scaleRow._leftRegion
+            CludesUI.BuildInlineCog(leftRegion, {
                 title = "Frame Width",
                 rows = {
                     {
@@ -566,7 +566,7 @@ CludesUI.AtOptionsLogin(function()
             return "This option requires Show Timer Bar or Show Enemy Forces to be enabled"
         end
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Bar Width",
             disabled = _barsOff,
@@ -584,13 +584,13 @@ CludesUI.AtOptionsLogin(function()
             disabled = _barsOff,
             disabledTooltip = _barsReq,
             getValue = IsTrue("customBorderStyle"),
-            setValue = function(v)
-                Set("customBorderStyle", v)
+            setValue = function(value)
+                Set("customBorderStyle", value)
                 ApplyBorder()
                 CludesUI:RefreshPage(true)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Border Style (with its cog) | Border Size (with a colour swatch):
         -- built only while Custom Border Style is on, so by default the row,
@@ -614,8 +614,8 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
             local function Quiet(key)
-                return function(v)
-                    Set(key, v)
+                return function(value)
+                    Set(key, value)
                 end
             end
             -- Named apart from texValues/texOrder (the bar texture lists) on
@@ -630,9 +630,9 @@ CludesUI.AtOptionsLogin(function()
             local BLACK, WHITE = { r = 0, g = 0, b = 0 }, { r = 1, g = 1, b = 1 }
 
             local bsRow
-            bsRow, hgt = W:DualRow(
+            bsRow, height = W:DualRow(
                 hostFrame,
-                posY,
+                cursorY,
                 {
                     type = "dropdown",
                     text = "Border Style",
@@ -644,8 +644,8 @@ CludesUI.AtOptionsLogin(function()
                     -- A new style starts clean: no offsets or shifts, its own
                     -- select colour (else white, or black for solid), its own
                     -- default size, and the size back in steps.
-                    setValue = function(v)
-                        Set("borderTexture", v)
+                    setValue = function(value)
+                        Set("borderTexture", value)
                         for _, key in ipairs({
                             "borderTextureOffset",
                             "borderTextureOffsetY",
@@ -654,12 +654,12 @@ CludesUI.AtOptionsLogin(function()
                         }) do
                             Set(key, nil)
                         end
-                        local col = CludesUI.GetBorderSelectColor(v) or (v ~= "solid" and WHITE) or BLACK
+                        local col = CludesUI.GetBorderSelectColor(value) or (value ~= "solid" and WHITE) or BLACK
                         Set("borderR", col.r)
                         Set("borderG", col.g)
                         Set("borderB", col.b)
                         Set("borderA", 1)
-                        local size = CludesUI.GetBorderDefaultSize("MythicPlus", v)
+                        local size = CludesUI.GetBorderDefaultSize("MythicPlus", value)
                         if size then
                             Set("borderSize", size)
                         end
@@ -685,7 +685,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                 })
             )
-            posY = posY - hgt
+            cursorY = cursorY - height
             -- Width / Height Offset, only for a textured style (a solid border
             -- has no outward offsets); the search pre-build makes it too, so
             -- the page measures the same either way.
@@ -706,8 +706,8 @@ CludesUI.AtOptionsLogin(function()
                 for _, half in ipairs({ ocfgL, ocfgR }) do
                     half.disabled, half.disabledTooltip = _borderOff, _borderReq
                 end
-                row, hgt = W:DualRow(hostFrame, posY, ocfgL, ocfgR)
-                posY = posY - hgt
+                row, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
+                cursorY = cursorY - height
             end
             if not CludesUI._prebuilding then
                 -- A shift: the stored one, else the style's default for its size
@@ -721,9 +721,9 @@ CludesUI.AtOptionsLogin(function()
                         max = 10,
                         step = 1,
                         get = function()
-                            local v = Cfg(key)
-                            if v then
-                                return v
+                            local value = Cfg(key)
+                            if value then
+                                return value
                             end
                             return (
                                 select(
@@ -736,8 +736,8 @@ CludesUI.AtOptionsLogin(function()
                                 )
                             )
                         end,
-                        set = function(v)
-                            Set(key, v)
+                        set = function(value)
+                            Set(key, value)
                             ApplyBorder()
                         end,
                     }
@@ -753,8 +753,8 @@ CludesUI.AtOptionsLogin(function()
                             type = "toggle",
                             label = "Apply to Forces Bar",
                             get = NotOff("borderApplyToForces"),
-                            set = function(v)
-                                Set("borderApplyToForces", v)
+                            set = function(value)
+                                Set("borderApplyToForces", value)
                                 ApplyBorder()
                                 CludesUI:RefreshPage()
                             end,
@@ -948,10 +948,10 @@ CludesUI.AtOptionsLogin(function()
             end
         end
 
-        _, hgt = W:SectionHeader(hostFrame, "TITLE AND AFFIXES", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "TITLE AND AFFIXES", cursorY)
+        cursorY = cursorY - height
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Title",
             disabled = ModOff,
@@ -1024,9 +1024,9 @@ CludesUI.AtOptionsLogin(function()
                 "Show Title"
             )
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Affix",
             disabled = ModOff,
@@ -1128,14 +1128,14 @@ CludesUI.AtOptionsLogin(function()
                 disabledTooltip = "the module",
             })
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "TIMER", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "TIMER", cursorY)
+        cursorY = cursorY - height
 
         local timerFontValues, timerFontOrder = CludesUI.BuildFontDropdownData()
         -- Timer Size only drives the standalone clock; the in-bar timer text has a fixed size.
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Timer Size",
             disabled = function()
@@ -1163,9 +1163,9 @@ CludesUI.AtOptionsLogin(function()
             getValue = Or("timerDisplayMode", "REMAINING_TOTAL"),
             setValue = Keep("timerDisplayMode"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Timer Font",
             disabled = ModOff,
@@ -1175,12 +1175,12 @@ CludesUI.AtOptionsLogin(function()
             getValue = Or("timerFont", "__global"),
             setValue = Keep("timerFont"),
         }, CludesUI.BlankRowCfg())
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "TIMER BAR", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "TIMER BAR", cursorY)
+        cursorY = cursorY - height
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Timer Bar",
             disabled = ModOff,
@@ -1245,9 +1245,9 @@ CludesUI.AtOptionsLogin(function()
                 end,
             })
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Timer Bar Height",
             tooltip = "Height of the timer bar. While the timer is inside the bar, In-Bar Height sets the minimum.",
@@ -1258,13 +1258,13 @@ CludesUI.AtOptionsLogin(function()
             step = 1,
             isPercent = false,
             getValue = Or("barHeight", 8),
-            setValue = function(v)
+            setValue = function(value)
                 -- Pin the forces bar to its current height before the first
                 -- change, so the two height sliders act independently.
                 if Cfg("enemyBarHeight") == nil then
                     Set("enemyBarHeight", Cfg("barHeight") or 8)
                 end
-                Set("barHeight", v)
+                Set("barHeight", value)
                 Refresh()
             end,
         }, {
@@ -1294,7 +1294,7 @@ CludesUI.AtOptionsLogin(function()
             disabled = OffWith("showTimerBar"),
             disabledTooltip = ModuleOr("Show Timer Bar"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Builds a threshold toggle config plus an attach() that hangs the inline
         -- RESIZE cog (white text / size / x / y) and the colour swatch onto a given
@@ -1319,15 +1319,15 @@ CludesUI.AtOptionsLogin(function()
                 return Cfg(showKey) ~= false
             end
 
-            local conf = {
+            local rowConf = {
                 type = "toggle",
                 text = "Show " .. labelText .. " Timer Text",
                 tooltip = "Show Timer Text",
                 disabled = ModOff,
                 disabledTooltip = "the module",
                 getValue = IsTimerTextShown,
-                setValue = function(v)
-                    Set(showKey, v)
+                setValue = function(value)
+                    Set(showKey, value)
                     Refresh()
                 end,
             }
@@ -1345,8 +1345,8 @@ CludesUI.AtOptionsLogin(function()
                             get = function()
                                 return Cfg(whiteKey) == true
                             end,
-                            set = function(v)
-                                Set(whiteKey, v)
+                            set = function(value)
+                                Set(whiteKey, value)
                                 Refresh()
                             end,
                         },
@@ -1359,8 +1359,8 @@ CludesUI.AtOptionsLogin(function()
                             get = function()
                                 return Cfg(sizeKey) or Cfg("thresholdSize") or 12
                             end,
-                            set = function(v)
-                                Set(sizeKey, v)
+                            set = function(value)
+                                Set(sizeKey, value)
                                 Refresh()
                             end,
                         },
@@ -1373,8 +1373,8 @@ CludesUI.AtOptionsLogin(function()
                             get = function()
                                 return Cfg(offsetXKey) or Cfg("thresholdTextOffsetX") or 0
                             end,
-                            set = function(v)
-                                Set(offsetXKey, v)
+                            set = function(value)
+                                Set(offsetXKey, value)
                                 Refresh()
                             end,
                         },
@@ -1387,8 +1387,8 @@ CludesUI.AtOptionsLogin(function()
                             get = function()
                                 return Cfg(offsetYKey) or Cfg("thresholdTextOffsetY") or 0
                             end,
-                            set = function(v)
-                                Set(offsetYKey, v)
+                            set = function(value)
+                                Set(offsetYKey, value)
                                 Refresh()
                             end,
                         },
@@ -1396,17 +1396,17 @@ CludesUI.AtOptionsLogin(function()
                     disabled = function()
                         return Cfg("enabled") == false or not IsTimerTextShown()
                     end,
-                    disabledTooltip = ModuleOr(conf.text),
+                    disabledTooltip = ModuleOr(rowConf.text),
                 })
                 -- Inline colour swatch (the +N threshold / segment colour), left of the cog
                 _AttachInlineSwatch(region, barColorKey, defR, defG, defB, afterBarSet, ModOff, "the module")
             end
 
-            return conf, attach
+            return rowConf, attach
         end
 
-        _, hgt = W:SectionHeader(hostFrame, "THRESHOLDS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "THRESHOLDS", cursorY)
+        cursorY = cursorY - height
 
         local p3cfg, p3attach = _ThresholdWidget(
             "+3 Threshold",
@@ -1452,7 +1452,7 @@ CludesUI.AtOptionsLogin(function()
         )
 
         -- Row 1: Ticks / Gaps (style + inline cog + Tick Color swatch) | +3 Threshold
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Ticks / Gaps",
             disabled = OffWith("showTimerBar"),
@@ -1507,24 +1507,24 @@ CludesUI.AtOptionsLogin(function()
             end, "Ticks")
             p3attach(row._rightRegion)
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Row 2: +2 Threshold | +1 Threshold
-        row, hgt = W:DualRow(hostFrame, posY, p2cfg, p1cfg)
+        row, height = W:DualRow(hostFrame, cursorY, p2cfg, p1cfg)
         if not CludesUI._prebuilding then
             p2attach(row._leftRegion)
             p1attach(row._rightRegion)
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "FORCES", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "FORCES", cursorY)
+        cursorY = cursorY - height
 
         local function _forcesOff()
             return Cfg("enabled") == false or Cfg("showEnemyBar") == false
         end
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Enemy Forces",
             disabled = ModOff,
@@ -1548,9 +1548,9 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = Keep("enemyBarHeight"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Enemy Text Format",
             disabled = _forcesOff,
@@ -1615,9 +1615,9 @@ CludesUI.AtOptionsLogin(function()
                 disabledTooltip = ModuleOr("Show Enemy Forces"),
             })
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Enemy Forces Position",
             disabled = _forcesOff,
@@ -1666,7 +1666,7 @@ CludesUI.AtOptionsLogin(function()
                 ModuleOr("Show Enemy Forces")
             )
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- The pull bar's default color is the forces fill color (accent or custom).
         local function _enemyBarColor()
@@ -1692,7 +1692,7 @@ CludesUI.AtOptionsLogin(function()
             end
             return "Show Current Pull in Bar"
         end
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Current Pull in Bar",
             disabled = _forcesOff,
@@ -1715,8 +1715,8 @@ CludesUI.AtOptionsLogin(function()
             getValue = function()
                 return (Cfg("pullBarAlpha") or 0.35) * 100
             end,
-            setValue = function(v)
-                Set("pullBarAlpha", v / 100)
+            setValue = function(value)
+                Set("pullBarAlpha", value / 100)
                 Refresh()
             end,
         })
@@ -1735,12 +1735,12 @@ CludesUI.AtOptionsLogin(function()
                 _enemyBarColor
             )
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "BOSS OBJECTIVES", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "BOSS OBJECTIVES", cursorY)
+        cursorY = cursorY - height
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Boss Objectives",
             disabled = ModOff,
@@ -1787,11 +1787,11 @@ CludesUI.AtOptionsLogin(function()
                 disabledTooltip = ModuleOr("Show Boss Objectives"),
             })
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Time Position also places the Split Compare text, so it stays usable
         -- while either the objective times or a compare mode is shown.
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Objective Times",
             disabled = OffWith("showObjectives"),
@@ -1824,9 +1824,9 @@ CludesUI.AtOptionsLogin(function()
             getValue = Or("objectiveTimePosition", "RIGHT"),
             setValue = Keep("objectiveTimePosition"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             pixel = true,
             text = "Objective Spacing",
@@ -1894,12 +1894,12 @@ CludesUI.AtOptionsLogin(function()
                 disabledTooltip = ModuleOr("Show Boss Objectives"),
             })
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
 
-        hostFrame:SetHeight(math.abs(posY - yOffset))
+        hostFrame:SetHeight(math.abs(cursorY - yOffset))
     end
 
     ---------------------------------------------------------------------------
@@ -1920,13 +1920,13 @@ CludesUI.AtOptionsLogin(function()
         return t and t[which]
     end
     -- Each refresh restyles the live bars, then repaints the header sample.
-    local function Restyler(exportName, pv)
+    local function Restyler(exportName, preview)
         return function()
             local apply = mod[exportName]
             if apply then
                 apply()
             end
-            PvRepaint(pv)
+            PvRepaint(preview)
         end
     end
     local TSBRefresh = Restyler("TSB_Refresh", tsbPv)
@@ -1973,23 +1973,23 @@ CludesUI.AtOptionsLogin(function()
         end
         -- Writers; repaint also redraws the page's widgets afterwards.
         local function Writer(key, cast, repaint)
-            return function(v)
+            return function(value)
                 local c = tbl()
                 if not c then
                     return
                 end
-                c[key] = cast(v)
+                c[key] = cast(value)
                 redraw()
                 if repaint then
                     CludesUI:RefreshPage()
                 end
             end
         end
-        local function Same(v)
-            return v
+        local function Same(value)
+            return value
         end
-        local function Truth(v)
-            return v and true or false
+        local function Truth(value)
+            return value and true or false
         end
         function A.Put(key, repaint)
             return Writer(key, Same, repaint)
@@ -2119,16 +2119,16 @@ CludesUI.AtOptionsLogin(function()
         end
         return picked
     end
-    local function TSBWhereGet(k)
+    local function TSBWhereGet(keyName)
         local picked = TSBWhere()
-        return (picked ~= nil and picked[k] == true) and true or false
+        return (picked ~= nil and picked[keyName] == true) and true or false
     end
-    local function TSBWhereSet(k, v)
+    local function TSBWhereSet(keyName, value)
         local picked = TSBWhere()
         if not picked then
             return
         end
-        picked[k] = v and true or nil
+        picked[keyName] = value and true or nil
         TSBRefresh()
     end
 
@@ -2227,8 +2227,8 @@ CludesUI.AtOptionsLogin(function()
 
     local function BuildTSBPage(pageName, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, row, hgt
+        local cursorY = yOffset
+        local _, row, height
 
         CludesUI:SetContentHeader(tsbBuilder)
         hostFrame._showRowDivider = true
@@ -2245,8 +2245,8 @@ CludesUI.AtOptionsLogin(function()
             return cfg
         end
         local function Row(left, right)
-            row, hgt = W:DualRow(hostFrame, posY, left, right)
-            posY = posY - hgt
+            row, height = W:DualRow(hostFrame, cursorY, left, right)
+            cursorY = cursorY - height
             return row
         end
         local function Slider(text, key, lo, hi, def, pixel, tooltip)
@@ -2276,8 +2276,8 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local heading
-        heading, hgt = W:SectionHeader(hostFrame, "CAST BARS", posY)
-        posY = posY - hgt
+        heading, height = W:SectionHeader(hostFrame, "CAST BARS", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "EMT_TargetedSpellBars", disabled = Off, disabledTooltip = REQ }
@@ -2341,10 +2341,10 @@ CludesUI.AtOptionsLogin(function()
                     local c = TSB()
                     return (c and c.growUp) and "UP" or "DOWN"
                 end,
-                setValue = function(v)
+                setValue = function(value)
                     local c = TSB()
                     if c then
-                        c.growUp = v == "UP"
+                        c.growUp = value == "UP"
                         TSBRefresh()
                     end
                 end,
@@ -2457,8 +2457,8 @@ CludesUI.AtOptionsLogin(function()
         ---------------------------------------------------------------------
         --  Interrupt awareness and visibility
         ---------------------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, "INTERRUPT AND VISIBILITY", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "INTERRUPT AND VISIBILITY", cursorY)
+        cursorY = cursorY - height
 
         local GO = CludesUI.GlowOptions
 
@@ -2513,8 +2513,8 @@ CludesUI.AtOptionsLogin(function()
                     get = function()
                         return math.floor(A.Or("oorAlpha", 0.45)() * 100 + 0.5)
                     end,
-                    set = function(v)
-                        A.Put("oorAlpha")(v / 100)
+                    set = function(value)
+                        A.Put("oorAlpha")(value / 100)
                     end,
                 },
             })
@@ -2532,9 +2532,9 @@ CludesUI.AtOptionsLogin(function()
             })
         end
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        hostFrame:SetHeight(math.abs(posY - yOffset))
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        hostFrame:SetHeight(math.abs(cursorY - yOffset))
     end
 
     ---------------------------------------------------------------------------
@@ -2542,8 +2542,8 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     local function BuildTFBPage(pageName, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, row, hgt
+        local cursorY = yOffset
+        local _, row, height
 
         CludesUI:SetContentHeader(tfbBuilder)
         hostFrame._showRowDivider = true
@@ -2551,8 +2551,8 @@ CludesUI.AtOptionsLogin(function()
         local texValues, texOrder = BuildBarTexDropdown()
 
         local function Row(left, right)
-            row, hgt = W:DualRow(hostFrame, posY, left, right)
-            posY = posY - hgt
+            row, height = W:DualRow(hostFrame, cursorY, left, right)
+            cursorY = cursorY - height
             return row
         end
         -- Settings both bars share (colours, kick hint, flash).
@@ -2615,8 +2615,8 @@ CludesUI.AtOptionsLogin(function()
             end
 
             local heading
-            heading, hgt = W:SectionHeader(hostFrame, header, posY)
-            posY = posY - hgt
+            heading, height = W:SectionHeader(hostFrame, header, cursorY)
+            cursorY = cursorY - height
             CludesUI.BuildSectionUnlockJump(heading, {
                 key = (which == "target") and "EMT_TargetCastBar" or "EMT_FocusCastBar",
                 disabled = Off,
@@ -2706,8 +2706,8 @@ CludesUI.AtOptionsLogin(function()
         BuildBarSection("focus", "FOCUS CAST BAR", "Enable Focus Cast Bar")
 
         -- CAST COLORS AND EFFECTS (shared by both bars)
-        _, hgt = W:SectionHeader(hostFrame, "CAST COLORS AND EFFECTS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "CAST COLORS AND EFFECTS", cursorY)
+        cursorY = cursorY - height
 
         local function SharedOff()
             local t, f = TFBBar("target"), TFBBar("focus")
@@ -2737,11 +2737,11 @@ CludesUI.AtOptionsLogin(function()
                 end
                 return (t and t.midCastEnabled == true) and "tickbar" or "tick"
             end,
-            setValue = function(v)
+            setValue = function(value)
                 local t = TFB()
                 if t then
-                    t.kickTickEnabled = v ~= "none"
-                    t.midCastEnabled = v ~= "none" and v ~= "tick"
+                    t.kickTickEnabled = value ~= "none"
+                    t.midCastEnabled = value ~= "none" and value ~= "tick"
                     TFBRefresh()
                 end
             end,
@@ -2811,9 +2811,9 @@ CludesUI.AtOptionsLogin(function()
             })
         end
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        hostFrame:SetHeight(math.abs(posY - yOffset))
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        hostFrame:SetHeight(math.abs(cursorY - yOffset))
     end
 
     -----------------------------------------------------------------------
@@ -2827,9 +2827,9 @@ CludesUI.AtOptionsLogin(function()
     -- A Run Summary setting, fallback while it was never stored.
     local function RSGet(key, fallback)
         local c = RSCfg()
-        local v = c and c[key]
-        if v ~= nil then
-            return v
+        local value = c and c[key]
+        if value ~= nil then
+            return value
         end
         return fallback
     end
@@ -2858,8 +2858,8 @@ CludesUI.AtOptionsLogin(function()
 
     local function BuildRSPage(pageName, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
 
         if CludesUI.ClearContentHeader then
             CludesUI:ClearContentHeader()
@@ -2868,12 +2868,12 @@ CludesUI.AtOptionsLogin(function()
 
         local REQ = "Enable Run Summary"
         local function Row(left, right)
-            _, hgt = W:DualRow(hostFrame, posY, left, right)
-            posY = posY - hgt
+            _, height = W:DualRow(hostFrame, cursorY, left, right)
+            cursorY = cursorY - height
         end
         local function Section(title)
-            _, hgt = W:SectionHeader(hostFrame, title, posY)
-            posY = posY - hgt
+            _, height = W:SectionHeader(hostFrame, title, cursorY)
+            cursorY = cursorY - height
         end
         -- A switch that is on until turned off.
         local function Switch(text, key, tooltip)
@@ -2886,8 +2886,8 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return RSGet(key, true) == true
                 end,
-                setValue = function(v)
-                    RSSet(key, v and true or false)
+                setValue = function(value)
+                    RSSet(key, value and true or false)
                 end,
             }
         end
@@ -2904,8 +2904,8 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return RSGet(key, def)
                 end,
-                setValue = function(v)
-                    RSSet(key, v)
+                setValue = function(value)
+                    RSSet(key, value)
                 end,
             }
         end
@@ -2917,13 +2917,13 @@ CludesUI.AtOptionsLogin(function()
             local ROW_H = BTN_H + 20
             local strip = CreateFrame("Frame", nil, hostFrame)
             PPn.Size(strip, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, ROW_H)
-            PPn.Point(strip, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY)
+            PPn.Point(strip, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
             local function Action(label, point, dx, onClick)
-                local btn = CreateFrame("Button", nil, strip)
-                PPn.Size(btn, BTN_W, BTN_H)
-                PPn.Point(btn, point, strip, "CENTER", dx, 0)
-                btn:SetFrameLevel(strip:GetFrameLevel() + 1)
-                CludesUI.MakeStyledButton(btn, label, 14, CludesUI.WB_COLOURS, onClick)
+                local button = CreateFrame("Button", nil, strip)
+                PPn.Size(button, BTN_W, BTN_H)
+                PPn.Point(button, point, strip, "CENTER", dx, 0)
+                button:SetFrameLevel(strip:GetFrameLevel() + 1)
+                CludesUI.MakeStyledButton(button, label, 14, CludesUI.WB_COLOURS, onClick)
             end
             Action("Show Preview", "RIGHT", -(GAP / 2), function()
                 if mod.RS_ShowPreview then
@@ -2943,7 +2943,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                 })
             end)
-            posY = posY - ROW_H
+            cursorY = cursorY - ROW_H
         end
 
         Section("RUN SUMMARY")
@@ -2953,8 +2953,8 @@ CludesUI.AtOptionsLogin(function()
                 text = "Enable Run Summary",
                 tooltip = "Records every finished Mythic+ key and shows an overview of the group when the run ends. Nothing is registered or created while this is off.",
                 getValue = RSOn,
-                setValue = function(v)
-                    RSSet("enabled", v and true or false)
+                setValue = function(value)
+                    RSSet("enabled", value and true or false)
                     CludesUI:RefreshPage()
                 end,
             },
@@ -3012,9 +3012,9 @@ CludesUI.AtOptionsLogin(function()
         )
         Row(Switch("Interrupts", "colInterrupts"), Switch("Deaths", "colDeaths"))
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        hostFrame:SetHeight(math.abs(posY - yOffset))
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        hostFrame:SetHeight(math.abs(cursorY - yOffset))
     end
 
     -- RegisterModule

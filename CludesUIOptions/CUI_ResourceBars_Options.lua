@@ -61,9 +61,9 @@ end
 
 -- Writes one stockBorderScale to all three bars, then re-fits every bar's
 -- Layout Mode size matches (they read the frame's reach).
-local function ClassicScaleToAll(p, v)
+local function ClassicScaleToAll(p, value)
     for _, key in ipairs(CLASSIC_SYNC_KEYS) do
-        p[key].stockBorderScale = v
+        p[key].stockBorderScale = value
     end
 end
 local function RefitAll()
@@ -79,16 +79,16 @@ function mod.ERB_ClassicBorderSizeCfg(cfgFn, offFn, offTip, rebuild, matchKey)
     return CludesUI.BlizzStyle.ClassicBorderSizeCfg(function()
         local c = cfgFn()
         return c and c.stockBorderScale
-    end, function(v)
+    end, function(value)
         local c = cfgFn()
         if not c then
             return
         end
-        c.stockBorderScale = v
+        c.stockBorderScale = value
         local p = Profile()
         local together = p and mod.ERB_GroupSettingOn and mod.ERB_GroupSettingOn(p)
         if together then
-            ClassicScaleToAll(p, v)
+            ClassicScaleToAll(p, value)
         end
         rebuild()
         if together then
@@ -120,9 +120,9 @@ function mod.ERB_ClassicBorderSync(regionFrame, dbFn, key, refresh, flashFn)
             if not p then
                 return false
             end
-            local v = p[key].stockBorderScale
+            local value = p[key].stockBorderScale
             for _, other in ipairs(CLASSIC_SYNC_KEYS) do
-                if p[other].stockBorderScale ~= v then
+                if p[other].stockBorderScale ~= value then
                     return false
                 end
             end
@@ -139,11 +139,11 @@ end
 -- borderSize in the "apply to all" syncs. A value the target had is cleared
 -- with false, never nil: nil does not carry through the mirror sync.
 function mod.ERB_CopyBorderPx(target, source)
-    local v = source.borderSizePx
-    if v == nil and target.borderSizePx ~= nil then
-        v = false
+    local value = source.borderSizePx
+    if value == nil and target.borderSizePx ~= nil then
+        value = false
     end
-    target.borderSizePx = v
+    target.borderSizePx = value
 end
 -- Two bars agree when both are unset (nil or false) or hold the same value.
 function mod.ERB_SameBorderPx(a, b)
@@ -370,9 +370,9 @@ CludesUI.AtOptionsLogin(function()
             PP.CreateBorder(holder, r, g, b, a or 1, size or 1, "BORDER", 7)
         end
         local handle = { _frame = holder, edges = (PP and PP.GetBorders(holder)) or {} }
-        function handle.SetColor(_, cr, cg, cb, ca)
+        function handle.SetColor(_, cr, cg, checkBtn, ca)
             if PP then
-                PP.SetBorderColor(holder, cr, cg, cb, ca or 1)
+                PP.SetBorderColor(holder, cr, cg, checkBtn, ca or 1)
             end
         end
         function handle.SetSize(_, px)
@@ -509,11 +509,11 @@ CludesUI.AtOptionsLogin(function()
 
     -- The border: Blizzard's bar chrome under the stock style, else ours
     -- (Extend Top / Bottom are power bar only, as live).
-    local function StyleBorder(bar, c, isHealth, wid, hgt)
+    local function StyleBorder(bar, c, isHealth, wid, height)
         local holder = bar._border._frame
         if mod.ERB_BarsBlizz() then
             holder:Hide()
-            mod.ERB_ApplyBlizzBarChrome(bar, bar._sb, wid, hgt, false, mod.ERB_BarFrameK(c))
+            mod.ERB_ApplyBlizzBarChrome(bar, bar._sb, wid, height, false, mod.ERB_BarFrameK(c))
             return
         end
         local level = bar:GetFrameLevel()
@@ -610,17 +610,17 @@ CludesUI.AtOptionsLogin(function()
         backdrop:SetColorTexture(c.bgR or 0, c.bgG or 0, c.bgB or 0, c.bgA or 0.75)
         UnsnapTex(backdrop)
         if g.barTextureBg or backdrop._erbBgTex then
-            local tex = g.barTextureBg
+            local texture = g.barTextureBg
                 and (c.fillOpacity or 100) >= 100
                 and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, texKey, nil)
-            mod.ERB_BgTexture(backdrop, tex, c.bgR, c.bgG, c.bgB, c.bgA)
+            mod.ERB_BgTexture(backdrop, texture, c.bgR, c.bgG, c.bgB, c.bgA)
         end
         return backdrop
     end
 
     -- Hash lines: the spec entry's own, else the bar's (ns.ApplyHashLines'
     -- rule), inside the border, in physical pixels as live.
-    local function StyleHashLines(bar, c, spec, wid, hgt, maxValue)
+    local function StyleHashLines(bar, c, spec, wid, height, maxValue)
         local ticks = bar._ticks
         for i = 1, #ticks do
             ticks[i]:Hide()
@@ -640,11 +640,11 @@ CludesUI.AtOptionsLogin(function()
         if not style or style == "" or style == "solid" then
             inset = CludesUI.BorderPx(c.borderSizePx, inset, style) or inset
         end
-        inset = math.min(inset * PP.mult, math.max(0, (hgt - 1) / 2))
+        inset = math.min(inset * PP.mult, math.max(0, (height - 1) / 2))
         local n = 0
         for part in (src.hashValues or ""):gmatch("[^,]+") do
-            local v = tonumber(part:match("^%s*(.-)%s*$"))
-            local frac = v and v > 0 and v / (percent and 100 or maxValue)
+            local value = tonumber(part:match("^%s*(.-)%s*$"))
+            local frac = value and value > 0 and value / (percent and 100 or maxValue)
             if frac and frac <= 1 then
                 n = n + 1
                 local tick = ticks[n]
@@ -660,7 +660,7 @@ CludesUI.AtOptionsLogin(function()
                     src.hashColorA or 0.7
                 )
                 tick:ClearAllPoints()
-                tick:SetSize(lineW, hgt - inset * 2)
+                tick:SetSize(lineW, height - inset * 2)
                 tick:SetPoint(
                     "TOPLEFT",
                     bar._sb,
@@ -717,9 +717,9 @@ CludesUI.AtOptionsLogin(function()
         local g = p.general
         local isHealth = kind == "health"
         local wid = _previewSnap(c.width or 214)
-        local hgt = _previewSnap(c.height or (isHealth and 16 or 14))
-        bar:SetSize(wid, hgt)
-        StyleBorder(bar, c, isHealth, wid, hgt)
+        local height = _previewSnap(c.height or (isHealth and 16 or 14))
+        bar:SetSize(wid, height)
+        StyleBorder(bar, c, isHealth, wid, height)
 
         -- The bar's own texture counts only while splitTex is on, as live.
         local texKey = (p.splitTex == true and c.barTexture) or g.barTexture
@@ -781,7 +781,7 @@ CludesUI.AtOptionsLogin(function()
             backdrop:SetAllPoints(fill)
         end
 
-        StyleHashLines(bar, c, spec, wid, hgt, maxValue)
+        StyleHashLines(bar, c, spec, wid, height, maxValue)
         mod.ERB_RoundBar(bar, c)
 
         local label = bar._text
@@ -880,15 +880,15 @@ CludesUI.AtOptionsLogin(function()
     end
 
     -- The bar texture behind a background (Textured Background), as live.
-    local function TexturedBg(tex, p, sp, allowed, r, g, b, a)
-        if not (p.general.barTextureBg or tex._erbBgTex) then
+    local function TexturedBg(texture, p, sp, allowed, r, g, b, a)
+        if not (p.general.barTextureBg or texture._erbBgTex) then
             return
         end
         local path = p.general.barTextureBg
             and allowed
             and (sp.fillOpacity or 100) >= 100
             and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, p.general.barTexture, nil)
-        mod.ERB_BgTexture(tex, path, r, g, b, a)
+        mod.ERB_BgTexture(texture, path, r, g, b, a)
     end
 
     local function FillPath(p)
@@ -946,9 +946,9 @@ CludesUI.AtOptionsLogin(function()
         local list = (entry and entry.hashValues ~= "") and entry.hashValues or (sp.tickValues or "")
         local values = {}
         for part in list:gmatch("[^,]+") do
-            local v = tonumber(part:match("^%s*(.-)%s*$"))
-            if v and v > 0 then
-                values[#values + 1] = v
+            local value = tonumber(part:match("^%s*(.-)%s*$"))
+            if value and value > 0 then
+                values[#values + 1] = value
             end
         end
         local get = _G._CURB_GetSecondaryResource
@@ -957,9 +957,9 @@ CludesUI.AtOptionsLogin(function()
         local percent = entry and entry.hashMode == "percent"
         local PP = CludesUI and CludesUI.PP
         local onePx = PP and PP.Scale(1) or 1
-        for i, v in ipairs(values) do
+        for i, value in ipairs(values) do
             local limit = percent and 100 or most
-            if v <= limit then
+            if value <= limit then
                 local tick = ticks[i]
                 if not tick then
                     tick = pc:CreateTexture(nil, "OVERLAY", nil, 7)
@@ -968,7 +968,7 @@ CludesUI.AtOptionsLogin(function()
                     tick:SetTexelSnappingBias(0)
                     ticks[i] = tick
                 end
-                local x = width * v / limit
+                local x = width * value / limit
                 tick:ClearAllPoints()
                 tick:SetSize(onePx, height)
                 tick:SetPoint("TOPLEFT", pc, "TOPLEFT", PP and PP.Scale(x) or x, 0)
@@ -996,8 +996,8 @@ CludesUI.AtOptionsLogin(function()
             scale = 1
         end
         local onePx = CludesUI.PP.perfect / scale -- one physical pixel in this frame's units
-        local function Snap(v)
-            return math.floor(v / onePx + 0.5) * onePx
+        local function Snap(value)
+            return math.floor(value / onePx + 0.5) * onePx
         end
         local width, height = Snap(sp.pipWidth), Snap(sp.pipHeight)
         local calc = _G._CURB_CalcPipGeometry
@@ -1043,11 +1043,11 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         local function Pick(field)
-            local v = entry and entry[field]
-            if v == nil then
-                v = sp[field]
+            local value = entry and entry[field]
+            if value == nil then
+                value = sp[field]
             end
-            return v
+            return value
         end
         local partial, reverse = Pick("thresholdPartialOnly"), Pick("thresholdReverse")
         if reverse then
@@ -1207,18 +1207,18 @@ CludesUI.AtOptionsLogin(function()
                 local w = xs[i + 1] - x
                 if w and w > 0 then
                     n = n + 1
-                    local tex = fills[n]
-                    if not tex then
-                        tex = pc:CreateTexture(nil, "BACKGROUND", nil, 0)
-                        UnsnapTex(tex)
-                        fills[n] = tex
+                    local texture = fills[n]
+                    if not texture then
+                        texture = pc:CreateTexture(nil, "BACKGROUND", nil, 0)
+                        UnsnapTex(texture)
+                        fills[n] = texture
                     end
-                    tex:SetColorTexture(sp.gapR or 0, sp.gapG or 0, sp.gapB or 0, sp.gapA or 1)
-                    tex:ClearAllPoints()
-                    tex:SetPoint("TOPLEFT", pc, "TOPLEFT", x, 0)
-                    tex:SetPoint("BOTTOMLEFT", pc, "BOTTOMLEFT", x, 0)
-                    tex:SetWidth(w)
-                    tex:Show()
+                    texture:SetColorTexture(sp.gapR or 0, sp.gapG or 0, sp.gapB or 0, sp.gapA or 1)
+                    texture:ClearAllPoints()
+                    texture:SetPoint("TOPLEFT", pc, "TOPLEFT", x, 0)
+                    texture:SetPoint("BOTTOMLEFT", pc, "BOTTOMLEFT", x, 0)
+                    texture:SetWidth(w)
+                    texture:Show()
                 end
             end
         end
@@ -1523,8 +1523,8 @@ CludesUI.AtOptionsLogin(function()
     -- live default order; then Arcane Soul below a divider), each under its
     -- title, centred in the container; then sizes the header.
     local function LayoutStack(holder, rows, titles, showAS)
-        local snap = _previewSnap or function(v)
-            return v
+        local snap = _previewSnap or function(value)
+            return value
         end
         local scale = (_previewScale and _previewScale > 0) and _previewScale or 1
         local titleH = (12 + 3) / scale -- a header-scale title line, in the bars' units
@@ -1869,9 +1869,9 @@ CludesUI.AtOptionsLogin(function()
         -- scale against UIParent's.
         _previewScale = UIParent:GetEffectiveScale() / heading:GetEffectiveScale()
         holder:SetScale(_previewScale)
-        _previewSnap = function(v)
+        _previewSnap = function(value)
             local s = holder:GetEffectiveScale()
-            return math.floor(v * s + 0.5) / s
+            return math.floor(value * s + 0.5) / s
         end
 
         local sp = p.secondary
@@ -1996,9 +1996,9 @@ CludesUI.AtOptionsLogin(function()
         end
         local kept = {}
         for token in tostring(str):gmatch("[^,]+") do
-            local v = tonumber(exact and token:match("^%s*(.-)%s*$") or (token:gsub("%s", "")))
-            if v and v >= 0 then
-                kept[#kept + 1] = tostring(v)
+            local value = tonumber(exact and token:match("^%s*(.-)%s*$") or (token:gsub("%s", "")))
+            if value and value >= 0 then
+                kept[#kept + 1] = tostring(value)
             end
         end
         return table.concat(kept, ", ")
@@ -2006,9 +2006,9 @@ CludesUI.AtOptionsLogin(function()
 
     -- The cog and popup for a bar's own hash lines (Health, Power). conf:
     -- parentRgn, getBarData, refreshFn, popupTitle, anchorTo. Returns the cog.
-    local function BuildHashCog(conf)
-        local Bar = conf.getBarData
-        local after = conf.refreshFn or function() end
+    local function BuildHashCog(rowConf)
+        local Bar = rowConf.getBarData
+        local after = rowConf.refreshFn or function() end
         local function Off()
             local c = Bar()
             return not (c and c.hashEnabled)
@@ -2019,10 +2019,10 @@ CludesUI.AtOptionsLogin(function()
                 local c = Bar()
                 return (c and c[key]) or default
             end
-            row.set = function(v)
+            row.set = function(value)
                 local c = Bar()
                 if c then
-                    c[key] = write and write(v) or v
+                    c[key] = write and write(value) or value
                     after()
                 end
             end
@@ -2041,8 +2041,8 @@ CludesUI.AtOptionsLogin(function()
                 },
                 "hashEnabled",
                 false,
-                function(v)
-                    return v and true or false
+                function(value)
+                    return value and true or false
                 end
             ),
             Field(
@@ -2084,10 +2084,10 @@ CludesUI.AtOptionsLogin(function()
                 end,
             },
         }
-        return CludesUI.BuildInlineCog(conf.parentRgn, {
-            anchorTo = conf.anchorTo,
+        return CludesUI.BuildInlineCog(rowConf.parentRgn, {
+            anchorTo = rowConf.anchorTo,
             tip = CludesUI.L("Hash Lines"),
-            title = conf.popupTitle or CludesUI.L("Hash Lines"),
+            title = rowConf.popupTitle or CludesUI.L("Hash Lines"),
             bgAlpha = 1,
             frameStrata = "FULLSCREEN_DIALOG",
             frameLevel = 500,
@@ -2141,13 +2141,13 @@ CludesUI.AtOptionsLogin(function()
     end
 
     -- The druid per-form cog on a row.
-    local function AddFormDisableBtn(rgn, leftOf, cfgFn, refreshFn, field, title, tooltip)
+    local function AddFormDisableBtn(region, leftOf, cfgFn, refreshFn, field, title, tooltip)
         local rows = FormToggleRows(cfgFn, refreshFn, field or "textDisabledForms")
         if not rows then
             return
         end
         title = title or "Enable/Disable per Form"
-        return CludesUI.BuildInlineCog(rgn, {
+        return CludesUI.BuildInlineCog(region, {
             anchorTo = leftOf,
             tip = tooltip or CludesUI.L(title),
             title = title,
@@ -2159,9 +2159,9 @@ CludesUI.AtOptionsLogin(function()
     end
     -- The CludesUI.L literals keep both titles in the static locale key list
     -- (tools/extract-locale-keys.sh sees literal string arguments only).
-    local function AddFormTextBtn(rgn, leftOf, cfgFn, refreshFn)
+    local function AddFormTextBtn(region, leftOf, cfgFn, refreshFn)
         return AddFormDisableBtn(
-            rgn,
+            region,
             leftOf,
             cfgFn,
             refreshFn,
@@ -2170,9 +2170,9 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.L("Enable/Disable per Form")
         )
     end
-    local function AddFormBarBtn(rgn, cfgFn, refreshFn)
+    local function AddFormBarBtn(region, cfgFn, refreshFn)
         return AddFormDisableBtn(
-            rgn,
+            region,
             nil,
             cfgFn,
             refreshFn,
@@ -2457,9 +2457,9 @@ CludesUI.AtOptionsLogin(function()
     end
 
     -- The widgets of band row k, made on first need.
-    local function EnsureBandRow(k)
-        if Band.rows[k] then
-            return Band.rows[k]
+    local function EnsureBandRow(keyName)
+        if Band.rows[keyName] then
+            return Band.rows[keyName]
         end
         local row = {}
         local frame = CreateFrame("Frame", nil, Band.popup)
@@ -2500,14 +2500,14 @@ CludesUI.AtOptionsLogin(function()
             if not band then
                 return
             end
-            local v = tonumber(self:GetText())
-            if v then
+            local value = tonumber(self:GetText())
+            if value then
                 local top = Band.countBased and 100
                     or (
                         (not Band.lockPercent and entry.bandMode == "value") and 1000000
                         or (Band.percentMax or 100)
                     )
-                band.to = math.max(1, math.min(top, math.floor(v + 0.5)))
+                band.to = math.max(1, math.min(top, math.floor(value + 0.5)))
                 SortBands(entry.bands)
                 BandChanged(false)
             end
@@ -2562,7 +2562,7 @@ CludesUI.AtOptionsLogin(function()
         end)
         row.delBtn = remove
 
-        Band.rows[k] = row
+        Band.rows[keyName] = row
         return row
     end
 
@@ -2619,22 +2619,22 @@ CludesUI.AtOptionsLogin(function()
         -- The row label follows the direction: "From" (>=) or "Up to".
         local rowLabel = entry.bandReverse and CludesUI.L("From") or CludesUI.L("Up to")
         local count = #entry.bands
-        for k = 1, count do
-            local row = EnsureBandRow(k)
-            row._idx = k
+        for keyName = 1, count do
+            local row = EnsureBandRow(keyName)
+            row._idx = keyName
             row.lbl:SetText(rowLabel)
             row.frame:ClearAllPoints()
             Pix.Point(row.frame, "TOPLEFT", popup, "TOPLEFT", BAND_PAD, y)
-            row.input:SetText(tostring(entry.bands[k].to or 1))
+            row.input:SetText(tostring(entry.bands[keyName].to or 1))
             if row.swatchSnap then
                 row.swatchSnap()
             end
             row.frame:Show()
             y = y - BAND_ROW_H - 4
         end
-        for k = count + 1, #Band.rows do
-            if Band.rows[k] then
-                Band.rows[k].frame:Hide()
+        for keyName = count + 1, #Band.rows do
+            if Band.rows[keyName] then
+                Band.rows[keyName].frame:Hide()
             end
         end
 
@@ -2795,9 +2795,9 @@ CludesUI.AtOptionsLogin(function()
             end)
         end
 
-        local function EnsureRow(k)
-            if rows[k] then
-                return rows[k]
+        local function EnsureRow(keyName)
+            if rows[keyName] then
+                return rows[keyName]
             end
             local row = {}
             local frame = CreateFrame("Frame", nil, popup)
@@ -2851,8 +2851,8 @@ CludesUI.AtOptionsLogin(function()
             name:SetWordWrap(false)
             row.nameFS = name
             function row.RefreshName()
-                local item = Item(row)
-                local id = item and item.spellID
+                local entry = Item(row)
+                local id = entry and entry.spellID
                 if id then
                     name:SetText(
                         C_Spell.GetSpellName(id)
@@ -2869,12 +2869,12 @@ CludesUI.AtOptionsLogin(function()
                     self._cancelCommit = nil
                     return
                 end
-                local item = Item(row)
-                if not item then
+                local entry = Item(row)
+                if not entry then
                     return
                 end
-                local v = tonumber(self:GetText())
-                item.spellID = (v and v > 0) and v or nil
+                local value = tonumber(self:GetText())
+                entry.spellID = (value and value > 0) and value or nil
                 row.RefreshName()
                 Changed()
             end)
@@ -2888,16 +2888,16 @@ CludesUI.AtOptionsLogin(function()
             end)
 
             local swatch, snap = CludesUI.BuildColorSwatch(frame, frame:GetFrameLevel() + 3, function()
-                local item = Item(row)
+                local entry = Item(row)
                 local d = LIST_DEFAULT
-                if not item then
+                if not entry then
                     return d[1], d[2], d[3], d[4]
                 end
-                return item.r or d[1], item.g or d[2], item.b or d[3], item.a or d[4]
+                return entry.r or d[1], entry.g or d[2], entry.b or d[3], entry.a or d[4]
             end, function(r, g, b, a)
-                local item = Item(row)
-                if item then
-                    item.r, item.g, item.b, item.a = r, g, b, a
+                local entry = Item(row)
+                if entry then
+                    entry.r, entry.g, entry.b, entry.a = r, g, b, a
                     Changed()
                 end
             end, true, 19)
@@ -2928,7 +2928,7 @@ CludesUI.AtOptionsLogin(function()
             end)
             row.delBtn = remove
 
-            rows[k] = row
+            rows[keyName] = row
             return row
         end
 
@@ -2944,23 +2944,23 @@ CludesUI.AtOptionsLogin(function()
             entry[field] = entry[field] or {}
             local list = entry[field]
             local y = FIRST_Y
-            for k = 1, #list do
-                local row = EnsureRow(k)
-                row._idx = k
+            for keyName = 1, #list do
+                local row = EnsureRow(keyName)
+                row._idx = keyName
                 row.frame:ClearAllPoints()
                 Pix.Point(row.frame, "TOPLEFT", popup, "TOPLEFT", BAND_PAD, y)
                 row._baseY = y -- for the drag hit test
                 row.frame:SetFrameLevel(popup:GetFrameLevel() + 2) -- a drag raised it
                 row.frame:SetAlpha(1)
-                row.input:SetText(list[k].spellID and tostring(list[k].spellID) or "")
+                row.input:SetText(list[keyName].spellID and tostring(list[keyName].spellID) or "")
                 row.RefreshName()
                 row.swatchSnap()
                 row.frame:Show()
                 y = y - ROW_H - 4
             end
-            for k = #list + 1, #rows do
-                if rows[k] then
-                    rows[k].frame:Hide()
+            for keyName = #list + 1, #rows do
+                if rows[keyName] then
+                    rows[keyName].frame:Hide()
                 end
             end
             y = y - 4
@@ -3334,13 +3334,13 @@ CludesUI.AtOptionsLogin(function()
     --                       the entries whose rules set barInput
     --    entryRules      -- fn(ent, rules, barData) adjusts the selected entry's rules (see RefreshDetail)
     -- Returns settingsBtn (the button frame).
-    local function BuildThresholdSettingsButton(conf)
-        local parentRgn = conf.parentRgn
-        local THR_FIELD = conf.thresholdField or "thresholdPct"
-        local HASH_NIL = conf.hashModeDefault or "percent"
+    local function BuildThresholdSettingsButton(rowConf)
+        local parentRgn = rowConf.parentRgn
+        local THR_FIELD = rowConf.thresholdField or "thresholdPct"
+        local HASH_NIL = rowConf.hashModeDefault or "percent"
         local ROW_GAP = 6
         local defR, defG, defB, defA =
-            conf.defaultR or 1, conf.defaultG or 0.2, conf.defaultB or 0.2, conf.defaultA or 1
+            rowConf.defaultR or 1, rowConf.defaultG or 0.2, rowConf.defaultB or 0.2, rowConf.defaultA or 1
         local _playerClassFile = select(2, UnitClass("player"))
 
         -- The Settings button, styled like the dropdowns; its border takes the
@@ -3379,13 +3379,13 @@ CludesUI.AtOptionsLogin(function()
         btnDis:SetFrameLevel(settingsBtn:GetFrameLevel() + 5)
         btnDis:EnableMouse(true)
         btnDis:SetScript("OnEnter", function()
-            U.ShowWidgetTooltip(settingsBtn, U.DisabledTooltip(conf.disabledTip or "this bar"))
+            U.ShowWidgetTooltip(settingsBtn, U.DisabledTooltip(rowConf.disabledTip or "this bar"))
         end)
         btnDis:SetScript("OnLeave", function()
             U.HideWidgetTooltip()
         end)
         local function UpdateBtnDis()
-            local off = conf.disabledFn and conf.disabledFn()
+            local off = rowConf.disabledFn and rowConf.disabledFn()
             btnDis:SetShown(off and true or false)
             settingsBtn:SetAlpha(off and 0.3 or 1)
             if parentRgn._label then
@@ -3398,7 +3398,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- The notice badge; both refreshers below run it again (every edit,
         -- add, delete and spec change), as does a hash commit.
-        local UpdateNotice = AttachThresholdNotice(settingsBtn, conf.getBarData)
+        local UpdateNotice = AttachThresholdNotice(settingsBtn, rowConf.getBarData)
         ThrWatchBuild()
 
         -- The editor page (built on first open) and its state.
@@ -3422,7 +3422,7 @@ CludesUI.AtOptionsLogin(function()
         -- Does any entry claim specID (0 = All Specs; it claims every spec)?
         -- With onlyAll, only an All Specs entry counts.
         local function Claimed(specID, onlyAll)
-            local bar = conf.getBarData()
+            local bar = rowConf.getBarData()
             for _, entry in ipairs(bar and bar.thresholdSpecs or {}) do
                 for _, id in ipairs(entry.specIDs or {}) do
                     if id == 0 or (not onlyAll and id == specID) then
@@ -3444,7 +3444,7 @@ CludesUI.AtOptionsLogin(function()
         local function BuildSpecItems()
             local items
             items, _roleSpecs = CludesUI.SpecPickItems({
-                roles = conf.roleShortcuts,
+                roles = rowConf.roleShortcuts,
                 lockedFn = IsSpecClaimed,
                 allLockedFn = HasAllSpecsEntry,
             })
@@ -3469,8 +3469,8 @@ CludesUI.AtOptionsLogin(function()
 
         -- A new entry: threshold on at its defaults, no hash lines.
         local function NewEntry(ids, bar)
-            if conf.newEntry then
-                return conf.newEntry(ids, bar)
+            if rowConf.newEntry then
+                return rowConf.newEntry(ids, bar)
             end
             local entry = {
                 specIDs = ids,
@@ -3493,7 +3493,7 @@ CludesUI.AtOptionsLogin(function()
             -- (mana, focus, energy: warn when low), off for a builder (warn
             -- when high). Only for an entry covering the spec being played,
             -- whose power type can be read.
-            if conf.partialDefault and CoversPlayer(ids) then
+            if rowConf.partialDefault and CoversPlayer(ids) then
                 local _, token = UnitPowerType("player")
                 if SPENDER_POWER[token] then
                     entry.thresholdPartialOnly = true
@@ -3525,10 +3525,10 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local function BuildFrame()
-            local hostFrame = conf.pageParent
+            local hostFrame = rowConf.pageParent
             local INNERPAD = 10
             local ROW_H = 50
-            local topY, botY = conf.pageTopY, conf.pageBotY() - (conf.pageBotExtra or 0)
+            local topY, botY = rowConf.pageTopY, rowConf.pageBotY() - (rowConf.pageBotExtra or 0)
 
             -- The page over its host's content, below the header. A Layout
             -- Mode cycle can leave this lazily built frame with no rect, so
@@ -3760,7 +3760,7 @@ CludesUI.AtOptionsLogin(function()
                         { 1, 1, 1, 0.7 }
                     ),
                     function()
-                        local bar = conf.getBarData()
+                        local bar = rowConf.getBarData()
                         if not bar then
                             return
                         end
@@ -3784,7 +3784,7 @@ CludesUI.AtOptionsLogin(function()
                         RefreshPicker()
                         RefreshSpecEntries(true)
                         RedrawDetail()
-                        conf.refreshFn()
+                        rowConf.refreshFn()
                     end
                 )
                 addLbl:SetText(CludesUI.L("Add Specs"))
@@ -3859,16 +3859,16 @@ CludesUI.AtOptionsLogin(function()
 
             -- The selected entry, or nil.
             local function CurEntry()
-                local bar = conf.getBarData()
+                local bar = rowConf.getBarData()
                 return bar and bar.thresholdSpecs and _selectedIdx and bar.thresholdSpecs[_selectedIdx] or nil
             end
 
             -- A pane row (with its label), registered for the layout pass.
             local _allRows = {}
-            local function DRow(labelText, hgt)
+            local function DRow(labelText, height)
                 local row = CreateFrame("Frame", nil, detailC)
                 row:SetFrameLevel(DLVL)
-                row._rawH = hgt or ROWH
+                row._rawH = height or ROWH
                 Pix.Height(row, row._rawH)
                 if labelText then
                     local label = CludesUI.MakeFont(row, 13, nil, 1, 1, 1)
@@ -3883,22 +3883,22 @@ CludesUI.AtOptionsLogin(function()
 
             -- A value box (hash, threshold); joins the boxes the watcher commits.
             local function MakeInput(rowParent, wid, numeric)
-                local box = CreateFrame("EditBox", nil, rowParent)
-                paneBoxes[box] = true
-                Pix.Size(box, wid, 22)
-                box:SetFrameLevel(rowParent:GetFrameLevel() + 3)
-                box:SetAutoFocus(false)
-                box:SetFont(MEDIAF, 12, "")
-                box:SetTextColor(1, 1, 1, 0.75)
-                box:SetJustifyH("CENTER")
+                local boxFrame = CreateFrame("EditBox", nil, rowParent)
+                paneBoxes[boxFrame] = true
+                Pix.Size(boxFrame, wid, 22)
+                boxFrame:SetFrameLevel(rowParent:GetFrameLevel() + 3)
+                boxFrame:SetAutoFocus(false)
+                boxFrame:SetFont(MEDIAF, 12, "")
+                boxFrame:SetTextColor(1, 1, 1, 0.75)
+                boxFrame:SetJustifyH("CENTER")
                 if numeric then
-                    box:SetNumeric(true)
+                    boxFrame:SetNumeric(true)
                 end
-                local bg = box:CreateTexture(nil, "BACKGROUND")
+                local bg = boxFrame:CreateTexture(nil, "BACKGROUND")
                 bg:SetAllPoints()
                 bg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
-                CludesUI.MakeRoundedBorder(box, 1, 1, 1, 0.08, bg)
-                return box
+                CludesUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.08, bg)
+                return boxFrame
             end
 
             -- A cover that greys a row's controls and says why (its _tip),
@@ -3909,9 +3909,9 @@ CludesUI.AtOptionsLogin(function()
                 cover:SetPoint("BOTTOMRIGHT", toRgn, "BOTTOMRIGHT", 3, -3)
                 cover:SetFrameLevel(row:GetFrameLevel() + lvl)
                 cover:EnableMouse(true)
-                local tex = cover:CreateTexture(nil, "OVERLAY")
-                tex:SetAllPoints()
-                tex:SetColorTexture(0.062, 0.070, 0.082, 0.7)
+                local texture = cover:CreateTexture(nil, "OVERLAY")
+                texture:SetAllPoints()
+                texture:SetColorTexture(0.062, 0.070, 0.082, 0.7)
                 cover:SetScript("OnEnter", function(self)
                     CludesUI.ShowWidgetTooltip(self, self._tip)
                 end)
@@ -3926,9 +3926,9 @@ CludesUI.AtOptionsLogin(function()
             -- and on Escape puts back saved() and throws the typing away.
             -- target: what the box edits (default the selected entry; the
             -- bar-wide row passes the bar), handed to commit and saved.
-            local function BindBox(box, commit, saved, target)
+            local function BindBox(boxFrame, commit, saved, target)
                 target = target or CurEntry
-                box:SetScript("OnEditFocusLost", function(self)
+                boxFrame:SetScript("OnEditFocusLost", function(self)
                     if self._cancelCommit then
                         self._cancelCommit = nil
                         return
@@ -3938,10 +3938,10 @@ CludesUI.AtOptionsLogin(function()
                         commit(self, owner)
                     end
                 end)
-                box:SetScript("OnEnterPressed", function(self)
+                boxFrame:SetScript("OnEnterPressed", function(self)
                     self:ClearFocus()
                 end)
-                box:SetScript("OnEscapePressed", function(self)
+                boxFrame:SetScript("OnEscapePressed", function(self)
                     self._cancelCommit = true
                     self:SetText(saved(target()))
                     self:ClearFocus()
@@ -3972,7 +3972,7 @@ CludesUI.AtOptionsLogin(function()
                     else
                         entry.talentSpellID, entry.talentName = key, talentRow._talentValues[key]
                     end
-                    conf.rebuildFn()
+                    rowConf.rebuildFn()
                     if talentRow._talentDD and talentRow._talentDD._refreshLabel then
                         talentRow._talentDD._refreshLabel()
                     end
@@ -3982,7 +3982,7 @@ CludesUI.AtOptionsLogin(function()
                 -- the same gate is locked.
                 function(key)
                     local entry = CurEntry()
-                    local bar = conf.getBarData()
+                    local bar = rowConf.getBarData()
                     if not (entry and bar and bar.thresholdSpecs) then
                         return false
                     end
@@ -4043,16 +4043,16 @@ CludesUI.AtOptionsLogin(function()
                     local entry = CurEntry()
                     return ((entry and entry.hashMode) or HASH_NIL) == "percent"
                 end,
-                set = function(v)
+                set = function(value)
                     local entry = CurEntry()
                     if entry then
-                        entry.hashMode = v and "percent" or "value"
-                        conf.rebuildFn()
+                        entry.hashMode = value and "percent" or "value"
+                        rowConf.rebuildFn()
                         RedrawDetail()
                     end
                 end,
             }
-            if conf.entryRules then
+            if rowConf.entryRules then
                 -- Pip resources place their lines by stack count.
                 byPercent.disabled = function()
                     return rules.pips
@@ -4070,17 +4070,17 @@ CludesUI.AtOptionsLogin(function()
                         type = "slider",
                         label = "Hash Width",
                         min = 1,
-                        max = conf.hashWidthMax or 5,
+                        max = rowConf.hashWidthMax or 5,
                         step = 1,
                         get = function()
                             local entry = CurEntry()
                             return entry and entry.hashWidth or 1
                         end,
-                        set = function(v)
+                        set = function(value)
                             local entry = CurEntry()
                             if entry then
-                                entry.hashWidth = v
-                                conf.rebuildFn()
+                                entry.hashWidth = value
+                                rowConf.rebuildFn()
                             end
                         end,
                     },
@@ -4107,7 +4107,7 @@ CludesUI.AtOptionsLogin(function()
                     local entry = CurEntry()
                     if entry then
                         entry.hashColorR, entry.hashColorG, entry.hashColorB, entry.hashColorA = r, g, b, a
-                        conf.rebuildFn()
+                        rowConf.rebuildFn()
                     end
                 end,
                 true,
@@ -4125,16 +4125,16 @@ CludesUI.AtOptionsLogin(function()
             BindBox(hashInput, function(self, entry)
                 entry.hashValues = SanitizePositions(self:GetText(), true)
                 self:SetText(entry.hashValues)
-                conf.rebuildFn()
+                rowConf.rebuildFn()
                 UpdateNotice()
             end, function(entry)
                 return entry and entry.hashValues or ""
             end)
 
             -- Threshold: on / off, the value, its colour (and an optional cog).
-            local threshRow = DRow(conf.thresholdLabel or "Threshold", ROWH)
+            local threshRow = DRow(rowConf.thresholdLabel or "Threshold", ROWH)
             local threshCogBtn
-            local cog = conf.thresholdCog
+            local cog = rowConf.thresholdCog
             if cog then
                 threshCogBtn = CludesUI.BuildInlineCog(threshRow, {
                     title = cog.title,
@@ -4159,11 +4159,11 @@ CludesUI.AtOptionsLogin(function()
                     end
                     return entry.thresholdEnabled ~= false -- on when unset
                 end,
-                function(v)
+                function(value)
                     local entry = CurEntry()
                     if entry then
-                        entry.thresholdEnabled = v
-                        conf.refreshFn()
+                        entry.thresholdEnabled = value
+                        rowConf.refreshFn()
                         RedrawDetail()
                     end
                 end,
@@ -4178,7 +4178,7 @@ CludesUI.AtOptionsLogin(function()
                     if not entry then
                         return defR, defG, defB, defA
                     end
-                    local bar = conf.getBarData()
+                    local bar = rowConf.getBarData()
                     return entry.thresholdR or bar.thresholdR or defR,
                         entry.thresholdG or bar.thresholdG or defG,
                         entry.thresholdB or bar.thresholdB or defB,
@@ -4188,7 +4188,7 @@ CludesUI.AtOptionsLogin(function()
                     local entry = CurEntry()
                     if entry then
                         entry.thresholdR, entry.thresholdG, entry.thresholdB, entry.thresholdA = r, g, b, a;
-                        (conf.swatchRefreshFn or conf.refreshFn)()
+                        (rowConf.swatchRefreshFn or rowConf.refreshFn)()
                     end
                 end,
                 true,
@@ -4204,15 +4204,15 @@ CludesUI.AtOptionsLogin(function()
             threshEnable:SetPoint("RIGHT", threshInput, "LEFT", -8, 0)
             -- Bounds and default come from the entry's rules.
             BindBox(threshInput, function(self, entry)
-                local v = tonumber(self:GetText())
-                if not v then
+                local value = tonumber(self:GetText())
+                if not value then
                     self:SetText(tostring(entry[THR_FIELD] or rules.thrDef))
                     return
                 end
-                v = math.max(rules.thrMin, math.min(rules.thrMax, math.floor(v + 0.5)))
-                self:SetText(tostring(v))
-                entry[THR_FIELD] = v
-                conf.refreshFn()
+                value = math.max(rules.thrMin, math.min(rules.thrMax, math.floor(value + 0.5)))
+                self:SetText(tostring(value))
+                entry[THR_FIELD] = value
+                rowConf.refreshFn()
             end, function(entry)
                 return tostring((entry and entry[THR_FIELD]) or rules.thrDef)
             end)
@@ -4251,11 +4251,11 @@ CludesUI.AtOptionsLogin(function()
                 return CludesUI.BuildToggleControl(row, DLVL + 4, function()
                     local entry = CurEntry()
                     return entry and entry[field] or false
-                end, function(v)
+                end, function(value)
                     local entry = CurEntry()
                     if entry then
-                        entry[field] = v
-                        conf.refreshFn()
+                        entry[field] = value
+                        rowConf.refreshFn()
                         if after then
                             after()
                         end
@@ -4293,8 +4293,8 @@ CludesUI.AtOptionsLogin(function()
             -- What every list editor opens on.
             local function EditorParams(anchor)
                 return {
-                    getBarData = conf.getBarData,
-                    refreshFn = conf.refreshFn,
+                    getBarData = rowConf.getBarData,
+                    refreshFn = rowConf.refreshFn,
                     entryIdx = _selectedIdx,
                     anchor = anchor,
                 }
@@ -4322,7 +4322,7 @@ CludesUI.AtOptionsLogin(function()
 
             -- Buff colours: the first active buff wins, over the threshold colour.
             local buffRow, buffSnap
-            if conf.showBuffs then
+            if rowConf.showBuffs then
                 buffRow, _, buffSnap = CardToggleRow(
                     "Buff Colors",
                     "Buffs",
@@ -4337,13 +4337,13 @@ CludesUI.AtOptionsLogin(function()
 
             -- Spender colours: the first castable spell wins.
             local spenderRow, spenderSnap
-            if conf.showSpenders then
-                local tip = conf.spenderTip or SPENDER_HELP_TIP
+            if rowConf.showSpenders then
+                local tip = rowConf.spenderTip or SPENDER_HELP_TIP
                 spenderRow, _, spenderSnap = CardToggleRow(
                     "Spender Colors",
                     "Spenders",
                     tip,
-                    conf.spenderToggleTip or tip,
+                    rowConf.spenderToggleTip or tip,
                     "spenderColorEnabled",
                     function(anchor)
                         ShowSpenderEditor(EditorParams(anchor))
@@ -4355,8 +4355,8 @@ CludesUI.AtOptionsLogin(function()
             local textInsteadRow = DRow("Recolor Text Instead Of Bar", ROWH)
             local textInsteadToggle, _, textInsteadSnap = EntryToggle(textInsteadRow, "thresholdTextInstead")
             textInsteadToggle:SetPoint("RIGHT", textInsteadRow, "RIGHT", 0, 0)
-            if conf.textInsteadTip then
-                HoverTip(textInsteadToggle, conf.textInsteadTip)
+            if rowConf.textInsteadTip then
+                HoverTip(textInsteadToggle, rowConf.textInsteadTip)
             end
             -- Covers the row when recolouring the text can have no effect (rules.textBlock).
             local textInsteadDis = MakeBlocker(textInsteadRow, textInsteadRow, textInsteadToggle, 2, 6)
@@ -4364,28 +4364,28 @@ CludesUI.AtOptionsLogin(function()
             -- A bar-wide number (conf.barInput), shown only for the entries
             -- whose rules ask for it; a commit is rounded and clamped.
             local barRow, barSnap
-            local bi = conf.barInput
+            local bi = rowConf.barInput
             if bi then
                 barRow = DRow(bi.label, ROWH)
-                local box = MakeInput(barRow, 50, true)
-                box:SetPoint("RIGHT", barRow, "RIGHT", 0, 0)
+                local boxFrame = MakeInput(barRow, 50, true)
+                boxFrame:SetPoint("RIGHT", barRow, "RIGHT", 0, 0)
                 if bi.letters then
-                    box:SetMaxLetters(bi.letters)
+                    boxFrame:SetMaxLetters(bi.letters)
                 end
                 local function Saved(bar)
                     return tostring((bar and bar[bi.field]) or bi.default)
                 end
                 barSnap = function()
-                    box:SetText(Saved(conf.getBarData()))
+                    boxFrame:SetText(Saved(rowConf.getBarData()))
                 end
-                BindBox(box, function(self, bar)
-                    local v = tonumber(self:GetText())
-                    if v then
-                        bar[bi.field] = math.max(bi.min, math.min(bi.max, math.floor(v + 0.5)))
-                        conf.refreshFn()
+                BindBox(boxFrame, function(self, bar)
+                    local value = tonumber(self:GetText())
+                    if value then
+                        bar[bi.field] = math.max(bi.min, math.min(bi.max, math.floor(value + 0.5)))
+                        rowConf.refreshFn()
                     end
                     self:SetText(Saved(bar))
-                end, Saved, conf.getBarData)
+                end, Saved, rowConf.getBarData)
             end
 
             -- The selected entry's rules: the bar's defaults, then
@@ -4399,11 +4399,11 @@ CludesUI.AtOptionsLogin(function()
             --   barInput                  show the conf.barInput row
             local function FillRules(entry)
                 local r = rules
-                r.thrMin, r.thrMax, r.thrDef = conf.threshMin or 1, conf.threshMax or 99, 30
+                r.thrMin, r.thrMax, r.thrDef = rowConf.threshMin or 1, rowConf.threshMax or 99, 30
                 r.thrLabel, r.thrTip, r.pips, r.hideHash = nil, nil, false, false
                 r.bandPctCap, r.multiBlock, r.textBlock, r.barInput = nil, nil, nil, false
-                if conf.entryRules then
-                    conf.entryRules(entry, r, conf.getBarData())
+                if rowConf.entryRules then
+                    rowConf.entryRules(entry, r, rowConf.getBarData())
                 end
                 return r
             end
@@ -4414,9 +4414,9 @@ CludesUI.AtOptionsLogin(function()
             local function FillTalents(entry, specID)
                 local values, order = talentRow._talentValues, talentRow._talentOrder
                 wipe(order)
-                for k in pairs(values) do
-                    if k ~= "_menuOpts" then
-                        values[k] = nil
+                for keyName in pairs(values) do
+                    if keyName ~= "_menuOpts" then
+                        values[keyName] = nil
                     end
                 end
                 values[0] = CludesUI.L("No talent")
@@ -4456,7 +4456,7 @@ CludesUI.AtOptionsLogin(function()
                 if (entry.hashMode or HASH_NIL) == "percent" then
                     return CludesUI.L("Percent"), CludesUI.L("(Ex: 25,50,75)")
                 end
-                return CludesUI.L("Value"), conf.hashValueHint or CludesUI.L("(Ex: 50000)")
+                return CludesUI.L("Value"), rowConf.hashValueHint or CludesUI.L("(Ex: 50000)")
             end
 
             -- Single threshold and multi-band are separate toggles; multi-band
@@ -4657,7 +4657,7 @@ CludesUI.AtOptionsLogin(function()
                 icon:SetAlpha(0.4)
             end)
             remove:SetScript("OnClick", function()
-                local bar = conf.getBarData()
+                local bar = rowConf.getBarData()
                 if not (bar and row._entryIdx) then
                     return
                 end
@@ -4671,7 +4671,7 @@ CludesUI.AtOptionsLogin(function()
                 _specDDRefresh()
                 RefreshSpecEntries()
                 RedrawDetail()
-                conf.refreshFn()
+                rowConf.refreshFn()
             end)
             row._delBtn = remove
 
@@ -4685,7 +4685,7 @@ CludesUI.AtOptionsLogin(function()
             )
             variant:SetPoint("RIGHT", remove, "LEFT", -10, 0)
             variant:SetScript("OnClick", function()
-                local bar = row._entryIdx and conf.getBarData()
+                local bar = row._entryIdx and rowConf.getBarData()
                 local specs = bar and bar.thresholdSpecs
                 local source = specs and specs[row._entryIdx]
                 if not source then
@@ -4697,7 +4697,7 @@ CludesUI.AtOptionsLogin(function()
                 _selectedIdx = row._entryIdx + 1
                 RefreshSpecEntries()
                 RedrawDetail()
-                conf.rebuildFn()
+                rowConf.rebuildFn()
             end)
             row._varBtn = variant
 
@@ -4738,7 +4738,7 @@ CludesUI.AtOptionsLogin(function()
             if not specContainer then
                 return
             end
-            local bar = conf.getBarData()
+            local bar = rowConf.getBarData()
             if not bar then
                 return
             end
@@ -4797,7 +4797,7 @@ CludesUI.AtOptionsLogin(function()
                 row._varBtn:SetShown(single)
                 if not single and entry.talentSpellID then
                     entry.talentSpellID, entry.talentName = nil, nil
-                    conf.rebuildFn()
+                    rowConf.rebuildFn()
                 end
 
                 -- Duplicates the resolver can never reach are dimmed.
@@ -4818,7 +4818,7 @@ CludesUI.AtOptionsLogin(function()
         -- Opens the editor (built on first use) with the resolver's live entry
         -- selected, or closes it.
         local function ToggleFrame()
-            if not conf.getBarData() then
+            if not rowConf.getBarData() then
                 return
             end
             if not thrPage then
@@ -4882,19 +4882,19 @@ CludesUI.AtOptionsLogin(function()
     -- Rows the Blizzard kit replaces but the classic cast bar leaves to the
     -- player (background colour and opacity): gated only under Blizzard
     -- Style, live under Classic WoW UI. Returns conf for inline use.
-    function mod.ERB_CastBlizzOnlyGate(conf)
+    function mod.ERB_CastBlizzOnlyGate(rowConf)
         if CludesUI.BlizzStyle.Active("castbar") == "blizzard" then
-            return CludesUI.BlizzStyle.Gate("castbar", conf)
+            return CludesUI.BlizzStyle.Gate("castbar", rowConf)
         end
-        return conf
+        return rowConf
     end
 
-    local function NoSnap(tex)
-        if tex.SetSnapToPixelGrid then
-            tex:SetSnapToPixelGrid(false)
-            tex:SetTexelSnappingBias(0)
+    local function NoSnap(texture)
+        if texture.SetSnapToPixelGrid then
+            texture:SetSnapToPixelGrid(false)
+            texture:SetTexelSnappingBias(0)
         end
-        return tex
+        return texture
     end
     -- Where the spell name sits in the stock text box.
     local SPELL_TEXT_SIDE = {
@@ -4908,7 +4908,7 @@ CludesUI.AtOptionsLogin(function()
     -- Spell Text on, the stock text box under it holding the spell name.
     -- Classic WoW UI seats the vanilla frame instead (no text box). Made
     -- once; off the style both hide. On mod (no new upvalue for the updater).
-    function mod.ERB_CastPreviewBlizzChrome(popFrame, cb, barW, blizz)
+    function mod.ERB_CastPreviewBlizzChrome(popFrame, checkBtn, barW, blizz)
         if not blizz then
             if popFrame.blizzFrame then
                 popFrame.blizzFrame:Hide()
@@ -4926,12 +4926,12 @@ CludesUI.AtOptionsLogin(function()
             popFrame.blizzFrame = NoSnap(art:CreateTexture(nil, "OVERLAY", nil, 2))
             popFrame.blizzTextBox = NoSnap(popFrame.barFrame:CreateTexture(nil, "BACKGROUND", nil, -1))
         end
-        local frame, box = popFrame.blizzFrame, popFrame.blizzTextBox
+        local frame, boxFrame = popFrame.blizzFrame, popFrame.blizzTextBox
         if mod.ERB_CastClassic() then
             -- Classic WoW UI: the vanilla frame round bar and icon (the live
             -- seat); the spell name stays on the bar.
-            mod.ERB_SeatClassicChrome(frame, popFrame.container, cb.height, false, mod.ERB_ClassicFrameK(cb))
-            box:Hide()
+            mod.ERB_SeatClassicChrome(frame, popFrame.container, checkBtn.height, false, mod.ERB_ClassicFrameK(checkBtn))
+            boxFrame:Hide()
             return
         end
         local frameAtlas = mod.ERB_BlizzAtlas("frame")
@@ -4944,22 +4944,22 @@ CludesUI.AtOptionsLogin(function()
         else
             frame:Hide()
         end
-        local boxAtlas = cb.showSpellText and mod.ERB_BlizzAtlas("textbox")
+        local boxAtlas = checkBtn.showSpellText and mod.ERB_BlizzAtlas("textbox")
         if not boxAtlas then
-            box:Hide()
+            boxFrame:Hide()
             return
         end
-        mod.ERB_StockAtlas(box, boxAtlas)
-        box:ClearAllPoints()
-        box:SetPoint("TOPLEFT", popFrame.barFrame, "BOTTOMLEFT", 0, 3)
-        box:SetPoint("BOTTOMRIGHT", popFrame.barFrame, "BOTTOMRIGHT", 0, -13)
-        box:Show()
+        mod.ERB_StockAtlas(boxFrame, boxAtlas)
+        boxFrame:ClearAllPoints()
+        boxFrame:SetPoint("TOPLEFT", popFrame.barFrame, "BOTTOMLEFT", 0, 3)
+        boxFrame:SetPoint("BOTTOMRIGHT", popFrame.barFrame, "BOTTOMRIGHT", 0, -13)
+        boxFrame:Show()
         local name = popFrame.spellText
-        local place = SPELL_TEXT_SIDE[cb.spellTextSide] or SPELL_TEXT_SIDE.left
+        local place = SPELL_TEXT_SIDE[checkBtn.spellTextSide] or SPELL_TEXT_SIDE.left
         name:ClearAllPoints()
         name:SetJustifyH(place[1])
-        name:SetPoint(place[1], box, place[2], place[3] + (cb.spellTextX or 0), cb.spellTextY or 0)
-        name:SetWidth(math.max(10, (barW or cb.width or 220) - 16))
+        name:SetPoint(place[1], boxFrame, place[2], place[3] + (checkBtn.spellTextX or 0), checkBtn.spellTextY or 0)
+        name:SetWidth(math.max(10, (barW or checkBtn.width or 220) - 16))
     end
 
     -- The cast bar preview, step by step (UpdateCastBarPreview puts them together).
@@ -4967,7 +4967,7 @@ CludesUI.AtOptionsLogin(function()
     -- The background: the stock kit's art, Blizzard's casting-bar art, or
     -- the colour (with the bar texture behind it for Textured Background,
     -- flat while Fill Color is below 100, as live).
-    local function CastBackground(pf, cb, blizzKit, classic, texKey)
+    local function CastBackground(pf, checkBtn, blizzKit, classic, texKey)
         local bg = pf.bg
         if bg._erbBgTex then
             mod.ERB_BgTexture(bg, nil) -- back to plain before a branch paints it
@@ -4994,10 +4994,10 @@ CludesUI.AtOptionsLogin(function()
             bg:SetAllPoints(pf.barFrame)
         else
             bg:SetTexture(nil)
-            bg:SetColorTexture(cb.bgR, cb.bgG, cb.bgB, cb.bgA)
-            if cb.textureBg and (cb.fillOpacity or 100) >= 100 then
+            bg:SetColorTexture(checkBtn.bgR, checkBtn.bgG, checkBtn.bgB, checkBtn.bgA)
+            if checkBtn.textureBg and (checkBtn.fillOpacity or 100) >= 100 then
                 local path = CludesUI.ResolveTexturePath(_G._CURB_CastBarTextures, texKey, nil)
-                mod.ERB_BgTexture(bg, path, cb.bgR, cb.bgG, cb.bgB, cb.bgA)
+                mod.ERB_BgTexture(bg, path, checkBtn.bgR, checkBtn.bgG, checkBtn.bgB, checkBtn.bgA)
             end
             bg:SetAllPoints(pf.barFrame)
         end
@@ -5006,41 +5006,41 @@ CludesUI.AtOptionsLogin(function()
     -- The border round bar and icon (none under a stock style), with Extend
     -- Top / Bottom; then the bottom separator (none under a stock style or a
     -- Solid border), as the live bar.
-    local function CastBorder(pf, cb, blizz)
+    local function CastBorder(pf, checkBtn, blizz)
         local holder = pf.container._border
         if holder then
             local level = pf.container:GetFrameLevel()
-            holder:SetFrameLevel(cb.borderBehind and math.max(0, level - 1) or (level + 5))
-            local size = blizz and 0 or (cb.borderSize or 0)
-            local style = cb.borderTexture or "solid"
-            local exact = (not blizz) and CludesUI.BorderPx(cb.borderSizePx, size, style) or nil
-            mod.ERB_AnchorBorderHost(holder, pf.container, mod.ERB_BorderExtents((not blizz) and cb or nil))
+            holder:SetFrameLevel(checkBtn.borderBehind and math.max(0, level - 1) or (level + 5))
+            local size = blizz and 0 or (checkBtn.borderSize or 0)
+            local style = checkBtn.borderTexture or "solid"
+            local exact = (not blizz) and CludesUI.BorderPx(checkBtn.borderSizePx, size, style) or nil
+            mod.ERB_AnchorBorderHost(holder, pf.container, mod.ERB_BorderExtents((not blizz) and checkBtn or nil))
             CludesUI.ApplyBorderStyle(
                 holder,
                 size,
-                cb.borderR or 0,
-                cb.borderG or 0,
-                cb.borderB or 0,
-                cb.borderA or 1,
+                checkBtn.borderR or 0,
+                checkBtn.borderG or 0,
+                checkBtn.borderB or 0,
+                checkBtn.borderA or 1,
                 style,
-                cb.borderTextureOffset,
-                cb.borderTextureOffsetY,
-                cb.borderTextureShiftX,
-                cb.borderTextureShiftY,
+                checkBtn.borderTextureOffset,
+                checkBtn.borderTextureOffsetY,
+                checkBtn.borderTextureShiftX,
+                checkBtn.borderTextureShiftY,
                 "resourcebars",
                 size,
                 nil,
                 exact
             )
         end
-        local separator = cb.edgeSep and not blizz and mod.ERB_Textured(cb)
-        mod.ERB_Separators(pf.container, cb, separator and true or false, pf.container:GetFrameLevel() + 7)
+        local separator = checkBtn.edgeSep and not blizz and mod.ERB_Textured(checkBtn)
+        mod.ERB_Separators(pf.container, checkBtn, separator and true or false, pf.container:GetFrameLevel() + 7)
     end
 
     -- The fill: texture (the stock kit's or Blizzard's fill art, else the
     -- chosen texture), colour or gradient at Fill Color's opacity. Below
     -- 100 the background covers only the empty part, as live.
-    local function CastFill(pf, cb, blizzKit, texKey)
+    local function CastFill(pf, checkBtn, blizzKit, texKey)
         local bar = pf.bar
         bar:ClearAllPoints()
         bar:SetAllPoints(pf.barFrame)
@@ -5057,22 +5057,22 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local fill = bar:GetStatusBarTexture()
-        local r, g, b = cb.fillR, cb.fillG, cb.fillB
-        if cb.classColored == true then
+        local r, g, b = checkBtn.fillR, checkBtn.fillG, checkBtn.fillB
+        if checkBtn.classColored == true then
             local _, class = UnitClass("player")
             local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
             if c then
                 r, g, b = c.r, c.g, c.b
             end
         end
-        local opacity = (cb.fillOpacity or 100) / 100
+        local opacity = (checkBtn.fillOpacity or 100) / 100
         if blizzKit then
             fill:SetVertexColor(1, 1, 1, 1) -- the stock art is coloured already (live skips it too)
-        elseif cb.gradientEnabled then
+        elseif checkBtn.gradientEnabled then
             fill:SetGradient(
-                cb.gradientDir or "HORIZONTAL",
+                checkBtn.gradientDir or "HORIZONTAL",
                 CreateColor(r, g, b, opacity),
-                CreateColor(cb.gradientR, cb.gradientG, cb.gradientB, cb.gradientA * opacity)
+                CreateColor(checkBtn.gradientR, checkBtn.gradientG, checkBtn.gradientB, checkBtn.gradientA * opacity)
             )
         else
             fill:SetVertexColor(r, g, b, opacity)
@@ -5080,7 +5080,7 @@ CludesUI.AtOptionsLogin(function()
         if texKey ~= "blizzard" and not blizzKit then
             local bg = pf.bg
             bg:ClearAllPoints()
-            if (cb.fillOpacity or 100) < 100 then
+            if (checkBtn.fillOpacity or 100) < 100 then
                 bg:SetPoint("TOPLEFT", fill, "TOPRIGHT", 0, 0)
                 bg:SetPoint("BOTTOMRIGHT", pf.barFrame, "BOTTOMRIGHT", 0, 0)
             else
@@ -5093,7 +5093,7 @@ CludesUI.AtOptionsLogin(function()
     -- The spark at the fill's edge: the stock pip under the kit (set once,
     -- drawn plain), the vanilla spark under Classic WoW UI (set once; taller
     -- than the bar and over the frame art, so on its own host above it).
-    local function CastSpark(pf, cb, blizzKit, classic, fill, hgt)
+    local function CastSpark(pf, checkBtn, blizzKit, classic, fill, height)
         local spark = pf.spark
         if blizzKit and not pf.blizzSpark then
             local pip = mod.ERB_BlizzAtlas("spark")
@@ -5111,7 +5111,7 @@ CludesUI.AtOptionsLogin(function()
             host:SetFrameLevel(pf.container:GetFrameLevel() + 8)
             spark:SetParent(host)
         end
-        if not cb.showSpark then
+        if not checkBtn.showSpark then
             spark:Hide()
             return
         end
@@ -5120,11 +5120,11 @@ CludesUI.AtOptionsLogin(function()
         local y = 0
         if classic then
             local C = mod.ERB_CLASSIC
-            local size = C.sparkSize * hgt / C.barH
+            local size = C.sparkSize * height / C.barH
             spark:SetSize(size, size)
-            y = C.sparkY * hgt / C.barH
+            y = C.sparkY * height / C.barH
         else
-            spark:SetSize(8, hgt)
+            spark:SetSize(8, height)
         end
         spark:ClearAllPoints()
         spark:SetPoint("CENTER", fill, "RIGHT", 0, y)
@@ -5134,7 +5134,7 @@ CludesUI.AtOptionsLogin(function()
     -- The spell icon on the left or right (under a stock style it spans the
     -- text box too and shows the whole art; Classic WoW UI keeps it under
     -- the frame art, inside the frame's window, as live).
-    local function CastIcon(pf, cb, look, size)
+    local function CastIcon(pf, checkBtn, look, size)
         local frame = pf.iconFrame
         frame:SetSize(size, size)
         if pf.icon then
@@ -5153,7 +5153,7 @@ CludesUI.AtOptionsLogin(function()
         else
             frame:SetPoint("TOPLEFT", pf.container, "TOPLEFT", 0, 0)
         end
-        mod.ERB_LayoutFreeCastIcon(frame, pf.container, cb, look.iconFree)
+        mod.ERB_LayoutFreeCastIcon(frame, pf.container, checkBtn, look.iconFree)
         frame:SetShown(look.hasIcon and true or false)
     end
 
@@ -5161,13 +5161,13 @@ CludesUI.AtOptionsLogin(function()
     -- wide as the border in the live bar's pixels (PP.perfect over the
     -- effective scale; the border renders through the same PP system). An
     -- exact Solid size drives it; a textured border keeps the step.
-    local function CastDivider(pf, cb, look)
+    local function CastDivider(pf, checkBtn, look)
         local divider = pf.iconDivider
         if not divider then
             return
         end
-        local show = look.hasIcon and not look.iconFree and cb.showIconDivider
-        if mod.ERB_CastDividerArt(divider, show, pf.iconFrame, look.iconOnRight, cb, look.blizz) then
+        local show = look.hasIcon and not look.iconFree and checkBtn.showIconDivider
+        if mod.ERB_CastDividerArt(divider, show, pf.iconFrame, look.iconOnRight, checkBtn, look.blizz) then
             divider:Show()
             return
         end
@@ -5178,10 +5178,10 @@ CludesUI.AtOptionsLogin(function()
         local PP = CludesUI.PP
         local scale = pf.container:GetEffectiveScale()
         local onePx = (PP and scale > 0) and (PP.perfect / scale) or 1
-        local size = cb.borderSize or 1
-        local style = cb.borderTexture
+        local size = checkBtn.borderSize or 1
+        local style = checkBtn.borderTexture
         if not look.blizz and (not style or style == "" or style == "solid") then
-            size = CludesUI.BorderPx(cb.borderSizePx, cb.borderSize or 0, style) or size
+            size = CludesUI.BorderPx(checkBtn.borderSizePx, checkBtn.borderSize or 0, style) or size
         end
         divider:ClearAllPoints()
         divider:SetWidth(math.max(onePx, math.floor(size + 0.5) * onePx))
@@ -5192,51 +5192,51 @@ CludesUI.AtOptionsLogin(function()
             divider:SetPoint("TOPLEFT", pf.iconFrame, "TOPRIGHT", 0, 0)
             divider:SetPoint("BOTTOMLEFT", pf.iconFrame, "BOTTOMRIGHT", 0, 0)
         end
-        divider:SetColorTexture(cb.borderR or 0, cb.borderG or 0, cb.borderB or 0, cb.borderA or 1)
+        divider:SetColorTexture(checkBtn.borderR or 0, checkBtn.borderG or 0, checkBtn.borderB or 0, checkBtn.borderA or 1)
         divider:Show()
     end
 
     -- The timer and spell name, placed by side as the live bar (a 3.0s cast).
-    local function CastTexts(pf, cb, blizzKit)
-        local timerW = (cb.timerSize or 11) * 2.2
-        local timerSide = cb.timerSide or "right"
-        local spellSide = cb.spellTextSide or "left"
+    local function CastTexts(pf, checkBtn, blizzKit)
+        local timerW = (checkBtn.timerSize or 11) * 2.2
+        local timerSide = checkBtn.timerSide or "right"
+        local spellSide = checkBtn.spellTextSide or "left"
         local barW = pf.bar:GetWidth() or 0
         local timer, spell = pf.timerText, pf.spellText
-        if cb.showTimer then
-            SetPVFont(timer, FONT_PATH, cb.timerSize or 11)
+        if checkBtn.showTimer then
+            SetPVFont(timer, FONT_PATH, checkBtn.timerSize or 11)
             local point, x, justify = mod.GetCastTextAnchor(timerSide, false, timerW)
             timer:ClearAllPoints()
             timer:SetJustifyH(justify)
-            timer:SetPoint(point, pf.bar, point, x + (cb.timerX or 0), cb.timerY or 0)
-            if cb.showTotalDuration then
+            timer:SetPoint(point, pf.bar, point, x + (checkBtn.timerX or 0), checkBtn.timerY or 0)
+            if checkBtn.showTotalDuration then
                 timer:SetText(string.format("%.1f / %.1f", 3.0 * _castBarPreviewFill, 3.0))
             else
                 timer:SetText(string.format("%.1f", 3.0 * (1 - _castBarPreviewFill)))
             end
             timer:Show()
-            mod.ERB_CastTextColor(timer, cb.timerR, cb.timerG, cb.timerB, cb.timerA)
+            mod.ERB_CastTextColor(timer, checkBtn.timerR, checkBtn.timerG, checkBtn.timerB, checkBtn.timerA)
         else
             timer:Hide()
         end
-        if cb.showSpellText then
-            SetPVFont(spell, FONT_PATH, cb.spellTextSize or 11)
+        if checkBtn.showSpellText then
+            SetPVFont(spell, FONT_PATH, checkBtn.spellTextSize or 11)
             -- In the stock text box the chrome pass places it.
             if not (blizzKit and mod.ERB_BlizzAtlas("textbox")) then
-                local shared = cb.showTimer and timerSide == spellSide
+                local shared = checkBtn.showTimer and timerSide == spellSide
                 local point, x, justify = mod.GetCastTextAnchor(spellSide, shared, timerW)
                 spell:ClearAllPoints()
                 spell:SetJustifyH(justify)
-                spell:SetPoint(point, pf.bar, point, x + (cb.spellTextX or 0), cb.spellTextY or 0)
+                spell:SetPoint(point, pf.bar, point, x + (checkBtn.spellTextX or 0), checkBtn.spellTextY or 0)
                 if spellSide == "center" then
-                    spell:SetWidth(barW - 8 - (cb.showTimer and 2 * timerW or 0))
+                    spell:SetWidth(barW - 8 - (checkBtn.showTimer and 2 * timerW or 0))
                 elseif barW > 0 then
-                    spell:SetWidth(barW - 8 - (cb.showTimer and timerW or 0))
+                    spell:SetWidth(barW - 8 - (checkBtn.showTimer and timerW or 0))
                 end
             end
             spell:SetText(CludesUI.L("Spell Name"))
             spell:Show()
-            mod.ERB_CastTextColor(spell, cb.spellTextR, cb.spellTextG, cb.spellTextB, cb.spellTextA)
+            mod.ERB_CastTextColor(spell, checkBtn.spellTextR, checkBtn.spellTextG, checkBtn.spellTextB, checkBtn.spellTextA)
         else
             spell:Hide()
         end
@@ -5249,7 +5249,7 @@ CludesUI.AtOptionsLogin(function()
         if not p or not pf.bar then
             return
         end
-        local cb = p.castBar
+        local checkBtn = p.castBar
         -- Under a stock style (fixed per session, as the live bar): Blizzard
         -- Style's kit (stock background, fill, pip and text box) or Classic
         -- WoW UI (the vanilla frame and spark round the player's fill); the
@@ -5264,16 +5264,16 @@ CludesUI.AtOptionsLogin(function()
             scale = 1
         end
         local onePx = CludesUI.PP.perfect / scale
-        local function Snap(v)
-            return math.floor(v / onePx + 0.5) * onePx
+        local function Snap(value)
+            return math.floor(value / onePx + 0.5) * onePx
         end
-        local wid, hgt = Snap(cb.width), Snap(cb.height)
+        local wid, height = Snap(checkBtn.width), Snap(checkBtn.height)
 
         -- The container: icon (square, beside the bar unless free) and bar.
-        local hasIcon = cb.showIcon ~= false and not mod.ERB_CastIconPortrait(cb)
-        local iconFree = mod.ERB_CastIconFree(cb)
-        local iconW = (hasIcon and not iconFree) and Snap(blizz and mod.ERB_CastIconW(cb) or hgt) or 0
-        pf.container:SetSize(wid + iconW, hgt)
+        local hasIcon = checkBtn.showIcon ~= false and not mod.ERB_CastIconPortrait(checkBtn)
+        local iconFree = mod.ERB_CastIconFree(checkBtn)
+        local iconW = (hasIcon and not iconFree) and Snap(blizz and mod.ERB_CastIconW(checkBtn) or height) or 0
+        pf.container:SetSize(wid + iconW, height)
         -- Shrunk to fit when the bar is wider than the panel.
         local heading = pf.container:GetParent()
         local room = (heading:GetWidth() - CludesUI.CONTENT_PAD * 2) / _castBarPreviewScale
@@ -5285,20 +5285,20 @@ CludesUI.AtOptionsLogin(function()
         pf.container:ClearAllPoints()
         pf.container:SetPoint("CENTER", heading, "CENTER", 0, 0)
         -- Dimmed while the bar is off (no click leads to its rows then).
-        local on = cb.enabled and true or false
+        local on = checkBtn.enabled and true or false
         PreviewBar.Lock(pf.container, on, pf.hits)
         PreviewBar.HintFor(on, heading)
 
-        local iconOnRight = hasIcon and cb.iconOnRight
-        pf.barFrame:SetSize(wid, hgt)
+        local iconOnRight = hasIcon and checkBtn.iconOnRight
+        pf.barFrame:SetSize(wid, height)
         pf.barFrame:ClearAllPoints()
         pf.barFrame:SetPoint("LEFT", pf.container, "LEFT", iconOnRight and 0 or iconW, 0)
 
-        local texKey = cb.texture
-        CastBackground(pf, cb, blizzKit, classic, texKey)
-        CastBorder(pf, cb, blizz)
-        local fill = CastFill(pf, cb, blizzKit, texKey)
-        CastSpark(pf, cb, blizzKit, classic, fill, hgt)
+        local texKey = checkBtn.texture
+        CastBackground(pf, checkBtn, blizzKit, classic, texKey)
+        CastBorder(pf, checkBtn, blizz)
+        local fill = CastFill(pf, checkBtn, blizzKit, texKey)
+        CastSpark(pf, checkBtn, blizzKit, classic, fill, height)
         local look = {
             blizz = blizz,
             classic = classic,
@@ -5306,11 +5306,11 @@ CludesUI.AtOptionsLogin(function()
             iconFree = iconFree,
             iconOnRight = iconOnRight,
         }
-        CastIcon(pf, cb, look, Snap(blizz and mod.ERB_CastIconW(cb) or hgt))
-        CastDivider(pf, cb, look)
-        local barW = CastTexts(pf, cb, blizzKit)
+        CastIcon(pf, checkBtn, look, Snap(blizz and mod.ERB_CastIconW(checkBtn) or height))
+        CastDivider(pf, checkBtn, look)
+        local barW = CastTexts(pf, checkBtn, blizzKit)
         -- Blizzard Style chrome: the frame art, and the text box with the name in it.
-        mod.ERB_CastPreviewBlizzChrome(pf, cb, barW, blizz)
+        mod.ERB_CastPreviewBlizzChrome(pf, checkBtn, barW, blizz)
         -- Re-flow so a justify change shows on text already drawn.
         mod.ReflowFontString(pf.timerText)
         mod.ReflowFontString(pf.spellText)
@@ -5362,39 +5362,39 @@ CludesUI.AtOptionsLogin(function()
                 scale = 1
             end
             local onePx = CludesUI.PP.perfect / scale
-            return function(v)
-                return math.floor(v / onePx + 0.5) * onePx
+            return function(value)
+                return math.floor(value / onePx + 0.5) * onePx
             end
         end
 
         -- The holder (bar plus icon), scaled down to fit when the bar is
         -- wider than the panel, and the bar's frame to the icon's right.
-        local function Shell(heading, hdrW, cb, Snap)
+        local function Shell(heading, hdrW, checkBtn, Snap)
             local previewScale = UIParent:GetEffectiveScale() / heading:GetEffectiveScale()
             _castBarPreviewScale = previewScale
-            local box = CreateFrame("Frame", nil, heading)
-            box:SetPoint("CENTER", heading, "CENTER", 0, 0)
-            local wid, hgt = Snap(cb.width), Snap(cb.height)
-            local hasIcon = cb.showIcon ~= false and not mod.ERB_CastIconPortrait(cb)
-            local iconW = hasIcon and Snap(hgt) or 0
+            local boxFrame = CreateFrame("Frame", nil, heading)
+            boxFrame:SetPoint("CENTER", heading, "CENTER", 0, 0)
+            local wid, height = Snap(checkBtn.width), Snap(checkBtn.height)
+            local hasIcon = checkBtn.showIcon ~= false and not mod.ERB_CastIconPortrait(checkBtn)
+            local iconW = hasIcon and Snap(height) or 0
             local total = wid + iconW
             local availW = (hdrW - CludesUI.CONTENT_PAD * 2) / previewScale
             local fit = 1
             if total > availW and total > 0 and availW > 0 then
                 fit = availW / total
             end
-            box:SetScale(previewScale * fit)
-            box:SetSize(total, hgt)
-            local barFrame = CreateFrame("Frame", nil, box)
-            barFrame:SetSize(wid, hgt)
-            barFrame:SetPoint("LEFT", box, "LEFT", iconW, 0)
-            return box, barFrame, hasIcon, hgt
+            boxFrame:SetScale(previewScale * fit)
+            boxFrame:SetSize(total, height)
+            local barFrame = CreateFrame("Frame", nil, boxFrame)
+            barFrame:SetSize(wid, height)
+            barFrame:SetPoint("LEFT", boxFrame, "LEFT", iconW, 0)
+            return boxFrame, barFrame, hasIcon, height
         end
 
         -- Fresh mocks: the style chrome memos (frame art, text box, the
         -- spark swaps) belong to the last build's frames; drop them so the
         -- next update makes the chrome again on these.
-        local function FreshChrome(pf, box, barFrame)
+        local function FreshChrome(pf, boxFrame, barFrame)
             if pf.blizzArt then
                 pf.blizzArt:Hide()
             end
@@ -5403,55 +5403,55 @@ CludesUI.AtOptionsLogin(function()
             end
             pf.blizzArt, pf.blizzFrame, pf.blizzTextBox, pf.blizzSpark, pf.classicSpark =
                 nil, nil, nil, nil, nil
-            pf.barFrame, pf.container = barFrame, box
+            pf.barFrame, pf.container = barFrame, boxFrame
         end
 
         -- The border on its own child frame over bar and icon (pixel or
         -- textured), then the Bottom Separator as the live bar draws it.
-        local function BorderHost(box, cb)
-            local host = CreateFrame("Frame", nil, box)
-            host:SetAllPoints(box)
-            host:SetFrameLevel(box:GetFrameLevel() + 5)
-            box._border = host
+        local function BorderHost(boxFrame, checkBtn)
+            local host = CreateFrame("Frame", nil, boxFrame)
+            host:SetAllPoints(boxFrame)
+            host:SetFrameLevel(boxFrame:GetFrameLevel() + 5)
+            boxFrame._border = host
             local blizz = mod.ERB_CastBlizz()
-            mod.ERB_AnchorBorderHost(host, box, mod.ERB_BorderExtents((not blizz) and cb or nil))
-            local size, tex = cb.borderSize or 0, cb.borderTexture or "solid"
+            mod.ERB_AnchorBorderHost(host, boxFrame, mod.ERB_BorderExtents((not blizz) and checkBtn or nil))
+            local size, texture = checkBtn.borderSize or 0, checkBtn.borderTexture or "solid"
             CludesUI.ApplyBorderStyle(
                 host,
                 size,
-                cb.borderR or 0,
-                cb.borderG or 0,
-                cb.borderB or 0,
-                cb.borderA or 1,
-                tex,
-                cb.borderTextureOffset,
-                cb.borderTextureOffsetY,
-                cb.borderTextureShiftX,
-                cb.borderTextureShiftY,
+                checkBtn.borderR or 0,
+                checkBtn.borderG or 0,
+                checkBtn.borderB or 0,
+                checkBtn.borderA or 1,
+                texture,
+                checkBtn.borderTextureOffset,
+                checkBtn.borderTextureOffsetY,
+                checkBtn.borderTextureShiftX,
+                checkBtn.borderTextureShiftY,
                 "resourcebars",
                 size,
                 nil,
-                CludesUI.BorderPx(cb.borderSizePx, size, tex)
+                CludesUI.BorderPx(checkBtn.borderSizePx, size, texture)
             )
-            local edge = (cb.edgeSep and not blizz and mod.ERB_Textured(cb)) and true or false
-            mod.ERB_Separators(box, cb, edge, box:GetFrameLevel() + 7)
+            local edge = (checkBtn.edgeSep and not blizz and mod.ERB_Textured(checkBtn)) and true or false
+            mod.ERB_Separators(boxFrame, checkBtn, edge, boxFrame:GetFrameLevel() + 7)
             return host
         end
 
         -- The bar over the whole frame: background (Textured Background as
         -- live, never under the Blizzard Style kit), the status bar at the
         -- made-up fill in its colour or gradient, and the spark.
-        local function BarParts(pf, barFrame, cb, hgt)
-            local texKey = cb.texture
+        local function BarParts(pf, barFrame, checkBtn, height)
+            local texKey = checkBtn.texture
             local stock = texKey == "blizzard"
             local back = barFrame:CreateTexture(nil, "BACKGROUND")
             back:SetAllPoints()
             if not stock then
-                back:SetColorTexture(cb.bgR, cb.bgG, cb.bgB, cb.bgA)
+                back:SetColorTexture(checkBtn.bgR, checkBtn.bgG, checkBtn.bgB, checkBtn.bgA)
                 local kit = mod.ERB_CastBlizz() and not mod.ERB_CastClassic()
-                if cb.textureBg and (cb.fillOpacity or 100) >= 100 and not kit then
+                if checkBtn.textureBg and (checkBtn.fillOpacity or 100) >= 100 and not kit then
                     local path = CludesUI.ResolveTexturePath(_G._CURB_CastBarTextures, texKey, nil)
-                    mod.ERB_BgTexture(back, path, cb.bgR, cb.bgG, cb.bgB, cb.bgA)
+                    mod.ERB_BgTexture(back, path, checkBtn.bgR, checkBtn.bgG, checkBtn.bgB, checkBtn.bgA)
                 end
             elseif mod.ERB_CastClassic() then
                 mod.ERB_StockAtlas(back, "UI-CastingBar-Background", true)
@@ -5470,37 +5470,37 @@ CludesUI.AtOptionsLogin(function()
             if stock then
                 fill:SetAtlas("UI-CastingBar-Fill", true)
             end
-            if cb.gradientEnabled then
+            if checkBtn.gradientEnabled then
                 fill:SetGradient(
-                    cb.gradientDir or "HORIZONTAL",
-                    CreateColor(cb.fillR, cb.fillG, cb.fillB, 1),
-                    CreateColor(cb.gradientR, cb.gradientG, cb.gradientB, cb.gradientA)
+                    checkBtn.gradientDir or "HORIZONTAL",
+                    CreateColor(checkBtn.fillR, checkBtn.fillG, checkBtn.fillB, 1),
+                    CreateColor(checkBtn.gradientR, checkBtn.gradientG, checkBtn.gradientB, checkBtn.gradientA)
                 )
             else
-                fill:SetVertexColor(cb.fillR, cb.fillG, cb.fillB, 1)
+                fill:SetVertexColor(checkBtn.fillR, checkBtn.fillG, checkBtn.fillB, 1)
             end
             pf.bar = bar
 
             local spark = bar:CreateTexture(nil, "OVERLAY", nil, 1)
             spark:SetTexture("Interface\\AddOns\\CludesUI\\media\\cast_spark.tga")
             spark:SetBlendMode("ADD")
-            spark:SetSize(8, hgt)
+            spark:SetSize(8, height)
             spark:SetPoint("CENTER", fill, "RIGHT", 0, 0)
-            spark:SetShown(cb.showSpark and true or false)
+            spark:SetShown(checkBtn.showSpark and true or false)
             pf.spark = spark
             return bar
         end
 
         -- The spell icon at the holder's left, full height, the next in the
         -- shuffled pool.
-        local function IconParts(pf, box, size, shown)
-            local frame = CreateFrame("Frame", nil, box)
+        local function IconParts(pf, boxFrame, size, shown)
+            local frame = CreateFrame("Frame", nil, boxFrame)
             local icon = frame:CreateTexture(nil, "ARTWORK")
             icon:SetAllPoints()
             icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
             icon:SetTexture(NextCastBarIcon())
             frame:SetSize(size, size)
-            frame:SetPoint("TOPLEFT", box, "TOPLEFT", 0, 0)
+            frame:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", 0, 0)
             frame:SetShown(shown)
             pf.iconFrame, pf.icon = frame, icon
             return frame
@@ -5536,14 +5536,14 @@ CludesUI.AtOptionsLogin(function()
             if not p then
                 return 0
             end
-            local cb = p.castBar
+            local checkBtn = p.castBar
             local pf = _castBarPreviewFrames
             local Snap = Snapper()
-            local box, barFrame, hasIcon, hgt = Shell(heading, hdrW, cb, Snap)
-            FreshChrome(pf, box, barFrame)
-            local border = BorderHost(box, cb)
-            local bar = BarParts(pf, barFrame, cb, hgt)
-            local iconFrame = IconParts(pf, box, Snap(hgt), hasIcon)
+            local boxFrame, barFrame, hasIcon, height = Shell(heading, hdrW, checkBtn, Snap)
+            FreshChrome(pf, boxFrame, barFrame)
+            local border = BorderHost(boxFrame, checkBtn)
+            local bar = BarParts(pf, barFrame, checkBtn, height)
+            local iconFrame = IconParts(pf, boxFrame, Snap(height), hasIcon)
 
             -- The icon/bar seam divider (the live "Show Icon Divider") on the
             -- border frame: on the holder itself it would sit under the icon
@@ -5557,38 +5557,38 @@ CludesUI.AtOptionsLogin(function()
             -- keeps them; their anchors stay on the bar.
             local layer = CreateFrame("Frame", nil, barFrame)
             layer:SetAllPoints(bar)
-            layer:SetFrameLevel(box:GetFrameLevel() + 9)
+            layer:SetFrameLevel(boxFrame:GetFrameLevel() + 9)
             local fill = _castBarPreviewFill
-            local timer = cb.showTotalDuration and string.format("%.1f / %.1f", 3.0 * fill, 3.0)
+            local timer = checkBtn.showTotalDuration and string.format("%.1f / %.1f", 3.0 * fill, 3.0)
                 or string.format("%.1f", 3.0 * (1 - fill))
             local timerText = BarText(
                 layer,
                 bar,
                 "RIGHT",
-                -4 + (cb.timerX or 0),
-                cb.timerY or 0,
-                cb.timerSize,
-                cb.showTimer,
+                -4 + (checkBtn.timerX or 0),
+                checkBtn.timerY or 0,
+                checkBtn.timerSize,
+                checkBtn.showTimer,
                 timer,
-                cb.timerR,
-                cb.timerG,
-                cb.timerB,
-                cb.timerA
+                checkBtn.timerR,
+                checkBtn.timerG,
+                checkBtn.timerB,
+                checkBtn.timerA
             )
             pf.timerText = timerText
             local spellText = BarText(
                 layer,
                 bar,
                 "LEFT",
-                4 + (cb.spellTextX or 0),
-                cb.spellTextY or 0,
-                cb.spellTextSize,
-                cb.showSpellText,
+                4 + (checkBtn.spellTextX or 0),
+                checkBtn.spellTextY or 0,
+                checkBtn.spellTextSize,
+                checkBtn.showSpellText,
                 CludesUI.L("Spell Name"),
-                cb.spellTextR,
-                cb.spellTextG,
-                cb.spellTextB,
-                cb.spellTextA
+                checkBtn.spellTextR,
+                checkBtn.spellTextG,
+                checkBtn.spellTextB,
+                checkBtn.spellTextA
             )
             pf.spellText = spellText
 
@@ -5596,17 +5596,17 @@ CludesUI.AtOptionsLogin(function()
             wipe(_hitOverlays)
             local hits = {}
             pf.hits = hits
-            local level = box:GetFrameLevel() + 20
+            local level = boxFrame:GetFrameLevel() + 20
             hits[#hits + 1] = CreateHitOverlay(barFrame, "castBar", level)
             hits[#hits + 1] = CreateHitOverlay(iconFrame, "castIcon", level + 5)
-            if cb.showTimer then
+            if checkBtn.showTimer then
                 hits[#hits + 1] = TextHit(bar, timerText, "castTimer", level + 5)
             end
-            if cb.showSpellText then
+            if checkBtn.showSpellText then
                 hits[#hits + 1] = TextHit(bar, spellText, "castSpellText", level + 5)
             end
-            local on = cb.enabled and true or false
-            PreviewBar.Lock(box, on, hits)
+            local on = checkBtn.enabled and true or false
+            PreviewBar.Lock(boxFrame, on, hits)
 
             _headerBaseH = CAST_PREVIEW_H
             return CAST_PREVIEW_H + ToggledHint(heading, on)
@@ -5638,14 +5638,14 @@ CludesUI.AtOptionsLogin(function()
         },
     }
     local function TexBgRowCfg(kind, apply)
-        local k = TEXBG_KINDS[kind]
+        local keyName = TEXBG_KINDS[kind]
         return {
             type = "toggle",
             label = "Textured Background",
             tooltip = "Draws the bar texture on the background too.",
             disabled = function()
                 local p = DB()
-                local t = p and p[k.tbl]
+                local t = p and p[keyName.tbl]
                 if not t then
                     return true
                 end
@@ -5653,22 +5653,22 @@ CludesUI.AtOptionsLogin(function()
                 if kind == "bars" and p.splitTex == true then
                     return false
                 end
-                local tx = t[k.tex] or "none"
-                return tx == "none" or (k.blizz == true and tx == "blizzard")
+                local tx = t[keyName.tex] or "none"
+                return tx == "none" or (keyName.blizz == true and tx == "blizzard")
             end,
-            disabledTooltip = k.need,
+            disabledTooltip = keyName.need,
             get = function()
                 local p = DB()
-                local t = p and p[k.tbl]
-                return (t and t[k.key]) or false
+                local t = p and p[keyName.tbl]
+                return (t and t[keyName.key]) or false
             end,
-            set = function(v)
+            set = function(value)
                 local p = DB()
-                local t = p and p[k.tbl]
+                local t = p and p[keyName.tbl]
                 if not t then
                     return
                 end
-                t[k.key] = v and true or false
+                t[keyName.key] = value and true or false
                 apply()
             end,
         }
@@ -5714,8 +5714,8 @@ CludesUI.AtOptionsLogin(function()
             _previewPipCount = pipCount
             _previewBarFillPct = fillPct
         end,
-        SetCastBarPreviewFill = function(v)
-            _castBarPreviewFill = v
+        SetCastBarPreviewFill = function(value)
+            _castBarPreviewFill = value
         end,
     }
 
@@ -5761,8 +5761,8 @@ CludesUI.AtOptionsLogin(function()
             local function Snap(val)
                 return math.floor(val / onePx + 0.5) * onePx
             end
-            local wid, hgt = Snap(rawW), Snap(g.height or 12)
-            boxHolder:SetSize(wid, hgt)
+            local wid, height = Snap(rawW), Snap(g.height or 12)
+            boxHolder:SetSize(wid, height)
             boxHolder:ClearAllPoints()
             boxHolder:SetPoint("CENTER", heading, "CENTER", 0, 0)
             local on = g.enabled and true or false
@@ -5836,9 +5836,9 @@ CludesUI.AtOptionsLogin(function()
             local fR, fG, fB, fA = g.fillR, g.fillG, g.fillB, g.fillA or 1
             if g.classColored then
                 local _, castFrame = UnitClass("player")
-                local cc = castFrame and CLASS_COLORS[castFrame]
-                if cc then
-                    fR, fG, fB = cc[1], cc[2], cc[3]
+                local classColor = castFrame and CLASS_COLORS[castFrame]
+                if classColor then
+                    fR, fG, fB = classColor[1], classColor[2], classColor[3]
                 end
             end
             if g.gradientEnabled then
@@ -5854,7 +5854,7 @@ CludesUI.AtOptionsLogin(function()
             -- Spark on the fill's leading edge
             local spark = popFrame.spark
             if g.showSpark then
-                spark:SetSize(8, hgt)
+                spark:SetSize(8, height)
                 spark:ClearAllPoints()
                 spark:SetPoint("CENTER", fillTex, leftward and "LEFT" or "RIGHT", 0, 0)
                 spark:Show()
@@ -5864,8 +5864,8 @@ CludesUI.AtOptionsLogin(function()
         end
 
         environ.UpdateGCDPreview = UpdateGCDPreview
-        environ.SetGCDPreviewFill = function(v)
-            gcdFill = v
+        environ.SetGCDPreviewFill = function(value)
+            gcdFill = value
         end
 
         environ._gcdPreviewBuilder = function(heading, hdrW)
@@ -6167,10 +6167,10 @@ CludesUI.AtOptionsLogin(function()
                 grp.iconHits = { CreateHitOverlay(widget, def.mapIcon, overlayLevel) }
                 for i, d in ipairs(def.icons) do
                     local ic = CreateFrame("Frame", nil, widget)
-                    local tex = ic:CreateTexture(nil, "ARTWORK")
-                    tex:SetAllPoints()
-                    tex:SetTexture(d.tex)
-                    tex:SetTexCoord(def.zoom, 1 - def.zoom, def.zoom, 1 - def.zoom)
+                    local texture = ic:CreateTexture(nil, "ARTWORK")
+                    texture:SetAllPoints()
+                    texture:SetTexture(d.tex)
+                    texture:SetTexCoord(def.zoom, 1 - def.zoom, def.zoom, 1 - def.zoom)
                     ic._border = CreateFrame("Frame", nil, ic)
                     ic._border:SetAllPoints(ic)
                     if d.timer then

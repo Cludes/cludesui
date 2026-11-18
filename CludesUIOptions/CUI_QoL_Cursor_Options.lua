@@ -130,19 +130,19 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     local function BuildCursorPage(page, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt, row, heading
+        local cursorY = yOffset
+        local _, height, row, heading
 
         CludesUI:ClearContentHeader()
 
         -----------------------------------------------------------------------
         --  APPEARANCE
         -----------------------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, SECTION_APPEARANCE, posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, SECTION_APPEARANCE, cursorY)
+        cursorY = cursorY - height
 
         -- Enable Cursor Circle ---- Color (multiSwatch: custom left, class colored right)
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Cursor Circle",
             getValue = function()
@@ -215,9 +215,9 @@ CludesUI.AtOptionsLogin(function()
                     hasAlpha = false,
                     getValue = function()
                         local _, class = UnitClass("player")
-                        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                        if cc then
-                            return cc.r, cc.g, cc.b
+                        local classColor = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+                        if classColor then
+                            return classColor.r, classColor.g, classColor.b
                         end
                         return 76 / 255, 201 / 255, 240 / 255
                     end,
@@ -268,16 +268,16 @@ CludesUI.AtOptionsLogin(function()
                 },
             },
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Block overlay on the right region when Cursor Circle is disabled
         if not CludesUI._prebuilding then
-            local rightRgn = row._rightRegion
-            local circleBlock = CreateFrame("Frame", nil, rightRgn)
+            local rightRegion = row._rightRegion
+            local circleBlock = CreateFrame("Frame", nil, rightRegion)
             circleBlock:SetAllPoints()
-            circleBlock:SetFrameLevel(rightRgn:GetFrameLevel() + 20)
+            circleBlock:SetFrameLevel(rightRegion:GetFrameLevel() + 20)
             circleBlock:EnableMouse(true)
             circleBlock:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(rightRgn, CludesUI.DisabledTooltip("Cursor Circle"))
+                CludesUI.ShowWidgetTooltip(rightRegion, CludesUI.DisabledTooltip("Cursor Circle"))
             end)
             circleBlock:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
@@ -287,8 +287,8 @@ CludesUI.AtOptionsLogin(function()
                 local off = not p or p.enabled == false
                 circleBlock:SetShown(off)
                 -- Dim the "Color" label with its swatches
-                if rightRgn._label then
-                    rightRgn._label:SetAlpha(off and 0.3 or 1)
+                if rightRegion._label then
+                    rightRegion._label:SetAlpha(off and 0.3 or 1)
                 end
             end
             UpdateCircleBlock()
@@ -299,7 +299,7 @@ CludesUI.AtOptionsLogin(function()
         -- toggle's DependentSetValue forces the rebuild on flips).
         if DB() and DB().enabled ~= false then
             -- Texture ---- Scale
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = "Texture",
                 values = {
@@ -350,10 +350,10 @@ CludesUI.AtOptionsLogin(function()
                     RefreshAddon()
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Circle Opacity ---- Cursor Trail
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Circle Opacity",
                 min = 0,
@@ -389,10 +389,10 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Only Show in Instances ---- Only Show When Hidden
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Only Show in Instances",
                 getValue = function()
@@ -428,10 +428,10 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Combat Only ---- Center Reticle
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Combat Only",
                 tooltip = "Only shows the cursor circle while you are in combat.",
@@ -469,17 +469,17 @@ CludesUI.AtOptionsLogin(function()
                     RefreshAddon()
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end -- close Cursor Circle hidden-while-disabled gate
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
 
         -----------------------------------------------------------------------
         --  GLOBAL COOLDOWN
         -----------------------------------------------------------------------
-        heading, hgt = W:SectionHeader(hostFrame, SECTION_GCD, posY)
-        posY = posY - hgt
+        heading, height = W:SectionHeader(hostFrame, SECTION_GCD, cursorY)
+        cursorY = cursorY - height
         -- The circle has a mover only while enabled and detached from the
         -- cursor, so the button names whichever of the two it still needs.
         CludesUI.BuildSectionUnlockJump(heading, {
@@ -497,7 +497,7 @@ CludesUI.AtOptionsLogin(function()
         })
 
         -- Enable GCD Circle ---- Color (multiSwatch: custom left, class colored right)
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable GCD Circle",
             getValue = function()
@@ -555,9 +555,9 @@ CludesUI.AtOptionsLogin(function()
                     hasAlpha = false,
                     getValue = function()
                         local _, class = UnitClass("player")
-                        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                        if cc then
-                            return cc.r, cc.g, cc.b
+                        local classColor = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+                        if classColor then
+                            return classColor.r, classColor.g, classColor.b
                         end
                         return 76 / 255, 201 / 255, 240 / 255
                     end,
@@ -602,16 +602,16 @@ CludesUI.AtOptionsLogin(function()
                 },
             },
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Block overlay on the right region when GCD Circle is disabled
         if not CludesUI._prebuilding then
-            local rightRgn = row._rightRegion
-            local gcdBlock = CreateFrame("Frame", nil, rightRgn)
+            local rightRegion = row._rightRegion
+            local gcdBlock = CreateFrame("Frame", nil, rightRegion)
             gcdBlock:SetAllPoints()
-            gcdBlock:SetFrameLevel(rightRgn:GetFrameLevel() + 20)
+            gcdBlock:SetFrameLevel(rightRegion:GetFrameLevel() + 20)
             gcdBlock:EnableMouse(true)
             gcdBlock:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(rightRgn, CludesUI.DisabledTooltip("GCD Circle"))
+                CludesUI.ShowWidgetTooltip(rightRegion, CludesUI.DisabledTooltip("GCD Circle"))
             end)
             gcdBlock:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
@@ -620,8 +620,8 @@ CludesUI.AtOptionsLogin(function()
                 local off = not GCD_DB().enabled
                 gcdBlock:SetShown(off)
                 -- Dim the "Color" label with its swatches
-                if rightRgn._label then
-                    rightRgn._label:SetAlpha(off and 0.3 or 1)
+                if rightRegion._label then
+                    rightRegion._label:SetAlpha(off and 0.3 or 1)
                 end
             end
             UpdateGCDBlock()
@@ -632,7 +632,7 @@ CludesUI.AtOptionsLogin(function()
         -- toggle's DependentSetValue forces the rebuild on flips).
         if GCD_DB().enabled then
             -- Ring Texture ---- Scale
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = "Ring Texture",
                 values = ringTexValues,
@@ -658,10 +658,10 @@ CludesUI.AtOptionsLogin(function()
                     RefreshGCD()
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Circle Opacity ---- Attach to Cursor
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Circle Opacity",
                 min = 0,
@@ -686,10 +686,10 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI:RefreshPage()
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Only Show in Instances ---- Combat Only
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Only Show in Instances",
                 getValue = function()
@@ -718,17 +718,17 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end -- close GCD Circle hidden-while-disabled gate
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
 
         -----------------------------------------------------------------------
         --  CAST BAR
         -----------------------------------------------------------------------
-        heading, hgt = W:SectionHeader(hostFrame, SECTION_CAST, posY)
-        posY = posY - hgt
+        heading, height = W:SectionHeader(hostFrame, SECTION_CAST, cursorY)
+        cursorY = cursorY - height
         -- As the GCD circle: a mover only while enabled and detached.
         CludesUI.BuildSectionUnlockJump(heading, {
             key = "ECL_Cast",
@@ -745,7 +745,7 @@ CludesUI.AtOptionsLogin(function()
         })
 
         -- Enable Cast Bar Circle ---- Color (multiSwatch: custom left, class colored right)
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Cast Bar Circle",
             getValue = function()
@@ -803,9 +803,9 @@ CludesUI.AtOptionsLogin(function()
                     hasAlpha = false,
                     getValue = function()
                         local _, class = UnitClass("player")
-                        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                        if cc then
-                            return cc.r, cc.g, cc.b
+                        local classColor = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+                        if classColor then
+                            return classColor.r, classColor.g, classColor.b
                         end
                         return 76 / 255, 201 / 255, 240 / 255
                     end,
@@ -850,16 +850,16 @@ CludesUI.AtOptionsLogin(function()
                 },
             },
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Block overlay on the right region when Cast Bar Circle is disabled
         if not CludesUI._prebuilding then
-            local rightRgn = row._rightRegion
-            local castBlock = CreateFrame("Frame", nil, rightRgn)
+            local rightRegion = row._rightRegion
+            local castBlock = CreateFrame("Frame", nil, rightRegion)
             castBlock:SetAllPoints()
-            castBlock:SetFrameLevel(rightRgn:GetFrameLevel() + 20)
+            castBlock:SetFrameLevel(rightRegion:GetFrameLevel() + 20)
             castBlock:EnableMouse(true)
             castBlock:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(rightRgn, CludesUI.DisabledTooltip("Cast Bar Circle"))
+                CludesUI.ShowWidgetTooltip(rightRegion, CludesUI.DisabledTooltip("Cast Bar Circle"))
             end)
             castBlock:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
@@ -868,8 +868,8 @@ CludesUI.AtOptionsLogin(function()
                 local off = not Cast_DB().enabled
                 castBlock:SetShown(off)
                 -- Dim the "Color" label with its swatches
-                if rightRgn._label then
-                    rightRgn._label:SetAlpha(off and 0.3 or 1)
+                if rightRegion._label then
+                    rightRegion._label:SetAlpha(off and 0.3 or 1)
                 end
             end
             UpdateCastBlock()
@@ -903,7 +903,7 @@ CludesUI.AtOptionsLogin(function()
         -- (the toggle's DependentSetValue forces the rebuild on flips).
         if Cast_DB().enabled then
             -- Ring Texture ---- Scale
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = "Ring Texture",
                 values = ringTexValues,
@@ -929,10 +929,10 @@ CludesUI.AtOptionsLogin(function()
                     RefreshCast()
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Circle Opacity ---- Attach to Cursor
-            row, hgt = W:DualRow(hostFrame, posY, {
+            row, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Circle Opacity",
                 min = 0,
@@ -957,10 +957,10 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI:RefreshPage()
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Only Show in Instances ---- Combat Only
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Only Show in Instances",
                 getValue = function()
@@ -989,10 +989,10 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end -- close Cast Bar Circle hidden-while-disabled gate
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     ---------------------------------------------------------------------------

@@ -54,7 +54,7 @@ local function StopPGPreviewOnHide()
     end
 end
 
-local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomBorderOff, CustomBorderOffTip)
+local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, CustomBorderOff, CustomBorderOffTip)
     local environ = mod._RFO_OptEnv
     local saved, floor, IsPreviewOff, MissingGlowDesc =
         environ.db, environ.floor, environ.IsPreviewOff, environ.MissingGlowDesc
@@ -69,19 +69,19 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
     end
     -- Row setters over SSet: the key written with the row's value.
     local function SSetRow(key)
-        return function(v)
-            SSet(key, v)
+        return function(value)
+            SSet(key, value)
         end
     end
-    local _, hgt, heading
+    local _, height, heading
     local row
-    local _secY = posY -- section start tracker
+    local _secY = cursorY -- section start tracker
     -------------------------------------------------------------------
     --  INDICATORS
     -------------------------------------------------------------------
     local indicatorHeader
-    indicatorHeader, hgt = W:SectionHeader(hostFrame, "INDICATORS", posY)
-    posY = posY - hgt
+    indicatorHeader, height = W:SectionHeader(hostFrame, "INDICATORS", cursorY)
+    cursorY = cursorY - height
 
     -- Eyeball: toggle indicator visibility on preview (raid + party); none in
     -- the search pre-build (it indexes nothing, and the header is a stand-in there)
@@ -96,16 +96,16 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 break
             end
         end
-        local eyeBtn = CreateFrame("Button", nil, indicatorHeader)
-        eyeBtn:SetSize(24, 24)
+        local eyeButton = CreateFrame("Button", nil, indicatorHeader)
+        eyeButton:SetSize(24, 24)
         if indLabel then
-            eyeBtn:SetPoint("LEFT", indLabel, "RIGHT", 5, 0)
+            eyeButton:SetPoint("LEFT", indLabel, "RIGHT", 5, 0)
         else
-            eyeBtn:SetPoint("LEFT", indicatorHeader, "BOTTOMLEFT", 85, 8)
+            eyeButton:SetPoint("LEFT", indicatorHeader, "BOTTOMLEFT", 85, 8)
         end
-        eyeBtn:SetFrameLevel(indicatorHeader:GetFrameLevel() + 5)
-        CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-        local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
+        eyeButton:SetFrameLevel(indicatorHeader:GetFrameLevel() + 5)
+        CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+        local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
 
         -- On ns so the preview can read it.
@@ -116,15 +116,15 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         local function RefreshIndicatorEye()
             if IsPreviewOff() then
                 eyeTex:SetTexture(EYE_VISIBLE)
-                CludesUI.SetGlyphAlpha(eyeBtn, 0.15)
+                CludesUI.SetGlyphAlpha(eyeButton, 0.15)
                 return
             end
             eyeTex:SetTexture(mod._indicatorsVisible and EYE_INVISIBLE or EYE_VISIBLE)
-            CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
+            CludesUI.SetGlyphAlpha(eyeButton, 0.4)
         end
         EYE.refreshIndicatorEye = RefreshIndicatorEye
         RefreshIndicatorEye()
-        eyeBtn:SetScript("OnClick", function()
+        eyeButton:SetScript("OnClick", function()
             if IsPreviewOff() then
                 return
             end
@@ -159,7 +159,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 mod.PvRefresh()
             end
         end)
-        eyeBtn:SetScript("OnEnter", function(self)
+        eyeButton:SetScript("OnEnter", function(self)
             if IsPreviewOff() then
                 CludesUI.ShowWidgetTooltip(self, "Enable preview to use")
                 return
@@ -170,7 +170,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 mod._indicatorsVisible and "Hide indicators on preview" or "Show indicators on preview"
             )
         end)
-        eyeBtn:SetScript("OnLeave", function(self)
+        eyeButton:SetScript("OnLeave", function(self)
             if not IsPreviewOff() then
                 CludesUI.SetGlyphAlpha(self, 0.4)
             end
@@ -207,7 +207,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             "bottomright",
         }
         local mbRow
-        mbRow, hgt = W:DualRow(hostFrame, posY, {
+        mbRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Missing Buffs",
             values = mbPositionValues,
@@ -241,7 +241,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             getValue = SValRow("missingBuffsSize", 22),
             setValue = SSetRow("missingBuffsSize"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         do
             local region = mbRow._leftRegion
             -- The role blessings, None first: the client's own spell names minus
@@ -273,14 +273,14 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             end
             local cut = full and common and common:match("^(.*%s)")
             for idx = 2, #blessOrder do
-                local k = blessOrder[idx]
-                local num = full and full[k]
-                blessValues[k] = (num and cut) and num:sub(#cut + 1) or num or BLESS_EN[k]
-                blessItems[#blessItems + 1] = { key = k, label = blessValues[k] }
+                local keyName = blessOrder[idx]
+                local num = full and full[keyName]
+                blessValues[keyName] = (num and cut) and num:sub(#cut + 1) or num or BLESS_EN[keyName]
+                blessItems[#blessItems + 1] = { key = keyName, label = blessValues[keyName] }
             end
             local view = setmetatable({}, {
-                __index = function(_, k)
-                    return SGet(k)
+                __index = function(_, keyName)
+                    return SGet(keyName)
                 end,
             })
             -- A priority list per role: the checked blessings in the order
@@ -291,16 +291,16 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             local function ListRow(labelText, picked, write)
                 local function Save(sequence, key, on)
                     local keep = {}
-                    for _, k in ipairs(picked()) do
-                        keep[k] = true
+                    for _, keyName in ipairs(picked()) do
+                        keep[keyName] = true
                     end
                     if key then
                         keep[key] = on or nil
                     end
                     local entries = {}
-                    for _, k in ipairs(sequence) do
-                        if keep[k] then
-                            entries[#entries + 1] = k
+                    for _, keyName in ipairs(sequence) do
+                        if keep[keyName] then
+                            entries[#entries + 1] = keyName
                         end
                     end
                     write(entries)
@@ -313,8 +313,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     hint = "Drag to set priority",
                     items = blessItems,
                     get = function(key)
-                        for _, k in ipairs(picked()) do
-                            if k == key then
+                        for _, keyName in ipairs(picked()) do
+                            if keyName == key then
                                 return true
                             end
                         end
@@ -365,15 +365,15 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     local ex = {}
                     local old = SGet(exKey)
                     if type(old) == "table" then
-                        for k, val in pairs(old) do
-                            ex[k] = val
+                        for keyName, val in pairs(old) do
+                            ex[keyName] = val
                         end
                     end
                     ex[class] = entries
                     SSet(exKey, next(ex) ~= nil and ex or nil)
                 end
                 local exShow, exAnchor
-                local function OpenExceptions(_, ddBtn)
+                local function OpenExceptions(_, dropdownBtn)
                     if not exShow then
                         local reset = "Use the " .. labelText:gsub(" Blessing", "") .. " List"
                         local rowList = {}
@@ -394,7 +394,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                             end
                             rowList[#rowList + 1] = r
                         end
-                        local popFrame = ddBtn:GetParent()
+                        local popFrame = dropdownBtn:GetParent()
                         local _, show = CludesUI.BuildCogPopup({
                             title = ROLE_TITLE[role],
                             rows = rowList,
@@ -416,7 +416,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     local f = exShow._popupFrame
                     exAnchor:ClearAllPoints()
                     exAnchor:SetPoint("BOTTOM", exAnchor:GetParent(), "TOPRIGHT", 4 + f:GetWidth() / 2, 5)
-                    ddBtn._sidePopup = f
+                    dropdownBtn._sidePopup = f
                 end
                 local r = ListRow(labelText, Picked, function(entries)
                     SSet(mod.RF_FvBlessingKey[role], entries)
@@ -567,7 +567,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         "classic",
         "blizzDefault",
     }
-    row, hgt = W:DualRow(hostFrame, posY, {
+    row, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Role Icons",
         values = roleStyleValues,
@@ -596,12 +596,12 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         end,
         setValue = function() end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Right side placeholder dropdown is swapped for a checkbox dropdown.
     if not CludesUI._prebuilding then
-        local rightRgn = row._rightRegion
-        if rightRgn._control then
-            rightRgn._control:Hide()
+        local rightRegion = row._rightRegion
+        if rightRegion._control then
+            rightRegion._control:Hide()
         end
         local function ShowRoleItems()
             local itemList = {
@@ -610,9 +610,9 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 { key = "dps", label = "DPS" },
             }
             if SVal("roleText", false) then
-                for _, item in ipairs(itemList) do
-                    local colorKey = "roleText" .. item.label .. "Color"
-                    item.swatch = {
+                for _, entry in ipairs(itemList) do
+                    local colorKey = "roleText" .. entry.label .. "Color"
+                    entry.swatch = {
                         get = function()
                             local c = SGet(colorKey) or mod._internals.defaults.profile[colorKey]
                             return c.r, c.g, c.b
@@ -629,21 +629,21 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             return itemList
         end
         local roleKeyMap = { tank = "showRoleForTank", healer = "showRoleForHealer", dps = "showRoleForDPS" }
-        local cbDD = CludesUI.BuildVisOptsCBDropdown(
-            rightRgn,
+        local checkDrop = CludesUI.BuildVisOptsCBDropdown(
+            rightRegion,
             170,
-            rightRgn:GetFrameLevel() + 2,
+            rightRegion:GetFrameLevel() + 2,
             ShowRoleItems,
-            function(k)
-                return SVal(roleKeyMap[k], true)
+            function(keyName)
+                return SVal(roleKeyMap[keyName], true)
             end,
-            function(k, val)
-                SSet(roleKeyMap[k], val)
+            function(keyName, val)
+                SSet(roleKeyMap[keyName], val)
             end
         )
-        Pix.Point(cbDD, "RIGHT", rightRgn, "RIGHT", -20, 0)
-        rightRgn._control = cbDD
-        rightRgn._lastInline = nil
+        Pix.Point(checkDrop, "RIGHT", rightRegion, "RIGHT", -20, 0)
+        rightRegion._control = checkDrop
+        rightRegion._lastInline = nil
     end
     do
         local region = row._leftRegion
@@ -704,9 +704,9 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
     local roleRow2
     -- Party Frames kit: role, ready check and leader take the stock spots
     -- (their offset cogs stay live).
-    roleRow2, hgt = W:DualRow(
+    roleRow2, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         mod.RF_PartyKitGate({
             type = "dropdown",
             text = "Role Position",
@@ -739,7 +739,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             setValue = SSetRow("roleIconSize"),
         }
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         local region = roleRow2._leftRegion
         CludesUI.BuildInlineCog(region, {
@@ -794,7 +794,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         "bottom",
         "bottomright",
     }
-    row, hgt = W:DualRow(hostFrame, posY, {
+    row, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Marker Position",
         values = markerPositionValues,
@@ -827,7 +827,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         getValue = SValRow("raidMarkerSize", 16),
         setValue = SSetRow("raidMarkerSize"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     do
         local region = row._leftRegion
@@ -859,9 +859,9 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
     -- Rows below Marker Position are the less-common indicators. The RAID tab collapses them behind the shared session expander (BuildLessCommonExpander in CludesUI_Widgets_RowAddons.lua); the party tab always shows them.
     local lessCommonOpen = true
     if not optionState._partyCtx then
-        lessCommonOpen, posY = CludesUI.BuildLessCommonExpander(
+        lessCommonOpen, cursorY = CludesUI.BuildLessCommonExpander(
             hostFrame,
-            posY,
+            cursorY,
             "rfIndicators",
             "Show Less Common Indicator Options"
         )
@@ -881,9 +881,9 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         }
         local readyCheckPositionOrder = CludesUI.POSITION_GRID_ORDER
         local rcRow
-        rcRow, hgt = W:DualRow(
+        rcRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             mod.RF_PartyKitGate({
                 type = "dropdown",
                 text = "Ready Check / Summon / Rez",
@@ -902,7 +902,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 setValue = SSetRow("readyCheckSize"),
             }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             local region = rcRow._leftRegion
             CludesUI.BuildInlineCog(region, {
@@ -973,7 +973,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             "bottomright",
         }
         local stRow
-        stRow, hgt = W:DualRow(hostFrame, posY, {
+        stRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Status Text",
             values = statusTextPositionValues,
@@ -989,7 +989,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             getValue = SValRow("statusTextSize", 14),
             setValue = SSetRow("statusTextSize"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             local region = stRow._leftRegion
             CludesUI.BuildInlineCog(region, {
@@ -1067,7 +1067,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         }
         -- (The dropdown is also the leader icon's on/off switch, so under the
         -- kit it keeps that job: shown at the stock spot, or None.)
-        row, hgt = W:DualRow(hostFrame, posY, mod.RF_OptPartyKit() and {
+        row, height = W:DualRow(hostFrame, cursorY, mod.RF_OptPartyKit() and {
             type = "segmented",
             text = "Leader Icon",
             values = { kit = "Party Frame", none = "None" },
@@ -1112,7 +1112,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             getValue = SValRow("leaderIconSize", 14),
             setValue = SSetRow("leaderIconSize"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         do
             local region = row._leftRegion
             CludesUI.BuildInlineCog(region, {
@@ -1190,7 +1190,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         local combatStyleOrder =
             { "standard", "class", "combat0", "combat1", "combat2", "combat3", "combat4", "combat5" }
         local ciRow
-        ciRow, hgt = W:DualRow(hostFrame, posY, {
+        ciRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Combat Icon",
             values = combatPositionValues,
@@ -1226,7 +1226,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             getValue = SValRow("combatIndicatorSize", 16),
             setValue = SSetRow("combatIndicatorSize"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             local region = ciRow._leftRegion
             CludesUI.BuildInlineCog(region, {
@@ -1307,7 +1307,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         -- Show Group Numbers | Number Size (+ alpha swatch). Raid only: party has no groups. Size + color also drive the always-on preview group labels; the toggle gates only the real frames.
         if not optionState._partyCtx then
             local gnRow
-            gnRow, hgt = W:DualRow(hostFrame, posY, {
+            gnRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Show Group Numbers",
                 getValue = SValRow("showGroupNumbers", false),
@@ -1321,7 +1321,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 getValue = SValRow("groupNumberSize", 10),
                 setValue = SSetRow("groupNumberSize"),
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
             if not CludesUI._prebuilding then
                 local region = gnRow._rightRegion
                 local colorSwatch = CludesUI.BuildColorSwatch(region, gnRow:GetFrameLevel() + 3, function()
@@ -1393,7 +1393,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             "bottomright",
         }
         local pingRow
-        pingRow, hgt = W:DualRow(hostFrame, posY, {
+        pingRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Ping Marker",
             values = pingPositionValues,
@@ -1427,7 +1427,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             getValue = SValRow("pingMarkerSize", 30),
             setValue = SSetRow("pingMarkerSize"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             local region = pingRow._leftRegion
             CludesUI.BuildInlineCog(region, {
@@ -1457,9 +1457,9 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
     end -- close the less-common-indicators collapse wrapper
     -- While expanded the shared link re-renders here in its "Hide ..." form; no-op while collapsed or in party ctx.
     if not optionState._partyCtx then
-        posY = CludesUI.FinishLessCommonExpander(
+        cursorY = CludesUI.FinishLessCommonExpander(
             hostFrame,
-            posY,
+            cursorY,
             "rfIndicators",
             "Show Less Common Indicator Options"
         )
@@ -1470,11 +1470,11 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
     -------------------------------------------------------------------
     local dispelHeader
     if onSection then
-        onSection("indicators", _secY, posY)
+        onSection("indicators", _secY, cursorY)
     end
-    _secY = posY
-    dispelHeader, hgt = W:SectionHeader(hostFrame, "DISPELS", posY)
-    posY = posY - hgt
+    _secY = cursorY
+    dispelHeader, height = W:SectionHeader(hostFrame, "DISPELS", cursorY)
+    cursorY = cursorY - height
 
     -- Eyeball: toggle dispel visibility on preview (raid + party); none in
     -- the search pre-build (it indexes nothing, and the header is a stand-in there)
@@ -1489,16 +1489,16 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 break
             end
         end
-        local eyeBtn = CreateFrame("Button", nil, dispelHeader)
-        eyeBtn:SetSize(24, 24)
+        local eyeButton = CreateFrame("Button", nil, dispelHeader)
+        eyeButton:SetSize(24, 24)
         if dispLabel then
-            eyeBtn:SetPoint("LEFT", dispLabel, "RIGHT", 5, 0)
+            eyeButton:SetPoint("LEFT", dispLabel, "RIGHT", 5, 0)
         else
-            eyeBtn:SetPoint("LEFT", dispelHeader, "BOTTOMLEFT", 85, 8)
+            eyeButton:SetPoint("LEFT", dispelHeader, "BOTTOMLEFT", 85, 8)
         end
-        eyeBtn:SetFrameLevel(dispelHeader:GetFrameLevel() + 5)
-        CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-        local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
+        eyeButton:SetFrameLevel(dispelHeader:GetFrameLevel() + 5)
+        CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+        local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
 
         if mod._dispelsVisible == nil then
@@ -1508,15 +1508,15 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         local function RefreshDispelEye()
             if IsPreviewOff() then
                 eyeTex:SetTexture(EYE_VISIBLE)
-                CludesUI.SetGlyphAlpha(eyeBtn, 0.15)
+                CludesUI.SetGlyphAlpha(eyeButton, 0.15)
                 return
             end
             eyeTex:SetTexture(mod._dispelsVisible and EYE_INVISIBLE or EYE_VISIBLE)
-            CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
+            CludesUI.SetGlyphAlpha(eyeButton, 0.4)
         end
         EYE.refreshDispelEye = RefreshDispelEye
         RefreshDispelEye()
-        eyeBtn:SetScript("OnClick", function()
+        eyeButton:SetScript("OnClick", function()
             if IsPreviewOff() then
                 return
             end
@@ -1535,7 +1535,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 mod.PvRefresh()
             end
         end)
-        eyeBtn:SetScript("OnEnter", function(self)
+        eyeButton:SetScript("OnEnter", function(self)
             if IsPreviewOff() then
                 CludesUI.ShowWidgetTooltip(self, "Enable preview to use")
                 return
@@ -1546,7 +1546,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 mod._dispelsVisible and "Hide dispels on preview" or "Show dispels on preview"
             )
         end)
-        eyeBtn:SetScript("OnLeave", function(self)
+        eyeButton:SetScript("OnLeave", function(self)
             if not IsPreviewOff() then
                 CludesUI.SetGlyphAlpha(self, 0.4)
             end
@@ -1564,7 +1564,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
     }
     local dispelOverlayOrder = { "none", "fill", "full", "gradient", "gradient_sharp", "gradient_reverse" }
 
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Dispel Overlay",
         values = dispelOverlayValues,
@@ -1587,7 +1587,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         getValue = SValRow("dispelOverlayOpacity", 100),
         setValue = SSetRow("dispelOverlayOpacity"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     local dispelIconPositionValues = {
         none = "None",
@@ -1613,7 +1613,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         "bottom",
         "bottomright",
     }
-    row, hgt = W:DualRow(hostFrame, posY, {
+    row, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Frame Border",
         min = 0,
@@ -1642,7 +1642,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             CludesUI:RefreshPage()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     do
         local region = row._rightRegion
         CludesUI.BuildInlineCog(region, {
@@ -1723,7 +1723,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
     end
 
     -- Dispel Colors: five always-active swatches, one per type. Unlike Name Color (a mode picker) each is independently editable, so no onClick/refreshAlpha -- the default click opens the picker.
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "multiSwatch",
         text = "Dispel Colors",
         -- Per-type alpha 0 hides that type's border/overlay entirely.
@@ -1815,12 +1815,12 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             SSet("dispelShowAll", not val)
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     if onSection then
-        onSection("dispels", _secY, posY)
+        onSection("dispels", _secY, cursorY)
     end
-    _secY = posY
+    _secY = cursorY
 
     -- Party Frames kit: the stock frame has no Top Name Bar (the whole
     -- section, its sync overlay included, is skipped on the Party page).
@@ -1828,15 +1828,15 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         -------------------------------------------------------------------
         --  TOP NAME BAR
         -------------------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, "TOP NAME BAR", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "TOP NAME BAR", cursorY)
+        cursorY = cursorY - height
 
         local function TNBOff()
             return not SVal("topNameBarEnabled", false)
         end
 
         -- Enable Top Name Bar | Height. The master toggle HIDES the dependent rows while off; SectionToggleSetValue forces that rebuild.
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Top Name Bar",
             getValue = SValRow("topNameBarEnabled", false),
@@ -1852,7 +1852,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             getValue = SValRow("topNameBarHeight", 20),
             setValue = SSetRow("topNameBarHeight"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if not TNBOff() and not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(row._rightRegion, {
@@ -1892,7 +1892,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
 
         if not TNBOff() then
             local tnbRow2
-            tnbRow2, hgt = W:DualRow(hostFrame, posY, {
+            tnbRow2, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Background",
                 min = 0,
@@ -1909,7 +1909,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 getValue = SValRow("topNameBarTextSize", 11),
                 setValue = SSetRow("topNameBarTextSize"),
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
             if not CludesUI._prebuilding then
                 local region = tnbRow2._leftRegion
                 local bgSwatch = CludesUI.BuildColorSwatch(region, tnbRow2:GetFrameLevel() + 3, function()
@@ -1954,7 +1954,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
 
             -- Align dropdown plus a custom/class swatch pair that doubles as the color-mode selector (as with Health Text). Defaults to class.
             local tnbRow3
-            tnbRow3, hgt = W:DualRow(hostFrame, posY, {
+            tnbRow3, height = W:DualRow(hostFrame, cursorY, {
                 type = "segmented",
                 text = "Alignment & Color",
                 values = { center = "Center", left = "Left", right = "Right" },
@@ -1968,7 +1968,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 getValue = SValRow("topNameBarBottom", false),
                 setValue = SSetRow("topNameBarBottom"),
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
             -- Custom rightmost (opens picker), class leftmost. Clicking switches topNameBarTextColorMode; the inactive one dims. Custom is added FIRST so it sits next to the dropdown.
             if not CludesUI._prebuilding then
                 local region = tnbRow3._leftRegion
@@ -2022,8 +2022,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 AddTNBSwatch(function()
                     local _, ct = UnitClass("player")
                     if ct and RAID_CLASS_COLORS[ct] then
-                        local cc = RAID_CLASS_COLORS[ct]
-                        return cc.r, cc.g, cc.b, 1
+                        local classColor = RAID_CLASS_COLORS[ct]
+                        return classColor.r, classColor.g, classColor.b, 1
                     end
                     return 1, 1, 1, 1
                 end, function() end, "class", false, "Class Color")
@@ -2031,7 +2031,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
 
             -- Attach Role Icons: the role icon sits on this bar, placed by the arrow cog
             local tnbRow4
-            tnbRow4, hgt = W:DualRow(hostFrame, posY, {
+            tnbRow4, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Attach Role Icons",
                 tooltip = "Places role icons on the Top Name Bar, in the same spot on every frame whether or not it shows a power bar.",
@@ -2041,7 +2041,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     CludesUI:RefreshPage()
                 end,
             }, CludesUI.BlankRowCfg())
-            posY = posY - hgt
+            cursorY = cursorY - height
             if not CludesUI._prebuilding then
                 CludesUI.BuildInlineCog(tnbRow4._leftRegion, {
                     title = "Role Icon Position",
@@ -2082,17 +2082,17 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         end -- close Top Name Bar hidden-while-disabled gate
 
         if onSection then
-            onSection("topNameBar", _secY, posY)
+            onSection("topNameBar", _secY, cursorY)
         end
     end -- not Party Frames kit
-    _secY = posY
+    _secY = cursorY
 
     -------------------------------------------------------------------
     --  FRIENDLY BOSS FRAMES (raid tab only)
     -------------------------------------------------------------------
     if not optionState._partyCtx then
-        _, hgt = W:SectionHeader(hostFrame, "FRIENDLY BOSS FRAMES", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "FRIENDLY BOSS FRAMES", cursorY)
+        cursorY = cursorY - height
 
         local function FBSet()
             local p = saved.profile
@@ -2107,7 +2107,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         end
         local FB_DISABLED_TIP = "This option requires Add Friendly Boss Group to be set to Healers or Always."
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "segmented",
             text = "Add Friendly Boss Group",
             values = { never = "Never", healers = "Healers", always = "Always" },
@@ -2138,7 +2138,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 CludesUI:RefreshPage()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Inline cog on the display dropdown: Show in Dungeons (opt-in;
         -- the group gate is raid-only without it). Dimmed while Never,
         -- like every row below the dropdown.
@@ -2169,13 +2169,13 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         end
         if FBEnabled() then
             -- Free Move Position: label left, Move Frames button right (Free Move only). Right slot: Boss Health Color.
-            row, hgt = W:DualRow(
+            row, height = W:DualRow(
                 hostFrame,
-                posY,
+                cursorY,
                 { type = "label", text = "Free Move Position" },
                 { type = "label", text = "Boss Health Color" }
             )
-            posY = posY - hgt
+            cursorY = cursorY - height
             do
                 local button = mod.RF_OptMoveFramesButton(row, row._leftRegion, {
                     isShown = mod.FB_IsMoverShown,
@@ -2248,7 +2248,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             end
 
             -- Row 3: size offset on top of the shared raid frame size
-            row, hgt = W:DualRow(hostFrame, posY, {
+            row, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Extra Width",
                 min = -50,
@@ -2283,19 +2283,19 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     end
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end -- close Friendly Boss Frames hidden-while-disabled gate
 
         if onSection then
-            onSection("friendlyBossFrames", _secY, posY)
+            onSection("friendlyBossFrames", _secY, cursorY)
         end
-        _secY = posY
+        _secY = cursorY
 
         -------------------------------------------------------------------
         --  EXTRA FRAMES (raid tab only)
         -------------------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, "EXTRA FRAMES", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "EXTRA FRAMES", cursorY)
+        cursorY = cursorY - height
 
         local function XFSet()
             local p = saved.profile
@@ -2309,7 +2309,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             return XFSet().showTanks == true or (CludesUIDB and CludesUIDB.extraFramesKey) ~= nil
         end
         -- Row 1: Add to Extra Group Hotkey (capture) | Show Tanks toggle
-        row, hgt = W:DualRow(hostFrame, posY, { type = "label", text = "Add to Extra Group Hotkey" }, {
+        row, height = W:DualRow(hostFrame, cursorY, { type = "label", text = "Add to Extra Group Hotkey" }, {
             type = "toggle",
             text = "Show Tanks in Extra Group",
             tooltip = "Automatically duplicates the raid's tanks into the Extra Frames group. Shares the frame cap with hotkey picks.",
@@ -2327,7 +2327,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 CludesUI:RefreshPage()
             end),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Inline cog on Show Tanks: tank auto-include options.
         if not CludesUI._prebuilding then
             local region = row._rightRegion
@@ -2398,7 +2398,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         -- Rows 2-4 are HIDDEN while unconfigured (no tanks toggle AND no hotkey); the triggers above rebuild when that state flips.
         if XFConfigured() then
             -- Row 2: Position | Free Move Position (Move Frames)
-            row, hgt = W:DualRow(hostFrame, posY, {
+            row, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = "Position",
                 values = { left = "Before First Group", right = "After Last Group", free = "Free Move" },
@@ -2416,7 +2416,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     CludesUI:RefreshPage(true)
                 end,
             }, { type = "label", text = "Free Move Position" })
-            posY = posY - hgt
+            cursorY = cursorY - height
             mod.RF_OptMoveFramesButton(row, row._rightRegion, {
                 isShown = mod.XF_IsMoverShown,
                 setShown = mod.XF_SetMoverShown,
@@ -2442,7 +2442,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
 
                 -- The wrap dropdown only offers the two directions perpendicular to the primary run, so a grow change forces a full rebuild to swap its value set.
                 local xfHoriz = (XFGrowDir() == "RIGHT" or XFGrowDir() == "LEFT")
-                row, hgt = W:DualRow(hostFrame, posY, {
+                row, height = W:DualRow(hostFrame, cursorY, {
                     type = "dropdown",
                     text = "Grow Direction",
                     tooltip = "Direction the frames are laid out.",
@@ -2475,7 +2475,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         XFReapply()
                     end,
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
                 do
                     local region = row._rightRegion
                     CludesUI.BuildInlineCog(region, {
@@ -2501,7 +2501,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             end -- Free Move only row
 
             -- Row 4: size offset on top of the shared raid frame size
-            row, hgt = W:DualRow(hostFrame, posY, {
+            row, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Extra Width",
                 min = -50,
@@ -2536,7 +2536,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     end
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
             -- Inline cog on Extra Width: Auto Resize Indicators (default on;
             -- off keeps indicators/auras at the real frames' base scale
             -- regardless of the extra frames' custom size).
@@ -2567,9 +2567,9 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         end -- close Extra Frames hidden-while-unconfigured gate
 
         if onSection then
-            onSection("extraFrames", _secY, posY)
+            onSection("extraFrames", _secY, cursorY)
         end
-        _secY = posY
+        _secY = cursorY
     end
 
     -------------------------------------------------------------------
@@ -2577,8 +2577,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
     -------------------------------------------------------------------
     -- Not a synced section: no onSection call, so the party tab never overlays it.
     do
-        _, hgt = W:SectionHeader(hostFrame, "PET FRAMES", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "PET FRAMES", cursorY)
+        cursorY = cursorY - height
 
         local function PFSet()
             local p = saved.profile
@@ -2618,7 +2618,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         end
         local BLANK = CludesUI.BlankRowCfg
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Pets",
             tooltip = "Adds your group's pets beside these frames, with their health, name, range and click-casting.",
@@ -2662,10 +2662,10 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 CludesUI:RefreshPage(PFPlacement() ~= before)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if PFEnabled() then
-            row, hgt = W:DualRow(hostFrame, posY, {
+            row, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Extra Width",
                 min = -50,
@@ -2698,11 +2698,11 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     PFRefreshPreview()
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             local placement = PFPlacement()
             if placement == "free" then
-                row, hgt = W:DualRow(hostFrame, posY, { type = "label", text = "Free Move Position" }, {
+                row, height = W:DualRow(hostFrame, cursorY, { type = "label", text = "Free Move Position" }, {
                     type = "dropdown",
                     text = "Growth Direction",
                     tooltip = "Match Frames grows the pets the same way as the frames.",
@@ -2723,7 +2723,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         mod.PF_PlaceMover(tabKey)
                     end,
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
                 mod.RF_OptMoveFramesButton(row, row._leftRegion, {
                     isShown = function()
                         return mod.PF_IsMoverShown(tabKey)
@@ -2738,7 +2738,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             elseif placement == "owner" then
                 -- Across the party frames' stack only: beside stacked frames, above or below
                 -- horizontal ones (the other sides hold the next frame).
-                row, hgt = W:DualRow(hostFrame, posY, {
+                row, height = W:DualRow(hostFrame, cursorY, {
                     type = "dropdown",
                     text = "Pet Side",
                     values = { right = "Right", left = "Left", above = "Above", below = "Below" },
@@ -2762,17 +2762,17 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         PFRefreshPreview()
                     end,
                 }, BLANK())
-                posY = posY - hgt
+                cursorY = cursorY - height
             end
         end
-        _secY = posY
+        _secY = cursorY
     end
 
     -------------------------------------------------------------------
     --  RANGE & TOOLTIP
     -------------------------------------------------------------------
-    heading, hgt = W:SectionHeader(hostFrame, "EXTRAS", posY)
-    posY = posY - hgt
+    heading, height = W:SectionHeader(hostFrame, "EXTRAS", cursorY)
+    cursorY = cursorY - height
     -- The Healer Mana Display's Move in Unlock Mode button, on the raid tab
     -- only: both tabs build this section and the display's settings are
     -- shared. Greyed while the mode is None, when the display has no mover.
@@ -2802,7 +2802,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         end
         return "outOfCombat"
     end
-    row, hgt = W:DualRow(hostFrame, posY, {
+    row, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Out of Range Alpha",
         min = 10,
@@ -2835,7 +2835,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         end,
         setValue = SSetRow("tooltipMode"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Cog: buff/HoT aura-icon tooltips (Buff Manager), hidden by default and opt-in here. This is the ONLY gate on the aura tip: the dropdown's tooltip mode governs the UNIT tooltip and must NOT veto an aura tip enabled here (see ns.RaidFrameTooltipAllowed).
     if not CludesUI._prebuilding then
         local region = row._rightRegion
@@ -2863,11 +2863,11 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     end
                     return "hidden"
                 end,
-                set = function(k)
-                    local val = k
-                    if k == "shown" then
+                set = function(keyName)
+                    local val = keyName
+                    if keyName == "shown" then
                         val = false
-                    elseif k == "hidden" then
+                    elseif keyName == "hidden" then
                         val = true
                     end
                     SSet("buffHideTooltips", val)
@@ -2898,7 +2898,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         end
     end
     local hmRow
-    hmRow, hgt = W:DualRow(hostFrame, posY, {
+    hmRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Healer Mana Display",
         tooltip = "Shows a mana percentage row for every healer in your group as its own movable text display. Position it in Layout Mode.",
@@ -2981,7 +2981,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             },
         },
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Inline cog (text settings) + preview eyeball on the toggle
     if not CludesUI._prebuilding then
         local region = hmRow._leftRegion
@@ -3026,8 +3026,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         local a = HMS().align
                         return (a == "RIGHT" or a == "CENTER") and a or "LEFT"
                     end,
-                    set = function(k)
-                        HMS().align = k
+                    set = function(keyName)
+                        HMS().align = keyName
                         HMRefresh()
                     end,
                 },
@@ -3040,8 +3040,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     get = function()
                         return HMS().growth == "UP" and "UP" or "DOWN"
                     end,
-                    set = function(k)
-                        HMS().growth = k
+                    set = function(keyName)
+                        HMS().growth = keyName
                         HMRefresh()
                     end,
                 },
@@ -3083,33 +3083,33 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
 
         local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
         local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-        local eyeBtn = CreateFrame("Button", nil, region)
-        eyeBtn:SetSize(26, 26)
-        eyeBtn:SetPoint("RIGHT", region._lastInline, "LEFT", -4, 0)
-        region._lastInline = eyeBtn
-        eyeBtn:SetFrameLevel(region:GetFrameLevel() + 5)
-        CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-        local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
+        local eyeButton = CreateFrame("Button", nil, region)
+        eyeButton:SetSize(26, 26)
+        eyeButton:SetPoint("RIGHT", region._lastInline, "LEFT", -4, 0)
+        region._lastInline = eyeButton
+        eyeButton:SetFrameLevel(region:GetFrameLevel() + 5)
+        CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+        local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
         eyeTex:SetTexture(EYE_VISIBLE)
         local function RefreshHMEye()
             eyeTex:SetTexture(mod._hmPreview and EYE_INVISIBLE or EYE_VISIBLE)
         end
         EYE.refreshHMEye = RefreshHMEye
-        eyeBtn:SetScript("OnClick", function()
+        eyeButton:SetScript("OnClick", function()
             if mod.HM_SetPreview then
                 mod.HM_SetPreview(not mod._hmPreview)
             end
             RefreshHMEye()
         end)
-        eyeBtn:SetScript("OnEnter", function(s)
+        eyeButton:SetScript("OnEnter", function(s)
             CludesUI.SetGlyphAlpha(s, 0.7)
             CludesUI.ShowWidgetTooltip(
                 s,
                 mod._hmPreview and "Hide the preview" or "Preview the display at its position"
             )
         end)
-        eyeBtn:SetScript("OnLeave", function(s)
+        eyeButton:SetScript("OnLeave", function(s)
             CludesUI.SetGlyphAlpha(s, 0.4)
             CludesUI.HideWidgetTooltip()
         end)
@@ -3201,7 +3201,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             }
         end
         local pgRow
-        pgRow, hgt = W:DualRow(hostFrame, posY, {
+        pgRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Player Group Label",
             tooltip = "Shows your raid group number in its own movable frame. Position it in Layout Mode.",
@@ -3227,8 +3227,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             disabledTooltip = "Player Group Label",
             swatches = PGModeSwatches("textColorMode", "textColor"),
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "multiSwatch",
             text = "Group Label Background",
             disabled = PGOff,
@@ -3254,7 +3254,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             disabledTooltip = "Player Group Label",
             swatches = PGModeSwatches("borderColorMode", "borderColor"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             local region = pgRow._leftRegion
             local function SizeRow(labelText, key)
@@ -3287,8 +3287,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         get = function()
                             return PGS().format == "full" and "full" or "number"
                         end,
-                        set = function(k)
-                            PGS().format = k
+                        set = function(keyName)
+                            PGS().format = keyName
                             PGRefresh()
                         end,
                     },
@@ -3341,37 +3341,37 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
 
             local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
             local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-            local eyeBtn = CreateFrame("Button", nil, region)
-            eyeBtn:SetSize(26, 26)
-            eyeBtn:SetPoint("RIGHT", region._lastInline, "LEFT", -4, 0)
-            region._lastInline = eyeBtn
-            eyeBtn:SetFrameLevel(region:GetFrameLevel() + 5)
-            CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-            local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
+            local eyeButton = CreateFrame("Button", nil, region)
+            eyeButton:SetSize(26, 26)
+            eyeButton:SetPoint("RIGHT", region._lastInline, "LEFT", -4, 0)
+            region._lastInline = eyeButton
+            eyeButton:SetFrameLevel(region:GetFrameLevel() + 5)
+            CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+            local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
             eyeTex:SetAllPoints()
             eyeTex:SetTexture(EYE_VISIBLE)
             local function RefreshPGEye()
                 eyeTex:SetTexture(mod._pgPreview and EYE_INVISIBLE or EYE_VISIBLE)
-                eyeBtn:SetEnabled(not PGOff())
-                CludesUI.SetGlyphAlpha(eyeBtn, PGOff() and 0.15 or 0.4)
+                eyeButton:SetEnabled(not PGOff())
+                CludesUI.SetGlyphAlpha(eyeButton, PGOff() and 0.15 or 0.4)
             end
             EYE.refreshPGEye = RefreshPGEye
             CludesUI.RegisterWidgetRefresh(RefreshPGEye)
             RefreshPGEye()
-            eyeBtn:SetScript("OnClick", function()
+            eyeButton:SetScript("OnClick", function()
                 if mod.PG_SetPreview then
                     mod.PG_SetPreview(not mod._pgPreview)
                 end
                 RefreshPGEye()
             end)
-            eyeBtn:SetScript("OnEnter", function(s)
+            eyeButton:SetScript("OnEnter", function(s)
                 CludesUI.SetGlyphAlpha(s, 0.7)
                 CludesUI.ShowWidgetTooltip(
                     s,
                     mod._pgPreview and "Hide the preview" or "Preview the label at its position"
                 )
             end)
-            eyeBtn:SetScript("OnLeave", function(s)
+            eyeButton:SetScript("OnLeave", function(s)
                 CludesUI.SetGlyphAlpha(s, 0.4)
                 CludesUI.HideWidgetTooltip()
             end)
@@ -3383,7 +3383,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
     end
 
     -- Hide Blizzard Party Panel shares the exact global setting and apply function as Quality of Life's Hide Blizzard Elements > Party Panel (CludesUIDB.hideBlizzardPartyFrame -> CludesUI._applyHideBlizzardPartyFrame): one setting, changeable on either page. Off when unset.
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Hide Blizzard Party Panel",
         tooltip = "Hides the collapsed Blizzard party/raid sidebar panel on the side of the screen.",
@@ -3433,10 +3433,10 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             },
         },
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Right-click + drag over a raid/party frame turns the camera (mouselook).
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Right Mouse Camera Unlock",
         tooltip = "Allows free camera movement while holding and dragging right mouse button over raid and party frames. Right-click tap still opens the unit menu.",
@@ -3463,12 +3463,12 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             ReloadAndUpdate()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     if onSection then
-        onSection("rangeTooltip", _secY, posY)
+        onSection("rangeTooltip", _secY, cursorY)
     end
-    return posY
+    return cursorY
 end
 
 -- Used by CUI_RaidFrames_Options.lua

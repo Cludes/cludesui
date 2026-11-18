@@ -203,13 +203,13 @@ local function ReadTree()
                     end
                 end
                 if half then
-                    local hgt = halves[half]
-                    hgt[#hgt + 1] = node
-                    if not hgt.minX or node.x < hgt.minX then
-                        hgt.minX = node.x
+                    local height = halves[half]
+                    height[#height + 1] = node
+                    if not height.minX or node.x < height.minX then
+                        height.minX = node.x
                     end
-                    if not hgt.maxX or node.x > hgt.maxX then
-                        hgt.maxX = node.x
+                    if not height.maxX or node.x > height.maxX then
+                        height.maxX = node.x
                     end
                 else
                     free[#free + 1] = node
@@ -222,8 +222,8 @@ local function ReadTree()
     for _, node in ipairs(free) do
         local c = RangeDistance(halves[CLASS_HALF], node.x)
         local s = RangeDistance(halves[SPEC_HALF], node.x)
-        local hgt = halves[(s < c) and SPEC_HALF or CLASS_HALF]
-        hgt[#hgt + 1] = node
+        local height = halves[(s < c) and SPEC_HALF or CLASS_HALF]
+        height[#height + 1] = node
     end
     return halves, specName
 end
@@ -263,7 +263,7 @@ end
 -------------------------------------------------------------------------------
 --  Popup state
 -------------------------------------------------------------------------------
-local dimmer, dialog, titleFS, hintFS, statusFS, offFrame
+local shade, dialog, titleFS, hintFS, statusFS, offFrame
 -- [i] = { frame, label, area, empty, lines = {}, buttons = {}, used = 0 }, one per tree
 -- (CLASS_HALF / SPEC_HALF, or WoW Forever's trees in order). Each panel keeps its own
 -- button pool so a button never changes parent (its border's frame level is fixed
@@ -473,12 +473,12 @@ local function LayoutPanel(panelFrame, nodes, span)
             local parts = num.choice and 2 or 1
             local wid = NODE / parts
             num.btns = {}
-            for k = 1, parts do
-                local e = num.entries[k]
+            for keyName = 1, parts do
+                local e = num.entries[keyName]
                 local button = AcquireButton(panelFrame)
                 button:SetSize(wid, NODE)
                 button:ClearAllPoints()
-                button:SetPoint("TOPLEFT", area, "TOPLEFT", leftX + (k - 1) * wid, -topY)
+                button:SetPoint("TOPLEFT", area, "TOPLEFT", leftX + (keyName - 1) * wid, -topY)
                 button.icon:SetTexture(e.icon)
                 if num.choice then
                     button.icon:SetTexCoord(0.27, 0.73, 0.08, 0.92)
@@ -488,7 +488,7 @@ local function LayoutPanel(panelFrame, nodes, span)
                 button.node = num
                 button.entryID = num.choice and e.entryID or nil
                 button.spellID = e.spellID
-                num.btns[k] = button
+                num.btns[keyName] = button
             end
         end
 
@@ -594,11 +594,11 @@ end
 -- scale is re-fitted to the new height, so a long list still fits the screen.
 LayoutOffTree = function()
     local num = #offTree
-    local hgt = POPUP_H
+    local height = POPUP_H
     if num > 0 then
         local rowList = math.ceil(num / CHIP_COLS)
         local stripH = OFF_LABEL_H + rowList * CHIP_H + (rowList - 1) * CHIP_GAP_Y
-        hgt = POPUP_H + OFF_PAD + stripH
+        height = POPUP_H + OFF_PAD + stripH
         offFrame:SetHeight(stripH)
         local ar, ag, ab = CludesUI.GetAccentColor()
         for idx = 1, num do
@@ -633,9 +633,9 @@ LayoutOffTree = function()
     for idx = num + 1, #chips do
         chips[idx]:Hide()
     end
-    dialog:SetHeight(hgt)
+    dialog:SetHeight(height)
     dialog:SetScale(CludesUI.PopupBump(POPUP_BUMP))
-    CludesUI.ClampPopupToScreen(dialog, POPUP_W, hgt)
+    CludesUI.ClampPopupToScreen(dialog, POPUP_W, height)
     -- Also runs while shown (a chip removed, Clear All): refit the outline.
     dialog._brd:Fit()
 end
@@ -687,7 +687,7 @@ local function Close()
     -- A chip hidden under the cursor never gets OnLeave; the modal dimmer means
     -- only this popup can own the widget tooltip here.
     CludesUI.HideWidgetTooltip(true)
-    dimmer:Hide()
+    shade:Hide()
 end
 
 local function Commit()
@@ -717,7 +717,7 @@ local function Build()
     -- density), and registered so the Panel Scale slider rescales it. Clamped: the
     -- trees side by side are wide, and the dimmer eats every click behind it, so an
     -- overflowing popup would strand its buttons off-screen.
-    dimmer, dialog = CludesUI.BuildPopupShell("CUI_TalentConditions", {
+    shade, dialog = CludesUI.BuildPopupShell("CUI_TalentConditions", {
         w = POPUP_W,
         h = POPUP_H,
         bump = POPUP_BUMP,
@@ -726,8 +726,8 @@ local function Build()
         onEscape = Close,
         onDimmerDown = Close,
     })
-    dimmer:Hide()
-    CludesUI._popupFrames[#CludesUI._popupFrames + 1] = { popup = dialog, dimmer = dimmer }
+    shade:Hide()
+    CludesUI._popupFrames[#CludesUI._popupFrames + 1] = { popup = dialog, dimmer = shade }
 
     titleFS = dialog:CreateFontString(nil, "OVERLAY")
     SetTCFont(titleFS, 16)
@@ -803,7 +803,7 @@ local function Build()
 
     -- Hooked, not set: hide hooks the popup shell or the controller cursor put
     -- on this dimmer must survive (with none, this is its only handler).
-    dimmer:HookScript("OnHide", function()
+    shade:HookScript("OnHide", function()
         onConfirm = nil
     end)
 end
@@ -856,6 +856,6 @@ function CludesUI.ShowTalentConditionsPopup(options)
     LayoutOffTree()
     RepaintAll()
     UpdateStatus()
-    CludesUI.PadPopupOpen(dimmer, dialog, dialog._cancelBtn, Close) -- controller cursor
-    dimmer:Show()
+    CludesUI.PadPopupOpen(shade, dialog, dialog._cancelBtn, Close) -- controller cursor
+    shade:Show()
 end

@@ -49,8 +49,8 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     local environ = mod._CURB_OptEnv
     local DB, Pix = environ.DB, environ.PP
     local W = CludesUI.Widgets
-    local posY = yOffset
-    local _, hgt
+    local cursorY = yOffset
+    local _, height
 
     hostFrame._showRowDivider = true
 
@@ -121,8 +121,8 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     end
 
     local _sec
-    _sec, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
-    posY = posY - hgt
+    _sec, height = W:SectionHeader(hostFrame, "LAYOUT", cursorY)
+    cursorY = cursorY - height
     CludesUI.BuildSectionUnlockJump(
         _sec,
         { key = "ERB_SwingTimer", disabled = stOff, disabledTooltip = ST_TIP }
@@ -133,7 +133,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
 
     -- Row: Enable Swing Timer (+ position cog) | Frame Strata
     local enableRow
-    enableRow, hgt = W:DualRow(hostFrame, posY, {
+    enableRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Enable Swing Timer",
         tooltip = "One bar per weapon that can swing, each filling over the time to the next auto attack.",
@@ -150,7 +150,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         getValue = Getter("frameStrata", "MEDIUM"),
         setValue = Setter("frameStrata"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Inline position cog (X/Y + unlock) on Enable, as on the GCD Bar page
     if not CludesUI._prebuilding then
         local region = enableRow._leftRegion
@@ -232,7 +232,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     -- Row: Row Height | Width. Height is per row; the mover reports the whole stack.
     local shDis, shTip, shRaw = CludesUI.MatchGuard("ERB_SwingTimer", "Height", stOff, ST_TIP)
     local swDis, swTip, swRaw = CludesUI.MatchGuard("ERB_SwingTimer", "Width", stOff, ST_TIP)
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Row Height",
         min = 1,
@@ -256,11 +256,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         getValue = Getter("width", 220),
         setValue = Setter("width"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Row: Row Spacing | Text Size (+ text offsets cog)
     local stTextRow
-    stTextRow, hgt = W:DualRow(hostFrame, posY, {
+    stTextRow, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         pixel = true,
         text = "Row Spacing",
@@ -283,7 +283,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         getValue = Getter("textSize", 11),
         setValue = Setter("textSize"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         local function OffsetRow(labelText, key)
             return {
@@ -321,7 +321,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
 
     -- Row: Visibility (shared checklist) | Hide When Idle (+ idle fill cog)
     local stShowRow
-    stShowRow, hgt = CludesUI.BuildVisibilityRow(W, hostFrame, posY, {
+    stShowRow, height = CludesUI.BuildVisibilityRow(W, hostFrame, cursorY, {
         getStore = function()
             local p = DB()
             return p and p.swingTimer
@@ -345,7 +345,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         getValue = Getter("hideWhenIdle"),
         setValue = Setter("hideWhenIdle"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     -- Inline cog on Visibility: Forms and Talents. A druid picks the forms the
     -- timer shows in (the per-form map the other bars' cogs write); any class can
     -- require talents, saved per class so one profile serves every class. While
@@ -443,25 +443,25 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         })
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 16)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 16)
+    cursorY = cursorY - height
 
-    _sec, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
-    posY = posY - hgt
+    _sec, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
+    cursorY = cursorY - height
 
     -- Global Settings > Style: the rows wear the Resource Bars row's stock
     -- frame (ns.ST_Style), which gates the CUI border rows as on the other
     -- bars.
     local stStock = mod.ST_Style() ~= "cui"
     local stClassic = stStock and mod.ERB_BarsClassic()
-    local function Gate(conf)
+    local function Gate(rowConf)
         if stStock then
-            return CludesUI.BlizzStyle.Gate("resourcebars", conf)
+            return CludesUI.BlizzStyle.Gate("resourcebars", rowConf)
         end
-        return conf
+        return rowConf
     end
     if stStock then
-        posY = CludesUI.BlizzStyle.Note(hostFrame, posY, "resourcebars")
+        cursorY = CludesUI.BlizzStyle.Note(hostFrame, cursorY, "resourcebars")
     end
 
     -- Row: Border Style | Border Size (+ inline color swatch + offset cog).
@@ -469,9 +469,9 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     do
         local btValues, btOrder = CludesUI.GetBorderTextureDropdown()
         local bsRow
-        bsRow, hgt = W:DualRow(
+        bsRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Gate({
                 type = "dropdown",
                 text = "Border Style",
@@ -556,12 +556,12 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     end,
                 }))
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
         -- Width Offset | Height Offset: own row while a textured style is selected.
         do
             local p = DB()
-            local tex = p and p.swingTimer.borderTexture or "solid"
-            if tex ~= "solid" and tex ~= "" then
+            local texture = p and p.swingTimer.borderTexture or "solid"
+            if texture ~= "solid" and texture ~= "" then
                 local function step()
                     local p = DB()
                     return p and (p.swingTimer.borderSize or 0) or 0
@@ -605,8 +605,8 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         CludesUI:RefreshPage()
                     end,
                 })
-                _, hgt = W:DualRow(hostFrame, posY, Gate(ocfgL), Gate(ocfgR))
-                posY = posY - hgt
+                _, height = W:DualRow(hostFrame, cursorY, Gate(ocfgL), Gate(ocfgR))
+                cursorY = cursorY - height
             end
         end
         -- Corner Radius cog on the size slider (right region), the Border color
@@ -781,8 +781,8 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             })
             local function UpdateCogVis()
                 local p = DB()
-                local tex = p and p.swingTimer.borderTexture or "solid"
-                if tex == "solid" or stClassic then
+                local texture = p and p.swingTimer.borderTexture or "solid"
+                if texture == "solid" or stClassic then
                     cogBtn:Hide()
                 else
                     cogBtn:Show()
@@ -842,7 +842,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         }
     end
     local colorRow
-    colorRow, hgt = W:DualRow(hostFrame, posY, {
+    colorRow, height = W:DualRow(hostFrame, cursorY, {
         type = "multiSwatch",
         text = "Color",
         disabled = stOff,
@@ -888,9 +888,9 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 tooltip = "Class Colored",
                 getValue = function()
                     local _, classFile = UnitClass("player")
-                    local cc = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
-                    if cc then
-                        return cc.r, cc.g, cc.b, 1
+                    local classColor = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
+                    if classColor then
+                        return classColor.r, classColor.g, classColor.b, 1
                     end
                     return 1, 0.70, 0, 1
                 end,
@@ -931,7 +931,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             RefreshST()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         local region = colorRow._leftRegion
         CludesUI.BuildInlineCog(region, {
@@ -982,7 +982,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     end
 
     -- Row: Bar Texture | Deplete Fill
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Bar Texture",
         disabled = stOff,
@@ -1000,11 +1000,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         getValue = Getter("depleteFill"),
         setValue = Setter("depleteFill"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Row: Show Spark | Tracked Weapons (checkbox dropdown, built below)
     local sparkRow
-    sparkRow, hgt = W:DualRow(hostFrame, posY, {
+    sparkRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Spark",
         tooltip = "Show a small glowing spark that moves along the leading edge of the fill while a swing is running.",
@@ -1025,15 +1025,15 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         end,
         setValue = function() end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         -- Not tied to Show Spark: a combined off hand's spark shows either way.
         -- Colours: store keys <key>SparkR/G/B/A, unset by default; each swatch
         -- shows the colour the bar paints (ST_SparkColor). A pick of the unset
         -- colour (white, or a combined off hand's fill) stores nothing, so the
         -- picker's Cancel leaves an unset spark following its default.
-        local function Near(posX, posY)
-            return math.abs(posX - posY) < 0.002
+        local function Near(posX, cursorY)
+            return math.abs(posX - cursorY) < 0.002
         end
         local function SparkSwatch(name, key)
             local prefixText = key .. "Spark"
@@ -1114,33 +1114,33 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             { key = "showOH", label = "Off Hand" },
             { key = "showR", label = "Ranged" },
         }
-        local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
             region,
             210,
             region:GetFrameLevel() + 2,
             WEAPON_ITEMS,
-            function(k)
+            function(keyName)
                 local p = DB()
-                return not p or p.swingTimer[k] ~= false
+                return not p or p.swingTimer[keyName] ~= false
             end,
-            function(k, val)
+            function(keyName, val)
                 local p = DB()
                 if not p then
                     return
                 end
-                p.swingTimer[k] = val
+                p.swingTimer[keyName] = val
                 -- The cog's Combine Hands greys out while a hand is off.
                 RefreshST()
                 CludesUI:RefreshPage()
             end
         )
-        Pix.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
-        region._control = cbDD
+        Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+        region._control = checkDrop
         region._lastInline = nil
         local function UpdateWeaponsDD()
             local off = stOff()
-            cbDD:SetAlpha(off and 0.3 or 1)
-            cbDD:EnableMouse(not off)
+            checkDrop:SetAlpha(off and 0.3 or 1)
+            checkDrop:EnableMouse(not off)
             cbDDRefresh()
         end
         UpdateWeaponsDD()
@@ -1209,7 +1209,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     end
 
     -- Row: Show Time | Show Weapon Label
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Time",
         tooltip = "Show the seconds left to the next swing on each row.",
@@ -1232,7 +1232,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         end,
         setValue = Setter("showLabel"),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- A cog's colour row: store keys prefix .. R/G/B/A, `def` the fallback
     -- {r, g, b, a}; `off` (optional) greys it out with `offTip`.
@@ -1251,14 +1251,14 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 if not g then
                     return def[1], def[2], def[3], def[4]
                 end
-                local k = prefixText
+                local keyName = prefixText
                 if shared and g[prefixText .. "R"] == nil then
-                    k = shared
+                    keyName = shared
                 end
-                return g[k .. "R"] or def[1],
-                    g[k .. "G"] or def[2],
-                    g[k .. "B"] or def[3],
-                    g[k .. "A"] or def[4]
+                return g[keyName .. "R"] or def[1],
+                    g[keyName .. "G"] or def[2],
+                    g[keyName .. "B"] or def[3],
+                    g[keyName .. "A"] or def[4]
             end,
             set = function(r, gg, b, a)
                 local p = DB()
@@ -1287,7 +1287,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
 
     -- Row: Range Check (+ out-of-range alpha cog) | Attack State (+ colors cog)
     local stateRow
-    stateRow, hgt = W:DualRow(hostFrame, posY, {
+    stateRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Range Check",
         tooltip = "Dim a row and paint its text red while the current target is out of that weapon's auto attack range.",
@@ -1309,7 +1309,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         getValue = Getter("attackState", "queued"),
         setValue = Setter("attackState", true),
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(stateRow._rightRegion, {
             disabled = stOff,
@@ -1412,7 +1412,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
     -- Row: Movement Guide (+ GO / STILL colors and Text Cue cog) | (blank: last
     -- row of the section)
     local guideRow
-    guideRow, hgt = W:DualRow(hostFrame, posY, {
+    guideRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Movement Guide",
         tooltip = "Marks when you can move (GO) and, for wand Shoot and Auto Shot, when you must stand still (STILL).",
@@ -1423,7 +1423,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         getValue = Getter("moveGuide", "off"),
         setValue = Setter("moveGuide", true),
     }, CludesUI.BlankRowCfg())
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(guideRow._leftRegion, {
             disabled = function()
@@ -1463,5 +1463,5 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         })
     end
 
-    return math.abs(posY)
+    return math.abs(cursorY)
 end

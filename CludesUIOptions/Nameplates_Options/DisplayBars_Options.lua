@@ -19,7 +19,7 @@ end -- module disabled: no options page
 local CreateFrame = CludesUI._Pool.CreateFrame
 local PoolGen, PoolIsIdle = CludesUI._Pool.Gen, CludesUI._Pool.IsIdle
 
-local function BuildDisplayBars(hostFrame, posY, context)
+local function BuildDisplayBars(hostFrame, cursorY, context)
     local environ = mod._NPO_OptEnv
     local BAR_W, DB, DBColor, DBVal = environ.BAR_W, environ.DB, environ.DBColor, environ.DBVal
     local defaultSet, displayCastIcons, hbtOrder, hbtValues =
@@ -35,17 +35,17 @@ local function BuildDisplayBars(hostFrame, posY, context)
         context.LiveApplyAuraText, context.RefreshAllTextures, context.ShowCogPopup
     local timerPosOrder, timerPosValues = context.timerPosOrder, context.timerPosValues
     local W = context.W
-    local _, hgt
+    local _, height
 
     -----------------------------------------------------------------------
     --  HEALTH BAR
     -----------------------------------------------------------------------
     local healthBarHeader
-    healthBarHeader, hgt = W:SectionHeader(hostFrame, "HEALTH AND CAST BAR", posY)
-    posY = posY - hgt
+    healthBarHeader, height = W:SectionHeader(hostFrame, "HEALTH AND CAST BAR", cursorY)
+    cursorY = cursorY - height
 
     local healthBarHeightRow
-    healthBarHeightRow, hgt = W:DualRow(hostFrame, posY, {
+    healthBarHeightRow, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Health Bar Width",
         min = 100,
@@ -114,14 +114,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
             UpdatePreview()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     local function castIconOff()
         return DB() and DB().showCastIcon == false
     end
 
     local castBarHeightRow
-    castBarHeightRow, hgt = W:DualRow(hostFrame, posY, {
+    castBarHeightRow, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Cast Bar Height",
         min = 10,
@@ -157,14 +157,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
             CludesUI:RefreshPage()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     local showCastIconRow = castBarHeightRow
 
     -- Inline cog on Spell Icon (right region) for Scale
     if not CludesUI._prebuilding then
-        local rightRgn = castBarHeightRow._rightRegion
-        CludesUI.BuildInlineCog(rightRgn, {
-            anchorTo = rightRgn._control,
+        local rightRegion = castBarHeightRow._rightRegion
+        CludesUI.BuildInlineCog(rightRegion, {
+            anchorTo = rightRegion._control,
             disabled = castIconOff,
             disabledTooltip = "Spell Icon",
             title = "Spell Icon Settings",
@@ -348,9 +348,9 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
     -- Cast Background Opacity (+ swatch) | Cast Bar Border (+ swatch)
     local castBgRow
-    castBgRow, hgt = W:DualRow(
+    castBgRow, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         mod.NP_BlizzOnlyGate({
             type = "slider",
             text = "Cast Background",
@@ -386,9 +386,9 @@ local function BuildDisplayBars(hostFrame, posY, context)
             end,
         })
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
-        local leftRgn = castBgRow._leftRegion
+        local leftRegion = castBgRow._leftRegion
         local castBgColorGet = function()
             local c = (DB() and DB().castBgColor) or defaultSet.castBgColor
             return c.r, c.g, c.b
@@ -402,15 +402,15 @@ local function BuildDisplayBars(hostFrame, posY, context)
             UpdatePreview()
         end
         local castBgSwatch, castBgUpdateSwatch = CludesUI.BuildColorSwatch(
-            leftRgn,
-            leftRgn:GetFrameLevel() + 5,
+            leftRegion,
+            leftRegion:GetFrameLevel() + 5,
             castBgColorGet,
             castBgColorSet,
             nil,
             20
         )
-        Pix.Point(castBgSwatch, "RIGHT", leftRgn._control, "LEFT", -12, 0)
-        leftRgn._lastInline = castBgSwatch
+        Pix.Point(castBgSwatch, "RIGHT", leftRegion._control, "LEFT", -12, 0)
+        leftRegion._lastInline = castBgSwatch
         CludesUI.RegisterWidgetRefresh(function()
             castBgUpdateSwatch()
         end)
@@ -420,7 +420,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
     end
     -- Inline color swatch on Cast Bar Border (right region)
     if not CludesUI._prebuilding then
-        local rightRgn = castBgRow._rightRegion
+        local rightRegion = castBgRow._rightRegion
         local castBorderColorGet = function()
             local c = (DB() and DB().castBorderColor) or defaultSet.castBorderColor
             return c.r, c.g, c.b
@@ -431,15 +431,15 @@ local function BuildDisplayBars(hostFrame, posY, context)
             UpdatePreview()
         end
         local cbSwatch, cbUpdateSwatch = CludesUI.BuildColorSwatch(
-            rightRgn,
-            rightRgn:GetFrameLevel() + 5,
+            rightRegion,
+            rightRegion:GetFrameLevel() + 5,
             castBorderColorGet,
             castBorderColorSet,
             nil,
             20
         )
-        Pix.Point(cbSwatch, "RIGHT", rightRgn._control, "LEFT", -12, 0)
-        rightRgn._lastInline = cbSwatch
+        Pix.Point(cbSwatch, "RIGHT", rightRegion._control, "LEFT", -12, 0)
+        rightRegion._lastInline = cbSwatch
         CludesUI.RegisterWidgetRefresh(function()
             cbUpdateSwatch()
         end)
@@ -448,7 +448,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
     -- Cast Timer: position dropdown (None/Right/Left), styled like the duration dropdowns. "None" hides it; Right/Left choose the side (reserving space, pushing shared-side cast text); Size/X/Y live in the inline cog.
     local castTimerRow
-    castTimerRow, hgt = W:DualRow(hostFrame, posY, {
+    castTimerRow, height = W:DualRow(hostFrame, cursorY, {
         type = "segmented",
         text = "Cast Timer",
         values = { none = "None", right = "Right", left = "Left" },
@@ -495,9 +495,9 @@ local function BuildDisplayBars(hostFrame, posY, context)
             UpdatePreview()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
-        local leftRgn = castTimerRow._leftRegion
+        local leftRegion = castTimerRow._leftRegion
         local ctColorGet = function()
             local c = (DB() and DB().castTimerColor) or defaultSet.castTimerColor
             return c.r, c.g, c.b
@@ -513,7 +513,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
         end
 
         -- Inline cog for Cast Timer Size / X / Y
-        CludesUI.BuildInlineCog(leftRgn, {
+        CludesUI.BuildInlineCog(leftRegion, {
             isOpen = CogPopupOpen,
             show = function(self)
                 ShowCogPopup(self, {
@@ -550,28 +550,28 @@ local function BuildDisplayBars(hostFrame, posY, context)
             end,
         })
         local ctSwatch, ctUpdateSwatch =
-            CludesUI.BuildColorSwatch(leftRgn, leftRgn:GetFrameLevel() + 5, ctColorGet, ctColorSet, nil, 20)
-        Pix.Point(ctSwatch, "RIGHT", leftRgn._lastInline or leftRgn._control, "LEFT", -8, 0)
-        leftRgn._lastInline = ctSwatch
+            CludesUI.BuildColorSwatch(leftRegion, leftRegion:GetFrameLevel() + 5, ctColorGet, ctColorSet, nil, 20)
+        Pix.Point(ctSwatch, "RIGHT", leftRegion._lastInline or leftRegion._control, "LEFT", -8, 0)
+        leftRegion._lastInline = ctSwatch
         CludesUI.RegisterWidgetRefresh(function()
             ctUpdateSwatch()
         end)
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     -----------------------------------------------------------------------
     --  CAST COLORS AND EFFECTS
     -----------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, SECTION_CASTBAR, posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, SECTION_CASTBAR, cursorY)
+    cursorY = cursorY - height
 
     -- Cast Color ---- Kick Ready Mid-Cast Hint
     local kickHintValues = { none = "None", tick = "Tick", tickbar = "Tick + Bar" }
     local kickHintOrder = { "none", "tick", "tickbar" }
     local castColorRow
-    castColorRow, hgt = W:DualRow(hostFrame, posY, {
+    castColorRow, height = W:DualRow(hostFrame, cursorY, {
         type = "multiSwatch",
         text = "Cast Color",
         swatches = {
@@ -670,13 +670,13 @@ local function BuildDisplayBars(hostFrame, posY, context)
             end)
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Inline mid-cast colour swatch on the Hint dropdown; greys out unless "Tick + Bar" is selected, since the colour only applies to the bar.
     if not CludesUI._prebuilding then
-        local rightRgn = castColorRow._rightRegion
-        local ctrl = rightRgn and rightRgn._control
-        if ctrl and CludesUI.BuildColorSwatch then
+        local rightRegion = castColorRow._rightRegion
+        local control = rightRegion and rightRegion._control
+        if control and CludesUI.BuildColorSwatch then
             local function midColorOff()
                 local saved = DB()
                 local enabled = saved and saved.interruptMidCastEnabled
@@ -686,7 +686,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 return not enabled
             end
             local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
-                rightRgn,
+                rightRegion,
                 castColorRow:GetFrameLevel() + 3,
                 function()
                     local c = DB().interruptMidCastColor or defaultSet.interruptMidCastColor
@@ -699,8 +699,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 nil,
                 20
             )
-            Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -12, 0)
-            rightRgn._lastInline = colorSwatch
+            Pix.Point(colorSwatch, "RIGHT", control, "LEFT", -12, 0)
+            rightRegion._lastInline = colorSwatch
             colorSwatch:SetScript("OnEnter", function(s)
                 CludesUI.ShowWidgetTooltip(s, "Interrupt Ready Mid-Cast")
             end)
@@ -720,8 +720,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
     -- Inline cog beside the Cast Color swatches: Show Shield Icon
     if not CludesUI._prebuilding then
-        local rgn = castColorRow._leftRegion
-        CludesUI.BuildInlineCog(rgn, {
+        local region = castColorRow._leftRegion
+        CludesUI.BuildInlineCog(region, {
             tip = "Cast Color Settings",
             title = "Cast Color",
             rows = {
@@ -815,9 +815,9 @@ local function BuildDisplayBars(hostFrame, posY, context)
         local impDesc = npImpCastGlowDesc
 
         local impGlowRow
-        impGlowRow, hgt = W:DualRow(
+        impGlowRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             GO.DropdownSpec(
                 impDesc,
                 "Important Cast Glow",
@@ -829,26 +829,26 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 "Show a glow on the cast bar when the enemy's cast is targeting you."
             )
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if not CludesUI._prebuilding then
             -- Icon-sized preview in each inline chain; -12: the widest FlipBook
             -- styles overhang ~8px per side.
-            local function AttachGlow(rgn, desc)
-                GO.AttachInline(rgn, desc)
-                local pv = GO.BuildPreview(rgn, desc, {
+            local function AttachGlow(region, desc)
+                GO.AttachInline(region, desc)
+                local preview = GO.BuildPreview(region, desc, {
                     bar = false,
                     width = 26,
                     height = 26,
                     icon = function()
                         return displayCastIcons[optionState._previewCastIconIdx or 1]
                     end,
-                    anchor = rgn._lastInline,
+                    anchor = region._lastInline,
                     x = -12,
                 })
-                if pv then
-                    pv:SetFrameLevel(rgn:GetFrameLevel() + 5)
-                    rgn._lastInline = pv
+                if preview then
+                    preview:SetFrameLevel(region:GetFrameLevel() + 5)
+                    region._lastInline = preview
                 end
             end
             AttachGlow(impGlowRow._leftRegion, impDesc)
@@ -917,7 +917,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 end
                 return nil
             end
-            row3, hgt = W:DualRow(hostFrame, posY, {
+            row3, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Focus Text Reminders",
                 tooltip = 'Display the word "FOCUS" below caster/miniboss mobs in M+ if you have not set your focus. This is the same setting as in the FocusKick bar options. Disabled for specs with no kick.',
@@ -936,23 +936,23 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     CludesUI:RefreshPage()
                 end,
             }, flashCfg)
-            posY = posY - hgt
+            cursorY = cursorY - height
             swatchRegion = row3._rightRegion
-            _, hgt = W:DualRow(hostFrame, posY, inFrontCfg, CludesUI.BlankRowCfg())
-            posY = posY - hgt
+            _, height = W:DualRow(hostFrame, cursorY, inFrontCfg, CludesUI.BlankRowCfg())
+            cursorY = cursorY - height
         else
-            row3, hgt = W:DualRow(hostFrame, posY, flashCfg, inFrontCfg)
-            posY = posY - hgt
+            row3, height = W:DualRow(hostFrame, cursorY, flashCfg, inFrontCfg)
+            cursorY = cursorY - height
             swatchRegion = row3._leftRegion
         end
 
         -- Inline flash colour swatch on the Show Interrupted Flash Effect toggle; greys out when disabled.
         if not CludesUI._prebuilding then
-            local rgn = swatchRegion
-            local ctrl = rgn and rgn._control
-            if ctrl and CludesUI.BuildColorSwatch then
+            local region = swatchRegion
+            local control = region and region._control
+            if control and CludesUI.BuildColorSwatch then
                 local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
-                    rgn,
+                    region,
                     row3:GetFrameLevel() + 3,
                     function()
                         local c = DB().interruptedFlashColor or defaultSet.interruptedFlashColor
@@ -965,8 +965,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     nil,
                     20
                 )
-                Pix.Point(colorSwatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -12, 0)
-                rgn._lastInline = colorSwatch
+                Pix.Point(colorSwatch, "RIGHT", region._lastInline or control, "LEFT", -12, 0)
+                region._lastInline = colorSwatch
                 colorSwatch:SetScript("OnEnter", function(s)
                     CludesUI.ShowWidgetTooltip(s, "Interrupted Flash Colour")
                 end)
@@ -989,23 +989,23 @@ local function BuildDisplayBars(hostFrame, posY, context)
         end
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     -----------------------------------------------------------------------
     --  TARGET, FOCUS & HOVER EFFECTS
     -----------------------------------------------------------------------
     local tfxHeader
-    tfxHeader, hgt = W:SectionHeader(hostFrame, "TARGET, FOCUS & HOVER EFFECTS", posY)
-    posY = posY - hgt
+    tfxHeader, height = W:SectionHeader(hostFrame, "TARGET, FOCUS & HOVER EFFECTS", cursorY)
+    cursorY = cursorY - height
 
     local targetGlowRow
     -- Build the arrow-style dropdown options from the shared style table.
     local arrowVals = { none = "None" }
     local arrowOrd = { "none" }
-    for _, k in ipairs(mod.TARGET_ARROW_ORDER) do
-        arrowVals[k] = mod.TARGET_ARROW_STYLES[k].label
-        arrowOrd[#arrowOrd + 1] = k
+    for _, keyName in ipairs(mod.TARGET_ARROW_ORDER) do
+        arrowVals[keyName] = mod.TARGET_ARROW_STYLES[keyName].label
+        arrowOrd[#arrowOrd + 1] = keyName
     end
     -- Preview the right-arrow texture on the right of each dropdown row.
     arrowVals._menuOpts = {
@@ -1026,7 +1026,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             return math.floor(st.w * 24 / 16 + 0.5)
         end,
     }
-    targetGlowRow, hgt = W:DualRow(hostFrame, posY, {
+    targetGlowRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Target Effect",
         values = { __placeholder = "..." },
@@ -1059,16 +1059,16 @@ local function BuildDisplayBars(hostFrame, posY, context)
             UpdatePreview()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Target Effect: multi-select checkbox dropdown (CUI Glow/Border Color/Highlight), independent toggles; data model live-converts from the legacy targetGlowStyle string (see ns.GetTargetGlow* in the core file).
     local refreshTargetBorderSwatch -- fwd decl; assigned when the swatch builds
     local refreshTargetGlowSwatch -- fwd decl; assigned when the glow swatch builds
     local refreshTargetHighlightCog -- fwd decl; assigned when the cog builds
     if not CludesUI._prebuilding then
-        local leftRgn = targetGlowRow._leftRegion
-        if leftRgn._control then
-            leftRgn._control:Hide()
+        local leftRegion = targetGlowRow._leftRegion
+        if leftRegion._control then
+            leftRegion._control:Hide()
         end
         -- The WoW Forever style offers Highlight alone: the other three are
         -- locked there (their getters read off, so they draw nothing).
@@ -1090,34 +1090,34 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 lockedTooltip = fvTip,
             },
         }
-        local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-            leftRgn,
+        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+            leftRegion,
             170,
-            leftRgn:GetFrameLevel() + 2,
+            leftRegion:GetFrameLevel() + 2,
             glowItems,
-            function(k)
-                if k == "cludesui" then
+            function(keyName)
+                if keyName == "cludesui" then
                     return mod.GetTargetGlowCludesUI()
                 end
-                if k == "borderColor" then
+                if keyName == "borderColor" then
                     return mod.GetTargetGlowBorderColor()
                 end
-                if k == "highlight" then
+                if keyName == "highlight" then
                     return mod.GetTargetGlowHighlight()
                 end
-                if k == "borderSize" then
+                if keyName == "borderSize" then
                     return mod.GetTargetGlowBorderSize()
                 end
                 return false
             end,
-            function(k, val)
-                if k == "cludesui" then
+            function(keyName, val)
+                if keyName == "cludesui" then
                     DB().targetGlowCludesUI = val
-                elseif k == "borderColor" then
+                elseif keyName == "borderColor" then
                     DB().targetGlowBorderColor = val
-                elseif k == "highlight" then
+                elseif keyName == "highlight" then
                     DB().targetGlowHighlight = val
-                elseif k == "borderSize" then
+                elseif keyName == "borderSize" then
                     DB().targetGlowBorderSize = val
                     -- First-enable snapshot: seed the cog slider with the user's CURRENT border size, so enabling changes nothing until they move it (one-time, never re-snapshots later).
                     if val and DB().targetBorderSizeValue == nil then
@@ -1147,9 +1147,9 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 end
             end
         )
-        Pix.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
-        leftRgn._control = cbDD
-        leftRgn._lastInline = nil
+        Pix.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
+        leftRegion._control = checkDrop
+        leftRegion._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
 
         -- Inline cog "More Effects": Highlight color/opacity + Glow opacity; enabled when Highlight OR CUI Glow is on (Glow Opacity reachable whenever the glow is active).
@@ -1161,7 +1161,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     or mod.GetTargetGlowBorderSize()
                 )
             end
-            local highlightCogBtn = CludesUI.BuildInlineCog(leftRgn, {
+            local highlightCogBtn = CludesUI.BuildInlineCog(leftRegion, {
                 disabled = highlightCogOff,
                 disabledTooltip = "a Target Effect",
                 title = "More Effects",
@@ -1264,8 +1264,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
         -- Inline Border Color swatch: edits targetBorderColor (default white), tints the custom border; dimmed+non-interactive unless Border Color is checked.
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
-            leftRgn,
-            leftRgn:GetFrameLevel() + 5,
+            leftRegion,
+            leftRegion:GetFrameLevel() + 5,
             function()
                 local c = mod.GetTargetBorderColor()
                 return c.r, c.g, c.b
@@ -1283,8 +1283,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
             nil,
             20
         )
-        Pix.Point(colorSwatch, "RIGHT", leftRgn._lastInline or leftRgn._control, "LEFT", -8, 0)
-        leftRgn._lastInline = colorSwatch
+        Pix.Point(colorSwatch, "RIGHT", leftRegion._lastInline or leftRegion._control, "LEFT", -8, 0)
+        leftRegion._lastInline = colorSwatch
         -- Tooltip so the swatch's purpose is clear (shown while interactive, i.e. Border Color on).
         CludesUI.HoverTip(colorSwatch, "Border Color")
         refreshTargetBorderSwatch = function()
@@ -1298,8 +1298,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
         -- Inline Glow Color swatch: edits targetGlowColor (default the signature blue), tints the CUI background glow; dimmed+non-interactive unless CUI Glow is checked.
         local glowSwatch, updateGlowSwatch = CludesUI.BuildColorSwatch(
-            leftRgn,
-            leftRgn:GetFrameLevel() + 5,
+            leftRegion,
+            leftRegion:GetFrameLevel() + 5,
             function()
                 local c = mod.GetTargetGlowColor()
                 return c.r, c.g, c.b
@@ -1314,8 +1314,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
             nil,
             20
         )
-        Pix.Point(glowSwatch, "RIGHT", leftRgn._lastInline or leftRgn._control, "LEFT", -8, 0)
-        leftRgn._lastInline = glowSwatch
+        Pix.Point(glowSwatch, "RIGHT", leftRegion._lastInline or leftRegion._control, "LEFT", -8, 0)
+        leftRegion._lastInline = glowSwatch
         CludesUI.HoverTip(glowSwatch, "Glow Color")
         refreshTargetGlowSwatch = function()
             local off = not mod.GetTargetGlowCludesUI()
@@ -1329,11 +1329,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
     -- Inline cog (arrow scale), beside the control; the swatches sit left of it
     do
-        local rightRgn = targetGlowRow._rightRegion
+        local rightRegion = targetGlowRow._rightRegion
         local arrowOff = function()
             return DBVal("showTargetArrows") ~= true
         end
-        CludesUI.BuildInlineCog(rightRgn, {
+        CludesUI.BuildInlineCog(rightRegion, {
             disabled = arrowOff,
             disabledTooltip = "Target Arrows",
             title = "Arrow Scale",
@@ -1373,7 +1373,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
     -- Inline Custom + Class color swatches on Target Arrows (custom adjacent to the cog, class to its left); click to switch, inactive swatch dims, both gray out when arrows off.
     do
-        local rightRgn = targetGlowRow._rightRegion
+        local rightRegion = targetGlowRow._rightRegion
         local arrowOff = function()
             return DBVal("showTargetArrows") ~= true
         end
@@ -1393,8 +1393,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
             classSwatch:SetMouseClickEnabled(not off)
         end
         customSwatch, updateCustom = CludesUI.BuildColorSwatch(
-            rightRgn,
-            rightRgn:GetFrameLevel() + 5,
+            rightRegion,
+            rightRegion:GetFrameLevel() + 5,
             function()
                 local c = DBVal("targetArrowColor") or defaultSet.targetArrowColor
                 return c.r, c.g, c.b
@@ -1411,7 +1411,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             nil,
             20
         )
-        Pix.Point(customSwatch, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
+        Pix.Point(customSwatch, "RIGHT", rightRegion._lastInline or rightRegion._control, "LEFT", -8, 0)
         local origCustomClick = customSwatch:GetScript("OnClick")
         customSwatch:SetScript("OnClick", function(self, ...)
             if arrowOff() then
@@ -1432,13 +1432,13 @@ local function BuildDisplayBars(hostFrame, posY, context)
         end)
         CludesUI.HoverTip(customSwatch, "Custom Color")
         classSwatch, updateClass = CludesUI.BuildColorSwatch(
-            rightRgn,
-            rightRgn:GetFrameLevel() + 5,
+            rightRegion,
+            rightRegion:GetFrameLevel() + 5,
             function()
                 local _, ct = UnitClass("player")
-                local cc = ct and C_ClassColor and C_ClassColor.GetClassColor(ct)
-                if cc then
-                    return cc.r, cc.g, cc.b
+                local classColor = ct and C_ClassColor and C_ClassColor.GetClassColor(ct)
+                if classColor then
+                    return classColor.r, classColor.g, classColor.b
                 end
                 return 1, 1, 1
             end,
@@ -1447,7 +1447,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             20
         )
         Pix.Point(classSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
-        rightRgn._lastInline = classSwatch
+        rightRegion._lastInline = classSwatch
         classSwatch:SetScript("OnClick", function()
             if arrowOff() then
                 return
@@ -1469,13 +1469,13 @@ local function BuildDisplayBars(hostFrame, posY, context)
     if not CludesUI._prebuilding then
         local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
         local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-        local leftRgn = targetGlowRow._leftRegion
-        local eyeBtn = CreateFrame("Button", nil, leftRgn)
-        eyeBtn:SetSize(26, 26)
-        eyeBtn:SetPoint("RIGHT", leftRgn._lastInline or leftRgn._control, "LEFT", -8, 0)
-        eyeBtn:SetFrameLevel(leftRgn:GetFrameLevel() + 5)
-        CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-        local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
+        local leftRegion = targetGlowRow._leftRegion
+        local eyeButton = CreateFrame("Button", nil, leftRegion)
+        eyeButton:SetSize(26, 26)
+        eyeButton:SetPoint("RIGHT", leftRegion._lastInline or leftRegion._control, "LEFT", -8, 0)
+        eyeButton:SetFrameLevel(leftRegion:GetFrameLevel() + 5)
+        CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+        local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
         local function RefreshTargetGlowEye()
             if optionState.showTargetGlowPreview then
@@ -1485,15 +1485,15 @@ local function BuildDisplayBars(hostFrame, posY, context)
             end
         end
         RefreshTargetGlowEye()
-        eyeBtn:SetScript("OnClick", function()
+        eyeButton:SetScript("OnClick", function()
             optionState.showTargetGlowPreview = not optionState.showTargetGlowPreview
             RefreshTargetGlowEye()
             UpdatePreview()
         end)
-        eyeBtn:SetScript("OnEnter", function(self)
+        eyeButton:SetScript("OnEnter", function(self)
             CludesUI.SetGlyphAlpha(self, 0.7)
         end)
-        eyeBtn:SetScript("OnLeave", function(self)
+        eyeButton:SetScript("OnLeave", function(self)
             CludesUI.SetGlyphAlpha(self, 0.4)
         end)
     end
@@ -1544,7 +1544,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
     end
 
     local targetColorRow
-    targetColorRow, hgt = W:DualRow(hostFrame, posY, {
+    targetColorRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Enable Target Color",
         getValue = function()
@@ -1597,11 +1597,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
             CludesUI:RefreshPage()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Inline Target Color swatch
     if not CludesUI._prebuilding then
-        local leftRgn = targetColorRow._leftRegion
+        local leftRegion = targetColorRow._leftRegion
         local targetColorGet = function()
             return DBColor("target")
         end
@@ -1613,14 +1613,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
             end
         end
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
-            leftRgn,
-            leftRgn:GetFrameLevel() + 5,
+            leftRegion,
+            leftRegion:GetFrameLevel() + 5,
             targetColorGet,
             targetColorSet,
             nil,
             20
         )
-        Pix.Point(colorSwatch, "RIGHT", leftRgn._control, "LEFT", -12, 0)
+        Pix.Point(colorSwatch, "RIGHT", leftRegion._control, "LEFT", -12, 0)
         CludesUI.RegisterWidgetRefresh(function()
             local off = isTargetColorDisabled()
             colorSwatch:SetAlpha(off and 0.15 or 1)
@@ -1634,7 +1634,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
     -- Inline Focus Color swatch
     if not CludesUI._prebuilding then
-        local rightRgn = targetColorRow._rightRegion
+        local rightRegion = targetColorRow._rightRegion
         local focusColorGet = function()
             return DBColor("focus")
         end
@@ -1646,14 +1646,14 @@ local function BuildDisplayBars(hostFrame, posY, context)
             end
         end
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
-            rightRgn,
-            rightRgn:GetFrameLevel() + 5,
+            rightRegion,
+            rightRegion:GetFrameLevel() + 5,
             focusColorGet,
             focusColorSet,
             nil,
             20
         )
-        Pix.Point(colorSwatch, "RIGHT", rightRgn._control, "LEFT", -12, 0)
+        Pix.Point(colorSwatch, "RIGHT", rightRegion._control, "LEFT", -12, 0)
         CludesUI.RegisterWidgetRefresh(function()
             local off = isFocusColorDisabled()
             colorSwatch:SetAlpha(off and 0.15 or 1)
@@ -1685,15 +1685,15 @@ local function BuildDisplayBars(hostFrame, posY, context)
             ["stripes-small-spread"] = "Small Spread Stripes",
             ["striped-tiny"] = "Tiny Stripes",
         }
-        for _, k in ipairs(STRIPE_ORDER) do
-            ovtValues[k] = STRIPE_NAMES[k]
-            ovtOrder[#ovtOrder + 1] = k
+        for _, keyName in ipairs(STRIPE_ORDER) do
+            ovtValues[keyName] = STRIPE_NAMES[keyName]
+            ovtOrder[#ovtOrder + 1] = keyName
         end
         ovtOrder[#ovtOrder + 1] = "---"
-        for _, k in ipairs(hbtOrder) do
-            ovtOrder[#ovtOrder + 1] = k
-            if k ~= "---" then
-                ovtValues[k] = hbtValues[k]
+        for _, keyName in ipairs(hbtOrder) do
+            ovtOrder[#ovtOrder + 1] = keyName
+            if keyName ~= "---" then
+                ovtValues[keyName] = hbtValues[keyName]
             end
         end
         ovtValues._menuOpts = {
@@ -1710,7 +1710,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
         }
     end
     local textureDualRow
-    textureDualRow, hgt = W:DualRow(hostFrame, posY, {
+    textureDualRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Target Texture",
         values = ovtValues,
@@ -1743,12 +1743,12 @@ local function BuildDisplayBars(hostFrame, posY, context)
         end,
         order = ovtOrder,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Inline Target Texture cog (Opacity + No Tint), beside the control; the swatch sits left of it
     if not CludesUI._prebuilding then
-        local leftRgn = textureDualRow._leftRegion
-        CludesUI.BuildInlineCog(leftRgn, {
+        local leftRegion = textureDualRow._leftRegion
+        CludesUI.BuildInlineCog(leftRegion, {
             disabled = isTargetTextureNone,
             disabledTooltip = "a Target Texture",
             title = "Target Texture",
@@ -1809,7 +1809,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
     -- Inline Target Texture color swatch
     if not CludesUI._prebuilding then
-        local leftRgn = textureDualRow._leftRegion
+        local leftRegion = textureDualRow._leftRegion
         local targetTexColorGet = function()
             local c = (DB() and DB().targetOverlayColor) or defaultSet.targetOverlayColor
             return c.r, c.g, c.b
@@ -1822,15 +1822,15 @@ local function BuildDisplayBars(hostFrame, posY, context)
             end
         end
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
-            leftRgn,
-            leftRgn:GetFrameLevel() + 5,
+            leftRegion,
+            leftRegion:GetFrameLevel() + 5,
             targetTexColorGet,
             targetTexColorSet,
             nil,
             20
         )
-        Pix.Point(colorSwatch, "RIGHT", leftRgn._lastInline or leftRgn._control, "LEFT", -8, 0)
-        leftRgn._lastInline = colorSwatch
+        Pix.Point(colorSwatch, "RIGHT", leftRegion._lastInline or leftRegion._control, "LEFT", -8, 0)
+        leftRegion._lastInline = colorSwatch
         CludesUI.RegisterWidgetRefresh(function()
             local off = isTargetTextureNone() or isTargetNoTint()
             colorSwatch:SetAlpha(off and 0.15 or 1)
@@ -1844,8 +1844,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
     -- Inline Focus Texture cog (Opacity + No Tint), beside the control; the swatch sits left of it
     if not CludesUI._prebuilding then
-        local rightRgn = textureDualRow._rightRegion
-        CludesUI.BuildInlineCog(rightRgn, {
+        local rightRegion = textureDualRow._rightRegion
+        CludesUI.BuildInlineCog(rightRegion, {
             disabled = isFocusTextureNone,
             disabledTooltip = "a Focus Texture",
             title = "Focus Texture",
@@ -1898,7 +1898,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
     -- Inline Focus Texture color swatch
     if not CludesUI._prebuilding then
-        local rightRgn = textureDualRow._rightRegion
+        local rightRegion = textureDualRow._rightRegion
         local focusTexColorGet = function()
             local c = (DB() and DB().focusOverlayColor) or defaultSet.focusOverlayColor
             return c.r, c.g, c.b
@@ -1911,15 +1911,15 @@ local function BuildDisplayBars(hostFrame, posY, context)
             end
         end
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
-            rightRgn,
-            rightRgn:GetFrameLevel() + 5,
+            rightRegion,
+            rightRegion:GetFrameLevel() + 5,
             focusTexColorGet,
             focusTexColorSet,
             nil,
             20
         )
-        Pix.Point(colorSwatch, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
-        rightRgn._lastInline = colorSwatch
+        Pix.Point(colorSwatch, "RIGHT", rightRegion._lastInline or rightRegion._control, "LEFT", -8, 0)
+        rightRegion._lastInline = colorSwatch
         CludesUI.RegisterWidgetRefresh(function()
             local off = isFocusTextureNone() or isFocusNoTint()
             colorSwatch:SetAlpha(off and 0.15 or 1)
@@ -1933,13 +1933,13 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
     -- Target Preview ---- Focus Preview
     local previewDualRow
-    previewDualRow, hgt = W:DualRow(
+    previewDualRow, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         { type = "label", text = "Target Preview" },
         { type = "label", text = "Focus Preview" }
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- The two bars sit at their half's right edge: the row's child anchored to that
     -- half, moved. Page reuse: the row's children of its earlier dresses stay among
@@ -1952,7 +1952,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 if PoolGen(previewDualRow) ~= previewRowGen then
                     return
                 end
-                local rgn = previewDualRow._leftRegion
+                local region = previewDualRow._leftRegion
                 for _, childFrame in ipairs({ previewDualRow:GetChildren() }) do
                     if
                         childFrame.GetNumPoints
@@ -1960,9 +1960,9 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         and not PoolIsIdle(childFrame)
                     then
                         local _, rel = childFrame:GetPoint(1)
-                        if rel == rgn then
+                        if rel == region then
                             childFrame:ClearAllPoints()
-                            Pix.Point(childFrame, "RIGHT", rgn, "RIGHT", -20, 0)
+                            Pix.Point(childFrame, "RIGHT", region, "RIGHT", -20, 0)
                             return
                         end
                     end
@@ -1987,7 +1987,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 if PoolGen(previewDualRow) ~= previewRowGen then
                     return
                 end
-                local rgn = previewDualRow._rightRegion
+                local region = previewDualRow._rightRegion
                 for _, childFrame in ipairs({ previewDualRow:GetChildren() }) do
                     if
                         childFrame.GetNumPoints
@@ -1995,9 +1995,9 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         and not PoolIsIdle(childFrame)
                     then
                         local _, rel = childFrame:GetPoint(1)
-                        if rel == rgn then
+                        if rel == region then
                             childFrame:ClearAllPoints()
-                            Pix.Point(childFrame, "RIGHT", rgn, "RIGHT", -20, 0)
+                            Pix.Point(childFrame, "RIGHT", region, "RIGHT", -20, 0)
                             return
                         end
                     end
@@ -2037,17 +2037,17 @@ local function BuildDisplayBars(hostFrame, posY, context)
         hoverOverlayValues.none = "None"
         hoverOverlayOrder[#hoverOverlayOrder + 1] = "none"
         hoverOverlayOrder[#hoverOverlayOrder + 1] = "---"
-        for _, k in ipairs(STRIPE_ORDER) do
-            hoverOverlayValues[k] = STRIPE_NAMES[k]
-            hoverOverlayOrder[#hoverOverlayOrder + 1] = k
+        for _, keyName in ipairs(STRIPE_ORDER) do
+            hoverOverlayValues[keyName] = STRIPE_NAMES[keyName]
+            hoverOverlayOrder[#hoverOverlayOrder + 1] = keyName
         end
         hoverOverlayOrder[#hoverOverlayOrder + 1] = "---"
-        for _, k in ipairs(hbtOrder) do
+        for _, keyName in ipairs(hbtOrder) do
             -- "none" is already prepended above; skip the copy from hbtOrder (which starts with "none") so it shows only once.
-            if k ~= "none" then
-                hoverOverlayOrder[#hoverOverlayOrder + 1] = k
-                if k ~= "---" then
-                    hoverOverlayValues[k] = hbtValues[k]
+            if keyName ~= "none" then
+                hoverOverlayOrder[#hoverOverlayOrder + 1] = keyName
+                if keyName ~= "---" then
+                    hoverOverlayValues[keyName] = hbtValues[keyName]
                 end
             end
         end
@@ -2066,7 +2066,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
     end
     do
         local hoverRow
-        hoverRow, hgt = W:DualRow(hostFrame, posY, {
+        hoverRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Hover Texture",
             tooltip = "Uses the Hover Effect color and opacity. Set to None for the flat hover highlight.",
@@ -2091,16 +2091,16 @@ local function BuildDisplayBars(hostFrame, posY, context)
             end,
             setValue = function() end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             -- Hover Effect: the Target Effect model copied onto mouseover
             -- (user-directed 2026-08-16, no preview integration). Highlight is
             -- the only default-on channel and rides the legacy
             -- hoverColor/hoverAlpha keys, so every profile keeps its exact
             -- pre-rework hover visuals until other channels are opted in.
-            local rightRgn = hoverRow._rightRegion
-            if rightRgn._control then
-                rightRgn._control:Hide()
+            local rightRegion = hoverRow._rightRegion
+            if rightRegion._control then
+                rightRegion._control:Hide()
             end
             local refreshHoverBorderSwatch
             local refreshHoverGlowSwatch
@@ -2116,33 +2116,33 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 },
             }
             local hvDD, hvDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                rightRgn,
+                rightRegion,
                 170,
-                rightRgn:GetFrameLevel() + 2,
+                rightRegion:GetFrameLevel() + 2,
                 hoverItems,
-                function(k)
-                    if k == "cludesui" then
+                function(keyName)
+                    if keyName == "cludesui" then
                         return mod.GetHoverGlowCludesUI()
                     end
-                    if k == "borderColor" then
+                    if keyName == "borderColor" then
                         return mod.GetHoverGlowBorderColor()
                     end
-                    if k == "highlight" then
+                    if keyName == "highlight" then
                         return mod.GetHoverGlowHighlight()
                     end
-                    if k == "borderSize" then
+                    if keyName == "borderSize" then
                         return mod.GetHoverGlowBorderSize()
                     end
                     return false
                 end,
-                function(k, val)
-                    if k == "cludesui" then
+                function(keyName, val)
+                    if keyName == "cludesui" then
                         DB().hoverGlowCludesUI = val
-                    elseif k == "borderColor" then
+                    elseif keyName == "borderColor" then
                         DB().hoverGlowBorderColor = val
-                    elseif k == "highlight" then
+                    elseif keyName == "highlight" then
                         DB().hoverGlowHighlight = val
-                    elseif k == "borderSize" then
+                    elseif keyName == "borderSize" then
                         DB().hoverGlowBorderSize = val
                         -- First-enable snapshot: seed the cog slider with the user's
                         -- CURRENT border size, so enabling changes nothing until they
@@ -2168,9 +2168,9 @@ local function BuildDisplayBars(hostFrame, posY, context)
                     end
                 end
             )
-            Pix.Point(hvDD, "RIGHT", rightRgn, "RIGHT", -20, 0)
-            rightRgn._control = hvDD
-            rightRgn._lastInline = nil
+            Pix.Point(hvDD, "RIGHT", rightRegion, "RIGHT", -20, 0)
+            rightRegion._control = hvDD
+            rightRegion._lastInline = nil
             CludesUI.RegisterWidgetRefresh(hvDDRefresh)
 
             -- Inline cog "More Effects": Highlight color/opacity (the legacy
@@ -2183,7 +2183,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                         or mod.GetHoverGlowBorderSize()
                     )
                 end
-                local hoverCogBtn = CludesUI.BuildInlineCog(rightRgn, {
+                local hoverCogBtn = CludesUI.BuildInlineCog(rightRegion, {
                     disabled = hoverCogOff,
                     disabledTooltip = "a Hover Effect",
                     title = "More Effects",
@@ -2265,8 +2265,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
             -- Inline Border Color swatch: dimmed unless Border Color is checked.
             local hvBSwatch, hvUpdateBSwatch = CludesUI.BuildColorSwatch(
-                rightRgn,
-                rightRgn:GetFrameLevel() + 5,
+                rightRegion,
+                rightRegion:GetFrameLevel() + 5,
                 function()
                     local c = mod.GetHoverBorderColor()
                     return c.r, c.g, c.b
@@ -2278,8 +2278,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 nil,
                 20
             )
-            Pix.Point(hvBSwatch, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
-            rightRgn._lastInline = hvBSwatch
+            Pix.Point(hvBSwatch, "RIGHT", rightRegion._lastInline or rightRegion._control, "LEFT", -8, 0)
+            rightRegion._lastInline = hvBSwatch
             CludesUI.HoverTip(hvBSwatch, "Border Color")
             refreshHoverBorderSwatch = function()
                 local off = not mod.GetHoverGlowBorderColor()
@@ -2292,8 +2292,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
             -- Inline Glow Color swatch: dimmed unless CUI Glow is checked.
             local hvGSwatch, hvUpdateGSwatch = CludesUI.BuildColorSwatch(
-                rightRgn,
-                rightRgn:GetFrameLevel() + 5,
+                rightRegion,
+                rightRegion:GetFrameLevel() + 5,
                 function()
                     local c = mod.GetHoverGlowColor()
                     return c.r, c.g, c.b
@@ -2305,8 +2305,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 nil,
                 20
             )
-            Pix.Point(hvGSwatch, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
-            rightRgn._lastInline = hvGSwatch
+            Pix.Point(hvGSwatch, "RIGHT", rightRegion._lastInline or rightRegion._control, "LEFT", -8, 0)
+            rightRegion._lastInline = hvGSwatch
             CludesUI.HoverTip(hvGSwatch, "Glow Color")
             refreshHoverGlowSwatch = function()
                 local off = not mod.GetHoverGlowCludesUI()
@@ -2318,11 +2318,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
             refreshHoverGlowSwatch()
 
             -- Inline Hover Texture cog (Full alpha on empty part of bar), left of the dropdown; disabled while set to None.
-            local leftRgn = hoverRow._leftRegion
+            local leftRegion = hoverRow._leftRegion
             local isHoverTextureNone = function()
                 return (DBVal("hoverOverlayTexture") or defaultSet.hoverOverlayTexture) == "none"
             end
-            CludesUI.BuildInlineCog(leftRgn, {
+            CludesUI.BuildInlineCog(leftRegion, {
                 disabled = isHoverTextureNone,
                 disabledTooltip = "a Hover Texture",
                 title = "Hover Texture",
@@ -2352,17 +2352,17 @@ local function BuildDisplayBars(hostFrame, posY, context)
     --  CLASS RESOURCE
     -----------------------------------------------------------------------
     local classResourceHeader
-    classResourceHeader, hgt = W:SectionHeader(hostFrame, "CLASS RESOURCE", posY)
-    posY = posY - hgt
+    classResourceHeader, height = W:SectionHeader(hostFrame, "CLASS RESOURCE", cursorY)
+    cursorY = cursorY - height
 
     local function classPowerDisabled()
         return DBVal("showClassPower") ~= true
     end
 
-    local classResourceSectionTop = posY -- track top of content rows
+    local classResourceSectionTop = cursorY -- track top of content rows
 
     local classResourceToggleRow
-    classResourceToggleRow, hgt = W:DualRow(hostFrame, posY, {
+    classResourceToggleRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Class Resource",
         getValue = function()
@@ -2427,8 +2427,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 getValue = function()
                     local _, ct = UnitClass("player")
                     if ct and RAID_CLASS_COLORS[ct] then
-                        local cc = RAID_CLASS_COLORS[ct]
-                        return cc.r, cc.g, cc.b, 1
+                        local classColor = RAID_CLASS_COLORS[ct]
+                        return classColor.r, classColor.g, classColor.b, 1
                     end
                     return 1, 1, 1, 1
                 end,
@@ -2449,13 +2449,13 @@ local function BuildDisplayBars(hostFrame, posY, context)
             },
         },
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Rows 2-4 are HIDDEN entirely while Show Class Resource is off (the toggle's DependentSetValue forces the rebuild on flips).
     if not classPowerDisabled() then
         -- Row 2: Position (with inline cog for X/Y) | Size
         local classResourceRow2
-        classResourceRow2, hgt = W:DualRow(hostFrame, posY, {
+        classResourceRow2, height = W:DualRow(hostFrame, cursorY, {
             type = "segmented",
             text = "Position",
             values = { top = "Top", bottom = "Bottom" },
@@ -2483,13 +2483,13 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 UpdatePreview()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Inline cog on Position dropdown (X/Y offset settings)
         if not CludesUI._prebuilding then
-            local leftRgn = classResourceRow2._leftRegion
-            CludesUI.BuildInlineCog(leftRgn, {
-                anchorTo = leftRgn._control,
+            local leftRegion = classResourceRow2._leftRegion
+            CludesUI.BuildInlineCog(leftRegion, {
+                anchorTo = leftRegion._control,
                 disabled = classPowerDisabled,
                 disabledTooltip = "Show Class Resource",
                 isOpen = CogPopupOpen,
@@ -2519,7 +2519,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
         -- Row 3: Bar Spacing + Background Color (with alpha)
         local classResourceRow3
-        classResourceRow3, hgt = W:DualRow(hostFrame, posY, {
+        classResourceRow3, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             pixel = true,
             text = "Bar Spacing",
@@ -2548,11 +2548,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 UpdatePreview()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Row 4: Shape | Border (inline thickness cog + color swatch on Border)
         local classResourceRow4
-        classResourceRow4, hgt = W:DualRow(hostFrame, posY, {
+        classResourceRow4, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Shape",
             values = {
@@ -2606,11 +2606,11 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 CludesUI:RefreshPage()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Inline thickness cog + border color swatch on the Border toggle
         if not CludesUI._prebuilding then
-            local rgn = classResourceRow4._rightRegion
+            local region = classResourceRow4._rightRegion
             local function borderOff()
                 return classPowerDisabled() or DBVal("classPowerBorder") ~= true
             end
@@ -2624,7 +2624,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 UpdatePreview()
             end
 
-            CludesUI.BuildInlineCog(rgn, {
+            CludesUI.BuildInlineCog(region, {
                 disabled = borderOff,
                 disabledTooltip = "Border",
                 title = "Border Settings",
@@ -2648,9 +2648,9 @@ local function BuildDisplayBars(hostFrame, posY, context)
             })
 
             local colorSwatch, updateSwatch =
-                CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, colorGet, colorSet, nil, 20)
-            Pix.Point(colorSwatch, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = colorSwatch
+                CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, colorGet, colorSet, nil, 20)
+            Pix.Point(colorSwatch, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+            region._lastInline = colorSwatch
             CludesUI.RegisterWidgetRefresh(function()
                 local off = borderOff()
                 colorSwatch:SetAlpha(off and 0.15 or 1)
@@ -2671,19 +2671,19 @@ local function BuildDisplayBars(hostFrame, posY, context)
         local crPad = CludesUI.CONTENT_PAD or 20
         classResourceSection:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", crPad, classResourceSectionTop)
         classResourceSection:SetPoint("TOPRIGHT", hostFrame, "TOPRIGHT", -crPad, classResourceSectionTop)
-        classResourceSection:SetHeight(math.abs(classResourceSectionTop - posY))
+        classResourceSection:SetHeight(math.abs(classResourceSectionTop - cursorY))
         classResourceSection._isSpacer = true -- hide from search layout
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     -----------------------------------------------------------------------
     --  GENERAL TEXT
     -----------------------------------------------------------------------
     local generalTextHeader
-    generalTextHeader, hgt = W:SectionHeader(hostFrame, "GENERAL TEXT", posY)
-    posY = posY - hgt
+    generalTextHeader, height = W:SectionHeader(hostFrame, "GENERAL TEXT", cursorY)
+    cursorY = cursorY - height
 
     -- Duration controls are per aura type. "None" is the show/hide switch.
     local auraDurPosRow
@@ -2699,16 +2699,16 @@ local function BuildDisplayBars(hostFrame, posY, context)
             cc = { text = "CC Duration", title = "CC Duration Settings", key = "ccTimerPosition" },
         }
         local function DurationDropdown(kind)
-            local conf = durationTypes[kind]
+            local rowConf = durationTypes[kind]
             return {
                 type = "dropdown",
-                text = conf.text,
+                text = rowConf.text,
                 values = timerPosValues,
                 getValue = function()
-                    return DBVal(conf.key) or atFallback
+                    return DBVal(rowConf.key) or atFallback
                 end,
                 setValue = function(val)
-                    DB()[conf.key] = val
+                    DB()[rowConf.key] = val
                     LiveApplyAuraText()
                     UpdatePreview()
                 end,
@@ -2720,7 +2720,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             UpdatePreview()
         end
         local function AttachDurationTools(regionFrame, kind)
-            local conf = durationTypes[kind]
+            local rowConf = durationTypes[kind]
             local colorGet = function()
                 local c = AuraDurationVal(kind, "Color")
                 return c.r, c.g, c.b
@@ -2731,7 +2731,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             end
 
             CludesUI.BuildInlineCog(regionFrame, {
-                title = conf.title,
+                title = rowConf.title,
                 rows = {
                     {
                         type = "slider",
@@ -2793,8 +2793,8 @@ local function BuildDisplayBars(hostFrame, posY, context)
         end
 
         local durationRow1
-        durationRow1, hgt = W:DualRow(hostFrame, posY, DurationDropdown("debuff"), DurationDropdown("buff"))
-        posY = posY - hgt
+        durationRow1, height = W:DualRow(hostFrame, cursorY, DurationDropdown("debuff"), DurationDropdown("buff"))
+        cursorY = cursorY - height
         auraDurPosRow = durationRow1
         if not CludesUI._prebuilding then
             AttachDurationTools(durationRow1._leftRegion, "debuff")
@@ -2802,7 +2802,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
         end
 
         local durationRow2
-        durationRow2, hgt = W:DualRow(hostFrame, posY, DurationDropdown("cc"), {
+        durationRow2, height = W:DualRow(hostFrame, cursorY, DurationDropdown("cc"), {
             type = "dropdown",
             text = "Aura Stacks",
             values = timerPosValues,
@@ -2816,7 +2816,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             end,
             order = timerPosOrder,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         auraTimerStackRow = durationRow2
         if not CludesUI._prebuilding then
             AttachDurationTools(durationRow2._leftRegion, "cc")
@@ -2824,7 +2824,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
 
         if not CludesUI._prebuilding then
             -- RIGHT: Aura Stacks inline color swatch
-            local rightRgn = durationRow2._rightRegion
+            local rightRegion = durationRow2._rightRegion
             local asColorGet = function()
                 local c = (DB() and DB().auraStackTextColor) or defaultSet.auraStackTextColor
                 return c.r, c.g, c.b
@@ -2836,7 +2836,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
             end
 
             -- RIGHT: Aura Stacks inline cog (Size / X / Y)
-            CludesUI.BuildInlineCog(rightRgn, {
+            CludesUI.BuildInlineCog(rightRegion, {
                 title = "Aura Stacks Settings",
                 rows = {
                     {
@@ -2887,15 +2887,15 @@ local function BuildDisplayBars(hostFrame, posY, context)
                 },
             })
             local asSwatch, asUpdateSwatch = CludesUI.BuildColorSwatch(
-                rightRgn,
-                rightRgn:GetFrameLevel() + 5,
+                rightRegion,
+                rightRegion:GetFrameLevel() + 5,
                 asColorGet,
                 asColorSet,
                 nil,
                 20
             )
-            Pix.Point(asSwatch, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
-            rightRgn._lastInline = asSwatch
+            Pix.Point(asSwatch, "RIGHT", rightRegion._lastInline or rightRegion._control, "LEFT", -8, 0)
+            rightRegion._lastInline = asSwatch
             CludesUI.RegisterWidgetRefresh(function()
                 asUpdateSwatch()
             end)
@@ -2906,7 +2906,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
     local castTextPosValues = { none = "None", left = "Left", right = "Right", center = "Center" }
     local castTextPosOrder = { "none", "left", "right", "center" }
     local spellNameRow
-    spellNameRow, hgt = W:DualRow(hostFrame, posY, {
+    spellNameRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Spell Name",
         values = castTextPosValues,
@@ -2953,7 +2953,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
     })
     if not CludesUI._prebuilding then
         -- LEFT: Spell Name inline color swatch
-        local leftRgn = spellNameRow._leftRegion
+        local leftRegion = spellNameRow._leftRegion
         local snColorGet = function()
             return DBColor("castNameColor")
         end
@@ -2968,7 +2968,7 @@ local function BuildDisplayBars(hostFrame, posY, context)
         end
 
         -- LEFT: Spell Name inline cog for X/Y offset
-        CludesUI.BuildInlineCog(leftRgn, {
+        CludesUI.BuildInlineCog(leftRegion, {
             isOpen = CogPopupOpen,
             show = function(self)
                 ShowCogPopup(self, {
@@ -3039,19 +3039,19 @@ local function BuildDisplayBars(hostFrame, posY, context)
             end,
         })
         local snSwatch, snUpdateSwatch =
-            CludesUI.BuildColorSwatch(leftRgn, leftRgn:GetFrameLevel() + 5, snColorGet, snColorSet, nil, 20)
-        Pix.Point(snSwatch, "RIGHT", leftRgn._lastInline or leftRgn._control, "LEFT", -8, 0)
-        leftRgn._lastInline = snSwatch
+            CludesUI.BuildColorSwatch(leftRegion, leftRegion:GetFrameLevel() + 5, snColorGet, snColorSet, nil, 20)
+        Pix.Point(snSwatch, "RIGHT", leftRegion._lastInline or leftRegion._control, "LEFT", -8, 0)
+        leftRegion._lastInline = snSwatch
         CludesUI.RegisterWidgetRefresh(function()
             snUpdateSwatch()
         end)
 
         -- RIGHT: Spell Target inline double swatch (custom + class colored)
-        local rightRgn = spellNameRow._rightRegion
-        local ctrl = rightRgn._control
+        local rightRegion = spellNameRow._rightRegion
+        local control = rightRegion._control
 
         -- RIGHT: Spell Target inline cog for X/Y offset
-        CludesUI.BuildInlineCog(rightRgn, {
+        CludesUI.BuildInlineCog(rightRegion, {
             isOpen = CogPopupOpen,
             show = function(self)
                 ShowCogPopup(self, {
@@ -3108,20 +3108,20 @@ local function BuildDisplayBars(hostFrame, posY, context)
         local ccGet = function()
             local _, ct = UnitClass("player")
             if ct and RAID_CLASS_COLORS[ct] then
-                local cc = RAID_CLASS_COLORS[ct]
-                return cc.r, cc.g, cc.b
+                local classColor = RAID_CLASS_COLORS[ct]
+                return classColor.r, classColor.g, classColor.b
             end
             return 1, 1, 1
         end
         local ccSwatch, ccUpdate = CludesUI.BuildColorSwatch(
-            rightRgn,
-            rightRgn:GetFrameLevel() + 5,
+            rightRegion,
+            rightRegion:GetFrameLevel() + 5,
             ccGet,
             function() end,
             nil,
             20
         )
-        Pix.Point(ccSwatch, "RIGHT", rightRgn._lastInline or ctrl, "LEFT", -8, 0)
+        Pix.Point(ccSwatch, "RIGHT", rightRegion._lastInline or control, "LEFT", -8, 0)
         ccSwatch:SetScript("OnClick", function()
             DB().castTargetClassColor = true
             for _, backing in pairs(plates) do
@@ -3144,17 +3144,17 @@ local function BuildDisplayBars(hostFrame, posY, context)
             UpdatePreview()
         end
         local stSwatch, stUpdate =
-            CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5, stColorGet, stColorSet, nil, 20)
+            CludesUI.BuildColorSwatch(rightRegion, rightRegion:GetFrameLevel() + 5, stColorGet, stColorSet, nil, 20)
         Pix.Point(stSwatch, "RIGHT", ccSwatch, "LEFT", -9, 0)
-        rightRgn._lastInline = stSwatch
+        rightRegion._lastInline = stSwatch
         stSwatch._eabOrigClick = stSwatch:GetScript("OnClick")
         stSwatch:SetScript("OnClick", function(self)
             local saved = DB()
-            local cc = saved and saved.castTargetClassColor
-            if cc == nil then
-                cc = defaultSet.castTargetClassColor
+            local classColor = saved and saved.castTargetClassColor
+            if classColor == nil then
+                classColor = defaultSet.castTargetClassColor
             end
-            if cc then
+            if classColor then
                 DB().castTargetClassColor = false
                 for _, backing in pairs(plates) do
                     backing:UpdateHealth()
@@ -3187,9 +3187,9 @@ local function BuildDisplayBars(hostFrame, posY, context)
         stSwatch:SetAlpha(isCC and 0.3 or 1)
         ccSwatch:SetAlpha(isCC and 1 or 0.3)
     end
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    return posY,
+    return cursorY,
         healthBarHeader,
         healthBarHeightRow,
         castBarHeightRow,

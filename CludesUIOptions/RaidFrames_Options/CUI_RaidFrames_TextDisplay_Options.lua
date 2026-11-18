@@ -111,10 +111,10 @@ end
 -- Builds the tiles at y under the Text Display header. opts.page: the page
 -- being built (cache check); opts.party: the Party tab (its textDisplay keys).
 -- Returns y and the first row.
-function mod.RFO_BuildTextDisplay(W, hostFrame, posY, options)
+function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
     -- The text files did not load: no text section, the page still builds.
     if not (mod.RF_TEXTS and mod.RF_TEXT_POSITIONS and mod.RF_TextShown and mod.RF_TEXT_SIG_KEYS) then
-        return posY
+        return cursorY
     end
     local environ = mod._RFO_OptEnv
     local SVal, SWrite, ReloadAndUpdate = environ.SVal, environ.SWrite, environ.ReloadAndUpdate
@@ -130,8 +130,8 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, posY, options)
     end
     -- Shown by the engine's own rule, read through the page's (party-aware) SVal.
     local view = setmetatable({}, {
-        __index = function(_, k)
-            return SVal(k)
+        __index = function(_, keyName)
+            return SVal(keyName)
         end,
     })
     local function Shown(t)
@@ -385,9 +385,9 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, posY, options)
             end, "custom", true, "Custom Color")
             AddSwatch(function()
                 local _, ct = UnitClass("player")
-                local cc = ct and CludesUI.GetClassColor(ct)
-                if cc then
-                    return cc.r, cc.g, cc.b, 1
+                local classColor = ct and CludesUI.GetClassColor(ct)
+                if classColor then
+                    return classColor.r, classColor.g, classColor.b, 1
                 end
                 return 1, 1, 1, 1
             end, function() end, "class", false, "Class Color")
@@ -448,7 +448,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, posY, options)
     for jdx = 1, #isShown do
         local cell = isShown[jdx]
         local t = cell.text
-        local conf = {
+        local rowConf = {
             type = "dropdown",
             text = POS[cell.pos] or cell.pos,
             order = MODE_ORDER[t.kind],
@@ -460,20 +460,20 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, posY, options)
             end,
         }
         if t.kind == "pp" then
-            conf.tooltip = "Shows only on frames whose power bar shows."
+            rowConf.tooltip = "Shows only on frames whose power bar shows."
         elseif t.kind == "name" and kit then
-            conf.tooltip =
+            rowConf.tooltip =
                 "On Party Frames style the name keeps the frame's own spot; its offsets still apply."
         elseif t.kind == "level" then
-            conf.tooltip = "Drawn in the name's colour."
+            rowConf.tooltip = "Drawn in the name's colour."
         end
-        conf.values = CustomText.Values(MODE_VALUES[t.kind], t.kind == "custom" and function()
+        rowConf.values = CustomText.Values(MODE_VALUES[t.kind], t.kind == "custom" and function()
             CustomText.Edit(t.fmt, CustomText.Color(t), function()
                 Notify(t)
                 Apply()
             end)
         end or nil)
-        cell.cfg = conf
+        cell.cfg = rowConf
         cells[#cells + 1] = cell
     end
 
@@ -611,8 +611,8 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, posY, options)
         end
     end
     for idx = 1, #cells, 2 do
-        local row, hgt = W:DualRow(hostFrame, posY, Config(cells[idx]), Config(cells[idx + 1]))
-        posY = posY - hgt
+        local row, height = W:DualRow(hostFrame, cursorY, Config(cells[idx]), Config(cells[idx + 1]))
+        cursorY = cursorY - height
         Finish(row, "_leftRegion", cells[idx])
         Finish(row, "_rightRegion", cells[idx + 1])
     end
@@ -638,17 +638,17 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, posY, options)
                 return false
             end
             local own = party and mod._IsPartySectionCustom and mod._IsPartySectionCustom("textDisplay")
-            return Sig(function(k)
+            return Sig(function(keyName)
                 local val
                 if own then
-                    val = popFrame["party_" .. k]
+                    val = popFrame["party_" .. keyName]
                 end
                 if val == nil then
-                    val = popFrame[k]
+                    val = popFrame[keyName]
                 end
                 return val
             end) ~= saved
         end
     end
-    return posY, firstRow
+    return cursorY, firstRow
 end

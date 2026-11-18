@@ -241,8 +241,8 @@ function GO.Spec(desc)
     s.excludes = desc.excludes
     local dc = desc.defaultColor
     local mode = desc.caps and desc.caps.mode and desc.get("mode") or "custom"
-    local cr, cg, cb = desc.get("color")
-    s.r, s.g, s.b = G.ResolveColor(mode, cr, cg, cb, dc and dc.r, dc and dc.g, dc and dc.b)
+    local cr, cg, checkBtn = desc.get("color")
+    s.r, s.g, s.b = G.ResolveColor(mode, cr, cg, checkBtn, dc and dc.r, dc and dc.g, dc and dc.b)
     local caps = desc.caps or {}
     if caps.params then
         s.lines, s.thickness, s.speed = desc.get("lines"), desc.get("thickness"), desc.get("speed")
@@ -775,13 +775,13 @@ function GO.BuildPreview(hostFrame, desc, options)
         isBar = desc.host == "bar"
     end
     local wid = options.width or (isBar and 110 or 36)
-    local hgt = options.height or (isBar and 16 or 36)
+    local height = options.height or (isBar and 16 or 36)
 
     local f = CreateFrame("Frame", nil, hostFrame)
     -- This build's dress of the preview: the descriptor keeps Refresh past later
     -- builds (desc._preview), which can dress these frames for another use.
     local dressGen = PoolGen(f)
-    Pix.Size(f, wid, hgt)
+    Pix.Size(f, wid, height)
     if options.anchor then
         Pix.Point(
             f,
@@ -827,7 +827,7 @@ function GO.BuildPreview(hostFrame, desc, options)
             return
         end
         f:SetAlpha(1)
-        G.StartSpecGlow(shade, GO.Spec(desc), wid, hgt, desc.host, G.PANEL_EXTRA)
+        G.StartSpecGlow(shade, GO.Spec(desc), wid, height, desc.host, G.PANEL_EXTRA)
     end
     -- A hidden preview (options closed, page left or rebuilt) stops its glow,
     -- so it leaves the glow driver and a closed panel costs nothing; shown
@@ -1407,27 +1407,27 @@ end
 -------------------------------------------------------------------------------
 function CludesUI.BuildFilterEditorShell(owner, slot, keepKey, width, height)
     local PoolKept, PoolOwned = CludesUI._Pool.Kept, CludesUI._Pool.Owned
-    local dimmer = PoolKept(owner, keepKey, "Frame", UIParent)
-    dimmer:SetFrameStrata("FULLSCREEN_DIALOG")
-    dimmer:SetAllPoints(UIParent)
-    dimmer:EnableMouse(true)
-    dimmer:EnableMouseWheel(true)
-    dimmer:SetScript("OnMouseWheel", function() end)
+    local shade = PoolKept(owner, keepKey, "Frame", UIParent)
+    shade:SetFrameStrata("FULLSCREEN_DIALOG")
+    shade:SetAllPoints(UIParent)
+    shade:EnableMouse(true)
+    shade:EnableMouseWheel(true)
+    shade:SetScript("OnMouseWheel", function() end)
     -- Clicking off the popup closes the editor (the popup is mouse-enabled,
     -- so clicks on it never reach the dimmer).
-    dimmer:SetScript("OnMouseDown", function()
-        dimmer:Hide()
+    shade:SetScript("OnMouseDown", function()
+        shade:Hide()
         owner[slot] = nil
     end)
-    local dimTex = CludesUI.SolidTex(dimmer, "BACKGROUND", 0, 0, 0, 0.25)
+    local dimTex = CludesUI.SolidTex(shade, "BACKGROUND", 0, 0, 0, 0.25)
     dimTex:SetAllPoints()
-    owner[slot] = dimmer
+    owner[slot] = shade
 
-    local dialog = CreateFrame("Frame", nil, dimmer)
+    local dialog = CreateFrame("Frame", nil, shade)
     dialog:SetSize(width, height)
     dialog:SetPoint("CENTER", UIParent, "CENTER", 0, 20)
     dialog:SetFrameStrata("FULLSCREEN_DIALOG")
-    dialog:SetFrameLevel(dimmer:GetFrameLevel() + 10)
+    dialog:SetFrameLevel(shade:GetFrameLevel() + 10)
     dialog:EnableMouse(true)
     local popBg = CludesUI.SolidTex(dialog, "BACKGROUND", 0.062, 0.070, 0.082, 1)
     popBg:SetAllPoints()
@@ -1458,7 +1458,7 @@ function CludesUI.BuildFilterEditorShell(owner, slot, keepKey, width, height)
             closeIcon:SetAlpha(0.40)
         end)
         close:SetScript("OnClick", function()
-            dimmer:Hide()
+            shade:Hide()
             owner[slot] = nil
         end)
     end
@@ -1481,12 +1481,12 @@ function CludesUI.BuildFilterEditorShell(owner, slot, keepKey, width, height)
             end
             self:SetPropagateKeyboardInput(key ~= "ESCAPE")
             if key == "ESCAPE" then
-                dimmer:Hide()
+                shade:Hide()
                 owner[slot] = nil
             end
         end)
     end
-    return dimmer, dialog
+    return shade, dialog
 end
 
 -------------------------------------------------------------------------------
@@ -1550,21 +1550,21 @@ function CludesUI.BuildFilterSpellList(child, lead, byClass, classOrder, opts)
         local wash = row:CreateTexture(nil, "ARTWORK")
         wash:SetAllPoints()
         wash:SetColorTexture(1, 1, 1, 0)
-        local box = CreateFrame("Frame", nil, row)
-        box:SetSize(16, 16)
-        box:SetPoint("LEFT", row, "LEFT", 6, 0)
-        local boxBg = box:CreateTexture(nil, "BACKGROUND")
+        local boxFrame = CreateFrame("Frame", nil, row)
+        boxFrame:SetSize(16, 16)
+        boxFrame:SetPoint("LEFT", row, "LEFT", 6, 0)
+        local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
         boxBg:SetAllPoints()
         boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-        local border = CludesUI.MakeRoundedBorder(box, 0.4, 0.4, 0.4, 0.6, boxBg)
-        local fill = box:CreateTexture(nil, "ARTWORK")
-        fill:SetPoint("TOPLEFT", box, "TOPLEFT", 2, -2)
-        fill:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -2, 2)
+        local border = CludesUI.MakeRoundedBorder(boxFrame, 0.4, 0.4, 0.4, 0.6, boxBg)
+        local fill = boxFrame:CreateTexture(nil, "ARTWORK")
+        fill:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", 2, -2)
+        fill:SetPoint("BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", -2, 2)
         fill:SetColorTexture(eg.r, eg.g, eg.b, 1)
-        CludesUI.RoundBody(box, fill, 2)
+        CludesUI.RoundBody(boxFrame, fill, 2)
         local icon = row:CreateTexture(nil, "ARTWORK")
         icon:SetSize(22, 22)
-        icon:SetPoint("LEFT", box, "RIGHT", 6, 0)
+        icon:SetPoint("LEFT", boxFrame, "RIGHT", 6, 0)
         local art = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(id)
         if art then
             icon:SetTexture(art)

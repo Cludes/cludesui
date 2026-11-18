@@ -237,8 +237,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     local SU, CS, CT = CludesUI._SpellUprank, CludesUI._ClassicSpellbook, CludesUI._ClassicTalents
     local MT = CludesUI._MapTravel
     local BLANK = CludesUI.BlankRowCfg
-    local posY = yOffset
-    local _, hgt, heading
+    local cursorY = yOffset
+    local _, height, heading
     hostFrame._showRowDivider = true
 
     ---------------------------------------------------------------------------
@@ -251,8 +251,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     --  runs that feature's own apply.
     ---------------------------------------------------------------------------
     local QR, GS = CludesUI._QuestRewards, CludesUI._GatherSkill
-    _, hgt = W:SectionHeader(hostFrame, "GENERAL", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "GENERAL", cursorY)
+    cursorY = cursorY - height
 
     local CW_LABEL = "Classic Windows"
     local cwItems = {
@@ -306,7 +306,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     end
 
     local generalRow
-    generalRow, hgt = W:DualRow(hostFrame, posY, {
+    generalRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Auto Uprank Spells on Bars",
         tooltip = "Swaps new spell ranks, yours and your pet's, onto your action bars.",
@@ -322,7 +322,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         text = CW_LABEL,
         tooltip = "Choose which windows open in their classic version.",
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         local region = generalRow._rightRegion
         local byKey = {}
@@ -348,7 +348,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     end
 
     local rewardRow
-    rewardRow, hgt = W:DualRow(hostFrame, posY, {
+    rewardRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Most Valuable Quest Reward",
         tooltip = "Among a quest's reward choices, a money bag marks the one that sells for most, its count included.",
@@ -372,7 +372,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             CludesUI:RefreshPage() -- the cog's disabled state
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(rewardRow._rightRegion, {
             title = "Gathering Skill in Tooltips",
@@ -401,7 +401,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     -- (CludesUIForeverEssentials_PetSummon.lua), while the Pet Journal exists.
     local PS = CludesUI._PetSummon
     if PS and C_PetJournal then
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Auto Summon Pet",
             tooltip = "Brings a random favorite pet back after loading screens, flights and deaths; a pet you dismiss stays away.",
@@ -434,14 +434,14 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 if not unitGuid then
                     return
                 end
-                local conf = PS.Cfg()
-                conf.chars = conf.chars or {}
-                conf.chars[unitGuid] = conf.chars[unitGuid] or {}
-                conf.chars[unitGuid].own = val or nil
+                local rowConf = PS.Cfg()
+                rowConf.chars = rowConf.chars or {}
+                rowConf.chars[unitGuid] = rowConf.chars[unitGuid] or {}
+                rowConf.chars[unitGuid].own = val or nil
                 PS.RefreshJournal()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     -- Known Levels: a player's level the game hides as ?? (10+ levels above
@@ -449,7 +449,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     -- keeps it, PvP on or off).
     local pvp = CludesUI._PvP
     if pvp then
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Known Levels Instead of ??",
             tooltip = "Unit frames, nameplates and tooltips show ?? for anything 10 or more levels above you. This shows the real level instead: the one the game still gives addons, or for a player whose level is hidden, the level they had when you last saw it (or a groupmate's PvP sharing sent it).",
@@ -460,7 +460,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 pvp.Cfg().knownLevels = val
             end,
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -468,10 +468,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local sources = NameFormatSources()
     if #sources > 0 then
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        _, hgt = W:SectionHeader(hostFrame, "NAME FORMAT", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "NAME FORMAT", cursorY)
+        cursorY = cursorY - height
         -- Placeholder dropdowns keep the labels, tooltips and search entries; the
         -- checkbox dropdowns replace them (DualRow only builds plain widgets).
         local function Slot(textValue, tooltip)
@@ -488,9 +488,9 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             }
         end
         local row
-        row, hgt = W:DualRow(
+        row, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Slot(
                 "First Name",
                 "Checked modules show players' first names. A module checked in both lists shows the full name."
@@ -500,7 +500,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "Checked modules show players' last names. A module checked in both lists shows the full name."
             )
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             local Pix = CludesUI.PanelPP
             -- A module that is switched off stays greyed out and out of "All".
@@ -571,10 +571,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         return not MR.Get("enabled")
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
-    _, hgt = W:SectionHeader(hostFrame, "WORLD MAP", posY)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
+    _, height = W:SectionHeader(hostFrame, "WORLD MAP", cursorY)
+    cursorY = cursorY - height
 
     -- Fade Map While Moving | Show the Game Behind the Map. Runtime in
     -- CludesUIForeverEssentials_MapFade.lua.
@@ -584,7 +584,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         MF.Apply()
     end
 
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Fade Map While Moving",
         tooltip = "The world map fades while you move and comes back when you stop or hover it.",
@@ -605,10 +605,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             SetFade("dim", val)
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     local revealRow
-    revealRow, hgt = W:DualRow(hostFrame, posY, {
+    revealRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Reveal Unexplored Areas",
         tooltip = "Shows the parts of the world map you have not explored yet. Use the cog to pick their color.",
@@ -632,10 +632,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             ZL.Apply()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     local markersRow
-    markersRow, hgt = W:DualRow(hostFrame, posY, {
+    markersRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Map Markers",
         tooltip = "Shows boats, zeppelins, dungeon entrances, flight points and zone exits on the world map; click one to link it in chat.",
@@ -659,7 +659,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             ZL.Apply()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         CludesUI.BuildInlineCog(revealRow._leftRegion, {
             title = "Reveal Unexplored Areas Settings",
@@ -738,8 +738,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local SS = CludesUI._SimplifiedStats
     if SS then
-        local function Set(k, val)
-            SS.Cfg()[k] = val
+        local function Set(keyName, val)
+            SS.Cfg()[keyName] = val
             CludesUI:RefreshPage() -- update the dependent rows' disabled state
         end
         local function shortenOff()
@@ -749,13 +749,13 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             return not SS.Get("colors")
         end
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        _, hgt = W:SectionHeader(hostFrame, "SIMPLIFIED STATS", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "SIMPLIFIED STATS", cursorY)
+        cursorY = cursorY - height
 
         -- Shorten Equip Lines | Color Stats
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Shorten Equip Lines",
             tooltip = "Shortens Equip: and Set: stat lines on item tooltips to +X Stat.",
@@ -776,10 +776,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set("colors", val)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Merge Equal Spell Power | Number Color
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Merge Equal Spell Power",
             tooltip = "Shows equal spell damage and healing as one Spell Power line.",
@@ -805,7 +805,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 SS.Cfg().numColor = (val ~= "signed") and val or nil
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -827,16 +827,16 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             or class == "HUNTER" and "Show Current Aspect"
             or "Show Current Stance / Form"
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "ACTIVE STANCE, FORM, ASPECT & AURA", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "ACTIVE STANCE, FORM, ASPECT & AURA", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_ActiveForm", disabled = afOff, disabledTooltip = labelText }
         )
 
-        _, hgt = CludesUI.BuildVisibilityRow(W, hostFrame, posY, {
+        _, height = CludesUI.BuildVisibilityRow(W, hostFrame, cursorY, {
             leftCfg = {
                 type = "toggle",
                 text = labelText,
@@ -859,11 +859,11 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             onChanged = CludesUI.RequestVisibilityUpdate,
             onOptionChanged = CludesUI.RequestVisibilityUpdate,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if not afOff() then
             -- Icon Size | Icon Zoom
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Icon Size",
                 min = 16,
@@ -891,14 +891,14 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                     AFSet("zoom", val)
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             -- Border Style | Border Size (+ color swatch)
             local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
             local borderRow
-            borderRow, hgt = W:DualRow(
+            borderRow, height = W:DualRow(
                 hostFrame,
-                posY,
+                cursorY,
                 {
                     type = "dropdown",
                     text = "Border Style",
@@ -945,7 +945,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                     apply = AF.Apply,
                 })
             )
-            posY = posY - hgt
+            cursorY = cursorY - height
 
             if not CludesUI._prebuilding then
                 local region = borderRow._rightRegion
@@ -998,8 +998,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                     end,
                     apply = AF.Apply,
                 })
-                _, hgt = W:DualRow(hostFrame, posY, offL, offR)
-                posY = posY - hgt
+                _, height = W:DualRow(hostFrame, cursorY, offL, offR)
+                cursorY = cursorY - height
             end
         end
     end
@@ -1016,15 +1016,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             TR.Cfg()[key] = val
             TR.Apply()
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "TRACKING REMINDER", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "TRACKING REMINDER", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_TrackingReminder", disabled = trOff, disabledTooltip = "Tracking Reminder" }
         )
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Tracking Reminder",
             tooltip = "A row of icons for the tracking you know but have not turned on: Find Treasure, hunter tracks, Track Humanoids in Cat Form, Sense Undead, Sense Demons. Click one to turn it on. Hidden in combat.",
@@ -1045,8 +1045,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 TRSet("gathering", val and true or false)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Icon Size",
             min = 16,
@@ -1061,7 +1061,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 TRSet("iconSize", math.floor(val + 0.5))
             end,
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -1076,15 +1076,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             STm.Cfg()[key] = val
             STm.Apply()
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "SWING TIMER", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "SWING TIMER", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_SwingTimer", disabled = stOff, disabledTooltip = "Swing Timer" }
         )
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Swing Timer",
             tooltip = "A bar per weapon that fills to your next auto attack. The game sends each swing's real length, so haste and parry haste are already counted.",
@@ -1106,8 +1106,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 STSet("hideIdle", val and true or false)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Off Hand Bar",
             disabled = stOff,
@@ -1128,8 +1128,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 STSet("ranged", val and true or false)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Width",
             min = 80,
@@ -1158,7 +1158,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 STSet("height", math.floor(val + 0.5))
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -1173,15 +1173,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             DM.Cfg()[key] = val
             DM.Apply()
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "MANA BAR", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "MANA BAR", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_ManaBar", disabled = dmOff, disabledTooltip = "Mana Bar" }
         )
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Mana Bar",
             tooltip = "Shows a druid's mana while in Bear, Cat or another form that hides it.",
@@ -1203,8 +1203,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 DMSet("fiveSecond", val and true or false)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Always Show",
             disabled = dmOff,
@@ -1230,7 +1230,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 DMSet("width", math.floor(val + 0.5))
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -1245,15 +1245,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             CB.Cfg()[key] = val
             CB.Apply()
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "CONSUMABLE BAR", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "CONSUMABLE BAR", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_ConsumableBar", disabled = cbOff, disabledTooltip = "Consumable Bar" }
         )
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Consumable Bar",
             tooltip = "The consumables in your bags on a bar you can click, with how many you carry and their cooldowns. It works in combat; an item you run out of in a fight keeps its icon until the fight ends.",
@@ -1278,7 +1278,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 CBSet("iconSize", math.floor(val + 0.5))
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         local cats = CB.Categories
         for idx = 1, #cats, 2 do
             local function Toggle(c)
@@ -1297,10 +1297,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                     end,
                 }
             end
-            _, hgt = W:DualRow(hostFrame, posY, Toggle(cats[idx]), Toggle(cats[idx + 1]))
-            posY = posY - hgt
+            _, height = W:DualRow(hostFrame, cursorY, Toggle(cats[idx]), Toggle(cats[idx + 1]))
+            cursorY = cursorY - height
         end
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Most Icons",
             min = 1,
@@ -1315,7 +1315,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 CBSet("maxIcons", math.floor(val + 0.5))
             end,
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -1330,15 +1330,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             RD.Cfg()[key] = val
             RD.Apply()
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "RAID DEBUFFS", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "RAID DEBUFFS", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_RaidDebuffs", disabled = rdOff, disabledTooltip = "Raid Debuffs" }
         )
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Raid Debuffs",
             tooltip = "Icons on your enemy target for the raid debuffs you pick: bright while up with their time, dim while missing. Changes to the picks apply out of combat.",
@@ -1359,7 +1359,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 RDSet("groupOnly", val and true or false)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         local entries = RD.Debuffs
         for idx = 1, #entries, 2 do
             local function Toggle(d)
@@ -1378,10 +1378,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                     end,
                 }
             end
-            _, hgt = W:DualRow(hostFrame, posY, Toggle(entries[idx]), Toggle(entries[idx + 1]))
-            posY = posY - hgt
+            _, height = W:DualRow(hostFrame, cursorY, Toggle(entries[idx]), Toggle(entries[idx + 1]))
+            cursorY = cursorY - height
         end
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Icon Size",
             min = 16,
@@ -1396,7 +1396,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 RDSet("iconSize", math.floor(val + 0.5))
             end,
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -1420,15 +1420,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             return values, sequence
         end
         local values, sequence = SetChoices()
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "GEAR SETS", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "GEAR SETS", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_GearSets", disabled = gsOff, disabledTooltip = "Gear Sets" }
         )
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Gear Sets Bar",
             tooltip = "Your equipment sets on a bar; click one to wear it. The set you are wearing is lit. Armour cannot change in combat, so a click in combat waits for the fight to end.",
@@ -1455,8 +1455,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 end)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "While Mounted",
             values = values,
@@ -1483,7 +1483,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 GSSet("restingSet", val)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -1498,15 +1498,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             IT.Cfg()[key] = val
             IT.Apply()
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "INSTANCE TRACKER", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "INSTANCE TRACKER", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_InstanceTracker", disabled = itOff, disabledTooltip = "Instance Tracker" }
         )
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Instance Tracker",
             tooltip = "Counts the new dungeons and raids your account enters in a rolling hour against the cap, times your runs, and prints a summary when you leave. Re-entering the same copy does not count again.",
@@ -1532,8 +1532,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 ITSet("cap", math.floor(val + 0.5))
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show the Counter",
             disabled = itOff,
@@ -1554,7 +1554,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 ITSet("summary", val and true or false)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not itOff() then
             local runs = IT.Runs()
             for idx = 1, math.min(#runs, 6), 2 do
@@ -1573,8 +1573,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                         ),
                     }
                 end
-                _, hgt = W:DualRow(hostFrame, posY, Run(runs[idx]), Run(runs[idx + 1]))
-                posY = posY - hgt
+                _, height = W:DualRow(hostFrame, cursorY, Run(runs[idx]), Run(runs[idx + 1]))
+                cursorY = cursorY - height
             end
         end
     end
@@ -1583,11 +1583,11 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     --  GROUP INSPECT
     ---------------------------------------------------------------------------
     if CludesUI._GroupInspect then
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        _, hgt = W:SectionHeader(hostFrame, "GROUP INSPECT", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "GROUP INSPECT", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "labeledButton",
             text = "Group Inspect",
             buttonText = "Open",
@@ -1597,7 +1597,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 CludesUI._GroupInspect.Show()
             end,
         }, { type = "label", text = "Players out of range answer when they come closer." })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -1614,11 +1614,11 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 return not f.Get("enabled")
             end
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        _, hgt = W:SectionHeader(hostFrame, "COMBAT EXTRAS", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "COMBAT EXTRAS", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Combat Timer",
             tooltip = "How long the current fight has run, held for a few seconds after it ends. Move it in Layout Mode.",
@@ -1639,8 +1639,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set(CE.timer, "chat", val and true or false)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Combat Alert",
             tooltip = "+ Combat and - Combat fade in the middle of the screen as you enter and leave combat.",
@@ -1661,8 +1661,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set(CE.alert, "sound", val and true or false)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Stealth Reminder",
             tooltip = "For rogues, and druids in Cat Form: Not stealthed shows while you are out of combat and out of stealth. Never in an inn or a city, or while mounted.",
@@ -1683,7 +1683,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set(CE.stealth, "groupOnly", val and true or false)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -1691,10 +1691,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local BS = CludesUI._BagSpace
     if BS then
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "BAG SPACE", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "BAG SPACE", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(heading, {
             key = "CUI_BagSpace",
             disabled = function()
@@ -1702,7 +1702,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             end,
             disabledTooltip = "Bag Space",
         })
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Bag Space",
             tooltip = "Free bag slots on screen, amber when nearly full and red when full. Hover it for the cheapest items you carry; click it to open your bags.",
@@ -1727,7 +1727,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 BS.Apply()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -1742,11 +1742,11 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             QA.Cfg()[key] = val and true or false
             QA.Apply()
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        _, hgt = W:SectionHeader(hostFrame, "QUEST AUTOMATION", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "QUEST AUTOMATION", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Quest Automation",
             tooltip = "Accepts and turns in quests for you. Hold Shift while talking to an NPC to do it yourself. With a choice of rewards it always stops for you to pick.",
@@ -1768,8 +1768,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 QASet("skipGrey", val)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Auto Accept",
             disabled = qaOff,
@@ -1790,8 +1790,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 QASet("turnIn", val)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Progress to Party",
             disabled = qaOff,
@@ -1803,7 +1803,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 QASet("progress", val)
             end,
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -1811,7 +1811,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local AP = CludesUI._ActionBarProfiles
     if AP then
-        local conf = AP.Cfg()
+        local rowConf = AP.Cfg()
         local nameList = AP.Names()
         local values, sequence = {}, {}
         for _, num in ipairs(nameList) do
@@ -1822,19 +1822,19 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             values[""] = "None saved"
             sequence[1] = ""
         end
-        if not values[conf.selected or ""] then
-            conf.selected = nameList[1] or ""
+        if not values[rowConf.selected or ""] then
+            rowConf.selected = nameList[1] or ""
         end
         local function Rebuild()
             C_Timer.After(0.1, function()
                 CludesUI:RefreshPage(true)
             end)
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        _, hgt = W:SectionHeader(hostFrame, "ACTION BAR PROFILES", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "ACTION BAR PROFILES", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "input",
             text = "Save Your Bars",
             inputWidth = 140,
@@ -1846,7 +1846,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             end,
             setValue = function(textValue)
                 AP.Save(textValue)
-                conf.selected = (textValue or ""):match("^%s*(.-)%s*$")
+                rowConf.selected = (textValue or ""):match("^%s*(.-)%s*$")
                 Rebuild()
             end,
         }, {
@@ -1857,20 +1857,20 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 return AP.Get("bindings")
             end,
             setValue = function(val)
-                conf.bindings = val and true or false
+                rowConf.bindings = val and true or false
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Profile",
             values = values,
             order = sequence,
             getValue = function()
-                return conf.selected or ""
+                return rowConf.selected or ""
             end,
             setValue = function(val)
-                conf.selected = val
+                rowConf.selected = val
             end,
         }, {
             type = "labeledButton",
@@ -1879,26 +1879,26 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             width = 90,
             tooltip = "Puts the profile on your bars. Spells you have not learned and items you do not carry are skipped. Out of combat only.",
             onClick = function()
-                if conf.selected and conf.selected ~= "" then
-                    AP.Load(conf.selected)
+                if rowConf.selected and rowConf.selected ~= "" then
+                    AP.Load(rowConf.selected)
                 end
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "labeledButton",
             text = "Delete It",
             buttonText = "Delete",
             width = 90,
             onClick = function()
-                if conf.selected and conf.selected ~= "" then
-                    AP.Delete(conf.selected)
-                    conf.selected = nil
+                if rowConf.selected and rowConf.selected ~= "" then
+                    AP.Delete(rowConf.selected)
+                    rowConf.selected = nil
                     Rebuild()
                 end
             end,
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -1906,11 +1906,11 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local LS = CludesUI._LootSparkles
     if LS then
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        _, hgt = W:SectionHeader(hostFrame, "LOOT SPARKLES", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "LOOT SPARKLES", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Quest Item Sparkles",
             tooltip = "Keeps the game's sparkle on lootable quest items, even after a graphics preset turns it off. Your outline mode is left as you set it. Switching this off takes effect after restarting the game.",
@@ -1921,7 +1921,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 LS.SetEnabled(val)
             end,
         }, { type = "label", text = "Turning it off needs a game restart." })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -1932,11 +1932,11 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         local function BSet(key, val)
             BI.Cfg()[key] = val and true or false
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        _, hgt = W:SectionHeader(hostFrame, "BEST IN SLOT", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "BEST IN SLOT", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "labeledButton",
             text = "Your BiS List",
             buttonText = "Open",
@@ -1955,8 +1955,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 BSet("enabled", val)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Mark BiS on Tooltips",
             getValue = function()
@@ -1976,8 +1976,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 BSet("alert", val)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "input",
             text = "Export",
             inputWidth = 160,
@@ -2001,7 +2001,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 BI.Import(textValue)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -2016,11 +2016,11 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         local function pOff()
             return not PH.Get("enabled")
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        _, hgt = W:SectionHeader(hostFrame, "PLAYER HISTORY", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "PLAYER HISTORY", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Player History",
             tooltip = "Remembers the players you group with on this computer: how often, the dungeons and raids together, and your last sessions. /chistory lists them. Right-click a player for Player Note to tag them and write a note.",
@@ -2042,8 +2042,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set("chats", val and true or false)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Forget After (days)",
             min = 7,
@@ -2067,8 +2067,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 PH.Cfg().tooltip = val and true or false
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "labeledButton",
             text = "Player History",
             buttonText = "Open",
@@ -2085,7 +2085,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 PH.Clear("history")
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -2100,15 +2100,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             TR2.Cfg()[key] = val
             TR2.Apply()
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "BOAT AND ZEPPELIN TIMERS", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "BOAT AND ZEPPELIN TIMERS", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_ShipTimer", disabled = tOff, disabledTooltip = "Boat and Zeppelin Timer" }
         )
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Boat and Zeppelin Timers",
             tooltip = "When each ship leaves and arrives, on minimap pins at its docks. A ship is timed when you ride it, when you click its pin as it arrives (left) or leaves (right), or from players who share timings.",
@@ -2130,8 +2130,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set("zone", val and true or false)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Share Timings",
             disabled = tOff,
@@ -2157,7 +2157,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set("size", math.floor(val + 0.5))
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -2183,13 +2183,13 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 end,
             }
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        _, hgt = W:SectionHeader(hostFrame, "TOWN MAP", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "TOWN MAP", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 "enabled",
                 "Town Map",
@@ -2204,10 +2204,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "Keeps vendors, trainers and the bank off questing maps. Flight masters, innkeepers and stable masters still show everywhere."
             )
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog("minimapMail", "Mailboxes on Minimap", "Pins the mailboxes near you on the minimap."),
             Tog(
                 "minimapSpirit",
@@ -2215,40 +2215,40 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "Pins the spirit healers near you on the minimap."
             )
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog("mail", "Mailboxes", "Every mailbox, in towns and out in the world."),
             Tog("spirit", "Spirit Healers", "Every graveyard's spirit healer, in towns and out in the world.")
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog("class", "Class Trainers", "Your own class's trainers only."),
             Tog("profession", "Profession Trainers")
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog("flight", "Flight Masters", "Left to Map Markers when its Flight Points pins are on."),
             Tog("inn", "Innkeepers")
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, Tog("bank", "Bank and Auction House"), Tog("repair", "Repairs"))
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, Tog("bank", "Bank and Auction House"), Tog("repair", "Repairs"))
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog("supplies", "Reagents, Ammo and Food"),
             Tog("stable", "Stable Masters", "Hunters only.")
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog("vendors", "Other Vendors", "Trade goods and every other merchant."),
             {
                 type = "slider",
@@ -2267,7 +2267,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 end,
             }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -2321,15 +2321,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             kings = "Blessing of Kings",
         }
         local ROLE_ORDER = { "none", "might", "wisdom", "kings" }
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "PALADIN BLESSINGS", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "PALADIN BLESSINGS", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_BlessingBar", disabled = bOff, disabledTooltip = "Blessing Bar" }
         )
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Blessing Bar",
             tooltip = "For paladins: your aura and a button per class in the group. Left-click a class to bless the next member who needs it, missing first; in combat each click steps to the next. Right-click a class for its blessing, its player list or the assignments. Plans are shared with the group's other paladins, and PallyPower users' plans are read too.",
@@ -2350,10 +2350,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 BL.Open()
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog("showAura", "Aura Button", "Casts your aura. Right-click it to choose which, wheel to cycle."),
             Tog(
                 "showFury",
@@ -2361,10 +2361,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "Casts Righteous Fury on yourself. A red ! means it is not up."
             )
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog("showSeal", "Seal Button", "Casts your seal. Right-click it to choose which, wheel to cycle."),
             Tog(
                 "showAuto",
@@ -2372,10 +2372,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "Left-click blesses the next player in need, right-click the next Greater Blessing."
             )
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 "autoGreater",
                 "Auto Buff Greater First",
@@ -2383,10 +2383,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             ),
             Tog("showClasses", "Class Buttons", "Off leaves only the Auto Buff button and the key bindings.")
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 "playerList",
                 "Player List",
@@ -2394,10 +2394,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             ),
             Tog("tooltips", "Show Tooltips", "A tooltip on each bar button.")
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 "labels",
                 "Class Labels",
@@ -2409,10 +2409,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "Minutes left on each class's shortest blessing, and on each player's."
             )
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 "smart",
                 "Smart Blessings",
@@ -2424,10 +2424,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "Only bless players who are missing a blessing or running out."
             )
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog("wait", "Wait for Players", "Cast a Greater Blessing only when the whole class is in range."),
             Tog(
                 "bench",
@@ -2435,15 +2435,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "In a raid dungeon, leave out the players outside its usual groups."
             )
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog("inParty", "Use in Party", "Show the bar in a party. It always shows in a raid."),
             Tog("solo", "Use When Solo", "Show the bar when you are not in a group.")
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Main Tank Blessing",
             values = ROLE_VALUES,
@@ -2470,10 +2470,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set("assist", val)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 "vertical",
                 "Vertical Bar",
@@ -2494,17 +2494,17 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 end,
             }
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Slider("size", "Button Size", 20, 60),
             Slider("spacing", "Button Spacing", 0, 30)
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Slider(
                 "groupGap",
                 "Aura / Class Gap",
@@ -2514,12 +2514,12 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             ),
             Slider("perRow", "Class Buttons per Row", 1, 9)
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, Slider("timerSize", "Timer Text Size", 8, 20), {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, Slider("timerSize", "Timer Text Size", 8, 20), {
             type = "label",
             text = "Key bindings: Next Blessing and Next Greater Blessing, under CludesUI in the game's Key Bindings.",
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -2548,15 +2548,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 end,
             }
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "DISCOVERY", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "DISCOVERY", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_DiscoveryTracker", disabled = dOff, disabledTooltip = "Discovery Tracker" }
         )
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Discovery",
             tooltip = "A window (/cdiscovery) of the library books, the Cozy Sleeping Bag's hidden chain, the Field Journal, and every quest and rare by zone, with trackers and map pins.",
@@ -2577,10 +2577,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 DC.Open()
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 "tracker",
                 "Library Books Tracker",
@@ -2592,10 +2592,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "From level 14 until you have the bag, the chain's next step on the same tracker."
             )
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog("mapPins", "Library Book Pins", "A pin on the world map for each book you still need."),
             Tog(
                 "mapTurnIn",
@@ -2603,10 +2603,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "While you carry books, a pin at the librarian or mage trainer who takes them."
             )
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog("bagMapPins", "Sleeping Bag Pins", "A pin on the world map at the chain's next step."),
             Tog(
                 "fieldJournal",
@@ -2614,10 +2614,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "Counts the fish you catch, the herbs you pick from their nodes and the dishes you cook, for this character."
             )
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 "nearby",
                 "Nearby Book Alert",
@@ -2639,15 +2639,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 end,
             }
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog("nearbyPing", "Alert Sound", "The map ping sound with the alert."),
             Tog("nearbyChat", "Alert Chat Line", "A chat line with the book's name and how far it is.")
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Map Pin Size",
             min = 12,
@@ -2662,7 +2662,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set("pinSize", math.floor(val + 0.5))
             end,
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -2691,10 +2691,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 end,
             }
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "QUEST LIST AND RARES", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "QUEST LIST AND RARES", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(heading, {
             key = "CUI_RareAlert",
             disabled = function()
@@ -2702,9 +2702,9 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             end,
             disabledTooltip = "Rare Alert",
         })
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 "questPins",
                 "Quest Giver Pins",
@@ -2712,17 +2712,17 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             ),
             Tog("pinGrey", "Low Level Quests", "Pins givers whose quests are grey to you too.")
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog("chainsOnly", "Chains Only", "Pins only quests that are part of a chain, and dungeon quests."),
             Tog("rarePins", "Rare Pins", "A star on the world map where each rare spawns.")
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 "rarePinsKilled",
                 "Pins for Killed Rares",
@@ -2744,10 +2744,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 end,
             }
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 "rareAlert",
                 "Rare Alerts",
@@ -2755,10 +2755,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             ),
             Tog("rareAlertKilled", "Alert for Killed Rares", "Also alerts for rares you have killed before.")
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog("rareSound", "Alert Sound", "The Gruntling Horn with each alert."),
             Tog(
                 "rareAlertSkull",
@@ -2766,8 +2766,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "Clicking the card also puts a skull on the rare. Your whole group sees the mark."
             )
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Alert Time (seconds)",
             min = 5,
@@ -2792,7 +2792,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 QL.TestAlert()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -2807,11 +2807,11 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             PF.Cfg()[key] = val
             PF.Apply()
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        _, hgt = W:SectionHeader(hostFrame, "PROFESSIONS", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "PROFESSIONS", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Professions",
             tooltip = "A window (/cprof) for each of your professions: the next rank and where to get it, the recipes you know that still give skill, and every recipe you have not learned with where it comes from. Open your profession window once so it knows what you have learned.",
@@ -2832,8 +2832,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 PF.Open()
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Next Rank Alert",
             disabled = pOff,
@@ -2856,7 +2856,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set("showLater", val and true or false)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -2878,13 +2878,13 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 end,
             }
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        _, hgt = W:SectionHeader(hostFrame, "MAIL AND ALTS", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "MAIL AND ALTS", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 "altCounts",
                 "Alt Item Counts",
@@ -2896,10 +2896,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "An Alts button beside the mailbox's Send tab lists your characters with level and gold; pick one to fill the To box."
             )
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 "quickAttach",
                 "Quick Attach",
@@ -2911,8 +2911,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "At login, names any of your characters with mail expiring within three days."
             )
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "labeledButton",
             text = "Forget a Character",
             buttonText = "Forget",
@@ -2922,7 +2922,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 MA.Forget(self)
             end,
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -2938,15 +2938,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             lt.Cfg()[key] = val
             lt.Apply()
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "LAYERS", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "LAYERS", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_LayerTracker", disabled = lOff, disabledTooltip = "Layer Tracker" }
         )
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Layer Tracker",
             tooltip = "Which layer of the zone you are on, read from the NPCs around you. Hover it for the layers seen in this zone.",
@@ -2967,8 +2967,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 ls.Cfg().enabled = val and true or false
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Countdown to a Layer Change",
             disabled = lOff,
@@ -2989,7 +2989,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set("chat", val and true or false)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -3039,17 +3039,17 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         local function gOff()
             return not gx.Get("enabled")
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "XP PER HOUR", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "XP PER HOUR", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_XPTicker", disabled = xOff, disabledTooltip = "XP per Hour" }
         )
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 xt,
                 "enabled",
@@ -3058,33 +3058,33 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             ),
             Tog(xt, "hideResting", "Hide While Resting", nil, xOff)
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(xt, "splits", "Show Level Times", nil, xOff),
             Num(xt, "history", "Levels Shown", 1, 10, 1, xOff)
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Num(xt, "size", "Text Size", 10, 28, 1, xOff),
             { type = "label", text = "" }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "GROUP XP", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "GROUP XP", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_GroupXP", disabled = gOff, disabledTooltip = "Group XP" }
         )
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 gx,
                 "enabled",
@@ -3093,21 +3093,21 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             ),
             Tog(gx, "showSelf", "Show Yourself", nil, gOff)
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(gx, "raid", "Also in Raids", nil, gOff),
             Num(gx, "width", "Width", 160, 500, 10, gOff)
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Num(gx, "size", "Text Size", 8, 20, 1, gOff),
             { type = "label", text = "" }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -3156,17 +3156,17 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         local function rsOff()
             return not rs.Get("enabled")
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "RESTOCK REMINDER", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "RESTOCK REMINDER", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_Restock", disabled = rsOff, disabledTooltip = "Restock Reminder" }
         )
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 rs,
                 "enabled",
@@ -3181,39 +3181,39 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 rsOff
             )
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(rs, "reagents", "Class Reagents", nil, rsOff),
             Tog(rs, "ammo", "Ammo (thrown, arrows, shot)", nil, rsOff)
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Num(rs, "ammoTarget", "Ammo to Carry", 50, 4000, 50, rsOff),
             Tog(rs, "food", "Food & Drink", "Warriors and rogues do not need drink.", rsOff)
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Num(rs, "foodBelow", "Food & Drink Below", 1, 40, 1, rsOff),
             Tog(rs, "vendor", "Junk & Full Bags", nil, rsOff)
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Num(rs, "foodMinLevel", "Food Minimum Level", 0, 60, 1, rsOff),
             Num(rs, "foodMaxLevel", "Food Maximum Level", 0, 60, 1, rsOff)
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
         if rs.Class == "HUNTER" then
-            _, hgt = W:DualRow(
+            _, height = W:DualRow(
                 hostFrame,
-                posY,
+                cursorY,
                 Tog(
                     rs,
                     "hunterAmmo",
@@ -3223,15 +3223,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 ),
                 Num(rs, "hunterAmmoBelow", "Remind When Ammo Falls To", 50, 4000, 50, rsOff)
             )
-            posY = posY - hgt
+            cursorY = cursorY - height
         end
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Num(rs, "bagsBelow", "Free Slots Below", 1, 20, 1, rsOff),
             Num(rs, "size", "Text Size", 10, 32, 1, rsOff)
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
         local reagents = rs.Reagents()
         for idx = 1, #reagents, 2 do
             local function Carry(r)
@@ -3258,14 +3258,14 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                     end,
                 }
             end
-            _, hgt = W:DualRow(hostFrame, posY, Carry(reagents[idx]), Carry(reagents[idx + 1]))
-            posY = posY - hgt
+            _, height = W:DualRow(hostFrame, cursorY, Carry(reagents[idx]), Carry(reagents[idx + 1]))
+            cursorY = cursorY - height
         end
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "OTHER REMINDERS", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "OTHER REMINDERS", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(heading, {
             key = "CUI_GearReminders",
             disabled = function()
@@ -3273,9 +3273,9 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             end,
             disabledTooltip = "Gear Reminders",
         })
-        _, hgt = W:DualRow(
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 lk,
                 "enabled",
@@ -3289,10 +3289,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 "Text on screen while you have talent points to spend. Hidden in combat."
             )
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(
+        cursorY = cursorY - height
+        _, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             Tog(
                 gr,
                 "worn",
@@ -3301,8 +3301,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             ),
             Tog(gr, "pole", "Fishing Pole Reminder", "An icon while you have a fishing pole equipped.")
         )
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Fishing Pole Shows In",
             values = { always = "Everywhere", instance = "Dungeons & Raids" },
@@ -3317,7 +3317,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set(gr, "poleWhere", val)
             end,
         }, Num(gr, "size", "Gear Icon Size", 20, 96, 1))
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -3331,11 +3331,11 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         local function SESet(key, val)
             SE.Cfg()[key] = val
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        _, hgt = W:SectionHeader(hostFrame, "MANA EFFICIENCY", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "MANA EFFICIENCY", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Mana Efficiency",
             tooltip = "A line on a mana spell's tooltip (and a macro that casts one) with its healing or damage per mana and per second, with your spell power and talents counted.",
@@ -3358,8 +3358,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 SESet("show", val)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Per Mana",
             disabled = seOff,
@@ -3380,8 +3380,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 SESet("perSecond", val and true or false)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Per Mana per Second",
             disabled = seOff,
@@ -3404,8 +3404,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 SESet("style", val)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Count Spell Power",
             disabled = seOff,
@@ -3426,8 +3426,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 SESet("talents", val and true or false)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Decimals",
             min = 0,
@@ -3442,7 +3442,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 SESet("decimals", math.floor(val + 0.5))
             end,
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -3461,15 +3461,15 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         local function ptOff()
             return not pt.Get("enabled")
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "HEALER MANA", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "HEALER MANA", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_HealerMana", disabled = hmOff, disabledTooltip = "Healer Mana" }
         )
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Healer Mana",
             tooltip = "Your group's healers and their mana, lowest first, with a cup beside anyone drinking. Move it in Layout Mode.",
@@ -3492,8 +3492,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set(hm, "where", val)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Yourself",
             disabled = hmOff,
@@ -3514,8 +3514,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set(hm, "drinking", val and true or false)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Width",
             min = 100,
@@ -3544,17 +3544,17 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set(hm, "size", math.floor(val + 0.5))
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        heading, hgt = W:SectionHeader(hostFrame, "PET TRACKER", posY)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        heading, height = W:SectionHeader(hostFrame, "PET TRACKER", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "CUI_PetTracker", disabled = ptOff, disabledTooltip = "Pet Tracker" }
         )
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Pet Tracker",
             tooltip = "A warning while a hunter or warlock has no pet out. A warlock who sacrificed their demon, and a hunter with Lone Wolf, are left alone.",
@@ -3575,8 +3575,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set(pt, "passive", val and true or false)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Warn on Low Pet Health",
             disabled = ptOff,
@@ -3601,8 +3601,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set(pt, "lowBelow", math.floor(val + 0.5))
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Only In Combat",
             disabled = ptOff,
@@ -3623,8 +3623,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set(pt, "instanceOnly", val and true or false)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Hide While Mounted",
             disabled = ptOff,
@@ -3645,18 +3645,18 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 Set(pt, "showIcon", val and true or false)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
     --  DUNGEON JOURNAL
     ---------------------------------------------------------------------------
     if CludesUI._Journal then
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        _, hgt = W:SectionHeader(hostFrame, "DUNGEON JOURNAL", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "DUNGEON JOURNAL", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "labeledButton",
             text = "Dungeon Journal",
             buttonText = "Open",
@@ -3666,7 +3666,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 CludesUI._Journal.Show()
             end,
         }, { type = "label", text = "Opens on the dungeon you are in." })
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     ---------------------------------------------------------------------------
@@ -3674,7 +3674,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     local SWt = CludesUI._StatWeights
     if SWt then
-        local conf = SWt.Cfg()
+        local rowConf = SWt.Cfg()
         local function Rebuild()
             C_Timer.After(0.05, function()
                 CludesUI:RefreshPage(true)
@@ -3685,11 +3685,11 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             values[s.key] = s.name
             sequence[#sequence + 1] = s.key
         end
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        _, hgt = W:SectionHeader(hostFrame, "STAT WEIGHTS", posY)
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "STAT WEIGHTS", cursorY)
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Upgrades on Tooltips",
             tooltip = "Gear that is an upgrade for your spec says so on its tooltip, as a percent over what you wear. The BiS window shows each pick's gain too. An estimate from these weights.",
@@ -3697,7 +3697,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 return SWt.Get("enabled")
             end,
             setValue = function(val)
-                conf.enabled = val and true or false
+                rowConf.enabled = val and true or false
                 Rebuild()
             end,
         }, {
@@ -3707,14 +3707,14 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             order = sequence,
             tooltip = "Automatic weighs by the talent tree you spent most points in.",
             getValue = function()
-                return conf.spec or ""
+                return rowConf.spec or ""
             end,
             setValue = function(val)
-                conf.spec = val
+                rowConf.spec = val
                 Rebuild()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if SWt.Get("enabled") then
             local key = SWt.ActiveSpec()
             local weights = SWt.For(key) or {}
@@ -3746,10 +3746,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 }
             end
             for idx = 1, #entries, 2 do
-                _, hgt = W:DualRow(hostFrame, posY, Slider(entries[idx]), Slider(entries[idx + 1]))
-                posY = posY - hgt
+                _, height = W:DualRow(hostFrame, cursorY, Slider(entries[idx]), Slider(entries[idx + 1]))
+                cursorY = cursorY - height
             end
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "labeledButton",
                 text = "Weights for " .. (SWt.Spec(key) and SWt.Spec(key).name or "?"),
                 buttonText = "Reset",
@@ -3760,7 +3760,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                     Rebuild()
                 end,
             }, { type = "label", text = "Main stat, Spell Damage, Healing or Stamina is 1." })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end
     end
 
@@ -3789,16 +3789,16 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         })
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
-    heading, hgt = W:SectionHeader(hostFrame, "JUNK ITEMS", posY)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
+    heading, height = W:SectionHeader(hostFrame, "JUNK ITEMS", cursorY)
+    cursorY = cursorY - height
     CludesUI.BuildSectionUnlockJump(
         heading,
         { key = "CUI_JunkList", disabled = junkOff, disabledTooltip = "Junk Items Window" }
     )
 
-    _, hgt = CludesUI.BuildVisibilityRow(W, hostFrame, posY, {
+    _, height = CludesUI.BuildVisibilityRow(W, hostFrame, cursorY, {
         leftCfg = {
             type = "toggle",
             text = "Enable Junk Items Window",
@@ -3822,14 +3822,14 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         onChanged = CludesUI.RequestVisibilityUpdate,
         onOptionChanged = CludesUI.RequestVisibilityUpdate,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     if not junkOff() then
         -- Rare and better are never junk by quality (and need DELETE typed), so
         -- both lists stop at Uncommon.
         local qualityValues, qualityOrder = _G._CUI_ItemQualityValues(Enum.ItemQuality.Uncommon)
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Items Shown",
             min = 1,
@@ -3856,9 +3856,9 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 JunkSet("maxQuality", tonumber(val))
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Delete Without Confirming",
             values = qualityValues,
@@ -3878,9 +3878,9 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             tooltip = "Brings back items you middle-clicked away.",
             onClick = ClearJunkExclusions,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Icon Size",
             min = 16,
@@ -3908,9 +3908,9 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 JunkSet("iconSpacing", val)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Price Position",
             values = { bottom = "Below Icon", top = "Above Icon" },
@@ -3932,11 +3932,11 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 JunkSet("showFreeSlots", val)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Only Show When Bag Space Is Low (its threshold in the cog) | Use Auctionator Prices
         local lowRow
-        lowRow, hgt = W:DualRow(hostFrame, posY, {
+        lowRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Only Show When Bag Space Is Low",
             tooltip = "Shows the window only while few bag slots are free. Use the cog to set how few.",
@@ -3962,7 +3962,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                 JunkSet("auctionPrices", val)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(lowRow._leftRegion, {
                 title = "Only Show When Bag Space Is Low",
@@ -3999,10 +3999,10 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         FI.Apply()
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
-    heading, hgt = W:SectionHeader(hostFrame, "FISHING", posY)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
+    heading, height = W:SectionHeader(hostFrame, "FISHING", cursorY)
+    cursorY = cursorY - height
     -- The Bobber Indicator's mover exists only while the indicator can show:
     -- the Fishing Key bound with Reel In and Bobber Indicator on (the cog's
     -- rows), so the button names whichever of the three is missing.
@@ -4024,7 +4024,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
 
     -- Fishing Key (keybind, its options in the cog) | Double-Click to Cast
     local fishKeyRow
-    fishKeyRow, hgt = W:DualRow(hostFrame, posY, {
+    fishKeyRow, height = W:DualRow(hostFrame, cursorY, {
         type = "label",
         text = "Fishing Key",
         tooltip = "One key casts your line, equipping your best fishing pole first. Use the cog for reeling in, the bobber indicator and lures.",
@@ -4044,7 +4044,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             CludesUI:RefreshPage() -- the cog's disabled state
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         local region = fishKeyRow._leftRegion
         local kbBtn, refresh = CludesUI.BuildKeybindButton(region, {
@@ -4124,7 +4124,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         })
     end
 
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Fishing Sounds",
         tooltip = "While you fish: music and ambience down, effects up, sound on in the background.",
@@ -4135,7 +4135,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             SetFish("sound", val)
         end,
     }, BLANK())
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    return math.abs(posY)
+    return math.abs(cursorY)
 end

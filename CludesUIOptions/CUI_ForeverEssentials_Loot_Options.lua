@@ -34,8 +34,8 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
     local W = CludesUI.Widgets
     local LF = CludesUI._LootFeed
     local BLANK = CludesUI.BlankRowCfg
-    local posY = yOffset
-    local _, hgt, heading
+    local cursorY = yOffset
+    local _, height, heading
     hostFrame._showRowDivider = true
 
     CludesUI:SetContentHeader(HeaderBuilder)
@@ -85,19 +85,19 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
     -- Binds cfg to setting key; apply runs after a change (none: the next row
     -- shown picks it up). Greyed out while the feed is off unless disabled is
     -- given.
-    local function Bind(conf, key, apply, disabled, disabledTooltip)
-        conf.disabled, conf.disabledTooltip = disabled or off, disabledTooltip or "Loot Feed"
-        conf.getValue = conf.getValue or function()
+    local function Bind(rowConf, key, apply, disabled, disabledTooltip)
+        rowConf.disabled, rowConf.disabledTooltip = disabled or off, disabledTooltip or "Loot Feed"
+        rowConf.getValue = rowConf.getValue or function()
             return LF.Get(key)
         end
-        conf.setValue = conf.setValue
+        rowConf.setValue = rowConf.setValue
             or function(val)
                 LF.Cfg()[key] = val
                 if apply then
                     apply()
                 end
             end
-        return conf
+        return rowConf
     end
     local function Toggle(key, textValue, tooltip, apply, disabled, disabledTooltip)
         return Bind(
@@ -140,14 +140,14 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
     ---------------------------------------------------------------------------
     --  GENERAL
     ---------------------------------------------------------------------------
-    heading, hgt = W:SectionHeader(hostFrame, "LOOT FEED", posY)
-    posY = posY - hgt
+    heading, height = W:SectionHeader(hostFrame, "LOOT FEED", cursorY)
+    cursorY = cursorY - height
     CludesUI.BuildSectionUnlockJump(
         heading,
         { key = "CUI_LootFeed", disabled = off, disabledTooltip = "Loot Feed" }
     )
 
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Enable Loot Feed",
         tooltip = "Shows what you loot and gain as short-lived rows that fade out.",
@@ -169,11 +169,11 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             LF.Preview()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Bind({ type = "dropdown", text = "Style", values = STYLES, order = STYLE_ORDER }, "style", function()
             LF.ApplyStyle()
             if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
@@ -200,28 +200,28 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             end
         )
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     ---------------------------------------------------------------------------
     --  SOURCES
     ---------------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "SOURCES", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "SOURCES", cursorY)
+    cursorY = cursorY - height
 
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Toggle("items", "Items", "Items you loot or receive.", Reapply),
         Toggle("money", "Money", "Money you loot.", Reapply)
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Toggle(
             "reputation",
             "Reputation",
@@ -230,11 +230,11 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         ),
         Toggle("currency", "Currencies", "Honor, badges and other currencies, with your total.", Reapply)
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Toggle("skills", "Skill Ups", "Weapon and profession skill increases.", Reapply),
         Toggle(
             "rolls",
@@ -243,11 +243,11 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             Reapply
         )
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Toggle("tracker", "Gold per Hour Tracker", "Pins a row with your gold per hour.", function()
             LF.Apply()
             LF.ApplyStyle()
@@ -257,22 +257,22 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             CludesUI:RefreshPage()
         end)
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     ---------------------------------------------------------------------------
     --  ITEMS
     ---------------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "ITEMS", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "ITEMS", cursorY)
+    cursorY = cursorY - height
 
     local qualityValues, qualityOrder = _G._CUI_ItemQualityValues(Enum.ItemQuality.Legendary)
 
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Bind({
             type = "dropdown",
             text = "Minimum Quality",
@@ -296,11 +296,11 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             "Items"
         )
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Toggle("showPrice", "Show Item Price", "Shows what the looted stack is worth.", function()
             LF.RefreshPreview()
             CludesUI:RefreshPage() -- Use Auctionator Prices greys with it
@@ -314,36 +314,36 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             auctionTip
         )
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     ---------------------------------------------------------------------------
     --  LAYOUT
     ---------------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "LAYOUT", cursorY)
+    cursorY = cursorY - height
 
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Slider("width", "Width", 150, 600),
         Slider("rowHeight", "Row Height", 20, 60, "Tile size in the Icon Tray style.")
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Slider("maxRows", "Max Rows", 1, 12),
         Slider("duration", "Display Time", 1, 30, "Seconds a row stays before it fades out.")
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Bind({
             type = "segmented",
             text = "Grow Direction",
@@ -352,11 +352,11 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         }, "grow", LF.ApplyStyle),
         Slider("textSize", "Text Size", 8, 24)
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Slider(
             "spacing",
             "Spacing",
@@ -366,22 +366,22 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         ),
         BLANK()
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     ---------------------------------------------------------------------------
     --  DISPLAY
     ---------------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
+    cursorY = cursorY - height
 
     local _, textureValues, textureOrder = CludesUI.BuildBarTextureTables()
     local displayRow
-    displayRow, hgt = W:DualRow(
+    displayRow, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Bind(
             { type = "dropdown", text = "Background Texture", values = textureValues, order = textureOrder },
             "bgTexture",
@@ -403,16 +403,16 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             end,
         })
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         Swatch(displayRow._rightRegion, "bg", "Background Color")
     end
 
     local borderValues, borderOrder = CludesUI.GetBorderTextureDropdown()
     local borderRow
-    borderRow, hgt = W:DualRow(
+    borderRow, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Bind(
             {
                 type = "dropdown",
@@ -477,7 +477,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             end,
         })
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
     if not CludesUI._prebuilding then
         local offsetX, offsetY = CludesUI.BorderOffsetCogRows({
             getTex = function()
@@ -581,9 +581,9 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         end)
     end
 
-    _, hgt = W:DualRow(
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Toggle(
             "qualityBorder",
             "Quality Borders",
@@ -601,7 +601,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         ),
         BLANK()
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    return math.abs(posY)
+    return math.abs(cursorY)
 end

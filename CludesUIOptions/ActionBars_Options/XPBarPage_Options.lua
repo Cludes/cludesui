@@ -106,7 +106,7 @@ local PV_BAR_H = 120 -- the tallest bar drawn (a vertical bar shrinks to it)
 local PV_MAX_H = 200 -- the tallest bar and texts drawn together
 -- frame, hdrW, h; pageWanted: the page on screen was built with a preview;
 -- retry: a repaint queued for a rect not resolved yet
-local pv = {}
+local preview = {}
 local XPPreviewRepaint -- forward: the queued retry calls it
 
 -- As the page's Never gating (K.BarIsNever, after GetVisibilityKey
@@ -164,7 +164,7 @@ end
 -- The queued measurement (pv.retry while queued). Its own paint does not
 -- queue again when the rect is still unresolved; every other paint may.
 local function XPPreviewRetry()
-    pv.retry = nil
+    preview.retry = nil
     XPPreviewRepaint(false, false, true)
 end
 
@@ -185,50 +185,50 @@ end
 
 -- The scale factor that fits the bar (w x h) and an overhang (frame units)
 -- into availW across, PV_BAR_H for the bar and PV_MAX_H with its texts.
-local function XPPreviewFit(availW, wid, hgt, scale, oL, oR, oT, oB)
+local function XPPreviewFit(availW, wid, height, scale, oL, oR, oT, oB)
     return math.min(
         1,
         availW / ((wid + oL + oR) * scale),
-        PV_BAR_H / (hgt * scale),
-        PV_MAX_H / ((hgt + oT + oB) * scale)
+        PV_BAR_H / (height * scale),
+        PV_MAX_H / ((height + oT + oB) * scale)
     )
 end
 
 local function XPPreviewPaint(noRetry)
     local s = mod._ABO_OptEnv.EAB.db.profile.bars[XP]
-    local f = pv.frame
+    local f = preview.frame
     local hostFrame = f:GetParent()
-    local wid, hgt = s.width or 400, s.height or 18
+    local wid, height = s.width or 400, s.height or 18
     local scale = UIParent:GetEffectiveScale() / hostFrame:GetEffectiveScale()
     -- The header's width now (a resized panel), else the one it was built at.
     local hdrW = hostFrame:GetWidth()
     if not hdrW or hdrW <= 0 then
-        hdrW = pv.hdrW
+        hdrW = preview.hdrW
     end
     local availW = hdrW - CludesUI.CONTENT_PAD * 2
     -- Started from the last paint's overhang, so an unchanged layout styles
     -- once; a different one is styled again at its own scale, so its 1px
     -- lines snap to it (texts keep their frame-unit places across a rescale).
-    local fit = XPPreviewFit(availW, wid, hgt, scale, pv.oL or 0, pv.oR or 0, pv.oT or 0, pv.oB or 0)
+    local fit = XPPreviewFit(availW, wid, height, scale, preview.oL or 0, preview.oR or 0, preview.oT or 0, preview.oB or 0)
     f:SetScale(scale * fit)
     XPPreviewStyle(f, s)
     local oL, oR, oT, oB = XPPreviewOverhang(f)
     if oL then
-        pv.oL, pv.oR, pv.oT, pv.oB = oL, oR, oT, oB
+        preview.oL, preview.oR, preview.oT, preview.oB = oL, oR, oT, oB
     else
         oL, oR, oT, oB = 0, 0, 0, 0
-        if not (pv.retry or noRetry) then
-            pv.retry = true
+        if not (preview.retry or noRetry) then
+            preview.retry = true
             C_Timer.After(0, XPPreviewRetry)
         end
     end
-    local fit2 = XPPreviewFit(availW, wid, hgt, scale, oL, oR, oT, oB)
+    local fit2 = XPPreviewFit(availW, wid, height, scale, oL, oR, oT, oB)
     if math.abs(fit2 - fit) > 0.001 then
         fit = fit2
         f:SetScale(scale * fit)
         XPPreviewStyle(f, s)
     end
-    local fullH = hgt + oT + oB
+    local fullH = height + oT + oB
     f:ClearAllPoints()
     mod._ABO_OptEnv.PP.Point(f, "CENTER", hostFrame, "CENTER", (oL - oR) / 2, (oB - oT) / 2)
     return math.floor(fullH * scale * fit + PV_PAD * 2 + 0.5)
@@ -239,7 +239,7 @@ end
 -- force: the header height is written even when unchanged (a restored
 -- header comes back at its cached height). noRetry: the queued measurement.
 XPPreviewRepaint = function(valueOnly, force, noRetry)
-    local f = pv.frame
+    local f = preview.frame
     if not (f and f:IsVisible()) then
         return
     end
@@ -247,10 +247,10 @@ XPPreviewRepaint = function(valueOnly, force, noRetry)
         mod.PaintXPFill(f, mod._ABO_OptEnv.EAB.db.profile.bars[XP], PV_CUR, PV_MAX, PV_RESTED)
         return
     end
-    local hgt = XPPreviewPaint(noRetry)
-    if force or hgt ~= pv.h then
-        pv.h = hgt
-        CludesUI:SetContentHeaderHeightSilent(hgt)
+    local height = XPPreviewPaint(noRetry)
+    if force or height ~= preview.h then
+        preview.h = height
+        CludesUI:SetContentHeaderHeightSilent(height)
     end
 end
 
@@ -258,19 +258,19 @@ local function XPHeaderBuilder(heading, hdrW)
     -- Every header root sits at the content header's own level
     -- (SetContentHeader), so the levels the frame set up when built (text
     -- host, border) hold in each header it moves into.
-    local f = pv.frame
+    local f = preview.frame
     if not f then
         f = mod.CreateXPBarFrame(nil, heading)
-        pv.frame = f
+        preview.frame = f
     else
         f:SetParent(heading)
     end
     f:ClearAllPoints()
     mod._ABO_OptEnv.PP.Point(f, "CENTER", heading, "CENTER", 0, 0)
     f:Show()
-    pv.hdrW = hdrW
-    pv.h = XPPreviewPaint()
-    return pv.h
+    preview.hdrW = hdrW
+    preview.h = XPPreviewPaint()
+    return preview.h
 end
 
 -- The header for the XP Bar page (nil: none), also for getHeaderBuilder.
@@ -286,7 +286,7 @@ end
 function mod.ABO_XPPreviewRefresh()
     -- nil: no shown build recorded one (only a shown build runs the header
     -- builder), so there is no preview to compare against: repaint only.
-    if pv.pageWanted ~= nil and XPPreviewWanted() ~= pv.pageWanted then
+    if preview.pageWanted ~= nil and XPPreviewWanted() ~= preview.pageWanted then
         CludesUI:RefreshPage(true)
     else
         XPPreviewRepaint(false, true)
@@ -311,14 +311,14 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     end
     -- Row chrome (frames: never on the search pre-build's absorber rows).
     local chrome = not CludesUI._prebuilding
-    local posY = yOffset
-    local _, hgt, heading
+    local cursorY = yOffset
+    local _, height, heading
 
     -- The preview header while the bar is ours and not Never (a style or
     -- Never flip rebuilds the page); no bar selector.
     local hb = mod.ABO_XPHeaderBuilder()
     if not CludesUI._prebuilding then
-        pv.pageWanted = hb ~= nil
+        preview.pageWanted = hb ~= nil
     end
     if hb then
         CludesUI:SetContentHeader(hb)
@@ -330,8 +330,8 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -------------------------------------------------------------------
     --  CORE
     -------------------------------------------------------------------
-    heading, hgt = W:SectionHeader(hostFrame, "CORE", posY)
-    posY = posY - hgt
+    heading, height = W:SectionHeader(hostFrame, "CORE", cursorY)
+    cursorY = cursorY - height
     -- The Move in Unlock Mode button on the bar's first section: greyed while
     -- Blizzard's bars are in use, since our bar (and its mover) is not built then.
     CludesUI.BuildSectionUnlockJump(
@@ -354,10 +354,10 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- The setting has no tooltip of its own: Blizz Default explains itself
     -- while hovered in the menu.
     styleValues._menuOpts = {
-        onItemHover = function(key, item)
-            if key == "default" and item then
+        onItemHover = function(key, entry)
+            if key == "default" and entry then
                 CludesUI.ShowWidgetTooltip(
-                    item,
+                    entry,
                     "Blizz Default also switches the reputation bars to Blizzard's."
                 )
             end
@@ -386,8 +386,8 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         end,
     }
     local visRow
-    visRow, hgt = CludesUI.BuildVisibilityRow(W, hostFrame, posY, visOpts)
-    posY = posY - hgt
+    visRow, height = CludesUI.BuildVisibilityRow(W, hostFrame, cursorY, visOpts)
+    cursorY = cursorY - height
     if chrome then
         local region = visRow._rightRegion
         CludesUI.BuildInlineCog(region, {
@@ -398,15 +398,15 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     end
     -- Rows below are hidden while visibility is Never (a Never flip rebuilds).
     if K.BarIsNever(XP) then
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
-    posY = K.SizeRow(posY, XP)
+    cursorY = K.SizeRow(cursorY, XP)
 
     -- Show Dividers (its 5% and 10% colours inline; its settings row below
     -- exists only while it is on) | Orientation (its cog: Vertical Text).
     local divRowTop
-    divRowTop, hgt = W:DualRow(hostFrame, posY, {
+    divRowTop, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Dividers",
         disabled = _blizzDis,
@@ -420,7 +420,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             mod.ApplyDataBarLayout(XP)
         end),
     }, K.OrientCfg({ XP }))
-    posY = posY - hgt
+    cursorY = cursorY - height
     K.OrientCog(divRowTop._rightRegion, { XP }, true)
     if chrome then
         -- The 5% Ticks swatch also greys while 5% Line Style is None (its
@@ -490,7 +490,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- Dividers is on.
     if S().showDividers then
         local divRow
-        divRow, hgt = W:DualRow(hostFrame, posY, {
+        divRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "5% Line Style",
             values = { dashed = "Dashed", dotted = "Dotted", solid = "Solid", none = "None" },
@@ -521,7 +521,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 CludesUI:RefreshPage()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if chrome then
             local lRgn, rRgn = divRow._leftRegion, divRow._rightRegion
             CludesUI.BuildInlineCog(lRgn, {
@@ -622,14 +622,14 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         end
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 12)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 12)
+    cursorY = cursorY - height
 
     -------------------------------------------------------------------
     --  CORE TEXT POSITIONS
     -------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "CORE TEXT POSITIONS", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "CORE TEXT POSITIONS", cursorY)
+    cursorY = cursorY - height
 
     -- The bar's texts, one slot each: only the ones that show something, two
     -- to a row, then Add Text Slot, which asks where the new text goes. Up to
@@ -812,9 +812,9 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- read and write the text's value through it. One entry per item; any
     -- other value is named by its items.
     local PH_VALUES = setmetatable({ none = "Remove" }, {
-        __index = function(_, k)
-            if type(k) == "string" and k:sub(1, 1) ~= "_" then
-                return ValueLabel(k)
+        __index = function(_, keyName)
+            if type(keyName) == "string" and keyName:sub(1, 1) ~= "_" then
+                return ValueLabel(keyName)
             end
         end,
     })
@@ -919,27 +919,27 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         for num, it in ipairs(TOP_ITEMS) do
             rowList[num] = { key = it.key, label = it.label }
         end
-        local function Checked(k)
+        local function Checked(keyName)
             if SlotItems(stem, i, own) ~= "top" then
                 return false
             end
             for num = 1, #own do
-                if own[num] == k then
+                if own[num] == keyName then
                     return true
                 end
             end
             return false
         end
         -- The checked items in the list's order (k turned on or off first).
-        local function WriteChecked(sequence, k, on)
+        local function WriteChecked(sequence, keyName, on)
             local set = {}
             if SlotItems(stem, i, own) == "top" then
                 for num = 1, #own do
                     set[own[num]] = true
                 end
             end
-            if k then
-                set[k] = on or nil
+            if keyName then
+                set[keyName] = on or nil
             end
             local result = {}
             for num = 1, #sequence do
@@ -951,19 +951,19 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             WriteSlot(stem, i, emptied and "none" or table.concat(result, ","), region)
             CludesUI:RefreshPage()
         end
-        local ctrl = region._control
-        local ddW = ctrl and ctrl:GetWidth() or 0
+        local control = region._control
+        local ddW = control and control:GetWidth() or 0
         if ddW < 50 then
             ddW = 210
         end
-        local cbDD, cbRefresh = CludesUI.BuildReorderCBDropdown(
+        local checkDrop, cbRefresh = CludesUI.BuildReorderCBDropdown(
             region,
             ddW,
             region:GetFrameLevel() + 2,
             rowList,
             Checked,
-            function(k, val, sequence)
-                WriteChecked(sequence, k, val)
+            function(keyName, val, sequence)
+                WriteChecked(sequence, keyName, val)
             end,
             {
                 hint = "Drag to Reorder",
@@ -977,12 +977,12 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     Rebuild()
                 end,
                 tail = SOLO_ITEMS,
-                tailSelected = function(k)
-                    return SlotItems(stem, i, own) == "solo" and own[1] == k
+                tailSelected = function(keyName)
+                    return SlotItems(stem, i, own) == "solo" and own[1] == keyName
                 end,
-                onTail = function(k)
+                onTail = function(keyName)
                     emptied = nil
-                    WriteSlot(stem, i, k, region)
+                    WriteSlot(stem, i, keyName, region)
                     CludesUI:RefreshPage()
                 end,
                 openOrder = function()
@@ -1016,38 +1016,38 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             }
         )
         local p1, rel, p2, ax, ay
-        if ctrl then
-            p1, rel, p2, ax, ay = ctrl:GetPoint(1)
-            ctrl:Hide()
+        if control then
+            p1, rel, p2, ax, ay = control:GetPoint(1)
+            control:Hide()
         end
         if p1 then
-            cbDD:SetPoint(p1, rel, p2, ax, ay)
+            checkDrop:SetPoint(p1, rel, p2, ax, ay)
         else
-            CludesUI.PanelPP.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
+            CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
         end
-        region._control = cbDD
+        region._control = checkDrop
         region._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbRefresh)
         -- What the text shows, on the list while it is closed (the name above
         -- it is the position button, with its own tooltip).
-        cbDD:HookScript("OnEnter", function(self)
+        checkDrop:HookScript("OnEnter", function(self)
             if self._ddMenu and self._ddMenu:IsShown() then
                 return
             end
             CludesUI.ShowWidgetTooltip(self, SLOT_TIP)
         end)
-        cbDD:HookScript("OnLeave", function()
+        checkDrop:HookScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        cbDD:HookScript("OnClick", function()
+        checkDrop:HookScript("OnClick", function()
             CludesUI.HideWidgetTooltip()
         end)
         -- The list has no disabled state of its own: grey it and block clicks;
         -- the row's disabled overlay explains the lock.
         local function SyncLock()
             local off = EntryLocked(e)
-            cbDD:SetAlpha(off and 0.3 or 1)
-            cbDD:EnableMouse(not off)
+            checkDrop:SetAlpha(off and 0.3 or 1)
+            checkDrop:EnableMouse(not off)
         end
         SyncLock()
         CludesUI.RegisterWidgetRefresh(SyncLock)
@@ -1368,8 +1368,8 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         end,
     }
     local cells = {}
-    for k = 1, #entries do
-        cells[k] = entries[k]
+    for keyName = 1, #entries do
+        cells[keyName] = entries[keyName]
     end
     cells[#cells + 1] = addCfg
     local function CellCfg(c)
@@ -1404,29 +1404,29 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             CludesUI._NotifySettingWrite(region, snap)
         end
     end
-    for k = 1, #cells, 2 do
-        local l, r = cells[k], cells[k + 1]
+    for keyName = 1, #cells, 2 do
+        local l, r = cells[keyName], cells[keyName + 1]
         local row
-        row, hgt = W:DualRow(hostFrame, posY, CellCfg(l), CellCfg(r))
-        posY = posY - hgt
+        row, height = W:DualRow(hostFrame, cursorY, CellCfg(l), CellCfg(r))
+        cursorY = cursorY - height
         CellChrome(row._leftRegion, l)
         CellChrome(row._rightRegion, r)
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 12)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 12)
+    cursorY = cursorY - height
 
     -------------------------------------------------------------------
     --  DISPLAY
     -------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
+    cursorY = cursorY - height
 
     -- Text Size (the bar text's, and every other text's until its own is
     -- set) | Text Background (its colour and opacity inline): a box behind
     -- every text shown.
     local textBgRow
-    textBgRow, hgt = W:DualRow(hostFrame, posY, K.TextSizeCfg(XP), {
+    textBgRow, height = W:DualRow(hostFrame, cursorY, K.TextSizeCfg(XP), {
         type = "toggle",
         text = "Text Background",
         disabled = _blizzDis,
@@ -1441,7 +1441,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             CludesUI:RefreshPage()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if chrome then
         CludesUI.BuildInlineSwatches(textBgRow._rightRegion, {
             {
@@ -1476,7 +1476,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
 
     -- Border Style | Border Size, no Custom Border toggle: the plain line
     -- shows as Solid 1px until the first edit turns the border on.
-    posY = K.BorderRows(posY, XP, true)
+    cursorY = K.BorderRows(cursorY, XP, true)
 
     -- Fill Style: Custom Color (the fill colour swatches inline: Custom,
     -- Accent, Reactive), Horizontal / Vertical Gradient (s.fillGradient; its
@@ -1511,11 +1511,11 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         return GRAD_KEY[S().fillGradient] or "custom"
     end
     local function FillKind()
-        local k = FillKey()
-        if k == "custom" then
+        local keyName = FillKey()
+        if keyName == "custom" then
             return "custom"
         end
-        return GRAD_DIR[k] and "gradient" or "flip"
+        return GRAD_DIR[keyName] and "gradient" or "flip"
     end
     local function Custom()
         return FillKind() == "custom"
@@ -1523,7 +1523,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- Rested Color: the rested XP shown ahead of the fill (dark blue at half
     -- opacity until set).
     local fillRow
-    fillRow, hgt = W:DualRow(hostFrame, posY, {
+    fillRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Fill Style",
         values = fillVals,
@@ -1564,7 +1564,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             mod.ApplyDataBarLayout(XP)
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
     if chrome then
         local region = fillRow._leftRegion
         if Custom() then
@@ -1669,7 +1669,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- its colour inline, locked at 0%; both fall back to the style's own
     -- background until set, ns.XPBarBackground) | Bar Texture.
     local bgRow
-    bgRow, hgt = W:DualRow(hostFrame, posY, {
+    bgRow, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Background",
         min = 0,
@@ -1693,7 +1693,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             end
         end,
     }, K.TexCfg(XP))
-    posY = posY - hgt
+    cursorY = cursorY - height
     if chrome then
         CludesUI.BuildInlineSwatches(bgRow._leftRegion, {
             {
@@ -1729,7 +1729,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
     -- Quest XP Overlay: the completed / incomplete colours as inline swatches
     -- (green / gold at 60% until set, ns.XPQuestColor), the filters in its cog.
     local questRow
-    questRow, hgt = W:DualRow(hostFrame, posY, {
+    questRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Quest XP Overlay",
         tooltip = "Shows the XP from quests in your quest log ahead of the fill.",
@@ -1745,7 +1745,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             CludesUI:RefreshPage()
         end,
     }, CludesUI.BlankRowCfg())
-    posY = posY - hgt
+    cursorY = cursorY - height
     if chrome then
         local region = questRow._leftRegion
         local function overlayOff()
@@ -1844,7 +1844,7 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         })
     end
 
-    return math.abs(posY)
+    return math.abs(cursorY)
 end
 
 -- Used by CUI_ActionBars_Options.lua

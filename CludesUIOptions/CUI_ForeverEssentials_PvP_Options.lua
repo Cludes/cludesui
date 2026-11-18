@@ -15,9 +15,9 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         return 0
     end
     local W = CludesUI.Widgets
-    local posY = yOffset
-    local _, hgt
-    local conf = P.Cfg()
+    local cursorY = yOffset
+    local _, height
+    local rowConf = P.Cfg()
     local function Off()
         return not P.Get("enabled")
     end
@@ -31,7 +31,7 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
                 return P.Get(key)
             end,
             setValue = function(val)
-                conf[key] = val and true or false
+                rowConf[key] = val and true or false
                 P.Apply()
             end,
         }
@@ -39,11 +39,11 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
 
     CludesUI:ClearContentHeader()
 
-    _, hgt = W:SectionHeader(hostFrame, "ENEMY DETECTION", posY)
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    _, height = W:SectionHeader(hostFrame, "ENEMY DETECTION", cursorY)
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Tog(
             "enabled",
             "Enemy Detection",
@@ -56,8 +56,8 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
             Off
         )
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, {
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "labeledButton",
         text = "Enemy List",
         buttonText = "Open",
@@ -76,8 +76,8 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
             P.Stats()
         end,
     })
-    posY = posY - hgt
-    _, hgt = W:DualRow(hostFrame, posY, {
+    cursorY = cursorY - height
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "slider",
         text = "Keep on Nearby List For",
         min = 30,
@@ -90,7 +90,7 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
             return P.Get("removeAfter")
         end,
         setValue = function(val)
-            conf.removeAfter = math.floor(val + 0.5)
+            rowConf.removeAfter = math.floor(val + 0.5)
         end,
     }, {
         type = "slider",
@@ -105,13 +105,13 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
             return P.Get("rows")
         end,
         setValue = function(val)
-            conf.rows = math.floor(val + 0.5)
+            rowConf.rows = math.floor(val + 0.5)
         end,
     })
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Tog(
             "battlegrounds",
             "Detect in Battlegrounds",
@@ -120,13 +120,13 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         ),
         { type = "label", text = "" }
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:SectionHeader(hostFrame, "ALERTS", posY)
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    _, height = W:SectionHeader(hostFrame, "ALERTS", cursorY)
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Tog(
             "sound",
             "Play Alert Sounds",
@@ -140,10 +140,10 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
             Off
         )
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Tog(
             "kosWarn",
             "Warn on Kill on Sight",
@@ -157,10 +157,10 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
             Off
         )
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Tog(
             "announceKoS",
             "Tell Group About Kill on Sight",
@@ -169,13 +169,13 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         ),
         { type = "label", text = "" }
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:SectionHeader(hostFrame, "SHARING AND TOOLS", posY)
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    _, height = W:SectionHeader(hostFrame, "SHARING AND TOOLS", cursorY)
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Tog(
             "share",
             "Share What I Spot",
@@ -189,10 +189,10 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
             Off
         )
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Tog(
             "kosButton",
             "Kill on Sight Button on Target",
@@ -206,13 +206,13 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
             Off
         )
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    _, hgt = W:SectionHeader(hostFrame, "WATCH LIST AND MAP", posY)
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    _, height = W:SectionHeader(hostFrame, "WATCH LIST AND MAP", cursorY)
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Tog(
             "watchWarn",
             "Warn When a Watched Player Is Near",
@@ -226,10 +226,10 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
             Off
         )
     )
-    posY = posY - hgt
-    _, hgt = W:DualRow(
+    cursorY = cursorY - height
+    _, height = W:DualRow(
         hostFrame,
-        posY,
+        cursorY,
         Tog(
             "combatMap",
             "Fights on the World Map",
@@ -248,11 +248,11 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
                 return P.Get("offZones")
             end,
             setValue = function(textValue)
-                conf.offZones = textValue or ""
+                rowConf.offZones = textValue or ""
             end,
         }
     )
-    posY = posY - hgt
+    cursorY = cursorY - height
 
-    return math.abs(posY)
+    return math.abs(cursorY)
 end

@@ -163,23 +163,23 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         row:SetHeight(28)
         row:SetFrameLevel(menu:GetFrameLevel() + 2)
 
-        local box = CreateFrame("Frame", nil, row)
-        box:SetSize(16, 16)
-        box:SetPoint("LEFT", row, "LEFT", 10, 0)
-        local boxBg = box:CreateTexture(nil, "BACKGROUND")
+        local boxFrame = CreateFrame("Frame", nil, row)
+        boxFrame:SetSize(16, 16)
+        boxFrame:SetPoint("LEFT", row, "LEFT", 10, 0)
+        local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
         boxBg:SetAllPoints()
         boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-        row._boxBrd = CludesUI.MakeRoundedBorder(box, 0.4, 0.4, 0.4, 0.6, boxBg)
+        row._boxBrd = CludesUI.MakeRoundedBorder(boxFrame, 0.4, 0.4, 0.4, 0.6, boxBg)
 
-        local chk = box:CreateTexture(nil, "ARTWORK")
-        PP.SetInside(chk, box, 2, 2)
-        CludesUI.RoundBody(box, chk, 2)
+        local chk = boxFrame:CreateTexture(nil, "ARTWORK")
+        PP.SetInside(chk, boxFrame, 2, 2)
+        CludesUI.RoundBody(boxFrame, chk, 2)
         row._chk = chk
 
-        local lbl = row:CreateFontString(nil, "OVERLAY")
-        lbl:SetFont(fontPath, 13, "")
-        lbl:SetPoint("LEFT", box, "RIGHT", 8, 0)
-        row._lbl = lbl
+        local caption = row:CreateFontString(nil, "OVERLAY")
+        caption:SetFont(fontPath, 13, "")
+        caption:SetPoint("LEFT", boxFrame, "RIGHT", 8, 0)
+        row._lbl = caption
 
         local hl = row:CreateTexture(nil, "ARTWORK")
         hl:SetAllPoints()
@@ -380,12 +380,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             row:SetFrameLevel(menu:GetFrameLevel() + 2)
             row:Show()
 
-            local boxBrd, chk, lbl, hl = row._boxBrd, row._chk, row._lbl, row._hl
+            local boxBrd, chk, caption, hl = row._boxBrd, row._chk, row._lbl, row._hl
             local gr = CludesUI.CLUDES_GREEN
             chk:SetColorTexture(gr.r, gr.g, gr.b, 1)
             chk:SetAlpha(1)
 
-            lbl:SetText(CludesUI.L(labels[key] or key))
+            caption:SetText(CludesUI.L(labels[key] or key))
 
             hl:SetColorTexture(1, 1, 1, 0)
 
@@ -401,7 +401,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
             if isCurrent then
                 -- Current element: checked, grayed out, non-interactive
-                lbl:SetTextColor(0.45, 0.45, 0.45, 0.7)
+                caption:SetTextColor(0.45, 0.45, 0.45, 0.7)
                 chk:Show()
                 boxBrd:SetColor(gr.r, gr.g, gr.b, 0.4)
                 chk:SetAlpha(0.4)
@@ -411,14 +411,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 row:Disable()
             else
                 row:Enable()
-                lbl:SetTextColor(0.75, 0.75, 0.75, 1)
+                caption:SetTextColor(0.75, 0.75, 0.75, 1)
                 UpdateCheck()
                 row:SetScript("OnEnter", function()
-                    lbl:SetTextColor(1, 1, 1, 1)
+                    caption:SetTextColor(1, 1, 1, 1)
                     hl:SetColorTexture(1, 1, 1, 0.04)
                 end)
                 row:SetScript("OnLeave", function()
-                    lbl:SetTextColor(0.75, 0.75, 0.75, 1)
+                    caption:SetTextColor(0.75, 0.75, 0.75, 1)
                     hl:SetColorTexture(1, 1, 1, 0)
                 end)
                 row:SetScript("OnClick", function()
@@ -587,8 +587,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         if not set then
             return
         end
-        local prev, lbl = linger.set, frame._label
-        linger.region, linger.label, linger.set = frame, lbl and lbl:GetText(), set
+        local prev, caption = linger.set, frame._label
+        linger.region, linger.label, linger.set = frame, caption and caption:GetText(), set
         linger.untilT = GetTime() + LINGER_SECONDS
         if prev and prev ~= set then
             prev(false)

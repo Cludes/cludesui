@@ -361,8 +361,8 @@ CludesUI.AtOptionsLogin(function()
             local kept = {}
             for _, sv in ipairs(Sharers(ownerFrame)) do
                 local success = mod.PalettesExclusive(sv, ownerFrame)
-                for _, k in ipairs(kept) do
-                    if success and not mod.PalettesExclusive(sv, k) then
+                for _, keyName in ipairs(kept) do
+                    if success and not mod.PalettesExclusive(sv, keyName) then
                         success = false
                     end
                 end
@@ -649,7 +649,7 @@ CludesUI.AtOptionsLogin(function()
         -- No selection zoom (hardcoded off in the module), so the fit
         -- budgets no growth headroom.
         local zoom = 1
-        local k
+        local keyName
         if layout == "GRID" then
             -- The grid is bounded on BOTH axes, so both budgets have to be met:
             -- the block's width across the columns, and its height down the rows.
@@ -666,7 +666,7 @@ CludesUI.AtOptionsLogin(function()
                 rowList = math.ceil(num / cols)
             end
             local pitch = iconSize + (MenuGet("fanGap") or 10)
-            k = math.min(
+            keyName = math.min(
                 PREVIEW_MAX_ZOOM,
                 BlockSpan(false) / (cols * pitch * 0.5 + iconSize * (zoom - 1) * 0.5),
                 BlockSpan(true) / (rowList * pitch * 0.5 + iconSize * (zoom - 1) * 0.5)
@@ -692,7 +692,7 @@ CludesUI.AtOptionsLogin(function()
             -- Both axes, not just the one the strip runs along: a short strip
             -- fits its own length several times over, and without the crossways
             -- budget it would grow until the icons ran out of the block.
-            k = math.min(
+            keyName = math.min(
                 PREVIEW_MAX_ZOOM,
                 BlockSpan(vertical) / reach,
                 BlockSpan(not vertical) / (iconSize * 0.5 * zoom)
@@ -704,9 +704,9 @@ CludesUI.AtOptionsLogin(function()
             -- it does in play and the icons never change size. Past a radius
             -- of roughly 140 the ring outgrows the block and draws past its
             -- edges -- the accepted price of the fixed scale.
-            k = 0.75
+            keyName = 0.75
         end
-        return radius * k, iconSize * k, deadZone * k
+        return radius * keyName, iconSize * keyName, deadZone * keyName
     end
 
     -- Manual drag, threshold-based -- the same shape as the Widgets reorder row
@@ -1502,8 +1502,8 @@ CludesUI.AtOptionsLogin(function()
     -- Which list the Back row goes home to, filled in here because a table
     -- literal cannot name itself. A category with no parent is at the root.
     for _, category in ipairs(PICKER_CATEGORIES) do
-        for _, sub in ipairs(category.subs or {}) do
-            sub.parent = category
+        for _, subMenu in ipairs(category.subs or {}) do
+            subMenu.parent = category
         end
     end
 
@@ -1525,8 +1525,8 @@ CludesUI.AtOptionsLogin(function()
         -- handing that one table to two entries would alias a single saved slot
         -- into both of them.
         local ent = {}
-        for k, v in pairs(record.slot) do
-            ent[k] = v
+        for keyName, value in pairs(record.slot) do
+            ent[keyName] = value
         end
         if pickerReplaceIndex then
             -- Opened by a right-click on an existing entry: the pick replaces
@@ -1768,29 +1768,29 @@ CludesUI.AtOptionsLogin(function()
         dropMenu.custom = custom
 
         local function MakeInput(hostFrame, height, multiline)
-            local box = CreateFrame("EditBox", nil, hostFrame)
-            box:SetHeight(height)
-            box:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
-            box:SetFont(FONT, 11, "")
-            box:SetTextColor(1, 1, 1, 0.9)
-            box:SetAutoFocus(false)
-            box:SetTextInsets(5, 5, 3, 3)
-            box:SetMultiLine(multiline == true)
+            local boxFrame = CreateFrame("EditBox", nil, hostFrame)
+            boxFrame:SetHeight(height)
+            boxFrame:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
+            boxFrame:SetFont(FONT, 11, "")
+            boxFrame:SetTextColor(1, 1, 1, 0.9)
+            boxFrame:SetAutoFocus(false)
+            boxFrame:SetTextInsets(5, 5, 3, 3)
+            boxFrame:SetMultiLine(multiline == true)
             -- Newlines are part of a macro, so a multiline box must not treat
             -- Enter as "commit"; the Add button is the only commit.
             if not multiline then
-                box:SetScript("OnEnterPressed", function(sv)
+                boxFrame:SetScript("OnEnterPressed", function(sv)
                     sv:ClearFocus()
                 end)
             end
-            box:SetScript("OnEscapePressed", function(sv)
+            boxFrame:SetScript("OnEscapePressed", function(sv)
                 sv:ClearFocus()
             end)
-            local backdrop = box:CreateTexture(nil, "BACKGROUND")
+            local backdrop = boxFrame:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAllPoints()
             backdrop:SetColorTexture(0, 0, 0, 0.4)
-            CludesUI.MakeRoundedBorder(box, 1, 1, 1, 0.10, backdrop)
-            return box
+            CludesUI.MakeRoundedBorder(boxFrame, 1, 1, 1, 0.10, backdrop)
+            return boxFrame
         end
 
         local nameLbl = CludesUI.MakeFont(custom, 10, nil, tR, tG, tB, tA)
@@ -2720,13 +2720,13 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         for num = index, MAX_PALETTES do
-            for _, k in ipairs(keyList[num]) do
-                SetBinding(k)
+            for _, keyName in ipairs(keyList[num]) do
+                SetBinding(keyName)
             end
         end
         for num = index, MAX_PALETTES - 1 do
-            for _, k in ipairs(keyList[num + 1] or {}) do
-                SetBinding(k, BINDING_PREFIX .. num)
+            for _, keyName in ipairs(keyList[num + 1] or {}) do
+                SetBinding(keyName, BINDING_PREFIX .. num)
             end
         end
         if any or handed then
@@ -3003,42 +3003,42 @@ CludesUI.AtOptionsLogin(function()
             return
         end
         local PPQ = CludesUI.PanelPP
-        local btn = CreateFrame("Button", nil, region)
+        local button = CreateFrame("Button", nil, region)
         -- 170x30, the exact face BuildDropdownControl gives every standard
         -- row dropdown, so this selector reads as one of them.
-        PPQ.Size(btn, MM_W, 30)
-        btn:SetFrameLevel(region:GetFrameLevel() + 3)
-        PPQ.Point(btn, "RIGHT", region, "RIGHT", -20, 0)
-        local backdrop = btn:CreateTexture(nil, "BACKGROUND")
+        PPQ.Size(button, MM_W, 30)
+        button:SetFrameLevel(region:GetFrameLevel() + 3)
+        PPQ.Point(button, "RIGHT", region, "RIGHT", -20, 0)
+        local backdrop = button:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_A)
-        local brd = CludesUI.MakeRoundedBorder(btn, 1, 1, 1, CludesUI.DD_BRD_A, backdrop)
+        local brd = CludesUI.MakeRoundedBorder(button, 1, 1, 1, CludesUI.DD_BRD_A, backdrop)
         -- The resting alpha is the text colour's, the channel the hover
         -- colours below write, so a hover and leave land back on it.
-        local labelFS = CludesUI.MakeFont(btn, 13, nil, 1, 1, 1, CludesUI.DD_TXT_A)
+        local labelFS = CludesUI.MakeFont(button, 13, nil, 1, 1, 1, CludesUI.DD_TXT_A)
         labelFS:SetJustifyH("LEFT")
         labelFS:SetWordWrap(false)
         labelFS:SetMaxLines(1)
-        labelFS:SetPoint("LEFT", btn, "LEFT", 12, 0)
-        local arrow = CludesUI.MakeDropdownArrow(btn, 12, PPQ)
+        labelFS:SetPoint("LEFT", button, "LEFT", 12, 0)
+        local arrow = CludesUI.MakeDropdownArrow(button, 12, PPQ)
         labelFS:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
         local menuT = MenuTable(editingMenu)
         labelFS:SetText((menuT and menuT.name) or AutoName(editingMenu))
         local sv = CludesUI.RD_DD_COLOURS
-        btn:SetScript("OnEnter", function()
+        button:SetScript("OnEnter", function()
             labelFS:SetTextColor(sv[21], sv[22], sv[23], sv[24])
             brd:SetColor(sv[13], sv[14], sv[15], sv[16])
             backdrop:SetColorTexture(sv[5], sv[6], sv[7], sv[8])
         end)
-        btn:SetScript("OnLeave", function()
+        button:SetScript("OnLeave", function()
             labelFS:SetTextColor(sv[17], sv[18], sv[19], sv[20])
             brd:SetColor(sv[9], sv[10], sv[11], sv[12])
             backdrop:SetColorTexture(sv[1], sv[2], sv[3], sv[4])
         end)
         if ProfileGet("enabled") ~= true then
-            btn:SetAlpha(0.4)
+            button:SetAlpha(0.4)
         end
-        btn:SetScript("OnClick", function()
+        button:SetScript("OnClick", function()
             if ProfileGet("enabled") ~= true then
                 return
             end
@@ -3046,18 +3046,18 @@ CludesUI.AtOptionsLogin(function()
             -- The same anchor only in the same dress: a page rebuild may dress
             -- this button again (page reuse), and an open menu then re-anchors
             -- to it as it would to a new button.
-            if menuFrame:IsShown() and menuFrame._anchor == btn and menuFrame._anchorGen == Pool.Gen(btn) then
+            if menuFrame:IsShown() and menuFrame._anchor == button and menuFrame._anchorGen == Pool.Gen(button) then
                 menuFrame:Hide()
                 return
             end
-            menuFrame._anchor, menuFrame._anchorGen = btn, Pool.Gen(btn)
+            menuFrame._anchor, menuFrame._anchorGen = button, Pool.Gen(button)
             menuFrame:ClearAllPoints()
-            menuFrame:SetPoint("TOPLEFT", btn, "BOTTOMLEFT", 0, -2)
+            menuFrame:SetPoint("TOPLEFT", button, "BOTTOMLEFT", 0, -2)
             RebuildMenuRows()
             menuFrame:Show()
         end)
-        region._lastInline = btn
-        return btn
+        region._lastInline = button
+        return button
     end
 
     -- The shared keybind capture button, on the row's right half: left-click
@@ -3214,12 +3214,12 @@ CludesUI.AtOptionsLogin(function()
     -- whenever nothing is being dragged.
     local function PreviewDragUpdate()
         local es = previewWheel:GetFrame():GetEffectiveScale()
-        local posX, posY = GetCursorPosition()
-        posX, posY = posX / es, posY / es
+        local posX, cursorY = GetCursorPosition()
+        posX, cursorY = posX / es, cursorY / es
         if not dragging then
             if
                 math.abs(posX - dragStartX) < DRAG_THRESHOLD
-                and math.abs(posY - dragStartY) < DRAG_THRESHOLD
+                and math.abs(cursorY - dragStartY) < DRAG_THRESHOLD
             then
                 return
             end
@@ -3317,8 +3317,8 @@ CludesUI.AtOptionsLogin(function()
                     return
                 end
                 local es = previewWheel:GetFrame():GetEffectiveScale()
-                local posX, posY = GetCursorPosition()
-                dragStartX, dragStartY = posX / es, posY / es
+                local posX, cursorY = GetCursorPosition()
+                dragStartX, dragStartY = posX / es, cursorY / es
                 dragFrom, dragTarget = self.index, nil
                 previewHost:SetScript("OnUpdate", PreviewDragUpdate)
             end)
@@ -3530,8 +3530,8 @@ CludesUI.AtOptionsLogin(function()
         local over = into.appearance or {}
         into.appearance = over
         for key in pairs(wanted) do
-            local v = from[key]
-            over[key] = (type(v) == "table") and CludesUI.Lite.DeepCopy(v) or v
+            local value = from[key]
+            over[key] = (type(value) == "table") and CludesUI.Lite.DeepCopy(value) or value
         end
         Reapply()
         CludesUI:RefreshPage(true)
@@ -3683,7 +3683,7 @@ CludesUI.AtOptionsLogin(function()
     -- the chosen one onto the edited menu after a confirm popup; its getValue
     -- always returns the placeholder so the dropdown stores nothing, and the
     -- registered widget refresh snaps the label back after each pick.
-    local function BuildApplyRow(hostFrame, posY, withCopy)
+    local function BuildApplyRow(hostFrame, cursorY, withCopy)
         local ROW_HEIGHT = 50
         -- Bespoke controls the search index does not list: its prebuild only
         -- takes the height.
@@ -3695,7 +3695,7 @@ CludesUI.AtOptionsLogin(function()
         local pad = CludesUI.CONTENT_PAD or 45
         local strip = CreateFrame("Frame", nil, hostFrame)
         Pix.Size(strip, hostFrame:GetWidth() - pad * 2, ROW_HEIGHT)
-        Pix.Point(strip, "TOPLEFT", hostFrame, "TOPLEFT", pad, posY)
+        Pix.Point(strip, "TOPLEFT", hostFrame, "TOPLEFT", pad, cursorY)
 
         local DROP_W, LABEL_GAP, BETWEEN = 180, 12, 40
         -- Each pair is { caption, dropdown }.
@@ -3777,8 +3777,8 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, row, hgt
+        local cursorY = yOffset
+        local _, row, height
 
         if CludesUI.ClearContentHeader then
             CludesUI:ClearContentHeader()
@@ -3819,21 +3819,21 @@ CludesUI.AtOptionsLogin(function()
         -----------------------------------------------------------------------
         --  GENERAL
         -----------------------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, "GENERAL", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "GENERAL", cursorY)
+        cursorY = cursorY - height
 
         local addPaletteBtn
-        row, hgt = W:DualRow(
+        row, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             {
                 type = "toggle",
                 text = "Enable Action Wheel",
                 getValue = function()
                     return ProfileGet("enabled") == true
                 end,
-                setValue = function(v)
-                    ProfilePut("enabled", v)
+                setValue = function(value)
+                    ProfilePut("enabled", value)
                     RedrawPage()
                 end,
             },
@@ -3864,17 +3864,17 @@ CludesUI.AtOptionsLogin(function()
             }
         )
         addPaletteBtn = row._rightRegion and row._rightRegion._control
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -----------------------------------------------------------------------
         --  ACTION MENU SETUP
         -----------------------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, "ACTION MENU SETUP", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "ACTION MENU SETUP", cursorY)
+        cursorY = cursorY - height
 
-        row, hgt = W:DualRow(
+        row, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             -- Two label halves: the selector and the keybind button are both
             -- bespoke controls attached below. The selector is the custom
             -- Profiles-style dropdown whose rows carry the inline rename and
@@ -3886,7 +3886,7 @@ CludesUI.AtOptionsLogin(function()
         )
         BuildMenuSelector(row._leftRegion)
         BuildKeybindButton(row._rightRegion)
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- The Select Key, then the switch that needs it: the key is the
         -- PREREQUISITE (a latched menu nothing can answer would be a trap), so
@@ -3909,9 +3909,9 @@ CludesUI.AtOptionsLogin(function()
         local function HasSelectKey()
             return StoredChord("confirmKey") ~= nil
         end
-        row, hgt = W:DualRow(
+        row, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             -- A label half, like the keybind row above: the control underneath
             -- is the same bespoke listening button, attached after the row.
             { type = "label", text = "Toggled Menu Select Action" },
@@ -3928,8 +3928,8 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return MenuGet("toggleMode") == true
                 end,
-                setValue = function(v)
-                    MenuPut("toggleMode", v)
+                setValue = function(value)
+                    MenuPut("toggleMode", value)
                     Reapply()
                 end,
             }
@@ -3954,7 +3954,7 @@ CludesUI.AtOptionsLogin(function()
             -- A bare mouse button is the point of this one. See BuildKeybindButton.
             plainMouse = true,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Its opposite, and on a row of its own: nothing else belongs beside a
         -- cancel key. Escape already backs out of any menu and stays that way;
@@ -3966,9 +3966,9 @@ CludesUI.AtOptionsLogin(function()
         -- is what brings this row in and out. A cancelKey bound earlier stays
         -- stored while hidden and returns with the row.
         if HasSelectKey() then
-            row, hgt = W:DualRow(
+            row, height = W:DualRow(
                 hostFrame,
-                posY,
+                cursorY,
                 { type = "label", text = "Menu Cancel Action" },
                 { type = "label", text = "" }
             )
@@ -4006,14 +4006,14 @@ CludesUI.AtOptionsLogin(function()
                 -- this is for.
                 plainMouse = true,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end
 
-        posY = posY - BuildPreview(hostFrame, posY)
+        cursorY = cursorY - BuildPreview(hostFrame, cursorY)
 
         -- Assign to Spec, and beside it Apply All Settings From while there is
         -- another menu to copy from.
-        posY = posY - BuildApplyRow(hostFrame, posY, paletteCount > 1)
+        cursorY = cursorY - BuildApplyRow(hostFrame, cursorY, paletteCount > 1)
 
         -----------------------------------------------------------------------
         --  Row helpers for the two sections below
@@ -4029,8 +4029,8 @@ CludesUI.AtOptionsLogin(function()
             local function fetch()
                 return read(MenuGet(key))
             end
-            local function store(v)
-                MenuPut(key, v)
+            local function store(value)
+                MenuPut(key, value)
                 Reapply()
             end
             if spec.label then
@@ -4046,27 +4046,27 @@ CludesUI.AtOptionsLogin(function()
             return PerMenu(spec, key, read)
         end
         local function Or(fallback)
-            return function(v)
-                return v or fallback
+            return function(value)
+                return value or fallback
             end
         end
-        local function OnUnlessOff(v)
-            return v ~= false
+        local function OnUnlessOff(value)
+            return value ~= false
         end
-        local function OffUnlessOn(v)
-            return v == true
+        local function OffUnlessOn(value)
+            return value == true
         end
         local function Put(left, right)
-            local made, height = W:DualRow(hostFrame, posY, left, right)
-            posY = posY - height
+            local made, height = W:DualRow(hostFrame, cursorY, left, right)
+            cursorY = cursorY - height
             return made
         end
 
         -----------------------------------------------------------------------
         --  LAYOUT
         -----------------------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "LAYOUT", cursorY)
+        cursorY = cursorY - height
 
         -- The page keeps the two decisions every menu needs (which layout it
         -- draws as, and where it opens) and the two sizes people reach for
@@ -4085,10 +4085,10 @@ CludesUI.AtOptionsLogin(function()
         local function fixedOnly()
             return Disabled() or (MenuGet("centerMode") or "CURSOR") ~= "SCREEN"
         end
-        local function Offset(lbl, key, reach)
+        local function Offset(caption, key, reach)
             return Gated({
                 type = "slider",
-                label = lbl,
+                label = caption,
                 min = -reach,
                 max = reach,
                 step = 1,
@@ -4110,8 +4110,8 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return MenuGet("layout") or "ARC"
                 end,
-                setValue = function(v)
-                    MenuPut("layout", v)
+                setValue = function(value)
+                    MenuPut("layout", value)
                     RedrawPage()
                 end,
             },
@@ -4229,8 +4229,8 @@ CludesUI.AtOptionsLogin(function()
                     getValue = function()
                         return ((MenuGet("fanVisible") or 2) * 2) + 1
                     end,
-                    setValue = function(v)
-                        MenuPut("fanVisible", (v - 1) * 0.5)
+                    setValue = function(value)
+                        MenuPut("fanVisible", (value - 1) * 0.5)
                         Reapply()
                     end,
                 }
@@ -4321,8 +4321,8 @@ CludesUI.AtOptionsLogin(function()
                                 order = { "PERIMETER", "HALO" },
                             },
                             "gridNestStyle",
-                            function(v)
-                                return (v == "HALO") and "HALO" or "PERIMETER"
+                            function(value)
+                                return (value == "HALO") and "HALO" or "PERIMETER"
                             end
                         ),
                     },
@@ -4338,8 +4338,8 @@ CludesUI.AtOptionsLogin(function()
         -----------------------------------------------------------------------
         --  APPEARANCE
         -----------------------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, "APPEARANCE", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "APPEARANCE", cursorY)
+        cursorY = cursorY - height
 
         Put(
             Gated({ type = "toggle", text = "Show Cooldowns" }, "showCooldowns", OnUnlessOff),
@@ -4501,10 +4501,10 @@ CludesUI.AtOptionsLogin(function()
             },
         })
 
-        _, hgt = W:Spacer(hostFrame, posY, 10)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 10)
+        cursorY = cursorY - height
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     ---------------------------------------------------------------------------

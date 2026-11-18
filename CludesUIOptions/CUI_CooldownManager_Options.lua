@@ -18,11 +18,11 @@ mod.PadPopupOpen = CludesUI.PadPopupOpen
 
 -- Gates a row under Blizzard Style only: the classic kit draws chrome round
 -- the user's own fill and background, so those settings stay live there.
-local function GateBlizzardOnly(key, conf)
+local function GateBlizzardOnly(key, rowConf)
     if CludesUI.BlizzStyle.Active(key) == "blizzard" then
-        return CludesUI.BlizzStyle.Gate(key, conf)
+        return CludesUI.BlizzStyle.Gate(key, rowConf)
     end
-    return conf
+    return rowConf
 end
 
 local PAGE_BAR_GLOWS = "Bar Glows"
@@ -533,8 +533,8 @@ CludesUI.AtOptionsLogin(function()
         local ROT_TO_SHARED =
             { pixel = 1, button = 2, autocast = 3, shape = 4, gcd = 5, modern = 6, classic = 7 }
         local SHARED_TO_ROT = {}
-        for k, val in pairs(ROT_TO_SHARED) do
-            SHARED_TO_ROT[val] = k
+        for keyName, val in pairs(ROT_TO_SHARED) do
+            SHARED_TO_ROT[val] = keyName
         end
         -- Why the CDM highlight cannot show, nil while it can: Blizzard's
         -- Assisted Highlight off (always on Forever) or Show Rotation Helper off.
@@ -1065,8 +1065,8 @@ CludesUI.AtOptionsLogin(function()
 
     local function BuildBarGlowsPage(pageName, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
 
         local backdrop = mod.GetBarGlows()
         local curBar = NormalizeSelectedBar(backdrop.selectedBar or "cooldowns")
@@ -1145,23 +1145,23 @@ CludesUI.AtOptionsLogin(function()
             local tDimA = CludesUI.TEXT_DIM_A or 0.85
             local ITEM_H = 26
 
-            local ddBtn = CreateFrame("Button", nil, header)
-            Pix.Size(ddBtn, ddW, DD_H)
-            ddBtn:SetFrameLevel(header:GetFrameLevel() + 5)
-            local ddBg = ddBtn:CreateTexture(nil, "BACKGROUND")
+            local dropdownBtn = CreateFrame("Button", nil, header)
+            Pix.Size(dropdownBtn, ddW, DD_H)
+            dropdownBtn:SetFrameLevel(header:GetFrameLevel() + 5)
+            local ddBg = dropdownBtn:CreateTexture(nil, "BACKGROUND")
             ddBg:SetAllPoints()
             ddBg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
-            local ddBrd = CludesUI.MakeRoundedBorder(ddBtn, 1, 1, 1, mBrdA, ddBg)
-            local ddLbl = ddBtn:CreateFontString(nil, "OVERLAY")
-            ddLbl:SetFont(FONT_PATH, 13, GetCDMOptOutline())
-            ddLbl:SetAlpha(mTxtA)
-            ddLbl:SetJustifyH("LEFT")
-            ddLbl:SetWordWrap(false)
-            ddLbl:SetMaxLines(1)
-            ddLbl:SetPoint("LEFT", ddBtn, "LEFT", 12, 0)
-            local ddArrow = CludesUI.MakeDropdownArrow(ddBtn, 12, CludesUI.PanelPP)
-            ddLbl:SetPoint("RIGHT", ddArrow, "LEFT", -5, 0)
-            ddLbl:SetText(GetBGTargetLabel(sel))
+            local ddBrd = CludesUI.MakeRoundedBorder(dropdownBtn, 1, 1, 1, mBrdA, ddBg)
+            local dropCaption = dropdownBtn:CreateFontString(nil, "OVERLAY")
+            dropCaption:SetFont(FONT_PATH, 13, GetCDMOptOutline())
+            dropCaption:SetAlpha(mTxtA)
+            dropCaption:SetJustifyH("LEFT")
+            dropCaption:SetWordWrap(false)
+            dropCaption:SetMaxLines(1)
+            dropCaption:SetPoint("LEFT", dropdownBtn, "LEFT", 12, 0)
+            local ddArrow = CludesUI.MakeDropdownArrow(dropdownBtn, 12, CludesUI.PanelPP)
+            dropCaption:SetPoint("RIGHT", ddArrow, "LEFT", -5, 0)
+            dropCaption:SetText(GetBGTargetLabel(sel))
 
             local ddMenu
             local function BuildDDMenu()
@@ -1175,56 +1175,56 @@ CludesUI.AtOptionsLogin(function()
                 dropMenu:SetFrameStrata("FULLSCREEN_DIALOG")
                 dropMenu:SetFrameLevel(300)
                 dropMenu:SetClampedToScreen(true)
-                dropMenu:SetPoint("TOPLEFT", ddBtn, "BOTTOMLEFT", 0, -2)
-                dropMenu:SetPoint("TOPRIGHT", ddBtn, "BOTTOMRIGHT", 0, -2)
+                dropMenu:SetPoint("TOPLEFT", dropdownBtn, "BOTTOMLEFT", 0, -2)
+                dropMenu:SetPoint("TOPRIGHT", dropdownBtn, "BOTTOMRIGHT", 0, -2)
                 local bg2 = dropMenu:CreateTexture(nil, "BACKGROUND")
                 bg2:SetAllPoints()
                 bg2:SetColorTexture(mBgR, mBgG, mBgB, mBgHA)
                 CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, mBrdA, bg2, nil, true)
-                local mH = 4
+                local menuH = 4
                 local targets = BuildBGTargetList()
                 for _, t in ipairs(targets) do
                     local entryVal = t.value
-                    local item = CreateFrame("Button", nil, dropMenu)
-                    item:SetHeight(ITEM_H)
-                    item:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -mH)
-                    item:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -mH)
-                    item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                    local iLbl = item:CreateFontString(nil, "OVERLAY")
+                    local entry = CreateFrame("Button", nil, dropMenu)
+                    entry:SetHeight(ITEM_H)
+                    entry:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -menuH)
+                    entry:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -menuH)
+                    entry:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                    local iLbl = entry:CreateFontString(nil, "OVERLAY")
                     iLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
                     iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                     iLbl:SetJustifyH("LEFT")
                     iLbl:SetWordWrap(false)
                     iLbl:SetMaxLines(1)
-                    iLbl:SetPoint("LEFT", item, "LEFT", 10, 0)
+                    iLbl:SetPoint("LEFT", entry, "LEFT", 10, 0)
                     iLbl:SetText(t.label)
-                    local iHl = item:CreateTexture(nil, "ARTWORK")
+                    local iHl = entry:CreateTexture(nil, "ARTWORK")
                     iHl:SetAllPoints()
                     iHl:SetColorTexture(1, 1, 1, 1)
                     local isCurrent = (entryVal == sel)
                     iHl:SetAlpha(isCurrent and selA or 0)
-                    item:SetScript("OnEnter", function()
+                    entry:SetScript("OnEnter", function()
                         iLbl:SetTextColor(1, 1, 1, 1)
                         iHl:SetAlpha(hlA)
                     end)
-                    item:SetScript("OnLeave", function()
+                    entry:SetScript("OnLeave", function()
                         iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                         iHl:SetAlpha(isCurrent and selA or 0)
                     end)
-                    item:SetScript("OnClick", function()
+                    entry:SetScript("OnClick", function()
                         dropMenu:Hide()
                         bgData.selectedBar = entryVal
                         bgData.selectedButton = nil
                         _glowSelectedButton = nil
                         CludesUI:RefreshPage(true)
                     end)
-                    mH = mH + ITEM_H
+                    menuH = menuH + ITEM_H
                 end
-                dropMenu:SetHeight(mH + 4)
+                dropMenu:SetHeight(menuH + 4)
                 dropMenu:SetScript("OnUpdate", function(m)
                     if
                         not m:IsMouseOver()
-                        and not ddBtn:IsMouseOver()
+                        and not dropdownBtn:IsMouseOver()
                         and IsMouseButtonDown("LeftButton")
                     then
                         m:Hide()
@@ -1237,38 +1237,38 @@ CludesUI.AtOptionsLogin(function()
                 ddMenu = dropMenu
             end
 
-            ddBtn:SetScript("OnEnter", function()
-                ddLbl:SetAlpha(mTxtHA)
+            dropdownBtn:SetScript("OnEnter", function()
+                dropCaption:SetAlpha(mTxtHA)
                 ddBrd:SetColor(1, 1, 1, mBrdHA)
                 ddBg:SetColorTexture(mBgR, mBgG, mBgB, mBgHA)
             end)
-            ddBtn:SetScript("OnLeave", function()
+            dropdownBtn:SetScript("OnLeave", function()
                 if ddMenu and ddMenu:IsShown() then
                     return
                 end
-                ddLbl:SetAlpha(mTxtA)
+                dropCaption:SetAlpha(mTxtA)
                 ddBrd:SetColor(1, 1, 1, mBrdA)
                 ddBg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
             end)
-            ddBtn:SetScript("OnClick", function()
+            dropdownBtn:SetScript("OnClick", function()
                 if ddMenu and ddMenu:IsShown() then
                     ddMenu:Hide()
                 else
                     BuildDDMenu()
                 end
             end)
-            ddBtn:HookScript("OnHide", function()
+            dropdownBtn:HookScript("OnHide", function()
                 if ddMenu then
                     ddMenu:Hide()
                 end
             end)
-            Pix.Point(ddBtn, "TOP", header, "TOP", 0, -20)
+            Pix.Point(dropdownBtn, "TOP", header, "TOP", 0, -20)
 
             -- (i) next to the picker: what the page does, on hover
             local details = CreateFrame("Frame", nil, header)
             Pix.Size(details, 16, 16)
-            Pix.Point(details, "LEFT", ddBtn, "RIGHT", 10, 0)
-            details:SetFrameLevel(ddBtn:GetFrameLevel())
+            Pix.Point(details, "LEFT", dropdownBtn, "RIGHT", 10, 0)
+            details:SetFrameLevel(dropdownBtn:GetFrameLevel())
             details:SetMouseClickEnabled(false)
             details:SetMouseMotionEnabled(true)
             local infoIco = details:CreateTexture(nil, "OVERLAY")
@@ -1507,36 +1507,36 @@ CludesUI.AtOptionsLogin(function()
                         -- GetDrawLayer comparisons on it error out mid page-build.
                         bf._sbt = sbt
                         if brdSize > 0 then
-                            local cr, cg, cb = brdColor.r, brdColor.g, brdColor.b
+                            local cr, cg, checkBtn = brdColor.r, brdColor.g, brdColor.b
                             if brdClassColor then
                                 local _, ct = UnitClass("player")
                                 if ct then
-                                    local cc = RAID_CLASS_COLORS[ct]
-                                    if cc then
-                                        cr, cg, cb = cc.r, cc.g, cc.b
+                                    local classColor = RAID_CLASS_COLORS[ct]
+                                    if classColor then
+                                        cr, cg, checkBtn = classColor.r, classColor.g, classColor.b
                                     end
                                 end
                             end
-                            sbt:SetVertexColor(cr, cg, cb, brdColor.a or 1)
+                            sbt:SetVertexColor(cr, cg, checkBtn, brdColor.a or 1)
                         else
                             sbt:SetVertexColor(0, 0, 0, 0)
                         end
                     end
                 elseif brdSize > 0 then
                     -- Square borders via unified PP system
-                    local cr, cg, cb, ca = brdColor.r, brdColor.g, brdColor.b, brdColor.a or 1
+                    local cr, cg, checkBtn, ca = brdColor.r, brdColor.g, brdColor.b, brdColor.a or 1
                     if brdClassColor then
                         local _, ct = UnitClass("player")
                         if ct then
-                            local cc = RAID_CLASS_COLORS[ct]
-                            if cc then
-                                cr, cg, cb = cc.r, cc.g, cc.b
+                            local classColor = RAID_CLASS_COLORS[ct]
+                            if classColor then
+                                cr, cg, checkBtn = classColor.r, classColor.g, classColor.b
                             end
                         end
                     end
                     local Pix = CludesUI and CludesUI.PP
                     if Pix then
-                        Pix.CreateBorder(bf, cr, cg, cb, ca, brdSize, "OVERLAY", 7)
+                        Pix.CreateBorder(bf, cr, cg, checkBtn, ca, brdSize, "OVERLAY", 7)
                     end
                 end
 
@@ -1796,8 +1796,8 @@ CludesUI.AtOptionsLogin(function()
         --  Scrollable content area
         -------------------------------------------------------------------
 
-        _, hgt = W:Spacer(hostFrame, posY, 8)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 8)
+        cursorY = cursorY - height
 
         -- A selected slot that is (now) non-glowable shows no glow settings (the header tip stays).
         if curBtn and type(curBar) == "string" then
@@ -1828,11 +1828,11 @@ CludesUI.AtOptionsLogin(function()
             hostFrame._showRowDivider = true
 
             if #buffList == 0 then
-                _, hgt = W:Spacer(hostFrame, posY, 8)
-                posY = posY - hgt
+                _, height = W:Spacer(hostFrame, cursorY, 8)
+                cursorY = cursorY - height
                 local emptyFrame = CreateFrame("Frame", nil, hostFrame)
                 emptyFrame:SetSize(hostFrame:GetWidth(), 30)
-                emptyFrame:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", 0, posY)
+                emptyFrame:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", 0, cursorY)
                 local emptyText = emptyFrame:CreateFontString(nil, "OVERLAY")
                 emptyText:SetFont(FONT_PATH, 12, GetCDMOptOutline())
                 emptyText:SetTextColor(0.5, 0.5, 0.5, 1)
@@ -1840,7 +1840,7 @@ CludesUI.AtOptionsLogin(function()
                 emptyText:SetText(
                     CludesUI.L("No buffs assigned. Right click a button in the preview to assign buffs.")
                 )
-                posY = posY - 30
+                cursorY = cursorY - 30
             else
                 local glowLabels, glowOrder = GetGlowStyleValues()
 
@@ -1848,12 +1848,12 @@ CludesUI.AtOptionsLogin(function()
                     -- Collapse bar across the top of the glow; collapsed shows the buff
                     -- icon and name and skips the rows below.
                     local expanded
-                    posY, expanded = mod.BuildBarGlowHeader(hostFrame, posY, record, aIdx, cdmSid)
+                    cursorY, expanded = mod.BuildBarGlowHeader(hostFrame, cursorY, record, aIdx, cdmSid)
                     if expanded then
                         -- Row 1: When (icon) <buff> is [Active] | And [buff] is [Active] (toggle)
                         -- (CUI_CooldownManager_BarGlowConditions.lua)
                         local removeAIdx = aIdx
-                        posY = mod.BuildBarGlowWhenRow(W, hostFrame, posY, record, Refresh, cdmSid)
+                        cursorY = mod.BuildBarGlowWhenRow(W, hostFrame, cursorY, record, Refresh, cdmSid)
 
                         -- Helper: resolve current glow color and restart preview if active
                         local pvKey = assignKey .. "_" .. aIdx
@@ -1866,12 +1866,12 @@ CludesUI.AtOptionsLogin(function()
                                 return
                             end
                             local style = BarHasCustomShape(curBar) and 2 or (record.glowStyle or 1)
-                            local cr, cg, cb
+                            local cr, cg, checkBtn
                             if record.colorMode == "class" then
-                                local cc = CludesUI.GetClassColor(CludesUI._playerClass)
-                                cr, cg, cb = cc.r, cc.g, cc.b
+                                local classColor = CludesUI.GetClassColor(CludesUI._playerClass)
+                                cr, cg, checkBtn = classColor.r, classColor.g, classColor.b
                             elseif record.colorMode == "custom" and record.glowColor then
-                                cr, cg, cb = record.glowColor.r, record.glowColor.g, record.glowColor.b
+                                cr, cg, checkBtn = record.glowColor.r, record.glowColor.g, record.glowColor.b
                             end
                             mod.StopNativeGlow(shade)
                             -- Blackout reads its fill opacity from the extras; every other
@@ -1881,7 +1881,7 @@ CludesUI.AtOptionsLogin(function()
                                 style,
                                 cr,
                                 cg,
-                                cb,
+                                checkBtn,
                                 style == 8 and { panel = true, alpha = record.glowAlpha }
                                     or CludesUI.Glows.PANEL_EXTRA
                             )
@@ -1893,7 +1893,7 @@ CludesUI.AtOptionsLogin(function()
                         -- and Glows cog): an unknown/secret application count never blocks
                         -- the glow.
                         local stackRow
-                        stackRow, hgt = W:DualRow(hostFrame, posY, {
+                        stackRow, height = W:DualRow(hostFrame, cursorY, {
                             type = "toggle",
                             text = "At Stacks",
                             tooltip = "Only glow once the buff's stack count matches the comparison set via the gear.",
@@ -1931,10 +1931,10 @@ CludesUI.AtOptionsLogin(function()
                                 CludesUI:RefreshPage()
                             end,
                         })
-                        posY = posY - hgt
+                        cursorY = cursorY - height
                         do
-                            local rgn = stackRow._leftRegion
-                            CludesUI.BuildInlineCog(rgn, {
+                            local region = stackRow._leftRegion
+                            CludesUI.BuildInlineCog(region, {
                                 title = "At Stacks",
                                 disabled = function()
                                     return record.mode == "MISSING"
@@ -2000,20 +2000,20 @@ CludesUI.AtOptionsLogin(function()
                         if not CludesUI._prebuilding then
                             local EYE_VIS = CludesUI.EYE_VISIBLE_ICON
                             local EYE_INVIS = CludesUI.EYE_INVISIBLE_ICON
-                            local leftRgn = stackRow._rightRegion
-                            if leftRgn and leftRgn._control then
-                                local eyeBtn = CreateFrame("Button", nil, leftRgn)
-                                eyeBtn:SetSize(26, 26)
-                                eyeBtn:SetPoint("RIGHT", leftRgn._control, "LEFT", -8, 0)
-                                eyeBtn:SetFrameLevel(leftRgn:GetFrameLevel() + 5)
-                                CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-                                local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
+                            local leftRegion = stackRow._rightRegion
+                            if leftRegion and leftRegion._control then
+                                local eyeButton = CreateFrame("Button", nil, leftRegion)
+                                eyeButton:SetSize(26, 26)
+                                eyeButton:SetPoint("RIGHT", leftRegion._control, "LEFT", -8, 0)
+                                eyeButton:SetFrameLevel(leftRegion:GetFrameLevel() + 5)
+                                CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+                                local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
                                 eyeTex:SetAllPoints()
                                 local function RefreshEye()
                                     eyeTex:SetTexture(_bgPreviewGlowActive[pvKey] and EYE_INVIS or EYE_VIS)
                                 end
                                 RefreshEye()
-                                eyeBtn:SetScript("OnClick", function()
+                                eyeButton:SetScript("OnClick", function()
                                     local previewBtn = _glowBtnFrames[curBtn]
                                     if not previewBtn then
                                         return
@@ -2036,12 +2036,12 @@ CludesUI.AtOptionsLogin(function()
                                     else
                                         local style = BarHasCustomShape(curBar) and 2
                                             or (record.glowStyle or 1)
-                                        local cr, cg, cb
+                                        local cr, cg, checkBtn
                                         if record.colorMode == "class" then
-                                            local cc = CludesUI.GetClassColor(CludesUI._playerClass)
-                                            cr, cg, cb = cc.r, cc.g, cc.b
+                                            local classColor = CludesUI.GetClassColor(CludesUI._playerClass)
+                                            cr, cg, checkBtn = classColor.r, classColor.g, classColor.b
                                         elseif record.colorMode == "custom" and record.glowColor then
-                                            cr, cg, cb =
+                                            cr, cg, checkBtn =
                                                 record.glowColor.r, record.glowColor.g, record.glowColor.b
                                         end
                                         mod.StartNativeGlow(
@@ -2049,7 +2049,7 @@ CludesUI.AtOptionsLogin(function()
                                             style,
                                             cr,
                                             cg,
-                                            cb,
+                                            checkBtn,
                                             style == 8 and { panel = true, alpha = record.glowAlpha }
                                                 or CludesUI.Glows.PANEL_EXTRA
                                         )
@@ -2061,18 +2061,18 @@ CludesUI.AtOptionsLogin(function()
                                     end
                                     RefreshEye()
                                 end)
-                                eyeBtn:SetScript("OnEnter", function(self)
+                                eyeButton:SetScript("OnEnter", function(self)
                                     CludesUI.SetGlyphAlpha(self, 0.7)
                                 end)
-                                eyeBtn:SetScript("OnLeave", function(self)
+                                eyeButton:SetScript("OnLeave", function(self)
                                     CludesUI.SetGlyphAlpha(self, 0.4)
                                 end)
 
                                 -- Blackout fill opacity, in a cog chained left of the eye. Locked
                                 -- unless the entry renders Blackout (custom-shaped bars always
                                 -- draw Shape Glow); the Glow Type setter's page refresh re-checks it.
-                                leftRgn._lastInline = eyeBtn
-                                CludesUI.BuildInlineCog(leftRgn, {
+                                leftRegion._lastInline = eyeButton
+                                CludesUI.BuildInlineCog(leftRegion, {
                                     title = "Blackout",
                                     disabled = function()
                                         return (BarHasCustomShape(curBar) and 2 or (record.glowStyle or 1))
@@ -2131,31 +2131,31 @@ CludesUI.AtOptionsLogin(function()
                         }
                         local colorRow, colorRgn, removeRgn
                         if CludesUI.IS_FOREVER then
-                            colorRow, hgt = W:DualRow(
+                            colorRow, height = W:DualRow(
                                 hostFrame,
-                                posY,
+                                cursorY,
                                 mod.BarGlowCombatCfg(record, Refresh),
                                 glowColorCfg
                             )
-                            posY = posY - hgt
+                            cursorY = cursorY - height
                             colorRgn = colorRow._rightRegion
                             local removeRow
-                            removeRow, hgt = W:DualRow(hostFrame, posY, removeCfg, CludesUI.BlankRowCfg())
-                            posY = posY - hgt
+                            removeRow, height = W:DualRow(hostFrame, cursorY, removeCfg, CludesUI.BlankRowCfg())
+                            cursorY = cursorY - height
                             removeRgn = removeRow._leftRegion
                         else
-                            posY = mod.BuildBarGlowCombatRow(W, hostFrame, posY, record, Refresh)
-                            colorRow, hgt = W:DualRow(hostFrame, posY, glowColorCfg, removeCfg)
-                            posY = posY - hgt
+                            cursorY = mod.BuildBarGlowCombatRow(W, hostFrame, cursorY, record, Refresh)
+                            colorRow, height = W:DualRow(hostFrame, cursorY, glowColorCfg, removeCfg)
+                            cursorY = cursorY - height
                             colorRgn, removeRgn = colorRow._leftRegion, colorRow._rightRegion
                         end
 
                         -- Inline color swatch for glow color
                         if not CludesUI._prebuilding then
-                            local leftRgn = colorRgn
-                            if leftRgn and CludesUI.BuildTrioColorSwatch then
+                            local leftRegion = colorRgn
+                            if leftRegion and CludesUI.BuildTrioColorSwatch then
                                 local glowSwatch, defaultSwatch, classSwatch =
-                                    CludesUI.BuildTrioColorSwatch(leftRgn, colorRow:GetFrameLevel() + 3, {
+                                    CludesUI.BuildTrioColorSwatch(leftRegion, colorRow:GetFrameLevel() + 3, {
                                         getMode = function()
                                             return record.colorMode or "default"
                                         end,
@@ -2177,7 +2177,7 @@ CludesUI.AtOptionsLogin(function()
                                         end,
                                         overrideSize = 20,
                                     })
-                                Pix.Point(classSwatch, "RIGHT", leftRgn, "RIGHT", -20, 0)
+                                Pix.Point(classSwatch, "RIGHT", leftRegion, "RIGHT", -20, 0)
                                 Pix.Point(glowSwatch, "RIGHT", classSwatch, "LEFT", -8, 0)
                                 Pix.Point(defaultSwatch, "RIGHT", glowSwatch, "LEFT", -8, 0)
                             end
@@ -2185,12 +2185,12 @@ CludesUI.AtOptionsLogin(function()
 
                         -- Duplicate, then the buff icon (spell tooltip on hover), LEFT of Remove
                         if not CludesUI._prebuilding then
-                            local rightRgn = removeRgn
-                            if rightRgn and rightRgn._control then
-                                local btn = rightRgn._control
+                            local rightRegion = removeRgn
+                            if rightRegion and rightRegion._control then
+                                local button = rightRegion._control
                                 local dupBtn = mod.BarGlowDuplicateButton(
-                                    rightRgn,
-                                    btn,
+                                    rightRegion,
+                                    button,
                                     buffList,
                                     aIdx,
                                     function()
@@ -2199,12 +2199,12 @@ CludesUI.AtOptionsLogin(function()
                                     end
                                 )
                                 local ico = mod.BarGlowSpellIcon(
-                                    rightRgn,
-                                    btn:GetHeight(),
+                                    rightRegion,
+                                    button:GetHeight(),
                                     record.mode == "USABLE" and (record.actionSpellID or cdmSid)
                                         or record.spellID
                                 )
-                                Pix.Point(ico, "RIGHT", dupBtn or btn, "LEFT", -8, 0)
+                                Pix.Point(ico, "RIGHT", dupBtn or button, "LEFT", -8, 0)
                             end
                         end
                     end
@@ -2212,7 +2212,7 @@ CludesUI.AtOptionsLogin(function()
             end
         end
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     -- Tracking Bars page with its state and hooks (CooldownManager_Options\
@@ -2300,8 +2300,8 @@ CludesUI.AtOptionsLogin(function()
     -- left behind keeps its preview, hidden, and brings it up to date as it
     -- shows again: onPageCacheRestore).
     local function CatchUpCDMPreview()
-        local pv = optionState._cdmPreview or CludesUI._cdmHeaderPreview
-        if pv and pv:IsVisible() then
+        local preview = optionState._cdmPreview or CludesUI._cdmHeaderPreview
+        if preview and preview:IsVisible() then
             UpdateCDMPreview()
         end
     end
@@ -2447,9 +2447,9 @@ CludesUI.AtOptionsLogin(function()
         if edge.activeAnimClassColor then
             local _, ct = UnitClass("player")
             if ct then
-                local cc = RAID_CLASS_COLORS[ct]
-                if cc then
-                    animR, animG, animB = cc.r, cc.g, cc.b
+                local classColor = RAID_CLASS_COLORS[ct]
+                if classColor then
+                    animR, animG, animB = classColor.r, classColor.g, classColor.b
                 end
             end
         elseif edge.activeAnimR then
@@ -2547,7 +2547,7 @@ CludesUI.AtOptionsLogin(function()
     -- swatch and cog give that reason first, then Show Keybind.
     local function BuildKeybindStyleControls(kbRow, BD, RefreshKeybindStyle, lockTip)
         if not CludesUI._prebuilding then
-            local rgn = kbRow._rightRegion
+            local region = kbRow._rightRegion
             local kbFonts, kbFontOrder = CludesUI.BuildFontDropdownData()
             kbFonts.__global = { text = "CDM Font" }
             local function OffTip()
@@ -2560,7 +2560,7 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
 
-            CludesUI.BuildInlineCog(rgn, {
+            CludesUI.BuildInlineCog(region, {
                 title = "Keybind Text Settings",
                 disabled = function()
                     return OffTip() ~= nil
@@ -2770,7 +2770,7 @@ CludesUI.AtOptionsLogin(function()
             })
 
             local kbSwatch, updateKbSwatch = CludesUI.BuildColorSwatch(
-                rgn,
+                region,
                 kbRow:GetFrameLevel() + 3,
                 function()
                     return BD().keybindR or 1, BD().keybindG or 1, BD().keybindB or 1, BD().keybindA or 0.9
@@ -2785,8 +2785,8 @@ CludesUI.AtOptionsLogin(function()
                 true,
                 20
             )
-            Pix.Point(kbSwatch, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = kbSwatch
+            Pix.Point(kbSwatch, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+            region._lastInline = kbSwatch
 
             local swatchBlock = CludesUI.NewSwatchBlocker(kbSwatch)
             swatchBlock:SetScript("OnEnter", function()
@@ -2842,8 +2842,8 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     local function BuildRotationAssistIconPage(pageName, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt, heading
+        local cursorY = yOffset
+        local _, height, heading
         hostFrame._showRowDivider = true
         local function Settings()
             return DB().rotationAssistIcon
@@ -2877,13 +2877,13 @@ CludesUI.AtOptionsLogin(function()
             mod.RefreshRotationAssistIcon()
         end
 
-        heading, hgt = W:SectionHeader(hostFrame, "ROTATION ASSIST ICON", posY)
-        posY = posY - hgt
+        heading, height = W:SectionHeader(hostFrame, "ROTATION ASSIST ICON", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
             { key = "ECME_RotationAssistIcon", disabled = IconOff, disabledTooltip = IconLockTip }
         )
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Rotation Assist Icon",
             tooltip = "Show Blizzard's current recommendation in a separate icon. Requires Assisted Highlight to be enabled in Blizzard's options. Press the spell's normal keybind; this display never casts spells. Blizzard supplies one recommendation, not a queue of future casts.",
@@ -2917,9 +2917,9 @@ CludesUI.AtOptionsLogin(function()
                 mod.RefreshRotationAssistIcon()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         local kbRow
-        kbRow, hgt = W:DualRow(hostFrame, posY, {
+        kbRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Only in Combat",
             tooltip = "Hide outside combat. Layout Mode shows a placeholder when no recommendation is available.",
@@ -2946,9 +2946,9 @@ CludesUI.AtOptionsLogin(function()
                 Apply()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         BuildKeybindStyleControls(kbRow, Settings, Apply, IconLockTip)
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "X Offset",
             min = -2000,
@@ -2979,8 +2979,8 @@ CludesUI.AtOptionsLogin(function()
                 SetOffset("y", val)
             end,
         })
-        posY = posY - hgt
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = cursorY - height
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show GCD",
             tooltip = "Show the global cooldown as a swipe over the recommended ability. The swipe shows when the GCD ends; casting, channeling and ability requirements can still delay your next action.",
@@ -2994,8 +2994,8 @@ CludesUI.AtOptionsLogin(function()
                 Apply()
             end,
         }, CludesUI.BlankRowCfg())
-        posY = posY - hgt
-        return math.abs(posY)
+        cursorY = cursorY - height
+        return math.abs(cursorY)
     end
 
     ---------------------------------------------------------------------------

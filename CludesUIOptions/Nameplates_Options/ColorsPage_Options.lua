@@ -106,10 +106,10 @@ end
 -- by class token, for the session (the player's starts expanded).
 local debuffColorAdded
 local debuffColorOpen = {}
-function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
+function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
     local DC = mod.DebuffColorKit
     if not DC then
-        return posY
+        return cursorY
     end
     local W = CludesUI.Widgets
     local Pix = CludesUI.PanelPP
@@ -248,8 +248,8 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
         for _, e in ipairs(singles) do
             Add(e.spell)
         end
-        for _, k in ipairs(combos) do
-            for _, ident in ipairs(k.spells) do
+        for _, keyName in ipairs(combos) do
+            for _, ident in ipairs(keyName.spells) do
                 Add(ident)
             end
         end
@@ -312,8 +312,8 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
     end
     local function ComboSpells(cell)
         local _, combos = Read(cell.class)
-        local k = combos[cell.n]
-        return k and k.spells or {}
+        local keyName = combos[cell.n]
+        return keyName and keyName.spells or {}
     end
 
     -- List edits. Structure changes (add, remove, reorder) rebuild the page;
@@ -407,8 +407,8 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
             end
             -- A textured border whose art no longer resolves (its media pack
             -- removed) draws nothing.
-            local tex = Get("customBorderTexture")
-            return tex ~= nil and tex ~= "" and tex ~= "solid" and not CludesUI.ResolveBorderTexture(tex)
+            local texture = Get("customBorderTexture")
+            return texture ~= nil and texture ~= "" and texture ~= "solid" and not CludesUI.ResolveBorderTexture(texture)
         end
         return Get("showBorder") == false
     end
@@ -417,15 +417,15 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
             return false
         end
         if Get("customBorderEnabled") then
-            local tex = Get("customBorderTexture")
-            return not tex or tex == "" or tex == "solid"
+            local texture = Get("customBorderTexture")
+            return not texture or texture == "" or texture == "solid"
         end
         return true
     end
-    local _, hgt, modeRow
-    _, hgt = W:SectionHeader(hostFrame, "DEBUFF BASED NAMEPLATE COLORING", posY)
-    posY = posY - hgt
-    modeRow, hgt = W:DualRow(hostFrame, posY, {
+    local _, height, modeRow
+    _, height = W:SectionHeader(hostFrame, "DEBUFF BASED NAMEPLATE COLORING", cursorY)
+    cursorY = cursorY - height
+    modeRow, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Debuff Coloring",
         values = {
@@ -470,7 +470,7 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
         disabledTooltip = "Debuff Coloring",
         tooltip = "Counts only the debuffs you applied.",
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Color Border's cog, built while it is picked (the dropdown rebuilds the
     -- page) and shown only over a border drawn as strips; a border change on
@@ -507,7 +507,7 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
     -- the health bar's own).
     if Mode() == "texture" then
         local environ = mod._NPO_OptEnv
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Texture",
             values = environ.hbtValues,
@@ -521,15 +521,15 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
                 Apply()
             end,
         }, CludesUI.BlankRowCfg())
-        posY = posY - hgt
+        cursorY = cursorY - height
     end
 
     -- Section gate: the rows below exist only while Debuff Coloring is on (the
     -- dropdown's SectionToggleSetValue rebuilds the page).
     if Off() then
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        return posY
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        return cursorY
     end
 
     -- Up/down arrows beside a row's name (white, the accent while hovered;
@@ -590,10 +590,10 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
         applied = "Applied",
         missing = "Missing",
         _menuOpts = {
-            onItemHover = function(key, item)
+            onItemHover = function(key, entry)
                 if key == "missing" then
                     CludesUI.ShowWidgetTooltip(
-                        item,
+                        entry,
                         CludesUI.L("Colors enemies you fight without this debuff.")
                     )
                 end
@@ -687,15 +687,15 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
                 local ident = tonumber(key)
                 return SpellIcon(ident and ident > 0 and ident), 0.08, 0.92, 0.08, 0.92
             end,
-            onItemHover = function(key, item)
+            onItemHover = function(key, entry)
                 local spell = own.byKey[key]
                 if spell then
                     CludesUI.ShowWidgetTooltip(
-                        item,
+                        entry,
                         spell.class .. " | " .. CludesUI.Lf("Spell ID: %1$s", spell.id)
                     )
                 elseif tonumber(key) then
-                    CludesUI.ShowWidgetTooltip(item, CludesUI.Lf("Spell ID: %1$s", key))
+                    CludesUI.ShowWidgetTooltip(entry, CludesUI.Lf("Spell ID: %1$s", key))
                 end
             end,
             onItemLeave = function()
@@ -776,12 +776,12 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
         ReorderArrows(region, cell)
         -- The menu rebuilds only when its custom spells change.
         local function Sync()
-            local ctrl = region._control
-            if cell.syncCustoms() and ctrl._invalidateMenu then
-                ctrl._invalidateMenu()
+            local control = region._control
+            if cell.syncCustoms() and control._invalidateMenu then
+                control._invalidateMenu()
             end
-            if ctrl._refreshLabel then
-                ctrl._refreshLabel()
+            if control._refreshLabel then
+                control._refreshLabel()
             end
         end
         Sync()
@@ -817,11 +817,11 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
     -- under the list, reads and writes the combo's spells.
     local function SetComboSpells(cell, spells, region)
         local singles, combos = Read(cell.class)
-        local k = combos[cell.n]
-        if not k then
+        local keyName = combos[cell.n]
+        if not keyName then
             return
         end
-        k.spells = spells
+        keyName.spells = spells
         Write(cell.class, singles, combos, region)
     end
     local COMBO_VALUES = setmetatable({}, {
@@ -914,13 +914,13 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
             end
             return itemList
         end
-        local ctrl = region._control
-        local ddW = ctrl and ctrl:GetWidth() or 0
+        local control = region._control
+        local ddW = control and control:GetWidth() or 0
         if ddW < 50 then
             ddW = 170
         end
         local pulse
-        local cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
             region,
             ddW,
             region:GetFrameLevel() + 2,
@@ -959,35 +959,35 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
             }
         )
         local p1, rel, p2, ax, ay
-        if ctrl then
-            p1, rel, p2, ax, ay = ctrl:GetPoint(1)
-            ctrl:Hide()
+        if control then
+            p1, rel, p2, ax, ay = control:GetPoint(1)
+            control:Hide()
         end
         if p1 then
-            cbDD:SetPoint(p1, rel, p2, ax, ay)
+            checkDrop:SetPoint(p1, rel, p2, ax, ay)
         else
-            Pix.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
+            Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
         end
-        region._control = cbDD
+        region._control = checkDrop
         region._lastInline = nil
         CludesUI.RegisterWidgetRefresh(cbRefresh)
-        pulse = CludesUI.AttachEmptyFilterWarn(region, cbDD, CludesUI.L("Pick at least two debuffs"), Valid)
+        pulse = CludesUI.AttachEmptyFilterWarn(region, checkDrop, CludesUI.L("Pick at least two debuffs"), Valid)
         CludesUI.BuildInlineSwatches(region, {
             {
                 tooltip = "Combo Color",
                 getValue = function()
                     local _, combos = Read(cell.class)
-                    local k = combos[cell.n]
-                    local c = k and k.color or DC.COMBO_COLOR
+                    local keyName = combos[cell.n]
+                    local c = keyName and keyName.color or DC.COMBO_COLOR
                     return c.r, c.g, c.b
                 end,
                 setValue = function(r, g, b)
                     local singles, combos = Read(cell.class)
-                    local k = combos[cell.n]
-                    if not k then
+                    local keyName = combos[cell.n]
+                    if not keyName then
                         return
                     end
-                    k.color = { r = r, g = g, b = b }
+                    keyName.color = { r = r, g = g, b = b }
                     Write(cell.class, singles, combos)
                 end,
             },
@@ -1152,8 +1152,8 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
             right[num] = { kind = "combo", class = class, n = num, count = #combos }
         end
         right[#right + 1] = AddComboCfg(class)
-        for k = 1, math.max(#leftX, #right) do
-            local l, r = leftX[k], right[k]
+        for keyName = 1, math.max(#leftX, #right) do
+            local l, r = leftX[keyName], right[keyName]
             local row
             row, ch = W:DualRow(hostFrame, cy, CellCfg(l), CellCfg(r))
             cy = cy - ch
@@ -1168,10 +1168,10 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
     local CLASS_ICONS = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
     local ICON_CROP = 0.1
     local function ClassGlyph(heading, class)
-        local box = CreateFrame("Frame", nil, heading)
-        Pix.Size(box, 24, 24)
-        Pix.Point(box, "LEFT", heading, "LEFT", 14, 0)
-        local icon = box:CreateTexture(nil, "ARTWORK")
+        local boxFrame = CreateFrame("Frame", nil, heading)
+        Pix.Size(boxFrame, 24, 24)
+        Pix.Point(boxFrame, "LEFT", heading, "LEFT", 14, 0)
+        local icon = boxFrame:CreateTexture(nil, "ARTWORK")
         icon:SetAllPoints()
         local coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class]
         if CludesUI.IS_FOREVER then
@@ -1183,7 +1183,7 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
             icon:SetTexture(CLASS_ICONS)
             icon:SetTexCoord(coords[1] + du, coords[2] - du, coords[3] + dv, coords[4] - dv)
         end
-        CludesUI.MakeBorder(box, 0, 0, 0, 1, Pix)
+        CludesUI.MakeBorder(boxFrame, 0, 0, 0, 1, Pix)
     end
 
     -- A class has a card while it holds an entry, the player's first; Add
@@ -1213,7 +1213,7 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
                 return ClassRows(class, singles, combos, cy)
             end,
         }
-        posY = CludesUI.BuildModuleCard(hostFrame, posY, W, tile, {
+        cursorY = CludesUI.BuildModuleCard(hostFrame, cursorY, W, tile, {
             enabled = true,
             expanded = debuffColorOpen,
             descW = 440,
@@ -1234,12 +1234,12 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
     -- Add Class: a first, unchosen debuff gives the picked class its card.
     if #unlisted > 0 then
         local openClass, wide
-        wide, hgt = W:WideButton(hostFrame, "+ Add Class", posY, function()
+        wide, height = W:WideButton(hostFrame, "+ Add Class", cursorY, function()
             if openClass then
                 openClass()
             end
         end, CLASS_W)
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
             -- The row's button: its one shown child (page reuse keeps the row's
             -- children of its earlier dresses among its children, hidden).
@@ -1256,9 +1256,9 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
             end
         end
     end
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
-    return posY
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
+    return cursorY
 end
 
 -- Mini preview bar builder for color swatches. type: "health"/"cast"/"castLocked". colorKey: DB key for the bar color (read live). parentRow: frame to attach to. anchorFrame: optional override anchor (e.g. DualRow half-region).
@@ -1441,11 +1441,11 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
             clip:SetPoint("LEFT", tlAnchor, tlRelPoint, 0, 0)
             clip:SetPoint("RIGHT", brAnchor, brRelPoint, 0, 0)
             clip:SetFrameLevel(health:GetFrameLevel() + 1)
-            local tex = clip:CreateTexture(nil, "ARTWORK", nil, sublayer)
-            tex:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
-            tex:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 0, 0)
-            tex:SetWidth(BAR_W)
-            return clip, tex
+            local texture = clip:CreateTexture(nil, "ARTWORK", nil, sublayer)
+            texture:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
+            texture:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 0, 0)
+            texture:SetWidth(BAR_W)
+            return clip, texture
         end
 
         local _overlayTexKey = (colorKey == "target") and "targetOverlayTexture" or "focusOverlayTexture"
@@ -1465,21 +1465,21 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
             return oAlpha * 0.3
         end
         if colorKey == "focus" or colorKey == "target" then
-            local tex = DBVal(_overlayTexKey) or defaultSet[_overlayTexKey]
-            if tex ~= "none" then
+            local texture = DBVal(_overlayTexKey) or defaultSet[_overlayTexKey]
+            if texture ~= "none" then
                 local fillRef = health:GetStatusBarTexture()
                 local oAlpha = DBVal(_overlayAlphaKey) or defaultSet[_overlayAlphaKey]
                 local oc = (DB() and DB()[_overlayColorKey]) or defaultSet[_overlayColorKey]
                 overlayFillClip, overlayFillTex =
                     MakeOverlayClip(fillRef, "TOPLEFT", fillRef, "BOTTOMRIGHT", 2)
                 overlayFillTex:SetTexture(
-                    mod.ResolveOverlayTexPath and mod.ResolveOverlayTexPath(tex) or (MEDIA .. tex .. ".png")
+                    mod.ResolveOverlayTexPath and mod.ResolveOverlayTexPath(texture) or (MEDIA .. texture .. ".png")
                 )
                 overlayFillTex:SetAlpha(oAlpha)
                 overlayFillTex:SetVertexColor(oc.r, oc.g, oc.b)
                 overlayBgClip, overlayBgTex = MakeOverlayClip(fillRef, "TOPRIGHT", health, "BOTTOMRIGHT", 1)
                 overlayBgTex:SetTexture(
-                    mod.ResolveOverlayTexPath and mod.ResolveOverlayTexPath(tex) or (MEDIA .. tex .. ".png")
+                    mod.ResolveOverlayTexPath and mod.ResolveOverlayTexPath(texture) or (MEDIA .. texture .. ".png")
                 )
                 overlayBgTex:SetAlpha(_overlayBgAlpha(oAlpha))
                 overlayBgTex:SetVertexColor(oc.r, oc.g, oc.b)
@@ -1505,12 +1505,12 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
             local size = DBVal("focusLetterSize") or defaultSet.focusLetterSize
             local anchor = GetFocusLetterAnchor()
             local posX = DBVal("focusLetterX") or defaultSet.focusLetterX
-            local posY = DBVal("focusLetterY") or defaultSet.focusLetterY
+            local cursorY = DBVal("focusLetterY") or defaultSet.focusLetterY
             local curFont = (CludesUI.GetFontPath("nameplates")) or DBVal("font")
             SetPVFont(focusLetterFS, curFont, size, GetNPOptOutline())
             focusLetterFS:SetText("F")
             focusLetterFS:ClearAllPoints()
-            focusLetterFS:SetPoint(anchor, health, anchor, posX, posY)
+            focusLetterFS:SetPoint(anchor, health, anchor, posX, cursorY)
             focusLetterFS:SetTextColor(1, 1, 1, 1)
             focusLetterFS:Show()
         end
@@ -1518,16 +1518,16 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
 
         -- Live update hook: re-color when swatch changes
         boxHolder.UpdateColor = function()
-            local cc = (DB() and DB()[colorKey]) or defaultSet[colorKey]
-            health:SetStatusBarColor(cc.r, cc.g, cc.b, 1)
+            local classColor = (DB() and DB()[colorKey]) or defaultSet[colorKey]
+            health:SetStatusBarColor(classColor.r, classColor.g, classColor.b, 1)
         end
         -- Live update hook: refresh overlay texture from DB
         boxHolder.UpdateOverlay = function()
             if colorKey ~= "focus" and colorKey ~= "target" then
                 return
             end
-            local tex = DBVal(_overlayTexKey) or defaultSet[_overlayTexKey]
-            if tex == "none" then
+            local texture = DBVal(_overlayTexKey) or defaultSet[_overlayTexKey]
+            if texture == "none" then
                 if overlayFillClip then
                     overlayFillClip:Hide()
                 end
@@ -1543,7 +1543,7 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
                         MakeOverlayClip(fillRef, "TOPLEFT", fillRef, "BOTTOMRIGHT", 2)
                 end
                 overlayFillTex:SetTexture(
-                    mod.ResolveOverlayTexPath and mod.ResolveOverlayTexPath(tex) or (MEDIA .. tex .. ".png")
+                    mod.ResolveOverlayTexPath and mod.ResolveOverlayTexPath(texture) or (MEDIA .. texture .. ".png")
                 )
                 overlayFillTex:SetAlpha(oAlpha)
                 overlayFillTex:SetVertexColor(oc.r, oc.g, oc.b)
@@ -1553,7 +1553,7 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
                         MakeOverlayClip(fillRef, "TOPRIGHT", health, "BOTTOMRIGHT", 1)
                 end
                 overlayBgTex:SetTexture(
-                    mod.ResolveOverlayTexPath and mod.ResolveOverlayTexPath(tex) or (MEDIA .. tex .. ".png")
+                    mod.ResolveOverlayTexPath and mod.ResolveOverlayTexPath(texture) or (MEDIA .. texture .. ".png")
                 )
                 overlayBgTex:SetAlpha(_overlayBgAlpha(oAlpha))
                 overlayBgTex:SetVertexColor(oc.r, oc.g, oc.b)
@@ -1572,8 +1572,8 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         boxHolder.RefreshBorderStyle = function() end -- no style toggle needed for 1px solid
         boxHolder.RefreshBorderColor = function()
             local bc = (DB() and DB().borderColor) or defaultSet.borderColor
-            for _, tex in ipairs(boxHolder._brdEdges) do
-                tex:SetColorTexture(bc.r, bc.g, bc.b, 1)
+            for _, texture in ipairs(boxHolder._brdEdges) do
+                texture:SetColorTexture(bc.r, bc.g, bc.b, 1)
             end
         end
     elseif colorType == "cast" or colorType == "castLocked" then
@@ -1748,8 +1748,8 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         Pix.Point(boxHolder, "RIGHT", anchor, "RIGHT", -(20 + SWATCH_SZ + SWATCH_GAP), 0)
 
         boxHolder.UpdateColor = function()
-            local cc = (DB() and DB()[colorKey]) or defaultSet[colorKey]
-            cast:SetStatusBarColor(cc.r, cc.g, cc.b, 1)
+            local classColor = (DB() and DB()[colorKey]) or defaultSet[colorKey]
+            cast:SetStatusBarColor(classColor.r, classColor.g, classColor.b, 1)
         end
         boxHolder.Randomize = function()
             cast:SetValue(NextCastFill())
@@ -1774,8 +1774,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         environ.THREAT_PCT_POSITION_ORDER
     local THREAT_PCT_POSITIONS = environ.THREAT_PCT_POSITIONS
     local W = CludesUI.Widgets
-    local posY = yOffset
-    local _, hgt
+    local cursorY = yOffset
+    local _, height
 
     -- No content header on Colors tab (presets are inline in scroll area)
     CludesUI:ClearContentHeader()
@@ -1791,8 +1791,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     -----------------------------------------------------------------------
     --  ENEMY COLORS
     -----------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, SECTION_ENEMY, posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, SECTION_ENEMY, cursorY)
+    cursorY = cursorY - height
 
     -- Modify Out of Combat is a view over darkenEnemiesOOC + darkenOOCRecolor (the
     -- runtime ignores the recolor flag while darkening is off): No Change = off,
@@ -1822,7 +1822,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
 
     -- Enemy Types | Modify Out of Combat
     local enemyTypesRow
-    enemyTypesRow, hgt = W:DualRow(hostFrame, posY, {
+    enemyTypesRow, height = W:DualRow(hostFrame, cursorY, {
         type = "multiSwatch",
         text = "Enemy Types",
         swatches = {
@@ -1895,7 +1895,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         end),
         tooltip = "How enemy plates look while out of combat.",
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Change Color's flat color (MaybeDarken), inline beside the dropdown while
     -- that mode is picked.
@@ -1923,7 +1923,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
 
     -- Inline cog on "Enemy Types": Simple Coloring When Not In M+. On: outside 5-man dungeons, Mini/Caster/Miniboss/Boss all use the flat "All Enemies" color below (Neutral keeps its own); off (default) has no effect anywhere. Keys keep their owBasic* names from before the current UI label.
     if not CludesUI._prebuilding then
-        local leftRgn = enemyTypesRow._leftRegion
+        local leftRegion = enemyTypesRow._leftRegion
         local isOWOff = function()
             local val = DBVal("owBasicColoring")
             if val == nil then
@@ -1931,7 +1931,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
             end
             return not val
         end
-        CludesUI.BuildInlineCog(leftRgn, {
+        CludesUI.BuildInlineCog(leftRegion, {
             title = "Enemy Colors",
             rows = {
                 {
@@ -1968,7 +1968,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
 
     -- Neutral & Mini Enemies | Enable Quest Mob Color
     local neutralMiniRow
-    neutralMiniRow, hgt = W:DualRow(hostFrame, posY, {
+    neutralMiniRow, height = W:DualRow(hostFrame, cursorY, {
         type = "multiSwatch",
         text = "Neutral & Mini Enemies",
         swatches = {
@@ -2013,11 +2013,11 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         end,
         tooltip = "Colors enemy nameplates for quest mobs you still need to kill.",
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Inline Quest Mob Color swatch
     if not CludesUI._prebuilding then
-        local rightRgn = neutralMiniRow._rightRegion
+        local rightRegion = neutralMiniRow._rightRegion
         local questColorGet = function()
             local c = DB().questMobColor or defaultSet.questMobColor
             return c.r, c.g, c.b
@@ -2030,14 +2030,14 @@ local function BuildColorsPage(page, hostFrame, yOffset)
             return DBVal("questMobColorEnabled") ~= true
         end
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
-            rightRgn,
-            rightRgn:GetFrameLevel() + 5,
+            rightRegion,
+            rightRegion:GetFrameLevel() + 5,
             questColorGet,
             questColorSet,
             nil,
             20
         )
-        Pix.Point(colorSwatch, "RIGHT", rightRgn._control, "LEFT", -12, 0)
+        Pix.Point(colorSwatch, "RIGHT", rightRegion._control, "LEFT", -12, 0)
         CludesUI.RegisterWidgetRefresh(function()
             local off = isQuestOff()
             colorSwatch:SetAlpha(off and 0.15 or 1)
@@ -2051,8 +2051,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
 
     -- Inline cog on "Neutral & Mini Enemies": "Mini Coloring M+ Only" toggle. On (default) restricts the Mini Enemies color to 5-man dungeons; off applies it everywhere.
     if not CludesUI._prebuilding then
-        local leftRgn = neutralMiniRow._leftRegion
-        CludesUI.BuildInlineCog(leftRgn, {
+        local leftRegion = neutralMiniRow._leftRegion
+        CludesUI.BuildInlineCog(leftRegion, {
             title = "Mini Enemies",
             rows = {
                 {
@@ -2076,7 +2076,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
 
     -- Color Casting Enemies | Enemy Players Use Enemy Color
     local castingRow
-    castingRow, hgt = W:DualRow(hostFrame, posY, {
+    castingRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Color Casting Enemies",
         getValue = function()
@@ -2100,7 +2100,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         end,
         tooltip = "Enemy players take the Enemies color instead of their class color.",
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Inline cog with the mob types each applies to, then the Interruptible / Uninterruptible swatches.
     if not CludesUI._prebuilding then
@@ -2164,14 +2164,14 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         }, { disabled = isCastingOff, disabledTooltip = "Color Casting Enemies" })
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
     -----------------------------------------------------------------------
     --  THREAT COLORS
     -----------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, SECTION_THREAT, posY)
-    posY = posY - hgt
+    _, height = W:SectionHeader(hostFrame, SECTION_THREAT, cursorY)
+    cursorY = cursorY - height
 
     -- Show Threat Colors (threatColorMode): Never / Instances (dungeons, raids and
     -- delves) / Group or Pet ("always": everywhere) / Always ("alwaysSolo"); an unknown
@@ -2192,7 +2192,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     end
 
     -- Row 1: Show Threat Colors (left) ---- Tank Threat (right)
-    _, hgt = W:DualRow(hostFrame, posY, {
+    _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Show Threat Colors",
         tooltip = "Where nameplates show threat colors.",
@@ -2232,7 +2232,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
             },
         },
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Disabled-state helpers (shared across the toggle rows' swatches and cogs)
     local function isTankHasAggroDisabled()
@@ -2301,7 +2301,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
 
     -- Row 2: Non-Tank Threat (left) ---- DPS: Show Special "No Aggro" Color (right)
     local nonTankRow
-    nonTankRow, hgt = W:DualRow(hostFrame, posY, {
+    nonTankRow, height = W:DualRow(hostFrame, cursorY, {
         type = "multiSwatch",
         text = "Non-Tank Threat",
         disabled = threatNever,
@@ -2347,7 +2347,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
             CludesUI:RefreshPage()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Inline cog on "Non-Tank Threat": steady red execute-style glow
     -- while the Near Aggro color is active (see EnsureNearAggroGlow).
@@ -2474,7 +2474,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
 
     -- Row 3: Classic Tank Aggro (left) ---- Tank: Show Special "Has Aggro" Color (right)
     local tankAggroRow
-    tankAggroRow, hgt = W:DualRow(hostFrame, posY, {
+    tankAggroRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Classic Tank Aggro",
         tooltip = "Enables a three-tier tank aggro system: has aggro, losing aggro, and no aggro colors override all mob-type colors.",
@@ -2511,7 +2511,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
             CludesUI:RefreshPage()
         end,
     })
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Inline "Has Aggro" color swatch next to Classic Tank Aggro toggle
     if not CludesUI._prebuilding then
@@ -2661,7 +2661,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     -- Row 4: Tank: Show Special "Off-Tank" Color (left) ---- Show Threat On (right);
     -- on WoW Forever the right slot is Show Threat % on Nameplates.
     local offTankRow
-    offTankRow, hgt = W:DualRow(hostFrame, posY, {
+    offTankRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = 'Tank: Show Special "Off-Tank" Color',
         tooltip = "Shows a special color for nameplates that another tank in your raid has aggro on.",
@@ -2680,7 +2680,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
             CludesUI:RefreshPage()
         end,
     }, offTankRightCfg)
-    posY = posY - hgt
+    cursorY = cursorY - height
 
     -- Inline "Off-Tank" color swatch next to the Off-Tank toggle
     if not CludesUI._prebuilding then
@@ -2702,7 +2702,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     local chanRow = offTankRow
     if CludesUI.IS_FOREVER then
         local threatPctRow
-        threatPctRow, hgt = W:DualRow(hostFrame, posY, {
+        threatPctRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Threat % Position",
             values = THREAT_PCT_POSITIONS,
@@ -2716,7 +2716,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 ThreatPctSet("threatPctPosition", val)
             end,
         }, chanCfg)
-        posY = posY - hgt
+        cursorY = cursorY - height
         chanRow = threatPctRow
 
         if not CludesUI._prebuilding then
@@ -2759,29 +2759,29 @@ local function BuildColorsPage(page, hostFrame, yOffset)
             },
             { key = "name", label = "Name" },
         }
-        local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
             region,
             170,
             region:GetFrameLevel() + 2,
             chanItems,
-            function(k)
-                if k == "health" then
+            function(keyName)
+                if keyName == "health" then
                     return mod.GetThreatColorHealth()
                 end
-                if k == "border" then
+                if keyName == "border" then
                     return mod.GetThreatColorBorder()
                 end
-                if k == "name" then
+                if keyName == "name" then
                     return mod.GetThreatColorName()
                 end
                 return false
             end,
-            function(k, val)
-                if k == "health" then
+            function(keyName, val)
+                if keyName == "health" then
                     DB().threatColorHealth = val
-                elseif k == "border" then
+                elseif keyName == "border" then
                     DB().threatColorBorder = val
-                elseif k == "name" then
+                elseif keyName == "name" then
                     DB().threatColorName = val
                 end
                 RefreshAllPlates()
@@ -2789,15 +2789,15 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 CludesUI:RefreshPage()
             end
         )
-        Pix.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
-        region._control = cbDD
-        cbDD:HookScript("OnEnter", function()
+        Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+        region._control = checkDrop
+        checkDrop:HookScript("OnEnter", function()
             CludesUI.ShowWidgetTooltip(
-                cbDD,
+                checkDrop,
                 "Chooses which parts of the nameplate show the threat colors; with Health Bar off, the bar keeps its Enemy Types color."
             )
         end)
-        cbDD:HookScript("OnLeave", function()
+        checkDrop:HookScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
@@ -2806,17 +2806,17 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         -- over the same slot shows the requirement.
         local function ApplyChanDisabled()
             local off = threatNever()
-            cbDD:SetAlpha(off and 0.3 or 1)
-            cbDD:EnableMouse(not off)
+            checkDrop:SetAlpha(off and 0.3 or 1)
+            checkDrop:EnableMouse(not off)
         end
         ApplyChanDisabled()
         CludesUI.RegisterWidgetRefresh(ApplyChanDisabled)
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
-    posY = mod.NP_BuildDebuffColorsOptions(hostFrame, posY)
+    cursorY = mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
 
     -- Build a refresh-all function for page cache restore
     optionState._colorPreviewRefreshAll = function()
@@ -2858,7 +2858,7 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         end
     end
 
-    return math.abs(posY)
+    return math.abs(cursorY)
 end
 
 -- Used by CUI_Nameplates_Options.lua

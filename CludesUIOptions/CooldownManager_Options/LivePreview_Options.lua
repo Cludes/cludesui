@@ -364,12 +364,12 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 if s and s:IsShown() and s._baseX and math.abs(s._baseX - colX) < 1 then
                     firstIdx = firstIdx or i
                     lastIdx = i
-                    local hgt = s:GetHeight()
+                    local height = s:GetHeight()
                     local topY = s._baseY
-                    if localY <= topY + pad and localY > topY - hgt - pad then
-                        local midY = topY - hgt / 2
+                    if localY <= topY + pad and localY > topY - height - pad then
+                        local midY = topY - height / 2
                         local isBlank = not s._icon or not s._icon:GetTexture()
-                        if i ~= fromIdx and math.abs(localY - midY) < hgt * (isBlank and 0.45 or 0.2) then
+                        if i ~= fromIdx and math.abs(localY - midY) < height * (isBlank and 0.45 or 0.2) then
                             return "swap", i
                         end
                         return "insert", (localY > midY) and i or (i + 1)
@@ -933,9 +933,9 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                         if bdHov.borderClassColor then
                             local _, ct = UnitClass("player")
                             if ct then
-                                local cc = RAID_CLASS_COLORS[ct]
-                                if cc then
-                                    bR, bG, bB = cc.r, cc.g, cc.b
+                                local classColor = RAID_CLASS_COLORS[ct]
+                                if classColor then
+                                    bR, bG, bB = classColor.r, classColor.g, classColor.b
                                 end
                             end
                         end
@@ -1024,8 +1024,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 -- duplicate buff maps >1 stored id to one slot; a normal slot maps exactly one (plain remove). Highest index first keeps the lower indices valid across removes.
                 local grp = (popFrame._buffDispGroups and popFrame._buffDispGroups[si]) or { si }
                 local sequence = {}
-                for _, v in ipairs(grp) do
-                    sequence[#sequence + 1] = v
+                for _, value in ipairs(grp) do
+                    sequence[#sequence + 1] = value
                 end
                 table.sort(sequence, function(a, b)
                     return a > b
@@ -1082,9 +1082,9 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 if edge.borderClassColor then
                     local _, ct = UnitClass("player")
                     if ct then
-                        local cc = RAID_CLASS_COLORS[ct]
-                        if cc then
-                            bR, bG, bB = cc.r, cc.g, cc.b
+                        local classColor = RAID_CLASS_COLORS[ct]
+                        if classColor then
+                            bR, bG, bB = classColor.r, classColor.g, classColor.b
                         end
                     end
                 end
@@ -1341,9 +1341,9 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     if bd2.borderClassColor then
                         local _, ct = UnitClass("player")
                         if ct then
-                            local cc = RAID_CLASS_COLORS[ct]
-                            if cc then
-                                bR2, bG2, bB2 = cc.r, cc.g, cc.b
+                            local classColor = RAID_CLASS_COLORS[ct]
+                            if classColor then
+                                bR2, bG2, bB2 = classColor.r, classColor.g, classColor.b
                             end
                         end
                     end
@@ -2055,9 +2055,9 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         if edge.borderClassColor then
             local _, ct = UnitClass("player")
             if ct then
-                local cc = RAID_CLASS_COLORS[ct]
-                if cc then
-                    bR, bG, bB = cc.r, cc.g, cc.b
+                local classColor = RAID_CLASS_COLORS[ct]
+                if classColor then
+                    bR, bG, bB = classColor.r, classColor.g, classColor.b
                 end
             end
         end

@@ -32,8 +32,8 @@ CludesUI.AtOptionsLogin(function()
             if page == "Bank" then
                 local okB, resB = pcall(function()
                     local W = CludesUI.Widgets
-                    local posY = yOffset
-                    local hgt, _
+                    local cursorY = yOffset
+                    local height, _
                     -- The Bags module namespace: its bank display resolver
                     local BagsNS = CludesUI._ModuleNS["CludesUIBags"]
 
@@ -49,7 +49,7 @@ CludesUI.AtOptionsLogin(function()
                         local fontFile = (CludesUI.GetFontPath("bags")) or "Fonts\\FRIZQT__.TTF"
                         local infoFrame = CreateFrame("Frame", nil, hostFrame)
                         infoFrame:SetSize(hostFrame:GetWidth(), 34)
-                        infoFrame:SetPoint("TOP", hostFrame, "TOP", 0, posY - 10)
+                        infoFrame:SetPoint("TOP", hostFrame, "TOP", 0, cursorY - 10)
                         infoFrame._isSpacer = true
                         local line1 = infoFrame:CreateFontString(nil, "OVERLAY")
                         line1:SetFont(fontFile, 15, "")
@@ -71,14 +71,14 @@ CludesUI.AtOptionsLogin(function()
                                 "Window scale, icon zoom and item level settings are shared with the Bags page."
                             )
                         )
-                        posY = posY - 50
+                        cursorY = cursorY - 50
                     end
 
-                    _, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
-                    posY = posY - hgt
+                    _, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
+                    cursorY = cursorY - height
 
                     -- Bank Display: a view over bankListView + bankCompactView (List wins when both are set)
-                    _, hgt = W:DualRow(hostFrame, posY, {
+                    _, height = W:DualRow(hostFrame, cursorY, {
                         type = "segmented",
                         text = "Bank Display",
                         tooltip = "How items are arranged in the bank window.",
@@ -106,13 +106,13 @@ CludesUI.AtOptionsLogin(function()
                             })
                         end,
                     }, CludesUI.BlankRowCfg())
-                    posY = posY - hgt
+                    cursorY = cursorY - height
 
-                    _, hgt = W:SectionHeader(hostFrame, "GROUPING", posY)
-                    posY = posY - hgt
+                    _, height = W:SectionHeader(hostFrame, "GROUPING", cursorY)
+                    cursorY = cursorY - height
 
                     -- Nest by Expansion | Group by Category
-                    _, hgt = W:DualRow(hostFrame, posY, {
+                    _, height = W:DualRow(hostFrame, cursorY, {
                         type = "toggle",
                         text = "Nest by Expansion",
                         tooltip = "In the OneBank and OneWarbank views, split the grid under expansion headers, newest first. Per-tab views are unaffected.",
@@ -137,12 +137,12 @@ CludesUI.AtOptionsLogin(function()
                             CludesUI:RefreshPage()
                         end,
                     })
-                    posY = posY - hgt
+                    cursorY = cursorY - height
 
-                    _, hgt = W:SectionHeader(hostFrame, "SIDEBAR", posY)
-                    posY = posY - hgt
+                    _, height = W:SectionHeader(hostFrame, "SIDEBAR", cursorY)
+                    cursorY = cursorY - height
 
-                    _, hgt = W:DualRow(hostFrame, posY, {
+                    _, height = W:DualRow(hostFrame, cursorY, {
                         type = "toggle",
                         text = "Category Sidebar",
                         tooltip = "List item categories in the bank sidebar the way the bags sidebar does -- groups such as The Armory with Weapons and Armor under them. Selecting one filters the grid to that category. Categories that split further list their parts as a third level while selected: Professions by profession, Armor by equipment slot, Trade Goods by material. Spans your character bank and warband together, so a category shows everything you own.",
@@ -170,9 +170,9 @@ CludesUI.AtOptionsLogin(function()
                             RefreshBank()
                         end,
                     })
-                    posY = posY - hgt
+                    cursorY = cursorY - height
 
-                    _, hgt = W:DualRow(hostFrame, posY, {
+                    _, height = W:DualRow(hostFrame, cursorY, {
                         type = "toggle",
                         text = "Hide Empty Slots When Grouped",
                         tooltip = "While either grouping toggle is on, drop the trailing block of empty slots so the view only shows items. Turn this off to keep the free slots visible for depositing.",
@@ -197,16 +197,16 @@ CludesUI.AtOptionsLogin(function()
                             RefreshBank()
                         end,
                     }, CludesUI.BlankRowCfg())
-                    posY = posY - hgt
+                    cursorY = cursorY - height
 
                     -- auto deposit/withdraw (not on wow forever: no warband bank there).
                     -- account-wide, so a shared profile never moves anyone's gold
                     local AutoGold = BagsNS and BagsNS.AutoGold
                     if AutoGold then
-                        _, hgt = W:SectionHeader(hostFrame, "WARBAND GOLD", posY)
-                        posY = posY - hgt
+                        _, height = W:SectionHeader(hostFrame, "WARBAND GOLD", cursorY)
+                        cursorY = cursorY - height
                         local goldRow
-                        goldRow, hgt = W:DualRow(hostFrame, posY, {
+                        goldRow, height = W:DualRow(hostFrame, cursorY, {
                             type = "toggle",
                             text = "Auto Deposit/Withdraw",
                             tooltip = "When you open the bank, gold moves between this character and your warband bank so the character keeps the Amount. Gold above it is deposited, and gold missing is withdrawn, as far as the warband bank holds it. Applies to all characters.",
@@ -239,7 +239,7 @@ CludesUI.AtOptionsLogin(function()
                                 AutoGold.Set("bagAutoGoldAmount", g and math.min(g, 9999999) or nil)
                             end,
                         })
-                        posY = posY - hgt
+                        cursorY = cursorY - height
                         if not CludesUI._prebuilding then
                             CludesUI.BuildInlineCog(goldRow._leftRegion, {
                                 title = "Auto Deposit/Withdraw",
@@ -267,9 +267,9 @@ CludesUI.AtOptionsLogin(function()
                     -- offline bank. account-wide, like the data it saves
                     local Offline = BagsNS and BagsNS.Offline
                     if Offline then
-                        _, hgt = W:SectionHeader(hostFrame, "OFFLINE BANK", posY)
-                        posY = posY - hgt
-                        _, hgt = W:DualRow(hostFrame, posY, {
+                        _, height = W:SectionHeader(hostFrame, "OFFLINE BANK", cursorY)
+                        cursorY = cursorY - height
+                        _, height = W:DualRow(hostFrame, cursorY, {
                             type = "toggle",
                             text = "Offline Bank",
                             tooltip = CludesUI.IS_FOREVER
@@ -294,12 +294,12 @@ CludesUI.AtOptionsLogin(function()
                                 Offline.Set("bagTooltipCounts", val)
                             end,
                         })
-                        posY = posY - hgt
+                        cursorY = cursorY - height
                     end
 
-                    _, hgt = W:Spacer(hostFrame, posY, 20)
-                    posY = posY - hgt
-                    return math.abs(posY)
+                    _, height = W:Spacer(hostFrame, cursorY, 20)
+                    cursorY = cursorY - height
+                    return math.abs(cursorY)
                 end) -- end pcall
                 if not okB then
                     print("|cffff0000[Bank Options ERROR]|r " .. tostring(resB))
@@ -314,8 +314,8 @@ CludesUI.AtOptionsLogin(function()
             local success, result = pcall(function()
                 local W = CludesUI.Widgets
                 local Pix = CludesUI.PanelPP
-                local posY = yOffset
-                local hgt, _
+                local cursorY = yOffset
+                local height, _
 
                 local function ResetAndRefreshBagLayout()
                     local bags = _G.CUI_Bags
@@ -371,8 +371,8 @@ CludesUI.AtOptionsLogin(function()
                 ---------------------------------------------------------------------------
                 --  LAYOUT
                 ---------------------------------------------------------------------------
-                _, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
-                posY = posY - hgt
+                _, height = W:SectionHeader(hostFrame, "LAYOUT", cursorY)
+                cursorY = cursorY - height
 
                 -- Bag Style | Default Selected Bag | Window Scale | Frame Strata |
                 -- Slot Size | Slot Spacing | Auto-Size to Fit (not in List) |
@@ -582,24 +582,24 @@ CludesUI.AtOptionsLogin(function()
                     end,
                 }
                 for i = 1, #layoutSlots, 2 do
-                    _, hgt = W:DualRow(
+                    _, height = W:DualRow(
                         hostFrame,
-                        posY,
+                        cursorY,
                         layoutSlots[i],
                         layoutSlots[i + 1] or CludesUI.BlankRowCfg()
                     )
-                    posY = posY - hgt
+                    cursorY = cursorY - height
                 end
 
                 ---------------------------------------------------------------------------
                 --  CATEGORIES
                 ---------------------------------------------------------------------------
-                _, hgt = W:SectionHeader(hostFrame, "CATEGORIES", posY)
-                posY = posY - hgt
+                _, height = W:SectionHeader(hostFrame, "CATEGORIES", cursorY)
+                cursorY = cursorY - height
 
                 -- Show Pinned Items | Show Recent Items (each with inline cog for OneBag)
                 local pinRecRow
-                pinRecRow, hgt = W:DualRow(hostFrame, posY, {
+                pinRecRow, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Show Pinned Items",
                     tooltip = "Show the Pinned Items category in the sidebar and content grid.",
@@ -628,7 +628,7 @@ CludesUI.AtOptionsLogin(function()
                         CludesUI:RefreshPage()
                     end,
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
 
                 -- Inline cog for Show Pinned Items
                 if not CludesUI._prebuilding then
@@ -753,7 +753,7 @@ CludesUI.AtOptionsLogin(function()
 
                 -- Enabled Categories | Hide Categories with 0 Items
                 local catRow
-                catRow, hgt = W:DualRow(hostFrame, posY, { type = "label", text = "Enabled Categories" }, {
+                catRow, height = W:DualRow(hostFrame, cursorY, { type = "label", text = "Enabled Categories" }, {
                     type = "toggle",
                     text = "Hide Categories with 0 Items",
                     tooltip = "Hide sidebar categories that have no items in them.",
@@ -767,7 +767,7 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end,
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
 
                 -- Enabled Categories dropdown (left side)
                 if not CludesUI._prebuilding then
@@ -798,11 +798,11 @@ CludesUI.AtOptionsLogin(function()
                     end
 
                     if #BuildCatItems() > 0 then
-                        local leftRgn = catRow._leftRegion
-                        local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                            leftRgn,
+                        local leftRegion = catRow._leftRegion
+                        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                            leftRegion,
                             210,
-                            leftRgn:GetFrameLevel() + 2,
+                            leftRegion:GetFrameLevel() + 2,
                             BuildCatItems,
                             function(defName)
                                 local dc = saved.profile.bagDisabledCategories
@@ -830,15 +830,15 @@ CludesUI.AtOptionsLogin(function()
                             10,
                             true
                         )
-                        Pix.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
-                        leftRgn._control = cbDD
-                        leftRgn._lastInline = nil
+                        Pix.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
+                        leftRegion._control = checkDrop
+                        leftRegion._lastInline = nil
                         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
                     end
                 end
 
                 -- Hide 'Add Category' Tab | Split Set Gear by Set
-                _, hgt = W:DualRow(hostFrame, posY, {
+                _, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Hide 'Add Category' Tab",
                     tooltip = "Hides the Add Category button at the bottom of the bag sidebar.",
@@ -874,10 +874,10 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end,
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
 
                 -- Category Title Size (also on the Fonts page) | Hide Sidebar Icons When Collapsed
-                _, hgt = W:DualRow(hostFrame, posY, {
+                _, height = W:DualRow(hostFrame, cursorY, {
                     type = "slider",
                     text = "Category Title Size",
                     min = 8,
@@ -907,14 +907,14 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end,
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
 
                 if anyGrid then
                     ---------------------------------------------------------------------------
                     --  DISPLAY (GRID / COMPACT)
                     ---------------------------------------------------------------------------
-                    _, hgt = W:SectionHeader(hostFrame, "DISPLAY (GRID / COMPACT)", posY)
-                    posY = posY - hgt
+                    _, height = W:SectionHeader(hostFrame, "DISPLAY (GRID / COMPACT)", cursorY)
+                    cursorY = cursorY - height
 
                     -- Show Item Level: Never / Default Colors / Custom Colored (+ the Gear
                     -- Track Rank cog and an inline swatch left of it, live only under
@@ -928,7 +928,7 @@ CludesUI.AtOptionsLogin(function()
                         return saved.profile.itemlevelUseCustomColor and "custom" or "default"
                     end
                     local ilvlRow
-                    ilvlRow, hgt = W:DualRow(hostFrame, posY, {
+                    ilvlRow, height = W:DualRow(hostFrame, cursorY, {
                         type = "dropdown",
                         text = "Show Item Level",
                         tooltip = "Display item levels on equipment items in the inventory, in their usual colors or in one color of your choice.",
@@ -971,7 +971,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                         end,
                     })
-                    posY = posY - hgt
+                    cursorY = cursorY - height
 
                     -- Show Item Level's inlines: the cog nearest the control (Show Gear
                     -- Track Rank, live while item levels show: the rank only renders
@@ -1046,7 +1046,7 @@ CludesUI.AtOptionsLogin(function()
 
                     -- Show BoE / Warbound Text (+ inline cog: Text Size) | Item Count Text Size
                     local bindRow
-                    bindRow, hgt = W:DualRow(hostFrame, posY, {
+                    bindRow, height = W:DualRow(hostFrame, cursorY, {
                         type = "toggle",
                         text = "Show BoE / Warbound Text",
                         tooltip = "Display Binds on Equipped / Warbound until Equipped on equipment items in your bags and bank.",
@@ -1085,7 +1085,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                         end,
                     })
-                    posY = posY - hgt
+                    cursorY = cursorY - height
 
                     -- Inline cog (RESIZE) on Show BoE / Warbound Text: text size
                     -- Skipped during the hidden search pre-build: that pass swaps the
@@ -1131,7 +1131,7 @@ CludesUI.AtOptionsLogin(function()
                     -- bags only, so not built while only the bank uses this display
                     if not bagList then
                         local setNameRow
-                        setNameRow, hgt = W:DualRow(hostFrame, posY, {
+                        setNameRow, height = W:DualRow(hostFrame, cursorY, {
                             type = "toggle",
                             text = "Show Set Name on Gear",
                             tooltip = "Display the equipment set's name at the bottom of bag items that belong to one of your equipment sets.",
@@ -1162,7 +1162,7 @@ CludesUI.AtOptionsLogin(function()
                                 end
                             end,
                         })
-                        posY = posY - hgt
+                        cursorY = cursorY - height
 
                         -- Inline cog (RESIZE) on Show Set Name on Gear: text size
                         if not CludesUI._prebuilding then
@@ -1200,8 +1200,8 @@ CludesUI.AtOptionsLogin(function()
                     ---------------------------------------------------------------------------
                     --  DISPLAY (LIST)
                     ---------------------------------------------------------------------------
-                    _, hgt = W:SectionHeader(hostFrame, "DISPLAY (LIST)", posY)
-                    posY = posY - hgt
+                    _, height = W:SectionHeader(hostFrame, "DISPLAY (LIST)", cursorY)
+                    cursorY = cursorY - height
 
                     -- Left Gap | Right Gap | Row Height | Text Size | Round Icons |
                     -- Section Gold Value | Split by Type | Hide Row Stripes, two per row.
@@ -1356,13 +1356,13 @@ CludesUI.AtOptionsLogin(function()
                     local splitRow, splitLeft
                     for i = 1, #listSlots, 2 do
                         local row
-                        row, hgt = W:DualRow(
+                        row, height = W:DualRow(
                             hostFrame,
-                            posY,
+                            cursorY,
                             listSlots[i],
                             listSlots[i + 1] or CludesUI.BlankRowCfg()
                         )
-                        posY = posY - hgt
+                        cursorY = cursorY - height
                         if splitSlot == i or splitSlot == i + 1 then
                             splitRow, splitLeft = row, splitSlot == i
                         end
@@ -1403,12 +1403,12 @@ CludesUI.AtOptionsLogin(function()
                 ---------------------------------------------------------------------------
                 --  EXTRAS (every display)
                 ---------------------------------------------------------------------------
-                _, hgt = W:SectionHeader(hostFrame, "EXTRAS", posY)
-                posY = posY - hgt
+                _, height = W:SectionHeader(hostFrame, "EXTRAS", cursorY)
+                cursorY = cursorY - height
 
                 -- Merge Duplicate Items | Group Gear by Slot (+ inline cog: Compact Slot Groups)
                 local gearRow
-                gearRow, hgt = W:DualRow(hostFrame, posY, {
+                gearRow, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Merge Duplicate Items",
                     tooltip = "Show copies of the same item in separate bag slots as one icon or row, with their counts added together. Gear is never merged, and OneBag and MultiBag always show every slot. Merging pauses while the mail, trade, auction house, vendor, bank or guild bank window is open.",
@@ -1439,7 +1439,7 @@ CludesUI.AtOptionsLogin(function()
                         CludesUI:RefreshPage()
                     end,
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
 
                 -- Inline cog for Group Gear by Slot: Compact Slot Groups. Grid display
                 -- only, so not built for any other Bag Style.
@@ -1484,7 +1484,7 @@ CludesUI.AtOptionsLogin(function()
 
                 -- Junk Item Visuals | Quality Item Border
                 local junkRow
-                junkRow, hgt = W:DualRow(hostFrame, posY, {
+                junkRow, height = W:DualRow(hostFrame, cursorY, {
                     type = "label",
                     text = "Junk Item Visuals",
                     tooltip = "Choose how junk items look in the bags and bank.",
@@ -1512,7 +1512,7 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end,
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
 
                 -- Junk Item Visuals dropdown (left side). The coin badge is drawn
                 -- only by the bag window's Grid and Compact displays, so the List
@@ -1562,7 +1562,7 @@ CludesUI.AtOptionsLogin(function()
 
                 -- Bag Top Bar Icons (+ inline cog: Sort to Bottom) | Gold Tracking and History
                 local iconsRow
-                iconsRow, hgt = W:DualRow(hostFrame, posY, {
+                iconsRow, height = W:DualRow(hostFrame, cursorY, {
                     type = "label",
                     text = "Bag Top Bar Icons",
                     tooltip = "Choose which icons show in the bag window's top bar; the Junk Icon is the Junk Marker.",
@@ -1577,7 +1577,7 @@ CludesUI.AtOptionsLogin(function()
                         CludesUI.GetGoldLedger().SetTracking(val)
                     end,
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
 
                 -- Bag Top Bar Icons dropdown (left side), its Sort Options cog to the left
                 if not CludesUI._prebuilding then
@@ -1587,11 +1587,11 @@ CludesUI.AtOptionsLogin(function()
                         { key = "bagShowQuickIcon", label = "Quick Actions Icon" },
                         { key = "bagShowSortIcon", label = "Sort Icon" },
                     }
-                    local leftRgn = iconsRow._leftRegion
+                    local leftRegion = iconsRow._leftRegion
                     local iconsDD, iconsDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                        leftRgn,
+                        leftRegion,
                         210,
-                        leftRgn:GetFrameLevel() + 2,
+                        leftRegion:GetFrameLevel() + 2,
                         TOP_BAR_ICONS,
                         function(key)
                             return saved.profile[key] ~= false
@@ -1623,12 +1623,12 @@ CludesUI.AtOptionsLogin(function()
                         nil,
                         10
                     )
-                    Pix.Point(iconsDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
-                    leftRgn._control = iconsDD
-                    leftRgn._lastInline = nil
+                    Pix.Point(iconsDD, "RIGHT", leftRegion, "RIGHT", -20, 0)
+                    leftRegion._control = iconsDD
+                    leftRegion._lastInline = nil
                     CludesUI.RegisterWidgetRefresh(iconsDDRefresh)
 
-                    CludesUI.BuildInlineCog(leftRgn, {
+                    CludesUI.BuildInlineCog(leftRegion, {
                         disabled = function()
                             return saved.profile.bagShowSortIcon == false
                         end,
@@ -1676,7 +1676,7 @@ CludesUI.AtOptionsLogin(function()
 
                 -- Enabled Currencies | Icon Zoom
                 local currRow
-                currRow, hgt = W:DualRow(hostFrame, posY, { type = "label", text = "Enabled Currencies" }, {
+                currRow, height = W:DualRow(hostFrame, cursorY, { type = "label", text = "Enabled Currencies" }, {
                     type = "slider",
                     text = "Icon Zoom",
                     min = 0,
@@ -1697,7 +1697,7 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end,
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
 
                 -- Enabled Currencies dropdown (left side)
                 if not CludesUI._prebuilding then
@@ -1758,9 +1758,9 @@ CludesUI.AtOptionsLogin(function()
                         local co = CludesUI._BagsCurrencyOrder and CludesUI._BagsCurrencyOrder()
                         if co then
                             local listed = {}
-                            for _, item in ipairs(currencyItems) do
-                                if item.key then
-                                    listed[item.key] = true
+                            for _, entry in ipairs(currencyItems) do
+                                if entry.key then
+                                    listed[entry.key] = true
                                 end
                             end
                             local retired = {}
@@ -1794,11 +1794,11 @@ CludesUI.AtOptionsLogin(function()
                     end
 
                     if #currencyItems > 0 then
-                        local leftRgn = currRow._leftRegion
-                        local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                            leftRgn,
+                        local leftRegion = currRow._leftRegion
+                        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                            leftRegion,
                             210,
-                            leftRgn:GetFrameLevel() + 2,
+                            leftRegion:GetFrameLevel() + 2,
                             currencyItems,
                             -- Tracked currencies are per character (the module owns
                             -- the accessor and its first-use seeding; see
@@ -1837,15 +1837,15 @@ CludesUI.AtOptionsLogin(function()
                             10,
                             true
                         )
-                        Pix.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
-                        leftRgn._control = cbDD
-                        leftRgn._lastInline = nil
+                        Pix.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
+                        leftRegion._control = checkDrop
+                        leftRegion._lastInline = nil
                         CludesUI.RegisterWidgetRefresh(cbDDRefresh)
                     end
                 end
 
                 -- Stack Splitter
-                _, hgt = W:DualRow(hostFrame, posY, {
+                _, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Stack Splitter",
                     tooltip = "Also use the split dialog with Auto Split in OneBag, MultiBag, the reagent bag, the bank and the guild bank, replacing Blizzard's split popup there. All Items and category views always use it.",
@@ -1867,19 +1867,19 @@ CludesUI.AtOptionsLogin(function()
                         BagsNS.ToggleBagsWithCharacterFrame()
                     end,
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
 
                 -- Auto Open Bags | Auto Close Bags: absent or true = selected
                 local autoRow
-                autoRow, hgt = W:DualRow(
+                autoRow, height = W:DualRow(
                     hostFrame,
-                    posY,
+                    cursorY,
                     { type = "label", text = "Auto Open Bags" },
                     { type = "label", text = "Auto Close Bags" }
                 )
-                posY = posY - hgt
+                cursorY = cursorY - height
                 local function AutoWindowsDropdown(region, setting)
-                    local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                    local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
                         region,
                         210,
                         region:GetFrameLevel() + 2,
@@ -1900,8 +1900,8 @@ CludesUI.AtOptionsLogin(function()
                             end
                         end
                     )
-                    Pix.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
-                    region._control = cbDD
+                    Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+                    region._control = checkDrop
                     region._lastInline = nil
                     CludesUI.RegisterWidgetRefresh(cbDDRefresh)
                 end
@@ -1909,7 +1909,7 @@ CludesUI.AtOptionsLogin(function()
                 AutoWindowsDropdown(autoRow._rightRegion, "bagAutoCloseWindows")
 
                 -- Slot Count Format | Separate Reagent Slots
-                _, hgt = W:DualRow(hostFrame, posY, {
+                _, height = W:DualRow(hostFrame, cursorY, {
                     type = "dropdown",
                     text = "Slot Count Format",
                     tooltip = "Show used or free inventory slots.",
@@ -1939,11 +1939,11 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end,
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
 
-                _, hgt = W:Spacer(hostFrame, posY, 20)
-                posY = posY - hgt
-                return math.abs(posY)
+                _, height = W:Spacer(hostFrame, cursorY, 20)
+                cursorY = cursorY - height
+                return math.abs(cursorY)
             end) -- end pcall
             if not success then
                 print("|cffff0000[Bags Options ERROR]|r " .. tostring(result))
@@ -1955,8 +1955,8 @@ CludesUI.AtOptionsLogin(function()
             local bdb = CludesUI._bagsDB
             local p = bdb and bdb.profile
             if p then
-                for k in pairs(p) do
-                    p[k] = nil
+                for keyName in pairs(p) do
+                    p[keyName] = nil
                 end
                 if bdb._profileDefaults then
                     CludesUI.Lite.DeepMergeDefaults(p, bdb._profileDefaults)

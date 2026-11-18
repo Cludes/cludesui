@@ -14,7 +14,7 @@ if not mod then
     return
 end -- module disabled: no options page
 
-local function BuildCoreTextColoring(hostFrame, posY, W)
+local function BuildCoreTextColoring(hostFrame, cursorY, W)
     local environ = mod._NPO_OptEnv
     local DB, DBVal, defaultSet = environ.DB, environ.DBVal, environ.defaults
     local Pix, UpdatePreview, RefreshAllPlates = environ.PP, environ.UpdatePreview, environ.RefreshAllPlates
@@ -29,11 +29,11 @@ local function BuildCoreTextColoring(hostFrame, posY, W)
         end
     end
     if #isShown == 0 then
-        return posY
+        return cursorY
     end
 
-    local _, hgt = W:SectionHeader(hostFrame, "CORE TEXT COLORING", posY)
-    posY = posY - hgt
+    local _, height = W:SectionHeader(hostFrame, "CORE TEXT COLORING", cursorY)
+    cursorY = cursorY - height
 
     hostFrame._showRowDivider = true
 
@@ -294,11 +294,11 @@ local function BuildCoreTextColoring(hostFrame, posY, W)
 
     -- Two halves per row in position order; an odd last half sits beside a
     -- blank one.
-    for k = 1, #isShown, 2 do
-        local l, r = isShown[k], isShown[k + 1]
+    for keyName = 1, #isShown, 2 do
+        local l, r = isShown[keyName], isShown[keyName + 1]
         local row, rowH = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             TextColoringCfg(l.key, l.coloring),
             r and TextColoringCfg(r.key, r.coloring) or CludesUI.BlankRowCfg()
         )
@@ -308,13 +308,13 @@ local function BuildCoreTextColoring(hostFrame, posY, W)
                 MakeTextColoringInline(row, "_rightRegion", r.key, r.coloring)
             end
         end
-        posY = posY - rowH
+        cursorY = cursorY - rowH
     end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+    _, height = W:Spacer(hostFrame, cursorY, 20)
+    cursorY = cursorY - height
 
-    return posY
+    return cursorY
 end
 
 -- Used by DisplayLayout_Options.lua

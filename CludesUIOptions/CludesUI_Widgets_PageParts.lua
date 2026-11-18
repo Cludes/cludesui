@@ -165,8 +165,8 @@ function CludesUI.BuildSoundDropdownValues(paths, nameList, sequence)
     nameList = nameList or CludesUI._groupDeathSoundNames or { none = "None" }
     sequence = sequence or CludesUI._groupDeathSoundOrder or { "none" }
     local values = {}
-    for k, val in pairs(nameList) do
-        values[k] = val
+    for keyName, val in pairs(nameList) do
+        values[keyName] = val
     end
     values._menuOpts = {
         itemHeight = 26,
@@ -212,12 +212,12 @@ end
 -- opts.warn: the label in the warning red, for a setting there that overrides
 -- this page. Returns the next y and the row; row:Relink(label, module, page,
 -- section, highlight) aims the same row at another setting.
-function CludesUI.BuildLinkRow(hostFrame, posY, labelText, module, page, section, highlight, options)
+function CludesUI.BuildLinkRow(hostFrame, cursorY, labelText, module, page, section, highlight, options)
     local Pix = CludesUI.PanelPP
     local ROW_H = 40
     local row = CreateFrame("Frame", nil, hostFrame)
     Pix.Size(row, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, ROW_H)
-    Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY)
+    Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
     row._skipRowDivider = true
     CludesUI.RowBg(row, hostFrame)
 
@@ -236,12 +236,12 @@ function CludesUI.BuildLinkRow(hostFrame, posY, labelText, module, page, section
     CludesUI.MakeStyledButton(button, "Open Settings", 11, CludesUI.WB_COLOURS, function()
         CludesUI:NavigateToElementSettings(module, page, section, nil, highlight)
     end)
-    function row:Relink(l, m, p, s, hgt)
+    function row:Relink(l, m, p, s, height)
         labelFS:SetText(CludesUI.L(l))
-        module, page, section, highlight = m, p, s, hgt
+        module, page, section, highlight = m, p, s, height
     end
 
-    return posY - ROW_H, row
+    return cursorY - ROW_H, row
 end
 
 -- A row of action cards across the page (icon, title, a short description;
@@ -261,7 +261,7 @@ end
 -- three in place. An equal card built with pulse = true also takes
 -- card:SetPulse(on): a breathing accent outline for an action that wants
 -- attention now, animated only while the card shows.
-local function BuildInlineRow(hostFrame, posY, cards, availW, fullW, footer)
+local function BuildInlineRow(hostFrame, cursorY, cards, availW, fullW, footer)
     local Pix = CludesUI.PanelPP
     local L = CludesUI.L
     local ROW_H, ICON, DIV_GAP, DIV_H = 60, 26, 24, 40
@@ -342,7 +342,7 @@ local function BuildInlineRow(hostFrame, posY, cards, availW, fullW, footer)
         hostFrame,
         "TOPLEFT",
         CludesUI.CONTENT_PAD + math.floor((fullW - totalW) / 2),
-        posY
+        cursorY
     )
 
     local posX = 0
@@ -417,17 +417,17 @@ local function BuildInlineRow(hostFrame, posY, cards, availW, fullW, footer)
             cardFrame:SetScript("OnClick", specInfo.onClick)
         end
     end
-    return posY - blockH, built
+    return cursorY - blockH, built
 end
 
-function CludesUI.BuildActionCardRow(hostFrame, posY, cards, options)
+function CludesUI.BuildActionCardRow(hostFrame, cursorY, cards, options)
     local Pix = CludesUI.PanelPP
     local L = CludesUI.L
     local num = #cards
     local fullW = hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2
     local totalW = (options and options.width) and math.floor(fullW * options.width) or fullW
     if options and options.inline then
-        return BuildInlineRow(hostFrame, posY, cards, totalW, fullW, options.footer)
+        return BuildInlineRow(hostFrame, cursorY, cards, totalW, fullW, options.footer)
     end
 
     local CARD_H, CARD_GAP = 66, 14
@@ -447,7 +447,7 @@ function CludesUI.BuildActionCardRow(hostFrame, posY, cards, options)
 
     local rowFrame = CreateFrame("Frame", nil, hostFrame)
     Pix.Size(rowFrame, totalW, CARD_H)
-    Pix.Point(rowFrame, "TOPLEFT", hostFrame, "TOPLEFT", leftX, posY)
+    Pix.Point(rowFrame, "TOPLEFT", hostFrame, "TOPLEFT", leftX, cursorY)
 
     local built = {}
     for idx = 1, num do
@@ -552,23 +552,23 @@ function CludesUI.BuildActionCardRow(hostFrame, posY, cards, options)
         end
         built[idx] = cardFrame
     end
-    return posY - CARD_H, built
+    return cursorY - CARD_H, built
 end
 
 -- Note row: a dim aside (inside a card when its module is disabled, under a
 -- row). opts.banner: the section banner look (row background, brighter text,
 -- up to two lines), for a note the player must read before the rows below.
-function CludesUI.BuildNoteRow(hostFrame, posY, textValue, options)
+function CludesUI.BuildNoteRow(hostFrame, cursorY, textValue, options)
     local banner = options and options.banner
     local ROW_H = banner and 40 or 34
     -- The search prebuild only indexes rows: same y advance, no frames.
     if CludesUI._prebuilding then
-        return posY - ROW_H
+        return cursorY - ROW_H
     end
     local Pix = CludesUI.PanelPP
     local row = CreateFrame("Frame", nil, hostFrame)
     Pix.Size(row, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, ROW_H)
-    Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY)
+    Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
     row._skipRowDivider = true
     if banner then
         CludesUI.RowBg(row, hostFrame)
@@ -583,7 +583,7 @@ function CludesUI.BuildNoteRow(hostFrame, posY, textValue, options)
         labelFS:SetMaxLines(2)
     end
     labelFS:SetText(CludesUI.L(textValue))
-    return posY - ROW_H
+    return cursorY - ROW_H
 end
 
 local MC_ARROW_DOWN = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-down3.png"
@@ -600,13 +600,13 @@ local MC_CARD_GAP = 14
 -- A disabled module's card is inert: dimmed header, tag and tooltip only.
 -- Sets tile._hdr and tile._descFS (the header and its description line)
 -- before tile.buildContent runs, for content that updates the header.
-function CludesUI.BuildModuleCard(hostFrame, posY, W, tile, options)
+function CludesUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
     local Pix = CludesUI.PanelPP
     local ACC = CludesUI.CLUDES_GREEN
     local L = CludesUI.L
     local enabled = options.enabled
     local expanded = enabled and options.expanded[tile.key]
-    local cardTop = posY
+    local cardTop = cursorY
     local brd
 
     -- Explicit size + single TOPLEFT anchor (the widget contract; see the
@@ -614,7 +614,7 @@ function CludesUI.BuildModuleCard(hostFrame, posY, W, tile, options)
     local cardW = hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2
     local heading = CreateFrame("Button", nil, hostFrame)
     Pix.Size(heading, cardW, MC_HEADER_H)
-    Pix.Point(heading, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY)
+    Pix.Point(heading, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
     heading:SetFrameLevel(hostFrame:GetFrameLevel() + 3)
 
     -- The header is its own pseudo-section, so searching the module name
@@ -741,7 +741,7 @@ function CludesUI.BuildModuleCard(hostFrame, posY, W, tile, options)
         end)
     end
 
-    posY = posY - MC_HEADER_H
+    cursorY = cursorY - MC_HEADER_H
 
     if expanded then
         local div = heading:CreateTexture(nil, "ARTWORK")
@@ -751,16 +751,16 @@ function CludesUI.BuildModuleCard(hostFrame, posY, W, tile, options)
         Pix.Point(div, "BOTTOMRIGHT", heading, "BOTTOMRIGHT", -1, 0)
         Pix.DisablePixelSnap(div)
 
-        posY = posY - 8
-        posY = tile.buildContent(hostFrame, posY, W, tile)
-        posY = posY - 8
+        cursorY = cursorY - 8
+        cursorY = tile.buildContent(hostFrame, cursorY, W, tile)
+        cursorY = cursorY - 8
     end
 
     -- Card background + border spanning header and expanded content (header
     -- child so inline search re-flows it with the header; see WS card notes).
     local backdrop = CreateFrame("Frame", nil, heading)
     backdrop:SetFrameLevel(hostFrame:GetFrameLevel())
-    Pix.Size(backdrop, cardW, cardTop - posY)
+    Pix.Size(backdrop, cardW, cardTop - cursorY)
     Pix.Point(backdrop, "TOPLEFT", heading, "TOPLEFT", 0, 0)
     brd = CludesUI.MakeRoundedCard(backdrop, expanded and 0.16 or 0.12)
     hbg = backdrop:CreateTexture(nil, "BACKGROUND", nil, 1)
@@ -792,7 +792,7 @@ function CludesUI.BuildModuleCard(hostFrame, posY, W, tile, options)
         end)
     end
 
-    return posY - MC_CARD_GAP
+    return cursorY - MC_CARD_GAP
 end
 
 -------------------------------------------------------------------------------
@@ -806,14 +806,14 @@ end
 -- onSelect(), onToggle(newState), onDelete(), onEdit(), onContext(tile),
 -- height (66), textRight (-52), titleUnclamped, editSize (16), editTooltip,
 -- editSnap (keep pixel snapping on the pencil). Returns height, tile.
-function CludesUI.BuildManagerTile(parentFrame, posY, options)
+function CludesUI.BuildManagerTile(parentFrame, cursorY, options)
     local fontFile = options.fontPath
     local Pix = CludesUI.PanelPP
     local TILE_H = options.height or 66
     local IR, IG, IB = 0.55, 0.72, 1
     local tile = CreateFrame("Button", nil, parentFrame)
     tile:SetSize(options.width, TILE_H)
-    tile:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", 0, posY)
+    tile:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", 0, cursorY)
     tile:SetFrameLevel(parentFrame:GetFrameLevel() + 1)
 
     local backdrop = tile:CreateTexture(nil, "BACKGROUND")
@@ -896,23 +896,23 @@ function CludesUI.BuildManagerTile(parentFrame, posY, options)
     end
 
     if options.subtitle or options.subtitleFn then
-        local sub = tile:CreateFontString(nil, "OVERLAY")
-        sub:SetFont(fontFile, 11, "")
-        sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -4)
-        sub:SetPoint("RIGHT", tile, "RIGHT", textRight, 0)
-        sub:SetJustifyH("LEFT")
-        sub:SetWordWrap(false)
-        sub:SetText(options.subtitleFn and options.subtitleFn() or options.subtitle)
+        local subMenu = tile:CreateFontString(nil, "OVERLAY")
+        subMenu:SetFont(fontFile, 11, "")
+        subMenu:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -4)
+        subMenu:SetPoint("RIGHT", tile, "RIGHT", textRight, 0)
+        subMenu:SetJustifyH("LEFT")
+        subMenu:SetWordWrap(false)
+        subMenu:SetText(options.subtitleFn and options.subtitleFn() or options.subtitle)
         if options.inheritedTooltip then
-            sub:SetTextColor(IR, IG, IB, 0.55)
+            subMenu:SetTextColor(IR, IG, IB, 0.55)
         else
-            sub:SetTextColor(0.4, 0.4, 0.4)
+            subMenu:SetTextColor(0.4, 0.4, 0.4)
         end
         -- Re-read on every non-force RefreshPage (a full rebuild would close
         -- an open checkbox dropdown in the detail pane).
         if options.subtitleFn then
             CludesUI.RegisterWidgetRefresh(function()
-                sub:SetText(options.subtitleFn())
+                subMenu:SetText(options.subtitleFn())
             end)
         end
     end
@@ -1090,22 +1090,22 @@ function CludesUI.BuildActivationOverlay(outerRoot, options)
     body:SetJustifyH("CENTER")
     body:SetTextColor(1, 1, 1, 0.56)
     body:SetText(options.text or "")
-    local sub
+    local subMenu
     if options.sub then
-        sub = shade:CreateFontString(nil, "OVERLAY")
-        sub:SetFont(fontFile, 12, "")
-        sub:SetPoint("TOP", body, "BOTTOM", 0, -8)
-        sub:SetWidth(math.floor(options.width * 0.7))
-        sub:SetJustifyH("CENTER")
-        sub:SetTextColor(1, 1, 1, 0.45)
-        sub:SetText(options.sub)
+        subMenu = shade:CreateFontString(nil, "OVERLAY")
+        subMenu:SetFont(fontFile, 12, "")
+        subMenu:SetPoint("TOP", body, "BOTTOM", 0, -8)
+        subMenu:SetWidth(math.floor(options.width * 0.7))
+        subMenu:SetJustifyH("CENTER")
+        subMenu:SetTextColor(1, 1, 1, 0.45)
+        subMenu:SetText(options.sub)
     end
     if not options.buttonLabel then
         return shade
     end
     local button = CreateFrame("Button", nil, shade)
     button:SetSize(240, 28)
-    button:SetPoint("TOP", sub or body, "BOTTOM", 0, -22)
+    button:SetPoint("TOP", subMenu or body, "BOTTOM", 0, -22)
     local backdrop = CludesUI.SolidTex(button, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
     backdrop:SetAllPoints(button)
     local brd = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.22, backdrop)
@@ -1123,9 +1123,9 @@ function CludesUI.BuildActivationOverlay(outerRoot, options)
 end
 
 -- Filter-editor popup button (dark bg, 1px border, accent border on hover).
-function CludesUI.BuildPopupButton(hostFrame, wid, hgt, labelText, onClick)
+function CludesUI.BuildPopupButton(hostFrame, wid, height, labelText, onClick)
     local button = CreateFrame("Button", nil, hostFrame)
-    button:SetSize(wid, hgt)
+    button:SetSize(wid, height)
     button:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
     local backdrop = CludesUI.SolidTex(button, "BACKGROUND", 0, 0, 0, 0.5)
     backdrop:SetAllPoints()

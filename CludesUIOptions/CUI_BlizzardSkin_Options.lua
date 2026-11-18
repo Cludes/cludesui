@@ -31,13 +31,13 @@ local function Account()
 end
 -- Row accessors over Account(): a key read (or its default) and written.
 local function AccountField(key)
-    return function(v)
-        Account()[key] = v
+    return function(value)
+        Account()[key] = value
     end
 end
 local function AccountFieldThen(key)
-    return function(v)
-        Account()[key] = v
+    return function(value)
+        Account()[key] = value
         if CludesUI._LootToast_Refresh then
             CludesUI._LootToast_Refresh()
         end
@@ -319,12 +319,12 @@ CludesUI.AtOptionsLogin(function()
                     c.fs:SetText(cols[idx].title)
                     c.fs:Hide()
                 end
-                cols[idx].show(header, function(root, wid, hgt)
+                cols[idx].show(header, function(root, wid, height)
                     if not wid then
                         root:SetScale(UIParent:GetEffectiveScale() / header:GetEffectiveScale())
                         return
                     end
-                    c.root, c.w, c.h = root, wid, hgt
+                    c.root, c.w, c.h = root, wid, height
                     Layout()
                 end)
             end
@@ -367,8 +367,8 @@ CludesUI.AtOptionsLogin(function()
             CludesUIDB = {}
         end
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
         -- The border row helpers (BorderSizeSlider, BorderOffsetCfgs, AttachBorderControls) sit
         -- above this page, shared with the Loot Window card.
         -- Width Offset | Height Offset right below a Border Style row, only while its style is
@@ -376,8 +376,8 @@ CludesUI.AtOptionsLogin(function()
         local function BorderOffsetRow(prefixText, disabledFn, apply)
             local ocfgL, ocfgR = BorderOffsetCfgs(prefixText, disabledFn, apply)
             if ocfgL then
-                _, hgt = W:DualRow(hostFrame, posY, ocfgL, ocfgR)
-                posY = posY - hgt
+                _, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
+                cursorY = cursorY - height
             end
         end
 
@@ -389,16 +389,16 @@ CludesUI.AtOptionsLogin(function()
         end
         hostFrame._showRowDivider = true
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "BLIZZARD POPUPS & GAME MENU", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "BLIZZARD POPUPS & GAME MENU", cursorY)
+        cursorY = cursorY - height
 
         local function popupOff()
             return CludesUIDB.reskinPopupsMenus == false
         end
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Reskin Popups and Menus",
             tooltip = "Reskins Blizzard's right-click context menus and pop-ups.",
@@ -438,12 +438,12 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         do
             local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
             local outer
-            outer, hgt = W:DualRow(hostFrame, posY, {
+            outer, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = "Border Style",
                 disabled = popupOff,
@@ -465,11 +465,11 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI:RefreshPage(true)
                 end,
             }, BorderSizeSlider("popupMenu", "Border Size", popupOff, PopupPreviewRepaint))
-            posY = posY - hgt
+            cursorY = cursorY - height
             AttachBorderControls(outer, "popupMenu", popupOff, true, { apply = PopupPreviewRepaint })
             BorderOffsetRow("popupMenu", popupOff, PopupPreviewRepaint)
             local buttons
-            buttons, hgt = W:DualRow(hostFrame, posY, {
+            buttons, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
                 text = "Button Border Style",
                 disabled = popupOff,
@@ -497,12 +497,12 @@ CludesUI.AtOptionsLogin(function()
                 popupOff,
                 PopupPreviewRepaint
             ))
-            posY = posY - hgt
+            cursorY = cursorY - height
             AttachBorderControls(buttons, "popupMenuButton", popupOff, nil, { apply = PopupPreviewRepaint })
             BorderOffsetRow("popupMenuButton", popupOff, PopupPreviewRepaint)
         end
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "colorpicker",
             text = "Button Background",
             hasAlpha = true,
@@ -611,9 +611,9 @@ CludesUI.AtOptionsLogin(function()
                 },
             },
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Font Size Scale",
             tooltip = "Scales the font size of reskinned Blizzard tooltips, menus, and popups.",
@@ -648,14 +648,14 @@ CludesUI.AtOptionsLogin(function()
                 })
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
 
         local heading
-        heading, hgt = W:SectionHeader(hostFrame, "BLIZZARD TOOLTIP", posY)
-        posY = posY - hgt
+        heading, height = W:SectionHeader(hostFrame, "BLIZZARD TOOLTIP", cursorY)
+        cursorY = cursorY - height
 
         -- "Reskin Tooltip" (customTooltips) is the master for this section: its
         -- reskin-driven sub-settings gray out (and stop applying) when it is off.
@@ -691,7 +691,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- Reskin Tooltip | Show Tooltips
         local ttShowRow
-        ttShowRow, hgt = W:DualRow(hostFrame, posY, {
+        ttShowRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Reskin Tooltip",
             getValue = function()
@@ -731,21 +731,21 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI:RefreshPage() -- update the Use Modifier cog disabled state
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- "Use Modifier" cog on Show Tooltips (right region): while the chosen
         -- modifier is held, suppression is lifted so a hidden tooltip can be
         -- read on hover (e.g. peeking a spell in combat). Disabled (blocked +
         -- dimmed) when the reskin is off or the mode is "Always" (nothing hides).
         if not CludesUI._prebuilding then
-            local rightRgn = ttShowRow._rightRegion
+            local rightRegion = ttShowRow._rightRegion
             local function showModOff()
                 if ttReskinOff() then
                     return true
                 end
                 return ((CludesUIDB and CludesUIDB.tooltipShowMode) or "always") == "always"
             end
-            CludesUI.BuildInlineCog(rightRgn, {
+            CludesUI.BuildInlineCog(rightRegion, {
                 gap = 9,
                 disabled = showModOff,
                 disabledTooltip = function()
@@ -770,9 +770,9 @@ CludesUI.AtOptionsLogin(function()
 
         -- Anchor to Cursor | Growth Direction
         local ttAnchorRow
-        ttAnchorRow, hgt = W:DualRow(
+        ttAnchorRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             {
                 type = "toggle",
                 text = "Anchor to Cursor",
@@ -819,15 +819,15 @@ CludesUI.AtOptionsLogin(function()
                 setValue = AccountField("tooltipGrowthDirection"),
             }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Position control on Anchor to Cursor (left region): position + X/Y offset
         if not CludesUI._prebuilding then
-            local leftRgn = ttAnchorRow._leftRegion
+            local leftRegion = ttAnchorRow._leftRegion
             local function ttCursorOff()
                 return not (CludesUIDB and CludesUIDB.tooltipAnchorCursor)
             end
-            CludesUI.BuildInlineCog(leftRgn, {
+            CludesUI.BuildInlineCog(leftRegion, {
                 gap = 9,
                 disabled = ttCursorOff,
                 disabledTooltip = "Anchor to Cursor",
@@ -895,9 +895,9 @@ CludesUI.AtOptionsLogin(function()
         -- reskin off because Detailed Tooltips (the UberTooltips CVar) works with
         -- the default Blizzard tooltip too; the reskin-driven entries lock instead.
         local ttExtrasRow
-        ttExtrasRow, hgt = W:DualRow(
+        ttExtrasRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             {
                 type = "dropdown",
                 text = "Tooltip Extras",
@@ -926,7 +926,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
             }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if not CludesUI._prebuilding then
             local Pix = CludesUI.PanelPP
@@ -1072,11 +1072,11 @@ CludesUI.AtOptionsLogin(function()
         -- ID lines only show while the chosen modifier is held. Disabled (blocked +
         -- dimmed) when Spell ID on Tooltip is off, mirroring the cursor-position cog.
         if not CludesUI._prebuilding then
-            local rightRgn = ttExtrasRow._rightRegion
+            local rightRegion = ttExtrasRow._rightRegion
             local function sidOff()
                 return not CludesUI.SpellIDOn()
             end
-            CludesUI.BuildInlineCog(rightRgn, {
+            CludesUI.BuildInlineCog(rightRegion, {
                 gap = 9,
                 disabled = sidOff,
                 disabledTooltip = "Spell ID on Tooltip",
@@ -1121,9 +1121,9 @@ CludesUI.AtOptionsLogin(function()
 
         -- Show Max Stack for Items | Show Player Buffs
         local ttStackRow
-        ttStackRow, hgt = W:DualRow(
+        ttStackRow, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             -- Independent of the reskin, so it is NOT gated by "Reskin
             -- Tooltip" -- like Spell ID on Tooltip.
             {
@@ -1155,17 +1155,17 @@ CludesUI.AtOptionsLogin(function()
                 end,
             }
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- "Use Modifier" cog on Show Max Stack for Items (left region): the Max
         -- Stack line only shows while the chosen modifier is held. Disabled
         -- (blocked + dimmed) when the toggle is off, mirroring the Spell ID cog.
         if not CludesUI._prebuilding then
-            local leftRgn = ttStackRow._leftRegion
+            local leftRegion = ttStackRow._leftRegion
             local function iStacksOff()
                 return not (CludesUIDB and CludesUIDB.showItemMaxStacks)
             end
-            CludesUI.BuildInlineCog(leftRgn, {
+            CludesUI.BuildInlineCog(leftRegion, {
                 gap = 9,
                 disabled = iStacksOff,
                 disabledTooltip = "Show Max Stack for Items",
@@ -1280,7 +1280,7 @@ CludesUI.AtOptionsLogin(function()
         -- setting, like Global Settings > Colors' Dark Mode Background: the opacity
         -- slider with its color as an inline swatch.
         local ttStripRow
-        ttStripRow, hgt = W:DualRow(hostFrame, posY, {
+        ttStripRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Health Strip",
             tooltip = "Shows the health bar on the bottom of unit tooltips.",
@@ -1316,10 +1316,10 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if not CludesUI._prebuilding then
-            local leftRgn = ttStripRow._leftRegion
+            local leftRegion = ttStripRow._leftRegion
             -- Health strip texture dropdown: the shared bar catalogue behind a
             -- "Blizzard" entry (the unset default). The triple lives on ns so the
             -- SharedMedia appender, which registers by table identity, gets the same
@@ -1351,7 +1351,7 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI._applyTooltipHealthStripStyle()
                 end
             end
-            CludesUI.BuildInlineCog(leftRgn, {
+            CludesUI.BuildInlineCog(leftRegion, {
                 gap = 9,
                 disabled = function()
                     return ttReskinOff() or stripHidden()
@@ -1416,9 +1416,9 @@ CludesUI.AtOptionsLogin(function()
         do
             local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
             local tooltipBorder
-            tooltipBorder, hgt = W:DualRow(
+            tooltipBorder, height = W:DualRow(
                 hostFrame,
-                posY,
+                cursorY,
                 {
                     type = "dropdown",
                     text = "Border Style",
@@ -1450,7 +1450,7 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end)
             )
-            posY = posY - hgt
+            cursorY = cursorY - height
             -- The engine aura tooltip follows the border only when synced (the sync repaints the preview too)
             local function TooltipBorderApply()
                 if CludesUI.SyncAuraTooltipSkin then
@@ -1472,8 +1472,8 @@ CludesUI.AtOptionsLogin(function()
         --  a right and SILENTLY DROPS a third -- a row shipped with three once
         --  rendered only two toggles and nothing errored.
         -----------------------------------------------------------------------
-        _, hgt = W:SectionHeader(hostFrame, "BLIZZARD BARS, POPUPS & BUTTONS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "BLIZZARD BARS, POPUPS & BUTTONS", cursorY)
+        cursorY = cursorY - height
 
         -- The slot configs, laid out per client below: WoW Forever has no
         -- extra action button, so its toggle is not built there and the
@@ -1549,18 +1549,18 @@ CludesUI.AtOptionsLogin(function()
         -- toggle took.
         local hudRow, queueRow, widgetRgn, queueRgn, timerRgn
         if extraCfg then
-            hudRow, hgt = W:DualRow(hostFrame, posY, widgetCfg, extraCfg)
-            posY = posY - hgt
-            queueRow, hgt = W:DualRow(hostFrame, posY, queueCfg, timerCfg)
-            posY = posY - hgt
+            hudRow, height = W:DualRow(hostFrame, cursorY, widgetCfg, extraCfg)
+            cursorY = cursorY - height
+            queueRow, height = W:DualRow(hostFrame, cursorY, queueCfg, timerCfg)
+            cursorY = cursorY - height
             widgetRgn = hudRow and hudRow._leftRegion
             queueRgn = queueRow and queueRow._leftRegion
             timerRgn = queueRow and queueRow._rightRegion
         else
-            hudRow, hgt = W:DualRow(hostFrame, posY, widgetCfg, queueCfg)
-            posY = posY - hgt
-            queueRow, hgt = W:DualRow(hostFrame, posY, timerCfg, CludesUI.BlankRowCfg())
-            posY = posY - hgt
+            hudRow, height = W:DualRow(hostFrame, cursorY, widgetCfg, queueCfg)
+            cursorY = cursorY - height
+            queueRow, height = W:DualRow(hostFrame, cursorY, timerCfg, CludesUI.BlankRowCfg())
+            cursorY = cursorY - height
             widgetRgn = hudRow and hudRow._leftRegion
             queueRgn = hudRow and hudRow._rightRegion
             timerRgn = queueRow and queueRow._leftRegion
@@ -1739,7 +1739,7 @@ CludesUI.AtOptionsLogin(function()
             UpdQueueTimerState()
         end
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     ---------------------------------------------------------------------------
@@ -1750,18 +1750,18 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     -- Section headers inside window-skin cards: title indented 5px to sit
     -- with the card chrome (the divider stays full width).
-    local function WSCardSection(hostFrame, textValue, posY)
+    local function WSCardSection(hostFrame, textValue, cursorY)
         local W = CludesUI.Widgets
-        local hf, hgt = W:SectionHeader(hostFrame, textValue, posY)
+        local hf, height = W:SectionHeader(hostFrame, textValue, cursorY)
         if hf and hf._label then
             CludesUI.PanelPP.Point(hf._label, "BOTTOMLEFT", hf, "BOTTOMLEFT", 5, 8)
         end
-        return hf, hgt
+        return hf, height
     end
 
-    local function BuildCharacterSheetContent(hostFrame, posY)
+    local function BuildCharacterSheetContent(hostFrame, cursorY)
         local W = CludesUI.Widgets
-        local _, hgt
+        local _, height
         local Pix = CludesUI.PanelPP
 
         local function themedOff()
@@ -1810,24 +1810,24 @@ CludesUI.AtOptionsLogin(function()
         -- section, slot text and socket strip: the gem icons and Icon Zoom
         -- are the CludesUI sheet's own, so Gems leaves the Item Details
         -- list and Icon Zoom greys out there.
-        local function csGate(conf)
+        local function csGate(rowConf)
             if stock then
-                conf.disabled = function()
+                rowConf.disabled = function()
                     return true
                 end
-                conf.disabledTooltip = "Character Sheet: Blizz Default"
-                conf.requireState = "disabled"
-                conf.rawTooltip = nil
-                conf._blizzGated = true
+                rowConf.disabledTooltip = "Character Sheet: Blizz Default"
+                rowConf.requireState = "disabled"
+                rowConf.rawTooltip = nil
+                rowConf._blizzGated = true
             end
-            return conf
+            return rowConf
         end
 
         ---------------------------------------------------------------------------
         --  CORE OPTIONS
         ---------------------------------------------------------------------------
-        _, hgt = WSCardSection(hostFrame, "CORE OPTIONS", posY)
-        posY = posY - hgt
+        _, height = WSCardSection(hostFrame, "CORE OPTIONS", cursorY)
+        cursorY = cursorY - height
 
         -- Blizzard's own slot icons under Blizz Default (the inspect sheet
         -- keeps its stored zoom).
@@ -1886,7 +1886,7 @@ CludesUI.AtOptionsLogin(function()
                     { key = "showGems", label = "Gems", refresh = "_refreshGemsVisibility" }
             end
             local coreRow1
-            coreRow1, hgt = W:DualRow(hostFrame, posY, {
+            coreRow1, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Mythic+ Rating",
                 tooltip = "Display your Mythic+ rating above the item level on the character sheet.",
@@ -1904,16 +1904,16 @@ CludesUI.AtOptionsLogin(function()
                 text = "Item Details",
                 tooltip = "Choose what shows on each equipped item.",
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
             if not CludesUI._prebuilding then
                 local region = coreRow1._rightRegion
                 -- Keys are on unless false; an optIn key is off unless true.
                 local refreshOf, optIn = {}, {}
-                for _, item in ipairs(ITEM_DETAILS) do
-                    refreshOf[item.key] = item.refresh
-                    optIn[item.key] = item.optIn
+                for _, entry in ipairs(ITEM_DETAILS) do
+                    refreshOf[entry.key] = entry.refresh
+                    optIn[entry.key] = entry.optIn
                 end
-                local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
                     region,
                     210,
                     region:GetFrameLevel() + 2,
@@ -1932,8 +1932,8 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end
                 )
-                Pix.Point(cbDD, "RIGHT", region, "RIGHT", -20, 0)
-                region._control = cbDD
+                Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+                region._control = checkDrop
                 region._lastInline = nil
                 CludesUI.RegisterWidgetRefresh(cbDDRefresh)
             end
@@ -1944,7 +1944,7 @@ CludesUI.AtOptionsLogin(function()
             -- Blizzard's sheet in its tab art
             -- (CludesUIBlizzardSkin_SocketPanel.lua).
             local socketRow
-            socketRow, hgt = W:DualRow(hostFrame, posY, {
+            socketRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Socket Panel",
                 tooltip = "Show a panel of equipped-gear sockets on the character sheet; click a socket to gem it.",
@@ -1959,7 +1959,7 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI:RefreshPage()
                 end,
             }, iconZoomCfg)
-            posY = posY - hgt
+            cursorY = cursorY - height
             AttachDisabledOverlay(socketRow)
 
             -- Inline cog on Socket Panel: stat letters on the gem icons (off
@@ -1995,7 +1995,7 @@ CludesUI.AtOptionsLogin(function()
             -- (or its armor when it has none) and each weapon's damage per
             -- second there. Icon Zoom greys out under Blizz Default.
             local statsRow
-            statsRow, hgt = W:DualRow(hostFrame, posY, {
+            statsRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Show Item Stats",
                 tooltip = "Show each item's main and secondary stat (or its armor) and each weapon's damage per second beside its slot.",
@@ -2009,7 +2009,7 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end,
             }, iconZoomCfg)
-            posY = posY - hgt
+            cursorY = cursorY - height
             AttachDisabledOverlay(statsRow)
         end
 
@@ -2045,7 +2045,7 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local enchGemRow
-        enchGemRow, hgt = W:DualRow(hostFrame, posY, {
+        enchGemRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Enchants",
             tooltip = "How enchants show beside each item.",
@@ -2079,7 +2079,7 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         AttachDisabledOverlay(enchGemRow)
 
         if not CludesUI._prebuilding then
@@ -2134,7 +2134,7 @@ CludesUI.AtOptionsLogin(function()
             }
         end
         local durSeasonRow
-        durSeasonRow, hgt = W:DualRow(hostFrame, posY, {
+        durSeasonRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Item Durability",
             tooltip = "Show total equipped durability above the character model, colored from green to red.",
@@ -2160,7 +2160,7 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI:RefreshPage()
             end,
         }, seasonCfg or CludesUI.BlankRowCfg())
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(durSeasonRow._leftRegion, {
@@ -2235,8 +2235,8 @@ CludesUI.AtOptionsLogin(function()
             end
         end
 
-        _, hgt = W:Spacer(hostFrame, posY, 10)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 10)
+        cursorY = cursorY - height
 
         ---------------------------------------------------------------------------
         --  GEAR FLYOUT
@@ -2246,8 +2246,8 @@ CludesUI.AtOptionsLogin(function()
         -- sheet off; the slot arrows belong to the sheet and grey out with it.
         -- The sheet's own slot letters live under Item Details (Stat Letters,
         -- Tertiary Stats). All off unless turned on.
-        _, hgt = WSCardSection(hostFrame, "GEAR FLYOUT", posY)
-        posY = posY - hgt
+        _, height = WSCardSection(hostFrame, "GEAR FLYOUT", cursorY)
+        cursorY = cursorY - height
 
         local flyoutStatsCfg
         if not CludesUI.IS_FOREVER then
@@ -2264,7 +2264,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
             }
         end
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Item Levels",
             tooltip = "Shows the item level on each item in the character sheet gear flyout (the popup of same-slot bag items that appears when hovering an equipped slot), coloured by quality.",
@@ -2273,10 +2273,10 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = AccountField("flyoutItemLevels"),
         }, flyoutStatsCfg or CludesUI.BlankRowCfg())
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if not CludesUI.IS_FOREVER then
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Tertiary Stat Letters",
                 tooltip = "Adds Leech, Avoidance and Speed (L, A, S) in smaller letters behind the secondary stats in the gear flyout.",
@@ -2304,17 +2304,17 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
         end
 
-        _, hgt = W:Spacer(hostFrame, posY, 10)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 10)
+        cursorY = cursorY - height
 
         ---------------------------------------------------------------------------
         --  STAT DISPLAY
         ---------------------------------------------------------------------------
-        _, hgt = WSCardSection(hostFrame, "STAT DISPLAY", posY)
-        posY = posY - hgt
+        _, height = WSCardSection(hostFrame, "STAT DISPLAY", cursorY)
+        cursorY = cursorY - height
 
         -- Every control here is a view over the keys the sheet already reads
         -- (showStatCategory_*, the Secondary/Tertiary Raw and Both pairs, the
@@ -2375,7 +2375,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- Stat Sections (checkbox dropdown + cog) | Show Diminishing Returns
         local sectionsRow
-        sectionsRow, hgt = W:DualRow(hostFrame, posY, { type = "label", text = "Stat Sections" }, {
+        sectionsRow, height = W:DualRow(hostFrame, cursorY, { type = "label", text = "Stat Sections" }, {
             type = "toggle",
             text = "Show Diminishing Returns",
             tooltip = "Adds diminishing returns info to Secondary and Tertiary stat tooltips.",
@@ -2384,9 +2384,9 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = AccountField("showAdjustedStats"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         if not CludesUI._prebuilding then
-            local leftRgn = sectionsRow._leftRegion
+            local leftRegion = sectionsRow._leftRegion
             -- Each section's colour swatch sits on its row of the dropdown; dimmed while
             -- Blizzard UI Color applies or the section is unchecked.
             local itemList = {}
@@ -2437,10 +2437,10 @@ CludesUI.AtOptionsLogin(function()
                     },
                 }
             end
-            local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                leftRgn,
+            local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                leftRegion,
                 210,
-                leftRgn:GetFrameLevel() + 2,
+                leftRegion:GetFrameLevel() + 2,
                 itemList,
                 SectionShown,
                 function(key, val)
@@ -2455,9 +2455,9 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI:RefreshPage()
                 end
             )
-            Pix.Point(cbDD, "RIGHT", leftRgn, "RIGHT", -20, 0)
-            leftRgn._control = cbDD
-            leftRgn._lastInline = nil
+            Pix.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
+            leftRegion._control = checkDrop
+            leftRegion._lastInline = nil
             CludesUI.RegisterWidgetRefresh(cbDDRefresh)
 
             -- Cog: the per-section extras the old per-section rows held
@@ -2525,7 +2525,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                 }
             end
-            CludesUI.BuildInlineCog(leftRgn, {
+            CludesUI.BuildInlineCog(leftRegion, {
                 title = "Stat Section Settings",
                 rows = rowList,
                 disabled = themedOff,
@@ -2537,7 +2537,7 @@ CludesUI.AtOptionsLogin(function()
         -- Secondary/Tertiary Text | Secondary/Tertiary Highlights (both write
         -- the Secondary and the Tertiary keys; the Secondary pair is shown)
         local stRow
-        stRow, hgt = W:DualRow(hostFrame, posY, {
+        stRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Secondary/Tertiary Text",
             tooltip = "How Secondary and Tertiary stat values are shown.",
@@ -2586,17 +2586,17 @@ CludesUI.AtOptionsLogin(function()
                 CludesUIDB.highlightTertiaryItems = val
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         AttachDisabledOverlay(stRow)
 
         ---------------------------------------------------------------------------
         --  INSPECT SHEET
         ---------------------------------------------------------------------------
-        _, hgt = WSCardSection(hostFrame, "INSPECT SHEET", posY)
-        posY = posY - hgt
+        _, height = WSCardSection(hostFrame, "INSPECT SHEET", cursorY)
+        cursorY = cursorY - height
 
         local themedInspectSheetRow
-        themedInspectSheetRow, hgt = W:DualRow(hostFrame, posY, {
+        themedInspectSheetRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Inspect Sheet",
             tooltip = "Applies CludesUI theme styling to the inspect sheet window.",
@@ -2636,7 +2636,7 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI:RefreshPage()
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Text Size (unset follows the character sheet's), shown only while
         -- the enchants show as text.
@@ -2677,7 +2677,7 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local itemLevelInspectRow
-        itemLevelInspectRow, hgt = W:DualRow(hostFrame, posY, {
+        itemLevelInspectRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Item Level",
             tooltip = "Toggle visibility of item level text on the inspect sheet.",
@@ -2704,7 +2704,7 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if not CludesUI._prebuilding then
             local function themedOff()
@@ -2742,20 +2742,20 @@ CludesUI.AtOptionsLogin(function()
             end
         end
 
-        return posY
+        return cursorY
     end
 
     ---------------------------------------------------------------------------
     --  LFG Menu card content
     ---------------------------------------------------------------------------
-    local function BuildLFGMenuContent(hostFrame, posY)
+    local function BuildLFGMenuContent(hostFrame, cursorY)
         local W = CludesUI.Widgets
-        local _, hgt
+        local _, height
 
-        _, hgt = WSCardSection(hostFrame, "QUALITY OF LIFE", posY)
-        posY = posY - hgt
+        _, height = WSCardSection(hostFrame, "QUALITY OF LIFE", cursorY)
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Remember Sign-Up Roles",
             tooltip = "Remembers the Tank/Healer/DPS roles you last applied with and restores them the next time you sign up to a premade group (limited to roles your current spec can fill). Works with or without the reskin.",
@@ -2769,9 +2769,9 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        return posY
+        return cursorY
     end
 
     ---------------------------------------------------------------------------
@@ -2786,9 +2786,9 @@ CludesUI.AtOptionsLogin(function()
     --  Blizzard's cards nor the custom list draws; auto-accept runs whatever
     --  the skin.
     ---------------------------------------------------------------------------
-    local function BuildFriendsCardContent(hostFrame, posY)
+    local function BuildFriendsCardContent(hostFrame, cursorY)
         local W = CludesUI.Widgets
-        local _, row, hgt
+        local _, row, height
         local Kit = CludesUI.FriendsKit
 
         local CUSTOM = "Custom Friends List Tiles"
@@ -2799,21 +2799,21 @@ CludesUI.AtOptionsLogin(function()
         local function tilesOff()
             return CludesUI.GetBlizzWindowStyle("socialui") == "off" and customOff()
         end
-        local function tileGate(conf, off)
-            conf.disabled = off or tilesOff
-            conf.disabledTooltip = CUSTOM
-            return conf
+        local function tileGate(rowConf, off)
+            rowConf.disabled = off or tilesOff
+            rowConf.disabledTooltip = CUSTOM
+            return rowConf
         end
 
-        _, hgt = WSCardSection(hostFrame, "DISPLAY", posY)
-        posY = posY - hgt
+        _, height = WSCardSection(hostFrame, "DISPLAY", cursorY)
+        cursorY = cursorY - height
 
         -- Custom Friends List Tiles | Tile Height: the custom friends list
         -- (CludesUI_FriendsList.lua) and its own height
         local tileMin, tileMax = CludesUI.FriendsList.TileRange()
-        row, hgt = W:DualRow(
+        row, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             {
                 type = "toggle",
                 text = CUSTOM,
@@ -2841,12 +2841,12 @@ CludesUI.AtOptionsLogin(function()
                 end,
             }, customOff)
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Tile Features | Class Icon Theme
-        row, hgt = W:DualRow(
+        row, height = W:DualRow(
             hostFrame,
-            posY,
+            cursorY,
             tileGate({
                 type = "dropdown",
                 text = "Tile Features",
@@ -2870,7 +2870,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
             })
         )
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Tile Features: one checkbox dropdown over the three tile switches,
         -- each still its own key, in place of the row's placeholder.
@@ -2912,7 +2912,7 @@ CludesUI.AtOptionsLogin(function()
         end
 
         -- Auto-Accept Friend Invites
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Auto-Accept Friend Invites",
             tooltip = "Auto-accepts all group invites from people on your friends list",
@@ -2924,7 +2924,7 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI:RefreshPage() -- the guildmate cog's disabled state
             end,
         }, CludesUI.BlankRowCfg())
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Guildmates in a cog on Auto-Accept Friend Invites: it only extends
         -- that feature, so the cog blocks while the toggle is off.
@@ -2950,12 +2950,12 @@ CludesUI.AtOptionsLogin(function()
             })
         end
 
-        return posY
+        return cursorY
     end
 
-    local function BuildMerchantContent(hostFrame, posY)
+    local function BuildMerchantContent(hostFrame, cursorY)
         local W = CludesUI.Widgets
-        local _, hgt
+        local _, height
 
         local function themedOff()
             return CludesUIDB and CludesUIDB.reskinMerchant == false
@@ -2987,15 +2987,15 @@ CludesUI.AtOptionsLogin(function()
             refresh()
         end
 
-        _, hgt = WSCardSection(hostFrame, "MERCHANT OPTIONS", posY)
-        posY = posY - hgt
+        _, height = WSCardSection(hostFrame, "MERCHANT OPTIONS", cursorY)
+        cursorY = cursorY - height
 
         local function merchantShowAsListOff()
             return CludesUIDB and CludesUIDB.merchantShowAsList == false
         end
 
         local row
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show As List",
             tooltip = "Shows the items as a list instead of pages.",
@@ -3040,10 +3040,10 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
         AttachDisabledOverlay(row)
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Item Level",
             tooltip = "Shows the item level on weapons and armor a vendor sells.",
@@ -3074,7 +3074,7 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Expand Vendor UI: a bigger grid in the vendor window. The cog sets its
         -- size; 2 x 5 is Blizzard's own layout. Needs the Merchant skin (the
@@ -3135,7 +3135,7 @@ CludesUI.AtOptionsLogin(function()
             })
         end
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Expand Vendor UI",
             tooltip = "Shows more vendor items at once, in the columns and rows set in the cog.",
@@ -3152,11 +3152,11 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI:RefreshPage()
             end,
         }, CludesUI.BlankRowCfg())
-        posY = posY - hgt
+        cursorY = cursorY - height
         BuildExpandCog(row._leftRegion)
         AttachDisabledOverlay(row)
 
-        return posY
+        return cursorY
     end
 
     ---------------------------------------------------------------------------
@@ -3166,12 +3166,12 @@ CludesUI.AtOptionsLogin(function()
     --  picked style. The Tooltips page's border rows (the shared helpers above,
     --  under the "lootWindow" and "lootIcon" prefixes), plus a Quality color mode.
     ---------------------------------------------------------------------------
-    local function BuildLootContent(hostFrame, posY)
+    local function BuildLootContent(hostFrame, cursorY)
         if not CludesUIDB then
             CludesUIDB = {}
         end
         local W = CludesUI.Widgets
-        local _, hgt
+        local _, height
         local prefixText = "lootWindow"
         local iconPrefix = "lootIcon"
 
@@ -3187,15 +3187,15 @@ CludesUI.AtOptionsLogin(function()
             end
         end
 
-        _, hgt = WSCardSection(hostFrame, "BORDER", posY)
-        posY = posY - hgt
+        _, height = WSCardSection(hostFrame, "BORDER", cursorY)
+        cursorY = cursorY - height
 
         local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
         texValues.default = "Default"
         table.insert(texOrder, 1, "default")
 
         local row
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Border Style",
             tooltip = "Replaces the loot window's border. Default keeps the standard window border.",
@@ -3234,7 +3234,7 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI:RefreshPage(true)
             end,
         }, BorderSizeSlider(prefixText, "Border Size", lootOff, refresh, "Loot Window"))
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Accent | Class | Custom | Quality swatches beside Border Size, as on the Tooltips page.
         AttachBorderControls(row, prefixText, lootOff, false, {
@@ -3248,16 +3248,16 @@ CludesUI.AtOptionsLogin(function()
         -- Width | Height Offset, only for a textured style (art with built-in padding needs fitting).
         local ocfgL, ocfgR = BorderOffsetCfgs(prefixText, lootOff, refresh, "Loot Window")
         if ocfgL then
-            _, hgt = W:DualRow(hostFrame, posY, ocfgL, ocfgR)
-            posY = posY - hgt
+            _, height = W:DualRow(hostFrame, cursorY, ocfgL, ocfgR)
+            cursorY = cursorY - height
         end
 
         -- ICON BORDER: the item icons' quality border in a picked style and size (color stays the item quality).
-        _, hgt = WSCardSection(hostFrame, "ICON BORDER", posY)
-        posY = posY - hgt
+        _, height = WSCardSection(hostFrame, "ICON BORDER", cursorY)
+        cursorY = cursorY - height
 
         local iconValues, iconOrder = CludesUI.GetBorderTextureDropdown()
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Icon Borders",
             tooltip = "Draws the item icons' quality border in the style and size below.",
@@ -3293,33 +3293,33 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI:RefreshPage(true)
             end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         local iconSize = BorderSizeSlider(iconPrefix, "Icon Border Size", iconOff, refresh, "Icon Borders")
         iconSize.trackWidth = nil -- no swatches beside it: the full track
         -- Textured styles add the two offsets: Size | Width Offset, then Height Offset | blank.
         local icL, icR = BorderOffsetCfgs(iconPrefix, iconOff, refresh, "Icon Borders")
         if icL then
-            _, hgt = W:DualRow(hostFrame, posY, iconSize, icL)
-            posY = posY - hgt
-            _, hgt = W:DualRow(hostFrame, posY, icR, CludesUI.BlankRowCfg())
-            posY = posY - hgt
+            _, height = W:DualRow(hostFrame, cursorY, iconSize, icL)
+            cursorY = cursorY - height
+            _, height = W:DualRow(hostFrame, cursorY, icR, CludesUI.BlankRowCfg())
+            cursorY = cursorY - height
         else
-            _, hgt = W:DualRow(hostFrame, posY, iconSize, CludesUI.BlankRowCfg())
-            posY = posY - hgt
+            _, height = W:DualRow(hostFrame, cursorY, iconSize, CludesUI.BlankRowCfg())
+            cursorY = cursorY - height
         end
 
-        return posY
+        return cursorY
     end
 
-    local function BuildLootToastContent(hostFrame, posY)
+    local function BuildLootToastContent(hostFrame, cursorY)
         local W = CludesUI.Widgets
-        local _, hgt
+        local _, height
 
-        _, hgt = WSCardSection(hostFrame, "QUALITY OF LIFE", posY)
-        posY = posY - hgt
+        _, height = WSCardSection(hostFrame, "QUALITY OF LIFE", cursorY)
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Quality Strip",
             tooltip = "Adds a strip down the left edge of a loot toast in the item's quality color. The flat skin drops Blizzard's quality ring around the icon, so this puts that rarity cue back.",
@@ -3336,9 +3336,9 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = AccountFieldThen("lootToastQualityStripMoney"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Toast Scale",
             tooltip = "Scales the loot and gold toasts.",
@@ -3352,9 +3352,9 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = AccountFieldThen("lootToastScale"),
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        return posY
+        return cursorY
     end
 
     ---------------------------------------------------------------------------
@@ -3363,13 +3363,13 @@ CludesUI.AtOptionsLogin(function()
     --  style. Sort, cap and minimum level ride the toggle's cog; Shown
     --  Characters lists every recorded character under its realm.
     ---------------------------------------------------------------------------
-    local function BuildMailAltList(hostFrame, posY)
+    local function BuildMailAltList(hostFrame, cursorY)
         local MA = mod.MailAlts
         if not MA then
-            return posY
+            return cursorY
         end
         local W = CludesUI.Widgets
-        local _, row, hgt
+        local _, row, height
         local REQ = "Show Alt List"
         local function On()
             return CludesUIDB and CludesUIDB.mailAltList == true
@@ -3406,10 +3406,10 @@ CludesUI.AtOptionsLogin(function()
             return itemList
         end
 
-        _, hgt = WSCardSection(hostFrame, "ALT LIST", posY)
-        posY = posY - hgt
+        _, height = WSCardSection(hostFrame, "ALT LIST", cursorY)
+        cursorY = cursorY - height
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        row, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Alt List",
             tooltip = "Lists your alts beside Send Mail.",
@@ -3431,7 +3431,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function() end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(row._leftRegion, {
@@ -3505,7 +3505,7 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.RegisterWidgetRefresh(refresh)
         end
 
-        return posY
+        return cursorY
     end
 
     ---------------------------------------------------------------------------
@@ -3622,7 +3622,7 @@ CludesUI.AtOptionsLogin(function()
     -- it; the active mode renders bright, the other dimmed.
     local function AttachLookSwatches(region, row, key)
         local Pix = CludesUI.PanelPP
-        local ctrl = region._control
+        local control = region._control
 
         local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
             region,
@@ -3643,7 +3643,7 @@ CludesUI.AtOptionsLogin(function()
             false,
             20
         )
-        Pix.Point(customSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+        Pix.Point(customSwatch, "RIGHT", control, "LEFT", -8, 0)
         local origClick = customSwatch:GetScript("OnClick")
         customSwatch:SetScript("OnClick", function(self, ...)
             local c = WSLook(key)
@@ -4252,13 +4252,13 @@ CludesUI.AtOptionsLogin(function()
     -- One expandable card: custom header (mini-window glyph + title + style
     -- dropdown + chevron) over a shared card background, with the window's
     -- rows below when expanded. Returns the new y cursor.
-    local function BuildWindowCard(hostFrame, posY, window)
+    local function BuildWindowCard(hostFrame, cursorY, window)
         local Pix = CludesUI.PanelPP
         local ACC = CludesUI.CLUDES_GREEN
         local L = CludesUI.L
         local hasSettings = window.buildContent ~= nil
         local expanded = hasSettings and _wsExpanded[window.key]
-        local cardTop = posY
+        local cardTop = cursorY
         local brd -- whole-card border, created with the bg below (hover closure)
 
         -- Explicit size + single TOPLEFT anchor (the widget contract): inline
@@ -4268,7 +4268,7 @@ CludesUI.AtOptionsLogin(function()
         local cardW = hostFrame:GetWidth() - (CludesUI.CONTENT_PAD - WS_CARD_INSET) * 2
         local heading = CreateFrame("Button", nil, hostFrame)
         Pix.Size(heading, cardW, WS_HEADER_H)
-        Pix.Point(heading, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD - WS_CARD_INSET, posY)
+        Pix.Point(heading, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD - WS_CARD_INSET, cursorY)
         heading:SetFrameLevel(hostFrame:GetFrameLevel() + 3)
 
         -- Search metadata: the header acts as its own section, so searching a
@@ -4456,7 +4456,7 @@ CludesUI.AtOptionsLogin(function()
             end)
         end
 
-        posY = posY - WS_HEADER_H
+        cursorY = cursorY - WS_HEADER_H
 
         if expanded then
             -- Divider between the header and the card's settings
@@ -4467,9 +4467,9 @@ CludesUI.AtOptionsLogin(function()
             Pix.Point(div, "BOTTOMRIGHT", heading, "BOTTOMRIGHT", -1, 0)
             Pix.DisablePixelSnap(div)
 
-            posY = posY - 8
-            posY = window.buildContent(hostFrame, posY)
-            posY = posY - 8
+            cursorY = cursorY - 8
+            cursorY = window.buildContent(hostFrame, cursorY)
+            cursorY = cursorY - 8
         end
 
         -- Card background + border spanning the header and any expanded content. Child
@@ -4479,7 +4479,7 @@ CludesUI.AtOptionsLogin(function()
         -- Explicitly sized because the header's own rect is the only anchor left.
         local backdrop = CreateFrame("Frame", nil, heading)
         backdrop:SetFrameLevel(hostFrame:GetFrameLevel())
-        Pix.Size(backdrop, cardW, cardTop - posY)
+        Pix.Size(backdrop, cardW, cardTop - cursorY)
         Pix.Point(backdrop, "TOPLEFT", heading, "TOPLEFT", 0, 0)
         brd = CludesUI.MakeRoundedCard(backdrop, expanded and 0.16 or 0.12)
         hbg = backdrop:CreateTexture(nil, "BACKGROUND", nil, 1)
@@ -4502,7 +4502,7 @@ CludesUI.AtOptionsLogin(function()
         CludesUI.RegisterWidgetRefresh(RefreshCardState)
         RefreshCardState()
 
-        return posY - WS_CARD_GAP
+        return cursorY - WS_CARD_GAP
     end
 
     -- Per-profile master kill switch (the ONLY per-profile setting in this
@@ -4672,18 +4672,18 @@ CludesUI.AtOptionsLogin(function()
     --  no addon has registered. Skins install at load: turning a toggle ON
     --  applies live when possible, turning OFF is reload-bound.
     ---------------------------------------------------------------------------
-    local function BuildThirdPartySection(hostFrame, posY)
+    local function BuildThirdPartySection(hostFrame, cursorY)
         local W = CludesUI.Widgets
         local entries = mod.GetThirdPartySkinList and mod.GetThirdPartySkinList()
         if not entries or #entries == 0 then
-            return posY
+            return cursorY
         end
 
-        local _, hgt
-        _, hgt = W:Spacer(hostFrame, posY, 10)
-        posY = posY - hgt
-        _, hgt = W:SectionHeader(hostFrame, "THIRD-PARTY ADDONS", posY)
-        posY = posY - hgt
+        local _, height
+        _, height = W:Spacer(hostFrame, cursorY, 10)
+        cursorY = cursorY - height
+        _, height = W:SectionHeader(hostFrame, "THIRD-PARTY ADDONS", cursorY)
+        cursorY = cursorY - height
 
         local function MasterOff()
             return (CludesUIDB and CludesUIDB.thirdPartySkinsOff) and true or false
@@ -4753,18 +4753,18 @@ CludesUI.AtOptionsLogin(function()
         local h2
         for idx = 1, #itemList, 2 do
             _, h2 =
-                W:DualRow(hostFrame, posY, itemList[idx], itemList[idx + 1] or { type = "label", text = "" })
-            posY = posY - h2
+                W:DualRow(hostFrame, cursorY, itemList[idx], itemList[idx + 1] or { type = "label", text = "" })
+            cursorY = cursorY - h2
         end
-        return posY
+        return cursorY
     end
 
     local function BuildWindowSkinsPage(pageName, hostFrame, yOffset)
         local W = CludesUI.Widgets
         local Pix = CludesUI.PanelPP
         local L = CludesUI.L
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
 
         hostFrame._showRowDivider = true
 
@@ -4778,15 +4778,15 @@ CludesUI.AtOptionsLogin(function()
             return math.abs(y2)
         end
 
-        _, hgt = W:Spacer(hostFrame, posY, 14)
-        posY = posY - hgt
+        _, height = W:Spacer(hostFrame, cursorY, 14)
+        cursorY = cursorY - height
 
         -- Hosted on a sized frame (not a raw region on the wrapper) so the
         -- inline search hides it while filtering and restores it on clear;
         -- regions are invisible to the search and would float over results.
         local introHost = CreateFrame("Frame", nil, hostFrame)
         Pix.Size(introHost, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, 20)
-        Pix.Point(introHost, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY)
+        Pix.Point(introHost, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
         local intro = CludesUI.MakeFont(introHost, 13, nil, 1, 1, 1, 0.5)
         Pix.Point(intro, "TOP", introHost, "TOP", 0, 0)
         intro:SetText(L("Pick a style for all reskinned Blizzard windows."))
@@ -4811,7 +4811,7 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.HideWidgetTooltip()
         end)
 
-        posY = posY - 28
+        cursorY = cursorY - 28
 
         -- Set-all row: pick a style, then push it to every window below. The
         -- swatch + cog edit the GLOBAL Modern background (windows without a
@@ -4830,7 +4830,7 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI:RefreshPage()
             end
         )
-        Pix.Point(allDD, "TOPLEFT", hostFrame, "TOP", -115, posY)
+        Pix.Point(allDD, "TOPLEFT", hostFrame, "TOP", -115, cursorY)
         allDD._ttText = "Style to apply to every window below."
         AttachModernSwatch(hostFrame, allDD, function()
             return _wsApplyAllStyle ~= "modern"
@@ -4853,14 +4853,14 @@ CludesUI.AtOptionsLogin(function()
                 WSReloadPopup("Changing window skin styles requires a UI reload to fully apply.")
             end
         end)
-        posY = posY - 30 - 26
+        cursorY = cursorY - 30 - 26
 
         -- GLOBAL OPTIONS: look settings shared by every reskinned window.
-        _, hgt = W:SectionHeader(hostFrame, "GLOBAL OPTIONS", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "GLOBAL OPTIONS", cursorY)
+        cursorY = cursorY - height
 
         local gRow1
-        gRow1, hgt = W:DualRow(hostFrame, posY, {
+        gRow1, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Show Accent Bar",
             tooltip = "Accent bar on the active tab of reskinned windows.",
@@ -4889,9 +4889,9 @@ CludesUI.AtOptionsLogin(function()
             AttachLookSwatches(gRow1._leftRegion, gRow1, "blizzWinAccentBar")
             AttachLookSwatches(gRow1._rightRegion, gRow1, "blizzWinBarFill")
         end
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "multiSwatch",
             text = "Link Color",
             swatches = {
@@ -4943,10 +4943,10 @@ CludesUI.AtOptionsLogin(function()
                 },
             },
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Breathing room between the global settings and the window cards.
-        posY = posY - 30
+        cursorY = cursorY - 30
 
         -- Cards with their own settings content (buildContent) sit at the top of the
         -- list, keeping their relative order; plain style-only cards follow in theirs.
@@ -4964,14 +4964,14 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         for _, window in ipairs(ordered) do
-            posY = BuildWindowCard(hostFrame, posY, window)
+            cursorY = BuildWindowCard(hostFrame, cursorY, window)
         end
 
-        posY = BuildThirdPartySection(hostFrame, posY)
+        cursorY = BuildThirdPartySection(hostFrame, cursorY)
 
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-        return math.abs(posY)
+        _, height = W:Spacer(hostFrame, cursorY, 20)
+        cursorY = cursorY - height
+        return math.abs(cursorY)
     end
 
     ---------------------------------------------------------------------------
@@ -5004,13 +5004,13 @@ CludesUI.AtOptionsLogin(function()
     end
     -- Row setters over EDR_Set: the key written with the row's value, then EDR_Rebuild() for the Then form.
     local function EDR_SetRow(key)
-        return function(v)
-            EDR_Set(key, v)
+        return function(value)
+            EDR_Set(key, value)
         end
     end
     local function EDR_SetRowThen(key)
-        return function(v)
-            EDR_Set(key, v)
+        return function(value)
+            EDR_Set(key, value)
             EDR_Rebuild()
         end
     end
@@ -5057,8 +5057,8 @@ CludesUI.AtOptionsLogin(function()
     local function BuildChatBubblesPage(pageName, hostFrame, yOffset)
         local W = CludesUI.Widgets
         local Pix = CludesUI.PP
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
 
         hostFrame._showRowDivider = true
         if not CludesUI._prebuilding then
@@ -5140,18 +5140,18 @@ CludesUI.AtOptionsLogin(function()
         if not CludesUI._prebuilding then
             local warnFrame = CreateFrame("Frame", nil, hostFrame)
             Pix.Size(warnFrame, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, 30)
-            Pix.Point(warnFrame, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY)
+            Pix.Point(warnFrame, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
             local warnFS = CludesUI.MakeFont(warnFrame, 14, "", 1, 0.25, 0.25, 1)
             warnFS:SetPoint("LEFT", warnFrame, "LEFT", 0, 0)
             warnFS:SetText(CludesUI.L("Only works outside of Instances"))
         end
-        posY = posY - 30
+        cursorY = cursorY - 30
 
-        _, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "DISPLAY", cursorY)
+        cursorY = cursorY - height
 
         local channelsRow
-        channelsRow, hgt = W:DualRow(hostFrame, posY, {
+        channelsRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = GATE,
             getValue = function()
@@ -5192,7 +5192,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function() end,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if not CludesUI._prebuilding then
             local region = channelsRow._rightRegion
@@ -5234,7 +5234,7 @@ CludesUI.AtOptionsLogin(function()
         -- Structural, not appearance: it decides which of Blizzard's switches we hold and at
         -- what value, so it takes the full pass. Half-empty right slot is allowed here because
         -- this is the last row of its section.
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Hide Chat Bubbles in Instances",
             getValue = function()
@@ -5246,12 +5246,12 @@ CludesUI.AtOptionsLogin(function()
             disabled = Off,
             disabledTooltip = GATE_REQ,
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
-        _, hgt = W:SectionHeader(hostFrame, "APPEARANCE", posY)
-        posY = posY - hgt
+        _, height = W:SectionHeader(hostFrame, "APPEARANCE", cursorY)
+        cursorY = cursorY - height
 
-        _, hgt = W:DualRow(hostFrame, posY, {
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Padding",
             min = 2,
@@ -5273,11 +5273,11 @@ CludesUI.AtOptionsLogin(function()
             disabled = Off,
             disabledTooltip = GATE_REQ,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         local fontValues, fontOrder = CludesUI.BuildFontDropdownData()
         local fontBorderRow
-        fontBorderRow, hgt = W:DualRow(hostFrame, posY, {
+        fontBorderRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Font",
             values = fontValues,
@@ -5297,7 +5297,7 @@ CludesUI.AtOptionsLogin(function()
             disabled = Off,
             disabledTooltip = GATE_REQ,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         if not CludesUI._prebuilding then
             -- Built BEFORE the swatch on purpose: the cog sits beside the control, and
@@ -5383,7 +5383,7 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local nameRow
-        nameRow, hgt = W:DualRow(hostFrame, posY, {
+        nameRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Show Speaker Name",
             tooltip = "Choose which channels show the speaker.",
@@ -5406,7 +5406,7 @@ CludesUI.AtOptionsLogin(function()
             disabled = Off,
             disabledTooltip = GATE_REQ,
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Same build as the Channels dropdown above.
         if not CludesUI._prebuilding then
@@ -5507,7 +5507,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- Last row of the section, so the empty right slot is allowed.
         local bgRow
-        bgRow, hgt = W:DualRow(hostFrame, posY, {
+        bgRow, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Background",
             getValue = function()
@@ -5520,7 +5520,7 @@ CludesUI.AtOptionsLogin(function()
             disabled = Off,
             disabledTooltip = GATE_REQ,
         }, { type = "label", text = "" })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Colour and opacity are one swatch but two stored keys, so the write goes straight
         -- to the DB rather than through CBSetStyle.
@@ -5551,13 +5551,13 @@ CludesUI.AtOptionsLogin(function()
             })
         end
 
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     local function BuildDragonRidingPage(pageName, hostFrame, yOffset)
         local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt
+        local cursorY = yOffset
+        local _, height
 
         hostFrame._showRowDivider = true
 
@@ -5603,8 +5603,8 @@ CludesUI.AtOptionsLogin(function()
         -- The Move in Unlock Mode button on the bar's first section, built
         -- whatever Enable Skyriding Bar says: its disabled state explains itself.
         local heading
-        heading, hgt = W:SectionHeader(hostFrame, "GENERAL", posY)
-        posY = posY - hgt
+        heading, height = W:SectionHeader(hostFrame, "GENERAL", cursorY)
+        cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(heading, {
             key = "EDR_Cluster",
             disabled = function()
@@ -5612,8 +5612,8 @@ CludesUI.AtOptionsLogin(function()
             end,
             disabledTooltip = "Skyriding Bar",
         })
-        posY = BS.Note(hostFrame, posY, "dragonriding")
-        _, hgt = W:DualRow(hostFrame, posY, {
+        cursorY = BS.Note(hostFrame, cursorY, "dragonriding")
+        _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Enable Skyriding Bar",
             getValue = function()
@@ -5639,7 +5639,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = EDR_SetRowThen("hideInCombat"),
         })
-        posY = posY - hgt
+        cursorY = cursorY - height
 
         -- Everything below Row 1 (the rest of GENERAL plus the LAYOUT and
         -- SPEED BAR sections) is HIDDEN entirely while the bar is off.
@@ -5664,7 +5664,7 @@ CludesUI.AtOptionsLogin(function()
 
             -- The parts the HUD shows. The speed bar's and Second Wind's own
             -- rows exist only while they are shown, so those two rebuild the page.
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Show Speed Bar",
                 getValue = EDR_ShowSpeed,
@@ -5681,9 +5681,9 @@ CludesUI.AtOptionsLogin(function()
                     EDR_Rebuild()
                 end),
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
             local wsRow
-            wsRow, hgt = W:DualRow(hostFrame, posY, {
+            wsRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Show Whirling Surge",
                 getValue = function()
@@ -5703,7 +5703,7 @@ CludesUI.AtOptionsLogin(function()
                     EDR_Redraw()
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
             -- Icon size: automatic (as tall as the bars) while Auto Size is on;
             -- turning it off hands the slider the current automatic size.
             if not CludesUI._prebuilding then
@@ -5751,7 +5751,7 @@ CludesUI.AtOptionsLogin(function()
             -- (the page rebuilds: the Charge row and the gem scale follow it).
             -- The cog holds the full-charge chime and, for the gems, their scale.
             local vigorRow
-            vigorRow, hgt = W:DualRow(hostFrame, posY, {
+            vigorRow, height = W:DualRow(hostFrame, cursorY, {
                 type = "segmented",
                 text = "Vigor Style",
                 values = { bars = "Bars", gems = "Classic Gems" },
@@ -5781,7 +5781,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = EDR_SetRowThen("stackSpacing"),
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
             if not CludesUI._prebuilding then
                 local vigorRows = {
                     {
@@ -5809,7 +5809,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 CludesUI.BuildInlineCog(vigorRow._leftRegion, { title = "Vigor", rows = vigorRows })
             end
-            _, hgt = W:DualRow(hostFrame, posY, {
+            _, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
                 text = "Width",
                 min = 80,
@@ -5831,7 +5831,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = EDR_SetRowThen("gap"),
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
             -- Border Size: the CludesUI border and its colour on the
             -- CludesUI look; under Classic WoW UI the slot sizes the vanilla
             -- frame, as the Resource Bars' Border Size does; Blizzard Style's
@@ -5862,7 +5862,7 @@ CludesUI.AtOptionsLogin(function()
                 })
             end
             local borderRow
-            borderRow, hgt = W:DualRow(hostFrame, posY, borderCfg, {
+            borderRow, height = W:DualRow(hostFrame, cursorY, borderCfg, {
                 type = "dropdown",
                 text = "Bar Texture",
                 values = edrTexValues,
@@ -5875,10 +5875,10 @@ CludesUI.AtOptionsLogin(function()
                     EDR_Redraw()
                 end,
             })
-            posY = posY - hgt
+            cursorY = cursorY - height
             if not CludesUI._prebuilding and edrStyle == "cui" then
                 local region = borderRow._leftRegion
-                local ctrl = region._control
+                local control = region._control
                 local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
                     region,
                     borderRow:GetFrameLevel() + 3,
@@ -5894,7 +5894,7 @@ CludesUI.AtOptionsLogin(function()
                     true,
                     20
                 )
-                CludesUI.PanelPP.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+                CludesUI.PanelPP.Point(colorSwatch, "RIGHT", control, "LEFT", -8, 0)
                 region._lastInline = colorSwatch
                 -- No border to colour at size 0: dimmed and blocked.
                 local block = CludesUI.NewSwatchBlocker(colorSwatch)
@@ -5922,17 +5922,17 @@ CludesUI.AtOptionsLogin(function()
                 end)
                 UpdateSwatchState()
             end
-            _, hgt = W:Spacer(hostFrame, posY, 20)
-            posY = posY - hgt
+            _, height = W:Spacer(hostFrame, cursorY, 20)
+            cursorY = cursorY - height
 
             -- Charge and Second Wind rows, each only while its part is shown
             -- (Classic Gems replaces the charge row); no section without either.
             local showCharges, showSW = not EDR_IsGems(), EDR_ShowSW()
             if showCharges or showSW then
-                _, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
-                posY = posY - hgt
+                _, height = W:SectionHeader(hostFrame, "LAYOUT", cursorY)
+                cursorY = cursorY - height
                 if showCharges then
-                    _, hgt = W:DualRow(hostFrame, posY, {
+                    _, height = W:DualRow(hostFrame, cursorY, {
                         type = "slider",
                         text = "Charge Height",
                         min = 2,
@@ -5976,10 +5976,10 @@ CludesUI.AtOptionsLogin(function()
                             },
                         },
                     })
-                    posY = posY - hgt
+                    cursorY = cursorY - height
                 end
                 if showSW then
-                    _, hgt = W:DualRow(hostFrame, posY, {
+                    _, height = W:DualRow(hostFrame, cursorY, {
                         type = "slider",
                         text = "Second Wind Height",
                         min = 2,
@@ -6023,17 +6023,17 @@ CludesUI.AtOptionsLogin(function()
                             },
                         },
                     })
-                    posY = posY - hgt
+                    cursorY = cursorY - height
                 end
-                _, hgt = W:Spacer(hostFrame, posY, 20)
-                posY = posY - hgt
+                _, height = W:Spacer(hostFrame, cursorY, 20)
+                cursorY = cursorY - height
             end
 
             -- The speed bar's own section only while the bar is shown.
             if EDR_ShowSpeed() then
-                _, hgt = W:SectionHeader(hostFrame, "SPEED BAR", posY)
-                posY = posY - hgt
-                _, hgt = W:DualRow(hostFrame, posY, {
+                _, height = W:SectionHeader(hostFrame, "SPEED BAR", cursorY)
+                cursorY = cursorY - height
+                _, height = W:DualRow(hostFrame, cursorY, {
                     type = "slider",
                     text = "Height",
                     min = 4,
@@ -6054,8 +6054,8 @@ CludesUI.AtOptionsLogin(function()
                         EDR_Redraw()
                     end,
                 })
-                posY = posY - hgt
-                _, hgt = W:DualRow(hostFrame, posY, {
+                cursorY = cursorY - height
+                _, height = W:DualRow(hostFrame, cursorY, {
                     type = "multiSwatch",
                     text = "Speed Color",
                     swatches = {
@@ -6122,9 +6122,9 @@ CludesUI.AtOptionsLogin(function()
                         },
                     },
                 })
-                posY = posY - hgt
+                cursorY = cursorY - height
                 local speedTextRow
-                speedTextRow, hgt = W:DualRow(hostFrame, posY, {
+                speedTextRow, height = W:DualRow(hostFrame, cursorY, {
                     type = "toggle",
                     text = "Show Speed Text",
                     getValue = function()
@@ -6196,15 +6196,15 @@ CludesUI.AtOptionsLogin(function()
                         },
                     })
                 end
-                posY = posY - hgt
-                _, hgt = W:Spacer(hostFrame, posY, 20)
-                posY = posY - hgt
+                cursorY = cursorY - height
+                _, height = W:Spacer(hostFrame, cursorY, 20)
+                cursorY = cursorY - height
             end -- Show Speed Bar
         end -- close Dragon Riding hidden-while-disabled gate
 
         -- The wrapper is SetAllPoints-anchored, so SetHeight on it is inert;
         -- return the measured height so the scroll range is correct.
-        return math.abs(posY)
+        return math.abs(cursorY)
     end
 
     -- WoW Forever has no skyriding: the Dragon Riding tab is not registered there
