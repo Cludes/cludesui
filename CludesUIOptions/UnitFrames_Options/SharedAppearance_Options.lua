@@ -24,9 +24,9 @@ local BORDER_TEX_KEYS =
     { "borderTextureOffset", "borderTextureOffsetY", "borderTextureShiftX", "borderTextureShiftY" }
 
 -- A colour copied as a table of its own (r, g, b); nothing when there is none.
-local function CopyColor(t, key, c)
+local function CopyColor(t, settingKey, c)
     if c then
-        t[key] = { r = c.r, g = c.g, b = c.b }
+        t[settingKey] = { r = c.r, g = c.g, b = c.b }
     end
 end
 
@@ -49,11 +49,11 @@ function mod.UFO_UnitSync(region, label, opts)
     local units, unitDB, state = opts.units or env.GROUP_UNIT_ORDER, env.UNIT_DB_MAP, env.optState
     local copy, same = opts.copy, opts.same
     if not copy then
-        local key, default, unsetOnly = opts.key, opts.default, opts.unsetOnly
+        local settingKey, default, unsetOnly = opts.key, opts.default, opts.unsetOnly
         -- The default stands in for an unset value, and for false unless
         -- opts.unsetOnly (a stored false is then a value of its own).
         local function Value(t)
-            local value = t[key]
+            local value = t[settingKey]
             if value == nil or (value == false and not unsetOnly) then
                 if type(default) == "function" then
                     return default()
@@ -63,7 +63,7 @@ function mod.UFO_UnitSync(region, label, opts)
             return value
         end
         copy = function(t, from)
-            t[key] = Value(from)
+            t[settingKey] = Value(from)
         end
         same = function(t, from)
             return Value(t) == Value(from)
@@ -231,16 +231,16 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
     local TexBgRowCfg = environ.TexBgRowCfg
     local W, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
     -- Row setters over SSet: the key written with the row's value.
-    local function SSetRow(key)
+    local function SSetRow(settingKey)
         return function(value)
-            SSet(key, value)
+            SSet(settingKey, value)
         end
     end
     local SVal = context.SVal
     -- A row getter over SVal: the key's value, or the default given.
-    local function SValRow(key, default)
+    local function SValRow(settingKey, default)
         return function()
-            return SVal(key, default)
+            return SVal(settingKey, default)
         end
     end
     local _, height
@@ -278,8 +278,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             if d.detachedPortraitShape == "none" then
                 d.detachedPortraitShape = "portrait"
             end
-            local side = d.portraitSide
-            if side == "insideleft" or side == "insideright" or side == "insidecenter" then
+            local edgeSide = d.portraitSide
+            if edgeSide == "insideleft" or edgeSide == "insideright" or edgeSide == "insidecenter" then
                 d.portraitSide = "left"
             end
             ReloadAndUpdate()
@@ -298,28 +298,28 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             if not classToken then
                 return nil
             end
-            local coords = CLASS_FULL_COORDS[classToken]
-            if not coords then
+            local texCoords = CLASS_FULL_COORDS[classToken]
+            if not texCoords then
                 return nil
             end
-            return CLASS_FULL_SPRITE_BASE .. styleKey .. ".tga", coords[1], coords[2], coords[3], coords[4]
+            return CLASS_FULL_SPRITE_BASE .. styleKey .. ".tga", texCoords[1], texCoords[2], texCoords[3], texCoords[4]
         end
     end
 
     -- Row 1: Visibility | Visibility Options. Group-axis check for the legacy
     -- showInRaid/showInParty/showSolo trio: only group items constrain it
     -- (unconstrained = true), matching ToggleFrame's group gating for multi-select.
-    local function GroupAxisPasses(vm, inRaid, inParty)
+    local function GroupAxisPasses(visModes, inRaid, inParty)
         -- A checked Hide lane vetoes whatever the Show lanes say, in both match
         -- modes; both lanes of one row at once counts as unconstrained.
         if
-            (vm.hide_in_raid and not vm.in_raid and inRaid)
-            or (vm.hide_in_party and not vm.in_party and inParty)
-            or (vm.hide_solo and not vm.solo and not inRaid and not inParty)
+            (visModes.hide_in_raid and not visModes.in_raid and inRaid)
+            or (visModes.hide_in_party and not visModes.in_party and inParty)
+            or (visModes.hide_solo and not visModes.solo and not inRaid and not inParty)
         then
             return false
         end
-        local g1, g2, g3 = vm.in_raid, vm.in_party, vm.solo
+        local g1, g2, g3 = visModes.in_raid, visModes.in_party, visModes.solo
         if not (g1 or g2 or g3) or (g1 and g2 and g3) then
             return true
         end
@@ -337,11 +337,11 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
     -- Keeps the boolean trio in sync with the effective selection; the legacy
     -- branch leaves the trio untouched for in_combat/out_of_combat/mouseover.
     local function SyncUnitVisBooleans(s)
-        local vm = s.visibilityModes
-        if type(vm) == "table" and next(vm) then
-            s.showInRaid = GroupAxisPasses(vm, true, false)
-            s.showInParty = GroupAxisPasses(vm, false, true)
-            s.showSolo = GroupAxisPasses(vm, false, false)
+        local visModes = s.visibilityModes
+        if type(visModes) == "table" and next(visModes) then
+            s.showInRaid = GroupAxisPasses(visModes, true, false)
+            s.showInParty = GroupAxisPasses(visModes, false, true)
+            s.showSolo = GroupAxisPasses(visModes, false, false)
             return
         end
         local value = s.barVisibility or "always"
@@ -516,21 +516,21 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                 if visRow._leftRegion._label then
                     visRow._leftRegion._label:SetAlpha(0.3)
                 end
-                local dis = CreateFrame("Frame", nil, visRow)
-                dis:SetPoint("TOPLEFT", ctl, "TOPLEFT", -2, 2)
-                dis:SetPoint("BOTTOMRIGHT", ctl, "BOTTOMRIGHT", 2, -2)
-                dis:SetFrameLevel(visRow:GetFrameLevel() + 10)
-                dis:EnableMouse(true)
-                local disTex = dis:CreateTexture(nil, "OVERLAY")
+                local disabledFn = CreateFrame("Frame", nil, visRow)
+                disabledFn:SetPoint("TOPLEFT", ctl, "TOPLEFT", -2, 2)
+                disabledFn:SetPoint("BOTTOMRIGHT", ctl, "BOTTOMRIGHT", 2, -2)
+                disabledFn:SetFrameLevel(visRow:GetFrameLevel() + 10)
+                disabledFn:EnableMouse(true)
+                local disTex = disabledFn:CreateTexture(nil, "OVERLAY")
                 disTex:SetAllPoints()
                 disTex:SetColorTexture(0.062, 0.070, 0.082, 0.7)
-                dis:SetScript("OnEnter", function(self)
+                disabledFn:SetScript("OnEnter", function(self)
                     CludesUI.ShowWidgetTooltip(
                         self,
                         CludesUI.DisabledTooltip("the Frame Source to be CludesUI")
                     )
                 end)
-                dis:SetScript("OnLeave", function()
+                disabledFn:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
             end
@@ -1077,12 +1077,12 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             end,
             function(keyName, value)
                 if keyName == "unit" then
-                    for _, key in ipairs(ALL_UNITS) do
-                        UNIT_DB_MAP[key]().showUnitTooltip = value
+                    for _, settingKey in ipairs(ALL_UNITS) do
+                        UNIT_DB_MAP[settingKey]().showUnitTooltip = value
                     end
                 elseif keyName == "auras" then
-                    for _, key in ipairs(MAIN_UNITS) do
-                        UNIT_DB_MAP[key]().showAuraTooltips = value
+                    for _, settingKey in ipairs(MAIN_UNITS) do
+                        UNIT_DB_MAP[settingKey]().showAuraTooltips = value
                     end
                 elseif keyName == "bossauras" then
                     UNIT_DB_MAP["boss"]().showAuraTooltips = value
@@ -1166,8 +1166,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
 
     -- Show Decimal on Health Text (global): one decimal on health value (240.5k)
     -- and health percent (77.3%) for every unit. Default off.
-    local decRow
-    decRow, height = W:DualRow(hostFrame, cursorY, {
+    local decimalRow
+    decimalRow, height = W:DualRow(hostFrame, cursorY, {
         type = "toggle",
         text = "Show Decimal on Health Text",
         tooltip = "Show one decimal place on health text: health values like 240.5k and health percent like 77.3%. Power text is unaffected. Off by default.",
@@ -1196,12 +1196,12 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
     cursorY = cursorY - height
     -- Dimmed "(Applies to All Units)" subtitle next to the label (CDM subtitle pattern).
     do
-        local suffix = decRow._leftRegion:CreateFontString(nil, "OVERLAY")
-        suffix:SetFont(CludesUI.EXPRESSWAY, 11, "")
-        suffix:SetTextColor(1, 1, 1, 0.35)
-        suffix:SetText(CludesUI.L("(Applies to All Units)"))
+        local tail = decimalRow._leftRegion:CreateFontString(nil, "OVERLAY")
+        tail:SetFont(CludesUI.EXPRESSWAY, 11, "")
+        tail:SetTextColor(1, 1, 1, 0.35)
+        tail:SetText(CludesUI.L("(Applies to All Units)"))
         local labelFS
-        local regions = { decRow._leftRegion:GetRegions() }
+        local regions = { decimalRow._leftRegion:GetRegions() }
         for idx = 1, #regions do
             local reg = regions[idx]
             if reg and reg.GetText and CludesUI.EnKey(reg:GetText()) == "Show Decimal on Health Text" then
@@ -1210,16 +1210,16 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             end
         end
         if labelFS then
-            suffix:SetPoint("LEFT", labelFS, "RIGHT", 5, 0)
+            tail:SetPoint("LEFT", labelFS, "RIGHT", 5, 0)
         else
-            suffix:SetPoint("LEFT", decRow._leftRegion, "LEFT", 120, 0)
+            tail:SetPoint("LEFT", decimalRow._leftRegion, "LEFT", 120, 0)
         end
     end
 
     -- Inline cog: extra decimal options. "Show 2 for Boss" (default on) gives boss
     -- frames a second decimal. Greyed out while the master decimal toggle is off.
     if not CludesUI._prebuilding then
-        CludesUI.BuildInlineCog(decRow._leftRegion, {
+        CludesUI.BuildInlineCog(decimalRow._leftRegion, {
             disabled = function()
                 return not saved.profile.showDecimalOnText
             end,
@@ -1279,7 +1279,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
     -- border) + Player Threat (player frame only, global). Inline swatches:
     -- Highlight / Has Aggro / Close to Aggro.
     if not CludesUI._prebuilding then
-        local rightRegion = decRow._rightRegion
+        local rightRegion = decimalRow._rightRegion
         if rightRegion._control then
             rightRegion._control:Hide()
         end
@@ -1311,8 +1311,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             function(keyName, value)
                 if keyName == "highlight" then
                     -- Shared across all 3 main frames; threat stays player-only below.
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        UNIT_DB_MAP[key]().highlightEnabled = value
+                    for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
+                        UNIT_DB_MAP[settingKey]().highlightEnabled = value
                     end
                     ReloadAndUpdate()
                 elseif keyName == "playerThreat" then
@@ -1330,15 +1330,15 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
         rightRegion._control = checkDrop
         rightRegion._lastInline = nil
 
-        local lvl = decRow:GetFrameLevel() + 3
+        local lvl = decimalRow:GetFrameLevel() + 3
         -- Highlight swatch (per-unit), nearest the dropdown.
         local hlSwatch, updHl = CludesUI.BuildColorSwatch(rightRegion, lvl, function()
             local c = UNIT_DB_MAP.player().highlightColor or { r = 1, g = 1, b = 1 }
             return c.r, c.g, c.b, UNIT_DB_MAP.player().highlightAlpha or 1
         end, function(r, g, b, a)
             -- Shared across all 3 main frames (see Highlight enable above).
-            for _, key in ipairs(GROUP_UNIT_ORDER) do
-                local d = UNIT_DB_MAP[key]()
+            for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
+                local d = UNIT_DB_MAP[settingKey]()
                 d.highlightColor = { r = r, g = g, b = b }
                 d.highlightAlpha = a
             end
@@ -1420,11 +1420,11 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             end
             return "Show Threat % on Target"
         end
-        local function PctSet(key, value)
-            saved.profile[key] = value
+        local function PctSet(settingKey, value)
+            saved.profile[settingKey] = value
             mod.RefreshThreatPct()
         end
-        local function PctSlider(key, labelText, lo, hi)
+        local function PctSlider(settingKey, labelText, lo, hi)
             return {
                 type = "slider",
                 label = labelText,
@@ -1432,10 +1432,10 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                 max = hi,
                 step = 1,
                 get = function()
-                    return saved.profile[key]
+                    return saved.profile[settingKey]
                 end,
                 set = function(value)
-                    PctSet(key, value)
+                    PctSet(settingKey, value)
                 end,
             }
         end
@@ -1553,17 +1553,17 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
         environ.portraitModeValues2, environ.portraitNonPlayerOrder, environ.portraitNonPlayerValues
     local W, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
     -- Row setters over SSet: the key written with the row's value, then UpdatePreview() for the Then form.
-    local function SSetRowThen(key)
+    local function SSetRowThen(settingKey)
         return function(value)
-            SSet(key, value)
+            SSet(settingKey, value)
             UpdatePreview()
         end
     end
     local SVal = context.SVal
     -- A row getter over SVal: the key's value, or the default given.
-    local function SValRow(key, default)
+    local function SValRow(settingKey, default)
         return function()
-            return SVal(key, default)
+            return SVal(settingKey, default)
         end
     end
     local _, height
@@ -1609,12 +1609,12 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                 -- Reset detached-only settings when leaving detached mode
                 if value ~= "detached" then
                     UNIT_DB_MAP[optionState.selectedUnit]().portraitSize = 0
-                    local side = UNIT_DB_MAP[optionState.selectedUnit]().portraitSide
+                    local edgeSide = UNIT_DB_MAP[optionState.selectedUnit]().portraitSide
                     if
-                        side == "top"
-                        or side == "insideleft"
-                        or side == "insideright"
-                        or side == "insidecenter"
+                        edgeSide == "top"
+                        or edgeSide == "insideleft"
+                        or edgeSide == "insideright"
+                        or edgeSide == "insidecenter"
                     then
                         UNIT_DB_MAP[optionState.selectedUnit]().portraitSide = "left"
                     end
@@ -1680,8 +1680,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                         if prefs.detachedPortraitShape == "none" then
                             prefs.detachedPortraitShape = "portrait"
                         end
-                        local side = prefs.portraitSide
-                        if side == "insideleft" or side == "insideright" or side == "insidecenter" then
+                        local edgeSide = prefs.portraitSide
+                        if edgeSide == "insideleft" or edgeSide == "insideright" or edgeSide == "insidecenter" then
                             prefs.portraitSide = "left"
                         end
                     end
@@ -1713,9 +1713,9 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
     if not CludesUI._prebuilding then
         mod.UFO_UnitSync(sharedPortraitModeRow._leftRegion, "Portrait Mode", {
             copy = function(t, from)
-                local style = from.portraitStyle or "attached"
-                t.portraitStyle = style
-                t.showPortrait = style ~= "none"
+                local styleName = from.portraitStyle or "attached"
+                t.portraitStyle = styleName
+                t.showPortrait = styleName ~= "none"
             end,
             same = function(t, from)
                 return (t.portraitStyle or "attached") == (from.portraitStyle or "attached")
@@ -1922,10 +1922,10 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
             max = 100,
             step = 1,
             disabled = function()
-                local style = SVal("portraitStyle", "attached")
-                local side = SVal("portraitSide", "left")
-                local isInside = side == "insideleft" or side == "insideright" or side == "insidecenter"
-                return style ~= "detached" and not isInside
+                local styleName = SVal("portraitStyle", "attached")
+                local edgeSide = SVal("portraitSide", "left")
+                local isInside = edgeSide == "insideleft" or edgeSide == "insideright" or edgeSide == "insidecenter"
+                return styleName ~= "detached" and not isInside
             end,
             disabledTooltip = "Only available in Detached or Inside modes",
             rawTooltip = true,
@@ -2360,9 +2360,9 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
         local function DVal(keyName)
             return mod.UF_DragonSettings(optionState.selectedUnit, SDB())[keyName]
         end
-        local function DSet(key, value)
+        local function DSet(settingKey, value)
             mod.UF_PinLegacyDragon(SDB())
-            SSet(key, value)
+            SSet(settingKey, value)
         end
         local function dragonOff()
             return not DVal("on")
@@ -2522,15 +2522,15 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         environ.classIconLocValues, environ.classIconOrder, environ.classIconValues, environ.optState
     local W, SGet, SSet, SVal = context.W, context.SGet, context.SSet, context.SVal
     -- A row getter over SVal: the key's value, or the default given.
-    local function SValRow(key, default)
+    local function SValRow(settingKey, default)
         return function()
-            return SVal(key, default)
+            return SVal(settingKey, default)
         end
     end
     -- Row setters over SSet: the key written with the row's value, then UpdatePreview() for the Then form.
-    local function SSetRowThen(key)
+    local function SSetRowThen(settingKey)
         return function(value)
-            SSet(key, value)
+            SSet(settingKey, value)
             UpdatePreview()
         end
     end
@@ -2683,7 +2683,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
     -- Rows 2-4 are HIDDEN while Enable Text Bar is off (DependentSetValue rebuilds
     -- on flips) and under Blizzard Style. Row locals referenced by the element-nav
     -- map are hoisted above the gate so the map never reads nil globals.
-    local sharedBtbTextRow, sharedBtbCenterRow
+    local btbTextRow, sharedBtbCenterRow
     if SVal("bottomTextBar", false) and not CludesUI.BlizzStyle.Get("unitframes") then
         -- Row 2: Height + Width
         local sharedBtbHeightRow
@@ -2752,7 +2752,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         -- the slot's own, so it is never cleared from the other slots. A selection
         -- keeps the page, so all three menus follow it.
         local function RefreshBtbMenus()
-            local t, c = sharedBtbTextRow, sharedBtbCenterRow
+            local t, c = btbTextRow, sharedBtbCenterRow
             mod.UFO_RefreshMenus(t and t._leftRegion, t and t._rightRegion, c and c._leftRegion)
         end
         local function SetBtbLeft(value)
@@ -2804,7 +2804,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         end
 
         -- Row 3: Left Text + Right Text
-        sharedBtbTextRow, height = W:DualRow(hostFrame, cursorY, {
+        btbTextRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Left Text",
             values = BtbValues("btbLeft", SetBtbLeft),
@@ -2834,7 +2834,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                 UpdatePreview()
             end
             mod.UFO_AddCustomFormatAccessor(
-                sharedBtbTextRow._leftRegion,
+                btbTextRow._leftRegion,
                 "BTB Left Text",
                 "btbLeft",
                 SVal("btbLeftContent", "none"),
@@ -2842,7 +2842,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                 apply
             )
             mod.UFO_AddCustomFormatAccessor(
-                sharedBtbTextRow._rightRegion,
+                btbTextRow._rightRegion,
                 "BTB Right Text",
                 "btbRight",
                 SVal("btbRightContent", "none"),
@@ -2852,7 +2852,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         end
         -- Cogwheel on BTB Left Text
         if not CludesUI._prebuilding then
-            local btbLRgn = sharedBtbTextRow._leftRegion
+            local btbLRgn = btbTextRow._leftRegion
             CludesUI.BuildInlineCog(btbLRgn, {
                 disabled = function()
                     return not SVal("bottomTextBar", false) or SVal("btbLeftContent", "none") == "none"
@@ -2974,7 +2974,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         -- Inline color swatches on BTB Left Text: Custom + Class (CDM Border Size
         -- pattern). Power Color stays in the cog; the three modes are mutually exclusive.
         if not CludesUI._prebuilding then
-            local btbLRgn = sharedBtbTextRow._leftRegion
+            local btbLRgn = btbTextRow._leftRegion
             local function blOff()
                 return SVal("btbLeftContent", "none") == "none" or not SVal("bottomTextBar", false)
             end
@@ -3065,12 +3065,12 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             end)
             CludesUI.HoverTip(blPowerSwatch, "Power Colored")
             local function UpdateBlSwatches()
-                local off = blOff()
-                local isClass = SVal("btbLeftClassColor", false)
-                local isPower = SVal("btbLeftPowerColor", false)
-                blSwatch:SetAlpha((isClass or isPower or off) and 0.3 or 1)
-                blClassSwatch:SetAlpha((isClass and not off) and 1 or 0.3)
-                blPowerSwatch:SetAlpha((isPower and not off) and 1 or 0.3)
+                local isOff = blOff()
+                local classMode = SVal("btbLeftClassColor", false)
+                local powerMode = SVal("btbLeftPowerColor", false)
+                blSwatch:SetAlpha((classMode or powerMode or isOff) and 0.3 or 1)
+                blClassSwatch:SetAlpha((classMode and not isOff) and 1 or 0.3)
+                blPowerSwatch:SetAlpha((powerMode and not isOff) and 1 or 0.3)
             end
             RegisterWidgetRefresh(function()
                 blUpdateSwatch()
@@ -3082,7 +3082,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         end
         -- Cogwheel on BTB Right Text
         if not CludesUI._prebuilding then
-            local btbRRgn = sharedBtbTextRow._rightRegion
+            local btbRRgn = btbTextRow._rightRegion
             CludesUI.BuildInlineCog(btbRRgn, {
                 disabled = function()
                     return not SVal("bottomTextBar", false) or SVal("btbRightContent", "none") == "none"
@@ -3204,7 +3204,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         -- Inline color swatches on BTB Right Text: Custom + Class (Power Color stays in
         -- the cog; the three modes are mutually exclusive).
         if not CludesUI._prebuilding then
-            local btbRRgn = sharedBtbTextRow._rightRegion
+            local btbRRgn = btbTextRow._rightRegion
             local function brOff()
                 return SVal("btbRightContent", "none") == "none" or not SVal("bottomTextBar", false)
             end
@@ -3295,12 +3295,12 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             end)
             CludesUI.HoverTip(brPowerSwatch, "Power Colored")
             local function UpdateBrSwatches()
-                local off = brOff()
-                local isClass = SVal("btbRightClassColor", false)
-                local isPower = SVal("btbRightPowerColor", false)
-                brSwatch:SetAlpha((isClass or isPower or off) and 0.3 or 1)
-                brClassSwatch:SetAlpha((isClass and not off) and 1 or 0.3)
-                brPowerSwatch:SetAlpha((isPower and not off) and 1 or 0.3)
+                local isOff = brOff()
+                local classMode = SVal("btbRightClassColor", false)
+                local powerMode = SVal("btbRightPowerColor", false)
+                brSwatch:SetAlpha((classMode or powerMode or isOff) and 0.3 or 1)
+                brClassSwatch:SetAlpha((classMode and not isOff) and 1 or 0.3)
+                brPowerSwatch:SetAlpha((powerMode and not isOff) and 1 or 0.3)
             end
             RegisterWidgetRefresh(function()
                 brUpdateSwatch()
@@ -3312,11 +3312,11 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         end
         -- Sync icons: BTB Left Text (left) and BTB Right Text (right)
         if not CludesUI._prebuilding then
-            local region = sharedBtbTextRow._leftRegion
+            local region = btbTextRow._leftRegion
             TextSlotSync(region, "Text Bar Left Text", "Left")
         end
         if not CludesUI._prebuilding then
-            local region = sharedBtbTextRow._rightRegion
+            local region = btbTextRow._rightRegion
             TextSlotSync(region, "Text Bar Right Text", "Right")
         end
 
@@ -3573,12 +3573,12 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             end)
             CludesUI.HoverTip(bcPowerSwatch, "Power Colored")
             local function UpdateBcSwatches()
-                local off = bcOff()
-                local isClass = SVal("btbCenterClassColor", false)
-                local isPower = SVal("btbCenterPowerColor", false)
-                bcSwatch:SetAlpha((isClass or isPower or off) and 0.3 or 1)
-                bcClassSwatch:SetAlpha((isClass and not off) and 1 or 0.3)
-                bcPowerSwatch:SetAlpha((isPower and not off) and 1 or 0.3)
+                local isOff = bcOff()
+                local classMode = SVal("btbCenterClassColor", false)
+                local powerMode = SVal("btbCenterPowerColor", false)
+                bcSwatch:SetAlpha((classMode or powerMode or isOff) and 0.3 or 1)
+                bcClassSwatch:SetAlpha((classMode and not isOff) and 1 or 0.3)
+                bcPowerSwatch:SetAlpha((powerMode and not isOff) and 1 or 0.3)
             end
             RegisterWidgetRefresh(function()
                 bcUpdateSwatch()
@@ -3590,8 +3590,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         end
         -- Cogwheel on Class Icon for size/location/x/y
         if not CludesUI._prebuilding then
-            local ciRgn = sharedBtbCenterRow._rightRegion
-            CludesUI.BuildInlineCog(ciRgn, {
+            local combatRegion = sharedBtbCenterRow._rightRegion
+            CludesUI.BuildInlineCog(combatRegion, {
                 disabled = function()
                     return not SVal("bottomTextBar", false) or SVal("btbClassIcon", "none") == "none"
                 end,
@@ -3654,7 +3654,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         end
     end -- close Text Bar hidden-while-disabled gate
 
-    return cursorY, sharedBtbHeader, sharedBtbToggleRow, sharedBtbTextRow, sharedBtbCenterRow
+    return cursorY, sharedBtbHeader, sharedBtbToggleRow, btbTextRow, sharedBtbCenterRow
 end
 
 function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
@@ -3668,15 +3668,15 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
     local SSetSupported, SValSupported, SVisible =
         context.SSetSupported, context.SValSupported, context.SVisible
     -- A row getter over SValSupported: the key's value, or the default given.
-    local function SValSupportedRow(key, default)
+    local function SValSupportedRow(settingKey, default)
         return function()
-            return SValSupported(key, default)
+            return SValSupported(settingKey, default)
         end
     end
     -- Row setters over SSetSupported: the key written with the row's value.
-    local function SSetSupportedRow(key)
+    local function SSetSupportedRow(settingKey)
         return function(value)
-            SSetSupported(key, value)
+            SSetSupported(settingKey, value)
         end
     end
     local height
@@ -3705,29 +3705,29 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
             ["class"] = "Class Theme",
             _menuOpts = {
                 itemHeight = 32,
-                icon = function(key)
-                    if key == "none" then
+                icon = function(settingKey)
+                    if settingKey == "none" then
                         return nil
                     end
-                    if key == "class" then
+                    if settingKey == "class" then
                         local _, ct = UnitClass("player")
                         if not ct then
                             return nil
                         end
-                        local coords = CLASS_FULL_COORDS[ct]
-                        if not coords then
+                        local texCoords = CLASS_FULL_COORDS[ct]
+                        if not texCoords then
                             return nil
                         end
                         return COMBAT_MEDIA_P .. "combat-indicator-class-custom.png",
-                            coords[1],
-                            coords[2],
-                            coords[3],
-                            coords[4]
-                    elseif key == "standard" then
+                            texCoords[1],
+                            texCoords[2],
+                            texCoords[3],
+                            texCoords[4]
+                    elseif settingKey == "standard" then
                         return COMBAT_MEDIA_P .. "combat-indicator-custom.png", 0, 1, 0, 1
                     else
                         -- New full-colour combat icons (combat0..combat5), shown as-is.
-                        return COMBAT_MEDIA_P .. key .. ".tga", 0, 1, 0, 1
+                        return COMBAT_MEDIA_P .. settingKey .. ".tga", 0, 1, 0, 1
                     end
                 end,
             },
@@ -3750,12 +3750,12 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
         -- Enemy Colors helper: custom reaction colors for non-player units.
         -- Global (one set shared by all frames); empty entries fall back to
         -- Blizzard defaults. Consumed by the Enemy Colors multiSwatch in slot 2.
-        local function enemySwatch(key, defIdx, dr, dg, dbb, tipText)
+        local function enemySwatch(settingKey, defIdx, dr, dg, dbb, tipText)
             return {
                 tooltip = tipText,
                 getValue = function()
                     local ec = saved.profile.enemyColors or {}
-                    local c = ec[key]
+                    local c = ec[settingKey]
                     if c then
                         return c.r, c.g, c.b
                     end
@@ -3767,7 +3767,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
                 end,
                 setValue = function(r, g, b)
                     saved.profile.enemyColors = saved.profile.enemyColors or {}
-                    saved.profile.enemyColors[key] = { r = r, g = g, b = b }
+                    saved.profile.enemyColors[settingKey] = { r = r, g = g, b = b }
                     if mod.ApplyEnemyColors then
                         mod.ApplyEnemyColors()
                     end
@@ -3822,9 +3822,9 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
         -- Eyeball toggle + cog + swatch on combat indicator dropdown
         -- (player + target only -- the focus row is dimmed with a tooltip)
         if SVisible("combatIndicatorStyle") and not CludesUI._prebuilding then
-            local ciRgn = sharedAddRow1._leftRegion
+            local combatRegion = sharedAddRow1._leftRegion
             CludesUI.AddPreviewEye(
-                ciRgn,
+                combatRegion,
                 optionState,
                 "showCombatIndicatorPreview",
                 "combat indicator",
@@ -3846,7 +3846,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
             local combatPosOrder =
                 { "topleft", "topright", "healthbar", "bottomleft", "bottomright", "textbar", "portrait" }
 
-            CludesUI.BuildInlineCog(ciRgn, {
+            CludesUI.BuildInlineCog(combatRegion, {
                 title = "Combat Indicator Settings",
                 rows = {
                     {
@@ -3934,7 +3934,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
             -- the Heal Absorb Style row above: eye, cog, swatch at -8 gaps,
             -- with the swatch dimmed + click-blocked (never hidden, so the
             -- inline chain keeps its spacing) when the color doesn't apply.
-            local combatSwatch = CludesUI.BuildColorSwatch(ciRgn, ciRgn:GetFrameLevel() + 5, function()
+            local combatSwatch = CludesUI.BuildColorSwatch(combatRegion, combatRegion:GetFrameLevel() + 5, function()
                 local classColor = SGetSupported("combatIndicatorCustomColor")
                 classColor = classColor or { r = 1, g = 1, b = 1 }
                 return classColor.r, classColor.g, classColor.b, 1
@@ -3943,17 +3943,17 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
                 ReloadAndUpdate()
                 UpdatePreview()
             end, false, 20)
-            combatSwatch:SetPoint("RIGHT", ciRgn._lastInline or ciRgn._control, "LEFT", -8, 0)
-            ciRgn._lastInline = combatSwatch
+            combatSwatch:SetPoint("RIGHT", combatRegion._lastInline or combatRegion._control, "LEFT", -8, 0)
+            combatRegion._lastInline = combatSwatch
             local combatSwatchBlock = CludesUI.NewSwatchBlocker(combatSwatch)
             combatSwatchBlock:Hide()
             local function UpdateSwatchVisibility()
                 local colorMode = SValSupported("combatIndicatorColor", "custom")
-                local style = SValSupported("combatIndicatorStyle", "class")
+                local styleName = SValSupported("combatIndicatorStyle", "class")
                 -- All custom combat icons (combat0..5) are shown as-is, so the custom-
                 -- color swatch doesn't apply to them.
-                local isRawIcon = style:find("^combat%d") and true or false
-                local usable = colorMode == "custom" and style ~= "none" and not isRawIcon
+                local isRawIcon = styleName:find("^combat%d") and true or false
+                local usable = colorMode == "custom" and styleName ~= "none" and not isRawIcon
                 combatSwatch:SetAlpha(usable and 1 or 0.3)
                 if usable then
                     combatSwatchBlock:Hide()
@@ -3971,7 +3971,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
     -- random marker each time it is switched on. (Module-namespace fields,
     -- not locals: this builder is long.)
     mod._ufPvEyes = mod._ufPvEyes or {}
-    mod._ufAddPvEye = function(region, key, what)
+    mod._ufAddPvEye = function(region, settingKey, what)
         if CludesUI._prebuilding or not region then
             return
         end
@@ -3981,12 +3981,12 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
         local eyes = mod._ufPvEyes
         local eyeButton, eyeTex = CludesUI.NewInlineEye(region)
         local function RefreshEye()
-            eyeTex:SetTexture(eyes[key] and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON)
+            eyeTex:SetTexture(eyes[settingKey] and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON)
         end
         RefreshEye()
         eyeButton:SetScript("OnClick", function()
-            eyes[key] = not eyes[key]
-            if key == "raid" and eyes[key] then
+            eyes[settingKey] = not eyes[settingKey]
+            if settingKey == "raid" and eyes[settingKey] then
                 eyes.raidIndex = math.random(1, 8)
             end
             RefreshEye()
@@ -3994,7 +3994,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
         end)
         eyeButton:SetScript("OnEnter", function(self)
             CludesUI.SetGlyphAlpha(self, 0.7)
-            CludesUI.ShowWidgetTooltip(self, (eyes[key] and "Hide " or "Show ") .. what .. " preview")
+            CludesUI.ShowWidgetTooltip(self, (eyes[settingKey] and "Hide " or "Show ") .. what .. " preview")
         end)
         eyeButton:SetScript("OnLeave", function(self)
             CludesUI.SetGlyphAlpha(self, 0.4)
@@ -4172,10 +4172,10 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
             })
         end
         -- Player + target sync link; the Faction Indicator row below reuses it.
-        BuildLeaderSync = function(region, key, default, label)
+        BuildLeaderSync = function(region, settingKey, default, label)
             mod.UFO_UnitSync(region, label, {
                 units = leaderSyncUnits,
-                key = key,
+                key = settingKey,
                 default = default,
                 unsetOnly = true,
                 self = true,
@@ -4201,9 +4201,9 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
         local function eliteLegacy()
             return mod.UF_DragonLegacy(SDB())
         end
-        local function eliteSet(key, value)
+        local function eliteSet(settingKey, value)
             mod.UF_PinLegacyDragon(SDB())
-            SSetSupported(key, value)
+            SSetSupported(settingKey, value)
         end
         local function eliteIndOff()
             return SValSupported("eliteIndicatorEnabled", false) ~= true or eliteLegacy()

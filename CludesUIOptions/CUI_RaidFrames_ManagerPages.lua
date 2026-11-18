@@ -114,7 +114,7 @@ local dmSelType = "icons"
 -- key, or a concrete "spec<ID>". Session-sticky like dmSel.
 local dmSpecSel = "allspecs"
 -- Inherited-tile selection ({ group, id }); wins over dmSel while set.
-local dmInhSel = nil
+local inheritSel = nil
 
 local function L(s)
     return CludesUI.L(s) or s
@@ -357,12 +357,12 @@ local function DmTable()
     if not p then
         return nil
     end
-    local dm = p.dmDebuff
-    if not dm then
-        dm = {}
-        p.dmDebuff = dm
+    local dmConf = p.dmDebuff
+    if not dmConf then
+        dmConf = {}
+        p.dmDebuff = dmConf
     end
-    return dm
+    return dmConf
 end
 
 -------------------------------------------------------------------------------
@@ -459,7 +459,7 @@ local TILE_FILTER_ITEMS = {
 -- (`claim` is the effect entry's claim-shaped target set). The two dispel
 -- entries are mutually exclusive and steer dm.dispelMode. Tile dropdowns use
 -- the full two-lane build below instead.
-local function BuildFilterCBDropdown(region, claim, dm)
+local function BuildFilterCBDropdown(region, claimKey, dmConf)
     local Pix = CludesUI.PP or CludesUI.PanelPP
     if region._control then
         region._control:Hide()
@@ -471,24 +471,24 @@ local function BuildFilterCBDropdown(region, claim, dm)
         TILE_FILTER_ITEMS,
         function(keyName)
             if keyName == "dispel_you" then
-                return (claim.dispel and true or false) and dm.dispelMode ~= "typed"
+                return (claimKey.dispel and true or false) and dmConf.dispelMode ~= "typed"
             elseif keyName == "dispel_typed" then
-                return (claim.dispel and true or false) and dm.dispelMode == "typed"
+                return (claimKey.dispel and true or false) and dmConf.dispelMode == "typed"
             end
-            return claim[keyName] and true or false
+            return claimKey[keyName] and true or false
         end,
         function(keyName, val)
             if keyName == "dispel_you" or keyName == "dispel_typed" then
                 if val then
-                    claim.dispel = true
-                    dm.dispelMode = (keyName == "dispel_typed") and "typed" or "you"
+                    claimKey.dispel = true
+                    dmConf.dispelMode = (keyName == "dispel_typed") and "typed" or "you"
                 else
-                    claim.dispel = false
+                    claimKey.dispel = false
                 end
                 DmApply()
                 return
             end
-            claim[keyName] = val and true or false
+            claimKey[keyName] = val and true or false
             DmApply()
         end,
         nil,
@@ -594,22 +594,22 @@ local TILE_LANE_ITEMS = {
 -- Two-lane filter write (base grid and tiles): the show lane lives in
 -- `show`, the hide lane in `owner.neg`, and the dispel / nonplayer flavors
 -- are global (dm). Checking one lane clears the other.
-local function DmSetLane(show, ownerFrame, dm, keyName, val, neg)
+local function DmSetLane(show, ownerFrame, dmConf, keyName, val, negated)
     local category, modeKey, mode = keyName, nil, nil
     if keyName == "dispel_you" or keyName == "dispel_typed" then
         category, modeKey, mode = "dispel", "dispelMode", (keyName == "dispel_typed") and "typed" or "you"
     elseif keyName == "nonplayer" or keyName == "anyplayer" then
         category, modeKey, mode = "nonplayer", "nonplayerMode", (keyName == "anyplayer") and "any" or nil
     end
-    if neg and val then
+    if negated and val then
         ownerFrame.neg = ownerFrame.neg or {}
         ownerFrame.neg[category] = true
         show[category] = nil
     else
-        if not neg then
+        if not negated then
             show[category] = val and true or nil
         end
-        if (neg or val) and ownerFrame.neg then
+        if (negated or val) and ownerFrame.neg then
             ownerFrame.neg[category] = nil
             if not next(ownerFrame.neg) then
                 ownerFrame.neg = nil
@@ -617,7 +617,7 @@ local function DmSetLane(show, ownerFrame, dm, keyName, val, neg)
         end
     end
     if val and modeKey then
-        dm[modeKey] = mode
+        dmConf[modeKey] = mode
     end
 end
 -- Match Mode rows (a radio pair over t.match, nil = Match Any = the union),
@@ -707,7 +707,7 @@ local function WithOwnerHints(itemList, t)
     end
     return result
 end
-local function BuildTileFiltersDD(region, t, dm)
+local function BuildTileFiltersDD(region, t, dmConf)
     local Pix = CludesUI.PP or CludesUI.PanelPP
     if region._control then
         region._control:Hide()
@@ -715,7 +715,7 @@ local function BuildTileFiltersDD(region, t, dm)
     if not t.claim then
         t.claim = {}
     end
-    local claim = t.claim
+    local claimKey = t.claim
     local function NegHas(category)
         return t.neg ~= nil and t.neg[category] == true
     end
@@ -725,7 +725,7 @@ local function BuildTileFiltersDD(region, t, dm)
         190,
         region:GetFrameLevel() + 2,
         WithOwnerHints(TileLaneItems(t), t),
-        function(keyName, neg)
+        function(keyName, negated)
             if keyName == TILE_MATCH_ALL then
                 return t.match == "all"
             end
@@ -739,32 +739,32 @@ local function BuildTileFiltersDD(region, t, dm)
                 return t.hasDuration == true
             end
             if keyName == "dispel_you" then
-                if neg then
-                    return NegHas("dispel") and dm.dispelMode ~= "typed"
+                if negated then
+                    return NegHas("dispel") and dmConf.dispelMode ~= "typed"
                 end
-                return (claim.dispel and true or false) and dm.dispelMode ~= "typed"
+                return (claimKey.dispel and true or false) and dmConf.dispelMode ~= "typed"
             elseif keyName == "dispel_typed" then
-                if neg then
-                    return NegHas("dispel") and dm.dispelMode == "typed"
+                if negated then
+                    return NegHas("dispel") and dmConf.dispelMode == "typed"
                 end
-                return (claim.dispel and true or false) and dm.dispelMode == "typed"
+                return (claimKey.dispel and true or false) and dmConf.dispelMode == "typed"
             end
             -- Two flavors of ONE nonplayer category (global dm.nonplayerMode).
             if keyName == "nonplayer" or keyName == "anyplayer" then
-                if (dm.nonplayerMode == "any") ~= (keyName == "anyplayer") then
+                if (dmConf.nonplayerMode == "any") ~= (keyName == "anyplayer") then
                     return false
                 end
-                if neg then
+                if negated then
                     return NegHas("nonplayer")
                 end
-                return claim.nonplayer and true or false
+                return claimKey.nonplayer and true or false
             end
-            if neg then
+            if negated then
                 return NegHas(keyName)
             end
-            return claim[keyName] and true or false
+            return claimKey[keyName] and true or false
         end,
-        function(keyName, val, neg)
+        function(keyName, val, negated)
             if keyName == TILE_MATCH_ANY or keyName == TILE_MATCH_ALL then
                 -- Radio pair: the clicked row wins whatever its checked state.
                 t.match = (keyName == TILE_MATCH_ALL) and "all" or nil
@@ -785,7 +785,7 @@ local function BuildTileFiltersDD(region, t, dm)
                 return
             end
             -- The dispel and nonplayer flavors are shared with the base grid.
-            DmSetLane(claim, t, dm, keyName, val, neg)
+            DmSetLane(claimKey, t, dmConf, keyName, val, negated)
             DmApply()
             -- Non-force: re-evaluates the base dropdown's empty-selection
             -- warning (tile claims count as grid content) without closing
@@ -825,12 +825,12 @@ local function BuildTileFiltersDD(region, t, dm)
         end
     )
 end
-local function BuildFxEffects(widget, sy, fxOwner)
+local function BuildFxEffects(widget, sy, effectOwner)
     -- One-time heal: the first Effects build stored a single fxGlow config.
-    if fxOwner.fxGlow then
-        local fg = fxOwner.fxGlow
-        fxOwner.fxList = fxOwner.fxList or {}
-        fxOwner.fxList[#fxOwner.fxList + 1] = {
+    if effectOwner.fxGlow then
+        local fg = effectOwner.fxGlow
+        effectOwner.fxList = effectOwner.fxList or {}
+        effectOwner.fxList[#effectOwner.fxList + 1] = {
             filters = fg.filters or {},
             glowType = fg.type,
             glowClassColor = fg.classColor,
@@ -838,10 +838,10 @@ local function BuildFxEffects(widget, sy, fxOwner)
             glowG = fg.g,
             glowB = fg.b,
         }
-        fxOwner.fxGlow = nil
+        effectOwner.fxGlow = nil
     end
     return CludesUI.BuildIconEffects(widget, sy, {
-        entries = fxOwner.fxList or {},
+        entries = effectOwner.fxList or {},
         apply = DmApply,
         -- The SAME filter dropdown as Assigned Debuffs / tile panes
         -- (shared items incl. the split dispel entries + tooltips).
@@ -849,8 +849,8 @@ local function BuildFxEffects(widget, sy, fxOwner)
             BuildFilterCBDropdown(region, e.filters, DmTable() or {})
         end,
         addEntry = function()
-            fxOwner.fxList = fxOwner.fxList or {}
-            fxOwner.fxList[#fxOwner.fxList + 1] = { filters = {} }
+            effectOwner.fxList = effectOwner.fxList or {}
+            effectOwner.fxList[#effectOwner.fxList + 1] = { filters = {} }
         end,
     })
 end
@@ -882,19 +882,19 @@ local function BuildBaseDetailDM(widget, fontFile)
     local W = CludesUI.Widgets
     local p = DmProfile()
     -- Row accessors over p: a key read (or its default) and written.
-    local function PFieldThen(key)
+    local function PFieldThen(filterKey)
         return function(value)
-            p[key] = value
+            p[filterKey] = value
             DmApply()
         end
     end
-    local function PFieldOr(key, default)
+    local function PFieldOr(filterKey, default)
         return function()
-            return p[key] or default
+            return p[filterKey] or default
         end
     end
-    local dm = DmTable()
-    if not (W and p and dm) then
+    local dmConf = DmTable()
+    if not (W and p and dmConf) then
         return 0
     end
     widget._showRowDivider = true
@@ -926,9 +926,9 @@ local function BuildBaseDetailDM(widget, fontFile)
             setValue = function() end,
         },
         CludesUI.MaxDurationDropdown(function()
-            return dm.maxDurSec
+            return dmConf.maxDurSec
         end, function(val)
-            dm.maxDurSec = val
+            dmConf.maxDurSec = val
         end, DmApply)
     )
     sy = sy - hh
@@ -944,7 +944,7 @@ local function BuildBaseDetailDM(widget, fontFile)
         local DM_MATCH_ANY = "__matchAny"
         local DM_MATCH_ALL = "__matchAll"
         local function AllOn()
-            return dm.all ~= false
+            return dmConf.all ~= false
         end
         local matchLockTip = CludesUI.L("Uncheck All Debuffs to choose how the Show filters combine.")
         local FILTER_ITEMS = {
@@ -1148,26 +1148,26 @@ local function BuildBaseDetailDM(widget, fontFile)
             end
         end
         local function NegHas(category)
-            return dm.neg ~= nil and dm.neg[category] == true
+            return dmConf.neg ~= nil and dmConf.neg[category] == true
         end
         -- One of the grid's content sources (with All Debuffs and enabled
         -- claiming tiles -- see DmHasContent).
         local function AnyShowCat()
-            return dm.boss == true
-                or dm.role == true
-                or dm.priority == true
-                or dm.cc == true
-                or dm.raid == true
-                or dm.raidcombat == true
-                or dm.dispel == true
-                or dm.nonplayer == true
-                or dm.castbyme == true
-                or dm.magic == true
-                or dm.curse == true
-                or dm.poison == true
-                or dm.disease == true
-                or dm.bleed == true
-                or dm.canapply == true
+            return dmConf.boss == true
+                or dmConf.role == true
+                or dmConf.priority == true
+                or dmConf.cc == true
+                or dmConf.raid == true
+                or dmConf.raidcombat == true
+                or dmConf.dispel == true
+                or dmConf.nonplayer == true
+                or dmConf.castbyme == true
+                or dmConf.magic == true
+                or dmConf.curse == true
+                or dmConf.poison == true
+                or dmConf.disease == true
+                or dmConf.bleed == true
+                or dmConf.canapply == true
         end
         -- Empty selections are LEGAL here (user directive 2026-08-16, the
         -- same reversal PAB got): any content source can be unchecked,
@@ -1186,10 +1186,10 @@ local function BuildBaseDetailDM(widget, fontFile)
                 return true
             end
             if AnyShowCat() then
-                if not (mod.DM_MatchEmpty and mod.DM_MatchEmpty(dm)) then
+                if not (mod.DM_MatchEmpty and mod.DM_MatchEmpty(dmConf)) then
                     return true
                 end
-            elseif dm.hasDuration == true then
+            elseif dmConf.hasDuration == true then
                 return true
             end
             local tiles = mod.DM_ActiveTiles and mod.DM_ActiveTiles()
@@ -1223,53 +1223,53 @@ local function BuildBaseDetailDM(widget, fontFile)
             190,
             region:GetFrameLevel() + 2,
             FILTER_ITEMS,
-            function(keyName, neg)
+            function(keyName, negated)
                 if keyName == DM_ALL_KEY then
                     return AllOn()
                 end
                 if keyName == DM_DUR_KEY then
-                    return dm.hasDuration == true
+                    return dmConf.hasDuration == true
                 end
                 if keyName == DM_HIDE_EXH then
                     return p.hideLustDebuff ~= false
                 end
                 if keyName == DM_MATCH_ALL then
-                    return dm.match == "all"
+                    return dmConf.match == "all"
                 end
                 if keyName == DM_MATCH_ANY then
-                    return dm.match ~= "all"
+                    return dmConf.match ~= "all"
                 end
                 if keyName == "dispel_you" then
-                    if neg then
-                        return NegHas("dispel") and dm.dispelMode ~= "typed"
+                    if negated then
+                        return NegHas("dispel") and dmConf.dispelMode ~= "typed"
                     end
-                    return dm.dispel == true and dm.dispelMode ~= "typed"
+                    return dmConf.dispel == true and dmConf.dispelMode ~= "typed"
                 elseif keyName == "dispel_typed" then
-                    if neg then
-                        return NegHas("dispel") and dm.dispelMode == "typed"
+                    if negated then
+                        return NegHas("dispel") and dmConf.dispelMode == "typed"
                     end
-                    return dm.dispel == true and dm.dispelMode == "typed"
+                    return dmConf.dispel == true and dmConf.dispelMode == "typed"
                 end
                 -- Two flavors of ONE nonplayer category (dm.nonplayerMode).
                 if keyName == "nonplayer" or keyName == "anyplayer" then
-                    if (dm.nonplayerMode == "any") ~= (keyName == "anyplayer") then
+                    if (dmConf.nonplayerMode == "any") ~= (keyName == "anyplayer") then
                         return false
                     end
-                    if neg then
+                    if negated then
                         return NegHas("nonplayer")
                     end
-                    return dm.nonplayer == true
+                    return dmConf.nonplayer == true
                 end
-                if neg then
+                if negated then
                     return NegHas(keyName)
                 end
-                return dm[keyName] == true
+                return dmConf[keyName] == true
             end,
-            function(keyName, val, neg)
+            function(keyName, val, negated)
                 if keyName == DM_ALL_KEY then
                     -- Lanes persist across mode flips (the hide lane subtracts in
                     -- both modes; the show lane goes dormant while All is on).
-                    dm.all = val and true or false
+                    dmConf.all = val and true or false
                     DmApply()
                     CludesUI:RefreshPage()
                     return
@@ -1277,7 +1277,7 @@ local function BuildBaseDetailDM(widget, fontFile)
                 if keyName == DM_DUR_KEY then
                     -- AND-modifier: combines with All Debuffs or any show-lane
                     -- selection; checked alone it acts as the timed catch-all.
-                    dm.hasDuration = val or nil
+                    dmConf.hasDuration = val or nil
                     DmApply()
                     CludesUI:RefreshPage()
                     return
@@ -1291,12 +1291,12 @@ local function BuildBaseDetailDM(widget, fontFile)
                 if keyName == DM_MATCH_ANY or keyName == DM_MATCH_ALL then
                     -- Radio pair: the clicked row wins whatever its checked
                     -- state (re-clicking the active row keeps it).
-                    dm.match = (keyName == DM_MATCH_ALL) and "all" or nil
+                    dmConf.match = (keyName == DM_MATCH_ALL) and "all" or nil
                     DmApply()
                     CludesUI:RefreshPage()
                     return
                 end
-                DmSetLane(dm, dm, dm, keyName, val, neg)
+                DmSetLane(dmConf, dmConf, dmConf, keyName, val, negated)
                 DmApply()
                 -- Non-force: re-evaluates the empty-selection warning (and
                 -- any other widget refreshers) without closing the menu.
@@ -1315,7 +1315,7 @@ local function BuildBaseDetailDM(widget, fontFile)
             -- the locked state under All Debuffs) keeps the plain list.
             {
                 separatorFn = function()
-                    return (dm.match == "all" and not AllOn()) and " & " or ", "
+                    return (dmConf.match == "all" and not AllOn()) and " & " or ", "
                 end,
             }
         )
@@ -1654,15 +1654,15 @@ local function BuildBaseDetailDM(widget, fontFile)
         end
     end
 
-    sy = BuildFxEffects(widget, sy, dm)
+    sy = BuildFxEffects(widget, sy, dmConf)
     return sy
 end
 
 local function BuildTileDetail(widget, fontFile, t)
     -- Row accessors over t: a key read (or its default) and written.
-    local function TFieldOr(key, default)
+    local function TFieldOr(filterKey, default)
         return function()
-            return t[key] or default
+            return t[filterKey] or default
         end
     end
     local W = CludesUI.Widgets
@@ -1674,14 +1674,14 @@ local function BuildTileDetail(widget, fontFile, t)
     -- A local _: the global _ would hold the last row, and through it the page.
     local _
 
-    local function TSet(key, val)
-        t[key] = val
+    local function TSet(filterKey, val)
+        t[filterKey] = val
         DmApply()
     end
     -- Row setters over TSet: the key written with the row's value.
-    local function TSetRow(key)
+    local function TSetRow(filterKey)
         return function(value)
-            TSet(key, value)
+            TSet(filterKey, value)
         end
     end
 
@@ -1690,10 +1690,10 @@ local function BuildTileDetail(widget, fontFile, t)
         -- per-tile style values as VIEWS over the base debuff style keys
         -- (nil = inherit; getters show the effective value).
         local p = DmProfile() or {}
-        local dm = DmTable() or {}
-        local function TEff(key, baseKey, default)
-            local val = t[key]
-            if key == "borderSizePx" and val == nil and (t.borderSize ~= nil or t.borderTexture ~= nil) then
+        local dmConf = DmTable() or {}
+        local function TEff(filterKey, baseKey, default)
+            local val = t[filterKey]
+            if filterKey == "borderSizePx" and val == nil and (t.borderSize ~= nil or t.borderTexture ~= nil) then
                 return false
             end
             if val == nil then
@@ -1704,15 +1704,15 @@ local function BuildTileDetail(widget, fontFile, t)
             end
             return val
         end
-        local function TBoolOn(key, baseKey) -- base default ON
-            if t[key] ~= nil then
-                return t[key] and true or false
+        local function TBoolOn(filterKey, baseKey) -- base default ON
+            if t[filterKey] ~= nil then
+                return t[filterKey] and true or false
             end
             return p[baseKey] ~= false
         end
-        local function TBoolOff(key, baseKey) -- base default OFF
-            if t[key] ~= nil then
-                return t[key] and true or false
+        local function TBoolOff(filterKey, baseKey) -- base default OFF
+            if t[filterKey] ~= nil then
+                return t[filterKey] and true or false
             end
             return p[baseKey] and true or false
         end
@@ -1741,7 +1741,7 @@ local function BuildTileDetail(widget, fontFile, t)
             end, DmApply)
         )
         sy = sy - hh
-        BuildTileFiltersDD(fRow._leftRegion, t, dm)
+        BuildTileFiltersDD(fRow._leftRegion, t, dmConf)
 
         _, hh = W:SectionHeader(widget, "CORE", sy)
         sy = sy - hh
@@ -2374,7 +2374,7 @@ local function DmPvClick(self)
             and mod.BM_InheritedGroupsFor
             and mod.BM_InheritedGroupsFor(dmSpecSel, true)
         then
-            dmInhSel = { group = "allspecs", id = "base" }
+            inheritSel = { group = "allspecs", id = "base" }
             CludesUI:RefreshPage(true)
             return
         end
@@ -2394,7 +2394,7 @@ local function DmPvClick(self)
                     local gl = mod.DM_BucketTiles and mod.DM_BucketTiles(inhG[gi])
                     for idx = 1, #(gl or {}) do
                         if gl[idx].id == ident then
-                            dmInhSel = { group = inhG[gi], id = ident }
+                            inheritSel = { group = inhG[gi], id = ident }
                             CludesUI:RefreshPage(true)
                             return
                         end
@@ -2404,7 +2404,7 @@ local function DmPvClick(self)
         end
     end
     dmSel = ident
-    dmInhSel = nil
+    inheritSel = nil
     CludesUI:RefreshPage(true)
 end
 
@@ -2464,24 +2464,24 @@ function mod.DMP_RefreshPreview()
         preview._dmShapePool = shapes
     end
     for idx = 1, #icons do
-        local fr = icons[idx]
-        if fr._cooldown then
-            fr._cooldown:SetCooldown(0, 0)
-            fr._cooldown:Hide()
+        local tile = icons[idx]
+        if tile._cooldown then
+            tile._cooldown:SetCooldown(0, 0)
+            tile._cooldown:Hide()
         end
-        if fr._hoverBdr then
-            fr._hoverBdr:Hide()
+        if tile._hoverBdr then
+            tile._hoverBdr:Hide()
         end
-        fr._dmSel = nil
-        fr:Hide()
+        tile._dmSel = nil
+        tile:Hide()
     end
     for idx = 1, #shapes do
-        local fr = shapes[idx]
-        if fr._hoverBdr then
-            fr._hoverBdr:Hide()
+        local tile = shapes[idx]
+        if tile._hoverBdr then
+            tile._hoverBdr:Hide()
         end
-        fr._dmSel = nil
-        fr:Hide()
+        tile._dmSel = nil
+        tile:Hide()
     end
     if preview._dmHC then
         preview._dmHC:Hide()
@@ -2501,78 +2501,78 @@ function mod.DMP_RefreshPreview()
     local iIdx, sIdx = 0, 0
     local function GetIcon()
         iIdx = iIdx + 1
-        local fr = icons[iIdx]
-        if not fr then
-            fr = CreateFrame("Frame", nil, health)
+        local tile = icons[iIdx]
+        if not tile then
+            tile = CreateFrame("Frame", nil, health)
             -- Live parity: aura icons render in the aura band (frame +
             -- LVL_AURA = 13), above the +8 border and the +12 text band
             -- (matches the BM preview pool and live frames).
-            fr:SetFrameLevel(preview:GetFrameLevel() + (mod.LVL_AURA or 13))
-            local texture = fr:CreateTexture(nil, "ARTWORK")
+            tile:SetFrameLevel(preview:GetFrameLevel() + (mod.LVL_AURA or 13))
+            local texture = tile:CreateTexture(nil, "ARTWORK")
             texture:SetAllPoints()
-            fr._tex = texture
-            local cd = CreateFrame("Cooldown", nil, fr, "CooldownFrameTemplate")
-            cd:SetAllPoints()
-            cd:SetDrawEdge(false)
-            cd:SetReverse(true)
-            cd:SetSwipeColor(0, 0, 0, 0.6)
-            cd:SetHideCountdownNumbers(true)
-            cd:Hide()
-            fr._cooldown = cd
+            tile._tex = texture
+            local cooldown = CreateFrame("Cooldown", nil, tile, "CooldownFrameTemplate")
+            cooldown:SetAllPoints()
+            cooldown:SetDrawEdge(false)
+            cooldown:SetReverse(true)
+            cooldown:SetSwipeColor(0, 0, 0, 0.6)
+            cooldown:SetHideCountdownNumbers(true)
+            cooldown:Hide()
+            tile._cooldown = cooldown
             if Pix then
-                local b = CreateFrame("Frame", nil, fr)
+                local b = CreateFrame("Frame", nil, tile)
                 b:SetAllPoints()
-                b:SetFrameLevel(fr:GetFrameLevel() + 1)
+                b:SetFrameLevel(tile:GetFrameLevel() + 1)
                 Pix.CreateBorder(b, 0, 0, 0, 1, 1)
-                fr._borderFrame = b
-                local hb = CreateFrame("Frame", nil, fr)
+                tile._borderFrame = b
+                local hb = CreateFrame("Frame", nil, tile)
                 hb:SetAllPoints()
-                hb:SetFrameLevel(fr:GetFrameLevel() + 8)
+                hb:SetFrameLevel(tile:GetFrameLevel() + 8)
                 hb:EnableMouse(false)
                 Pix.CreateBorder(hb, 0, 0, 0, 0, 2)
                 hb:Hide()
-                fr._hoverBdr = hb
+                tile._hoverBdr = hb
             end
-            local tc = CreateFrame("Frame", nil, fr)
+            local tc = CreateFrame("Frame", nil, tile)
             tc:SetAllPoints()
-            tc:SetFrameLevel(fr:GetFrameLevel() + 5)
-            fr._count = tc:CreateFontString(nil, "OVERLAY")
-            fr:EnableMouse(true)
-            fr:SetScript("OnEnter", DmPvEnter)
-            fr:SetScript("OnLeave", DmPvLeave)
-            fr:SetScript("OnMouseUp", DmPvClick)
-            icons[iIdx] = fr
+            tc:SetFrameLevel(tile:GetFrameLevel() + 5)
+            tile._count = tc:CreateFontString(nil, "OVERLAY")
+            tile:EnableMouse(true)
+            tile:SetScript("OnEnter", DmPvEnter)
+            tile:SetScript("OnLeave", DmPvLeave)
+            tile:SetScript("OnMouseUp", DmPvClick)
+            icons[iIdx] = tile
         end
-        return fr
+        return tile
     end
     local function GetShape()
         sIdx = sIdx + 1
-        local fr = shapes[sIdx]
-        if not fr then
-            fr = CreateFrame("Frame", nil, health)
+        local tile = shapes[sIdx]
+        if not tile then
+            tile = CreateFrame("Frame", nil, health)
             -- Bars render in the aura band like live (BM bars ride button + LVL_AURA).
-            fr:SetFrameLevel(preview:GetFrameLevel() + (mod.LVL_AURA or 13))
-            local bgTex = fr:CreateTexture(nil, "BACKGROUND")
+            tile:SetFrameLevel(preview:GetFrameLevel() + (mod.LVL_AURA or 13))
+            local bgTex = tile:CreateTexture(nil, "BACKGROUND")
             bgTex:SetAllPoints()
-            fr._bgTex = bgTex
-            local texture = fr:CreateTexture(nil, "ARTWORK")
-            fr._tex = texture
+            tile._bgTex = bgTex
+            local texture = tile:CreateTexture(nil, "ARTWORK")
+            tile._tex = texture
             if Pix then
-                local hb = CreateFrame("Frame", nil, fr)
+                local hb = CreateFrame("Frame", nil, tile)
                 hb:SetAllPoints()
-                hb:SetFrameLevel(fr:GetFrameLevel() + 8)
+                hb:SetFrameLevel(tile:GetFrameLevel() + 8)
                 hb:EnableMouse(false)
                 Pix.CreateBorder(hb, 0, 0, 0, 0, 2)
                 hb:Hide()
-                fr._hoverBdr = hb
+                tile._hoverBdr = hb
             end
-            fr:EnableMouse(true)
-            fr:SetScript("OnEnter", DmPvEnter)
-            fr:SetScript("OnLeave", DmPvLeave)
-            fr:SetScript("OnMouseUp", DmPvClick)
-            shapes[sIdx] = fr
+            tile:EnableMouse(true)
+            tile:SetScript("OnEnter", DmPvEnter)
+            tile:SetScript("OnLeave", DmPvLeave)
+            tile:SetScript("OnMouseUp", DmPvClick)
+            shapes[sIdx] = tile
         end
-        return fr
+        return tile
     end
 
     -- One icon run (the base grid or an icon-container tile). Display keys
@@ -2617,10 +2617,10 @@ function mod.DMP_RefreshPreview()
         end
         local lineStart = cursor
         for idx = 1, rowConf.count do
-            local fr = GetIcon()
-            fr._dmSel = rowConf.selKey
-            fr:SetSize(sz, sz)
-            fr:ClearAllPoints()
+            local tile = GetIcon()
+            tile._dmSel = rowConf.selKey
+            tile:SetSize(sz, sz)
+            tile:ClearAllPoints()
             local lineOff = 0
             if per > 0 then
                 if idx > 1 and (idx - 1) % per == 0 then
@@ -2646,24 +2646,24 @@ function mod.DMP_RefreshPreview()
                 cursor = cursor + sz + gap
                 gx = (rowConf.wrapH == "LEFT") and -lineOff or lineOff
             end
-            fr:SetPoint(selfPoint, host, anchor, (rowConf.offX or 0) + gx, (rowConf.offY or 0) + gy)
+            tile:SetPoint(selfPoint, host, anchor, (rowConf.offX or 0) + gx, (rowConf.offY or 0) + gy)
             if rowConf.color then
                 -- Square grid tiles: flat color blocks instead of icons.
-                fr._tex:SetColorTexture(
+                tile._tex:SetColorTexture(
                     rowConf.color.r or 1,
                     rowConf.color.g or 0.35,
                     rowConf.color.b or 0.35,
                     rowConf.color.a or 1
                 )
             else
-                fr._tex:SetTexture(SampleDebuffTexture(idx))
+                tile._tex:SetTexture(SampleDebuffTexture(idx))
                 local z = sv.debuffIconZoom or 0.08
-                fr._tex:SetTexCoord(z, 1 - z, z, 1 - z)
+                tile._tex:SetTexCoord(z, 1 - z, z, 1 - z)
             end
-            fr:SetAlpha(rowConf.alpha)
-            mod.RFC_PreviewAuraBorder(fr, fr._borderFrame, sv, "debuffBorder")
-            local cd = fr._cooldown
-            if cd then
+            tile:SetAlpha(rowConf.alpha)
+            mod.RFC_PreviewAuraBorder(tile, tile._borderFrame, sv, "debuffBorder")
+            local cooldown = tile._cooldown
+            if cooldown then
                 local wantSwipe = sv.debuffShowSwipe ~= false
                 local wantDurText = sv.debuffShowDurText and true or false
                 if wantSwipe or wantDurText then
@@ -2675,22 +2675,22 @@ function mod.DMP_RefreshPreview()
                     -- FontString instead, exactly like the BM preview.
                     local seed = GetPvCDSeed(idx)
                     local dur = 3600
-                    cd:SetCooldown(GetTime() - dur * (1 - seed), dur)
-                    cd:SetDrawSwipe(wantSwipe)
-                    cd:SetHideCountdownNumbers(true)
-                    cd:Show()
-                    if not fr._pvDurText then
-                        fr._pvDurText = cd:CreateFontString(nil, "OVERLAY")
+                    cooldown:SetCooldown(GetTime() - dur * (1 - seed), dur)
+                    cooldown:SetDrawSwipe(wantSwipe)
+                    cooldown:SetHideCountdownNumbers(true)
+                    cooldown:Show()
+                    if not tile._pvDurText then
+                        tile._pvDurText = cooldown:CreateFontString(nil, "OVERLAY")
                     end
                     if wantDurText then
-                        local dt = fr._pvDurText
+                        local dt = tile._pvDurText
                         local dtc = sv.debuffDurTextColor or { r = 1, g = 1, b = 1 }
                         CludesUI.ApplyIconTextFont(dt, fontFile, sv.debuffDurTextSize or 10, "raidFrames")
                         dt:SetTextColor(dtc.r or 1, dtc.g or 1, dtc.b or 1)
                         dt:ClearAllPoints()
                         dt:SetPoint(
                             "CENTER",
-                            fr,
+                            tile,
                             "CENTER",
                             sv.debuffDurTextOffsetX or 0,
                             sv.debuffDurTextOffsetY or 0
@@ -2698,45 +2698,45 @@ function mod.DMP_RefreshPreview()
                         dt:SetText(tostring(math.floor(3 + seed * 17)))
                         dt:Show()
                     else
-                        fr._pvDurText:Hide()
+                        tile._pvDurText:Hide()
                     end
                 else
-                    cd:Hide()
-                    if fr._pvDurText then
-                        fr._pvDurText:Hide()
+                    cooldown:Hide()
+                    if tile._pvDurText then
+                        tile._pvDurText:Hide()
                     end
                 end
             end
-            if fr._count then
+            if tile._count then
                 if sv.debuffShowStacks ~= false then
                     local sc = sv.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
                     CludesUI.ApplyIconTextFont(
-                        fr._count,
+                        tile._count,
                         fontFile,
                         sv.debuffStacksTextSize or 11,
                         "raidFrames"
                     )
-                    fr._count:SetTextColor(sc.r or 1, sc.g or 1, sc.b or 1)
-                    fr._count:ClearAllPoints()
-                    fr._count:SetPoint(
+                    tile._count:SetTextColor(sc.r or 1, sc.g or 1, sc.b or 1)
+                    tile._count:ClearAllPoints()
+                    tile._count:SetPoint(
                         "BOTTOMRIGHT",
-                        fr,
+                        tile,
                         "BOTTOMRIGHT",
                         sv.debuffStacksOffsetX or -1,
                         sv.debuffStacksOffsetY or 2
                     )
-                    fr._count:SetText("3")
+                    tile._count:SetText("3")
                 else
                     -- Only the stacks-on branch ever fonts this FontString: a
                     -- bare SetText on a fontless one spams "Font not set"
                     -- (field report 2026-08-16, 122x with stacks disabled).
                     -- Fonted = a previous stacks-on render left text to clear.
-                    if fr._count:GetFont() then
-                        fr._count:SetText("")
+                    if tile._count:GetFont() then
+                        tile._count:SetText("")
                     end
                 end
             end
-            fr:Show()
+            tile:Show()
         end
     end
 
@@ -2751,7 +2751,7 @@ function mod.DMP_RefreshPreview()
         baseShown = not (mod.DM_BaseDisabled and mod.DM_BaseDisabled(dmSpecSel))
     end
     if baseShown then
-        local sel = (dmSel == "base" and not dmInhSel) or (dmInhSel and dmInhSel.id == "base") or false
+        local sel = (dmSel == "base" and not inheritSel) or (inheritSel and inheritSel.id == "base") or false
         local basePos = p.debuffPosition or "bottomright"
         local baseCenterEdge
         if (p.debuffGrowDirection or "LEFT") == "CENTER" then
@@ -2789,7 +2789,7 @@ function mod.DMP_RefreshPreview()
         if t.enabled then
             -- Selected = the edited bucket's selection OR the inherited
             -- selection (ids are globally unique across buckets).
-            local sel = (dmSel == t.id and not dmInhSel) or (dmInhSel and dmInhSel.id == t.id) or false
+            local sel = (dmSel == t.id and not inheritSel) or (inheritSel and inheritSel.id == t.id) or false
             local alpha = (sel or allVis) and 1 or 0.5
             if t.type == "icons" or t.type == "square" then
                 RenderRun({
@@ -2818,8 +2818,8 @@ function mod.DMP_RefreshPreview()
                     color = (t.type == "square") and (t.color or { r = 1, g = 0.35, b = 0.35, a = 1 }) or nil,
                 })
             elseif t.type == "bar" then
-                local fr = GetShape()
-                fr._dmSel = t.id
+                local tile = GetShape()
+                tile._dmSel = t.id
                 -- BM_PlaceBar parity: fill-axis sliders + Full pins that
                 -- swap screen edges when the bar is vertical.
                 local wid = t.width or 60
@@ -2832,56 +2832,56 @@ function mod.DMP_RefreshPreview()
                 else
                     fullW, fullH = t.barFullWidth, t.barFullHeight
                 end
-                fr:ClearAllPoints()
+                tile:ClearAllPoints()
                 if fullW and fullH then
-                    fr:SetPoint("TOPLEFT", host, "TOPLEFT", 0, 0)
-                    fr:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", 0, 0)
+                    tile:SetPoint("TOPLEFT", host, "TOPLEFT", 0, 0)
+                    tile:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", 0, 0)
                 elseif fullW then
                     local vEdge = (anchor:find("BOTTOM", 1, true) and "BOTTOM")
                         or (anchor:find("TOP", 1, true) and "TOP")
                         or ""
                     local oy = t.offsetY or 0
-                    fr:SetPoint(vEdge .. "LEFT", host, vEdge .. "LEFT", 0, oy)
-                    fr:SetPoint(vEdge .. "RIGHT", host, vEdge .. "RIGHT", 0, oy)
-                    fr:SetHeight(isVert and wid or hh2)
+                    tile:SetPoint(vEdge .. "LEFT", host, vEdge .. "LEFT", 0, oy)
+                    tile:SetPoint(vEdge .. "RIGHT", host, vEdge .. "RIGHT", 0, oy)
+                    tile:SetHeight(isVert and wid or hh2)
                 elseif fullH then
                     local hEdge = (anchor:find("RIGHT", 1, true) and "RIGHT")
                         or (anchor:find("LEFT", 1, true) and "LEFT")
                         or ""
                     local ox = t.offsetX or 0
-                    fr:SetPoint("TOP" .. hEdge, host, "TOP" .. hEdge, ox, 0)
-                    fr:SetPoint("BOTTOM" .. hEdge, host, "BOTTOM" .. hEdge, ox, 0)
-                    fr:SetWidth(isVert and hh2 or wid)
+                    tile:SetPoint("TOP" .. hEdge, host, "TOP" .. hEdge, ox, 0)
+                    tile:SetPoint("BOTTOM" .. hEdge, host, "BOTTOM" .. hEdge, ox, 0)
+                    tile:SetWidth(isVert and hh2 or wid)
                 else
                     if isVert then
-                        fr:SetSize(hh2, wid)
+                        tile:SetSize(hh2, wid)
                     else
-                        fr:SetSize(wid, hh2)
+                        tile:SetSize(wid, hh2)
                     end
-                    fr:SetPoint(anchor, host, anchor, t.offsetX or 0, t.offsetY or 0)
+                    tile:SetPoint(anchor, host, anchor, t.offsetX or 0, t.offsetY or 0)
                 end
                 local c = t.color or { r = 0.25, g = 0.8, b = 0.45 }
                 local bgc = t.barBgColor or { r = 0, g = 0, b = 0 }
-                fr._bgTex:SetColorTexture(bgc.r or 0, bgc.g or 0, bgc.b or 0, (t.barBgOpacity or 50) / 100)
-                fr._bgTex:Show()
+                tile._bgTex:SetColorTexture(bgc.r or 0, bgc.g or 0, bgc.b or 0, (t.barBgOpacity or 50) / 100)
+                tile._bgTex:Show()
                 -- 60% sample fill along the fill axis, reverse-aware.
                 local sw = (fullW and (host:GetWidth() or wid)) or (isVert and hh2 or wid)
                 local sh = (fullH and (host:GetHeight() or hh2)) or (isVert and wid or hh2)
-                fr._tex:ClearAllPoints()
+                tile._tex:ClearAllPoints()
                 if isVert then
-                    local edge = t.reverseFill and "TOP" or "BOTTOM"
-                    fr._tex:SetPoint(edge .. "LEFT", fr, edge .. "LEFT", 0, 0)
-                    fr._tex:SetPoint(edge .. "RIGHT", fr, edge .. "RIGHT", 0, 0)
-                    fr._tex:SetHeight(math.max(1, floor(sh * 0.6)))
+                    local edgeName = t.reverseFill and "TOP" or "BOTTOM"
+                    tile._tex:SetPoint(edgeName .. "LEFT", tile, edgeName .. "LEFT", 0, 0)
+                    tile._tex:SetPoint(edgeName .. "RIGHT", tile, edgeName .. "RIGHT", 0, 0)
+                    tile._tex:SetHeight(math.max(1, floor(sh * 0.6)))
                 else
-                    local edge = t.reverseFill and "RIGHT" or "LEFT"
-                    fr._tex:SetPoint("TOP" .. edge, fr, "TOP" .. edge, 0, 0)
-                    fr._tex:SetPoint("BOTTOM" .. edge, fr, "BOTTOM" .. edge, 0, 0)
-                    fr._tex:SetWidth(math.max(1, floor(sw * 0.6)))
+                    local edgeName = t.reverseFill and "RIGHT" or "LEFT"
+                    tile._tex:SetPoint("TOP" .. edgeName, tile, "TOP" .. edgeName, 0, 0)
+                    tile._tex:SetPoint("BOTTOM" .. edgeName, tile, "BOTTOM" .. edgeName, 0, 0)
+                    tile._tex:SetWidth(math.max(1, floor(sw * 0.6)))
                 end
-                fr._tex:SetColorTexture(c.r or 1, c.g or 1, c.b or 1, (t.barColorOpacity or 100) / 100)
-                fr:SetAlpha(alpha)
-                fr:Show()
+                tile._tex:SetColorTexture(c.r or 1, c.g or 1, c.b or 1, (t.barColorOpacity or 100) / 100)
+                tile:SetAlpha(alpha)
+                tile:Show()
             elseif t.type == "healthcolor" then
                 -- Frame-wide effect: shown while selected / eyeball (BM parity)
                 if sel or allVis then
@@ -2971,7 +2971,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     -- the full-page overlay to build at the end. nil = normal page.
     local dmOverlayState = CludesUI.SpecOverrides_DmPagePrelude() or nil
 
-    local dm = DmTable()
+    local dmConf = DmTable()
 
     -- Editing-spec bucket sanity: stale/unknown keys reset to All Specs.
     if
@@ -3010,15 +3010,15 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     -- id "base" = the inherited Base Icons grid (concrete spec views only).
     local inhSelTile = nil
     local inhSelBase = false
-    if dmInhSel and inhGroups then
-        if dmInhSel.id == "base" then
-            inhSelBase = (dmInhSel.group == "allspecs")
+    if inheritSel and inhGroups then
+        if inheritSel.id == "base" then
+            inhSelBase = (inheritSel.group == "allspecs")
         else
             for gi = 1, #inhGroups do
-                if inhGroups[gi] == dmInhSel.group then
-                    local gl = mod.DM_BucketTiles and mod.DM_BucketTiles(dmInhSel.group)
+                if inhGroups[gi] == inheritSel.group then
+                    local gl = mod.DM_BucketTiles and mod.DM_BucketTiles(inheritSel.group)
                     for idx = 1, #(gl or {}) do
-                        if gl[idx].id == dmInhSel.id then
+                        if gl[idx].id == inheritSel.id then
                             inhSelTile = gl[idx]
                             break
                         end
@@ -3029,7 +3029,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         end
     end
     if not (inhSelTile or inhSelBase) then
-        dmInhSel = nil
+        inheritSel = nil
     end
 
     -- Validate selection.
@@ -3046,8 +3046,8 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         end
     end
     -- "base" in a concrete spec view IS the inherited base grid.
-    if dmSel == "base" and not dmInhSel and baseInherited then
-        dmInhSel = { group = "allspecs", id = "base" }
+    if dmSel == "base" and not inheritSel and baseInherited then
+        inheritSel = { group = "allspecs", id = "base" }
         inhSelBase = true
     end
 
@@ -3059,19 +3059,19 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
 
     -- No header bar (matches the redesigned Buff Manager page): content
     -- starts at the top of the viewport.
-    local root = CreateFrame("Frame", nil, outerRoot)
-    root:SetPoint("TOPLEFT", outerRoot, "TOPLEFT", 0, 0)
-    root:SetPoint("BOTTOMRIGHT", outerRoot, "BOTTOMRIGHT", 0, 0)
-    root:SetFrameLevel(outerRoot:GetFrameLevel() + 1)
+    local rootFrame = CreateFrame("Frame", nil, outerRoot)
+    rootFrame:SetPoint("TOPLEFT", outerRoot, "TOPLEFT", 0, 0)
+    rootFrame:SetPoint("BOTTOMRIGHT", outerRoot, "BOTTOMRIGHT", 0, 0)
+    rootFrame:SetFrameLevel(outerRoot:GetFrameLevel() + 1)
     local visibleH = fullH
 
     -------------------------------------------------------------------
     --  RIGHT SIDEBAR (full visible height, own scroll, dark bg)
     -------------------------------------------------------------------
-    local sidebarOuter = CreateFrame("Frame", nil, root)
+    local sidebarOuter = CreateFrame("Frame", nil, rootFrame)
     sidebarOuter:SetSize(sidebarW, visibleH)
-    sidebarOuter:SetPoint("TOPRIGHT", root, "TOPRIGHT", 0, -1)
-    sidebarOuter:SetFrameLevel(root:GetFrameLevel() + 1)
+    sidebarOuter:SetPoint("TOPRIGHT", rootFrame, "TOPRIGHT", 0, -1)
+    sidebarOuter:SetFrameLevel(rootFrame:GetFrameLevel() + 1)
     local sbBg = sidebarOuter:CreateTexture(nil, "BACKGROUND")
     sbBg:SetAllPoints()
     sbBg:SetColorTexture(0, 0, 0, 0.25)
@@ -3117,11 +3117,11 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             title = L("Base Icons"),
             posText = basePosText,
             subtitle = L("The standard debuff grid"),
-            selected = (dmSel == "base" and not dmInhSel),
+            selected = (dmSel == "base" and not inheritSel),
             enabled = true,
             onSelect = function()
                 dmSel = "base"
-                dmInhSel = nil
+                inheritSel = nil
                 CludesUI:RefreshPage(true)
             end,
         })
@@ -3139,7 +3139,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             enabled = (not disHere) and true or false,
             showToggle = true,
             onSelect = function()
-                dmInhSel = { group = "allspecs", id = "base" }
+                inheritSel = { group = "allspecs", id = "base" }
                 CludesUI:RefreshPage(true)
             end,
             onToggle = function()
@@ -3166,7 +3166,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     posText = TilePosText(t),
                     subtitle = gname,
                     inheritedTooltip = CludesUI.Lf("Inherited from %1$s. Editable only there.", gname),
-                    selected = (dmInhSel and dmInhSel.group == gkey and dmInhSel.id == t.id) and true
+                    selected = (inheritSel and inheritSel.group == gkey and inheritSel.id == t.id) and true
                         or false,
                     -- Pill = the PER-SPEC enable only; a group-level disable
                     -- dims the tile instead (the pill must never look dead).
@@ -3174,7 +3174,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     enabled = (not disHere) and true or false,
                     showToggle = true,
                     onSelect = function()
-                        dmInhSel = { group = gkey, id = t.id }
+                        inheritSel = { group = gkey, id = t.id }
                         CludesUI:RefreshPage(true)
                     end,
                     onToggle = function()
@@ -3201,12 +3201,12 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             subtitleFn = function()
                 return TileSubtitle(t)
             end,
-            selected = (dmSel == t.id and not dmInhSel),
+            selected = (dmSel == t.id and not inheritSel),
             enabled = t.enabled and true or false,
             showToggle = true,
             onSelect = function()
                 dmSel = t.id
-                dmInhSel = nil
+                inheritSel = nil
                 CludesUI:RefreshPage(true)
             end,
             -- Right-click: copy this tile into another editing-spec bucket
@@ -3219,8 +3219,8 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     title = L("Add To"),
                     fontPath = fontFile,
                     items = CludesUI.SpecBucketMenuItems(dmSpecSel, nil, mod.DM_ForeverKey),
-                    onPick = function(key)
-                        if mod.DM_CopyTile and mod.DM_CopyTile(t, key) then
+                    onPick = function(filterKey)
+                        if mod.DM_CopyTile and mod.DM_CopyTile(t, filterKey) then
                             ApplyAndRedraw()
                         end
                     end,
@@ -3373,7 +3373,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     end
                 end)
 
-                local py = -POPUP_PAD
+                local paneY = -POPUP_PAD
                 local ddW = POPUP_W - POPUP_PAD * 2
 
                 -- Filters label + checkbox dropdown (identical items to the
@@ -3381,10 +3381,10 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                 -- filters at Create)
                 local fltLbl = dialog:CreateFontString(nil, "OVERLAY")
                 fltLbl:SetFont(fontFile, 11, "")
-                fltLbl:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, py)
+                fltLbl:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, paneY)
                 fltLbl:SetText(L("Filters"))
                 fltLbl:SetTextColor(1, 1, 1, 0.6)
-                py = py - LABEL_H - LBL_GAP
+                paneY = paneY - LABEL_H - LBL_GAP
 
                 -- Same two-lane item list as the tile Filters dropdown; picks
                 -- pend in popup._dmFilters (show keys plain, hide keys with a
@@ -3397,13 +3397,13 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     ddW,
                     dialog:GetFrameLevel() + 2,
                     TILE_LANE_ITEMS,
-                    function(keyName, neg)
-                        if neg then
+                    function(keyName, negated)
+                        if negated then
                             return pend["neg_" .. keyName] and true or false
                         end
                         return pend[keyName] and true or false
                     end,
-                    function(keyName, val, neg)
+                    function(keyName, val, negated)
                         if keyName == TILE_CA_ALL or keyName == TILE_CA_DUR then
                             -- Independent bits (All Debuffs / Has Duration modifier).
                             pend[keyName] = val and true or nil
@@ -3415,12 +3415,12 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                             pend.dispel_you, pend.dispel_typed = nil, nil
                             pend.neg_dispel_you, pend.neg_dispel_typed = nil, nil
                             if val then
-                                pend[(neg and "neg_" or "") .. keyName] = true
+                                pend[(negated and "neg_" or "") .. keyName] = true
                             end
                             return
                         end
                         -- Two-lane pend write: checking one lane clears the other.
-                        if neg then
+                        if negated then
                             pend["neg_" .. keyName] = val and true or nil
                             if val then
                                 pend[keyName] = nil
@@ -3436,17 +3436,17 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     12
                 )
                 fltDD:SetSize(ddW, ROW_H2)
-                fltDD:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, py)
+                fltDD:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, paneY)
                 dialog._fltDD = fltDD
                 dialog._fltDDRefresh = fltDDRefresh
-                py = py - ROW_H2 - DD_GAP
+                paneY = paneY - ROW_H2 - DD_GAP
 
                 local indLbl = dialog:CreateFontString(nil, "OVERLAY")
                 indLbl:SetFont(fontFile, 11, "")
-                indLbl:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, py)
+                indLbl:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, paneY)
                 indLbl:SetText(L("Indicator"))
                 indLbl:SetTextColor(1, 1, 1, 0.6)
-                py = py - LABEL_H - LBL_GAP
+                paneY = paneY - LABEL_H - LBL_GAP
 
                 local indDD = CludesUI.BuildDropdownControl(
                     dialog,
@@ -3461,14 +3461,14 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                         dmSelType = val
                     end
                 )
-                indDD:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, py)
+                indDD:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, paneY)
                 dialog._indDD = indDD
-                py = py - ROW_H2 - DD_GAP
+                paneY = paneY - ROW_H2 - DD_GAP
 
                 local accentColor = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
                 local cBtn = CreateFrame("Button", nil, dialog)
                 cBtn:SetSize(ddW, ROW_H2)
-                cBtn:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, py)
+                cBtn:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, paneY)
                 cBtn:SetFrameLevel(dialog:GetFrameLevel() + 1)
                 local cBg = cBtn:CreateTexture(nil, "BACKGROUND")
                 cBg:SetAllPoints()
@@ -3536,7 +3536,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                             t.hasDuration = true
                         end
                         dmSel = t.id
-                        dmInhSel = nil
+                        inheritSel = nil
                         ApplyAndRedraw()
                     end
                 end)
@@ -3565,10 +3565,10 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     --  page's left column, band split 65/35 like the BM's.
     -------------------------------------------------------------------
     local PAD = 20
-    local leftFixed = CreateFrame("Frame", nil, root)
-    leftFixed:SetSize(leftW, 10) -- height set after content
-    leftFixed:SetPoint("TOPLEFT", root, "TOPLEFT", 0, 0)
-    local ly = 0
+    local leftPane = CreateFrame("Frame", nil, rootFrame)
+    leftPane:SetSize(leftW, 10) -- height set after content
+    leftPane:SetPoint("TOPLEFT", rootFrame, "TOPLEFT", 0, 0)
+    local layoutY = 0
 
     local pvSplitW = floor(leftW * 0.65)
     local specSplitW = leftW - pvSplitW
@@ -3578,7 +3578,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     -- (the Editing Spec section owns the right 35%).
     local ovRaid, ovParty = mod.BM_PreviewOverrideTips("dm")
     local pvFrame, sectionH, PV_SCALE =
-        mod.BM_BuildSimplePreview(leftFixed, p, fontFile, Pix, pvSplitW / 2, -PAD, {
+        mod.BM_BuildSimplePreview(leftPane, p, fontFile, Pix, pvSplitW / 2, -PAD, {
             party = mod.BM_PreviewIsParty(),
             styleToggle = true,
             kitAuras = "debuffs",
@@ -3593,10 +3593,10 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         local EYE_INVIS = CludesUI.EYE_INVISIBLE_ICON
         mod._dmAllVisible = mod._dmAllVisible or false
 
-        local eyeButton = CreateFrame("Button", nil, leftFixed)
+        local eyeButton = CreateFrame("Button", nil, leftPane)
         eyeButton:SetSize(26, 26)
         eyeButton:SetPoint("LEFT", pvFrame, "RIGHT", 18 / PV_SCALE, 0)
-        eyeButton:SetFrameLevel(leftFixed:GetFrameLevel() + 5)
+        eyeButton:SetFrameLevel(leftPane:GetFrameLevel() + 5)
 
         local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
@@ -3626,10 +3626,10 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     --  bucket -- healer specs included (the DM has no healer-key legacy).
     -------------------------------------------------------------------
     do
-        local splitDiv = leftFixed:CreateTexture(nil, "ARTWORK")
+        local splitDiv = leftPane:CreateTexture(nil, "ARTWORK")
         splitDiv:SetWidth(1)
-        splitDiv:SetPoint("TOP", leftFixed, "TOPLEFT", pvSplitW, ly - 10)
-        splitDiv:SetPoint("BOTTOM", leftFixed, "TOPLEFT", pvSplitW, ly - sectionH + 10)
+        splitDiv:SetPoint("TOP", leftPane, "TOPLEFT", pvSplitW, layoutY - 10)
+        splitDiv:SetPoint("BOTTOM", leftPane, "TOPLEFT", pvSplitW, layoutY - sectionH + 10)
         splitDiv:SetColorTexture(1, 1, 1, 0.08)
 
         local specCenterX = pvSplitW + specSplitW / 2
@@ -3638,25 +3638,25 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         local specDDValues, specDDOrder, specDDIcons = CludesUI.BuildSpecBucketRoster(nil, mod.DM_ForeverKey)
         specDDValues._menuOpts = {
             maxHeight = 300,
-            icon = function(key)
-                return specDDIcons[key]
+            icon = function(filterKey)
+                return specDDIcons[filterKey]
             end,
         }
 
         local groupH = 14 + 7 + 30
-        local groupTopY = ly - (sectionH - groupH) / 2
-        local specLabel = leftFixed:CreateFontString(nil, "OVERLAY")
+        local groupTopY = layoutY - (sectionH - groupH) / 2
+        local specLabel = leftPane:CreateFontString(nil, "OVERLAY")
         specLabel:SetFont(fontFile, 12, "")
-        specLabel:SetPoint("TOP", leftFixed, "TOPLEFT", specCenterX, groupTopY)
+        specLabel:SetPoint("TOP", leftPane, "TOPLEFT", specCenterX, groupTopY)
         specLabel:SetJustifyH("CENTER")
         specLabel:SetText(L("Editing Spec"))
         specLabel:SetTextColor(1, 1, 1, 0.75)
 
         local specDDW = specSplitW - PAD - 50
         local specDD = CludesUI.BuildDropdownControl(
-            leftFixed,
+            leftPane,
             specDDW,
-            leftFixed:GetFrameLevel() + 2,
+            leftPane:GetFrameLevel() + 2,
             specDDValues,
             specDDOrder,
             function()
@@ -3665,7 +3665,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             function(val)
                 dmSpecSel = val
                 dmSel = "base"
-                dmInhSel = nil
+                inheritSel = nil
                 CludesUI:RefreshPage(true)
             end
         )
@@ -3676,42 +3676,42 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     -- Excluded Debuffs" link is retired (exclude list is internal now) and
     -- the BM-style click-hint was dropped the next day. The band-height
     -- accounting stays so the divider seats where it always did.
-    ly = ly - sectionH - 10
+    layoutY = layoutY - sectionH - 10
 
     -------------------------------------------------------------------
     --  DIVIDER (below preview, above settings title) -- BM parity
     -------------------------------------------------------------------
-    local div1 = leftFixed:CreateTexture(nil, "ARTWORK")
+    local div1 = leftPane:CreateTexture(nil, "ARTWORK")
     div1:SetHeight(1)
-    div1:SetPoint("TOPLEFT", leftFixed, "TOPLEFT", PAD, ly)
-    div1:SetPoint("TOPRIGHT", leftFixed, "TOPRIGHT", -PAD, ly)
+    div1:SetPoint("TOPLEFT", leftPane, "TOPLEFT", PAD, layoutY)
+    div1:SetPoint("TOPRIGHT", leftPane, "TOPRIGHT", -PAD, layoutY)
     div1:SetColorTexture(1, 1, 1, 0.08)
 
-    ly = ly - 25
+    layoutY = layoutY - 25
 
     -- Accent-colored title + gray subtitle (BM parity)
-    local settingsTitle = leftFixed:CreateFontString(nil, "OVERLAY")
-    settingsTitle:SetFont(fontFile, 18, "")
-    settingsTitle:SetPoint("TOPLEFT", leftFixed, "TOPLEFT", PAD, ly)
-    settingsTitle:SetJustifyH("LEFT")
-    settingsTitle:SetWordWrap(false)
+    local settingsHeading = leftPane:CreateFontString(nil, "OVERLAY")
+    settingsHeading:SetFont(fontFile, 18, "")
+    settingsHeading:SetPoint("TOPLEFT", leftPane, "TOPLEFT", PAD, layoutY)
+    settingsHeading:SetJustifyH("LEFT")
+    settingsHeading:SetWordWrap(false)
     local ac2 = CludesUI.CLUDES_GREEN
     if ac2 then
-        settingsTitle:SetTextColor(ac2.r, ac2.g, ac2.b)
+        settingsHeading:SetTextColor(ac2.r, ac2.g, ac2.b)
     else
-        settingsTitle:SetTextColor(0.30, 0.79, 0.94)
+        settingsHeading:SetTextColor(0.30, 0.79, 0.94)
     end
 
-    local subTitle = leftFixed:CreateFontString(nil, "OVERLAY")
-    subTitle:SetFont(fontFile, 13, "")
-    subTitle:SetPoint("LEFT", settingsTitle, "RIGHT", 4, 0)
-    subTitle:SetPoint("RIGHT", leftFixed, "RIGHT", -PAD, 0)
-    subTitle:SetJustifyH("LEFT")
-    subTitle:SetWordWrap(false)
-    subTitle:SetTextColor(0.75, 0.75, 0.75, 0.65)
+    local subHeading = leftPane:CreateFontString(nil, "OVERLAY")
+    subHeading:SetFont(fontFile, 13, "")
+    subHeading:SetPoint("LEFT", settingsHeading, "RIGHT", 4, 0)
+    subHeading:SetPoint("RIGHT", leftPane, "RIGHT", -PAD, 0)
+    subHeading:SetJustifyH("LEFT")
+    subHeading:SetWordWrap(false)
+    subHeading:SetTextColor(0.75, 0.75, 0.75, 0.65)
 
     local selTile
-    if not dmInhSel and dmSel ~= "base" then
+    if not inheritSel and dmSel ~= "base" then
         for idx = 1, #tiles do
             if tiles[idx].id == dmSel then
                 selTile = tiles[idx]
@@ -3721,36 +3721,36 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     end
     -- Group views (not All Specs, not a concrete spec) list no base grid: a
     -- "base" selection there means nothing is selected.
-    local groupEmpty = (dmSel == "base" and not dmInhSel and not baseOwn and not baseInherited)
-    if dmInhSel and inhSelTile then
-        local ginfo2 = mod.BM_GROUP_BUCKET_INFO and mod.BM_GROUP_BUCKET_INFO[dmInhSel.group]
-        local gname2 = ginfo2 and L(ginfo2.name) or dmInhSel.group
-        settingsTitle:SetTextColor(0.55, 0.72, 1)
-        settingsTitle:SetText(TileName(inhSelTile))
-        subTitle:SetText("(" .. CludesUI.Lf("Inherited from %1$s", gname2) .. ")")
-    elseif dmInhSel and inhSelBase then
-        settingsTitle:SetTextColor(0.55, 0.72, 1)
-        settingsTitle:SetText(L("Base Icons"))
-        subTitle:SetText("(" .. CludesUI.Lf("Inherited from %1$s", allSpecsName) .. ")")
+    local groupEmpty = (dmSel == "base" and not inheritSel and not baseOwn and not baseInherited)
+    if inheritSel and inhSelTile then
+        local ginfo2 = mod.BM_GROUP_BUCKET_INFO and mod.BM_GROUP_BUCKET_INFO[inheritSel.group]
+        local gname2 = ginfo2 and L(ginfo2.name) or inheritSel.group
+        settingsHeading:SetTextColor(0.55, 0.72, 1)
+        settingsHeading:SetText(TileName(inhSelTile))
+        subHeading:SetText("(" .. CludesUI.Lf("Inherited from %1$s", gname2) .. ")")
+    elseif inheritSel and inhSelBase then
+        settingsHeading:SetTextColor(0.55, 0.72, 1)
+        settingsHeading:SetText(L("Base Icons"))
+        subHeading:SetText("(" .. CludesUI.Lf("Inherited from %1$s", allSpecsName) .. ")")
     elseif selTile then
-        settingsTitle:SetText(L(TYPE_NAMES[selTile.type] or selTile.type))
-        subTitle:SetText("(" .. TileSubtitle(selTile) .. ")")
+        settingsHeading:SetText(L(TYPE_NAMES[selTile.type] or selTile.type))
+        subHeading:SetText("(" .. TileSubtitle(selTile) .. ")")
         CludesUI.RegisterWidgetRefresh(function()
-            subTitle:SetText("(" .. TileSubtitle(selTile) .. ")")
+            subHeading:SetText("(" .. TileSubtitle(selTile) .. ")")
         end)
     elseif groupEmpty then
         local ginfo3 = mod.BM_GROUP_BUCKET_INFO and mod.BM_GROUP_BUCKET_INFO[dmSpecSel]
-        settingsTitle:SetText(ginfo3 and L(ginfo3.name) or dmSpecSel)
-        subTitle:SetText("(" .. L("No indicator selected") .. ")")
+        settingsHeading:SetText(ginfo3 and L(ginfo3.name) or dmSpecSel)
+        subHeading:SetText("(" .. L("No indicator selected") .. ")")
     else
-        settingsTitle:SetText(L("Base Icons"))
-        subTitle:SetText("(" .. L("The standard debuff grid") .. ")")
+        settingsHeading:SetText(L("Base Icons"))
+        subHeading:SetText("(" .. L("The standard debuff grid") .. ")")
     end
 
-    ly = ly - 18 - 10
+    layoutY = layoutY - 18 - 10
 
-    local fixedH = math.abs(ly)
-    leftFixed:SetHeight(fixedH)
+    local fixedH = math.abs(layoutY)
+    leftPane:SetHeight(fixedH)
 
     -------------------------------------------------------------------
     --  Settings scroll area (BM parity: smooth scroll + thin thumb;
@@ -3761,10 +3761,10 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     local viewportH = max(10, visibleH - fixedH)
     local settingsW = leftW + padDiff * 2
 
-    local settingsScroll = CreateFrame("ScrollFrame", nil, root)
-    settingsScroll:SetPoint("TOPLEFT", leftFixed, "BOTTOMLEFT", -padDiff, 5)
+    local settingsScroll = CreateFrame("ScrollFrame", nil, rootFrame)
+    settingsScroll:SetPoint("TOPLEFT", leftPane, "BOTTOMLEFT", -padDiff, 5)
     settingsScroll:SetSize(settingsW, viewportH)
-    settingsScroll:SetFrameLevel(root:GetFrameLevel() + 1)
+    settingsScroll:SetFrameLevel(rootFrame:GetFrameLevel() + 1)
     settingsScroll:SetClipsChildren(true)
 
     local settingsChild = CreateFrame("Frame", nil, settingsScroll)
@@ -3825,7 +3825,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         itemLink:SetScript("OnClick", function()
             dmSpecSel = jumpGroup
             dmSel = jumpId
-            dmInhSel = nil
+            inheritSel = nil
             CludesUI:RefreshPage(true)
         end)
         return -110
@@ -3833,11 +3833,11 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
 
     -- Detail rows build inside the scroll child
     local sy
-    if dmInhSel and inhSelTile then
-        local ginfo2 = mod.BM_GROUP_BUCKET_INFO and mod.BM_GROUP_BUCKET_INFO[dmInhSel.group]
-        local gname2 = ginfo2 and L(ginfo2.name) or dmInhSel.group
-        sy = BuildInheritedPane(gname2, dmInhSel.group, dmInhSel.id)
-    elseif dmInhSel and inhSelBase then
+    if inheritSel and inhSelTile then
+        local ginfo2 = mod.BM_GROUP_BUCKET_INFO and mod.BM_GROUP_BUCKET_INFO[inheritSel.group]
+        local gname2 = ginfo2 and L(ginfo2.name) or inheritSel.group
+        sy = BuildInheritedPane(gname2, inheritSel.group, inheritSel.id)
+    elseif inheritSel and inhSelBase then
         sy = BuildInheritedPane(allSpecsName, "allspecs", "base")
     elseif selTile then
         sy = BuildTileDetail(settingsChild, fontFile, selTile)
@@ -4243,7 +4243,7 @@ end
 -- "Custom ID" link that opens the standard input popup. Built on the
 -- canonical placeholder-dropdown hosting pattern (hide rgn._control, mount
 -- the CB dropdown, re-point, register its refresh).
-function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
+function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
     local W = CludesUI.Widgets
     local Pix = CludesUI.PP or CludesUI.PanelPP
     if not (W and Pix) then
@@ -4296,7 +4296,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
                     isTopAction = true,
                     label = "Edit Filters",
                     onClick = function()
-                        mod.BMP_ShowFilterEditor(ind.filters, ind.negFilters)
+                        mod.BMP_ShowFilterEditor(indicator.filters, indicator.negFilters)
                     end,
                 },
                 { isHeader = true, label = "Show", rightLabel = "Hide" },
@@ -4311,32 +4311,32 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
             190,
             region:GetFrameLevel() + 2,
             FilterItems,
-            function(keyName, neg)
-                if neg then
-                    return ind.negFilters and ind.negFilters[keyName] == true
+            function(keyName, negated)
+                if negated then
+                    return indicator.negFilters and indicator.negFilters[keyName] == true
                 end
-                return ind.filters and ind.filters[keyName] and true or false
+                return indicator.filters and indicator.filters[keyName] and true or false
             end,
-            function(keyName, val, neg)
+            function(keyName, val, negated)
                 -- Two-lane write: checking one lane clears the other.
-                if neg then
-                    ind.negFilters = ind.negFilters or {}
-                    ind.negFilters[keyName] = val and true or nil
-                    if not next(ind.negFilters) then
-                        ind.negFilters = nil
+                if negated then
+                    indicator.negFilters = indicator.negFilters or {}
+                    indicator.negFilters[keyName] = val and true or nil
+                    if not next(indicator.negFilters) then
+                        indicator.negFilters = nil
                     end
-                    if val and ind.filters then
-                        ind.filters[keyName] = nil
+                    if val and indicator.filters then
+                        indicator.filters[keyName] = nil
                     end
                 else
-                    if not ind.filters then
-                        ind.filters = {}
+                    if not indicator.filters then
+                        indicator.filters = {}
                     end
-                    ind.filters[keyName] = val and true or nil
-                    if val and ind.negFilters then
-                        ind.negFilters[keyName] = nil
-                        if not next(ind.negFilters) then
-                            ind.negFilters = nil
+                    indicator.filters[keyName] = val and true or nil
+                    if val and indicator.negFilters then
+                        indicator.negFilters[keyName] = nil
+                        if not next(indicator.negFilters) then
+                            indicator.negFilters = nil
                         end
                     end
                 end
@@ -4370,7 +4370,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
             region._control:Hide()
         end
         local function HasDirect(ident)
-            local sp = ind.spells
+            local sp = indicator.spells
             if not sp then
                 return false
             end
@@ -4386,15 +4386,15 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
         -- way. (WoW Forever writes no mark: a typed rank stands for every
         -- rank, and one that came with a profile stays as it is.)
         local idAction = mod.BM2_SpellIdAction(function(ident)
-            local ex = ind.exactSpells
+            local ex = indicator.exactSpells
             local was = ex and ex[ident]
             local added = not HasDirect(ident)
             if added then
-                ind.spells = ind.spells or {}
-                ind.spells[#ind.spells + 1] = ident
+                indicator.spells = indicator.spells or {}
+                indicator.spells[#indicator.spells + 1] = ident
             end
-            mod.BM2_SetSpellExact(ind, ident, true)
-            ex = ind.exactSpells
+            mod.BM2_SetSpellExact(indicator, ident, true)
+            ex = indicator.exactSpells
             if added or (ex and ex[ident]) ~= was then
                 if mod.ReloadFrames then
                     mod.ReloadFrames()
@@ -4432,8 +4432,8 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
             -- buff already assigned. nil on every other client.
             local ap = mod.BM2_ForeverAltPrimary
             local covered = {}
-            if ind.filters and mod.BM2_GetFilter then
-                for fid in pairs(ind.filters) do
+            if indicator.filters and mod.BM2_GetFilter then
+                for fid in pairs(indicator.filters) do
                     local f = mod.BM2_GetFilter(fid)
                     if f then
                         for ident, on in pairs(f.spells) do
@@ -4450,7 +4450,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
             local universe = (mod.BM2_AllPresetSpells and mod.BM2_AllPresetSpells()) or {}
             local selected, rest = {}, {}
             local seen = {}
-            local sp = ind.spells or {}
+            local sp = indicator.spells or {}
             for idx = 1, #sp do
                 seen[sp[idx]] = true
                 if ap and ap[sp[idx]] then
@@ -4486,20 +4486,20 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
             ExtraItems,
             HasDirect,
             function(keyName, val)
-                ind.spells = ind.spells or {}
+                indicator.spells = indicator.spells or {}
                 if val then
                     if not HasDirect(keyName) then
-                        ind.spells[#ind.spells + 1] = keyName
+                        indicator.spells[#indicator.spells + 1] = keyName
                     end
                 else
-                    for idx = #ind.spells, 1, -1 do
-                        if ind.spells[idx] == keyName then
-                            table.remove(ind.spells, idx)
+                    for idx = #indicator.spells, 1, -1 do
+                        if indicator.spells[idx] == keyName then
+                            table.remove(indicator.spells, idx)
                         end
                     end
                     -- The typed mark leaves with the entry: a later pick from
                     -- Presets keeps the curated family.
-                    mod.BM2_SetSpellExact(ind, keyName, false)
+                    mod.BM2_SetSpellExact(indicator, keyName, false)
                 end
                 if mod.ReloadFrames then
                     mod.ReloadFrames()
@@ -4527,22 +4527,22 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
         order = { "both", "raid", "party" },
         tooltip = "Party frames in arenas and small raids count as Party; Friendly Boss frames count as Raid.",
         disabled = function()
-            return ind.anchorTo ~= nil
+            return indicator.anchorTo ~= nil
         end,
         disabledTooltip = "Remove the Anchor To position",
         getValue = function()
-            local val = ind.showIn
-            if ind.anchorTo ~= nil and mod.BM2_EffectiveShowIn then
-                local key = mod._bmSelectedSpecKey
-                val = mod.BM2_EffectiveShowIn(ind, key and mod.BM2_SpecInds and mod.BM2_SpecInds(key) or nil)
+            local val = indicator.showIn
+            if indicator.anchorTo ~= nil and mod.BM2_EffectiveShowIn then
+                local filterKey = mod._bmSelectedSpecKey
+                val = mod.BM2_EffectiveShowIn(indicator, filterKey and mod.BM2_SpecInds and mod.BM2_SpecInds(filterKey) or nil)
             end
             return (val == "raid" or val == "party") and val or "both"
         end,
         setValue = function(val)
             if val == "raid" or val == "party" then
-                ind.showIn = val
+                indicator.showIn = val
             else
-                ind.showIn = nil
+                indicator.showIn = nil
             end
             if mod.BM2_Invalidate then
                 mod.BM2_Invalidate()
@@ -4561,17 +4561,17 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
     -- arrangement. The cog's drag list writes ind.spellOrder; the runtime
     -- renders one engine group per arranged spell in that order (BmSegments
     -- in the containers file) instead of the engine's default in-group sorting.
-    if ind.type == "icon" or ind.type == "square" then
+    if indicator.type == "icon" or indicator.type == "square" then
         -- Default presentation for anything the user has not arranged yet:
         -- the editing spec's own class spells lead, then class-agnostic
         -- (consumables/no hint), then other classes' (externals etc.). The
         -- STORED arrangement is never re-prioritized -- it is the user's.
         local function EditingClassToken()
-            local key = mod._bmSelectedSpecKey
+            local filterKey = mod._bmSelectedSpecKey
             local specs = mod.BM_HEALER_SPECS
-            if key and specs then
+            if filterKey and specs then
                 for idx = 1, #specs do
-                    if specs[idx].key == key then
+                    if specs[idx].key == filterKey then
                         return specs[idx].classToken
                     end
                 end
@@ -4608,16 +4608,16 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
             text = "Custom Order",
             tooltip = "Show this indicator's buffs in the exact order you arrange (the first 10 arranged buffs are guaranteed; any beyond follow the default sorting).",
             getValue = function()
-                return ind.customOrder == true
+                return indicator.customOrder == true
             end,
             setValue = function(val)
-                ind.customOrder = val or nil
-                if val and not ind.spellOrder then
+                indicator.customOrder = val or nil
+                if val and not indicator.spellOrder then
                     -- Seed the arrangement from the current resolved list so
                     -- the ordered groups engage immediately; the cog only
                     -- rearranges from there.
-                    local r = (mod.BM2_ResolveSpells and mod.BM2_ResolveSpells(ind)) or ind.spells or {}
-                    ind.spellOrder = PrioritizeResolved(r)
+                    local r = (mod.BM2_ResolveSpells and mod.BM2_ResolveSpells(indicator)) or indicator.spells or {}
+                    indicator.spellOrder = PrioritizeResolved(r)
                 end
                 if mod.ReloadFrames then
                     mod.ReloadFrames()
@@ -4631,7 +4631,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
             -- then any newly-resolved spells appended in prioritized order.
             -- The cog reads the items again each time its list opens.
             local function OrderItems()
-                local resolved = (mod.BM2_ResolveSpells and mod.BM2_ResolveSpells(ind)) or ind.spells or {}
+                local resolved = (mod.BM2_ResolveSpells and mod.BM2_ResolveSpells(indicator)) or indicator.spells or {}
                 local present, seen, result = {}, {}, {}
                 for idx = 1, #resolved do
                     present[resolved[idx]] = true
@@ -4641,7 +4641,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
                         or (C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(ident))
                     result[#result + 1] = { key = ident, label = nm or ("Spell " .. tostring(ident)) }
                 end
-                local so = ind.spellOrder
+                local so = indicator.spellOrder
                 if so then
                     -- WoW Forever: an entry saved under a rank alternate
                     -- stands for its family's primary. nil elsewhere.
@@ -4679,13 +4679,13 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, ind, fontFile)
                         maxVisible = 12,
                         items = OrderItems,
                         set = function(keyList)
-                            ind.spellOrder = keyList
+                            indicator.spellOrder = keyList
                             if mod.ReloadFrames then
                                 mod.ReloadFrames()
                             end
                         end,
                         disabled = function()
-                            return ind.customOrder ~= true
+                            return indicator.customOrder ~= true
                         end,
                         disabledTooltip = "Custom Order",
                     },

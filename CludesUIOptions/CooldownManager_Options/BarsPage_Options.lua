@@ -25,19 +25,19 @@ local PoolKept, PoolBegin = CludesUI._Pool.Kept, CludesUI._Pool.Begin
 -- Bars page shows (its page frame's OnShow and OnHide), so nothing listens
 -- while the page is hidden. Only the preview is drawn again: the rows below
 -- it do not change with the mount.
-local mountLive = {}
-function mountLive.OnEvent()
+local mountActive = {}
+function mountActive.OnEvent()
     local environ = mod._CDMO_OptEnv
     local preview = environ and (environ.optState._cdmPreview or CludesUI._cdmHeaderPreview)
     if preview and preview:IsVisible() then
         environ.UpdateCDMPreviewAndResize()
     end
 end
-function mountLive.Arm()
-    mountLive.frame:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED")
+function mountActive.Arm()
+    mountActive.frame:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED")
 end
-function mountLive.Disarm()
-    mountLive.frame:UnregisterAllEvents()
+function mountActive.Disarm()
+    mountActive.frame:UnregisterAllEvents()
 end
 
 local function BuildCDMBarsPage(page, hostFrame, yOffset)
@@ -153,26 +153,26 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             -- Scrollable, capped list: a long cross-class spec list scrolls
             -- (mousewheel) inside a fixed max height instead of running off the
             -- screen. A thin thumb on the right shows when there is more to see.
-            local scrollF = CreateFrame("ScrollFrame", nil, dialog)
-            scrollF:SetPoint("TOPLEFT", search, "BOTTOMLEFT", 0, -8)
-            scrollF:SetPoint("RIGHT", dialog, "RIGHT", -12, 0)
-            scrollF:EnableMouseWheel(true)
-            local listF = CreateFrame("Frame", nil, scrollF)
+            local scroller = CreateFrame("ScrollFrame", nil, dialog)
+            scroller:SetPoint("TOPLEFT", search, "BOTTOMLEFT", 0, -8)
+            scroller:SetPoint("RIGHT", dialog, "RIGHT", -12, 0)
+            scroller:EnableMouseWheel(true)
+            local listF = CreateFrame("Frame", nil, scroller)
             listF:SetWidth(DDW)
-            scrollF:SetScrollChild(listF)
-            local track = scrollF:CreateTexture(nil, "ARTWORK")
+            scroller:SetScrollChild(listF)
+            local track = scroller:CreateTexture(nil, "ARTWORK")
             track:SetWidth(3)
             track:SetColorTexture(1, 1, 1, 0.06)
-            track:SetPoint("TOPRIGHT", scrollF, "TOPRIGHT", -1, 0)
-            track:SetPoint("BOTTOMRIGHT", scrollF, "BOTTOMRIGHT", -1, 0)
+            track:SetPoint("TOPRIGHT", scroller, "TOPRIGHT", -1, 0)
+            track:SetPoint("BOTTOMRIGHT", scroller, "BOTTOMRIGHT", -1, 0)
             track:Hide()
-            local thumb = scrollF:CreateTexture(nil, "OVERLAY")
+            local thumb = scroller:CreateTexture(nil, "OVERLAY")
             thumb:SetWidth(3)
             thumb:SetColorTexture(1, 1, 1, 0.25)
             thumb:Hide()
             local function UpdateThumb()
-                local visH, fullH = scrollF:GetHeight(), listF:GetHeight()
-                local maxScroll = math.max(0, fullH - visH)
+                local visibleH, fullH = scroller:GetHeight(), listF:GetHeight()
+                local maxScroll = math.max(0, fullH - visibleH)
                 if maxScroll <= 0 then
                     track:Hide()
                     thumb:Hide()
@@ -180,13 +180,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 end
                 track:Show()
                 thumb:Show()
-                local thumbH = math.max(20, visH * visH / fullH)
+                local thumbH = math.max(20, visibleH * visibleH / fullH)
                 thumb:SetHeight(thumbH)
-                local frac = (scrollF:GetVerticalScroll() or 0) / maxScroll
+                local frac = (scroller:GetVerticalScroll() or 0) / maxScroll
                 thumb:ClearAllPoints()
-                thumb:SetPoint("TOPRIGHT", track, "TOPRIGHT", 0, -frac * (visH - thumbH))
+                thumb:SetPoint("TOPRIGHT", track, "TOPRIGHT", 0, -frac * (visibleH - thumbH))
             end
-            scrollF:SetScript("OnMouseWheel", function(self, delta)
+            scroller:SetScript("OnMouseWheel", function(self, delta)
                 local maxScroll = math.max(0, listF:GetHeight() - self:GetHeight())
                 if maxScroll <= 0 then
                     return
@@ -201,7 +201,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             end)
             dialog:SetScript("OnMouseDown", function() end)
             P.dimmer, P.popup, P.search, P.ph, P.list, P.DDW = shade, dialog, search, ph, listF, DDW
-            P.scroll, P.updateThumb = scrollF, UpdateThumb
+            P.scroll, P.updateThumb = scroller, UpdateThumb
         end
 
         local function Rebuild()
@@ -252,11 +252,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     r._tx:SetText(nm)
                     r._isDefault = (s.key == defaultKey)
                     r._hl:SetShown(r._isDefault)
-                    local key = s.key
+                    local barKey = s.key
                     r:SetScript("OnClick", function()
                         P.dimmer:Hide()
                         if onSelect then
-                            onSelect(key)
+                            onSelect(barKey)
                         end
                     end)
                     r:Show()
@@ -264,9 +264,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             end
             local listH = math.max(ROW_H, isShown * ROW_H)
             P.list:SetHeight(listH)
-            local visH = math.min(listH, MAX_LIST_H)
-            P.scroll:SetHeight(visH)
-            P.popup:SetHeight(110 + visH)
+            local visibleH = math.min(listH, MAX_LIST_H)
+            P.scroll:SetHeight(visibleH)
+            P.popup:SetHeight(110 + visibleH)
             -- Rebuilt while shown (search typing): refit the outline's bottom edge.
             P.brd:Fit()
             P.scroll:SetVerticalScroll(0)
@@ -396,8 +396,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         local existing = mod.GetRPTSyncSpecs and mod.GetRPTSyncSpecs()
         local specs = {}
         if existing then
-            for key in pairs(existing) do
-                specs[#specs + 1] = { key = key, checked = true }
+            for barKey in pairs(existing) do
+                specs[#specs + 1] = { key = barKey, checked = true }
             end
         end
         CludesUI:ShowCDMSpecPickerPopup({
@@ -514,11 +514,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
 
     local barId = barInfo.key
     local function BD()
-        local pp = DB()
-        if not pp or not pp.cdmBars or not pp.cdmBars.bars then
+        local profile = DB()
+        if not profile or not profile.cdmBars or not profile.cdmBars.bars then
             return barInfo
         end
-        for _, b in ipairs(pp.cdmBars.bars) do
+        for _, b in ipairs(profile.cdmBars.bars) do
             if b.key == barId then
                 return b
             end
@@ -526,40 +526,40 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         return barInfo
     end
     -- Row accessors over BD(): a key read (or its default) and written.
-    local function BDField(key)
+    local function BDField(barKey)
         return function(value)
-            BD()[key] = value
+            BD()[barKey] = value
         end
     end
-    local function BDFieldOr(key, default)
+    local function BDFieldOr(barKey, default)
         return function()
-            return BD()[key] or default
+            return BD()[barKey] or default
         end
     end
-    local function BDFieldIs(key)
+    local function BDFieldIs(barKey)
         return function()
-            return BD()[key] == true
+            return BD()[barKey] == true
         end
     end
-    local function BDFieldGet(key)
+    local function BDFieldGet(barKey)
         return function()
-            return BD()[key]
+            return BD()[barKey]
         end
     end
     -- Row accessors over BD(): a key read (or its default) and written.
-    local function BDField(key)
+    local function BDField(barKey)
         return function(value)
-            BD()[key] = value
+            BD()[barKey] = value
         end
     end
-    local function BDFieldOr(key, default)
+    local function BDFieldOr(barKey, default)
         return function()
-            return BD()[key] or default
+            return BD()[barKey] or default
         end
     end
-    local function BDFieldGet(key)
+    local function BDFieldGet(barKey)
         return function()
-            return BD()[key]
+            return BD()[barKey]
         end
     end
 
@@ -568,7 +568,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     -- FocusKick is the special nameplate-anchored bar. Most options panel
     -- sections are hidden for it; only Icon Display + a custom Nameplate
     -- Anchor row are shown.
-    local isFocusKick = (barInfo.key == "focuskick")
+    local focusKickBar = (barInfo.key == "focuskick")
 
     -------------------------------------------------------------------
     --  CONTENT HEADER  (dropdown + live preview)
@@ -738,7 +738,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             -- menu in place. Same drag mechanics as the shared reorder
             -- widget (RF Class Order). Row clicks / delete / rename are
             -- untouched -- only the grip starts a drag.
-            local dragState = {}
+            local drag = {}
             local customRows = {}
             local hintShown = false
             local insLine
@@ -750,10 +750,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 insLine:Hide()
             end
             local function ResetDrag()
-                dragState.row = nil
-                dragState.startY = nil
-                dragState.active = false
-                dragState.slot = nil
+                drag.row = nil
+                drag.startY = nil
+                drag.active = false
+                drag.slot = nil
             end
             -- The slot (1 .. #customRows + 1) a row dragged to height cY would
             -- drop into: before the first other custom row whose middle lies
@@ -779,8 +779,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 else
                     -- FocusKick is treated as a built-in: cannot be deleted
                     -- or renamed even though its barType is "cooldowns".
-                    local isFocusKick = (b.key == "focuskick")
-                    local isCustom = not BUILT_IN[b.key] and not isFocusKick
+                    local focusKickBar = (b.key == "focuskick")
+                    local isCustom = not BUILT_IN[b.key] and not focusKickBar
 
                     -- Hint above the custom-bar band (only when reorderable).
                     if reorderable and not hintShown and ordByKey[b.key] then
@@ -802,15 +802,15 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         customRows[#customRows + 1] = { item = entry, key = b.key, topY = -menuH }
                     end
 
-                    local iLbl = entry:CreateFontString(nil, "OVERLAY")
-                    iLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                    iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                    iLbl:SetJustifyH("LEFT")
-                    iLbl:SetWordWrap(false)
-                    iLbl:SetMaxLines(1)
-                    iLbl:SetPoint("LEFT", entry, "LEFT", 10, 0)
+                    local itemCaption = entry:CreateFontString(nil, "OVERLAY")
+                    itemCaption:SetFont(FONT_PATH, 11, GetCDMOptOutline())
+                    itemCaption:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                    itemCaption:SetJustifyH("LEFT")
+                    itemCaption:SetWordWrap(false)
+                    itemCaption:SetMaxLines(1)
+                    itemCaption:SetPoint("LEFT", entry, "LEFT", 10, 0)
                     local displayName = CludesUI.L(b.name or b.key)
-                    iLbl:SetText(displayName)
+                    itemCaption:SetText(displayName)
 
                     local iHl = entry:CreateTexture(nil, "ARTWORK")
                     iHl:SetAllPoints()
@@ -822,11 +822,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     local delBtn, editBtn
                     -- The row lit (hovered) and at rest (the selected bar's wash).
                     local function Lit()
-                        iLbl:SetTextColor(1, 1, 1, 1)
+                        itemCaption:SetTextColor(1, 1, 1, 1)
                         iHl:SetAlpha(hlA)
                     end
                     local function Rest()
-                        iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                        itemCaption:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                         iHl:SetAlpha(position == optionState.selectedCDMBarIndex and selA or 0)
                         if delBtn then
                             delBtn:SetAlpha(0.75)
@@ -871,7 +871,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         delBtn = RowIcon(entry, "RIGHT", -8, "cui-close.png", "Delete")
                         editBtn = RowIcon(delBtn, "LEFT", -4, "cui-edit.png", "Rename")
 
-                        iLbl:SetPoint("RIGHT", editBtn, "LEFT", -4, 0)
+                        itemCaption:SetPoint("RIGHT", editBtn, "LEFT", -4, 0)
 
                         -- Drag grip: the ONLY drag affordance (row click still
                         -- selects, delete/rename untouched). Same grip glyph +
@@ -879,52 +879,52 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         -- shared reorder widget. Drop writes the display key
                         -- list and re-renders this menu in place.
                         if reorderable and ordByKey[b.key] then
-                            iLbl:SetPoint("LEFT", entry, "LEFT", 24, 0)
-                            local gripBtn = CreateFrame("Button", nil, entry)
-                            gripBtn:SetSize(16, ITEM_H)
-                            gripBtn:SetPoint("LEFT", entry, "LEFT", 4, 0)
-                            gripBtn:SetFrameLevel(entry:GetFrameLevel() + 2)
-                            local grip = gripBtn:CreateFontString(nil, "OVERLAY")
-                            grip:SetFont(FONT_PATH, 10, GetCDMOptOutline())
-                            grip:SetPoint("CENTER", gripBtn, "CENTER", 0, 0)
-                            grip:SetText("=")
-                            grip:SetTextColor(1, 1, 1, 0.2)
-                            gripBtn:SetScript("OnEnter", function()
-                                grip:SetTextColor(1, 1, 1, 0.6)
+                            itemCaption:SetPoint("LEFT", entry, "LEFT", 24, 0)
+                            local gripButton = CreateFrame("Button", nil, entry)
+                            gripButton:SetSize(16, ITEM_H)
+                            gripButton:SetPoint("LEFT", entry, "LEFT", 4, 0)
+                            gripButton:SetFrameLevel(entry:GetFrameLevel() + 2)
+                            local gripTex = gripButton:CreateFontString(nil, "OVERLAY")
+                            gripTex:SetFont(FONT_PATH, 10, GetCDMOptOutline())
+                            gripTex:SetPoint("CENTER", gripButton, "CENTER", 0, 0)
+                            gripTex:SetText("=")
+                            gripTex:SetTextColor(1, 1, 1, 0.2)
+                            gripButton:SetScript("OnEnter", function()
+                                gripTex:SetTextColor(1, 1, 1, 0.6)
                             end)
-                            gripBtn:SetScript("OnLeave", function()
-                                if not (dragState.row == entry and dragState.active) then
-                                    grip:SetTextColor(1, 1, 1, 0.2)
+                            gripButton:SetScript("OnLeave", function()
+                                if not (drag.row == entry and drag.active) then
+                                    gripTex:SetTextColor(1, 1, 1, 0.2)
                                 end
                             end)
-                            gripBtn:SetScript("OnMouseDown", function(_, mb)
+                            gripButton:SetScript("OnMouseDown", function(_, mb)
                                 if mb ~= "LeftButton" then
                                     return
                                 end
                                 local _, cy = GetCursorPosition()
-                                dragState.row = entry
-                                dragState.startY = cy
-                                dragState.active = false
-                                dragState.slot = nil
+                                drag.row = entry
+                                drag.startY = cy
+                                drag.active = false
+                                drag.slot = nil
                             end)
-                            gripBtn:SetScript("OnUpdate", function()
-                                if dragState.row ~= entry or not dragState.startY then
+                            gripButton:SetScript("OnUpdate", function()
+                                if drag.row ~= entry or not drag.startY then
                                     return
                                 end
                                 local _, cy = GetCursorPosition()
-                                if not dragState.active then
-                                    if math.abs(cy - dragState.startY) < 3 then
+                                if not drag.active then
+                                    if math.abs(cy - drag.startY) < 3 then
                                         return
                                     end
-                                    dragState.active = true
+                                    drag.active = true
                                     entry:SetFrameLevel(dropMenu:GetFrameLevel() + 10)
                                     entry:SetAlpha(0.8)
-                                    grip:SetTextColor(1, 1, 1, 0.6)
+                                    gripTex:SetTextColor(1, 1, 1, 0.6)
                                 end
                                 local cY = cy / dropMenu:GetEffectiveScale()
                                 local mT = dropMenu:GetTop() or 0
                                 local iI = DropSlot(entry, cY, mT)
-                                dragState.slot = iI
+                                drag.slot = iI
                                 local bandTop = customRows[1] and customRows[1].topY or 0
                                 local lnY = (iI <= 1) and (bandTop + 1) or (bandTop - (iI - 1) * ITEM_H + 1)
                                 insLine:ClearAllPoints()
@@ -935,12 +935,12 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 entry:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, cY - mT)
                                 entry:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, cY - mT)
                             end)
-                            gripBtn:SetScript("OnMouseUp", function(_, mb)
-                                if mb ~= "LeftButton" or dragState.row ~= entry then
+                            gripButton:SetScript("OnMouseUp", function(_, mb)
+                                if mb ~= "LeftButton" or drag.row ~= entry then
                                     return
                                 end
-                                local wasActive = dragState.active
-                                local slot = dragState.slot
+                                local wasActive = drag.active
+                                local slot = drag.slot
                                 ResetDrag()
                                 if insLine then
                                     insLine:Hide()
@@ -965,9 +965,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                     if from ~= to then
                                         local mv = table.remove(keyList, from)
                                         table.insert(keyList, to, mv)
-                                        local pp = DB()
-                                        if pp and pp.cdmBars then
-                                            pp.cdmBars.customBarMenuOrder = keyList
+                                        local profile = DB()
+                                        if profile and profile.cdmBars then
+                                            profile.cdmBars.customBarMenuOrder = keyList
                                         end
                                     end
                                 end
@@ -1076,35 +1076,35 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 { type = "buffs", label = CludesUI.L("+ Add New Buff Bar") },
             }
             for _, record in ipairs(addBarTypes) do
-                local addItem = CreateFrame("Button", nil, dropMenu)
-                addItem:SetHeight(ITEM_H)
-                addItem:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -menuH)
-                addItem:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -menuH)
-                addItem:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                local addLbl = addItem:CreateFontString(nil, "OVERLAY")
-                addLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                addLbl:SetPoint("LEFT", addItem, "LEFT", 10, 0)
-                addLbl:SetJustifyH("LEFT")
+                local addEntry = CreateFrame("Button", nil, dropMenu)
+                addEntry:SetHeight(ITEM_H)
+                addEntry:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -menuH)
+                addEntry:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -menuH)
+                addEntry:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                local addCaption = addEntry:CreateFontString(nil, "OVERLAY")
+                addCaption:SetFont(FONT_PATH, 11, GetCDMOptOutline())
+                addCaption:SetPoint("LEFT", addEntry, "LEFT", 10, 0)
+                addCaption:SetJustifyH("LEFT")
                 if atCap then
-                    addLbl:SetText(CludesUI.Lf("%1$s (max %2$s)", record.label, mod.MAX_CUSTOM_BARS or 6))
-                    addLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
+                    addCaption:SetText(CludesUI.Lf("%1$s (max %2$s)", record.label, mod.MAX_CUSTOM_BARS or 6))
+                    addCaption:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
                 else
-                    addLbl:SetText(record.label)
-                    addLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                    local addHl = addItem:CreateTexture(nil, "ARTWORK")
+                    addCaption:SetText(record.label)
+                    addCaption:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                    local addHl = addEntry:CreateTexture(nil, "ARTWORK")
                     addHl:SetAllPoints()
                     addHl:SetColorTexture(1, 1, 1, 1)
                     addHl:SetAlpha(0)
                     local bType = record.type
-                    addItem:SetScript("OnEnter", function()
-                        addLbl:SetTextColor(1, 1, 1, 1)
+                    addEntry:SetScript("OnEnter", function()
+                        addCaption:SetTextColor(1, 1, 1, 1)
                         addHl:SetAlpha(hlA)
                     end)
-                    addItem:SetScript("OnLeave", function()
-                        addLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                    addEntry:SetScript("OnLeave", function()
+                        addCaption:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                         addHl:SetAlpha(0)
                     end)
-                    addItem:SetScript("OnClick", function()
+                    addEntry:SetScript("OnClick", function()
                         dropMenu:Hide()
                         mod.AddCDMBar(bType)
                         optionState.selectedCDMBarIndex = #p.cdmBars.bars
@@ -1122,7 +1122,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
 
             -- Close on left-click outside (non-blocking). Never dismiss while a custom-bar row is being dragged -- a fast drag can momentarily leave the menu bounds.
             dropMenu:SetScript("OnUpdate", function(m)
-                if dragState.active then
+                if drag.active then
                     return
                 end
                 if not m:IsMouseOver() and not dropdownBtn:IsMouseOver() and IsMouseButtonDown("LeftButton") then
@@ -1184,15 +1184,15 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     -- shows, from now on and whenever it shows again. Skipped during a hidden search
     -- pre-build: nothing to preview while indexing.
     if not CludesUI._prebuilding then
-        if not mountLive.frame then
-            mountLive.frame = CreateFrame("Frame")
-            mountLive.frame:SetScript("OnEvent", mountLive.OnEvent)
+        if not mountActive.frame then
+            mountActive.frame = CreateFrame("Frame")
+            mountActive.frame:SetScript("OnEvent", mountActive.OnEvent)
         end
         if hostFrame:IsVisible() then
-            mountLive.Arm()
+            mountActive.Arm()
         end
-        hostFrame:HookScript("OnShow", mountLive.Arm)
-        hostFrame:HookScript("OnHide", mountLive.Disarm)
+        hostFrame:HookScript("OnShow", mountActive.Arm)
+        hostFrame:HookScript("OnHide", mountActive.Disarm)
     end
 
     -------------------------------------------------------------------
@@ -1214,18 +1214,18 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     -- Sync helper: all bars except ghost/focuskick. FocusKick is a nameplate-anchored
     -- identity and never receives global syncs.
     local function ForEachSyncBar(func)
-        local pp = DB()
-        if not pp or not pp.cdmBars then
+        local profile = DB()
+        if not profile or not profile.cdmBars then
             return
         end
-        for _, b in ipairs(pp.cdmBars.bars) do
+        for _, b in ipairs(profile.cdmBars.bars) do
             if not b.isGhostBar and b.key ~= "focuskick" then
                 func(b)
             end
         end
     end
 
-    if not isFocusKick then
+    if not focusKickBar then
         heading, height = W:SectionHeader(hostFrame, "BAR LAYOUT", cursorY)
         cursorY = cursorY - height
         -- The selected bar's mover (the key is read at the click).
@@ -1237,7 +1237,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
 
         -- Row 1: (Sync) Visibility. Mouseover stays structurally absent for CDM bars
         -- (noMouseover), matching the old VIS_VALUES_CDM list.
-        local visRow, visH = CludesUI.BuildVisibilityRow(
+        local visRow, visibleH = CludesUI.BuildVisibilityRow(
             W,
             hostFrame,
             cursorY,
@@ -1297,7 +1297,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 end,
             }
         )
-        cursorY = cursorY - visH
+        cursorY = cursorY - visibleH
 
         -- ONE sync icon now that both halves share a control: VisFullCopy / VisFullEquals
         -- carry the mode selection and every option boolean together.
@@ -1308,13 +1308,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 tooltip = "Apply Visibility to all Bars",
                 isSynced = function()
                     local source = BD()
-                    local synced = true
+                    local inSync = true
                     ForEachSyncBar(function(b)
                         if not CludesUI.VisFullEquals(source, "barVisibility", b, "barVisibility") then
-                            synced = false
+                            inSync = false
                         end
                     end)
-                    return synced
+                    return inSync
                 end,
                 onClick = function()
                     local source = BD()
@@ -1351,7 +1351,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             barInfo.barType == "cooldowns"
             or barInfo.barType == "utility"
             or barInfo.barType == "buffs"
-        ) and not isFocusKick
+        ) and not focusKickBar
         local row3Right
         if isCDOrUtilityRow3 then
             row3Right = {
@@ -1775,13 +1775,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             -- A bar may not BOTH receive overflow and have its own overflow config: incoming
             -- icons ignore the recipient's cap and never chain onward, so a cap on a recipient
             -- would promise behavior that does not exist. Recipient = ANY bar (enabled or not -- re-enabling must not create the forbidden state) with an active cap+target pair pointing here.
-            local function BarIsOverflowRecipient(key)
-                local pp = DB()
-                if not (pp and pp.cdmBars) then
+            local function BarIsOverflowRecipient(barKey)
+                local profile = DB()
+                if not (profile and profile.cdmBars) then
                     return false
                 end
-                for _, b in ipairs(pp.cdmBars.bars) do
-                    if b.key ~= key and b.maxIcons and b.maxIcons > 0 and b.overflowTarget == key then
+                for _, b in ipairs(profile.cdmBars.bars) do
+                    if b.key ~= barKey and b.maxIcons and b.maxIcons > 0 and b.overflowTarget == barKey then
                         return true
                     end
                 end
@@ -1789,9 +1789,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             end
             local ofVals, ofOrder = { [""] = "None" }, { "" }
             do
-                local pp = DB()
-                if pp and pp.cdmBars then
-                    for _, b in ipairs(pp.cdmBars.bars) do
+                local profile = DB()
+                if profile and profile.cdmBars then
+                    for _, b in ipairs(profile.cdmBars.bars) do
                         local bt = mod.GetBarType and mod.GetBarType(b) or b.barType
                         -- Bars with their own active overflow config are not offered as targets (the recipient rule, other door).
                         local hasOwnOverflow = b.maxIcons and b.maxIcons > 0 and b.overflowTarget ~= nil
@@ -1813,7 +1813,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     local current = barInfo.overflowTarget
                     if current and not ofVals[current] then
                         local curName = current
-                        for _, b in ipairs(pp.cdmBars.bars) do
+                        for _, b in ipairs(profile.cdmBars.bars) do
                             if b.key == current then
                                 curName = b.name or current
                                 break
@@ -1956,7 +1956,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     -------------------------------------------------------------------
     --  FOCUSKICK OPTIONS (FocusKick only)
     -------------------------------------------------------------------
-    if isFocusKick then
+    if focusKickBar then
         _, height = W:SectionHeader(hostFrame, "FocusKick Options", cursorY)
         cursorY = cursorY - height
 
@@ -1975,7 +1975,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         end
         -- A cog slider over one of this bar's settings: read with its default,
         -- written and then applied by apply().
-        local function BarSlider(label, key, default, minV, maxV, apply)
+        local function BarSlider(label, barKey, default, minV, maxV, apply)
             return {
                 type = "slider",
                 label = label,
@@ -1983,10 +1983,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 max = maxV,
                 step = 1,
                 get = function()
-                    return BD()[key] or default
+                    return BD()[barKey] or default
                 end,
                 set = function(value)
-                    BD()[key] = value
+                    BD()[barKey] = value
                     apply()
                 end,
             }
@@ -2074,7 +2074,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             CludesUI.HoverTip(accentSwatch, "Accent Color")
 
             -- Left (custom) swatch: color picker when accent mode is off
-            local customSwatch, updateCustomSwatch = CludesUI.BuildColorSwatch(
+            local customColorSwatch, updateCustomSwatch = CludesUI.BuildColorSwatch(
                 region,
                 npRow:GetFrameLevel() + 3,
                 function()
@@ -2089,13 +2089,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 false,
                 20
             )
-            Pix.Point(customSwatch, "RIGHT", accentSwatch, "LEFT", -8, 0)
-            CludesUI.HoverTip(customSwatch, "Custom Color")
+            Pix.Point(customColorSwatch, "RIGHT", accentSwatch, "LEFT", -8, 0)
+            CludesUI.HoverTip(customColorSwatch, "Custom Color")
 
             -- Block overlay: while accent mode is active, clicking the custom swatch flips accent mode off instead of opening the color picker.
-            local customBlock = CreateFrame("Button", nil, customSwatch)
+            local customBlock = CreateFrame("Button", nil, customColorSwatch)
             customBlock:SetAllPoints()
-            customBlock:SetFrameLevel(customSwatch:GetFrameLevel() + 10)
+            customBlock:SetFrameLevel(customColorSwatch:GetFrameLevel() + 10)
             customBlock:EnableMouse(true)
             customBlock:SetScript("OnClick", function()
                 if BD().focusReminderUseAccent then
@@ -2105,20 +2105,20 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 end
             end)
             customBlock:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color")
+                CludesUI.ShowWidgetTooltip(customColorSwatch, "Custom Color")
             end)
             customBlock:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            region._lastInline = customSwatch
+            region._lastInline = customColorSwatch
 
             -- Disable both swatches + cog when Focus Text Reminders toggle is off
-            local enableBlock = CreateFrame("Frame", nil, customSwatch)
+            local enableBlock = CreateFrame("Frame", nil, customColorSwatch)
             enableBlock:SetAllPoints()
-            enableBlock:SetFrameLevel(customSwatch:GetFrameLevel() + 20)
+            enableBlock:SetFrameLevel(customColorSwatch:GetFrameLevel() + 20)
             enableBlock:EnableMouse(true)
             enableBlock:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(customSwatch, CludesUI.DisabledTooltip("Focus Text Reminders"))
+                CludesUI.ShowWidgetTooltip(customColorSwatch, CludesUI.DisabledTooltip("Focus Text Reminders"))
             end)
             enableBlock:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
@@ -2129,7 +2129,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local enabled = edge.focusReminderEnabled == true
                 if not enabled then
                     accentSwatch:SetAlpha(0.3)
-                    customSwatch:SetAlpha(0.3)
+                    customColorSwatch:SetAlpha(0.3)
                     customBlock:Hide()
                     enableBlock:Show()
                 else
@@ -2137,11 +2137,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     local useAccent = edge.focusReminderUseAccent
                     if useAccent then
                         accentSwatch:SetAlpha(1)
-                        customSwatch:SetAlpha(0.3)
+                        customColorSwatch:SetAlpha(0.3)
                         customBlock:Show()
                     else
                         accentSwatch:SetAlpha(0.3)
-                        customSwatch:SetAlpha(1)
+                        customColorSwatch:SetAlpha(1)
                         customBlock:Hide()
                     end
                 end
@@ -2170,25 +2170,25 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             itemHeight = 26,
             maxTextWidthPct = 0.8,
             searchable = true,
-            iconAtlas = function(key)
-                if key == "none" then
+            iconAtlas = function(barKey)
+                if barKey == "none" then
                     return nil
                 end
                 local paths = mod.FOCUSKICK_SOUND_PATHS
-                if not paths or not paths[key] then
+                if not paths or not paths[barKey] then
                     return nil
                 end
                 return CludesUI.SOUND_ICON_ATLAS
             end,
-            iconPressedAtlas = function(key)
-                if key == "none" then
+            iconPressedAtlas = function(barKey)
+                if barKey == "none" then
                     return nil
                 end
                 return CludesUI.SOUND_ICON_PRESSED_ATLAS
             end,
-            iconOnClick = function(key)
+            iconOnClick = function(barKey)
                 local paths = mod.FOCUSKICK_SOUND_PATHS
-                local filePath = paths and paths[key]
+                local filePath = paths and paths[barKey]
                 if filePath then
                     PlaySoundFile(filePath, "Master")
                 end
@@ -2203,11 +2203,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         -- is currently on the focuskick bar, even if the user added or
         -- removed spells via the spell picker without closing options.
         local spellValues = {}
-        local spellOrder = {}
+        local orderList = {}
         local function RebuildSpellOptions()
             wipe(spellValues)
-            for i = #spellOrder, 1, -1 do
-                spellOrder[i] = nil
+            for i = #orderList, 1, -1 do
+                orderList[i] = nil
             end
             -- Interrupts only. The list comes from CludesUI.KickData (the suite's
             -- interrupt table, built from game spell data and shared with the Kick
@@ -2229,7 +2229,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             -- No explicit pick: the engine falls back to the bar's first castable
             -- spell, or stays silent on an empty bar. Name that state honestly.
             spellValues["__none"] = barHasSpell and "Auto (First on Bar)" or "None"
-            spellOrder[#spellOrder + 1] = "__none"
+            orderList[#orderList + 1] = "__none"
 
             local kicks, seenName = {}, {}
             local KD = CludesUI.KickData
@@ -2253,16 +2253,16 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 return a.name < b.name
             end)
             if #kicks > 0 then
-                spellOrder[#spellOrder + 1] = "---"
+                orderList[#orderList + 1] = "---"
                 for _, keyName in ipairs(kicks) do
                     spellValues[keyName.key] = keyName.name
-                    spellOrder[#spellOrder + 1] = keyName.key
+                    orderList[#orderList + 1] = keyName.key
                 end
             end
             -- Sound-only mode: fire on every cast, no interrupt or cooldown gate.
-            spellOrder[#spellOrder + 1] = "---"
+            orderList[#orderList + 1] = "---"
             spellValues["__any"] = "Any Cast (Sound Only)"
-            spellOrder[#spellOrder + 1] = "__any"
+            orderList[#orderList + 1] = "__any"
             -- The stored selection can outlive its spell (removing the kick empties
             -- assignedSpells, focusKickInterruptSpellID keeps pointing at it) and the
             -- dropdown would render the raw spell id. Give it a NAME but do NOT add it
@@ -2301,24 +2301,24 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             text = "Interrupt Spell",
             tooltip = "Pick your kick to play the sound only while it is off cooldown, or Any Cast (Sound Only) to play it on every enemy cast.\nLeave the bar above empty for a sound with no nameplate icon.",
             values = spellValues,
-            order = spellOrder,
+            order = orderList,
             getValue = function()
                 if BD().focusCastSoundAnyCast == true then
                     return "__any"
                 end
                 local spellRef = BD().focusKickInterruptSpellID
                 if not spellRef then
-                    return spellOrder[1]
+                    return orderList[1]
                 end
                 -- No label means RebuildSpellOptions rejected it: either
                 -- this character cannot cast it, or it is not on the bar
                 -- and not castable. Show what the bar actually holds
                 -- rather than a selection the player never made.
-                local key = tostring(spellRef)
-                if not spellValues[key] then
-                    return spellOrder[1]
+                local barKey = tostring(spellRef)
+                if not spellValues[barKey] then
+                    return orderList[1]
                 end
-                return key
+                return barKey
             end,
             setValue = function(value)
                 BD().focusCastSoundAnyCast = (value == "__any") or nil
@@ -2485,17 +2485,17 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local value = edge.iconShape or "none"
                 local zoom = edge.iconZoom or 0.08
                 local crop = mod.CdmCropPercent(edge)
-                local synced = true
+                local inSync = true
                 ForEachSyncBar(function(b)
                     if
                         (b.iconShape or "none") ~= value
                         or (b.iconZoom or 0.08) ~= zoom
                         or mod.CdmCropPercent(b) ~= crop
                     then
-                        synced = false
+                        inSync = false
                     end
                 end)
-                return synced
+                return inSync
             end,
             onClick = function()
                 local edge = BD()
@@ -2530,13 +2530,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             tooltip = "Apply Icon Zoom to all Bars",
             isSynced = function()
                 local value = BD().iconZoom or 0.08
-                local synced = true
+                local inSync = true
                 ForEachSyncBar(function(b)
                     if (b.iconZoom or 0.08) ~= value then
-                        synced = false
+                        inSync = false
                     end
                 end)
-                return synced
+                return inSync
             end,
             onClick = function()
                 local value = BD().iconZoom or 0.08
@@ -2599,29 +2599,29 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local sx = edge.borderTextureShiftX
                 local sy = edge.borderTextureShiftY
                 local bh = edge.borderBehind or false
-                local synced = true
+                local inSync = true
                 ForEachSyncBar(function(b)
                     if (b.borderTexture or "solid") ~= bt then
-                        synced = false
+                        inSync = false
                     end
                     if b.borderTextureOffset ~= ox or b.borderTextureOffsetY ~= oy then
-                        synced = false
+                        inSync = false
                     end
                     if b.borderTextureShiftX ~= sx or b.borderTextureShiftY ~= sy then
-                        synced = false
+                        inSync = false
                     end
                     if (b.borderBehind or false) ~= bh then
-                        synced = false
+                        inSync = false
                     end
                 end)
-                return synced
+                return inSync
             end,
         })
     end
 
-    local isBuffGlowBar = isBuffBar or (barInfo.barType == "custom_buff")
+    local buffGlowBar = isBuffBar or (barInfo.barType == "custom_buff")
     local scaleAnimRow
-    if isBuffGlowBar then
+    if buffGlowBar then
         -- Row 1: Always Show Buffs (native buff bars only) | Icon Scale.
         -- Per-bar now: shows a greyed placeholder icon for each inactive
         -- tracked buff. No edit-mode change, no reload. custom_buff bars
@@ -2754,14 +2754,14 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 text = "Custom Icon Shape",
                 values = SHAPE_VALUES,
                 order = SHAPE_ORDER,
-                itemDisabled = function(val)
-                    if val ~= "none" and val ~= "cropped" and (BD().borderTexture or "solid") ~= "solid" then
+                itemDisabled = function(value)
+                    if value ~= "none" and value ~= "cropped" and (BD().borderTexture or "solid") ~= "solid" then
                         return true
                     end
                     return false
                 end,
-                itemDisabledTooltip = function(val)
-                    if val ~= "none" and val ~= "cropped" and (BD().borderTexture or "solid") ~= "solid" then
+                itemDisabledTooltip = function(value)
+                    if value ~= "none" and value ~= "cropped" and (BD().borderTexture or "solid") ~= "solid" then
                         return "This option requires the Border Style to be set to Solid"
                     end
                 end,
@@ -2822,14 +2822,14 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     text = "Border Size",
                     values = BORDER_LABELS,
                     order = BORDER_ORDER,
-                    itemDisabled = function(val)
-                        if IsCustomShape() and (val == "thin" or val == "normal" or val == "heavy") then
+                    itemDisabled = function(value)
+                        if IsCustomShape() and (value == "thin" or value == "normal" or value == "heavy") then
                             return true
                         end
                         return false
                     end,
-                    itemDisabledTooltip = function(val)
-                        if IsCustomShape() and (val == "thin" or val == "normal" or val == "heavy") then
+                    itemDisabledTooltip = function(value)
+                        if IsCustomShape() and (value == "thin" or value == "normal" or value == "heavy") then
                             return "This option requires a non-custom shape to be selected"
                         end
                     end,
@@ -3134,17 +3134,17 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         local value = edge.borderThickness or "thin"
                         local px = edge.borderSizePx or false
                         local classColor = edge.borderClassColor
-                        local synced = true
+                        local inSync = true
                         ForEachSyncBar(function(b)
                             if
                                 (b.borderThickness or "thin") ~= value
                                 or (b.borderSizePx or false) ~= px
                                 or b.borderClassColor ~= classColor
                             then
-                                synced = false
+                                inSync = false
                             end
                         end)
-                        return synced
+                        return inSync
                     end,
                     onClick = function()
                         local edge = BD()
@@ -3232,13 +3232,13 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 tooltip = "Apply Icon Spacing to all Bars",
                 isSynced = function()
                     local value = BD().spacing or 2
-                    local synced = true
+                    local inSync = true
                     ForEachSyncBar(function(b)
                         if (b.spacing or 2) ~= value then
-                            synced = false
+                            inSync = false
                         end
                     end)
-                    return synced
+                    return inSync
                 end,
                 onClick = function()
                     local value = BD().spacing or 2
@@ -3262,9 +3262,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     -- growth axis is width/height matched, so no MatchGuard lock is needed.
     -- Orientation resolves at build time; the page rebuilds on flips. FocusKick is
     -- excluded: it is nameplate-anchored, nothing matches or anchors to its edges.
-    if not isFocusKick then
+    if not focusKickBar then
         local minVert = BD().verticalOrientation == true
-        local region = isBuffGlowBar and scaleAnimRow._rightRegion or scaleAnimRow._leftRegion
+        local region = buffGlowBar and scaleAnimRow._rightRegion or scaleAnimRow._leftRegion
         CludesUI.BuildInlineCog(region, {
             title = minVert and "Minimum Height" or "Minimum Width",
             rows = {
@@ -3291,7 +3291,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     end
 
     -- Border Style dropdown (CD/utility and non-buff bars only)
-    if not isBuffGlowBar then
+    if not buffGlowBar then
         do
             local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
             local bsRow
@@ -3304,14 +3304,14 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     text = "Border Size",
                     values = BORDER_LABELS,
                     order = BORDER_ORDER,
-                    itemDisabled = function(val)
-                        if IsCustomShape() and (val == "thin" or val == "normal" or val == "heavy") then
+                    itemDisabled = function(value)
+                        if IsCustomShape() and (value == "thin" or value == "normal" or value == "heavy") then
                             return true
                         end
                         return false
                     end,
-                    itemDisabledTooltip = function(val)
-                        if IsCustomShape() and (val == "thin" or val == "normal" or val == "heavy") then
+                    itemDisabledTooltip = function(value)
+                        if IsCustomShape() and (value == "thin" or value == "normal" or value == "heavy") then
                             return "This option requires a non-custom shape to be selected"
                         end
                     end,
@@ -3623,7 +3623,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         local sy = edge.borderTextureShiftY
                         local br, backdrop, bb, ba =
                             edge.borderR or 0, edge.borderG or 0, edge.borderB or 0, edge.borderA or 1
-                        local synced = true
+                        local inSync = true
                         ForEachSyncBar(function(b)
                             if
                                 (b.borderThickness or "thin") ~= value
@@ -3631,10 +3631,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 or b.borderClassColor ~= classColor
                                 or (b.borderTexture or "solid") ~= bt
                             then
-                                synced = false
+                                inSync = false
                             end
                             if b.borderTextureShiftX ~= sx or b.borderTextureShiftY ~= sy then
-                                synced = false
+                                inSync = false
                             end
                             if
                                 (b.borderR or 0) ~= br
@@ -3642,10 +3642,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 or (b.borderB or 0) ~= bb
                                 or (b.borderA or 1) ~= ba
                             then
-                                synced = false
+                                inSync = false
                             end
                         end)
-                        return synced
+                        return inSync
                     end,
                     onClick = function()
                         local edge = BD()
@@ -3686,7 +3686,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
 
     -- (Sync) Custom Icon Shape | (Sync) Icon Zoom (CD/utility bars only;
     -- buff bars have both in their own Row 3 above)
-    if not isBuffGlowBar then
+    if not buffGlowBar then
         local shapeRow
         shapeRow, height = W:DualRow(
             hostFrame,
@@ -3696,14 +3696,14 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 text = "Custom Icon Shape",
                 values = SHAPE_VALUES,
                 order = SHAPE_ORDER,
-                itemDisabled = function(val)
-                    if val ~= "none" and val ~= "cropped" and (BD().borderTexture or "solid") ~= "solid" then
+                itemDisabled = function(value)
+                    if value ~= "none" and value ~= "cropped" and (BD().borderTexture or "solid") ~= "solid" then
                         return true
                     end
                     return false
                 end,
-                itemDisabledTooltip = function(val)
-                    if val ~= "none" and val ~= "cropped" and (BD().borderTexture or "solid") ~= "solid" then
+                itemDisabledTooltip = function(value)
+                    if value ~= "none" and value ~= "cropped" and (BD().borderTexture or "solid") ~= "solid" then
                         return "This option requires the Border Style to be set to Solid"
                     end
                 end,
@@ -4022,7 +4022,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             },
         }
         -- Show Charge/Stack Text (row 3) is buff-family only -- see its comment.
-        if not isBuffGlowBar then
+        if not buffGlowBar then
             table.remove(scPopupSpec.rows, 3)
         end
         CludesUI.BuildInlineCog(rightRegion, scPopupSpec)
@@ -4075,7 +4075,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     end
 
     -- Suppress GCD (CD/utility bars only) | Pixel Glow Thickness (+ cog: Lines/Speed)
-    if not isBuffGlowBar then
+    if not buffGlowBar then
         if mod.CDM_BarHasPixelRow(barInfo) then
             local sgcdRow
             sgcdRow, height = W:DualRow(hostFrame, cursorY, {
@@ -4187,7 +4187,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     -- Pixel Glow Thickness (buff bars) -- mirrors the CD/utility row above.
     -- Reuses the same buffGlow* variables so user settings are unchanged.
     -- Always enabled (no disabled state).
-    if isBuffGlowBar then
+    if buffGlowBar then
         local pgRow
         pgRow, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
@@ -4298,7 +4298,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     -- Charges/Stacks Only (cd/utility bars) -- the counterpart to the buff
     -- bars' "Only Show Numbers" above. Strips the icon down to its charge /
     -- stack counter: art, swipe, recharge edge and cooldown text all go.
-    if not isBuffGlowBar and (barInfo.barType == "cooldowns" or barInfo.barType == "utility") then
+    if not buffGlowBar and (barInfo.barType == "cooldowns" or barInfo.barType == "utility") then
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "toggle",
             text = "Charges/Stacks Only (No Icon)",
@@ -4330,7 +4330,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     --  EXTRAS (not shown for custom aura bars or FocusKick)
     -------------------------------------------------------------------
     local isCustomBuffBar = (barInfo.barType == "custom_buff")
-    local isAnyBuffBar = isBuffGlowBar -- buffs or custom_buff
+    local isAnyBuffBar = buffGlowBar -- buffs or custom_buff
     if mod.CDM_BarHasExtras(barInfo) then
         _, height = W:SectionHeader(hostFrame, "EXTRAS", cursorY)
         cursorY = cursorY - height
@@ -4513,19 +4513,19 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         end
         -- A rotation setting read with its default, and written (when the store
         -- exists) with the highlights redrawn either way.
-        local function RotGet(key, default)
+        local function RotGet(barKey, default)
             local c = RotationBars()
-            return (c and c[key]) or default
+            return (c and c[barKey]) or default
         end
         local function RotRedraw()
             if mod.UpdateRotationHighlights then
                 mod.UpdateRotationHighlights()
             end
         end
-        local function RotSet(key, value)
+        local function RotSet(barKey, value)
             local c = RotationBars()
             if c then
-                c[key] = value
+                c[barKey] = value
             end
             RotRedraw()
         end
@@ -4551,14 +4551,14 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         local function RotRowsKey()
             local c = RotationBars()
             local s = (c and c.rotationAssistStyle) or "blizzard"
-            local key = 0
+            local barKey = 0
             if s ~= "blizzard" then
-                key = 1
+                barKey = 1
             end
             if s == "solid" or s == "pixel" then
-                key = key + 2
+                barKey = barKey + 2
             end
-            return key
+            return barKey
         end
 
         -- Style | Color and Thickness | Outset: built only while the CDM highlight
@@ -4879,7 +4879,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     --  the offset re-applies on exit. 0/0 = the feature is fully inert.
     --  FocusKick is nameplate-pinned (no free position, no mover): dead controls there.
     -----------------------------------------------------------------
-    if not isFocusKick then
+    if not focusKickBar then
         _, height = W:SectionHeader(hostFrame, "ADDITIONAL BAR OFFSET", cursorY)
         cursorY = cursorY - height
         do
