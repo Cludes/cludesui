@@ -13,7 +13,7 @@ CUI_NS.unlockParts = CUI_NS.unlockParts or {}
 CUI_NS.unlockParts.Session = function(LM)
     local mod, ABAR, min, max = CUI_NS, LM.EAB, LM.min, LM.max
     local sin, FONT_PATH, MOVER_ALPHA, ALL_BAR_ORDER = LM.sin, LM.FONT_PATH, LM.MOVER_ALPHA, LM.ALL_BAR_ORDER
-    local registeredElements, registeredOrder, RebuildRegisteredOrder, movers =
+    local registeredElements, registeredOrder, RebuildRegisteredOrder, handles =
         LM.registeredElements, LM.registeredOrder, LM.RebuildRegisteredOrder, LM.movers
     local lockAnimFrame, pendingPositions, snapshotPositions, snapshotAnchors =
         LM.lockAnimFrame, LM.pendingPositions, LM.snapshotPositions, LM.snapshotAnchors
@@ -59,11 +59,11 @@ CUI_NS.unlockParts.Session = function(LM)
         -- Action bars: for any bar that has NO saved position, capture its live position
         for _, barId in ipairs(ALL_BAR_ORDER) do
             if not snapshotPositions[barId] then
-                local bar = LM.GetBarFrame(barId)
-                if bar then
-                    local nPts = bar:GetNumPoints()
+                local barFrame = LM.GetBarFrame(barId)
+                if barFrame then
+                    local nPts = barFrame:GetNumPoints()
                     if nPts and nPts > 0 then
-                        local anchorPoint, _, relPoint, posX, posY = bar:GetPoint(1)
+                        local anchorPoint, _, relPoint, posX, posY = barFrame:GetPoint(1)
                         if anchorPoint then
                             snapshotPositions[barId] =
                                 { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
@@ -74,20 +74,20 @@ CUI_NS.unlockParts.Session = function(LM)
         end
         -- Registered elements: snapshot via loadPosition or live frame position
         RebuildRegisteredOrder()
-        for _, key in ipairs(registeredOrder) do
-            if not snapshotPositions[key] then
-                local elem = registeredElements[key]
-                if elem then
-                    local place = elem.loadPosition and elem.loadPosition(key)
+        for _, barKey in ipairs(registeredOrder) do
+            if not snapshotPositions[barKey] then
+                local element = registeredElements[barKey]
+                if element then
+                    local place = element.loadPosition and element.loadPosition(barKey)
                     if place then
-                        snapshotPositions[key] = {
+                        snapshotPositions[barKey] = {
                             point = place.point,
                             relPoint = place.relPoint or place.point,
                             x = place.x,
                             y = place.y,
                         }
                     else
-                        local fr = elem.getFrame and elem.getFrame(key)
+                        local fr = element.getFrame and element.getFrame(barKey)
                         if fr then
                             local nPts = fr:GetNumPoints()
                             if nPts and nPts > 0 then
@@ -95,7 +95,7 @@ CUI_NS.unlockParts.Session = function(LM)
                                 if anchorPoint then
                                     -- relPoint may be a frame object here (not a string) if anchored to
                                     -- a parent frame rather than UIParent; mark this snapshot so RevertPositions skips writing it to SavedVariables.
-                                    snapshotPositions[key] = {
+                                    snapshotPositions[barKey] = {
                                         point = anchorPoint,
                                         relPoint = relPoint,
                                         x = posX,
@@ -114,9 +114,9 @@ CUI_NS.unlockParts.Session = function(LM)
         -- growth-edge pin fields; losing them on cancel would force a lazy
         -- recapture from whatever position the session left the bar at)
         wipe(snapshotAnchors)
-        local anchorDB = GetAnchorDB()
-        if anchorDB then
-            for childKey, details in pairs(anchorDB) do
+        local anchorStore = GetAnchorDB()
+        if anchorStore then
+            for childKey, details in pairs(anchorStore) do
                 snapshotAnchors[childKey] = {
                     target = details.target,
                     side = details.side,
@@ -142,12 +142,12 @@ CUI_NS.unlockParts.Session = function(LM)
 
         -- Snapshot element sizes so we can revert width/height changes on discard
         wipe(snapshotSizes)
-        for _, key in ipairs(registeredOrder) do
-            local elem = registeredElements[key]
-            if elem and elem.getSize then
-                local wid, hgt = elem.getSize(key)
+        for _, barKey in ipairs(registeredOrder) do
+            local element = registeredElements[barKey]
+            if element and element.getSize then
+                local wid, hgt = element.getSize(barKey)
                 if wid and hgt then
-                    snapshotSizes[key] = { w = wid, h = hgt }
+                    snapshotSizes[barKey] = { w = wid, h = hgt }
                 end
             end
         end
@@ -168,32 +168,32 @@ CUI_NS.unlockParts.Session = function(LM)
             end
         end
         -- ...and each match's Extra Width / Height, reverted with its link.
-        local sx = MatchH.snapExtra
-        wipe(sx.w)
-        wipe(sx.h)
+        local startX = MatchH.snapExtra
+        wipe(startX.w)
+        wipe(startX.h)
         local wxDB = CludesUIDB and CludesUIDB.unlockWidthMatchExtra
         if wxDB then
             for k, v in pairs(wxDB) do
-                sx.w[k] = v
+                startX.w[k] = v
             end
         end
         local hxDB = CludesUIDB and CludesUIDB.unlockHeightMatchExtra
         if hxDB then
             for k, v in pairs(hxDB) do
-                sx.h[k] = v
+                startX.h[k] = v
             end
         end
 
         -- Snapshot growth directions so we can revert on discard
         wipe(snapshotGrowDirs)
-        local cdm = CludesUI.Lite.GetAddon("CludesUICooldownManager", true)
-        local cdmBars = cdm and cdm.db and cdm.db.profile and cdm.db.profile.cdmBars
-        if cdmBars and cdmBars.bars then
-            for _, bar in ipairs(cdmBars.bars) do
+        local cdmStore = CludesUI.Lite.GetAddon("CludesUICooldownManager", true)
+        local cdmBarCfg = cdmStore and cdmStore.db and cdmStore.db.profile and cdmStore.db.profile.cdmBars
+        if cdmBarCfg and cdmBarCfg.bars then
+            for _, barFrame in ipairs(cdmBarCfg.bars) do
                 -- bar.key guard: ghost bars (keyless skeletons from stale
                 -- override writes) have nothing to snapshot.
-                if bar.key then
-                    snapshotGrowDirs["CDM_" .. bar.key] = bar.growDirection or false
+                if barFrame.key then
+                    snapshotGrowDirs["CDM_" .. barFrame.key] = barFrame.growDirection or false
                 end
             end
         end
@@ -217,12 +217,12 @@ CUI_NS.unlockParts.Session = function(LM)
         -- table: this body is inside the deferred-init closure, at the 200-local cap.
         local rawSnap = {}
         CludesUI._unlockSnapRawPos = rawSnap
-        local cdmPos = cdm and cdm.db and cdm.db.profile and cdm.db.profile.cdmBarPositions
-        if cdmPos and cdmBars and cdmBars.bars then
-            for _, bar in ipairs(cdmBars.bars) do
-                local e = cdmPos[bar.key]
+        local cdmPos = cdmStore and cdmStore.db and cdmStore.db.profile and cdmStore.db.profile.cdmBarPositions
+        if cdmPos and cdmBarCfg and cdmBarCfg.bars then
+            for _, barFrame in ipairs(cdmBarCfg.bars) do
+                local e = cdmPos[barFrame.key]
                 if e then
-                    rawSnap["CDM_" .. bar.key] = CopyTable(e)
+                    rawSnap["CDM_" .. barFrame.key] = CopyTable(e)
                 end
             end
         end
@@ -244,40 +244,40 @@ CUI_NS.unlockParts.Session = function(LM)
     --  session). Red lock = element can't be edited in the special session (owned by a spec-sharing group, or a blocked subsystem).
     -------------------------------------------------------------------------------
     do
-        local specOvBanner
+        local overrideBanner
         local function UpdateSpecOvBanner()
             local g = CludesUI._specialUnlockGroup
             if not g or not LM.unlockFrame then
-                if specOvBanner then
-                    specOvBanner:Hide()
+                if overrideBanner then
+                    overrideBanner:Hide()
                 end
                 return
             end
-            if not specOvBanner then
-                specOvBanner = CreateFrame("Frame", nil, LM.unlockFrame)
-                specOvBanner:SetFrameLevel(LM.unlockFrame:GetFrameLevel() + 60)
-                specOvBanner:SetHeight(28)
-                specOvBanner:SetPoint("TOP", LM.unlockFrame, "TOP", 0, -64)
-                local backdrop = specOvBanner:CreateTexture(nil, "BACKGROUND")
+            if not overrideBanner then
+                overrideBanner = CreateFrame("Frame", nil, LM.unlockFrame)
+                overrideBanner:SetFrameLevel(LM.unlockFrame:GetFrameLevel() + 60)
+                overrideBanner:SetHeight(28)
+                overrideBanner:SetPoint("TOP", LM.unlockFrame, "TOP", 0, -64)
+                local backdrop = overrideBanner:CreateTexture(nil, "BACKGROUND")
                 backdrop:SetAllPoints()
                 backdrop:SetColorTexture(0.16, 0.12, 0.04, 0.92)
-                specOvBanner._brd =
-                    CludesUI.MakeRoundedBorder(specOvBanner, 199 / 255, 166 / 255, 90 / 255, 0.7, backdrop)
-                local fontStr = specOvBanner:CreateFontString(nil, "OVERLAY")
+                overrideBanner._brd =
+                    CludesUI.MakeRoundedBorder(overrideBanner, 199 / 255, 166 / 255, 90 / 255, 0.7, backdrop)
+                local fontStr = overrideBanner:CreateFontString(nil, "OVERLAY")
                 fontStr:SetFont(FONT_PATH, 12, "OUTLINE, SLUG")
                 fontStr:SetPoint("CENTER")
                 fontStr:SetTextColor(1, 0.88, 0.55, 1)
-                specOvBanner._text = fontStr
+                overrideBanner._text = fontStr
             end
-            specOvBanner._text:SetText(
+            overrideBanner._text:SetText(
                 string.format(
                     CludesUI.L("Customizing Layout Mode: %s (changes apply only to this group's specs)"),
                     g.name or "?"
                 )
             )
-            specOvBanner:SetWidth((specOvBanner._text:GetStringWidth() or 200) + 28)
-            specOvBanner:Show()
-            specOvBanner._brd:Fit()
+            overrideBanner:SetWidth((overrideBanner._text:GetStringWidth() or 200) + 28)
+            overrideBanner:Show()
+            overrideBanner._brd:Fit()
         end
 
         -- Layer model: a custom unlock mode is a whole-layout fork, so there are no
@@ -285,7 +285,7 @@ CUI_NS.unlockParts.Session = function(LM)
         -- and this banner carry the state; this refresh keeps the banner current and hides stale per-element markers on pooled movers.
         CludesUI._unlockRefreshSpecOvMarks = function()
             UpdateSpecOvBanner()
-            for _, m in pairs(movers) do
+            for _, m in pairs(handles) do
                 if m._specOvBrd then
                     m._specOvBrd:Hide()
                 end
@@ -305,7 +305,7 @@ CUI_NS.unlockParts.Session = function(LM)
             if place == "RESET" then
                 ClearBarPosition(barId)
             else
-                local elem = registeredElements[barId]
+                local element = registeredElements[barId]
                 local pt, rpt, px, py = place.point, place.relPoint, place.x, place.y
                 -- Anchor-cascade marker: ApplyAnchorPosition repositioned this bar during
                 -- the session (e.g. its anchor target was dragged) but the entry carries no
@@ -315,7 +315,7 @@ CUI_NS.unlockParts.Session = function(LM)
                 -- bar's LIVE bounds instead -- ConvertToCenterPos prefers them and returns
                 -- the exact CENTER/CENTER convention SaveBarPosition expects. Bars a cascade
                 -- reapplied without actually moving resolve to the same snapshot position.
-                if elem and not pt and place._anchored then
+                if element and not pt and place._anchored then
                     local liveBar = LM.GetBarFrame(barId)
                     if
                         liveBar
@@ -328,13 +328,13 @@ CUI_NS.unlockParts.Session = function(LM)
                     end
                 end
                 -- If position wasn't dragged, fill from snapshot
-                if elem and not pt then
-                    local snap = snapshotPositions[barId]
-                    if snap then
-                        pt, rpt, px, py = snap.point, snap.relPoint or snap.point, snap.x, snap.y
+                if element and not pt then
+                    local snapshot = snapshotPositions[barId]
+                    if snapshot then
+                        pt, rpt, px, py = snapshot.point, snapshot.relPoint or snapshot.point, snapshot.x, snapshot.y
                     else
                         -- Fallback: read from loadPosition
-                        local lp = elem.loadPosition and elem.loadPosition(barId)
+                        local lp = element.loadPosition and element.loadPosition(barId)
                         if lp then
                             pt, rpt, px, py = lp.point, lp.relPoint or lp.point, lp.x, lp.y
                         end
@@ -342,10 +342,10 @@ CUI_NS.unlockParts.Session = function(LM)
                 end
                 LM.SaveBarPosition(barId, pt, rpt, px, py)
                 -- Install anchor guard for action bar positions
-                if not elem then
-                    local bar = LM.GetBarFrame(barId)
-                    if bar then
-                        InstallAnchorGuard(bar, barId)
+                if not element then
+                    local barFrame = LM.GetBarFrame(barId)
+                    if barFrame then
+                        InstallAnchorGuard(barFrame, barId)
                     end
                 end
             end
@@ -367,9 +367,9 @@ CUI_NS.unlockParts.Session = function(LM)
         -- suppressed that above to avoid partial-state rebuilds.
         for barId in pairs(pendingPositions) do
             if type(barId) == "string" and barId:sub(1, 4) == "CDM_" then
-                local elem = registeredElements[barId]
-                if elem and elem.applyPosition then
-                    pcall(elem.applyPosition, barId)
+                local element = registeredElements[barId]
+                if element and element.applyPosition then
+                    pcall(element.applyPosition, barId)
                 end
                 break -- one rebuild is enough, it rebuilds all bars
             end
@@ -392,7 +392,7 @@ CUI_NS.unlockParts.Session = function(LM)
             local activeName = pdb.activeProfile or "Default"
             local profileData = pdb.profiles and pdb.profiles[activeName]
             if profileData then
-                local snap = {
+                local snapshot = {
                     anchors = CopyTable(CludesUIDB.unlockAnchors or {}),
                     widthMatch = CopyTable(CludesUIDB.unlockWidthMatch or {}),
                     heightMatch = CopyTable(CludesUIDB.unlockHeightMatch or {}),
@@ -407,17 +407,17 @@ CUI_NS.unlockParts.Session = function(LM)
                 if CludesUI.SpecOverrides_UnlockBaselineLinks then
                     local ba, bw, bh = CludesUI.SpecOverrides_UnlockBaselineLinks()
                     if ba then
-                        snap.anchors = CopyTable(ba)
-                        snap.widthMatch = CopyTable(bw)
-                        snap.heightMatch = CopyTable(bh)
+                        snapshot.anchors = CopyTable(ba)
+                        snapshot.widthMatch = CopyTable(bw)
+                        snapshot.heightMatch = CopyTable(bh)
                         -- The baseline's match extras ride with its links (4th and
                         -- 5th returns); a baseline without extras carries none.
                         local _, _, _, bwx, bhx = CludesUI.SpecOverrides_UnlockBaselineLinks()
-                        snap.widthMatchExtra = CopyTable(bwx or {})
-                        snap.heightMatchExtra = CopyTable(bhx or {})
+                        snapshot.widthMatchExtra = CopyTable(bwx or {})
+                        snapshot.heightMatchExtra = CopyTable(bhx or {})
                     end
                 end
-                profileData.unlockLayout = snap
+                profileData.unlockLayout = snapshot
             end
         end
         -- The active spec's tracked buff bar links and extras into their spec bucket,
@@ -467,12 +467,12 @@ CUI_NS.unlockParts.Session = function(LM)
                     -- Prefer the verbatim pre-session entry (saved edge PLUS the tgt*
                     -- follow baselines): the coordinate-only snapshot would strip the baselines from grow bars on every cancel, costing a bless cycle before target-follow works again.
                     local rawSnap = CludesUI._unlockSnapRawPos and CludesUI._unlockSnapRawPos[barId]
-                    local snap = snapshotPositions[barId]
+                    local snapshot = snapshotPositions[barId]
                     if rawSnap then
                         saved[barId] = CopyTable(rawSnap)
-                    elseif snap then
+                    elseif snapshot then
                         saved[barId] =
-                            { point = snap.point, relPoint = snap.relPoint, x = snap.x, y = snap.y }
+                            { point = snapshot.point, relPoint = snapshot.relPoint, x = snapshot.x, y = snapshot.y }
                     else
                         saved[barId] = nil
                     end
@@ -481,11 +481,11 @@ CUI_NS.unlockParts.Session = function(LM)
         end
 
         for barId, _ in pairs(pendingPositions) do
-            local elem = registeredElements[barId]
-            if elem and elem.savePosition then
-                local snap = snapshotPositions[barId]
-                if snap and not snap._fromLiveFrame then
-                    elem.savePosition(barId, snap.point, snap.relPoint or snap.point, snap.x, snap.y)
+            local element = registeredElements[barId]
+            if element and element.savePosition then
+                local snapshot = snapshotPositions[barId]
+                if snapshot and not snapshot._fromLiveFrame then
+                    element.savePosition(barId, snapshot.point, snapshot.relPoint or snapshot.point, snapshot.x, snapshot.y)
                 end
             end
         end
@@ -493,13 +493,13 @@ CUI_NS.unlockParts.Session = function(LM)
         CludesUI._propagatingSave = false
 
         -- 2) Restore anchor data before repositioning
-        local anchorDB = GetAnchorDB()
-        if anchorDB then
+        local anchorStore = GetAnchorDB()
+        if anchorStore then
             -- fallback rides the snapshot (copied both ways), so pre-session
             -- fallbacks survive the revert and session edits discard with it.
-            wipe(anchorDB)
+            wipe(anchorStore)
             for childKey, details in pairs(snapshotAnchors) do
-                anchorDB[childKey] = {
+                anchorStore[childKey] = {
                     target = details.target,
                     side = details.side,
                     mode = details.mode,
@@ -524,14 +524,14 @@ CUI_NS.unlockParts.Session = function(LM)
         end
 
         -- 3) Restore element sizes
-        for key, snap in pairs(snapshotSizes) do
-            local elem = registeredElements[key]
-            if elem then
-                if elem.setWidth and snap.w then
-                    pcall(elem.setWidth, key, snap.w)
+        for barKey, snapshot in pairs(snapshotSizes) do
+            local element = registeredElements[barKey]
+            if element then
+                if element.setWidth and snapshot.w then
+                    pcall(element.setWidth, barKey, snapshot.w)
                 end
-                if elem.setHeight and snap.h then
-                    pcall(elem.setHeight, key, snap.h)
+                if element.setHeight and snapshot.h then
+                    pcall(element.setHeight, barKey, snapshot.h)
                 end
             end
         end
@@ -555,36 +555,36 @@ CUI_NS.unlockParts.Session = function(LM)
         -- reads both live (its setWidth only re-lays it out) and step 6 rebuilds only
         -- bars that moved, so a bar whose extra the restore changes is re-laid out here.
         if CludesUIDB then
-            local sx = MatchH.snapExtra
+            local startX = MatchH.snapExtra
             local relayout
-            local function Note(live, snap)
+            local function Note(live, snapshot)
                 if live then
                     for k, v in pairs(live) do
-                        if snap[k] ~= v and k:sub(1, 4) == "CDM_" then
+                        if snapshot[k] ~= v and k:sub(1, 4) == "CDM_" then
                             relayout = relayout or {}
                             relayout[k] = true
                         end
                     end
                 end
-                for k, v in pairs(snap) do
+                for k, v in pairs(snapshot) do
                     if not (live and live[k] == v) and k:sub(1, 4) == "CDM_" then
                         relayout = relayout or {}
                         relayout[k] = true
                     end
                 end
             end
-            Note(CludesUIDB.unlockWidthMatchExtra, sx.w)
-            Note(CludesUIDB.unlockHeightMatchExtra, sx.h)
+            Note(CludesUIDB.unlockWidthMatchExtra, startX.w)
+            Note(CludesUIDB.unlockHeightMatchExtra, startX.h)
             if CludesUIDB.unlockWidthMatchExtra then
                 wipe(CludesUIDB.unlockWidthMatchExtra)
             end
-            for k, v in pairs(sx.w) do
+            for k, v in pairs(startX.w) do
                 MatchH.SetMatchExtra("w", k, v)
             end
             if CludesUIDB.unlockHeightMatchExtra then
                 wipe(CludesUIDB.unlockHeightMatchExtra)
             end
-            for k, v in pairs(sx.h) do
+            for k, v in pairs(startX.h) do
                 MatchH.SetMatchExtra("h", k, v)
             end
             if relayout then
@@ -598,16 +598,16 @@ CUI_NS.unlockParts.Session = function(LM)
         end
 
         -- 5) Restore growth directions
-        for key, snapGrow in pairs(snapshotGrowDirs) do
+        for barKey, snapGrow in pairs(snapshotGrowDirs) do
             local val = snapGrow == false and nil or snapGrow
-            if key:sub(1, 4) == "CDM_" then
-                local rawKey = key:sub(5)
+            if barKey:sub(1, 4) == "CDM_" then
+                local rawKey = barKey:sub(5)
                 local cdmA = CludesUI.Lite.GetAddon("CludesUICooldownManager", true)
                 local cdmB = cdmA and cdmA.db and cdmA.db.profile and cdmA.db.profile.cdmBars
                 if cdmB and cdmB.bars then
-                    for _, bar in ipairs(cdmB.bars) do
-                        if bar.key == rawKey then
-                            bar.growDirection = val
+                    for _, barFrame in ipairs(cdmB.bars) do
+                        if barFrame.key == rawKey then
+                            barFrame.growDirection = val
                             break
                         end
                     end
@@ -615,8 +615,8 @@ CUI_NS.unlockParts.Session = function(LM)
             else
                 local eabA = CludesUI.Lite.GetAddon("CludesUIActionBars", true)
                 local abB = eabA and eabA.db and eabA.db.profile and eabA.db.profile.bars
-                if abB and abB[key] then
-                    abB[key].growDirection = val
+                if abB and abB[barKey] then
+                    abB[barKey].growDirection = val
                 end
             end
         end
@@ -626,9 +626,9 @@ CUI_NS.unlockParts.Session = function(LM)
         local didCDMRebuild = false
         for barId in pairs(pendingPositions) do
             if not didCDMRebuild and type(barId) == "string" and barId:sub(1, 4) == "CDM_" then
-                local elem = registeredElements[barId]
-                if elem and elem.applyPosition then
-                    pcall(elem.applyPosition, barId)
+                local element = registeredElements[barId]
+                if element and element.applyPosition then
+                    pcall(element.applyPosition, barId)
                 end
                 didCDMRebuild = true
             end
@@ -637,33 +637,33 @@ CUI_NS.unlockParts.Session = function(LM)
         -- 6) Reposition unanchored elements through normal path.
         -- Skip anchored elements -- step 7 handles them via ApplyAnchorPosition.
         for barId, _ in pairs(pendingPositions) do
-            local ai = anchorDB and anchorDB[barId]
+            local ai = anchorStore and anchorStore[barId]
             if not (ai and ai.target) then
-                local bar = LM.GetBarFrame(barId)
-                if bar then
-                    local snap = snapshotPositions[barId]
+                local barFrame = LM.GetBarFrame(barId)
+                if barFrame then
+                    local snapshot = snapshotPositions[barId]
                     local revElem = registeredElements[barId]
                     if revElem and revElem.noInitHook then
                         -- Self-positioning: its own authority, from the restored save.
                         if revElem.applyPosition then
                             pcall(revElem.applyPosition, barId)
                         end
-                    elseif snap and not snap._fromLiveFrame then
-                        if not LM.ApplyCenterPosition(barId, snap) then
+                    elseif snapshot and not snapshot._fromLiveFrame then
+                        if not LM.ApplyCenterPosition(barId, snapshot) then
                             pcall(function()
-                                CludesUI.ClearFramePoints(bar)
+                                CludesUI.ClearFramePoints(barFrame)
                                 CludesUI.SetFramePoint(
-                                    bar,
-                                    snap.point,
+                                    barFrame,
+                                    snapshot.point,
                                     UIParent,
-                                    snap.relPoint,
-                                    snap.x,
-                                    snap.y
+                                    snapshot.relPoint,
+                                    snapshot.x,
+                                    snapshot.y
                                 )
                             end)
                         end
-                    elseif bar.UpdateGridLayout then
-                        pcall(bar.UpdateGridLayout, bar)
+                    elseif barFrame.UpdateGridLayout then
+                        pcall(barFrame.UpdateGridLayout, barFrame)
                     end
                 end
             end
@@ -675,9 +675,9 @@ CUI_NS.unlockParts.Session = function(LM)
         -- anchored custom-growth bars (StanceBar, CDM grow bars) from their center
         -- offsets + live width instead of the just-restored saved edge -- the bar
         -- visibly snaps off its reverted position. Mirrors the CommitPositions fix.
-        if anchorDB then
+        if anchorStore then
             CludesUI._reapplyForceEdgePreserve = true
-            for childKey, details in pairs(anchorDB) do
+            for childKey, details in pairs(anchorStore) do
                 if details.target and LM.GetBarFrame(childKey) and LM.GetBarFrame(details.target) then
                     pcall(LM.ApplyAnchorPosition, childKey, details.target, details.side)
                 end
@@ -764,20 +764,20 @@ CUI_NS.unlockParts.Session = function(LM)
 
         -- Restore objective tracker
         if LM.objTrackerWasVisible then
-            local objTracker = _G.ObjectiveTrackerFrame
-            if objTracker then
-                objTracker:SetAlpha(1)
-                local wasEnabled = CludesUI._GetFFD(objTracker).unlockMouseWasEnabled
-                if objTracker.EnableMouse then
-                    pcall(objTracker.EnableMouse, objTracker, wasEnabled and true or false)
+            local questTracker = _G.ObjectiveTrackerFrame
+            if questTracker then
+                questTracker:SetAlpha(1)
+                local wasEnabled = CludesUI._GetFFD(questTracker).unlockMouseWasEnabled
+                if questTracker.EnableMouse then
+                    pcall(questTracker.EnableMouse, questTracker, wasEnabled and true or false)
                 end
             end
             LM.objTrackerWasVisible = false
         end
         -- Restore CludesUI QT background
-        local qtBg = _G.CludesUIQTBackground
-        if qtBg then
-            qtBg:SetAlpha(1)
+        local trackerBg = _G.CludesUIQTBackground
+        if trackerBg then
+            trackerBg:SetAlpha(1)
         end
         -- Re-apply user visibility setting (handles "never" mode for both tracker + bg)
         if _G.CludesUIQuestTracker and _G.CludesUIQuestTracker.UpdateVisibility then
@@ -831,7 +831,7 @@ CUI_NS.unlockParts.Session = function(LM)
         LM.hoveredMover = nil
         cogHoveredMover = nil
         CludesUI._unlockCursorSpeed = 0
-        for _, m in pairs(movers) do
+        for _, m in pairs(handles) do
             m._snapTarget = nil
             m._dragging = false
             m._shiftAxis = nil
@@ -866,7 +866,7 @@ CUI_NS.unlockParts.Session = function(LM)
         -- banner is a child of unlockFrame, hidden with it above; the next
         -- session's mark refresh re-evaluates everything).
         CludesUI._specialUnlockGroup = nil
-        for _, m in pairs(movers) do
+        for _, m in pairs(handles) do
             if m._specOvBrd then
                 m._specOvBrd:Hide()
             end
@@ -1072,26 +1072,26 @@ CUI_NS.unlockParts.Session = function(LM)
             if anchorLinePool[position] then
                 return anchorLinePool[position]
             end
-            local line = anchorLineFrame:CreateLine(nil, "ARTWORK", nil, 1)
-            line:SetThickness(3)
-            line:SetSnapToPixelGrid(false)
-            line:SetTexelSnappingBias(0)
-            line:SetTexture("Interface\\AddOns\\CludesUI\\media\\textures\\soft-line")
-            anchorLinePool[position] = line
-            return line
+            local guide = anchorLineFrame:CreateLine(nil, "ARTWORK", nil, 1)
+            guide:SetThickness(3)
+            guide:SetSnapToPixelGrid(false)
+            guide:SetTexelSnappingBias(0)
+            guide:SetTexture("Interface\\AddOns\\CludesUI\\media\\textures\\soft-line")
+            anchorLinePool[position] = guide
+            return guide
         end
 
         local function GetAnchorPulse(position)
             if anchorPulsePool[position] then
                 return anchorPulsePool[position]
             end
-            local line = anchorLineFrame:CreateLine(nil, "ARTWORK", nil, 2)
-            line:SetThickness(3)
-            line:SetSnapToPixelGrid(false)
-            line:SetTexelSnappingBias(0)
-            line:SetTexture("Interface\\AnimaChannelingDevice\\AnimaChannelingDeviceLineVerticalMask")
-            anchorPulsePool[position] = line
-            return line
+            local guide = anchorLineFrame:CreateLine(nil, "ARTWORK", nil, 2)
+            guide:SetThickness(3)
+            guide:SetSnapToPixelGrid(false)
+            guide:SetTexelSnappingBias(0)
+            guide:SetTexture("Interface\\AnimaChannelingDevice\\AnimaChannelingDeviceLineVerticalMask")
+            anchorPulsePool[position] = guide
+            return guide
         end
 
         -- Per-line animation state keyed by "childKey:targetKey"
@@ -1107,8 +1107,8 @@ CUI_NS.unlockParts.Session = function(LM)
             local nowTime = GetTime()
             if saved and LM.isUnlocked then
                 for childKey, details in pairs(saved) do
-                    local cm = movers[childKey]
-                    local tm = movers[details.target]
+                    local cm = handles[childKey]
+                    local tm = handles[details.target]
                     if cm and tm and cm:IsShown() and tm:IsShown() then
                         -- Use _hoverConfirmed so lines wait for hover intent
                         local cmActive = cm._hoverConfirmed or cm._dragging
@@ -1119,8 +1119,8 @@ CUI_NS.unlockParts.Session = function(LM)
                             if not anchorLineAnim[pairKey] then
                                 anchorLineAnim[pairKey] = nowTime
                             end
-                            local elapsed = nowTime - anchorLineAnim[pairKey]
-                            local t = elapsed / ANCHOR_LINE_DUR
+                            local timePassed = nowTime - anchorLineAnim[pairKey]
+                            local t = timePassed / ANCHOR_LINE_DUR
                             if t > 1 then
                                 t = 1
                             end
@@ -1128,18 +1128,18 @@ CUI_NS.unlockParts.Session = function(LM)
                             local ease = 1 - (1 - t) * (1 - t)
 
                             position = position + 1
-                            local line = GetAnchorLine(position)
+                            local guide = GetAnchorLine(position)
                             -- Child center (line origin)
-                            local x1 = ((cm:GetLeft() or 0) + (cm:GetRight() or 0)) * 0.5
-                            local y1 = ((cm:GetBottom() or 0) + (cm:GetTop() or 0)) * 0.5
+                            local fromX = ((cm:GetLeft() or 0) + (cm:GetRight() or 0)) * 0.5
+                            local fromY = ((cm:GetBottom() or 0) + (cm:GetTop() or 0)) * 0.5
                             -- Parent center (line destination)
                             local x2 = ((tm:GetLeft() or 0) + (tm:GetRight() or 0)) * 0.5
                             local y2 = ((tm:GetBottom() or 0) + (tm:GetTop() or 0)) * 0.5
                             if details.mode == "POINT" then
-                                local sx, sy = LM.PointPicker.Point(cm, details.sourcePoint)
+                                local startX, sy = LM.PointPicker.Point(cm, details.sourcePoint)
                                 local tx, ty = LM.PointPicker.Point(tm, details.targetPoint)
-                                if sx and tx then
-                                    x1, y1, x2, y2 = sx, sy, tx, ty
+                                if startX and tx then
+                                    fromX, fromY, x2, y2 = startX, sy, tx, ty
                                     pointLines = pointLines + 1
                                     LM.PointVisuals.Connection(
                                         pointLines,
@@ -1152,18 +1152,18 @@ CUI_NS.unlockParts.Session = function(LM)
                                 end
                             end
                             -- Partial endpoint based on animation progress
-                            local ex = x1 + (x2 - x1) * ease
-                            local ey = y1 + (y2 - y1) * ease
-                            line:SetStartPoint("BOTTOMLEFT", UIParent, x1, y1)
-                            line:SetEndPoint("BOTTOMLEFT", UIParent, ex, ey)
+                            local ex = fromX + (x2 - fromX) * ease
+                            local ey = fromY + (y2 - fromY) * ease
+                            guide:SetStartPoint("BOTTOMLEFT", UIParent, fromX, fromY)
+                            guide:SetEndPoint("BOTTOMLEFT", UIParent, ex, ey)
                             local pointR, pointG, pointB, pointA
                             if details.mode == "POINT" then
                                 pointR, pointG, pointB, pointA = CludesUI.GetPointAnchorColor("line")
-                                line:SetVertexColor(pointR, pointG, pointB, pointA * 0.75 * ease)
+                                guide:SetVertexColor(pointR, pointG, pointB, pointA * 0.75 * ease)
                             else
-                                line:SetVertexColor(1, 0.7, 0.3, 0.75 * ease)
+                                guide:SetVertexColor(1, 0.7, 0.3, 0.75 * ease)
                             end
-                            line:Show()
+                            guide:Show()
 
                             -- Pulse overlay: streak that sweeps child->parent, loops every 3s
                             local pulse = GetAnchorPulse(position)
@@ -1193,10 +1193,10 @@ CUI_NS.unlockParts.Session = function(LM)
                                     if clampHead <= clampTail then
                                         pulse:Hide()
                                     else
-                                        local px1 = x1 + (x2 - x1) * clampTail
-                                        local py1 = y1 + (y2 - y1) * clampTail
-                                        local px2 = x1 + (x2 - x1) * clampHead
-                                        local py2 = y1 + (y2 - y1) * clampHead
+                                        local px1 = fromX + (x2 - fromX) * clampTail
+                                        local py1 = fromY + (y2 - fromY) * clampTail
+                                        local px2 = fromX + (x2 - fromX) * clampHead
+                                        local py2 = fromY + (y2 - fromY) * clampHead
                                         pulse:SetStartPoint("BOTTOMLEFT", UIParent, px1, py1)
                                         pulse:SetEndPoint("BOTTOMLEFT", UIParent, px2, py2)
                                         if details.mode == "POINT" then
@@ -1288,8 +1288,8 @@ CUI_NS.unlockParts.Session = function(LM)
         end
 
         -- ESC to close (skip if confirm popup is already showing)
-        LM.unlockFrame:SetScript("OnKeyDown", function(self, key)
-            if key == "ESCAPE" then
+        LM.unlockFrame:SetScript("OnKeyDown", function(self, barKey)
+            if barKey == "ESCAPE" then
                 -- If the confirm popup is visible, let it handle ESC instead
                 local dimmer = _G["CUIConfirmDimmer"]
                 if dimmer and dimmer:IsShown() then
@@ -1403,18 +1403,18 @@ CUI_NS.unlockParts.Session = function(LM)
         -- Scan line: the screen's width, a bright line with a soft glow either side.
         local scan = CreateFrame("Frame", nil, A)
         scan:SetHeight(THICK + 2 * SCAN_GLOW)
-        local line = scan:CreateTexture(nil, "OVERLAY")
-        line:SetPoint("LEFT")
-        line:SetPoint("RIGHT")
-        line:SetHeight(THICK)
+        local guide = scan:CreateTexture(nil, "OVERLAY")
+        guide:SetPoint("LEFT")
+        guide:SetPoint("RIGHT")
+        guide:SetHeight(THICK)
         local above = scan:CreateTexture(nil, "ARTWORK")
-        above:SetPoint("BOTTOMLEFT", line, "TOPLEFT")
-        above:SetPoint("BOTTOMRIGHT", line, "TOPRIGHT")
+        above:SetPoint("BOTTOMLEFT", guide, "TOPLEFT")
+        above:SetPoint("BOTTOMRIGHT", guide, "TOPRIGHT")
         above:SetHeight(SCAN_GLOW)
         above:SetColorTexture(1, 1, 1, 1)
         local below = scan:CreateTexture(nil, "ARTWORK")
-        below:SetPoint("TOPLEFT", line, "BOTTOMLEFT")
-        below:SetPoint("TOPRIGHT", line, "BOTTOMRIGHT")
+        below:SetPoint("TOPLEFT", guide, "BOTTOMLEFT")
+        below:SetPoint("TOPRIGHT", guide, "BOTTOMRIGHT")
         below:SetHeight(SCAN_GLOW)
         below:SetColorTexture(1, 1, 1, 1)
         scan:Hide()
@@ -1436,7 +1436,7 @@ CUI_NS.unlockParts.Session = function(LM)
             for i = 1, 8 do
                 arms[i]:SetColorTexture(r, g, b, 1)
             end
-            line:SetColorTexture(r, g, b, 0.9)
+            guide:SetColorTexture(r, g, b, 0.9)
             above:SetGradient("VERTICAL", CreateColor(r, g, b, 0.22), CreateColor(r, g, b, 0))
             below:SetGradient("VERTICAL", CreateColor(r, g, b, 0), CreateColor(r, g, b, 0.22))
         end
@@ -1608,20 +1608,20 @@ CUI_NS.unlockParts.Session = function(LM)
         -- Hide objective tracker (alpha only -- no :Hide() to avoid taint).
         -- Hook SetAlpha to suppress Blizzard re-showing it during unlock
         -- (mounting, quest updates, etc. call SetAlpha(1) on their own).
-        local objTracker = _G.ObjectiveTrackerFrame
-        if objTracker and objTracker:IsShown() then
+        local questTracker = _G.ObjectiveTrackerFrame
+        if questTracker and questTracker:IsShown() then
             LM.objTrackerWasVisible = true
             -- Our state for Blizzard's tracker lives in the frame data table,
             -- never on the frame itself.
-            local otfd = CludesUI._GetFFD(objTracker)
-            otfd.unlockMouseWasEnabled = objTracker:IsMouseEnabled()
-            objTracker:SetAlpha(0)
-            if objTracker.EnableMouse then
-                pcall(objTracker.EnableMouse, objTracker, false)
+            local otfd = CludesUI._GetFFD(questTracker)
+            otfd.unlockMouseWasEnabled = questTracker:IsMouseEnabled()
+            questTracker:SetAlpha(0)
+            if questTracker.EnableMouse then
+                pcall(questTracker.EnableMouse, questTracker, false)
             end
             if not otfd.unlockAlphaHooked then
                 otfd.unlockAlphaHooked = true
-                hooksecurefunc(objTracker, "SetAlpha", function(self, a)
+                hooksecurefunc(questTracker, "SetAlpha", function(self, a)
                     if LM.isUnlocked and a > 0 then
                         self:SetAlpha(0)
                     end
@@ -1631,12 +1631,12 @@ CUI_NS.unlockParts.Session = function(LM)
             LM.objTrackerWasVisible = false
         end
         -- Also hide CludesUI QT background (separate UIParent child)
-        local qtBg = _G.CludesUIQTBackground
-        if qtBg then
-            qtBg:SetAlpha(0)
-            if not qtBg._eabUnlockAlphaHooked then
-                qtBg._eabUnlockAlphaHooked = true
-                hooksecurefunc(qtBg, "SetAlpha", function(self, a)
+        local trackerBg = _G.CludesUIQTBackground
+        if trackerBg then
+            trackerBg:SetAlpha(0)
+            if not trackerBg._eabUnlockAlphaHooked then
+                trackerBg._eabUnlockAlphaHooked = true
+                hooksecurefunc(trackerBg, "SetAlpha", function(self, a)
                     if LM.isUnlocked and a > 0 then
                         self:SetAlpha(0)
                     end
@@ -1653,7 +1653,7 @@ CUI_NS.unlockParts.Session = function(LM)
         -- Sync / ShowBlizzOwnedOverlays calls so last session's hides don't persist.
         -- Fallback/override anchor ghosts carry the same flag (their tables are
         -- do-block locals, hence the namespaced helpers).
-        for _, m in pairs(movers) do
+        for _, m in pairs(handles) do
             m._tempHidden = nil
         end
         for _, shade in pairs(_blizzOwnedOverlays) do
@@ -1735,7 +1735,7 @@ CUI_NS.unlockParts.Session = function(LM)
         if LM.hudFrame then
             LM.hudFrame:Hide()
         end
-        for _, m in pairs(movers) do
+        for _, m in pairs(handles) do
             m:Hide()
         end
 
@@ -1774,7 +1774,7 @@ CUI_NS.unlockParts.Session = function(LM)
 
         local panelHidden = false
         local panelRealScale = panelFrame and panelFrame:GetScale() or 1
-        local elapsed = 0
+        local timePassed = 0
         local fadeInSynced = false
         local moversIn = false
 
@@ -1789,7 +1789,7 @@ CUI_NS.unlockParts.Session = function(LM)
             if not autoKey then
                 return
             end
-            local m = movers[autoKey]
+            local m = handles[autoKey]
             if not m then
                 return
             end
@@ -1847,7 +1847,7 @@ CUI_NS.unlockParts.Session = function(LM)
             -- anchored) keeps its border/level highlight via OnLeave regardless; the
             -- nudge block above re-expands only while the cursor is over the mover.
 
-            elapsed = elapsed + dt
+            timePassed = timePassed + dt
 
             ---------------------------------------------------------------
             --  Background overlay fade: 0 -> full alpha over 0.75 seconds
@@ -1855,7 +1855,7 @@ CUI_NS.unlockParts.Session = function(LM)
             ---------------------------------------------------------------
             local OVERLAY_FADE_DUR = 0.75
             if LM.unlockFrame._overlay then
-                local oa = min(1, elapsed / OVERLAY_FADE_DUR) * (LM.unlockFrame._overlayMaxAlpha or 0.20)
+                local oa = min(1, timePassed / OVERLAY_FADE_DUR) * (LM.unlockFrame._overlayMaxAlpha or 0.20)
                 LM.unlockFrame._overlay:SetColorTexture(0.020, 0.025, 0.031, oa)
             end
 
@@ -1863,7 +1863,7 @@ CUI_NS.unlockParts.Session = function(LM)
             --  Grid glitch overlay -- runs independently of lock phases
             --  Starts at GRID_START (beginning of idle spin, 1s earlier)
             ---------------------------------------------------------------
-            if elapsed >= GRID_START then
+            if timePassed >= GRID_START then
                 if not gridStarted then
                     gridStarted = true
                     if LM.gridFrame then
@@ -1893,8 +1893,8 @@ CUI_NS.unlockParts.Session = function(LM)
                     end
                     -- Registered elements (unit frames, etc.)
                     RebuildRegisteredOrder()
-                    for _, key in ipairs(registeredOrder) do
-                        local m = CreateMover(key)
+                    for _, barKey in ipairs(registeredOrder) do
+                        local m = CreateMover(barKey)
                         if m then
                             m:Sync()
                             m:SetAlpha(0)
@@ -1905,9 +1905,9 @@ CUI_NS.unlockParts.Session = function(LM)
                     -- Re-apply saved anchor positions and refresh anchored mover text
                     ReapplyAllAnchors()
                     wipe(pendingPositions)
-                    for bk, _ in pairs(movers) do
-                        if movers[bk].RefreshAnchoredText then
-                            movers[bk]:RefreshAnchoredText()
+                    for bk, _ in pairs(handles) do
+                        if handles[bk].RefreshAnchoredText then
+                            handles[bk]:RefreshAnchoredText()
                         end
                     end
                     -- Spec-override gold borders / special-session locks + banner
@@ -1976,25 +1976,25 @@ CUI_NS.unlockParts.Session = function(LM)
                         local spawned = false
                         local missing = false
                         for _, rk in ipairs(registeredOrder) do
-                            if not movers[rk] then
-                                local rm = CreateMover(rk)
-                                if rm then
-                                    rm:Sync()
-                                    rm:SetAlpha(LM.darkOverlaysEnabled and 1 or MOVER_ALPHA)
-                                    rm:Show()
+                            if not handles[rk] then
+                                local removeBtn = CreateMover(rk)
+                                if removeBtn then
+                                    removeBtn:Sync()
+                                    removeBtn:SetAlpha(LM.darkOverlaysEnabled and 1 or MOVER_ALPHA)
+                                    removeBtn:Show()
                                     spawned = true
                                 else
                                     missing = true
                                 end
-                            elseif not movers[rk]:IsShown() then
+                            elseif not handles[rk]:IsShown() then
                                 -- Mover exists but bar frame was not ready on
                                 -- first Sync -- re-sync now that it may be available
                                 local re = registeredElements[rk]
                                 if not (re and re.isHidden and re.isHidden()) then
-                                    local rm = movers[rk]
-                                    rm:Sync()
-                                    if rm:IsShown() then
-                                        rm:SetAlpha(LM.darkOverlaysEnabled and 1 or MOVER_ALPHA)
+                                    local removeBtn = handles[rk]
+                                    removeBtn:Sync()
+                                    if removeBtn:IsShown() then
+                                        removeBtn:SetAlpha(LM.darkOverlaysEnabled and 1 or MOVER_ALPHA)
                                         spawned = true
                                     else
                                         missing = true
@@ -2016,27 +2016,27 @@ CUI_NS.unlockParts.Session = function(LM)
                     end)
                 end
 
-                local glitchT = elapsed - GRID_START
+                local glitchT = timePassed - GRID_START
 
                 -- Movers fade in over GLITCH_DUR, delayed by MOVER_DELAY (both
                 -- end before the animation does). A mover selected meanwhile (the
                 -- auto-select, a click) keeps the alpha the selection gave it.
                 local MOVER_DELAY = 0.40
-                local moverFadeT = glitchT - MOVER_DELAY
-                for _, m in pairs(movers) do
+                local fadeTime = glitchT - MOVER_DELAY
+                for _, m in pairs(handles) do
                     if m:IsShown() and not m._selected then
-                        if moverFadeT > 0 then
+                        if fadeTime > 0 then
                             -- Re-sync once right as movers begin fading in so any
                             -- frames that were nil at initial sync are now ready.
                             if not fadeInSynced then
                                 fadeInSynced = true
-                                for _, rm in pairs(movers) do
-                                    rm:Sync()
+                                for _, removeBtn in pairs(handles) do
+                                    removeBtn:Sync()
                                 end
                             end
                             m:SetAlpha(
                                 (LM.darkOverlaysEnabled and 1 or MOVER_ALPHA)
-                                    * min(1, moverFadeT / GLITCH_DUR)
+                                    * min(1, fadeTime / GLITCH_DUR)
                             )
                         else
                             m:SetAlpha(0)
@@ -2044,15 +2044,15 @@ CUI_NS.unlockParts.Session = function(LM)
                     end
                 end
                 -- The movers are in: the requested mover is selected and flashed now.
-                if not moversIn and moverFadeT >= GLITCH_DUR then
+                if not moversIn and fadeTime >= GLITCH_DUR then
                     moversIn = true
                     TryAutoSelect()
                 end
                 -- Blizzard-owned overlays fade in on the same curve
                 for _, bov in pairs(_blizzOwnedOverlays) do
                     if bov:IsShown() then
-                        if moverFadeT > 0 then
-                            bov:SetAlpha(min(1, moverFadeT / GLITCH_DUR))
+                        if fadeTime > 0 then
+                            bov:SetAlpha(min(1, fadeTime / GLITCH_DUR))
                         else
                             bov:SetAlpha(0)
                         end
@@ -2060,16 +2060,16 @@ CUI_NS.unlockParts.Session = function(LM)
                 end
                 -- Fallback ghosts fade in on the same curve (75% resting alpha)
                 if CludesUI._SetFallbackGhostsAlpha then
-                    if moverFadeT > 0 then
-                        CludesUI._SetFallbackGhostsAlpha(min(1, moverFadeT / GLITCH_DUR))
+                    if fadeTime > 0 then
+                        CludesUI._SetFallbackGhostsAlpha(min(1, fadeTime / GLITCH_DUR))
                     else
                         CludesUI._SetFallbackGhostsAlpha(0)
                     end
                 end
                 -- Override anchor ghosts ride the same curve
                 if CludesUI._SetOverrideGhostsAlpha then
-                    if moverFadeT > 0 then
-                        CludesUI._SetOverrideGhostsAlpha(min(1, moverFadeT / GLITCH_DUR))
+                    if fadeTime > 0 then
+                        CludesUI._SetOverrideGhostsAlpha(min(1, fadeTime / GLITCH_DUR))
                     else
                         CludesUI._SetOverrideGhostsAlpha(0)
                     end
@@ -2077,7 +2077,7 @@ CUI_NS.unlockParts.Session = function(LM)
 
                 -- The grid shows behind the scan line as it sweeps down.
                 if LM.gridFrame and LM.gridFrame:IsShown() then
-                    LM.gridFrame:SetAlpha(max(0, min(1, (elapsed - SCAN_START) / SCAN_DUR)))
+                    LM.gridFrame:SetAlpha(max(0, min(1, (timePassed - SCAN_START) / SCAN_DUR)))
                 end
             end
 
@@ -2085,11 +2085,11 @@ CUI_NS.unlockParts.Session = function(LM)
             --  Fold: the panel scales down and fades while the brackets close in
             --  from its size onto the logo, which grows in.
             -------------------------------------------------------------------
-            if elapsed < MORPH then
-                local t = EaseInOutCubic(elapsed / MORPH)
+            if timePassed < MORPH then
+                local t = EaseInOutCubic(timePassed / MORPH)
                 if panelFrame and not panelHidden then
                     panelFrame:SetScale(panelRealScale * max(0.01, 1 - 0.4 * t))
-                    panelFrame:SetAlpha(1 - min(1, elapsed / 0.2))
+                    panelFrame:SetAlpha(1 - min(1, timePassed / 0.2))
                     if t > 0.95 then
                         panelHidden = true
                         panelFrame:SetScale(panelRealScale)
@@ -2098,7 +2098,7 @@ CUI_NS.unlockParts.Session = function(LM)
                     end
                 end
                 A.SetBrackets(startHalf + (EMBLEM_HALF - startHalf) * t)
-                A.SetBracketAlpha(min(1, elapsed / 0.12))
+                A.SetBracketAlpha(min(1, timePassed / 0.12))
                 local ls = EMBLEM_LOGO * (1.4 - 0.4 * t)
                 A._logo:SetSize(ls, ls)
                 A._logo:SetAlpha(t)
@@ -2119,7 +2119,7 @@ CUI_NS.unlockParts.Session = function(LM)
             A.SetBracketAlpha(1)
 
             -- Lock: the brackets pull in a few pixels and spring back.
-            local lt = elapsed - MORPH
+            local lt = timePassed - MORPH
             if lt < LOCK then
                 A.SetBrackets(EMBLEM_HALF - 6 * sin(lt / LOCK * math.pi))
             else
@@ -2129,7 +2129,7 @@ CUI_NS.unlockParts.Session = function(LM)
             -- The bar drops in from above, settling with a slight overshoot.
             local hud = LM.hudFrame
             if hud and hud:IsShown() then
-                local u = min(1, max(0, (elapsed - BAR_START) / BAR_DUR)) - 1
+                local u = min(1, max(0, (timePassed - BAR_START) / BAR_DUR)) - 1
                 local e = 1 + 2.2 * u * u * u + 1.2 * u * u
                 hud:ClearAllPoints()
                 hud:SetPoint("TOP", UIParent, "TOP", 0, (BANNER_PX_H + 10) * (hud:GetScale() or 1) * (1 - e))
@@ -2137,7 +2137,7 @@ CUI_NS.unlockParts.Session = function(LM)
 
             -- The emblem flies up into the bar's badge, shrinking to its size:
             -- the brackets land on the badge's border and the logo on its logo.
-            local ft = (elapsed - FLY_START) / FLY_DUR
+            local ft = (timePassed - FLY_START) / FLY_DUR
             local target = hud and hud._badgeLogo
             if ft > 0 and target and target:GetCenter() then
                 local f = EaseInOutCubic(min(1, ft))
@@ -2156,7 +2156,7 @@ CUI_NS.unlockParts.Session = function(LM)
             end
 
             -- The scan line leaves the emblem and sweeps to the bottom of the screen.
-            local sp = (elapsed - SCAN_START) / SCAN_DUR
+            local sp = (timePassed - SCAN_START) / SCAN_DUR
             if sp > 0 and sp < 1 then
                 local e = 1 - (1 - sp) * (1 - sp) * (1 - sp)
                 A._scan:Show()
@@ -2166,7 +2166,7 @@ CUI_NS.unlockParts.Session = function(LM)
                 A._scan:Hide()
             end
 
-            if elapsed < DONE then
+            if timePassed < DONE then
                 return
             end
 
