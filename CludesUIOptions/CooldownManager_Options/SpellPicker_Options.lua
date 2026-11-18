@@ -1121,6 +1121,19 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- existence sentinel AddHostedBuffByCdID sets. That sentinel doubles as the
                 -- gate: a buff-family bar never sets it, so its own cd-claim markers (ordinary
                 -- members via AddTrackedBuffByCdID, not hosted) are never read as hosted slots.
+                -- Whether a bar member is one of the bar's injected icons (a preset,
+                -- one of your racials or a custom spell, whose settings live in
+                -- customActiveStates), not a hosted buff's marker, which is a real
+                -- Blizzard buff frame moved onto the bar.
+                AB.IsInjectedMember = function(bsX, sid)
+                    local injected = (type(sid) == "number" and sid < 0)
+                        or (mod._myRacialsSet and mod._myRacialsSet[sid])
+                        or (bsX.customSpellIDs and bsX.customSpellIDs[sid])
+                    if not injected then
+                        return false
+                    end
+                    return not (mod.HostedBuffMarkerToSpell and mod.HostedBuffMarkerToSpell(sid))
+                end
                 AB.ForEachHostedKey = function(bsX, func)
                     if type(bsX) ~= "table" or type(bsX.hostedBuffSpellIDs) ~= "table" then
                         return
@@ -1209,15 +1222,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         end
                     end
                     for _, sid2 in ipairs(bsX.assignedSpells) do
-                        local isInj = (
-                            (type(sid2) == "number" and sid2 < 0)
-                            or (mod._myRacialsSet and mod._myRacialsSet[sid2])
-                            or (bsX.customSpellIDs and bsX.customSpellIDs[sid2])
-                        )
-                            -- Hosted-buff markers are reparented Blizzard buff frames,
-                            -- not preset icons -- never mint cas entries for them.
-                            and not (mod.HostedBuffMarkerToSpell and mod.HostedBuffMarkerToSpell(sid2))
-                        if isInj then
+                        if AB.IsInjectedMember(bsX, sid2) then
                             if mod.SlotIDFromKey(sid2) then
                                 -- Equipment slots stamp the SLOT entry: one bar application
                                 -- covers whatever item is equipped, now or after any swap -- no entry minted per equipped item.
@@ -1340,15 +1345,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             and mod.ResolveCustomActiveKey
                         then
                             for _, sid2 in ipairs(bsX.assignedSpells) do
-                                local isInj = (
-                                    (type(sid2) == "number" and sid2 < 0)
-                                    or (mod._myRacialsSet and mod._myRacialsSet[sid2])
-                                    or (bsX.customSpellIDs and bsX.customSpellIDs[sid2])
-                                )
-                                    and not (
-                                        mod.HostedBuffMarkerToSpell and mod.HostedBuffMarkerToSpell(sid2)
-                                    )
-                                if isInj then
+                                if AB.IsInjectedMember(bsX, sid2) then
                                     -- Trinket slots resolve to the EQUIPPED item's own entry
                                     -- (the values the stamp will clear); the slot entry is the bar-level stamp itself (analogous to the tier) and is not counted.
                                     local e = mod.GetCustomActiveState(mod.ResolveCustomActiveKey(sid2))
@@ -1735,15 +1732,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return
                             end
                             for _, sid2 in ipairs(bsX.assignedSpells) do
-                                local isInj = (
-                                    (type(sid2) == "number" and sid2 < 0)
-                                    or (mod._myRacialsSet and mod._myRacialsSet[sid2])
-                                    or (bsX.customSpellIDs and bsX.customSpellIDs[sid2])
-                                )
-                                    and not (
-                                        mod.HostedBuffMarkerToSpell and mod.HostedBuffMarkerToSpell(sid2)
-                                    )
-                                if isInj then
+                                if AB.IsInjectedMember(bsX, sid2) then
                                     if mod.SlotIDFromKey(sid2) then
                                         -- Equipment slots: the stamp lives on the SLOT entry. Also
                                         -- sweep the equipped item's own entry -- it may carry a legacy per-item stamp from before slot stamping.
