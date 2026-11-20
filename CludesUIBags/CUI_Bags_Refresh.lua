@@ -221,13 +221,13 @@ local function CreateBagScrollFrame()
 
     local sidebarW = GetSidebarWidth()
     local headerH = CUI_Bags.Header:GetHeight() + (mod.ModernStripH and mod.ModernStripH() or 0)
-    local rightInset = mod.BagsForever() and -7 or -1
-    CUI_Bags._scrollRightInset = rightInset
+    local scrollInset = mod.BagsForever() and -7 or -1
+    CUI_Bags._scrollRightInset = scrollInset
 
     -- ScrollFrame: fills between header, footer, and sidebar
     local scrollFrame = CreateFrame("ScrollFrame", nil, CUI_Bags)
     scrollFrame:SetPoint("TOPLEFT", CUI_Bags, "TOPLEFT", sidebarW, -(headerH + 1))
-    scrollFrame:SetPoint("BOTTOMRIGHT", CUI_Bags.Footer, "TOPRIGHT", rightInset, 0)
+    scrollFrame:SetPoint("BOTTOMRIGHT", CUI_Bags.Footer, "TOPRIGHT", scrollInset, 0)
     scrollFrame:EnableMouseWheel(true)
 
     -- Scroll child: tall frame that holds all items
@@ -239,8 +239,8 @@ local function CreateBagScrollFrame()
 
     -- Track (always visible)
     local track, thumb, UpdateThumb = mod.AttachGridScrollbar(CUI_Bags, scrollFrame, true, false)
-    track:SetPoint("TOPRIGHT", CUI_Bags, "TOPRIGHT", rightInset, -(headerH + 1))
-    track:SetPoint("BOTTOMRIGHT", CUI_Bags.Footer, "TOPRIGHT", rightInset, 0)
+    track:SetPoint("TOPRIGHT", CUI_Bags, "TOPRIGHT", scrollInset, -(headerH + 1))
+    track:SetPoint("BOTTOMRIGHT", CUI_Bags.Footer, "TOPRIGHT", scrollInset, 0)
 
     CUI_Bags._scrollFrame = scrollFrame
     CUI_Bags._scrollChild = childFrame
@@ -284,24 +284,24 @@ do
         GRIP_INSET = 36,
     }
 
-    local function GripStop(grip)
-        grip:SetScript("OnUpdate", nil)
-        if grip._drag then
-            grip._drag = nil
-            grip:GetParent()._resizing = nil
-            grip._cfg.finish()
+    local function GripStop(dragGrip)
+        dragGrip:SetScript("OnUpdate", nil)
+        if dragGrip._drag then
+            dragGrip._drag = nil
+            dragGrip:GetParent()._resizing = nil
+            dragGrip._cfg.finish()
         end
-        grip:SetAlpha(grip:IsMouseOver() and GR.HOVER or GR.A)
+        dragGrip:SetAlpha(dragGrip:IsMouseOver() and GR.HOVER or GR.A)
     end
 
-    local function GripOnUpdate(grip)
+    local function GripOnUpdate(dragGrip)
         if not IsMouseButtonDown("LeftButton") then
-            GripStop(grip)
+            GripStop(dragGrip)
             return
         end
-        local skinData, conf = grip._drag, grip._cfg
+        local skinData, conf = dragGrip._drag, dragGrip._cfg
         local cx, cy = GetCursorPosition()
-        local es = grip:GetParent():GetEffectiveScale()
+        local es = dragGrip:GetParent():GetEffectiveScale()
         local step = conf.step
         local dx = math.floor(cx / es - skinData.x + 0.5)
         dx = math.max((conf.minCols - skinData.cols) * step, math.min((skinData.maxCols - skinData.cols) * step, dx))
@@ -319,14 +319,14 @@ do
             conf.finish()
         end
         -- After the refresh, which sets the snapped size
-        grip:GetParent():SetSize(skinData.frameW + dx, hgt)
+        dragGrip:GetParent():SetSize(skinData.frameW + dx, hgt)
     end
 
-    local function GripOnMouseDown(grip, btnFrame)
+    local function GripOnMouseDown(dragGrip, btnFrame)
         if btnFrame ~= "LeftButton" then
             return
         end
-        local widget, conf = grip:GetParent(), grip._cfg
+        local widget, conf = dragGrip:GetParent(), dragGrip._cfg
         local left, top, right, bottom =
             widget:GetLeft(), widget:GetTop(), widget:GetRight(), widget:GetBottom()
         if not left then
@@ -340,7 +340,7 @@ do
         local es = widget:GetEffectiveScale()
         local screenW = UIParent:GetRight() * UIParent:GetEffectiveScale() / es
         local cols, hgt = conf.getCols(), conf.getHeight()
-        grip._drag = {
+        dragGrip._drag = {
             x = cx / es,
             y = cy / es,
             cols = cols,
@@ -354,46 +354,46 @@ do
         }
         widget._resizing = true
         -- Keep the hover look while the cursor runs ahead of the snapped edge
-        grip:SetAlpha(GR.HOVER)
-        grip:SetScript("OnUpdate", GripOnUpdate)
+        dragGrip:SetAlpha(GR.HOVER)
+        dragGrip:SetScript("OnUpdate", GripOnUpdate)
     end
 
-    local function GripReset(grip)
-        GripStop(grip)
-        grip._cfg.reset()
+    local function GripReset(dragGrip)
+        GripStop(dragGrip)
+        dragGrip._cfg.reset()
     end
 
-    local function GripOnEnter(grip)
-        grip:SetAlpha(GR.HOVER)
-        CUI.ShowWidgetTooltip(grip, CludesUI.L("Drag to resize. Double-click to reset."))
+    local function GripOnEnter(dragGrip)
+        dragGrip:SetAlpha(GR.HOVER)
+        CUI.ShowWidgetTooltip(dragGrip, CludesUI.L("Drag to resize. Double-click to reset."))
     end
 
-    function GR.GripOnLeave(grip)
-        if not grip._drag then
-            grip:SetAlpha(GR.A)
+    function GR.GripOnLeave(dragGrip)
+        if not dragGrip._drag then
+            dragGrip:SetAlpha(GR.A)
         end
         CUI.HideWidgetTooltip()
     end
 
-    function GR.LockTooltip(lock)
-        CUI.ShowWidgetTooltip(lock, CludesUI.L(lock._cfg.isLocked() and "Locked" or "Unlocked"))
+    function GR.LockTooltip(lockBtn)
+        CUI.ShowWidgetTooltip(lockBtn, CludesUI.L(lockBtn._cfg.isLocked() and "Locked" or "Unlocked"))
     end
 
-    function GR.LockOnEnter(lock)
-        lock:SetAlpha(GR.HOVER)
-        GR.LockTooltip(lock)
+    function GR.LockOnEnter(lockBtn)
+        lockBtn:SetAlpha(GR.HOVER)
+        GR.LockTooltip(lockBtn)
     end
 
-    function GR.LockOnLeave(lock)
-        lock:SetAlpha(GR.A)
+    function GR.LockOnLeave(lockBtn)
+        lockBtn:SetAlpha(GR.A)
         CUI.HideWidgetTooltip()
     end
 
-    function GR.LockOnClick(lock)
-        local conf = lock._cfg
+    function GR.LockOnClick(lockBtn)
+        local conf = lockBtn._cfg
         conf.setLocked(not conf.isLocked())
-        mod.UpdateResizeGrip(lock:GetParent(), conf)
-        GR.LockTooltip(lock)
+        mod.UpdateResizeGrip(lockBtn:GetParent(), conf)
+        GR.LockTooltip(lockBtn)
     end
 
     function GR.IconButton(widget, wid, hgt, filePath)
@@ -415,11 +415,11 @@ do
     -- while unlocked and the window does not size itself. Runs on every refresh,
     -- so it repaints only when that state changes.
     function mod.UpdateResizeGrip(widget, conf)
-        local grip, lock = widget._resizeGrip, widget._lockBtn
+        local dragGrip, lockBtn = widget._resizeGrip, widget._lockBtn
         local locked = conf.isLocked()
         local noGrip = locked or (conf.hidden and conf.hidden()) or false
         if
-            lock
+            lockBtn
             and widget._gripCfg == conf
             and widget._gripLocked == locked
             and widget._gripNoGrip == noGrip
@@ -427,43 +427,43 @@ do
             return
         end
         widget._gripCfg, widget._gripLocked, widget._gripNoGrip = conf, locked, noGrip
-        if not lock then
-            lock = GR.IconButton(widget, 13, 17)
-            lock:SetScript("OnEnter", GR.LockOnEnter)
-            lock:SetScript("OnLeave", GR.LockOnLeave)
-            lock:SetScript("OnClick", GR.LockOnClick)
-            widget._lockBtn = lock
+        if not lockBtn then
+            lockBtn = GR.IconButton(widget, 13, 17)
+            lockBtn:SetScript("OnEnter", GR.LockOnEnter)
+            lockBtn:SetScript("OnLeave", GR.LockOnLeave)
+            lockBtn:SetScript("OnClick", GR.LockOnClick)
+            widget._lockBtn = lockBtn
         end
-        lock._cfg = conf
-        lock._icon:SetTexture(locked and GR.LOCKED or GR.UNLOCKED)
-        lock:ClearAllPoints()
+        lockBtn._cfg = conf
+        lockBtn._icon:SetTexture(locked and GR.LOCKED or GR.UNLOCKED)
+        lockBtn:ClearAllPoints()
         local inset = GR.LOCK_INSET
         if noGrip then
-            if grip then
-                grip:Hide()
+            if dragGrip then
+                dragGrip:Hide()
             end
-            lock:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -4, 4)
+            lockBtn:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -4, 4)
         else
-            if not grip then
-                grip = GR.IconButton(widget, 18, 18, GR.RESIZE)
-                grip:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -2, 2)
-                grip:SetScript("OnMouseDown", GripOnMouseDown)
-                grip:SetScript("OnMouseUp", GripStop)
-                grip:SetScript("OnDoubleClick", GripReset)
-                grip:SetScript("OnEnter", GripOnEnter)
-                grip:SetScript("OnLeave", GR.GripOnLeave)
+            if not dragGrip then
+                dragGrip = GR.IconButton(widget, 18, 18, GR.RESIZE)
+                dragGrip:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -2, 2)
+                dragGrip:SetScript("OnMouseDown", GripOnMouseDown)
+                dragGrip:SetScript("OnMouseUp", GripStop)
+                dragGrip:SetScript("OnDoubleClick", GripReset)
+                dragGrip:SetScript("OnEnter", GripOnEnter)
+                dragGrip:SetScript("OnLeave", GR.GripOnLeave)
                 -- Window closed mid-drag: end the drag instead of resuming on reopen
-                grip:SetScript("OnHide", GripStop)
-                widget._resizeGrip = grip
+                dragGrip:SetScript("OnHide", GripStop)
+                widget._resizeGrip = dragGrip
             end
-            if not grip._drag then
-                grip._cfg = conf
+            if not dragGrip._drag then
+                dragGrip._cfg = conf
             end
-            grip:Show()
-            lock:SetPoint("RIGHT", grip, "LEFT", -2, 0)
+            dragGrip:Show()
+            lockBtn:SetPoint("RIGHT", dragGrip, "LEFT", -2, 0)
             inset = GR.GRIP_INSET
         end
-        lock:Show()
+        lockBtn:Show()
         if widget._gripInset ~= inset then
             widget._gripInset = inset
             conf.inset(inset)
@@ -566,10 +566,10 @@ local function FinishRefresh(
     curY,
     gridContentW,
     sidebarW,
-    regularUsed,
-    regularTotal,
-    reagentUsed,
-    reagentTotal,
+    bagUsed,
+    bagTotal,
+    reagUsed,
+    reagTotal,
     totalCount
 )
     -- In combat the sort button's lock depends on the view just painted.
@@ -598,9 +598,9 @@ local function FinishRefresh(
     -- Update scroll track left position to match sidebar
     if CUI_Bags._scrollTrack then
         CUI_Bags._scrollTrack:ClearAllPoints()
-        local rightInset = CUI_Bags._scrollRightInset
-        CUI_Bags._scrollTrack:SetPoint("TOPRIGHT", CUI_Bags, "TOPRIGHT", rightInset, -(headerH + 1))
-        CUI_Bags._scrollTrack:SetPoint("BOTTOMRIGHT", CUI_Bags.Footer, "TOPRIGHT", rightInset, 0)
+        local scrollInset = CUI_Bags._scrollRightInset
+        CUI_Bags._scrollTrack:SetPoint("TOPRIGHT", CUI_Bags, "TOPRIGHT", scrollInset, -(headerH + 1))
+        CUI_Bags._scrollTrack:SetPoint("BOTTOMRIGHT", CUI_Bags.Footer, "TOPRIGHT", scrollInset, 0)
     end
 
     -- 6. Size frame. Default: fixed height, dynamic width. Auto-size: height grows to fit content
@@ -610,13 +610,13 @@ local function FinishRefresh(
     -- Resize grip height: the whole window, footer inside it (so a footer
     -- re-wrap never moves the bottom edge)
     local userH = BP().bagHeight
-    local totalW = sidebarW + gridContentW
+    local fullW = sidebarW + gridContentW
     local autoSize = CUI_Bags.AutoSizeOn()
     if autoSize then
         CUI_Bags._asMaxGridW = math.max(CUI_Bags._asMaxGridW or 0, gridContentW)
-        totalW = sidebarW + CUI_Bags._asMaxGridW
+        fullW = sidebarW + CUI_Bags._asMaxGridW
     end
-    local currencyFooterH = UpdateCurrencyDisplays(totalW) or FOOTER_H
+    local currencyFooterH = UpdateCurrencyDisplays(fullW) or FOOTER_H
 
     -- A grip-set height overrides WoW Forever's grow-only content fit (Auto-Size hides the grip)
     if autoSize or (CUI.IS_FOREVER and not userH) then
@@ -649,10 +649,10 @@ local function FinishRefresh(
             neededH = math.max(FIXED_H, math.min(fitH, maxH))
         end
         CUI_Bags._asMaxH = math.max(CUI_Bags._asMaxH or 0, neededH)
-        CUI_Bags:SetWidth(totalW)
+        CUI_Bags:SetWidth(fullW)
         CUI_Bags:SetHeight(CUI_Bags._asMaxH)
     else
-        CUI_Bags:SetWidth(totalW)
+        CUI_Bags:SetWidth(fullW)
         CUI_Bags:SetHeight(userH or (FIXED_H + currencyFooterH - FOOTER_H))
     end
 
@@ -660,7 +660,7 @@ local function FinishRefresh(
         -- Optional capacity formats count physical slots, not filtered items.
         local format = BP().bagSlotCountFormat
         local separate = not CludesUI.IS_FOREVER and BP().bagSeparateReagentSlots == true
-        local countText
+        local countLabel
         if
             not separate
             and format ~= "free"
@@ -669,16 +669,16 @@ local function FinishRefresh(
             and selectedCategoryIndex ~= -1
             and selectedCategoryIndex ~= -2
         then
-            countText = CludesUI.Lf("%d Items", totalCount)
+            countLabel = CludesUI.Lf("%d Items", totalCount)
         elseif separate then
-            countText = FormatSlots(regularUsed, regularTotal, false, format)
-            if reagentTotal > 0 then
-                countText = countText .. "\n" .. FormatSlots(reagentUsed, reagentTotal, true, format)
+            countLabel = FormatSlots(bagUsed, bagTotal, false, format)
+            if reagTotal > 0 then
+                countLabel = countLabel .. "\n" .. FormatSlots(reagUsed, reagTotal, true, format)
             end
         else
-            countText = FormatSlots(regularUsed + reagentUsed, regularTotal + reagentTotal, false, format)
+            countLabel = FormatSlots(bagUsed + reagUsed, bagTotal + reagTotal, false, format)
         end
-        CUI_Bags.Header.itemCount:SetText(countText)
+        CUI_Bags.Header.itemCount:SetText(countLabel)
     end
 
     UpdateBagMoneyDisplay()
@@ -728,27 +728,27 @@ function CUI_Bags:RefreshInventory()
 
     -- 1. Gather items from all bags (0-4 + reagent bag 5)
     ReleaseAllSlotTables()
-    local tempItems = {}
+    local scanItems = {}
     local emptySlots = {}
-    local regularUsed, regularTotal = 0, 0
-    local reagentUsed, reagentTotal = 0, 0
+    local bagUsed, bagTotal = 0, 0
+    local reagUsed, reagTotal = 0, 0
     local special = mod.SpecialBags()
 
     for bag = 0, 5 do
-        local numSlots = C_Container.GetContainerNumSlots(bag)
+        local slotCount = C_Container.GetContainerNumSlots(bag)
         local restricted = special and special[bag]
         if bag == 5 then
-            reagentTotal = numSlots
+            reagTotal = slotCount
         elseif not restricted then
-            regularTotal = regularTotal + numSlots
+            bagTotal = bagTotal + slotCount
         end
-        for slot = 1, numSlots do
+        for slot = 1, slotCount do
             local details = C_Container.GetContainerItemInfo(bag, slot)
             if details then
                 if bag == 5 then
-                    reagentUsed = reagentUsed + 1
+                    reagUsed = reagUsed + 1
                 elseif not restricted then
-                    regularUsed = regularUsed + 1
+                    bagUsed = bagUsed + 1
                 end
                 local itemLink = C_Container.GetContainerItemLink(bag, slot)
                 local skinData = AcquireSlotTable()
@@ -759,21 +759,21 @@ function CUI_Bags:RefreshInventory()
                 CUI_Bags.ApplyBindKeyword(details, bag, slot)
                 -- Pre-cache per-item data for RenderButton (zero API calls at render time)
                 if itemLink then
-                    local facts = _linkFacts[itemLink]
-                    local q, bindType, isGear
-                    if facts then
-                        q, bindType, isGear = facts.q, facts.bindType, facts.isGear
+                    local linkInfo = _linkFacts[itemLink]
+                    local quality, bindType, isGear
+                    if linkInfo then
+                        quality, bindType, isGear = linkInfo.q, linkInfo.bindType, linkInfo.isGear
                     else
                         local _
-                        _, _, q, _, _, _, _, _, _, _, _, _, _, bindType = GetItemInfo(itemLink)
+                        _, _, quality, _, _, _, _, _, _, _, _, _, _, bindType = GetItemInfo(itemLink)
                         isGear = IsGearItem(itemLink)
-                        if q ~= nil then
+                        if quality ~= nil then
                             if _linkFactsN >= 4000 then
                                 wipe(_linkFacts)
                                 _linkFactsN = 0
                             end
-                            facts = { q = q, bindType = bindType, isGear = isGear }
-                            _linkFacts[itemLink] = facts
+                            linkInfo = { q = quality, bindType = bindType, isGear = isGear }
+                            _linkFacts[itemLink] = linkInfo
                             _linkFactsN = _linkFactsN + 1
                         end
                     end
@@ -783,7 +783,7 @@ function CUI_Bags:RefreshInventory()
                     -- pre-cached here: GetArmorySlotBucket fetches them lazily, only
                     -- for gear items and only while Group Gear by Slot is on, so the
                     -- feature costs nothing on the refresh path when disabled.
-                    skinData._giQuality = q
+                    skinData._giQuality = quality
                     skinData._giBindType = bindType
                     -- Track rank + cooldown: only for types that need them
                     skinData._isGear = isGear
@@ -799,17 +799,17 @@ function CUI_Bags:RefreshInventory()
                         and GetUpgradeTrack
                         and (not CUI_Bags.IsListMode() or mod.ListUsesColumn("track"))
                     then
-                        local rankText, trackColor
-                        if facts and facts.trackText then
-                            rankText, trackColor = facts.trackText, facts.trackColor
+                        local trackText, trackColor
+                        if linkInfo and linkInfo.trackText then
+                            trackText, trackColor = linkInfo.trackText, linkInfo.trackColor
                         else
-                            rankText, trackColor = GetUpgradeTrack(itemLink)
-                            if facts and rankText and rankText ~= "" then
-                                facts.trackText, facts.trackColor = rankText, trackColor
+                            trackText, trackColor = GetUpgradeTrack(itemLink)
+                            if linkInfo and trackText and trackText ~= "" then
+                                linkInfo.trackText, linkInfo.trackColor = trackText, trackColor
                             end
                         end
-                        if rankText and rankText ~= "" then
-                            skinData._giTrackRank = rankText
+                        if trackText and trackText ~= "" then
+                            skinData._giTrackRank = trackText
                             skinData._giTrackColor = trackColor
                         elseif
                             skinData._giIlvl and not (BP().itemlevelUseCustomColor and BP().itemlevelCustomColor)
@@ -851,7 +851,7 @@ function CUI_Bags:RefreshInventory()
                     -- border; _isQuestStarter (questID set but inactive) is Blizzard's "!" and drives the corner marker.
                     skinData._isQuest, skinData._isQuestStarter = mod.GetSlotQuestFlags(bag, slot)
                 end
-                tempItems[#tempItems + 1] = skinData
+                scanItems[#scanItems + 1] = skinData
             else
                 local skinData = AcquireSlotTable()
                 skinData.bag = bag
@@ -863,8 +863,8 @@ function CUI_Bags:RefreshInventory()
 
     -- 1b. Detect manual item swaps and update saved visual order
     local isAllItems = selectedCategoryIndex == 0 and not selectedGroupName
-    local swapDetected = DetectAndApplySwaps(tempItems, isAllItems)
-    TakeBagSnapshot(tempItems)
+    local swapDetected = DetectAndApplySwaps(scanItems, isAllItems)
+    TakeBagSnapshot(scanItems)
 
     -- Show blocked-swap tooltip in category/group views (not All Items, not OneBag)
     if swapDetected and not isAllItems and selectedCategoryIndex ~= -1 and selectedCategoryIndex ~= -2 then
@@ -882,11 +882,11 @@ function CUI_Bags:RefreshInventory()
     end
 
     -- 2. Classify all items and get counts
-    local categoryCounts, totalCount = CUI_CategoryManager:ClassifyAll(tempItems)
+    local categoryCounts, totalCount = CUI_CategoryManager:ClassifyAll(scanItems)
 
     -- 2a. Snapshot slot->category mapping for partial refresh
     wipe(_slotCategories)
-    for _, payload in ipairs(tempItems) do
+    for _, payload in ipairs(scanItems) do
         if payload.categoryIndex and payload.bag and payload.slot then
             _slotCategories[payload.bag * 1000 + payload.slot] = payload.categoryIndex
         end
@@ -916,7 +916,7 @@ function CUI_Bags:RefreshInventory()
         and BP().bagDimPinnedInOneBag == true
     if pinnedCatIdx and pinnedSet and showPinned then
         local pinnedCount = 0
-        for _, payload in ipairs(tempItems) do
+        for _, payload in ipairs(scanItems) do
             if
                 payload.info
                 and payload.info.itemID
@@ -941,7 +941,7 @@ function CUI_Bags:RefreshInventory()
     local recentCount = 0
     local showRecent = BP().bagShowRecentItems ~= false
     if recentCatIdx and CUI_Bags._recentItems and showRecent then
-        for _, payload in ipairs(tempItems) do
+        for _, payload in ipairs(scanItems) do
             if
                 not payload._pinnedOnly
                 and payload.info
@@ -993,8 +993,8 @@ function CUI_Bags:RefreshInventory()
         end
         if selectedGroupName then
             filterSet = {}
-            local members = CUI_CategoryManager:GetGroupMembers(selectedGroupName)
-            for _, mi in ipairs(members) do
+            local groupMembers = CUI_CategoryManager:GetGroupMembers(selectedGroupName)
+            for _, mi in ipairs(groupMembers) do
                 filterSet[mi] = true
                 AddSetChildren(mi)
             end
@@ -1005,7 +1005,7 @@ function CUI_Bags:RefreshInventory()
     end
 
     local displayItems = {}
-    for _, payload in ipairs(tempItems) do
+    for _, payload in ipairs(scanItems) do
         local show = true
         if offlineUp then
             show = false -- the offline panel covers these
@@ -1037,7 +1037,7 @@ function CUI_Bags:RefreshInventory()
     if next(_pendingResortCats) or next(_pendingResortGroups) then
         local cats = CUI_CategoryManager:GetCategories()
         local itemsByCat = {}
-        for _, payload in ipairs(tempItems) do
+        for _, payload in ipairs(scanItems) do
             local ci = payload.categoryIndex
             if ci then
                 if not itemsByCat[ci] then
@@ -1055,10 +1055,10 @@ function CUI_Bags:RefreshInventory()
             SaveCategoryOrder(ci, itemList)
         end
         for gn in pairs(_pendingResortGroups) do
-            local members = CUI_CategoryManager:GetGroupMembers(gn)
-            if members and #members > 0 then
+            local groupMembers = CUI_CategoryManager:GetGroupMembers(gn)
+            if groupMembers and #groupMembers > 0 then
                 local merged = {}
-                for _, mi in ipairs(members) do
+                for _, mi in ipairs(groupMembers) do
                     for _, payload in ipairs(itemsByCat[mi] or {}) do
                         merged[#merged + 1] = payload
                     end
@@ -1095,7 +1095,7 @@ function CUI_Bags:RefreshInventory()
         -- but not WIDTH, so they MUST fold into the estimate or a header-heavy tab (All Items with many categories) grows taller than wide.
         local num, S
         if selectedCategoryIndex > 0 and not selectedGroupName then
-            num = (categoryCounts and categoryCounts[selectedCategoryIndex]) or #tempItems
+            num = (categoryCounts and categoryCounts[selectedCategoryIndex]) or #scanItems
             -- The anchor view folds in its set children's items; count them too
             if BP().bagSplitSetGearBySet then
                 local szCats = CUI_CategoryManager:GetCategories()
@@ -1111,7 +1111,7 @@ function CUI_Bags:RefreshInventory()
             S = 1
         elseif selectedCategoryIndex == 0 and not selectedGroupName then
             -- All Items: one section per non-empty category
-            num = #tempItems + #emptySlots
+            num = #scanItems + #emptySlots
             S = 0
             if categoryCounts then
                 -- Set children fold into their anchor's section: count them as one
@@ -1135,7 +1135,7 @@ function CUI_Bags:RefreshInventory()
             end
         elseif selectedCategoryIndex == -2 then
             -- MultiBag: one section per bag that has slots (+ reagent)
-            num = #tempItems + #emptySlots
+            num = #scanItems + #emptySlots
             S = 0
             for bag = 0, 5 do
                 if C_Container.GetContainerNumSlots(bag) > 0 then
@@ -1148,7 +1148,7 @@ function CUI_Bags:RefreshInventory()
         else
             -- OneBag / group view: a few sections (pinned/recent/main/reagent,
             -- plus OneBag's special bags)
-            num = #tempItems + #emptySlots
+            num = #scanItems + #emptySlots
             S = 3 + (selectedCategoryIndex == -1 and spBags or 0)
         end
         num = math.max(num, 1)
@@ -1212,7 +1212,7 @@ function CUI_Bags:RefreshInventory()
     SetPaintedPanelOpen(_anyItemPanelOpen)
 
     -- no live items laid out under the offline panel (select modes would hit them)
-    local liveItems, liveEmpty = tempItems, emptySlots
+    local liveItems, liveEmpty = scanItems, emptySlots
     if offlineUp then
         liveItems, liveEmpty = {}, {}
     end
@@ -1256,10 +1256,10 @@ function CUI_Bags:RefreshInventory()
             -(listH + colHdrH),
             gridW + gridPadX * 2 + scrollbarPad + 2,
             sidebarW,
-            regularUsed,
-            regularTotal,
-            reagentUsed,
-            reagentTotal,
+            bagUsed,
+            bagTotal,
+            reagUsed,
+            reagTotal,
             totalCount
         )
         return
@@ -1302,10 +1302,10 @@ function CUI_Bags:RefreshInventory()
         curY,
         gridW + gridPadX * 2 + scrollbarPad + 2,
         sidebarW,
-        regularUsed,
-        regularTotal,
-        reagentUsed,
-        reagentTotal,
+        bagUsed,
+        bagTotal,
+        reagUsed,
+        reagTotal,
         totalCount
     )
 end
@@ -1321,12 +1321,12 @@ function CUI_BagsReagent:RefreshInventory()
     if InCombatLockdown() then
         CUI_Bags._refreshPendingCombat = true
     end
-    local tempItems = {}
-    local numSlots = C_Container.GetContainerNumSlots(5)
-    if numSlots > 0 then
-        for slot = 1, numSlots do
+    local scanItems = {}
+    local slotCount = C_Container.GetContainerNumSlots(5)
+    if slotCount > 0 then
+        for slot = 1, slotCount do
             local details = C_Container.GetContainerItemInfo(5, slot)
-            tempItems[#tempItems + 1] = { bag = 5, slot = slot, info = details }
+            scanItems[#scanItems + 1] = { bag = 5, slot = slot, info = details }
         end
     end
 
@@ -1336,7 +1336,7 @@ function CUI_BagsReagent:RefreshInventory()
 
     local startX, startY = 15, -45
     local REAGENT_COLUMNS = 4
-    for i, payload in ipairs(tempItems) do
+    for i, payload in ipairs(scanItems) do
         local button = GetOrCreateReagentSlot(i)
         if button then -- nil during combat (avoids minting tainted secure buttons)
             local hostFrame = button:GetParent()
@@ -1442,7 +1442,7 @@ function CUI_BagsReagent:RefreshInventory()
 
     CUI_BagsReagent:SetWidth((REAGENT_COLUMNS * (SLOT_SIZE + SPACING)) + 30)
     CUI_BagsReagent:SetHeight(
-        math.abs(startY) + (math.ceil(#tempItems / REAGENT_COLUMNS) * (SLOT_SIZE + SPACING)) + 40
+        math.abs(startY) + (math.ceil(#scanItems / REAGENT_COLUMNS) * (SLOT_SIZE + SPACING)) + 40
     )
 end
 

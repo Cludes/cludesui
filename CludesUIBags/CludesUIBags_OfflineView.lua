@@ -170,19 +170,19 @@ end
 -------------------------------------------------------------------------------
 -- delete an alt's saves, asked first. either window showing them goes back
 -- to this character
-local function AskForget(c)
+local function AskForget(char)
     CUI:ShowConfirmPopup({
         title = "Delete Saved Data",
         message = CludesUI.Lf(
             "Delete %1$s's saved bags and bank? They are saved again the next time you log in on that character.",
-            c.name
+            char.name
         ),
         confirmText = "Delete",
         cancelText = "Cancel",
         onConfirm = function()
-            Offline.Forget(c.key)
+            Offline.Forget(char.key)
             for _, wid in ipairs(views) do
-                if wid.key == c.key then
+                if wid.key == char.key then
                     wid.key = nil
                     Rebuild(wid)
                 end
@@ -194,35 +194,35 @@ end
 -- realm headers (only with more than one realm), each alt with an x to delete it
 local function OpenPicker(val, ownerFrame)
     local itemList, realm = {}, nil
-    local chars, realms = Offline.Characters(), {}
-    for _, c in ipairs(chars) do
-        realms[c.realm] = true
+    local charList, realms = Offline.Characters(), {}
+    for _, char in ipairs(charList) do
+        realms[char.realm] = true
     end
     local manyRealms = next(realms) ~= nil and next(realms, next(realms)) ~= nil
     local function Off()
         return true
     end
     local isShown = ShownKey(val)
-    for _, c in ipairs(chars) do
-        if manyRealms and c.realm ~= realm then
-            realm = c.realm
+    for _, char in ipairs(charList) do
+        if manyRealms and char.realm ~= realm then
+            realm = char.realm
             itemList[#itemList + 1] = { text = realm, noLoc = true, isDisabled = Off }
         end
         itemList[#itemList + 1] = {
-            text = Hex(c.class) .. c.name .. "|r",
+            text = Hex(char.class) .. char.name .. "|r",
             noLoc = true,
-            isActive = isShown == c.key,
+            isActive = isShown == char.key,
             onClick = function()
-                val.key = not c.current and c.key or nil
+                val.key = not char.current and char.key or nil
                 Rebuild(val)
             end,
-            onRemove = not c.current and function()
-                AskForget(c)
+            onRemove = not char.current and function()
+                AskForget(char)
             end or nil,
             removeTip = CludesUI.L("Delete saved data"),
         }
     end
-    if #chars < 2 then
+    if #charList < 2 then
         itemList[#itemList + 1] =
             { text = CludesUI.L("No other characters saved yet."), noLoc = true, isDisabled = Off }
     end
@@ -300,9 +300,9 @@ local function SyncTitle(val, title, count)
         p.btn:SetShown(enabled)
     end
     if enabled then
-        local c = Offline.Char(ShownKey(val))
-        local name = (c and c.name) or UnitName("player") or ""
-        local class = (c and c.class) or select(2, UnitClass("player"))
+        local char = Offline.Char(ShownKey(val))
+        local name = (char and char.name) or UnitName("player") or ""
+        local class = (char and char.class) or select(2, UnitClass("player"))
         title:SetText(val.word(Hex(class) .. name .. "|r"))
     else
         title:SetText(val.plain())
@@ -383,12 +383,12 @@ local function TabButton(val, textValue, key)
 end
 
 local function PaintTabs(val)
-    local region, g, b = CUI.GetAccentColor()
+    local red, green, blue = CUI.GetAccentColor()
     local kind = TabKind(val)
     for _, t in ipairs(val.tabs) do
         local enabled = t.key == kind
         t.text:SetTextColor(enabled and 1 or 0.6, enabled and 1 or 0.6, enabled and 1 or 0.6)
-        t.line:SetColorTexture(region, g, b, 1)
+        t.line:SetColorTexture(red, green, blue, 1)
         t.line:SetShown(enabled)
         -- the bank window lists the tabs in its sidebar instead
         t:SetShown(val.mode == "bank" and not val.side and (t.key ~= "warband" or Offline.HasWarband()))
@@ -437,8 +437,8 @@ local function Build(val)
     -- gold looks like the bags footer's (SmallMoneyFrameTemplate, 11pt)
     moneyN = moneyN + 1
     local name = "CUI_OfflineMoneyFrame" .. moneyN
-    local money = CreateFrame("Frame", name, barFrame, "SmallMoneyFrameTemplate")
-    MoneyFrame_SetType(money, "STATIC")
+    local moneyFrame = CreateFrame("Frame", name, barFrame, "SmallMoneyFrameTemplate")
+    MoneyFrame_SetType(moneyFrame, "STATIC")
     for _, suffix in ipairs({ "GoldButton", "SilverButton", "CopperButton" }) do
         local button = _G[name .. suffix]
         local txt = button and button:GetFontString()
@@ -446,27 +446,27 @@ local function Build(val)
             SetFont(txt, 11)
         end
     end
-    for _, c in pairs({ money:GetChildren() }) do
-        c:EnableMouse(false)
+    for _, char in pairs({ moneyFrame:GetChildren() }) do
+        char:EnableMouse(false)
     end
-    val.money, val.moneyName = money, name
+    val.money, val.moneyName = moneyFrame, name
     -- hover says whose gold it is
-    local moneyHit = CreateFrame("Frame", nil, barFrame)
-    moneyHit:SetPoint("TOPLEFT", money, "TOPLEFT", -5, 5)
-    moneyHit:SetPoint("BOTTOMRIGHT", money, "BOTTOMRIGHT", 5, -5)
-    moneyHit:SetFrameLevel(money:GetFrameLevel() + 10)
-    moneyHit:EnableMouse(true)
-    moneyHit:SetScript("OnEnter", function(self)
+    local moneyHitbox = CreateFrame("Frame", nil, barFrame)
+    moneyHitbox:SetPoint("TOPLEFT", moneyFrame, "TOPLEFT", -5, 5)
+    moneyHitbox:SetPoint("BOTTOMRIGHT", moneyFrame, "BOTTOMRIGHT", 5, -5)
+    moneyHitbox:SetFrameLevel(moneyFrame:GetFrameLevel() + 10)
+    moneyHitbox:EnableMouse(true)
+    moneyHitbox:SetScript("OnEnter", function(self)
         local textValue
         if val.mode == "bank" and TabKind(val) == "warband" then
             textValue = CludesUI.L("Warband Currency")
         else
-            local c = Offline.Char(ShownKey(val))
-            textValue = CludesUI.Lf("%1$s's Currency", (c and c.name) or UnitName("player") or "")
+            local char = Offline.Char(ShownKey(val))
+            textValue = CludesUI.Lf("%1$s's Currency", (char and char.name) or UnitName("player") or "")
         end
         CUI.ShowWidgetTooltip(self, textValue)
     end)
-    moneyHit:SetScript("OnLeave", function()
+    moneyHitbox:SetScript("OnLeave", function()
         CUI.HideWidgetTooltip()
     end)
 
@@ -590,14 +590,14 @@ local function Containers(val)
         local wid = Offline.Warband()
         list, saved = wid.tabs, wid.time
     else
-        local c = Offline.Char(ShownKey(val))
-        if not c then
+        local char = Offline.Char(ShownKey(val))
+        if not char then
             return nil
         end
         if val.mode == "bags" then
-            return c.bags, c.bagsTime, c.bags
+            return char.bags, char.bagsTime, char.bags
         end
-        list, saved = c.bank, c.bankTime
+        list, saved = char.bank, char.bankTime
     end
     -- one tab picked in the bank window's sidebar: the view keeps one wrapper so the memo holds
     if i and val.mode == "bank" and type(list) == "table" and list[i] then
@@ -779,9 +779,9 @@ local function Collect(list, bags, query, filter, source)
         return all, used, sum
     end
     local itemList = {}
-    for _, it in ipairs(all) do
-        if (query == "" or it.lower:find(query, 1, true)) and (not filter or filter[it.cat]) then
-            itemList[#itemList + 1] = it
+    for _, item in ipairs(all) do
+        if (query == "" or item.lower:find(query, 1, true)) and (not filter or filter[item.cat]) then
+            itemList[#itemList + 1] = item
         end
     end
     return itemList, used, sum
@@ -789,10 +789,10 @@ end
 
 -- sidebar counts for the alt's bags
 function mod.OfflineCounts()
-    local c = Offline.Char(bagsView.key)
+    local char = Offline.Char(bagsView.key)
     local counts, sum = {}, 0
-    for _, it in ipairs((Classified(c and c.bags, true))) do
-        counts[it.cat] = (counts[it.cat] or 0) + 1
+    for _, item in ipairs((Classified(char and char.bags, true))) do
+        counts[item.cat] = (counts[item.cat] or 0) + 1
         sum = sum + 1
     end
     return counts, sum
@@ -821,22 +821,22 @@ end
 local function Group(itemList)
     local cats = _G.CUI_CategoryManager and _G.CUI_CategoryManager:GetCategories() or {}
     local by = {}
-    for _, it in ipairs(itemList) do
-        local g = by[it.cat]
+    for _, item in ipairs(itemList) do
+        local g = by[item.cat]
         if not g then
-            g = { idx = it.cat, name = cats[it.cat] and cats[it.cat].name or CludesUI.L("Items"), items = {} }
-            by[it.cat] = g
+            g = { idx = item.cat, name = cats[item.cat] and cats[item.cat].name or CludesUI.L("Items"), items = {} }
+            by[item.cat] = g
         end
-        g.items[#g.items + 1] = it
+        g.items[#g.items + 1] = item
     end
-    local groups = {}
+    local catGroups = {}
     for _, g in pairs(by) do
-        groups[#groups + 1] = g
+        catGroups[#catGroups + 1] = g
     end
-    table.sort(groups, function(a, b)
+    table.sort(catGroups, function(a, b)
         return a.idx < b.idx
     end)
-    for _, g in ipairs(groups) do
+    for _, g in ipairs(catGroups) do
         table.sort(g.items, function(a, b)
             if a.q ~= b.q then
                 return a.q > b.q
@@ -847,26 +847,26 @@ local function Group(itemList)
             return a.str < b.str
         end)
     end
-    return groups
+    return catGroups
 end
 
-local function PaintSlot(b, it)
+local function PaintSlot(b, item)
     local z = BP().bagItemIconZoom or 0.08
-    b.str = it.str
-    b.icon:SetTexture(it.icon or 134400)
+    b.str = item.str
+    b.icon:SetTexture(item.icon or 134400)
     b.icon:SetTexCoord(z, 1 - z, z, 1 - z)
     CUI.ApplyIconTextFont(b.Count, GetFont(), BP().bagCountFontSize or 11, "bags")
-    b.Count:SetText(it.n > 1 and it.n or "")
+    b.Count:SetText(item.n > 1 and item.n or "")
     b.Level:SetFont(GetFont(), BP().itemlevelFontSize or 12, CUI.SlugFlag("OUTLINE, SLUG"))
-    local lvl = it.gear and BP().showItemlevelInBags ~= false and C_Item.GetDetailedItemLevelInfo(it.str)
+    local lvl = item.gear and BP().showItemlevelInBags ~= false and C_Item.GetDetailedItemLevelInfo(item.str)
     if lvl and lvl > 1 then
         b.Level:SetText(lvl)
         b.Level:SetTextColor(1, 1, 1)
     else
         b.Level:SetText("")
     end
-    b._r, b._g, b._b = mod.QualityBorderColor(it.q)
-    if not b._fvSlotBorder and it.q <= 1 and BP().bagQualityBorder ~= false then
+    b._r, b._g, b._b = mod.QualityBorderColor(item.q)
+    if not b._fvSlotBorder and item.q <= 1 and BP().bagQualityBorder ~= false then
         b._r, b._g, b._b = 0.25, 0.25, 0.25
     end
     mod.SetInsetBorderColor(b, b._r, b._g, b._b, 1)
@@ -875,14 +875,14 @@ end
 
 -- the bar's gold: its right edge on the window's own gold readout
 local function PaintGold(val, gold)
-    local money, barFrame = val.money, val.bar
-    money:ClearAllPoints()
+    local moneyFrame, barFrame = val.money, val.bar
+    moneyFrame:ClearAllPoints()
     local ref = val.goldRef and val.goldRef()
     local dx = -10
     if ref and ref:IsShown() and ref:GetRight() and barFrame:GetRight() then
         dx = ref:GetRight() - barFrame:GetRight()
     end
-    money:SetPoint("RIGHT", barFrame, "RIGHT", dx, 0)
+    moneyFrame:SetPoint("RIGHT", barFrame, "RIGHT", dx, 0)
     if type(gold) == "number" then
         MoneyFrame_Update(val.moneyName, gold)
         -- whole gold with separators, as the bags footer shows it
@@ -891,13 +891,13 @@ local function PaintGold(val, gold)
         if txt and gold >= 10000 then
             txt:SetText(BreakUpLargeNumbers(math.floor(gold / 10000)))
         end
-        money:Show()
+        moneyFrame:Show()
     else
-        money:Hide()
+        moneyFrame:Hide()
     end
     val.info:ClearAllPoints()
-    if money:IsShown() then
-        val.info:SetPoint("RIGHT", money, "LEFT", -14, 0)
+    if moneyFrame:IsShown() then
+        val.info:SetPoint("RIGHT", moneyFrame, "LEFT", -14, 0)
     else
         val.info:SetPoint("RIGHT", barFrame, "RIGHT", dx, 0)
     end
@@ -914,10 +914,10 @@ local function Gold(val)
         return GL.Money()
     end
     -- The ledger keys by GUID; an entry from an older build by "Name-Realm".
-    local c = Offline.Char(key)
-    local chars = GL.Data().chars
-    local e = (c and c.guid and chars[c.guid]) or chars[key]
-    return e and e.money
+    local char = Offline.Char(key)
+    local charList = GL.Data().chars
+    local charRec = (char and char.guid and charList[char.guid]) or charList[key]
+    return charRec and charRec.money
 end
 
 -- everything the grid draws from; the same signature twice means nothing moved.
@@ -998,18 +998,18 @@ Paint = function(val, force)
     local itemList, used, sum = Collect(list, val.mode == "bags", query, filter, source)
     local posY, isShown, nh = -6, 0, 0
     if list then
-        local groups = Group(itemList)
+        local catGroups = Group(itemList)
         -- onebank / onewarbank: everything in one block, no headers
         if val.mode == "bank" and select(3, TabKind(val)) then
             local all = {}
-            for _, g in ipairs(groups) do
-                for _, it in ipairs(g.items) do
-                    all[#all + 1] = it
+            for _, g in ipairs(catGroups) do
+                for _, item in ipairs(g.items) do
+                    all[#all + 1] = item
                 end
             end
-            groups = { { items = all } }
+            catGroups = { { items = all } }
         end
-        for _, g in ipairs(groups) do
+        for _, g in ipairs(catGroups) do
             if g.name then
                 nh = nh + 1
                 local hgt = Head(val, nh)
@@ -1021,7 +1021,7 @@ Paint = function(val, force)
                 hgt:Show()
                 posY = posY - 22
             end
-            for i, it in ipairs(g.items) do
+            for i, item in ipairs(g.items) do
                 isShown = isShown + 1
                 local b = Slot(val, isShown)
                 b:ClearAllPoints()
@@ -1030,7 +1030,7 @@ Paint = function(val, force)
                     PAD + 5 + ((i - 1) % cols) * (SLOT_SIZE + SPACING),
                     posY - math.floor((i - 1) / cols) * (SLOT_SIZE + SPACING)
                 )
-                PaintSlot(b, it)
+                PaintSlot(b, item)
             end
             posY = posY - math.ceil(#g.items / cols) * (SLOT_SIZE + SPACING) - 6
         end
@@ -1308,8 +1308,8 @@ if CUI_Bank then
     end
 
     PaintSide = function(val)
-        local side = val.side
-        local c = Offline.Char(ShownKey(val))
+        local sidePane = val.side
+        local char = Offline.Char(ShownKey(val))
         local entries = {}
         -- same layout as the live sidebar: all (tabs nested under it) and one, per kind
         local oneFirst = mod.BankDefaultsToOne()
@@ -1358,7 +1358,7 @@ if CUI_Bank then
             CludesUI.L("OneBank"),
             413587,
             1542860,
-            c and c.bank,
+            char and char.bank,
             "CharacterBankTab_"
         )
         if Offline.HasWarband() then
@@ -1374,41 +1374,41 @@ if CUI_Bank then
         end
 
         local collapsed = BP().bankSidebarCollapsed
-        local wid = side:GetWidth()
+        local wid = sidePane:GetWidth()
         local region, g, b = CUI.GetAccentColor()
         local posY = 0
         local px = CUI.PP.mult
-        if not side._div then
-            side._div = side:CreateTexture(nil, "ARTWORK")
-            side._div:SetColorTexture(0.2, 0.2, 0.2, 1)
+        if not sidePane._div then
+            sidePane._div = sidePane:CreateTexture(nil, "ARTWORK")
+            sidePane._div:SetColorTexture(0.2, 0.2, 0.2, 1)
         end
-        side._div:Hide()
-        for i, e in ipairs(entries) do
+        sidePane._div:Hide()
+        for i, entry in ipairs(entries) do
             -- a divider like the live sidebar's
-            if e.split then
+            if entry.split then
                 posY = posY - 4
                 local inset = math.floor(wid * 0.08)
-                side._div:ClearAllPoints()
-                side._div:SetHeight(px)
-                side._div:SetPoint("TOPLEFT", side, "TOPLEFT", inset, posY)
-                side._div:SetPoint("TOPRIGHT", side, "TOPRIGHT", -inset, posY)
-                side._div:Show()
+                sidePane._div:ClearAllPoints()
+                sidePane._div:SetHeight(px)
+                sidePane._div:SetPoint("TOPLEFT", sidePane, "TOPLEFT", inset, posY)
+                sidePane._div:SetPoint("TOPRIGHT", sidePane, "TOPRIGHT", -inset, posY)
+                sidePane._div:Show()
                 posY = posY - px - 4
             end
             local row = Row(i)
-            row.key, row.name, row.n = e.key, e.name, e.n
-            row.on = e.key == val.viewTab
+            row.key, row.name, row.n = entry.key, entry.name, entry.n
+            row.on = entry.key == val.viewTab
             row:ClearAllPoints()
-            row:SetPoint("TOPLEFT", side, "TOPLEFT", 0, posY)
+            row:SetPoint("TOPLEFT", sidePane, "TOPLEFT", 0, posY)
             row:SetWidth(wid)
-            mod.AnchorBagSidebarIcon(row.icon, collapsed, 8 + (e.nested and 10 or 0))
-            row.icon:SetTexture(CludesUI.ClientIcon(e.icon))
+            mod.AnchorBagSidebarIcon(row.icon, collapsed, 8 + (entry.nested and 10 or 0))
+            row.icon:SetTexture(CludesUI.ClientIcon(entry.icon))
             row.icon:SetAlpha(row.on and 1 or 0.75)
             row.label:SetShown(not collapsed)
             row.count:SetShown(not collapsed)
-            row.label:SetText(e.name)
+            row.label:SetText(entry.name)
             row.label:SetTextColor(1, 1, 1, row.on and 1 or 0.75)
-            row.count:SetText(e.n)
+            row.count:SetText(entry.n)
             row.ind:SetColorTexture(region, g, b, 1)
             row.ind:SetShown(row.on)
             row.bg:SetColorTexture(region, g, b, row.on and 0.1 or 0)
