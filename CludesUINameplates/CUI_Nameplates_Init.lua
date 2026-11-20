@@ -390,8 +390,8 @@ do
 
     function RT.Appearance()
         SetFSFont(RT.fs, (p and p.rangeTextSize) or defaultSet.rangeTextSize, GetNPOutline())
-        local c = (p and p.rangeTextColor) or defaultSet.rangeTextColor
-        RT.fs:SetTextColor(c.r, c.g, c.b, 1)
+        local color = (p and p.rangeTextColor) or defaultSet.rangeTextColor
+        RT.fs:SetTextColor(color.r, color.g, color.b, 1)
     end
 
     function RT.Detach()

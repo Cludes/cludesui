@@ -670,8 +670,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                     hasAlpha = true,
                     tooltip = "Tints the areas you have not explored yet. White shows them as they are.",
                     get = function()
-                        local c = MR.Get("color")
-                        return c.r, c.g, c.b, c.a
+                        local color = MR.Get("color")
+                        return color.r, color.g, color.b, color.a
                     end,
                     set = function(red, green, blue, a)
                         MR.Cfg().color = { r = red, g = green, b = blue, a = a or 1 }

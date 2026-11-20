@@ -152,15 +152,15 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                     cell,
                     cell:GetFrameLevel() + 2,
                     function()
-                        local c = entry.getColor()
-                        return c.r, c.g, c.b, 1
+                        local color = entry.getColor()
+                        return color.r, color.g, color.b, 1
                     end,
                     function(red, green, blue)
-                        local c = entry.getColor()
-                        c.r = red
-                        c.g = green
-                        c.b = blue
-                        entry.setColor(c)
+                        local color = entry.getColor()
+                        color.r = red
+                        color.g = green
+                        color.b = blue
+                        entry.setColor(color)
                         local rl = CludesUI._widgetRefreshList
                         if rl then
                             for i2 = 1, #rl do

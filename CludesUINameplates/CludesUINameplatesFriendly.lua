@@ -160,9 +160,9 @@ local NPC_COLOR_R, NPC_COLOR_G, NPC_COLOR_B = 0, 1, 0
 -- in full-plate mode -- name-only NPCs have their own colors in the NPC cog.
 local function GetFriendlyNPCColor()
     local plate = FP()
-    local c = plate and plate.friendlyNPCColor
-    if c then
-        return c.r, c.g, c.b
+    local color = plate and plate.friendlyNPCColor
+    if color then
+        return color.r, color.g, color.b
     end
     return NPC_COLOR_R, NPC_COLOR_G, NPC_COLOR_B
 end
@@ -507,8 +507,8 @@ local function GetNPCNameColor(unitToken)
         return 0.9, 0.7, 0.0
     end
     local plate = FP()
-    local c = (plate and plate.friendlyNPCNameColor) or mod.defaults.friendlyNPCNameColor
-    return c.r, c.g, c.b
+    local color = (plate and plate.friendlyNPCNameColor) or mod.defaults.friendlyNPCNameColor
+    return color.r, color.g, color.b
 end
 
 -- Title line under the name-only NPC name. Independent of the name color; the
@@ -518,12 +518,12 @@ end
 -- stored one.
 local function GetNPCTitleColor(unitToken)
     local plate = FP()
-    local c = (plate and plate.friendlyNPCTitleColor) or mod.defaults.friendlyNPCTitleColor
+    local color = (plate and plate.friendlyNPCTitleColor) or mod.defaults.friendlyNPCTitleColor
     local reactionId = unitToken and UnitReaction(unitToken, "player")
     if reactionId and reactionId == 4 then
-        return 0.9, 0.7, 0.0, c.a or 1
+        return 0.9, 0.7, 0.0, color.a or 1
     end
-    return c.r, c.g, c.b, c.a or 1
+    return color.r, color.g, color.b, color.a or 1
 end
 
 local NPC_TITLE_FONT_SIZE = 10
@@ -746,17 +746,17 @@ local function ClassRGB(unitToken, plainOnly)
         if success then
             return true, red, green, blue
         end
-        local c = C_ClassColor.GetClassColor(tok)
-        if c then
-            return true, c:GetRGB()
+        local color = C_ClassColor.GetClassColor(tok)
+        if color then
+            return true, color:GetRGB()
         end
         return false
     end
     if not tok then
         return false
     end
-    local c = CludesUI.GetClassColor(tok)
-    return true, c.r, c.g, c.b
+    local color = CludesUI.GetClassColor(tok)
+    return true, color.r, color.g, color.b
 end
 
 -- Paints one full plate's bar and name. Players: the bar takes the class colour
@@ -808,9 +808,9 @@ local function GetSubTextColor(unitToken)
             return red, green, blue
         end
     end
-    local c = plate and plate.friendlyBelowNameColor
-    if c then
-        return c.r or SUB_TEXT_R, c.g or SUB_TEXT_G, c.b or SUB_TEXT_B
+    local color = plate and plate.friendlyBelowNameColor
+    if color then
+        return color.r or SUB_TEXT_R, color.g or SUB_TEXT_G, color.b or SUB_TEXT_B
     end
     return SUB_TEXT_R, SUB_TEXT_G, SUB_TEXT_B
 end

@@ -10840,8 +10840,8 @@ do
                             if ilvl and ilvl > 0 then
                                 fontStr:SetText(ilvl)
                                 local quality = select(3, C_Item.GetItemInfo(link))
-                                local c = CludesUI.GetItemLevelColor(link, quality)
-                                fontStr:SetTextColor(c.r or 1, c.g or 1, c.b or 1, 1)
+                                local color = CludesUI.GetItemLevelColor(link, quality)
+                                fontStr:SetTextColor(color.r or 1, color.g or 1, color.b or 1, 1)
                             end
                         end
                     end
@@ -18585,16 +18585,16 @@ do
             return false
         end
         if not issecretvalue(token) then
-            local c = CludesUI.GetClassColor(token)
-            return true, c.r, c.g, c.b
+            local color = CludesUI.GetClassColor(token)
+            return true, color.r, color.g, color.b
         end
         local success, region, g, button = CludesUI.GetClassColorForRestrictedUnit(unitToken, token)
         if success then
             return true, region, g, button
         end
-        local c = C_ClassColor.GetClassColor(token)
-        if c then
-            return true, c.r, c.g, c.b
+        local color = C_ClassColor.GetClassColor(token)
+        if color then
+            return true, color.r, color.g, color.b
         end
         return false
     end
@@ -18639,14 +18639,14 @@ do
         if type(token) ~= "string" or issecretvalue(token) then
             return
         end
-        local c = CludesUI.GetPowerColor(token)
-        if not c then
-            c = PowerBarColor and PowerBarColor[token]
-            if not (c and c.atlas) then
+        local color = CludesUI.GetPowerColor(token)
+        if not color then
+            color = PowerBarColor and PowerBarColor[token]
+            if not (color and color.atlas) then
                 return
             end
         end
-        barFrame:SetStatusBarColor(c.r, c.g, c.b)
+        barFrame:SetStatusBarColor(color.r, color.g, color.b)
     end
 
     -- A bar of ours: flat fill. unit is the class colour's source for a health

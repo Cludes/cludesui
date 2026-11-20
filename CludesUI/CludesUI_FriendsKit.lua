@@ -1196,9 +1196,9 @@ local function BuildCharLine(account)
         else
             levelString = CludesUI.Lf("(Level %d)", lvl)
         end
-        local c = LocationColor(account)
-        if c and c.WrapTextInColorCode then
-            levelString = c:WrapTextInColorCode(levelString)
+        local color = LocationColor(account)
+        if color and color.WrapTextInColorCode then
+            levelString = color:WrapTextInColorCode(levelString)
         end
         isShown = isShown .. " " .. levelString
     end

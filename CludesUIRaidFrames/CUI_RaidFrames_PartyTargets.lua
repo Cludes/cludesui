@@ -153,9 +153,9 @@ do
                 if success then
                     return true, red, green, blue
                 end
-                local c = C_ClassColor.GetClassColor(classTok)
-                if c then
-                    return true, c.r, c.g, c.b
+                local color = C_ClassColor.GetClassColor(classTok)
+                if color then
+                    return true, color.r, color.g, color.b
                 end
                 return false
             end
@@ -1117,8 +1117,8 @@ do
                 local p = mock.hp / 100
                 health:SetStatusBarColor(p < 0.5 and 1 or (1 - (p - 0.5) * 2), p > 0.5 and 1 or (p * 2), 0, 1)
             elseif mode == "custom" then
-                local c = s.partyTargetCustomFillColor or PT.DEF_FILL
-                health:SetStatusBarColor(c.r, c.g, c.b, 1)
+                local color = s.partyTargetCustomFillColor or PT.DEF_FILL
+                health:SetStatusBarColor(color.r, color.g, color.b, 1)
             else
                 health:SetStatusBarColor(rc.r, rc.g, rc.b, 1)
             end
@@ -1126,8 +1126,8 @@ do
             if s.partyTargetBgClassColored then
                 backdrop:SetColorTexture(rc.r, rc.g, rc.b, a)
             else
-                local c = s.partyTargetCustomBgColor or mod._PF.DEFAULT_BG
-                backdrop:SetColorTexture(c.r, c.g, c.b, a)
+                local color = s.partyTargetCustomBgColor or mod._PF.DEFAULT_BG
+                backdrop:SetColorTexture(color.r, color.g, color.b, a)
             end
         end
         frame:Show()

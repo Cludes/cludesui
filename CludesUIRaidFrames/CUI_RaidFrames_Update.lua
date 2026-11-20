@@ -911,12 +911,12 @@ function mod._RebuildDispelCurves()
         return
     end
     local function build(profile, mult, alphaMult)
-        local c = C_CurveUtil.CreateColorCurve()
-        c:SetType(Enum.LuaCurveType.Step)
+        local color = C_CurveUtil.CreateColorCurve()
+        color:SetType(Enum.LuaCurveType.Step)
         local function add(position, key, dr, dg, saved)
             local colour = profile and profile[key]
             -- Per-type alpha rides the curve too (0 = type opted out of the dispel border/overlay). Never darkened by mult.
-            c:AddPoint(
+            color:AddPoint(
                 position,
                 CreateColor(
                     (colour and colour.r or dr) * mult,
@@ -933,7 +933,7 @@ function mod._RebuildDispelCurves()
         add(4, "dispelColorPoison", 0.0, 0.706, 0.286)
         add(9, "dispelColorBleed", 0.75, 0.15, 0.15)
         add(11, "dispelColorBleed", 0.75, 0.15, 0.15)
-        return c
+        return color
     end
     -- Bright (full) curves + parallel 50%-darkened curves for the clock border's already-elapsed
     -- arc. Darkening applies to the user's CLEAN colors at build time, never a secret per-frame one.

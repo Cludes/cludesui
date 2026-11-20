@@ -76,8 +76,8 @@ local function GetSATimerColor()
     if conf.standaloneTimerUseAccent then
         return GetAccentRGB()
     end
-    local c = conf.standaloneTimerColor
-    return c and c.r or 1, c and c.g or 1, c and c.b or 1
+    local color = conf.standaloneTimerColor
+    return color and color.r or 1, color and color.g or 1, color and color.b or 1
 end
 
 local function ApplySATimerColor()
@@ -127,22 +127,22 @@ local function ApplySATimerStyle()
     )
 
     if _saTimerBG then
-        local c = conf.standaloneTimerBackgroundColor or { r = 0, g = 0, b = 0, a = 0 }
-        _saTimerBG:SetColorTexture(c.r or 0, c.g or 0, c.b or 0, c.a or 0)
+        local color = conf.standaloneTimerBackgroundColor or { r = 0, g = 0, b = 0, a = 0 }
+        _saTimerBG:SetColorTexture(color.r or 0, color.g or 0, color.b or 0, color.a or 0)
     end
 
     if _saTimerBorder then
         local Pix = CludesUI and CludesUI.PP
-        local c = conf.standaloneTimerBorderColor or { r = 0, g = 0, b = 0, a = 1 }
+        local color = conf.standaloneTimerBorderColor or { r = 0, g = 0, b = 0, a = 1 }
         local borderSize = math.max(0, math.floor((conf.standaloneTimerBorderSize or 0) + 0.5))
         if borderSize > 0 and Pix and Pix.UpdateBorder then
             Pix.UpdateBorder(
                 _saTimerBorder,
                 borderSize,
-                c.r or 0,
-                c.g or 0,
-                c.b or 0,
-                c.a == nil and 1 or c.a
+                color.r or 0,
+                color.g or 0,
+                color.b or 0,
+                color.a == nil and 1 or color.a
             )
             _saTimerBorder:Show()
         else
@@ -353,24 +353,24 @@ local function CreateSATimer()
     _saTimer:SetFrameStrata("HIGH")
     _saTimer:SetScript("OnMouseDown", function(self, btnFrame)
         if btnFrame == "LeftButton" and IsShiftKeyDown() then
-            local c = DB()
+            local cfg = DB()
             -- Belt and braces: locked timers are click-through (EnableMouse
             -- off), so this handler should never fire while locked.
-            if c.standaloneTimerLocked then
+            if cfg.standaloneTimerLocked then
                 return
             end
-            if (c.standaloneTimerAnchor or "free") == "free" then
+            if (cfg.standaloneTimerAnchor or "free") == "free" then
                 self:StartMoving()
             end
         end
     end)
     _saTimer:SetScript("OnMouseUp", function(self)
         self:StopMovingOrSizing()
-        local c = DB()
-        if (c.standaloneTimerAnchor or "free") == "free" then
+        local cfg = DB()
+        if (cfg.standaloneTimerAnchor or "free") == "free" then
             local leftX, topY = self:GetLeft(), self:GetTop()
             if leftX and topY then
-                c.standaloneTimerPos = { x = leftX, y = topY }
+                cfg.standaloneTimerPos = { x = leftX, y = topY }
             end
         end
     end)
@@ -514,8 +514,8 @@ do
     end
 
     mod.ApplyDMKeybinds = function()
-        local c = DB()
-        local wantReset, wantToggle = WantKey(c.resetDataKey), WantKey(c.toggleWindowsKey)
+        local cfg = DB()
+        local wantReset, wantToggle = WantKey(cfg.resetDataKey), WantKey(cfg.toggleWindowsKey)
         if not wantReset and not wantToggle and not appliedReset and not appliedToggle then
             kbFrame:UnregisterEvent("UPDATE_BINDINGS")
             return

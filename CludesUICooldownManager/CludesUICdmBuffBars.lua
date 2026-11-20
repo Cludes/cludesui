@@ -440,8 +440,8 @@ function mod.GetTrackedBuffBars()
     if not tbb._pandemicModeMigrated then
         for _, bar in ipairs(tbb.bars or {}) do
             if not bar.pandemicGlowMode then
-                local c = bar.pandemicGlowColor
-                if c and not (c.r == 1 and c.g == 1 and c.b == 0) then
+                local color = bar.pandemicGlowColor
+                if color and not (color.r == 1 and color.g == 1 and color.b == 0) then
                     bar.pandemicGlowMode = "custom"
                 else
                     bar.pandemicGlowMode = "default"

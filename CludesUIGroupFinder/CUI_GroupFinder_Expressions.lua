@@ -306,8 +306,8 @@ end
 local compiled, compiledFor, compileErr
 
 local function Current()
-    local c = GFNS.Cfg and GFNS.Cfg()
-    local textValue = c and c.extraExpr
+    local cfg = GFNS.Cfg and GFNS.Cfg()
+    local textValue = cfg and cfg.extraExpr
     if textValue ~= compiledFor then
         compiledFor = textValue
         compiled, compileErr = nil, nil
@@ -1116,8 +1116,8 @@ end
 
 -- reset with no box built yet
 GFNS.ExtraExprReset = function()
-    local c = GFNS.Cfg and GFNS.Cfg()
-    if c then
-        c.extraExpr = nil
+    local cfg = GFNS.Cfg and GFNS.Cfg()
+    if cfg then
+        cfg.extraExpr = nil
     end
 end

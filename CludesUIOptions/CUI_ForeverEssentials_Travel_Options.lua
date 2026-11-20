@@ -244,19 +244,19 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                 return FT.Get("borderTexture")
             end,
             setValue = function(val)
-                local c = FT.Cfg()
-                c.borderTexture = val
-                c.borderTextureOffset, c.borderTextureOffsetY = nil, nil
-                c.borderTextureShiftX, c.borderTextureShiftY = nil, nil
-                c.exitBorderOffset, c.exitBorderOffsetY = nil, nil
+                local cfg = FT.Cfg()
+                cfg.borderTexture = val
+                cfg.borderTextureOffset, cfg.borderTextureOffsetY = nil, nil
+                cfg.borderTextureShiftX, cfg.borderTextureShiftY = nil, nil
+                cfg.exitBorderOffset, cfg.exitBorderOffsetY = nil, nil
                 local color, behind = CludesUI.GetBorderStyleSelectDefaults(val)
-                c.borderR, c.borderG, c.borderB, c.borderBehind = color.r, color.g, color.b, behind
+                cfg.borderR, cfg.borderG, cfg.borderB, cfg.borderBehind = color.r, color.g, color.b, behind
                 local size = CludesUI.GetBorderDefaultSize(nil, val)
                 if size then
-                    c.borderSize = size
+                    cfg.borderSize = size
                 end
-                if c.borderSizePx then
-                    c.borderSizePx = false
+                if cfg.borderSizePx then
+                    cfg.borderSizePx = false
                 end
                 FT.ApplyStyle()
                 CludesUI:RefreshPage(true)
@@ -270,8 +270,8 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                 return FT.Get("borderSize")
             end,
             setStep = function(val)
-                local c = FT.Cfg()
-                c.borderTexture, c.borderSize = FT.Get("borderTexture"), val
+                local cfg = FT.Cfg()
+                cfg.borderTexture, cfg.borderSize = FT.Get("borderTexture"), val
             end,
             getTex = function()
                 return FT.Get("borderTexture")
@@ -345,8 +345,8 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                     return FT.Get("borderR"), FT.Get("borderG"), FT.Get("borderB"), 1
                 end,
                 setValue = function(red, green, blue)
-                    local c = FT.Cfg()
-                    c.borderR, c.borderG, c.borderB = red, green, blue
+                    local cfg = FT.Cfg()
+                    cfg.borderR, cfg.borderG, cfg.borderB = red, green, blue
                     FT.ApplyStyle()
                 end,
             },
@@ -423,9 +423,9 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                     return ACC.r, ACC.g, ACC.b, 1
                 end,
                 setValue = function(red, green, blue)
-                    local c = FT.Cfg()
-                    c.fillR, c.fillG, c.fillB = red, green, blue
-                    c.classColored = false
+                    local cfg = FT.Cfg()
+                    cfg.fillR, cfg.fillG, cfg.fillB = red, green, blue
+                    cfg.classColored = false
                     FT.ApplyStyle()
                     CludesUI:RefreshPage()
                 end,
@@ -470,8 +470,8 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                     return FT.Get("bgR"), FT.Get("bgG"), FT.Get("bgB"), 1
                 end,
                 setValue = function(red, green, blue)
-                    local c = FT.Cfg()
-                    c.bgR, c.bgG, c.bgB = red, green, blue
+                    local cfg = FT.Cfg()
+                    cfg.bgR, cfg.bgG, cfg.bgB = red, green, blue
                     FT.ApplyStyle()
                 end,
             },
@@ -682,8 +682,8 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                     return FT.Get("sparkR"), FT.Get("sparkG"), FT.Get("sparkB"), 1
                 end,
                 setValue = function(red, green, blue)
-                    local c = FT.Cfg()
-                    c.sparkR, c.sparkG, c.sparkB = red, green, blue
+                    local cfg = FT.Cfg()
+                    cfg.sparkR, cfg.sparkG, cfg.sparkB = red, green, blue
                     FT.ApplyStyle()
                 end,
             },

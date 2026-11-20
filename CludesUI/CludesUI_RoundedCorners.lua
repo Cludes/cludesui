@@ -1403,8 +1403,8 @@ end
 function CludesUI.OutlineButton(button, backdrop, primary)
     local function Colour()
         if primary then
-            local c = CludesUI.CLUDES_GREEN
-            return c.r, c.g, c.b
+            local color = CludesUI.CLUDES_GREEN
+            return color.r, color.g, color.b
         end
         return 1, 1, 1
     end
@@ -1446,8 +1446,8 @@ function CludesUI.AccentCap(widget)
     cap:SetPoint("TOPRIGHT")
     cap:SetHeight(2)
     local function Paint()
-        local c = CludesUI.CLUDES_GREEN
-        cap:SetColorTexture(c.r, c.g, c.b, 0.9)
+        local color = CludesUI.CLUDES_GREEN
+        cap:SetColorTexture(color.r, color.g, color.b, 0.9)
     end
     Paint()
     widget:HookScript("OnShow", Paint)
@@ -1462,8 +1462,8 @@ function CludesUI.CardSidebar(outer, backdrop)
         return t
     end
     local cap = outer:CreateTexture(nil, "ARTWORK")
-    local c = CludesUI.CLUDES_GREEN
-    cap:SetColorTexture(c.r, c.g, c.b, 0.9)
+    local color = CludesUI.CLUDES_GREEN
+    cap:SetColorTexture(color.r, color.g, color.b, 0.9)
     cap:SetPoint("TOPLEFT")
     cap:SetPoint("TOPRIGHT")
     cap:SetHeight(2)

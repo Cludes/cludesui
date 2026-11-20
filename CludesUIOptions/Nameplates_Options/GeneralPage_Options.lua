@@ -295,8 +295,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     disabledTooltip = "Class Colored Health Bar",
                     requireState = "disabled",
                     get = function()
-                        local c = DBVal("friendlyBarColor") or defaultSet.friendlyBarColor
-                        return c.r, c.g, c.b
+                        local color = DBVal("friendlyBarColor") or defaultSet.friendlyBarColor
+                        return color.r, color.g, color.b
                     end,
                     set = function(red, green, blue)
                         DB().friendlyBarColor = { r = red, g = green, b = blue }
@@ -450,8 +450,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                 tooltip = "Custom Color",
                 hasAlpha = false,
                 getValue = function()
-                    local c = DBVal("friendlyBelowNameColor") or defaultSet.friendlyBelowNameColor
-                    return c.r, c.g, c.b
+                    local color = DBVal("friendlyBelowNameColor") or defaultSet.friendlyBelowNameColor
+                    return color.r, color.g, color.b
                 end,
                 setValue = function(red, green, blue)
                     DB().friendlyBelowNameColor = { r = red, g = green, b = blue }
@@ -750,8 +750,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     type = "colorpicker",
                     label = "Name Color",
                     get = function()
-                        local c = DBVal("friendlyNPCNameColor") or defaultSet.friendlyNPCNameColor
-                        return c.r, c.g, c.b
+                        local color = DBVal("friendlyNPCNameColor") or defaultSet.friendlyNPCNameColor
+                        return color.r, color.g, color.b
                     end,
                     set = function(red, green, blue)
                         DB().friendlyNPCNameColor = { r = red, g = green, b = blue }
@@ -765,8 +765,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     label = "Title Color",
                     hasAlpha = true,
                     get = function()
-                        local c = DBVal("friendlyNPCTitleColor") or defaultSet.friendlyNPCTitleColor
-                        return c.r, c.g, c.b, c.a or 1
+                        local color = DBVal("friendlyNPCTitleColor") or defaultSet.friendlyNPCTitleColor
+                        return color.r, color.g, color.b, color.a or 1
                     end,
                     set = function(red, green, blue, a)
                         DB().friendlyNPCTitleColor = { r = red, g = green, b = blue, a = a or 1 }
@@ -794,8 +794,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             npcSwatch:SetMouseClickEnabled(not off)
         end
         npcSwatch, updateNpcSwatch = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
-            local c = DBVal("friendlyNPCColor") or defaultSet.friendlyNPCColor
-            return c.r, c.g, c.b
+            local color = DBVal("friendlyNPCColor") or defaultSet.friendlyNPCColor
+            return color.r, color.g, color.b
         end, function(red, green, blue)
             DB().friendlyNPCColor = { r = red, g = green, b = blue }
             mod.RefreshFriendlyColors()
@@ -1384,8 +1384,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     -- Inline color swatch for hash line custom color
     if not CludesUI._prebuilding then
         local hashColorGet = function()
-            local c = (DB() and DB().hashLineColor) or defaultSet.hashLineColor
-            return c.r, c.g, c.b
+            local color = (DB() and DB().hashLineColor) or defaultSet.hashLineColor
+            return color.r, color.g, color.b
         end
         local hashColorSet = function(red, green, blue)
             DB().hashLineColor = { r = red, g = green, b = blue }
@@ -1748,8 +1748,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     if not CludesUI._prebuilding then
         local region = tfRangeRow._leftRegion
         local rangeColorGet = function()
-            local c = (DB() and DB().rangeTextColor) or defaultSet.rangeTextColor
-            return c.r, c.g, c.b
+            local color = (DB() and DB().rangeTextColor) or defaultSet.rangeTextColor
+            return color.r, color.g, color.b
         end
         local rangeColorSet = function(red, green, blue)
             DB().rangeTextColor = { r = red, g = green, b = blue }

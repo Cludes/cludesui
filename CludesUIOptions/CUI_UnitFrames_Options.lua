@@ -521,8 +521,8 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
         local region = line._rightRegion
         local sw, updateSw = CludesUI.BuildColorSwatch(region, line:GetFrameLevel() + 3, function()
             local s = settingGet()
-            local c = s.castBorderColor
-            return c and c.r or 0, c and c.g or 0, c and c.b or 0, s.castBorderAlpha or 1
+            local color = s.castBorderColor
+            return color and color.r or 0, color and color.g or 0, color and color.b or 0, s.castBorderAlpha or 1
         end, function(red, green, blue, a)
             local s = settingGet()
             s.castBorderColor = { r = red, g = green, b = blue }
@@ -570,9 +570,9 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
                     d.castBorderOffsetX, d.castBorderOffsetY =
                         source.castBorderOffsetX, source.castBorderOffsetY
                     d.castBorderShiftX, d.castBorderShiftY = source.castBorderShiftX, source.castBorderShiftY
-                    local c = source.castBorderColor
-                    if c then
-                        d.castBorderColor = { r = c.r, g = c.g, b = c.b }
+                    local color = source.castBorderColor
+                    if color then
+                        d.castBorderColor = { r = color.r, g = color.g, b = color.b }
                     end
                     d.castBorderAlpha = source.castBorderAlpha
                     if withSize then
@@ -996,8 +996,8 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
         })
         local sw, updateSw = CludesUI.BuildColorSwatch(region, line:GetFrameLevel() + 3, function()
             local s = Src()
-            local c = s.borderColor
-            return c and c.r or 0, c and c.g or 0, c and c.b or 0, s.borderAlpha or 1
+            local color = s.borderColor
+            return color and color.r or 0, color and color.g or 0, color and color.b or 0, s.borderAlpha or 1
         end, function(red, green, blue, a)
             B.borderColor = { r = red, g = green, b = blue }
             B.borderAlpha = a

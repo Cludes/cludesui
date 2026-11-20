@@ -476,11 +476,11 @@ local function CreateDMWindow(winIdx)
         barFrame.classIcon:Hide()
         -- Per-bar border (lazy-created, only when borderSize > 0)
         function barFrame.ApplyBorder()
-            local c = DB()
-            local sz = c.borderSize or 0
+            local cfg = DB()
+            local sz = cfg.borderSize or 0
             -- Stock-style rows carry no CUI border: Blizzard Style draws the
             -- stock shadow edge, Classic WoW UI a plain bar.
-            if sz <= 0 or mod.DMBlizz() or (c.barSeparators and mod.DMUseBarSeparators(c)) then
+            if sz <= 0 or mod.DMBlizz() or (cfg.barSeparators and mod.DMUseBarSeparators(cfg)) then
                 if barFrame._borderFrame then
                     barFrame._borderFrame:Hide()
                 end
@@ -492,7 +492,7 @@ local function CreateDMWindow(winIdx)
             -- Follow-fill mode: fill extent is SECRET geometry, so nothing may measure it
             -- (Backdrop/NineSlice crash on GetWidth of a frame anchored to it) -- render four
             -- plain color strips via engine anchors instead (left fixed, right rides the fill); always solid regardless of Border Style, styled path stays full-row only.
-            if c.borderFollowFill then
+            if cfg.borderFollowFill then
                 if barFrame._borderFrame then
                     barFrame._borderFrame:Hide()
                 end
@@ -509,8 +509,8 @@ local function CreateDMWindow(winIdx)
                     barFrame._fillBorder = fb
                 end
                 local ft = barFrame.fill:GetStatusBarTexture()
-                local anchorL = c.borderFollowFillIcon and barFrame.row or barFrame.fill
-                local red, green, blue, a = c.borderR or 0, c.borderG or 0, c.borderB or 0, c.borderA or 1
+                local anchorL = cfg.borderFollowFillIcon and barFrame.row or barFrame.fill
+                local red, green, blue, a = cfg.borderR or 0, cfg.borderG or 0, cfg.borderB or 0, cfg.borderA or 1
                 fb.top:SetColorTexture(red, green, blue, a)
                 fb.bottom:SetColorTexture(red, green, blue, a)
                 fb.left:SetColorTexture(red, green, blue, a)
@@ -543,21 +543,21 @@ local function CreateDMWindow(winIdx)
                 barFrame._borderFrame:SetFrameLevel(barFrame.row:GetFrameLevel() + 3)
             end
             barFrame._borderFrame:Show()
-            local texture = c.borderTexture or "solid"
+            local texture = cfg.borderTexture or "solid"
             -- Exact size (nil = the legacy step path) only while it still pairs with sz + tex.
-            local px = CludesUI.BorderPx(c.borderSizePx, sz, texture)
+            local px = CludesUI.BorderPx(cfg.borderSizePx, sz, texture)
             CludesUI.ApplyBorderStyle(
                 barFrame._borderFrame,
                 sz,
-                c.borderR or 0,
-                c.borderG or 0,
-                c.borderB or 0,
-                c.borderA or 1,
+                cfg.borderR or 0,
+                cfg.borderG or 0,
+                cfg.borderB or 0,
+                cfg.borderA or 1,
                 texture,
-                c.borderTextureOffset,
-                c.borderTextureOffsetY,
-                c.borderTextureShiftX,
-                c.borderTextureShiftY,
+                cfg.borderTextureOffset,
+                cfg.borderTextureOffsetY,
+                cfg.borderTextureShiftX,
+                cfg.borderTextureShiftY,
                 "damagemeters",
                 sz,
                 nil,
@@ -566,10 +566,10 @@ local function CreateDMWindow(winIdx)
         end
         barFrame.ApplyBorder()
         function barFrame.ApplyIconBorder()
-            local c = DB()
-            local sz = c.iconBorderSize or 0
-            local showIcon = (c.iconStyle or "spec") ~= "none"
-            if not c.customIconBorder or sz <= 0 or not showIcon then
+            local cfg = DB()
+            local sz = cfg.iconBorderSize or 0
+            local showIcon = (cfg.iconStyle or "spec") ~= "none"
+            if not cfg.customIconBorder or sz <= 0 or not showIcon then
                 if barFrame._iconBorderFrame then
                     barFrame._iconBorderFrame:Hide()
                 end
@@ -580,20 +580,20 @@ local function CreateDMWindow(winIdx)
                 barFrame._iconBorderFrame:SetFrameLevel(barFrame.row:GetFrameLevel() + 6)
                 barFrame._iconBorderFrame:SetAllPoints(barFrame.classIcon) -- tracks icon size/position
             end
-            local texture = c.iconBorderTexture or "solid"
-            local px = CludesUI.BorderPx(c.iconBorderSizePx, sz, texture)
+            local texture = cfg.iconBorderTexture or "solid"
+            local px = CludesUI.BorderPx(cfg.iconBorderSizePx, sz, texture)
             CludesUI.ApplyBorderStyle(
                 barFrame._iconBorderFrame,
                 sz,
-                c.iconBorderR or 0,
-                c.iconBorderG or 0,
-                c.iconBorderB or 0,
-                c.iconBorderA or 1,
+                cfg.iconBorderR or 0,
+                cfg.iconBorderG or 0,
+                cfg.iconBorderB or 0,
+                cfg.iconBorderA or 1,
                 texture,
-                c.iconBorderTextureOffset,
-                c.iconBorderTextureOffsetY,
-                c.iconBorderTextureShiftX,
-                c.iconBorderTextureShiftY,
+                cfg.iconBorderTextureOffset,
+                cfg.iconBorderTextureOffsetY,
+                cfg.iconBorderTextureShiftX,
+                cfg.iconBorderTextureShiftY,
                 "damagemeters_icon",
                 sz,
                 nil,
@@ -607,18 +607,18 @@ local function CreateDMWindow(winIdx)
         barFrame._bg = barFrame.row:CreateTexture(nil, "BACKGROUND", nil, -8)
         barFrame._bg:SetAllPoints(barFrame.row)
         function barFrame.ApplyBg()
-            local c = DB()
+            local cfg = DB()
             -- Blizzard Style: the stock track and edge; Classic WoW UI keeps
             -- the plain track below.
             if mod.DMStyle() == "blizzard" then
                 mod.DMApplyBlizzBarBg(barFrame)
                 return
             end
-            local a = c.barBgAlpha or 0
+            local a = cfg.barBgAlpha or 0
             -- Class-colored track when enabled: tint the bg with this bar's class color (x bg
             -- alpha), else the custom bg color. classFile can be secret, so guard before indexing
             -- (RAID_CLASS_COLORS[secret] throws); GetClassColor honors global overrides. Mirrors fill/text class coloring.
-            if c.barBgUseClassColor then
+            if cfg.barBgUseClassColor then
                 local castFrame = barFrame._class
                 if
                     castFrame
@@ -632,7 +632,7 @@ local function CreateDMWindow(winIdx)
                     end
                 end
             end
-            barFrame._bg:SetColorTexture(c.barBgR or 0, c.barBgG or 0, c.barBgB or 0, a)
+            barFrame._bg:SetColorTexture(cfg.barBgR or 0, cfg.barBgG or 0, cfg.barBgB or 0, a)
         end
         barFrame.ApplyBg()
         local tf = CreateFrame("Frame", nil, barFrame.fill)
@@ -1019,12 +1019,12 @@ local function CreateDMWindow(winIdx)
                 if W._parked then
                     return
                 end
-                local c = DB()
+                local cfg = DB()
                 -- (WoW Forever's title keeps its gold.)
-                if c.hdrTextUseAccent ~= false and not mod.DMForever() then
+                if cfg.hdrTextUseAccent ~= false and not mod.DMForever() then
                     W.titleText:SetTextColor(red, green, blue, 1)
                 end
-                if c.iconColorUseAccent then
+                if cfg.iconColorUseAccent then
                     for _, ic in ipairs(W.hdrIcons) do
                         if not ic._hdrArt then
                             ic:SetVertexColor(red, green, blue, ICON_ALPHA)
@@ -1045,11 +1045,11 @@ local function CreateDMWindow(winIdx)
 
     W.hdrIcons = {}
     local function GetIconColor()
-        local c = DB()
-        if c.iconColorUseAccent then
+        local cfg = DB()
+        if cfg.iconColorUseAccent then
             return GetAccentRGB()
         end
-        local ic = c.iconColor
+        local ic = cfg.iconColor
         return ic and ic.r or 1, ic and ic.g or 1, ic and ic.b or 1
     end
 
@@ -1459,8 +1459,8 @@ local function CreateDMWindow(winIdx)
                     mod.ApplyWindowBorder()
                 end
                 -- Persist count
-                local c = DB()
-                c.windowCount = newIdx2
+                local cfg = DB()
+                cfg.windowCount = newIdx2
                 mod.RegisterDMUnlock()
                 nw.ShowHome()
             else
@@ -1549,16 +1549,16 @@ local function CreateDMWindow(winIdx)
         if not fontStr or not full then
             return
         end
-        local c = DB()
-        local iconSz = mod.DMHdrIconSize(c)
-        local num = mod.DMHeaderButtonCount(W, c)
+        local cfg = DB()
+        local iconSz = mod.DMHdrIconSize(cfg)
+        local num = mod.DMHeaderButtonCount(W, cfg)
         -- Icons hidden until hover occupy no space, so the title gets the whole header instead of truncating against a gap that isn't there
         if W._hdrIconsShown == false then
             num = 0
         end
         local headerW = widget:GetWidth() or (wdb.width or 300)
         local btnLeft = headerW - (iconSz * num) - (btnPad * num) - 2
-        local avail = btnLeft - (6 + (c.hdrTextOffX or 0)) - 6
+        local avail = btnLeft - (6 + (cfg.hdrTextOffX or 0)) - 6
         if avail < 1 then
             avail = 1
         end
@@ -1890,8 +1890,8 @@ local function CreateDMWindow(winIdx)
     end
     viewport:EnableMouseWheel(true)
     viewport:SetScript("OnMouseWheel", function(_, delta)
-        local c = DB()
-        local _, _, stride = mod._RowMetrics(c.barHeight or 18, c.barSpacing or 2, widget:GetEffectiveScale())
+        local cfg = DB()
+        local _, _, stride = mod._RowMetrics(cfg.barHeight or 18, cfg.barSpacing or 2, widget:GetEffectiveScale())
         local current = viewport:GetVerticalScroll() or 0
         -- Return to the row grid after the bottom clamp splits a row.
         local target = (math.floor(current / stride + 0.5) - delta * 2) * stride
@@ -1956,8 +1956,8 @@ local function CreateDMWindow(winIdx)
     local _srcScrollMax = 0
     W.srcViewport:EnableMouseWheel(true)
     W.srcViewport:SetScript("OnMouseWheel", function(_, delta)
-        local c = DB()
-        local _, _, step = mod._RowMetrics(c.barHeight or 18, c.barSpacing or 2, widget:GetEffectiveScale())
+        local cfg = DB()
+        local _, _, step = mod._RowMetrics(cfg.barHeight or 18, cfg.barSpacing or 2, widget:GetEffectiveScale())
         step = step * 2
         local current = W.srcViewport:GetVerticalScroll() or 0
         W.srcViewport:SetVerticalScroll(math.max(0, math.min(_srcScrollMax, current - delta * step)))
@@ -2309,8 +2309,8 @@ local function CreateDMWindow(winIdx)
         if not viewport or not contentFrame then
             return
         end
-        local c = DB()
-        local _, _, stride = mod._RowMetrics(c.barHeight or 18, c.barSpacing or 2, widget:GetEffectiveScale())
+        local cfg = DB()
+        local _, _, stride = mod._RowMetrics(cfg.barHeight or 18, cfg.barSpacing or 2, widget:GetEffectiveScale())
         local totalH = dataCount * stride
         contentFrame:SetHeight(math.max(10, totalH))
         local viewH = viewport:GetHeight()
@@ -2341,10 +2341,10 @@ local function CreateDMWindow(winIdx)
         if not W.stickyPlayer or not W.stickySep then
             return
         end
-        local c = DB()
+        local cfg = DB()
         -- (A Threat list, WoW Forever, pins no row.)
         if
-            c.showPinnedSelf == false
+            cfg.showPinnedSelf == false
             or not _playerGUID
             or not sources
             or #sources == 0
@@ -2371,7 +2371,7 @@ local function CreateDMWindow(winIdx)
             return
         end
         local barH, _, stride, pxMult =
-            mod._RowMetrics(c.barHeight or 18, c.barSpacing or 2, widget:GetEffectiveScale())
+            mod._RowMetrics(cfg.barHeight or 18, cfg.barSpacing or 2, widget:GetEffectiveScale())
         local scrollVal = viewport:GetVerticalScroll() or 0
         local fullViewH = widget:GetHeight() - GetHeaderH() - 2 * ci
         if fullViewH < 1 then
@@ -2434,11 +2434,11 @@ local function CreateDMWindow(winIdx)
         local source = sources[playerIdx]
         local maxAmt = isDeaths and 1 or (sources[1] and sources[1].totalAmount or 1)
         local barFrame = W.stickyPlayer
-        local leftFS = c.leftFontSize or c.fontSize or 11
-        local rightFS = c.rightFontSize or c.fontSize or 11
-        local iconStyle = c.iconStyle or "spec"
+        local leftFS = cfg.leftFontSize or cfg.fontSize or 11
+        local rightFS = cfg.rightFontSize or cfg.fontSize or 11
+        local iconStyle = cfg.iconStyle or "spec"
         local showIcon = iconStyle ~= "none"
-        local showClassColor = c.showClassColor ~= false
+        local showClassColor = cfg.showClassColor ~= false
         local texPath, texKey = GetBarTexturePath()
         -- Layout cache: only rebuild on settings change (iconStyle, as the row key: a style switch re-resolves the icon)
         local stickyCacheKey = leftFS
@@ -2453,11 +2453,11 @@ local function CreateDMWindow(winIdx)
             .. "|"
             .. barH
             .. "|"
-            .. tostring(c.classIconZoom)
+            .. tostring(cfg.classIconZoom)
             .. "|"
-            .. tostring(c.barFillAlpha)
-        if (c.spriteIconZoom or 0) ~= 0 then
-            stickyCacheKey = stickyCacheKey .. "|" .. c.spriteIconZoom
+            .. tostring(cfg.barFillAlpha)
+        if (cfg.spriteIconZoom or 0) ~= 0 then
+            stickyCacheKey = stickyCacheKey .. "|" .. cfg.spriteIconZoom
         end
         if stickyCacheKey ~= W._stickyCacheKey then
             W._stickyCacheKey = stickyCacheKey
@@ -2465,7 +2465,7 @@ local function CreateDMWindow(winIdx)
             barFrame.fill:ClearAllPoints()
             barFrame.fill:SetHeight(barH)
             ApplyBarTexture(barFrame.fill, texPath, texKey)
-            barFrame.fill:SetAlpha(c.barFillAlpha or 1)
+            barFrame.fill:SetAlpha(cfg.barFillAlpha or 1)
             SetDMFont(barFrame.pos, leftFS)
             SetDMFont(barFrame.label, leftFS)
             SetDMFont(barFrame.amount, rightFS)
@@ -2491,7 +2491,7 @@ local function CreateDMWindow(winIdx)
             end
             if barFrame._iconBorderFrame then
                 barFrame._iconBorderFrame:SetShown(
-                    c.customIconBorder and (c.iconBorderSize or 0) > 0 and barFrame.classIcon:IsShown()
+                    cfg.customIconBorder and (cfg.iconBorderSize or 0) > 0 and barFrame.classIcon:IsShown()
                 )
             end
             barFrame.fill:SetPoint("TOPLEFT", barFrame.row, "TOPLEFT", iconOffset, 0)
@@ -2508,18 +2508,18 @@ local function CreateDMWindow(winIdx)
             end
             -- Repaint class-colored background for the new class (no-op when off); bar._class set here so ApplyBg reads the current class
             barFrame._class = class
-            if c.barBgUseClassColor then
+            if cfg.barBgUseClassColor then
                 barFrame.ApplyBg()
             end
         end
         -- Accent / custom fill: outside the class memo (as the rows paint it), so Use Accent,
         -- Custom Color and a live accent change reach the pinned row.
         if not showClassColor then
-            if c.barColorUseAccent ~= false then
+            if cfg.barColorUseAccent ~= false then
                 local ar2, ag2, ab2 = GetAccentRGB()
                 barFrame.fill:SetStatusBarColor(ar2, ag2, ab2)
             else
-                local bc = c.barColor
+                local bc = cfg.barColor
                 barFrame.fill:SetStatusBarColor(bc and bc.r or 0.35, bc and bc.g or 0.55, bc and bc.b or 0.8)
             end
         end
@@ -2532,7 +2532,7 @@ local function CreateDMWindow(winIdx)
             barFrame.fill:SetValue(source.totalAmount or 0)
         end
         -- Rank: only when position changes
-        local hideNums = c.hideNumbers
+        local hideNums = cfg.hideNumbers
         if hideNums then
             barFrame.pos:SetText("")
             W._stickyRankCache = nil -- un-hiding repaints the rank
@@ -2562,10 +2562,10 @@ local function CreateDMWindow(winIdx)
             barFrame.amount:SetText(AbbrevNumber(source.totalAmount))
         else
             barFrame.amount:SetText(
-                FormatBarValue(source.totalAmount, source.amountPerSecond, c.numberFormat or 2)
+                FormatBarValue(source.totalAmount, source.amountPerSecond, cfg.numberFormat or 2)
             )
         end
-        if c.rightTextUseThreatGradient then
+        if cfg.rightTextUseThreatGradient then
             if not W._valueGradientRange then
                 mod.DMPrepareValueGradient(W, sources, #sources)
             end
@@ -2573,14 +2573,14 @@ local function CreateDMWindow(winIdx)
             barFrame._valueGradientActive = true
         elseif barFrame._valueGradientActive then
             barFrame._valueGradientActive, barFrame._gradT = nil, nil
-            local color = c.rightTextUseClassColor and class and CUI.GetClassColor(class) or c.rightTextColor
+            local color = cfg.rightTextUseClassColor and class and CUI.GetClassColor(class) or cfg.rightTextColor
             barFrame.amount:SetTextColor(color and color.r or 1, color and color.g or 1, color and color.b or 1)
         end
         barFrame._src = source
         barFrame._srcGUID = source.sourceGUID
         barFrame._class = class
         W.stickySep:Show()
-        if c.barSeparators or c.iconSeparator or c.showPlayerMarker or W._decorSync then
+        if cfg.barSeparators or cfg.iconSeparator or cfg.showPlayerMarker or W._decorSync then
             mod.DMApplyRowDecor(barFrame, W, source, pinTop and 0 or -1)
         end
     end
@@ -2601,15 +2601,15 @@ local function CreateDMWindow(winIdx)
         local count = 0
         if session and session.combatSources then
             local sources = session.combatSources
-            local c = DB()
+            local cfg = DB()
             local barH, barSp, stride =
-                mod._RowMetrics(c.barHeight or 18, c.barSpacing or 2, widget:GetEffectiveScale())
-            local rowDecor = c.barSeparators or c.iconSeparator or c.showPlayerMarker or W._decorSync
-            local leftFS = c.leftFontSize or c.fontSize or 11
-            local rightFS = c.rightFontSize or c.fontSize or 11
+                mod._RowMetrics(cfg.barHeight or 18, cfg.barSpacing or 2, widget:GetEffectiveScale())
+            local rowDecor = cfg.barSeparators or cfg.iconSeparator or cfg.showPlayerMarker or W._decorSync
+            local leftFS = cfg.leftFontSize or cfg.fontSize or 11
+            local rightFS = cfg.rightFontSize or cfg.fontSize or 11
             local fontSize = leftFS -- compat for cacheKey
-            local showIcon = (c.iconStyle or "spec") ~= "none"
-            local showClassColor = c.showClassColor ~= false
+            local showIcon = (cfg.iconStyle or "spec") ~= "none"
+            local showClassColor = cfg.showClassColor ~= false
             local texPath, texKey = GetBarTexturePath()
             local rowWidth = viewport:GetWidth() or 200
             local labelMaxW = math.max(20, rowWidth * 0.60)
@@ -2645,14 +2645,14 @@ local function CreateDMWindow(winIdx)
             end
             local maxAmt = isDeaths and 1 or (sources[1] and sources[1].totalAmount or 1)
             count = math.min(#sources, BAR_POOL_SIZE)
-            if c.rightTextUseThreatGradient then
+            if cfg.rightTextUseThreatGradient then
                 mod.DMPrepareValueGradient(W, sources, #sources)
             end
             -- Before the visible range below: it must read this segment's clamped scroll and pinned viewport.
             RecalcViewport(count)
             W.UpdateSticky(sources, count)
             -- Cache key: detects settings changes that require full bar rebuild
-            local iconStyle = c.iconStyle or "spec"
+            local iconStyle = cfg.iconStyle or "spec"
             local cacheKey = leftFS
                 .. "|"
                 .. rightFS
@@ -2663,34 +2663,34 @@ local function CreateDMWindow(winIdx)
                 .. "|"
                 .. tostring(showClassColor)
                 .. "|"
-                .. tostring(c.barColorUseAccent)
+                .. tostring(cfg.barColorUseAccent)
                 .. "|"
                 .. barH
                 .. "|"
                 .. barSp
                 .. "|"
-                .. tostring(c.hideNumbers)
+                .. tostring(cfg.hideNumbers)
                 .. "|"
-                .. tostring(c.leftTextUseClassColor)
+                .. tostring(cfg.leftTextUseClassColor)
                 .. "|"
-                .. tostring(c.rightTextUseClassColor)
+                .. tostring(cfg.rightTextUseClassColor)
                 .. "|"
-                .. tostring(c.barFillAlpha)
+                .. tostring(cfg.barFillAlpha)
                 .. "|"
-                .. tostring(c.classIconZoom)
-            if (c.spriteIconZoom or 0) ~= 0 or c.rightTextUseThreatGradient then
+                .. tostring(cfg.classIconZoom)
+            if (cfg.spriteIconZoom or 0) ~= 0 or cfg.rightTextUseThreatGradient then
                 cacheKey = cacheKey
                     .. "|"
-                    .. tostring(c.spriteIconZoom)
+                    .. tostring(cfg.spriteIconZoom)
                     .. "|"
-                    .. tostring(c.rightTextUseThreatGradient)
+                    .. tostring(cfg.rightTextUseThreatGradient)
             end
             local fullRebuild = (cacheKey ~= W._barCacheKey)
             if fullRebuild then
                 W._barCacheKey = cacheKey
             end
 
-            local numFmt = c.numberFormat or 2
+            local numFmt = cfg.numberFormat or 2
             local isSecret = issecretvalue and true or false
 
             -- Visible range calculation
@@ -2723,12 +2723,12 @@ local function CreateDMWindow(winIdx)
                         barFrame.fill:ClearAllPoints()
                         barFrame.fill:SetHeight(barH)
                         ApplyBarTexture(barFrame.fill, texPath, texKey)
-                        barFrame.fill:SetAlpha(c.barFillAlpha or 1)
+                        barFrame.fill:SetAlpha(cfg.barFillAlpha or 1)
                         SetDMFont(barFrame.pos, leftFS)
                         SetDMFont(barFrame.label, leftFS)
                         SetDMFont(barFrame.amount, rightFS)
                         barFrame.label:SetWidth(labelMaxW)
-                        if c.hideNumbers then
+                        if cfg.hideNumbers then
                             barFrame.pos:SetText("")
                         else
                             barFrame.pos:SetText(RANK_STRINGS[i] or (i .. "."))
@@ -2764,8 +2764,8 @@ local function CreateDMWindow(winIdx)
                             end
                             if barFrame._iconBorderFrame then
                                 barFrame._iconBorderFrame:SetShown(
-                                    c.customIconBorder
-                                        and (c.iconBorderSize or 0) > 0
+                                    cfg.customIconBorder
+                                        and (cfg.iconBorderSize or 0) > 0
                                         and barFrame.classIcon:IsShown()
                                 )
                             end
@@ -2774,7 +2774,7 @@ local function CreateDMWindow(winIdx)
                             barFrame._cachedColorClass = false
                             -- Repaint class-colored background for the new class (no-op when off); bar._class set here so ApplyBg reads the current class
                             barFrame._class = class
-                            if c.barBgUseClassColor then
+                            if cfg.barBgUseClassColor then
                                 barFrame.ApplyBg()
                             end
                         end
@@ -2789,7 +2789,7 @@ local function CreateDMWindow(winIdx)
                         end
 
                         -- Threat: the pull line takes no rank, so ranks move with it
-                        if isThreat and not c.hideNumbers and barFrame._cachedRank ~= source.rankText then
+                        if isThreat and not cfg.hideNumbers and barFrame._cachedRank ~= source.rankText then
                             barFrame._cachedRank = source.rankText
                             barFrame.pos:SetText(source.rankText)
                         end
@@ -2820,11 +2820,11 @@ local function CreateDMWindow(winIdx)
                         elseif fullRebuild or not barFrame._cachedColorClass then
                             barFrame._cachedColorClass = false
                             barFrame._cachedThreatColor = nil
-                            if c.barColorUseAccent ~= false then
+                            if cfg.barColorUseAccent ~= false then
                                 local ar2, ag2, ab2 = GetAccentRGB()
                                 barFrame.fill:SetStatusBarColor(ar2, ag2, ab2)
                             else
-                                local bc = c.barColor
+                                local bc = cfg.barColor
                                 barFrame.fill:SetStatusBarColor(
                                     bc and bc.r or 0.35,
                                     bc and bc.g or 0.55,
@@ -2834,26 +2834,26 @@ local function CreateDMWindow(winIdx)
                         end
 
                         -- Left text color (pos + label)
-                        if c.leftTextUseClassColor then
+                        if cfg.leftTextUseClassColor then
                             local cc = class and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
                             local lr, lg, lb = cc and cc.r or 1, cc and cc.g or 1, cc and cc.b or 1
                             barFrame.label:SetTextColor(lr, lg, lb)
                             barFrame.pos:SetTextColor(lr, lg, lb)
                         elseif fullRebuild then
-                            local tc = c.leftTextColor
+                            local tc = cfg.leftTextColor
                             local lr, lg, lb = tc and tc.r or 1, tc and tc.g or 1, tc and tc.b or 1
                             barFrame.label:SetTextColor(lr, lg, lb)
                             barFrame.pos:SetTextColor(lr, lg, lb)
                         end
                         -- Right text color (amount)
-                        if c.rightTextUseThreatGradient then
+                        if cfg.rightTextUseThreatGradient then
                             mod.DMPaintValueGradient(barFrame, W, source, i)
-                        elseif c.rightTextUseClassColor then
+                        elseif cfg.rightTextUseClassColor then
                             local cc = class and RAID_CLASS_COLORS[class] and CUI.GetClassColor(class)
                             local rr, rg, rb = cc and cc.r or 1, cc and cc.g or 1, cc and cc.b or 1
                             barFrame.amount:SetTextColor(rr, rg, rb)
                         elseif fullRebuild then
-                            local tc = c.rightTextColor
+                            local tc = cfg.rightTextColor
                             local rr, rg, rb = tc and tc.r or 1, tc and tc.g or 1, tc and tc.b or 1
                             barFrame.amount:SetTextColor(rr, rg, rb)
                         end
@@ -3115,11 +3115,11 @@ local function CreateDMWindow(winIdx)
             for ri = #events, 1, -1 do
                 reversed[#reversed + 1] = events[ri]
             end
-            local c = DB()
+            local cfg = DB()
             local barH, _, stride =
-                mod._RowMetrics(c.barHeight or 18, c.barSpacing or 2, widget:GetEffectiveScale())
-            local leftFS = c.leftFontSize or c.fontSize or 11
-            local rightFS = c.rightFontSize or c.fontSize or 11
+                mod._RowMetrics(cfg.barHeight or 18, cfg.barSpacing or 2, widget:GetEffectiveScale())
+            local leftFS = cfg.leftFontSize or cfg.fontSize or 11
+            local rightFS = cfg.rightFontSize or cfg.fontSize or 11
             local texPath, texKey = GetBarTexturePath()
             local deathTime = reversed[#reversed] and reversed[#reversed].timestamp
             if IsSecret(deathTime) then
@@ -3288,9 +3288,9 @@ local function CreateDMWindow(winIdx)
                     srcData = sd
                 end
             end
-            local c = DB()
+            local cfg = DB()
             local barH, _, stride =
-                mod._RowMetrics(c.barHeight or 18, c.barSpacing or 2, widget:GetEffectiveScale())
+                mod._RowMetrics(cfg.barHeight or 18, cfg.barSpacing or 2, widget:GetEffectiveScale())
             -- Rows and the icon lookup's source are kept on the window: this
             -- runs on every meter refresh while the breakdown is open.
             W._enemyRows = W._enemyRows or {}
@@ -3307,8 +3307,8 @@ local function CreateDMWindow(winIdx)
                 end
                 return
             end
-            local leftFS = c.leftFontSize or c.fontSize or 11
-            local rightFS = c.rightFontSize or c.fontSize or 11
+            local leftFS = cfg.leftFontSize or cfg.fontSize or 11
+            local rightFS = cfg.rightFontSize or cfg.fontSize or 11
             local texPath, texKey = GetBarTexturePath()
             local maxAmt = players[1].total
             local pCount = math.min(playerCount, BAR_POOL_SIZE)
@@ -3345,7 +3345,7 @@ local function CreateDMWindow(winIdx)
                     barFrame.label:SetTextColor(1, 1, 1)
                     barFrame.amount:SetTextColor(1, 1, 1)
                     barFrame.label:SetText(StripRealm(p.name, nil, p))
-                    barFrame.amount:SetText(FormatBarValue(p.total, p.amountPerSecond, c.numberFormat or 2))
+                    barFrame.amount:SetText(FormatBarValue(p.total, p.amountPerSecond, cfg.numberFormat or 2))
                     barFrame._spellID = nil
                 else
                     barFrame.row:Hide()
@@ -3389,11 +3389,11 @@ local function CreateDMWindow(winIdx)
             return
         end
         local spells = srcData.combatSpells
-        local c = DB()
+        local cfg = DB()
         local barH, barSp, stride =
-            mod._RowMetrics(c.barHeight or 18, c.barSpacing or 2, widget:GetEffectiveScale())
-        local leftFS = c.leftFontSize or c.fontSize or 11
-        local rightFS = c.rightFontSize or c.fontSize or 11
+            mod._RowMetrics(cfg.barHeight or 18, cfg.barSpacing or 2, widget:GetEffectiveScale())
+        local leftFS = cfg.leftFontSize or cfg.fontSize or 11
+        local rightFS = cfg.rightFontSize or cfg.fontSize or 11
         local texPath, texKey = GetBarTexturePath()
         local sorted = {}
         for _, spell in ipairs(spells) do
@@ -3551,7 +3551,7 @@ local function CreateDMWindow(winIdx)
                     barFrame.label:SetTextColor(1, 1, 1)
                     barFrame.amount:SetTextColor(1, 1, 1)
                     barFrame.label:SetText(t.name)
-                    barFrame.amount:SetText(FormatBarValue(t.total, t.amountPerSecond, c.numberFormat or 2))
+                    barFrame.amount:SetText(FormatBarValue(t.total, t.amountPerSecond, cfg.numberFormat or 2))
                     barFrame._spellID = nil
                     targetsRendered = targetsRendered + 1
                 end
@@ -4055,7 +4055,7 @@ local function CreateDMWindow(winIdx)
         if not widget then
             return
         end
-        local c = DB()
+        local cfg = DB()
         if CUI._unlockActive or mod._optionsOpen then
             widget:SetAlpha(1)
             widget:EnableMouse(true)
@@ -4067,7 +4067,7 @@ local function CreateDMWindow(winIdx)
             widget:Hide()
             return
         end
-        local vis = CUI.EvalVisibility(c)
+        local vis = CUI.EvalVisibility(cfg)
         if not vis or vis == false then
             widget:Hide()
             return
@@ -4094,8 +4094,8 @@ local function CreateDMWindow(winIdx)
         if mod._toggleHidden or InstanceHidden() then
             return false
         end
-        local c = DB()
-        return c ~= nil and CUI.VisWantsMouseover(c, "visibility")
+        local cfg = DB()
+        return cfg ~= nil and CUI.VisWantsMouseover(cfg, "visibility")
     end
     CUI.RegisterVisibilityUpdater(W.UpdateVisibility)
     if CUI.RegisterMouseoverTarget then
@@ -4166,10 +4166,10 @@ local function CreateDMWindow(winIdx)
         -- Compact DB: remove entry and shift remaining down (no holes). Uses W.idx (not the
         -- winIdx upvalue) since prior deletions may have shifted this window's slot since creation.
         local removedIdx = runtimeIdx or W.idx
-        local c = DB()
-        if c.windows then
-            table.remove(c.windows, removedIdx)
-            c.windowCount = #c.windows
+        local cfg = DB()
+        if cfg.windows then
+            table.remove(cfg.windows, removedIdx)
+            cfg.windowCount = #cfg.windows
         end
         -- Update remaining windows' idx to match their new DB position
         for i, wid in ipairs(_windows) do
@@ -4210,7 +4210,7 @@ local function CreateDMWindow(winIdx)
         CUI.RegisterMouseoverTarget(widget, MouseoverActive)
         W.idx = index
         wdb = WinDB(index)
-        local c = DB()
+        local cfg = DB()
         -- Window state, as set at the top of this function
         local dmType = wdb.curDMType or Enum.DamageMeterType.DamageDone
         if not DM_TYPE_NAMES[dmType] then
@@ -4277,45 +4277,45 @@ local function CreateDMWindow(winIdx)
             homeScroll:SetVerticalScroll(0)
         end
         -- Window and breakdown background, header bar
-        local bgR, bgG, bgB, bgA = c.bgR or 0, c.bgG or 0, c.bgB or 0, c.bgAlpha or 0.75
+        local bgR, bgG, bgB, bgA = cfg.bgR or 0, cfg.bgG or 0, cfg.bgB or 0, cfg.bgAlpha or 0.75
         local hdrH = GetHeaderH()
         widget._bg:ClearAllPoints()
         widget._bg:SetPoint("TOPLEFT", widget, "TOPLEFT", 0, -hdrH)
         widget._bg:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", 0, 0)
-        mod.DMPaintWindowBg(widget._bg, bgR, bgG, bgB, bgA, true, c.bgTexture)
-        mod.DMPaintWindowBg(W.sourceFrame._bg, bgR, bgG, bgB, bgA, nil, c.bgTexture)
+        mod.DMPaintWindowBg(widget._bg, bgR, bgG, bgB, bgA, true, cfg.bgTexture)
+        mod.DMPaintWindowBg(W.sourceFrame._bg, bgR, bgG, bgB, bgA, nil, cfg.bgTexture)
         header:SetHeight(hdrH)
-        local hc = c.hdrBgColor
+        local hc = cfg.hdrBgColor
         mod.DMPaintHeaderBg(
             header._hdrBg,
             hc and hc.r or 0x1B / 255,
             hc and hc.g or 0x1B / 255,
             hc and hc.b or 0x1B / 255,
-            c.hdrBgAlpha or 1
+            cfg.hdrBgAlpha or 1
         )
         if not mod.DMClassicSeparator(header._bottomBorder, PhysicalPixels(1)) then
-            local size = c.hdrBottomBorderSize or 0
-            local color = c.hdrBottomBorderColor or {}
+            local size = cfg.hdrBottomBorderSize or 0
+            local color = cfg.hdrBottomBorderColor or {}
             header._bottomBorder:SetHeight(PhysicalPixels(size))
             header._bottomBorder:SetColorTexture(color.r or 0, color.g or 0, color.b or 0, color.a or 1)
             header._bottomBorder:SetShown(size > 0 and not mod.DMBlizz())
         end
         -- Title and timer
-        local titleFS = c.hdrFontSize or 11
+        local titleFS = cfg.hdrFontSize or 11
         SetDMFont(W.titleText, titleFS)
         W.titleText:ClearAllPoints()
         W.titleText:SetPoint(
             "LEFT",
             header,
             "LEFT",
-            6 + (c.hdrTextOffX or 0),
-            (c.hdrTextOffY or 0) + mod.DMHdrLift(c.hdrHeight)
+            6 + (cfg.hdrTextOffX or 0),
+            (cfg.hdrTextOffY or 0) + mod.DMHdrLift(cfg.hdrHeight)
         )
         local tR, tG, tB
-        if c.hdrTextUseAccent ~= false then
+        if cfg.hdrTextUseAccent ~= false then
             tR, tG, tB = mod.DMTitleRGB()
         else
-            local tc = c.hdrTextColor
+            local tc = cfg.hdrTextColor
             tR = tc and tc.r or 1
             tG = tc and tc.g or 1
             tB = tc and tc.b or 1
@@ -4327,7 +4327,7 @@ local function CreateDMWindow(winIdx)
         W.timerText:SetText("(0:00)")
         W.timerText:SetShown(not wdb.hideTimer)
         -- Header buttons: size, glyph colour, meter type icon, close icon, lock state
-        local sz = mod.DMHdrIconSize(c)
+        local sz = mod.DMHdrIconSize(cfg)
         local ir, ig, ib = GetIconColor()
         for _, button in ipairs(W.hdrBtns) do
             button:SetSize(sz, sz)
@@ -4344,12 +4344,12 @@ local function CreateDMWindow(winIdx)
             closeTex:SetSize(sz + 2, sz + 2)
             closeTex:SetPoint("CENTER", W.winActionBtn, "CENTER", 0, 0)
         end
-        LayoutHeaderButtons(W, c, sz)
+        LayoutHeaderButtons(W, cfg, sz)
         UpdateLockIcon()
         local a = W.isHovered and 0.3 or 0
         W.resizeGrip:SetAlpha(W.windowLocked and 0 or a)
         W.lockBtn:SetAlpha(a)
-        ApplyHeaderButtonsHoverVisibility(W, c)
+        ApplyHeaderButtonsHoverVisibility(W, cfg)
         -- Rows and the pinned row: borders, track, text offsets
         for i = 1, BAR_POOL_SIZE do
             local barFrame = W.rowPool[i]

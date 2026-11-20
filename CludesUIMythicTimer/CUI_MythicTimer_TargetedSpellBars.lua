@@ -299,9 +299,9 @@ local function StyleBar(holderFrame, conf)
     if pp and pp.DisablePixelSnap then
         pp.DisablePixelSnap(holderFrame.sb:GetStatusBarTexture())
     end
-    local c = conf.barColor
-    if c then
-        holderFrame.sb:SetStatusBarColor(c.r, c.g, c.b)
+    local color = conf.barColor
+    if color then
+        holderFrame.sb:SetStatusBarColor(color.r, color.g, color.b)
     end
 
     -- Fill texture re-mint: SetStatusBarTexture creates a NEW texture object
@@ -447,12 +447,12 @@ end
 local IMP_GLOW_SPEC = {}
 local function StartImportantGlowAnim(holderFrame, conf)
     local shade = EnsureGlowOverlay(holderFrame)
-    local c = conf.importantGlowColor or { r = 1, g = 0.2, b = 0.2 }
+    local color = conf.importantGlowColor or { r = 1, g = 0.2, b = 0.2 }
     local bgc = conf.importantGlowBackgroundColor
     local specInfo = IMP_GLOW_SPEC
     specInfo.style = conf.importantGlowStyle or 1
     specInfo.r, specInfo.g, specInfo.b =
-        Glows.ResolveColor(conf.importantGlowColorMode or "custom", c.r, c.g, c.b)
+        Glows.ResolveColor(conf.importantGlowColorMode or "custom", color.r, color.g, color.b)
     specInfo.lines, specInfo.thickness, specInfo.speed =
         conf.importantGlowLines, conf.importantGlowThickness, conf.importantGlowSpeed
     specInfo.bg = (conf.importantGlowBackground == true) or nil
@@ -1322,9 +1322,9 @@ local function PaintSampleRow(e, conf, sample, slot, anchor)
         e.bar.sb:GetStatusBarTexture():SetVertexColor(un.r, un.g, un.b)
     else
         e.bar.overlay:SetAlpha(0)
-        local c = conf.barColor
-        if c then
-            e.bar.sb:GetStatusBarTexture():SetVertexColor(c.r, c.g, c.b)
+        local color = conf.barColor
+        if color then
+            e.bar.sb:GetStatusBarTexture():SetVertexColor(color.r, color.g, color.b)
         end
     end
 

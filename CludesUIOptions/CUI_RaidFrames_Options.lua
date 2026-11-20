@@ -378,9 +378,9 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                 disabledTooltip = "This option requires a Shape other than None.",
                 rawTooltip = true,
                 get = function()
-                    local c = db.profile.partyPortraitBgColor
-                    if c then
-                        return c.r, c.g, c.b, c.a or 1
+                    local color = db.profile.partyPortraitBgColor
+                    if color then
+                        return color.r, color.g, color.b, color.a or 1
                     end
                     return 0.1, 0.1, 0.1, 1
                 end,
@@ -561,8 +561,8 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                 tooltip = "Custom Color",
                 hasAlpha = false,
                 getValue = function()
-                    local c = db.profile.partyPortraitBorderColor or { r = 0, g = 0, b = 0 }
-                    return c.r, c.g, c.b
+                    local color = db.profile.partyPortraitBorderColor or { r = 0, g = 0, b = 0 }
+                    return color.r, color.g, color.b
                 end,
                 setValue = function(red, green, blue)
                     PtSet("partyPortraitBorderColor", { r = red, g = green, b = blue })
@@ -763,9 +763,9 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
     if not CludesUI._prebuilding then
         local region = row._leftRegion
         local colorSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
-            local c = db.profile.partyTargetCustomFillColor
-            if c then
-                return c.r, c.g, c.b, 1
+            local color = db.profile.partyTargetCustomFillColor
+            if color then
+                return color.r, color.g, color.b, 1
             end
             return 37 / 255, 193 / 255, 29 / 255, 1
         end, function(red, green, blue)
@@ -819,9 +819,9 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         region._lastInline = bgClassSwatch
 
         local bgSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
-            local c = db.profile.partyTargetCustomBgColor
-            if c then
-                return c.r, c.g, c.b, 1
+            local color = db.profile.partyTargetCustomBgColor
+            if color then
+                return color.r, color.g, color.b, 1
             end
             return 17 / 255, 17 / 255, 17 / 255, 1
         end, function(red, green, blue)

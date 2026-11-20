@@ -253,8 +253,8 @@ end
 -- The header's height: the Header Height setting, plus the Forever header
 -- band's rail under it (ns.DMFvRail; 0 on every other look).
 local function GetHeaderH()
-    local c = DB()
-    local hgt = c.hdrHeight or 22
+    local cfg = DB()
+    local hgt = cfg.hdrHeight or 22
     return hgt + mod.DMFvRail(hgt)
 end
 

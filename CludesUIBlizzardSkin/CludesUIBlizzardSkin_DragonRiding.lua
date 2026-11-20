@@ -489,8 +489,8 @@ function OnUpdate(self, dt)
                 speedBar.text:SetText(FormatSpeedText(speedPct))
             end
             local aboveThrill = (speedPct >= (p.thrillThreshold or 0))
-            local c = (p.thrillColorToggle and aboveThrill) and p.thrillColor or p.normalColor
-            speedBar:SetStatusBarColor(c.r, c.g, c.b, c.a)
+            local color = (p.thrillColorToggle and aboveThrill) and p.thrillColor or p.normalColor
+            speedBar:SetStatusBarColor(color.r, color.g, color.b, color.a)
             lastSpeedApplied = fraction
         end
     end -- speed-poll gate
@@ -826,12 +826,12 @@ local function ApplyBordersAll(S, L)
         return
     end
     local p = saved.profile
-    local c = p.borderColor
+    local color = p.borderColor
     -- The Blizzard and Classic WoW UI bar styles draw their own frames instead.
     local thick = L.chrome and 0 or (p.borderThickness or 0)
     for _, frame in ipairs(S.bordered) do
         if thick > 0 then
-            Pix.UpdateBorder(frame, thick, c.r, c.g, c.b, c.a)
+            Pix.UpdateBorder(frame, thick, color.r, color.g, color.b, color.a)
             Pix.ShowBorder(frame)
         else
             Pix.HideBorder(frame)
@@ -1605,8 +1605,8 @@ local function PaintSet(S, p, L)
         sw.pips[idx]:SetStatusBarTexture(texPath)
     end
 
-    local c = p.normalColor
-    speedValue:SetStatusBarColor(c.r, c.g, c.b, c.a)
+    local color = p.normalColor
+    speedValue:SetStatusBarColor(color.r, color.g, color.b, color.a)
     speedValue.bg:SetColorTexture(p.speedBarBg.r, p.speedBarBg.g, p.speedBarBg.b, p.speedBarBg.a)
 
     local tickFrac = (p.thrillThreshold or 0) / (p.maxSpeed > 0 and p.maxSpeed or 1)
@@ -1729,9 +1729,9 @@ local function PaintSample()
     local fraction = (p.maxSpeed > 0) and (SAMPLE_SPEED_PCT / p.maxSpeed) or 0
     S.speed:SetValue(max(0, min(1, fraction)))
     S.speed.text:SetText(FormatSpeedText(SAMPLE_SPEED_PCT))
-    local c = (p.thrillColorToggle and SAMPLE_SPEED_PCT >= (p.thrillThreshold or 0)) and p.thrillColor
+    local color = (p.thrillColorToggle and SAMPLE_SPEED_PCT >= (p.thrillThreshold or 0)) and p.thrillColor
         or p.normalColor
-    S.speed:SetStatusBarColor(c.r, c.g, c.b, c.a)
+    S.speed:SetStatusBarColor(color.r, color.g, color.b, color.a)
 
     if L.classic then
         -- Still gems: no pulse, flash or swirl in the header.

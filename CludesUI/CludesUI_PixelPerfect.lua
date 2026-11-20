@@ -2011,9 +2011,9 @@ do
         end
         for _, record in ipairs(CludesUI._builtinBorderTextures) do
             if record.key == texKey then
-                local c = record.selectColor
-                if c then
-                    return { r = c.r, g = c.g, b = c.b }
+                local color = record.selectColor
+                if color then
+                    return { r = color.r, g = color.g, b = color.b }
                 end
                 return nil
             end

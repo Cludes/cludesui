@@ -196,9 +196,9 @@ local function BlockColorOf(b)
     elseif b.useAccentColor then
         return mod.GetAccent()
     end
-    local c = b.color
-    if c then
-        return c.r or 1, c.g or 1, c.b or 1
+    local color = b.color
+    if color then
+        return color.r or 1, color.g or 1, color.b or 1
     end
     return 1, 1, 1
 end
@@ -424,9 +424,9 @@ local function IconColorOf(b)
     elseif b.useIconAccentColor then
         return mod.GetAccent()
     end
-    local c = b.iconColor
-    if c then
-        return c.r or 1, c.g or 1, c.b or 1
+    local color = b.iconColor
+    if color then
+        return color.r or 1, color.g or 1, color.b or 1
     end
     return mod.BlockIconDefault(b.type, b.settings)
 end

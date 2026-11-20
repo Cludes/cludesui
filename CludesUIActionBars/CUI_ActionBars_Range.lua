@@ -81,8 +81,8 @@ local function ApplyRangeTint(button, outOfRange, barSettings)
     end
     local rfd = EFD(button)
     if outOfRange and barSettings.outOfRangeColoring then
-        local c = barSettings.outOfRangeColor or { r = 0.7, g = 0.2, b = 0.2 }
-        ico:SetVertexColor(c.r, c.g, c.b)
+        local color = barSettings.outOfRangeColor or { r = 0.7, g = 0.2, b = 0.2 }
+        ico:SetVertexColor(color.r, color.g, color.b)
         rfd.rangeTinted = true
     elseif rfd.rangeTinted then
         rfd.rangeTinted = nil

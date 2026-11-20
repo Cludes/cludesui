@@ -661,11 +661,11 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             rightRegion,
             abBsRow:GetFrameLevel() + 3,
             function()
-                local c = SGet("borderColor")
-                if not c then
+                local color = SGet("borderColor")
+                if not color then
                     return 0, 0, 0
                 end
-                return c.r, c.g, c.b
+                return color.r, color.g, color.b
             end,
             function(red, green, blue)
                 SSetColor("borderColor", red, green, blue, nil, function(keyName)
@@ -766,11 +766,11 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             if (bar.borderClassColor or false) ~= (value.cc or false) then
                 return false
             end
-            local c, bc = value.c, bar.borderColor
-            return (bc and bc.r or 0) == (c and c.r or 0)
-                and (bc and bc.g or 0) == (c and c.g or 0)
-                and (bc and bc.b or 0) == (c and c.b or 0)
-                and (bc and bc.a or 1) == (c and c.a or 1)
+            local color, bc = value.c, bar.borderColor
+            return (bc and bc.r or 0) == (color and color.r or 0)
+                and (bc and bc.g or 0) == (color and color.g or 0)
+                and (bc and bc.b or 0) == (color and color.b or 0)
+                and (bc and bc.a or 1) == (color and color.a or 1)
         end)
     end
 
@@ -1005,8 +1005,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             region,
             slotBgRow:GetFrameLevel() + 3,
             function()
-                local c = ABAR.db.profile.slotBgColor or { r = 0.15, g = 0.15, b = 0.15 }
-                return c.r, c.g, c.b, 1
+                local color = ABAR.db.profile.slotBgColor or { r = 0.15, g = 0.15, b = 0.15 }
+                return color.r, color.g, color.b, 1
             end,
             function(red, green, blue)
                 ABAR.db.profile.slotBgColor = { r = red, g = green, b = blue }
@@ -1125,8 +1125,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 disabled = BgDisabled,
                 disabledTooltip = "Bar Background",
                 getValue = function()
-                    local c = SGet("bgColor") or { r = 0, g = 0, b = 0, a = 0.5 }
-                    return c.r, c.g, c.b, 1
+                    local color = SGet("bgColor") or { r = 0, g = 0, b = 0, a = 0.5 }
+                    return color.r, color.g, color.b, 1
                 end,
                 setValue = function(red, green, blue)
                     local old = SGet("bgColor") or { a = 0.5 }
@@ -1319,8 +1319,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                         regionFrame,
                         regionFrame:GetFrameLevel() + 5,
                         function()
-                            local c = SGet("bgBorderColor") or { r = 0, g = 0, b = 0, a = 1 }
-                            return c.r, c.g, c.b, c.a
+                            local color = SGet("bgBorderColor") or { r = 0, g = 0, b = 0, a = 1 }
+                            return color.r, color.g, color.b, color.a
                         end,
                         function(red, green, blue, a)
                             SSetColor("bgBorderColor", red, green, blue, a, function(keyName)
@@ -1374,8 +1374,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                         then
                             return false
                         end
-                        local tc, c = target.bgBorderColor or { r = 0, g = 0, b = 0, a = 1 }, value.color
-                        return tc.r == c.r and tc.g == c.g and tc.b == c.b and tc.a == c.a
+                        local tc, color = target.bgBorderColor or { r = 0, g = 0, b = 0, a = 1 }, value.color
+                        return tc.r == color.r and tc.g == color.g and tc.b == color.b and tc.a == color.a
                     end)
                 end
 
@@ -1804,9 +1804,9 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             return { on = s.outOfRangeColoring or false, color = s.outOfRangeColor }
         end, function(bar, value)
             bar.outOfRangeColoring = value.on
-            local c = value.color
-            if c then
-                bar.outOfRangeColor = { r = c.r, g = c.g, b = c.b }
+            local color = value.color
+            if color then
+                bar.outOfRangeColor = { r = color.r, g = color.g, b = color.b }
             end
         end, function(bar, value)
             return (bar.outOfRangeColoring or false) == value.on
@@ -1817,11 +1817,11 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     do
         local leftRegion = rangeSwipeRow._leftRegion
         local rangeColorGet = function()
-            local c = SGet("outOfRangeColor")
-            if not c then
+            local color = SGet("outOfRangeColor")
+            if not color then
                 return 0.7, 0.2, 0.2
             end
-            return c.r, c.g, c.b
+            return color.r, color.g, color.b
         end
         local rangeColorSet = function(red, green, blue)
             SSetColor("outOfRangeColor", red, green, blue, nil, function()
@@ -1870,8 +1870,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             region,
             rangeSwipeRow:GetFrameLevel() + 5,
             function()
-                local c = ABAR.db.profile.cdSwipeColor or {}
-                return c.r or 0, c.g or 0, c.b or 0
+                local color = ABAR.db.profile.cdSwipeColor or {}
+                return color.r or 0, color.g or 0, color.b or 0
             end,
             function(red, green, blue)
                 ABAR.db.profile.cdSwipeColor = { r = red, g = green, b = blue }
@@ -2643,8 +2643,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             if (bar.cooldownTextYOffset or 0) ~= value.oy or (bar.cooldownFontFit or false) ~= value.fit then
                 return false
             end
-            local c, bc = value.c, bar.cooldownTextColor
-            return not c or (bc and bc.r == c.r and bc.g == c.g and bc.b == c.b) and true or false
+            local color, bc = value.c, bar.cooldownTextColor
+            return not color or (bc and bc.r == color.r and bc.g == color.g and bc.b == color.b) and true or false
         end)
     end
 

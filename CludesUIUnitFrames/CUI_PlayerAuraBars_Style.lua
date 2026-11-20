@@ -112,10 +112,10 @@ local function BuildDispelColorMap(conf)
     local map, fp = {}, {}
     for index = 1, #DISPEL_SLOTS do
         local def = DISPEL_SLOTS[index]
-        local c = conf[def.colorKey]
-        local region = (c and c.r) or def.fallback[1]
-        local g = (c and c.g) or def.fallback[2]
-        local b = (c and c.b) or def.fallback[3]
+        local color = conf[def.colorKey]
+        local region = (color and color.r) or def.fallback[1]
+        local g = (color and color.g) or def.fallback[2]
+        local b = (color and color.b) or def.fallback[3]
         map[def.token] = CreateColor(region, g, b, 1)
         fp[#fp + 1] = string.format("%.3f,%.3f,%.3f", region, g, b)
     end
@@ -176,8 +176,8 @@ local function PAB_ApplyExtraText(btnFrame, skinData, style)
             skinData.duration:SetPoint(dp, btnFrame, drp, style.durationX or 0, style.durationY or 0)
             skinData.pabDurAnchor = aKey
         end
-        local c = style.durationColor
-        skinData.duration:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
+        local color = style.durationColor
+        skinData.duration:SetTextColor(color and color.r or 1, color and color.g or 1, color and color.b or 1)
         -- "Show S for Seconds" rebind: duration opts land once at creation;
         -- re-register when the style's formatter choice changed. The nil
         -- gate skips the creation-time applyExtra pass (the creation block
@@ -215,8 +215,8 @@ local function PAB_ApplyExtraText(btnFrame, skinData, style)
             skinData.pabStackAnchor = sKey
         end
         skinData.stack:SetShown(style.showStacks ~= false)
-        local c = style.stackColor
-        skinData.stack:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
+        local color = style.stackColor
+        skinData.stack:SetTextColor(color and color.r or 1, color and color.g or 1, color and color.b or 1)
     end
 
     -- Duration swipe visibility. style.hideSwipe only runs through AK's

@@ -1425,10 +1425,10 @@ function mod.ApplyAbsorbStyle(backing)
     -- Tint applies to every style EXCEPT Blizzard, which keeps its own coloring.
     local red, green, blue = 1, 1, 1
     if style ~= "blizzard" then
-        local c = (p and p.absorbColor) or defaultSet.absorbColor
+        local color = (p and p.absorbColor) or defaultSet.absorbColor
         -- Per-component default: a partial colour table would throw downstream.
-        if c then
-            red, green, blue = c.r or 1, c.g or 1, c.b or 1
+        if color then
+            red, green, blue = color.r or 1, color.g or 1, color.b or 1
         end
     end
     local mask = backing._absorbMask

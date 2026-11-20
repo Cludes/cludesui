@@ -56,8 +56,8 @@ CludesUI.AtOptionsLogin(function()
     -- Assigned names in the suite accent, read on every call so a theme change
     -- lands with the next refresh.
     local function Accent(textValue)
-        local c = CludesUI.CLUDES_GREEN
-        return CludesUI.HexColor(c.r, c.g, c.b) .. tostring(textValue) .. "|r"
+        local color = CludesUI.CLUDES_GREEN
+        return CludesUI.HexColor(color.r, color.g, color.b) .. tostring(textValue) .. "|r"
     end
 
     local ALL_SPECS_TEXT = CludesUI.L("All Specs")

@@ -133,9 +133,9 @@ local function Color()
         local frame = CludesUI.GetPowerBgDarkenFactor()
         barFrame.bg:SetColorTexture(red * frame, green * frame, blue * frame, 1)
     else
-        local c = s.customPowerBgColor
-        if c then
-            barFrame.bg:SetColorTexture(c.r, c.g, c.b, 1)
+        local color = s.customPowerBgColor
+        if color then
+            barFrame.bg:SetColorTexture(color.r, color.g, color.b, 1)
         else
             barFrame.bg:SetColorTexture(17 / 255, 17 / 255, 17 / 255, 1)
         end

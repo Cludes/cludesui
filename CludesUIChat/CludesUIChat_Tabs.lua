@@ -487,8 +487,8 @@ local function StyleGhost(g, active)
         )
         bgColor = { r = br, g = bgc2, b = bb, a = ba }
     else
-        local c = conf.tabBackgroundColor or { r = 0.03, g = 0.045, b = 0.05, a = 0.44 }
-        bgColor = { r = c.r or 0.03, g = c.g or 0.045, b = c.b or 0.05, a = c.a == nil and 0.44 or c.a }
+        local color = conf.tabBackgroundColor or { r = 0.03, g = 0.045, b = 0.05, a = 0.44 }
+        bgColor = { r = color.r or 0.03, g = color.g or 0.045, b = color.b or 0.05, a = color.a == nil and 0.44 or color.a }
     end
     local texKey = conf.tabBackgroundTexture or "none"
     local texPath
@@ -533,8 +533,8 @@ local function StyleGhost(g, active)
             region, gg, b = CUI.GetAccentColor()
             a = (conf.innerBorderColor and conf.innerBorderColor.a) or 0.06
         else
-            local c = conf.innerBorderColor or { r = 1, g = 1, b = 1, a = 0.06 }
-            region, gg, b, a = c.r or 1, c.g or 1, c.b or 1, c.a == nil and 0.06 or c.a
+            local color = conf.innerBorderColor or { r = 1, g = 1, b = 1, a = 0.06 }
+            region, gg, b, a = color.r or 1, color.g or 1, color.b or 1, color.a == nil and 0.06 or color.a
         end
         g._sep:SetColorTexture(region, gg, b, a)
         g._sep:Show()

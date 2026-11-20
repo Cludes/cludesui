@@ -279,8 +279,8 @@ local function ApplyRFDebuffText(btnFrame, d, look)
             d.rfDurFont = fontKey
             CludesUI.ApplyIconTextFont(d.duration, filePath, look.durSize or 8, "raidFrames")
         end
-        local c = look.durColor
-        d.duration:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
+        local color = look.durColor
+        d.duration:SetTextColor(color and color.r or 1, color and color.g or 1, color and color.b or 1)
         -- Anchor change-guarded, stamp AFTER the calls: SetPoint against the button
         -- is policed under the 12.1 aura-secret restriction, so unchanged offsets must
         -- make zero button-touching calls to keep restyles live in-instance.
@@ -299,8 +299,8 @@ local function ApplyRFDebuffText(btnFrame, d, look)
             d.rfStackFont = fontKey
             CludesUI.ApplyIconTextFont(d.stack, filePath, look.stackSize or 8, "raidFrames")
         end
-        local c = look.stackColor
-        d.stack:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
+        local color = look.stackColor
+        d.stack:SetTextColor(color and color.r or 1, color and color.g or 1, color and color.b or 1)
         local sKey = (look.stackOffX or 0) .. "|" .. (look.stackOffY or 0)
         if d.rfStackAnchor ~= sKey then
             d.stack:ClearAllPoints()
@@ -329,8 +329,8 @@ local function ApplyRFDebuffText(btnFrame, d, look)
             texture:SetAllPoints(btnFrame)
             d.dmSqTex = texture
         end
-        local c = look.squareColor
-        texture:SetColorTexture(c.r or 1, c.g or 0.35, c.b or 0.35, c.a or 1)
+        local color = look.squareColor
+        texture:SetColorTexture(color.r or 1, color.g or 0.35, color.b or 0.35, color.a or 1)
         texture:Show()
     elseif d.dmSqTex then
         d.dmSqTex:Hide()
@@ -777,10 +777,10 @@ function mod.RFC_DispelBorderColorMap(s)
     local map, fp = {}, {}
     for i = 1, #DISPEL_SLOTS do
         local defaults = DISPEL_SLOTS[i]
-        local c = s[defaults.colorKey]
-        local r = (c and c.r) or defaults.fallback[1]
-        local g = (c and c.g) or defaults.fallback[2]
-        local b = (c and c.b) or defaults.fallback[3]
+        local color = s[defaults.colorKey]
+        local r = (color and color.r) or defaults.fallback[1]
+        local g = (color and color.g) or defaults.fallback[2]
+        local b = (color and color.b) or defaults.fallback[3]
         map[defaults.token] = CreateColor(r, g, b, 1)
         fp[#fp + 1] = string.format("%.3f,%.3f,%.3f", r, g, b)
     end
@@ -849,10 +849,10 @@ local function ApplyRFDispelSlot(btnFrame, dropdown, look)
         dropdown.lvl = lvl
     end
 
-    local c = look.typeColors and look.typeColors[defaults.token]
-    local red, green, blue = c and c.r or 1, c and c.g or 1, c and c.b or 1
+    local color = look.typeColors and look.typeColors[defaults.token]
+    local red, green, blue = color and color.r or 1, color and color.g or 1, color and color.b or 1
     -- Per-type alpha (0 = user opted this type out of the dispel visuals)
-    local typeA = (c and c.a) or 1
+    local typeA = (color and color.a) or 1
     local alpha = (look.opacity or 100) / 100 * typeA
 
     -- Overlay texture (fill / full / gradient). Sublevel 2+def.level (3..7)
@@ -1030,12 +1030,12 @@ local function BuildDispelStyle(s, compact)
     local typeColors = {}
     for i = 1, #DISPEL_SLOTS do
         local defaults = DISPEL_SLOTS[i]
-        local c = s[defaults.colorKey]
+        local color = s[defaults.colorKey]
         typeColors[defaults.token] = {
-            r = c and c.r or defaults.fallback[1],
-            g = c and c.g or defaults.fallback[2],
-            b = c and c.b or defaults.fallback[3],
-            a = (c and c.a) or 1,
+            r = color and color.r or defaults.fallback[1],
+            g = color and color.g or defaults.fallback[2],
+            b = color and color.b or defaults.fallback[3],
+            a = (color and color.a) or 1,
         }
     end
     -- Color Custom Borders: the frame border's own ApplyBorderStyle inputs, so each

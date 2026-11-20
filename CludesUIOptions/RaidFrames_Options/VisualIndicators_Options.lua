@@ -379,8 +379,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         local rowList = {}
                         for _, token in ipairs(ROLE_CLASSES[role]) do
                             local name = LOCALIZED_CLASS_NAMES_MALE[token] or token
-                            local c = CludesUI.GetClassColor(token)
-                            local r = ListRow(CludesUI.HexColor(c.r, c.g, c.b) .. name .. "|r", function()
+                            local color = CludesUI.GetClassColor(token)
+                            local r = ListRow(CludesUI.HexColor(color.r, color.g, color.b) .. name .. "|r", function()
                                 return Own(token) or Picked()
                             end, function(entries)
                                 SetOwn(token, entries)
@@ -614,8 +614,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     local colorKey = "roleText" .. entry.label .. "Color"
                     entry.swatch = {
                         get = function()
-                            local c = SGet(colorKey) or mod._internals.defaults.profile[colorKey]
-                            return c.r, c.g, c.b
+                            local color = SGet(colorKey) or mod._internals.defaults.profile[colorKey]
+                            return color.r, color.g, color.b
                         end,
                         set = function(red, green, blue)
                             SSet(colorKey, { r = red, g = green, b = blue })
@@ -1028,9 +1028,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         if not CludesUI._prebuilding then
             local region = stRow._rightRegion
             local colorSwatch = CludesUI.BuildColorSwatch(region, stRow:GetFrameLevel() + 3, function()
-                local c = SGet("statusTextColor")
-                if c then
-                    return c.r, c.g, c.b, 1
+                local color = SGet("statusTextColor")
+                if color then
+                    return color.r, color.g, color.b, 1
                 end
                 return 1, 1, 1, 1
             end, function(red, green, blue)
@@ -1289,9 +1289,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         if not CludesUI._prebuilding then
             local region = ciRow._rightRegion
             local colorSwatch = CludesUI.BuildColorSwatch(region, ciRow:GetFrameLevel() + 3, function()
-                local c = SGet("combatIndicatorCustomColor")
-                if c then
-                    return c.r, c.g, c.b, 1
+                local color = SGet("combatIndicatorCustomColor")
+                if color then
+                    return color.r, color.g, color.b, 1
                 end
                 return 1, 0.2, 0.2, 1
             end, function(red, green, blue)
@@ -1325,9 +1325,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             if not CludesUI._prebuilding then
                 local region = gnRow._rightRegion
                 local colorSwatch = CludesUI.BuildColorSwatch(region, gnRow:GetFrameLevel() + 3, function()
-                    local c = SGet("groupNumberColor")
-                    if c then
-                        return c.r, c.g, c.b, c.a or 0.75
+                    local color = SGet("groupNumberColor")
+                    if color then
+                        return color.r, color.g, color.b, color.a or 0.75
                     end
                     return 1, 1, 1, 0.75
                 end, function(red, green, blue, a)
@@ -1732,9 +1732,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 tooltip = "Magic",
                 hasAlpha = true,
                 getValue = function()
-                    local c = SGet("dispelColorMagic")
-                    if c then
-                        return c.r, c.g, c.b, c.a or 1
+                    local color = SGet("dispelColorMagic")
+                    if color then
+                        return color.r, color.g, color.b, color.a or 1
                     end
                     return 0.354, 0.396, 0.74, 1
                 end,
@@ -1747,9 +1747,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 tooltip = "Curse",
                 hasAlpha = true,
                 getValue = function()
-                    local c = SGet("dispelColorCurse")
-                    if c then
-                        return c.r, c.g, c.b, c.a or 1
+                    local color = SGet("dispelColorCurse")
+                    if color then
+                        return color.r, color.g, color.b, color.a or 1
                     end
                     return 0.636, 0.0, 0.64, 1
                 end,
@@ -1762,9 +1762,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 tooltip = "Disease",
                 hasAlpha = true,
                 getValue = function()
-                    local c = SGet("dispelColorDisease")
-                    if c then
-                        return c.r, c.g, c.b, c.a or 1
+                    local color = SGet("dispelColorDisease")
+                    if color then
+                        return color.r, color.g, color.b, color.a or 1
                     end
                     return 0.71, 0.379, 0.0, 1
                 end,
@@ -1777,9 +1777,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 tooltip = "Poison",
                 hasAlpha = true,
                 getValue = function()
-                    local c = SGet("dispelColorPoison")
-                    if c then
-                        return c.r, c.g, c.b, c.a or 1
+                    local color = SGet("dispelColorPoison")
+                    if color then
+                        return color.r, color.g, color.b, color.a or 1
                     end
                     return 0.052, 0.586, 0.62, 1
                 end,
@@ -1792,9 +1792,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 tooltip = "Bleed",
                 hasAlpha = true,
                 getValue = function()
-                    local c = SGet("dispelColorBleed")
-                    if c then
-                        return c.r, c.g, c.b, c.a or 1
+                    local color = SGet("dispelColorBleed")
+                    if color then
+                        return color.r, color.g, color.b, color.a or 1
                     end
                     return 0.75, 0.15, 0.15, 1
                 end,
@@ -1913,9 +1913,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             if not CludesUI._prebuilding then
                 local region = tnbRow2._leftRegion
                 local bgSwatch = CludesUI.BuildColorSwatch(region, tnbRow2:GetFrameLevel() + 3, function()
-                    local c = SGet("topNameBarBgColor")
-                    if c then
-                        return c.r, c.g, c.b, 1
+                    local color = SGet("topNameBarBgColor")
+                    if color then
+                        return color.r, color.g, color.b, 1
                     end
                     return 17 / 255, 17 / 255, 17 / 255, 1
                 end, function(red, green, blue)
@@ -2010,9 +2010,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 end
                 -- Custom (rightmost): editable, opens the picker when active.
                 AddTNBSwatch(function()
-                    local c = SGet("topNameBarTextColor")
-                    if c then
-                        return c.r, c.g, c.b, 1
+                    local color = SGet("topNameBarTextColor")
+                    if color then
+                        return color.r, color.g, color.b, 1
                     end
                     return 1, 1, 1, 1
                 end, function(red, green, blue)
@@ -2216,9 +2216,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             if not CludesUI._prebuilding then
                 local region = row._rightRegion
                 local colorSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
-                    local c = FBSet().healthColor
-                    if c then
-                        return c.r, c.g, c.b, 1
+                    local color = FBSet().healthColor
+                    if color then
+                        return color.r, color.g, color.b, 1
                     end
                     return 23 / 255, 172 / 255, 49 / 255, 1
                 end, function(red, green, blue)
@@ -2928,8 +2928,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             {
                 tooltip = "Custom Colored",
                 getValue = function()
-                    local c = HMS().color
-                    return (c and c.r) or 1, (c and c.g) or 1, (c and c.b) or 1, 1
+                    local color = HMS().color
+                    return (color and color.r) or 1, (color and color.g) or 1, (color and color.b) or 1, 1
                 end,
                 setValue = function(red, green, blue)
                     local hm = HMS()
@@ -3158,8 +3158,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     hasAlpha = true,
                     refreshAlpha = Alpha("custom"),
                     getValue = function()
-                        local c = mod._PGCustomColor(colorKey)
-                        return c.r, c.g, c.b, c.a or 1
+                        local color = mod._PGCustomColor(colorKey)
+                        return color.r, color.g, color.b, color.a or 1
                     end,
                     setValue = function(red, green, blue, a)
                         PGS()[colorKey] = { r = red, g = green, b = blue, a = a }
@@ -3178,9 +3178,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     hasAlpha = false,
                     refreshAlpha = Alpha("class"),
                     getValue = function()
-                        local c = CludesUI.GetClassColor(CludesUI._playerClass)
-                        if c then
-                            return c.r, c.g, c.b, 1
+                        local color = CludesUI.GetClassColor(CludesUI._playerClass)
+                        if color then
+                            return color.r, color.g, color.b, 1
                         end
                         return 1, 1, 1, 1
                     end,
@@ -3405,9 +3405,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 tooltip = "Offline",
                 hasAlpha = false,
                 getValue = function()
-                    local c = SGet("statusColorOffline")
-                    if c then
-                        return c.r, c.g, c.b
+                    local color = SGet("statusColorOffline")
+                    if color then
+                        return color.r, color.g, color.b
                     end
                     return 0x66 / 255, 0x66 / 255, 0x66 / 255
                 end,
@@ -3420,9 +3420,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 tooltip = "Dead",
                 hasAlpha = false,
                 getValue = function()
-                    local c = SGet("statusColorDead")
-                    if c then
-                        return c.r, c.g, c.b
+                    local color = SGet("statusColorDead")
+                    if color then
+                        return color.r, color.g, color.b
                     end
                     return 0x24 / 255, 0x17 / 255, 0x17 / 255
                 end,

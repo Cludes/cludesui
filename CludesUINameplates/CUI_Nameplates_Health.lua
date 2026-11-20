@@ -453,9 +453,9 @@ function NameplateFrame:UpdateHealthColor()
     local mirrored, mr, mg, mb = false
     if mod._reactionMirrorClass then
         local _, tok = UnitClass(unitToken)
-        local c = C_ClassColor.GetClassColor(tok)
-        if c then
-            mirrored, mr, mg, mb = true, c:GetRGB()
+        local color = C_ClassColor.GetClassColor(tok)
+        if color then
+            mirrored, mr, mg, mb = true, color:GetRGB()
         end
     end
     -- Off-tank fold: same shape as mirror -- the folded components can be

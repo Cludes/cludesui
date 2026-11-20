@@ -2941,11 +2941,11 @@ do
         -- "class" (default), or "custom". No mode saved: a stored custom
         -- color means the user was using it, so custom wins; otherwise class
         -- color, the pre-mode default look.
-        local c = CludesUI.QoLExtrasGet("secondaryStatsColor")
-        local mode = CludesUI.QoLExtrasGet("secondaryStatsColorMode") or (c and "custom" or "class")
+        local color = CludesUI.QoLExtrasGet("secondaryStatsColor")
+        local mode = CludesUI.QoLExtrasGet("secondaryStatsColorMode") or (color and "custom" or "class")
         local customColorHex
-        if mode == "custom" and c then
-            customColorHex = format("%02x%02x%02x", c.r * 255, c.g * 255, c.b * 255)
+        if mode == "custom" and color then
+            customColorHex = format("%02x%02x%02x", color.r * 255, color.g * 255, color.b * 255)
         elseif mode == "class" then
             -- Per-use white fallback while the class color is still
             -- resolving; never cached, so the real color takes over.
@@ -3354,9 +3354,9 @@ do
             end
             return 1, 1, 1, 1 -- class color not resolved yet; retry next update
         end
-        local c = CludesUI.QoLExtrasGet("fpsColor")
-        if c then
-            return c.r or 1, c.g or 1, c.b or 1, c.a or 1
+        local color = CludesUI.QoLExtrasGet("fpsColor")
+        if color then
+            return color.r or 1, color.g or 1, color.b or 1, color.a or 1
         end
         return 1, 1, 1, 1
     end
@@ -3885,9 +3885,9 @@ do
             local durSz = (CludesUIDB and CludesUIDB.durWarnTextSize) or 30
             fontStr:SetFont(fontFile, durSz, CludesUI.GetFontOutlineFlag("extras"))
 
-            local c = CludesUIDB and CludesUIDB.durWarnColor
-            if c then
-                fontStr:SetTextColor(c.r, c.g, c.b, 1)
+            local color = CludesUIDB and CludesUIDB.durWarnColor
+            if color then
+                fontStr:SetTextColor(color.r, color.g, color.b, 1)
             else
                 fontStr:SetTextColor(1, 0.27, 0.27, 1)
             end
@@ -4448,11 +4448,11 @@ do
             crosshair:SetFrameStrata(strata)
         end
 
-        local c = G("crosshairColor")
-        local cr = c and c.r or 1
-        local cg = c and c.g or 1
-        local callback = c and c.b or 1
-        local ca = c and c.a or 0.75
+        local color = G("crosshairColor")
+        local cr = color and color.r or 1
+        local cg = color and color.g or 1
+        local callback = color and color.b or 1
+        local ca = color and color.a or 0.75
 
         -- Preset gives the baseline width/length, sliders override per axis.
         local preset = CludesUI.CROSSHAIR_PRESETS[px] or CludesUI.CROSSHAIR_PRESETS.Normal
@@ -5558,9 +5558,9 @@ do
                 return c.r, c.g, c.b
             end
         end
-        local c = (store and store[which == "leave" and "combatAlertLeaveColor" or "combatAlertEnterColor"])
+        local color = (store and store[which == "leave" and "combatAlertLeaveColor" or "combatAlertEnterColor"])
             or (which == "leave" and DEFAULTS.leaveColor or DEFAULTS.enterColor)
-        return c.r, c.g, c.b
+        return color.r, color.g, color.b
     end
 
     local function AlertText(which)

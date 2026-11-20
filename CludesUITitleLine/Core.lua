@@ -599,8 +599,8 @@ function mod.Party(nowTime)
 end
 
 function mod.ClassColor(class)
-    local c = class and C_ClassColor.GetClassColor(class)
-    return c and { c.r, c.g, c.b } or mod.COLORS.ink2
+    local color = class and C_ClassColor.GetClassColor(class)
+    return color and { color.r, color.g, color.b } or mod.COLORS.ink2
 end
 
 -- Your characters -------------------------------------------------------------------

@@ -425,8 +425,8 @@ local function EnsureTargetHighlight(backing)
     -- (OVERLAY 4/5), still above the fill; the CUI and classic looks keep it on top.
     local t = backing.health:CreateTexture(nil, "OVERLAY", nil, mod.NP_Style() == "blizzard" and 0 or 5)
     t:SetAllPoints(backing.health)
-    local c = mod.GetTargetHighlightColor()
-    t:SetColorTexture(c.r, c.g, c.b, mod.GetTargetHighlightAlpha())
+    local color = mod.GetTargetHighlightColor()
+    t:SetColorTexture(color.r, color.g, color.b, mod.GetTargetHighlightAlpha())
     t:Hide()
     backing.targetHighlight = t
     -- Blizzard Style: inside the stock bar shape like the fill.
@@ -493,9 +493,9 @@ function mod.GetTargetArrowColor(prof)
         end
         return 1, 1, 1
     end
-    local c = prof and prof.targetArrowColor
-    if c then
-        return c.r, c.g, c.b
+    local color = prof and prof.targetArrowColor
+    if color then
+        return color.r, color.g, color.b
     end
     return 1, 1, 1
 end
@@ -1133,8 +1133,8 @@ function mod.NP_ApplyCastTints(backing, tier, lit, fold)
             local otc = Inner._C("offTankAggro")
             local success = true
             if intOn then
-                local c = (p and p.castingIntColor) or defaultSet.castingIntColor
-                local red, green, blue = MaybeDarken(c.r, c.g, c.b, lit)
+                local color = (p and p.castingIntColor) or defaultSet.castingIntColor
+                local red, green, blue = MaybeDarken(color.r, color.g, color.b, lit)
                 local okI
                 okI, red, green, blue = mod.ComputeOffTankFold(backing.unit, red, green, blue, otc.r, otc.g, otc.b)
                 if okI then
@@ -1144,8 +1144,8 @@ function mod.NP_ApplyCastTints(backing, tier, lit, fold)
                 end
             end
             if success and unintOn then
-                local c = (p and p.castingUnintColor) or defaultSet.castingUnintColor
-                local red, green, blue = MaybeDarken(c.r, c.g, c.b, lit)
+                local color = (p and p.castingUnintColor) or defaultSet.castingUnintColor
+                local red, green, blue = MaybeDarken(color.r, color.g, color.b, lit)
                 local okU
                 okU, red, green, blue = mod.ComputeOffTankFold(backing.unit, red, green, blue, otc.r, otc.g, otc.b)
                 if okU then

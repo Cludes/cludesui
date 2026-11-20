@@ -76,8 +76,8 @@ local function AlertCogRows(prefixText, applyFrame, preview)
             disabledTooltip = "Disable Class Color to pick a custom color.",
             rawTooltip = true,
             get = function()
-                local c = saved("Color") or D.color
-                return c.r, c.g, c.b
+                local color = saved("Color") or D.color
+                return color.r, color.g, color.b
             end,
             set = function(red, green, blue)
                 put("Color", { r = red, g = green, b = blue })
@@ -252,9 +252,9 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
                     disabledTooltip = "Disable Class Color to pick a custom color.",
                     rawTooltip = true,
                     get = function()
-                        local c = (CludesUIDB and CludesUIDB.combatAlertEnterColor)
+                        local color = (CludesUIDB and CludesUIDB.combatAlertEnterColor)
                             or { r = 1.00, g = 1.00, b = 1.00 }
-                        return c.r, c.g, c.b
+                        return color.r, color.g, color.b
                     end,
                     set = function(red, green, blue)
                         Account().combatAlertEnterColor = { r = red, g = green, b = blue }
@@ -297,9 +297,9 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
                     disabledTooltip = "Disable Class Color to pick a custom color.",
                     rawTooltip = true,
                     get = function()
-                        local c = (CludesUIDB and CludesUIDB.combatAlertLeaveColor)
+                        local color = (CludesUIDB and CludesUIDB.combatAlertLeaveColor)
                             or { r = 1.00, g = 1.00, b = 1.00 }
-                        return c.r, c.g, c.b
+                        return color.r, color.g, color.b
                     end,
                     set = function(red, green, blue)
                         Account().combatAlertLeaveColor = { r = red, g = green, b = blue }

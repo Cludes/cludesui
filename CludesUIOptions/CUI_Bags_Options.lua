@@ -536,9 +536,9 @@ CludesUI.AtOptionsLogin(function()
                     hasAlpha = true,
                     tooltip = "The tint over the bag and bank window backgrounds. Its opacity sets how strong the tint is.",
                     getValue = function()
-                        local c = saved.profile.bagBgColor
-                        if c then
-                            return c.r, c.g, c.b, c.a or 0.25
+                        local color = saved.profile.bagBgColor
+                        if color then
+                            return color.r, color.g, color.b, color.a or 0.25
                         end
                         return 0, 0, 0, 0.25
                     end,
@@ -570,9 +570,9 @@ CludesUI.AtOptionsLogin(function()
                     disabled = NoSlotGrid,
                     disabledTooltip = NO_SLOT_GRID,
                     getValue = function()
-                        local c = saved.profile.bagSlotBgColor
-                        if c then
-                            return c.r, c.g, c.b, c.a or 1
+                        local color = saved.profile.bagSlotBgColor
+                        if color then
+                            return color.r, color.g, color.b, color.a or 1
                         end
                         return 1, 1, 1, 1
                     end,
@@ -1006,9 +1006,9 @@ CludesUI.AtOptionsLogin(function()
                             region,
                             region:GetFrameLevel() + 5,
                             function()
-                                local c = saved.profile.itemlevelCustomColor
-                                if c then
-                                    return c.r, c.g, c.b, 1
+                                local color = saved.profile.itemlevelCustomColor
+                                if color then
+                                    return color.r, color.g, color.b, 1
                                 end
                                 return 1, 1, 1, 1
                             end,

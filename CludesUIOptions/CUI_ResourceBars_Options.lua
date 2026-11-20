@@ -3118,8 +3118,8 @@ CludesUI.AtOptionsLogin(function()
         icon:SetTexture([[Interface\AddOns\CludesUI\media\icons\cui-info.png]])
         badgeTex._color = THR_NOTE_IDLE
         local function Tint(alpha)
-            local c = badgeTex._color
-            icon:SetVertexColor(c[1], c[2], c[3], alpha)
+            local color = badgeTex._color
+            icon:SetVertexColor(color[1], color[2], color[3], alpha)
         end
         badgeTex:SetScript("OnEnter", function(self)
             Tint(1)

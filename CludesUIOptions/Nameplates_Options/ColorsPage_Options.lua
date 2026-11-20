@@ -47,9 +47,9 @@ if CludesUI.IS_FOREVER then
                 tooltip = tipText,
                 hidden = GapColorOff,
                 get = function()
-                    local c = get(colorKey)
-                    if c then
-                        return c.r, c.g, c.b
+                    local color = get(colorKey)
+                    if color then
+                        return color.r, color.g, color.b
                     end
                     return 1, 1, 1
                 end,
@@ -207,8 +207,8 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
     end)
     local CLASS_VALUES = { _noLoc = true }
     for _, classFile in ipairs(ORDER) do
-        local c = CludesUI.GetClassColor(classFile)
-        CLASS_VALUES[classFile] = CludesUI.HexColor(c.r, c.g, c.b) .. NAME[classFile] .. "|r"
+        local color = CludesUI.GetClassColor(classFile)
+        CLASS_VALUES[classFile] = CludesUI.HexColor(color.r, color.g, color.b) .. NAME[classFile] .. "|r"
     end
 
     -- The presets for the spell menus (WoW Forever lists none: they are
@@ -792,8 +792,8 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
                 tooltip = "Debuff Color",
                 getValue = function()
                     local e = Read(swatchCell.class)[swatchCell.n]
-                    local c = e and e.color or DC.SINGLE_COLOR
-                    return c.r, c.g, c.b
+                    local color = e and e.color or DC.SINGLE_COLOR
+                    return color.r, color.g, color.b
                 end,
                 setValue = function(red, green, blue)
                     local singles, combos = Read(swatchCell.class)
@@ -978,8 +978,8 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
                 getValue = function()
                     local _, combos = Read(swatchCell.class)
                     local keyName = combos[swatchCell.n]
-                    local c = keyName and keyName.color or DC.COMBO_COLOR
-                    return c.r, c.g, c.b
+                    local color = keyName and keyName.color or DC.COMBO_COLOR
+                    return color.r, color.g, color.b
                 end,
                 setValue = function(red, green, blue)
                     local singles, combos = Read(swatchCell.class)
@@ -1226,8 +1226,8 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
         -- class color at full strength.
         local _, title = tile._descFS:GetPoint(1)
         if title and title.SetTextColor then
-            local c = CludesUI.GetClassColor(classFile)
-            title:SetTextColor(c.r, c.g, c.b, 1)
+            local color = CludesUI.GetClassColor(classFile)
+            title:SetTextColor(color.r, color.g, color.b, 1)
         end
     end
 
@@ -1425,8 +1425,8 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         RefreshHealthText()
 
         -- Color the bar from the swatch's DB value
-        local c = (DB() and DB()[colorKey]) or defaultSet[colorKey]
-        healthBar:SetStatusBarColor(c.r, c.g, c.b, 1)
+        local color = (DB() and DB()[colorKey]) or defaultSet[colorKey]
+        healthBar:SetStatusBarColor(color.r, color.g, color.b, 1)
 
         -- Focus overlay on the focus preview bar: clip frames for non-overlapping fixed-size textures
         local overlayFillClip, overlayFillTex, overlayBgClip, overlayBgTex
@@ -1740,8 +1740,8 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         end
 
         -- Color the bar
-        local c = (DB() and DB()[colorKey]) or defaultSet[colorKey]
-        castBar:SetStatusBarColor(c.r, c.g, c.b, 1)
+        local color = (DB() and DB()[colorKey]) or defaultSet[colorKey]
+        castBar:SetStatusBarColor(color.r, color.g, color.b, 1)
 
         -- Shift container left to account for cast icon hanging outside
         boxHolder:ClearAllPoints()
@@ -1905,8 +1905,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 tooltip = "Out of Combat Color",
                 getValue = function()
                     local saved = DB()
-                    local c = (saved and saved.darkenOOCColor) or defaultSet.darkenOOCColor
-                    return c.r, c.g, c.b
+                    local color = (saved and saved.darkenOOCColor) or defaultSet.darkenOOCColor
+                    return color.r, color.g, color.b
                 end,
                 setValue = function(red, green, blue)
                     DB().darkenOOCColor = { r = red, g = green, b = blue }
@@ -2019,8 +2019,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
     if not CludesUI._prebuilding then
         local rightRegion = neutralMiniRow._rightRegion
         local questColorGet = function()
-            local c = DB().questMobColor or defaultSet.questMobColor
-            return c.r, c.g, c.b
+            local color = DB().questMobColor or defaultSet.questMobColor
+            return color.r, color.g, color.b
         end
         local questColorSet = function(red, green, blue)
             DB().questMobColor = { r = red, g = green, b = blue }

@@ -195,8 +195,8 @@ local function ApplyNPText(btnFrame, skinData, look)
             skinData.npDurFont = fontKey
             CludesUI.ApplyIconTextFont(skinData.duration, filePath, look.durSize or 11, "nameplates")
         end
-        local c = look.durColor
-        skinData.duration:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
+        local color = look.durColor
+        skinData.duration:SetTextColor(color and color.r or 1, color and color.g or 1, color and color.b or 1)
         local m = TEXT_POS[look.durPos] or TEXT_POS.topleft
         -- Anchor change-guarded (stamp AFTER the calls): SetPoint with the
         -- button as the relative frame is policed by the 12.1 button access

@@ -514,9 +514,9 @@ do
             if not skinData.gameMenuInset then
                 return
             end
-            local c = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
+            local color = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
                 or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
-            skinData.gameMenuButtonBg:SetColorTexture(c.r, c.g, c.b, c.a == nil and 0.8 or c.a)
+            skinData.gameMenuButtonBg:SetColorTexture(color.r, color.g, color.b, color.a == nil and 0.8 or color.a)
             CludesUI._applyBlizzardConfiguredBorder(skinData.gameMenuInset, "popupMenuButton", 1)
             local fontStr = button:GetFontString()
             -- Native mode keeps Blizzard's own gold on our dark inset.

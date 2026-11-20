@@ -265,8 +265,8 @@ local function BuildMiniTextAndSize(
             -- Inline swatches: Hover (nearest the dropdown), then Target to its left.
             local lvl = barTexRow:GetFrameLevel() + 3
             local hoverSwatch, updHover = CludesUI.BuildColorSwatch(rightRegion, lvl, function()
-                local c = unitSettings.bossHoverBorderColor or { r = 1, g = 1, b = 1 }
-                return c.r, c.g, c.b, unitSettings.bossHoverBorderAlpha or 1
+                local color = unitSettings.bossHoverBorderColor or { r = 1, g = 1, b = 1 }
+                return color.r, color.g, color.b, unitSettings.bossHoverBorderAlpha or 1
             end, function(red, green, blue, a)
                 unitSettings.bossHoverBorderColor = { r = red, g = green, b = blue }
                 unitSettings.bossHoverBorderAlpha = a
@@ -277,8 +277,8 @@ local function BuildMiniTextAndSize(
             CludesUI.HoverTip(hoverSwatch, "Hover")
 
             local targetSwatch, updTarget = CludesUI.BuildColorSwatch(rightRegion, lvl, function()
-                local c = unitSettings.bossTargetBorderColor or { r = 1, g = 1, b = 1 }
-                return c.r, c.g, c.b, unitSettings.bossTargetBorderAlpha or 1
+                local color = unitSettings.bossTargetBorderColor or { r = 1, g = 1, b = 1 }
+                return color.r, color.g, color.b, unitSettings.bossTargetBorderAlpha or 1
             end, function(red, green, blue, a)
                 unitSettings.bossTargetBorderColor = { r = red, g = green, b = blue }
                 unitSettings.bossTargetBorderAlpha = a
@@ -530,9 +530,9 @@ local function BuildMiniTextAndSize(
                     tooltip = "Custom Colored Fill",
                     hasAlpha = false,
                     getValue = function()
-                        local c = MGet("customFillColor")
-                        if c then
-                            return c.r, c.g, c.b
+                        local color = MGet("customFillColor")
+                        if color then
+                            return color.r, color.g, color.b
                         end
                         return 37 / 255, 193 / 255, 29 / 255
                     end,
@@ -718,9 +718,9 @@ local function BuildMiniTextAndSize(
                     tooltip = "Custom Background Color",
                     hasAlpha = false,
                     getValue = function()
-                        local c = MGet("customBgColor")
-                        if c then
-                            return c.r, c.g, c.b
+                        local color = MGet("customBgColor")
+                        if color then
+                            return color.r, color.g, color.b
                         end
                         return 17 / 255, 17 / 255, 17 / 255
                     end,
@@ -1291,9 +1291,9 @@ local function BuildMiniTextAndSize(
             fPwrSw:SetAlpha((MVal("powerPercentPowerColor", true) ~= false) and 1 or 0.3)
 
             local fGet = function()
-                local c = MGet("customPowerFillColor")
-                if c then
-                    return c.r, c.g, c.b
+                local color = MGet("customPowerFillColor")
+                if color then
+                    return color.r, color.g, color.b
                 end
                 return 0, 0, 1
             end
@@ -1425,9 +1425,9 @@ local function BuildMiniTextAndSize(
                 region,
                 region:GetFrameLevel() + 5,
                 function()
-                    local c = MGet("powerTextColor")
-                    if c then
-                        return c.r, c.g, c.b
+                    local color = MGet("powerTextColor")
+                    if color then
+                        return color.r, color.g, color.b
                     end
                     return 1, 1, 1
                 end,
@@ -1549,8 +1549,8 @@ local function BuildMiniTextAndSize(
                 region,
                 pwrBorderRow:GetFrameLevel() + 3,
                 function()
-                    local c = MGet("powerBorderColor") or { r = 0, g = 0, b = 0 }
-                    return c.r, c.g, c.b, MVal("powerBorderAlpha", 1)
+                    local color = MGet("powerBorderColor") or { r = 0, g = 0, b = 0 }
+                    return color.r, color.g, color.b, MVal("powerBorderAlpha", 1)
                 end,
                 function(red, green, blue, a)
                     unitSettings.powerBorderColor = { r = red, g = green, b = blue }
@@ -4533,8 +4533,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             local region = castMainRow._leftRegion
             local function AddCastColorSwatch(tooltip, colorKey, fallback, disabledFn)
                 local sw, updateSw = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
-                    local c = B[colorKey] or fallback
-                    return c.r, c.g, c.b, 1
+                    local color = B[colorKey] or fallback
+                    return color.r, color.g, color.b, 1
                 end, function(red, green, blue)
                     B[colorKey] = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
@@ -4743,9 +4743,9 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             if not CludesUI._prebuilding then
                 local region = reverseRow._rightRegion
                 local sw = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
-                    local c = B.castBgColor
-                    if c then
-                        return c.r, c.g, c.b
+                    local color = B.castBgColor
+                    if color then
+                        return color.r, color.g, color.b
                     end
                     return 0, 0, 0
                 end, function(red, green, blue)
@@ -4844,8 +4844,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     },
                 })
                 local sw = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
-                    local c = B.castSpellNameColor or { r = 1, g = 1, b = 1 }
-                    return c.r, c.g, c.b
+                    local color = B.castSpellNameColor or { r = 1, g = 1, b = 1 }
+                    return color.r, color.g, color.b
                 end, function(red, green, blue)
                     B.castSpellNameColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
@@ -4889,8 +4889,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     },
                 })
                 local sw = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
-                    local c = B.castDurationColor or { r = 1, g = 1, b = 1 }
-                    return c.r, c.g, c.b
+                    local color = B.castDurationColor or { r = 1, g = 1, b = 1 }
+                    return color.r, color.g, color.b
                 end, function(red, green, blue)
                     B.castDurationColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()

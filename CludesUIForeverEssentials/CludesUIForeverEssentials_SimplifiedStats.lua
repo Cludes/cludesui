@@ -332,12 +332,12 @@ local function PrefixedLine(textValue, shortenOn)
             local result
             if p.kind == "set" then
                 if shortenOn then
-                    local c = colorOn
+                    local color = colorOn
                     if p.gray then
                         colorOn = false
                     end
                     result = SimplifyStatLine(inner, true)
-                    colorOn = c
+                    colorOn = color
                     -- every output line keeps the prefix
                     if result then
                         linePre = pre

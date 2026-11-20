@@ -263,9 +263,9 @@ local CLASS_COLORS = setmetatable({}, {
         if not CludesUI or not CludesUI.GetClassColor then
             return nil
         end
-        local c = CludesUI.GetClassColor(class)
-        if c then
-            return { c.r, c.g, c.b }
+        local color = CludesUI.GetClassColor(class)
+        if color then
+            return { color.r, color.g, color.b }
         end
         return nil
     end,
@@ -321,9 +321,9 @@ local POWER_COLORS = setmetatable({}, {
         end
         local key = ResolvePowerKey(powerKey)
         if key and CludesUI.GetPowerColor then
-            local c = CludesUI.GetPowerColor(key)
-            if c then
-                local val = { c.r, c.g, c.b }
+            local color = CludesUI.GetPowerColor(key)
+            if color then
+                local val = { color.r, color.g, color.b }
                 rawset(t, powerKey, val)
                 return val
             end

@@ -47,17 +47,17 @@ mod.ApplyBossBorderState = function(self)
     end
     local red, green, blue, a
     if self._hovered and s.bossHoverBorderEnabled then
-        local c = s.bossHoverBorderColor or { r = 1, g = 1, b = 1 }
-        red, green, blue, a = c.r, c.g, c.b, s.bossHoverBorderAlpha or 1
+        local color = s.bossHoverBorderColor or { r = 1, g = 1, b = 1 }
+        red, green, blue, a = color.r, color.g, color.b, s.bossHoverBorderAlpha or 1
     elseif self._isTarget and s.bossTargetBorderEnabled then
-        local c = s.bossTargetBorderColor or { r = 1, g = 1, b = 1 }
-        red, green, blue, a = c.r, c.g, c.b, s.bossTargetBorderAlpha or 1
+        local color = s.bossTargetBorderColor or { r = 1, g = 1, b = 1 }
+        red, green, blue, a = color.r, color.g, color.b, s.bossTargetBorderAlpha or 1
     else
         -- The normal colour the reload sweep painted: the same settings table
         -- (the donor's while inheriting, never the unused boss copy).
         local bsrc = mod.UF_BossBorderSettings()
-        local c = bsrc.borderColor or { r = 0, g = 0, b = 0 }
-        red, green, blue, a = c.r, c.g, c.b, bsrc.borderAlpha or 1
+        local color = bsrc.borderColor or { r = 0, g = 0, b = 0 }
+        red, green, blue, a = color.r, color.g, color.b, bsrc.borderAlpha or 1
     end
     CludesUI.SetBorderStyleColor(self.unifiedBorder, red, green, blue, a)
     local seam = self.Power and self.Power._pbSeam

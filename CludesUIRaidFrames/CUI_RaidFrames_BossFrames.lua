@@ -224,18 +224,18 @@ do
         local region, g, bcol, a
         local raised, hlSize, hlPx = false, nil, nil
         if FB.hov[b] and s.hoverBorderEnabled ~= false then
-            local c = s.hoverBorderColor or { r = 1, g = 1, b = 1 }
-            region, g, bcol, a = c.r, c.g, c.b, s.hoverBorderAlpha or 1
+            local color = s.hoverBorderColor or { r = 1, g = 1, b = 1 }
+            region, g, bcol, a = color.r, color.g, color.b, s.hoverBorderAlpha or 1
             raised, hlSize = true, s.hoverBorderSize or 1
             hlPx = CludesUI.BorderPx(s.hoverBorderSizePx, hlSize, s.borderTexture or "solid")
         elseif targeted then
-            local c = s.targetBorderColor or { r = 1, g = 1, b = 1 }
-            region, g, bcol, a = c.r, c.g, c.b, s.targetBorderAlpha or 1
+            local color = s.targetBorderColor or { r = 1, g = 1, b = 1 }
+            region, g, bcol, a = color.r, color.g, color.b, s.targetBorderAlpha or 1
             raised, hlSize = true, s.targetBorderSize or 1
             hlPx = CludesUI.BorderPx(s.targetBorderSizePx, hlSize, s.borderTexture or "solid")
         else
-            local c = s.borderColor or { r = 0, g = 0, b = 0 }
-            region, g, bcol, a = c.r, c.g, c.b, s.borderAlpha or 1
+            local color = s.borderColor or { r = 0, g = 0, b = 0 }
+            region, g, bcol, a = color.r, color.g, color.b, s.borderAlpha or 1
         end
         -- Raise above neighbors while highlighted (as the raid buttons: overlapping frames would cover it).
         local pl = b:GetFrameLevel()

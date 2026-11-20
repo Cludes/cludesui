@@ -1818,8 +1818,8 @@ do
         end
         if mode == "class" then
             -- The palette colour (custom + Class Color Darken); an unknown class is white.
-            local c = CludesUI.GetClassColor(CludesUI._playerClass)
-            return c.r, c.g, c.b
+            local color = CludesUI.GetClassColor(CludesUI._playerClass)
+            return color.r, color.g, color.b
         end
         if red ~= nil then
             return red, green or 0, blue or 0
@@ -1934,8 +1934,8 @@ do
         return val
     end
     function G.SpecFromFlat(result, t, k, mode, defs)
-        local c = FlatVal(t, defs, k.color)
-        result.r, result.g, result.b = G.ResolveColor(mode, c and c.r, c and c.g, c and c.b)
+        local color = FlatVal(t, defs, k.color)
+        result.r, result.g, result.b = G.ResolveColor(mode, color and color.r, color and color.g, color and color.b)
         result.lines = FlatVal(t, defs, k.lines)
         result.thickness = FlatVal(t, defs, k.thickness)
         result.speed = FlatVal(t, defs, k.speed)

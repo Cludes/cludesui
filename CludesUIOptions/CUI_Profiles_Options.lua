@@ -215,9 +215,9 @@ local function BuildAddonListRow(scrollChild, i, entry, fullWidth, o)
         tick:SetShown(look.tick)
         boxBg:SetAlpha(look.box)
         if state == "blocked" then
-            local c = o.inactiveColor
+            local color = o.inactiveColor
             statusFs:SetText(o.inactiveText)
-            statusFs:SetTextColor(c[1], c[2], c[3], c[4])
+            statusFs:SetTextColor(color[1], color[2], color[3], color[4])
         elseif state == "included" then
             boxBorder:SetColor(EG.r, EG.g, EG.b, 0.15)
             statusFs:SetText(CludesUI.L("Ready"))

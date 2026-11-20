@@ -211,10 +211,10 @@ mod.ApplyHeader = function()
     if conf.hdrTextUseAccent ~= false then
         tR, tG, tB = mod.DMTitleRGB()
     else
-        local c = conf.hdrTextColor
-        tR = c and c.r or 1
-        tG = c and c.g or 1
-        tB = c and c.b or 1
+        local color = conf.hdrTextColor
+        tR = color and color.r or 1
+        tG = color and color.g or 1
+        tB = color and color.b or 1
     end
     local hdrFS = conf.hdrFontSize or 11
     local hdrH = GetHeaderH()
@@ -279,10 +279,10 @@ mod.ApplyIconColor = function()
     if conf.iconColorUseAccent then
         red, green, blue = GetAccentRGB()
     else
-        local c = conf.iconColor
-        red = c and c.r or 1
-        green = c and c.g or 1
-        blue = c and c.b or 1
+        local color = conf.iconColor
+        red = color and color.r or 1
+        green = color and color.g or 1
+        blue = color and color.b or 1
     end
     for _, wid in ipairs(_windows) do
         for _, iconTex in ipairs(wid.hdrIcons) do

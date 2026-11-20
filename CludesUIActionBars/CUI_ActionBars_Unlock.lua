@@ -237,7 +237,7 @@ local function RegisterWithUnlockMode()
                     return nil
                 end
                 local sz, px = mod.ResolveBorderThickness(s)
-                local c = s.borderColor
+                local color = s.borderColor
                 return CludesUI.BorderMatchPad(
                     sz,
                     s.borderTexture or "solid",
@@ -249,7 +249,7 @@ local function RegisterWithUnlockMode()
                     s.borderThickness or "thin",
                     px,
                     nil,
-                    c and c.a or 1
+                    color and color.a or 1
                 )
             end,
             setWidth = function(_, wid)

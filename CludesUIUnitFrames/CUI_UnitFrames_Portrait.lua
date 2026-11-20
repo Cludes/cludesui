@@ -1425,9 +1425,9 @@ local function ApplyDetachedPortraitShape(portraitBack, unitSettings, portraitUn
             -- Dark mode: always the player's own class color.
             local _, classFile = UnitClass("player")
             if classFile then
-                local c = CludesUI.GetClassColor(classFile)
-                if c then
-                    bR, bG, bB = c.r, c.g, c.b
+                local color = CludesUI.GetClassColor(classFile)
+                if color then
+                    bR, bG, bB = color.r, color.g, color.b
                 end
             end
         elseif portraitUnit and UnitExists(portraitUnit) then
@@ -1435,9 +1435,9 @@ local function ApplyDetachedPortraitShape(portraitBack, unitSettings, portraitUn
             -- for NPCs, tapped grey).
             local _, classFile = UnitClass(portraitUnit)
             if UnitIsPlayer(portraitUnit) and not issecretvalue(classFile) and classFile then
-                local c = CludesUI.GetClassColor(classFile)
-                if c then
-                    bR, bG, bB = c.r, c.g, c.b
+                local color = CludesUI.GetClassColor(classFile)
+                if color then
+                    bR, bG, bB = color.r, color.g, color.b
                 end
             elseif UnitIsTapDenied and UnitIsTapDenied(portraitUnit) then
                 bR, bG, bB = 0.6, 0.6, 0.6
@@ -1446,10 +1446,10 @@ local function ApplyDetachedPortraitShape(portraitBack, unitSettings, portraitUn
                 if reaction then
                     -- Prefer oUF's reaction table (carries the custom Enemy Colors
                     -- override) so the border matches the health bar.
-                    local c = (mod.Colors and mod.Colors.reaction and mod.Colors.reaction[reaction])
+                    local color = (mod.Colors and mod.Colors.reaction and mod.Colors.reaction[reaction])
                         or FACTION_BAR_COLORS[reaction]
-                    if c then
-                        bR, bG, bB = c.r, c.g, c.b
+                    if color then
+                        bR, bG, bB = color.r, color.g, color.b
                     end
                 end
             end
@@ -1457,9 +1457,9 @@ local function ApplyDetachedPortraitShape(portraitBack, unitSettings, portraitUn
             -- Fallback: player class color.
             local _, classFile = UnitClass("player")
             if classFile then
-                local c = CludesUI.GetClassColor(classFile)
-                if c then
-                    bR, bG, bB = c.r, c.g, c.b
+                local color = CludesUI.GetClassColor(classFile)
+                if color then
+                    bR, bG, bB = color.r, color.g, color.b
                 end
             end
         end

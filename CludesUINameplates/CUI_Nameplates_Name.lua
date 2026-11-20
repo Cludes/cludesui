@@ -949,8 +949,8 @@ function NameplateFrame:ApplyTarget()
     -- configurable; re-applied on show so live edits and pooled textures update)
     if targeted and mod.GetTargetGlowHighlight() then
         EnsureTargetHighlight(self)
-        local c = mod.GetTargetHighlightColor()
-        self.targetHighlight:SetColorTexture(c.r, c.g, c.b, mod.GetTargetHighlightAlpha())
+        local color = mod.GetTargetHighlightColor()
+        self.targetHighlight:SetColorTexture(color.r, color.g, color.b, mod.GetTargetHighlightAlpha())
         self.targetHighlight:Show()
     elseif self.targetHighlight then
         self.targetHighlight:Hide()

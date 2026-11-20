@@ -34,10 +34,10 @@ local _, CLASS = UnitClass("player")
 
 -- profiles[class][name] = { actions = { [slot] = {...} }, bindings = { {command, key1, key2}, ... } }
 local function Profiles()
-    local c = F.Cfg()
-    c.profiles = c.profiles or {}
-    c.profiles[CLASS] = c.profiles[CLASS] or {}
-    return c.profiles[CLASS]
+    local cfg = F.Cfg()
+    cfg.profiles = cfg.profiles or {}
+    cfg.profiles[CLASS] = cfg.profiles[CLASS] or {}
+    return cfg.profiles[CLASS]
 end
 
 --- Profile names for this class, sorted.

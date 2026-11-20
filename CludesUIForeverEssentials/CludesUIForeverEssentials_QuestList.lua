@@ -1811,8 +1811,8 @@ end
 
 local function QuestTip(ident)
     return function(tipText)
-        local c = GetQuestDifficultyColor(Q.Level(ident))
-        tipText:SetText(Q.Name(ident), c.r, c.g, c.b)
+        local color = GetQuestDifficultyColor(Q.Level(ident))
+        tipText:SetText(Q.Name(ident), color.r, color.g, color.b)
         local bits = { ("Level %d"):format(Q.Level(ident)) }
         if Q.Dungeon(ident) then
             bits[#bits + 1] = Q.Battleground(ident) and "Battleground" or "Dungeon"
@@ -1878,12 +1878,12 @@ local function DrawPins()
                     if index == 1 then
                         QuestTip(ident)(tipText)
                     else
-                        local c = GetQuestDifficultyColor(Q.Level(ident))
+                        local color = GetQuestDifficultyColor(Q.Level(ident))
                         tipText:AddLine(
                             Q.Name(ident) .. Muted(("  (%d)"):format(Q.Level(ident))),
-                            c.r,
-                            c.g,
-                            c.b
+                            color.r,
+                            color.g,
+                            color.b
                         )
                     end
                 end
@@ -2043,11 +2043,11 @@ end
 
 local function QuestRow(R2, ident, indent)
     local status = Q.State(ident)
-    local c = GetQuestDifficultyColor(Q.Level(ident))
+    local color = GetQuestDifficultyColor(Q.Level(ident))
     local name = ("|cff%02x%02x%02x[%d]|r %s"):format(
-        c.r * 255,
-        c.g * 255,
-        c.b * 255,
+        color.r * 255,
+        color.g * 255,
+        color.b * 255,
         Q.Level(ident),
         Q.Name(ident)
     )

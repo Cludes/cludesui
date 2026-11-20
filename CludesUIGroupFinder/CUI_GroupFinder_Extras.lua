@@ -36,8 +36,8 @@ local GFNS = mod
 
 -- specific roles: match all (and) or match any (or)
 GFNS.ExtraRolesAny = function()
-    local c = GFNS.Cfg and GFNS.Cfg()
-    return c and c.extraRolesAny == true or false
+    local cfg = GFNS.Cfg and GFNS.Cfg()
+    return cfg and cfg.extraRolesAny == true or false
 end
 
 local CM = mod.CUI
@@ -787,8 +787,8 @@ end
 --  region tags: where the leader plays from (us: region, eu: realm language)
 -------------------------------------------------------------------------------
 local function TagsOn()
-    local c = GFNS.Cfg and GFNS.Cfg()
-    return c and c.extraRegionTags ~= false and mod.RegionList() ~= nil
+    local cfg = GFNS.Cfg and GFNS.Cfg()
+    return cfg and cfg.extraRegionTags ~= false and mod.RegionList() ~= nil
 end
 
 local function RegionOf(resultID)
@@ -860,8 +860,8 @@ end
 --  row art: the instance's art fading across the left half
 -------------------------------------------------------------------------------
 local function RowArtOn()
-    local c = GFNS.Cfg and GFNS.Cfg()
-    return c and c.extraRowArt == true
+    local cfg = GFNS.Cfg and GFNS.Cfg()
+    return cfg and cfg.extraRowArt == true
 end
 
 -- instance art by map id: keystone background, else the journal's

@@ -462,10 +462,10 @@ function mod.HealthIndicatorsApply(barFrame, conf, orientation)
                 end
             end
             shade:SetRotatesTexture(vertical and not tiled)
-            local c = conf[k.color]
+            local color = conf[k.color]
             local red, green, blue, a = k.r, k.g, k.b, k.a
-            if c then
-                red, green, blue, a = c.r or red, c.g or green, c.b or blue, c.a or a
+            if color then
+                red, green, blue, a = color.r or red, color.g or green, color.b or blue, color.a or a
             end
             if k.opacity then
                 a = (conf[k.opacity] or k.opacityDef) / 100

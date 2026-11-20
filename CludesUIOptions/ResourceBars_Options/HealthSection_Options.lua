@@ -36,20 +36,20 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
     -- and, with alsoPage, rebuilds the page.
     local function ConfGetter(key, default)
         return function()
-            local c = rowConf()
+            local rowCfg = rowConf()
             if default == nil then
-                return c and c[key]
+                return rowCfg and rowCfg[key]
             end
-            return c and c[key] or default
+            return rowCfg and rowCfg[key] or default
         end
     end
     local function ConfSetter(key, after, alsoPage)
         return function(val)
-            local c = rowConf()
-            if not c then
+            local rowCfg = rowConf()
+            if not rowCfg then
                 return
             end
-            c[key] = val
+            rowCfg[key] = val
             after()
             if alsoPage then
                 CludesUI:RefreshPage()
@@ -57,8 +57,8 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
         end
     end
     local function healthOff()
-        local c = rowConf()
-        return not (c and c.enabled)
+        local rowCfg = rowConf()
+        return not (rowCfg and rowCfg.enabled)
     end
 
     local heading
@@ -80,14 +80,14 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
         getValue = ConfGetter("enabled"),
         -- Rows below Row 1 are hidden while off, so the flip must force the full rebuild
         setValue = CludesUI.DependentSetValue(function()
-            local c = rowConf()
-            return c and c.enabled
+            local rowCfg = rowConf()
+            return rowCfg and rowCfg.enabled
         end, function(val)
-            local c = rowConf()
-            if not c then
+            local rowCfg = rowConf()
+            if not rowCfg then
                 return
             end
-            c.enabled = val
+            rowCfg.enabled = val
             RebuildHealth()
             CludesUI:RefreshPage()
         end),
@@ -99,9 +99,9 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
         values = { HORIZONTAL = "Horizontal", VERTICAL_UP = "Vertical Up", VERTICAL_DOWN = "Vertical Down" },
         order = { "HORIZONTAL", "VERTICAL_UP", "VERTICAL_DOWN" },
         getValue = function()
-            local c = rowConf()
+            local rowCfg = rowConf()
             local p = DB()
-            return (c and c.orientation) or (p and p.general.orientation) or "HORIZONTAL"
+            return (rowCfg and rowCfg.orientation) or (p and p.general.orientation) or "HORIZONTAL"
         end,
         setValue = ConfSetter("orientation", Refresh),
     })
@@ -154,8 +154,8 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
     if not CludesUI._prebuilding then
         local keyName = mod.HEALTH_INDICATORS[3]
         local function lossOff()
-            local c = rowConf()
-            return not (c and c[keyName.show] == true)
+            local rowCfg = rowConf()
+            return not (rowCfg and rowCfg[keyName.show] == true)
         end
         CludesUI.BuildInlineCog(healthEnableRow._leftRegion, {
             title = "Max Health Reduction",
@@ -166,15 +166,15 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                     type = "toggle",
                     label = "Show Reduction",
                     get = function()
-                        local c = rowConf()
-                        return c and c[keyName.show] == true
+                        local rowCfg = rowConf()
+                        return rowCfg and rowCfg[keyName.show] == true
                     end,
                     set = function(val)
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return
                         end
-                        c[keyName.show] = val or nil
+                        rowCfg[keyName.show] = val or nil
                         RefreshHealth()
                     end,
                 },
@@ -185,15 +185,15 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                     values = hiNames,
                     order = hiLossOrder,
                     get = function()
-                        local c = rowConf()
-                        return c and c[keyName.style] or "striped"
+                        local rowCfg = rowConf()
+                        return rowCfg and rowCfg[keyName.style] or "striped"
                     end,
                     set = function(val)
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return
                         end
-                        c[keyName.style] = val
+                        rowCfg[keyName.style] = val
                         RefreshHealth()
                     end,
                 },
@@ -203,19 +203,19 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                     hasAlpha = true,
                     hidden = lossOff,
                     get = function()
-                        local c = rowConf()
-                        local col = c and c[keyName.color]
+                        local rowCfg = rowConf()
+                        local col = rowCfg and rowCfg[keyName.color]
                         if col then
                             return col.r or keyName.r, col.g or keyName.g, col.b or keyName.b, col.a or keyName.a
                         end
                         return keyName.r, keyName.g, keyName.b, keyName.a
                     end,
                     set = function(red, green, blue, a)
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return
                         end
-                        c[keyName.color] = { r = red, g = green, b = blue, a = a }
+                        rowCfg[keyName.color] = { r = red, g = green, b = blue, a = a }
                         RefreshHealth()
                     end,
                 },
@@ -245,8 +245,8 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
         }) do
             local keyName, styleText = def.k, def.styleText
             local function styleOf()
-                local c = rowConf()
-                return c and c[keyName.style] or "none"
+                local rowCfg = rowConf()
+                return rowCfg and rowCfg[keyName.style] or "none"
             end
             local function styleOff()
                 return styleOf() == "none"
@@ -259,11 +259,11 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                 order = def.order,
                 getValue = styleOf,
                 setValue = function(val)
-                    local c = rowConf()
-                    if not c then
+                    local rowCfg = rowConf()
+                    if not rowCfg then
                         return
                     end
-                    c[keyName.style] = (val ~= "none") and val or nil
+                    rowCfg[keyName.style] = (val ~= "none") and val or nil
                     RefreshHealth()
                     CludesUI:RefreshPage()
                 end,
@@ -276,15 +276,15 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                 disabled = styleOff,
                 disabledTooltip = styleText,
                 getValue = function()
-                    local c = rowConf()
-                    return c and c[keyName.opacity] or keyName.opacityDef
+                    local rowCfg = rowConf()
+                    return rowCfg and rowCfg[keyName.opacity] or keyName.opacityDef
                 end,
                 setValue = function(val)
-                    local c = rowConf()
-                    if not c then
+                    local rowCfg = rowConf()
+                    if not rowCfg then
                         return
                     end
-                    c[keyName.opacity] = val
+                    rowCfg[keyName.opacity] = val
                     RefreshHealth()
                 end,
             })
@@ -317,18 +317,18 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         return true
                     end
                     local function get(key, fallback)
-                        local c = rowConf()
-                        if c and c[key] ~= nil then
-                            return c[key]
+                        local rowCfg = rowConf()
+                        if rowCfg and rowCfg[key] ~= nil then
+                            return rowCfg[key]
                         end
                         return fallback
                     end
                     local function set(key, value)
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return
                         end
-                        c[key] = value
+                        rowCfg[key] = value
                         RefreshHealth()
                     end
                     local function glowUnavailable()
@@ -451,19 +451,19 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                     region,
                     absorbRow:GetFrameLevel() + 3,
                     function()
-                        local c = rowConf()
-                        local col = c and c[keyName.color]
+                        local rowCfg = rowConf()
+                        local col = rowCfg and rowCfg[keyName.color]
                         if col then
                             return col.r or keyName.r, col.g or keyName.g, col.b or keyName.b, 1
                         end
                         return keyName.r, keyName.g, keyName.b, 1
                     end,
                     function(red, green, blue)
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return
                         end
-                        c[keyName.color] = { r = red, g = green, b = blue }
+                        rowCfg[keyName.color] = { r = red, g = green, b = blue }
                         RefreshHealth()
                     end,
                     false,
@@ -625,27 +625,27 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                     order = texOrder,
                     getValue = ConfGetter("borderTexture", "solid"),
                     setValue = function(val)
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return
                         end
-                        c.borderTexture = val
-                        c.borderTextureOffset = nil
-                        c.borderTextureOffsetY = nil
-                        c.borderTextureShiftX = nil
-                        c.borderTextureShiftY = nil
+                        rowCfg.borderTexture = val
+                        rowCfg.borderTextureOffset = nil
+                        rowCfg.borderTextureOffsetY = nil
+                        rowCfg.borderTextureShiftX = nil
+                        rowCfg.borderTextureShiftY = nil
                         local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(val)
-                        c.borderR = _bcol.r
-                        c.borderG = _bcol.g
-                        c.borderB = _bcol.b
-                        c.borderA = 1
-                        c.borderBehind = _bbehind
+                        rowCfg.borderR = _bcol.r
+                        rowCfg.borderG = _bcol.g
+                        rowCfg.borderB = _bcol.b
+                        rowCfg.borderA = 1
+                        rowCfg.borderBehind = _bbehind
                         local defSz = CludesUI.GetBorderDefaultSize("resourcebars", val)
                         if defSz then
-                            c.borderSize = defSz
+                            rowCfg.borderSize = defSz
                         end
-                        if c.borderSizePx then
-                            c.borderSizePx = false
+                        if rowCfg.borderSizePx then
+                            rowCfg.borderSizePx = false
                         end
                         RebuildHealth()
                         CludesUI:RefreshPage(true)
@@ -666,27 +666,27 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                             disabled = healthOff,
                             disabledTooltip = "Health Bar",
                             getStep = function()
-                                local c = rowConf()
-                                return c and c.borderSize or 1
+                                local rowCfg = rowConf()
+                                return rowCfg and rowCfg.borderSize or 1
                             end,
                             setStep = function(val)
-                                local c = rowConf()
-                                if c then
-                                    c.borderSize = val
+                                local rowCfg = rowConf()
+                                if rowCfg then
+                                    rowCfg.borderSize = val
                                 end
                             end,
                             getTex = function()
-                                local c = rowConf()
-                                return c and c.borderTexture or "solid"
+                                local rowCfg = rowConf()
+                                return rowCfg and rowCfg.borderTexture or "solid"
                             end,
                             getPx = function()
-                                local c = rowConf()
-                                return c and c.borderSizePx
+                                local rowCfg = rowConf()
+                                return rowCfg and rowCfg.borderSizePx
                             end,
                             setPx = function(val)
-                                local c = rowConf()
-                                if c then
-                                    c.borderSizePx = val
+                                local rowCfg = rowConf()
+                                if rowCfg then
+                                    rowCfg.borderSizePx = val
                                 end
                             end,
                             apply = function()
@@ -700,45 +700,45 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
             -- Width Offset | Height Offset: the textured border's outward offsets get their own row while a
             -- textured style is selected (the stock styles gate it away exactly like the row above).
             do
-                local c = rowConf()
-                local texture = c and c.borderTexture or "solid"
+                local rowCfg = rowConf()
+                local texture = rowCfg and rowCfg.borderTexture or "solid"
                 if texture ~= "solid" and texture ~= "" then
                     local function step()
-                        local c = rowConf()
-                        return c and c.borderSize or 1
+                        local rowCfg = rowConf()
+                        return rowCfg and rowCfg.borderSize or 1
                     end
                     local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                         addonKey = "resourcebars",
                         disabled = healthOff,
                         disabledTooltip = "Health Bar",
                         getTex = function()
-                            local c = rowConf()
-                            return c and c.borderTexture or "solid"
+                            local rowCfg = rowConf()
+                            return rowCfg and rowCfg.borderTexture or "solid"
                         end,
                         getStep = step,
                         getSizeKey = step,
                         getPx = function()
-                            local c = rowConf()
-                            return c and c.borderSizePx
+                            local rowCfg = rowConf()
+                            return rowCfg and rowCfg.borderSizePx
                         end,
                         getX = function()
-                            local c = rowConf()
-                            return c and c.borderTextureOffset
+                            local rowCfg = rowConf()
+                            return rowCfg and rowCfg.borderTextureOffset
                         end,
                         setX = function(val)
-                            local c = rowConf()
-                            if c then
-                                c.borderTextureOffset = val
+                            local rowCfg = rowConf()
+                            if rowCfg then
+                                rowCfg.borderTextureOffset = val
                             end
                         end,
                         getY = function()
-                            local c = rowConf()
-                            return c and c.borderTextureOffsetY
+                            local rowCfg = rowConf()
+                            return rowCfg and rowCfg.borderTextureOffsetY
                         end,
                         setY = function(val)
-                            local c = rowConf()
-                            if c then
-                                c.borderTextureOffsetY = val
+                            local rowCfg = rowConf()
+                            if rowCfg then
+                                rowCfg.borderTextureOffsetY = val
                             end
                         end,
                         apply = function()
@@ -768,8 +768,8 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                             if healthOff() or CludesUI.BlizzStyle.Get("resourcebars") then
                                 return true
                             end
-                            local c = rowConf()
-                            return not CludesUI.RoundedStyleOK(c and c.borderTexture)
+                            local rowCfg = rowConf()
+                            return not CludesUI.RoundedStyleOK(rowCfg and rowCfg.borderTexture)
                         end,
                         disabledTooltip = function()
                             if CludesUI.BlizzStyle.Get("resourcebars") then
@@ -794,14 +794,14 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                                 set = ConfSetter("cornerRadius", RebuildHealth),
                             },
                         }, function()
-                            local c = rowConf()
-                            return c and c.cornerMask
+                            local rowCfg = rowConf()
+                            return rowCfg and rowCfg.cornerMask
                         end, function(val)
-                            local c = rowConf()
-                            if not c then
+                            local rowCfg = rowConf()
+                            if not rowCfg then
                                 return
                             end
-                            c.cornerMask = val
+                            rowCfg.cornerMask = val
                             RebuildHealth()
                         end),
                     })
@@ -810,18 +810,18 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                     region,
                     hpBsRow:GetFrameLevel() + 3,
                     function()
-                        local c = rowConf()
-                        return (c and c.borderR or 0),
-                            (c and c.borderG or 0),
-                            (c and c.borderB or 0),
-                            (c and c.borderA or 1)
+                        local rowCfg = rowConf()
+                        return (rowCfg and rowCfg.borderR or 0),
+                            (rowCfg and rowCfg.borderG or 0),
+                            (rowCfg and rowCfg.borderB or 0),
+                            (rowCfg and rowCfg.borderA or 1)
                     end,
                     function(red, green, blue, a)
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return
                         end
-                        c.borderR, c.borderG, c.borderB, c.borderA = red, green, blue, a
+                        rowCfg.borderR, rowCfg.borderG, rowCfg.borderB, rowCfg.borderA = red, green, blue, a
                         SmoothRefresh()
                         CludesUI:RefreshPage()
                     end,
@@ -864,27 +864,27 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                             max = 10,
                             step = 1,
                             get = function()
-                                local c = rowConf()
-                                if not c then
+                                local rowCfg = rowConf()
+                                if not rowCfg then
                                     return 0
                                 end
-                                local val = c.borderTextureShiftX
+                                local val = rowCfg.borderTextureShiftX
                                 if val then
                                     return val
                                 end
                                 local _, _, dsx = CludesUI.GetBorderDefaults(
                                     "resourcebars",
-                                    c.borderTexture or "solid",
-                                    c.borderSize or 1
+                                    rowCfg.borderTexture or "solid",
+                                    rowCfg.borderSize or 1
                                 )
                                 return dsx
                             end,
                             set = function(val)
-                                local c = rowConf()
-                                if not c then
+                                local rowCfg = rowConf()
+                                if not rowCfg then
                                     return
                                 end
-                                c.borderTextureShiftX = val == 0 and nil or val
+                                rowCfg.borderTextureShiftX = val == 0 and nil or val
                                 RebuildHealth()
                                 CludesUI:RefreshPage()
                             end,
@@ -896,27 +896,27 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                             max = 10,
                             step = 1,
                             get = function()
-                                local c = rowConf()
-                                if not c then
+                                local rowCfg = rowConf()
+                                if not rowCfg then
                                     return 0
                                 end
-                                local val = c.borderTextureShiftY
+                                local val = rowCfg.borderTextureShiftY
                                 if val then
                                     return val
                                 end
                                 local _, _, _, dsy = CludesUI.GetBorderDefaults(
                                     "resourcebars",
-                                    c.borderTexture or "solid",
-                                    c.borderSize or 1
+                                    rowCfg.borderTexture or "solid",
+                                    rowCfg.borderSize or 1
                                 )
                                 return dsy
                             end,
                             set = function(val)
-                                local c = rowConf()
-                                if not c then
+                                local rowCfg = rowConf()
+                                if not rowCfg then
                                     return
                                 end
-                                c.borderTextureShiftY = val == 0 and nil or val
+                                rowCfg.borderTextureShiftY = val == 0 and nil or val
                                 RebuildHealth()
                                 CludesUI:RefreshPage()
                             end,
@@ -926,11 +926,11 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                             label = "Show Behind",
                             get = ConfGetter("borderBehind", false),
                             set = function(val)
-                                local c = rowConf()
-                                if not c then
+                                local rowCfg = rowConf()
+                                if not rowCfg then
                                     return
                                 end
-                                c.borderBehind = val == false and nil or val
+                                rowCfg.borderBehind = val == false and nil or val
                                 RebuildHealth()
                                 CludesUI:RefreshPage()
                             end,
@@ -938,8 +938,8 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                     },
                 })
                 local function UpdateCogVis()
-                    local c = rowConf()
-                    local texture = c and c.borderTexture or "solid"
+                    local rowCfg = rowConf()
+                    local texture = rowCfg and rowCfg.borderTexture or "solid"
                     if texture == "solid" or mod.ERB_ClassicBorderRow() then
                         cogBtn:Hide()
                     else
@@ -1092,15 +1092,15 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
             disabled = healthOff,
             disabledTooltip = "Health Bar",
             getValue = function()
-                local c = rowConf()
-                return math.floor((c and c.barAlpha or 1) * 100 + 0.5)
+                local rowCfg = rowConf()
+                return math.floor((rowCfg and rowCfg.barAlpha or 1) * 100 + 0.5)
             end,
             setValue = function(val)
-                local c = rowConf()
-                if not c then
+                local rowCfg = rowConf()
+                if not rowCfg then
                     return
                 end
-                c.barAlpha = val / 100
+                rowCfg.barAlpha = val / 100
                 RefreshHealth()
                 CludesUI:RefreshPage()
             end,
@@ -1115,8 +1115,8 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
             disabled = healthOff,
             disabledTooltip = "Health Bar",
             getValue = function()
-                local c = rowConf()
-                return (c and c.fillOpacity) or 100
+                local rowCfg = rowConf()
+                return (rowCfg and rowCfg.fillOpacity) or 100
             end,
             setValue = ConfSetter("fillOpacity", RebuildHealth),
         })
@@ -1126,8 +1126,8 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
             local region = healthBorderRow._rightRegion
             CludesUI.BuildInlineCog(region, {
                 disabled = function()
-                    local c = rowConf()
-                    return c and not c.enabled
+                    local rowCfg = rowConf()
+                    return rowCfg and not rowCfg.enabled
                 end,
                 disabledTooltip = "Health Bar",
                 title = "Fill Settings",
@@ -1156,45 +1156,45 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                     tooltip = "Gradient End Color",
                     hasAlpha = true,
                     disabled = function()
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return true
                         end
-                        if not c.enabled then
+                        if not rowCfg.enabled then
                             return true
                         end
                         local tse = _G._CURB_ResolveThresholdSpecEntry
-                            and _G._CURB_ResolveThresholdSpecEntry(c)
+                            and _G._CURB_ResolveThresholdSpecEntry(rowCfg)
                         if tse and (tse.thresholdEnabled ~= false) then
                             return true
                         end
-                        return not c.gradientEnabled
+                        return not rowCfg.gradientEnabled
                     end,
                     disabledTooltip = function()
-                        local c = rowConf()
-                        if not c or not c.enabled then
+                        local rowCfg = rowConf()
+                        if not rowCfg or not rowCfg.enabled then
                             return "Health Bar"
                         end
                         local tse = _G._CURB_ResolveThresholdSpecEntry
-                            and _G._CURB_ResolveThresholdSpecEntry(c)
+                            and _G._CURB_ResolveThresholdSpecEntry(rowCfg)
                         if tse and (tse.thresholdEnabled ~= false) then
                             return "This option requires the threshold to be off in Threshold & Hash Lines"
                         end
                         return "Gradient"
                     end,
                     getValue = function()
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return 0.20, 0.20, 0.80, 1
                         end
-                        return c.gradientR, c.gradientG, c.gradientB, c.gradientA
+                        return rowCfg.gradientR, rowCfg.gradientG, rowCfg.gradientB, rowCfg.gradientA
                     end,
                     setValue = function(red, green, blue, a)
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return
                         end
-                        c.gradientR, c.gradientG, c.gradientB, c.gradientA = red, green, blue, a
+                        rowCfg.gradientR, rowCfg.gradientG, rowCfg.gradientB, rowCfg.gradientA = red, green, blue, a
                         SmoothRefresh()
                     end,
                 },
@@ -1202,31 +1202,31 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                     tooltip = "Custom Colored",
                     hasAlpha = false,
                     getValue = function()
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return 37 / 255, 193 / 255, 29 / 255, 1
                         end
-                        return c.fillR, c.fillG, c.fillB, 1
+                        return rowCfg.fillR, rowCfg.fillG, rowCfg.fillB, 1
                     end,
                     setValue = function(red, green, blue)
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return
                         end
-                        c.fillR, c.fillG, c.fillB = red, green, blue
-                        if not c.customColored then
-                            c.customColored = true
+                        rowCfg.fillR, rowCfg.fillG, rowCfg.fillB = red, green, blue
+                        if not rowCfg.customColored then
+                            rowCfg.customColored = true
                         end
                         SmoothRefresh()
                         CludesUI:RefreshPage()
                     end,
                     onClick = function(self)
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return
                         end
-                        if not c.customColored then
-                            c.customColored = true
+                        if not rowCfg.customColored then
+                            rowCfg.customColored = true
                             RebuildHealth()
                             CludesUI:RefreshPage()
                             return
@@ -1236,8 +1236,8 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         end
                     end,
                     refreshAlpha = function()
-                        local c = rowConf()
-                        local isClassColored = not c or not c.customColored
+                        local rowCfg = rowConf()
+                        local isClassColored = not rowCfg or not rowCfg.customColored
                         return isClassColored and 0.3 or 1
                     end,
                 },
@@ -1253,17 +1253,17 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return
                         end
-                        c.customColored = false
+                        rowCfg.customColored = false
                         RebuildHealth()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local c = rowConf()
-                        local isClassColored = not c or not c.customColored
+                        local rowCfg = rowConf()
+                        local isClassColored = not rowCfg or not rowCfg.customColored
                         return isClassColored and 1 or 0.3
                     end,
                 },
@@ -1309,8 +1309,8 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
             local region = healthBorderRow._leftRegion
             CludesUI.BuildInlineCog(region, {
                 disabled = function()
-                    local c = rowConf()
-                    return c and not c.enabled
+                    local rowCfg = rowConf()
+                    return rowCfg and not rowCfg.enabled
                 end,
                 disabledTooltip = "Health Bar",
                 title = "Out of Combat Opacity & Visibility",
@@ -1319,8 +1319,8 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         type = "toggle",
                         label = "Fade Out of Combat",
                         get = function()
-                            local c = rowConf()
-                            return c and c.oocFadeEnabled == true
+                            local rowCfg = rowConf()
+                            return rowCfg and rowCfg.oocFadeEnabled == true
                         end,
                         set = ConfSetter("oocFadeEnabled", RefreshHealth),
                     },
@@ -1331,19 +1331,19 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         max = 100,
                         step = 1,
                         disabled = function()
-                            local c = rowConf()
-                            return not (c and c.oocFadeEnabled)
+                            local rowCfg = rowConf()
+                            return not (rowCfg and rowCfg.oocFadeEnabled)
                         end,
                         get = function()
-                            local c = rowConf()
-                            return math.floor(((c and c.oocAlpha) or 0.5) * 100 + 0.5)
+                            local rowCfg = rowConf()
+                            return math.floor(((rowCfg and rowCfg.oocAlpha) or 0.5) * 100 + 0.5)
                         end,
                         set = function(val)
-                            local c = rowConf()
-                            if not c then
+                            local rowCfg = rowConf()
+                            if not rowCfg then
                                 return
                             end
-                            c.oocAlpha = val / 100
+                            rowCfg.oocAlpha = val / 100
                             RefreshHealth()
                         end,
                     },
@@ -1352,8 +1352,8 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         label = "Show When Health Missing",
                         tooltip = "Shows the Health bar while your health is below full, even when its Visibility setting hides it.",
                         get = function()
-                            local c = rowConf()
-                            return c and c.showWhenMissing == true
+                            local rowCfg = rowConf()
+                            return rowCfg and rowCfg.showWhenMissing == true
                         end,
                         set = ConfSetter("showWhenMissing", RefreshHealth),
                     },
@@ -1363,18 +1363,18 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
 
         -- Text Color disables when the bar is off OR Health Text is None
         local function healthTextDis()
-            local c = rowConf()
-            if not c then
+            local rowCfg = rowConf()
+            if not rowCfg then
                 return false
             end
-            if not c.enabled then
+            if not rowCfg.enabled then
                 return true
             end
-            return c.textFormat == "none"
+            return rowCfg.textFormat == "none"
         end
         local function healthTextDisTip()
-            local c = rowConf()
-            if c and not c.enabled then
+            local rowCfg = rowConf()
+            if rowCfg and not rowCfg.enabled then
                 return "Health Bar"
             end
             return "This option requires a Health Text format other than None"
@@ -1417,28 +1417,28 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                     tooltip = "Custom Colored",
                     hasAlpha = true,
                     getValue = function()
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return 1, 1, 1, 1
                         end
-                        return c.textFillR, c.textFillG, c.textFillB, c.textFillA
+                        return rowCfg.textFillR, rowCfg.textFillG, rowCfg.textFillB, rowCfg.textFillA
                     end,
                     setValue = function(red, green, blue, a)
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return
                         end
-                        c.textFillR, c.textFillG, c.textFillB, c.textFillA = red, green, blue, a
+                        rowCfg.textFillR, rowCfg.textFillG, rowCfg.textFillB, rowCfg.textFillA = red, green, blue, a
                         RebuildHealth()
                         SmoothRefresh()
                     end,
                     onClick = function(self)
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return
                         end
-                        if c.textCustomColored == false then
-                            c.textCustomColored = true
+                        if rowCfg.textCustomColored == false then
+                            rowCfg.textCustomColored = true
                             RebuildHealth()
                             CludesUI:RefreshPage()
                             return
@@ -1448,8 +1448,8 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         end
                     end,
                     refreshAlpha = function()
-                        local c = rowConf()
-                        local isClassColored = c and c.textCustomColored == false
+                        local rowCfg = rowConf()
+                        local isClassColored = rowCfg and rowCfg.textCustomColored == false
                         return isClassColored and 0.3 or 1
                     end,
                 },
@@ -1465,17 +1465,17 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local c = rowConf()
-                        if not c then
+                        local rowCfg = rowConf()
+                        if not rowCfg then
                             return
                         end
-                        c.textCustomColored = false
+                        rowCfg.textCustomColored = false
                         RebuildHealth()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local c = rowConf()
-                        local isClassColored = c and c.textCustomColored == false
+                        local rowCfg = rowConf()
+                        local isClassColored = rowCfg and rowCfg.textCustomColored == false
                         return isClassColored and 1 or 0.3
                     end,
                 },
@@ -1487,8 +1487,8 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
             local region = healthTextSizeRow._leftRegion
             local cogBtn = CludesUI.BuildInlineCog(region, {
                 disabled = function()
-                    local c = rowConf()
-                    return c and not c.enabled
+                    local rowCfg = rowConf()
+                    return rowCfg and not rowCfg.enabled
                 end,
                 disabledTooltip = "Health Bar",
                 title = "Health Text",

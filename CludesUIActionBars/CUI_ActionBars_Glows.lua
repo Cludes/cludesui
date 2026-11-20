@@ -140,12 +140,12 @@ local function UpdateFlipbook(button)
     -- Color mode: the class flag alone decides Class (legacy profiles and older
     -- spec overrides carry only the flag); the mode key tells Default from
     -- Custom. The options getter reads the same rule.
-    local c = p.procGlowColor or { r = 1, g = 0.776, b = 0.376 }
+    local color = p.procGlowColor or { r = 1, g = 0.776, b = 0.376 }
     local cr, cg, callback = _G_Glows.ResolveColor(
         p.procGlowUseClassColor and "class" or (p.procGlowColorMode == "default" and "default" or "custom"),
-        c.r,
-        c.g,
-        c.b
+        color.r,
+        color.g,
+        color.b
     )
 
     local loopIdx = p.procGlowType or 1
@@ -543,12 +543,12 @@ do
     -- reader for the live buttons and the Animations page preview.
     mod._AssistCustomGlowColor = function()
         local p = ABAR.db and ABAR.db.profile
-        local c = p and p.assistGlowColor
+        local color = p and p.assistGlowColor
         return _G_Glows.ResolveColor(
             _G_Glows.DeriveColorMode(nil, p and p.assistGlowUseClassColor),
-            c and c.r,
-            c and c.g,
-            c and c.b,
+            color and color.r,
+            color and color.g,
+            color and color.b,
             0.15,
             0.5,
             1
@@ -677,9 +677,9 @@ do
         end
         -- Re-assert: bar layout can change the button's frame level after create.
         shade:SetFrameLevel(button:GetFrameLevel() + 14)
-        local c = (p and p.assistGlowOverlayColor) or { r = 0.15, g = 0.5, b = 1 }
+        local color = (p and p.assistGlowOverlayColor) or { r = 0.15, g = 0.5, b = 1 }
         local a = (p and p.assistGlowOverlayAlpha) or 30
-        shade.tex:SetColorTexture(c.r or 0.15, c.g or 0.5, c.b or 1, a / 100)
+        shade.tex:SetColorTexture(color.r or 0.15, color.g or 0.5, color.b or 1, a / 100)
         -- Custom button shapes win over the rounded corners: a circle mask must
         -- not end up as a rounded square. Keyed on the mask OBJECT, not a
         -- boolean -- a shape change swaps the mask, and the stale one has to be
@@ -1173,11 +1173,11 @@ end
 local function ResolveCooldownEdgeColor(p)
     if p.cooldownEdgeUseClassColor then
         local cr, cg, callback = GetClassColor()
-        local c = p.cooldownEdgeColor or { a = 1 }
-        return cr, cg, callback, c.a or 1
+        local color = p.cooldownEdgeColor or { a = 1 }
+        return cr, cg, callback, color.a or 1
     end
-    local c = p.cooldownEdgeColor or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
-    return c.r, c.g, c.b, c.a
+    local color = p.cooldownEdgeColor or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
+    return color.r, color.g, color.b, color.a
 end
 
 local function ApplySingleCooldownEdge(cooldownFrame, edgeSize, cr, cg, callback, ca)

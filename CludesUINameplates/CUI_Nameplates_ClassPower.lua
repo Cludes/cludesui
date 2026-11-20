@@ -119,9 +119,9 @@ local function GetClassPipColor(class, powerName)
         if powerName then
             local alias = powerName:match("^(.+)_BAR$")
             local key = alias or powerName
-            local c = CludesUI.GetPowerColor(key)
-            if c then
-                return { c.r, c.g, c.b }
+            local color = CludesUI.GetPowerColor(key)
+            if color then
+                return { color.r, color.g, color.b }
             end
         end
         local rc = CludesUI.GetResourceColor(class)
@@ -866,8 +866,8 @@ mod._WCNP_Arm = function(powerName)
         mod._wcnpOpts = o
     end
     if GetClassPowerClassColors() then
-        local c = GetClassPipColor(PLAYER_CLASS) or CP_DEFAULT_COLOR
-        o.r, o.g, o.b = c[1], c[2], c[3]
+        local color = GetClassPipColor(PLAYER_CLASS) or CP_DEFAULT_COLOR
+        o.r, o.g, o.b = color[1], color[2], color[3]
     else
         local classColor = GetClassPowerCustomColor()
         o.r, o.g, o.b = classColor.r, classColor.g, classColor.b
@@ -1214,8 +1214,8 @@ local function MaybeDarken(red, green, blue, inCombat)
         recolor = defaultSet.darkenOOCRecolor
     end
     if recolor then
-        local c = (p and p.darkenOOCColor) or defaultSet.darkenOOCColor
-        return c.r, c.g, c.b
+        local color = (p and p.darkenOOCColor) or defaultSet.darkenOOCColor
+        return color.r, color.g, color.b
     end
     return DarkenColor(red, green, blue)
 end

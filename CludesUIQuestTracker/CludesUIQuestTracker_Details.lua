@@ -98,8 +98,8 @@ local drawn -- what the window shows, as one string
 local dragged = false -- the player moved it: it no longer follows the tracker
 
 local function Accent()
-    local c = CludesUI.CLUDES_GREEN
-    return c.r, c.g, c.b
+    local color = CludesUI.CLUDES_GREEN
+    return color.r, color.g, color.b
 end
 
 local function Dim()
@@ -224,9 +224,9 @@ local function AddTile(e, x, y, width)
     tile:SetSize(width, TILE)
     tile:ClearAllPoints()
     tile:SetPoint("TOPLEFT", content, "TOPLEFT", x, -y)
-    local c = e.quality and ColorManager.GetColorDataForItemQuality(e.quality)
-    if c then
-        tile.quality:SetColor(c.r, c.g, c.b, 1)
+    local color = e.quality and ColorManager.GetColorDataForItemQuality(e.quality)
+    if color then
+        tile.quality:SetColor(color.r, color.g, color.b, 1)
     else
         tile.quality:SetColor(0, 0, 0, 1)
     end
@@ -234,8 +234,8 @@ local function AddTile(e, x, y, width)
     tile.count:SetText((e.count and e.count > 1) and e.count or "")
     Style(tile.name, 11)
     tile.name:SetText(e.name or RETRIEVING_DATA)
-    if c then
-        tile.name:SetTextColor(c.r, c.g, c.b)
+    if color then
+        tile.name:SetTextColor(color.r, color.g, color.b)
     else
         tile.name:SetTextColor(1, 1, 1)
     end
@@ -259,8 +259,8 @@ local function LevelLine()
     local parts = {}
     local level = C_QuestLog.GetQuestDifficultyLevel(questID)
     if level and level > 0 then
-        local c = GetQuestDifficultyColor(level)
-        parts[1] = CreateColor(c.r, c.g, c.b):WrapTextInColorCode(LEVEL .. " " .. level)
+        local color = GetQuestDifficultyColor(level)
+        parts[1] = CreateColor(color.r, color.g, color.b):WrapTextInColorCode(LEVEL .. " " .. level)
     end
     local tag = C_QuestLog.GetQuestTagInfo(questID)
     if tag and tag.tagName then

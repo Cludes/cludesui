@@ -1100,8 +1100,8 @@ BuildAllCDMBars = function()
         end
         -- Live migration: pandemicGlowMode replaced pandemicGlowColor always being set
         if not barInfo.pandemicGlowMode then
-            local c = barInfo.pandemicGlowColor
-            if c and not (c.r == 1 and c.g == 1 and c.b == 0) then
+            local color = barInfo.pandemicGlowColor
+            if color and not (color.r == 1 and color.g == 1 and color.b == 0) then
                 barInfo.pandemicGlowMode = "custom"
             else
                 barInfo.pandemicGlowMode = "default"

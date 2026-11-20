@@ -158,8 +158,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
         local saved = CludesUIDB or {}
         local modeName = _elementColorMode()
         if modeName == "custom" then
-            local c = saved.popupMenuButtonTextColor or { r = 1, g = 1, b = 1 }
-            return c.r, c.g, c.b
+            local color = saved.popupMenuButtonTextColor or { r = 1, g = 1, b = 1 }
+            return color.r, color.g, color.b
         elseif modeName == "class" then
             local _, class = UnitClass("player")
             local c = class and RAID_CLASS_COLORS[class]
@@ -168,8 +168,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
             end
         end
         -- accent AND native both land here; only the Game Menu header calls this unconditionally under native (branded green) -- others gate first.
-        local c = CludesUI.CLUDES_GREEN or { r = 0.27, g = 0.86, b = 0.49 }
-        return c.r, c.g, c.b
+        local color = CludesUI.CLUDES_GREEN or { r = 0.27, g = 0.86, b = 0.49 }
+        return color.r, color.g, color.b
     end
     CludesUI._getPopupMenuButtonTextColor = _getElementColor
 
@@ -1606,10 +1606,10 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                 _cuiRefreshEnabled(button)
             end
             if button then
-                local c = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
+                local color = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
                     or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
                 if GetFFD(button).bg then
-                    GetFFD(button).bg:SetColorTexture(c.r, c.g, c.b, c.a == nil and 0.8 or c.a)
+                    GetFFD(button).bg:SetColorTexture(color.r, color.g, color.b, color.a == nil and 0.8 or color.a)
                 end
                 _applyConfiguredBorder(button, "popupMenuButton", 1)
             end
@@ -2070,8 +2070,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                 topStrip.bg:Hide()
                 below = 9
             end
-            local c = classColor or HIGHLIGHT_FONT_COLOR
-            topStrip:SetStatusBarColor(c.r, c.g, c.b)
+            local color = classColor or HIGHLIGHT_FONT_COLOR
+            topStrip:SetStatusBarColor(color.r, color.g, color.b)
             topStrip:Show()
         elseif topStrip then
             topStrip:Hide()
@@ -2409,10 +2409,10 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                             GetFFD(hoverTex).owned = true
                         end
                         -- Colors re-applied every show.
-                        local c = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
+                        local color = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
                             or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
                         if GetFFD(button).bg then
-                            GetFFD(button).bg:SetColorTexture(c.r, c.g, c.b, c.a == nil and 0.8 or c.a)
+                            GetFFD(button).bg:SetColorTexture(color.r, color.g, color.b, color.a == nil and 0.8 or color.a)
                         end
                         _applyConfiguredBorder(button, "popupMenuButton", 1)
                         local fontStr = button:GetFontString()
@@ -2467,14 +2467,14 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
             end
             local saved = CludesUIDB or {}
             local QT = CludesUI.QUEUE_TIMER
-            local c = saved.queueTimerTextColor
+            local color = saved.queueTimerTextColor
             local fontFile = (CludesUI.GetFontPath("extras")) or "Fonts\\FRIZQT__.TTF"
             CludesUI.PrimeFontShadow(timerLabel, true)
             timerLabel:SetFont(fontFile, saved.queueTimerTextSize or QT.TEXT_SIZE, "")
             timerLabel:SetTextColor(
-                (c and c.r) or QT.TEXT_R,
-                (c and c.g) or QT.TEXT_G,
-                (c and c.b) or QT.TEXT_B,
+                (color and color.r) or QT.TEXT_R,
+                (color and color.g) or QT.TEXT_G,
+                (color and color.b) or QT.TEXT_B,
                 1
             )
             timerLabel:ClearAllPoints()
@@ -2687,10 +2687,10 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                 hoverTex:SetAllPoints()
                 GetFFD(hoverTex).owned = true
             end
-            local c = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
+            local color = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
                 or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
             if GetFFD(button).bg then
-                GetFFD(button).bg:SetColorTexture(c.r, c.g, c.b, c.a == nil and 0.8 or c.a)
+                GetFFD(button).bg:SetColorTexture(color.r, color.g, color.b, color.a == nil and 0.8 or color.a)
             end
             _applyConfiguredBorder(button, "popupMenuButton", 1)
             local fontStr = button:GetFontString()

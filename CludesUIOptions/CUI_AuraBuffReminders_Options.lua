@@ -2713,14 +2713,14 @@ CludesUI.AtOptionsLogin(function()
                 region:GetFrameLevel() + 2,
                 items,
                 function(keyName)
-                    local c = CDB()
-                    return c and c.wrongPetAllowed and c.wrongPetAllowed[keyName]
+                    local cfg = CDB()
+                    return cfg and cfg.wrongPetAllowed and cfg.wrongPetAllowed[keyName]
                 end,
                 function(keyName, value)
-                    local c = CDB()
-                    if c then
-                        c.wrongPetAllowed = c.wrongPetAllowed or {}
-                        c.wrongPetAllowed[keyName] = value
+                    local cfg = CDB()
+                    if cfg then
+                        cfg.wrongPetAllowed = cfg.wrongPetAllowed or {}
+                        cfg.wrongPetAllowed[keyName] = value
                     end
                     RefreshAll()
                     RebuildPreviewHeader()
@@ -2761,13 +2761,13 @@ CludesUI.AtOptionsLogin(function()
             text = text,
             tooltip = tooltip,
             getValue = function()
-                local c = CDB()
-                return c and c.enabled and c.enabled[key]
+                local cfg = CDB()
+                return cfg and cfg.enabled and cfg.enabled[key]
             end,
             setValue = function(value)
-                local c = CDB()
-                if c and c.enabled then
-                    c.enabled[key] = value
+                local cfg = CDB()
+                if cfg and cfg.enabled then
+                    cfg.enabled[key] = value
                     RefreshAll()
                     RebuildPreviewHeader()
                 end
@@ -2793,13 +2793,13 @@ CludesUI.AtOptionsLogin(function()
             values = values,
             order = order,
             getValue = function()
-                local c = CDB()
-                return c and c[prefKey] or "last_used"
+                local cfg = CDB()
+                return cfg and cfg[prefKey] or "last_used"
             end,
             setValue = function(value)
-                local c = CDB()
-                if c then
-                    c[prefKey] = value
+                local cfg = CDB()
+                if cfg then
+                    cfg[prefKey] = value
                     RefreshAll()
                 end
             end,
@@ -2809,12 +2809,12 @@ CludesUI.AtOptionsLogin(function()
     -- Inky Black Potion's zone list: map IDs, comma separated, the current
     -- zone one click away.
     local function ChooseInkyZones()
-        local c = CDB()
+        local cfg = CDB()
         CludesUI:ShowInputPopup({
             title = "Inky Black Potion Zone IDs",
             message = "Enter map zone IDs separated by commas.\nThe potion reminder will only show in these zones.",
             placeholder = "e.g. 2248, 2339",
-            initialText = c and c.inkyBlackZones or "",
+            initialText = cfg and cfg.inkyBlackZones or "",
             maxLetters = 500,
             confirmText = "Save",
             extraButton = {
@@ -2882,8 +2882,8 @@ CludesUI.AtOptionsLogin(function()
 
         local block = OffBlocker(button, "Inky Black Potion")
         local function Dim()
-            local c = CDB()
-            local isOff = not c or not c.enabled or not c.enabled.inky_black
+            local cfg = CDB()
+            local isOff = not cfg or not cfg.enabled or not cfg.enabled.inky_black
             button:SetAlpha(isOff and 0.3 or 1)
             block:SetShown(isOff)
         end
@@ -2966,8 +2966,8 @@ CludesUI.AtOptionsLogin(function()
     -- warning is off, which also ends the preview.
     local function ManaWarningInlines(region)
         local function Off()
-            local c = CDB()
-            return c ~= nil and c.rcManaWarn == false
+            local cfg = CDB()
+            return cfg ~= nil and cfg.rcManaWarn == false
         end
         local previewing = false
         local RefreshEye
@@ -2982,12 +2982,12 @@ CludesUI.AtOptionsLogin(function()
         end
         local function Field(key, default, after)
             return function()
-                local c = CDB()
-                return c and c[key] or default
+                local cfg = CDB()
+                return cfg and cfg[key] or default
             end, function(value)
-                local c = CDB()
-                if c then
-                    c[key] = value
+                local cfg = CDB()
+                if cfg then
+                    cfg[key] = value
                     after()
                 end
             end
@@ -3008,13 +3008,13 @@ CludesUI.AtOptionsLogin(function()
                     values = region._rcwFontValues,
                     order = region._rcwFontOrder,
                     get = function()
-                        local c = CDB()
-                        return (c and c.rcManaWarnFont) or "__global"
+                        local cfg = CDB()
+                        return (cfg and cfg.rcManaWarnFont) or "__global"
                     end,
                     set = function(value)
-                        local c = CDB()
-                        if c then
-                            c.rcManaWarnFont = (value ~= "__global") and value or nil
+                        local cfg = CDB()
+                        if cfg then
+                            cfg.rcManaWarnFont = (value ~= "__global") and value or nil
                             ApplyManaWarning()
                             PreviewOn()
                         end
@@ -3027,8 +3027,8 @@ CludesUI.AtOptionsLogin(function()
         })
 
         local swatch = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
-            local c = CDB()
-            local col = c and c.rcManaWarnColor
+            local cfg = CDB()
+            local col = cfg and cfg.rcManaWarnColor
             if col then
                 return col.r, col.g, col.b, 1
             end
@@ -3038,9 +3038,9 @@ CludesUI.AtOptionsLogin(function()
             end
             return 0, 0.825, 1, 1
         end, function(red, green, blue)
-            local c = CDB()
-            if c then
-                c.rcManaWarnColor = { r = red, g = green, b = blue }
+            local cfg = CDB()
+            if cfg then
+                cfg.rcManaWarnColor = { r = red, g = green, b = blue }
                 ApplyManaWarning()
             end
         end, false, 20)
@@ -3105,13 +3105,13 @@ CludesUI.AtOptionsLogin(function()
             text = "Show Without Item in Bags",
             tooltip = "When on, augment rune/flask/food/weapon reminders still show (dimmed) when you have no matching item in your bags, as a prompt to restock.\nWhen off, they are hidden entirely if you don't carry the item.",
             getValue = function()
-                local c = CDB()
-                return not c or c.showWithoutItem ~= false
+                local cfg = CDB()
+                return not cfg or cfg.showWithoutItem ~= false
             end,
             setValue = function(value)
-                local c = CDB()
-                if c then
-                    c.showWithoutItem = value
+                local cfg = CDB()
+                if cfg then
+                    cfg.showWithoutItem = value
                     RefreshAll()
                 end
             end,
@@ -3120,13 +3120,13 @@ CludesUI.AtOptionsLogin(function()
             text = MANA_WARN,
             tooltip = "Flashes LOW MANA during an out-of-combat raid ready check while you are a healer under 80% mana.",
             getValue = function()
-                local c = CDB()
-                return not c or c.rcManaWarn ~= false
+                local cfg = CDB()
+                return not cfg or cfg.rcManaWarn ~= false
             end,
             setValue = function(value)
-                local c = CDB()
-                if c then
-                    c.rcManaWarn = value
+                local cfg = CDB()
+                if cfg then
+                    cfg.rcManaWarn = value
                 end
                 if not value and _G._CUABR_RCWarnHidePreview then
                     _G._CUABR_RCWarnHidePreview()

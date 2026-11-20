@@ -130,10 +130,10 @@ function mod.NPO_EditCustomText(slotKey, onSave)
     local key = slotKey .. "CustomFormat"
     -- The slot's colour as the nameplate preview paints it (Text Coloring mode),
     -- copied: the level colour is a reused table.
-    local c = mod.NPO_PreviewSlotColor(slotKey)
+    local color = mod.NPO_PreviewSlotColor(slotKey)
     CludesUI.TextTags.EditPopup({
         cat = mod.NP_TextTags,
-        color = c and { r = c.r, g = c.g, b = c.b },
+        color = color and { r = color.r, g = color.g, b = color.b },
         onSave = onSave,
         tagNotes = { hp = CludesUI.L("shows DEAD") },
         get = function()
@@ -501,8 +501,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             return not val
         end
         local borderColorGet = function()
-            local c = (DB() and DB().borderColor) or defaultSet.borderColor
-            return c.r, c.g, c.b
+            local color = (DB() and DB().borderColor) or defaultSet.borderColor
+            return color.r, color.g, color.b
         end
         local borderColorSet = function(red, green, blue)
             DB().borderColor = { r = red, g = green, b = blue }
@@ -896,8 +896,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             local rightRegion = customBorderRow._rightRegion
             local cbColGet = function()
-                local c = (DB() and DB().customBorderColor) or defaultSet.customBorderColor
-                return c.r, c.g, c.b, (DBVal("customBorderAlpha") or defaultSet.customBorderAlpha or 1)
+                local color = (DB() and DB().customBorderColor) or defaultSet.customBorderColor
+                return color.r, color.g, color.b, (DBVal("customBorderAlpha") or defaultSet.customBorderAlpha or 1)
             end
             local cbColSet = function(red, green, blue, a)
                 DB().customBorderColor = { r = red, g = green, b = blue }
@@ -991,9 +991,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             end,
             setValue = function(val)
                 DB().bgAlpha = val / 100
-                local c = (DB() and DB().bgColor) or defaultSet.bgColor
+                local color = (DB() and DB().bgColor) or defaultSet.bgColor
                 for _, backing in pairs(plates) do
-                    backing.healthBG:SetColorTexture(c.r, c.g, c.b, val / 100)
+                    backing.healthBG:SetColorTexture(color.r, color.g, color.b, val / 100)
                 end
                 UpdatePreview()
             end,
@@ -1022,8 +1022,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     if not CludesUI._prebuilding then
         local leftRegion = bgHoverRow._leftRegion
         local cbColorGet = function()
-            local c = (DB() and DB().bgColor) or defaultSet.bgColor
-            return c.r, c.g, c.b
+            local color = (DB() and DB().bgColor) or defaultSet.bgColor
+            return color.r, color.g, color.b
         end
         local cbColorSet = function(red, green, blue)
             DB().bgColor = { r = red, g = green, b = blue }
@@ -1107,8 +1107,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     if not CludesUI._prebuilding then
         local region = bgHoverRow._rightRegion
         local acColorGet = function()
-            local c = (DB() and DB().absorbColor) or defaultSet.absorbColor or { r = 1, g = 1, b = 1 }
-            return c.r, c.g, c.b
+            local color = (DB() and DB().absorbColor) or defaultSet.absorbColor or { r = 1, g = 1, b = 1 }
+            return color.r, color.g, color.b
         end
         local acColorSet = function(red, green, blue)
             DB().absorbColor = { r = red, g = green, b = blue }

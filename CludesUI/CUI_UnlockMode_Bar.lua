@@ -48,8 +48,8 @@ CUI_NS.unlockParts.Bar = function(LM)
         if CludesUI._specialUnlockGroup then
             return 1, 0.82, 0.30
         end
-        local c = CludesUI.CLUDES_GREEN
-        return c.r, c.g, c.b
+        local color = CludesUI.CLUDES_GREEN
+        return color.r, color.g, color.b
     end
 
     -------------------------------------------------------------------------------

@@ -401,9 +401,9 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         local region = row._leftRegion
 
         local colorSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
-            local c = SGet("customFillColor")
-            if c then
-                return c.r, c.g, c.b, 1
+            local color = SGet("customFillColor")
+            if color then
+                return color.r, color.g, color.b, 1
             end
             return 37 / 255, 193 / 255, 29 / 255, 1
         end, function(red, green, blue)
@@ -523,9 +523,9 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         region._lastInline = bgClassSwatch
 
         local bgSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
-            local c = SGet("customBgColor")
-            if c then
-                return c.r, c.g, c.b, 1
+            local color = SGet("customBgColor")
+            if color then
+                return color.r, color.g, color.b, 1
             end
             return 17 / 255, 17 / 255, 17 / 255, 1
         end, function(red, green, blue)
@@ -615,9 +615,9 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     if not CludesUI._prebuilding then
         local region = healPredRow._leftRegion
         local colorSwatch = CludesUI.BuildColorSwatch(region, healPredRow:GetFrameLevel() + 3, function()
-            local c = SGet("healPredColor")
-            if c then
-                return c.r, c.g, c.b, 1
+            local color = SGet("healPredColor")
+            if color then
+                return color.r, color.g, color.b, 1
             end
             return 102 / 255, 243 / 255, 102 / 255, 1
         end, function(red, green, blue)
@@ -971,9 +971,9 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     if not CludesUI._prebuilding then
         local region = absorbRow._leftRegion
         local colorSwatch = CludesUI.BuildColorSwatch(region, absorbRow:GetFrameLevel() + 3, function()
-            local c = SGet("absorbColor")
-            if c then
-                return c.r, c.g, c.b, 1
+            local color = SGet("absorbColor")
+            if color then
+                return color.r, color.g, color.b, 1
             end
             return 1, 1, 1, 1
         end, function(red, green, blue)
@@ -1085,9 +1085,9 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     if not CludesUI._prebuilding then
         local region = absorbBarRow._rightRegion
         local colorSwatch = CludesUI.BuildColorSwatch(region, absorbBarRow:GetFrameLevel() + 3, function()
-            local c = SGet("absorbBarColor")
-            if c then
-                return c.r, c.g, c.b, c.a or 1
+            local color = SGet("absorbBarColor")
+            if color then
+                return color.r, color.g, color.b, color.a or 1
             end
             return 1, 1, 1, 1
         end, function(red, green, blue, a)
@@ -1202,9 +1202,9 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
     if not CludesUI._prebuilding then
         local region = healAbsorbRow._leftRegion
         local colorSwatch = CludesUI.BuildColorSwatch(region, healAbsorbRow:GetFrameLevel() + 3, function()
-            local c = SGet("healAbsorbColor")
-            if c then
-                return c.r or 0.8, c.g or 0.15, c.b or 0.15, 1
+            local color = SGet("healAbsorbColor")
+            if color then
+                return color.r or 0.8, color.g or 0.15, color.b or 0.15, 1
             end
             return 0.8, 0.15, 0.15, 1
         end, function(red, green, blue)
@@ -1290,9 +1290,9 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                 region,
                 healAbsorbBarRow:GetFrameLevel() + 3,
                 function()
-                    local c = SGet("healAbsorbBarColor")
-                    if c then
-                        return c.r, c.g, c.b, c.a or 1
+                    local color = SGet("healAbsorbBarColor")
+                    if color then
+                        return color.r, color.g, color.b, color.a or 1
                     end
                     return 200 / 255, 29 / 255, 29 / 255, 1
                 end,
@@ -1402,9 +1402,9 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         if not CludesUI._prebuilding then
             local region = maxHealthRow._leftRegion
             local colorSwatch = CludesUI.BuildColorSwatch(region, maxHealthRow:GetFrameLevel() + 3, function()
-                local c = SGet("maxHealthColor")
-                if c then
-                    return c.r or 0.7, c.g or 0.1, c.b or 0.1, 1
+                local color = SGet("maxHealthColor")
+                if color then
+                    return color.r or 0.7, color.g or 0.1, color.b or 0.1, 1
                 end
                 return 0.7, 0.1, 0.1, 1
             end, function(red, green, blue)
@@ -1818,12 +1818,12 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             pwBdrRow:GetFrameLevel() + 3,
             function()
                 if MatchingPowerBorder() then
-                    local c = SGet("borderColor")
-                    return c and c.r or 0, c and c.g or 0, c and c.b or 0, SVal("borderAlpha", 1)
+                    local color = SGet("borderColor")
+                    return color and color.r or 0, color and color.g or 0, color and color.b or 0, SVal("borderAlpha", 1)
                 end
-                local c = SGet("powerBorderColor")
-                if c then
-                    return c.r, c.g, c.b, SVal("powerBorderAlpha", 1)
+                local color = SGet("powerBorderColor")
+                if color then
+                    return color.r, color.g, color.b, SVal("powerBorderAlpha", 1)
                 end
                 return 0, 0, 0, 1
             end,
@@ -1925,9 +1925,9 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
         region._lastInline = bgPwrSwatch
 
         local bgSwatch = CludesUI.BuildColorSwatch(region, pwBgRow:GetFrameLevel() + 3, function()
-            local c = SGet("powerBgColor")
-            if c then
-                return c.r, c.g, c.b, 1
+            local color = SGet("powerBgColor")
+            if color then
+                return color.r, color.g, color.b, 1
             end
             return 0, 0, 0, 1
         end, function(red, green, blue)

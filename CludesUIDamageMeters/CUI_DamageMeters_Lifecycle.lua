@@ -650,20 +650,20 @@ initFrame:SetScript("OnEvent", function(self)
         end
         SetActiveRow(nil)
         _hoverPollFrame:Hide()
-        local c = DB()
+        local cfg = DB()
         -- Clear the hotkey toggle so a profile swap never lands in a hidden state whose
         -- cause is no longer visible, then re-apply both keybinds from the new profile
         mod._toggleHidden = false
         mod.ApplyDMKeybinds()
         -- Force English Units from the new profile
         mod.RebuildNumberFormat()
-        if not c.windows then
-            c.windows = {}
+        if not cfg.windows then
+            cfg.windows = {}
         end
-        local wc = math.max(1, c.windowCount or 1)
-        c.windowCount = wc
+        local wc = math.max(1, cfg.windowCount or 1)
+        cfg.windowCount = wc
         for index = wc + 1, MAX_WINDOWS do
-            c.windows[index] = nil
+            cfg.windows[index] = nil
         end
         -- Windows past the new count are parked, the last first (they come back in order)
         for index = #_windows, wc + 1, -1 do
@@ -695,12 +695,12 @@ initFrame:SetScript("OnEvent", function(self)
         mod.RegisterDMUnlock()
         -- The standalone timer is kept: set up again as built, or hidden while disabled
         if _saTimer then
-            if c.standaloneTimer then
+            if cfg.standaloneTimer then
                 SetupSATimer()
             else
                 _saTimer:Hide()
             end
-        elseif c.standaloneTimer then
+        elseif cfg.standaloneTimer then
             CreateSATimer()
         end
         -- Pre-create tooltip frame so first hover doesn't pay creation cost. This and the
@@ -709,7 +709,7 @@ initFrame:SetScript("OnEvent", function(self)
         EnsureTooltipFrame()
         -- Update tooltip scale
         if _ttFrame then
-            local sc = (c.hoverTooltipScale or 100) / 100
+            local sc = (cfg.hoverTooltipScale or 100) / 100
             _ttFrame:SetScale(sc)
         end
         mod._DMReviveTicks()

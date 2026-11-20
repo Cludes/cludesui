@@ -812,8 +812,8 @@ function CHAT.SB_DurabilityAlert(button)
     end
     button._sbAlert = worst
     local e = button._sbEntry
-    local c = ((e and e.alertColors) or CHAT.SB_ALERT)[worst]
-    button._icon:SetVertexColor(c[1], c[2], c[3], c[4])
+    local color = ((e and e.alertColors) or CHAT.SB_ALERT)[worst]
+    button._icon:SetVertexColor(color[1], color[2], color[3], color[4])
 end
 
 -- Blizzard Style voice button: the headset while a voice channel is active,

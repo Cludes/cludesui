@@ -697,8 +697,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             cap:SetPoint("TOPLEFT")
             cap:SetPoint("TOPRIGHT")
             cap:SetHeight(2)
-            local c = CludesUI.CLUDES_GREEN
-            cap:SetColorTexture(c.r, c.g, c.b, 0.9)
+            local color = CludesUI.CLUDES_GREEN
+            cap:SetColorTexture(color.r, color.g, color.b, 0.9)
         end
         -- Escape closes the open list first (the newest open window), not the
         -- whole settings window behind it. Registered on every build: the page
@@ -3634,8 +3634,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     return
                 end
                 if not look then
-                    local c = options.color
-                    cr, cg, checkBtn = c.r, c.g, c.b
+                    local color = options.color
+                    cr, cg, checkBtn = color.r, color.g, color.b
                     px = options.thickness or 2
                     if type(px) == "function" then
                         px = px()
@@ -3766,7 +3766,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
         button:SetFrameLevel(frameLevelOverride or (anchor:GetFrameLevel() + 20))
         button:RegisterForClicks("LeftButtonDown")
-        local c = CludesUI.CLUDES_GREEN
+        local color = CludesUI.CLUDES_GREEN
         local hlBase, hlCont, brd
         if style and style.container then
             if options and options.hlBehindText then
@@ -3779,12 +3779,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             hlCont = CreateFrame("Frame", nil, hlBase)
             hlCont:SetAllPoints()
             hlCont:SetFrameLevel(hlBase:GetFrameLevel() + 1)
-            brd = CludesUI.PP.CreateBorder(hlCont, c.r, c.g, c.b, 1, 2, "OVERLAY", 7)
+            brd = CludesUI.PP.CreateBorder(hlCont, color.r, color.g, color.b, 1, 2, "OVERLAY", 7)
         else
             local hlTarget = (options and options.hlBehindText) and element
                 or (options and options.hlAnchor)
                 or button
-            brd = CludesUI.PP.CreateBorder(hlTarget, c.r, c.g, c.b, 1, 2, "OVERLAY", 7)
+            brd = CludesUI.PP.CreateBorder(hlTarget, color.r, color.g, color.b, 1, 2, "OVERLAY", 7)
         end
         brd:Hide()
         button:SetScript("OnEnter", function()

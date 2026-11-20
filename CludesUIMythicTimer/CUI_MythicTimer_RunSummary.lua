@@ -51,8 +51,8 @@ local function Cfg()
 end
 
 local function Enabled()
-    local c = Cfg()
-    return c and c.enabled == true
+    local cfg = Cfg()
+    return cfg and cfg.enabled == true
 end
 
 local IsSecret, PlainString = CludesUI.IsSecret, CludesUI.PlainString
@@ -88,8 +88,8 @@ local function GetSV()
 end
 
 local function HistorySize()
-    local c = Cfg()
-    local num = c and tonumber(c.historySize) or 20
+    local cfg = Cfg()
+    local num = cfg and tonumber(cfg.historySize) or 20
     if num < 5 then
         num = 5
     elseif num > 50 then
@@ -1121,12 +1121,12 @@ local SORT_KEYS = { dps = true, damageTaken = true, interrupts = true, deaths = 
 local sortKey, sortAsc = "dps", false -- refreshed from the profile by SortMembers
 
 local function SortState()
-    local c = Cfg()
-    local recKey = c and c.sortKey
+    local cfg = Cfg()
+    local recKey = cfg and cfg.sortKey
     if not SORT_KEYS[recKey] then
         recKey = "dps"
     end
-    return recKey, (c and c.sortAsc == true) or false
+    return recKey, (cfg and cfg.sortAsc == true) or false
 end
 
 local function MemberOrder(a, b)
@@ -1363,8 +1363,8 @@ local function ArmLootWait()
     if not lastSummary then
         return
     end
-    local c = Cfg()
-    if not (c and c.showAfterLoot) then
+    local cfg = Cfg()
+    if not (cfg and cfg.showAfterLoot) then
         ShowPending()
         return
     end
@@ -1725,8 +1725,8 @@ local currentRecord
 local rowsTextSize -- the size the member rows were last stamped with
 
 local function TextSize()
-    local c = Cfg()
-    local v = c and tonumber(c.textSize) or DEFAULT_TEXT_SZ
+    local cfg = Cfg()
+    local v = cfg and tonumber(cfg.textSize) or DEFAULT_TEXT_SZ
     if v < 8 then
         v = 8
     elseif v > 24 then
@@ -1888,23 +1888,23 @@ end
 --  Chrome
 --------------------------------------------------------------------------------
 local function SavePositionFromFrame()
-    local c = Cfg()
-    if not (c and window) then
+    local cfg = Cfg()
+    if not (cfg and window) then
         return
     end
     local anchorPoint, _, relPoint, posX, posY = window:GetPoint(1)
     if not anchorPoint then
         return
     end
-    c.position = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
+    cfg.position = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
 end
 
 ApplyPosition = function()
     if not window then
         return
     end
-    local c = Cfg()
-    local place = c and c.position
+    local cfg = Cfg()
+    local place = cfg and cfg.position
     window:ClearAllPoints()
     if place and place.point then
         local Pix = CUI.PP
@@ -2136,16 +2136,16 @@ local function BuildWindow()
                 end
             end)
             button:SetScript("OnClick", function()
-                local c = Cfg()
-                if not c then
+                local cfg = Cfg()
+                if not cfg then
                     return
                 end
                 local recKey, asc = SortState()
                 if recKey == colour.key then
-                    c.sortAsc = not asc
+                    cfg.sortAsc = not asc
                 else
-                    c.sortKey = colour.key
-                    c.sortAsc = false
+                    cfg.sortKey = colour.key
+                    cfg.sortAsc = false
                 end
                 RefreshWindowIfOpen()
             end)

@@ -58,8 +58,8 @@ local function Build()
     barFrame:SetPoint("TOPLEFT")
     barFrame:SetPoint("TOPRIGHT")
     barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    local c = PowerBarColor and PowerBarColor.MANA or { r = 0, g = 0.55, b = 1 }
-    barFrame:GetStatusBarTexture():SetVertexColor(c.r, c.g, c.b)
+    local color = PowerBarColor and PowerBarColor.MANA or { r = 0, g = 0.55, b = 1 }
+    barFrame:GetStatusBarTexture():SetVertexColor(color.r, color.g, color.b)
     CludesUI.Kit.Panel(barFrame, 0.85)
     textValue = barFrame:CreateFontString(nil, "OVERLAY")
     CludesUI.Kit.Font(textValue, 10, "essentials")

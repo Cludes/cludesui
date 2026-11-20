@@ -188,8 +188,8 @@ function mod.RFO_AuraBorderSettings(hostFrame, cursorY, W, get, set, apply, disa
     if not CludesUI._prebuilding then
         local region = row._rightRegion
         local swatch, refresh = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
-            local c = Val("Color", {})
-            return c.r or 0, c.g or 0, c.b or 0, c.a or 1
+            local color = Val("Color", {})
+            return color.r or 0, color.g or 0, color.b or 0, color.a or 1
         end, function(red, green, blue, a)
             set("Color", { r = red, g = green, b = blue, a = a })
             apply()
@@ -325,9 +325,9 @@ local function TileGlowDesc(t, onChange)
                 return t.glowColorMode or "default"
             -- The tile keeps its color under t.color, the rest under glow*.
             elseif f == "color" then
-                local c = t.color
-                if c then
-                    return c.r, c.g, c.b
+                local color = t.color
+                if color then
+                    return color.r, color.g, color.b
                 end
             end
             return CludesUI.GlowOptions.FlatGet(t, "glow", f)
@@ -1520,8 +1520,8 @@ local function BuildBaseDetailDM(widget, fontFile)
         })
 
         local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
-            local c = p.debuffDurTextColor or { r = 1, g = 1, b = 1 }
-            return c.r or 1, c.g or 1, c.b or 1, 1
+            local color = p.debuffDurTextColor or { r = 1, g = 1, b = 1 }
+            return color.r or 1, color.g or 1, color.b or 1, 1
         end, function(red, green, blue)
             p.debuffDurTextColor = { r = red, g = green, b = blue }
             DmApply()
@@ -1565,8 +1565,8 @@ local function BuildBaseDetailDM(widget, fontFile)
         })
 
         local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
-            local c = p.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
-            return c.r or 1, c.g or 1, c.b or 1, 1
+            local color = p.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
+            return color.r or 1, color.g or 1, color.b or 1, 1
         end, function(red, green, blue)
             p.debuffStacksTextColor = { r = red, g = green, b = blue }
             DmApply()
@@ -1937,8 +1937,8 @@ local function BuildTileDetail(widget, fontFile, t)
             })
 
             local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
-                local c = t.durTextColor or p.debuffDurTextColor or { r = 1, g = 1, b = 1 }
-                return c.r or 1, c.g or 1, c.b or 1, 1
+                local color = t.durTextColor or p.debuffDurTextColor or { r = 1, g = 1, b = 1 }
+                return color.r or 1, color.g or 1, color.b or 1, 1
             end, function(red, green, blue)
                 t.durTextColor = { r = red, g = green, b = blue }
                 DmApply()
@@ -1988,8 +1988,8 @@ local function BuildTileDetail(widget, fontFile, t)
             })
 
             local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
-                local c = t.stacksTextColor or p.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
-                return c.r or 1, c.g or 1, c.b or 1, 1
+                local color = t.stacksTextColor or p.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
+                return color.r or 1, color.g or 1, color.b or 1, 1
             end, function(red, green, blue)
                 t.stacksTextColor = { r = red, g = green, b = blue }
                 DmApply()
@@ -2033,8 +2033,8 @@ local function BuildTileDetail(widget, fontFile, t)
                 text = "Color",
                 hasAlpha = true,
                 getValue = function()
-                    local c = t.color or { r = 1, g = 0.35, b = 0.35, a = 1 }
-                    return c.r or 1, c.g or 0.35, c.b or 0.35, c.a or 1
+                    local color = t.color or { r = 1, g = 0.35, b = 0.35, a = 1 }
+                    return color.r or 1, color.g or 0.35, color.b or 0.35, color.a or 1
                 end,
                 setValue = function(red, green, blue, a)
                     t.color = { r = red, g = green, b = blue, a = a or 1 }
@@ -2084,12 +2084,12 @@ local function BuildTileDetail(widget, fontFile, t)
         -- DISPLAY section below, BM parity.)
         local region = catRow._rightRegion
         local swatch = CludesUI.BuildColorSwatch(region, catRow:GetFrameLevel() + 3, function()
-            local c = t.color or { r = 1, g = 1, b = 1 }
-            return c.r or 1, c.g or 1, c.b or 1, 1
+            local color = t.color or { r = 1, g = 1, b = 1 }
+            return color.r or 1, color.g or 1, color.b or 1, 1
         end, function(red, green, blue)
-            local c = t.color or {}
-            c.r, c.g, c.b = red, green, blue
-            t.color = c
+            local color = t.color or {}
+            color.r, color.g, color.b = red, green, blue
+            t.color = color
             DmApply()
         end, false, 20)
         -- Label slots have no _control: anchor to the region itself.
@@ -2250,8 +2250,8 @@ local function BuildTileDetail(widget, fontFile, t)
         do
             local region = barBgRow._leftRegion
             local colorSwatch = CludesUI.BuildColorSwatch(region, barBgRow:GetFrameLevel() + 3, function()
-                local c = t.color or { r = 0.25, g = 0.8, b = 0.45 }
-                return c.r or 0.25, c.g or 0.8, c.b or 0.45, 1
+                local color = t.color or { r = 0.25, g = 0.8, b = 0.45 }
+                return color.r or 0.25, color.g or 0.8, color.b or 0.45, 1
             end, function(red, green, blue)
                 t.color = { r = red, g = green, b = blue }
                 DmApply()
@@ -2262,8 +2262,8 @@ local function BuildTileDetail(widget, fontFile, t)
         do
             local region = barBgRow._rightRegion
             local bgSwatch = CludesUI.BuildColorSwatch(region, barBgRow:GetFrameLevel() + 3, function()
-                local c = t.barBgColor or { r = 0, g = 0, b = 0 }
-                return c.r or 0, c.g or 0, c.b or 0, 1
+                local color = t.barBgColor or { r = 0, g = 0, b = 0 }
+                return color.r or 0, color.g or 0, color.b or 0, 1
             end, function(red, green, blue)
                 t.barBgColor = { r = red, g = green, b = blue }
                 DmApply()
@@ -2860,7 +2860,7 @@ function mod.DMP_RefreshPreview()
                     end
                     tile:SetPoint(anchor, host, anchor, t.offsetX or 0, t.offsetY or 0)
                 end
-                local c = t.color or { r = 0.25, g = 0.8, b = 0.45 }
+                local color = t.color or { r = 0.25, g = 0.8, b = 0.45 }
                 local bgc = t.barBgColor or { r = 0, g = 0, b = 0 }
                 tile._bgTex:SetColorTexture(bgc.r or 0, bgc.g or 0, bgc.b or 0, (t.barBgOpacity or 50) / 100)
                 tile._bgTex:Show()
@@ -2879,7 +2879,7 @@ function mod.DMP_RefreshPreview()
                     tile._tex:SetPoint("BOTTOM" .. edgeName, tile, "BOTTOM" .. edgeName, 0, 0)
                     tile._tex:SetWidth(math.max(1, floor(sw * 0.6)))
                 end
-                tile._tex:SetColorTexture(c.r or 1, c.g or 1, c.b or 1, (t.barColorOpacity or 100) / 100)
+                tile._tex:SetColorTexture(color.r or 1, color.g or 1, color.b or 1, (t.barColorOpacity or 100) / 100)
                 tile:SetAlpha(alpha)
                 tile:Show()
             elseif t.type == "healthcolor" then
@@ -2894,13 +2894,13 @@ function mod.DMP_RefreshPreview()
                         hc:SetAllPoints(fill or health)
                         preview._dmHC = hc
                     end
-                    local c = t.color or { r = 1, g = 0.25, b = 0.25 }
+                    local color = t.color or { r = 1, g = 0.25, b = 0.25 }
                     mod.RF_TintOverBarFill(
                         hc,
                         health,
-                        c.r or 1,
-                        c.g or 0.25,
-                        c.b or 0.25,
+                        color.r or 1,
+                        color.g or 0.25,
+                        color.b or 0.25,
                         (t.opacity or 45) / 100
                     )
                     hc:Show()

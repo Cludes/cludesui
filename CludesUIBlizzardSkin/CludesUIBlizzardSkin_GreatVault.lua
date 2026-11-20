@@ -495,8 +495,8 @@ local function RefreshTypeFrameState(widget, skinName)
         return
     end
     if widget.Name then
-        local c = STYLE.colors.typeName
-        widget.Name:SetTextColor(c.r, c.g, c.b, 1)
+        local color = STYLE.colors.typeName
+        widget.Name:SetTextColor(color.r, color.g, color.b, 1)
 
         local skinData = GetFFD(widget)
         if not skinData.nameRaised then

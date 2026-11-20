@@ -57,10 +57,10 @@ function ABAR:ApplyBordersForBar(barId)
     if not s then
         return
     end
-    local c = s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
+    local color = s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
     local sz, px = ResolveBorderThickness(s)
     local enabled = sz > 0
-    local cr, cg, callback, ca = c.r, c.g, c.b, c.a or 1
+    local cr, cg, callback, ca = color.r, color.g, color.b, color.a or 1
     if s.borderClassColor then
         local _, classToken = UnitClass("player")
         if classToken then
@@ -515,12 +515,12 @@ function ABAR:ReapplyHotkeyColors()
     end
     for barId, buttons in pairs(barButtons) do
         local s = barList[barId]
-        local c = s and not s.hideKeybind and s.keybindFontColor
-        if c and (c.r ~= 1 or c.g ~= 1 or c.b ~= 1) then
+        local color = s and not s.hideKeybind and s.keybindFontColor
+        if color and (color.r ~= 1 or color.g ~= 1 or color.b ~= 1) then
             for index = 1, #buttons do
                 local hotkeyText = buttons[index] and buttons[index].HotKey
                 if hotkeyText then
-                    hotkeyText:SetTextColor(c.r, c.g, c.b)
+                    hotkeyText:SetTextColor(color.r, color.g, color.b)
                 end
             end
         end
@@ -807,7 +807,7 @@ function ABAR:ApplySlotBackgroundColor()
     if not profileDB then
         return
     end
-    local c = profileDB.slotBgColor or { r = 0.15, g = 0.15, b = 0.15 }
+    local color = profileDB.slotBgColor or { r = 0.15, g = 0.15, b = 0.15 }
     local a = profileDB.slotBgOpacity
     if a == nil then
         a = 50
@@ -819,7 +819,7 @@ function ABAR:ApplySlotBackgroundColor()
             for _, button in ipairs(buttonList) do
                 local buttonData = button and EFD(button)
                 if buttonData and buttonData.slotBG then
-                    buttonData.slotBG:SetColorTexture(c.r or 0.15, c.g or 0.15, c.b or 0.15, a)
+                    buttonData.slotBG:SetColorTexture(color.r or 0.15, color.g or 0.15, color.b or 0.15, a)
                 end
             end
         end
@@ -834,7 +834,7 @@ function ABAR:ApplyCooldownSwipeColor()
     if not profileDB then
         return
     end
-    local c = profileDB.cdSwipeColor or { r = 0, g = 0, b = 0 }
+    local color = profileDB.cdSwipeColor or { r = 0, g = 0, b = 0 }
     local a = (profileDB.cdSwipeAlpha or 80) / 100
     for _, details in ipairs(BAR_CONFIG) do
         local buttonList = barButtons[details.key]
@@ -842,7 +842,7 @@ function ABAR:ApplyCooldownSwipeColor()
             for _, button in ipairs(buttonList) do
                 local cd = button and button.cooldown
                 if cd and cd.SetSwipeColor then
-                    pcall(cd.SetSwipeColor, cd, c.r or 0, c.g or 0, c.b or 0, a)
+                    pcall(cd.SetSwipeColor, cd, color.r or 0, color.g or 0, color.b or 0, a)
                 end
             end
         end
@@ -887,9 +887,9 @@ function ABAR:ApplyBackgroundForBar(barId)
         barBackgrounds[barId] = bgTex
     end
 
-    local c = s.bgColor or { r = 0, g = 0, b = 0, a = 0.5 }
-    local alpha = s.bgOpacity ~= nil and s.bgOpacity / 100 or c.a
-    bgTex.fill:SetColorTexture(c.r, c.g, c.b, alpha)
+    local color = s.bgColor or { r = 0, g = 0, b = 0, a = 0.5 }
+    local alpha = s.bgOpacity ~= nil and s.bgOpacity / 100 or color.a
+    bgTex.fill:SetColorTexture(color.r, color.g, color.b, alpha)
     -- bgPadX/bgPadY remain as fallbacks for profiles predating bgPadding.
     local pad = s.bgPadding
     local padX = pad ~= nil and pad or (s.bgPadX or 0)

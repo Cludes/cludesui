@@ -1255,9 +1255,9 @@ local function PaintBorder(b, classFile)
         return
     end
     if sClassBorder and not Secret(classFile) then
-        local c = C_ClassColor.GetClassColor(classFile)
-        if c then
-            local region, g, bl = c:GetRGB()
+        local color = C_ClassColor.GetClassColor(classFile)
+        if color then
+            local region, g, bl = color:GetRGB()
             Pix.SetBorderColor(owner, region, g, bl, 1)
             return
         end

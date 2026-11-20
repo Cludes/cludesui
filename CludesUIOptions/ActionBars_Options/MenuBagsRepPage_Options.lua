@@ -382,9 +382,9 @@ local function DataBarKit(hostFrame)
         return t ~= "" and t ~= "solid"
     end
     local function CopyDataBarColor(dst, source)
-        local c = source.borderColor
-        if c then
-            dst.borderColor = { r = c.r, g = c.g, b = c.b, a = c.a }
+        local color = source.borderColor
+        if color then
+            dst.borderColor = { r = color.r, g = color.g, b = color.b, a = color.a }
         end
     end
     local function CopyDataBarStyle(dst, source)
@@ -737,9 +737,9 @@ local function DataBarKit(hostFrame)
                     tooltip = "Border Color",
                     hasAlpha = true,
                     getValue = function()
-                        local c = V().borderColor
-                        if c then
-                            return c.r or 0, c.g or 0, c.b or 0, c.a or 1
+                        local color = V().borderColor
+                        if color then
+                            return color.r or 0, color.g or 0, color.b or 0, color.a or 1
                         end
                         return 0, 0, 0, 1
                     end,
@@ -846,9 +846,9 @@ local function DataBarKit(hostFrame)
             {
                 tooltip = "Custom Color",
                 getValue = function()
-                    local c = S().customColor
-                    if c then
-                        return c.r or 1, c.g or 1, c.b or 1
+                    local color = S().customColor
+                    if color then
+                        return color.r or 1, color.g or 1, color.b or 1
                     end
                     return 1, 1, 1
                 end,

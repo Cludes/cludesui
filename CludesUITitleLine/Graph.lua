@@ -747,9 +747,9 @@ local function DrawTiles(context, hidden)
 
     for idx, tier in ipairs(sum.tiers) do
         local t = tiles[idx + 1]
-        local c = tier.tier.color
+        local color = tier.tier.color
         t.summary, t.ctx = tier, context
-        t.swatch:SetColorTexture(c[1], c[2], c[3])
+        t.swatch:SetColorTexture(color[1], color[2], color[3])
         t.label:SetText(tier.tier.label)
         -- The same level the Keys view draws: at the season end where known.
         local level = tier.levelEnd or tier.levelNow
@@ -888,12 +888,12 @@ local function DrawSeries(context, hidden)
     local sum = context.summary
     for _, tier in ipairs(sum.tiers) do
         if not hidden[tier.tier.key] then
-            local pts, c = tier.pts, tier.tier.color
+            local pts, color = tier.pts, tier.tier.color
             for idx = 2, #pts do
-                Segment(pools.series, pts[idx - 1][1], pts[idx - 1][2], pts[idx][1], pts[idx][2], c)
+                Segment(pools.series, pts[idx - 1][1], pts[idx - 1][2], pts[idx][1], pts[idx][2], color)
             end
-            Band(tier, c)
-            Projection(pools.series, tier, c)
+            Band(tier, color)
+            Projection(pools.series, tier, color)
         end
     end
 
@@ -1095,9 +1095,9 @@ local function DrawGroup(context)
         cell.member = m
         cell:SetShown(m ~= nil)
         if m then
-            local c = mod.ClassColor(m.class)
+            local color = mod.ClassColor(m.class)
             cell.name:SetText(m.name)
-            cell.name:SetTextColor(c[1], c[2], c[3])
+            cell.name:SetTextColor(color[1], color[2], color[3])
             if m.score > 0 then
                 cell.value:SetText(mod.Fmt(m.score))
                 cell.sub:SetText(NextLine(context, m.score))
@@ -1386,11 +1386,11 @@ function Graph.ShowMember(cell)
         return
     end
     tipText.rows:Reset()
-    local c = mod.ClassColor(m.class)
+    local color = mod.ClassColor(m.class)
     SizeTip(260)
     tipText.note:Hide()
     tipText.title:SetText(m.name)
-    tipText.title:SetTextColor(c[1], c[2], c[3])
+    tipText.title:SetTextColor(color[1], color[2], color[3])
     tipText.tag:SetText(
         m.seen and #m.seen.pts > 1 and ("seen since " .. mod.DateText(m.seen.pts[1][1])) or ""
     )

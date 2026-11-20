@@ -1868,11 +1868,11 @@ local function ApplyUFText(btnFrame, skinData, look)
             skinData.ufDurFont = fontKey
             CludesUI.ApplyIconTextFont(skinData.duration, filePath, look.cdTextSize or 10, "unitFrames")
         end
-        local c = look.cdTextColor
-        local cKey = CK(c)
+        local color = look.cdTextColor
+        local cKey = CK(color)
         if skinData.ufDurColor ~= cKey then
             skinData.ufDurColor = cKey
-            skinData.duration:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
+            skinData.duration:SetTextColor(color and color.r or 1, color and color.g or 1, color and color.b or 1)
         end
         -- Anchor change-guarded (stamp AFTER the calls): SetPoint with the
         -- button as the relative frame is policed by the 12.1 button access
@@ -1908,11 +1908,11 @@ local function ApplyUFText(btnFrame, skinData, look)
             skinData.ufStackFont = fontKey
             CludesUI.ApplyIconTextFont(skinData.stack, filePath, look.stackSize or 14, "unitFrames")
         end
-        local c = look.stackColor
-        local cKey = CK(c)
+        local color = look.stackColor
+        local cKey = CK(color)
         if skinData.ufStackColor ~= cKey then
             skinData.ufStackColor = cKey
-            skinData.stack:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
+            skinData.stack:SetTextColor(color and color.r or 1, color and color.g or 1, color and color.b or 1)
         end
         local sp = STACK_POINTS[look.stackPos or "bottomright"] or STACK_POINTS.bottomright
         local sKey = sp[1] .. "|" .. (sp[2] + (look.stackOffX or 0)) .. "|" .. (look.stackOffY or 0)
@@ -2364,8 +2364,8 @@ end
 
 -- Unset color = "default" mode: the suite's default look (gold).
 function PurgeGlow.Spec(cfg)
-    local c = cfg.buffPurgeGlowColor
-    local modeName = cfg.buffPurgeGlowColorMode or (c and "custom" or "default")
+    local color = cfg.buffPurgeGlowColor
+    local modeName = cfg.buffPurgeGlowColorMode or (color and "custom" or "default")
     local bgc = cfg.buffPurgeGlowBackgroundColor
     local specInfo = {
         style = cfg.buffPurgeGlow,
@@ -2377,7 +2377,7 @@ function PurgeGlow.Spec(cfg)
         bgG = bgc and bgc.g,
         bgB = bgc and bgc.b,
     }
-    specInfo.r, specInfo.g, specInfo.b = CludesUI.Glows.ResolveColor(modeName, c and c.r, c and c.g, c and c.b)
+    specInfo.r, specInfo.g, specInfo.b = CludesUI.Glows.ResolveColor(modeName, color and color.r, color and color.g, color and color.b)
     -- Class mode: the palette colour this spec (and Register's print) holds,
     -- for the colours-changed hook below the reload.
     if modeName == "class" then
@@ -3591,24 +3591,24 @@ do
         local filterPass = ""
         for index = 1, #DISPEL_SLOTS do
             local slotIndex = DISPEL_SLOTS[index]
-            local c = p[slotIndex.colorKey]
+            local color = p[slotIndex.colorKey]
             filterPass = filterPass
                 .. string.format(
                     "%.3f,%.3f,%.3f;",
-                    (c and c.r) or slotIndex.fallback[1],
-                    (c and c.g) or slotIndex.fallback[2],
-                    (c and c.b) or slotIndex.fallback[3]
+                    (color and color.r) or slotIndex.fallback[1],
+                    (color and color.g) or slotIndex.fallback[2],
+                    (color and color.b) or slotIndex.fallback[3]
                 )
         end
         if memoFP ~= filterPass then
             local map = {}
             for index = 1, #DISPEL_SLOTS do
                 local slotIndex = DISPEL_SLOTS[index]
-                local c = p[slotIndex.colorKey]
+                local color = p[slotIndex.colorKey]
                 map[DISPEL_TYPE_TOKENS[slotIndex.key]] = CreateColor(
-                    (c and c.r) or slotIndex.fallback[1],
-                    (c and c.g) or slotIndex.fallback[2],
-                    (c and c.b) or slotIndex.fallback[3],
+                    (color and color.r) or slotIndex.fallback[1],
+                    (color and color.g) or slotIndex.fallback[2],
+                    (color and color.b) or slotIndex.fallback[3],
                     1
                 )
             end
@@ -3682,7 +3682,7 @@ local function ApplyDispelSlotStyle(btnFrame, skinData, look)
         skinData.overlay = btnFrame:CreateTexture(nil, "ARTWORK", nil, 2 + (look.level or 1))
     end
     local texture = skinData.overlay
-    local c = look.color
+    local color = look.color
     local alpha = (look.opacity or 100) / 100
 
     -- Change-guarded, stamped AFTER the call: SetFrameLevel on the slot
@@ -3719,7 +3719,7 @@ local function ApplyDispelSlotStyle(btnFrame, skinData, look)
         else
             texture:SetTexCoord(0, 1, 0, 1)
         end
-        texture:SetVertexColor(c.r, c.g, c.b, alpha)
+        texture:SetVertexColor(color.r, color.g, color.b, alpha)
     elseif look.mode == "fill" then
         texture:ClearAllPoints()
         texture:Show()
@@ -3732,14 +3732,14 @@ local function ApplyDispelSlotStyle(btnFrame, skinData, look)
             texture:SetAllPoints(health)
         end
         texture:SetTexCoord(0, 1, 0, 1)
-        texture:SetColorTexture(c.r, c.g, c.b, alpha)
+        texture:SetColorTexture(color.r, color.g, color.b, alpha)
         texture:SetVertexColor(1, 1, 1, 1)
     else -- "full"
         texture:ClearAllPoints()
         texture:Show()
         texture:SetAllPoints(health)
         texture:SetTexCoord(0, 1, 0, 1)
-        texture:SetColorTexture(c.r, c.g, c.b, alpha)
+        texture:SetColorTexture(color.r, color.g, color.b, alpha)
         texture:SetVertexColor(1, 1, 1, 1)
     end
 
@@ -3773,9 +3773,9 @@ local function ApplyDispelSlotStyle(btnFrame, skinData, look)
             skinData.ufCbHost,
             skinData.ufCbState,
             callback.size,
-            c.r,
-            c.g,
-            c.b,
+            color.r,
+            color.g,
+            color.b,
             1,
             callback.tex,
             callback.offX,
@@ -3827,7 +3827,7 @@ local function ApplyDispelSlotStyle(btnFrame, skinData, look)
             skinData.ufRingTex:SetTexture(art)
             skinData.ufRingArt = art
         end
-        skinData.ufRingTex:SetVertexColor(c.r, c.g, c.b, 1)
+        skinData.ufRingTex:SetVertexColor(color.r, color.g, color.b, 1)
         owner:Show()
     elseif skinData.ufRingOn then
         skinData.ufRingHost:Hide()
@@ -3837,8 +3837,8 @@ local function ApplyDispelSlotStyle(btnFrame, skinData, look)
     -- Only enabled, displayed separators get copies. The inactive by-me twin
     -- and disabled custom-border mode clear any copies they previously drew.
     if ub or skinData.ufPowerSeam or skinData.ufPortraitSeam then
-        ApplyDispelSeparatorCopy(btnFrame, skinData, "ufPowerSeam", ub and uf.Power and uf.Power._pbSeam, c)
-        ApplyDispelSeparatorCopy(btnFrame, skinData, "ufPortraitSeam", ub and uf._portraitSeparator, c)
+        ApplyDispelSeparatorCopy(btnFrame, skinData, "ufPowerSeam", ub and uf.Power and uf.Power._pbSeam, color)
+        ApplyDispelSeparatorCopy(btnFrame, skinData, "ufPortraitSeam", ub and uf._portraitSeparator, color)
     end
 
     -- Type Icon Position: the type's icon on a corner of the health bar (Raid

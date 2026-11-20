@@ -197,9 +197,9 @@ function mod.ApplyWindowBackground(backdrop, overlayFrame)
     end
     local p = BP()
     local o = (p.bagBgOpacity or 100) / 100
-    local c = p.bagBgColor
+    local color = p.bagBgColor
     backdrop:SetAlpha(o)
-    overlayFrame:SetColorTexture(c and c.r or 0, c and c.g or 0, c and c.b or 0, c and c.a or 0.25)
+    overlayFrame:SetColorTexture(color and color.r or 0, color and color.g or 0, color and color.b or 0, color and color.a or 0.25)
     overlayFrame:SetAlpha(o)
 end
 
@@ -229,10 +229,10 @@ local slotBgs = setmetatable({}, { __mode = "k" })
 function mod.PaintSlotBackground(texture, alpha)
     texture._slotBgAlpha = alpha
     slotBgs[texture] = true
-    local c = BP().bagSlotBgColor
-    if c then
-        texture:SetVertexColor(c.r, c.g, c.b)
-        texture:SetAlpha(alpha * (c.a or 1))
+    local color = BP().bagSlotBgColor
+    if color then
+        texture:SetVertexColor(color.r, color.g, color.b)
+        texture:SetAlpha(alpha * (color.a or 1))
     else
         texture:SetVertexColor(1, 1, 1)
         texture:SetAlpha(alpha)

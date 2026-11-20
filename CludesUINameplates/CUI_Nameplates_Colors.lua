@@ -636,8 +636,8 @@ local function ResolveNeutralColor(unitToken)
                 colorKey = "owBasicColor"
             end
         end
-        local c = _C(colorKey)
-        return c.r, c.g, c.b
+        local color = _C(colorKey)
+        return color.r, color.g, color.b
     end
     local c = _C("neutral")
     return c.r, c.g, c.b
@@ -851,10 +851,10 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
             local _, t = UnitClass(unitToken)
             local success, sr, sg, scrollBar = CludesUI.GetClassColorForRestrictedUnit(unitToken, t)
             if not success then
-                local c = C_ClassColor.GetClassColor(t)
-                if c then
+                local color = C_ClassColor.GetClassColor(t)
+                if color then
                     success = true
-                    sr, sg, scrollBar = c:GetRGB()
+                    sr, sg, scrollBar = color:GetRGB()
                 end
             end
             if success then
@@ -877,11 +877,11 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
         if not painted then
             local red, green, blue
             if tok and tok ~= true then
-                local c = CludesUI.GetClassColor(tok)
-                red, green, blue = c.r, c.g, c.b
+                local color = CludesUI.GetClassColor(tok)
+                red, green, blue = color.r, color.g, color.b
             elseif UnitIsTapDenied(unitToken) then
-                local c = (p and p.enemyNameTappedColor) or _C("tapped")
-                red, green, blue = c.r, c.g, c.b
+                local color = (p and p.enemyNameTappedColor) or _C("tapped")
+                red, green, blue = color.r, color.g, color.b
             else
                 red, green, blue = GetEnemyNameReactionColor(unitToken)
             end
@@ -1294,8 +1294,8 @@ local function GetReactionColor(unitToken, castSeen)
             if simple == nil then
                 simple = defaultSet.owBasicColoring
             end
-            local c = _C((simple and not mod._inDungeon) and "owBasicColor" or "enemyInCombat")
-            return MaybeDarken(c.r, c.g, c.b, UnitAffectingCombat(unitToken))
+            local color = _C((simple and not mod._inDungeon) and "owBasicColor" or "enemyInCombat")
+            return MaybeDarken(color.r, color.g, color.b, UnitAffectingCombat(unitToken))
         end
         local _, class = UnitClass(unitToken)
         -- A secret class token (identity-restricted, i.e. instanced PvP) cannot key a

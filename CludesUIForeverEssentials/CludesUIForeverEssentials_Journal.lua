@@ -83,9 +83,9 @@ local function LevelText(skinData)
     local range = lv[1] == lv[2] and tostring(lv[1]) or (lv[1] .. "-" .. lv[2])
     local mine = UnitLevel("player")
     local at = mine < lv[1] and lv[1] or (mine > lv[2] and lv[2] or mine)
-    local c = GetQuestDifficultyColor and GetQuestDifficultyColor(at)
-    if c then
-        return ("|cff%02x%02x%02x%s|r"):format(c.r * 255, c.g * 255, c.b * 255, range)
+    local color = GetQuestDifficultyColor and GetQuestDifficultyColor(at)
+    if color then
+        return ("|cff%02x%02x%02x%s|r"):format(color.r * 255, color.g * 255, color.b * 255, range)
     end
     return range
 end

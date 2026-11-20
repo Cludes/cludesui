@@ -1121,12 +1121,12 @@ function mod.NP_UpdateCustomBorderWrap(backing)
     if edge then
         red, green, blue, a = edge:GetBackdropBorderColor()
     elseif uc and uc._bdColor then
-        local c = uc._bdColor
-        red, green, blue, a = c[1], c[2], c[3], c[4] or 1
+        local color = uc._bdColor
+        red, green, blue, a = color[1], color[2], color[3], color[4] or 1
     end
     if not red then
-        local c = (p and p.customBorderColor) or defaultSet.customBorderColor
-        red, green, blue, a = c.r, c.g, c.b, (p and p.customBorderAlpha) or defaultSet.customBorderAlpha or 1
+        local color = (p and p.customBorderColor) or defaultSet.customBorderColor
+        red, green, blue, a = color.r, color.g, color.b, (p and p.customBorderAlpha) or defaultSet.customBorderAlpha or 1
     end
     if backing._castOverlayLifted then
         if backing._cbWrapMode == "single" then

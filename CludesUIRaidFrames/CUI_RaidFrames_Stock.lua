@@ -294,15 +294,15 @@ local SOLID_S = { borderTexture = "solid" }
 function mod.RF_StockHighlight(stockStyle, bf, s, hover, target)
     mod.RF_StockTarget(stockStyle, target)
     if hover then
-        local c = s.hoverBorderColor
+        local color = s.hoverBorderColor
         local hs = s.hoverBorderSize or 1
         mod.ApplyHighlightBorder(
             bf,
             SOLID_S,
             hs,
-            c and c.r or 1,
-            c and c.g or 1,
-            c and c.b or 1,
+            color and color.r or 1,
+            color and color.g or 1,
+            color and color.b or 1,
             s.hoverBorderAlpha or 1,
             CludesUI.BorderPx(s.hoverBorderSizePx, hs, "solid")
         )
@@ -1274,8 +1274,8 @@ function mod.RF_KitHighlight(stockStyle, bf, s, hover, target)
         return
     end
     if hover then
-        local c = s.hoverBorderColor
-        hov:SetVertexColor(c and c.r or 1, c and c.g or 1, c and c.b or 1, s.hoverBorderAlpha or 1)
+        local color = s.hoverBorderColor
+        hov:SetVertexColor(color and color.r or 1, color and color.g or 1, color and color.b or 1, s.hoverBorderAlpha or 1)
     end
     hov:SetShown(hover and true or false)
     sel:SetShown(target and true or false)

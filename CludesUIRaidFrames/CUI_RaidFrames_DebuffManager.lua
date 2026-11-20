@@ -2537,9 +2537,9 @@ local function RefreshTileGridStyle(key, tileStyle, s, tileDef, renderSize, font
         .. "|" .. tostring(renderSize)
         .. "|" .. FxListFP(tileDef.fxList)
     if tileDef.type == "square" then
-        local c = tileDef.color or {}
+        local color = tileDef.color or {}
         val = val .. "|sq" .. string.format("%.2f,%.2f,%.2f,%.2f",
-            c.r or 1, c.g or 0.35, c.b or 0.35, c.a or 1)
+            color.r or 1, color.g or 0.35, color.b or 0.35, color.a or 1)
     end
     if tileStyle.style ~= val and mod.RFC_BuildDebuffStyle then
         tileStyle.style = val
@@ -2576,7 +2576,7 @@ local function EnsureTileStyle(skinData, s, tileDef, szOv, szCat)
         RefreshTileGridStyle(key, tileStyle, s, tileDef,
             EffectiveIconSizeForClass(szOv or tileDef.size or 18, cls), font)
     else
-        local c = tileDef.color or {}
+        local color = tileDef.color or {}
         local bgc = tileDef.barBgColor or {}
         local cl = {}
         if tileDef.claim then
@@ -2599,7 +2599,7 @@ local function EnsureTileStyle(skinData, s, tileDef, szOv, szCat)
             tostring(tileDef.barFullWidth), tostring(tileDef.barFullHeight),
             tostring(tileDef.barColorOpacity), tostring(tileDef.barBgOpacity),
             tostring(tileDef.frameLevel),
-            string.format("%.2f,%.2f,%.2f,%.2f", c.r or 1, c.g or 1, c.b or 1, c.a or 1),
+            string.format("%.2f,%.2f,%.2f,%.2f", color.r or 1, color.g or 1, color.b or 1, color.a or 1),
             string.format("%.2f,%.2f,%.2f", bgc.r or 0, bgc.g or 0, bgc.b or 0),
             table.concat(cl, "+"), tostring(tileDef.all), tostring(tileDef.hasDuration),
             mOn and (mLive and "mA" or "mE") or "-",
@@ -2632,10 +2632,10 @@ local function EnsureTileStyle(skinData, s, tileDef, szOv, szCat)
                     colorOp = tileDef.barColorOpacity, bgOp = tileDef.barBgOpacity,
                     bgR = bgc.r, bgG = bgc.g, bgB = bgc.b,
                     lvl = BAR_FRAMELVL[tileDef.frameLevel or "behindBorders"],
-                    r = c.r, g = c.g, b = c.b,
+                    r = color.r, g = color.g, b = color.b,
                     -- Health color rides a dedicated Opacity setting (the swatch has no alpha strip there, matching BM).
                     a = (tileDef.type == "healthcolor")
-                        and ((tileDef.opacity or 45) / 100) or c.a,
+                        and ((tileDef.opacity or 45) / 100) or color.a,
                 },
             }
             AK.RestyleSoon(key)

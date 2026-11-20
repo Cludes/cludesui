@@ -121,8 +121,8 @@ function mod.UpdatePowerSeam(power, s, stock, preview)
     end
     seam._key, seam._step, seam._px, seam._path = key, size, px, filePath
     seam._above = (s.powerPosition == "above")
-    local c = b.borderColor
-    seam._tex:SetVertexColor(c and c.r or 0, c and c.g or 0, c and c.b or 0, b.borderAlpha or 1)
+    local color = b.borderColor
+    seam._tex:SetVertexColor(color and color.r or 0, color and color.g or 0, color and color.b or 0, b.borderAlpha or 1)
     seam:Show()
     mod.UF_LayoutPowerSeam(seam)
     CludesUI.RegisterPxReapply(seam, (px and not preview) and mod.UF_LayoutPowerSeam or nil)
@@ -216,8 +216,8 @@ function mod.UpdatePortraitSeparator(widget, portrait, s, side, attached, stock,
         seam._px = CludesUI.BorderPx(b.borderSizePx, size, seam._key)
     end
     seam._right = side == "right"
-    local c = b.borderColor
-    seam._tex:SetVertexColor(c and c.r or 0, c and c.g or 0, c and c.b or 0, b.borderAlpha or 1)
+    local color = b.borderColor
+    seam._tex:SetVertexColor(color and color.r or 0, color and color.g or 0, color and color.b or 0, b.borderAlpha or 1)
     mod.UF_LayoutPortraitSeparator(seam)
     seam:Show()
     if powerSeam and powerSeam:IsShown() then
@@ -268,7 +268,7 @@ function mod.UpdatePowerBorder(power, prefs)
     border:ClearAllPoints()
     Pix.Point(border, "TOPLEFT", power, "TOPLEFT", 0, 0)
     Pix.Point(border, "BOTTOMRIGHT", power, "BOTTOMRIGHT", 0, 0)
-    local c = prefs.powerBorderColor or { r = 0, g = 0, b = 0 }
+    local color = prefs.powerBorderColor or { r = 0, g = 0, b = 0 }
     local alpha = prefs.powerBorderAlpha or 1
     -- Attached bars are always Solid; their unused edges are hidden below so only
     -- the health/power seam stays visible.
@@ -280,9 +280,9 @@ function mod.UpdatePowerBorder(power, prefs)
     CludesUI.ApplyBorderStyle(
         border,
         size,
-        c.r,
-        c.g,
-        c.b,
+        color.r,
+        color.g,
+        color.b,
         alpha,
         style,
         prefs.powerBorderOffsetX,

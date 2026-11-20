@@ -214,11 +214,11 @@ local function CUI_UpdateSlotStyle(slotKey, slotID, textLayer, rightSide)
             if useName and styled then
                 enchantText:SetFont(fontFile, enchantSize, CludesUI.SlugFlag("OUTLINE, SLUG"))
                 local _, _, quality = GetItemInfo(linkText)
-                local c = CludesUI.GetItemLevelColor(linkText, quality)
+                local color = CludesUI.GetItemLevelColor(linkText, quality)
                 enchantText:SetTextColor(
-                    c.r + (1 - c.r) * 0.5,
-                    c.g + (1 - c.g) * 0.5,
-                    c.b + (1 - c.b) * 0.5,
+                    color.r + (1 - color.r) * 0.5,
+                    color.g + (1 - color.g) * 0.5,
+                    color.b + (1 - color.b) * 0.5,
                     0.9
                 )
             else

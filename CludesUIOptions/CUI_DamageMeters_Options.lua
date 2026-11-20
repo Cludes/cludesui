@@ -363,8 +363,8 @@ CludesUI.AtOptionsLogin(function()
                 region,
                 windowBorderRow:GetFrameLevel() + 3,
                 function()
-                    local c = Cfg("windowBorderColor") or {}
-                    return c.r or 0, c.g or 0, c.b or 0, c.a or 1
+                    local color = Cfg("windowBorderColor") or {}
+                    return color.r or 0, color.g or 0, color.b or 0, color.a or 1
                 end,
                 function(red, green, blue, a)
                     Set("windowBorderColor", { r = red, g = green, b = blue, a = a or 1 })
@@ -640,9 +640,9 @@ CludesUI.AtOptionsLogin(function()
                 region,
                 hdrRow1:GetFrameLevel() + 3,
                 function()
-                    local c = Cfg("hdrBgColor")
-                    if c then
-                        return c.r or 0x1B / 255, c.g or 0x1B / 255, c.b or 0x1B / 255
+                    local color = Cfg("hdrBgColor")
+                    if color then
+                        return color.r or 0x1B / 255, color.g or 0x1B / 255, color.b or 0x1B / 255
                     end
                     return 0x1B / 255, 0x1B / 255, 0x1B / 255
                 end,
@@ -730,8 +730,8 @@ CludesUI.AtOptionsLogin(function()
                 region,
                 hdrBorderRow:GetFrameLevel() + 3,
                 function()
-                    local c = Cfg("hdrBottomBorderColor") or {}
-                    return c.r or 0, c.g or 0, c.b or 0, c.a or 1
+                    local color = Cfg("hdrBottomBorderColor") or {}
+                    return color.r or 0, color.g or 0, color.b or 0, color.a or 1
                 end,
                 function(red, green, blue, a)
                     Set("hdrBottomBorderColor", { r = red, g = green, b = blue, a = a or 1 })
@@ -770,9 +770,9 @@ CludesUI.AtOptionsLogin(function()
                 region,
                 hdrBorderRow:GetFrameLevel() + 3,
                 function()
-                    local c = Cfg("iconColor")
-                    if c then
-                        return c.r or 1, c.g or 1, c.b or 1
+                    local color = Cfg("iconColor")
+                    if color then
+                        return color.r or 1, color.g or 1, color.b or 1
                     end
                     return 1, 1, 1
                 end,
@@ -912,9 +912,9 @@ CludesUI.AtOptionsLogin(function()
                 region,
                 hdrRow2:GetFrameLevel() + 3,
                 function()
-                    local c = Cfg("hdrTextColor")
-                    if c then
-                        return c.r or 1, c.g or 1, c.b or 1
+                    local color = Cfg("hdrTextColor")
+                    if color then
+                        return color.r or 1, color.g or 1, color.b or 1
                     end
                     return 1, 1, 1
                 end,
@@ -1043,9 +1043,9 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Custom Color",
                     hasAlpha = false,
                     getValue = function()
-                        local c = Cfg("barColor")
-                        if c then
-                            return c.r or 0.35, c.g or 0.55, c.b or 0.8
+                        local color = Cfg("barColor")
+                        if color then
+                            return color.r or 0.35, color.g or 0.55, color.b or 0.8
                         end
                         return 0.35, 0.55, 0.8
                     end,
@@ -1975,9 +1975,9 @@ CludesUI.AtOptionsLogin(function()
                 region,
                 btRow:GetFrameLevel() + 3,
                 function()
-                    local c = Cfg("leftTextColor")
-                    if c then
-                        return c.r or 1, c.g or 1, c.b or 1
+                    local color = Cfg("leftTextColor")
+                    if color then
+                        return color.r or 1, color.g or 1, color.b or 1
                     end
                     return 1, 1, 1
                 end,
@@ -2086,9 +2086,9 @@ CludesUI.AtOptionsLogin(function()
                 region,
                 btRow:GetFrameLevel() + 3,
                 function()
-                    local c = Cfg("rightTextColor")
-                    if c then
-                        return c.r or 1, c.g or 1, c.b or 1
+                    local color = Cfg("rightTextColor")
+                    if color then
+                        return color.r or 1, color.g or 1, color.b or 1
                     end
                     return 1, 1, 1
                 end,
@@ -2250,9 +2250,9 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Custom Color",
                     hasAlpha = false,
                     getValue = function()
-                        local c = Cfg("standaloneTimerColor")
-                        if c then
-                            return c.r or 1, c.g or 1, c.b or 1
+                        local color = Cfg("standaloneTimerColor")
+                        if color then
+                            return color.r or 1, color.g or 1, color.b or 1
                         end
                         return 1, 1, 1
                     end,
@@ -2405,8 +2405,8 @@ CludesUI.AtOptionsLogin(function()
                         label = "Background Color",
                         hasAlpha = true,
                         get = function()
-                            local c = Cfg("standaloneTimerBackgroundColor") or { r = 0, g = 0, b = 0, a = 0 }
-                            return c.r, c.g, c.b, c.a
+                            local color = Cfg("standaloneTimerBackgroundColor") or { r = 0, g = 0, b = 0, a = 0 }
+                            return color.r, color.g, color.b, color.a
                         end,
                         set = function(red, green, blue, a)
                             Set("standaloneTimerBackgroundColor", { r = red, g = green, b = blue, a = a })
@@ -2418,8 +2418,8 @@ CludesUI.AtOptionsLogin(function()
                         label = "Border Color",
                         hasAlpha = true,
                         get = function()
-                            local c = Cfg("standaloneTimerBorderColor") or { r = 0, g = 0, b = 0, a = 1 }
-                            return c.r, c.g, c.b, c.a
+                            local color = Cfg("standaloneTimerBorderColor") or { r = 0, g = 0, b = 0, a = 1 }
+                            return color.r, color.g, color.b, color.a
                         end,
                         set = function(red, green, blue, a)
                             Set("standaloneTimerBorderColor", { r = red, g = green, b = blue, a = a })
@@ -3134,9 +3134,9 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Custom Color",
                     hasAlpha = false,
                     getValue = function()
-                        local c = SHDB().barColor
-                        if c then
-                            return c.r or 0.298, c.g or 0.565, c.b or 0.494
+                        local color = SHDB().barColor
+                        if color then
+                            return color.r or 0.298, color.g or 0.565, color.b or 0.494
                         end
                         return 0.298, 0.565, 0.494
                     end,
@@ -3213,9 +3213,9 @@ CludesUI.AtOptionsLogin(function()
                 region,
                 textRow:GetFrameLevel() + 3,
                 function()
-                    local c = SHDB().textColor
-                    if c then
-                        return c.r or 1, c.g or 1, c.b or 1
+                    local color = SHDB().textColor
+                    if color then
+                        return color.r or 1, color.g or 1, color.b or 1
                     end
                     return 1, 1, 1
                 end,

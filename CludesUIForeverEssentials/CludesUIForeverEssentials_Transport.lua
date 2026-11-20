@@ -61,11 +61,11 @@ for name, route in pairs(Routes) do
 end
 
 local function Saved(slot)
-    local c = F.Cfg()
-    c[slot] = c[slot] or {}
+    local cfg = F.Cfg()
+    cfg[slot] = cfg[slot] or {}
     local realm = GetRealmName() or "?"
-    c[slot][realm] = c[slot][realm] or {}
-    return c[slot][realm]
+    cfg[slot][realm] = cfg[slot][realm] or {}
+    return cfg[slot][realm]
 end
 local function Rows()
     return Saved("sightings")

@@ -134,9 +134,9 @@ CludesUI.AtLogin(function()
                     end,
                     disabledTooltip = "Background above 0",
                     getValue = function()
-                        local c = mod.OwnListGet("windowBgColor")
-                        if c then
-                            return c.r, c.g, c.b, c.a or 0.62
+                        local color = mod.OwnListGet("windowBgColor")
+                        if color then
+                            return color.r, color.g, color.b, color.a or 0.62
                         end
                         return 0, 0, 0, 0.62
                     end,

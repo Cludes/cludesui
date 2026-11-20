@@ -58,8 +58,8 @@ function XF.Tip(ownerFrame, title, ...)
     CM.ShowWidgetTooltip(ownerFrame, textValue)
 end
 function XF.ClassLine(classFile, textValue)
-    local c = C_ClassColor and C_ClassColor.GetClassColor and C_ClassColor.GetClassColor(classFile)
-    return c and c:WrapTextInColorCode(textValue) or textValue
+    local color = C_ClassColor and C_ClassColor.GetClassColor and C_ClassColor.GetClassColor(classFile)
+    return color and color:WrapTextInColorCode(textValue) or textValue
 end
 function XF.Untip()
     XF.tipOwner = nil
@@ -384,17 +384,17 @@ function XF.RestoreCharFilter()
     end
     XF.filterRestored = true
     -- dimmed keeps the picks with us and blizzard's search wide
-    local c = Cfg()
+    local cfg = Cfg()
     if DimOn() then
-        if type(c.dimPicks) ~= "table" then
-            c.dimPicks = Picks(frame)
+        if type(cfg.dimPicks) ~= "table" then
+            cfg.dimPicks = Picks(frame)
         end
         Widen(frame)
-    elseif type(c.dimPicks) == "table" then
+    elseif type(cfg.dimPicks) == "table" then
         for _, k in ipairs(PICK_KEYS) do
-            frame[k] = c.dimPicks[k]
+            frame[k] = cfg.dimPicks[k]
         end
-        c.dimPicks = nil
+        cfg.dimPicks = nil
     end
     C_LFGList.SaveAdvancedFilter(frame)
     XF.Remember(frame)
@@ -457,8 +457,8 @@ local function RegionsAvailable()
 end
 
 local function ChosenRegions()
-    local c = Cfg()
-    return type(c.regions) == "table" and c.regions or nil
+    local cfg = Cfg()
+    return type(cfg.regions) == "table" and cfg.regions or nil
 end
 
 local function RegionFilterActive()
@@ -667,8 +667,8 @@ local function ScanBountiful()
 end
 
 local function ChosenDelves()
-    local c = Cfg()
-    return type(c.delves) == "table" and next(c.delves) and c.delves or nil
+    local cfg = Cfg()
+    return type(cfg.delves) == "table" and next(cfg.delves) and cfg.delves or nil
 end
 
 local MAX_TIER = 13 -- 1-11, then ? and ??
@@ -922,8 +922,8 @@ function XF.AnyRaidHidden()
 end
 
 local function ChosenBosses()
-    local c = Cfg()
-    return type(c.bosses) == "table" and next(c.bosses) and c.bosses or nil
+    local cfg = Cfg()
+    return type(cfg.bosses) == "table" and next(cfg.bosses) and cfg.bosses or nil
 end
 
 local function BossFilterActive()
@@ -1183,11 +1183,11 @@ function XF.ExtraFilterActive()
     if not SP or (SP.categoryID ~= DUNGEONS and SP.categoryID ~= RAIDS) then
         return false
     end
-    local c = Cfg()
-    if c.partyFit or c.notDeclined or c.hasLust or c.hasBrez then
+    local cfg = Cfg()
+    if cfg.partyFit or cfg.notDeclined or cfg.hasLust or cfg.hasBrez then
         return true
     end
-    if mod.ExtraClassKeep and c[SP.categoryID == RAIDS and "raidMyClass" or "extraMyClass"] then
+    if mod.ExtraClassKeep and cfg[SP.categoryID == RAIDS and "raidMyClass" or "extraMyClass"] then
         return true
     end
     if mod.ExtraExprActive and mod.ExtraExprActive() then
@@ -1234,14 +1234,14 @@ function XF.PartyNeeds(need)
 end
 
 function XF.ExtraKeep(ident, details, need)
-    local c = Cfg()
-    if c.notDeclined and XF.IsDeclinedResult(ident, details) then
+    local cfg = Cfg()
+    if cfg.notDeclined and XF.IsDeclinedResult(ident, details) then
         return false
     end
     local counts = C_LFGList.GetSearchResultMemberCounts(ident)
     if type(counts) == "table" and not IsSecret(counts) then
         local num = XF.Num
-        if c.partyFit and need then
+        if cfg.partyFit and need then
             for roleName, n in pairs(need) do
                 local leftX = num(counts, XF.REMAINING[roleName])
                 if leftX and leftX < n then
@@ -1276,10 +1276,10 @@ function XF.ExtraKeep(ident, details, need)
     end
     -- has / missing bloodlust, battle res and your class
     if mod.ExtraClassKeep then
-        if not mod.ExtraClassKeep(ident, details, c, SP and SP.categoryID == RAIDS) then
+        if not mod.ExtraClassKeep(ident, details, cfg, SP and SP.categoryID == RAIDS) then
             return false
         end
-    elseif c.hasLust or c.hasBrez then
+    elseif cfg.hasLust or cfg.hasBrez then
         local n = details and details.numMembers
         if type(n) == "number" and not IsSecret(n) then
             local lust, brez = false, false
@@ -1295,10 +1295,10 @@ function XF.ExtraKeep(ident, details, need)
                     end
                 end
             end
-            if c.hasLust and not lust then
+            if cfg.hasLust and not lust then
                 return false
             end
-            if c.hasBrez and not brez then
+            if cfg.hasBrez and not brez then
                 return false
             end
         end
@@ -1453,18 +1453,18 @@ function mod.DimFiltersChanged()
     if not frame then
         return
     end
-    local c = Cfg()
+    local cfg = Cfg()
     if DimOn() then
-        c.dimPicks = Picks(frame)
+        cfg.dimPicks = Picks(frame)
         Widen(frame)
     else
-        local p = c.dimPicks
+        local p = cfg.dimPicks
         if type(p) == "table" then
             for _, k in ipairs(PICK_KEYS) do
                 frame[k] = p[k]
             end
         end
-        c.dimPicks = nil
+        cfg.dimPicks = nil
     end
     C_LFGList.SaveAdvancedFilter(frame)
     XF.Remember(frame)
@@ -1480,7 +1480,7 @@ function XF.PassesFilters(ident, details)
     if not SP or P.secret or not P.any then
         return true
     end
-    local c = Cfg()
+    local cfg = Cfg()
     local _, appStatus = C_LFGList.GetApplicationInfo(ident)
     if IsSecret(appStatus) then
         return true
@@ -1490,7 +1490,7 @@ function XF.PassesFilters(ident, details)
     end
     if appStatus and appStatus ~= "none" then
         -- applied groups stay lit, unless declined with not declined on.
-        return not (P.extraOn and c.notDeclined and XF.IsDeclinedResult(ident, details))
+        return not (P.extraOn and cfg.notDeclined and XF.IsDeclinedResult(ident, details))
     end
     if P.dimOn and not XF.DimKeep(ident, details) then
         return false
@@ -2414,14 +2414,14 @@ local function AddPlaystyleItems(m, posY, raids)
     for index, labelText in ipairs(PLAYSTYLES) do
         m.items["style_" .. index] = MenuItem(m, posY, labelText, function()
             if raids then
-                local c = Cfg()
-                if type(c.raidPlaystyles) ~= "table" then
-                    c.raidPlaystyles = {}
+                local cfg = Cfg()
+                if type(cfg.raidPlaystyles) ~= "table" then
+                    cfg.raidPlaystyles = {}
                 end
-                c.raidPlaystyles[index] = (not c.raidPlaystyles[index]) or nil
+                cfg.raidPlaystyles[index] = (not cfg.raidPlaystyles[index]) or nil
                 local _, n = ChosenRaidPlaystyles()
                 if n == #PLAYSTYLES then
-                    wipe(c.raidPlaystyles)
+                    wipe(cfg.raidPlaystyles)
                 end
                 Refilter()
                 Paint()
@@ -2503,11 +2503,11 @@ local function AddRoleItems(m, posY, raids)
         local filterKey = region.key
         m.items["role_" .. filterKey] = MenuItem(m, posY, region.label, function()
             if raids then
-                local c = Cfg()
-                if type(c.raidRoles) ~= "table" then
-                    c.raidRoles = {}
+                local cfg = Cfg()
+                if type(cfg.raidRoles) ~= "table" then
+                    cfg.raidRoles = {}
                 end
-                c.raidRoles[filterKey] = (not c.raidRoles[filterKey]) or nil
+                cfg.raidRoles[filterKey] = (not cfg.raidRoles[filterKey]) or nil
                 Refilter()
                 Paint()
             else
@@ -2579,13 +2579,13 @@ function XF.OpenOpList(button, roleName)
             highlight:SetColorTexture(1, 1, 1, CM.DD_ITEM_HL_A)
             entry.opKey = o.key
             entry:SetScript("OnClick", function()
-                local c = Cfg()
-                if type(c.roleCounts) ~= "table" then
-                    c.roleCounts = {}
+                local cfg = Cfg()
+                if type(cfg.roleCounts) ~= "table" then
+                    cfg.roleCounts = {}
                 end
-                local region = c.roleCounts[L.role] or {}
+                local region = cfg.roleCounts[L.role] or {}
                 region.op = o.key
-                c.roleCounts[L.role] = region
+                cfg.roleCounts[L.role] = region
                 L:Hide()
                 Refilter()
                 Paint()
@@ -2645,12 +2645,12 @@ end
 -- 'Tanks [Less Than] [n]' row; empty box means no check.
 function XF.AddCountRow(m, posY, roleName, textValue)
     local function Rule()
-        local c = Cfg()
-        if type(c.roleCounts) ~= "table" then
-            c.roleCounts = {}
+        local cfg = Cfg()
+        if type(cfg.roleCounts) ~= "table" then
+            cfg.roleCounts = {}
         end
-        local region = c.roleCounts[roleName] or {}
-        c.roleCounts[roleName] = region
+        local region = cfg.roleCounts[roleName] or {}
+        cfg.roleCounts[roleName] = region
         return region
     end
     local rowF = CreateFrame("Frame", nil, m)
@@ -2749,8 +2749,8 @@ end
 -- toggles both menus share
 function XF.AddFlagItem(m, posY, filterKey, textValue, tipText)
     local entry = MenuItem(m, posY, textValue, function()
-        local c = Cfg()
-        c[filterKey] = (not c[filterKey]) or nil
+        local cfg = Cfg()
+        cfg[filterKey] = (not cfg[filterKey]) or nil
         Refilter()
         Paint()
     end)
@@ -2770,11 +2770,11 @@ end
 
 XF.FLAG_KEYS = { "partyFit", "notDeclined", "hasLust", "hasBrez" }
 function XF.PaintFlagItems(m)
-    local c = Cfg()
+    local cfg = Cfg()
     for _, filterKey in ipairs(XF.FLAG_KEYS) do
         local entry = m.items["flag_" .. filterKey]
         if entry then
-            entry:SetChecked(c[filterKey] == true)
+            entry:SetChecked(cfg[filterKey] == true)
         end
     end
 end
@@ -2794,8 +2794,8 @@ end
 -- min. rating: the leader's m+ rating, applied on search again
 local function AddRatingRow(m, posY)
     local function Send()
-        local c = Cfg()
-        local val = c.ratingOn and (tonumber(c.ratingValue) or 0) or 0
+        local cfg = Cfg()
+        local val = cfg.ratingOn and (tonumber(cfg.ratingValue) or 0) or 0
         local frame = XF.GetFilter()
         if (frame.minimumRating or 0) ~= val then
             frame.minimumRating = val
@@ -2830,12 +2830,12 @@ local function AddRatingRow(m, posY)
     callback.fill:SetPoint("TOPLEFT", callback, "TOPLEFT", 3, -3)
     callback.fill:SetPoint("BOTTOMRIGHT", callback, "BOTTOMRIGHT", -3, 3)
     callback:SetScript("OnClick", function()
-        local c = Cfg()
-        c.ratingOn = (not c.ratingOn) or nil
+        local cfg = Cfg()
+        cfg.ratingOn = (not cfg.ratingOn) or nil
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         Send()
         Paint()
-        if c.ratingOn and m.rating then
+        if cfg.ratingOn and m.rating then
             m.rating.box:SetFocus()
         end
     end)
@@ -2857,14 +2857,14 @@ end
 
 -- restore the saved rating when ticked again.
 function XF.AdoptRating()
-    local c = Cfg()
-    if c.ratingOn ~= nil or c.ratingValue ~= nil then
+    local cfg = Cfg()
+    if cfg.ratingOn ~= nil or cfg.ratingValue ~= nil then
         return
     end
     local frame = XF.GetFilter()
     local val = frame and tonumber(frame.minimumRating) or 0
     if val > 0 then
-        c.ratingOn, c.ratingValue = true, val
+        cfg.ratingOn, cfg.ratingValue = true, val
     end
 end
 
@@ -2873,8 +2873,8 @@ function XF.PaintRating(m)
     if not region then
         return
     end
-    local c = Cfg()
-    local isOn = c.ratingOn == true
+    local cfg = Cfg()
+    local isOn = cfg.ratingOn == true
     local ar, ag, ab = Accent()
     region.cb.fill:SetColorTexture(ar, ag, ab, 1)
     region.cb.fill:SetShown(isOn)
@@ -2884,7 +2884,7 @@ function XF.PaintRating(m)
         region.cb.ring:SetColor(0.25, 0.25, 0.25, 0.6)
     end
     if not region.box:HasFocus() then
-        local val = tonumber(c.ratingValue)
+        local val = tonumber(cfg.ratingValue)
         region.box:SetText(val and val > 0 and tostring(val) or "")
     end
     local a = isOn and 1 or 0.4
@@ -2906,19 +2906,19 @@ local function AddRegionItems(m, posY)
     for index, region in ipairs(Regions()) do
         local filterKey = region.key
         local entry = MenuItem(m, posY, lang and region.tag or region.label, function()
-            local c = Cfg()
-            if type(c.regions) ~= "table" then
-                c.regions = {}
+            local cfg = Cfg()
+            if type(cfg.regions) ~= "table" then
+                cfg.regions = {}
             end
-            c.regions[filterKey] = (not c.regions[filterKey]) or nil
+            cfg.regions[filterKey] = (not cfg.regions[filterKey]) or nil
             local n = 0
             for _, o in ipairs(Regions()) do
-                if c.regions[o.key] then
+                if cfg.regions[o.key] then
                     n = n + 1
                 end
             end
             if n == #Regions() then
-                wipe(c.regions)
+                wipe(cfg.regions)
             end
             Refilter()
             Paint()
@@ -3132,11 +3132,11 @@ local function BuildRaidDiffMenu()
     local red, green, blue = ThemeFill()
     backdrop:SetColorTexture(red, green, blue, 0.98)
     local function Diffs()
-        local c = Cfg()
-        if type(c.raidDiffs) ~= "table" then
-            c.raidDiffs = {}
+        local cfg = Cfg()
+        if type(cfg.raidDiffs) ~= "table" then
+            cfg.raidDiffs = {}
         end
-        return c.raidDiffs
+        return cfg.raidDiffs
     end
     m.items = {}
     local posY = 3
@@ -3407,19 +3407,19 @@ local function MakeDelveSquare(hostFrame)
         if not skinData then
             return
         end
-        local c = Cfg()
-        if type(c.delves) ~= "table" then
-            c.delves = {}
+        local cfg = Cfg()
+        if type(cfg.delves) ~= "table" then
+            cfg.delves = {}
         end
-        c.delves[skinData.groupID] = (not c.delves[skinData.groupID]) or nil
+        cfg.delves[skinData.groupID] = (not cfg.delves[skinData.groupID]) or nil
         local n = 0
         for _, o in ipairs(delves or {}) do
-            if c.delves[o.groupID] then
+            if cfg.delves[o.groupID] then
                 n = n + 1
             end
         end
         if n == #(delves or {}) then
-            wipe(c.delves)
+            wipe(cfg.delves)
         end
         Refilter()
         Paint()
@@ -3570,11 +3570,11 @@ local function BossPickList()
             if not skinData then
                 return
             end
-            local c = Cfg()
-            if type(c.bosses) ~= "table" then
-                c.bosses = {}
+            local cfg = Cfg()
+            if type(cfg.bosses) ~= "table" then
+                cfg.bosses = {}
             end
-            c.bosses[skinData.key] = p.value
+            cfg.bosses[skinData.key] = p.value
             Refilter()
             Paint()
         end)
@@ -3603,8 +3603,8 @@ local function OpenBossPick(square)
     entries.owner = square
     local wid = square:GetWidth()
     local iconTex = math.floor(wid * 0.6 + 0.5)
-    local c = Cfg()
-    local current = type(c.bosses) == "table" and square.boss and c.bosses[square.boss.key] or nil
+    local cfg = Cfg()
+    local current = type(cfg.bosses) == "table" and square.boss and cfg.bosses[square.boss.key] or nil
     for index, entry in ipairs(entries.rows) do
         entry:SetSize(wid, wid)
         entry:ClearAllPoints()
@@ -3709,12 +3709,12 @@ local function BuildRaidMenu()
     local posY = 3
     -- current season only, older raids dimmed and out
     raidMenu.items.season = MenuItem(raidMenu, posY, CludesUI.L("Current Season Only"), function()
-        local c = Cfg()
-        c.extraSeasonRaids = not XF.SeasonOnly()
-        if type(c.bosses) == "table" then
+        local cfg = Cfg()
+        cfg.extraSeasonRaids = not XF.SeasonOnly()
+        if type(cfg.bosses) == "table" then
             for _, bo in ipairs(bosses or {}) do
                 if not RaidShown(bo.raid) then
-                    c.bosses[bo.key] = nil
+                    cfg.bosses[bo.key] = nil
                 end
             end
         end
@@ -3731,9 +3731,9 @@ local function BuildRaidMenu()
     for _, raid in ipairs(raidList or {}) do
         local joinId = raid.jid
         raidMenu.items[joinId] = MenuItem(raidMenu, posY, raid.name, function()
-            local c = Cfg()
-            if type(c.raidsHidden) ~= "table" then
-                c.raidsHidden = {}
+            local cfg = Cfg()
+            if type(cfg.raidsHidden) ~= "table" then
+                cfg.raidsHidden = {}
             end
             if RaidShown(joinId) then
                 -- keep at least one raid ticked.
@@ -3747,11 +3747,11 @@ local function BuildRaidMenu()
                     return
                 end
             end
-            c.raidsHidden[joinId] = (not c.raidsHidden[joinId]) or nil
-            if c.raidsHidden[joinId] and type(c.bosses) == "table" then
+            cfg.raidsHidden[joinId] = (not cfg.raidsHidden[joinId]) or nil
+            if cfg.raidsHidden[joinId] and type(cfg.bosses) == "table" then
                 for _, bo in ipairs(bosses or {}) do
                     if bo.raid == joinId then
-                        c.bosses[bo.key] = nil
+                        cfg.bosses[bo.key] = nil
                     end
                 end
             end
@@ -3767,8 +3767,8 @@ local function BuildRaidMenu()
     div:SetPoint("TOPRIGHT", raidMenu, "TOPRIGHT", -1, -posY - 3)
     posY = posY + 7
     raidMenu.items.worldBosses = MenuItem(raidMenu, posY, CludesUI.L("World Bosses"), function()
-        local c = Cfg()
-        c.hideWorldBosses = (not c.hideWorldBosses) or nil
+        local cfg = Cfg()
+        cfg.hideWorldBosses = (not cfg.hideWorldBosses) or nil
         Refilter()
         Paint()
     end)
@@ -3831,11 +3831,11 @@ local function BuildTierMenu()
         CM.MakeBorder(tierMenu, ThemeBorder())
     end
     local function Tiers()
-        local c = Cfg()
-        if type(c.delveTiers) ~= "table" then
-            c.delveTiers = {}
+        local cfg = Cfg()
+        if type(cfg.delveTiers) ~= "table" then
+            cfg.delveTiers = {}
         end
-        return c.delveTiers
+        return cfg.delveTiers
     end
     tierMenu.items = {}
     local posY = 3
@@ -4217,35 +4217,35 @@ local function CogFilterButton(button)
             frame[skinData.key] = true
         end
         frame.activities = AllDungeonGroups()
-        local c = Cfg()
-        if type(c.regions) == "table" then
-            wipe(c.regions)
+        local cfg = Cfg()
+        if type(cfg.regions) == "table" then
+            wipe(cfg.regions)
         end
-        if type(c.delves) == "table" then
-            wipe(c.delves)
+        if type(cfg.delves) == "table" then
+            wipe(cfg.delves)
         end
-        if type(c.delveTiers) == "table" then
-            wipe(c.delveTiers)
+        if type(cfg.delveTiers) == "table" then
+            wipe(cfg.delveTiers)
         end
-        if type(c.bosses) == "table" then
-            wipe(c.bosses)
+        if type(cfg.bosses) == "table" then
+            wipe(cfg.bosses)
         end
-        if type(c.raidDiffs) == "table" then
-            wipe(c.raidDiffs)
+        if type(cfg.raidDiffs) == "table" then
+            wipe(cfg.raidDiffs)
         end
-        if type(c.raidPlaystyles) == "table" then
-            wipe(c.raidPlaystyles)
+        if type(cfg.raidPlaystyles) == "table" then
+            wipe(cfg.raidPlaystyles)
         end
-        if type(c.raidRoles) == "table" then
-            wipe(c.raidRoles)
+        if type(cfg.raidRoles) == "table" then
+            wipe(cfg.raidRoles)
         end
-        c.partyFit, c.notDeclined, c.hasLust, c.hasBrez = nil, nil, nil, nil
-        c.extraMyClass, c.raidMyClass = nil, nil
+        cfg.partyFit, cfg.notDeclined, cfg.hasLust, cfg.hasBrez = nil, nil, nil, nil
+        cfg.extraMyClass, cfg.raidMyClass = nil, nil
         if mod.ExtraExprReset then
             mod.ExtraExprReset()
         end
-        if type(c.roleCounts) == "table" then
-            wipe(c.roleCounts)
+        if type(cfg.roleCounts) == "table" then
+            wipe(cfg.roleCounts)
         end
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         Apply(frame)
@@ -4500,8 +4500,8 @@ local function Layout()
         return
     end
     XF.NewPass()
-    local c = Cfg()
-    local padding = tonumber(c.padding) or 12
+    local cfg = Cfg()
+    local padding = tonumber(cfg.padding) or 12
     local showFilters = SP.categoryID == DUNGEONS
     local showDiff = SP.categoryID == DUNGEONS or SP.categoryID == RAIDS
     local showDelves = SP.categoryID == DELVES
@@ -4791,11 +4791,11 @@ local function LayoutCategoryList()
         return
     end
     local CS = LFGListFrame and LFGListFrame.CategorySelection
-    local c = Cfg()
+    local cfg = Cfg()
     if not (CS and type(CS.CategoryButtons) == "table") then
         return
     end
-    local padding = tonumber(c.padding) or 12
+    local padding = tonumber(cfg.padding) or 12
     for index, btn in ipairs(CS.CategoryButtons) do
         btn:ClearAllPoints()
         if index == 1 then
@@ -4871,11 +4871,11 @@ local function LayoutEntryFields()
         return
     end
     local EC = LFGListFrame and LFGListFrame.EntryCreation
-    local c = Cfg()
+    local cfg = Cfg()
     if not EC then
         return
     end
-    local padding = tonumber(c.padding) or 12
+    local padding = tonumber(cfg.padding) or 12
     local W = EC:GetWidth()
     if type(W) ~= "number" or W <= 0 then
         return

@@ -453,9 +453,9 @@ local function ApplyStyleToRegions(btnFrame, look)
             state.stack:SetPoint(sp, btnFrame, sp, look.stackX or 2, look.stackY or -2)
             state.akStackAnchor = sKey
         end
-        local c = look.stackColor
-        if c then
-            state.stack:SetTextColor(c.r, c.g, c.b, c.a or 1)
+        local color = look.stackColor
+        if color then
+            state.stack:SetTextColor(color.r, color.g, color.b, color.a or 1)
         end
     end
 

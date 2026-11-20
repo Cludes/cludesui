@@ -202,7 +202,7 @@ local function PutStyle(st, key, value)
 end
 
 local function UpdateStyle(st, s)
-    local c = s.borderColor or defaultSet.profile.borderColor
+    local color = s.borderColor or defaultSet.profile.borderColor
     local grid = not st.isParty and mod.RF_GridOn(s)
     local red, green, blue, a
     if grid and not st.isPet then
@@ -220,9 +220,9 @@ local function UpdateStyle(st, s)
     PutStyle(st, "shiftX", s.borderTextureShiftX)
     PutStyle(st, "shiftY", s.borderTextureShiftY)
     PutStyle(st, "behind", s.borderBehind)
-    PutStyle(st, "r", c.r)
-    PutStyle(st, "g", c.g)
-    PutStyle(st, "b", c.b)
+    PutStyle(st, "r", color.r)
+    PutStyle(st, "g", color.g)
+    PutStyle(st, "b", color.b)
     PutStyle(st, "a", s.borderAlpha or 1)
     PutStyle(st, "bgR", red)
     PutStyle(st, "bgG", green)

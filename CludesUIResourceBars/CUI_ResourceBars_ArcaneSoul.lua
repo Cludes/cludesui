@@ -458,13 +458,13 @@ local CURVE_CACHE_MAX = 64
 local curves, curveCacheN = {}, 0
 local curvePoints
 local function BuildCurve()
-    local c = C_CurveUtil.CreateColorCurve()
-    c:SetType(Enum.LuaCurveType.Step)
+    local color = C_CurveUtil.CreateColorCurve()
+    color:SetType(Enum.LuaCurveType.Step)
     for i = 1, #curvePoints do
         local point = curvePoints[i]
-        c:AddPoint(point[1], CreateColor(point[2], point[3], point[4], point[5]))
+        color:AddPoint(point[1], CreateColor(point[2], point[3], point[4], point[5]))
     end
-    return c
+    return color
 end
 
 local function StepCurve(cacheKey, points)

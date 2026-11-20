@@ -927,8 +927,8 @@ end
 
 local function IconSize(hgt)
     -- 16px at 100%, 1px per 5%
-    local c = GFNS.Cfg and GFNS.Cfg()
-    local pct = tonumber(c and c.iconSize) or (GFNS.DEFAULTS and GFNS.DEFAULTS.iconSize) or 125
+    local cfg = GFNS.Cfg and GFNS.Cfg()
+    local pct = tonumber(cfg and cfg.iconSize) or (GFNS.DEFAULTS and GFNS.DEFAULTS.iconSize) or 125
     return math.max(8, math.min(hgt - 4, 16 + math.floor((pct - 100) / 5 + 0.5)))
 end
 

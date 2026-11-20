@@ -1265,8 +1265,8 @@ local function BuildMainPage(page, hostFrame, yOffset)
             end),
         })
         local borderSwatch, updBorder = CludesUI.BuildColorSwatch(region, lvl, function()
-            local c = SGet("borderColor") or { r = 0, g = 0, b = 0 }
-            return c.r, c.g, c.b, SVal("borderAlpha", 1)
+            local color = SGet("borderColor") or { r = 0, g = 0, b = 0 }
+            return color.r, color.g, color.b, SVal("borderAlpha", 1)
         end, function(red, green, blue, a)
             SWrite("borderColor", { r = red, g = green, b = blue })
             SWrite("borderAlpha", a)
@@ -1485,8 +1485,8 @@ local function BuildMainPage(page, hostFrame, yOffset)
         -- Target to its left.
         local lvl = hoverBordersRow:GetFrameLevel() + 3
         local hoverSwatch, updHover = CludesUI.BuildColorSwatch(rightRegion, lvl, function()
-            local c = SGet("hoverBorderColor") or { r = 1, g = 1, b = 1 }
-            return c.r, c.g, c.b, SVal("hoverBorderAlpha", 1)
+            local color = SGet("hoverBorderColor") or { r = 1, g = 1, b = 1 }
+            return color.r, color.g, color.b, SVal("hoverBorderAlpha", 1)
         end, function(red, green, blue, a)
             SWrite("hoverBorderColor", { r = red, g = green, b = blue })
             SWrite("hoverBorderAlpha", a)
@@ -1498,8 +1498,8 @@ local function BuildMainPage(page, hostFrame, yOffset)
         CludesUI.HoverTip(hoverSwatch, "Hover")
 
         local targetSwatch, updTarget = CludesUI.BuildColorSwatch(rightRegion, lvl, function()
-            local c = SGet("targetBorderColor") or { r = 1, g = 1, b = 1 }
-            return c.r, c.g, c.b, SVal("targetBorderAlpha", 1)
+            local color = SGet("targetBorderColor") or { r = 1, g = 1, b = 1 }
+            return color.r, color.g, color.b, SVal("targetBorderAlpha", 1)
         end, function(red, green, blue, a)
             SWrite("targetBorderColor", { r = red, g = green, b = blue })
             SWrite("targetBorderAlpha", a)

@@ -233,8 +233,8 @@ function Library.Title(book)
     if Library.Done(book) then
         return CHECK .. " " .. Muted(book.name)
     end
-    local c = GetQuestDifficultyColor(book.tier)
-    return ("|cff%02x%02x%02x(%d)|r %s"):format(c.r * 255, c.g * 255, c.b * 255, book.tier, book.name)
+    local color = GetQuestDifficultyColor(book.tier)
+    return ("|cff%02x%02x%02x(%d)|r %s"):format(color.r * 255, color.g * 255, color.b * 255, book.tier, book.name)
 end
 
 -------------------------------------------------------------------------------
@@ -917,8 +917,8 @@ end
 local function BookTip(book, spot)
     return function(tipText)
         tipText:SetText(book.name, 1, 1, 1)
-        local c = GetQuestDifficultyColor(book.tier)
-        tipText:AddLine(("Level %d"):format(book.tier), c.r, c.g, c.b)
+        local color = GetQuestDifficultyColor(book.tier)
+        tipText:AddLine(("Level %d"):format(book.tier), color.r, color.g, color.b)
         if spot then
             tipText:AddLine(ZoneName(spot[SPOT_MAP]) .. ", " .. Library.Where(spot), unpack(MUTED))
             if spot[SPOT_NOTE] then

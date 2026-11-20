@@ -733,8 +733,8 @@ CludesUI.AtOptionsLogin(function()
         CludesUI.BuildSectionUnlockJump(heading, {
             key = "ECL_Cast",
             disabled = function()
-                local c = Cast_DB()
-                return not (c.enabled and c.attached == false)
+                local cfg = Cast_DB()
+                return not (cfg.enabled and cfg.attached == false)
             end,
             disabledTooltip = function()
                 return Cast_DB().enabled and "Attach to Cursor" or "Cast Bar Circle"
@@ -768,8 +768,8 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Custom Color",
                     hasAlpha = false,
                     getValue = function()
-                        local c = Cast_DB()
-                        local r, ng, b = HexToRGB(c.hex)
+                        local cfg = Cast_DB()
+                        local r, ng, b = HexToRGB(cfg.hex)
                         return r, ng, b
                     end,
                     setValue = function(red, green, blue)
@@ -778,10 +778,10 @@ CludesUI.AtOptionsLogin(function()
                         RefreshCast()
                     end,
                     onClick = function(self)
-                        local c = Cast_DB()
-                        if c.useClassColor or c.useAccentColor then
-                            c.useClassColor = false
-                            c.useAccentColor = false
+                        local cfg = Cast_DB()
+                        if cfg.useClassColor or cfg.useAccentColor then
+                            cfg.useClassColor = false
+                            cfg.useAccentColor = false
                             RefreshCast()
                             CludesUI:RefreshPage()
                             return
@@ -791,11 +791,11 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end,
                     refreshAlpha = function()
-                        local c = Cast_DB()
-                        if not c.enabled then
+                        local cfg = Cast_DB()
+                        if not cfg.enabled then
                             return 0.15
                         end
-                        return (c.useClassColor or c.useAccentColor) and 0.3 or 1
+                        return (cfg.useClassColor or cfg.useAccentColor) and 0.3 or 1
                     end,
                 },
                 {
@@ -811,18 +811,18 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local c = Cast_DB()
-                        c.useClassColor = true
-                        c.useAccentColor = false
+                        local cfg = Cast_DB()
+                        cfg.useClassColor = true
+                        cfg.useAccentColor = false
                         RefreshCast()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local c = Cast_DB()
-                        if not c.enabled then
+                        local cfg = Cast_DB()
+                        if not cfg.enabled then
                             return 0.15
                         end
-                        return c.useClassColor and 1 or 0.3
+                        return cfg.useClassColor and 1 or 0.3
                     end,
                 },
                 {
@@ -834,18 +834,18 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local c = Cast_DB()
-                        c.useAccentColor = true
-                        c.useClassColor = false
+                        local cfg = Cast_DB()
+                        cfg.useAccentColor = true
+                        cfg.useClassColor = false
                         RefreshCast()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local c = Cast_DB()
-                        if not c.enabled then
+                        local cfg = Cast_DB()
+                        if not cfg.enabled then
                             return 0.15
                         end
-                        return c.useAccentColor and 1 or 0.3
+                        return cfg.useAccentColor and 1 or 0.3
                     end,
                 },
             },
@@ -888,8 +888,8 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     label = "Show Spark",
                     get = function()
-                        local c = Cast_DB()
-                        return c.sparkEnabled ~= false
+                        local cfg = Cast_DB()
+                        return cfg.sparkEnabled ~= false
                     end,
                     set = function(val)
                         Cast_DB().sparkEnabled = val

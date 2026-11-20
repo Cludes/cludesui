@@ -544,8 +544,8 @@ CludesUI.AtOptionsLogin(function()
                         region,
                         borderRow:GetFrameLevel() + 3,
                         function()
-                            local c = Cfg("panelBorderColor") or { r = 1, g = 1, b = 1 }
-                            return c.r, c.g, c.b, Cfg("panelBorderOpacity") or 0.18
+                            local color = Cfg("panelBorderColor") or { r = 1, g = 1, b = 1 }
+                            return color.r, color.g, color.b, Cfg("panelBorderOpacity") or 0.18
                         end,
                         function(red, green, blue, a)
                             Set("panelBorderColor", { r = red, g = green, b = blue })
@@ -1326,12 +1326,12 @@ CludesUI.AtOptionsLogin(function()
                             tooltip = "Custom Color",
                             hasAlpha = false,
                             getValue = function()
-                                local c = Cfg("tabBackgroundColor") or fallback
-                                return c.r, c.g, c.b, c.a == nil and fallback.a or c.a
+                                local color = Cfg("tabBackgroundColor") or fallback
+                                return color.r, color.g, color.b, color.a == nil and fallback.a or color.a
                             end,
                             setValue = function(red, green, blue)
-                                local c = Cfg("tabBackgroundColor") or fallback
-                                local a = c.a == nil and fallback.a or c.a
+                                local color = Cfg("tabBackgroundColor") or fallback
+                                local a = color.a == nil and fallback.a or color.a
                                 Set("tabBackgroundColor", { r = red, g = green, b = blue, a = a })
                                 if CHAT.ApplyTabAppearance then
                                     CHAT.ApplyTabAppearance()
@@ -1405,9 +1405,9 @@ CludesUI.AtOptionsLogin(function()
                             tooltip = "Custom Color",
                             hasAlpha = true,
                             getValue = function()
-                                local c = Cfg("activeUnderlineColor")
+                                local color = Cfg("activeUnderlineColor")
                                     or { r = 0.05, g = 0.82, b = 0.61, a = 1 }
-                                return c.r, c.g, c.b, c.a == nil and 1 or c.a
+                                return color.r, color.g, color.b, color.a == nil and 1 or color.a
                             end,
                             setValue = function(red, green, blue, a)
                                 Set("activeUnderlineColor", { r = red, g = green, b = blue, a = a })
@@ -1796,8 +1796,8 @@ CludesUI.AtOptionsLogin(function()
                         region,
                         borderRow:GetFrameLevel() + 3,
                         function()
-                            local c = Cfg("tabBorderColor") or { r = 1, g = 1, b = 1 }
-                            return c.r, c.g, c.b, Cfg("tabBorderOpacity") or 0.18
+                            local color = Cfg("tabBorderColor") or { r = 1, g = 1, b = 1 }
+                            return color.r, color.g, color.b, Cfg("tabBorderOpacity") or 0.18
                         end,
                         function(red, green, blue, a)
                             Set("tabBorderColor", { r = red, g = green, b = blue })
@@ -1858,8 +1858,8 @@ CludesUI.AtOptionsLogin(function()
                         region,
                         activeBorderRow:GetFrameLevel() + 3,
                         function()
-                            local c = Cfg("tabBorderColorActive") or { r = 1, g = 1, b = 1 }
-                            return c.r, c.g, c.b, c.a == nil and 0.18 or c.a
+                            local color = Cfg("tabBorderColorActive") or { r = 1, g = 1, b = 1 }
+                            return color.r, color.g, color.b, color.a == nil and 0.18 or color.a
                         end,
                         function(red, green, blue, a)
                             Set("tabBorderColorActive", { r = red, g = green, b = blue, a = a })
@@ -2111,8 +2111,8 @@ CludesUI.AtOptionsLogin(function()
                     region,
                     extrasBorderRow:GetFrameLevel() + 3,
                     function()
-                        local c = Cfg("innerBorderColor") or { r = 1, g = 1, b = 1, a = 0.06 }
-                        return c.r, c.g, c.b, c.a == nil and 0.06 or c.a
+                        local color = Cfg("innerBorderColor") or { r = 1, g = 1, b = 1, a = 0.06 }
+                        return color.r, color.g, color.b, color.a == nil and 0.06 or color.a
                     end,
                     function(red, green, blue, a)
                         Set("innerBorderColor", { r = red, g = green, b = blue, a = a })

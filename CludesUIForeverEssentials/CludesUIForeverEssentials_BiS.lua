@@ -93,10 +93,10 @@ local _, CLASS = UnitClass("player")
 
 -- lists[class] = { [invSlot] = itemID }
 local function List()
-    local c = F.Cfg()
-    c.lists = c.lists or {}
-    c.lists[CLASS] = c.lists[CLASS] or {}
-    return c.lists[CLASS]
+    local cfg = F.Cfg()
+    cfg.lists = cfg.lists or {}
+    cfg.lists[CLASS] = cfg.lists[CLASS] or {}
+    return cfg.lists[CLASS]
 end
 
 local Refresh -- the window's repaint, set below

@@ -71,8 +71,8 @@ do
         local p = GetABProfile()
         if p then
             local pType = p.pushedTextureType or 2
-            local c = p.pushedCustomColor or { r = 0.973, g = 0.839, b = 0.604 }
-            local cr, cg, callback = c.r, c.g, c.b
+            local color = p.pushedCustomColor or { r = 0.973, g = 0.839, b = 0.604 }
+            local cr, cg, callback = color.r, color.g, color.b
             if p.pushedUseClassColor then
                 local _, classTok = UnitClass("player")
                 if classTok then

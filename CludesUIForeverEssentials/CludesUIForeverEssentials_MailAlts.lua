@@ -37,8 +37,8 @@ local function Secret(val)
     return issecretvalue and issecretvalue(val)
 end
 local function ClassName(name, class)
-    local c = class and C_ClassColor and C_ClassColor.GetClassColor(class)
-    return c and c:WrapTextInColorCode(name) or name
+    local color = class and C_ClassColor and C_ClassColor.GetClassColor(class)
+    return color and color:WrapTextInColorCode(name) or name
 end
 local function Coins(copper)
     return C_CurrencyInfo.GetCoinTextureString(copper, 12)
@@ -49,9 +49,9 @@ end
 -------------------------------------------------------------------------------
 local realmKey, me
 local function All()
-    local c = F.Cfg()
-    c.alts = c.alts or {}
-    return c.alts
+    local cfg = F.Cfg()
+    cfg.alts = cfg.alts or {}
+    return cfg.alts
 end
 local function Realm()
     realmKey = realmKey or ((GetRealmName() or "?") .. "-" .. (UnitFactionGroup("player") or ""))

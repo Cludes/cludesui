@@ -160,8 +160,8 @@ local function OutcomeColor(statusText)
     if historyCfg.barColorUseAccent then
         return GetAccentRGB()
     end
-    local c = historyCfg.barColor
-    return c and c.r or 0.298, c and c.g or 0.565, c and c.b or 0.494
+    local color = historyCfg.barColor
+    return color and color.r or 0.298, color and color.g or 0.565, color and color.b or 0.494
 end
 
 -- Resolve spell override (base -> active override) for correct name/icon

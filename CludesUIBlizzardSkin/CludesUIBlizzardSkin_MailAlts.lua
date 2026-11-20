@@ -276,12 +276,12 @@ local function RowEnter(self)
     if type(e) ~= "table" then
         return
     end
-    local c = CUI.GetClassColor(e.class)
+    local color = CUI.GetClassColor(e.class)
     local head = e.name
     if self._foreign then
         head = head .. " - " .. (e.realm or e.realmKey)
     end
-    local textValue = CUI.HexColor(c.r, c.g, c.b) .. head .. "|r\n" .. Describe(e)
+    local textValue = CUI.HexColor(color.r, color.g, color.b) .. head .. "|r\n" .. Describe(e)
     if self._limited then
         textValue = textValue .. "\n" .. CludesUI.L("Only Warbound items can be mailed to this character.")
     end
@@ -480,9 +480,9 @@ Paint = function()
         -- Mail addresses another realm's character as "Name-Realm".
         region._target = foreign and (e.name .. "-" .. e.realmKey) or e.name
         DressIcon(region._icon, e.class)
-        local c = CUI.GetClassColor(e.class)
+        local color = CUI.GetClassColor(e.class)
         region._name:SetText(foreign and (e.name .. FOREIGN_SERVER_LABEL) or e.name)
-        region._name:SetTextColor(c.r, c.g, c.b)
+        region._name:SetTextColor(color.r, color.g, color.b)
         region._lvl:SetText(e.level or "")
         region:SetAlpha(limited and LIMITED_ALPHA or 1)
         region:Show()

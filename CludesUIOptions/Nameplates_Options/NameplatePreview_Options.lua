@@ -446,8 +446,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
         end
         local red, green, blue = 1, 1, 1
         if style ~= "blizzard" then
-            local c = (DB() and DB().absorbColor) or defaultSet.absorbColor or { r = 1, g = 1, b = 1 }
-            red, green, blue = c.r, c.g, c.b
+            local color = (DB() and DB().absorbColor) or defaultSet.absorbColor or { r = 1, g = 1, b = 1 }
+            red, green, blue = color.r, color.g, color.b
         end
         for _, bar in ipairs({ previewAbsorb.absorb, previewAbsorb.absorbForward }) do
             bar:SetStatusBarTexture(texture)
@@ -2802,7 +2802,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 local key = (i == 1) and "textSlotBottomLeft" or "textSlotBottomRight"
                 local el = (i == 1) and slotBL or slotBR
                 local corner = (i == 1) and "LEFT" or "RIGHT"
-                local c = glowPreview.slotColor(key)
+                local color = glowPreview.slotColor(key)
                 local sz = DBVal(key .. "Size") or defaultSet[key .. "Size"]
                 local bx, byo = DBVal(key .. "XOffset") or 0, by + (DBVal(key .. "YOffset") or 0)
                 if mod.IsNameElement(el) then
@@ -2814,13 +2814,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         bx,
                         byo,
                         sz,
-                        c.r,
-                        c.g,
-                        c.b,
+                        color.r,
+                        color.g,
+                        color.b,
                         key
                     )
                 elseif el ~= "none" then
-                    PlaceHealthInBar(el, "BOTTOM" .. corner, "TOP" .. corner, bx, byo, sz, c.r, c.g, c.b, key)
+                    PlaceHealthInBar(el, "BOTTOM" .. corner, "TOP" .. corner, bx, byo, sz, color.r, color.g, color.b, key)
                 end
                 if el ~= "none" then
                     ext = math.max(ext, sz + 2 - (DBVal(key .. "YOffset") or 0))
@@ -2836,7 +2836,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 local key = (i == 1) and "textSlotTopLeft" or "textSlotTopRight"
                 local el = DBVal(key) or defaultSet[key]
                 local corner = (i == 1) and "LEFT" or "RIGHT"
-                local c = glowPreview.slotColor(key)
+                local color = glowPreview.slotColor(key)
                 local sz = DBVal(key .. "Size") or defaultSet[key .. "Size"]
                 local tx = DBVal(key .. "XOffset") or 0
                 local ty = 4 + nameYOff + cpPush + (DBVal(key .. "YOffset") or 0)
@@ -2849,13 +2849,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         tx,
                         ty,
                         sz,
-                        c.r,
-                        c.g,
-                        c.b,
+                        color.r,
+                        color.g,
+                        color.b,
                         key
                     )
                 elseif el ~= "none" then
-                    PlaceHealthInBar(el, "TOP" .. corner, "BOTTOM" .. corner, tx, ty, sz, c.r, c.g, c.b, key)
+                    PlaceHealthInBar(el, "TOP" .. corner, "BOTTOM" .. corner, tx, ty, sz, color.r, color.g, color.b, key)
                 end
             end
         end

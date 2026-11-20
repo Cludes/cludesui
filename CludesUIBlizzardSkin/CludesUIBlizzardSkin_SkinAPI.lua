@@ -96,8 +96,8 @@ end
 
 -- Live accent color (r, g, b). Prefer OnLooksChanged over caching this.
 function base.GetAccentColor()
-    local c = CUI.CLUDES_GREEN or {}
-    return c.r or 0.298, c.g or 0.788, c.b or 0.941
+    local color = CUI.CLUDES_GREEN or {}
+    return color.r or 0.298, color.g or 0.788, color.b or 0.941
 end
 
 -- House panel fill (r, g, b, a) for custom elements that should match.

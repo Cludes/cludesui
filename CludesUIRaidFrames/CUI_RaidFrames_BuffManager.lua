@@ -1454,33 +1454,33 @@ function mod.BM_ApplyPreviewIndicators(f, index, s)
                         local wantShow = isSelected or mod._bmAllIndicatorsVisible
                         if wantShow then
                             if indicatorType == "healthcolor" and f._bmHCOverlay then
-                                local c = indicator.color or { r = 0, g = 1, b = 0 }
+                                local color = indicator.color or { r = 0, g = 1, b = 0 }
                                 mod.RF_TintOverBarFill(
                                     f._bmHCOverlay,
                                     f._bmHCBar,
-                                    c.r,
-                                    c.g,
-                                    c.b,
+                                    color.r,
+                                    color.g,
+                                    color.b,
                                     (indicator.opacity or 100) / 100
                                 )
                                 f._bmHCOverlay:Show()
                             elseif indicatorType == "bgcolor" and f._bmBGOverlay then
-                                local c = indicator.color or { r = 0, g = 1, b = 0 }
+                                local color = indicator.color or { r = 0, g = 1, b = 0 }
                                 mod.RF_TexBgTint(
                                     f._bmBGOverlay,
                                     mod.RF_TexBgPath(s),
                                     mod.RF_IsVerticalFill(s)
                                 )
-                                f._bmBGOverlay:SetColorTexture(c.r, c.g, c.b, (indicator.opacity or 100) / 100)
+                                f._bmBGOverlay:SetColorTexture(color.r, color.g, color.b, (indicator.opacity or 100) / 100)
                                 f._bmBGOverlay:Show()
                             elseif indicatorType == "border" and f._bmEffectBorder and Pix then
-                                local c = indicator.color or { r = 0, g = 1, b = 0 }
+                                local color = indicator.color or { r = 0, g = 1, b = 0 }
                                 ApplyEffectBorder(
                                     f._bmEffectBorder,
                                     indicator,
-                                    c.r,
-                                    c.g,
-                                    c.b,
+                                    color.r,
+                                    color.g,
+                                    color.b,
                                     (indicator.borderOpacity or 100) / 100
                                 )
                                 f._bmEffectBorder:Show()
@@ -1497,8 +1497,8 @@ function mod.BM_ApplyPreviewIndicators(f, index, s)
                             if barFrame then
                                 BM_ApplyBarLevel(barFrame, indicator, pvBaseLvl)
                                 barFrame:SetReverseFill(indicator.reverseFill or false)
-                                local c = indicator.color or { r = 0, g = 1, b = 0 }
-                                barFrame:SetStatusBarColor(c.r, c.g, c.b, (indicator.barColorOpacity or 100) / 100)
+                                local color = indicator.color or { r = 0, g = 1, b = 0 }
+                                barFrame:SetStatusBarColor(color.r, color.g, color.b, (indicator.barColorOpacity or 100) / 100)
                                 if barFrame._bg then
                                     local bgc = indicator.barBgColor or { r = 0, g = 0, b = 0 }
                                     barFrame._bg:SetColorTexture(
@@ -1666,12 +1666,12 @@ function mod.BM_ApplyPreviewIndicators(f, index, s)
                                         tile._tex:SetVertexColor(1, 1, 1, pvHideIcon and 0 or 1)
                                     else
                                         -- Per-ability color (preview): this spell's color, then legacy ind.color, then default.
-                                        local c = (indicator.spellColors and indicator.spellColors[spellRef])
+                                        local color = (indicator.spellColors and indicator.spellColors[spellRef])
                                             or indicator.color
                                             or { r = 0, g = 1, b = 0 }
                                         -- Reset vertex first (as live): a reused icon frame can carry a faded tint that blanks it.
                                         tile._tex:SetVertexColor(1, 1, 1, 1)
-                                        tile._tex:SetColorTexture(c.r, c.g, c.b, 1)
+                                        tile._tex:SetColorTexture(color.r, color.g, color.b, 1)
                                         tile._tex:SetTexCoord(0, 1, 0, 1)
                                     end
                                     -- Fixed preview stacks: Blistering Scales 8, Lifebloom 2
@@ -1758,7 +1758,7 @@ function mod.BM_ApplyPreviewIndicators(f, index, s)
                                             and not pvHideIcon
                                             and not CludesUI.IS_FOREVER
                                         if pandemicPreview then
-                                            local c = indicator.pandemicBorderColor or { r = 1, g = 0.2, b = 0.2 }
+                                            local color = indicator.pandemicBorderColor or { r = 1, g = 0.2, b = 0.2 }
                                             if
                                                 indicator.pandemicBorderTextured == true
                                                 and border
@@ -1767,10 +1767,10 @@ function mod.BM_ApplyPreviewIndicators(f, index, s)
                                                 and border.texture ~= ""
                                                 and CludesUI.ResolveBorderTexture(border.texture)
                                             then
-                                                border[1], border[2], border[3], border[4] = c.r, c.g, c.b, 1
+                                                border[1], border[2], border[3], border[4] = color.r, color.g, color.b, 1
                                             else
                                                 border =
-                                                    { c.r, c.g, c.b, 1, size = indicator.pandemicBorderWidth or 2 }
+                                                    { color.r, color.g, color.b, 1, size = indicator.pandemicBorderWidth or 2 }
                                             end
                                         end
                                         mod.RFC_ApplyAuraBorder(
@@ -2247,8 +2247,8 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
         tnb._cuiRoleIcon = false
         mod.RF_PlaceTopNameText(tnbText, tnb, s)
         if (s.topNameBarTextColorMode or "class") == "custom" then
-            local c = s.topNameBarTextColor or { r = 1, g = 1, b = 1 }
-            tnbText:SetTextColor(c.r, c.g, c.b)
+            local color = s.topNameBarTextColor or { r = 1, g = 1, b = 1 }
+            tnbText:SetTextColor(color.r, color.g, color.b)
         elseif cc then
             tnbText:SetTextColor(cc.r, cc.g, cc.b)
         else
@@ -4175,8 +4175,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     region,
                     thRow:GetFrameLevel() + 3,
                     function()
-                        local c = indicator.thresholdColor or { r = 1, g = 0.2, b = 0.2 }
-                        return c.r, c.g, c.b
+                        local color = indicator.thresholdColor or { r = 1, g = 0.2, b = 0.2 }
+                        return color.r, color.g, color.b
                     end,
                     function(red, green, blue)
                         indicator.thresholdColor = { r = red, g = green, b = blue }
@@ -4679,8 +4679,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 })
 
                 local colorSwatch = CludesUI.BuildColorSwatch(region, durRow:GetFrameLevel() + 3, function()
-                    local c = indicator.durationTextColor or { r = 1, g = 1, b = 1 }
-                    return c.r, c.g, c.b, 1
+                    local color = indicator.durationTextColor or { r = 1, g = 1, b = 1 }
+                    return color.r, color.g, color.b, 1
                 end, function(red, green, blue)
                     indicator.durationTextColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
@@ -4746,8 +4746,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
             do
                 local region = durRow._rightRegion
                 local colorSwatch = CludesUI.BuildColorSwatch(region, durRow:GetFrameLevel() + 3, function()
-                    local c = indicator.stacksTextColor or { r = 1, g = 1, b = 1 }
-                    return c.r, c.g, c.b, 1
+                    local color = indicator.stacksTextColor or { r = 1, g = 1, b = 1 }
+                    return color.r, color.g, color.b, 1
                 end, function(red, green, blue)
                     indicator.stacksTextColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
@@ -4809,8 +4809,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 for _, spellRef in ipairs(indicator.spells or {}) do
                     local mySid = spellRef
                     local colorSwatch = CludesUI.BuildColorSwatch(region, extraRow:GetFrameLevel() + 3, function()
-                        local c = (indicator.spellColors and indicator.spellColors[mySid]) or indicator.color or DEFAULT_SQ
-                        return c.r, c.g, c.b, 1
+                        local color = (indicator.spellColors and indicator.spellColors[mySid]) or indicator.color or DEFAULT_SQ
+                        return color.r, color.g, color.b, 1
                     end, function(red, green, blue)
                         if not indicator.spellColors then
                             indicator.spellColors = {}
@@ -4854,10 +4854,10 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             region,
                             extraRow:GetFrameLevel() + 3,
                             function()
-                                local c = (indicator.filterColors and indicator.filterColors[myFid])
+                                local color = (indicator.filterColors and indicator.filterColors[myFid])
                                     or indicator.color
                                     or DEFAULT_SQ
-                                return c.r, c.g, c.b, 1
+                                return color.r, color.g, color.b, 1
                             end,
                             function(red, green, blue)
                                 if not indicator.filterColors then
@@ -4970,8 +4970,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     {
                         tooltip = "Pandemic Border Color",
                         getValue = function()
-                            local c = indicator.pandemicBorderColor or { r = 1, g = 0.2, b = 0.2 }
-                            return c.r, c.g, c.b, 1
+                            local color = indicator.pandemicBorderColor or { r = 1, g = 0.2, b = 0.2 }
+                            return color.r, color.g, color.b, 1
                         end,
                         setValue = function(red, green, blue)
                             indicator.pandemicBorderColor = { r = red, g = green, b = blue }
@@ -5207,8 +5207,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         region,
                         barBgRow:GetFrameLevel() + 3,
                         function()
-                            local c = indicator.color or { r = 0x0C / 255, g = 0xD2 / 255, b = 0x9D / 255 }
-                            return c.r, c.g, c.b, 1
+                            local color = indicator.color or { r = 0x0C / 255, g = 0xD2 / 255, b = 0x9D / 255 }
+                            return color.r, color.g, color.b, 1
                         end,
                         function(red, green, blue)
                             indicator.color = { r = red, g = green, b = blue }
@@ -5226,8 +5226,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         region,
                         barBgRow:GetFrameLevel() + 3,
                         function()
-                            local c = indicator.barBgColor or { r = 0, g = 0, b = 0 }
-                            return c.r, c.g, c.b, 1
+                            local color = indicator.barBgColor or { r = 0, g = 0, b = 0 }
+                            return color.r, color.g, color.b, 1
                         end,
                         function(red, green, blue)
                             indicator.barBgColor = { r = red, g = green, b = blue }
@@ -5467,8 +5467,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         region,
                         bdrColorRow:GetFrameLevel() + 3,
                         function()
-                            local c = indicator.color or { r = ac.r, g = ac.g, b = ac.b }
-                            return c.r, c.g, c.b, 1
+                            local color = indicator.color or { r = ac.r, g = ac.g, b = ac.b }
+                            return color.r, color.g, color.b, 1
                         end,
                         function(red, green, blue)
                             indicator.color = { r = red, g = green, b = blue }
@@ -5526,8 +5526,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     text = "Color",
                     hasAlpha = false,
                     getValue = function()
-                        local c = indicator.color or { r = 0x0C / 255, g = 0xD2 / 255, b = 0x9D / 255 }
-                        return c.r, c.g, c.b
+                        local color = indicator.color or { r = 0x0C / 255, g = 0xD2 / 255, b = 0x9D / 255 }
+                        return color.r, color.g, color.b
                     end,
                     setValue = function(red, green, blue)
                         indicator.color = { r = red, g = green, b = blue }

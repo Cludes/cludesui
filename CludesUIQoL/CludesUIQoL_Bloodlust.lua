@@ -133,9 +133,9 @@ local function RP(key)
 end
 
 local function RP_color()
-    local c = P() and P().readyColor
-    if c then
-        return c.r or 1, c.g or 1, c.b or 1
+    local color = P() and P().readyColor
+    if color then
+        return color.r or 1, color.g or 1, color.b or 1
     end
     return 1, 1, 1
 end
@@ -176,9 +176,9 @@ local function _resolveBorderColor()
             return RAID_CLASS_COLORS[classTok].r, RAID_CLASS_COLORS[classTok].g, RAID_CLASS_COLORS[classTok].b, 1
         end
     end
-    local c = EP_borderColor()
-    if c then
-        return c.r or 0, c.g or 0, c.b or 0, c.a or 1
+    local color = EP_borderColor()
+    if color then
+        return color.r or 0, color.g or 0, color.b or 0, color.a or 1
     end
     return 0, 0, 0, 1
 end

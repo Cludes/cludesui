@@ -411,10 +411,10 @@ end
 -- textured style but Pixels seeds a white border and the highlight defaults
 -- to white. Such a highlight draws gold instead (white on a gold border).
 function mod.RF_VisibleHighlight(s, red, green, blue)
-    local c = s.borderColor
+    local color = s.borderColor
     local br, backdrop, bb = 0, 0, 0
-    if c then
-        br, backdrop, bb = c.r, c.g, c.b
+    if color then
+        br, backdrop, bb = color.r, color.g, color.b
     end
     if math.abs(red - br) + math.abs(green - backdrop) + math.abs(blue - bb) >= 0.15 then
         return red, green, blue
@@ -540,8 +540,8 @@ function mod.RF_ApplyPowerBorderArt(owner, s, force, preview, nameBar)
     owner._powerArtEdge = (nameBar and not s.topNameBarBottom) and "BOTTOM" or "TOP"
     owner._powerArtSize = size
     owner._powerArtPx = CludesUI.BorderPx(s.borderSizePx, size, key)
-    local c = s.borderColor
-    owner._powerArtR, owner._powerArtG, owner._powerArtB = c and c.r or 0, c and c.g or 0, c and c.b or 0
+    local color = s.borderColor
+    owner._powerArtR, owner._powerArtG, owner._powerArtB = color and color.r or 0, color and color.g or 0, color and color.b or 0
     owner._powerArtAlpha = s.borderAlpha or 1
     owner._powerArtOffset, owner._powerArtOffsetY = s.borderTextureOffset, s.borderTextureOffsetY
     owner._powerArtShiftX, owner._powerArtShiftY = s.borderTextureShiftX, s.borderTextureShiftY
@@ -1164,13 +1164,13 @@ local function StyleButton(btnFrame)
         local red, green, blue, a
         local raised, hlSize, hlPx = false, nil, nil
         if skinData._hovered and s.hoverBorderEnabled ~= false then
-            local c = s.hoverBorderColor or { r = 1, g = 1, b = 1 }
-            red, green, blue, a = c.r, c.g, c.b, s.hoverBorderAlpha or 1
+            local color = s.hoverBorderColor or { r = 1, g = 1, b = 1 }
+            red, green, blue, a = color.r, color.g, color.b, s.hoverBorderAlpha or 1
             raised, hlSize = true, s.hoverBorderSize or 1
             hlPx = CludesUI.BorderPx(s.hoverBorderSizePx, hlSize, s.borderTexture or "solid")
         elseif skinData._isTarget and s.targetBorderEnabled ~= false then
-            local c = s.targetBorderColor or { r = 1, g = 1, b = 1 }
-            red, green, blue, a = c.r, c.g, c.b, s.targetBorderAlpha or 1
+            local color = s.targetBorderColor or { r = 1, g = 1, b = 1 }
+            red, green, blue, a = color.r, color.g, color.b, s.targetBorderAlpha or 1
             raised, hlSize = true, s.targetBorderSize or 1
             hlPx = CludesUI.BorderPx(s.targetBorderSizePx, hlSize, s.borderTexture or "solid")
         elseif skinData._aggroBdr and s.threatCustomBorder == true and mod.RF_CustomBorderOn(s) then
@@ -1180,8 +1180,8 @@ local function StyleButton(btnFrame)
             red, green, blue, a = 1, 0, 0, 1
             raised = true
         else
-            local c = s.borderColor or { r = 0, g = 0, b = 0 }
-            red, green, blue, a = c.r, c.g, c.b, s.borderAlpha or 1
+            local color = s.borderColor or { r = 0, g = 0, b = 0 }
+            red, green, blue, a = color.r, color.g, color.b, s.borderAlpha or 1
         end
         ApplyBorderLevel(raised, s)
         if (s.borderSize or 1) <= 0 then

@@ -223,8 +223,8 @@ CludesUI.AtOptionsLogin(function()
             return sw
         end
         local accent = AddModeSwatch(right._control, "accent", "Accent Color", function()
-            local c = CludesUI.CLUDES_GREEN
-            return c.r, c.g, c.b, 1
+            local color = CludesUI.CLUDES_GREEN
+            return color.r, color.g, color.b, 1
         end, false)
         local class = AddModeSwatch(accent, "class", "Class Color", function()
             local _, k = UnitClass("player")
@@ -232,8 +232,8 @@ CludesUI.AtOptionsLogin(function()
             return c.r, c.g, c.b, 1
         end, false)
         local last = AddModeSwatch(class, "custom", "Custom Color", function()
-            local c = CludesUIDB[prefixText .. "BorderColor"] or { r = 1, g = 1, b = 1 }
-            return c.r, c.g, c.b, CludesUIDB[prefixText .. "BorderOpacity"] or CludesUI.RESKIN.BRD_ALPHA
+            local color = CludesUIDB[prefixText .. "BorderColor"] or { r = 1, g = 1, b = 1 }
+            return color.r, color.g, color.b, CludesUIDB[prefixText .. "BorderOpacity"] or CludesUI.RESKIN.BRD_ALPHA
         end, true)
         local q = options and options.quality
         if q then
@@ -508,8 +508,8 @@ CludesUI.AtOptionsLogin(function()
             hasAlpha = true,
             disabled = popupOff,
             getValue = function()
-                local c = CludesUIDB.popupMenuButtonBackgroundColor or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
-                return c.r, c.g, c.b, c.a
+                local color = CludesUIDB.popupMenuButtonBackgroundColor or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
+                return color.r, color.g, color.b, color.a
             end,
             setValue = function(red, green, blue, a)
                 CludesUIDB.popupMenuButtonBackgroundColor = { r = red, g = green, b = blue, a = a }
@@ -545,8 +545,8 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Accent Color",
                     hasAlpha = false,
                     getValue = function()
-                        local c = CludesUI.CLUDES_GREEN
-                        return c.r, c.g, c.b
+                        local color = CludesUI.CLUDES_GREEN
+                        return color.r, color.g, color.b
                     end,
                     setValue = function() end,
                     onClick = function()
@@ -564,8 +564,8 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Custom Color",
                     hasAlpha = false,
                     getValue = function()
-                        local c = CludesUIDB.popupMenuButtonTextColor or { r = 1, g = 1, b = 1 }
-                        return c.r, c.g, c.b
+                        local color = CludesUIDB.popupMenuButtonTextColor or { r = 1, g = 1, b = 1 }
+                        return color.r, color.g, color.b
                     end,
                     setValue = function(red, green, blue)
                         CludesUIDB.popupMenuButtonTextColorMode = "custom"
@@ -1395,9 +1395,9 @@ CludesUI.AtOptionsLogin(function()
                 {
                     tooltip = "Background Color",
                     getValue = function()
-                        local c = CludesUIDB and CludesUIDB.tooltipBgColor
-                        if c then
-                            return c.r, c.g, c.b, 1
+                        local color = CludesUIDB and CludesUIDB.tooltipBgColor
+                        if color then
+                            return color.r, color.g, color.b, 1
                         end
                         local R = CludesUI.RESKIN
                         return R.BG_R, R.BG_G, R.BG_B, 1
@@ -1710,8 +1710,8 @@ CludesUI.AtOptionsLogin(function()
                 timerRgn,
                 timerRgn:GetFrameLevel() + 5,
                 function()
-                    local c = CludesUIDB and CludesUIDB.queueTimerTextColor
-                    return (c and c.r) or QT.TEXT_R, (c and c.g) or QT.TEXT_G, (c and c.b) or QT.TEXT_B
+                    local color = CludesUIDB and CludesUIDB.queueTimerTextColor
+                    return (color and color.r) or QT.TEXT_R, (color and color.g) or QT.TEXT_G, (color and color.b) or QT.TEXT_B
                 end,
                 function(red, green, blue)
                     Set("queueTimerTextColor", { r = red, g = green, b = blue })
@@ -3396,10 +3396,10 @@ CludesUI.AtOptionsLogin(function()
                     lastRealm = entry.realm
                     itemList[#itemList + 1] = { isHeader = true, label = entry.realm }
                 end
-                local c = CludesUI.GetClassColor(entry.class)
+                local color = CludesUI.GetClassColor(entry.class)
                 itemList[#itemList + 1] = {
                     key = entry.guid,
-                    label = CludesUI.HexColor(c.r, c.g, c.b) .. entry.name .. "|r",
+                    label = CludesUI.HexColor(color.r, color.g, color.b) .. entry.name .. "|r",
                     tooltip = MA.Describe(entry),
                 }
             end
@@ -4559,9 +4559,9 @@ CludesUI.AtOptionsLogin(function()
             local cbg = cardFrame:CreateTexture(nil, "BACKGROUND")
             cbg:SetAllPoints()
             cbg:SetColorTexture(0.121, 0.113, 0.106, 1)
-            local c = titleColors[idx]
+            local color = titleColors[idx]
             local bar = cardFrame:CreateTexture(nil, "ARTWORK")
-            bar:SetColorTexture(c[1], c[2], c[3], isCenter and 0.95 or 0.75)
+            bar:SetColorTexture(color[1], color[2], color[3], isCenter and 0.95 or 0.75)
             bar:SetHeight(8)
             Pix.Point(bar, "TOPLEFT", cardFrame, "TOPLEFT", 1, -1)
             Pix.Point(bar, "TOPRIGHT", cardFrame, "TOPRIGHT", -1, -1)

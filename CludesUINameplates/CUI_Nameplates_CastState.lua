@@ -233,11 +233,11 @@ end
 
 -- Recolor the mouseover highlight on every live plate (enemy + friendly).
 function mod.RefreshHoverEffect()
-    local c = (p and p.hoverColor) or defaultSet.hoverColor
+    local color = (p and p.hoverColor) or defaultSet.hoverColor
     local a = (p and p.hoverAlpha) or defaultSet.hoverAlpha
     for _, backing in pairs(mod.plates) do
         if backing.highlight then
-            backing.highlight:SetColorTexture(c.r, c.g, c.b, a)
+            backing.highlight:SetColorTexture(color.r, color.g, color.b, a)
         end
         if backing == mod._currentMouseoverPlate then
             mod.ShowHoverEffect(backing)
@@ -249,7 +249,7 @@ function mod.RefreshHoverEffect()
     end
     for _, backing in pairs(mod.friendlyPlates or {}) do
         if backing.highlight then
-            backing.highlight:SetColorTexture(c.r, c.g, c.b, a)
+            backing.highlight:SetColorTexture(color.r, color.g, color.b, a)
         end
         if backing == mod._currentMouseoverPlate then
             mod.ShowHoverEffect(backing)

@@ -740,9 +740,9 @@ function CludesUI.ResolveProfileAccent(profileData)
     local accent = profileData and profileData.cuiAccent
     -- 1) per-profile
     if accent and accent.useClass then
-        local c = CludesUI.GetRawClassColor(CludesUI._playerClass)
-        if c then
-            return true, c.r, c.g, c.b
+        local color = CludesUI.GetRawClassColor(CludesUI._playerClass)
+        if color then
+            return true, color.r, color.g, color.b
         end
     end
     if accent and accent.custom then
@@ -751,9 +751,9 @@ function CludesUI.ResolveProfileAccent(profileData)
     end
     -- 2) frozen global root -- ONLY when the profile has no explicit cuiAccent. An explicit per-profile opt-out (useClass=false, no custom yet) must NOT fall through to the global class color; it drops to the global custom/theme terminal below, matching the displayed Custom swatch state.
     if (not accent) and CludesUIDB and CludesUIDB.useClassAccentColor then
-        local c = CludesUI.GetRawClassColor(CludesUI._playerClass)
-        if c then
-            return true, c.r, c.g, c.b
+        local color = CludesUI.GetRawClassColor(CludesUI._playerClass)
+        if color then
+            return true, color.r, color.g, color.b
         end
     end
     local gca = CludesUIDB and CludesUIDB.customAccentColor

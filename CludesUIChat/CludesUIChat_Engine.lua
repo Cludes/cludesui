@@ -687,9 +687,9 @@ local function RosterAdd(unitToken, colors)
     if issecretvalue and issecretvalue(class) then
         return
     end
-    local c = class and colors[class]
-    if c and c.colorStr then
-        ROSTER_LOW[name:lower()] = c.colorStr
+    local color = class and colors[class]
+    if color and color.colorStr then
+        ROSTER_LOW[name:lower()] = color.colorStr
     end
 end
 

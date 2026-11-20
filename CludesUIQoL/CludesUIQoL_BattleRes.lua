@@ -157,9 +157,9 @@ local function _resolveBorderColor(p)
             return RAID_CLASS_COLORS[countText].r, RAID_CLASS_COLORS[countText].g, RAID_CLASS_COLORS[countText].b, 1
         end
     end
-    local c = p.borderColor
-    if c then
-        return c.r or 0, c.g or 0, c.b or 0, c.a or 1
+    local color = p.borderColor
+    if color then
+        return color.r or 0, color.g or 0, color.b or 0, color.a or 1
     end
     return 0, 0, 0, 1
 end

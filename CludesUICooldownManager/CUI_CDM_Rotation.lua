@@ -169,9 +169,9 @@ do
     local function _rotResolveColor(conf)
         local mode = conf and conf.rotationAssistColorMode or "default"
         if mode == "class" then
-            local c = CludesUI.GetClassColor(CludesUI._playerClass)
-            if c then
-                return c.r, c.g, c.b
+            local color = CludesUI.GetClassColor(CludesUI._playerClass)
+            if color then
+                return color.r, color.g, color.b
             end
         elseif mode == "custom" then
             return conf.rotationAssistColorR or 1,

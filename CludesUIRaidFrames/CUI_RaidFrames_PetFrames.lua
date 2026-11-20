@@ -1630,9 +1630,9 @@ do
     -- Shows the spec's pets with the group's top-left at x, y from rel's top-left. s: the settings they
     -- are styled from.
     function mod.PF_ShowPreview(specInfo, src, hostFrame, rel, posX, posY)
-        local c = PF.PvColors(src)
+        local color = PF.PvColors(src)
         for index = 1, specInfo.n do
-            local frame = PF.PvFrame(index, hostFrame, src, specInfo.w, specInfo.h, c, true)
+            local frame = PF.PvFrame(index, hostFrame, src, specInfo.w, specInfo.h, color, true)
             local off = index - 1
             local fx, fy = posX, posY
             if specInfo.grow == "RIGHT" then
@@ -1657,20 +1657,20 @@ do
     -- lastF (the last frame along the growth). s: the settings they are styled from.
     function mod.PF_ShowOwnerPreview(specInfo, src, hostFrame, lastF)
         mod.RF_PreviewPetCompact(nil)
-        local c = PF.PvColors(src)
+        local color = PF.PvColors(src)
         local num = 0
         for index = 1, 5 do
             local owner = mod._partyPvFrames[index]
             if owner and owner:IsShown() then
                 num = num + 1
-                local frame = PF.PvFrame(num, hostFrame, src, specInfo.w, specInfo.h, c)
+                local frame = PF.PvFrame(num, hostFrame, src, specInfo.w, specInfo.h, color)
                 frame:ClearAllPoints()
                 PF.OwnerPoint(frame, owner, specInfo.side, specInfo.gap)
             end
         end
         if specInfo.selfSlot and lastF and num < #PF.PV_PETS then
             num = num + 1
-            local frame = PF.PvFrame(num, hostFrame, src, specInfo.w, specInfo.h, c)
+            local frame = PF.PvFrame(num, hostFrame, src, specInfo.w, specInfo.h, color)
             frame:ClearAllPoints()
             frame:SetPoint(specInfo.sPt, lastF, specInfo.sRp, specInfo.sX, specInfo.sY)
         end

@@ -632,8 +632,8 @@ _quickKeybindState.InitButtons = function()
                                     and ABAR.db.profile.bars
                                     and ABAR.db.profile.bars[bk]
                                 if s and Pix then
-                                    local c = s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
-                                    local cr, cg, callback, ca = c.r, c.g, c.b, c.a or 1
+                                    local color = s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
+                                    local cr, cg, callback, ca = color.r, color.g, color.b, color.a or 1
                                     if s.borderClassColor then
                                         local _, classTok = UnitClass("player")
                                         local cc = classTok and RAID_CLASS_COLORS[classTok]

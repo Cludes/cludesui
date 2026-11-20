@@ -30,9 +30,9 @@ local function CastTextSync(region, label, sizeKey, sizeDefault, colorKey, fitKe
             if fitKey then
                 t[fitKey] = from[fitKey] == true or nil
             end
-            local c = from[colorKey]
-            if c then
-                t[colorKey] = { r = c.r, g = c.g, b = c.b }
+            local color = from[colorKey]
+            if color then
+                t[colorKey] = { r = color.r, g = color.g, b = color.b }
             end
         end,
         same = function(t, from)
@@ -226,7 +226,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 or "Apply Show Cast Bar and Fill Color to all Frames",
             onClick = function()
                 local value = GetCastbarEnabled(optionState.selectedUnit)
-                local c = UNIT_DB_MAP[optionState.selectedUnit]().castbarFillColor
+                local color = UNIT_DB_MAP[optionState.selectedUnit]().castbarFillColor
                 local readyC = isKickUnit
                     and UNIT_DB_MAP[optionState.selectedUnit]().castbarInterruptReadyColor
                 local unintC = isKickUnit
@@ -234,8 +234,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 local keyList = isKickUnit and { "target", "focus" } or GROUP_UNIT_ORDER
                 for _, key in ipairs(keyList) do
                     SetCastbarEnabled(key, value)
-                    if c then
-                        UNIT_DB_MAP[key]().castbarFillColor = { r = c.r, g = c.g, b = c.b }
+                    if color then
+                        UNIT_DB_MAP[key]().castbarFillColor = { r = color.r, g = color.g, b = color.b }
                     end
                     if readyC then
                         UNIT_DB_MAP[key]().castbarInterruptReadyColor =
@@ -251,7 +251,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             end,
             isSynced = function()
                 local value = GetCastbarEnabled(optionState.selectedUnit)
-                local c = UNIT_DB_MAP[optionState.selectedUnit]().castbarFillColor
+                local color = UNIT_DB_MAP[optionState.selectedUnit]().castbarFillColor
                 local readyC = isKickUnit
                     and UNIT_DB_MAP[optionState.selectedUnit]().castbarInterruptReadyColor
                 local unintC = isKickUnit
@@ -262,11 +262,11 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         return false
                     end
                     local kc = UNIT_DB_MAP[key]().castbarFillColor
-                    if c and kc then
-                        if kc.r ~= c.r or kc.g ~= c.g or kc.b ~= c.b then
+                    if color and kc then
+                        if kc.r ~= color.r or kc.g ~= color.g or kc.b ~= color.b then
                             return false
                         end
-                    elseif c ~= kc then
+                    elseif color ~= kc then
                         return false
                     end
                     if isKickUnit then
@@ -301,15 +301,15 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 end,
                 onApply = function(checkedKeys)
                     local value = GetCastbarEnabled(optionState.selectedUnit)
-                    local c = UNIT_DB_MAP[optionState.selectedUnit]().castbarFillColor
+                    local color = UNIT_DB_MAP[optionState.selectedUnit]().castbarFillColor
                     local readyC = isKickUnit
                         and UNIT_DB_MAP[optionState.selectedUnit]().castbarInterruptReadyColor
                     local unintC = isKickUnit
                         and UNIT_DB_MAP[optionState.selectedUnit]().castbarUninterruptibleColor
                     for _, key in ipairs(checkedKeys) do
                         SetCastbarEnabled(key, value)
-                        if c then
-                            UNIT_DB_MAP[key]().castbarFillColor = { r = c.r, g = c.g, b = c.b }
+                        if color then
+                            UNIT_DB_MAP[key]().castbarFillColor = { r = color.r, g = color.g, b = color.b }
                         end
                         if readyC and (key == "target" or key == "focus") then
                             UNIT_DB_MAP[key]().castbarInterruptReadyColor =
@@ -449,9 +449,9 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
         local leftRegion = sharedCastRow1._leftRegion
         local function AddCastColorSwatch(tooltip, colorKey, fallback, disabledFn)
             local sw, updateSw = CludesUI.BuildColorSwatch(leftRegion, leftRegion:GetFrameLevel() + 5, function()
-                local c = SGetSupported(colorKey)
-                c = c or fallback
-                return c.r, c.g, c.b, 1
+                local color = SGetSupported(colorKey)
+                color = color or fallback
+                return color.r, color.g, color.b, 1
             end, function(red, green, blue)
                 SSetSupported(colorKey, { r = red, g = green, b = blue })
                 ReloadAndUpdate()
@@ -837,9 +837,9 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             local region = castRow2._rightRegion
             local bgSwGet = function()
-                local c = UNIT_DB_MAP[optionState.selectedUnit]().castBgColor
-                if c then
-                    return c.r, c.g, c.b
+                local color = UNIT_DB_MAP[optionState.selectedUnit]().castBgColor
+                if color then
+                    return color.r, color.g, color.b
                 end
                 return 0, 0, 0
             end
@@ -1018,9 +1018,9 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             local snRgn = castTextRow._leftRegion
             local snSw = CludesUI.BuildColorSwatch(snRgn, snRgn:GetFrameLevel() + 5, function()
-                local c = SGetSupported("castSpellNameColor")
-                c = c or { r = 1, g = 1, b = 1 }
-                return c.r, c.g, c.b, 1
+                local color = SGetSupported("castSpellNameColor")
+                color = color or { r = 1, g = 1, b = 1 }
+                return color.r, color.g, color.b, 1
             end, function(red, green, blue)
                 UNIT_DB_MAP[optionState.selectedUnit]().castSpellNameColor = { r = red, g = green, b = blue }
                 ReloadAndUpdate()
@@ -1082,9 +1082,9 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             local dtRgn = castTextRow._rightRegion
             local dtSw = CludesUI.BuildColorSwatch(dtRgn, dtRgn:GetFrameLevel() + 5, function()
-                local c = SGetSupported("castDurationColor")
-                c = c or { r = 1, g = 1, b = 1 }
-                return c.r, c.g, c.b, 1
+                local color = SGetSupported("castDurationColor")
+                color = color or { r = 1, g = 1, b = 1 }
+                return color.r, color.g, color.b, 1
             end, function(red, green, blue)
                 UNIT_DB_MAP[optionState.selectedUnit]().castDurationColor = { r = red, g = green, b = blue }
                 ReloadAndUpdate()
@@ -1196,9 +1196,9 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             local trgRgn = castTargetRow._leftRegion
             local trgSw = CludesUI.BuildColorSwatch(trgRgn, trgRgn:GetFrameLevel() + 5, function()
-                local c = SGetSupported("castSpellTargetColor")
-                c = c or { r = 1, g = 1, b = 1 }
-                return c.r, c.g, c.b, 1
+                local color = SGetSupported("castSpellTargetColor")
+                color = color or { r = 1, g = 1, b = 1 }
+                return color.r, color.g, color.b, 1
             end, function(red, green, blue)
                 UNIT_DB_MAP[optionState.selectedUnit]().castSpellTargetColor = { r = red, g = green, b = blue }
                 ReloadAndUpdate()
@@ -3253,9 +3253,9 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                     tooltip = "Magic",
                     hasAlpha = false,
                     getValue = function()
-                        local c = saved.profile.dispelColorMagic
-                        if c then
-                            return c.r, c.g, c.b
+                        local color = saved.profile.dispelColorMagic
+                        if color then
+                            return color.r, color.g, color.b
                         end
                         return 0.349, 0.475, 1.0
                     end,
@@ -3268,9 +3268,9 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                     tooltip = "Curse",
                     hasAlpha = false,
                     getValue = function()
-                        local c = saved.profile.dispelColorCurse
-                        if c then
-                            return c.r, c.g, c.b
+                        local color = saved.profile.dispelColorCurse
+                        if color then
+                            return color.r, color.g, color.b
                         end
                         return 0.636, 0.0, 0.64
                     end,
@@ -3283,9 +3283,9 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                     tooltip = "Disease",
                     hasAlpha = false,
                     getValue = function()
-                        local c = saved.profile.dispelColorDisease
-                        if c then
-                            return c.r, c.g, c.b
+                        local color = saved.profile.dispelColorDisease
+                        if color then
+                            return color.r, color.g, color.b
                         end
                         return 0.671, 0.384, 0.098
                     end,
@@ -3298,9 +3298,9 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                     tooltip = "Poison",
                     hasAlpha = false,
                     getValue = function()
-                        local c = saved.profile.dispelColorPoison
-                        if c then
-                            return c.r, c.g, c.b
+                        local color = saved.profile.dispelColorPoison
+                        if color then
+                            return color.r, color.g, color.b
                         end
                         return 0.0, 0.706, 0.286
                     end,
@@ -3313,9 +3313,9 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                     tooltip = "Bleed",
                     hasAlpha = false,
                     getValue = function()
-                        local c = saved.profile.dispelColorBleed
-                        if c then
-                            return c.r, c.g, c.b
+                        local color = saved.profile.dispelColorBleed
+                        if color then
+                            return color.r, color.g, color.b
                         end
                         return 0.75, 0.15, 0.15
                     end,

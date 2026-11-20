@@ -565,10 +565,10 @@ end
 function mod.XPBarBackground(s)
     local fitWidth = mod.XPArtFit(s)
     local art = fitWidth and not fitWidth.ring
-    local c = s.barBgColor
+    local color = s.barBgColor
     local red, green, blue
-    if c then
-        red, green, blue = c.r or 0, c.g or 0, c.b or 0
+    if color then
+        red, green, blue = color.r or 0, color.g or 0, color.b or 0
     elseif art then
         red, green, blue = 1, 1, 1
     else
@@ -723,20 +723,20 @@ function mod.AB_DataBarDividers(holderFrame, wid, hgt, orient, s)
         local solidExt = fitWidth and fitWidth.solidExt * onePx or 0
         local solidFull = full + 2 * solidExt
         local solidC0 = c0 - solidExt
-        local c = s.tick5Color
-        local r5, g5, b5 = c and c.r or 220 / 255, c and c.g or 167 / 255, c and c.b or 127 / 255
-        local a5 = c and c.a or 0.9
-        c = s.tick10Color
-        local r10, g10, b10 = c and c.r or 1, c and c.g or 1, c and c.b or 1
-        local a10 = c and c.a or 0.9
+        local color = s.tick5Color
+        local r5, g5, b5 = color and color.r or 220 / 255, color and color.g or 167 / 255, color and color.b or 127 / 255
+        local a5 = color and color.a or 0.9
+        color = s.tick10Color
+        local r10, g10, b10 = color and color.r or 1, color and color.g or 1, color and color.b or 1
+        local a10 = color and color.a or 0.9
         local showLbl = s.showDividerText
         local lsz, lflag, lr, lg, lb, lrot, lcos, lsin, lox, loy, across
         if showLbl then
             local pi = math.pi
             lsz = s.dividerTextSize or 8
             lflag = CludesUI.GetFontOutlineFlag("actionBars")
-            c = s.dividerTextColor
-            lr, lg, lb = c and c.r or 1, c and c.g or 1, c and c.b or 1
+            color = s.dividerTextColor
+            lr, lg, lb = color and color.r or 1, color and color.g or 1, color and color.b or 1
             lrot = (isVertical and s.rotateDividerText) and (s.textReadDown and -pi / 2 or pi / 2) or 0
             lcos, lsin = math.cos(lrot), math.sin(lrot)
             local ox, oy = s.dividerTextOffX or 0, s.dividerTextOffY or 0

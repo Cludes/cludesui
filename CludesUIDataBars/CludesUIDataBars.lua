@@ -2233,20 +2233,20 @@ local function ApplyThemeToHost(owner, theme, texKey, showBorder)
     if theme.style == "modern" then
         owner._edbBgAtlas:SetAlpha(0)
         owner._edbBgOverlay:SetAlpha(0)
-        local c = theme.modernColor or {}
+        local color = theme.modernColor or {}
         if texPath then
             -- Tinted by the Modern color; its alpha rides the vertex tint
             -- so Bar Opacity keeps working.
             owner._edbBarTex:SetTexture(texPath)
-            owner._edbBarTex:SetVertexColor(c.r or 0.067, c.g or 0.067, c.b or 0.067, c.a or 0.95)
-            owner._edbBarTex:SetAlpha(c.a or 0.95)
+            owner._edbBarTex:SetVertexColor(color.r or 0.067, color.g or 0.067, color.b or 0.067, color.a or 0.95)
+            owner._edbBarTex:SetAlpha(color.a or 0.95)
             owner._edbModernBg:SetAlpha(0)
         else
             owner._edbBarTex:SetAlpha(0)
-            owner._edbModernBg:SetColorTexture(c.r or 0.067, c.g or 0.067, c.b or 0.067, c.a or 0.95)
+            owner._edbModernBg:SetColorTexture(color.r or 0.067, color.g or 0.067, color.b or 0.067, color.a or 0.95)
             owner._edbModernBg:SetAlpha(1)
         end
-        op = c.a
+        op = color.a
         if op == nil then
             op = 0.95
         end

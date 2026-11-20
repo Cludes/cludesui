@@ -254,13 +254,13 @@ function Alerts.Color(prefixText, dr, dg, saved)
     if DB(prefixText .. "UseClassColor") then
         local _, token = UnitClass("player")
         if token then
-            local c = CUI.GetClassColor(token)
-            return c.r, c.g, c.b
+            local color = CUI.GetClassColor(token)
+            return color.r, color.g, color.b
         end
     end
-    local c = DB(prefixText .. "Color")
-    if c then
-        return c.r, c.g, c.b
+    local color = DB(prefixText .. "Color")
+    if color then
+        return color.r, color.g, color.b
     end
     return dr, dg, saved
 end

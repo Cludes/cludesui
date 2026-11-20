@@ -63,9 +63,9 @@ CludesUI.SpellCostPrediction = SCP
 
 -- Custom color, else Blizzard's mana prediction color, else a light blue.
 function SCP.Color(s)
-    local c = s and s.powerCostColor
-    if c then
-        return c.r, c.g, c.b
+    local color = s and s.powerCostColor
+    if color then
+        return color.r, color.g, color.b
     end
     local b = POWERBAR_PREDICTION_COLOR_MANA
     if b and b.GetRGB then

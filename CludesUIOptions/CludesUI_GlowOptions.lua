@@ -536,8 +536,8 @@ local function ColorRow(desc, off)
                 refreshAlpha = modeAlpha("class"),
                 onClick = pick("class"),
                 getValue = function()
-                    local c = CludesUI.GetClassColor(CludesUI._playerClass)
-                    return c.r, c.g, c.b, 1
+                    local color = CludesUI.GetClassColor(CludesUI._playerClass)
+                    return color.r, color.g, color.b, 1
                 end,
             },
         },
@@ -1202,8 +1202,8 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
         do
             local region = bRow._leftRegion
             local swatch = CludesUI.BuildColorSwatch(region, bRow:GetFrameLevel() + 3, function()
-                local c = e.borderColor or { r = 0, g = 0, b = 0 }
-                return c.r or 0, c.g or 0, c.b or 0, 1
+                local color = e.borderColor or { r = 0, g = 0, b = 0 }
+                return color.r or 0, color.g or 0, color.b or 0, 1
             end, function(red, green, blue)
                 e.borderColor = { r = red, g = green, b = blue }
                 opts.apply()

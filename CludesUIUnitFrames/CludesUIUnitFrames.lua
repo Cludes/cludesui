@@ -1888,8 +1888,8 @@ do
         mod.UF_TexBgTint(backdrop, mod.UF_TexBgCastPath(s, texKey, castBar._blizzCast))
         -- Repaint now: the reload paints this bg before the textures are applied.
         if s and not castBar._blizzCast then
-            local c = s.castBgColor
-            backdrop:SetColorTexture(c and c.r or 0, c and c.g or 0, c and c.b or 0, s.castBgAlpha or 0.5)
+            local color = s.castBgColor
+            backdrop:SetColorTexture(color and color.r or 0, color and color.g or 0, color and color.b or 0, s.castBgAlpha or 0.5)
         end
     end
 end

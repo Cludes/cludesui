@@ -217,11 +217,11 @@ end
 
 local merged = {}
 local function Changes(create)
-    local c = F.Cfg()
-    if create and type(c.changes) ~= "table" then
-        c.changes = {}
+    local cfg = F.Cfg()
+    if create and type(cfg.changes) ~= "table" then
+        cfg.changes = {}
     end
-    return c.changes
+    return cfg.changes
 end
 
 local function For(key)

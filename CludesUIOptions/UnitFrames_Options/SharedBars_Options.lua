@@ -199,9 +199,9 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     return "Gradient"
                 end,
                 getValue = function()
-                    local c = SGet("gradientColor")
-                    if c then
-                        return c.r, c.g, c.b
+                    local color = SGet("gradientColor")
+                    if color then
+                        return color.r, color.g, color.b
                     end
                     return 0.20, 0.20, 0.80
                 end,
@@ -225,9 +225,9 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 disabledTooltip = "Dynamic Color is on -- the fill color comes from the unit's health",
                 rawTooltip = true,
                 getValue = function()
-                    local c = SGet("customFillColor")
-                    if c then
-                        return c.r, c.g, c.b
+                    local color = SGet("customFillColor")
+                    if color then
+                        return color.r, color.g, color.b
                     end
                     return 37 / 255, 193 / 255, 29 / 255
                 end,
@@ -896,9 +896,9 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                     tooltip = "Custom Colored",
                                     hasAlpha = false,
                                     getValue = function()
-                                        local c = SVal("leftTextTargetSepColor", nil)
-                                        if type(c) == "table" then
-                                            return c.r or 1, c.g or 1, c.b or 1
+                                        local color = SVal("leftTextTargetSepColor", nil)
+                                        if type(color) == "table" then
+                                            return color.r or 1, color.g or 1, color.b or 1
                                         end
                                         return 1, 1, 1
                                     end,
@@ -1246,9 +1246,9 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                     tooltip = "Custom Colored",
                                     hasAlpha = false,
                                     getValue = function()
-                                        local c = SVal("rightTextTargetSepColor", nil)
-                                        if type(c) == "table" then
-                                            return c.r or 1, c.g or 1, c.b or 1
+                                        local color = SVal("rightTextTargetSepColor", nil)
+                                        if type(color) == "table" then
+                                            return color.r or 1, color.g or 1, color.b or 1
                                         end
                                         return 1, 1, 1
                                     end,
@@ -1592,9 +1592,9 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                     tooltip = "Custom Colored",
                                     hasAlpha = false,
                                     getValue = function()
-                                        local c = SVal("centerTextTargetSepColor", nil)
-                                        if type(c) == "table" then
-                                            return c.r or 1, c.g or 1, c.b or 1
+                                        local color = SVal("centerTextTargetSepColor", nil)
+                                        if type(color) == "table" then
+                                            return color.r or 1, color.g or 1, color.b or 1
                                         end
                                         return 1, 1, 1
                                     end,
@@ -1932,9 +1932,9 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                     tooltip = "Custom Colored",
                                     hasAlpha = false,
                                     getValue = function()
-                                        local c = SVal("extraTextTargetSepColor", nil)
-                                        if type(c) == "table" then
-                                            return c.r or 1, c.g or 1, c.b or 1
+                                        local color = SVal("extraTextTargetSepColor", nil)
+                                        if type(color) == "table" then
+                                            return color.r or 1, color.g or 1, color.b or 1
                                         end
                                         return 1, 1, 1
                                     end,
@@ -2453,9 +2453,9 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     return "Gradient"
                 end,
                 getValue = function()
-                    local c = SGet("powerGradientColor")
-                    if c then
-                        return c.r, c.g, c.b
+                    local color = SGet("powerGradientColor")
+                    if color then
+                        return color.r, color.g, color.b
                     end
                     return 0.20, 0.20, 0.80
                 end,
@@ -2469,9 +2469,9 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 tooltip = "Custom Colored Fill",
                 hasAlpha = false,
                 getValue = function()
-                    local c = SGet("customPowerFillColor")
-                    if c then
-                        return c.r, c.g, c.b
+                    local color = SGet("customPowerFillColor")
+                    if color then
+                        return color.r, color.g, color.b
                     end
                     return 0, 0, 1
                 end,
@@ -2763,9 +2763,9 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 tooltip = "Custom Text Color",
                 hasAlpha = false,
                 getValue = function()
-                    local c = SGet("powerTextColor")
-                    if c then
-                        return c.r, c.g, c.b
+                    local color = SGet("powerTextColor")
+                    if color then
+                        return color.r, color.g, color.b
                     end
                     return 1, 1, 1
                 end,
@@ -2869,9 +2869,9 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
         mod.UFO_UnitSync(sharedPowerRow4._rightRegion, "Text Color", {
             self = true,
             copy = function(t, from)
-                local c = from.powerTextColor
+                local color = from.powerTextColor
                 t.powerPercentTextPowerColor = from.powerPercentTextPowerColor or false
-                t.powerTextColor = c and { r = c.r, g = c.g, b = c.b } or nil
+                t.powerTextColor = color and { r = color.r, g = color.g, b = color.b } or nil
             end,
             same = function(t, from)
                 return (t.powerPercentTextPowerColor or false) == (from.powerPercentTextPowerColor or false)
@@ -3099,8 +3099,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             rightRegion,
             sharedPowerBorderRow:GetFrameLevel() + 3,
             function()
-                local c = SGet("powerBorderColor") or { r = 0, g = 0, b = 0 }
-                return c.r, c.g, c.b, SVal("powerBorderAlpha", 1)
+                local color = SGet("powerBorderColor") or { r = 0, g = 0, b = 0 }
+                return color.r, color.g, color.b, SVal("powerBorderAlpha", 1)
             end,
             function(red, green, blue, a)
                 UNIT_DB_MAP[optionState.selectedUnit]().powerBorderColor = { r = red, g = green, b = blue }
@@ -3361,12 +3361,12 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                             tooltip = "Custom Text Color",
                             hasAlpha = false,
                             getValue = function()
-                                local c = SVal("foreverFormTextColor", nil)
-                                if c == nil and SVal("foreverFormTextPowerColor", nil) == nil then
-                                    c = SGet("powerTextColor")
+                                local color = SVal("foreverFormTextColor", nil)
+                                if color == nil and SVal("foreverFormTextPowerColor", nil) == nil then
+                                    color = SGet("powerTextColor")
                                 end
-                                if c then
-                                    return c.r, c.g, c.b
+                                if color then
+                                    return color.r, color.g, color.b
                                 end
                                 return 1, 1, 1
                             end,
@@ -3728,9 +3728,9 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                     tooltip = "Custom Colored",
                     hasAlpha = false,
                     getValue = function()
-                        local c = SGetSupported("classPowerCustomColor")
-                        c = c or { r = 1, g = 0.82, b = 0 }
-                        return c.r, c.g, c.b, 1
+                        local color = SGetSupported("classPowerCustomColor")
+                        color = color or { r = 1, g = 0.82, b = 0 }
+                        return color.r, color.g, color.b, 1
                     end,
                     setValue = function(red, green, blue)
                         UNIT_DB_MAP[optionState.selectedUnit]().classPowerCustomColor =
@@ -3788,9 +3788,9 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             local ccRgn = sharedClassResRow._rightRegion
             local emptySwatch = CludesUI.BuildColorSwatch(ccRgn, ccRgn:GetFrameLevel() + 5, function()
-                local c = SGetSupported("classPowerEmptyColor")
-                c = c or { r = 0.2, g = 0.2, b = 0.2, a = 1.0 }
-                return c.r, c.g, c.b, c.a or 1
+                local color = SGetSupported("classPowerEmptyColor")
+                color = color or { r = 0.2, g = 0.2, b = 0.2, a = 1.0 }
+                return color.r, color.g, color.b, color.a or 1
             end, function(red, green, blue, a)
                 UNIT_DB_MAP[optionState.selectedUnit]().classPowerEmptyColor =
                     { r = red, g = green, b = blue, a = a or 1 }
@@ -3997,9 +3997,9 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                 disabledTooltip = "Class Resource must be set to Modern",
                 rawTooltip = true,
                 getValue = function()
-                    local c = SGetSupported("classPowerBgColor")
-                    c = c or { r = 0.082, g = 0.082, b = 0.082, a = 1.0 }
-                    return c.r, c.g, c.b, c.a
+                    local color = SGetSupported("classPowerBgColor")
+                    color = color or { r = 0.082, g = 0.082, b = 0.082, a = 1.0 }
+                    return color.r, color.g, color.b, color.a
                 end,
                 setValue = function(red, green, blue, a)
                     SSetSupported("classPowerBgColor", { r = red, g = green, b = blue, a = a or 1 })
@@ -4026,8 +4026,8 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                 mod.UFO_UnitSync(sharedClassResRow3._rightRegion, "Class Resource Background Color", {
                     self = true,
                     copy = function(t, from)
-                        local c = from.classPowerBgColor
-                        t.classPowerBgColor = c and { r = c.r, g = c.g, b = c.b, a = c.a } or nil
+                        local color = from.classPowerBgColor
+                        t.classPowerBgColor = color and { r = color.r, g = color.g, b = color.b, a = color.a } or nil
                     end,
                     same = function(t, from)
                         local r1, g1, b1, a1 = Bg(t.classPowerBgColor)
@@ -4471,9 +4471,9 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             local region = absorbRow._leftRegion
             local colorSwatch = CludesUI.BuildColorSwatch(region, absorbRow:GetFrameLevel() + 3, function()
-                local c = SGetSupported("absorbColor")
-                if c then
-                    return c.r, c.g, c.b, 1
+                local color = SGetSupported("absorbColor")
+                if color then
+                    return color.r, color.g, color.b, 1
                 end
                 return 1, 1, 1, 1
             end, function(red, green, blue)
@@ -4603,9 +4603,9 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             local region = healAbsorbRow._leftRegion
             local colorSwatch = CludesUI.BuildColorSwatch(region, healAbsorbRow:GetFrameLevel() + 3, function()
-                local c = SGetSupported("healAbsorbColor")
-                if c then
-                    return c.r or 0.8, c.g or 0.15, c.b or 0.15, 1
+                local color = SGetSupported("healAbsorbColor")
+                if color then
+                    return color.r or 0.8, color.g or 0.15, color.b or 0.15, 1
                 end
                 return 0.8, 0.15, 0.15, 1
             end, function(red, green, blue)
@@ -4677,9 +4677,9 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             local region = absorbBarRow._rightRegion
             local colorSwatch = CludesUI.BuildColorSwatch(region, absorbBarRow:GetFrameLevel() + 3, function()
-                local c = SGetSupported("absorbBarColor")
-                if c then
-                    return c.r, c.g, c.b, c.a or 1
+                local color = SGetSupported("absorbBarColor")
+                if color then
+                    return color.r, color.g, color.b, color.a or 1
                 end
                 return 1, 1, 1, 1
             end, function(red, green, blue, a)
@@ -4750,9 +4750,9 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                 region,
                 healAbsorbBarRow:GetFrameLevel() + 3,
                 function()
-                    local c = SGetSupported("healAbsorbBarColor")
-                    if c then
-                        return c.r, c.g, c.b, c.a or 1
+                    local color = SGetSupported("healAbsorbBarColor")
+                    if color then
+                        return color.r, color.g, color.b, color.a or 1
                     end
                     return 200 / 255, 29 / 255, 29 / 255, 1
                 end,
@@ -4828,9 +4828,9 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
             })
             -- Swatch tints the texture; blocked for None and the pre-colored styles.
             local colorSwatch = CludesUI.BuildColorSwatch(region, maxHealthRow:GetFrameLevel() + 3, function()
-                local c = SGetSupported("maxHealthColor")
-                if c then
-                    return c.r or 0.7, c.g or 0.1, c.b or 0.1, 1
+                local color = SGetSupported("maxHealthColor")
+                if color then
+                    return color.r or 0.7, color.g or 0.1, color.b or 0.1, 1
                 end
                 return 0.7, 0.1, 0.1, 1
             end, function(red, green, blue)

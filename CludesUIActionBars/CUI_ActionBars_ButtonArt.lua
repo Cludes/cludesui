@@ -604,8 +604,8 @@ local function MakeButtonSquare(buttonFrame)
             if not pdb or not (cd and cd.SetSwipeColor) then
                 return
             end
-            local c = pdb.cdSwipeColor or { r = 0, g = 0, b = 0 }
-            pcall(cd.SetSwipeColor, cd, c.r or 0, c.g or 0, c.b or 0, (pdb.cdSwipeAlpha or 80) / 100)
+            local color = pdb.cdSwipeColor or { r = 0, g = 0, b = 0 }
+            pcall(cd.SetSwipeColor, cd, color.r or 0, color.g or 0, color.b or 0, (pdb.cdSwipeAlpha or 80) / 100)
         end)
     end
     if buttonFrame.SlotBackground then
@@ -1026,16 +1026,16 @@ local function ApplyShapeToButton(buttonFrame, shapeKey, brdOn, brdR, brdG, brdB
                 or "solid"
             if texKey ~= "solid" then
                 local s = ABAR.db.profile.bars[barId]
-                local c = s and s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
+                local color = s and s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
                 local sz, px = ResolveBorderThickness(s)
                 local thKey = s.borderThickness or "thin"
                 CludesUI.ApplyBorderStyle(
                     buttonFrame,
                     sz,
-                    c.r,
-                    c.g,
-                    c.b,
-                    c.a or 1,
+                    color.r,
+                    color.g,
+                    color.b,
+                    color.a or 1,
                     texKey,
                     s.borderTextureOffset,
                     s.borderTextureOffsetY,

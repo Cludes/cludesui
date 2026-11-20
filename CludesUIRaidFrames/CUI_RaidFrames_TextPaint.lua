@@ -259,9 +259,9 @@ local function TextColor(e, unitToken, s, pr, pg, pb)
         end
         return GetPowerColor(unitToken)
     else -- "custom"
-        local c = s[e.k.Color]
-        if c then
-            return c.r, c.g, c.b
+        local color = s[e.k.Color]
+        if color then
+            return color.r, color.g, color.b
         end
     end
     return P.r or 1, P.g or 1, P.b or 1

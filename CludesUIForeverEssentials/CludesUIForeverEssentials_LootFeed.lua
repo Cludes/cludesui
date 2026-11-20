@@ -176,9 +176,9 @@ local function AnchorHeight(num)
 end
 
 local function Accent()
-    local c = CludesUI.CLUDES_GREEN
-    if c then
-        return c.r, c.g, c.b
+    local color = CludesUI.CLUDES_GREEN
+    if color then
+        return color.r, color.g, color.b
     end
     return 0.30, 0.79, 0.94
 end

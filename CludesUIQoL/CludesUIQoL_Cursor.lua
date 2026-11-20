@@ -763,11 +763,11 @@ UpdateVisibility = function()
 
     -- Cast circle instance-only / combat-only check
     if castRoot then
-        local c = Cast_DB()
-        if c.enabled then
+        local cfg = Cast_DB()
+        if cfg.enabled then
             if
-                (c.instanceOnly and not InRealInstancedContent())
-                or (c.combatOnly and not InCombatLockdown())
+                (cfg.instanceOnly and not InRealInstancedContent())
+                or (cfg.combatOnly and not InCombatLockdown())
             then
                 castRoot:Hide()
                 castRoot:SetScript("OnUpdate", nil)
@@ -776,7 +776,7 @@ UpdateVisibility = function()
                 -- Re-apply cursor tracking since cursor visibility may have changed.
                 -- Skip while unlocked: the mover owns position, and re-arming this
                 -- would fight it (see the same gate in ApplyCastCircle).
-                if c.attached ~= false and not CludesUI._unlockActive then
+                if cfg.attached ~= false and not CludesUI._unlockActive then
                     local cursorShown = frame and frame:IsShown()
                     if cursorShown then
                         castRoot:SetScript("OnUpdate", nil)
@@ -796,7 +796,7 @@ UpdateVisibility = function()
                             )
                         end)
                     end
-                elseif c.attached ~= false then
+                elseif cfg.attached ~= false then
                     castRoot:SetScript("OnUpdate", nil)
                 end
             end
@@ -889,10 +889,10 @@ local function CreateCastCircle()
     if castRoot then
         return
     end
-    local c = Cast_DB()
-    local ringRadius = (c.radius or 36)
-    local region, newG, b = ParseHex(c.hex)
-    local a = (c.alpha or 100) / 100
+    local cfg = Cast_DB()
+    local ringRadius = (cfg.radius or 36)
+    local region, newG, b = ParseHex(cfg.hex)
+    local a = (cfg.alpha or 100) / 100
 
     castRoot = CreateFrame("Frame", "ECL_CastRoot", UIParent)
     castRoot:SetSize(ringRadius * 2, ringRadius * 2)
@@ -901,7 +901,7 @@ local function CreateCastCircle()
     castRoot:EnableMouse(false)
     castRoot:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 
-    castRing = CreateRing(castRoot, ringRadius, c.ringTex or "normal", region, newG, b, a)
+    castRing = CreateRing(castRoot, ringRadius, cfg.ringTex or "normal", region, newG, b, a)
 
     -- Spark textures: main spark + glow layer for vibrancy
     local sparkLayer = CreateFrame("Frame", nil, castRoot)
@@ -1070,8 +1070,8 @@ local function CreateCastCircle()
 end
 
 local function ApplyCastCircle()
-    local c = Cast_DB()
-    local enabled = c.enabled
+    local cfg = Cast_DB()
+    local enabled = cfg.enabled
     if not enabled then
         if castRoot then
             castRoot:Hide()
@@ -1097,33 +1097,33 @@ local function ApplyCastCircle()
         castRoot:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_UPDATE", "player")
         castRoot:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP", "player")
     end
-    local attached = c.attached ~= false -- default true
-    local ringRadius = c.radius or 36
-    local zoom = (c.scale or 100) / 100
+    local attached = cfg.attached ~= false -- default true
+    local ringRadius = cfg.radius or 36
+    local zoom = (cfg.scale or 100) / 100
     -- ResolveColor picks accent > class > custom hex automatically
-    local region, newG, b = ResolveColor(c)
-    local a = (c.alpha or 100) / 100
+    local region, newG, b = ResolveColor(cfg)
+    local a = (cfg.alpha or 100) / 100
 
     castAttached = attached
     castRoot:SetScale(zoom)
     castRing:SetRingColor(region, newG, b, a)
     castRing:SetRingRadius(ringRadius)
-    castRing:SetRingTexture(c.ringTex or "normal")
+    castRing:SetRingTexture(cfg.ringTex or "normal")
     castRoot:SetSize(ringRadius * 2, ringRadius * 2)
 
     -- Spark settings
     if castRoot._spark then
         local sparkSize = ringRadius * 0.6
         castRoot._spark:SetSize(sparkSize, sparkSize)
-        if c.sparkEnabled then
+        if cfg.sparkEnabled then
             local sr, sg, scrollBar
             -- In accent or class mode, the spark inherits the ring color.
             -- In custom mode, the spark uses its own sparkHex (or falls
             -- back to the ring hex if sparkHex isn't set).
-            if c.useAccentColor or c.useClassColor then
+            if cfg.useAccentColor or cfg.useClassColor then
                 sr, sg, scrollBar = region, newG, b
             else
-                sr, sg, scrollBar = ParseHex(c.sparkHex or c.hex)
+                sr, sg, scrollBar = ParseHex(cfg.sparkHex or cfg.hex)
             end
             castRoot._spark:SetVertexColor(sr, sg, scrollBar, 1)
             -- Glow layer: same color, slightly transparent for bloom
@@ -1137,11 +1137,11 @@ local function ApplyCastCircle()
 
     castRoot:Show()
     -- Respect instance-only: hide if not in instance
-    if c.instanceOnly and not InRealInstancedContent() then
+    if cfg.instanceOnly and not InRealInstancedContent() then
         castRoot:Hide()
     end
     -- Respect combat-only: hide if not in combat
-    if c.combatOnly and not InCombatLockdown() then
+    if cfg.combatOnly and not InCombatLockdown() then
         castRoot:Hide()
     end
     if attached and not CludesUI._unlockActive then
@@ -1402,8 +1402,8 @@ _G._CUCL_ApplyCastPosition = function()
     if anchored and castRoot:GetLeft() then
         return
     end
-    local c = Cast_DB()
-    local place = c.pos
+    local cfg = Cast_DB()
+    local place = cfg.pos
     if place and place.point then
         local pixel, py = place.x or 0, place.y or 0
         local PPa = CludesUI and CludesUI.PP

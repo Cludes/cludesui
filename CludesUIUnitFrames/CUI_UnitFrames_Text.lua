@@ -694,9 +694,9 @@ mod.ResolveUnitNameColor = function(unitToken)
         local _, classKey = UnitClass(unitToken)
         if not issecretvalue(classKey) and classKey then
             -- The suite's Class Colors (custom colors, Class Color Darken), as the health bar.
-            local c = CludesUI.GetClassColor(classKey)
-            if c then
-                return c.r, c.g, c.b
+            local color = CludesUI.GetClassColor(classKey)
+            if color then
+                return color.r, color.g, color.b
             end
         end
         return nil
@@ -707,10 +707,10 @@ mod.ResolveUnitNameColor = function(unitToken)
         end
         local reactionId = UnitReaction(unitToken, "player")
         if reactionId and not issecretvalue(reactionId) then
-            local c = (mod.Colors and mod.Colors.reaction and mod.Colors.reaction[reactionId])
+            local color = (mod.Colors and mod.Colors.reaction and mod.Colors.reaction[reactionId])
                 or FACTION_BAR_COLORS[reactionId]
-            if c then
-                return c.r, c.g, c.b
+            if color then
+                return color.r, color.g, color.b
             end
         end
     end
@@ -730,9 +730,9 @@ local function ResolveRestrictedClassColor(unitToken, classKey)
         return true, red, green, blue
     end
     if C_ClassColor and C_ClassColor.GetClassColor then
-        local c = C_ClassColor.GetClassColor(classKey)
-        if c then
-            return true, c.r, c.g, c.b
+        local color = C_ClassColor.GetClassColor(classKey)
+        if color then
+            return true, color.r, color.g, color.b
         end
     end
     return false
@@ -1091,10 +1091,10 @@ TagFns.tgtcol = function(unitToken)
         -- Still nothing usable: the plain reaction colour instead of "".
         local reactionId = UnitReaction(tunit, "player")
         if reactionId and not issecretvalue(reactionId) then
-            local c = (mod.Colors and mod.Colors.reaction and mod.Colors.reaction[reactionId])
+            local color = (mod.Colors and mod.Colors.reaction and mod.Colors.reaction[reactionId])
                 or FACTION_BAR_COLORS[reactionId]
-            if c then
-                red, green, blue = c.r, c.g, c.b
+            if color then
+                red, green, blue = color.r, color.g, color.b
             end
         end
     end
@@ -1300,10 +1300,10 @@ do
                 return sep
             end
         end
-        local c = prefs[prefixText .. "TargetSepColor"]
+        local color = prefs[prefixText .. "TargetSepColor"]
         local esc
-        if type(c) == "table" then
-            esc = CludesUI.HexColor(c.r or 1, c.g or 1, c.b or 1)
+        if type(color) == "table" then
+            esc = CludesUI.HexColor(color.r or 1, color.g or 1, color.b or 1)
         else
             esc = CludesUI.COLOR_CODES.WHITE
         end

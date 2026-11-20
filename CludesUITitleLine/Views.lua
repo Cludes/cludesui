@@ -230,10 +230,10 @@ local function DrawGuild(panelFrame)
         local e = st.entries[idx]
         if e.line then
             local s = e.line
-            local c = s.tier.color
-            Rect(kit.mark, panelFrame, NAME, posY - 8, 12, 2, c)
+            local color = s.tier.color
+            Rect(kit.mark, panelFrame, NAME, posY - 8, 12, 2, color)
             Put(panelFrame, "small", C.ink2, NAME + 18, posY - 1, s.tier.label .. " line")
-            Rect(kit.fill, panelFrame, NAME + 130, posY - 8, right - NAME - 200, 1, c, 0.5)
+            Rect(kit.fill, panelFrame, NAME + 130, posY - 8, right - NAME - 200, 1, color, 0.5)
             Put(panelFrame, "small", C.ink2, right, posY - 1, mod.Fmt(s.lineNow), true)
         else
             local m = e.member

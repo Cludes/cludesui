@@ -362,9 +362,9 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             end,
             setValue = function(val)
                 DB().castBgAlpha = val / 100
-                local c = (DB() and DB().castBgColor) or defaultSet.castBgColor
+                local color = (DB() and DB().castBgColor) or defaultSet.castBgColor
                 for _, backing in pairs(plates) do
-                    backing.castBG:SetColorTexture(c.r, c.g, c.b, val / 100)
+                    backing.castBG:SetColorTexture(color.r, color.g, color.b, val / 100)
                 end
                 UpdatePreview()
             end,
@@ -390,8 +390,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     if not CludesUI._prebuilding then
         local leftRegion = castBgRow._leftRegion
         local castBgColorGet = function()
-            local c = (DB() and DB().castBgColor) or defaultSet.castBgColor
-            return c.r, c.g, c.b
+            local color = (DB() and DB().castBgColor) or defaultSet.castBgColor
+            return color.r, color.g, color.b
         end
         local castBgColorSet = function(red, green, blue)
             DB().castBgColor = { r = red, g = green, b = blue }
@@ -422,8 +422,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     if not CludesUI._prebuilding then
         local rightRegion = castBgRow._rightRegion
         local castBorderColorGet = function()
-            local c = (DB() and DB().castBorderColor) or defaultSet.castBorderColor
-            return c.r, c.g, c.b
+            local color = (DB() and DB().castBorderColor) or defaultSet.castBorderColor
+            return color.r, color.g, color.b
         end
         local castBorderColorSet = function(red, green, blue)
             DB().castBorderColor = { r = red, g = green, b = blue }
@@ -499,8 +499,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     if not CludesUI._prebuilding then
         local leftRegion = castTimerRow._leftRegion
         local ctColorGet = function()
-            local c = (DB() and DB().castTimerColor) or defaultSet.castTimerColor
-            return c.r, c.g, c.b
+            local color = (DB() and DB().castTimerColor) or defaultSet.castTimerColor
+            return color.r, color.g, color.b
         end
         local ctColorSet = function(red, green, blue)
             DB().castTimerColor = { r = red, g = green, b = blue }
@@ -689,8 +689,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 rightRegion,
                 castColorRow:GetFrameLevel() + 3,
                 function()
-                    local c = DB().interruptMidCastColor or defaultSet.interruptMidCastColor
-                    return c.r, c.g, c.b
+                    local color = DB().interruptMidCastColor or defaultSet.interruptMidCastColor
+                    return color.r, color.g, color.b
                 end,
                 function(red, green, blue)
                     DB().interruptMidCastColor = { r = red, g = green, b = blue }
@@ -955,8 +955,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     region,
                     row3:GetFrameLevel() + 3,
                     function()
-                        local c = DB().interruptedFlashColor or defaultSet.interruptedFlashColor
-                        return c.r, c.g, c.b
+                        local color = DB().interruptedFlashColor or defaultSet.interruptedFlashColor
+                        return color.r, color.g, color.b
                     end,
                     function(red, green, blue)
                         DB().interruptedFlashColor = { r = red, g = green, b = blue }
@@ -1171,8 +1171,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         label = "Highlight Color",
                         hasAlpha = false,
                         get = function()
-                            local c = mod.GetTargetHighlightColor()
-                            return c.r, c.g, c.b
+                            local color = mod.GetTargetHighlightColor()
+                            return color.r, color.g, color.b
                         end,
                         set = function(red, green, blue)
                             DB().targetHighlightColor = { r = red, g = green, b = blue }
@@ -1267,8 +1267,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             leftRegion,
             leftRegion:GetFrameLevel() + 5,
             function()
-                local c = mod.GetTargetBorderColor()
-                return c.r, c.g, c.b
+                local color = mod.GetTargetBorderColor()
+                return color.r, color.g, color.b
             end,
             function(red, green, blue)
                 DB().targetBorderColor = { r = red, g = green, b = blue }
@@ -1301,8 +1301,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             leftRegion,
             leftRegion:GetFrameLevel() + 5,
             function()
-                local c = mod.GetTargetGlowColor()
-                return c.r, c.g, c.b
+                local color = mod.GetTargetGlowColor()
+                return color.r, color.g, color.b
             end,
             function(red, green, blue)
                 DB().targetGlowColor = { r = red, g = green, b = blue }
@@ -1396,8 +1396,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             rightRegion,
             rightRegion:GetFrameLevel() + 5,
             function()
-                local c = DBVal("targetArrowColor") or defaultSet.targetArrowColor
-                return c.r, c.g, c.b
+                local color = DBVal("targetArrowColor") or defaultSet.targetArrowColor
+                return color.r, color.g, color.b
             end,
             function(red, green, blue)
                 DB().targetArrowColor = { r = red, g = green, b = blue }
@@ -1811,8 +1811,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     if not CludesUI._prebuilding then
         local leftRegion = textureDualRow._leftRegion
         local targetTexColorGet = function()
-            local c = (DB() and DB().targetOverlayColor) or defaultSet.targetOverlayColor
-            return c.r, c.g, c.b
+            local color = (DB() and DB().targetOverlayColor) or defaultSet.targetOverlayColor
+            return color.r, color.g, color.b
         end
         local targetTexColorSet = function(red, green, blue)
             DB().targetOverlayColor = { r = red, g = green, b = blue }
@@ -1900,8 +1900,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     if not CludesUI._prebuilding then
         local rightRegion = textureDualRow._rightRegion
         local focusTexColorGet = function()
-            local c = (DB() and DB().focusOverlayColor) or defaultSet.focusOverlayColor
-            return c.r, c.g, c.b
+            local color = (DB() and DB().focusOverlayColor) or defaultSet.focusOverlayColor
+            return color.r, color.g, color.b
         end
         local focusTexColorSet = function(red, green, blue)
             DB().focusOverlayColor = { r = red, g = green, b = blue }
@@ -2193,8 +2193,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                             label = "Highlight Color",
                             hasAlpha = false,
                             get = function()
-                                local c = (DB() and DB().hoverColor) or defaultSet.hoverColor
-                                return c.r, c.g, c.b
+                                local color = (DB() and DB().hoverColor) or defaultSet.hoverColor
+                                return color.r, color.g, color.b
                             end,
                             set = function(red, green, blue)
                                 DB().hoverColor = { r = red, g = green, b = blue }
@@ -2268,8 +2268,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 rightRegion,
                 rightRegion:GetFrameLevel() + 5,
                 function()
-                    local c = mod.GetHoverBorderColor()
-                    return c.r, c.g, c.b
+                    local color = mod.GetHoverBorderColor()
+                    return color.r, color.g, color.b
                 end,
                 function(red, green, blue)
                     DB().hoverBorderColor = { r = red, g = green, b = blue }
@@ -2295,8 +2295,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 rightRegion,
                 rightRegion:GetFrameLevel() + 5,
                 function()
-                    local c = mod.GetHoverGlowColor()
-                    return c.r, c.g, c.b
+                    local color = mod.GetHoverGlowColor()
+                    return color.r, color.g, color.b
                 end,
                 function(red, green, blue)
                     DB().hoverGlowColor = { r = red, g = green, b = blue }
@@ -2388,8 +2388,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 disabled = classPowerOff,
                 disabledTooltip = "Show Class Resource",
                 getValue = function()
-                    local c = (DB() and DB().classPowerCustomColor) or defaultSet.classPowerCustomColor
-                    return c.r, c.g, c.b
+                    local color = (DB() and DB().classPowerCustomColor) or defaultSet.classPowerCustomColor
+                    return color.r, color.g, color.b
                 end,
                 setValue = function(red, green, blue)
                     DB().classPowerCustomColor = { r = red, g = green, b = blue }
@@ -2539,8 +2539,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             text = "Background Color",
             hasAlpha = true,
             getValue = function()
-                local c = (DB() and DB().classPowerBgColor) or defaultSet.classPowerBgColor
-                return c.r, c.g, c.b, c.a
+                local color = (DB() and DB().classPowerBgColor) or defaultSet.classPowerBgColor
+                return color.r, color.g, color.b, color.a
             end,
             setValue = function(red, green, blue, a)
                 DB().classPowerBgColor = { r = red, g = green, b = blue, a = a }
@@ -2615,8 +2615,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 return classPowerOff() or DBVal("classPowerBorder") ~= true
             end
             local colorGet = function()
-                local c = (DB() and DB().classPowerBorderColor) or defaultSet.classPowerBorderColor
-                return c.r, c.g, c.b
+                local color = (DB() and DB().classPowerBorderColor) or defaultSet.classPowerBorderColor
+                return color.r, color.g, color.b
             end
             local colorSet = function(red, green, blue)
                 DB().classPowerBorderColor = { r = red, g = green, b = blue, a = 1 }
@@ -2722,8 +2722,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         local function AttachDurationTools(regionFrame, kind)
             local rowConf = durationTypes[kind]
             local colorGet = function()
-                local c = AuraDurationVal(kind, "Color")
-                return c.r, c.g, c.b
+                local color = AuraDurationVal(kind, "Color")
+                return color.r, color.g, color.b
             end
             local colorSet = function(red, green, blue)
                 DB()[kind .. "DurationTextColor"] = { r = red, g = green, b = blue }
@@ -2826,8 +2826,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             -- RIGHT: Aura Stacks inline color swatch
             local rightRegion = durationRow2._rightRegion
             local asColorGet = function()
-                local c = (DB() and DB().auraStackTextColor) or defaultSet.auraStackTextColor
-                return c.r, c.g, c.b
+                local color = (DB() and DB().auraStackTextColor) or defaultSet.auraStackTextColor
+                return color.r, color.g, color.b
             end
             local asColorSet = function(red, green, blue)
                 DB().auraStackTextColor = { r = red, g = green, b = blue }

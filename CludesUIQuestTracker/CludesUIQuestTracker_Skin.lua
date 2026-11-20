@@ -45,16 +45,16 @@ end
 -- Color helpers. All four user-facing text colors come from DB so they
 -- follow the Colors section in the options page.
 local function GetTitleRGB()
-    local c = EQT.DB()
-    return c.titleR or 1.0, c.titleG or 0.910, c.titleB or 0.471
+    local cfg = EQT.DB()
+    return cfg.titleR or 1.0, cfg.titleG or 0.910, cfg.titleB or 0.471
 end
 local function GetCompletedRGB()
-    local c = EQT.DB()
-    return c.completedR or 0.251, c.completedG or 1.0, c.completedB or 0.349
+    local cfg = EQT.DB()
+    return cfg.completedR or 0.251, cfg.completedG or 1.0, cfg.completedB or 0.349
 end
 local function GetFocusRGB()
-    local c = EQT.DB()
-    return c.focusR or 0.871, c.focusG or 0.251, c.focusB or 1.0
+    local cfg = EQT.DB()
+    return cfg.focusR or 0.871, cfg.focusG or 0.251, cfg.focusB or 1.0
 end
 local SUB_TRACKERS = {
     "ScenarioObjectiveTracker",
@@ -144,28 +144,28 @@ local function GetHeaderRGB()
         end
         return 1.0, 0.82, 0.0
     end
-    local c = EQT.DB()
-    if c.headerShowClassColor then
+    local cfg = EQT.DB()
+    if cfg.headerShowClassColor then
         return GetClassColorRGB()
     end
-    if c.headerUseAccent ~= false then
+    if cfg.headerUseAccent ~= false then
         return GetAccent()
     end
-    return c.headerR or 1.0, c.headerG or 1.0, c.headerB or 1.0
+    return cfg.headerR or 1.0, cfg.headerG or 1.0, cfg.headerB or 1.0
 end
 
 -- Section-divider line color, user-adjustable via the "Line Color" swatch in Colors
 -- options: Class Color / Custom Color / Accent Color. Defaults to Accent Color
 -- (lineUseAccent is treated as true unless explicitly set to false).
 local function GetLineRGB()
-    local c = EQT.DB()
-    if c.lineShowClassColor then
+    local cfg = EQT.DB()
+    if cfg.lineShowClassColor then
         return GetClassColorRGB()
     end
-    if c.lineUseAccent ~= false then
+    if cfg.lineUseAccent ~= false then
         return GetAccent()
     end
-    return c.lineR or 1.0, c.lineG or 1.0, c.lineB or 1.0
+    return cfg.lineR or 1.0, cfg.lineG or 1.0, cfg.lineB or 1.0
 end
 
 local function GetFont()
@@ -979,9 +979,9 @@ local function TitleDifficultyOn()
 end
 -- A quest's difficulty color for the player's level, or nil.
 local function QuestDifficultyRGB(questID)
-    local c = GetDifficultyColor(C_PlayerInfo.GetContentDifficultyQuestForPlayer(questID))
-    if c then
-        return c.r, c.g, c.b
+    local color = GetDifficultyColor(C_PlayerInfo.GetContentDifficultyQuestForPlayer(questID))
+    if color then
+        return color.r, color.g, color.b
     end
 end
 

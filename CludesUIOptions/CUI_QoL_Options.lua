@@ -404,8 +404,8 @@ local function BuildSelfCombatTextSection(hostFrame, cursorY)
                     return sctOff() and "Self Combat Text" or labelText
                 end,
                 getValue = function()
-                    local c = SCTGet(colorKey)
-                    return c.r, c.g, c.b
+                    local color = SCTGet(colorKey)
+                    return color.r, color.g, color.b
                 end,
                 setValue = function(red, green, blue)
                     SCTSet(colorKey, { r = red, g = green, b = blue })
@@ -1308,9 +1308,9 @@ CludesUI.AtOptionsLogin(function()
             end
 
             local fpsSwGet = function()
-                local c = CludesUI.QoLExtrasGet("fpsColor")
-                if c then
-                    return c.r, c.g, c.b, c.a
+                local color = CludesUI.QoLExtrasGet("fpsColor")
+                if color then
+                    return color.r, color.g, color.b, color.a
                 end
                 return 1, 1, 1, 1
             end
@@ -1710,9 +1710,9 @@ CludesUI.AtOptionsLogin(function()
 
             -- Color swatch (left of the cog)
             local durSwGet = function()
-                local c = CludesUIDB and CludesUIDB.durWarnColor
-                if c then
-                    return c.r, c.g, c.b
+                local color = CludesUIDB and CludesUIDB.durWarnColor
+                if color then
+                    return color.r, color.g, color.b
                 end
                 return 1, 0.27, 0.27
             end
@@ -2137,9 +2137,9 @@ CludesUI.AtOptionsLogin(function()
                             {
                                 tooltip = "Custom Color",
                                 getValue = function()
-                                    local c = CludesUI.QoLExtrasGet("tertiaryStatsColor")
-                                    if c then
-                                        return c.r, c.g, c.b
+                                    local color = CludesUI.QoLExtrasGet("tertiaryStatsColor")
+                                    if color then
+                                        return color.r, color.g, color.b
                                     end
                                     return 1, 1, 1
                                 end,
@@ -2206,9 +2206,9 @@ CludesUI.AtOptionsLogin(function()
                 leftRegion,
                 leftRegion:GetFrameLevel() + 5,
                 function()
-                    local c = CludesUI.QoLExtrasGet("secondaryStatsColor")
-                    if c then
-                        return c.r, c.g, c.b
+                    local color = CludesUI.QoLExtrasGet("secondaryStatsColor")
+                    if color then
+                        return color.r, color.g, color.b
                     end
                     return 1, 1, 1
                 end,
@@ -3041,9 +3041,9 @@ CludesUI.AtOptionsLogin(function()
             local leftRegion = crosshairRow._leftRegion
 
             local chSwGet = function()
-                local c = cursorGet("crosshairColor")
-                if c then
-                    return c.r, c.g, c.b, c.a
+                local color = cursorGet("crosshairColor")
+                if color then
+                    return color.r, color.g, color.b, color.a
                 end
                 return 1, 1, 1, 0.75
             end
@@ -3123,9 +3123,9 @@ CludesUI.AtOptionsLogin(function()
                 return crosshairOff() or cursorGet("crosshairMeleeColorEnabled") ~= true
             end
             local mcGet = function()
-                local c = cursorGet("crosshairMeleeColor")
-                if c then
-                    return c.r, c.g, c.b, c.a
+                local color = cursorGet("crosshairMeleeColor")
+                if color then
+                    return color.r, color.g, color.b, color.a
                 end
                 return 1, 0, 0, 1
             end

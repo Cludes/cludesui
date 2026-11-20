@@ -55,16 +55,16 @@ do
     function ERB.ResolveSecondaryResourceColor(powerKey)
         local rk = RKEY[powerKey]
         if rk and CludesUI.GetClassResourceColor then
-            local c = CludesUI.GetClassResourceColor(rk)
-            if c then
-                return c.r, c.g, c.b
+            local color = CludesUI.GetClassResourceColor(rk)
+            if color then
+                return color.r, color.g, color.b
             end
         end
         local pk = PKEY[powerKey]
         if pk and CludesUI.GetPowerColor then
-            local c = CludesUI.GetPowerColor(pk)
-            if c then
-                return c.r, c.g, c.b
+            local color = CludesUI.GetPowerColor(pk)
+            if color then
+                return color.r, color.g, color.b
             end
         end
         return nil

@@ -443,9 +443,9 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 end,
                 rawTooltip = _blizzDis,
                 getValue = function()
-                    local c = S().tick5Color
-                    if c then
-                        return c.r or 220 / 255, c.g or 167 / 255, c.b or 127 / 255, c.a or 0.9
+                    local color = S().tick5Color
+                    if color then
+                        return color.r or 220 / 255, color.g or 167 / 255, color.b or 127 / 255, color.a or 0.9
                     end
                     return 220 / 255, 167 / 255, 127 / 255, 0.9
                 end,
@@ -458,9 +458,9 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 tooltip = "10% Lines",
                 hasAlpha = true,
                 getValue = function()
-                    local c = S().tick10Color
-                    if c then
-                        return c.r or 1, c.g or 1, c.b or 1, c.a or 0.9
+                    local color = S().tick10Color
+                    if color then
+                        return color.r or 1, color.g or 1, color.b or 1, color.a or 0.9
                     end
                     return 1, 1, 1, 0.9
                 end,
@@ -564,9 +564,9 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                         type = "colorpicker",
                         label = "Text Color",
                         get = function()
-                            local c = S().dividerTextColor
-                            if c then
-                                return c.r or 1, c.g or 1, c.b or 1
+                            local color = S().dividerTextColor
+                            if color then
+                                return color.r or 1, color.g or 1, color.b or 1
                             end
                             return 1, 1, 1
                         end,
@@ -1448,9 +1448,9 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 tooltip = "Background Color",
                 hasAlpha = true,
                 getValue = function()
-                    local c = S().textBgColor
-                    if c then
-                        return c.r or 0.06, c.g or 0.06, c.b or 0.08, c.a or 0.9
+                    local color = S().textBgColor
+                    if color then
+                        return color.r or 0.06, color.g or 0.06, color.b or 0.08, color.a or 0.9
                     end
                     return 0.06, 0.06, 0.08, 0.9
                 end,
@@ -1553,9 +1553,9 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         disabledTooltip = BLIZZ_DIS_TIP,
         rawTooltip = true,
         getValue = function()
-            local c = S().restedColor
-            if c then
-                return c.r or 0.15, c.g or 0.30, c.b or 0.60, c.a or 0.5
+            local color = S().restedColor
+            if color then
+                return color.r or 0.15, color.g or 0.30, color.b or 0.60, color.a or 0.5
             end
             return 0.15, 0.30, 0.60, 0.5
         end,

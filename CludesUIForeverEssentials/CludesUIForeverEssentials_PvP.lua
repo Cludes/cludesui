@@ -100,14 +100,14 @@ end
 --  Store (account-wide: Forever names are unique for the region)
 -------------------------------------------------------------------------------
 local function Store()
-    local c = F.Cfg()
-    c.players = c.players or {} -- name -> { class, level, race, guild, faction, guess, first, last, zone, sub, wins, losses }
-    c.kos = c.kos or {} -- name -> time added
-    c.reasons = c.reasons or {} -- name -> { reason = true }
-    c.ignore = c.ignore or {} -- name -> time added
-    c.watch = c.watch or {} -- own-faction name -> { added, reason, class, level, guild, seen, zone }
-    c.fights = c.fights or {} -- { name, result "W"|"L", map, x, y, when }, newest last
-    return c
+    local cfg = F.Cfg()
+    cfg.players = cfg.players or {} -- name -> { class, level, race, guild, faction, guess, first, last, zone, sub, wins, losses }
+    cfg.kos = cfg.kos or {} -- name -> time added
+    cfg.reasons = cfg.reasons or {} -- name -> { reason = true }
+    cfg.ignore = cfg.ignore or {} -- name -> time added
+    cfg.watch = cfg.watch or {} -- own-faction name -> { added, reason, class, level, guild, seen, zone }
+    cfg.fights = cfg.fights or {} -- { name, result "W"|"L", map, x, y, when }, newest last
+    return cfg
 end
 
 local nearby = {} -- name -> last seen (GetTime), this session
@@ -335,13 +335,13 @@ local function NoteLevel(unit)
     if not (level and level > 0) then
         return
     end
-    local c = F.Cfg()
-    c.levels = c.levels or {} -- name -> { level, last seen (time()) }
-    local seen = c.levels[name]
+    local cfg = F.Cfg()
+    cfg.levels = cfg.levels or {} -- name -> { level, last seen (time()) }
+    local seen = cfg.levels[name]
     if seen then
         seen[1], seen[2] = level, time()
     else
-        c.levels[name] = { level, time() }
+        cfg.levels[name] = { level, time() }
     end
 end
 

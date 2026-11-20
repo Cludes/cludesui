@@ -409,9 +409,9 @@ local function ResolveAlertColor(prefixText, useClassKey)
     local alertCfg = MA()
     if alertCfg[useClassKey] then
         local _, classToken = UnitClass("player")
-        local c = classToken and CludesUI.GetClassColor(classToken)
-        if c then
-            return c.r, c.g, c.b
+        local color = classToken and CludesUI.GetClassColor(classToken)
+        if color then
+            return color.r, color.g, color.b
         end
     end
     return alertCfg[prefixText .. "R"] or 1, alertCfg[prefixText .. "G"] or 1, alertCfg[prefixText .. "B"] or 1

@@ -934,10 +934,10 @@ function CludesUI.GetLevelDifficultyColor(lvl, attackable)
         end
         return nil
     end
-    local c = (GetRelativeDifficultyColor and GetRelativeDifficultyColor(mine, lvl))
+    local color = (GetRelativeDifficultyColor and GetRelativeDifficultyColor(mine, lvl))
         or (GetQuestDifficultyColor and GetQuestDifficultyColor(lvl))
-    if c then
-        return c.r, c.g, c.b
+    if color then
+        return color.r, color.g, color.b
     end
 end
 -- For a unit; nil when the level or attackability cannot be read (secret).

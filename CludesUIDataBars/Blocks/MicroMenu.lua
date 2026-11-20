@@ -906,10 +906,10 @@ local function MMBuildGuildTip(s)
 
     local noteFmt
     if s.showGuildNotes == true then
-        local c = s.guildNoteColor
+        local color = s.guildNoteColor
         local nr, ng, nb = 0.925, 0.839, 0.447
-        if c then
-            nr, ng, nb = c.r or nr, c.g or ng, c.b or nb
+        if color then
+            nr, ng, nb = color.r or nr, color.g or ng, color.b or nb
         end
         noteFmt = format(
             " |cffffffff(|r|cff%02x%02x%02x%%s|r|cffffffff)|r",

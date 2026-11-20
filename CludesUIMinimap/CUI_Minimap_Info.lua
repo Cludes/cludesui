@@ -54,8 +54,8 @@ local function GetDescColor(mp)
     if mp and mp.fpsUseAccent then
         red, green, blue = ACCENT.r, ACCENT.g, ACCENT.b
     elseif mp and mp.fpsColor then
-        local c = mp.fpsColor
-        red, green, blue = c.r or 1, c.g or 1, c.b or 1
+        local color = mp.fpsColor
+        red, green, blue = color.r or 1, color.g or 1, color.b or 1
     end
     local hex = format("%02x%02x%02x", floor(red * 255 + 0.5), floor(green * 255 + 0.5), floor(blue * 255 + 0.5))
     return red, green, blue, hex

@@ -148,8 +148,8 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
             if fillTex then
                 fillTex:SetAlpha(1)
             end
-            local c = s.customFillColor
-            frame._health:SetStatusBarColor(c.r, c.g, c.b, (s.healthBarOpacity or 100) / 100)
+            local color = s.customFillColor
+            frame._health:SetStatusBarColor(color.r, color.g, color.b, (s.healthBarOpacity or 100) / 100)
         else
             if fillTex then
                 fillTex:SetAlpha(1)
@@ -170,8 +170,8 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
             frame._topNameBarText:SetText(name)
         end
         if (s.topNameBarTextColorMode or "class") == "custom" then
-            local c = s.topNameBarTextColor or { r = 1, g = 1, b = 1 }
-            frame._topNameBarText:SetTextColor(c.r, c.g, c.b)
+            local color = s.topNameBarTextColor or { r = 1, g = 1, b = 1 }
+            frame._topNameBarText:SetTextColor(color.r, color.g, color.b)
         else
             local cc = CludesUI.GetClassColor(classToken)
             if cc then
@@ -1531,10 +1531,10 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
             end
         end
         if frame._bg then
-            local c = s.statusColorDead or { r = 0x24 / 255, g = 0x17 / 255, b = 0x17 / 255 }
+            local color = s.statusColorDead or { r = 0x24 / 255, g = 0x17 / 255, b = 0x17 / 255 }
             frame._bg:ClearAllPoints()
             frame._bg:SetAllPoints(frame._health)
-            frame._bg:SetColorTexture(c.r, c.g, c.b, 1)
+            frame._bg:SetColorTexture(color.r, color.g, color.b, 1)
         end
         -- Hide shield on dead players
         if frame._absorbBar then
@@ -1555,10 +1555,10 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
             end
         end
         if frame._bg then
-            local c = s.statusColorOffline or { r = 0x66 / 255, g = 0x66 / 255, b = 0x66 / 255 }
+            local color = s.statusColorOffline or { r = 0x66 / 255, g = 0x66 / 255, b = 0x66 / 255 }
             frame._bg:ClearAllPoints()
             frame._bg:SetAllPoints(frame._health)
-            frame._bg:SetColorTexture(c.r, c.g, c.b, 1)
+            frame._bg:SetColorTexture(color.r, color.g, color.b, 1)
         end
     end
 

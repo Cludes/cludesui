@@ -509,8 +509,8 @@ local function GetHealthColor(unitToken, s)
         end
         return 0.5, 0.5, 0.5
     elseif mode == "custom" then
-        local c = s.customFillColor
-        return c.r, c.g, c.b
+        local color = s.customFillColor
+        return color.r, color.g, color.b
     else -- "class"
         local _, classToken = UnitClass(unitToken)
         -- Secret-safe: a secret classToken would throw on GetClassColor's table index.
@@ -699,16 +699,16 @@ function mod.GetBgColor(unitToken, s)
         end
     end
     -- Partial/imported profiles can lack the key (field report 2026-08-16).
-    local c = s.customBgColor or defaultSet.customBgColor
-    return c.r, c.g, c.b, a
+    local color = s.customBgColor or defaultSet.customBgColor
+    return color.r, color.g, color.b, a
 end
 
 -- Class/custom color resolution for the Top Name Bar text (no accent mode).
 local function GetTopNameBarColor(unitToken, s)
     s = s or saved.profile
     if (s.topNameBarTextColorMode or "class") == "custom" then
-        local c = s.topNameBarTextColor or { r = 1, g = 1, b = 1 }
-        return c.r, c.g, c.b
+        local color = s.topNameBarTextColor or { r = 1, g = 1, b = 1 }
+        return color.r, color.g, color.b
     end
     local _, classToken = UnitClass(unitToken)
     if classToken and not issecretvalue(classToken) then

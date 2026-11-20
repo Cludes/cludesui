@@ -1673,9 +1673,9 @@ CludesUI.AtOptionsLogin(function()
             if Cfg("enemyBarUseAccent") ~= false then
                 return CludesUI.ResolveActiveAccent()
             end
-            local c = Cfg("enemyBarColor")
-            if c then
-                return c.r or 0.35, c.g or 0.55, c.b or 0.8
+            local color = Cfg("enemyBarColor")
+            if color then
+                return color.r or 0.35, color.g or 0.55, color.b or 0.8
             end
             return 0.35, 0.55, 0.8
         end

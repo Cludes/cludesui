@@ -88,8 +88,8 @@ local function Cfg()
 end
 
 local function Get(key, default)
-    local c = Cfg()
-    local val = c and c[key]
+    local cfg = Cfg()
+    local val = cfg and cfg[key]
     if val == nil then
         return default
     end

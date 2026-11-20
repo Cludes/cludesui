@@ -44,10 +44,10 @@ end
 -- Account store: entries = { {t, map, copy}, ... } for the last hour;
 -- runs[guid] = { {name, start, seconds, deaths, xp, items}, ... } newest first.
 local function Store()
-    local c = F.Cfg()
-    c.entries = c.entries or {}
-    c.runs = c.runs or {}
-    return c
+    local cfg = F.Cfg()
+    cfg.entries = cfg.entries or {}
+    cfg.runs = cfg.runs or {}
+    return cfg
 end
 
 local function Prune()

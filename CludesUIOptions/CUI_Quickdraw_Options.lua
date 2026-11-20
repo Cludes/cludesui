@@ -4398,8 +4398,8 @@ CludesUI.AtOptionsLogin(function()
             end
 
             local customSwatch, updateCustom = Swatch(function()
-                local c = MenuGet("selectColor") or {}
-                return c[1] or 0.298, c[2] or 0.788, c[3] or 0.941
+                local color = MenuGet("selectColor") or {}
+                return color[1] or 0.298, color[2] or 0.788, color[3] or 0.941
             end, function(r2, g2, b2)
                 MenuPut("selectColor", { r2, g2, b2 })
                 MenuPut("selectColorCustom", true)

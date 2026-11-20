@@ -4161,10 +4161,10 @@ local function GetSearchHighlight()
     local pulse = table.remove(_searchHighlightPool)
     if not pulse then
         pulse = CreateFrame("Frame")
-        local c = CLUDES_GREEN
+        local color = CLUDES_GREEN
         local function MkEdge()
             local t = pulse:CreateTexture(nil, "OVERLAY", nil, 7)
-            t:SetColorTexture(c.r, c.g, c.b, 1)
+            t:SetColorTexture(color.r, color.g, color.b, 1)
             return t
         end
         pulse._top = MkEdge()

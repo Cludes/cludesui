@@ -99,8 +99,8 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                 end
                 return (m == "default") and "default" or "custom"
             elseif f == "color" then
-                local c = p.procGlowColor or { r = 1, g = 0.776, b = 0.376 }
-                return c.r, c.g, c.b
+                local color = p.procGlowColor or { r = 1, g = 0.776, b = 0.376 }
+                return color.r, color.g, color.b
             end
             return CludesUI.GlowOptions.FlatGet(p, "procGlow", f)
         end,
@@ -221,8 +221,8 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                 cr, cg, checkBtn = classColor and classColor.r or 1, classColor and classColor.g or 1, classColor and classColor.b or 1
                 ca = 1
             else
-                local c = p[prefixText .. "CustomColor"] or defs.solidColor
-                cr, cg, checkBtn, ca = c.r, c.g, c.b, c.a
+                local color = p[prefixText .. "CustomColor"] or defs.solidColor
+                cr, cg, checkBtn, ca = color.r, color.g, color.b, color.a
             end
             shade:SetVertexColor(cr, cg, checkBtn, 0.3)
             shade:Show()
@@ -239,8 +239,8 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                 cr, cg, checkBtn = classColor and classColor.r or 1, classColor and classColor.g or 1, classColor and classColor.b or 1
                 ca = 1
             else
-                local c = p[prefixText .. "CustomColor"] or { r = 1, g = 0.792, b = 0.427, a = 1 }
-                cr, cg, checkBtn, ca = c.r, c.g, c.b, c.a
+                local color = p[prefixText .. "CustomColor"] or { r = 1, g = 0.792, b = 0.427, a = 1 }
+                cr, cg, checkBtn, ca = color.r, color.g, color.b, color.a
             end
             for idx = 1, 4 do
                 bo[idx]:SetVertexColor(cr, cg, checkBtn, ca)
@@ -278,9 +278,9 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                 shade:SetDesaturated(true)
                 shade:SetVertexColor(classColor and classColor.r or 1, classColor and classColor.g or 1, classColor and classColor.b or 1, 1)
             else
-                local c = p[prefixText .. "CustomColor"] or { r = 1, g = 0.792, b = 0.427, a = 1 }
+                local color = p[prefixText .. "CustomColor"] or { r = 1, g = 0.792, b = 0.427, a = 1 }
                 shade:SetDesaturated(true)
-                shade:SetVertexColor(c.r, c.g, c.b, c.a)
+                shade:SetVertexColor(color.r, color.g, color.b, color.a)
             end
             shade:Show()
             for idx = 1, 4 do
@@ -463,9 +463,9 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
         end
 
         if style == 2 or style == 3 then
-            local c = p.assistGlowOverlayColor or { r = 0.15, g = 0.5, b = 1 }
+            local color = p.assistGlowOverlayColor or { r = 0.15, g = 0.5, b = 1 }
             local a = (p.assistGlowOverlayAlpha or 30) / 100
-            shade:SetColorTexture(c.r or 0.15, c.g or 0.5, c.b or 1, a)
+            shade:SetColorTexture(color.r or 0.15, color.g or 0.5, color.b or 1, a)
             shade:Show()
         end
     end
@@ -545,11 +545,11 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
             end,
             rawTooltip = true,
             getValue = function()
-                local c = p.pushedCustomColor
-                if not c then
+                local color = p.pushedCustomColor
+                if not color then
                     return 0.973, 0.839, 0.604, 1
                 end
-                return c.r, c.g, c.b, c.a
+                return color.r, color.g, color.b, color.a
             end,
             setValue = function(red, green, blue, a)
                 SetUnifiedColor(red, green, blue, a)
@@ -933,8 +933,8 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                     tooltip = "Assisted Highlight Glow Color",
                     hasAlpha = false,
                     getValue = function()
-                        local c = p.assistGlowColor or { r = 0.15, g = 0.5, b = 1 }
-                        return c.r, c.g, c.b
+                        local color = p.assistGlowColor or { r = 0.15, g = 0.5, b = 1 }
+                        return color.r, color.g, color.b
                     end,
                     setValue = function(red, green, blue)
                         p.assistGlowColor = { r = red, g = green, b = blue }
@@ -1015,8 +1015,8 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                     tooltip = "Button Overlay Color",
                     hasAlpha = false,
                     getValue = function()
-                        local c = p.assistGlowOverlayColor or { r = 0.15, g = 0.5, b = 1 }
-                        return c.r, c.g, c.b
+                        local color = p.assistGlowOverlayColor or { r = 0.15, g = 0.5, b = 1 }
+                        return color.r, color.g, color.b
                     end,
                     setValue = function(red, green, blue)
                         p.assistGlowOverlayColor = { r = red, g = green, b = blue }

@@ -418,9 +418,9 @@ end
 -- colour otherwise, the player's own class in dark mode or with no unit.
 local function PlayerClassColor()
     local _, classTok = UnitClass("player")
-    local c = classTok and CludesUI.GetClassColor(classTok)
-    if c then
-        return c.r, c.g, c.b
+    local color = classTok and CludesUI.GetClassColor(classTok)
+    if color then
+        return color.r, color.g, color.b
     end
     return 1, 1, 1
 end
@@ -432,9 +432,9 @@ local function TintBorder(edge, unitToken, ctOverride)
     local red, green, blue
     local s = mod._scaledPartyProxy
     if ctOverride then
-        local c = CludesUI.GetClassColor(ctOverride)
-        if c then
-            red, green, blue = c.r, c.g, c.b
+        local color = CludesUI.GetClassColor(ctOverride)
+        if color then
+            red, green, blue = color.r, color.g, color.b
         end
     elseif s and s.healthColorMode == "dark" then
         red, green, blue = PlayerClassColor()
@@ -442,9 +442,9 @@ local function TintBorder(edge, unitToken, ctOverride)
         local _, classTok = UnitClass(unitToken)
         local isPl = UnitIsPlayer(unitToken)
         if not issecretvalue(classTok) and not issecretvalue(isPl) and isPl and classTok then
-            local c = CludesUI.GetClassColor(classTok)
-            if c then
-                red, green, blue = c.r, c.g, c.b
+            local color = CludesUI.GetClassColor(classTok)
+            if color then
+                red, green, blue = color.r, color.g, color.b
             end
         else
             local re = UnitReaction(unitToken, "player")

@@ -279,8 +279,8 @@ local function EnsureGlowModeMigrated(p)
     if p.glowColorMode then
         return
     end
-    local c = p.glowColor
-    if c and not (c.r == 1 and c.g == 0.776 and c.b == 0.376) then
+    local color = p.glowColor
+    if color and not (color.r == 1 and color.g == 0.776 and color.b == 0.376) then
         p.glowColorMode = "custom"
     else
         p.glowColorMode = "default"
@@ -299,11 +299,11 @@ local function ResolveGlowTint(p)
     if p.glowColorMode ~= "custom" then
         return nil
     end
-    local c = p.glowColor
-    if not c then
+    local color = p.glowColor
+    if not color then
         return nil
     end
-    return c.r or 1, c.g or 0.776, c.b or 0.376
+    return color.r or 1, color.g or 0.776, color.b or 0.376
 end
 
 local TEXT_ANCHOR_POINTS = {

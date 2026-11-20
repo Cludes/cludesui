@@ -798,9 +798,9 @@ CludesUI.AtOptionsLogin(function()
                 borderRow:GetFrameLevel() + 3,
                 function()
                     local mapDB = MinimapDB()
-                    local c = mapDB and mapDB.borderColor
-                    if c then
-                        return c.r, c.g, c.b, mapDB.borderA or 1
+                    local color = mapDB and mapDB.borderColor
+                    if color then
+                        return color.r, color.g, color.b, mapDB.borderA or 1
                     end
                     -- Legacy: pre-style users' border colour keys
                     if mapDB then
@@ -2522,9 +2522,9 @@ CludesUI.AtOptionsLogin(function()
                 region:GetFrameLevel() + 5,
                 function()
                     local mapDB = MinimapDB()
-                    local c = mapDB and mapDB.fpsColor
-                    if c then
-                        return c.r or 1, c.g or 1, c.b or 1, 1
+                    local color = mapDB and mapDB.fpsColor
+                    if color then
+                        return color.r or 1, color.g or 1, color.b or 1, 1
                     end
                     return 1, 1, 1, 1
                 end,

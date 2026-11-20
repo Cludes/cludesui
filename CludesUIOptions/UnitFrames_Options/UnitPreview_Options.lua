@@ -1420,16 +1420,16 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             blizzard = 0.8,
         }
         local a = s.absorbOpacity and (s.absorbOpacity / 100) or STYLE_ALPHA[style] or 0.8
-        local c = s.absorbColor or { r = 1, g = 1, b = 1 }
-        PaintAbsorb(barFrame, s, style, STRIPED_TEX, 1, c.r, c.g, c.b, a, s.absorbEdgeMode)
+        local color = s.absorbColor or { r = 1, g = 1, b = 1 }
+        PaintAbsorb(barFrame, s, style, STRIPED_TEX, 1, color.r, color.g, color.b, a, s.absorbEdgeMode)
         return style
     end
     -- The heal absorb's look: red by default; the outlined stripe styles
     -- carry their own colour, so those draw untinted.
     local function PaintHealAbsorb(barFrame, s, style)
-        local c = s.healAbsorbColor or { r = 0.8, g = 0.15, b = 0.15 }
+        local color = s.healAbsorbColor or { r = 0.8, g = 0.15, b = 0.15 }
         if style == "largeOutlinedStripes" or style == "largeOutlinedStripesR" then
-            c = { r = 1, g = 1, b = 1 }
+            color = { r = 1, g = 1, b = 1 }
         end
         local a = (s.healAbsorbOpacity or 65) / 100
         PaintAbsorb(
@@ -1438,9 +1438,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             style,
             WHITE_TEX,
             2,
-            c.r or 0.8,
-            c.g or 0.15,
-            c.b or 0.15,
+            color.r or 0.8,
+            color.g or 0.15,
+            color.b or 0.15,
             a,
             s.healAbsorbEdgeMode
         )
@@ -3555,14 +3555,14 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         if dispelPreview then
             local modeName = saved.profile.dispelOverlay or "none"
             if optionState.showDispelOverlayPreview and modeName ~= "none" then
-                local c = saved.profile.dispelColorMagic or { r = 0.349, g = 0.475, b = 1.0 }
+                local color = saved.profile.dispelColorMagic or { r = 0.349, g = 0.475, b = 1.0 }
                 local alpha = (saved.profile.dispelOverlayOpacity or 100) / 100
                 dispelPreview:ClearAllPoints()
                 dispelPreview:SetVertexColor(1, 1, 1, 1)
                 dispelPreview:SetTexCoord(0, 1, 0, 1)
                 if modeName == "full" then
                     dispelPreview:SetAllPoints(healthBar)
-                    dispelPreview:SetColorTexture(c.r, c.g, c.b, alpha)
+                    dispelPreview:SetColorTexture(color.r, color.g, color.b, alpha)
                 elseif modeName == "gradient" or modeName == "gradient_sharp" or modeName == "gradient_reverse" then
                     dispelPreview:SetAllPoints(healthBar)
                     dispelPreview:SetTexture(
@@ -3572,10 +3572,10 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                     if modeName == "gradient_reverse" then
                         dispelPreview:SetTexCoord(0, 1, 1, 0)
                     end
-                    dispelPreview:SetVertexColor(c.r, c.g, c.b, alpha)
+                    dispelPreview:SetVertexColor(color.r, color.g, color.b, alpha)
                 else
                     dispelPreview:SetAllPoints(healthFill)
-                    dispelPreview:SetColorTexture(c.r, c.g, c.b, alpha)
+                    dispelPreview:SetColorTexture(color.r, color.g, color.b, alpha)
                 end
                 dispelPreview:Show()
             else

@@ -501,8 +501,8 @@ local function DressDialog(dialog)
     cap:SetPoint("TOPRIGHT")
     cap:SetHeight(2)
     local function Paint()
-        local c = CLUDES_GREEN
-        cap:SetColorTexture(c.r, c.g, c.b, 0.9)
+        local color = CLUDES_GREEN
+        cap:SetColorTexture(color.r, color.g, color.b, 0.9)
     end
     Paint()
     dialog:HookScript("OnShow", Paint)
@@ -2031,8 +2031,8 @@ function CludesUI:ShowInputPopup(options)
         dialog._closeSuggest()
         if pv then
             dialog._previewLabelFS:SetText(options.previewLabel or "")
-            local c = options.previewColor
-            dialog._previewValue:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1, 1)
+            local color = options.previewColor
+            dialog._previewValue:SetTextColor(color and color.r or 1, color and color.g or 1, color and color.b or 1, 1)
             belowH = 32
         end
     end

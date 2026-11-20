@@ -255,8 +255,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         cap:SetPoint("TOPRIGHT")
         cap:SetHeight(2)
         dialog:HookScript("OnShow", function()
-            local c = CludesUI.CLUDES_GREEN
-            cap:SetColorTexture(c.r, c.g, c.b, 0.9)
+            local color = CludesUI.CLUDES_GREEN
+            cap:SetColorTexture(color.r, color.g, color.b, 0.9)
         end)
         local titleLbl = MakeFont(titleBar, 13, nil, 1, 1, 1)
         titleLbl:SetPoint("LEFT", dialog, "TOPLEFT", PAD, -24)
@@ -873,15 +873,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             button._tex = texture
             CludesUI.RoundBody(button, texture)
             button:SetScript("OnEnter", function(self)
-                local c = self._color
-                if not c then
+                local color = self._color
+                if not color then
                     return
                 end
                 local hex = string.format(
                     "%02X%02X%02X",
-                    math.floor(c[1] * 255 + 0.5),
-                    math.floor(c[2] * 255 + 0.5),
-                    math.floor(c[3] * 255 + 0.5)
+                    math.floor(color[1] * 255 + 0.5),
+                    math.floor(color[2] * 255 + 0.5),
+                    math.floor(color[3] * 255 + 0.5)
                 )
                 local hint = isFavorites and CludesUI.L("Right-click: remove favorite")
                     or CludesUI.L("Right-click: favorite")
@@ -893,17 +893,17 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end)
             button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
             button:SetScript("OnClick", function(self, mouseButton)
-                local c = self._color
-                if not c then
+                local color = self._color
+                if not color then
                     return
                 end
                 if mouseButton == "RightButton" then
-                    if isFavorites or not IsFavorite(c[1], c[2], c[3]) then
-                        ToggleFavorite(c[1], c[2], c[3])
+                    if isFavorites or not IsFavorite(color[1], color[2], color[3]) then
+                        ToggleFavorite(color[1], color[2], color[3])
                     end
                     RefreshSwatchRows()
                 else
-                    currentH, currentS, currentV = RGBtoHSV(c[1], c[2], c[3])
+                    currentH, currentS, currentV = RGBtoHSV(color[1], color[2], color[3])
                     UpdateAllControls()
                     FireCallbacks()
                 end

@@ -1429,8 +1429,8 @@ CUI_NS.unlockParts.Session = function(LM)
         function A.Paint(special)
             local red, green, blue = 1, 0.82, 0.30
             if not special then
-                local c = CludesUI.CLUDES_GREEN
-                red, green, blue = c.r, c.g, c.b
+                local color = CludesUI.CLUDES_GREEN
+                red, green, blue = color.r, color.g, color.b
             end
             logo:SetVertexColor(red, green, blue, 1)
             for i = 1, 8 do

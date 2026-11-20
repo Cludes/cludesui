@@ -99,10 +99,10 @@ local function Load()
     if players then
         return true
     end
-    local c = F.Cfg()
-    c.players = c.players or {}
-    c.notes = c.notes or {}
-    players, notes = c.players, c.notes
+    local cfg = F.Cfg()
+    cfg.players = cfg.players or {}
+    cfg.notes = cfg.notes or {}
+    players, notes = cfg.players, cfg.notes
     local cutoff = time() - math.max(7, math.min(365, Get("days"))) * DAY
     count = 0
     for guid, rec in pairs(players) do
@@ -112,10 +112,10 @@ local function Load()
             count = count + 1
         end
     end
-    if c.resume and type(c.resume) == "table" then
-        resume, resumeAt = c.resume, c.resume.at
+    if cfg.resume and type(cfg.resume) == "table" then
+        resume, resumeAt = cfg.resume, cfg.resume.at
     end
-    c.resume = nil
+    cfg.resume = nil
     return true
 end
 

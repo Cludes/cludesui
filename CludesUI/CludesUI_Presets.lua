@@ -851,8 +851,8 @@ do
         -- Per-call subtitle color (default dim white). Lets a caller render a red
         -- overwrite warning in the subtitle slot. Reset every call (popup is cached).
         if options.subtitleColor then
-            local c = options.subtitleColor
-            specDialog._subtitle:SetTextColor(c.r or c[1] or 1, c.g or c[2] or 1, c.b or c[3] or 1, c.a or 1)
+            local color = options.subtitleColor
+            specDialog._subtitle:SetTextColor(color.r or color[1] or 1, color.g or color[2] or 1, color.b or color[3] or 1, color.a or 1)
         else
             specDialog._subtitle:SetTextColor(1, 1, 1, 0.45)
         end

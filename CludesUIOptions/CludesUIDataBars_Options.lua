@@ -1974,12 +1974,12 @@ CludesUI.AtOptionsLogin(function()
                 skinName.style = val
                 -- Selecting Modern starts Bar Opacity at 95.
                 if val == "modern" then
-                    local c = skinName.modernColor
-                    if not c then
-                        c = { r = 0.067, g = 0.067, b = 0.067 }
-                        skinName.modernColor = c
+                    local color = skinName.modernColor
+                    if not color then
+                        color = { r = 0.067, g = 0.067, b = 0.067 }
+                        skinName.modernColor = color
                     end
-                    c.a = 0.95
+                    color.a = 0.95
                 end
                 mod.ApplyTheme(barId)
                 HardRefresh()
@@ -2111,8 +2111,8 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Opacity of the bar's background; the swatch picks the Modern color.",
             getValue = function()
                 if skinName.style == "modern" then
-                    local c = skinName.modernColor
-                    local a = c and c.a
+                    local color = skinName.modernColor
+                    local a = color and color.a
                     if a == nil then
                         a = 0.95
                     end
@@ -2126,12 +2126,12 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(val)
                 if skinName.style == "modern" then
-                    local c = skinName.modernColor
-                    if not c then
-                        c = { r = 0.067, g = 0.067, b = 0.067 }
-                        skinName.modernColor = c
+                    local color = skinName.modernColor
+                    if not color then
+                        color = { r = 0.067, g = 0.067, b = 0.067 }
+                        skinName.modernColor = color
                     end
-                    c.a = val / 100
+                    color.a = val / 100
                 else
                     skinName.cuiOpacity = val / 100
                 end
@@ -2146,32 +2146,32 @@ CludesUI.AtOptionsLogin(function()
             -- changes HardRefresh, so the state re-evaluates on switch.
             local region = opacityRow._leftRegion
             local colorSwatch = CludesUI.BuildColorSwatch(region, opacityRow:GetFrameLevel() + 3, function()
-                local c = skinName.modernColor
-                if not c then
+                local color = skinName.modernColor
+                if not color then
                     return 0.067, 0.067, 0.067
                 end
-                local r = c.r
+                local r = color.r
                 if r == nil then
                     r = 0.067
                 end
-                local g = c.g
+                local g = color.g
                 if g == nil then
                     g = 0.067
                 end
-                local b2 = c.b
+                local b2 = color.b
                 if b2 == nil then
                     b2 = 0.067
                 end
                 return r, g, b2
             end, function(r, g, b2)
-                local c = skinName.modernColor
-                if not c then
-                    c = { a = 0.95 }
-                    skinName.modernColor = c
+                local color = skinName.modernColor
+                if not color then
+                    color = { a = 0.95 }
+                    skinName.modernColor = color
                 end
-                c.r = r
-                c.g = g
-                c.b = b2
+                color.r = r
+                color.g = g
+                color.b = b2
                 mod.ApplyTheme(barId)
                 RefreshPreviewTheme()
             end, false, 20)
@@ -2640,9 +2640,9 @@ CludesUI.AtOptionsLogin(function()
                         tooltip = "Custom Color",
                         hasAlpha = false,
                         getValue = function()
-                            local c = b.color
-                            if c then
-                                return c.r or 1, c.g or 1, c.b or 1
+                            local color = b.color
+                            if color then
+                                return color.r or 1, color.g or 1, color.b or 1
                             end
                             return 1, 1, 1
                         end,
@@ -2941,9 +2941,9 @@ CludesUI.AtOptionsLogin(function()
                             tooltip = "Custom Color",
                             hasAlpha = false,
                             getValue = function()
-                                local c = b.iconColor
-                                if c then
-                                    return c.r or 1, c.g or 1, c.b or 1
+                                local color = b.iconColor
+                                if color then
+                                    return color.r or 1, color.g or 1, color.b or 1
                                 end
                                 return mod.BlockIconDefault(b.type, s)
                             end,
@@ -4278,9 +4278,9 @@ CludesUI.AtOptionsLogin(function()
                     {
                         tip = "Custom Color",
                         get = function()
-                            local c = b.iconColor
-                            if c then
-                                return c.r or 1, c.g or 1, c.b or 1
+                            local color = b.iconColor
+                            if color then
+                                return color.r or 1, color.g or 1, color.b or 1
                             end
                             return 1, 1, 1
                         end,
@@ -4350,9 +4350,9 @@ CludesUI.AtOptionsLogin(function()
                     bagsLowRow:GetFrameLevel() + 3,
                     function()
                         local d = mod.BAGS_LOW_COLOR
-                        local c = s.lowColor
-                        if c then
-                            return c.r or d[1], c.g or d[2], c.b or d[3]
+                        local color = s.lowColor
+                        if color then
+                            return color.r or d[1], color.g or d[2], color.b or d[3]
                         end
                         return d[1], d[2], d[3]
                     end,
@@ -4578,11 +4578,11 @@ CludesUI.AtOptionsLogin(function()
                         region,
                         notesRow:GetFrameLevel() + 3,
                         function()
-                            local c = s.guildNoteColor
-                            if not c then
+                            local color = s.guildNoteColor
+                            if not color then
                                 return 0.925, 0.839, 0.447
                             end
-                            return c.r or 0.925, c.g or 0.839, c.b or 0.447
+                            return color.r or 0.925, color.g or 0.839, color.b or 0.447
                         end,
                         function(r, g, b2)
                             s.guildNoteColor = { r = r, g = g, b = b2 }

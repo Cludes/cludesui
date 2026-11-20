@@ -211,9 +211,9 @@ local function GetBorderStyleColor(conf)
     if conf.useClassColor then
         return ACC.r, ACC.g, ACC.b, conf.borderA or 1
     end
-    local c = conf.borderColor
-    if c then
-        return c.r, c.g, c.b, conf.borderA or 1
+    local color = conf.borderColor
+    if color then
+        return color.r, color.g, color.b, conf.borderA or 1
     end
     return GetBorderColor(conf)
 end

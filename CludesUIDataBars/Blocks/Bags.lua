@@ -96,8 +96,8 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
         if hovered then
             label:SetTextColor(mod.GetAccent())
         elseif (s.lowThreshold or 0) > 0 and (shownFree or 0) < s.lowThreshold then
-            local c = s.lowColor
-            label:SetTextColor(c and c.r or LOW[1], c and c.g or LOW[2], c and c.b or LOW[3])
+            local color = s.lowColor
+            label:SetTextColor(color and color.r or LOW[1], color and color.g or LOW[2], color and color.b or LOW[3])
         else
             label:SetTextColor(K.BlockColorOf(blockCfg))
         end

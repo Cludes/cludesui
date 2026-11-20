@@ -143,8 +143,8 @@ Offline.CurrentKey = OwnKey
 
 -- a class's colour code, custom class colours included
 local function ClassHex(class)
-    local c = class and CUI.GetClassColor(class)
-    return c and CUI.HexColor(c.r, c.g, c.b) or "|cffffffff"
+    local color = class and CUI.GetClassColor(class)
+    return color and CUI.HexColor(color.r, color.g, color.b) or "|cffffffff"
 end
 Offline.ClassHex = ClassHex
 

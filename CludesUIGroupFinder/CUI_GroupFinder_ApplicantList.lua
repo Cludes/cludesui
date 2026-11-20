@@ -816,8 +816,8 @@ local function PaintRole(roleBtn, role, classFile)
         local classColor = CUI.GetClassColor(classFile)
         roleBtn.bg:SetColorTexture(classColor.r, classColor.g, classColor.b, 1)
     else
-        local c = mod.RaidRoleColors[role]
-        roleBtn.bg:SetColorTexture(c[1], c[2], c[3], 1)
+        local color = mod.RaidRoleColors[role]
+        roleBtn.bg:SetColorTexture(color[1], color[2], color[3], 1)
     end
     local round = mod.OwnListGet("iconShape") ~= "square"
     if round and not roleBtn.masked then
@@ -1175,8 +1175,8 @@ local function PaintRaidRoles()
         local p, role = raidRoles.parts[k], ROLES[k]
         local num = payload[role]
         if type(num) == "number" and not Secret(num) then
-            local c = mod.RaidRoleColors[role]
-            p.bg:SetColorTexture(c[1], c[2], c[3], 1)
+            local color = mod.RaidRoleColors[role]
+            p.bg:SetColorTexture(color[1], color[2], color[3], 1)
             if round and not p.masked then
                 p.bg:AddMaskTexture(p.mask)
                 p.masked = true

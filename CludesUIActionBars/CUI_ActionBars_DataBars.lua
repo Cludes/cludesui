@@ -76,9 +76,9 @@ function mod.ResolveDataBarColor(s, red, green, blue)
             return ACC.r or red, ACC.g or green, ACC.b or blue
         end
     elseif mode == "custom" then
-        local c = s.customColor
-        if c then
-            return c.r or 1, c.g or 1, c.b or 1
+        local color = s.customColor
+        if color then
+            return color.r or 1, color.g or 1, color.b or 1
         end
         return 1, 1, 1
     end
@@ -141,15 +141,15 @@ mod.ApplyDataBarBorder = function(holderFrame, s)
         end
     end
     local texture = s.borderTexture or "solid"
-    local c = s.borderColor
+    local color = s.borderColor
     local sz, px = ResolveBorderThickness(s)
     CludesUI.ApplyBorderStyle(
         owner,
         sz,
-        c and c.r or 0,
-        c and c.g or 0,
-        c and c.b or 0,
-        c and c.a or 1,
+        color and color.r or 0,
+        color and color.g or 0,
+        color and color.b or 0,
+        color and color.a or 1,
         texture,
         s.borderTextureOffset,
         s.borderTextureOffsetY,
@@ -268,12 +268,12 @@ function mod.DataBarPlaceText(widget, s)
     end
     if backdrop then
         if bgOn then
-            local c = s.textBgColor
+            local color = s.textBgColor
             backdrop:SetColorTexture(
-                c and c.r or 0.06,
-                c and c.g or 0.06,
-                c and c.b or 0.08,
-                c and c.a or 0.9
+                color and color.r or 0.06,
+                color and color.g or 0.06,
+                color and color.b or 0.08,
+                color and color.a or 0.9
             )
             backdrop:Show()
         else
@@ -992,7 +992,7 @@ local function RegisterDataBarsWithUnlockMode()
                         return nil
                     end
                     local sz, px = ResolveBorderThickness(s)
-                    local c = s.borderColor
+                    local color = s.borderColor
                     return CludesUI.BorderMatchPad(
                         sz,
                         s.borderTexture or "solid",
@@ -1004,7 +1004,7 @@ local function RegisterDataBarsWithUnlockMode()
                         s.borderThickness or "thin",
                         px,
                         nil,
-                        c and c.a or 1
+                        color and color.a or 1
                     )
                 end,
                 setWidth = function(_, wid)

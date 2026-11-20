@@ -2163,8 +2163,8 @@ CludesUI.AtOptionsLogin(function()
                                             record.colorMode = m
                                         end,
                                         getCustomRGB = function()
-                                            local c = record.glowColor or { r = 1.0, g = 0.788, b = 0.137 }
-                                            return c.r, c.g, c.b
+                                            local color = record.glowColor or { r = 1.0, g = 0.788, b = 0.137 }
+                                            return color.r, color.g, color.b
                                         end,
                                         setCustomRGB = function(red, green, blue)
                                             record.glowColor = { r = red, g = green, b = blue }

@@ -1255,12 +1255,12 @@ local function EnsureSearchUI()
     cap:SetPoint("TOPRIGHT")
     cap:SetHeight(2)
     dialog:HookScript("OnShow", function()
-        local c = CludesUI.CLUDES_GREEN
-        cap:SetColorTexture(c.r, c.g, c.b, 0.9)
+        local color = CludesUI.CLUDES_GREEN
+        cap:SetColorTexture(color.r, color.g, color.b, 0.9)
     end)
     local function Wash(texture, enabled)
-        local c = CludesUI.CLUDES_GREEN
-        texture:SetColorTexture(c.r, c.g, c.b, enabled and 0.16 or 0)
+        local color = CludesUI.CLUDES_GREEN
+        texture:SetColorTexture(color.r, color.g, color.b, enabled and 0.16 or 0)
     end
 
     local resultsFrame = CreateFrame("Frame", nil, dialog)

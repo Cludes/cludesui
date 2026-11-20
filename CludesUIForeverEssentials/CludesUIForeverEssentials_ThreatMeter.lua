@@ -273,11 +273,11 @@ end
 -- Writes into the real saved appearance[group] table (created on first write)
 -- and restyles. Callers whose toggle gates other rows refresh the page.
 function mod.SetStyleValues(group, values)
-    local c = Cfg()
-    local ap = c.appearance
+    local cfg = Cfg()
+    local ap = cfg.appearance
     if type(ap) ~= "table" then
         ap = {}
-        c.appearance = ap
+        cfg.appearance = ap
     end
     local saved = ap[group]
     if type(saved) ~= "table" then
@@ -291,11 +291,11 @@ function mod.SetStyleValues(group, values)
 end
 
 function mod.SetStyleValue(group, key, value)
-    local c = Cfg()
-    local ap = c.appearance
+    local cfg = Cfg()
+    local ap = cfg.appearance
     if type(ap) ~= "table" then
         ap = {}
-        c.appearance = ap
+        cfg.appearance = ap
     end
     local saved = ap[group]
     if type(saved) ~= "table" then
@@ -411,10 +411,10 @@ end
 mod.GetTrackedUnit = TrackedUnit
 
 function mod.SetFocusEnabled(enabled)
-    local c = Cfg()
-    c.focusEnabled = enabled
-    if not enabled and c.source == "focus" then
-        c.source = nil
+    local cfg = Cfg()
+    cfg.focusEnabled = enabled
+    if not enabled and cfg.source == "focus" then
+        cfg.source = nil
     end
 end
 
@@ -444,11 +444,11 @@ function mod.SetDisplayedValue(val)
     if not mod.DisplayValues[val] then
         return
     end
-    local c = Cfg()
-    c.showValue = val == "value" or val == "value_relative" or val == "value_pull"
-    c.showPercent = val ~= "none" and val ~= "value"
-    if c.showPercent then
-        c.percentMode = val:find("pull", 1, true) and "pull" or "relative"
+    local cfg = Cfg()
+    cfg.showValue = val == "value" or val == "value_relative" or val == "value_pull"
+    cfg.showPercent = val ~= "none" and val ~= "value"
+    if cfg.showPercent then
+        cfg.percentMode = val:find("pull", 1, true) and "pull" or "relative"
     end
 end
 
@@ -666,17 +666,17 @@ local function PlaceSeparators(hostRegion)
             hostRegion.headerLine = hostRegion.art:CreateTexture(nil, "OVERLAY")
             Pix.DisablePixelSnap(hostRegion.headerLine)
         end
-        local c = dm.windowBorderColor
+        local color = dm.windowBorderColor
         Place(
             hostRegion.headerLine,
             dm.windowBorderTexture,
             dm.windowBorderSize,
             dm.windowBorderSizePx,
             -dm.inset - dm.headerHeight,
-            c.r or 0,
-            c.g or 0,
-            c.b or 0,
-            c.a or 1
+            color.r or 0,
+            color.g or 0,
+            color.b or 0,
+            color.a or 1
         )
     elseif hostRegion.headerLine then
         hostRegion.headerLine:Hide()
@@ -1939,8 +1939,8 @@ CreateWindow = function()
         PinPosition = PinPosition,
         SaveMove = SaveMove,
         SaveSize = function(width, height)
-            local c = Cfg()
-            c.width, c.height = width, height
+            local cfg = Cfg()
+            cfg.width, cfg.height = width, height
         end,
     })
     widget:EnableMouseWheel(true)

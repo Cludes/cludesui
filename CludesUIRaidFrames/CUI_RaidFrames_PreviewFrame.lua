@@ -408,13 +408,13 @@ local function CreatePreviewFrame(index, party)
             local c = frame._pvDispelBdrC
             red, green, blue, a = c.r, c.g, c.b, c.a or 1
         elseif frame._hovered and s.hoverBorderEnabled ~= false then
-            local c = s.hoverBorderColor or { r = 1, g = 1, b = 1 }
-            red, green, blue, a = c.r, c.g, c.b, s.hoverBorderAlpha or 1
+            local color = s.hoverBorderColor or { r = 1, g = 1, b = 1 }
+            red, green, blue, a = color.r, color.g, color.b, s.hoverBorderAlpha or 1
             raised, hlSize = true, s.hoverBorderSize or 1
             hlPx = CludesUI.BorderPx(s.hoverBorderSizePx, hlSize, s.borderTexture or "solid")
         elseif frame._isTarget and s.targetBorderEnabled ~= false then
-            local c = s.targetBorderColor or { r = 1, g = 1, b = 1 }
-            red, green, blue, a = c.r, c.g, c.b, s.targetBorderAlpha or 1
+            local color = s.targetBorderColor or { r = 1, g = 1, b = 1 }
+            red, green, blue, a = color.r, color.g, color.b, s.targetBorderAlpha or 1
             raised, hlSize = true, s.targetBorderSize or 1
             hlPx = CludesUI.BorderPx(s.targetBorderSizePx, hlSize, s.borderTexture or "solid")
         elseif frame._pvAggroBdr then
@@ -427,8 +427,8 @@ local function CreatePreviewFrame(index, party)
             local c = frame._pvDispelBdrC
             red, green, blue, a = c.r, c.g, c.b, c.a or 1
         else
-            local c = s.borderColor or { r = 0, g = 0, b = 0 }
-            red, green, blue, a = c.r, c.g, c.b, s.borderAlpha or 1
+            local color = s.borderColor or { r = 0, g = 0, b = 0 }
+            red, green, blue, a = color.r, color.g, color.b, s.borderAlpha or 1
         end
         -- Match real frames: raise the inset border above overlapping neighbors
         -- while highlighted (handles negative Frame Spacing in the preview too).

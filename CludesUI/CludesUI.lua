@@ -2284,11 +2284,11 @@ CludesUI.QUEUE_TIMER = {
 -- CludesUIDB); unset = RESKIN palette. Returns r,g,b,a (0 is valid: Lua 0 is truthy, so `or` fallback fires on nil only).
 function CludesUI.GetTooltipBg()
     local saved = CludesUIDB
-    local c = saved and saved.tooltipBgColor
+    local color = saved and saved.tooltipBgColor
     local R = CludesUI.RESKIN
-    local r = (c and c.r) or R.BG_R
-    local g = (c and c.g) or R.BG_G
-    local b = (c and c.b) or R.BG_B
+    local r = (color and color.r) or R.BG_R
+    local g = (color and color.g) or R.BG_G
+    local b = (color and color.b) or R.BG_B
     local a = (saved and saved.tooltipBgOpacity) or R.TT_ALPHA
     return r, g, b, a
 end
@@ -2296,10 +2296,10 @@ end
 -- Border); unset = white @ BRD_ALPHA, 1px. Returns r,g,b,a,size (0 is valid).
 function CludesUI.GetTooltipBorder()
     local saved = CludesUIDB
-    local c = saved and saved.tooltipBorderColor
-    local r = (c and c.r) or 1
-    local g = (c and c.g) or 1
-    local b = (c and c.b) or 1
+    local color = saved and saved.tooltipBorderColor
+    local r = (color and color.r) or 1
+    local g = (color and color.g) or 1
+    local b = (color and color.b) or 1
     local a = (saved and saved.tooltipBorderOpacity) or CludesUI.RESKIN.BRD_ALPHA
     local px = (saved and saved.tooltipBorderSize) or 1
     return r, g, b, a, px
@@ -3796,10 +3796,10 @@ if not CludesUI.ResolveActiveAccent then
         local accent = p and p.cuiAccent
         -- 1) per-profile cuiAccent
         if accent and accent.useClass then
-            local c = (CludesUI.GetRawClassColor and CludesUI.GetRawClassColor(playerClass))
+            local color = (CludesUI.GetRawClassColor and CludesUI.GetRawClassColor(playerClass))
                 or CLASS_COLOR_MAP[playerClass]
-            if c then
-                return c.r, c.g, c.b
+            if color then
+                return color.r, color.g, color.b
             end
         end
         if accent and accent.custom then
@@ -3808,10 +3808,10 @@ if not CludesUI.ResolveActiveAccent then
         end
         -- 2) frozen global root (only when no explicit per-profile cuiAccent)
         if (not accent) and saved and saved.useClassAccentColor then
-            local c = (CludesUI.GetRawClassColor and CludesUI.GetRawClassColor(playerClass))
+            local color = (CludesUI.GetRawClassColor and CludesUI.GetRawClassColor(playerClass))
                 or CLASS_COLOR_MAP[playerClass]
-            if c then
-                return c.r, c.g, c.b
+            if color then
+                return color.r, color.g, color.b
             end
         end
         local gca = saved and saved.customAccentColor
@@ -5600,9 +5600,9 @@ initFrame:SetScript("OnEvent", function(self, evt)
                 insetPx:SetFrameLevel(customButton:GetFrameLevel())
                 local cBg = insetPx:CreateTexture(nil, "BACKGROUND", nil, -6)
                 cBg:SetAllPoints()
-                local c = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
+                local color = CludesUIDB and CludesUIDB.popupMenuButtonBackgroundColor
                     or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
-                cBg:SetColorTexture(c.r, c.g, c.b, c.a == nil and 0.8 or c.a)
+                cBg:SetColorTexture(color.r, color.g, color.b, color.a == nil and 0.8 or color.a)
                 CludesUI._GetFFD(customButton).gameMenuInset = insetPx
                 CludesUI._GetFFD(customButton).gameMenuButtonBg = cBg
                 if CludesUI._applyBlizzardConfiguredBorder then

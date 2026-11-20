@@ -67,8 +67,8 @@ local function GetEnemyNameTextSize()
 end
 mod.GetEnemyNameTextSize = GetEnemyNameTextSize
 local function GetDebuffTextColor()
-    local c = (p and p.debuffTimerColor) or defaultSet.debuffTimerColor
-    return c.r, c.g, c.b, 1
+    local color = (p and p.debuffTimerColor) or defaultSet.debuffTimerColor
+    return color.r, color.g, color.b, 1
 end
 mod.GetDebuffTextColor = GetDebuffTextColor
 
@@ -146,9 +146,9 @@ function mod.GetPandemicGlowSpec(result)
         result.r, result.g, result.b = nil, nil, nil
     else
         result.style = mod.NP_TO_SHARED_GLOW[position] or 1
-        local c = (p and p.pandemicGlowColor) or defaultSet.pandemicGlowColor
+        local color = (p and p.pandemicGlowColor) or defaultSet.pandemicGlowColor
         result.r, result.g, result.b =
-            CludesUI.Glows.ResolveColor((p and p.pandemicGlowMode) or "custom", c.r, c.g, c.b)
+            CludesUI.Glows.ResolveColor((p and p.pandemicGlowMode) or "custom", color.r, color.g, color.b)
     end
     result.lines = GetPandemicGlowLines()
     result.thickness = GetPandemicGlowThickness()
@@ -232,9 +232,9 @@ do
         end
         -- Never customized = "default": no tint request (nil), the suite's
         -- default look (gold). An explicit swatch pick is stored and honored.
-        local c = p and p.dispelGlowColor
-        local modeName = (p and p.dispelGlowColorMode) or (c and "custom" or "default")
-        return CludesUI.Glows.ResolveColor(modeName, c and c.r, c and c.g, c and c.b)
+        local color = p and p.dispelGlowColor
+        local modeName = (p and p.dispelGlowColorMode) or (color and "custom" or "default")
+        return CludesUI.Glows.ResolveColor(modeName, color and color.r, color and color.g, color and color.b)
     end
     -- Full render spec for the dispel glow (live purge glow and its preview).
     mod.GetDispelGlowSpec = function(dispelType, result)
@@ -503,8 +503,8 @@ local function GetKickTickEnabled()
 end
 mod.GetKickTickEnabled = GetKickTickEnabled
 local function GetKickTickColor()
-    local c = (p and p.kickTickColor) or defaultSet.kickTickColor
-    return c.r, c.g, c.b
+    local color = (p and p.kickTickColor) or defaultSet.kickTickColor
+    return color.r, color.g, color.b
 end
 mod.GetKickTickColor = GetKickTickColor
 -- Optional element ("debuffs", "buffs", "ccs") selects per-element spacing; no arg
@@ -783,9 +783,9 @@ do
         if not k then
             return 1, 1, 1
         end
-        local c = saved[part == "level" and k.lvl or k.name] or saved[k.color] or defaultSet[k.color]
-        if c then
-            return c.r, c.g, c.b
+        local color = saved[part == "level" and k.lvl or k.name] or saved[k.color] or defaultSet[k.color]
+        if color then
+            return color.r, color.g, color.b
         end
         return 1, 1, 1
     end
@@ -1572,17 +1572,17 @@ local function GetClassPowerClassColors()
 end
 mod.GetClassPowerClassColors = GetClassPowerClassColors
 local function GetClassPowerCustomColor()
-    local c = (p and p.classPowerCustomColor) or defaultSet.classPowerCustomColor
-    return c
+    local color = (p and p.classPowerCustomColor) or defaultSet.classPowerCustomColor
+    return color
 end
 mod.GetClassPowerCustomColor = GetClassPowerCustomColor
 mod.GetClassPowerBgColor = function()
-    local c = (p and p.classPowerBgColor) or defaultSet.classPowerBgColor
-    return c
+    local color = (p and p.classPowerBgColor) or defaultSet.classPowerBgColor
+    return color
 end
 mod.GetClassPowerEmptyColor = function()
-    local c = (p and p.classPowerEmptyColor) or defaultSet.classPowerEmptyColor
-    return c
+    local color = (p and p.classPowerEmptyColor) or defaultSet.classPowerEmptyColor
+    return color
 end
 -- On ns, not file locals (Lua's 200 main-chunk local limit).
 function mod.GetClassPowerShape()
@@ -1714,7 +1714,7 @@ function mod.NP_ApplyCastIconSeparator(cast, iconTex, saved, customOn, strata)
     local size = saved.customBorderSize or defaultSet.customBorderSize
     local px = CludesUI.BorderPx(saved.customBorderSizePx, size, layoutKey)
     local right = saved.castIconOnRight == true
-    local c = saved.customBorderColor or defaultSet.customBorderColor
+    local color = saved.customBorderColor or defaultSet.customBorderColor
     local a = saved.customBorderAlpha or defaultSet.customBorderAlpha
     -- Restyle inputs: shown state, strata, level (a strata change resets it), texture,
     -- size step, exact px, side, the scale its width snaps to, and its colour.
@@ -1727,9 +1727,9 @@ function mod.NP_ApplyCastIconSeparator(cast, iconTex, saved, customOn, strata)
         and seamTex._px == px
         and seamTex._right == right
         and seamTex._es == seamTex:GetEffectiveScale()
-        and seamTex._r == c.r
-        and seamTex._g == c.g
-        and seamTex._b == c.b
+        and seamTex._r == color.r
+        and seamTex._g == color.g
+        and seamTex._b == color.b
         and seamTex._a == a
     then
         return
@@ -1737,8 +1737,8 @@ function mod.NP_ApplyCastIconSeparator(cast, iconTex, saved, customOn, strata)
     seamTex:SetFrameStrata(st)
     seamTex:SetFrameLevel(level)
     seamTex._key, seamTex._size, seamTex._px, seamTex._right = layoutKey, size, px, right
-    seamTex._r, seamTex._g, seamTex._b, seamTex._a = c.r, c.g, c.b, a
-    seamTex._tex:SetVertexColor(c.r, c.g, c.b, a)
+    seamTex._r, seamTex._g, seamTex._b, seamTex._a = color.r, color.g, color.b, a
+    seamTex._tex:SetVertexColor(color.r, color.g, color.b, a)
     mod.NP_LayoutCastIconSeparator(seamTex)
     seamTex:Show()
     CludesUI.RegisterPxReapply(seamTex, strata and mod.NP_LayoutCastIconSeparator or nil)
@@ -1817,11 +1817,11 @@ function mod.ApplyCastIconBorder(backing)
     local px = CludesUI.BorderPx(p.customBorderSizePx, sz, texture)
     local red, green, blue, a
     if p.castIconTargetBorder and backing._isTarget and mod.GetTargetGlowBorderColor() then
-        local c = mod.GetTargetBorderColor()
-        red, green, blue, a = c.r, c.g, c.b, 1
+        local color = mod.GetTargetBorderColor()
+        red, green, blue, a = color.r, color.g, color.b, 1
     else
-        local c = p.customBorderColor or defaultSet.customBorderColor
-        red, green, blue, a = c.r, c.g, c.b, p.customBorderAlpha or defaultSet.customBorderAlpha or 1
+        local color = p.customBorderColor or defaultSet.customBorderColor
+        red, green, blue, a = color.r, color.g, color.b, p.customBorderAlpha or defaultSet.customBorderAlpha or 1
     end
     local strata = backing._castOverlayLifted and backing.cast:GetFrameStrata() or "MEDIUM"
     local level = iconTex:GetFrameLevel() + 3
@@ -1874,8 +1874,8 @@ local function GetBorderColor()
     if mod.NP_Classic() then
         return 0, 0, 0
     end
-    local c = (p and p.borderColor) or defaultSet.borderColor
-    return c.r, c.g, c.b
+    local color = (p and p.borderColor) or defaultSet.borderColor
+    return color.r, color.g, color.b
 end
 mod.GetBorderColor = GetBorderColor
 -- Health border size: the classic plate's fixed 1px edge, else the profile's
@@ -1891,8 +1891,8 @@ function mod.NP_CastBorderColor()
     if mod.NP_Classic() then
         return 0, 0, 0
     end
-    local c = (p and p.castBorderColor) or defaultSet.castBorderColor
-    return c.r, c.g, c.b
+    local color = (p and p.castBorderColor) or defaultSet.castBorderColor
+    return color.r, color.g, color.b
 end
 -- "Wrap Border Around Castbar". The cast-visibility hook reads this on every
 -- cast show/hide, so it must stay a trivial table lookup.
@@ -2093,9 +2093,9 @@ mod.GetTextSlotSize = GetTextSlotSize
 
 -- Get color for a text slot key (e.g. "textSlotTop")
 local function GetTextSlotColor(slotName)
-    local c = (p and p[slotName .. "Color"]) or defaultSet[slotName .. "Color"]
-    if c then
-        return c.r, c.g, c.b
+    local color = (p and p[slotName .. "Color"]) or defaultSet[slotName .. "Color"]
+    if color then
+        return color.r, color.g, color.b
     end
     return 1, 1, 1
 end

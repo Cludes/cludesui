@@ -112,9 +112,9 @@ local function MakeBorderColorSwatches()
             tooltip = "Custom Color",
             hasAlpha = false,
             getValue = function()
-                local c = Cfg("borderColor")
-                if c then
-                    return c.r or 0, c.g or 0, c.b or 0
+                local color = Cfg("borderColor")
+                if color then
+                    return color.r or 0, color.g or 0, color.b or 0
                 end
                 return 0, 0, 0
             end,
@@ -681,9 +681,9 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                     region,
                     region:GetFrameLevel() + 5,
                     function()
-                        local c = Cfg(colorKey)
-                        if c then
-                            return c.r or 1, c.g or 1, c.b or 1
+                        local color = Cfg(colorKey)
+                        if color then
+                            return color.r or 1, color.g or 1, color.b or 1
                         end
                         return 1, 1, 1
                     end,
@@ -864,9 +864,9 @@ local function MakeBloodlustBorderColorSwatches()
             tooltip = "Custom Color",
             hasAlpha = false,
             getValue = function()
-                local c = BL_Cfg("borderColor")
-                if c then
-                    return c.r or 0, c.g or 0, c.b or 0
+                local color = BL_Cfg("borderColor")
+                if color then
+                    return color.r or 0, color.g or 0, color.b or 0
                 end
                 return 0, 0, 0
             end,
@@ -1228,9 +1228,9 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                     leftRegion,
                     leftRegion:GetFrameLevel() + 5,
                     function()
-                        local c = BL_Cfg("readyColor")
-                        if c then
-                            return c.r or 1, c.g or 1, c.b or 1
+                        local color = BL_Cfg("readyColor")
+                        if color then
+                            return color.r or 1, color.g or 1, color.b or 1
                         end
                         return 1, 1, 1
                     end,

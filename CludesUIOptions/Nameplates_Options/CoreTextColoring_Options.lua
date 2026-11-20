@@ -121,8 +121,8 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
             -- A part colour not picked yet starts from the slot colour.
             local function PartColor(key)
                 local saved = DB()
-                local c = (saved and (saved[key] or saved[colorKey])) or defaultSet[colorKey]
-                return c.r, c.g, c.b
+                local color = (saved and (saved[key] or saved[colorKey])) or defaultSet[colorKey]
+                return color.r, color.g, color.b
             end
             cog = CludesUI.BuildInlineCog(region, {
                 title = title,
@@ -209,8 +209,8 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
         local anchor = region._lastInline or region._control
         local gap = region._lastInline and -8 or -12
         local custom, updateCustom = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
-            local c = (DB() and DB()[colorKey]) or defaultSet[colorKey]
-            return c.r, c.g, c.b
+            local color = (DB() and DB()[colorKey]) or defaultSet[colorKey]
+            return color.r, color.g, color.b
         end, function(red, green, blue)
             DB()[colorKey] = { r = red, g = green, b = blue }
             Apply()

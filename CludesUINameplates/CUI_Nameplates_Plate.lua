@@ -422,8 +422,8 @@ function NameplateFrame:UpdateCastText(spellName)
             targetLabel:SetTextColor(1, 1, 1, 1)
         end
     else
-        local c = saved.castTargetColor or defaultSet.castTargetColor
-        targetLabel:SetTextColor(c.r, c.g, c.b, 1)
+        local color = saved.castTargetColor or defaultSet.castTargetColor
+        targetLabel:SetTextColor(color.r, color.g, color.b, 1)
     end
     if not combine or not targeted then
         self.castName:SetTextColor(nameColor.r, nameColor.g, nameColor.b, 1)
@@ -738,22 +738,22 @@ function NameplateFrame:UpdateToT()
                 fontStr:SetTextColor(red, green, blue, 1)
                 return
             end
-            local c = C_ClassColor.GetClassColor(plateUnit)
-            if c then
-                fontStr:SetTextColor(c:GetRGB())
+            local color = C_ClassColor.GetClassColor(plateUnit)
+            if color then
+                fontStr:SetTextColor(color:GetRGB())
                 return
             end
         else
-            local c = CludesUI.GetClassColor(plateUnit)
-            if c then
-                fontStr:SetTextColor(c.r, c.g, c.b, 1)
+            local color = CludesUI.GetClassColor(plateUnit)
+            if color then
+                fontStr:SetTextColor(color.r, color.g, color.b, 1)
                 return
             end
         end
     end
-    local c = (p and p[mod._npToTColorKey]) or defaultSet[mod._npToTColorKey]
-    if c then
-        fontStr:SetTextColor(c.r, c.g, c.b, 1)
+    local color = (p and p[mod._npToTColorKey]) or defaultSet[mod._npToTColorKey]
+    if color then
+        fontStr:SetTextColor(color.r, color.g, color.b, 1)
     else
         fontStr:SetTextColor(1, 1, 1, 1)
     end
@@ -1249,9 +1249,9 @@ function NameplateFrame:SetUnit(unitToken, plateFrame)
                     end
                 end
                 if type(classToken) ~= "nil" and C_ClassColor then
-                    local c = C_ClassColor.GetClassColor(classToken)
-                    if c then
-                        self.castTarget:SetTextColor(c:GetRGB())
+                    local color = C_ClassColor.GetClassColor(classToken)
+                    if color then
+                        self.castTarget:SetTextColor(color:GetRGB())
                         appliedCTC = true
                     end
                 end

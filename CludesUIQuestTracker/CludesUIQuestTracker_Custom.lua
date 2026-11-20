@@ -345,17 +345,17 @@ end
 -- custom colour); with no pick, the Header Color. The fourth return is true
 -- while that colour is the accent.
 local function ZoneRGB()
-    local c = EQT.DB()
-    local accent = c.customZoneUseAccent
+    local cfg = EQT.DB()
+    local accent = cfg.customZoneUseAccent
     if accent == nil then
         local red, green, blue = EQT.GetHeaderRGB()
-        return red, green, blue, not (c.headerShowClassColor or c.headerUseAccent == false)
+        return red, green, blue, not (cfg.headerShowClassColor or cfg.headerUseAccent == false)
     end
     if accent then
         local a = CludesUI.CLUDES_GREEN
         return a.r, a.g, a.b, true
     end
-    return c.customZoneR or 1, c.customZoneG or 1, c.customZoneB or 1, false
+    return cfg.customZoneR or 1, cfg.customZoneG or 1, cfg.customZoneB or 1, false
 end
 EQT.CustomZoneRGB = ZoneRGB
 
@@ -1538,9 +1538,9 @@ local function AddRewardLine(e, ownerFrame)
                 e.name
             )
         or BONUS_OBJECTIVE_REWARD_FORMAT:format(e.texture, e.name)
-    local c = e.quality and ColorManager.GetColorDataForItemQuality(e.quality)
-    if c then
-        GameTooltip:AddLine(textValue, c.r, c.g, c.b)
+    local color = e.quality and ColorManager.GetColorDataForItemQuality(e.quality)
+    if color then
+        GameTooltip:AddLine(textValue, color.r, color.g, color.b)
     else
         GameTooltip:AddLine(textValue, 1, 1, 1)
     end
@@ -1614,8 +1614,8 @@ local function ApplyBackground()
     if not widget then
         return
     end
-    local c = EQT.DB()
-    widget.bg:SetColorTexture(c.bgR or 0, c.bgG or 0, c.bgB or 0, c.bgAlpha or 0.5)
+    local cfg = EQT.DB()
+    widget.bg:SetColorTexture(cfg.bgR or 0, cfg.bgG or 0, cfg.bgB or 0, cfg.bgAlpha or 0.5)
     widget.topLine:SetColorTexture(EQT.GetLineRGB())
     ShowBackground(true)
     local hr, hg, hb = EQT.GetHeaderRGB()
@@ -1794,15 +1794,15 @@ local function TakeBlizzardSpot()
     if not leftX then
         return false
     end
-    local c = EQT.DB()
-    if (c.customWidth or DEF_WIDTH) == DEF_WIDTH then
-        c.customWidth = Clamp(math.floor(wid + 0.5), WIDTH_MIN, WIDTH_MAX)
+    local cfg = EQT.DB()
+    if (cfg.customWidth or DEF_WIDTH) == DEF_WIDTH then
+        cfg.customWidth = Clamp(math.floor(wid + 0.5), WIDTH_MIN, WIDTH_MAX)
     end
-    if (c.customMaxHeight or DEF_HEIGHT) == DEF_HEIGHT then
-        c.customMaxHeight = Clamp(math.floor(hgt + 0.5), HEIGHT_MIN, HEIGHT_MAX)
+    if (cfg.customMaxHeight or DEF_HEIGHT) == DEF_HEIGHT then
+        cfg.customMaxHeight = Clamp(math.floor(hgt + 0.5), HEIGHT_MIN, HEIGHT_MAX)
     end
     -- The panel's top edge; growing up, the bottom edge of the same area.
-    c.customPos = Anchored({
+    cfg.customPos = Anchored({
         point = "TOPLEFT",
         relPoint = "BOTTOMLEFT",
         x = math.floor(leftX + 0.5),

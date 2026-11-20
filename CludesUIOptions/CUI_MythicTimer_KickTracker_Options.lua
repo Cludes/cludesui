@@ -771,11 +771,11 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                     hasAlpha = false,
                     getValue = function()
                         local _, cls = UnitClass("player")
-                        local c = cls and C_ClassColor.GetClassColor(cls)
-                        if not c then
+                        local color = cls and C_ClassColor.GetClassColor(cls)
+                        if not color then
                             return 0.2, 0.2, 0.2
                         end
-                        local red, green, b = c:GetRGB()
+                        local red, green, b = color:GetRGB()
                         return red * 0.3, green * 0.3, b * 0.3
                     end,
                     setValue = function() end,

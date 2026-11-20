@@ -169,8 +169,8 @@ function mod.UFO_SwatchPair(region, opts)
     local def = opts.colorDefault
     Add(
         function()
-            local c = store()[opts.colorKey] or def
-            return c.r, c.g, c.b
+            local color = store()[opts.colorKey] or def
+            return color.r, color.g, color.b
         end,
         function(red, green, blue)
             store()[opts.colorKey] = { r = red, g = green, b = blue }
@@ -981,8 +981,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             leftRegion,
             sharedScaleBorderRow:GetFrameLevel() + 3,
             function()
-                local c = SGet("borderColor") or { r = 0, g = 0, b = 0 }
-                return c.r, c.g, c.b, SVal("borderAlpha", 1)
+                local color = SGet("borderColor") or { r = 0, g = 0, b = 0 }
+                return color.r, color.g, color.b, SVal("borderAlpha", 1)
             end,
             function(red, green, blue, a)
                 UNIT_DB_MAP[optionState.selectedUnit]().borderColor = { r = red, g = green, b = blue }
@@ -1333,8 +1333,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
         local lvl = decimalRow:GetFrameLevel() + 3
         -- Highlight swatch (per-unit), nearest the dropdown.
         local hlSwatch, updHl = CludesUI.BuildColorSwatch(rightRegion, lvl, function()
-            local c = UNIT_DB_MAP.player().highlightColor or { r = 1, g = 1, b = 1 }
-            return c.r, c.g, c.b, UNIT_DB_MAP.player().highlightAlpha or 1
+            local color = UNIT_DB_MAP.player().highlightColor or { r = 1, g = 1, b = 1 }
+            return color.r, color.g, color.b, UNIT_DB_MAP.player().highlightAlpha or 1
         end, function(red, green, blue, a)
             -- Shared across all 3 main frames (see Highlight enable above).
             for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
@@ -1352,8 +1352,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
         if isPlayer then
             -- Has Aggro swatch (global), left of Highlight.
             hasSwatch, updHas = CludesUI.BuildColorSwatch(rightRegion, lvl, function()
-                local c = saved.profile.playerThreatHasAggroColor or { r = 1, g = 0.5, b = 0 }
-                return c.r, c.g, c.b, 1
+                local color = saved.profile.playerThreatHasAggroColor or { r = 1, g = 0.5, b = 0 }
+                return color.r, color.g, color.b, 1
             end, function(red, green, blue)
                 saved.profile.playerThreatHasAggroColor = { r = red, g = green, b = blue }
                 if mod.UpdatePlayerThreatBorder then
@@ -1366,8 +1366,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
 
             -- Close to Aggro swatch (global), left of Has Aggro.
             nearSwatch, updNear = CludesUI.BuildColorSwatch(rightRegion, lvl, function()
-                local c = saved.profile.playerThreatNearAggroColor or { r = 0.81, g = 0.72, b = 0.19 }
-                return c.r, c.g, c.b, 1
+                local color = saved.profile.playerThreatNearAggroColor or { r = 0.81, g = 0.72, b = 0.19 }
+                return color.r, color.g, color.b, 1
             end, function(red, green, blue)
                 saved.profile.playerThreatNearAggroColor = { r = red, g = green, b = blue }
                 if mod.UpdatePlayerThreatBorder then
@@ -1774,9 +1774,9 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                 disabledTooltip = "This option requires a Shape other than None.",
                 rawTooltip = true,
                 get = function()
-                    local c = SGet("detachedPortraitBgColor")
-                    if c then
-                        return c.r, c.g, c.b, c.a or 1
+                    local color = SGet("detachedPortraitBgColor")
+                    if color then
+                        return color.r, color.g, color.b, color.a or 1
                     end
                     return 0.1, 0.1, 0.1, 1
                 end,
@@ -2124,9 +2124,9 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                     tooltip = "Custom Color",
                     hasAlpha = false,
                     getValue = function()
-                        local c = SGet("detachedPortraitBorderColor")
-                        c = c or { r = 0, g = 0, b = 0 }
-                        return c.r, c.g, c.b
+                        local color = SGet("detachedPortraitBorderColor")
+                        color = color or { r = 0, g = 0, b = 0 }
+                        return color.r, color.g, color.b
                     end,
                     setValue = function(red, green, blue)
                         UNIT_DB_MAP[optionState.selectedUnit]().detachedPortraitBorderColor =
@@ -2319,8 +2319,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
             end
             mod.UFO_UnitSync(region, "Shape Border", {
                 copy = function(t, from)
-                    local c = from.detachedPortraitBorderColor
-                    t.detachedPortraitBorderColor = c and { r = c.r, g = c.g, b = c.b } or nil
+                    local color = from.detachedPortraitBorderColor
+                    t.detachedPortraitBorderColor = color and { r = color.r, g = color.g, b = color.b } or nil
                     t.detachedPortraitBorderOpacity = from.detachedPortraitBorderOpacity
                     t.detachedPortraitBorderSize = from.detachedPortraitBorderSize
                     t.detachedPortraitClassColor = from.detachedPortraitClassColor
@@ -2606,10 +2606,10 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             local btbRgn = sharedBtbToggleRow._leftRegion
             local sw = CludesUI.BuildColorSwatch(btbRgn, btbRgn:GetFrameLevel() + 5, function()
-                local c = SGet("btbBgColor")
-                c = c or { r = 0.2, g = 0.2, b = 0.2 }
+                local color = SGet("btbBgColor")
+                color = color or { r = 0.2, g = 0.2, b = 0.2 }
                 local a = SGet("btbBgOpacity")
-                return c.r, c.g, c.b, a or 1.0
+                return color.r, color.g, color.b, a or 1.0
             end, function(red, green, blue, a)
                 UNIT_DB_MAP[optionState.selectedUnit]().btbBgColor = { r = red, g = green, b = blue }
                 UNIT_DB_MAP[optionState.selectedUnit]().btbBgOpacity = a
@@ -2911,9 +2911,9 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                 tooltip = "Custom Colored",
                                 hasAlpha = false,
                                 getValue = function()
-                                    local c = SVal("btbLeftTargetSepColor", nil)
-                                    if type(c) == "table" then
-                                        return c.r or 1, c.g or 1, c.b or 1
+                                    local color = SVal("btbLeftTargetSepColor", nil)
+                                    if type(color) == "table" then
+                                        return color.r or 1, color.g or 1, color.b or 1
                                     end
                                     return 1, 1, 1
                                 end,
@@ -3141,9 +3141,9 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                 tooltip = "Custom Colored",
                                 hasAlpha = false,
                                 getValue = function()
-                                    local c = SVal("btbRightTargetSepColor", nil)
-                                    if type(c) == "table" then
-                                        return c.r or 1, c.g or 1, c.b or 1
+                                    local color = SVal("btbRightTargetSepColor", nil)
+                                    if type(color) == "table" then
+                                        return color.r or 1, color.g or 1, color.b or 1
                                     end
                                     return 1, 1, 1
                                 end,
@@ -3419,9 +3419,9 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                 tooltip = "Custom Colored",
                                 hasAlpha = false,
                                 getValue = function()
-                                    local c = SVal("btbCenterTargetSepColor", nil)
-                                    if type(c) == "table" then
-                                        return c.r or 1, c.g or 1, c.b or 1
+                                    local color = SVal("btbCenterTargetSepColor", nil)
+                                    if type(color) == "table" then
+                                        return color.r or 1, color.g or 1, color.b or 1
                                     end
                                     return 1, 1, 1
                                 end,

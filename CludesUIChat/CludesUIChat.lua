@@ -406,11 +406,11 @@ local EDIT_BG_R, EDIT_BG_G, EDIT_BG_B = 0.05, 0.065, 0.08
 local function GetInnerBorderColor(conf)
     if conf.innerBorderColorMode == "accent" and CludesUI.GetAccentColor then
         local red, green, blue = CludesUI.GetAccentColor()
-        local c = conf.innerBorderColor
-        return red, green, blue, (c and c.a) or 0.06
+        local color = conf.innerBorderColor
+        return red, green, blue, (color and color.a) or 0.06
     end
-    local c = conf.innerBorderColor or { r = 1, g = 1, b = 1, a = 0.06 }
-    return c.r or 1, c.g or 1, c.b or 1, c.a == nil and 0.06 or c.a
+    local color = conf.innerBorderColor or { r = 1, g = 1, b = 1, a = 0.06 }
+    return color.r or 1, color.g or 1, color.b or 1, color.a == nil and 0.06 or color.a
 end
 
 -- Chat frame text size is Blizzard's per-frame setting (right-click tab ->

@@ -315,9 +315,9 @@ local function PaintMember(row, settings, class, kick, name)
     row.sb:SetStatusBarColor(red, green, blue)
     local br, bgTex, bb, ba
     if settings.barBgMode == "custom" then
-        local c = settings.barBgColor
-        if c then
-            br, bgTex, bb, ba = c.r, c.g, c.b, c.a or 0.45
+        local color = settings.barBgColor
+        if color then
+            br, bgTex, bb, ba = color.r, color.g, color.b, color.a or 0.45
         else
             br, bgTex, bb, ba = 0, 0, 0, 0.45
         end

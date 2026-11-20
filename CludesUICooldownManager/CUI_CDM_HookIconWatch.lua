@@ -1306,11 +1306,11 @@ do
                     end
                 end
                 if isForm then
-                    local c = line.leftColor
-                    if not Readable(c) then
+                    local color = line.leftColor
+                    if not Readable(color) then
                         return nil
                     end
-                    local red, green, blue = c.r, c.g, c.b
+                    local red, green, blue = color.r, color.g, color.b
                     if
                         issecretvalue(red)
                         or issecretvalue(green)

@@ -99,31 +99,31 @@ local function CDB()
 end
 
 local function Enabled()
-    local c = CDB()
-    return c and c.buffCheck == true
+    local cfg = CDB()
+    return cfg and cfg.buffCheck == true
 end
 
 local function OpenOnReady()
-    local c = CDB()
-    return c and c.buffCheckOnReady ~= false
+    local cfg = CDB()
+    return cfg and cfg.buffCheckOnReady ~= false
 end
 
 -- Default on: shows only the players who are not fully buffed.
 local function OnlyMissing()
-    local c = CDB()
-    return not c or c.buffCheckOnlyMissing ~= false
+    local cfg = CDB()
+    return not cfg or cfg.buffCheckOnlyMissing ~= false
 end
 
 -- Default on: a missing augment rune makes a player not fully buffed.
 local function RuneRequired()
-    local c = CDB()
-    return not c or c.buffCheckRuneRequired ~= false
+    local cfg = CDB()
+    return not cfg or cfg.buffCheckRuneRequired ~= false
 end
 
 -- Default off: a missing vantus rune makes a player not fully buffed.
 local function VantusRequired()
-    local c = CDB()
-    return c and c.buffCheckVantusRequired == true or false
+    local cfg = CDB()
+    return cfg and cfg.buffCheckVantusRequired == true or false
 end
 
 local function Restricted()
@@ -417,8 +417,8 @@ end
 -- Kept as a TOPLEFT offset: the height (and width) change with the roster and
 -- the filter, and the top-left corner must stay put while they do.
 local function SavePosition()
-    local c = CDB()
-    if not c then
+    local cfg = CDB()
+    if not cfg then
         return
     end
     local leftX, topY = widget:GetLeft(), widget:GetTop()
@@ -428,7 +428,7 @@ local function SavePosition()
     local posX, posY = leftX, topY - UIParent:GetTop()
     widget:ClearAllPoints()
     widget:SetPoint("TOPLEFT", UIParent, "TOPLEFT", posX, posY)
-    c.buffCheckPos = { point = "TOPLEFT", relPoint = "TOPLEFT", x = posX, y = posY }
+    cfg.buffCheckPos = { point = "TOPLEFT", relPoint = "TOPLEFT", x = posX, y = posY }
 end
 
 local function StopWake()
@@ -507,27 +507,27 @@ local function Build()
         return callback
     end
     widget.onlyBox = MakeCheckbox(CludesUI.L("Hide Fully Buffed"), function()
-        local c = CDB()
-        if not c then
+        local cfg = CDB()
+        if not cfg then
             return
         end
-        c.buffCheckOnlyMissing = not OnlyMissing()
+        cfg.buffCheckOnlyMissing = not OnlyMissing()
         Render()
     end)
     widget.runeBox = MakeCheckbox(CludesUI.L("Require Augment Rune"), function()
-        local c = CDB()
-        if not c then
+        local cfg = CDB()
+        if not cfg then
             return
         end
-        c.buffCheckRuneRequired = not RuneRequired()
+        cfg.buffCheckRuneRequired = not RuneRequired()
         Render()
     end)
     widget.vantusBox = MakeCheckbox(CludesUI.L("Require Vantus Rune"), function()
-        local c = CDB()
-        if not c then
+        local cfg = CDB()
+        if not cfg then
             return
         end
-        c.buffCheckVantusRequired = not VantusRequired()
+        cfg.buffCheckVantusRequired = not VantusRequired()
         Render()
     end)
     widget.boxes = { widget.onlyBox, widget.runeBox, widget.vantusBox }
