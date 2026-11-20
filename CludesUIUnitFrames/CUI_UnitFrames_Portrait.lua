@@ -70,20 +70,20 @@ end
 -- mirror = true (Mirror Portrait) flips both lanes: the reset before SetAtlas
 -- is the flipped one, and the sprite cell's left/right coords swap.
 function mod.UF_PaintClassIcon(texture, unitId, style, mirror)
-    local _, ct = UnitClass(unitId)
-    if issecretvalue(ct) then
+    local _, classTok = UnitClass(unitId)
+    if issecretvalue(classTok) then
         if mirror then
             texture:SetTexCoord(1, 0, 0, 1)
         else
             texture:SetTexCoord(0, 1, 0, 1)
         end
-        texture:SetAtlas("classicon-" .. ct)
+        texture:SetAtlas("classicon-" .. classTok)
         return true
     end
-    if not ct then
+    if not classTok then
         return false
     end
-    return ApplyClassIconTexture(texture, ct, style, mirror)
+    return ApplyClassIconTexture(texture, classTok, style, mirror)
 end
 
 -- What a non-player shows on a Class art frame: "2d", "none" or "3d". s = the

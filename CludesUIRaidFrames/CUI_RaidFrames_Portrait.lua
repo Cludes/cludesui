@@ -417,8 +417,8 @@ end
 -- Class-coloured shape border: the unit's class for players, its reaction
 -- colour otherwise, the player's own class in dark mode or with no unit.
 local function PlayerClassColor()
-    local _, ct = UnitClass("player")
-    local c = ct and CludesUI.GetClassColor(ct)
+    local _, classTok = UnitClass("player")
+    local c = classTok and CludesUI.GetClassColor(classTok)
     if c then
         return c.r, c.g, c.b
     end
@@ -439,10 +439,10 @@ local function TintBorder(edge, unitToken, ctOverride)
     elseif s and s.healthColorMode == "dark" then
         red, green, blue = PlayerClassColor()
     elseif unitToken and UnitExists(unitToken) then
-        local _, ct = UnitClass(unitToken)
+        local _, classTok = UnitClass(unitToken)
         local isPl = UnitIsPlayer(unitToken)
-        if not issecretvalue(ct) and not issecretvalue(isPl) and isPl and ct then
-            local c = CludesUI.GetClassColor(ct)
+        if not issecretvalue(classTok) and not issecretvalue(isPl) and isPl and classTok then
+            local c = CludesUI.GetClassColor(classTok)
             if c then
                 red, green, blue = c.r, c.g, c.b
             end
@@ -507,15 +507,15 @@ function mod.RF_PtPaint(st, unitToken, evt)
     end
     local repainted = false
     if mode == "class" then
-        local _, ct = UnitClass(unitToken)
-        if issecretvalue(ct) then
-            ct = nil
+        local _, classTok = UnitClass(unitToken)
+        if issecretvalue(classTok) then
+            classTok = nil
         end
-        ct = ct or "WARRIOR"
+        classTok = classTok or "WARRIOR"
         -- (A change of art set clears _ct at its write in RF_PtApply.)
-        if edge._ct ~= ct or evt == "Force" then
-            edge._ct = ct
-            mod.RF_PtClassArt(edge._class, ct, edge._style)
+        if edge._ct ~= classTok or evt == "Force" then
+            edge._ct = classTok
+            mod.RF_PtClassArt(edge._class, classTok, edge._style)
             repainted = true
         end
         if not issecretvalue(unitGuid) then

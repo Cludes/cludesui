@@ -777,8 +777,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
     -- else the slot colour passed in.
     popFrame._totSampleColor = function(slotKey, red, green, blue)
         if slotKey and mod.NP_SlotColorMode(slotKey, DB()) == "class" then
-            local _, ct = UnitClass("player")
-            local classColor = ct and CludesUI.GetClassColor(ct)
+            local _, classTok = UnitClass("player")
+            local classColor = classTok and CludesUI.GetClassColor(classTok)
             if classColor then
                 return classColor.r, classColor.g, classColor.b
             end

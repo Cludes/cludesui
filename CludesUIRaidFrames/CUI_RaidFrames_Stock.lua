@@ -1229,11 +1229,11 @@ function mod.RF_KitPortrait(stockStyle, unitToken)
     end
     local p = mod._scaledPartyProxy
     if p and p.partyPortraitMode == "class" and mod.RF_PtClassArt then
-        local _, ct = UnitClass(unitToken)
-        if issecretvalue(ct) then
-            ct = nil
+        local _, classTok = UnitClass(unitToken)
+        if issecretvalue(classTok) then
+            classTok = nil
         end
-        mod.RF_PtClassArt(texture, ct or "WARRIOR", p.partyPortraitClassStyle or "modern")
+        mod.RF_PtClassArt(texture, classTok or "WARRIOR", p.partyPortraitClassStyle or "modern")
     else
         texture:SetTexCoord(0, 1, 0, 1)
         SetPortraitTexture(texture, unitToken)

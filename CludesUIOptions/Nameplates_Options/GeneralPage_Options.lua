@@ -416,8 +416,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             rightRegion,
             rightRegion:GetFrameLevel() + 5,
             function()
-                local _, ct = UnitClass("player")
-                local classColor = ct and C_ClassColor and C_ClassColor.GetClassColor(ct)
+                local _, classTok = UnitClass("player")
+                local classColor = classTok and C_ClassColor and C_ClassColor.GetClassColor(classTok)
                 if classColor then
                     return classColor.r, classColor.g, classColor.b
                 end

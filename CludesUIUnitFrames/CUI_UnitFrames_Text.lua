@@ -751,11 +751,11 @@ mod.ResolveBgClassColor = function(classUnit)
         return false
     end
     if UnitIsPlayer(classUnit) or (UnitInPartyIsAI and UnitInPartyIsAI(classUnit)) then
-        local _, ct = UnitClass(classUnit)
-        if issecretvalue(ct) then
-            return ResolveRestrictedClassColor(classUnit, ct)
+        local _, classTok = UnitClass(classUnit)
+        if issecretvalue(classTok) then
+            return ResolveRestrictedClassColor(classUnit, classTok)
         end
-        local cc = ct and CludesUI.GetClassColor(ct)
+        local cc = classTok and CludesUI.GetClassColor(classTok)
         if cc then
             return true, cc.r, cc.g, cc.b
         end

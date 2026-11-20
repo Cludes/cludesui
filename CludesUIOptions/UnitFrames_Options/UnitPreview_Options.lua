@@ -2832,8 +2832,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             local pvPfR, pvPfG, pvPfB
             local pvUsePowerColor = s.powerPercentPowerColor ~= false
             if pvUsePowerColor and s.powerClassColored then
-                local _, ct = UnitClass("player")
-                local classColor = CludesUI.GetClassColor(ct)
+                local _, classTok = UnitClass("player")
+                local classColor = CludesUI.GetClassColor(classTok)
                 pvPfR, pvPfG, pvPfB = classColor.r, classColor.g, classColor.b
             elseif pvUsePowerColor then
                 local _, pToken = UnitPowerType("player")

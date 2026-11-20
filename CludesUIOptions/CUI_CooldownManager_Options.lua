@@ -1509,9 +1509,9 @@ CludesUI.AtOptionsLogin(function()
                         if brdSize > 0 then
                             local cr, cg, checkBtn = brdColor.r, brdColor.g, brdColor.b
                             if brdClassColor then
-                                local _, ct = UnitClass("player")
-                                if ct then
-                                    local classColor = RAID_CLASS_COLORS[ct]
+                                local _, classTok = UnitClass("player")
+                                if classTok then
+                                    local classColor = RAID_CLASS_COLORS[classTok]
                                     if classColor then
                                         cr, cg, checkBtn = classColor.r, classColor.g, classColor.b
                                     end
@@ -1526,9 +1526,9 @@ CludesUI.AtOptionsLogin(function()
                     -- Square borders via unified PP system
                     local cr, cg, checkBtn, ca = brdColor.r, brdColor.g, brdColor.b, brdColor.a or 1
                     if brdClassColor then
-                        local _, ct = UnitClass("player")
-                        if ct then
-                            local classColor = RAID_CLASS_COLORS[ct]
+                        local _, classTok = UnitClass("player")
+                        if classTok then
+                            local classColor = RAID_CLASS_COLORS[classTok]
                             if classColor then
                                 cr, cg, checkBtn = classColor.r, classColor.g, classColor.b
                             end
@@ -2445,9 +2445,9 @@ CludesUI.AtOptionsLogin(function()
         -- Resolve active animation color
         local animR, animG, animB = 1.0, 0.85, 0.0
         if edge.activeAnimClassColor then
-            local _, ct = UnitClass("player")
-            if ct then
-                local classColor = RAID_CLASS_COLORS[ct]
+            local _, classTok = UnitClass("player")
+            if classTok then
+                local classColor = RAID_CLASS_COLORS[classTok]
                 if classColor then
                     animR, animG, animB = classColor.r, classColor.g, classColor.b
                 end

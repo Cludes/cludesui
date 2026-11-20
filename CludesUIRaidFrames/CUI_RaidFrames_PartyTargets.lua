@@ -147,19 +147,19 @@ do
     -- reaction (neither secret) are kept on frame, for the ticker's re-check.
     local function PT_ClassRGB(u, widget)
         if UnitIsPlayer(u) or (UnitInPartyIsAI and UnitInPartyIsAI(u)) then
-            local _, ct = UnitClass(u)
-            if issecretvalue(ct) then
-                local success, red, green, blue = CUI.GetClassColorForRestrictedUnit(u, ct)
+            local _, classTok = UnitClass(u)
+            if issecretvalue(classTok) then
+                local success, red, green, blue = CUI.GetClassColorForRestrictedUnit(u, classTok)
                 if success then
                     return true, red, green, blue
                 end
-                local c = C_ClassColor.GetClassColor(ct)
+                local c = C_ClassColor.GetClassColor(classTok)
                 if c then
                     return true, c.r, c.g, c.b
                 end
                 return false
             end
-            local cc = ct and CUI.GetClassColor(ct)
+            local cc = classTok and CUI.GetClassColor(classTok)
             if cc then
                 return true, cc.r, cc.g, cc.b
             end

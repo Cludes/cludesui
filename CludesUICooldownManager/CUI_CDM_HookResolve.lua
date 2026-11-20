@@ -491,9 +491,9 @@ function mod.ApplyActiveOverlays(widget, fd, ss, isActive, edge)
             local gr, gg, gb = mod.ResolveGlowColor(ss)
             if not gr then
                 if ss.activeGlowClassColor then
-                    local _, ct = UnitClass("player")
-                    if ct then
-                        local cc = RAID_CLASS_COLORS[ct]
+                    local _, classTok = UnitClass("player")
+                    if classTok then
+                        local cc = RAID_CLASS_COLORS[classTok]
                         if cc then
                             gr, gg, gb = cc.r, cc.g, cc.b
                         end

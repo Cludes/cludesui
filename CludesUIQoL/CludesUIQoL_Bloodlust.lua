@@ -171,9 +171,9 @@ local FormatTime -- forward declaration (shared by the debuff text and the buff 
 -------------------------------------------------------------------------------
 local function _resolveBorderColor()
     if EP("borderUseClass") then
-        local _, ct = UnitClass("player")
-        if ct and RAID_CLASS_COLORS[ct] then
-            return RAID_CLASS_COLORS[ct].r, RAID_CLASS_COLORS[ct].g, RAID_CLASS_COLORS[ct].b, 1
+        local _, classTok = UnitClass("player")
+        if classTok and RAID_CLASS_COLORS[classTok] then
+            return RAID_CLASS_COLORS[classTok].r, RAID_CLASS_COLORS[classTok].g, RAID_CLASS_COLORS[classTok].b, 1
         end
     end
     local c = EP_borderColor()

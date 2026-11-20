@@ -278,9 +278,9 @@ mod.TBB_POPULAR_BUFFS = TBB_POPULAR_BUFFS
 -------------------------------------------------------------------------------
 local _classR, _classG, _classB = 0.30, 0.79, 0.94
 do
-    local _, ct = UnitClass("player")
-    if ct then
-        local cc = RAID_CLASS_COLORS[ct]
+    local _, classTok = UnitClass("player")
+    if classTok then
+        local cc = RAID_CLASS_COLORS[classTok]
         if cc then
             _classR, _classG, _classB = cc.r, cc.g, cc.b
         end

@@ -798,8 +798,8 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         local region = row._rightRegion
         -- Class swatch shows the player's class color and is not editable.
         local bgClassSwatch = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
-            local _, ct = UnitClass("player")
-            local classColor = ct and CludesUI.GetClassColor(ct)
+            local _, classTok = UnitClass("player")
+            local classColor = classTok and CludesUI.GetClassColor(classTok)
             if classColor then
                 return classColor.r, classColor.g, classColor.b, 1
             end

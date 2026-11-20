@@ -460,8 +460,8 @@ local function DecorateFrame(widget, barInfo)
                     local alpha = (bdB and bdB.swipeAlpha) or barInfo.swipeAlpha or 0.7
                     local mode = ssB and ssB.cdSwipeColor
                     if mode == "class" then
-                        local _, ct = UnitClass("player")
-                        local cc = ct and RAID_CLASS_COLORS[ct]
+                        local _, classTok = UnitClass("player")
+                        local cc = classTok and RAID_CLASS_COLORS[classTok]
                         if cc then
                             sr, sg, scrollBar = cc.r, cc.g, cc.b
                         end
@@ -675,9 +675,9 @@ local function DecorateFrame(widget, barInfo)
                     -- Active: swipe color (custom, class, or default #FFC660).
                     local cr, cg, callback, ca
                     if iconSettings and iconSettings.activeSwipeClassColor then
-                        local _, ct = UnitClass("player")
-                        if ct then
-                            local cc = RAID_CLASS_COLORS[ct]
+                        local _, classTok = UnitClass("player")
+                        if classTok then
+                            local cc = RAID_CLASS_COLORS[classTok]
                             if cc then
                                 cr, cg, callback = cc.r, cc.g, cc.b
                             end

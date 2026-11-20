@@ -635,8 +635,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             rightRegion,
             abBsRow:GetFrameLevel() + 3,
             function()
-                local _, ct = UnitClass("player")
-                local classColor = ct and RAID_CLASS_COLORS and RAID_CLASS_COLORS[ct]
+                local _, classTok = UnitClass("player")
+                local classColor = classTok and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classTok]
                 if classColor then
                     return classColor.r, classColor.g, classColor.b
                 end

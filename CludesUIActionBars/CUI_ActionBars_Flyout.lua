@@ -195,9 +195,9 @@ local function OnBlizzardFlyoutShow(flyout)
     local brdColor = s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
     local cr, cg, callback, ca = brdColor.r, brdColor.g, brdColor.b, brdColor.a or 1
     if s.borderClassColor then
-        local _, ct = UnitClass("player")
-        if ct then
-            local cc = RAID_CLASS_COLORS[ct]
+        local _, classTok = UnitClass("player")
+        if classTok then
+            local cc = RAID_CLASS_COLORS[classTok]
             if cc then
                 cr, cg, callback = cc.r, cc.g, cc.b
             end
@@ -206,9 +206,9 @@ local function OnBlizzardFlyoutShow(flyout)
     local shapeBrdColor = s.shapeBorderColor or brdColor
     local sbR, sbG, sbB, sbA = shapeBrdColor.r, shapeBrdColor.g, shapeBrdColor.b, shapeBrdColor.a or 1
     if s.borderClassColor then
-        local _, ct = UnitClass("player")
-        if ct then
-            local cc = RAID_CLASS_COLORS[ct]
+        local _, classTok = UnitClass("player")
+        if classTok then
+            local cc = RAID_CLASS_COLORS[classTok]
             if cc then
                 sbR, sbG, sbB = cc.r, cc.g, cc.b
             end

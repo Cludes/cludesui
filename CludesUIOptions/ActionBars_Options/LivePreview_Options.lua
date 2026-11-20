@@ -371,9 +371,9 @@ local function BuildLivePreview(hostFrame, yOff)
             useClassColor = prefs.shapeBorderClassColor
         end
         if useClassColor then
-            local _, ct = UnitClass("player")
-            if ct then
-                local classColor = RAID_CLASS_COLORS[ct]
+            local _, classTok = UnitClass("player")
+            if classTok then
+                local classColor = RAID_CLASS_COLORS[classTok]
                 if classColor then
                     shapeBrdR, shapeBrdG, shapeBrdB = classColor.r, classColor.g, classColor.b
                 end

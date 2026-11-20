@@ -1435,8 +1435,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             rightRegion,
             rightRegion:GetFrameLevel() + 5,
             function()
-                local _, ct = UnitClass("player")
-                local classColor = ct and C_ClassColor and C_ClassColor.GetClassColor(ct)
+                local _, classTok = UnitClass("player")
+                local classColor = classTok and C_ClassColor and C_ClassColor.GetClassColor(classTok)
                 if classColor then
                     return classColor.r, classColor.g, classColor.b
                 end
@@ -3106,9 +3106,9 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
 
         -- Class colored swatch (beside the cog)
         local ccGet = function()
-            local _, ct = UnitClass("player")
-            if ct and RAID_CLASS_COLORS[ct] then
-                local classColor = RAID_CLASS_COLORS[ct]
+            local _, classTok = UnitClass("player")
+            if classTok and RAID_CLASS_COLORS[classTok] then
+                local classColor = RAID_CLASS_COLORS[classTok]
                 return classColor.r, classColor.g, classColor.b
             end
             return 1, 1, 1

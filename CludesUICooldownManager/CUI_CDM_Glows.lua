@@ -912,9 +912,9 @@ local function ResolveGlowColor(ss)
         return nil
     end
     if ss.glowColor == "class" then
-        local _, ct = UnitClass("player")
-        if ct then
-            local cc = RAID_CLASS_COLORS[ct]
+        local _, classTok = UnitClass("player")
+        if classTok then
+            local cc = RAID_CLASS_COLORS[classTok]
             if cc then
                 return cc.r, cc.g, cc.b
             end
@@ -972,9 +972,9 @@ local function ShowProcGlow(iconTex, cr, cg, callback)
             if ur then
                 cr, cg, callback = ur, ug, ub
             elseif ss.procGlowClassColor then
-                local _, ct = UnitClass("player")
-                if ct then
-                    local cc = RAID_CLASS_COLORS[ct]
+                local _, classTok = UnitClass("player")
+                if classTok then
+                    local cc = RAID_CLASS_COLORS[classTok]
                     if cc then
                         cr, cg, callback = cc.r, cc.g, cc.b
                     end

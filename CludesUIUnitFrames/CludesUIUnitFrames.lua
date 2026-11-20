@@ -2374,8 +2374,8 @@ do
         elseif mode == "customDynamic" then
             return mod.UF_ResolveDynamicColor(s, fraction)
         elseif mode == "classReactive" then
-            local _, ct = UnitClass("player")
-            return mod.UF_ResolveClassReactiveColor(s, ct, fraction)
+            local _, classTok = UnitClass("player")
+            return mod.UF_ResolveClassReactiveColor(s, classTok, fraction)
         end
         return nil
     end
@@ -2519,8 +2519,8 @@ local function ApplyDarkTheme(healthBar, unitToken)
                 healthBar.colorReaction = false
                 healthBar.colorTapped = false
                 healthBar.colorDisconnected = false
-                local _, ct = UnitClass("player")
-                local classColor = ct and not issecretvalue(ct) and CludesUI.GetClassColor(ct)
+                local _, classTok = UnitClass("player")
+                local classColor = classTok and not issecretvalue(classTok) and CludesUI.GetClassColor(classTok)
                 if classColor then
                     healthBar:SetStatusBarColor(classColor.r, classColor.g, classColor.b)
                 end
@@ -2567,8 +2567,8 @@ local function ApplyDarkTheme(healthBar, unitToken)
                 bR, bG, bB = customFillRGB.r, customFillRGB.g, customFillRGB.b
                 haveBase = true
             elseif classColored and uKey == "pet" then
-                local _, ct = UnitClass("player")
-                local classColor = ct and not issecretvalue(ct) and CludesUI.GetClassColor(ct)
+                local _, classTok = UnitClass("player")
+                local classColor = classTok and not issecretvalue(classTok) and CludesUI.GetClassColor(classTok)
                 if classColor then
                     bR, bG, bB = classColor.r, classColor.g, classColor.b
                     haveBase = true

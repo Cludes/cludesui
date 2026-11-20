@@ -487,8 +487,8 @@ mod._UpdateCombatIcon = function(skinData, s, unitToken)
     else
         local classToken = skinData.classToken
         if not classToken then
-            local _, ct = UnitClass(unitToken)
-            classToken = ct
+            local _, classTok = UnitClass(unitToken)
+            classToken = classTok
         end
         if classToken and issecretvalue(classToken) then
             classToken = nil
@@ -1492,10 +1492,10 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
                 -- and the neutral gray, exactly as before.
                 local tok = skinData._clsTok
                 if not tok then
-                    local _, ct = UnitClass(unitToken)
-                    if ct and not issecretvalue(ct) then
-                        tok = ct
-                        skinData._clsTok = ct
+                    local _, classTok = UnitClass(unitToken)
+                    if classTok and not issecretvalue(classTok) then
+                        tok = classTok
+                        skinData._clsTok = classTok
                     end
                 end
                 local cc = tok and mod.CludesUI.GetClassColor(tok)

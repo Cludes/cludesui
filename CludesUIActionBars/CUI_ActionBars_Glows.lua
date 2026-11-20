@@ -1452,9 +1452,9 @@ function ABAR:ApplyMiscTextures()
     local customC = p.pushedCustomColor or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
     local cr, cg, callback, ca = customC.r, customC.g, customC.b, customC.a or 1
     if useCC then
-        local _, ct = UnitClass("player")
-        if ct then
-            local cc = RAID_CLASS_COLORS[ct]
+        local _, classTok = UnitClass("player")
+        if classTok then
+            local cc = RAID_CLASS_COLORS[classTok]
             if cc then
                 cr, cg, callback = cc.r, cc.g, cc.b
             end

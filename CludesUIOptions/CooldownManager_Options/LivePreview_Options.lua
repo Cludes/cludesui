@@ -931,9 +931,9 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     if bdHov then
                         bR, bG, bB = bdHov.borderR or 0, bdHov.borderG or 0, bdHov.borderB or 0
                         if bdHov.borderClassColor then
-                            local _, ct = UnitClass("player")
-                            if ct then
-                                local classColor = RAID_CLASS_COLORS[ct]
+                            local _, classTok = UnitClass("player")
+                            if classTok then
+                                local classColor = RAID_CLASS_COLORS[classTok]
                                 if classColor then
                                     bR, bG, bB = classColor.r, classColor.g, classColor.b
                                 end
@@ -1080,9 +1080,9 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             if edge then
                 bR, bG, bB = edge.borderR or 0, edge.borderG or 0, edge.borderB or 0
                 if edge.borderClassColor then
-                    local _, ct = UnitClass("player")
-                    if ct then
-                        local classColor = RAID_CLASS_COLORS[ct]
+                    local _, classTok = UnitClass("player")
+                    if classTok then
+                        local classColor = RAID_CLASS_COLORS[classTok]
                         if classColor then
                             bR, bG, bB = classColor.r, classColor.g, classColor.b
                         end
@@ -1339,9 +1339,9 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 if bd2 then
                     bR2, bG2, bB2 = bd2.borderR or 0, bd2.borderG or 0, bd2.borderB or 0
                     if bd2.borderClassColor then
-                        local _, ct = UnitClass("player")
-                        if ct then
-                            local classColor = RAID_CLASS_COLORS[ct]
+                        local _, classTok = UnitClass("player")
+                        if classTok then
+                            local classColor = RAID_CLASS_COLORS[classTok]
                             if classColor then
                                 bR2, bG2, bB2 = classColor.r, classColor.g, classColor.b
                             end
@@ -2053,9 +2053,9 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         -- Border color
         local bR, bG, bB = edge.borderR or 0, edge.borderG or 0, edge.borderB or 0
         if edge.borderClassColor then
-            local _, ct = UnitClass("player")
-            if ct then
-                local classColor = RAID_CLASS_COLORS[ct]
+            local _, classTok = UnitClass("player")
+            if classTok then
+                local classColor = RAID_CLASS_COLORS[classTok]
                 if classColor then
                     bR, bG, bB = classColor.r, classColor.g, classColor.b
                 end

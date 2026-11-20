@@ -2020,9 +2020,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     ReloadAndUpdate()
                 end, "custom", true, "Custom Color")
                 AddTNBSwatch(function()
-                    local _, ct = UnitClass("player")
-                    if ct and RAID_CLASS_COLORS[ct] then
-                        local classColor = RAID_CLASS_COLORS[ct]
+                    local _, classTok = UnitClass("player")
+                    if classTok and RAID_CLASS_COLORS[classTok] then
+                        local classColor = RAID_CLASS_COLORS[classTok]
                         return classColor.r, classColor.g, classColor.b, 1
                     end
                     return 1, 1, 1, 1

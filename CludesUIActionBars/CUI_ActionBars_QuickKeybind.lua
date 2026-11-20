@@ -617,8 +617,8 @@ _quickKeybindState.InitButtons = function()
                                         or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
                                     local hr, hg, hb = cc.r, cc.g, cc.b
                                     if useCC then
-                                        local _, ct = UnitClass("player")
-                                        local c2 = ct and RAID_CLASS_COLORS[ct]
+                                        local _, classTok = UnitClass("player")
+                                        local c2 = classTok and RAID_CLASS_COLORS[classTok]
                                         if c2 then
                                             hr, hg, hb = c2.r, c2.g, c2.b
                                         end
@@ -635,8 +635,8 @@ _quickKeybindState.InitButtons = function()
                                     local c = s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
                                     local cr, cg, callback, ca = c.r, c.g, c.b, c.a or 1
                                     if s.borderClassColor then
-                                        local _, ct = UnitClass("player")
-                                        local cc = ct and RAID_CLASS_COLORS[ct]
+                                        local _, classTok = UnitClass("player")
+                                        local cc = classTok and RAID_CLASS_COLORS[classTok]
                                         if cc then
                                             cr, cg, callback = cc.r, cc.g, cc.b
                                         end
