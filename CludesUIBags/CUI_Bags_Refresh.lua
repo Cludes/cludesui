@@ -220,7 +220,7 @@ local function CreateBagScrollFrame()
     end
 
     local sidebarW = GetSidebarWidth()
-    local headerH = CUI_Bags.Header:GetHeight()
+    local headerH = CUI_Bags.Header:GetHeight() + (mod.ModernStripH and mod.ModernStripH() or 0)
     local rightInset = mod.BagsForever() and -7 or -1
     CUI_Bags._scrollRightInset = rightInset
 
@@ -577,7 +577,7 @@ local function FinishRefresh(
         CUI_Bags._applySortEnabled()
     end
     local scrollFrame, childFrame = CUI_Bags._scrollFrame, CUI_Bags._scrollChild
-    local headerH = CUI_Bags.Header:GetHeight()
+    local headerH = CUI_Bags.Header:GetHeight() + (mod.ModernStripH and mod.ModernStripH() or 0)
     local contentH = math.abs(curY) + 10
     if childFrame then
         childFrame:SetHeight(contentH)
@@ -1186,7 +1186,7 @@ function CUI_Bags:RefreshInventory()
 
     local columns = GetColumns()
     local sidebarW = GetSidebarWidth()
-    local headerH = CUI_Bags.Header:GetHeight()
+    local headerH = CUI_Bags.Header:GetHeight() + (mod.ModernStripH and mod.ModernStripH() or 0)
     local gridPadX = 10
     local gridW = columns * (SLOT_SIZE + SPACING)
     -- List rows take the grip-set width (List has no Auto-Size), by default the default pitch's

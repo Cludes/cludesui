@@ -53,6 +53,10 @@ local function FixedViewCount()
 end
 
 local function GetSidebarWidth()
+    -- The Modern display has no sidebar: its chip strip picks the view
+    if CUI_Bags.IsModernMode and CUI_Bags.IsModernMode() then
+        return 0
+    end
     local p = BP()
     if not p.bagSidebarCollapsed then
         return SIDEBAR_W_EXPANDED
@@ -1360,14 +1364,16 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
     -- A collapsed sidebar with no icon strip hides; its expand arrow sits left
     -- of the window title meanwhile (the tip on the categories waits for it)
     local hidden = sidebarW == 0
+    -- Modern: no sidebar to expand again, so no expand arrow by the title
+    local modern = CUI_Bags.IsModernMode and CUI_Bags.IsModernMode() == true
     if CUI_Bags._sidebarHidden ~= hidden then
         CUI_Bags._sidebarHidden = hidden
         sideBar:SetShown(not hidden)
         local heading = CUI_Bags.Header
-        CUI_Bags._titleArrow:SetShown(hidden)
+        CUI_Bags._titleArrow:SetShown(hidden and not modern)
         if not mod.BagsForever() then
             heading.title:ClearAllPoints()
-            heading.title:SetPoint("LEFT", heading, "LEFT", hidden and 24 or 8, 0)
+            heading.title:SetPoint("LEFT", heading, "LEFT", (hidden and not modern) and 24 or 8, 0)
         end
         if hidden and CUI_Bags._catTip then
             CUI_Bags._catTip:Hide()
@@ -1375,6 +1381,9 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
     end
     -- Nothing to paint on a hidden sidebar: un-hiding comes back through here
     if hidden then
+        if modern and mod.BuildModernChips then
+            mod.BuildModernChips(categoryCounts, totalCount)
+        end
         return
     end
 

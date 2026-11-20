@@ -23,6 +23,7 @@ CUI_Bags_Shared.lua
 CUI_Bags_Slots.lua
 CUI_Bags_Select.lua
 CUI_Bags_Sidebar.lua
+CUI_Bags_Modern.lua
 CUI_Bags_Refresh.lua
 CUI_Bags_Start.lua
 CludesUIBags_Grid.lua

@@ -350,10 +350,10 @@ CludesUI.AtOptionsLogin(function()
                 end
 
                 local BagsNS = CludesUI._ModuleNS["CludesUIBags"]
-                -- Bag Style value: "grid" | "list" | "compact" (any other saved value reads as Grid)
+                -- Bag Style value: "grid" | "list" | "compact" | "modern" (any other saved value reads as Grid)
                 local function BagDisplayValue()
                     local m = saved.profile.bagDisplayMode
-                    return (m == "list" or m == "compact") and m or "grid"
+                    return (m == "list" or m == "compact" or m == "modern") and m or "grid"
                 end
                 -- The Display sections are only built while the bags or the bank use
                 -- that display: Grid and Compact share one, List has its own.
@@ -379,10 +379,11 @@ CludesUI.AtOptionsLogin(function()
                 -- Background Color | Background Opacity | Slot Background, two per row
                 local layoutSlots = {
                     {
-                        type = "segmented",
+                        type = "dropdown",
                         text = "Bag Style",
-                        values = { grid = "Grid", list = "List", compact = "Compact" },
-                        order = { "grid", "list", "compact" },
+                        tooltip = "Modern: one grid with category chips across the top instead of the sidebar.",
+                        values = { grid = "Grid", list = "List", compact = "Compact", modern = "Modern" },
+                        order = { "grid", "list", "compact", "modern" },
                         getValue = function()
                             return BagDisplayValue()
                         end,

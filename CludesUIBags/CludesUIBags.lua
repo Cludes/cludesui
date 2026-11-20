@@ -402,8 +402,17 @@ function CUI_Bags.IsListMode()
         local mode = BP().bagDisplayMode
         _listMode = mode == "list"
         CUI_Bags._compactMode = mode == "compact"
+        CUI_Bags._modernMode = mode == "modern"
     end
     return _listMode
+end
+-- Modern display (CUI_Bags_Modern.lua): the Grid display with category chips
+-- in place of the sidebar, on IsListMode's latch
+function CUI_Bags.IsModernMode()
+    if CUI_Bags.IsListMode() == nil then
+        return nil
+    end
+    return CUI_Bags._modernMode
 end
 -- Compact display (CludesUIBags_Compact.lua), on IsListMode's latch
 function CUI_Bags.IsCompactMode()
