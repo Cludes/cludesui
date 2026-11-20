@@ -1002,8 +1002,8 @@ function mod.MigrateSpecToBarFilterModelV6()
         return
     end
 
-    local p = ECME.db and ECME.db.profile
-    local barList = p and p.cdmBars and p.cdmBars.bars
+    local profile = ECME.db and ECME.db.profile
+    local barList = profile and profile.cdmBars and profile.cdmBars.bars
     if type(barList) ~= "table" then
         return
     end
@@ -1434,9 +1434,9 @@ function mod.CollectDefaultBuffTrackEntries()
     -- "is this the same buff" everywhere else in this file.
     local diverted = {}
     local divertedCd = {} -- cooldownID-level diversions (collided-buff slots)
-    local p = ECME and ECME.db and ECME.db.profile
-    if p and p.cdmBars and p.cdmBars.bars then
-        for _, otherBd in ipairs(p.cdmBars.bars) do
+    local profile = ECME and ECME.db and ECME.db.profile
+    if profile and profile.cdmBars and profile.cdmBars.bars then
+        for _, otherBd in ipairs(profile.cdmBars.bars) do
             if otherBd.enabled and otherBd.key ~= "buffs" then
                 local otherSd = mod.GetBarSpellData(otherBd.key)
                 if otherBd.barType == "buffs" or otherBd.barType == "custom_buff" then
@@ -1635,11 +1635,11 @@ local function DropTrinketSidClaims(cooldownId, spellRef)
     then
         return
     end
-    local p = ECME.db.profile
-    if not (p and p.cdmBars and p.cdmBars.bars) then
+    local profile = ECME.db.profile
+    if not (profile and profile.cdmBars and profile.cdmBars.bars) then
         return
     end
-    for _, bar in ipairs(p.cdmBars.bars) do
+    for _, bar in ipairs(profile.cdmBars.bars) do
         if bar.barType ~= "custom_buff" then
             if mod.IsBarBuffFamily(bar) then
                 mod.RemoveSpellFromBar(bar.key, spellRef)
@@ -2246,10 +2246,10 @@ function mod.AddTrackedSpell(barId, ident)
     -- family the target bar belongs to (no positivity gate): trinkets stay
     -- on CD/util bars, custom items sweep only their own family.
     local targetBd = barDataByKey[barId]
-    local p = ECME.db.profile
+    local profile = ECME.db.profile
     local targetIsBuff = IsBarBuffFamily(barId)
-    if p and p.cdmBars and p.cdmBars.bars then
-        for _, bar in ipairs(p.cdmBars.bars) do
+    if profile and profile.cdmBars and profile.cdmBars.bars then
+        for _, bar in ipairs(profile.cdmBars.bars) do
             if bar.key ~= barId and bar.barType ~= "custom_buff" then
                 if IsBarBuffFamily(bar) == targetIsBuff then
                     mod.RemoveSpellFromBar(bar.key, ident)
@@ -2367,9 +2367,9 @@ function mod.AddTrackedBuffByCdID(barId, cooldownId, spellRef)
     DropTrinketSidClaims(cooldownId, spellRef)
     local marker = mod.CdClaimMarker(cooldownId)
     if barId == "buffs" then
-        local p = ECME.db.profile
-        if p and p.cdmBars and p.cdmBars.bars then
-            for _, bar in ipairs(p.cdmBars.bars) do
+        local profile = ECME.db.profile
+        if profile and profile.cdmBars and profile.cdmBars.bars then
+            for _, bar in ipairs(profile.cdmBars.bars) do
                 if bar.key ~= "buffs" and bar.barType ~= "custom_buff" and IsBarBuffFamily(bar) then
                     mod.RemoveSpellFromBar(bar.key, marker)
                 end
@@ -2685,8 +2685,8 @@ function mod.AddCDMBar(barKind, label, numRows)
     local RegisterCDMUnlockElements = mod.RegisterCDMUnlockElements
     local MAX_CUSTOM_BARS = mod.MAX_CUSTOM_BARS
 
-    local p = ECME.db.profile
-    local bars = p.cdmBars.bars
+    local profile = ECME.db.profile
+    local bars = profile.cdmBars.bars
     local customCount = 0
     for _, bar in ipairs(bars) do
         if bar.key ~= "cooldowns" and bar.key ~= "utility" and bar.key ~= "buffs" and not bar.isGhostBar then
@@ -2792,8 +2792,8 @@ function mod.RemoveCDMBar(barKey)
         return false
     end
     local RegisterCDMUnlockElements = mod.RegisterCDMUnlockElements
-    local p = ECME.db.profile
-    for i, barInfo in ipairs(p.cdmBars.bars) do
+    local profile = ECME.db.profile
+    for i, barInfo in ipairs(profile.cdmBars.bars) do
         if barInfo.key == barKey then
             local widget = cdmBarFrames[barKey]
             if widget then
@@ -2801,11 +2801,11 @@ function mod.RemoveCDMBar(barKey)
             end
             cdmBarFrames[barKey] = nil
             cdmBarIcons[barKey] = nil
-            p.cdmBarPositions[barKey] = nil
-            table.remove(p.cdmBars.bars, i)
+            profile.cdmBarPositions[barKey] = nil
+            table.remove(profile.cdmBars.bars, i)
             -- Max Icons overflow: clear targets pointing at the removed bar
             -- (runtime fail-safes on a dangling key; this is config hygiene).
-            for _, bar in ipairs(p.cdmBars.bars) do
+            for _, bar in ipairs(profile.cdmBars.bars) do
                 if bar.overflowTarget == barKey then
                     bar.overflowTarget = nil
                 end
@@ -2906,8 +2906,8 @@ function mod.PruneEquipmentBuffRows()
     if not any then
         return
     end
-    local p = ECME and ECME.db and ECME.db.profile
-    local bars = p and p.cdmBars and p.cdmBars.bars
+    local profile = ECME and ECME.db and ECME.db.profile
+    local bars = profile and profile.cdmBars and profile.cdmBars.bars
     if not bars then
         return
     end

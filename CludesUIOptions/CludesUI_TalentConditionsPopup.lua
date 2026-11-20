@@ -290,8 +290,8 @@ local function PaintButton(button)
     local c = ConditionOn(button)
     if c then
         if c.taken then
-            local ar, ag, ab = CludesUI.GetAccentColor()
-            Pix.SetBorderColor(button, ar, ag, ab, 1)
+            local accR, accG, accB = CludesUI.GetAccentColor()
+            Pix.SetBorderColor(button, accR, accG, accB, 1)
         else
             Pix.SetBorderColor(button, NOT_TAKEN_R, NOT_TAKEN_G, NOT_TAKEN_B, 1)
         end
@@ -316,8 +316,8 @@ local function ButtonOnEnter(button)
     if not c then
         GameTooltip:AddLine(CludesUI.L("Click: show only while this talent is taken"), 0.7, 0.7, 0.7, true)
     elseif c.taken then
-        local ar, ag, ab = CludesUI.GetAccentColor()
-        GameTooltip:AddLine(CludesUI.L("Shown only while this talent is taken"), ar, ag, ab, true)
+        local accR, accG, accB = CludesUI.GetAccentColor()
+        GameTooltip:AddLine(CludesUI.L("Shown only while this talent is taken"), accR, accG, accB, true)
         GameTooltip:AddLine(CludesUI.L("Click: show only while it is NOT taken"), 0.7, 0.7, 0.7, true)
     else
         GameTooltip:AddLine(
@@ -417,9 +417,9 @@ UpdateStatus = function()
         statusFS:SetText(texts.none)
         statusFS:SetTextColor(0.7, 0.7, 0.7, 0.9)
     elseif met then
-        local ar, ag, ab = CludesUI.GetAccentColor()
+        local accR, accG, accB = CludesUI.GetAccentColor()
         statusFS:SetText(texts.met(total))
-        statusFS:SetTextColor(ar, ag, ab, 1)
+        statusFS:SetTextColor(accR, accG, accB, 1)
     else
         statusFS:SetText(texts.notMet(total))
         statusFS:SetTextColor(NOT_TAKEN_R, NOT_TAKEN_G, NOT_TAKEN_B, 1)
@@ -600,7 +600,7 @@ LayoutOffTree = function()
         local stripH = OFF_LABEL_H + rowList * CHIP_H + (rowList - 1) * CHIP_GAP_Y
         height = POPUP_H + OFF_PAD + stripH
         offFrame:SetHeight(stripH)
-        local ar, ag, ab = CludesUI.GetAccentColor()
+        local accR, accG, accB = CludesUI.GetAccentColor()
         for idx = 1, num do
             local c = offTree[idx]
             local chip = chips[idx] or MakeChip(idx)
@@ -620,7 +620,7 @@ LayoutOffTree = function()
             chip.icon:SetTexture((spellRef and C_Spell.GetSpellTexture(spellRef)) or 134400)
             chip.label:SetText((spellRef and C_Spell.GetSpellName(spellRef)) or CludesUI.L("Unknown talent"))
             if c.taken then
-                chip.border:SetColor(ar, ag, ab, 1)
+                chip.border:SetColor(accR, accG, accB, 1)
             else
                 chip.border:SetColor(NOT_TAKEN_R, NOT_TAKEN_G, NOT_TAKEN_B, 1)
             end
@@ -753,8 +753,8 @@ local function Build()
     offLabel:SetTextColor(0.7, 0.7, 0.7, 0.85)
     offLabel:SetText(CludesUI.L("Conditions on talents not shown above (they still apply):"))
 
-    local ar, ag, ab = CludesUI.GetAccentColor()
-    local saveBtn = CludesUI.MakeActionButton(dialog, fontFile, CludesUI.L("Save"), ar, ag, ab, { w = BTN_W })
+    local accR, accG, accB = CludesUI.GetAccentColor()
+    local saveBtn = CludesUI.MakeActionButton(dialog, fontFile, CludesUI.L("Save"), accR, accG, accB, { w = BTN_W })
     saveBtn:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -SIDE_PAD, BTN_BOTTOM)
     saveBtn:SetScript("OnClick", Commit)
     KeepButtonLabel(saveBtn)

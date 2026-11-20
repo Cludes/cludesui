@@ -646,9 +646,9 @@ end
 -- the settings classifying reads (disabled categories, split set gear) as one
 -- string, for the memo and the signature
 local function DisabledKey()
-    local p = BP()
-    local dis = p.bagSplitSetGearBySet and "split|" or ""
-    for k in pairs(p.bagDisabledCategories or _emptyP) do
+    local profile = BP()
+    local dis = profile.bagSplitSetGearBySet and "split|" or ""
+    for k in pairs(profile.bagDisabledCategories or _emptyP) do
         dis = dis .. k .. ","
     end
     return dis
@@ -851,10 +851,10 @@ local function Group(itemList)
 end
 
 local function PaintSlot(b, item)
-    local z = BP().bagItemIconZoom or 0.08
+    local zoom = BP().bagItemIconZoom or 0.08
     b.str = item.str
     b.icon:SetTexture(item.icon or 134400)
-    b.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+    b.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
     CUI.ApplyIconTextFont(b.Count, GetFont(), BP().bagCountFontSize or 11, "bags")
     b.Count:SetText(item.n > 1 and item.n or "")
     b.Level:SetFont(GetFont(), BP().itemlevelFontSize or 12, CUI.SlugFlag("OUTLINE, SLUG"))
@@ -923,7 +923,7 @@ end
 -- everything the grid draws from; the same signature twice means nothing moved.
 -- gold and the saved time are painted on their own, outside it
 local function Signature(val, list, source, query)
-    local p = BP()
+    local profile = BP()
     local sel, set = mod.GetSelection()
     local red, green, blue = CUI.GetAccentColor()
     local dis = DisabledKey()
@@ -942,15 +942,15 @@ local function Signature(val, list, source, query)
         SPACING,
         catGen,
         GetFont(),
-        tostring(p.bagItemIconZoom),
-        tostring(p.bagCountFontSize),
-        tostring(p.itemlevelFontSize),
-        tostring(p.showItemlevelInBags),
-        tostring(p.bagQualityBorder),
-        tostring(p.bagCatTitleSize),
-        tostring(p.bankSidebarCollapsed),
-        tostring(p.bankHideTabsInSidebar),
-        tostring(p.bankCategorySidebar),
+        tostring(profile.bagItemIconZoom),
+        tostring(profile.bagCountFontSize),
+        tostring(profile.itemlevelFontSize),
+        tostring(profile.showItemlevelInBags),
+        tostring(profile.bagQualityBorder),
+        tostring(profile.bagCatTitleSize),
+        tostring(profile.bankSidebarCollapsed),
+        tostring(profile.bankHideTabsInSidebar),
+        tostring(profile.bankCategorySidebar),
         tostring(mod.BankDefaultsToOne()),
         dis,
         red,
@@ -1106,8 +1106,8 @@ local function Soon(val, force)
     C_Timer.After(0.2, val.soon)
 end
 -- only the ids a view asked for repaint it
-local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, _, ident, success)
+local eventFrame = CreateFrame("Frame")
+eventFrame:SetScript("OnEvent", function(_, _, ident, success)
     if not pending[ident] then
         return
     end
@@ -1124,11 +1124,11 @@ end)
 local function SyncEvents()
     for _, val in ipairs(views) do
         if val.panel and val.panel:IsVisible() then
-            ev:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+            eventFrame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
             return
         end
     end
-    ev:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
+    eventFrame:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
 end
 -- this character's own bags never show in a panel (they're live), so their
 -- saves don't repaint anything

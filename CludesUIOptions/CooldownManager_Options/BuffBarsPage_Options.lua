@@ -794,15 +794,15 @@ local function InitBuffBarsPage(
         status:SetPoint("TOP", dialog._durBox, "BOTTOM", 0, -6)
         dialog._status = status
 
-        local ar, ag, ab = CludesUI.GetAccentColor()
+        local accR, accG, accB = CludesUI.GetAccentColor()
         dialog._addBtn = PopupButton(
             dialog,
             "Add",
             "BOTTOMRIGHT",
             -4,
-            { ar, ag, ab, 0.15 },
-            { ar, ag, ab, 0.3 },
-            { ar, ag, ab, 0.9 }
+            { accR, accG, accB, 0.15 },
+            { accR, accG, accB, 0.3 },
+            { accR, accG, accB, 0.9 }
         )
         local cancel = PopupButton(
             dialog,
@@ -1704,9 +1704,9 @@ local function InitBuffBarsPage(
         local usingBlizz = DB() and DB().cdmBars and DB().cdmBars.useBlizzardBuffBars
         if usingBlizz then
             _, height = W:WideDualButton(hostFrame, "Enable Tracking Bars", "Open Blizzard CDM", cursorY, function()
-                local p = DB()
-                if p and p.cdmBars then
-                    p.cdmBars.useBlizzardBuffBars = false
+                local profile = DB()
+                if profile and profile.cdmBars then
+                    profile.cdmBars.useBlizzardBuffBars = false
                 end
                 CludesUI:ShowConfirmPopup({
                     title = "Reload Required",
@@ -1986,7 +1986,7 @@ local function InitBuffBarsPage(
                 -- A fixed spot, as the CDM icon menu sits under its icon: beside the
                 -- clicked row, just outside the bar menu, so it covers no other bar.
                 soundMenu:SetPoint("TOPLEFT", anchorRow, "TOPRIGHT", 4, 0)
-                local ar, ag, ab = CludesUI.GetAccentColor()
+                local accR, accG, accB = CludesUI.GetAccentColor()
                 local nameList = mod.FOCUSKICK_SOUND_NAMES or {}
                 local flyouts = {}
 
@@ -2048,7 +2048,7 @@ local function InitBuffBarsPage(
                     local function Paint()
                         local barKey = rowConf[field]
                         if barKey and barKey ~= "none" then
-                            labelFS:SetTextColor(ar, ag, ab, 1)
+                            labelFS:SetTextColor(accR, accG, accB, 1)
                         else
                             labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                         end
@@ -2159,7 +2159,7 @@ local function InitBuffBarsPage(
                 innerFrame:SetWidth(dropdownBtn:GetWidth() * dropdownBtn:GetEffectiveScale() / dropMenu:GetEffectiveScale())
                 innerFrame:SetPoint("TOPLEFT")
                 local MENU_MAX_H = 420
-                local ar, ag, ab = CludesUI.GetAccentColor()
+                local accR, accG, accB = CludesUI.GetAccentColor()
 
                 local menuH = 4
 
@@ -2197,9 +2197,9 @@ local function InitBuffBarsPage(
                             from = keyName
                         end
                         if r.frame == over then
-                            local _, cy = GetCursorPosition()
+                            local _, curY = GetCursorPosition()
                             local mid = (over:GetTop() + over:GetBottom()) / 2
-                            gap = (cy / over:GetEffectiveScale() > mid) and keyName or keyName + 1
+                            gap = (curY / over:GetEffectiveScale() > mid) and keyName or keyName + 1
                         end
                     end
                     if over == dropZone.head then
@@ -2233,16 +2233,16 @@ local function InitBuffBarsPage(
                 local function GhostText(text, accent)
                     dragShadow._lbl:SetText(text or "")
                     if accent then
-                        dragShadow._lbl:SetTextColor(ar, ag, ab, 1)
+                        dragShadow._lbl:SetTextColor(accR, accG, accB, 1)
                     else
                         dragShadow._lbl:SetTextColor(1, 1, 1, 0.8)
                     end
                 end
                 local function GhostUpdate()
-                    local cx, cy = GetCursorPosition()
-                    local sc = UIParent:GetEffectiveScale()
+                    local curX, curY = GetCursorPosition()
+                    local uiScale = UIParent:GetEffectiveScale()
                     dragShadow:ClearAllPoints()
-                    dragShadow:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", cx / sc + 14, cy / sc - 22)
+                    dragShadow:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", curX / uiScale + 14, curY / uiScale - 22)
                     local dropZone, over = HoveredZone()
                     local place, gap = ReorderTarget(dropZone, over)
                     if place then
@@ -2384,12 +2384,12 @@ local function InitBuffBarsPage(
                     label:SetText(name)
                     if gkey then
                         local tag = MenuFont(entry, 9)
-                        tag:SetTextColor(ar, ag, ab, 0.9)
+                        tag:SetTextColor(accR, accG, accB, 0.9)
                         tag:SetPoint("LEFT", label, "RIGHT", 6, 0)
                         tag:SetText(CludesUI.L("GLOBAL"))
                     end
                     local edit = MenuFont(entry, 10)
-                    edit:SetTextColor(ar, ag, ab, 0.85)
+                    edit:SetTextColor(accR, accG, accB, 0.85)
                     edit:SetText(CludesUI.L("Edit Group"))
                     if gkey then
                         local del = CloseButton(entry, 0.6)
@@ -2439,7 +2439,7 @@ local function InitBuffBarsPage(
                     end)
                     entry:SetScript("OnLeave", function()
                         label:SetTextColor(1, 1, 1, 0.9)
-                        edit:SetTextColor(ar, ag, ab, 0.85)
+                        edit:SetTextColor(accR, accG, accB, 0.85)
                         highlight:SetAlpha(rest)
                     end)
                     entry:SetScript("OnClick", function()
@@ -2650,14 +2650,14 @@ local function InitBuffBarsPage(
                     label:SetPoint("LEFT", entry, "LEFT", 10 + (indent or 0), 0)
                     label:SetJustifyH("LEFT")
                     label:SetText(textValue)
-                    label:SetTextColor(ar, ag, ab, 0.85)
+                    label:SetTextColor(accR, accG, accB, 0.85)
                     local highlight = RowHighlight(entry, 0)
                     entry:SetScript("OnEnter", function()
                         label:SetTextColor(1, 1, 1, 1)
                         highlight:SetAlpha(hlA)
                     end)
                     entry:SetScript("OnLeave", function()
-                        label:SetTextColor(ar, ag, ab, 0.85)
+                        label:SetTextColor(accR, accG, accB, 0.85)
                         highlight:SetAlpha(0)
                     end)
                     entry:SetScript("OnClick", onClick)
@@ -2968,9 +2968,9 @@ local function InitBuffBarsPage(
                         cancelText = "Cancel",
                         reload = true,
                         onConfirm = function()
-                            local p = DB()
-                            if p and p.cdmBars then
-                                p.cdmBars.useBlizzardBuffBars = true
+                            local profile = DB()
+                            if profile and profile.cdmBars then
+                                profile.cdmBars.useBlizzardBuffBars = true
                             end
                         end,
                     })
@@ -3073,8 +3073,8 @@ local function InitBuffBarsPage(
             -- list, so saves, renames and deletes never go stale. The saved pick, else
             -- the first preset.
             local function SelectedPresetName()
-                local p = DB()
-                local selection = p and p.tbbSelectedStylePreset
+                local profile = DB()
+                local selection = profile and profile.tbbSelectedStylePreset
                 if selection and mod.FindTBBStylePreset and mod.FindTBBStylePreset(selection) then
                     return selection
                 end
@@ -3287,9 +3287,9 @@ local function InitBuffBarsPage(
                 local name = preset.name
                 line:SetScript("OnClick", function()
                     presetMenu:Hide()
-                    local p = DB()
-                    if p then
-                        p.tbbSelectedStylePreset = name
+                    local profile = DB()
+                    if profile then
+                        profile.tbbSelectedStylePreset = name
                     end
                     UpdatePrDDLabel()
                 end)
@@ -3443,9 +3443,9 @@ local function InitBuffBarsPage(
                                 name = UniqueTBBPresetName()
                             end
                             if mod.SaveTBBStylePreset and mod.SaveTBBStylePreset(name, source) then
-                                local p = DB()
-                                if p then
-                                    p.tbbSelectedStylePreset = name
+                                local profile = DB()
+                                if profile then
+                                    profile.tbbSelectedStylePreset = name
                                 end
                             end
                             CludesUI:RefreshPage(true)

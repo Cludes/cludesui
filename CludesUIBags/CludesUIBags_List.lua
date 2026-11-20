@@ -429,11 +429,11 @@ local function SetCollapsed(set, key, val)
     end
 end
 local function ToggleCollapsed(self)
-    local p = BP()
-    local set = p.bagListCollapsed
+    local profile = BP()
+    local set = profile.bagListCollapsed
     if not set then
         set = {}
-        p.bagListCollapsed = set
+        profile.bagListCollapsed = set
     end
     if IsShiftKeyDown() and not self._sub then
         local collapse = not IsCollapsed(self._key) or nil
@@ -624,21 +624,21 @@ local function OnHeaderDragUpdate(self)
         self:SetScript("OnUpdate", nil)
         return
     end
-    local cx = GetCursorPosition()
+    local curX = GetCursorPosition()
     if not self._dragged then
-        if math.abs(cx - self._downX) <= 6 then
+        if math.abs(curX - self._downX) <= 6 then
             return
         end
         self._dragged = true
     end
-    cx = cx / self:GetEffectiveScale()
+    curX = curX / self:GetEffectiveScale()
     local cols, btns = GetColumns(), self:GetParent()._btns
     local target = 1
     for _, cid in ipairs(cols) do
         local b = btns[cid]
         if cid ~= self._colId and b then
             local l, region = b:GetLeft(), b:GetRight()
-            if l and cx > (l + region) / 2 then
+            if l and curX > (l + region) / 2 then
                 target = target + 1
             end
         end
@@ -676,12 +676,12 @@ local function OnHeaderMouseUp(self, btnFrame)
     if not def.field then
         return
     end
-    local p = BP()
-    if p.bagListSortKey == self._colId then
-        p.bagListSortAsc = not p.bagListSortAsc
+    local profile = BP()
+    if profile.bagListSortKey == self._colId then
+        profile.bagListSortAsc = not profile.bagListSortAsc
     else
-        p.bagListSortKey = self._colId
-        p.bagListSortAsc = not def.desc
+        profile.bagListSortKey = self._colId
+        profile.bagListSortAsc = not def.desc
     end
     Refresh()
 end
@@ -730,18 +730,18 @@ local function SizerOnUpdate(self)
         return
     end
     local heading = self:GetParent()
-    local cx = GetCursorPosition() / heading:GetEffectiveScale()
-    local wid = math.floor(self._startW + self._sign * (cx - self._startCX) + 0.5)
+    local curX = GetCursorPosition() / heading:GetEffectiveScale()
+    local wid = math.floor(self._startW + self._sign * (curX - self._startCX) + 0.5)
     wid = math.max(MIN_COL_W, math.min(self._maxW, wid))
     if wid == self._lastW then
         return
     end
     self._lastW = wid
-    local p = BP()
-    local t = p.bagListColWidths
+    local profile = BP()
+    local t = profile.bagListColWidths
     if not t then
         t = {}
-        p.bagListColWidths = t
+        profile.bagListColWidths = t
     end
     t[heading._colId] = wid
     for owner in pairs(_hdrBars) do

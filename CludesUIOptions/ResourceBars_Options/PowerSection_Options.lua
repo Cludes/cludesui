@@ -98,8 +98,8 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
         order = { "HORIZONTAL", "VERTICAL_UP", "VERTICAL_DOWN" },
         getValue = function()
             local rowCfg = rowConf()
-            local p = DB()
-            return (rowCfg and rowCfg.orientation) or (p and p.general.orientation) or "HORIZONTAL"
+            local profile = DB()
+            return (rowCfg and rowCfg.orientation) or (profile and profile.general.orientation) or "HORIZONTAL"
         end,
         setValue = ConfSetter("orientation", Refresh),
     })
@@ -156,23 +156,23 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     region = region,
                     tooltip = "Apply Height to all Bars",
                     onClick = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        local val = p.primary.height or 16
-                        p.secondary.pipHeight = val
-                        p.health.height = val
+                        local val = profile.primary.height or 16
+                        profile.secondary.pipHeight = val
+                        profile.health.height = val
                         SmoothRefresh()
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return false
                         end
-                        local val = p.primary.height or 16
-                        return (p.secondary.pipHeight or 20) == val and (p.health.height or 20) == val
+                        local val = profile.primary.height or 16
+                        return (profile.secondary.pipHeight or 20) == val and (profile.health.height or 20) == val
                     end,
                     flashTargets = function()
                         return {
@@ -189,23 +189,23 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     region = region,
                     tooltip = "Apply Width to all Bars",
                     onClick = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        local val = p.primary.width or 220
-                        p.secondary.pipWidth = val
-                        p.health.width = val
+                        local val = profile.primary.width or 220
+                        profile.secondary.pipWidth = val
+                        profile.health.width = val
                         SmoothRefresh()
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return false
                         end
-                        local val = p.primary.width or 220
-                        return (p.secondary.pipWidth or 214) == val and (p.health.width or 220) == val
+                        local val = profile.primary.width or 220
+                        return (profile.secondary.pipWidth or 214) == val and (profile.health.width or 220) == val
                     end,
                     flashTargets = function()
                         return {
@@ -561,15 +561,15 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                                 if powerOff() then
                                     return powerDisTip
                                 end
-                                local p = DB()
-                                if not (p and p.gcdBar.enabled) then
+                                local profile = DB()
+                                if not (profile and profile.gcdBar.enabled) then
                                     return "GCD Bar"
                                 end
                                 return "This option can't be used while Show Behind is enabled."
                             end,
                             rawTooltip = function()
-                                local p = DB()
-                                return not powerOff() and (p and p.gcdBar.enabled) and true or false
+                                local profile = DB()
+                                return not powerOff() and (profile and profile.gcdBar.enabled) and true or false
                             end,
                             get = ConfGetter("borderAboveGCD", false),
                             set = function(val)
@@ -714,12 +714,12 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     region = pwrBsRow._leftRegion,
                     tooltip = "Apply Border Style to all Bars",
                     onClick = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        local was = mod.ERB_TexturedBars(p)
-                        local s = p.primary
+                        local was = mod.ERB_TexturedBars(profile)
+                        local s = profile.primary
                         local function apply(t)
                             t.borderTexture = s.borderTexture
                             t.borderTextureOffset = s.borderTextureOffset
@@ -734,22 +734,22 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             mod.ERB_CopyBorderPx(t, s)
                             t.borderBehind = s.borderBehind
                         end
-                        apply(p.secondary)
-                        apply(p.health)
+                        apply(profile.secondary)
+                        apply(profile.health)
                         SmoothRefresh()
-                        CludesUI:RefreshPage(mod.ERB_TexturedBars(p) ~= was)
+                        CludesUI:RefreshPage(mod.ERB_TexturedBars(profile) ~= was)
                     end,
                     isSynced = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return false
                         end
-                        local bt = p.primary.borderTexture or "solid"
-                        local bh = p.primary.borderBehind or false
-                        return (p.secondary.borderTexture or "solid") == bt
-                            and (p.health.borderTexture or "solid") == bt
-                            and (p.secondary.borderBehind or false) == bh
-                            and (p.health.borderBehind or false) == bh
+                        local bt = profile.primary.borderTexture or "solid"
+                        local bh = profile.primary.borderBehind or false
+                        return (profile.secondary.borderTexture or "solid") == bt
+                            and (profile.health.borderTexture or "solid") == bt
+                            and (profile.secondary.borderBehind or false) == bh
+                            and (profile.health.borderBehind or false) == bh
                     end,
                     flashTargets = function()
                         return { pwrBsRow._leftRegion }
@@ -759,47 +759,47 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     region = pwrBsRow._rightRegion,
                     tooltip = "Apply Border to all Bars",
                     onClick = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        local was = mod.ERB_TexturedBars(p)
+                        local was = mod.ERB_TexturedBars(profile)
                         local red, green, blue, a =
-                            p.primary.borderR, p.primary.borderG, p.primary.borderB, p.primary.borderA
-                        local sz = p.primary.borderSize or 1
-                        local bt = p.primary.borderTexture or "solid"
-                        local cr, cm = p.primary.cornerRadius or 0, p.primary.cornerMask
-                        p.secondary.borderR, p.secondary.borderG, p.secondary.borderB, p.secondary.borderA =
+                            profile.primary.borderR, profile.primary.borderG, profile.primary.borderB, profile.primary.borderA
+                        local sz = profile.primary.borderSize or 1
+                        local bt = profile.primary.borderTexture or "solid"
+                        local cr, cm = profile.primary.cornerRadius or 0, profile.primary.cornerMask
+                        profile.secondary.borderR, profile.secondary.borderG, profile.secondary.borderB, profile.secondary.borderA =
                             red, green, blue, a
-                        p.secondary.borderSize = sz
-                        p.secondary.borderTexture = bt
-                        p.secondary.cornerRadius = cr
-                        p.secondary.cornerMask = cm
-                        mod.ERB_CopyBorderPx(p.secondary, p.primary)
-                        p.health.borderR, p.health.borderG, p.health.borderB, p.health.borderA = red, green, blue, a
-                        p.health.borderSize = sz
-                        p.health.borderTexture = bt
-                        p.health.cornerRadius = cr
-                        p.health.cornerMask = cm
-                        mod.ERB_CopyBorderPx(p.health, p.primary)
+                        profile.secondary.borderSize = sz
+                        profile.secondary.borderTexture = bt
+                        profile.secondary.cornerRadius = cr
+                        profile.secondary.cornerMask = cm
+                        mod.ERB_CopyBorderPx(profile.secondary, profile.primary)
+                        profile.health.borderR, profile.health.borderG, profile.health.borderB, profile.health.borderA = red, green, blue, a
+                        profile.health.borderSize = sz
+                        profile.health.borderTexture = bt
+                        profile.health.cornerRadius = cr
+                        profile.health.cornerMask = cm
+                        mod.ERB_CopyBorderPx(profile.health, profile.primary)
                         SmoothRefresh()
-                        CludesUI:RefreshPage(mod.ERB_TexturedBars(p) ~= was)
+                        CludesUI:RefreshPage(mod.ERB_TexturedBars(profile) ~= was)
                     end,
                     isSynced = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return false
                         end
                         local sr, sg, scrollBar, sa, ssz =
-                            p.primary.borderR,
-                            p.primary.borderG,
-                            p.primary.borderB,
-                            p.primary.borderA,
-                            p.primary.borderSize or 1
+                            profile.primary.borderR,
+                            profile.primary.borderG,
+                            profile.primary.borderB,
+                            profile.primary.borderA,
+                            profile.primary.borderSize or 1
                         local sbt, scr, scm =
-                            p.primary.borderTexture or "solid",
-                            p.primary.cornerRadius or 0,
-                            p.primary.cornerMask or 15
+                            profile.primary.borderTexture or "solid",
+                            profile.primary.cornerRadius or 0,
+                            profile.primary.cornerMask or 15
                         local function eq(t)
                             return t.borderR == sr
                                 and t.borderG == sg
@@ -809,9 +809,9 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                                 and (t.borderTexture or "solid") == sbt
                                 and (t.cornerRadius or 0) == scr
                                 and (t.cornerMask or 15) == scm
-                                and mod.ERB_SameBorderPx(t, p.primary)
+                                and mod.ERB_SameBorderPx(t, profile.primary)
                         end
-                        return eq(p.secondary) and eq(p.health)
+                        return eq(profile.secondary) and eq(profile.health)
                     end,
                     flashTargets = function()
                         return {
@@ -1044,23 +1044,23 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                 region = region,
                 tooltip = "Apply Opacity to all Bars",
                 onClick = function()
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    local val = p.primary.barAlpha or 1
-                    p.secondary.barAlpha = val
-                    p.health.barAlpha = val
+                    local val = profile.primary.barAlpha or 1
+                    profile.secondary.barAlpha = val
+                    profile.health.barAlpha = val
                     SmoothRefresh()
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return false
                     end
-                    local val = p.primary.barAlpha or 1
-                    return (p.secondary.barAlpha or 1) == val and (p.health.barAlpha or 1) == val
+                    local val = profile.primary.barAlpha or 1
+                    return (profile.secondary.barAlpha or 1) == val and (profile.health.barAlpha or 1) == val
                 end,
                 flashTargets = function()
                     return {

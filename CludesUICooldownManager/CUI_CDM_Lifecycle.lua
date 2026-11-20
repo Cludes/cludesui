@@ -191,7 +191,7 @@ RegisterCDMUnlockElements = function()
                         LayoutCDMBar(key)
                     end,
                     savePos = function(_, anchorPoint, relPoint, posX, posY)
-                        local p = ECME.db.profile
+                        local profile = ECME.db.profile
                         local storePoint, storeX, storeY = anchorPoint, posX, posY
                         local bd2 = barDataByKey[key]
                         local grow = bd2 and bd2.growDirection
@@ -228,7 +228,7 @@ RegisterCDMUnlockElements = function()
                                 tgtL, tgtR, tgtT, tgtB = CludesUI.GetAnchorTargetEdgesUI("CDM_" .. key)
                             end
                         end
-                        p.cdmBarPositions[key] = {
+                        profile.cdmBarPositions[key] = {
                             point = storePoint,
                             relPoint = relPoint,
                             x = storeX,
@@ -332,8 +332,8 @@ end
 -- file is at the 200-local cap, nothing here may persist a file-scope local.
 do
     local function AnyBarHasAddOffset()
-        local p = ECME and ECME.db and ECME.db.profile
-        local barList = p and p.cdmBars and p.cdmBars.bars
+        local profile = ECME and ECME.db and ECME.db.profile
+        local barList = profile and profile.cdmBars and profile.cdmBars.bars
         if not barList then
             return false
         end
@@ -360,8 +360,8 @@ do
             -- for the snapshot. Unlock-ANCHORED offset bars are stripped by
             -- the wants-gated anchor reapply that follows; module-anchored
             -- bars have no movers and snapshot nothing.
-            local p = ECME and ECME.db and ECME.db.profile
-            local barList = p and p.cdmBars and p.cdmBars.bars
+            local profile = ECME and ECME.db and ECME.db.profile
+            local barList = profile and profile.cdmBars and profile.cdmBars.bars
             if not barList then
                 return
             end
@@ -374,7 +374,7 @@ do
                     and not (CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("CDM_" .. edge.key))
                 then
                     local widget = cdmBarFrames[edge.key]
-                    local place = p.cdmBarPositions and p.cdmBarPositions[edge.key]
+                    local place = profile.cdmBarPositions and profile.cdmBarPositions[edge.key]
                     if widget and place and place.point then
                         ApplyBarPositionCentered(widget, place, edge.key)
                     end
@@ -387,8 +387,8 @@ do
             end
             BuildAllCDMBars()
             if CludesUI.PropagateAnchorChain and CludesUI.IsUnlockAnchored then
-                local p = ECME and ECME.db and ECME.db.profile
-                local barList = p and p.cdmBars and p.cdmBars.bars
+                local profile = ECME and ECME.db and ECME.db.profile
+                local barList = profile and profile.cdmBars and profile.cdmBars.bars
                 if barList then
                     for index = 1, #barList do
                         local edge = barList[index]
@@ -417,8 +417,8 @@ _G._CUCME_RegisterUnlock = RegisterCDMUnlockElements
 -- deliberately suppressed (spec-override values written right after a spec
 -- change), so the bar still moves to its new offset. On ns: 200-local cap.
 mod.CDMReapplyBarPositions = function()
-    local p = ECME and ECME.db and ECME.db.profile
-    local barList = p and p.cdmBars and p.cdmBars.bars
+    local profile = ECME and ECME.db and ECME.db.profile
+    local barList = profile and profile.cdmBars and profile.cdmBars.bars
     -- Never inside unlock mode: movers own positions there and a re-place
     -- from saved coords would revert un-saved drags.
     if not barList or InCombatLockdown() or CludesUI._unlockActive then
@@ -434,7 +434,7 @@ mod.CDMReapplyBarPositions = function()
                 end
             else
                 local widget = cdmBarFrames[edge.key]
-                local place = p.cdmBarPositions and p.cdmBarPositions[edge.key]
+                local place = profile.cdmBarPositions and profile.cdmBarPositions[edge.key]
                 if widget and place and place.point then
                     ApplyBarPositionCentered(widget, place, edge.key)
                 end
@@ -719,14 +719,14 @@ function ECME:CDMFinishSetup()
     -- Pre-size CDM bar frames using cached icon counts from last session. Purely cosmetic: gives
     -- anchored elements correct dimensions to compute against before the real spell data populates. BuildAllCDMBars below overwrites everything with real data.
     do
-        local p = ECME.db and ECME.db.profile
-        if p and p.cdmBars and p.cdmBars.enabled and CludesUIDB then
+        local profile = ECME.db and ECME.db.profile
+        if profile and profile.cdmBars and profile.cdmBars.enabled and CludesUIDB then
             local charKey = mod.GetCharKey()
             local specKey = mod.GetActiveSpecKey()
             local cache = CludesUIDB.cdmCachedBarSizes
             local counts = cache and cache[charKey] and cache[charKey][specKey]
             if counts then
-                for index, barInfo in ipairs(p.cdmBars.bars) do
+                for index, barInfo in ipairs(profile.cdmBars.bars) do
                     if barInfo.enabled then
                         local cachedCount = counts[barInfo.key]
                         if cachedCount and cachedCount > 0 then
@@ -794,7 +794,7 @@ function ECME:CDMFinishSetup()
                             widget:SetSize(totalW, totalH)
                             widget._prevLayoutW = totalW
                             widget._prevLayoutH = totalH
-                            local place = p.cdmBarPositions and p.cdmBarPositions[key]
+                            local place = profile.cdmBarPositions and profile.cdmBarPositions[key]
                             if place and place.point then
                                 widget:ClearAllPoints()
                                 widget:SetPoint(

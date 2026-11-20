@@ -200,21 +200,21 @@ CludesUI.AtOptionsLogin(function()
 
     -- Selected bar, validated (falls back to the first bar).
     local function SelectedBar()
-        local p = Profile()
-        if not p then
+        local profile = Profile()
+        if not profile then
             return nil
         end
-        local barList = p.bars
+        local barList = profile.bars
         if #barList == 0 then
             return nil
         end
-        if p.selectedBarId then
-            local b = mod.GetBar(p.selectedBarId)
+        if profile.selectedBarId then
+            local b = mod.GetBar(profile.selectedBarId)
             if b then
                 return b
             end
         end
-        p.selectedBarId = barList[1].id
+        profile.selectedBarId = barList[1].id
         return barList[1]
     end
 
@@ -299,10 +299,10 @@ CludesUI.AtOptionsLogin(function()
             cancelText = "Cancel",
             onConfirm = function()
                 mod.DeleteBar(rowConf.id)
-                local p = Profile()
+                local profile = Profile()
                 local barList = mod.BarsInOrder()
-                if p and barList[1] then
-                    p.selectedBarId = barList[1].id
+                if profile and barList[1] then
+                    profile.selectedBarId = barList[1].id
                 end
                 CludesUI:InvalidateModulePageCache("CludesUIDataBars")
                 HardRefresh()
@@ -659,9 +659,9 @@ CludesUI.AtOptionsLogin(function()
                     end)
                     entry:SetScript("OnClick", function()
                         dropMenu:Hide()
-                        local p = Profile()
-                        if p then
-                            p.selectedBarId = entry._bar.id
+                        local profile = Profile()
+                        if profile then
+                            profile.selectedBarId = entry._bar.id
                         end
                         HardRefresh()
                     end)
@@ -1168,15 +1168,15 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local function CursorStripPos()
-            local cx, cy = GetCursorPosition()
+            local curX, curY = GetCursorPosition()
             local es = barStrip:GetEffectiveScale()
             if not es or es == 0 then
                 es = 1
             end
             if isVertical then
-                return (barStrip:GetTop() or 0) - cy / es
+                return (barStrip:GetTop() or 0) - curY / es
             end
-            return cx / es - (barStrip:GetLeft() or 0)
+            return curX / es - (barStrip:GetLeft() or 0)
         end
 
         local function ComputeInsertIdx()
@@ -1334,12 +1334,12 @@ CludesUI.AtOptionsLogin(function()
                     FinishDrag()
                     return
                 end
-                local cx, cy = GetCursorPosition()
-                local sc = UIParent:GetEffectiveScale()
-                cx, cy = cx / sc, cy / sc
+                local curX, curY = GetCursorPosition()
+                local uiScale = UIParent:GetEffectiveScale()
+                curX, curY = curX / uiScale, curY / uiScale
                 local gs = dragShadow:GetScale() or 1
                 dragShadow:ClearAllPoints()
-                dragShadow:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx / gs, cy / gs)
+                dragShadow:SetPoint("CENTER", UIParent, "BOTTOMLEFT", curX / gs, curY / gs)
                 UpdateDragVisuals()
             end)
         end
@@ -1446,8 +1446,8 @@ CludesUI.AtOptionsLogin(function()
                 if dragIdx then
                     return
                 end
-                local cx, cy = GetCursorPosition()
-                scrollBar._pendX, scrollBar._pendY = cx, cy
+                local curX, curY = GetCursorPosition()
+                scrollBar._pendX, scrollBar._pendY = curX, curY
                 scrollBar:SetScript("OnUpdate", function(s3)
                     if not IsMouseButtonDown("LeftButton") then
                         s3:SetScript("OnUpdate", nil)
@@ -1753,8 +1753,8 @@ CludesUI.AtOptionsLogin(function()
             _edbNavigateFn = NavigateToSetting
         end
 
-        local p = Profile()
-        if not p then
+        local profile = Profile()
+        if not profile then
             return math.abs(cursorY)
         end
         local rowConf = SelectedBar()
@@ -3181,11 +3181,11 @@ CludesUI.AtOptionsLogin(function()
                         },
                         order = { "none", "short", "long", "icon" },
                         getValue = function()
-                            local p = s.prefix
-                            if p == nil then
-                                p = "short"
+                            local profile = s.prefix
+                            if profile == nil then
+                                profile = "short"
                             end
-                            return p
+                            return profile
                         end,
                         setValue = SFieldThen("prefix"),
                     }
@@ -3432,11 +3432,11 @@ CludesUI.AtOptionsLogin(function()
                         values = { [0] = "None", [1] = "One", [2] = "Two" },
                         order = { 0, 1, 2 },
                         getValue = function()
-                            local p = s.precision
-                            if p == nil then
-                                p = 0
+                            local profile = s.precision
+                            if profile == nil then
+                                profile = 0
                             end
-                            return p
+                            return profile
                         end,
                         setValue = SFieldThen("precision"),
                     },
@@ -3993,11 +3993,11 @@ CludesUI.AtOptionsLogin(function()
                         values = { [0] = "None", [1] = "One", [2] = "Two" },
                         order = { 0, 1, 2 },
                         getValue = function()
-                            local p = s.precision
-                            if p == nil then
-                                p = 0
+                            local profile = s.precision
+                            if profile == nil then
+                                profile = 0
                             end
-                            return p
+                            return profile
                         end,
                         setValue = SFieldThen("precision"),
                     },
@@ -4700,9 +4700,9 @@ CludesUI.AtOptionsLogin(function()
         end
         local barKey = "block:" .. blockId .. ":" .. settingKey
         CludesUI:NavigateToElementSettings("CludesUIDataBars", PAGE_DATABARS, nil, function()
-            local p = Profile()
-            if p then
-                p.selectedBarId = barId
+            local profile = Profile()
+            if profile then
+                profile.selectedBarId = barId
             end
         end)
         -- The click-target map belongs to the page build the call above kicks

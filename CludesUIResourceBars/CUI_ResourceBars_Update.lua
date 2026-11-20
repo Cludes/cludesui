@@ -162,9 +162,9 @@ local function UpdateHealthBar()
         if healthCfg.customColored then
             baseR, baseG, baseB = healthCfg.fillR, healthCfg.fillG, healthCfg.fillB
         else
-            local cc = CLASS_COLORS[cachedClass]
-            if cc then
-                baseR, baseG, baseB = cc[1], cc[2], cc[3]
+            local classColor = CLASS_COLORS[cachedClass]
+            if classColor then
+                baseR, baseG, baseB = classColor[1], classColor[2], classColor[3]
             else
                 baseR, baseG, baseB = 0.15, 0.75, 0.30
             end
@@ -248,9 +248,9 @@ local function UpdateHealthBar()
         end
     elseif fillTex and not healthCfg.customColored then
         local red, green, blue
-        local cc = CLASS_COLORS[cachedClass]
-        if cc then
-            red, green, blue = cc[1], cc[2], cc[3]
+        local classColor = CLASS_COLORS[cachedClass]
+        if classColor then
+            red, green, blue = classColor[1], classColor[2], classColor[3]
         else
             red, green, blue = 0.15, 0.75, 0.30
         end
@@ -1270,9 +1270,9 @@ local function UpdateIronfurBar()
         local _dfr, _dfg, _dfb = CludesUI.GetDarkModeFill()
         red, green, blue, a = _dfr, _dfg, _dfb, 1
     elseif secondaryCfg.classColored ~= false then
-        local cc = CLASS_COLORS[cachedClass]
-        if cc then
-            red, green, blue = cc[1], cc[2], cc[3]
+        local classColor = CLASS_COLORS[cachedClass]
+        if classColor then
+            red, green, blue = classColor[1], classColor[2], classColor[3]
         else
             red, green, blue = 1, 1, 1
         end
@@ -1783,9 +1783,9 @@ local function UpdateSecondaryResource()
         if rr then
             red, green, blue = rr, rg, rb
         else
-            local cc = CLASS_COLORS[cachedClass]
-            if cc then
-                red, green, blue = cc[1], cc[2], cc[3]
+            local classColor = CLASS_COLORS[cachedClass]
+            if classColor then
+                red, green, blue = classColor[1], classColor[2], classColor[3]
             end
         end
         a = 1
@@ -1795,9 +1795,9 @@ local function UpdateSecondaryResource()
         if powerColor then
             red, green, blue = powerColor[1], powerColor[2], powerColor[3]
         else
-            local cc = CLASS_COLORS[cachedClass]
-            if cc then
-                red, green, blue = cc[1], cc[2], cc[3]
+            local classColor = CLASS_COLORS[cachedClass]
+            if classColor then
+                red, green, blue = classColor[1], classColor[2], classColor[3]
             end
         end
         a = 1

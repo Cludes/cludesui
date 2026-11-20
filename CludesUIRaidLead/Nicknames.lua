@@ -120,10 +120,10 @@ function mod.NicknameCount()
     return num
 end
 
-local ev = CreateFrame("Frame")
-ev:RegisterEvent("PLAYER_LOGIN")
-ev:RegisterEvent("GROUP_JOINED")
-ev:SetScript("OnEvent", function(_, evt)
+local eventFrame = CreateFrame("Frame")
+eventFrame:RegisterEvent("PLAYER_LOGIN")
+eventFrame:RegisterEvent("GROUP_JOINED")
+eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "PLAYER_LOGIN" then
         C_Timer.After(15, function()
             Announce(false)

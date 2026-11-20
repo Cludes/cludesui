@@ -365,20 +365,20 @@ end
 -- .desaturateInactiveBuffs) become PER-BAR fields; a profile with the global ON turns every buff bar ON.
 -- Runs once per profile (flag on cdmBars); re-runs on swap to a pre-migration profile, which carries no flag.
 function mod.MigrateAlwaysShowBuffsToPerBar()
-    local p = ECME.db and ECME.db.profile
-    if not p or not p.cdmBars or p.cdmBars._asbPerBarMigrated then
+    local profile = ECME.db and ECME.db.profile
+    if not profile or not profile.cdmBars or profile.cdmBars._asbPerBarMigrated then
         return
     end
-    p.cdmBars._asbPerBarMigrated = true
-    local oldOn = p.cdmBars.showInactiveBuffIcons
-    local oldDesat = p.cdmBars.desaturateInactiveBuffs
+    profile.cdmBars._asbPerBarMigrated = true
+    local oldOn = profile.cdmBars.showInactiveBuffIcons
+    local oldDesat = profile.cdmBars.desaturateInactiveBuffs
     if oldOn == nil and oldDesat == nil then
         return
     end
-    if type(p.cdmBars.bars) ~= "table" then
+    if type(profile.cdmBars.bars) ~= "table" then
         return
     end
-    for _, edge in ipairs(p.cdmBars.bars) do
+    for _, edge in ipairs(profile.cdmBars.bars) do
         if edge.barType == "buffs" then
             if oldOn ~= nil then
                 edge.showInactiveBuffIcons = oldOn and true or false
@@ -397,15 +397,15 @@ end
 -- buff-family bar (its key stays custom_*, never "buffs"). Same once-per-profile contract as
 -- above. MUST run AFTER MigrateAlwaysShowBuffsToPerBar so the old global Always-Show value only lands on original buff bars, not converted Auras bars.
 function mod.MigrateCustomBuffBarsToBuffBars()
-    local p = ECME.db and ECME.db.profile
-    if not p or not p.cdmBars or p.cdmBars._customBuffMergedV1 then
+    local profile = ECME.db and ECME.db.profile
+    if not profile or not profile.cdmBars or profile.cdmBars._customBuffMergedV1 then
         return
     end
-    p.cdmBars._customBuffMergedV1 = true
-    if type(p.cdmBars.bars) ~= "table" then
+    profile.cdmBars._customBuffMergedV1 = true
+    if type(profile.cdmBars.bars) ~= "table" then
         return
     end
-    for _, edge in ipairs(p.cdmBars.bars) do
+    for _, edge in ipairs(profile.cdmBars.bars) do
         if edge.barType == "custom_buff" then
             edge.barType = "buffs"
         end
@@ -657,8 +657,8 @@ local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, po
         _G[BLIZZ_CDM_FRAMES.buffs],
         colour:GetChildren()
     )
-    local p = ECME.db and ECME.db.profile
-    local cdmBars = p and p.cdmBars
+    local profile = ECME.db and ECME.db.profile
+    local cdmBars = profile and profile.cdmBars
     local barList = cdmBars and cdmBars.bars
     if barList then
         local focusKick = mod.FOCUSKICK_BAR_KEY

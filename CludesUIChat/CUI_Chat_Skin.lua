@@ -91,17 +91,17 @@ local function SkinChatFrame(castFrame)
             -- tab drag grabs near the frame's top-left, so a later re-attach
             -- by anchor point lands without a jump; CENTER produced one).
             local issec = _G.issecretvalue
-            local mx, my = GetCursorPosition()
+            local curX, curY = GetCursorPosition()
             local es = frame:GetEffectiveScale()
             local wid, hgt = frame:GetWidth() or 430, frame:GetHeight() or 120
             if
-                mx
-                and my
+                curX
+                and curY
                 and es
                 and es > 0
-                and not (issec and (issec(mx) or issec(my) or issec(wid) or issec(hgt)))
+                and not (issec and (issec(curX) or issec(curY) or issec(wid) or issec(hgt)))
             then
-                frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", mx / es - wid / 2, my / es + hgt / 2)
+                frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", curX / es - wid / 2, curY / es + hgt / 2)
             else
                 frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
             end
@@ -141,21 +141,21 @@ local function SkinChatFrame(castFrame)
             else
                 l, t = castFrame:GetLeft(), castFrame:GetTop()
             end
-            local mx, my = GetCursorPosition()
+            local curX, curY = GetCursorPosition()
             local es = castFrame:GetEffectiveScale()
             local issec = _G.issecretvalue
-            if not (l and t and mx and my and es and es > 0) then
+            if not (l and t and curX and curY and es and es > 0) then
                 return
             end
-            if issec and (issec(l) or issec(t) or issec(mx) or issec(my)) then
+            if issec and (issec(l) or issec(t) or issec(curX) or issec(curY)) then
                 return
             end
             pcall(function()
                 castFrame:ClearAllPoints()
                 castFrame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", l, t)
             end)
-            defaultChat._tabDragOffX = l - mx / es
-            defaultChat._tabDragOffY = t - my / es
+            defaultChat._tabDragOffX = l - curX / es
+            defaultChat._tabDragOffY = t - curY / es
             local texKey = defaultChat._tabDragTicker
             if not texKey then
                 texKey = CreateFrame("Frame")
@@ -165,13 +165,13 @@ local function SkinChatFrame(castFrame)
                         texKey:Hide()
                         return
                     end
-                    local cx, cy = GetCursorPosition()
+                    local curX, curY = GetCursorPosition()
                     local es2 = castFrame:GetEffectiveScale()
                     local isec2 = _G.issecretvalue
-                    if not (cx and cy and es2 and es2 > 0) then
+                    if not (curX and curY and es2 and es2 > 0) then
                         return
                     end
-                    if isec2 and (isec2(cx) or isec2(cy)) then
+                    if isec2 and (isec2(curX) or isec2(curY)) then
                         return
                     end
                     castFrame:ClearAllPoints()
@@ -179,8 +179,8 @@ local function SkinChatFrame(castFrame)
                         "TOPLEFT",
                         UIParent,
                         "BOTTOMLEFT",
-                        cx / es2 + defaultChat._tabDragOffX,
-                        cy / es2 + defaultChat._tabDragOffY
+                        curX / es2 + defaultChat._tabDragOffX,
+                        curY / es2 + defaultChat._tabDragOffY
                     )
                 end)
                 defaultChat._tabDragTicker = texKey

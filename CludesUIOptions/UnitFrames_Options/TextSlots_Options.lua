@@ -103,10 +103,10 @@ function mod.UFO_RefreshMenus(...)
                 dropdown._invalidateMenu()
             end
         end
-        local rl = CludesUI._widgetRefreshList
-        if rl then
-            for ri = 1, #rl do
-                rl[ri]()
+        local refreshList = CludesUI._widgetRefreshList
+        if refreshList then
+            for ri = 1, #refreshList do
+                refreshList[ri]()
             end
         end
     end)

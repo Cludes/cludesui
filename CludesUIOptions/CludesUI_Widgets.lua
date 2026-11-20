@@ -580,10 +580,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- off the slot this one took).
     local function RefreshWidgetsNextFrame()
         C_Timer.After(0, function()
-            local rl = CludesUI._widgetRefreshList
-            if rl then
-                for ri = 1, #rl do
-                    rl[ri]()
+            local refreshList = CludesUI._widgetRefreshList
+            if refreshList then
+                for ri = 1, #refreshList do
+                    refreshList[ri]()
                 end
             end
         end)
@@ -1484,8 +1484,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         EndThumbDrag(self2)
                         return
                     end
-                    local _, cy = GetCursorPosition()
-                    local deltaY = ddDragStartY - cy / self2:GetEffectiveScale()
+                    local _, curY = GetCursorPosition()
+                    local deltaY = ddDragStartY - curY / self2:GetEffectiveScale()
                     local maxTravel = menuRail:GetHeight() - self2:GetHeight()
                     if maxTravel <= 0 then
                         return
@@ -4066,13 +4066,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- Controller cursor: the hidden pointer is not on the tile, so open at
         -- the tile and put the cursor into the list.
         local scale = UIParent:GetEffectiveScale()
-        local cx, cy = GetCursorPosition()
+        local curX, curY = GetCursorPosition()
         dropMenu:ClearAllPoints()
         local padCursor = CludesUI.PadCursorShown()
         if padCursor and anchor then
             dropMenu:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -2)
         else
-            dropMenu:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", cx / scale + 2, cy / scale + 2)
+            dropMenu:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", curX / scale + 2, curY / scale + 2)
         end
         dropMenu:Show()
         if padCursor then

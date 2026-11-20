@@ -572,8 +572,8 @@ function mod.ForEachSavedSettingsBlock(func)
             end
         end
     end
-    local p = ECME and ECME.db and ECME.db.profile
-    local barList = p and p.cdmBars and p.cdmBars.bars
+    local profile = ECME and ECME.db and ECME.db.profile
+    local barList = profile and profile.cdmBars and profile.cdmBars.bars
     if type(barList) == "table" then
         for _, edge in ipairs(barList) do
             local abs = type(edge) == "table" and edge.barSpellSettings
@@ -801,14 +801,14 @@ end
 -- positive = racial/custom spell, negative = item/trinket-slot preset. Entry shape: { duration,
 -- activeSwipeMode, activeSwipeClassColor, activeSwipeR/G/B/A, activeGlow, glowColor, glowColorR/G/B }.
 function mod.GetCustomActiveStates()
-    local p = ECME and ECME.db and ECME.db.profile
-    if not p then
+    local profile = ECME and ECME.db and ECME.db.profile
+    if not profile then
         return nil
     end
-    if not p.customActiveStates then
-        p.customActiveStates = {}
+    if not profile.customActiveStates then
+        profile.customActiveStates = {}
     end
-    return p.customActiveStates
+    return profile.customActiveStates
 end
 
 -- Read (or, with create=true, lazily create) the entry for one spell key.

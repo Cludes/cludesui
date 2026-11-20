@@ -446,13 +446,13 @@ end
 -- Resolves a bar's live cfg + polarity from its (kind,id) identity, via the same
 -- lookups every other engine-side path uses.
 local function ResolvePreviewCfg(kindName, ident)
-    local s = PAB()
-    if not s then
+    local pabCfg = PAB()
+    if not pabCfg then
         return nil
     end
     if ident == "default" then
         local buffSide = kindName == "buff"
-        return (buffSide and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s)), buffSide
+        return (buffSide and DefaultBuffsCfg(pabCfg) or DefaultDebuffsCfg(pabCfg)), buffSide
     elseif kindName == "buff" then
         return mod.PAB_GetCustomBuffBar(ident), true
     else

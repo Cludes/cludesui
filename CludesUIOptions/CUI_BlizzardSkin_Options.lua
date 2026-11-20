@@ -265,15 +265,15 @@ CludesUI.AtOptionsLogin(function()
                 lblHost:SetFrameLevel(headerText:GetFrameLevel() + 3)
             end
             local function Layout()
-                local s = UIParent:GetEffectiveScale() / headerText:GetEffectiveScale()
+                local uiScale = UIParent:GetEffectiveScale() / headerText:GetEffectiveScale()
                 local colW = ((building and hdrW or headerText:GetWidth()) - 2 * CludesUI.CONTENT_PAD) / num
                 local maxH = 0
                 for idx = 1, num do
                     local c = state[idx]
                     if c and c.w then
-                        local fit = (c.w > 0) and math.min(1, colW / (c.w * s)) or 1
-                        c.root:SetScale(s * fit)
-                        maxH = math.max(maxH, c.h * s * fit)
+                        local fit = (c.w > 0) and math.min(1, colW / (c.w * uiScale)) or 1
+                        c.root:SetScale(uiScale * fit)
+                        maxH = math.max(maxH, c.h * uiScale * fit)
                     end
                 end
                 local blockH = maxH + titleH

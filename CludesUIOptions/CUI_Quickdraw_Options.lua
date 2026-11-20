@@ -2647,9 +2647,9 @@ CludesUI.AtOptionsLogin(function()
     -- index, entries that opened the deleted palette are removed, and each
     -- shifted palette's keybind moves with it.
     local function DeletePalette(index)
-        local p = DB()
+        local profile = DB()
         local total = MenuCount()
-        if not p or total <= 1 or index < 1 or index > total then
+        if not profile or total <= 1 or index < 1 or index > total then
             return
         end
 
@@ -2670,7 +2670,7 @@ CludesUI.AtOptionsLogin(function()
         -- before the indexes move.
         local handed = HandOffKeys(index, GetBindingKey(BINDING_PREFIX .. index))
 
-        table.remove(p.palettes, index)
+        table.remove(profile.palettes, index)
         ProfilePut("paletteCount", total - 1)
 
         -- The auto-names close ranks with everything else. A palette the user
@@ -3186,7 +3186,7 @@ CludesUI.AtOptionsLogin(function()
             return nil
         end
 
-        local mx, my = GetCursorPosition()
+        local curX, curY = GetCursorPosition()
         local best, bestDist
         for i = 1, isShown do
             local wid = previewWheel:GetSlotWidget(i)
@@ -3200,7 +3200,7 @@ CludesUI.AtOptionsLogin(function()
                 -- GetCenter is in the widget's own scaled space; the cursor is
                 -- in screen units, so the scale has to be applied to compare.
                 local es = wid:GetEffectiveScale()
-                local dx, dy = mx - cx * es, my - cy * es
+                local dx, dy = curX - cx * es, curY - cy * es
                 local d = dx * dx + dy * dy
                 if not bestDist or d < bestDist then
                     best, bestDist = i, d

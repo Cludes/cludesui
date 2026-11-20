@@ -29,12 +29,12 @@ local cdmBarFrames, cdmBarIcons = Inner.cdmBarFrames, Inner.cdmBarIcons
 local FOCUSKICK_BAR_KEY = "focuskick"
 mod.FOCUSKICK_BAR_KEY = FOCUSKICK_BAR_KEY
 local function EnsureFocusKickBar()
-    local p = ECME.db and ECME.db.profile
-    if not p or not p.cdmBars or not p.cdmBars.bars then
+    local profile = ECME.db and ECME.db.profile
+    if not profile or not profile.cdmBars or not profile.cdmBars.bars then
         return
     end
     -- Desired position: directly after the "buffs" default bar and before any custom bars (skipping ghost bars).
-    local barList = p.cdmBars.bars
+    local barList = profile.cdmBars.bars
     local goalIdx
     for index, bar in ipairs(barList) do
         if bar.key == "buffs" then
@@ -199,8 +199,8 @@ local function ApplyFocusKickAnchor()
     if not widget then
         return
     end
-    local p = ECME.db and ECME.db.profile
-    local edge = p and barDataByKey and barDataByKey[FOCUSKICK_BAR_KEY]
+    local profile = ECME.db and ECME.db.profile
+    local edge = profile and barDataByKey and barDataByKey[FOCUSKICK_BAR_KEY]
     if not edge then
         return
     end

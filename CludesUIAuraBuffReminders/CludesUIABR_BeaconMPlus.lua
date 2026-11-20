@@ -33,7 +33,7 @@ local STYLE_KEY = "abrBeaconMPlus"
 local GLOW_SPEC = { style = 2, r = 1, g = 0.15, b = 0.15 } -- Action Button Glow, red
 local GLOW_NEED = { flip = true } -- the family Action Button Glow draws on an engine host
 
-local ev = CreateFrame("Frame")
+local eventFrame = CreateFrame("Frame")
 local started = false -- the first PLAYER_ENTERING_WORLD ran the initial sync
 local level = -1 -- 0 off, 1 option on but not Holy, 2 armed (Holy)
 local tankUnit -- cached out of the encounter; roles can read secret in M+
@@ -185,11 +185,11 @@ end
 -- the key's end; each of those starts looks the tank up again.
 local function WatchRoster(enabled)
     if enabled then
-        ev:RegisterEvent("GROUP_ROSTER_UPDATE")
-        ev:RegisterEvent("PLAYER_ROLES_ASSIGNED")
+        eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+        eventFrame:RegisterEvent("PLAYER_ROLES_ASSIGNED")
     else
-        ev:UnregisterEvent("GROUP_ROSTER_UPDATE")
-        ev:UnregisterEvent("PLAYER_ROLES_ASSIGNED")
+        eventFrame:UnregisterEvent("GROUP_ROSTER_UPDATE")
+        eventFrame:UnregisterEvent("PLAYER_ROLES_ASSIGNED")
     end
 end
 
@@ -225,19 +225,19 @@ local function Sync()
         return
     end
     level = wanted
-    ev:UnregisterAllEvents()
+    eventFrame:UnregisterAllEvents()
     Disarm()
     if wanted == 0 then
         return
     end
-    ev:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
+    eventFrame:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
     if wanted == 2 then
-        ev:RegisterEvent("ENCOUNTER_START")
-        ev:RegisterEvent("ENCOUNTER_END")
-        ev:RegisterEvent("CHALLENGE_MODE_START")
-        ev:RegisterEvent("CHALLENGE_MODE_COMPLETED")
-        ev:RegisterEvent("CHALLENGE_MODE_RESET")
-        ev:RegisterEvent("PLAYER_ENTERING_WORLD")
+        eventFrame:RegisterEvent("ENCOUNTER_START")
+        eventFrame:RegisterEvent("ENCOUNTER_END")
+        eventFrame:RegisterEvent("CHALLENGE_MODE_START")
+        eventFrame:RegisterEvent("CHALLENGE_MODE_COMPLETED")
+        eventFrame:RegisterEvent("CHALLENGE_MODE_RESET")
+        eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
         WatchRoster(C_ChallengeMode.IsChallengeModeActive())
         RefreshTank()
         if IsEncounterInProgress() then
@@ -248,7 +248,7 @@ local function Sync()
     end
 end
 
-ev:SetScript("OnEvent", function(_, evt)
+eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "ENCOUNTER_START" then
         Arm()
     elseif evt == "CHALLENGE_MODE_START" then
@@ -285,4 +285,4 @@ ev:SetScript("OnEvent", function(_, evt)
         Sync()
     end
 end)
-ev:RegisterEvent("PLAYER_ENTERING_WORLD")
+eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")

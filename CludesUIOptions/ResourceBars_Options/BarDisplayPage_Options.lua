@@ -66,8 +66,8 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
         local function Blocked()
-            local p = DB()
-            return p and environ.PreviewAvail(p, settingKey) or nil
+            local profile = DB()
+            return profile and environ.PreviewAvail(profile, settingKey) or nil
         end
         -- A button the pool dressed again since (another page) is not this eye any more.
         local gen = CludesUI._Pool.Gen(eyeButton)
@@ -171,31 +171,31 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
 
     -- Row 1: Visibility | Visibility Options. One control drives all three bars: the scalar and the multi-select set write to health/primary/secondary in lockstep; reads come from secondary, the representative.
     local function ApplyVisScalarAll(_, modeName)
-        local p = DB()
-        if not p then
+        local profile = DB()
+        if not profile then
             return
         end
-        p.secondary.visibility = modeName
-        p.health.visibility = modeName
-        p.primary.visibility = modeName
+        profile.secondary.visibility = modeName
+        profile.health.visibility = modeName
+        profile.primary.visibility = modeName
     end
     local function MirrorVisModes()
-        local p = DB()
-        if not p then
+        local profile = DB()
+        if not profile then
             return
         end
-        local source = p.secondary.visibilityModes
+        local source = profile.secondary.visibilityModes
         if source then
             local c1, c2 = {}, {}
             for keyName in pairs(source) do
                 c1[keyName] = true
                 c2[keyName] = true
             end
-            p.health.visibilityModes = c1
-            p.primary.visibilityModes = c2
+            profile.health.visibilityModes = c1
+            profile.primary.visibilityModes = c2
         else
-            p.health.visibilityModes = nil
-            p.primary.visibilityModes = nil
+            profile.health.visibilityModes = nil
+            profile.primary.visibilityModes = nil
         end
     end
     -- One control for all three bars: the scalar, the multi-select set and the option
@@ -208,27 +208,27 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         cursorY,
         {
             getStore = function()
-                local p = DB()
-                return p and p.secondary
+                local profile = DB()
+                return profile and profile.secondary
             end,
             -- The override marker fans out like the scalar and the option lanes do;
             -- secondary leads, matching getStore above.
             getStores = function()
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return nil
                 end
                 -- Built by presence, never as a literal triple: a nil in the middle
                 -- would leave a hole the # operator reads past.
                 local result = {}
-                if p.secondary then
-                    result[#result + 1] = p.secondary
+                if profile.secondary then
+                    result[#result + 1] = profile.secondary
                 end
-                if p.health then
-                    result[#result + 1] = p.health
+                if profile.health then
+                    result[#result + 1] = profile.health
                 end
-                if p.primary then
-                    result[#result + 1] = p.primary
+                if profile.primary then
+                    result[#result + 1] = profile.primary
                 end
                 return result
             end,
@@ -236,20 +236,20 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             caps = { partyIncludesRaid = false, luaDragonriding = true },
             applyScalarFn = ApplyVisScalarAll,
             getOption = function(keyName)
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return false
                 end
-                return p.secondary[keyName] or false
+                return profile.secondary[keyName] or false
             end,
             setOption = function(keyName, value)
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return
                 end
-                p.secondary[keyName] = value
-                p.health[keyName] = value
-                p.primary[keyName] = value
+                profile.secondary[keyName] = value
+                profile.health[keyName] = value
+                profile.primary[keyName] = value
             end,
             onChanged = function()
                 MirrorVisModes()
@@ -291,19 +291,19 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             rightRegion:GetFrameLevel() + 2,
             smoothItems,
             function(keyName)
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return false
                 end
-                return (p[keyName] and p[keyName].smoothBars) or false
+                return (profile[keyName] and profile[keyName].smoothBars) or false
             end,
             function(keyName, value)
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return
                 end
-                if p[keyName] then
-                    p[keyName].smoothBars = value
+                if profile[keyName] then
+                    profile[keyName].smoothBars = value
                 end
                 if _G._CURB_ApplySmoothing then
                     _G._CURB_ApplySmoothing()
@@ -337,18 +337,18 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Dark Mode Class Resource",
         getValue = function()
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return false
             end
-            return p.secondary.darkTheme
+            return profile.secondary.darkTheme
         end,
         setValue = function(value)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return
             end
-            p.secondary.darkTheme = value
+            profile.secondary.darkTheme = value
             RebuildClass()
             -- Full rebuild so the Background label re-renders
             CludesUI:RefreshPage(true)
@@ -361,28 +361,28 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         step = 1,
         trackWidth = 120,
         getValue = function()
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return 75
             end
-            if p.splitBg == true then
-                return math.floor(((p.secondary.barBgA or 0.5) * 100) + 0.5)
+            if profile.splitBg == true then
+                return math.floor(((profile.secondary.barBgA or 0.5) * 100) + 0.5)
             end
-            return math.floor(((p.health.bgA or 0.75) * 100) + 0.5)
+            return math.floor(((profile.health.bgA or 0.75) * 100) + 0.5)
         end,
         setValue = function(value)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return
             end
             local a = value / 100
-            if p.splitBg == true then
+            if profile.splitBg == true then
                 -- Split mode: Health/Power own their keys via the rows below, this row still owns the class resource bar
-                p.secondary.barBgA = a
+                profile.secondary.barBgA = a
             else
-                p.health.bgA = a
-                p.primary.bgA = a
-                p.secondary.barBgA = a
+                profile.health.bgA = a
+                profile.primary.bgA = a
+                profile.secondary.barBgA = a
             end
             SmoothRefresh()
             CludesUI:RefreshPage()
@@ -411,16 +411,16 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     type = "toggle",
                     label = "Choose background per bar",
                     get = function()
-                        local p = DB()
-                        return (p and p.splitBg) == true
+                        local profile = DB()
+                        return (profile and profile.splitBg) == true
                     end,
                     set = function(value)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
                         if value then
-                            p.splitBg = true
+                            profile.splitBg = true
                             -- Close the popup so the newly revealed per-bar rows are visible (frame always exists here, but guard anyway)
                             local pfr = splitCog and splitCog._popupFrame
                             if pfr then
@@ -429,11 +429,11 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         else
                             -- Split OFF re-unifies from Health (the unified row's read source) so "off" really means one background, not silently diverged bars.
                             -- Stored false, not nil: profile sync copies only keys that exist.
-                            p.splitBg = false
-                            local healthCfg = p.health
-                            p.primary.bgR, p.primary.bgG, p.primary.bgB, p.primary.bgA =
+                            profile.splitBg = false
+                            local healthCfg = profile.health
+                            profile.primary.bgR, profile.primary.bgG, profile.primary.bgB, profile.primary.bgA =
                                 healthCfg.bgR, healthCfg.bgG, healthCfg.bgB, healthCfg.bgA
-                            p.secondary.barBgR, p.secondary.barBgG, p.secondary.barBgB, p.secondary.barBgA =
+                            profile.secondary.barBgR, profile.secondary.barBgG, profile.secondary.barBgB, profile.secondary.barBgA =
                                 healthCfg.bgR, healthCfg.bgG, healthCfg.bgB, healthCfg.bgA
                             SmoothRefresh()
                         end
@@ -447,25 +447,25 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             region,
             bgRow:GetFrameLevel() + 3,
             function()
-                local p = DB()
-                if p and p.splitBg == true then
-                    return p.secondary.barBgR or 0, p.secondary.barBgG or 0, p.secondary.barBgB or 0
+                local profile = DB()
+                if profile and profile.splitBg == true then
+                    return profile.secondary.barBgR or 0, profile.secondary.barBgG or 0, profile.secondary.barBgB or 0
                 end
-                return (p and p.health.bgR or 0x11 / 255),
-                    (p and p.health.bgG or 0x11 / 255),
-                    (p and p.health.bgB or 0x11 / 255)
+                return (profile and profile.health.bgR or 0x11 / 255),
+                    (profile and profile.health.bgG or 0x11 / 255),
+                    (profile and profile.health.bgB or 0x11 / 255)
             end,
             function(red, green, blue)
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return
                 end
-                if p.splitBg == true then
-                    p.secondary.barBgR, p.secondary.barBgG, p.secondary.barBgB = red, green, blue
+                if profile.splitBg == true then
+                    profile.secondary.barBgR, profile.secondary.barBgG, profile.secondary.barBgB = red, green, blue
                 else
-                    p.health.bgR, p.health.bgG, p.health.bgB = red, green, blue
-                    p.primary.bgR, p.primary.bgG, p.primary.bgB = red, green, blue
-                    p.secondary.barBgR, p.secondary.barBgG, p.secondary.barBgB = red, green, blue
+                    profile.health.bgR, profile.health.bgG, profile.health.bgB = red, green, blue
+                    profile.primary.bgR, profile.primary.bgG, profile.primary.bgB = red, green, blue
+                    profile.secondary.barBgR, profile.secondary.barBgG, profile.secondary.barBgB = red, green, blue
                 end
                 SmoothRefresh()
                 CludesUI:RefreshPage()
@@ -493,15 +493,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                 step = 1,
                 trackWidth = 120,
                 getValue = function()
-                    local p = DB()
-                    return math.floor(((p and p.health.bgA or 0.75) * 100) + 0.5)
+                    local profile = DB()
+                    return math.floor(((profile and profile.health.bgA or 0.75) * 100) + 0.5)
                 end,
                 setValue = function(value)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.health.bgA = value / 100
+                    profile.health.bgA = value / 100
                     SmoothRefresh()
                     CludesUI:RefreshPage()
                 end,
@@ -513,15 +513,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                 step = 1,
                 trackWidth = 120,
                 getValue = function()
-                    local p = DB()
-                    return math.floor(((p and p.primary.bgA or 0.75) * 100) + 0.5)
+                    local profile = DB()
+                    return math.floor(((profile and profile.primary.bgA or 0.75) * 100) + 0.5)
                 end,
                 setValue = function(value)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.primary.bgA = value / 100
+                    profile.primary.bgA = value / 100
                     SmoothRefresh()
                     CludesUI:RefreshPage()
                 end,
@@ -534,17 +534,17 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     region,
                     splitRow:GetFrameLevel() + 3,
                     function()
-                        local p = DB()
-                        return (p and p.health.bgR or 0x11 / 255),
-                            (p and p.health.bgG or 0x11 / 255),
-                            (p and p.health.bgB or 0x11 / 255)
+                        local profile = DB()
+                        return (profile and profile.health.bgR or 0x11 / 255),
+                            (profile and profile.health.bgG or 0x11 / 255),
+                            (profile and profile.health.bgB or 0x11 / 255)
                     end,
                     function(red, green, blue)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.health.bgR, p.health.bgG, p.health.bgB = red, green, blue
+                        profile.health.bgR, profile.health.bgG, profile.health.bgB = red, green, blue
                         SmoothRefresh()
                         CludesUI:RefreshPage()
                     end,
@@ -561,17 +561,17 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     region,
                     splitRow:GetFrameLevel() + 3,
                     function()
-                        local p = DB()
-                        return (p and p.primary.bgR or 0x11 / 255),
-                            (p and p.primary.bgG or 0x11 / 255),
-                            (p and p.primary.bgB or 0x11 / 255)
+                        local profile = DB()
+                        return (profile and profile.primary.bgR or 0x11 / 255),
+                            (profile and profile.primary.bgG or 0x11 / 255),
+                            (profile and profile.primary.bgB or 0x11 / 255)
                     end,
                     function(red, green, blue)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.primary.bgR, p.primary.bgG, p.primary.bgB = red, green, blue
+                        profile.primary.bgR, profile.primary.bgG, profile.primary.bgB = red, green, blue
                         SmoothRefresh()
                         CludesUI:RefreshPage()
                     end,
@@ -599,18 +599,18 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         values = hbtValues,
         order = hbtOrder,
         getValue = function()
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return "none"
             end
-            return p.general.barTexture or "none"
+            return profile.general.barTexture or "none"
         end,
         setValue = function(value)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return
             end
-            p.general.barTexture = value
+            profile.general.barTexture = value
             SmoothRefresh()
         end,
     }, {
@@ -620,15 +620,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         values = strataValues,
         order = strataOrder,
         getValue = function()
-            local p = DB()
-            return p and p.general.frameStrata or "MEDIUM"
+            local profile = DB()
+            return profile and profile.general.frameStrata or "MEDIUM"
         end,
         setValue = function(value)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return
             end
-            p.general.frameStrata = value
+            profile.general.frameStrata = value
             SmoothRefresh()
         end,
     })
@@ -646,20 +646,20 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                 order = o,
                 ddWidth = 170,
                 get = function()
-                    local p = DB()
-                    return p and mod.ERB_BarTexture(p, barId) or "__match"
+                    local profile = DB()
+                    return profile and mod.ERB_BarTexture(profile, barId) or "__match"
                 end,
                 set = function(val)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    local was = p.splitTex == true
-                    mod.ERB_SetBarTexture(p, barId, val ~= "__match" and val)
+                    local was = profile.splitTex == true
+                    mod.ERB_SetBarTexture(profile, barId, val ~= "__match" and val)
                     SmoothRefresh()
                     -- The Global Settings Textures page shows the health and power rows
                     -- only while one has its own texture: drop its cached build on a flip.
-                    if (p.splitTex == true) ~= was then
+                    if (profile.splitTex == true) ~= was then
                         CludesUI:InvalidateModulePageCache("_CUIGlobal")
                     end
                 end,
@@ -679,15 +679,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                 order = o,
                 ddWidth = 150,
                 get = function()
-                    local p = DB()
-                    return p and p[barId].frameStrata or "__match"
+                    local profile = DB()
+                    return profile and profile[barId].frameStrata or "__match"
                 end,
                 set = function(val)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p[barId].frameStrata = val ~= "__match" and val or false
+                    profile[barId].frameStrata = val ~= "__match" and val or false
                     SmoothRefresh()
                 end,
             }
@@ -703,15 +703,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     label = "Blizzard Class Resource Bar Texture",
                     tooltip = "Bar-style class resources (Insanity, Maelstrom, Astral Power, etc.) use Blizzard's default player frame bar artwork instead of the texture above.",
                     get = function()
-                        local p = DB()
-                        return (p and p.secondary.useBlizzardAtlas) or false
+                        local profile = DB()
+                        return (profile and profile.secondary.useBlizzardAtlas) or false
                     end,
                     set = function(value)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.secondary.useBlizzardAtlas = value
+                        profile.secondary.useBlizzardAtlas = value
                         RebuildClass()
                         if value then
                             CludesUI:ShowConfirmPopup({
@@ -727,15 +727,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     label = "Continuous Texture for Pip Resources",
                     tooltip = "Spreads the texture across all pips instead of restarting it on each one. Useful for gradient textures.",
                     get = function()
-                        local p = DB()
-                        return (p and p.secondary.useContinuousTexture) or false
+                        local profile = DB()
+                        return (profile and profile.secondary.useContinuousTexture) or false
                     end,
                     set = function(value)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.secondary.useContinuousTexture = value
+                        profile.secondary.useContinuousTexture = value
                         RebuildClass()
                     end,
                 },
@@ -764,14 +764,14 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             text = "Border Around All",
             tooltip = "Draws one frame around the resource bars instead of one per bar.",
             disabled = function()
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return true
                 end
-                if p.general.classicBorderAll then
+                if profile.general.classicBorderAll then
                     return false
                 end
-                return not mod.ERB_GroupCheck(p)
+                return not mod.ERB_GroupCheck(profile)
             end,
             disabledTooltip = function()
                 local _, why = mod.ERB_GroupCheck(DB())
@@ -785,21 +785,21 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             end,
             rawTooltip = true,
             getValue = function()
-                local p = DB()
-                return (p and p.general.classicBorderAll) and true or false
+                local profile = DB()
+                return (profile and profile.general.classicBorderAll) and true or false
             end,
             setValue = function(value)
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return
                 end
-                p.general.classicBorderAll = value and true or false
+                profile.general.classicBorderAll = value and true or false
                 -- One classic frame, one size: the lead bar's Border Size
                 -- for all three (Blizzard Style has no Border Size).
                 if value and mod.ERB_ClassicBorderRow() then
-                    local s = mod.ERB_GroupLeadCfg(p).stockBorderScale
+                    local s = mod.ERB_GroupLeadCfg(profile).stockBorderScale
                     for idx = 1, #CLASSIC_SYNC_KEYS do
-                        p[CLASSIC_SYNC_KEYS[idx]].stockBorderScale = s
+                        profile[CLASSIC_SYNC_KEYS[idx]].stockBorderScale = s
                     end
                 end
                 Refresh()
@@ -821,11 +821,11 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         -- holds that frame (Unit Frames wins it). Greyed only while off, so
         -- it can still be turned off there.
         disabled = function()
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return true
             end
-            if p.secondary.blizzardClassArt then
+            if profile.secondary.blizzardClassArt then
                 return false
             end
             return not (mod.ERB_BlizzClassArtSupported and mod.ERB_BlizzClassArtSupported())
@@ -845,15 +845,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         end,
         rawTooltip = true,
         getValue = function()
-            local p = DB()
-            return (p and p.secondary.blizzardClassArt) and true or false
+            local profile = DB()
+            return (profile and profile.secondary.blizzardClassArt) and true or false
         end,
         setValue = function(value)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return
             end
-            p.secondary.blizzardClassArt = value and true or false
+            profile.secondary.blizzardClassArt = value and true or false
             RebuildClass()
             CludesUI:RefreshPage()
         end,
@@ -864,8 +864,8 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
     if not CludesUI._prebuilding then
         local region = blizzArtRow._leftRegion
         local function artOff()
-            local p = DB()
-            return not (p and p.secondary.blizzardClassArt)
+            local profile = DB()
+            return not (profile and profile.secondary.blizzardClassArt)
         end
         CludesUI.BuildInlineCog(region, {
             disabled = artOff,
@@ -879,15 +879,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     max = 200,
                     step = 5,
                     get = function()
-                        local p = DB()
-                        return math.floor(((p and p.secondary.blizzardClassArtScale) or 1) * 100 + 0.5)
+                        local profile = DB()
+                        return math.floor(((profile and profile.secondary.blizzardClassArtScale) or 1) * 100 + 0.5)
                     end,
                     set = function(value)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.secondary.blizzardClassArtScale = value / 100
+                        profile.secondary.blizzardClassArtScale = value / 100
                         if mod.ERB_ApplyBlizzClassArt then
                             mod.ERB_ApplyBlizzClassArt()
                         end
@@ -902,8 +902,8 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
     if borderAllOn and not CludesUI._prebuilding then
         local region = blizzArtRow._rightRegion
         local function groupOff()
-            local p = DB()
-            return not (p and p.general.classicBorderAll)
+            local profile = DB()
+            return not (profile and profile.general.classicBorderAll)
         end
         local function redraw()
             if mod.ERB_GroupDirty then
@@ -922,19 +922,19 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     max = 5,
                     step = 1,
                     get = function()
-                        local p = DB()
-                        local value = p and p.general.classicBorderAllSepSize
+                        local profile = DB()
+                        local value = profile and profile.general.classicBorderAllSepSize
                         if value == nil then
                             value = 1
                         end
                         return value
                     end,
                     set = function(value)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.general.classicBorderAllSepSize = value
+                        profile.general.classicBorderAllSepSize = value
                         redraw()
                     end,
                 },
@@ -942,19 +942,19 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     type = "colorpicker",
                     label = "Separator Color",
                     get = function()
-                        local p = DB()
-                        local g = p and p.general
+                        local profile = DB()
+                        local g = profile and profile.general
                         return (g and g.classicBorderAllSepR) or 0,
                             (g and g.classicBorderAllSepG) or 0,
                             (g and g.classicBorderAllSepB) or 0,
                             1
                     end,
                     set = function(red, green, blue)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.general.classicBorderAllSepR, p.general.classicBorderAllSepG, p.general.classicBorderAllSepB =
+                        profile.general.classicBorderAllSepR, profile.general.classicBorderAllSepG, profile.general.classicBorderAllSepB =
                             red, green, blue
                         redraw()
                     end,
@@ -979,23 +979,23 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         tooltip = "When the class resource bar is not shown, this automatically adds the class resource height to the power bar.",
         -- Mutually exclusive with "Shift Elements if No Resource": grey this while shift is set, but only when this is itself OFF so a legacy profile with both on can still turn this off (no deadlock).
         disabled = function()
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return false
             end
-            if not p.primary.enabled then
+            if not profile.primary.enabled then
                 return true
             end
             if CludesUI.GetHeightMatchTarget and CludesUI.GetHeightMatchTarget("ERB_Power") then
                 return true
             end
             -- Shift blocks expand when the dropdown is set to Up/Down. Independent of "Show Class Resource" -- toggling the resource bar must NOT change this control's disabled state.
-            local shiftOn = (p.secondary.shiftElementsIfNoResource or "None") ~= "None"
-            return shiftOn and not p.primary.expandIfNoResource and true or false
+            local shiftOn = (profile.secondary.shiftElementsIfNoResource or "None") ~= "None"
+            return shiftOn and not profile.primary.expandIfNoResource and true or false
         end,
         disabledTooltip = function()
-            local p = DB()
-            if p and not p.primary.enabled then
+            local profile = DB()
+            if profile and not profile.primary.enabled then
                 return "Power Bar"
             end
             if CludesUI.GetHeightMatchTarget and CludesUI.GetHeightMatchTarget("ERB_Power") then
@@ -1008,22 +1008,22 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             if CludesUI.GetHeightMatchTarget and CludesUI.GetHeightMatchTarget("ERB_Power") then
                 return false
             end
-            local p = DB()
-            return p and p.primary.expandIfNoResource
+            local profile = DB()
+            return profile and profile.primary.expandIfNoResource
         end,
         setValue = function(value)
             -- Block enable when height matched
             if value and CludesUI.GetHeightMatchTarget and CludesUI.GetHeightMatchTarget("ERB_Power") then
                 return
             end
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return
             end
-            p.primary.expandIfNoResource = value
+            profile.primary.expandIfNoResource = value
             -- Enabling expand turns off the mutually-exclusive shift option.
             if value then
-                p.secondary.shiftElementsIfNoResource = "None"
+                profile.secondary.shiftElementsIfNoResource = "None"
             end
             Refresh()
             CludesUI:RefreshPage()
@@ -1037,32 +1037,32 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         -- turn this off (no deadlock). Independent of "Show Class Resource" -- the shift setting is
         -- exactly what's wanted while the resource bar is hidden, so that toggle must NOT change this control's disabled state.
         disabled = function()
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return false
             end
             -- Expand only blocks shift when EFFECTIVELY on (power bar enabled and not height-matched)
             local matchedHeight = CludesUI.GetHeightMatchTarget and CludesUI.GetHeightMatchTarget("ERB_Power")
-            local expandOn = p.primary.enabled and p.primary.expandIfNoResource and not matchedHeight
-            local shiftOff = (p.secondary.shiftElementsIfNoResource or "None") == "None"
+            local expandOn = profile.primary.enabled and profile.primary.expandIfNoResource and not matchedHeight
+            local shiftOff = (profile.secondary.shiftElementsIfNoResource or "None") == "None"
             return expandOn and shiftOff and true or false
         end,
         disabledTooltip = "This option can't be used while Expand Power Bar if No Resource is enabled.",
         values = { None = "None", Up = "Up", Down = "Down" },
         order = { "None", "Up", "Down" },
         getValue = function()
-            local p = DB()
-            return (p and p.secondary.shiftElementsIfNoResource) or "None"
+            local profile = DB()
+            return (profile and profile.secondary.shiftElementsIfNoResource) or "None"
         end,
         setValue = function(value)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return
             end
-            p.secondary.shiftElementsIfNoResource = value
+            profile.secondary.shiftElementsIfNoResource = value
             -- Enabling shift turns off the mutually-exclusive expand option.
             if value ~= "None" then
-                p.primary.expandIfNoResource = false
+                profile.primary.expandIfNoResource = false
             end
             RebuildClass()
             CludesUI:RefreshPage()
@@ -1079,15 +1079,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         end
         CludesUI.BuildInlineCog(region, {
             disabled = function()
-                local p = DB()
-                if not (p and p.primary.enabled and p.primary.expandIfNoResource) then
+                local profile = DB()
+                if not (profile and profile.primary.enabled and profile.primary.expandIfNoResource) then
                     return true
                 end
                 return matchedHeight() and true or false
             end,
             disabledTooltip = function()
-                local p = DB()
-                if p and not p.primary.enabled then
+                local profile = DB()
+                if profile and not profile.primary.enabled then
                     return "Power Bar"
                 end
                 if matchedHeight() then
@@ -1105,15 +1105,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     max = 50,
                     step = 1,
                     get = function()
-                        local p = DB()
-                        return (p and p.primary.expandIfNoResourceExtraY) or 0
+                        local profile = DB()
+                        return (profile and profile.primary.expandIfNoResourceExtraY) or 0
                     end,
                     set = function(value)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.primary.expandIfNoResourceExtraY = value
+                        profile.primary.expandIfNoResourceExtraY = value
                         Refresh()
                     end,
                 },
@@ -1134,15 +1134,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     max = 50,
                     step = 1,
                     get = function()
-                        local p = DB()
-                        return (p and p.secondary.shiftElementsIfNoResourceExtraY) or 0
+                        local profile = DB()
+                        return (profile and profile.secondary.shiftElementsIfNoResourceExtraY) or 0
                     end,
                     set = function(value)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.secondary.shiftElementsIfNoResourceExtraY = value
+                        profile.secondary.shiftElementsIfNoResourceExtraY = value
                         RebuildClass()
                         -- BuildBars' cascade is edge-gated on the shift
                         -- DIRECTION, which a magnitude edit never flips --
@@ -1167,15 +1167,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         values = { None = "None", Up = "Up", Down = "Down" },
         order = { "None", "Up", "Down" },
         getValue = function()
-            local p = DB()
-            return (p and p.primary.shiftElementsIfNoPower) or "None"
+            local profile = DB()
+            return (profile and profile.primary.shiftElementsIfNoPower) or "None"
         end,
         setValue = function(value)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return
             end
-            p.primary.shiftElementsIfNoPower = value
+            profile.primary.shiftElementsIfNoPower = value
             RebuildPower()
             CludesUI:RefreshPage()
         end,
@@ -1184,20 +1184,20 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         text = "Hide Power Bar if Resource",
         tooltip = "Hides the power bar whenever the class resource bar is showing.",
         disabled = function()
-            local p = DB()
-            return not (p and p.secondary.enabled)
+            local profile = DB()
+            return not (profile and profile.secondary.enabled)
         end,
         disabledTooltip = "Class Resource",
         getValue = function()
-            local p = DB()
-            return (p and p.secondary.hidePowerIfResource) and true or false
+            local profile = DB()
+            return (profile and profile.secondary.hidePowerIfResource) and true or false
         end,
         setValue = function(value)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return
             end
-            p.secondary.hidePowerIfResource = value
+            profile.secondary.hidePowerIfResource = value
             RebuildClass()
         end,
     })
@@ -1216,15 +1216,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     max = 50,
                     step = 1,
                     get = function()
-                        local p = DB()
-                        return (p and p.primary.shiftElementsIfNoPowerExtraY) or 0
+                        local profile = DB()
+                        return (profile and profile.primary.shiftElementsIfNoPowerExtraY) or 0
                     end,
                     set = function(value)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.primary.shiftElementsIfNoPowerExtraY = value
+                        profile.primary.shiftElementsIfNoPowerExtraY = value
                         RebuildPower()
                         -- Same explicit re-cascade as the class-resource
                         -- Shift Offset cog: the direction edge gate never
@@ -1260,8 +1260,8 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             parent = hostFrame,
             y = cursorY,
             getData = function()
-                local p = DB()
-                return p and p.secondary or {}
+                local profile = DB()
+                return profile and profile.secondary or {}
             end,
             onApply = function()
                 RebuildClass()
@@ -1292,8 +1292,8 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             parent = hostFrame,
             y = cursorY,
             getData = function()
-                local p = DB()
-                return p and p.primary or {}
+                local profile = DB()
+                return profile and profile.primary or {}
             end,
             onApply = function()
                 RebuildPower()
@@ -1353,11 +1353,11 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         if not spellRef then
                             return "default"
                         end
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return "default"
                         end
-                        local shade = p.primary.powerTypeOverride
+                        local shade = profile.primary.powerTypeOverride
                         if shade and shade[spellRef] == "mana" then
                             return "always"
                         end
@@ -1376,23 +1376,23 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         if not spellRef then
                             return
                         end
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
                         if value == "alt" then
-                            if not p.primary.powerTypeOverride then
-                                p.primary.powerTypeOverride = {}
+                            if not profile.primary.powerTypeOverride then
+                                profile.primary.powerTypeOverride = {}
                             end
-                            p.primary.powerTypeOverride[spellRef] = true
+                            profile.primary.powerTypeOverride[spellRef] = true
                         elseif value == "always" then
-                            if not p.primary.powerTypeOverride then
-                                p.primary.powerTypeOverride = {}
+                            if not profile.primary.powerTypeOverride then
+                                profile.primary.powerTypeOverride = {}
                             end
-                            p.primary.powerTypeOverride[spellRef] = "mana"
+                            profile.primary.powerTypeOverride[spellRef] = "mana"
                         else
-                            if p.primary.powerTypeOverride then
-                                p.primary.powerTypeOverride[spellRef] = nil
+                            if profile.primary.powerTypeOverride then
+                                profile.primary.powerTypeOverride[spellRef] = nil
                             end
                         end
                         RebuildPower()
@@ -1429,20 +1429,20 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                 values = { off = "Off", fsr = "5-Second Rule", ticks = "Regen Ticks" },
                 order = { "off", "fsr", "ticks" },
                 getValue = function()
-                    local p = DB()
-                    if not (p and p.primary.manaRegenSpark) then
+                    local profile = DB()
+                    if not (profile and profile.primary.manaRegenSpark) then
                         return "off"
                     end
-                    return p.primary.manaRegenSparkMode == "ticks" and "ticks" or "fsr"
+                    return profile.primary.manaRegenSparkMode == "ticks" and "ticks" or "fsr"
                 end,
                 setValue = function(value)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.primary.manaRegenSpark = value ~= "off"
+                    profile.primary.manaRegenSpark = value ~= "off"
                     if value ~= "off" then
-                        p.primary.manaRegenSparkMode = (value == "ticks") and "ticks" or nil
+                        profile.primary.manaRegenSparkMode = (value == "ticks") and "ticks" or nil
                     end
                     RebuildPower()
                 end,
@@ -1452,15 +1452,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                 text = "Spell Cost Prediction",
                 tooltip = "While you cast, shows on the bar the mana the spell will cost.",
                 getValue = function()
-                    local p = DB()
-                    return p and p.primary.powerCostPrediction == true or false
+                    local profile = DB()
+                    return profile and profile.primary.powerCostPrediction == true or false
                 end,
                 setValue = function(value)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.primary.powerCostPrediction = value
+                    profile.primary.powerCostPrediction = value
                     RebuildPower()
                     CludesUI:RefreshPage()
                 end,
@@ -1475,22 +1475,22 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     {
                         tooltip = "Spell Cost Color",
                         getValue = function()
-                            local p = DB()
-                            local red, green, b = SCP.Color(p and p.primary)
+                            local profile = DB()
+                            local red, green, b = SCP.Color(profile and profile.primary)
                             return red, green, b, 1
                         end,
                         setValue = function(red, green, blue)
-                            local p = DB()
-                            if not p then
+                            local profile = DB()
+                            if not profile then
                                 return
                             end
-                            p.primary.powerCostColor = { r = red, g = green, b = blue }
+                            profile.primary.powerCostColor = { r = red, g = green, b = blue }
                         end,
                     },
                 }, {
                     disabled = function()
-                        local p = DB()
-                        return not (p and p.primary.powerCostPrediction == true)
+                        local profile = DB()
+                        return not (profile and profile.primary.powerCostPrediction == true)
                     end,
                     disabledTooltip = "Spell Cost Prediction",
                     size = 20,
@@ -1504,22 +1504,22 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     values = { ["default"] = "Match Form", ["alt"] = "Mana" },
                     order = { "default", "alt" },
                     getValue = function()
-                        local p = DB()
-                        local shade = p and p.primary.powerTypeOverride
+                        local profile = DB()
+                        local shade = profile and profile.primary.powerTypeOverride
                         return (shade and shade.foreverDruid) and "alt" or "default"
                     end,
                     setValue = function(value)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
                         if value == "alt" then
-                            if not p.primary.powerTypeOverride then
-                                p.primary.powerTypeOverride = {}
+                            if not profile.primary.powerTypeOverride then
+                                profile.primary.powerTypeOverride = {}
                             end
-                            p.primary.powerTypeOverride.foreverDruid = true
-                        elseif p.primary.powerTypeOverride then
-                            p.primary.powerTypeOverride.foreverDruid = nil
+                            profile.primary.powerTypeOverride.foreverDruid = true
+                        elseif profile.primary.powerTypeOverride then
+                            profile.primary.powerTypeOverride.foreverDruid = nil
                         end
                         RebuildPower()
                         CludesUI:RefreshPage()
@@ -1533,20 +1533,20 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                 -- Edits go straight to the module: the companion is not part of the
                 -- bar build, so a full ApplyAll would rebuild every bar.
                 local function FdmCfg()
-                    local p = DB()
-                    return p and p.primary.foreverDruidMana
+                    local profile = DB()
+                    return profile and profile.primary.foreverDruidMana
                 end
                 local function FdmTypeMana()
-                    local p = DB()
-                    local shade = p and p.primary.powerTypeOverride
+                    local profile = DB()
+                    local shade = profile and profile.primary.powerTypeOverride
                     return (shade and shade.foreverDruid) and true or false
                 end
                 local function FdmOff()
                     if FdmTypeMana() then
                         return true
                     end
-                    local t = FdmCfg()
-                    return not (t and t.enabled)
+                    local druidMana = FdmCfg()
+                    return not (druidMana and druidMana.enabled)
                 end
                 local function FdmOffTip()
                     if FdmTypeMana() then
@@ -1558,8 +1558,8 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     if FdmOff() then
                         return true
                     end
-                    local t = FdmCfg()
-                    return (t and t.textFormat or "none") == "none"
+                    local druidMana = FdmCfg()
+                    return (druidMana and druidMana.textFormat or "none") == "none"
                 end
                 local function FdmTextDisTip()
                     if FdmOff() then
@@ -1580,15 +1580,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     disabled = FdmTypeMana,
                     disabledTooltip = "This option requires Power Type to be set to Match Form",
                     getValue = function()
-                        local t = FdmCfg()
-                        return t and t.enabled or false
+                        local druidMana = FdmCfg()
+                        return druidMana and druidMana.enabled or false
                     end,
                     setValue = function(value)
-                        local t = FdmCfg()
-                        if not t then
+                        local druidMana = FdmCfg()
+                        if not druidMana then
                             return
                         end
-                        t.enabled = value
+                        druidMana.enabled = value
                         RefreshFDM()
                         CludesUI:RefreshPage()
                     end,
@@ -1615,15 +1615,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         "both",
                     }),
                     getValue = function()
-                        local t = FdmCfg()
-                        return CludesUI.PowerTextFormat(t and t.textFormat or "none")
+                        local druidMana = FdmCfg()
+                        return CludesUI.PowerTextFormat(druidMana and druidMana.textFormat or "none")
                     end,
                     setValue = function(value)
-                        local t = FdmCfg()
-                        if not t then
+                        local druidMana = FdmCfg()
+                        if not druidMana then
                             return
                         end
-                        t.textFormat = value
+                        druidMana.textFormat = value
                         RefreshFDM()
                         CludesUI:RefreshPage()
                     end,
@@ -1643,15 +1643,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                 order = { "below", "above", "inside" },
                                 tooltip = "On a vertical Power Bar, Below is the right side and Above is the left side.",
                                 get = function()
-                                    local t = FdmCfg()
-                                    return t and t.position or "below"
+                                    local druidMana = FdmCfg()
+                                    return druidMana and druidMana.position or "below"
                                 end,
                                 set = function(value)
-                                    local t = FdmCfg()
-                                    if not t then
+                                    local druidMana = FdmCfg()
+                                    if not druidMana then
                                         return
                                     end
-                                    t.position = value
+                                    druidMana.position = value
                                     RefreshFDM()
                                 end,
                             },
@@ -1663,20 +1663,20 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                 max = 20,
                                 step = 1,
                                 disabled = function()
-                                    local t = FdmCfg()
-                                    return (t and t.position == "inside") and true or false
+                                    local druidMana = FdmCfg()
+                                    return (druidMana and druidMana.position == "inside") and true or false
                                 end,
                                 disabledTooltip = "This option requires Position to be Below or Above",
                                 get = function()
-                                    local t = FdmCfg()
-                                    return t and t.gap or 2
+                                    local druidMana = FdmCfg()
+                                    return druidMana and druidMana.gap or 2
                                 end,
                                 set = function(value)
-                                    local t = FdmCfg()
-                                    if not t then
+                                    local druidMana = FdmCfg()
+                                    if not druidMana then
                                         return
                                     end
-                                    t.gap = value
+                                    druidMana.gap = value
                                     RefreshFDM()
                                 end,
                             },
@@ -1687,15 +1687,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                 max = 30,
                                 step = 1,
                                 get = function()
-                                    local t = FdmCfg()
-                                    return t and t.height or 6
+                                    local druidMana = FdmCfg()
+                                    return druidMana and druidMana.height or 6
                                 end,
                                 set = function(value)
-                                    local t = FdmCfg()
-                                    if not t then
+                                    local druidMana = FdmCfg()
+                                    if not druidMana then
                                         return
                                     end
-                                    t.height = value
+                                    druidMana.height = value
                                     RefreshFDM()
                                 end,
                             },
@@ -1706,15 +1706,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                 max = 100,
                                 step = 1,
                                 get = function()
-                                    local t = FdmCfg()
-                                    return t and t.offsetX or 0
+                                    local druidMana = FdmCfg()
+                                    return druidMana and druidMana.offsetX or 0
                                 end,
                                 set = function(value)
-                                    local t = FdmCfg()
-                                    if not t then
+                                    local druidMana = FdmCfg()
+                                    if not druidMana then
                                         return
                                     end
-                                    t.offsetX = value
+                                    druidMana.offsetX = value
                                     RefreshFDM()
                                 end,
                             },
@@ -1725,15 +1725,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                 max = 100,
                                 step = 1,
                                 get = function()
-                                    local t = FdmCfg()
-                                    return t and t.offsetY or 0
+                                    local druidMana = FdmCfg()
+                                    return druidMana and druidMana.offsetY or 0
                                 end,
                                 set = function(value)
-                                    local t = FdmCfg()
-                                    if not t then
+                                    local druidMana = FdmCfg()
+                                    if not druidMana then
                                         return
                                     end
-                                    t.offsetY = value
+                                    druidMana.offsetY = value
                                     RefreshFDM()
                                 end,
                             },
@@ -1752,15 +1752,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                 max = 24,
                                 step = 1,
                                 get = function()
-                                    local t = FdmCfg()
-                                    return t and t.textSize or 8
+                                    local druidMana = FdmCfg()
+                                    return druidMana and druidMana.textSize or 8
                                 end,
                                 set = function(value)
-                                    local t = FdmCfg()
-                                    if not t then
+                                    local druidMana = FdmCfg()
+                                    if not druidMana then
                                         return
                                     end
-                                    t.textSize = value
+                                    druidMana.textSize = value
                                     RefreshFDM()
                                 end,
                             },
@@ -1768,15 +1768,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                 type = "toggle",
                                 label = "Show %",
                                 get = function()
-                                    local t = FdmCfg()
-                                    return (not t) or t.showPercent ~= false
+                                    local druidMana = FdmCfg()
+                                    return (not druidMana) or druidMana.showPercent ~= false
                                 end,
                                 set = function(value)
-                                    local t = FdmCfg()
-                                    if not t then
+                                    local druidMana = FdmCfg()
+                                    if not druidMana then
                                         return
                                     end
-                                    t.showPercent = value
+                                    druidMana.showPercent = value
                                     RefreshFDM()
                                 end,
                             },
@@ -1787,15 +1787,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                 order = { "LEFT", "CENTER", "RIGHT" },
                                 tooltip = "Anchor the text inside the bar. The X/Y offsets move it from there.",
                                 get = function()
-                                    local t = FdmCfg()
-                                    return t and t.textAnchor or "CENTER"
+                                    local druidMana = FdmCfg()
+                                    return druidMana and druidMana.textAnchor or "CENTER"
                                 end,
                                 set = function(value)
-                                    local t = FdmCfg()
-                                    if not t then
+                                    local druidMana = FdmCfg()
+                                    if not druidMana then
                                         return
                                     end
-                                    t.textAnchor = value
+                                    druidMana.textAnchor = value
                                     RefreshFDM()
                                 end,
                             },
@@ -1806,15 +1806,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                 max = 100,
                                 step = 1,
                                 get = function()
-                                    local t = FdmCfg()
-                                    return t and t.textXOffset or 0
+                                    local druidMana = FdmCfg()
+                                    return druidMana and druidMana.textXOffset or 0
                                 end,
                                 set = function(value)
-                                    local t = FdmCfg()
-                                    if not t then
+                                    local druidMana = FdmCfg()
+                                    if not druidMana then
                                         return
                                     end
-                                    t.textXOffset = value
+                                    druidMana.textXOffset = value
                                     RefreshFDM()
                                 end,
                             },
@@ -1825,15 +1825,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                 max = 100,
                                 step = 1,
                                 get = function()
-                                    local t = FdmCfg()
-                                    return t and t.textYOffset or 0
+                                    local druidMana = FdmCfg()
+                                    return druidMana and druidMana.textYOffset or 0
                                 end,
                                 set = function(value)
-                                    local t = FdmCfg()
-                                    if not t then
+                                    local druidMana = FdmCfg()
+                                    if not druidMana then
                                         return
                                     end
-                                    t.textYOffset = value
+                                    druidMana.textYOffset = value
                                     RefreshFDM()
                                 end,
                             },
@@ -1846,27 +1846,27 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                             tooltip = "Custom Colored",
                             hasAlpha = true,
                             getValue = function()
-                                local t = FdmCfg()
-                                if not t then
+                                local druidMana = FdmCfg()
+                                if not druidMana then
                                     return 1, 1, 1, 1
                                 end
-                                return t.textFillR or 1, t.textFillG or 1, t.textFillB or 1, t.textFillA or 1
+                                return druidMana.textFillR or 1, druidMana.textFillG or 1, druidMana.textFillB or 1, druidMana.textFillA or 1
                             end,
                             setValue = function(red, green, blue, a)
-                                local t = FdmCfg()
-                                if not t then
+                                local druidMana = FdmCfg()
+                                if not druidMana then
                                     return
                                 end
-                                t.textFillR, t.textFillG, t.textFillB, t.textFillA = red, green, blue, a
+                                druidMana.textFillR, druidMana.textFillG, druidMana.textFillB, druidMana.textFillA = red, green, blue, a
                                 RefreshFDM()
                             end,
                             onClick = function(self)
-                                local t = FdmCfg()
-                                if not t then
+                                local druidMana = FdmCfg()
+                                if not druidMana then
                                     return
                                 end
-                                if t.textCustomColored == false then
-                                    t.textCustomColored = true
+                                if druidMana.textCustomColored == false then
+                                    druidMana.textCustomColored = true
                                     RefreshFDM()
                                     CludesUI:RefreshPage()
                                     return
@@ -1876,8 +1876,8 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                 end
                             end,
                             refreshAlpha = function()
-                                local t = FdmCfg()
-                                return (t and t.textCustomColored == false) and 0.3 or 1
+                                local druidMana = FdmCfg()
+                                return (druidMana and druidMana.textCustomColored == false) and 0.3 or 1
                             end,
                         },
                         {
@@ -1891,17 +1891,17 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                             end,
                             setValue = function() end,
                             onClick = function()
-                                local t = FdmCfg()
-                                if not t then
+                                local druidMana = FdmCfg()
+                                if not druidMana then
                                     return
                                 end
-                                t.textCustomColored = false
+                                druidMana.textCustomColored = false
                                 RefreshFDM()
                                 CludesUI:RefreshPage()
                             end,
                             refreshAlpha = function()
-                                local t = FdmCfg()
-                                return (t and t.textCustomColored == false) and 1 or 0.3
+                                local druidMana = FdmCfg()
+                                return (druidMana and druidMana.textCustomColored == false) and 1 or 0.3
                             end,
                         },
                     }, {
@@ -1951,8 +1951,8 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             parent = hostFrame,
             y = cursorY,
             getData = function()
-                local p = DB()
-                return p and p.health or {}
+                local profile = DB()
+                return profile and profile.health or {}
             end,
             onApply = function()
                 RebuildHealth()
@@ -1983,8 +1983,8 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             environ.UpdatePreviewHeader()
         end
         local asOff = function()
-            local p = DB()
-            return p and not p.arcaneSoul.enabled
+            local profile = DB()
+            return profile and not profile.arcaneSoul.enabled
         end
         local AS_TIP = "Arcane Soul Helper"
 
@@ -2002,15 +2002,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             text = "Enable Arcane Soul Helper",
             tooltip = "Shows a countdown to the Arcane Soul window over the last seconds of Arcane Surge, then the time left inside it. Sunfury Arcane Mages only.",
             getValue = function()
-                local p = DB()
-                return p and p.arcaneSoul.enabled
+                local profile = DB()
+                return profile and profile.arcaneSoul.enabled
             end,
             setValue = function(value)
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return
                 end
-                p.arcaneSoul.enabled = value
+                profile.arcaneSoul.enabled = value
                 RefreshAS()
                 CludesUI:RefreshPage()
             end,
@@ -2024,15 +2024,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             disabled = asOff,
             disabledTooltip = AS_TIP,
             getValue = function()
-                local p = DB()
-                return p and p.arcaneSoul.threshold or 5
+                local profile = DB()
+                return profile and profile.arcaneSoul.threshold or 5
             end,
             setValue = function(value)
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return
                 end
-                p.arcaneSoul.threshold = value
+                profile.arcaneSoul.threshold = value
                 RefreshAS()
             end,
         })
@@ -2043,8 +2043,8 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             local region = asEnableRow._leftRegion
             CludesUI.BuildInlineCog(region, {
                 disabled = function()
-                    local p = DB()
-                    return p and not p.arcaneSoul.enabled
+                    local profile = DB()
+                    return profile and not profile.arcaneSoul.enabled
                 end,
                 disabledTooltip = AS_TIP,
                 title = "Arcane Soul Position",
@@ -2056,25 +2056,25 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         max = 600,
                         step = 1,
                         get = function()
-                            local p = DB()
-                            if not p then
+                            local profile = DB()
+                            if not profile then
                                 return 0
                             end
-                            local a = p.arcaneSoul
-                            return (a.unlockPos and a.unlockPos.x) or 0
+                            local arcaneCfg = profile.arcaneSoul
+                            return (arcaneCfg.unlockPos and arcaneCfg.unlockPos.x) or 0
                         end,
                         set = function(value)
-                            local p = DB()
-                            if not p then
+                            local profile = DB()
+                            if not profile then
                                 return
                             end
-                            local a = p.arcaneSoul
+                            local arcaneCfg = profile.arcaneSoul
                             -- No separate offset pair for this display: the cog edits
                             -- the same saved position the mover writes, seeding it
                             -- from the default the renderer falls back to.
-                            a.unlockPos = a.unlockPos
+                            arcaneCfg.unlockPos = arcaneCfg.unlockPos
                                 or { point = "CENTER", relPoint = "CENTER", x = 0, y = -150 }
-                            a.unlockPos.x = value
+                            arcaneCfg.unlockPos.x = value
                             RefreshAS()
                         end,
                     },
@@ -2085,22 +2085,22 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         max = 600,
                         step = 1,
                         get = function()
-                            local p = DB()
-                            if not p then
+                            local profile = DB()
+                            if not profile then
                                 return -150
                             end
-                            local a = p.arcaneSoul
-                            return (a.unlockPos and a.unlockPos.y) or -150
+                            local arcaneCfg = profile.arcaneSoul
+                            return (arcaneCfg.unlockPos and arcaneCfg.unlockPos.y) or -150
                         end,
                         set = function(value)
-                            local p = DB()
-                            if not p then
+                            local profile = DB()
+                            if not profile then
                                 return
                             end
-                            local a = p.arcaneSoul
-                            a.unlockPos = a.unlockPos
+                            local arcaneCfg = profile.arcaneSoul
+                            arcaneCfg.unlockPos = arcaneCfg.unlockPos
                                 or { point = "CENTER", relPoint = "CENTER", x = 0, y = -150 }
-                            a.unlockPos.y = value
+                            arcaneCfg.unlockPos.y = value
                             RefreshAS()
                         end,
                     },
@@ -2118,8 +2118,8 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         local asFormatOrder = { "seconds", "gcd", "secondsGcd" }
         -- The LAST warning only exists where the Soul window counts Barrages.
         local function AsSoulCountsGcd()
-            local p = DB()
-            local m = p and p.arcaneSoul.countMode
+            local profile = DB()
+            local m = profile and profile.arcaneSoul.countMode
             return m == "gcd" or m == "secondsGcd"
         end
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -2131,15 +2131,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             values = asFormatValues,
             order = asFormatOrder,
             getValue = function()
-                local p = DB()
-                return p and p.arcaneSoul.countMode or "seconds"
+                local profile = DB()
+                return profile and profile.arcaneSoul.countMode or "seconds"
             end,
             setValue = function(value)
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return
                 end
-                p.arcaneSoul.countMode = value
+                profile.arcaneSoul.countMode = value
                 RefreshAS()
             end,
         }, {
@@ -2151,15 +2151,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
             disabled = asOff,
             disabledTooltip = AS_TIP,
             getValue = function()
-                local p = DB()
-                return p and p.arcaneSoul.textSize or 24
+                local profile = DB()
+                return profile and profile.arcaneSoul.textSize or 24
             end,
             setValue = function(value)
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return
                 end
-                p.arcaneSoul.textSize = value
+                profile.arcaneSoul.textSize = value
                 RefreshAS()
                 if CludesUI.NotifyElementResized then
                     CludesUI.NotifyElementResized("CUI_ArcaneSoul")
@@ -2186,15 +2186,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                 values = asFontValues,
                 order = asFontOrder,
                 getValue = function()
-                    local p = DB()
-                    return p and p.arcaneSoul.font or "__global"
+                    local profile = DB()
+                    return profile and profile.arcaneSoul.font or "__global"
                 end,
                 setValue = function(value)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.arcaneSoul.font = value
+                    profile.arcaneSoul.font = value
                     RefreshAS()
                 end,
             }, {
@@ -2205,15 +2205,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                 values = asOutlineValues,
                 order = asOutlineOrder,
                 getValue = function()
-                    local p = DB()
-                    return p and p.arcaneSoul.outlineMode or "__global"
+                    local profile = DB()
+                    return profile and profile.arcaneSoul.outlineMode or "__global"
                 end,
                 setValue = function(value)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.arcaneSoul.outlineMode = value
+                    profile.arcaneSoul.outlineMode = value
                     RefreshAS()
                 end,
             })
@@ -2231,20 +2231,20 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     tooltip = "Countdown to Soul",
                     hasAlpha = false,
                     getValue = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return 1, 1, 1
                         end
-                        local a = p.arcaneSoul
-                        return a.preR or 0.64, a.preG or 0.21, a.preB or 0.93
+                        local arcaneCfg = profile.arcaneSoul
+                        return arcaneCfg.preR or 0.64, arcaneCfg.preG or 0.21, arcaneCfg.preB or 0.93
                     end,
                     setValue = function(red, green, blue)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        local a = p.arcaneSoul
-                        a.preR, a.preG, a.preB = red, green, blue
+                        local arcaneCfg = profile.arcaneSoul
+                        arcaneCfg.preR, arcaneCfg.preG, arcaneCfg.preB = red, green, blue
                         RefreshAS()
                     end,
                 },
@@ -2252,20 +2252,20 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     tooltip = "Inside Soul",
                     hasAlpha = false,
                     getValue = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return 1, 1, 1
                         end
-                        local a = p.arcaneSoul
-                        return a.soulR or 0.64, a.soulG or 0.21, a.soulB or 0.93
+                        local arcaneCfg = profile.arcaneSoul
+                        return arcaneCfg.soulR or 0.64, arcaneCfg.soulG or 0.21, arcaneCfg.soulB or 0.93
                     end,
                     setValue = function(red, green, blue)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        local a = p.arcaneSoul
-                        a.soulR, a.soulG, a.soulB = red, green, blue
+                        local arcaneCfg = profile.arcaneSoul
+                        arcaneCfg.soulR, arcaneCfg.soulG, arcaneCfg.soulB = red, green, blue
                         RefreshAS()
                     end,
                 },
@@ -2274,25 +2274,25 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     tooltip = "Last Barrage",
                     hasAlpha = false,
                     disabled = function()
-                        local p = DB()
-                        return not p or not p.arcaneSoul.enabled or not AsSoulCountsGcd()
+                        local profile = DB()
+                        return not profile or not profile.arcaneSoul.enabled or not AsSoulCountsGcd()
                     end,
                     disabledTooltip = "This option requires Countdown Format to count GCDs inside Arcane Soul",
                     getValue = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return 1, 1, 1
                         end
-                        local a = p.arcaneSoul
-                        return a.lastR or 1.0, a.lastG or 0.25, a.lastB or 0.25
+                        local arcaneCfg = profile.arcaneSoul
+                        return arcaneCfg.lastR or 1.0, arcaneCfg.lastG or 0.25, arcaneCfg.lastB or 0.25
                     end,
                     setValue = function(red, green, blue)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        local a = p.arcaneSoul
-                        a.lastR, a.lastG, a.lastB = red, green, blue
+                        local arcaneCfg = profile.arcaneSoul
+                        arcaneCfg.lastR, arcaneCfg.lastG, arcaneCfg.lastB = red, green, blue
                         RefreshAS()
                     end,
                 },

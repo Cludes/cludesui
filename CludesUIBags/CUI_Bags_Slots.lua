@@ -222,8 +222,8 @@ local function GetOrCreateReagentSlot(position)
 
     mod.SizeSlot(button)
     if button.icon then
-        local z = BP().bagItemIconZoom or 0.08
-        button.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+        local zoom = BP().bagItemIconZoom or 0.08
+        button.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         button.icon:ClearAllPoints()
         button.icon:SetAllPoints(button)
     end
@@ -381,8 +381,8 @@ local function GetOrCreateBagSlot(position)
     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     button:RegisterForDrag("LeftButton")
     button.icon = button:CreateTexture(nil, "ARTWORK")
-    local z = BP().bagItemIconZoom or 0.08
-    button.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+    local zoom = BP().bagItemIconZoom or 0.08
+    button.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
     button.icon:SetAllPoints(button)
     button.Count = button:CreateFontString(nil, "OVERLAY")
     CludesUI.ApplyIconTextFont(button.Count, GetFont(), BP().bagCountFontSize or 11, "bags")
@@ -515,20 +515,20 @@ CUI_Bags.RefreshTextSizes = RefreshTextSizes
 --  Fast icon-zoom update (options zoom cog): no full RefreshInventory
 -------------------------------------------------------------------------------
 local function RefreshIconZoom()
-    local z = BP().bagItemIconZoom or 0.08
+    local zoom = BP().bagItemIconZoom or 0.08
     for _, button in pairs(itemSlots) do
         if button.icon then
-            button.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+            button.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         end
     end
     for _, button in pairs(reagentSlots) do
         if button.icon then
-            button.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+            button.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         end
     end
     for _, button in pairs(bagSlots) do
         if button.icon then
-            button.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+            button.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         end
     end
 end

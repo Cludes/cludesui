@@ -654,15 +654,15 @@ do
         if not bags then
             return
         end
-        local p = BP()
+        local profile = BP()
         local previous, gap = self._searchBox, 13
-        local sortOn = p.bagShowSortIcon ~= false
+        local sortOn = profile.bagShowSortIcon ~= false
         self._sortBtn:SetShown(sortOn)
         local forever = mod.BagsForever()
         if sortOn or forever then
             previous, gap = self._sortBtn, 6
         end
-        local bagsOn = p.bagShowBagsIcon ~= false
+        local bagsOn = profile.bagShowBagsIcon ~= false
         bags:ClearAllPoints()
         bags:SetPoint("RIGHT", previous, "LEFT", -gap, 0)
         bags:SetShown(bagsOn)

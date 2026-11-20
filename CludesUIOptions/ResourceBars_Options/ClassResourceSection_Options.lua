@@ -168,23 +168,23 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
         end
         if _IsGuardianDruid() then
             local _ifOff = function()
-                local p = DB()
-                return p and not p.secondary.guardianIronfurBar
+                local profile = DB()
+                return profile and not profile.secondary.guardianIronfurBar
             end
             local _, hh = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Guardian Druid Ironfur Bar",
                 tooltip = "Replaces the class resource bar with an Ironfur tracker. Each Ironfur cast adds a hash line that slides from right to left as its buff decays. Duration is talent-aware (Ursoc's Endurance and Guardian of Elune).",
                 getValue = function()
-                    local p = DB()
-                    return p and p.secondary.guardianIronfurBar
+                    local profile = DB()
+                    return profile and profile.secondary.guardianIronfurBar
                 end,
                 setValue = function(val)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.secondary.guardianIronfurBar = val
+                    profile.secondary.guardianIronfurBar = val
                     RebuildClass()
                     CludesUI:RefreshPage()
                 end,
@@ -194,15 +194,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                 disabled = _ifOff,
                 disabledTooltip = "Guardian Druid Ironfur Bar",
                 getValue = function()
-                    local p = DB()
-                    return p and p.secondary.guardianShowHashLines ~= false
+                    local profile = DB()
+                    return profile and profile.secondary.guardianShowHashLines ~= false
                 end,
                 setValue = function(val)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.secondary.guardianShowHashLines = val
+                    profile.secondary.guardianShowHashLines = val
                     SmoothRefresh()
                     CludesUI:RefreshPage()
                 end,
@@ -238,15 +238,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                 text = "Prot Warrior Ignore Pain Bar",
                 tooltip = ipBarTip,
                 getValue = function()
-                    local p = DB()
-                    return p and p.secondary.protIgnorePainBar
+                    local profile = DB()
+                    return profile and profile.secondary.protIgnorePainBar
                 end,
                 setValue = function(val)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.secondary.protIgnorePainBar = val
+                    profile.secondary.protIgnorePainBar = val
                     RebuildClass()
                     CludesUI:RefreshPage()
                 end,
@@ -255,20 +255,20 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                 text = "Show Hash Line",
                 tooltip = ipHashTip,
                 disabled = function()
-                    local p = DB()
-                    return not (p and p.secondary.protIgnorePainBar)
+                    local profile = DB()
+                    return not (profile and profile.secondary.protIgnorePainBar)
                 end,
                 disabledTooltip = "Prot Warrior Ignore Pain Bar",
                 getValue = function()
-                    local p = DB()
-                    return p and p.secondary.protIgnorePainHashLine ~= false
+                    local profile = DB()
+                    return profile and profile.secondary.protIgnorePainHashLine ~= false
                 end,
                 setValue = function(val)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.secondary.protIgnorePainHashLine = val
+                    profile.secondary.protIgnorePainHashLine = val
                     CludesUI:RefreshPage()
                 end,
             })
@@ -306,15 +306,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                 text = "Arms Warrior Sweeping Strikes Bar",
                 tooltip = ssBarTip,
                 getValue = function()
-                    local p = DB()
-                    return p and p.secondary.armsSweepingStrikesBar
+                    local profile = DB()
+                    return profile and profile.secondary.armsSweepingStrikesBar
                 end,
                 setValue = function(val)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.secondary.armsSweepingStrikesBar = val
+                    profile.secondary.armsSweepingStrikesBar = val
                     RebuildClass()
                     CludesUI:RefreshPage()
                 end,
@@ -451,23 +451,23 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     region = region,
                     tooltip = "Apply Height to all Bars",
                     onClick = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        local val = p.secondary.pipHeight or 20
-                        p.primary.height = val
-                        p.health.height = val
+                        local val = profile.secondary.pipHeight or 20
+                        profile.primary.height = val
+                        profile.health.height = val
                         SmoothRefresh()
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return false
                         end
-                        local val = p.secondary.pipHeight or 20
-                        return (p.primary.height or 16) == val and (p.health.height or 20) == val
+                        local val = profile.secondary.pipHeight or 20
+                        return (profile.primary.height or 16) == val and (profile.health.height or 20) == val
                     end,
                     flashTargets = function()
                         return {
@@ -484,23 +484,23 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     region = region,
                     tooltip = "Apply Width to all Bars",
                     onClick = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        local totalW = p.secondary.pipWidth or 214
-                        p.primary.width = totalW
-                        p.health.width = totalW
+                        local totalW = profile.secondary.pipWidth or 214
+                        profile.primary.width = totalW
+                        profile.health.width = totalW
                         SmoothRefresh()
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return false
                         end
-                        local totalW = p.secondary.pipWidth or 214
-                        return (p.primary.width or 220) == totalW and (p.health.width or 220) == totalW
+                        local totalW = profile.secondary.pipWidth or 214
+                        return (profile.primary.width or 220) == totalW and (profile.health.width or 220) == totalW
                     end,
                     flashTargets = function()
                         return {
@@ -1032,12 +1032,12 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     region = classBsRow._leftRegion,
                     tooltip = "Apply Border Style to all Bars",
                     onClick = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        local was = mod.ERB_TexturedBars(p)
-                        local s = p.secondary
+                        local was = mod.ERB_TexturedBars(profile)
+                        local s = profile.secondary
                         local function apply(t)
                             t.borderTexture = s.borderTexture
                             t.borderTextureOffset = s.borderTextureOffset
@@ -1052,22 +1052,22 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                             mod.ERB_CopyBorderPx(t, s)
                             t.borderBehind = s.borderBehind
                         end
-                        apply(p.primary)
-                        apply(p.health)
+                        apply(profile.primary)
+                        apply(profile.health)
                         SmoothRefresh()
-                        CludesUI:RefreshPage(mod.ERB_TexturedBars(p) ~= was)
+                        CludesUI:RefreshPage(mod.ERB_TexturedBars(profile) ~= was)
                     end,
                     isSynced = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return false
                         end
-                        local bt = p.secondary.borderTexture or "solid"
-                        local bh = p.secondary.borderBehind or false
-                        return (p.primary.borderTexture or "solid") == bt
-                            and (p.health.borderTexture or "solid") == bt
-                            and (p.primary.borderBehind or false) == bh
-                            and (p.health.borderBehind or false) == bh
+                        local bt = profile.secondary.borderTexture or "solid"
+                        local bh = profile.secondary.borderBehind or false
+                        return (profile.primary.borderTexture or "solid") == bt
+                            and (profile.health.borderTexture or "solid") == bt
+                            and (profile.primary.borderBehind or false) == bh
+                            and (profile.health.borderBehind or false) == bh
                     end,
                     flashTargets = function()
                         return { classBsRow._leftRegion }
@@ -1078,47 +1078,47 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     region = classBsRow._rightRegion,
                     tooltip = "Apply Border to all Bars",
                     onClick = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        local was = mod.ERB_TexturedBars(p)
+                        local was = mod.ERB_TexturedBars(profile)
                         local red, green, blue, a =
-                            p.secondary.borderR, p.secondary.borderG, p.secondary.borderB, p.secondary.borderA
-                        local sz = p.secondary.borderSize or 1
-                        local bt = p.secondary.borderTexture or "solid"
-                        local cr, cm = p.secondary.cornerRadius or 0, p.secondary.cornerMask
-                        p.primary.borderR, p.primary.borderG, p.primary.borderB, p.primary.borderA =
+                            profile.secondary.borderR, profile.secondary.borderG, profile.secondary.borderB, profile.secondary.borderA
+                        local sz = profile.secondary.borderSize or 1
+                        local bt = profile.secondary.borderTexture or "solid"
+                        local cr, cm = profile.secondary.cornerRadius or 0, profile.secondary.cornerMask
+                        profile.primary.borderR, profile.primary.borderG, profile.primary.borderB, profile.primary.borderA =
                             red, green, blue, a
-                        p.primary.borderSize = sz
-                        p.primary.borderTexture = bt
-                        p.primary.cornerRadius = cr
-                        p.primary.cornerMask = cm
-                        mod.ERB_CopyBorderPx(p.primary, p.secondary)
-                        p.health.borderR, p.health.borderG, p.health.borderB, p.health.borderA = red, green, blue, a
-                        p.health.borderSize = sz
-                        p.health.borderTexture = bt
-                        p.health.cornerRadius = cr
-                        p.health.cornerMask = cm
-                        mod.ERB_CopyBorderPx(p.health, p.secondary)
+                        profile.primary.borderSize = sz
+                        profile.primary.borderTexture = bt
+                        profile.primary.cornerRadius = cr
+                        profile.primary.cornerMask = cm
+                        mod.ERB_CopyBorderPx(profile.primary, profile.secondary)
+                        profile.health.borderR, profile.health.borderG, profile.health.borderB, profile.health.borderA = red, green, blue, a
+                        profile.health.borderSize = sz
+                        profile.health.borderTexture = bt
+                        profile.health.cornerRadius = cr
+                        profile.health.cornerMask = cm
+                        mod.ERB_CopyBorderPx(profile.health, profile.secondary)
                         SmoothRefresh()
-                        CludesUI:RefreshPage(mod.ERB_TexturedBars(p) ~= was)
+                        CludesUI:RefreshPage(mod.ERB_TexturedBars(profile) ~= was)
                     end,
                     isSynced = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return false
                         end
                         local sr, sg, scrollBar, sa, ssz =
-                            p.secondary.borderR,
-                            p.secondary.borderG,
-                            p.secondary.borderB,
-                            p.secondary.borderA,
-                            p.secondary.borderSize or 1
+                            profile.secondary.borderR,
+                            profile.secondary.borderG,
+                            profile.secondary.borderB,
+                            profile.secondary.borderA,
+                            profile.secondary.borderSize or 1
                         local sbt, scr, scm =
-                            p.secondary.borderTexture or "solid",
-                            p.secondary.cornerRadius or 0,
-                            p.secondary.cornerMask or 15
+                            profile.secondary.borderTexture or "solid",
+                            profile.secondary.cornerRadius or 0,
+                            profile.secondary.cornerMask or 15
                         local function eq(t)
                             return t.borderR == sr
                                 and t.borderG == sg
@@ -1128,9 +1128,9 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                                 and (t.borderTexture or "solid") == sbt
                                 and (t.cornerRadius or 0) == scr
                                 and (t.cornerMask or 15) == scm
-                                and mod.ERB_SameBorderPx(t, p.secondary)
+                                and mod.ERB_SameBorderPx(t, profile.secondary)
                         end
-                        return eq(p.primary) and eq(p.health)
+                        return eq(profile.primary) and eq(profile.health)
                     end,
                     flashTargets = function()
                         return {
@@ -1571,23 +1571,23 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     region = region,
                     tooltip = "Apply Opacity to all Bars",
                     onClick = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        local val = p.secondary.barAlpha or 1
-                        p.primary.barAlpha = val
-                        p.health.barAlpha = val
+                        local val = profile.secondary.barAlpha or 1
+                        profile.primary.barAlpha = val
+                        profile.health.barAlpha = val
                         SmoothRefresh()
                         CludesUI:RefreshPage()
                     end,
                     isSynced = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return false
                         end
-                        local val = p.secondary.barAlpha or 1
-                        return (p.primary.barAlpha or 1) == val and (p.health.barAlpha or 1) == val
+                        local val = profile.secondary.barAlpha or 1
+                        return (profile.primary.barAlpha or 1) == val and (profile.health.barAlpha or 1) == val
                     end,
                     flashTargets = function()
                         return {
@@ -1666,15 +1666,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
             disabled = classOff,
             disabledTooltip = "Class Resource",
             getValue = function()
-                local p = DB()
-                return p and p.secondary.showText
+                local profile = DB()
+                return profile and profile.secondary.showText
             end,
             setValue = function(val)
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return
                 end
-                p.secondary.showText = val
+                profile.secondary.showText = val
                 RebuildClass()
                 CludesUI:RefreshPage()
             end,
@@ -1688,15 +1688,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     type = "toggle",
                     label = "Show %",
                     get = function()
-                        local p = DB()
-                        return (not p) or p.secondary.showPercent ~= false
+                        local profile = DB()
+                        return (not profile) or profile.secondary.showPercent ~= false
                     end,
                     set = function(val)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.secondary.showPercent = val
+                        profile.secondary.showPercent = val
                         RefreshClass()
                     end,
                 },
@@ -1705,15 +1705,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     label = "Only if Power Bar Hidden",
                     tooltip = 'Show the resource text only while the power bar is hidden - disabled, filtered off for this spec, a spec with no power, or hidden by "Hide Power Bar if Resource". Off = always show the text.',
                     get = function()
-                        local p = DB()
-                        return p and p.secondary.showTextOnlyIfNoPower
+                        local profile = DB()
+                        return profile and profile.secondary.showTextOnlyIfNoPower
                     end,
                     set = function(val)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.secondary.showTextOnlyIfNoPower = val
+                        profile.secondary.showTextOnlyIfNoPower = val
                         RebuildClass()
                     end,
                 },
@@ -1722,16 +1722,16 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     label = "Hide at Zero",
                     tooltip = "Hide the resource text while the resource is at zero.",
                     get = function()
-                        local p = DB()
-                        return p and p.secondary.hideTextAtZero
+                        local profile = DB()
+                        return profile and profile.secondary.hideTextAtZero
                     end,
                     set = function(val)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
                         -- Rebuild: the build path installs or removes the filter.
-                        p.secondary.hideTextAtZero = val
+                        profile.secondary.hideTextAtZero = val
                         RebuildClass()
                     end,
                 },
@@ -1742,15 +1742,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     max = 64,
                     step = 1,
                     get = function()
-                        local p = DB()
-                        return p and p.secondary.textSize or 11
+                        local profile = DB()
+                        return profile and profile.secondary.textSize or 11
                     end,
                     set = function(val)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.secondary.textSize = val
+                        profile.secondary.textSize = val
                         RefreshClass()
                     end,
                 },
@@ -1761,15 +1761,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     order = { "LEFT", "CENTER", "RIGHT" },
                     tooltip = "Anchor the text inside the bar. The X/Y offsets move it from there.",
                     get = function()
-                        local p = DB()
-                        return p and p.secondary.textAnchor or "CENTER"
+                        local profile = DB()
+                        return profile and profile.secondary.textAnchor or "CENTER"
                     end,
                     set = function(val)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.secondary.textAnchor = val
+                        profile.secondary.textAnchor = val
                         RefreshClass()
                     end,
                 },
@@ -1780,15 +1780,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     max = 100,
                     step = 1,
                     get = function()
-                        local p = DB()
-                        return p and p.secondary.textXOffset or 0
+                        local profile = DB()
+                        return profile and profile.secondary.textXOffset or 0
                     end,
                     set = function(val)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.secondary.textXOffset = val
+                        profile.secondary.textXOffset = val
                         RefreshClass()
                     end,
                 },
@@ -1799,15 +1799,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     max = 100,
                     step = 1,
                     get = function()
-                        local p = DB()
-                        return p and p.secondary.textYOffset or 0
+                        local profile = DB()
+                        return profile and profile.secondary.textYOffset or 0
                     end,
                     set = function(val)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.secondary.textYOffset = val
+                        profile.secondary.textYOffset = val
                         RefreshClass()
                     end,
                 },
@@ -1821,15 +1821,15 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         type = "toggle",
                         label = "Show Max Stacks",
                         get = function()
-                            local p = DB()
-                            return (not p) or p.secondary.showMaxStacks ~= false
+                            local profile = DB()
+                            return (not profile) or profile.secondary.showMaxStacks ~= false
                         end,
                         set = function(val)
-                            local p = DB()
-                            if not p then
+                            local profile = DB()
+                            if not profile then
                                 return
                             end
-                            p.secondary.showMaxStacks = val
+                            profile.secondary.showMaxStacks = val
                             RefreshClass()
                         end,
                     })
@@ -1837,8 +1837,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
             end
             CludesUI.BuildInlineCog(region, {
                 disabled = function()
-                    local p = DB()
-                    return not p or not p.secondary.enabled or not p.secondary.showText
+                    local profile = DB()
+                    return not profile or not profile.secondary.enabled or not profile.secondary.showText
                 end,
                 disabledTooltip = "Resource Text",
                 title = "Resource Text",
@@ -1855,18 +1855,18 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                 region,
                 classColorRow:GetFrameLevel() + 3,
                 function()
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return 1, 1, 1, 1
                     end
-                    return p.secondary.textR or 1, p.secondary.textG or 1, p.secondary.textB or 1, 1
+                    return profile.secondary.textR or 1, profile.secondary.textG or 1, profile.secondary.textB or 1, 1
                 end,
                 function(red, green, blue)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.secondary.textR, p.secondary.textG, p.secondary.textB = red, green, blue
+                    profile.secondary.textR, profile.secondary.textG, profile.secondary.textB = red, green, blue
                     RefreshClass()
                 end,
                 false,
@@ -1883,8 +1883,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
             end)
             local function UpdateSwatchDis()
                 updateSwatch()
-                local p = DB()
-                local off = not p or not p.secondary.enabled or not p.secondary.showText
+                local profile = DB()
+                local off = not profile or not profile.secondary.enabled or not profile.secondary.showText
                 if off then
                     colorSwatch:SetAlpha(0.3)
                     swatchDis:Show()
@@ -2343,18 +2343,18 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     text = "Show Focus as Power Bar (BM/MM)",
                     tooltip = "When enabled, BM and MM specs show Focus as the standard power bar instead of a class resource bar.",
                     getValue = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return false
                         end
-                        return p.secondary.hunterFocusAsPower or false
+                        return profile.secondary.hunterFocusAsPower or false
                     end,
                     setValue = function(val)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.secondary.hunterFocusAsPower = val
+                        profile.secondary.hunterFocusAsPower = val
                         RebuildPower()
                         RebuildClass()
                         CludesUI:RefreshPage()

@@ -422,11 +422,11 @@ function PaletteView:Geom(shownOverride)
     if self.opts.geom then
         return self.opts.geom()
     end
-    local p = self:P()
-    if not p then
+    local profile = self:P()
+    if not profile then
         return 100, 40, 24
     end
-    local radius, iconSize = p.radius or 100, p.iconSize or 40
+    local radius, iconSize = profile.radius or 100, profile.iconSize or 40
     if self:LayoutMode() == "ARC" then
         local isShown = max(1, shownOverride or self.shownCount or 1)
         if isShown > 1 then
@@ -445,7 +445,7 @@ function PaletteView:Geom(shownOverride)
             -- there, which is exactly what a sixteen-entry ring showed.
             local half = self:ArcGeom(isShown) * 0.5
             if half > 0 and half < pi * 0.5 then
-                local need = max(iconSize + (p.fanGap or 10), iconSize * 2 ^ 0.5)
+                local need = max(iconSize + (profile.fanGap or 10), iconSize * 2 ^ 0.5)
                 radius = max(radius, need / (2 * sin(half)))
             end
         end
@@ -488,8 +488,8 @@ end
 -- pins one so the page can show either without changing what the user plays
 -- with); everything else follows the profile.
 function PaletteView:LayoutMode()
-    local p = self:P()
-    return self.opts.layout or (p and p.layout) or "ARC"
+    local profile = self:P()
+    return self.opts.layout or (profile and profile.layout) or "ARC"
 end
 
 -- Which way a fan runs. Every axis-dependent decision in the file reads this
@@ -497,8 +497,8 @@ end
 -- layouts that happen to share every setting. Meaningless outside a fan, where
 -- callers do not ask.
 function PaletteView:FanHoriz()
-    local p = self:P()
-    return not p or p.fanOrientation ~= "VERTICAL"
+    local profile = self:P()
+    return not profile or profile.fanOrientation ~= "VERTICAL"
 end
 
 function PaletteView:IsFan()
@@ -512,9 +512,9 @@ end
 -- The lattice spacing entries are placed on: one icon plus the gap between two
 -- of them. The grid, both strips and a nested arc all measure from this.
 function PaletteView:Pitch()
-    local p = self:P()
+    local profile = self:P()
     local _, iconSize = self:Geom()
-    return iconSize + ((p and p.fanGap) or 10)
+    return iconSize + ((profile and profile.fanGap) or 10)
 end
 
 Inner.AdoptFontString, Inner.ApplyIconCrop = AdoptFontString, ApplyIconCrop

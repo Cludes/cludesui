@@ -405,8 +405,8 @@ local function ShowWidgetTooltip(labelText, textValue, options)
         )
     elseif options and options.anchor == "cursor" then
         local scale = tip:GetEffectiveScale()
-        local cx, cy = GetCursorPosition()
-        tip:SetPoint("BOTTOM", UIParent, "BOTTOMLEFT", cx / scale, cy / scale + 4)
+        local curX, curY = GetCursorPosition()
+        tip:SetPoint("BOTTOM", UIParent, "BOTTOMLEFT", curX / scale, curY / scale + 4)
     elseif options and options.anchor == "below" then
         tip:SetPoint("TOP", labelText, "BOTTOM", 0, -4)
     elseif options and options.anchor == "left" then
@@ -1467,13 +1467,13 @@ local function ShowContextMenu(anchor, itemList, options)
     else
         -- Position at cursor
         local scale = panelFrame:GetEffectiveScale()
-        local cx, cy = GetCursorPosition()
+        local curX, curY = GetCursorPosition()
         panelFrame:SetPoint(
             (options and options.above) and "BOTTOMLEFT" or "TOPLEFT",
             UIParent,
             "BOTTOMLEFT",
-            cx / scale,
-            cy / scale
+            curX / scale,
+            curY / scale
         )
     end
     _ctxOpen = panelFrame

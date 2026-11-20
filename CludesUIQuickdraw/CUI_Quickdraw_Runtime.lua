@@ -942,12 +942,12 @@ end
 -- It also makes the call free for the options panel, which reaches Refresh on
 -- every slider tick.
 function mod.UpdateBindings()
-    local p = P()
-    if not p then
+    local profile = P()
+    if not profile then
         return
     end
 
-    local sig = p.enabled and "on" or "off"
+    local sig = profile.enabled and "on" or "off"
     local count = PaletteCount()
     for i = 1, count do
         local k1, k2 = GetBindingKey(BINDING_PREFIX .. i)
@@ -975,7 +975,7 @@ function mod.UpdateBindings()
     if bindOwner then
         ClearOverrideBindings(bindOwner)
     end
-    if not p.enabled then
+    if not profile.enabled then
         return
     end
     if not bindOwner then
@@ -1064,8 +1064,8 @@ local function SpecSync(_, _, unitToken)
     if unitToken and unitToken ~= "player" then
         return
     end
-    local p = P()
-    if not (p and p.enabled) then
+    local profile = P()
+    if not (profile and profile.enabled) then
         return
     end
     CludesUI._RefreshSpecID()
@@ -1147,8 +1147,8 @@ end
 -- land, a palette the fight left on screen. Dropping the handler that pays them
 -- would strand the bindings live for the rest of the session.
 function EventsWanted()
-    local p = P()
-    if p and p.enabled then
+    local profile = P()
+    if profile and profile.enabled then
         return true
     end
     return bindingsDirty or pushDirty or secureCloseDirty ~= nil
@@ -1265,8 +1265,8 @@ function mod.Refresh()
     -- override bindings back down, and before anything that costs something:
     -- switched off, this module draws nothing, pushes nothing and schedules
     -- nothing at all.
-    local p = P()
-    if not p or not p.enabled then
+    local profile = P()
+    if not profile or not profile.enabled then
         return
     end
 
@@ -1345,8 +1345,8 @@ function EQD:OnInitialize()
 end
 
 function EQD:OnEnable()
-    local p = P()
-    if not p then
+    local profile = P()
+    if not profile then
         return
     end
 
@@ -1357,7 +1357,7 @@ function EQD:OnEnable()
     -- module on mid-session still gets combat-deferred rebinding and
     -- stuck-palette cleanup, without a session that never enables it paying for
     -- any of them. All it holds is the one empty frame the main file makes.
-    if not p.enabled then
+    if not profile.enabled then
         return
     end
 

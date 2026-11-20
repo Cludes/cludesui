@@ -101,8 +101,8 @@ end
 -- on a client missing presets the other one offers, a fresh copy without them
 -- (ns.PAB_OtherClientPreset).
 function mod.PAB_Filters()
-    local s = PAB()
-    local storage = s and s.pabFilters
+    local pabCfg = PAB()
+    local storage = pabCfg and pabCfg.pabFilters
     local entries = storage and storage.list or nil
     if not entries or next(mod.PAB_OTHER_ONLY_PRESETS) == nil then
         return entries
@@ -119,8 +119,8 @@ end
 -- Scans the stored list (no copy per lookup); nil for a preset only the other
 -- client offers, so every resolver treats an assignment to it as a dangling id.
 function mod.PAB_GetFilter(ident)
-    local s = PAB()
-    local storage = s and s.pabFilters
+    local pabCfg = PAB()
+    local storage = pabCfg and pabCfg.pabFilters
     local entries = storage and storage.list
     if not entries then
         return nil
@@ -174,8 +174,8 @@ function mod.PAB_HiddenPresetFilter(ident)
     if next(mod.PAB_OTHER_ONLY_PRESETS) == nil then
         return false
     end
-    local s = PAB()
-    local storage = s and s.pabFilters
+    local pabCfg = PAB()
+    local storage = pabCfg and pabCfg.pabFilters
     local entries = storage and storage.list
     if not entries then
         return false
@@ -189,11 +189,11 @@ function mod.PAB_HiddenPresetFilter(ident)
 end
 
 function mod.PAB_AddFilter(label)
-    local s = PABEnsure()
-    if not s then
+    local pabCfg = PABEnsure()
+    if not pabCfg then
         return nil
     end
-    local storage = FilterStore(s)
+    local storage = FilterStore(pabCfg)
     local frame = { id = storage.nextId, name = label or "New Filter", spells = {} }
     storage.nextId = storage.nextId + 1
     storage.list[#storage.list + 1] = frame
@@ -212,11 +212,11 @@ end
 -- FRAME's buff filter lanes -- it shares this registry through its own keys
 -- (buffFilters/buffNegFilters, see PlayerBuffChain in CUI_UnitFrames_AuraContainers.lua).
 function mod.PAB_DeleteFilter(ident)
-    local s = PAB()
-    if not (s and s.pabFilters) then
+    local pabCfg = PAB()
+    if not (pabCfg and pabCfg.pabFilters) then
         return
     end
-    local entries = s.pabFilters.list
+    local entries = pabCfg.pabFilters.list
     for i = #entries, 1, -1 do
         if entries[i].id == ident then
             table.remove(entries, i)
@@ -237,18 +237,18 @@ function mod.PAB_DeleteFilter(ident)
             barFrame.showAllBuffs = nil
         end
     end
-    if s.defaultBuffs then
-        Strip(s.defaultBuffs, true)
+    if pabCfg.defaultBuffs then
+        Strip(pabCfg.defaultBuffs, true)
     end
-    local customBars = s.customBuffBars
+    local customBars = pabCfg.customBuffBars
     if customBars then
         for i = 1, #customBars do
             Strip(customBars[i], false)
         end
     end
     -- Editing-spec bucket bars share the same filter registry.
-    if s.pabSpecBars then
-        for _, bar in pairs(s.pabSpecBars) do
+    if pabCfg.pabSpecBars then
+        for _, bar in pairs(pabCfg.pabSpecBars) do
             local blockList = bar.buffBars
             if blockList then
                 for i = 1, #blockList do
@@ -442,8 +442,8 @@ end
 -- fans out to its alternates with the same state.
 function mod.PAB_CopyBM2FiltersIn()
     local buffRules = CludesUI._BM2FilterBridge
-    local s = PABEnsure()
-    if not (buffRules and s) then
+    local pabCfg = PABEnsure()
+    if not (buffRules and pabCfg) then
         return false
     end
     local source = buffRules.Filters() or {}
@@ -451,7 +451,7 @@ function mod.PAB_CopyBM2FiltersIn()
     -- An id typed into a library filter tracks that aura alone there, so it
     -- comes over alone (an older library has no such ids).
     local typedIn = buffRules.SpellExact
-    local nameToId = NameToId(FilterStore(s).list)
+    local nameToId = NameToId(FilterStore(pabCfg).list)
     for i = 1, #source do
         local scrollFrame = source[i]
         local typeId = nameToId[scrollFrame.name]
@@ -508,8 +508,8 @@ end
 -- forks stay valid.
 function mod.PAB_CopyOwnFiltersIntoBM2()
     local buffRules = CludesUI._BM2FilterBridge
-    local s = PAB()
-    if not (buffRules and s) then
+    local pabCfg = PAB()
+    if not (buffRules and pabCfg) then
         return false
     end
     -- Alt id -> primary: our registry flattens talent/rank alternates into
@@ -525,7 +525,7 @@ function mod.PAB_CopyOwnFiltersIntoBM2()
         end
     end
     -- Presets only the other client offers stay out (ns.PAB_Filters' view).
-    local own = mod.PAB_Filters() or FilterStore(s).list
+    local own = mod.PAB_Filters() or FilterStore(pabCfg).list
     local nameToId = NameToId(buffRules.Filters() or {})
     for i = 1, #own do
         local of = own[i]
@@ -594,8 +594,8 @@ CludesUI._PABFilterBridge = {
 }
 
 function mod.PAB_CustomBuffBars()
-    local s = PAB()
-    return s and s.customBuffBars or nil
+    local pabCfg = PAB()
+    return pabCfg and pabCfg.customBuffBars or nil
 end
 
 -------------------------------------------------------------------------------
@@ -809,8 +809,8 @@ function mod.PAB_ImportBM2Filters()
 end
 
 function mod.PAB_CustomDebuffBars()
-    local s = PAB()
-    return s and s.customDebuffBars or nil
+    local pabCfg = PAB()
+    return pabCfg and pabCfg.customDebuffBars or nil
 end
 
 -- Both lookups search the legacy array first, then every editing-spec
@@ -825,8 +825,8 @@ function mod.PAB_GetCustomBuffBar(ident)
             end
         end
     end
-    local s = PAB()
-    local state = s and s.pabSpecBars
+    local pabCfg = PAB()
+    local state = pabCfg and pabCfg.pabSpecBars
     if state then
         for filterKey, b in pairs(state) do
             local blockList = b.buffBars
@@ -850,8 +850,8 @@ function mod.PAB_GetCustomDebuffBar(ident)
             end
         end
     end
-    local s = PAB()
-    local state = s and s.pabSpecBars
+    local pabCfg = PAB()
+    local state = pabCfg and pabCfg.pabSpecBars
     if state then
         for filterKey, b in pairs(state) do
             local blockList = b.debuffBars
@@ -876,13 +876,13 @@ end
 -- BuildStyle/ComputeGrid apply the same `or <default>` fallbacks either way, so a
 -- fresh bar renders with sane defaults and Options only writes fields the user touches.
 function mod.PAB_AddCustomBuffBar(label, bucket)
-    local s = PABEnsure()
-    if not s then
+    local pabCfg = PABEnsure()
+    if not pabCfg then
         return nil
     end
-    s.customBuffBars = s.customBuffBars or {}
+    pabCfg.customBuffBars = pabCfg.customBuffBars or {}
     local barFrame = {
-        id = NextBarId(s),
+        id = NextBarId(pabCfg),
         name = label or "New Buff Bar",
         enabled = true,
         filters = {}, -- [filterId] = true (BM2-style assigned filters)
@@ -898,19 +898,19 @@ function mod.PAB_AddCustomBuffBar(label, bucket)
     }
     -- The edited editing-spec bucket owns the new bar; ids come from the ONE
     -- shared counter regardless of bucket.
-    local target = mod.PAB_BucketBars(true, bucket, true) or s.customBuffBars
+    local target = mod.PAB_BucketBars(true, bucket, true) or pabCfg.customBuffBars
     target[#target + 1] = barFrame
     return barFrame
 end
 
 function mod.PAB_AddCustomDebuffBar(label, bucket)
-    local s = PABEnsure()
-    if not s then
+    local pabCfg = PABEnsure()
+    if not pabCfg then
         return nil
     end
-    s.customDebuffBars = s.customDebuffBars or {}
+    pabCfg.customDebuffBars = pabCfg.customDebuffBars or {}
     local barFrame = {
-        id = NextBarId(s),
+        id = NextBarId(pabCfg),
         name = label or "New Debuff Bar",
         enabled = true,
         classFilters = {}, -- [classKey] = true, same vocabulary as BuildChain
@@ -920,7 +920,7 @@ function mod.PAB_AddCustomDebuffBar(label, bucket)
         maxRows = 1,
         maxTotal = 8,
     }
-    local target = mod.PAB_BucketBars(false, bucket, true) or s.customDebuffBars
+    local target = mod.PAB_BucketBars(false, bucket, true) or pabCfg.customDebuffBars
     target[#target + 1] = barFrame
     return barFrame
 end
@@ -933,8 +933,8 @@ end
 -- "Add To" menu): full settings clone -- position included -- under a fresh
 -- global id; the source is untouched.
 function mod.PAB_CopyCustomBar(isBuff, source, bucket)
-    local s = PABEnsure()
-    if not (s and source) then
+    local pabCfg = PABEnsure()
+    if not (pabCfg and source) then
         return nil
     end
     local target = mod.PAB_BucketBars(isBuff, bucket, true)
@@ -942,7 +942,7 @@ function mod.PAB_CopyCustomBar(isBuff, source, bucket)
         return nil
     end
     local barFrame = CopyTable(source)
-    barFrame.id = NextBarId(s)
+    barFrame.id = NextBarId(pabCfg)
     target[#target + 1] = barFrame
     return barFrame
 end
@@ -971,8 +971,8 @@ local function DeleteFromSpecBuckets(s, ident, listField)
 end
 
 function mod.PAB_DeleteCustomBuffBar(ident)
-    local s = PABEnsure()
-    if not s then
+    local pabCfg = PABEnsure()
+    if not pabCfg then
         return
     end
     -- WoW Forever: a delete can empty the bucket the player's class renders
@@ -980,34 +980,34 @@ function mod.PAB_DeleteCustomBuffBar(ident)
     -- to the next class spec with data (ns.PAB_ForeverSpecID); a move
     -- re-drives every custom bar once.
     local fvSid = CludesUI.IS_FOREVER and mod.PAB_ForeverSpecID() or nil
-    if s.customBuffBars then
-        for i = #s.customBuffBars, 1, -1 do
-            if s.customBuffBars[i].id == ident then
-                table.remove(s.customBuffBars, i)
+    if pabCfg.customBuffBars then
+        for i = #pabCfg.customBuffBars, 1, -1 do
+            if pabCfg.customBuffBars[i].id == ident then
+                table.remove(pabCfg.customBuffBars, i)
             end
         end
     end
-    DeleteFromSpecBuckets(s, ident, "buffBars")
+    DeleteFromSpecBuckets(pabCfg, ident, "buffBars")
     if fvSid and mod.PAB_ForeverSpecID() ~= fvSid then
         ReloadAllCustomBars()
     end
 end
 
 function mod.PAB_DeleteCustomDebuffBar(ident)
-    local s = PABEnsure()
-    if not s then
+    local pabCfg = PABEnsure()
+    if not pabCfg then
         return
     end
     -- WoW Forever: same bucket-move check as ns.PAB_DeleteCustomBuffBar.
     local fvSid = CludesUI.IS_FOREVER and mod.PAB_ForeverSpecID() or nil
-    if s.customDebuffBars then
-        for i = #s.customDebuffBars, 1, -1 do
-            if s.customDebuffBars[i].id == ident then
-                table.remove(s.customDebuffBars, i)
+    if pabCfg.customDebuffBars then
+        for i = #pabCfg.customDebuffBars, 1, -1 do
+            if pabCfg.customDebuffBars[i].id == ident then
+                table.remove(pabCfg.customDebuffBars, i)
             end
         end
     end
-    DeleteFromSpecBuckets(s, ident, "debuffBars")
+    DeleteFromSpecBuckets(pabCfg, ident, "debuffBars")
     if fvSid and mod.PAB_ForeverSpecID() ~= fvSid then
         ReloadAllCustomBars()
     end
@@ -1131,14 +1131,14 @@ function mod.PAB_BucketHasData(ident, state)
     end
     -- WoW Forever renders All Specs and the class's own bucket only, so only
     -- a disable of an All Specs bar counts. Scans the bar arrays in place.
-    local s = PAB()
-    local entries = s and s.customBuffBars
+    local pabCfg = PAB()
+    local entries = pabCfg and pabCfg.customBuffBars
     for i = 1, (entries and #entries or 0) do
         if dis[entries[i].id] then
             return true
         end
     end
-    entries = s and s.customDebuffBars
+    entries = pabCfg and pabCfg.customDebuffBars
     for i = 1, (entries and #entries or 0) do
         if dis[entries[i].id] then
             return true
@@ -1147,8 +1147,8 @@ function mod.PAB_BucketHasData(ident, state)
     return false
 end
 function mod.PAB_ForeverSpecID(token)
-    local s = PAB()
-    return CludesUI.ForeverClassSpec(token, mod.PAB_BucketHasData, s and s.pabSpecBars)
+    local pabCfg = PAB()
+    return CludesUI.ForeverClassSpec(token, mod.PAB_BucketHasData, pabCfg and pabCfg.pabSpecBars)
 end
 -- The bucket a Forever class row edits: the one that class renders.
 function mod.PAB_ForeverKey(token)
@@ -1187,20 +1187,20 @@ end
 -- Per-spec disable of a GROUP bucket's bar, stored on the viewing spec's
 -- concrete "spec<ID>" bucket (ids are global, the bare id suffices).
 function mod.PAB_InhDisabled(concreteKey, ident)
-    local s = PAB()
-    local b = s and SpecBarBucket(s, concreteKey, false)
+    local pabCfg = PAB()
+    local b = pabCfg and SpecBarBucket(pabCfg, concreteKey, false)
     return (b and b.inhDis and b.inhDis[ident]) and true or false
 end
 
 function mod.PAB_SetInhDisabled(concreteKey, ident, disabled)
-    local s = PABEnsure()
-    if not (s and concreteKey and ident) then
+    local pabCfg = PABEnsure()
+    if not (pabCfg and concreteKey and ident) then
         return
     end
     -- WoW Forever: clearing the last per-spec disable can move the bucket
     -- the player's class renders (see ns.PAB_DeleteCustomBuffBar).
     local fvSid = CludesUI.IS_FOREVER and mod.PAB_ForeverSpecID() or nil
-    local b = SpecBarBucket(s, concreteKey, true)
+    local b = SpecBarBucket(pabCfg, concreteKey, true)
     b.inhDis[ident] = disabled and true or nil
     if fvSid and mod.PAB_ForeverSpecID() ~= fvSid then
         ReloadAllCustomBars()
@@ -1249,8 +1249,8 @@ function mod.PAB_BarActive(barFrame, bucket)
     end
     local isOwn = bucket and bucket:match("^spec%d") and true or false
     if not isOwn and spellRef then
-        local s = PAB()
-        local con = s and s.pabSpecBars and s.pabSpecBars["spec" .. spellRef]
+        local pabCfg = PAB()
+        local con = pabCfg and pabCfg.pabSpecBars and pabCfg.pabSpecBars["spec" .. spellRef]
         if con and con.inhDis and con.inhDis[barFrame.id] then
             return false
         end

@@ -551,7 +551,7 @@ if CUI.IS_FOREVER then
         end
         local maxBags = C_Bank.FetchMaxNumBankTabs(Enum.BankType.Character)
         local bought = C_Bank.FetchPurchasedBankTabData(Enum.BankType.Character)
-        local z = BP().bagItemIconZoom or 0.08
+        local zoom = BP().bagItemIconZoom or 0.08
         local num = 0
         -- Slot 1 is the bank itself; bag slots start at 2.
         for bagSlot = 2, maxBags do
@@ -561,7 +561,7 @@ if CUI.IS_FOREVER then
             button.bought = bought[bagSlot] ~= nil
             local details = button.bought and C_Container.GetContainerItemInfo(BANK_BAG_SLOTS, bagSlot)
             button.hasBag = details and true or false
-            button.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+            button.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
             button.icon:SetTexture(
                 details and details.iconFileID or "Interface\\PaperDoll\\UI-PaperDoll-Slot-Bag"
             )
@@ -2389,10 +2389,10 @@ CUI_Bank.RefreshTextSizes = RefreshBankTextSizes
 
 -- Fast icon-zoom update for bank slots (mirrors bags RefreshIconZoom)
 local function RefreshBankIconZoom()
-    local z = BP().bagItemIconZoom or 0.08
+    local zoom = BP().bagItemIconZoom or 0.08
     for _, button in pairs(_bankSlots) do
         if button.icon then
-            button.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+            button.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         end
     end
 end
@@ -2428,8 +2428,8 @@ local _bankGripCfg = {
         BP().bankPosition = { point = "TOPLEFT", relativePoint = "BOTTOMLEFT", x = leftX, y = topY }
     end,
     reset = function()
-        local p = BP()
-        p.bankColumns, p.bankHeight, p.bankListWidth = nil, nil, nil
+        local profile = BP()
+        profile.bankColumns, profile.bankHeight, profile.bankListWidth = nil, nil, nil
         CUI_Bank:RefreshBank()
     end,
     -- The warband gold text sits at the footer's right edge
@@ -3454,9 +3454,9 @@ local function DragTarget()
             end
         end
     end
-    local _, cy = GetCursorPosition()
-    cy = cy / sideChild:GetEffectiveScale()
-    local after = cy < (topY:GetTop() + bottom:GetBottom()) / 2
+    local _, curY = GetCursorPosition()
+    curY = curY / sideChild:GetEffectiveScale()
+    local after = curY < (topY:GetTop() + bottom:GetBottom()) / 2
     return block, after, after and bottom or topY
 end
 
@@ -3556,9 +3556,9 @@ dragHost:SetScript("OnUpdate", function()
         DragVisuals(skinData.btn)
         dragShade:Show()
     end
-    local sc = UIParent:GetEffectiveScale()
+    local uiScale = UIParent:GetEffectiveScale()
     dragShade:ClearAllPoints()
-    dragShade:SetPoint("LEFT", UIParent, "BOTTOMLEFT", posX / sc + 12, posY / sc)
+    dragShade:SetPoint("LEFT", UIParent, "BOTTOMLEFT", posX / uiScale + 12, posY / uiScale)
     local block, after, line = DragTarget()
     skinData.target, skinData.after = block, after
     if line then

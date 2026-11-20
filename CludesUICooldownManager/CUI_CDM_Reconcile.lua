@@ -26,10 +26,10 @@ local CaptureCDMPositions = Inner.CaptureCDMPositions
 --  CDM Bar: First Login Capture
 -------------------------------------------------------------------------------
 local function CDMFirstLoginCapture()
-    local p = ECME.db.profile
+    local profile = ECME.db.profile
     local captured = CaptureCDMPositions()
 
-    for _, barInfo in ipairs(p.cdmBars.bars) do
+    for _, barInfo in ipairs(profile.cdmBars.bars) do
         local limit = captured[barInfo.key]
         if limit then
             -- Icon size: visual size from child icon (base width * child scale).
@@ -52,7 +52,7 @@ local function CDMFirstLoginCapture()
             end
             -- Position: no scale division needed (scale is always 1)
             if limit.point then
-                p.cdmBarPositions[barInfo.key] = {
+                profile.cdmBarPositions[barInfo.key] = {
                     point = limit.point,
                     relPoint = limit.relPoint,
                     x = limit.x,
@@ -68,8 +68,8 @@ end
 --- Re-seed assignedSpells from live cdmBarIcons. Appends any positive spell IDs present on the
 --- live bars but missing from assignedSpells. Called after CollectAndReanchor so the preview stays in sync with what the player actually sees on their CDM bars.
 function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
-    local p = ECME and ECME.db and ECME.db.profile
-    if not p or not p.cdmBars then
+    local profile = ECME and ECME.db and ECME.db.profile
+    if not profile or not profile.cdmBars then
         return
     end
 
@@ -141,7 +141,7 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
         end
     end
 
-    for _, barInfo in ipairs(p.cdmBars.bars) do
+    for _, barInfo in ipairs(profile.cdmBars.bars) do
         -- cdUtilOnly (the automatic reseed path): buff-family bars are picker-authoritative --
         -- materializing live buff icons would reintroduce the secret-ID drift duplicate-slot bug
         -- the options materializer's skip exists to prevent. The manual Repopulate flow passes nothing and keeps its full sweep.
@@ -832,8 +832,8 @@ end
 --- of combat via the shared regen waiter above. Interactive options edits
 --- bypass this and call ns.ReconcileAssignedSpellDrops directly.
 function mod.RequestCDMDropPass(reason)
-    local p = ECME and ECME.db and ECME.db.profile
-    if not p or not p.cdmBars then
+    local profile = ECME and ECME.db and ECME.db.profile
+    if not profile or not profile.cdmBars then
         return
     end
 
@@ -1365,8 +1365,8 @@ end
 -- the reseed/settings-close/regen edges is a natural follow-up, not required for this
 -- function to be reachable.
 function mod.ReconcileBuffFamilyDrops(barId)
-    local p = ECME and ECME.db and ECME.db.profile
-    if not p or not p.cdmBars then
+    local profile = ECME and ECME.db and ECME.db.profile
+    if not profile or not profile.cdmBars then
         return nil
     end
     if not (mod.IsBarBuffFamily and mod.IsBarBuffFamily(barId)) then
@@ -1535,8 +1535,8 @@ end
 ---     racial has a place: the bar ns.RACIAL_REPOP_BAR lists for it, else where
 ---     Blizzard's viewers show it.
 function mod.RepopulateFromBlizzard(fromRequest)
-    local p = ECME.db and ECME.db.profile
-    if not p or not p.cdmBars then
+    local profile = ECME.db and ECME.db.profile
+    if not profile or not profile.cdmBars then
         return
     end
     local specKey = mod.GetActiveSpecKey()
@@ -1622,7 +1622,7 @@ function mod.RepopulateFromBlizzard(fromRequest)
 
     -- Filter Blizzard entries off all CD/utility bars (main + custom). Skip ghost, custom_buff,
     -- and default buff bar. The default buff bar (key == "buffs") has no assignedSpells to filter -- Blizzard's viewer is the authority. Extra buff bars ARE filtered for user assignments.
-    for _, barInfo in ipairs(p.cdmBars.bars) do
+    for _, barInfo in ipairs(profile.cdmBars.bars) do
         if
             not barInfo.isGhostBar
             and barInfo.key ~= "buffs"
@@ -1672,7 +1672,7 @@ function mod.RepopulateFromBlizzard(fromRequest)
     -- share its spell ID).
     local racialSD = racialBar and mod.GetBarSpellData(racialBar)
     if racialSD then
-        for _, bar in ipairs(p.cdmBars.bars) do
+        for _, bar in ipairs(profile.cdmBars.bars) do
             local isBuff = bar.barType == "custom_buff" or mod.IsBarBuffFamily(bar)
             local barSpells = not isBuff and bar.key and mod.GetBarSpellData(bar.key)
             local entries = barSpells and barSpells.assignedSpells

@@ -68,8 +68,8 @@ CludesUI.AtOptionsLogin(function()
     -- One profile table's accessor (nil until the profile loads).
     local function Section(key)
         return function()
-            local p = DB()
-            return p and p[key]
+            local profile = DB()
+            return profile and profile[key]
         end
     end
     local DDB = Section("display")
@@ -80,8 +80,8 @@ CludesUI.AtOptionsLogin(function()
 
     -- The reminder name font: the display's own pick, else the module font.
     local function GetNameFontPath()
-        local d = DDB()
-        local pick = d and d.nameFont
+        local display = DDB()
+        local pick = display and display.nameFont
         if pick and pick ~= "__global" and CludesUI.ResolveFontName then
             local path = CludesUI.ResolveFontName(pick)
             if path and path ~= "" then
@@ -366,25 +366,25 @@ CludesUI.AtOptionsLogin(function()
         if not _previewIcons or #_previewIcons == 0 then
             return
         end
-        local d = DDB()
-        if not d then
+        local display = DDB()
+        if not display then
             return
         end
-        local sz, iconH, spacing = IconMetrics(d)
-        local glowSpec = _G._CUABR_GlowSpec and _G._CUABR_GlowSpec(d, {})
+        local sz, iconH, spacing = IconMetrics(display)
+        local glowSpec = _G._CUABR_GlowSpec and _G._CUABR_GlowSpec(display, {})
         -- Up to the first slot with no frame.
         local placed = 0
         while _previewIcons[placed + 1] and _previewIcons[placed + 1].frame do
             placed = placed + 1
         end
-        PlaceIcons(d, sz, spacing, placed)
+        PlaceIcons(display, sz, spacing, placed)
         for i = 1, placed do
-            StyleIcon(_previewIcons[i].frame, d, sz, iconH, glowSpec)
+            StyleIcon(_previewIcons[i].frame, display, sz, iconH, glowSpec)
         end
 
         -- The row is centred in the header, as tall as the icons plus any
         -- text hanging below them; the header itself stays 80 (plus the hint).
-        local overhang = d.showText and (math.abs(d.textYOffset or -2) + (d.textSize or 11)) or 0
+        local overhang = display.showText and (math.abs(display.textYOffset or -2) + (display.textSize or 11)) or 0
         if _previewContainer then
             _previewContainer:SetHeight(iconH + overhang)
             _previewContainer:ClearAllPoints()
@@ -424,9 +424,9 @@ CludesUI.AtOptionsLogin(function()
         if not _previewIcons or #_previewIcons == 0 then
             return
         end
-        local d = DDB()
-        local sz, _, spacing = IconMetrics(d)
-        PlaceIcons(d, sz, spacing)
+        local display = DDB()
+        local sz, _, spacing = IconMetrics(display)
+        PlaceIcons(display, sz, spacing)
     end
 
     local _eabrGlow -- made on first click: Widgets helpers load with the panel
@@ -563,7 +563,7 @@ CludesUI.AtOptionsLogin(function()
     -- them (a tab switch then costs no frame churn).
     _previewHeaderBuilder = function(hdr, hdrW)
         local icons = CollectPreviewIcons()
-        local d = DDB()
+        local display = DDB()
 
         -- The levels the first build gave the container and its icons (a
         -- kept header root's own dress can raise what it holds).
@@ -595,9 +595,9 @@ CludesUI.AtOptionsLogin(function()
             return PREVIEW_H + ((not IsPreviewHintDismissed()) and 35 or 0)
         end
 
-        local sz, iconH, spacing = IconMetrics(d)
-        local showText = d and d.showText
-        local overhang = showText and (math.abs((d and d.textYOffset) or -2) + ((d and d.textSize) or 11))
+        local sz, iconH, spacing = IconMetrics(display)
+        local showText = display and display.showText
+        local overhang = showText and (math.abs((display and display.textYOffset) or -2) + ((display and display.textSize) or 11))
             or 0
         if _previewContainer then
             _previewContainer:SetParent(hdr)
@@ -621,9 +621,9 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         wipe(_previewIcons)
-        local x = PreviewStartX(d, #icons, sz, spacing, hdrW)
+        local x = PreviewStartX(display, #icons, sz, spacing, hdrW)
         for i, data in ipairs(icons) do
-            local button = MakePreviewIcon(container, data, d, sz, iconH, x + (i - 1) * (sz + spacing))
+            local button = MakePreviewIcon(container, data, display, sz, iconH, x + (i - 1) * (sz + spacing))
             _previewIcons[i] = { frame = button, data = data }
         end
         UpdatePreviewHeader() -- glows
@@ -1163,14 +1163,14 @@ CludesUI.AtOptionsLogin(function()
             confirmText = set and "Rename" or "Create",
             onConfirm = function(text)
                 local name = strtrim(text or "")
-                local f = FDB()
-                if name == "" or not f then
+                local foreverCfg = FDB()
+                if name == "" or not foreverCfg then
                     return
                 end
                 if set then
                     set.name = name
                 else
-                    f.customGroups[#f.customGroups + 1] = { name = name, ids = {} }
+                    foreverCfg.customGroups[#foreverCfg.customGroups + 1] = { name = name, ids = {} }
                 end
                 RebuildSoon()
             end,
@@ -1226,8 +1226,8 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function BuildForeverGroupSections(parent, y)
-        local f = FDB()
-        for groupIndex, set in ipairs(f.customGroups) do
+        local foreverCfg = FDB()
+        for groupIndex, set in ipairs(foreverCfg.customGroups) do
             local slots = {
                 {
                     type = "input",
@@ -1262,7 +1262,7 @@ CludesUI.AtOptionsLogin(function()
                 "Remove",
                 "Deletes this group and its spells.",
                 function()
-                    table.remove(f.customGroups, groupIndex)
+                    table.remove(foreverCfg.customGroups, groupIndex)
                     Rebuild()
                 end
             )
@@ -1283,8 +1283,8 @@ CludesUI.AtOptionsLogin(function()
     --  in-place updates.
     ---------------------------------------------------------------------------
     local function RemoveCustomSpell(id)
-        local f = FDB()
-        local entryList = f and f.customIDs
+        local foreverCfg = FDB()
+        local entryList = foreverCfg and foreverCfg.customIDs
         if not entryList then
             return
         end
@@ -1293,27 +1293,27 @@ CludesUI.AtOptionsLogin(function()
                 table.remove(entryList, j)
             end
         end
-        if f.customClasses then
-            f.customClasses[id] = nil
+        if foreverCfg.customClasses then
+            foreverCfg.customClasses[id] = nil
         end
         Rebuild()
     end
 
     -- Whether spell id reminds class token (on unless unticked).
     local function CustomClassOn(id, token)
-        local f = FDB()
-        local isOff = f and f.customClasses and f.customClasses[id]
+        local foreverCfg = FDB()
+        local isOff = foreverCfg and foreverCfg.customClasses and foreverCfg.customClasses[id]
         return not (isOff and isOff[token] == false)
     end
     -- Ticks or unticks class token for spell id; only unticked classes are
     -- stored, and an entry with none left goes.
     local function SetCustomClass(id, token, on)
-        local f = FDB()
-        if not f then
+        local foreverCfg = FDB()
+        if not foreverCfg then
             return
         end
-        f.customClasses = f.customClasses or {}
-        local all = f.customClasses
+        foreverCfg.customClasses = foreverCfg.customClasses or {}
+        local all = foreverCfg.customClasses
         local isOff = all[id]
         if on then
             if isOff then
@@ -1386,8 +1386,8 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function BuildForeverCustomRows(parent, y, lead)
-        local f = FDB()
-        local ids = f and f.customIDs
+        local foreverCfg = FDB()
+        local ids = foreverCfg and foreverCfg.customIDs
         local slots = {
             lead,
             ButtonSlot(
@@ -1433,33 +1433,33 @@ CludesUI.AtOptionsLogin(function()
                     UpdatePreviewHeader()
                 end,
                 get = function(f)
-                    local d = DDB()
-                    if not d then
+                    local display = DDB()
+                    if not display then
                         return nil
                     end
                     if f == "style" then
-                        return d.glowType or 0
+                        return display.glowType or 0
                     elseif f == "mode" then
                         -- Read-path migration: a profile activated mid-session may not
                         -- have a mode key yet; derive it from the stored color.
                         if _G._CUABR_EnsureGlowModeMigrated then
-                            _G._CUABR_EnsureGlowModeMigrated(d)
+                            _G._CUABR_EnsureGlowModeMigrated(display)
                         end
-                        return d.glowColorMode or "default"
+                        return display.glowColorMode or "default"
                     end
-                    return CludesUI.GlowOptions.FlatGet(d, "glow", f)
+                    return CludesUI.GlowOptions.FlatGet(display, "glow", f)
                 end,
                 set = function(f, a, b2, c2)
-                    local d = DDB()
-                    if not d then
+                    local display = DDB()
+                    if not display then
                         return
                     end
                     if f == "style" then
-                        d.glowType = a
+                        display.glowType = a
                     elseif f == "mode" then
-                        d.glowColorMode = a
+                        display.glowColorMode = a
                     else
-                        CludesUI.GlowOptions.FlatSet(d, "glow", f, a, b2, c2)
+                        CludesUI.GlowOptions.FlatSet(display, "glow", f, a, b2, c2)
                     end
                 end,
             }
@@ -1552,17 +1552,17 @@ CludesUI.AtOptionsLogin(function()
     end
     local function Get(key, default)
         return function()
-            local d = DDB()
-            return d and d[key] or default
+            local display = DDB()
+            return display and display[key] or default
         end
     end
     local function Set(key, after)
         return function(value)
-            local d = DDB()
-            if not d then
+            local display = DDB()
+            if not display then
                 return
             end
-            d[key] = value;
+            display[key] = value;
             (after or Live)(value)
         end
     end
@@ -1673,8 +1673,8 @@ CludesUI.AtOptionsLogin(function()
         local header, h = W:SectionHeader(parent, SECTION_CORE, y, nil, {
             tooltip = "Master toggle for all aura, buff, and consumable reminders. Talent reminders are not affected.",
             getValue = function()
-                local d = DDB()
-                return d and d.remindersEnabled ~= false
+                local display = DDB()
+                return display and display.remindersEnabled ~= false
             end,
             setValue = Set("remindersEnabled", function()
                 if _G._CUABR_UpdateGroupAuraRegistration then
@@ -1720,13 +1720,13 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 disabledTooltip = CludesUI.DisabledTooltip("CludesUI Raid & Party Frames"),
                 getValue = function()
-                    local d = DDB()
-                    return d and d.beaconMPlus == true
+                    local display = DDB()
+                    return display and display.beaconMPlus == true
                 end,
                 setValue = function(value)
-                    local d = DDB()
-                    if d then
-                        d.beaconMPlus = value or nil
+                    local display = DDB()
+                    if display then
+                        display.beaconMPlus = value or nil
                         RefreshAll()
                     end
                 end,
@@ -1739,25 +1739,25 @@ CludesUI.AtOptionsLogin(function()
     -- A display field as read (nil when unset) and a write with no follow-up.
     local function Raw(key)
         return function()
-            local d = DDB()
-            return d and d[key]
+            local display = DDB()
+            return display and display[key]
         end
     end
     local function Store(key)
         return function(value)
-            local d = DDB()
-            if d then
-                d[key] = value
+            local display = DDB()
+            if display then
+                display[key] = value
             end
         end
     end
     local function BorderTex()
-        local d = DDB()
-        return (d and d.borderTexture) or "solid"
+        local display = DDB()
+        return (display and display.borderTexture) or "solid"
     end
     local function BorderStep()
-        local d = DDB()
-        return (d and d.borderSize) or 1
+        local display = DDB()
+        return (display and display.borderSize) or 1
     end
     -- A shape change re-masks the reminder icons and the preview.
     local function Reshape()
@@ -1774,8 +1774,8 @@ CludesUI.AtOptionsLogin(function()
             values = values,
             order = order,
             itemDisabled = function(value)
-                local d = DDB()
-                return value ~= "none" and value ~= "cropped" and d and (d.borderTexture or "solid") ~= "solid"
+                local display = DDB()
+                return value ~= "none" and value ~= "cropped" and display and (display.borderTexture or "solid") ~= "solid"
             end,
             itemDisabledTooltip = "This option requires Border Style to be set to Solid",
             getValue = Get("iconShape", "none"),
@@ -1790,13 +1790,13 @@ CludesUI.AtOptionsLogin(function()
             max = 15,
             step = 0.5,
             getValue = function()
-                local d = DDB()
-                return ((d and d.iconZoom) or 0.07) * 100
+                local display = DDB()
+                return ((display and display.iconZoom) or 0.07) * 100
             end,
             setValue = function(value)
-                local d = DDB()
-                if d then
-                    d.iconZoom = value / 100
+                local display = DDB()
+                if display then
+                    display.iconZoom = value / 100
                     Reshape()
                 end
             end,
@@ -1804,8 +1804,8 @@ CludesUI.AtOptionsLogin(function()
         CludesUI.BuildInlineCog(line._leftRegion, {
             title = "Icon Shape",
             disabled = function()
-                local d = DDB()
-                return not d or d.iconShape ~= "cropped"
+                local display = DDB()
+                return not display or display.iconShape ~= "cropped"
             end,
             disabledTooltip = "This option requires Icon Shape to be set to Cropped",
             rows = {
@@ -1829,19 +1829,19 @@ CludesUI.AtOptionsLogin(function()
     -- A new border style starts from that style's own colour, layering and
     -- size, with no leftover offsets, shifts or exact pixels.
     local function PickBorderStyle(value)
-        local d = DDB()
-        if not d then
+        local display = DDB()
+        if not display then
             return
         end
-        d.borderTexture = value
-        d.borderTextureOffset, d.borderTextureOffsetY = nil, nil
-        d.borderTextureShiftX, d.borderTextureShiftY = nil, nil
+        display.borderTexture = value
+        display.borderTextureOffset, display.borderTextureOffsetY = nil, nil
+        display.borderTextureShiftX, display.borderTextureShiftY = nil, nil
         local color, behind = CludesUI.GetBorderStyleSelectDefaults(value)
-        d.borderR, d.borderG, d.borderB, d.borderA = color.r, color.g, color.b, 1
-        d.borderBehind = behind
-        d.borderSize = CludesUI.GetBorderDefaultSize("aurabuffreminders", value) or d.borderSize
-        if d.borderSizePx then
-            d.borderSizePx = false
+        display.borderR, display.borderG, display.borderB, display.borderA = color.r, color.g, color.b, 1
+        display.borderBehind = behind
+        display.borderSize = CludesUI.GetBorderDefaultSize("aurabuffreminders", value) or display.borderSize
+        if display.borderSizePx then
+            display.borderSizePx = false
         end
         RefreshBorders()
         -- Rebuild: the Width | Height Offset row follows the Solid / textured pick.
@@ -1860,18 +1860,18 @@ CludesUI.AtOptionsLogin(function()
                 values = { none = "None", strong = "Strong" },
                 order = { "none", "strong" },
                 getValue = function()
-                    local d = DDB()
-                    return d and (d.borderSize or 1) > 0 and "strong" or "none"
+                    local display = DDB()
+                    return display and (display.borderSize or 1) > 0 and "strong" or "none"
                 end,
                 setValue = function(value)
-                    local d = DDB()
-                    if not d then
+                    local display = DDB()
+                    if not display then
                         return
                     end
                     if value ~= "strong" then
-                        d.borderSize = 0
-                    elseif (d.borderSize or 1) <= 0 then
-                        d.borderSize = 1
+                        display.borderSize = 0
+                    elseif (display.borderSize or 1) <= 0 then
+                        display.borderSize = 1
                     end
                     RefreshBorders()
                 end,
@@ -1898,28 +1898,28 @@ CludesUI.AtOptionsLogin(function()
             max = 10,
             step = 1,
             get = function()
-                local d = DDB()
-                if not d then
+                local display = DDB()
+                if not display then
                     return 0
                 end
-                if d[key] ~= nil then
-                    return d[key]
+                if display[key] ~= nil then
+                    return display[key]
                 end
                 return (
                     select(
                         which,
                         CludesUI.GetBorderDefaults(
                             "aurabuffreminders",
-                            d.borderTexture or "solid",
-                            d.borderSize or 1
+                            display.borderTexture or "solid",
+                            display.borderSize or 1
                         )
                     )
                 )
             end,
             set = function(value)
-                local d = DDB()
-                if d then
-                    d[key] = (value ~= 0) and value or nil
+                local display = DDB()
+                if display then
+                    display[key] = (value ~= 0) and value or nil
                     RefreshBorders()
                 end
             end,
@@ -1977,13 +1977,13 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     label = "Show Behind",
                     get = function()
-                        local d = DDB()
-                        return d and d.borderBehind == true
+                        local display = DDB()
+                        return display and display.borderBehind == true
                     end,
                     set = function(value)
-                        local d = DDB()
-                        if d then
-                            d.borderBehind = value
+                        local display = DDB()
+                        if display then
+                            display.borderBehind = value
                             RefreshBorders()
                         end
                     end,
@@ -1991,23 +1991,23 @@ CludesUI.AtOptionsLogin(function()
             },
         })
         local function CogShown()
-            local d = DDB()
-            cog:SetShown(d and (d.borderTexture or "solid") ~= "solid")
+            local display = DDB()
+            cog:SetShown(display and (display.borderTexture or "solid") ~= "solid")
         end
         CogShown()
         CludesUI.RegisterWidgetRefresh(CogShown)
 
         local region = line._rightRegion
         local swatch, refresh = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
-            local d = DDB()
-            return (d and d.borderR) or 0,
-                (d and d.borderG) or 0,
-                (d and d.borderB) or 0,
-                (d and d.borderA) or 1
+            local display = DDB()
+            return (display and display.borderR) or 0,
+                (display and display.borderG) or 0,
+                (display and display.borderB) or 0,
+                (display and display.borderA) or 1
         end, function(red, green, blue, a)
-            local d = DDB()
-            if d then
-                d.borderR, d.borderG, d.borderB, d.borderA = red, green, blue, a or 1
+            local display = DDB()
+            if display then
+                display.borderR, display.borderG, display.borderB, display.borderA = red, green, blue, a or 1
                 RefreshBorders()
             end
         end, true, 20)
@@ -2040,9 +2040,9 @@ CludesUI.AtOptionsLogin(function()
             order = order,
             get = Get(key, "__global"),
             set = function(value)
-                local d = DDB()
-                if d then
-                    d[key] = (value ~= "__global") and value or nil
+                local display = DDB()
+                if display then
+                    display[key] = (value ~= "__global") and value or nil
                     (after or Live)()
                 end
             end,
@@ -2069,8 +2069,8 @@ CludesUI.AtOptionsLogin(function()
         CludesUI.BuildInlineCog(region, {
             title = "Name Settings",
             disabled = function()
-                local d = DDB()
-                return not d or not d.showText
+                local display = DDB()
+                return not display or not display.showText
             end,
             disabledTooltip = "Show Name",
             rows = {
@@ -2089,13 +2089,13 @@ CludesUI.AtOptionsLogin(function()
             },
         })
         local swatch = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
-            local d = DDB()
-            local textColor = d and d.textColor or { r = 1, g = 1, b = 1 }
+            local display = DDB()
+            local textColor = display and display.textColor or { r = 1, g = 1, b = 1 }
             return textColor.r, textColor.g, textColor.b, 1
         end, function(red, green, blue)
-            local d = DDB()
-            if d then
-                d.textColor = { r = red, g = green, b = blue }
+            local display = DDB()
+            if display then
+                display.textColor = { r = red, g = green, b = blue }
                 Live()
             end
         end, false, 20)
@@ -2109,8 +2109,8 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.HideWidgetTooltip()
         end)
         local function Dim()
-            local d = DDB()
-            local isOff = not d or not d.showText
+            local display = DDB()
+            local isOff = not display or not display.showText
             swatch:SetAlpha(isOff and 0.3 or 1)
             block:SetShown(isOff)
         end
@@ -2134,8 +2134,8 @@ CludesUI.AtOptionsLogin(function()
             text = "Show Item Count",
             tooltip = "Show how many of the consumable you have left in your bags.",
             getValue = function()
-                local d = DDB()
-                return not d or d.showCount ~= false
+                local display = DDB()
+                return not display or display.showCount ~= false
             end,
             setValue = Rebuilds("showCount"),
         })
@@ -2144,8 +2144,8 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.BuildInlineCog(nameRow._rightRegion, {
                 title = "Item Count Settings",
                 disabled = function()
-                    local d = DDB()
-                    return d and d.showCount == false
+                    local display = DDB()
+                    return display and display.showCount == false
                 end,
                 disabledTooltip = "Show Item Count",
                 rows = {
@@ -2182,8 +2182,8 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.BuildInlineCog(glowRow._rightRegion, {
                 title = "Cursor Settings",
                 disabled = function()
-                    local d = DDB()
-                    return not (d and d.cursorAttach)
+                    local display = DDB()
+                    return not (display and display.cursorAttach)
                 end,
                 disabledTooltip = "Attach Important Buffs to Cursor",
                 rows = {
@@ -2192,8 +2192,8 @@ CludesUI.AtOptionsLogin(function()
                         label = "Only on Cursor in Combat",
                         tooltip = "Out of combat, important buffs show with your other reminders.",
                         get = function()
-                            local d = DDB()
-                            return d and d.cursorAttachCombatOnly == true
+                            local display = DDB()
+                            return display and display.cursorAttachCombatOnly == true
                         end,
                         set = Set("cursorAttachCombatOnly", RefreshAll),
                     },
@@ -2287,8 +2287,8 @@ CludesUI.AtOptionsLogin(function()
             text = "Show Tooltips",
             tooltip = "Show item or spell tooltips when hovering reminder icons.",
             getValue = function()
-                local d = DDB()
-                return not d or d.showTooltips ~= false
+                local display = DDB()
+                return not display or display.showTooltips ~= false
             end,
             setValue = Store("showTooltips"),
         }, {
@@ -2308,13 +2308,13 @@ CludesUI.AtOptionsLogin(function()
                 text = "Action Picker",
                 tooltip = "Right-click a spell group or Class Buffs reminder that has more than one spell to choose the spell its left click casts. Scroll over a spell in the picker to choose its rank.",
                 getValue = function()
-                    local f = FDB()
-                    return f and f.pickerEnabled == true
+                    local foreverCfg = FDB()
+                    return foreverCfg and foreverCfg.pickerEnabled == true
                 end,
                 setValue = function(value)
-                    local f = FDB()
-                    if f then
-                        f.pickerEnabled = value
+                    local foreverCfg = FDB()
+                    if foreverCfg then
+                        foreverCfg.pickerEnabled = value
                         RefreshAll()
                     end
                 end,
@@ -3151,18 +3151,18 @@ CludesUI.AtOptionsLogin(function()
             text = text,
             tooltip = tooltip,
             getValue = function()
-                local f = FDB()
+                local foreverCfg = FDB()
                 if defaultOn then
-                    return not f or f[key] ~= false
+                    return not foreverCfg or foreverCfg[key] ~= false
                 end
-                return f and f[key] == true
+                return foreverCfg and foreverCfg[key] == true
             end,
             setValue = function(value)
-                local f = FDB()
-                if not f then
+                local foreverCfg = FDB()
+                if not foreverCfg then
                     return
                 end
-                f[key] = value
+                foreverCfg[key] = value
                 RefreshAll()
                 if rebuild then
                     CludesUI:RefreshPage()
@@ -3210,14 +3210,14 @@ CludesUI.AtOptionsLogin(function()
             region:GetFrameLevel() + 2,
             items,
             function(key)
-                local f = FDB()
-                return _G._CUABR_FvClassBuffOn(byKey[key], f and f.classBuffPicks)
+                local foreverCfg = FDB()
+                return _G._CUABR_FvClassBuffOn(byKey[key], foreverCfg and foreverCfg.classBuffPicks)
             end,
             function(key, value)
-                local f = FDB()
-                if f then
-                    f.classBuffPicks = f.classBuffPicks or {}
-                    f.classBuffPicks[key] = value and true or false
+                local foreverCfg = FDB()
+                if foreverCfg then
+                    foreverCfg.classBuffPicks = foreverCfg.classBuffPicks or {}
+                    foreverCfg.classBuffPicks[key] = value and true or false
                     RefreshAll()
                 end
             end
@@ -3251,18 +3251,18 @@ CludesUI.AtOptionsLogin(function()
                 order = order,
                 ddWidth = 200,
                 get = function()
-                    local f = FDB()
-                    local t = f and f.weaponHands and f.weaponHands[class]
+                    local foreverCfg = FDB()
+                    local t = foreverCfg and foreverCfg.weaponHands and foreverCfg.weaponHands[class]
                     return t and t[field] or "auto"
                 end,
                 set = function(value)
-                    local f = FDB()
-                    if not f then
+                    local foreverCfg = FDB()
+                    if not foreverCfg then
                         return
                     end
-                    f.weaponHands = f.weaponHands or {}
-                    f.weaponHands[class] = f.weaponHands[class] or {}
-                    f.weaponHands[class][field] = value ~= "auto" and value or nil
+                    foreverCfg.weaponHands = foreverCfg.weaponHands or {}
+                    foreverCfg.weaponHands[class] = foreverCfg.weaponHands[class] or {}
+                    foreverCfg.weaponHands[class][field] = value ~= "auto" and value or nil
                     RefreshAll()
                 end,
             }
@@ -3289,13 +3289,13 @@ CludesUI.AtOptionsLogin(function()
             values = { high = "Highest Owned", low = "Lowest Owned" },
             order = { "high", "low" },
             get = function()
-                local f = FDB()
-                return f and f.weaponLowRank and "low" or "high"
+                local foreverCfg = FDB()
+                return foreverCfg and foreverCfg.weaponLowRank and "low" or "high"
             end,
             set = function(value)
-                local f = FDB()
-                if f then
-                    f.weaponLowRank = value == "low"
+                local foreverCfg = FDB()
+                if foreverCfg then
+                    foreverCfg.weaponLowRank = value == "low"
                     RefreshAll()
                 end
             end,
@@ -3305,13 +3305,13 @@ CludesUI.AtOptionsLogin(function()
             label = "Hide When None in Bags",
             tooltip = "Hides a reminder when you have none of its item in your bags.\nOff: a chosen item still shows, greyed out. Auto only ever picks items you have.",
             get = function()
-                local f = FDB()
-                return not f or f.weaponHideNoItem ~= false
+                local foreverCfg = FDB()
+                return not foreverCfg or foreverCfg.weaponHideNoItem ~= false
             end,
             set = function(value)
-                local f = FDB()
-                if f then
-                    f.weaponHideNoItem = value
+                local foreverCfg = FDB()
+                if foreverCfg then
+                    foreverCfg.weaponHideNoItem = value
                     RefreshAll()
                 end
             end,
@@ -3324,13 +3324,13 @@ CludesUI.AtOptionsLogin(function()
             step = 1,
             tooltip = "Show a reminder before a poison, imbue, stone or oil runs out.\n0 = only once it has run out.\n1-10 = when it has less than this many minutes left.",
             get = function()
-                local f = FDB()
-                return f and f.weaponShowBelow or 1
+                local foreverCfg = FDB()
+                return foreverCfg and foreverCfg.weaponShowBelow or 1
             end,
             set = function(value)
-                local f = FDB()
-                if f then
-                    f.weaponShowBelow = value
+                local foreverCfg = FDB()
+                if foreverCfg then
+                    foreverCfg.weaponShowBelow = value
                     RefreshAll()
                 end
             end,
@@ -3398,8 +3398,8 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.BuildInlineCog(gatherRow._rightRegion, {
                 title = "Gathering Tracking",
                 disabled = function()
-                    local f = FDB()
-                    return not (f and f.gather == true)
+                    local foreverCfg = FDB()
+                    return not (foreverCfg and foreverCfg.gather == true)
                 end,
                 disabledTooltip = "Gathering Tracking",
                 rows = {
@@ -3407,13 +3407,13 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         label = "Ignore If Class Tracking Is Active",
                         get = function()
-                            local f = FDB()
-                            return not f or f.gatherClassTrack ~= false
+                            local foreverCfg = FDB()
+                            return not foreverCfg or foreverCfg.gatherClassTrack ~= false
                         end,
                         set = function(value)
-                            local f = FDB()
-                            if f then
-                                f.gatherClassTrack = value
+                            local foreverCfg = FDB()
+                            if foreverCfg then
+                                foreverCfg.gatherClassTrack = value
                                 RefreshAll()
                             end
                         end,
@@ -3470,8 +3470,8 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.BuildInlineCog(weaponRow._rightRegion, {
                 title = "Weapon Buffs",
                 disabled = function()
-                    local f = FDB()
-                    return not (f and f.weapon == true)
+                    local foreverCfg = FDB()
+                    return not (foreverCfg and foreverCfg.weapon == true)
                 end,
                 disabledTooltip = "Weapon Buffs",
                 minWidth = 320,
@@ -3491,10 +3491,10 @@ CludesUI.AtOptionsLogin(function()
                 return ""
             end,
             setValue = function(text)
-                local f = FDB()
-                if f then
-                    f.customIDs = f.customIDs or {}
-                    AddSpellIDToList(f.customIDs, text)
+                local foreverCfg = FDB()
+                if foreverCfg then
+                    foreverCfg.customIDs = foreverCfg.customIDs or {}
+                    AddSpellIDToList(foreverCfg.customIDs, text)
                 end
             end,
         })
@@ -4169,8 +4169,8 @@ CludesUI.AtOptionsLogin(function()
         local function ReminderRow(index, idx, reminder, yOff)
             local line = TRListRow(entryList, yOff, index)
             local function Saved()
-                local p = DB()
-                return p and p.talentReminders and p.talentReminders[idx]
+                local profile = DB()
+                return profile and profile.talentReminders and profile.talentReminders[idx]
             end
             local icon = line:CreateTexture(nil, "ARTWORK")
             icon:SetSize(22, 22)
@@ -4200,9 +4200,9 @@ CludesUI.AtOptionsLogin(function()
                     isTopAction = true,
                     label = "Delete Reminder",
                     onClick = function()
-                        local p = DB()
-                        if p and p.talentReminders and p.talentReminders[idx] then
-                            table.remove(p.talentReminders, idx)
+                        local profile = DB()
+                        if profile and profile.talentReminders and profile.talentReminders[idx] then
+                            table.remove(profile.talentReminders, idx)
                             RebuildList()
                             TalentRemindersChanged()
                         end
@@ -4316,11 +4316,11 @@ CludesUI.AtOptionsLogin(function()
                 line:Hide()
             end
             wipe(listRows)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return 0
             end
-            local reminders = p.talentReminders or {}
+            local reminders = profile.talentReminders or {}
             local visible = VisibleReminders(reminders)
             if #visible == 0 then
                 local line = TRListRow(entryList, 0, 1)
@@ -4374,13 +4374,13 @@ CludesUI.AtOptionsLogin(function()
                 PulseRedBorder(talentBtn)
                 return
             end
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return
             end
-            p.talentReminders = p.talentReminders or {}
+            profile.talentReminders = profile.talentReminders or {}
             table.sort(nameList)
-            for _, r in ipairs(p.talentReminders) do
+            for _, r in ipairs(profile.talentReminders) do
                 if r.spellID == pickedSpellID then
                     local zl = EditableZoneList(r)
                     for _, zoneName in ipairs(nameList) do
@@ -4394,7 +4394,7 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
             local _, class = UnitClass("player")
-            p.talentReminders[#p.talentReminders + 1] = {
+            profile.talentReminders[#profile.talentReminders + 1] = {
                 zoneNames = nameList,
                 spellID = pickedSpellID,
                 spellName = pickedName,

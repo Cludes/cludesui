@@ -132,10 +132,10 @@ local function ScanGroup()
     end
 end
 
-local ev = CreateFrame("Frame")
-ev:RegisterEvent("INSPECT_READY")
-ev:RegisterEvent("GROUP_ROSTER_UPDATE")
-ev:SetScript("OnEvent", function(_, evt, unitGuid)
+local eventFrame = CreateFrame("Frame")
+eventFrame:RegisterEvent("INSPECT_READY")
+eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+eventFrame:SetScript("OnEvent", function(_, evt, unitGuid)
     if evt == "GROUP_ROSTER_UPDATE" then
         if window and window:IsShown() then
             ScanGroup()

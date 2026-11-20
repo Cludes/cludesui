@@ -842,8 +842,8 @@ function mod.RebuildSpellRouteMap()
     wipe(mod._buffReplaceBars)
     _routeMapBuilt = false
 
-    local p = ECME.db and ECME.db.profile
-    if not p or not p.cdmBars then
+    local profile = ECME.db and ECME.db.profile
+    if not profile or not profile.cdmBars then
         return
     end
 
@@ -923,7 +923,7 @@ function mod.RebuildSpellRouteMap()
     -- Pass 1: custom buff bars + custom_buff (TBB) bars. TBB bars compete for
     -- the same buff icon spells, so their diversions land in
     -- _divertedSpellsBuff even though IsBarBuffFamily is false for custom_buff.
-    for _, edge in ipairs(p.cdmBars.bars) do
+    for _, edge in ipairs(profile.cdmBars.bars) do
         if
             edge.enabled
             and not edge.isGhostBar
@@ -950,7 +950,7 @@ function mod.RebuildSpellRouteMap()
     -- overwrite them so explicit custom-bar placement OUTRANKS the default
     -- (else a spell also in cooldowns.assignedSpells, materialized spillover
     -- both-state, renders on the default cooldowns bar).
-    for _, edge in ipairs(p.cdmBars.bars) do
+    for _, edge in ipairs(profile.cdmBars.bars) do
         if
             edge.enabled
             and not edge.isGhostBar
@@ -961,7 +961,7 @@ function mod.RebuildSpellRouteMap()
     end
     -- Pass 3: custom CD/utility bars overwrite the default diversions
     -- (deliberate custom-bar placement wins).
-    for _, edge in ipairs(p.cdmBars.bars) do
+    for _, edge in ipairs(profile.cdmBars.bars) do
         if
             edge.enabled
             and not edge.isGhostBar
@@ -979,7 +979,7 @@ function mod.RebuildSpellRouteMap()
     -- viewer, so ResolveCDIDToBar reads only _divertedSpellsBuff for it. After
     -- passes 1-2 so an explicit host outranks a stray buff-bar copy; the bar's
     -- Pass 3 CD diversion is untouched (separate family maps).
-    for _, edge in ipairs(p.cdmBars.bars) do
+    for _, edge in ipairs(profile.cdmBars.bars) do
         if
             edge.enabled
             and not edge.isGhostBar
@@ -1017,7 +1017,7 @@ function mod.RebuildSpellRouteMap()
     -- expansion) and remember which cooldown it stands in for; the collect
     -- pass swaps the frames. Gated: a profile with no mapping skips the pass.
     if mod._cdmAnyBuffReplace then
-        for _, edge in ipairs(p.cdmBars.bars) do
+        for _, edge in ipairs(profile.cdmBars.bars) do
             if
                 edge.enabled
                 and not edge.isGhostBar
@@ -1094,7 +1094,7 @@ function mod.RebuildSpellRouteMap()
     -- ns.AddSpellToBar removes it from the ghost, so this never hides a
     -- deliberate placement. Only a ghost entry that is a pure ALIAS of a
     -- visible family (set above) is skipped.
-    for _, edge in ipairs(p.cdmBars.bars) do
+    for _, edge in ipairs(profile.cdmBars.bars) do
         if edge.enabled and edge.isGhostBar then
             CollectDiversionsFor(edge, ghostAliasSkip)
         end

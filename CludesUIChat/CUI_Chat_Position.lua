@@ -981,10 +981,10 @@ local function BuildMainChatResizeGrip(castFrame)
         if not sizing then
             return
         end
-        local cx, cy = GetCursorPosition()
+        local curX, curY = GetCursorPosition()
         local es = castFrame:GetEffectiveScale()
-        local dx = cx / es - startX
-        local dy = startY - cy / es
+        local dx = curX / es - startX
+        local dy = startY - curY / es
         local shiftDown = IsShiftKeyDown()
         local newW, newH
         if shiftDown then
@@ -1049,9 +1049,9 @@ local function BuildMainChatResizeGrip(castFrame)
         SetFramePoint(castFrame, "TOPLEFT", UIParent, "BOTTOMLEFT", leftX, topY)
         SetFramePoint(castFrame, "BOTTOMRIGHT", UIParent, "BOTTOMLEFT", leftX + wid, topY - hgt)
         anchorLeft, anchorTop = leftX, topY
-        local cx, cy = GetCursorPosition()
+        local curX, curY = GetCursorPosition()
         local es = castFrame:GetEffectiveScale()
-        startX, startY = cx / es, cy / es
+        startX, startY = curX / es, curY / es
         startW, startH = wid, hgt
         curW, curH = wid, hgt
         shiftWas = false

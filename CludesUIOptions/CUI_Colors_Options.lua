@@ -161,10 +161,10 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                         color.g = green
                         color.b = blue
                         entry.setColor(color)
-                        local rl = CludesUI._widgetRefreshList
-                        if rl then
-                            for i2 = 1, #rl do
-                                rl[i2]()
+                        local refreshList = CludesUI._widgetRefreshList
+                        if refreshList then
+                            for i2 = 1, #refreshList do
+                                refreshList[i2]()
                             end
                         end
                     end,
@@ -196,10 +196,10 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                     entry.resetFn()
                     CludesUI.ApplyColorsToOUF()
                     updateSwatch()
-                    local rl = CludesUI._widgetRefreshList
-                    if rl then
-                        for i2 = 1, #rl do
-                            rl[i2]()
+                    local refreshList = CludesUI._widgetRefreshList
+                    if refreshList then
+                        for i2 = 1, #refreshList do
+                            refreshList[i2]()
                         end
                     end
                 end)

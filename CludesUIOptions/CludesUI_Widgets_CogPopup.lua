@@ -1429,9 +1429,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         if not dsY then
                             return
                         end
-                        local _, cy = GetCursorPosition()
+                        local _, curY = GetCursorPosition()
                         if not isDragging then
-                            if math.abs(cy - dsY) < 3 then
+                            if math.abs(curY - dsY) < 3 then
                                 return
                             end
                             isDragging = true
@@ -1444,7 +1444,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             end
                         end
                         local sc = dropMenu:GetEffectiveScale()
-                        local cY = cy / sc
+                        local cY = curY / sc
                         local mT = sChild:GetTop() or 0
                         local iI = #rowFrames
                         for ri, r2 in ipairs(rowFrames) do
@@ -1509,8 +1509,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             if b ~= "LeftButton" then
                                 return
                             end
-                            local _, cy = GetCursorPosition()
-                            dsY = cy
+                            local _, curY = GetCursorPosition()
+                            dsY = curY
                             dragRow = self
                             self:SetScript("OnUpdate", DragUpdate)
                         end)
@@ -1529,16 +1529,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             insLine:Hide()
                             self:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
                             self:SetAlpha(1)
-                            local _, cy = GetCursorPosition()
+                            local _, curY = GetCursorPosition()
                             local sc = dropMenu:GetEffectiveScale()
-                            cy = cy / sc
+                            curY = curY / sc
                             local mT = sChild:GetTop() or 0
                             local from = self._cbIndex
                             local iI = #rowFrames
                             for ri, r2 in ipairs(rowFrames) do
                                 if r2 ~= self and r2._baseY then
                                     local rm = mT + r2._baseY - MH / 2
-                                    if cy > rm then
+                                    if curY > rm then
                                         iI = ri
                                         break
                                     end

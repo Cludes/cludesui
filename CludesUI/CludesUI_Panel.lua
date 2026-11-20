@@ -1000,8 +1000,8 @@ local function BuildFrame()
         if isv and (isv(l) or isv(r) or isv(t) or isv(b) or isv(ml) or isv(mb)) then
             return
         end
-        local s = UIParent:GetEffectiveScale() / panelFrame:GetEffectiveScale()
-        local sw, sh = UIParent:GetWidth() * s, UIParent:GetHeight() * s
+        local uiScale = UIParent:GetEffectiveScale() / panelFrame:GetEffectiveScale()
+        local sw, sh = UIParent:GetWidth() * uiScale, UIParent:GetHeight() * uiScale
         local dx, dy = 0, 0
         if r > sw then
             dx = sw - r
@@ -2420,7 +2420,7 @@ local function BuildSidebar()
 
         -- Cursor position along the track as a 0..1 fraction (nil until the track has a size)
         local function CursorFrac()
-            local cx, centerY = GetCursorPosition()
+            local curX, centerY = GetCursorPosition()
             local len = horizontal and rail:GetWidth() or rail:GetHeight()
             if not len or len < 1 then
                 return nil
@@ -2429,7 +2429,7 @@ local function BuildSidebar()
             if not origin then
                 return nil
             end
-            local cur = (horizontal and cx or centerY) / opacityPanel:GetEffectiveScale()
+            local cur = (horizontal and curX or centerY) / opacityPanel:GetEffectiveScale()
             local fraction = (cur - origin - THUMB_H / 2) / (len - THUMB_H)
             return math.max(0, math.min(1, fraction))
         end

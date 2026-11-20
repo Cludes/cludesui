@@ -107,7 +107,7 @@ end
 -- count. PushPalette needs exactly that: it runs while the palette is closed,
 -- when shownCount still describes whatever was drawn last.
 function PaletteView:GridDims(shownOverride)
-    local p = self:P()
+    local profile = self:P()
     local isShown = max(1, shownOverride or self.shownCount)
 
     local mode = self:LayoutMode()
@@ -119,7 +119,7 @@ function PaletteView:GridDims(shownOverride)
     end
 
     local cols
-    if not p or p.gridAutoColumns ~= false then
+    if not profile or profile.gridAutoColumns ~= false then
         -- Counted from the REAL entries, not from `shown`. An interactive view
         -- draws one extra entry for the trailing "+", and letting that tip the
         -- column count would make the editor lay a palette out differently from
@@ -127,7 +127,7 @@ function PaletteView:GridDims(shownOverride)
         -- live palette drew 3 + 3.
         cols = AutoGridColumns(max(1, shownOverride or self.slotCount or isShown))
     else
-        cols = min(MAX_SLOTS, max(1, floor(p.gridColumns or 4)))
+        cols = min(MAX_SLOTS, max(1, floor(profile.gridColumns or 4)))
     end
     if cols > isShown then
         cols = isShown
@@ -391,10 +391,10 @@ end
 -- the options preview fits a palette to its panel, and a band read at its
 -- literal profile size would draw nests at full distance around a shrunken one.
 function PaletteView:NestMetrics(isShown)
-    local p = self:P()
+    local profile = self:P()
     local _, iconSize = self:Geom()
     local pitch = self:Pitch()
-    local base = p.iconSize or 40
+    local base = profile.iconSize or 40
     local k = (base > 0) and (iconSize / base) or 1
     local cols, rowList = self:GridDims(isShown)
 
@@ -403,8 +403,8 @@ function PaletteView:NestMetrics(isShown)
         pitch = pitch,
         cols = cols,
         rows = rowList,
-        band = max(0, p.nestBand or NEST_BAND_DEFAULT) * k,
-        gap = (p.fanGap or 10) * k,
+        band = max(0, profile.nestBand or NEST_BAND_DEFAULT) * k,
+        gap = (profile.fanGap or 10) * k,
         -- FIXED true -- nests break out above/right wherever the sides tie
         -- (the Nest Side setting was removed); a nestSide key left in stored
         -- profiles is never read.
@@ -413,14 +413,14 @@ function PaletteView:NestMetrics(isShown)
         -- POPOUT value a stored profile may still carry: its detached block
         -- came to answer arming exactly the way the lane does, and the lane is
         -- what it folded into.
-        style = (p.gridNestStyle == "HALO") and "HALO" or "PERIMETER",
+        style = (profile.gridNestStyle == "HALO") and "HALO" or "PERIMETER",
     }
     m.halfX = (cols - 1) * 0.5 * pitch
     m.halfY = (rowList - 1) * 0.5 * pitch
     -- Nested entries are drawn smaller than the palette's own, so a nest reads
     -- as subordinate to the entry it hangs off rather than as a second block of
     -- equals.
-    m.childIcon = iconSize * min(1, max(0.4, p.nestScale or 0.8))
+    m.childIcon = iconSize * min(1, max(0.4, profile.nestScale or 0.8))
     m.childPitch = m.childIcon + m.gap
     -- Across the run: how thick the band of boxes is. One icon plus the gap
     -- either side of it, so the box reaches back to the block's own edge and a
@@ -432,7 +432,7 @@ function PaletteView:NestMetrics(isShown)
     -- with. The lane hugs the block at the default and reads the slider as
     -- extra clearance on top of that, so the two answers agree wherever the
     -- user has moved it and the snug read is what an untouched profile gets.
-    m.bandExtra = max(0, (p.nestBand or NEST_BAND_DEFAULT) - NEST_BAND_DEFAULT) * k
+    m.bandExtra = max(0, (profile.nestBand or NEST_BAND_DEFAULT) - NEST_BAND_DEFAULT) * k
     -- A strip has no interior to displace and no corner to wrap, so the styles
     -- that rearrange a block have nothing to rearrange: it is always a small
     -- block of its own, centred on the parent and broken out perpendicular to

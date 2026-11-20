@@ -1537,9 +1537,9 @@ local function BuildBarWindow()
             if not widget._resizing then
                 return
             end
-            local cx = GetCursorPosition()
+            local curX = GetCursorPosition()
             local es = widget:GetEffectiveScale()
-            widget:SetWidth(max(MIN_W, resizeStartW + (cx / es - resizeStartX)))
+            widget:SetWidth(max(MIN_W, resizeStartW + (curX / es - resizeStartX)))
         end)
         resizeBtnHdr:SetScript("OnMouseDown", function(_, button)
             if button ~= "LeftButton" or widget._locked then
@@ -1550,8 +1550,8 @@ local function BuildBarWindow()
                 widget:ClearAllPoints()
                 widget:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", leftX, topY)
             end
-            local cx = GetCursorPosition()
-            resizeStartX = cx / widget:GetEffectiveScale()
+            local curX = GetCursorPosition()
+            resizeStartX = curX / widget:GetEffectiveScale()
             resizeStartW = widget:GetWidth()
             widget._resizing = true
             resizeFrame:Show()

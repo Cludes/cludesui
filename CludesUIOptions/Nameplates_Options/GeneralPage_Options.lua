@@ -99,9 +99,9 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             do
                 if val then
                     -- Enabling: re-assert every friendly-player CVar that SetupAuraCVars sets on load (it skips these while the toggle is off) -- runtime is the only restore path short of /reload.
-                    local p = DB()
-                    local nameOnly = (p and p.friendlyNameOnly ~= false)
-                    local classColor = (p and p.classColorFriendly ~= false)
+                    local profile = DB()
+                    local nameOnly = (profile and profile.friendlyNameOnly ~= false)
+                    local classColor = (profile and profile.classColorFriendly ~= false)
                     -- One of only two places CUI is allowed to force friendly plates visible; also clears any follower-dungeon capture.
                     if mod.ForceFriendlyPlayerCVarsOn then
                         mod.ForceFriendlyPlayerCVarsOn()
@@ -122,7 +122,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     pcall(
                         CludesUI.SetCVar,
                         "nameplateUseClassColorForFriendlyPlayerUnitNames",
-                        mod.FriendlyNameClassCVar(p),
+                        mod.FriendlyNameClassCVar(profile),
                         "CludesUINameplates"
                     )
                 else

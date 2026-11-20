@@ -93,7 +93,7 @@ local function AnyOn()
     return KeyOn() or F.Get("doubleClick") or F.Get("sound")
 end
 
-local ev = CreateFrame("Frame")
+local eventFrame = CreateFrame("Frame")
 local clickOwner = CreateFrame("Frame") -- holds the double-click's binding
 local castButton, indicator
 local fishingID, fishingName -- the Fishing rank known (nil: none)
@@ -354,9 +354,9 @@ local function StartSession()
         return
     end
     inSession = true
-    ev:RegisterEvent("PLAYER_STARTED_MOVING")
+    eventFrame:RegisterEvent("PLAYER_STARTED_MOVING")
     if ReelOn() then
-        ev:RegisterEvent("PLAYER_SOFT_INTERACT_CHANGED")
+        eventFrame:RegisterEvent("PLAYER_SOFT_INTERACT_CHANGED")
     end
 end
 
@@ -368,8 +368,8 @@ local function EndSession()
         return
     end
     inSession = false
-    ev:UnregisterEvent("PLAYER_STARTED_MOVING")
-    ev:UnregisterEvent("PLAYER_SOFT_INTERACT_CHANGED")
+    eventFrame:UnregisterEvent("PLAYER_STARTED_MOVING")
+    eventFrame:UnregisterEvent("PLAYER_SOFT_INTERACT_CHANGED")
 end
 
 -- Built out of combat (the caller checks).
@@ -440,7 +440,7 @@ end
 -------------------------------------------------------------------------------
 --  Events
 -------------------------------------------------------------------------------
-ev:SetScript("OnEvent", function(_, evt, _, arg2, arg3)
+eventFrame:SetScript("OnEvent", function(_, evt, _, arg2, arg3)
     if evt == "PLAYER_SOFT_INTERACT_CHANGED" then
         -- arg2: the new soft interact target. The bobber with the line in the
         -- water: the key reels in. Anything else: it casts again.
@@ -514,7 +514,7 @@ local function Apply()
     end
     UpdateIndicator()
     if not AnyOn() then
-        ev:UnregisterAllEvents()
+        eventFrame:UnregisterAllEvents()
         return
     end
     BuildButton()
@@ -523,10 +523,10 @@ local function Apply()
         BuildIndicator()
     end -- placed in Unlock Mode before the first cast
     for index = 1, #FEATURE_EVENTS do
-        ev:RegisterEvent(FEATURE_EVENTS[index])
+        eventFrame:RegisterEvent(FEATURE_EVENTS[index])
     end
-    ev:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START", "player")
-    ev:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP", "player")
+    eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START", "player")
+    eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP", "player")
     -- Never under the Gamepad interface style: a hook on a Blizzard frame
     -- there can run inside its secure navigation.
     if F.Get("doubleClick") and not worldHooked and not CludesUI.PadGamepadUI() then

@@ -469,14 +469,14 @@ local function ApplyPosition()
     if not widget then
         return
     end
-    local p = P()
-    if not p then
+    local profile = P()
+    if not profile then
         return
     end
     widget:ClearAllPoints()
     local cx, cy
-    if p.pos and p.pos.centerX and p.pos.centerY then
-        cx, cy = p.pos.centerX, p.pos.centerY
+    if profile.pos and profile.pos.centerX and profile.pos.centerY then
+        cx, cy = profile.pos.centerX, profile.pos.centerY
     else
         cx, cy = _defaultLeftOfBrezCenter()
     end
@@ -491,15 +491,15 @@ end
 -- Seed a concrete starting position (left of Brez) the first time the tracker
 -- is switched away from "Never". Does nothing if a position already exists.
 local function SeedDefaultPos()
-    local p = P()
-    if not p then
+    local profile = P()
+    if not profile then
         return
     end
-    if p.pos then
+    if profile.pos then
         return
     end
     local cx, cy = _defaultLeftOfBrezCenter()
-    p.pos = { centerX = cx, centerY = cy }
+    profile.pos = { centerX = cx, centerY = cy }
     ApplyPosition()
 end
 _G._CUI_Bloodlust_SeedPos = SeedDefaultPos
@@ -738,11 +738,11 @@ local _state = {
 --  Visibility / text
 -------------------------------------------------------------------------------
 local function ShouldShow()
-    local p = P()
-    if not p or not p.enabled then
+    local profile = P()
+    if not profile or not profile.enabled then
         return false
     end
-    local val = p.visibility or "NEVER"
+    local val = profile.visibility or "NEVER"
     if val == "NEVER" then
         return false
     end
@@ -1143,8 +1143,8 @@ local function Apply()
     ApplyShape()
     _applyBuffShape()
     ApplyPosition()
-    local p = P()
-    local enabled = p and p.enabled and (p.visibility ~= "NEVER")
+    local profile = P()
+    local enabled = profile and profile.enabled and (profile.visibility ~= "NEVER")
     _ensureEvents(enabled)
     if enabled then
         _refreshSated()
@@ -1178,8 +1178,8 @@ local function RegisterUnlock()
             order = 601,
             noAnchorTarget = true, -- icon size changes; nothing should anchor to it
             isHidden = function()
-                local p = P()
-                return not p or not p.enabled or (p.visibility == "NEVER")
+                local profile = P()
+                return not profile or not profile.enabled or (profile.visibility == "NEVER")
             end,
             getFrame = function()
                 if not widget then
@@ -1193,24 +1193,24 @@ local function RegisterUnlock()
             end,
             linkedDimensions = true, -- always square; one slider drives both
             setWidth = function(_, wid)
-                local p = P()
-                if not p then
+                local profile = P()
+                if not profile then
                     return
                 end
                 local PPb = CludesUI and CludesUI.PP
-                p.iconSize = math.max(16, PPb and PPb.Snap(wid) or math.floor(wid + 0.5))
+                profile.iconSize = math.max(16, PPb and PPb.Snap(wid) or math.floor(wid + 0.5))
                 Apply()
                 if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
                     CludesUI.RepositionBarToMover("CUI_Bloodlust")
                 end
             end,
             setHeight = function(_, hgt)
-                local p = P()
-                if not p then
+                local profile = P()
+                if not profile then
                     return
                 end
                 local PPb = CludesUI and CludesUI.PP
-                p.iconSize = math.max(16, PPb and PPb.Snap(hgt) or math.floor(hgt + 0.5))
+                profile.iconSize = math.max(16, PPb and PPb.Snap(hgt) or math.floor(hgt + 0.5))
                 Apply()
                 if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
                     CludesUI.RepositionBarToMover("CUI_Bloodlust")
@@ -1219,11 +1219,11 @@ local function RegisterUnlock()
             savePos = function(_, anchorPoint, relPoint, posX, posY)
                 -- Unlock mode hands over CENTER/CENTER coords; on Cancel the frame
                 -- still sits at the dragged spot, so never read the live position.
-                local p = P()
-                if not p then
+                local profile = P()
+                if not profile then
                     return
                 end
-                p.pos = { centerX = posX, centerY = posY }
+                profile.pos = { centerX = posX, centerY = posY }
             end,
             loadPos = loadPos,
             clearPos = clearPos,

@@ -164,10 +164,10 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
     end
     local function RunWidgetRefresh()
         C_Timer.After(0, function()
-            local rl = CludesUI._widgetRefreshList
-            if rl then
-                for idx = 1, #rl do
-                    rl[idx]()
+            local refreshList = CludesUI._widgetRefreshList
+            if refreshList then
+                for idx = 1, #refreshList do
+                    refreshList[idx]()
                 end
             end
         end)

@@ -850,8 +850,8 @@ function PaletteView:NestsFollowSelection()
         return true
     end
     if self:IsFan() and not self:IsPointerLayout() then
-        local p = self:P()
-        return (p and p.fanMouseSelect) == false
+        local profile = self:P()
+        return (profile and profile.fanMouseSelect) == false
     end
     return false
 end

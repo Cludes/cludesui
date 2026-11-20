@@ -555,9 +555,9 @@ BuildGCDBar = function()
     local fillTex = barFrame:GetStatusBarTexture()
     local fR, fG, fB, fA = g.fillR, g.fillG, g.fillB, g.fillA
     if g.classColored then
-        local cc = CLASS_COLORS[cachedClass]
-        if cc then
-            fR, fG, fB = cc[1], cc[2], cc[3]
+        local classColor = CLASS_COLORS[cachedClass]
+        if classColor then
+            fR, fG, fB = classColor[1], classColor[2], classColor[3]
         end
     end
     if g.gradientEnabled then

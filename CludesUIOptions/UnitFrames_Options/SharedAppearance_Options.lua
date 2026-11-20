@@ -285,10 +285,10 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             ReloadAndUpdate()
             UpdatePreview()
             C_Timer.After(0, function()
-                local rl = CludesUI._widgetRefreshList
-                if rl then
-                    for ri = 1, #rl do
-                        rl[ri]()
+                local refreshList = CludesUI._widgetRefreshList
+                if refreshList then
+                    for ri = 1, #refreshList do
+                        refreshList[ri]()
                     end
                 end
             end)
@@ -1626,10 +1626,10 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                     return
                 end
                 C_Timer.After(0, function()
-                    local rl = CludesUI._widgetRefreshList
-                    if rl then
-                        for idx = 1, #rl do
-                            rl[idx]()
+                    local refreshList = CludesUI._widgetRefreshList
+                    if refreshList then
+                        for idx = 1, #refreshList do
+                            refreshList[idx]()
                         end
                     end
                 end)

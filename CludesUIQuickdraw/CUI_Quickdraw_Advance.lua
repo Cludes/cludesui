@@ -37,18 +37,18 @@ end
 -- Lay the grid out and select the entry nearest the pointer. noPointer draws it
 -- evenly with nothing selected, which is what Layout and the editor want.
 function PaletteView:AdvanceGrid(noPointer)
-    local p = self:P()
+    local profile = self:P()
     local isShown = self.shownCount
-    if not p or isShown < 1 then
+    if not profile or isShown < 1 then
         self:SetSelection(nil)
         return
     end
 
     local _, iconSize = self:Geom()
-    local pitch = iconSize + (p.fanGap or 10)
-    local decay, aDecay = FalloffRatios(p)
-    local minS = p.fanMinScale or 0.30
-    local minA = p.fanMinAlpha or 0.12
+    local pitch = iconSize + (profile.fanGap or 10)
+    local decay, aDecay = FalloffRatios(profile)
+    local minS = profile.fanMinScale or 0.30
+    local minA = profile.fanMinAlpha or 0.12
     if self.opts.interactive then
         minS = max(minS, FAN_EDIT_MIN_SCALE)
         minA = max(minA, FAN_EDIT_MIN_ALPHA)
@@ -64,13 +64,13 @@ function PaletteView:AdvanceGrid(noPointer)
     local fx, fy = widget:GetCenter()
     if fx and not noPointer then
         local es = widget:GetEffectiveScale()
-        local mx, my = GetCursorPosition()
-        mx, my = mx / es, my / es
-        if not self._steered and (abs(mx - self._gateX) >= 1 or abs(my - self._gateY) >= 1) then
+        local curX, curY = GetCursorPosition()
+        curX, curY = curX / es, curY / es
+        if not self._steered and (abs(curX - self._gateX) >= 1 or abs(curY - self._gateY) >= 1) then
             self._steered = true
         end
         if self._steered then
-            dx, dy = mx - fx, my - fy
+            dx, dy = curX - fx, curY - fy
         end
     end
 
@@ -207,17 +207,17 @@ end
 -- visible entry. Sizes the frame and bounds the cancel, from one number: a
 -- second copy of this would drift the moment either falloff setting moved.
 function PaletteView:FanHalfLength()
-    local p = self:P()
+    local profile = self:P()
     local _, iconSize = self:Geom()
     -- One window for editor and play alike: the editor draws the same
     -- fanVisible-each-side strip a hold does and scrolls the rest into view.
-    local window = (p and p.fanVisible) or 2
-    local minS = self.opts.interactive and FAN_EDIT_MIN_SCALE or ((p and p.fanMinScale) or 0.30)
+    local window = (profile and profile.fanVisible) or 2
+    local minS = self.opts.interactive and FAN_EDIT_MIN_SCALE or ((profile and profile.fanMinScale) or 0.30)
     -- Plus the room ApplyFanGeometry leaves for the selected entry to grow into,
     -- which every offset past the centre carries. Left out, the frame would be
     -- narrower than the strip drawn in it and the cancel box would sit inside
     -- the last entry rather than beyond it.
-    return FanOffset(window, iconSize, (p and p.fanGap) or 10, (FalloffRatios(p)), minS)
+    return FanOffset(window, iconSize, (profile and profile.fanGap) or 10, (FalloffRatios(profile)), minS)
         + iconSize
         + iconSize * (SelectedZoom() - 1) * 0.5
 end
@@ -229,8 +229,8 @@ function PaletteView:StripOffset()
         return nil
     end
     local es = self.frame:GetEffectiveScale()
-    local mx, my = GetCursorPosition()
-    return mx / es - self._gateX, my / es - self._gateY
+    local curX, curY = GetCursorPosition()
+    return curX / es - self._gateX, curY / es - self._gateY
 end
 
 -- The nest the entry at `index` opens, if it opens one.
@@ -267,8 +267,8 @@ function PaletteView:FanSlotOffset(slot)
     if skinData * 2 > isShown then
         skinData = skinData - isShown
     end
-    local p = self:P()
-    if abs(skinData) > ((p and p.fanVisible) or 2) + 0.5 then
+    local profile = self:P()
+    if abs(skinData) > ((profile and profile.fanVisible) or 2) + 0.5 then
         return nil
     end
     return skinData
@@ -282,14 +282,14 @@ function PaletteView:FanCancelProgress()
     if not self._gateX then
         return 0
     end
-    local p = self:P()
+    local profile = self:P()
     local _, iconSize = self:Geom()
     local along, across = self:StripOffset()
     if not self:FanHoriz() then
         along, across = across, along
     end
 
-    local margin = FAN_CANCEL_REACH * (iconSize + ((p and p.fanGap) or 10))
+    local margin = FAN_CANCEL_REACH * (iconSize + ((profile and profile.fanGap) or 10))
     -- Travel toward the nest the selected entry opens does not count as leaving:
     -- its children sit past the ordinary margin, so measuring them by it would
     -- cancel the palette on the way to reaching them. Only on the side the nest
@@ -562,9 +562,9 @@ function PaletteView:PlaceHubText()
     -- entry deep, but a grid is as deep as it has rows.
     local pad = iconSize * 0.5 + 14
     if mode == "GRID" then
-        local p = self:P()
+        local profile = self:P()
         local _, rowList = self:GridDims()
-        pad = rowList * (iconSize + ((p and p.fanGap) or 10)) * 0.5 + 14
+        pad = rowList * (iconSize + ((profile and profile.fanGap) or 10)) * 0.5 + 14
     end
     -- The editor is pinned rather than quadrant-tested: its block sits wherever
     -- the options page happens to be scrolled to, and a caption that jumped

@@ -588,9 +588,9 @@ do
         frame:HookScript("OnHide", OnPanelToggle)
         return true
     end
-    local ev = CreateFrame("Frame")
-    ev:RegisterEvent("PLAYER_LOGIN")
-    ev:SetScript("OnEvent", function(self, evt, addon)
+    local eventFrame = CreateFrame("Frame")
+    eventFrame:RegisterEvent("PLAYER_LOGIN")
+    eventFrame:SetScript("OnEvent", function(self, evt, addon)
         if evt == "PLAYER_LOGIN" then
             self:UnregisterEvent("PLAYER_LOGIN")
             local a, b = TryHook("PlayerSpellsFrame"), TryHook("MacroFrame")

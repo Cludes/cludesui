@@ -485,14 +485,14 @@ do
         if not (ECME and ECME.db) then
             SetECME(mod.ECME)
         end
-        local p = ECME and ECME.db and ECME.db.profile
-        if not p then
+        local profile = ECME and ECME.db and ECME.db.profile
+        if not profile then
             return nil
         end
-        if not p.tbbGlobalGroups and create then
-            p.tbbGlobalGroups = {}
+        if not profile.tbbGlobalGroups and create then
+            profile.tbbGlobalGroups = {}
         end
-        return p.tbbGlobalGroups, p
+        return profile.tbbGlobalGroups, profile
     end
 
     function mod.GetTBBGlobalGroups()
@@ -1247,16 +1247,16 @@ function mod.GetTBBStylePresets()
     if not (ECME and ECME.db) then
         SetECME(mod.ECME)
     end
-    local p = ECME and ECME.db and ECME.db.profile
-    if not p then
+    local profile = ECME and ECME.db and ECME.db.profile
+    if not profile then
         return nil
     end
-    if not p.tbbStylePresets then
-        p.tbbStylePresets = {}
+    if not profile.tbbStylePresets then
+        profile.tbbStylePresets = {}
     end
     -- Same icon-footprint fold as GetTrackedBuffBars: legacy presets stored the FILL size rather than the icon-inclusive total.
-    if not p._tbbPresetIconTotal then
-        for _, presetRec in ipairs(p.tbbStylePresets) do
+    if not profile._tbbPresetIconTotal then
+        for _, presetRec in ipairs(profile.tbbStylePresets) do
             local s = presetRec.style
             if s and (s.iconDisplay or "none") ~= "none" then
                 if s.verticalOrientation then
@@ -1266,9 +1266,9 @@ function mod.GetTBBStylePresets()
                 end
             end
         end
-        p._tbbPresetIconTotal = true
+        profile._tbbPresetIconTotal = true
     end
-    return p.tbbStylePresets
+    return profile.tbbStylePresets
 end
 
 function mod.FindTBBStylePreset(label)
@@ -1329,9 +1329,9 @@ function mod.DeleteTBBStylePreset(label)
     for i, presetRec in ipairs(presetList) do
         if presetRec.name == label then
             table.remove(presetList, i)
-            local p = ECME and ECME.db and ECME.db.profile
-            if p and p.tbbSelectedStylePreset == label then
-                p.tbbSelectedStylePreset = nil
+            local profile = ECME and ECME.db and ECME.db.profile
+            if profile and profile.tbbSelectedStylePreset == label then
+                profile.tbbSelectedStylePreset = nil
             end
             return true
         end
@@ -1365,9 +1365,9 @@ function mod.RenameTBBStylePreset(oldName, newName)
             end
         end
     end
-    local p = ECME and ECME.db and ECME.db.profile
-    if p and p.tbbSelectedStylePreset == oldName then
-        p.tbbSelectedStylePreset = newName
+    local profile = ECME and ECME.db and ECME.db.profile
+    if profile and profile.tbbSelectedStylePreset == oldName then
+        profile.tbbSelectedStylePreset = newName
     end
     return true
 end

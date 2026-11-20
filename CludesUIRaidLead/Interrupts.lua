@@ -164,15 +164,15 @@ local function Paint()
     box:Show()
 end
 
-local ev = CreateFrame("Frame")
+local eventFrame = CreateFrame("Frame")
 
 local function Stop()
     rot = nil
-    ev:UnregisterEvent("UNIT_SPELLCAST_START")
-    ev:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-    ev:UnregisterEvent("UNIT_SPELLCAST_STOP")
-    ev:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-    ev:UnregisterEvent("UNIT_SPELLCAST_INTERRUPTED")
+    eventFrame:UnregisterEvent("UNIT_SPELLCAST_START")
+    eventFrame:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_START")
+    eventFrame:UnregisterEvent("UNIT_SPELLCAST_STOP")
+    eventFrame:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+    eventFrame:UnregisterEvent("UNIT_SPELLCAST_INTERRUPTED")
     if box then
         box:Hide()
     end
@@ -198,12 +198,12 @@ function mod.StartKicks(noteText)
         "UNIT_SPELLCAST_CHANNEL_STOP",
         "UNIT_SPELLCAST_INTERRUPTED",
     }) do
-        ev:RegisterUnitEvent(event, s.unit)
+        eventFrame:RegisterUnitEvent(event, s.unit)
     end
     Paint()
 end
 
-ev:SetScript("OnEvent", function(_, evt)
+eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "ENCOUNTER_START" or evt == "PLAYER_REGEN_DISABLED" then
         return
     end

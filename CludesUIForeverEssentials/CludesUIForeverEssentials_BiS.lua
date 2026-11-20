@@ -269,12 +269,12 @@ local function Announce(itemLink)
     Say(textValue)
 end
 
-local ev = CreateFrame("Frame")
-ev:RegisterEvent("START_LOOT_ROLL")
-ev:RegisterEvent("LOOT_OPENED")
-ev:RegisterEvent("CHAT_MSG_LOOT")
-ev:RegisterEvent("BAG_UPDATE_DELAYED")
-ev:SetScript("OnEvent", function(_, evt, a1)
+local eventFrame = CreateFrame("Frame")
+eventFrame:RegisterEvent("START_LOOT_ROLL")
+eventFrame:RegisterEvent("LOOT_OPENED")
+eventFrame:RegisterEvent("CHAT_MSG_LOOT")
+eventFrame:RegisterEvent("BAG_UPDATE_DELAYED")
+eventFrame:SetScript("OnEvent", function(_, evt, a1)
     if evt == "START_LOOT_ROLL" then
         -- Not seen in Forever's own UI code: used only where the client has it.
         local itemLink = GetLootRollItemLink and GetLootRollItemLink(a1)

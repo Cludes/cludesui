@@ -1119,12 +1119,12 @@ function CHAT._PositionChatPanelNow(castFrame)
             and castFrame:IsShown()
             and castFrame:GetNumPoints() == 0
         then
-            local cx, cy = GetCursorPosition()
+            local curX, curY = GetCursorPosition()
             local es = castFrame:GetEffectiveScale()
             local issec = _G.issecretvalue
-            if cx and cy and es and es > 0 and not (issec and (issec(cx) or issec(cy))) then
+            if curX and curY and es and es > 0 and not (issec and (issec(curX) or issec(curY))) then
                 pcall(function()
-                    castFrame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx / es, cy / es)
+                    castFrame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", curX / es, curY / es)
                 end)
             else
                 pcall(function()
@@ -1144,17 +1144,17 @@ function CHAT._PositionChatPanelNow(castFrame)
     local issecret = _G.issecretvalue
     if issecret and (issecret(l) or issecret(t) or issecret(region) or issecret(callback)) then
         if _G.MOVING_CHATFRAME == castFrame and skinData._bgL then
-            local mx, my = GetCursorPosition()
-            if mx and my and not (issecret(mx) or issecret(my)) then
+            local curX, curY = GetCursorPosition()
+            if curX and curY and not (issecret(curX) or issecret(curY)) then
                 local ui2 = UIParent:GetEffectiveScale()
                 if ui2 and ui2 > 0 then
-                    mx, my = mx / ui2, my / ui2
+                    curX, curY = curX / ui2, curY / ui2
                     local base = skinData._dragCursorBase
                     if not base then
-                        base = { x = mx, y = my, l = skinData._bgL, t = skinData._bgT, r = skinData._bgR, b = skinData._bgB }
+                        base = { x = curX, y = curY, l = skinData._bgL, t = skinData._bgT, r = skinData._bgR, b = skinData._bgB }
                         skinData._dragCursorBase = base
                     end
-                    local dx, dy = mx - base.x, my - base.y
+                    local dx, dy = curX - base.x, curY - base.y
                     skinData._bgL, skinData._bgT = base.l + dx, base.t + dy
                     skinData._bgR, skinData._bgB = base.r + dx, base.b + dy
                     backdrop:ClearAllPoints()

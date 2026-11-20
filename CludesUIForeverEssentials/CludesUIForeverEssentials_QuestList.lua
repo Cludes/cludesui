@@ -2313,8 +2313,8 @@ end)
 -------------------------------------------------------------------------------
 --  Events and apply
 -------------------------------------------------------------------------------
-local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function()
+local eventFrame = CreateFrame("Frame")
+eventFrame:SetScript("OnEvent", function()
     if added and WorldMapFrame:IsShown() then
         DrawPins()
     end
@@ -2324,7 +2324,7 @@ end)
 function module.QuestListApply()
     giverEvents:UnregisterAllEvents()
     killEvents:UnregisterAllEvents()
-    ev:UnregisterAllEvents()
+    eventFrame:UnregisterAllEvents()
     if On() then
         for _, event in ipairs({ "GOSSIP_SHOW", "QUEST_GREETING", "QUEST_DETAIL", "QUEST_TURNED_IN" }) do
             giverEvents:RegisterEvent(event)
@@ -2338,7 +2338,7 @@ function module.QuestListApply()
             "PLAYER_LEVEL_UP",
             "SKILL_LINES_CHANGED",
         }) do
-            pcall(ev.RegisterEvent, ev, event)
+            pcall(eventFrame.RegisterEvent, eventFrame, event)
         end
     end
     PinsApply()

@@ -53,7 +53,7 @@ function mod.BuildTrackedBuffBars()
     -- Per-spec unlock-link views: the global anchor/match stores must hold THIS spec's TBB entries before any anchored-state below is read.
     mod.SyncTBBUnlockLinks()
 
-    local p = ECME.db.profile
+    local profile = ECME.db.profile
 
     -- NEVER auto-swap width/height per build: the Vertical Orientation toggle already swaps
     -- dimensions, and a per-build swap fights slider input and makes resizes erratic.
@@ -65,7 +65,7 @@ function mod.BuildTrackedBuffBars()
     end
 
     -- "Use Blizzard CDM Bars": hide all TBB frames and bail
-    if p.cdmBars and p.cdmBars.useBlizzardBuffBars then
+    if profile.cdmBars and profile.cdmBars.useBlizzardBuffBars then
         for index = 1, #tbbFrames do
             if tbbFrames[index] then
                 tbbFrames[index]:Hide()

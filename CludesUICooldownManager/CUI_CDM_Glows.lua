@@ -246,9 +246,9 @@ function CludesUI.ApplyPandemicGlowToAll(payload, options)
             np.pandemicGlowMode = payload.mode or "default"
         end
     end
-    local p = ECME.db and ECME.db.profile
-    if p and p.cdmBars and p.cdmBars.bars then
-        for _, bar in ipairs(p.cdmBars.bars) do
+    local profile = ECME.db and ECME.db.profile
+    if profile and profile.cdmBars and profile.cdmBars.bars then
+        for _, bar in ipairs(profile.cdmBars.bars) do
             if bar.key ~= options.skipCdmKey and not bar.isGhostBar and bar.barType ~= "custom_buff" then
                 PG_Write(bar, payload, PG_CdmIndexFromName)
             end
@@ -287,9 +287,9 @@ function CludesUI.IsPandemicGlowSyncedToAll(payload, options)
             return false
         end
     end
-    local p = ECME.db and ECME.db.profile
-    if p and p.cdmBars and p.cdmBars.bars then
-        for _, bar in ipairs(p.cdmBars.bars) do
+    local profile = ECME.db and ECME.db.profile
+    if profile and profile.cdmBars and profile.cdmBars.bars then
+        for _, bar in ipairs(profile.cdmBars.bars) do
             if
                 bar.key ~= options.skipCdmKey
                 and not bar.isGhostBar
@@ -329,8 +329,8 @@ mod._cdmGlowRec = setmetatable({}, { __mode = "k" })
 -- walk the DB there. Re-read on apply/profile change, at world entry, and from
 -- the option itself.
 function mod.RefreshGlowCombatGate()
-    local p = ECME and ECME.db and ECME.db.profile
-    local enabled = (p and p.cdmBars and p.cdmBars.glowsOnlyInCombat) and true or false
+    local profile = ECME and ECME.db and ECME.db.profile
+    local enabled = (profile and profile.cdmBars and profile.cdmBars.glowsOnlyInCombat) and true or false
     mod._cdmGlowOOCGate = enabled
     -- Sticky: once the gate has been on there may be suppressed glows left to
     -- release, so the sweep has to stay reachable after it goes off again.

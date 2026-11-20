@@ -83,8 +83,8 @@ local function _previewActive()
 end
 
 local function IsTextMode()
-    local p = P()
-    return (p and p.displayMode) == "text"
+    local profile = P()
+    return (profile and profile.displayMode) == "text"
 end
 
 -------------------------------------------------------------------------------
@@ -93,8 +93,8 @@ end
 --  through the shared font registry, and outline overrides stay slug-gated.
 -------------------------------------------------------------------------------
 local function GetBrezFont()
-    local p = P()
-    local key = (p and p.font) or "__global"
+    local profile = P()
+    local key = (profile and profile.font) or "__global"
     if key ~= "__global" and CludesUI and CludesUI.ResolveFontName then
         local filePath = CludesUI.ResolveFontName(key)
         if filePath then
@@ -105,8 +105,8 @@ local function GetBrezFont()
 end
 
 local function GetBrezOutline()
-    local p = P()
-    local mode = (p and p.outlineMode) or "__global"
+    local profile = P()
+    local mode = (profile and profile.outlineMode) or "__global"
     if mode == "outline" then
         return (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     end
@@ -214,18 +214,18 @@ local function ApplyShape()
     if not widget then
         return
     end
-    local p = P()
-    if not p then
+    local profile = P()
+    if not profile then
         return
     end
 
     local Pix = CludesUI and CludesUI.PP
-    local shapeKey = p.shape or "none"
-    local bs = BORDER_PX[p.borderSize or "thin"] or 1
+    local shapeKey = profile.shape or "none"
+    local bs = BORDER_PX[profile.borderSize or "thin"] or 1
 
     -- Frame sizing: square by default; for "cropped" the height is 80% of width
     -- (mirrors Action Bars line 2263: btnH = btnH * 0.80).
-    local size = p.iconSize or 40
+    local size = profile.iconSize or 40
     local fw, fh = size, size
     if shapeKey == "cropped" then
         fh = math.floor(size * 0.80 + 0.5)
@@ -245,24 +245,24 @@ local function ApplyShape()
 
     -- Duration text (centered) and count text (bottom-right) -- positioned for
     -- every shape since the early-return below would otherwise skip them.
-    SetBrezIconFont(durationText, p.durationSize or 12)
+    SetBrezIconFont(durationText, profile.durationSize or 12)
     durationText:ClearAllPoints()
     durationText:SetPoint(
         "CENTER",
         widget,
         "CENTER",
-        _snapOff(p.durationOffsetX or 0),
-        _snapOff(p.durationOffsetY or 0)
+        _snapOff(profile.durationOffsetX or 0),
+        _snapOff(profile.durationOffsetY or 0)
     )
 
-    SetBrezIconFont(countLine, p.countSize or 11)
+    SetBrezIconFont(countLine, profile.countSize or 11)
     countLine:ClearAllPoints()
     countLine:SetPoint(
         "BOTTOMRIGHT",
         widget,
         "BOTTOMRIGHT",
-        _snapOff(-2 + (p.countOffsetX or 0)),
-        _snapOff(2 + (p.countOffsetY or 0))
+        _snapOff(-2 + (profile.countOffsetX or 0)),
+        _snapOff(2 + (profile.countOffsetY or 0))
     )
 
     -----------------------------------------------------------------------
@@ -289,7 +289,7 @@ local function ApplyShape()
         borderTex:Hide() -- shape-border atlas is for custom shapes only
         _applyShapeOutline(widget, nil, 0)
 
-        local z = (p.iconZoom or 11) / 100
+        local z = (profile.iconZoom or 11) / 100
         if shapeKey == "cropped" then
             iconTexture:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
         elseif z > 0 then
@@ -304,7 +304,7 @@ local function ApplyShape()
                 Pix.CreateBorder(widget, 0, 0, 0, 1, 1, "OVERLAY", 2)
             end
             if bs > 0 then
-                local red, green, blue, a = _resolveBorderColor(p)
+                local red, green, blue, a = _resolveBorderColor(profile)
                 Pix.UpdateBorder(widget, bs, red, green, blue, a)
                 Pix.ShowBorder(widget)
             else
@@ -352,7 +352,7 @@ local function ApplyShape()
     end
 
     borderTex:Hide()
-    local red, green, blue, a = _resolveBorderColor(p)
+    local red, green, blue, a = _resolveBorderColor(profile)
     _applyShapeOutline(widget, shapeKey, bs, red, green, blue, a)
 end
 
@@ -392,13 +392,13 @@ end
 -- placeholder string; live polling overwrites it the moment the tracker
 -- shows (UpdateVisibility polls immediately on Show).
 local function ApplyText()
-    local p = P()
-    if not p or not textLine then
+    local profile = P()
+    if not profile or not textLine then
         return
     end
-    _cntPfx = _colorPrefix(p.textCountColor)
-    _timPfx = _colorPrefix(p.textTimerColor)
-    SetBrezFont(textLine, p.textSize or 14)
+    _cntPfx = _colorPrefix(profile.textCountColor)
+    _timPfx = _colorPrefix(profile.textTimerColor)
+    SetBrezFont(textLine, profile.textSize or 14)
     -- Drop the dedupe caches so the next compose re-renders with new colors
     -- (the ticker repaints within half a second while shown).
     _txtCount, _txtTime, _txtZero = nil, nil, nil
@@ -408,10 +408,10 @@ local function ApplyText()
     local wid = textLine:GetStringWidth() or 0
     local hgt = textLine:GetStringHeight() or 0
     if wid < 1 then
-        wid = (p.textSize or 14) * 4
+        wid = (profile.textSize or 14) * 4
     end
     if hgt < 1 then
-        hgt = p.textSize or 14
+        hgt = profile.textSize or 14
     end
     local tw, th = math.ceil(wid) + 4, math.ceil(hgt) + 2
     local PPt = CludesUI and CludesUI.PP
@@ -428,12 +428,12 @@ local function ApplyPosition()
     if not widget then
         return
     end
-    local p = P()
-    if not p then
+    local profile = P()
+    if not profile then
         return
     end
     widget:ClearAllPoints()
-    local place = p.pos
+    local place = profile.pos
     local cx = (place and place.centerX) or 0
     local cy = (place and place.centerY) or 200
     local PPp = CludesUI and CludesUI.PP
@@ -508,11 +508,11 @@ function mod.ApplyInstanceEvent(state, evt)
 end
 
 local function ShouldShow()
-    local p = P()
-    if not p or not p.enabled then
+    local profile = P()
+    if not profile or not profile.enabled then
         return false
     end
-    local val = p.visibility or "MPLUS_AND_RAID"
+    local val = profile.visibility or "MPLUS_AND_RAID"
     if val == "NEVER" then
         return false
     end
@@ -657,8 +657,8 @@ local function PollCharges()
 
     _setCount(tostring(chargeCount), chargeCount <= 0)
     _setDur(timeLabel)
-    local p = P()
-    _setDesat(p and p.desaturateNoCharges ~= false and chargeCount <= 0)
+    local profile = P()
+    _setDesat(profile and profile.desaturateNoCharges ~= false and chargeCount <= 0)
     if cdFrame then
         if recharging then
             cdFrame:SetCooldown(start, dur)
@@ -838,8 +838,8 @@ end
 -- mid-key still catches up on events missed while unregistered.
 local _eventsRegistered = false
 _syncEventRegistration = function()
-    local p = P()
-    local wanted = (p and p.enabled and (p.visibility or "MPLUS_AND_RAID") ~= "NEVER") and true or false
+    local profile = P()
+    local wanted = (profile and profile.enabled and (profile.visibility or "MPLUS_AND_RAID") ~= "NEVER") and true or false
     if wanted == _eventsRegistered then
         return
     end
@@ -886,8 +886,8 @@ local function RegisterUnlock()
             order = 600,
             noAnchorTarget = true, -- icon size changes; nothing should be anchored to it
             isHidden = function()
-                local p = P()
-                return not p or not p.enabled or (p.visibility == "NEVER")
+                local profile = P()
+                return not profile or not profile.enabled or (profile.visibility == "NEVER")
             end,
             getFrame = function()
                 if not widget then
@@ -896,8 +896,8 @@ local function RegisterUnlock()
                 return widget
             end,
             getSize = function()
-                local p = P()
-                if p and p.displayMode == "text" then
+                local profile = P()
+                if profile and profile.displayMode == "text" then
                     -- Text display: the frame is sized to the measured text
                     -- box by ApplyText, so report that instead of iconSize.
                     if not widget then
@@ -908,34 +908,34 @@ local function RegisterUnlock()
                         return wid, hgt
                     end
                 end
-                local s = (p and p.iconSize) or 40
+                local s = (profile and profile.iconSize) or 40
                 return s, s
             end,
             linkedDimensions = true, -- always square; one slider drives both
             setWidth = function(_, wid)
-                local p = P()
-                if not p then
+                local profile = P()
+                if not profile then
                     return
                 end
-                if p.displayMode == "text" then
+                if profile.displayMode == "text" then
                     -- Text display: the box width is measured from the rendered string
                     -- (ApplyText), never an input. Writing it into textSize turned the
                     -- unlock Cancel round-trip (getSize -> setWidth) into a 40-point font.
                     return
                 end
                 local PPb = CludesUI and CludesUI.PP
-                p.iconSize = math.max(16, PPb and PPb.Snap(wid) or math.floor(wid + 0.5))
+                profile.iconSize = math.max(16, PPb and PPb.Snap(wid) or math.floor(wid + 0.5))
                 Apply()
                 if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
                     CludesUI.RepositionBarToMover("CUI_BattleRes")
                 end
             end,
             setHeight = function(_, hgt)
-                local p = P()
-                if not p then
+                local profile = P()
+                if not profile then
                     return
                 end
-                if p.displayMode == "text" then
+                if profile.displayMode == "text" then
                     -- Text display: getSize reports the measured box, so a height equal
                     -- to the current one is the unlock round-trip (Cancel feeds the open
                     -- snapshot back) and leaves textSize alone; a different height is a
@@ -943,10 +943,10 @@ local function RegisterUnlock()
                     if widget and math.abs(hgt - widget:GetHeight()) < 0.5 then
                         return
                     end
-                    p.textSize = math.max(8, math.min(40, math.floor(hgt + 0.5) - 2))
+                    profile.textSize = math.max(8, math.min(40, math.floor(hgt + 0.5) - 2))
                 else
                     local PPb = CludesUI and CludesUI.PP
-                    p.iconSize = math.max(16, PPb and PPb.Snap(hgt) or math.floor(hgt + 0.5))
+                    profile.iconSize = math.max(16, PPb and PPb.Snap(hgt) or math.floor(hgt + 0.5))
                 end
                 Apply()
                 if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
@@ -956,11 +956,11 @@ local function RegisterUnlock()
             savePos = function(_, anchorPoint, relPoint, posX, posY)
                 -- Unlock mode hands over CENTER/CENTER coords; on Cancel the frame
                 -- still sits at the dragged spot, so never read the live position.
-                local p = P()
-                if not p then
+                local profile = P()
+                if not profile then
                     return
                 end
-                p.pos = { centerX = posX, centerY = posY }
+                profile.pos = { centerX = posX, centerY = posY }
             end,
             loadPos = loadPos,
             clearPos = clearPos,

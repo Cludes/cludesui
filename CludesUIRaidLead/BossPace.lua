@@ -157,12 +157,12 @@ function mod.StartPace(name, seconds)
     Update()
 end
 
-local ev = CreateFrame("Frame")
-ev:RegisterEvent("ENCOUNTER_START")
-ev:RegisterEvent("ENCOUNTER_END")
-ev:RegisterEvent("PLAYER_ENTERING_WORLD")
+local eventFrame = CreateFrame("Frame")
+eventFrame:RegisterEvent("ENCOUNTER_START")
+eventFrame:RegisterEvent("ENCOUNTER_END")
+eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 local registered
-ev:SetScript("OnEvent", function(_, evt, _, encounterName)
+eventFrame:SetScript("OnEvent", function(_, evt, _, encounterName)
     if evt == "ENCOUNTER_END" then
         return Stop()
     end

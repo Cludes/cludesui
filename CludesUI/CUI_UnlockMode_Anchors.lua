@@ -2084,10 +2084,10 @@ CUI_NS.unlockParts.Anchors = function(LM)
             RejectH._anchor:SetSize(1, 1)
             RejectH._timer = CreateFrame("Frame")
         end
-        local sc = UIParent:GetEffectiveScale()
-        local mx, my = GetCursorPosition()
+        local uiScale = UIParent:GetEffectiveScale()
+        local curX, curY = GetCursorPosition()
         RejectH._anchor:ClearAllPoints()
-        RejectH._anchor:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", mx / sc, my / sc)
+        RejectH._anchor:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", curX / uiScale, curY / uiScale)
         CludesUI.ShowWidgetTooltip(RejectH._anchor, textValue, {})
         local timePassed = 0
         RejectH._timer:SetScript("OnUpdate", function(self, dt)
@@ -2097,10 +2097,10 @@ CUI_NS.unlockParts.Anchors = function(LM)
                 self:SetScript("OnUpdate", nil)
                 return
             end
-            local s = UIParent:GetEffectiveScale()
-            local cx, cy = GetCursorPosition()
+            local uiScale = UIParent:GetEffectiveScale()
+            local curX, curY = GetCursorPosition()
             RejectH._anchor:ClearAllPoints()
-            RejectH._anchor:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", cx / s, cy / s)
+            RejectH._anchor:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", curX / uiScale, curY / uiScale)
         end)
     end
     function RejectH.IsActionBar(barId)

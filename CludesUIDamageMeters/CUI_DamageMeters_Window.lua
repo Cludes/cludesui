@@ -404,8 +404,8 @@ local function ShowEDMMenu(itemList, anchorBtn)
         _edmMenu:SetPoint("BOTTOMRIGHT", anchorBtn, "TOPRIGHT", 0, 0)
     else
         local scale = _edmMenu:GetEffectiveScale()
-        local cx, cy = GetCursorPosition()
-        _edmMenu:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", cx / scale, cy / scale)
+        local curX, curY = GetCursorPosition()
+        _edmMenu:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", curX / scale, curY / scale)
     end
     _edmMenuAnchor = anchorBtn
     _edmMenu:Show()
@@ -1690,10 +1690,10 @@ local function CreateDMWindow(winIdx)
                 end
             end
         end
-        local cx, cy = GetCursorPosition()
+        local curX, curY = GetCursorPosition()
         local es = widget:GetEffectiveScale()
-        local newLeft = dragStartLeft + (cx / es - dragStartCX)
-        local newTop = dragStartTop + (cy / es - dragStartCY)
+        local newLeft = dragStartLeft + (curX / es - dragStartCX)
+        local newTop = dragStartTop + (curY / es - dragStartCY)
         -- Snap to closest window only (use unsnapped target to prevent oscillation)
         local near = not W.snapDisabled and FindClosestWindow(newLeft, newTop)
         if near then
@@ -1776,10 +1776,10 @@ local function CreateDMWindow(winIdx)
         if CUI.InProtectedInstance() then
             return
         end
-        local cx, cy = GetCursorPosition()
+        local curX, curY = GetCursorPosition()
         local es = widget:GetEffectiveScale()
-        dragStartCX = cx / es
-        dragStartCY = cy / es
+        dragStartCX = curX / es
+        dragStartCY = curY / es
         dragStartLeft = widget:GetLeft()
         dragStartTop = widget:GetTop()
         if not dragStartLeft or not dragStartTop then
@@ -2078,10 +2078,10 @@ local function CreateDMWindow(winIdx)
         if not W.resizing then
             return
         end
-        local cx, cy = GetCursorPosition()
+        local curX, curY = GetCursorPosition()
         local es = widget:GetEffectiveScale()
-        local dx = cx / es - resizeStartX
-        local dy = resizeStartY - cy / es
+        local dx = curX / es - resizeStartX
+        local dy = resizeStartY - curY / es
         local shiftDown = IsShiftKeyDown()
         local newW, newH
         if shiftDown then
@@ -2149,10 +2149,10 @@ local function CreateDMWindow(winIdx)
         end
         resizeAnchorLeft = leftX
         resizeAnchorTop = topY
-        local cx, cy = GetCursorPosition()
+        local curX, curY = GetCursorPosition()
         local es = widget:GetEffectiveScale()
-        resizeStartX = cx / es
-        resizeStartY = cy / es
+        resizeStartX = curX / es
+        resizeStartY = curY / es
         resizeStartW = widget:GetWidth()
         resizeStartH = widget:GetHeight()
         W.resizing = true

@@ -465,7 +465,7 @@ end
 --  Events. No Blizzard frame is ever hooked or SetScript-ed. Heavy events are
 --  only registered when the feature is enabled (zero cost when disabled).
 -------------------------------------------------------------------------------
-local ev = CreateFrame("Frame")
+local eventFrame = CreateFrame("Frame")
 
 -- Feature events are registered only while enabled and unregistered on
 -- disable, so a disabled reminder costs nothing on roster/zone/combat events.
@@ -473,22 +473,22 @@ local ev = CreateFrame("Frame")
 -- hide or secure attribute write is pending; its handler re-syncs afterwards.
 local function SyncEvents()
     if IsEnabled() then
-        ev:RegisterEvent("LFG_LIST_JOINED_GROUP")
-        ev:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
-        ev:RegisterEvent("GROUP_ROSTER_UPDATE")
-        ev:RegisterEvent("PLAYER_ENTERING_WORLD")
-        ev:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-        ev:RegisterEvent("PLAYER_REGEN_DISABLED")
-        ev:RegisterEvent("PLAYER_REGEN_ENABLED")
+        eventFrame:RegisterEvent("LFG_LIST_JOINED_GROUP")
+        eventFrame:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
+        eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+        eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+        eventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+        eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+        eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
     else
-        ev:UnregisterEvent("LFG_LIST_JOINED_GROUP")
-        ev:UnregisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
-        ev:UnregisterEvent("GROUP_ROSTER_UPDATE")
-        ev:UnregisterEvent("PLAYER_ENTERING_WORLD")
-        ev:UnregisterEvent("ZONE_CHANGED_NEW_AREA")
-        ev:UnregisterEvent("PLAYER_REGEN_DISABLED")
+        eventFrame:UnregisterEvent("LFG_LIST_JOINED_GROUP")
+        eventFrame:UnregisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
+        eventFrame:UnregisterEvent("GROUP_ROSTER_UPDATE")
+        eventFrame:UnregisterEvent("PLAYER_ENTERING_WORLD")
+        eventFrame:UnregisterEvent("ZONE_CHANGED_NEW_AREA")
+        eventFrame:UnregisterEvent("PLAYER_REGEN_DISABLED")
         if not (pendingHide or pendingAttrSpellID) then
-            ev:UnregisterEvent("PLAYER_REGEN_ENABLED")
+            eventFrame:UnregisterEvent("PLAYER_REGEN_ENABLED")
         end
     end
 end
@@ -513,7 +513,7 @@ ApplyTeleportPrompt = function()
         SeedShownFromListing()
         if not dialog and InCombatLockdown() then
             pendingBuild = true
-            ev:RegisterEvent("PLAYER_REGEN_ENABLED")
+            eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
             return
         end
         pendingBuild = nil
@@ -528,8 +528,8 @@ ApplyTeleportPrompt = function()
 end
 _G._CUI_ApplyTeleportPrompt = ApplyTeleportPrompt
 
-ev:RegisterEvent("PLAYER_LOGIN")
-ev:SetScript("OnEvent", function(self, evt, arg1, arg2)
+eventFrame:RegisterEvent("PLAYER_LOGIN")
+eventFrame:SetScript("OnEvent", function(self, evt, arg1, arg2)
     if evt == "PLAYER_LOGIN" then
         -- Login is always out of combat: safe to create the secure button now.
         if IsEnabled() then

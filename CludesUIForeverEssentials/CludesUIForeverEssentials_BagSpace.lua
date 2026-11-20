@@ -133,9 +133,9 @@ local function Build()
     return widget
 end
 
-local ev = CreateFrame("Frame")
+local eventFrame = CreateFrame("Frame")
 local queued
-ev:SetScript("OnEvent", function()
+eventFrame:SetScript("OnEvent", function()
     if queued then
         return
     end
@@ -149,13 +149,13 @@ end)
 local function Apply()
     if Enabled() then
         Build()
-        ev:RegisterEvent("BAG_UPDATE_DELAYED")
-        ev:RegisterEvent("PLAYER_ENTERING_WORLD")
+        eventFrame:RegisterEvent("BAG_UPDATE_DELAYED")
+        eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
         if not CludesUI._unlockActive then
             F.Place(widget)
         end
     else
-        ev:UnregisterAllEvents()
+        eventFrame:UnregisterAllEvents()
     end
     Paint()
 end

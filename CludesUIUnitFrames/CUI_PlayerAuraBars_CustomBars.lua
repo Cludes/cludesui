@@ -268,8 +268,8 @@ local function RegisterPABCustomUnlock()
     -- Editing-spec bucket bars register too (every bucket -- isHidden drops
     -- the mover on specs a bar doesn't render for).
     do
-        local s = PAB()
-        local st = s and s.pabSpecBars
+        local pabCfg = PAB()
+        local st = pabCfg and pabCfg.pabSpecBars
         if st then
             for _, b in pairs(st) do
                 local bl = b.buffBars
@@ -656,8 +656,8 @@ local function ReloadAllCustomBarsImpl()
             mod.PAB_ReloadCustomDebuffBar(debuffList[index].id)
         end
     end
-    local s = PAB()
-    local st = s and s.pabSpecBars
+    local pabCfg = PAB()
+    local st = pabCfg and pabCfg.pabSpecBars
     if st then
         for _, b in pairs(st) do
             local bl = b.buffBars

@@ -145,10 +145,10 @@ function mod.StartBreak(minutes)
     end
 end
 
-local ev = CreateFrame("Frame")
-ev:RegisterEvent("PLAYER_ENTERING_WORLD")
+local eventFrame = CreateFrame("Frame")
+eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 local registered
-ev:SetScript("OnEvent", function()
+eventFrame:SetScript("OnEvent", function()
     if registered or InCombatLockdown() or not CludesUI.RegisterUnlockElements then
         return
     end

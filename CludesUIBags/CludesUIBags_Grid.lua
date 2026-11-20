@@ -155,13 +155,13 @@ mod.GetOrCreateSlot = GetOrCreateSlot
 -- Item Visuals' Desaturate is on) and its Junk Marker coin badge (its Show Coin
 -- Icon): the game's coin, cropped round, lifted past the bottom-left corner.
 local function PaintJunkState(button, details, markerJunk)
-    local p = BP()
+    local profile = BP()
     local quality = details.quality or 1
     SetItemButtonDesaturated(
         button,
-        details.isLocked or (p.bagDesaturateJunkItems == true and (quality == 0 or markerJunk)) or false
+        details.isLocked or (profile.bagDesaturateJunkItems == true and (quality == 0 or markerJunk)) or false
     )
-    if markerJunk and p.bagShowJunkCoin == true then
+    if markerJunk and profile.bagShowJunkCoin == true then
         local coin = button._junkCoin
         if not coin then
             coin = button:CreateTexture(nil, "OVERLAY", nil, 6)

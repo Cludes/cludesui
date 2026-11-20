@@ -553,22 +553,22 @@ end
 -- Palettes past the first are created on demand: the defaults table only seeds
 -- palette 1, so DeepMergeDefaults never has to know how many the user wants.
 local function EnsurePalette(index)
-    local p = P()
+    local profile = P()
     -- nil is an answer, not an error: ChildIndex hands one back for a
     -- nested-palette slot whose palette number is missing or out of range, and
     -- its callers pass it straight through on their way to the question-mark
     -- fallback. Comparing it would take the paint of the whole containing
     -- palette down with it.
-    if not p or not index or index < 1 or index > MAX_PALETTES then
+    if not profile or not index or index < 1 or index > MAX_PALETTES then
         return nil
     end
-    if not p.palettes then
-        p.palettes = {}
+    if not profile.palettes then
+        profile.palettes = {}
     end
-    local palette = p.palettes[index]
+    local palette = profile.palettes[index]
     if not palette then
         palette = { name = AutoPaletteName(index), slots = {} }
-        p.palettes[index] = palette
+        profile.palettes[index] = palette
     end
     if type(palette.slots) ~= "table" then
         palette.slots = {}
@@ -602,11 +602,11 @@ mod.EnsurePalette = EnsurePalette
 -- entries to hand back anyway, and every write site still goes through
 -- EnsurePalette, so what this reads is always compact by the time it exists.
 local function ReadPalette(index)
-    local p = P()
-    if not p or not index or index < 1 or index > MAX_PALETTES then
+    local profile = P()
+    if not profile or not index or index < 1 or index > MAX_PALETTES then
         return nil
     end
-    local palette = p.palettes and p.palettes[index]
+    local palette = profile.palettes and profile.palettes[index]
     if type(palette) ~= "table" then
         return nil
     end
@@ -695,17 +695,17 @@ mod.APPEARANCE_KEYS = APPEARANCE_KEYS
 local appearanceViews = {}
 
 local function PA(paletteIndex)
-    local p = P()
-    if not p then
+    local profile = P()
+    if not profile then
         return nil
     end
     -- Straight off p.palettes, NOT through EnsurePalette: this runs several
     -- times per frame on every steered layout, and EnsurePalette rebuilds the
     -- slot array to compact it. A palette that has never been ensured has no
     -- overrides to read anyway, so the profile is the whole answer.
-    local palette = paletteIndex and p.palettes and p.palettes[paletteIndex]
+    local palette = paletteIndex and profile.palettes and profile.palettes[paletteIndex]
     if type(palette) ~= "table" then
-        return p
+        return profile
     end
 
     local view = appearanceViews[palette]
@@ -776,8 +776,8 @@ end
 -- over -- a palette can be opened by a key, nested inside another palette, or
 -- both.
 local function PaletteCount()
-    local p = P()
-    return min(MAX_PALETTES, max(1, (p and p.paletteCount) or 1))
+    local profile = P()
+    return min(MAX_PALETTES, max(1, (profile and profile.paletteCount) or 1))
 end
 mod.PaletteCount = PaletteCount
 
@@ -909,8 +909,8 @@ end
 -------------------------------------------------------------------------------
 -- A palette's spec set, or nil for every spec.
 function mod.PaletteSpecs(index)
-    local p = P()
-    local palette = p and index and p.palettes and p.palettes[index]
+    local profile = P()
+    local palette = profile and index and profile.palettes and profile.palettes[index]
     local specs = type(palette) == "table" and palette.specs
     if type(specs) ~= "table" or next(specs) == nil then
         return nil
@@ -963,8 +963,8 @@ end
 -- The palette whose key palette `index` shares, or nil for its own. A share
 -- always names the key's holder, never another palette sharing it.
 function mod.ShareOwner(index)
-    local p = P()
-    local palettes = p and p.palettes
+    local profile = P()
+    local palettes = profile and profile.palettes
     local palette = palettes and palettes[index]
     local ownerFrame = type(palette) == "table" and tonumber(palette.keyShare)
     if not ownerFrame or ownerFrame == index or ownerFrame < 1 or ownerFrame > PaletteCount() then

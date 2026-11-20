@@ -61,8 +61,8 @@ local sweepEnd -- end time of the running sweep; nil while idle
 local inWindow = false -- true while the 5s sweep runs
 local regenSeen = false -- mana update seen during the current tick sweep
 local dur = C_DurationUtil.CreateDuration()
-local ev = CreateFrame("Frame")
-local timer = ev:CreateAnimationGroup() -- one-shot, one sweep long
+local eventFrame = CreateFrame("Frame")
+local timer = eventFrame:CreateAnimationGroup() -- one-shot, one sweep long
 local timerSpan = timer:CreateAnimation("Animation")
 
 -- True when the spell's cost includes mana. A secret amount counts as a cost;
@@ -171,7 +171,7 @@ timer:SetScript("OnFinished", function()
     end
 end)
 
-ev:SetScript("OnEvent", function(_, evt, _, arg2, arg3)
+eventFrame:SetScript("OnEvent", function(_, evt, _, arg2, arg3)
     if evt == "UNIT_SPELLCAST_SUCCEEDED" then
         if CostsMana(arg3) then
             inWindow = true
@@ -204,9 +204,9 @@ local function Listen()
     if tk ~= ticking then
         ticking = tk
         if tk then
-            ev:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
+            eventFrame:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
         else
-            ev:UnregisterEvent("UNIT_POWER_UPDATE")
+            eventFrame:UnregisterEvent("UNIT_POWER_UPDATE")
         end
     end
     if enabled == listening then
@@ -214,9 +214,9 @@ local function Listen()
     end
     listening = enabled
     if enabled then
-        ev:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+        eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
     else
-        ev:UnregisterAllEvents()
+        eventFrame:UnregisterAllEvents()
         ticking = false
         Idle()
     end

@@ -1004,8 +1004,8 @@ local function Refresh()
     layer:Set(map, spots, #spots)
 end
 
-local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, evt)
+local eventFrame = CreateFrame("Frame")
+eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "PLAYER_ENTERING_WORLD" then
         Times.Prune(GetServerTime())
     end
@@ -1018,7 +1018,7 @@ function module.TransportTimeText(key)
 end
 
 local function Apply()
-    ev:UnregisterAllEvents()
+    eventFrame:UnregisterAllEvents()
     if Enabled() then
         for _, event in ipairs({
             "PLAYER_ENTERING_WORLD",
@@ -1026,7 +1026,7 @@ local function Apply()
             "ZONE_CHANGED",
             "ZONE_CHANGED_INDOORS",
         }) do
-            ev:RegisterEvent(event)
+            eventFrame:RegisterEvent(event)
         end
         if IsLoggedIn() then
             Times.Prune(GetServerTime())

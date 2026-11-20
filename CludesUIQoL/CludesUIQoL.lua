@@ -37,16 +37,16 @@ mod.CombatQueue = CludesUI.NewCombatQueue(CreateFrame("Frame"))
 -- center offset (Battle Res, Bloodlust).
 function mod.CenterPosFns(P)
     local function restorePos()
-        local p = P()
-        if p and p.pos then
-            return { point = "CENTER", relPoint = "CENTER", x = p.pos.centerX, y = p.pos.centerY }
+        local profile = P()
+        if profile and profile.pos then
+            return { point = "CENTER", relPoint = "CENTER", x = profile.pos.centerX, y = profile.pos.centerY }
         end
         return nil
     end
     local function resetPos()
-        local p = P()
-        if p then
-            p.pos = nil
+        local profile = P()
+        if profile then
+            profile.pos = nil
         end
     end
     return restorePos, resetPos

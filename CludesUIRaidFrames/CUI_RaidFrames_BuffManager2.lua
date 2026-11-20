@@ -279,20 +279,20 @@ local function ImportLegacyProfile(p, b)
 end
 
 local function Store()
-    local p = P()
-    if not p then return nil end
-    local b = p.bm2
+    local profile = P()
+    if not profile then return nil end
+    local b = profile.bm2
     -- WoW Forever: the one-time buff clear ("fvBuffWipe" is its frozen mark,
     -- CludesUI_Migration.lua). A missing store is built blank there, so the
     -- legacy one-shot below never runs on that client.
     if FVBW and not (b and b.fvBuffWipe) then
-        local nb = FVBW.ClearBM(p)
+        local nb = FVBW.ClearBM(profile)
         if nb then b = nb; mod.BM2_Invalidate() end
     end
     if not b then
         b = { filters = { nextId = 1, list = {} }, specs = {}, seeded = {} }
-        p.bm2 = b
-        ImportLegacyProfile(p, b)
+        profile.bm2 = b
+        ImportLegacyProfile(profile, b)
     end
     return b
 end

@@ -170,12 +170,12 @@ local function ApplyPosition()
     end
 end
 
-local ev = CreateFrame("Frame")
-ev:RegisterEvent("PLAYER_ENTERING_WORLD")
-ev:RegisterEvent("PLAYER_REGEN_ENABLED")
-pcall(ev.RegisterEvent, ev, "ADDON_RESTRICTION_STATE_CHANGED")
+local eventFrame = CreateFrame("Frame")
+eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+pcall(eventFrame.RegisterEvent, eventFrame, "ADDON_RESTRICTION_STATE_CHANGED")
 local registered
-ev:SetScript("OnEvent", function(_, evt)
+eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "PLAYER_ENTERING_WORLD" then
         if not holderFrame then
             holderFrame = CreateFrame("Frame", "CludesUIRaidLeadAuraGlows", UIParent)

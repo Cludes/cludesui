@@ -177,15 +177,15 @@ local function BeaconLayoutIcons()
             local p = saved.profile.display
             local spacing = p.iconSpacing or 8
             local baseScale = p.scale or 1.0
-            local sz = floor(ICON_SIZE * baseScale + 0.5)
-            local iconH = sz
+            local iconSz = floor(ICON_SIZE * baseScale + 0.5)
+            local iconH = iconSz
             if p.iconShape and p.iconShape ~= "none" then
-                sz, iconH = mod.IconDimensions(sz, p)
+                iconSz, iconH = mod.IconDimensions(iconSz, p)
             end
-            local totalW = (#visIcons * sz) + ((#visIcons - 1) * spacing)
-            local startX = -(totalW / 2) + (sz / 2)
+            local totalW = (#visIcons * iconSz) + ((#visIcons - 1) * spacing)
+            local startX = -(totalW / 2) + (iconSz / 2)
             for index, frame in ipairs(visIcons) do
-                frame:SetSize(sz, iconH)
+                frame:SetSize(iconSz, iconH)
                 frame:SetAlpha(p.opacity or 1.0)
                 frame:SetFrameStrata("TOOLTIP")
                 frame:SetFrameLevel(9980)
@@ -195,7 +195,7 @@ local function BeaconLayoutIcons()
                     "CENTER",
                     cursorAnchor,
                     "CENTER",
-                    startX + (index - 1) * (sz + spacing),
+                    startX + (index - 1) * (iconSz + spacing),
                     -(iconH + 8)
                 )
             end
@@ -226,8 +226,8 @@ local function BeaconApplyGlow(frame, show)
         local glowType = p and p.glowType or 0
         if glowType > 0 then
             local baseScale = p and p.scale or 1.0
-            local sz = floor(ICON_SIZE * baseScale + 0.5)
-            ApplyGlow(frame, p, sz)
+            local iconSz = floor(ICON_SIZE * baseScale + 0.5)
+            ApplyGlow(frame, p, iconSz)
         end
         _B.glowState[frame._spellID] = true
     else

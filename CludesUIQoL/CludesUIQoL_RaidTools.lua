@@ -530,15 +530,15 @@ end
 mod.RaidToolsProfile = P
 
 local function Mode()
-    local p = P()
-    return (p and p.mode) or "never"
+    local profile = P()
+    return (profile and profile.mode) or "never"
 end
 
 -- The Show as choice, normalized: any unset/unknown value preserves the
 -- original One Window behavior. Compact Band is selected explicitly.
 local function ShowAs()
-    local p = P()
-    local val = p and p.showAs
+    local profile = P()
+    local val = profile and profile.showAs
     if val ~= "compact" and val ~= "one" and val ~= "two" and val ~= "group" and val ~= "markers" then
         val = "one"
     end
@@ -547,18 +547,18 @@ end
 mod.ShowAs = ShowAs
 
 local function CompactWidth()
-    local p = P()
-    return math.max(COMPACT_MIN_W, (p and p.compactWidth) or COMPACT_W)
+    local profile = P()
+    return math.max(COMPACT_MIN_W, (profile and profile.compactWidth) or COMPACT_W)
 end
 
 local function CompactHeight()
-    local p = P()
-    return math.max(COMPACT_MIN_H, (p and p.compactHeight) or COMPACT_H)
+    local profile = P()
+    return math.max(COMPACT_MIN_H, (profile and profile.compactHeight) or COMPACT_H)
 end
 
 local function WindowScale()
-    local p = P()
-    return (p and p.scale) or 1
+    local profile = P()
+    return (profile and profile.scale) or 1
 end
 
 -------------------------------------------------------------------------------
@@ -807,15 +807,15 @@ end
 
 -- An optional button's switch, defaulting to shown for an unset profile.
 local function ButtonShown(toolKey)
-    local p = P()
-    return not p or p[toolKey] ~= false
+    local profile = P()
+    return not profile or profile[toolKey] ~= false
 end
 
 -- The Buff Check button needs Raid Buff Check on (and a retail client: the
 -- feature file publishes ns.ToggleBuffCheck only there).
 local function BuffCheckShown()
-    local p = P()
-    return p and p.showBuffCheck == true and p.buffCheck == true and mod.ToggleBuffCheck ~= nil
+    local profile = P()
+    return profile and profile.showBuffCheck == true and profile.buffCheck == true and mod.ToggleBuffCheck ~= nil
 end
 
 local function ToggleBuffCheck()
@@ -1695,12 +1695,12 @@ end
 -- Show-as arrangement. OOC only (Apply gates); the holders are plain frames,
 -- so the re-parent is an ordinary SetParent.
 local function ApplyLayout()
-    local p = P()
+    local profile = P()
     local displayAs = ShowAs()
     local windowGroup, windowMarkers = sectionList.Group, sectionList.Markers
 
     local isCompact = displayAs == "compact"
-    local collapseUI = not isCompact and p and p.collapsedIcon ~= false
+    local collapseUI = not isCompact and profile and profile.collapsedIcon ~= false
     windowGroup._collapseBtn:SetShown(collapseUI)
     -- Two Windows: only Group & Pull carries the collapse control -- one
     -- button folds the whole feature, and a second on Markers would just be
@@ -1768,7 +1768,7 @@ local function ApplyLayout()
     -- The collapsed icon rides the shell the mode actually shows: Markers-only anchors
     -- (and scales, see Apply) to the Markers shell, everything else to Group & Pull.
     -- Which CORNER it rides is the Menu Grow Direction setting (see ICON_CORNER above).
-    local corner = ICON_CORNER[p and p.growDir] or "TOPLEFT"
+    local corner = ICON_CORNER[profile and profile.growDir] or "TOPLEFT"
     iconButton:ClearAllPoints()
     iconButton:SetPoint(corner, (displayAs == "markers") and windowMarkers or windowGroup, corner, 0, 0)
 
@@ -1816,10 +1816,10 @@ local function ApplySectionPosition(toolKey, unlockKey, posKey)
         return
     end
 
-    local p = P()
+    local profile = P()
     unlockKey = unlockKey or (UNLOCK_KEY .. toolKey)
     posKey = posKey or toolKey
-    local position = ((p and p.pos) or {})[posKey] or DefaultPos(toolKey)
+    local position = ((profile and profile.pos) or {})[posKey] or DefaultPos(toolKey)
     if CludesUI.ApplyCenterPosition and position.point == "CENTER" and position.relPoint == "CENTER" then
         -- Skips anchor-linked elements itself, and defers its own combat case for
         -- protected frames. FALSE means it could not resolve a live frame for this key
@@ -1871,7 +1871,7 @@ local MODE_DRIVERS = {
 
 -- Reached only from Apply, which has already returned if we are in combat.
 local function ApplyVisibility()
-    local p = P()
+    local profile = P()
     local modeName = Mode()
     local driver = MODE_DRIVERS[modeName]
     -- The out-of-combat settle for the state a driver will not re-fire
@@ -1903,7 +1903,7 @@ local function ApplyVisibility()
     -- With the toggle off the seed is "expanded" and the icon never shows.
     -- The strip is already the minimized form. Its keybind is therefore a
     -- direct show/hide, never a second collapse into a mystery icon.
-    local startExpanded = isCompact or not (p and p.collapsedIcon ~= false)
+    local startExpanded = isCompact or not (profile and profile.collapsedIcon ~= false)
 
     -- Settings preview (the TBB-placeholder arrangement): while the Raid
     -- Tools page is in front, the windows are forced shown and FULLY EXPANDED
@@ -1966,8 +1966,8 @@ local function ApplyToggleKeybind()
         return
     end
     ClearOverrideBindings(toggleBtn)
-    local p = P()
-    local k = p and p.toggleKey
+    local profile = P()
+    local k = profile and profile.toggleKey
     -- The gate takes the binding with it rather than leaving a key that eats
     -- its own keypress: the snippet would refuse a disabled frame, and an
     -- override binding swallows whatever the key does otherwise.
@@ -2192,20 +2192,20 @@ local function BuildQuickFire()
 end
 
 local function ApplyQuickFireBindings()
-    local p = P()
+    local profile = P()
     if runState.qfBindingOwner then
         ClearOverrideBindings(runState.qfBindingOwner)
     end
-    if not p or p.quickFire ~= true or Mode() == "never" or AssistSuppressed() then
+    if not profile or profile.quickFire ~= true or Mode() == "never" or AssistSuppressed() then
         return
     end
 
     BuildQuickFire()
     PrimeQuickFire(runState.qfPlace)
     local bindings = {
-        { p.quickFirePlaceKey, "CludesUIRaidToolsQuickFirePlace" },
-        { p.quickFireUndoKey, "CludesUIRaidToolsQuickFireUndo" },
-        { p.quickFireClearKey, "CludesUIRaidToolsQuickFireClear" },
+        { profile.quickFirePlaceKey, "CludesUIRaidToolsQuickFirePlace" },
+        { profile.quickFireUndoKey, "CludesUIRaidToolsQuickFireUndo" },
+        { profile.quickFireClearKey, "CludesUIRaidToolsQuickFireClear" },
     }
     for _, binding in ipairs(bindings) do
         if binding[1] and binding[1] ~= "" then
@@ -2275,8 +2275,8 @@ local function EnsureEvents()
                 or evt == "PLAYER_REGEN_ENABLED"
                 or evt == "PLAYER_ENTERING_WORLD"
             then
-                local p = P()
-                if p and p.quickFire == true and runState.qfPlace then
+                local profile = P()
+                if profile and profile.quickFire == true and runState.qfPlace then
                     PrimeQuickFire(runState.qfPlace)
                 end
             end
@@ -2288,8 +2288,8 @@ local function EnsureEvents()
     eventName:RegisterEvent("PARTY_LEADER_CHANGED")
     eventName:RegisterEvent("PLAYER_ENTERING_WORLD")
     eventName:RegisterEvent("PLAYER_REGEN_ENABLED")
-    local p = P()
-    if Mode() ~= "never" and (ShowAs() == "compact" or (p and p.quickFire == true)) then
+    local profile = P()
+    if Mode() ~= "never" and (ShowAs() == "compact" or (profile and profile.quickFire == true)) then
         eventName:RegisterEvent("RAID_TARGET_UPDATE")
     else
         eventName:UnregisterEvent("RAID_TARGET_UPDATE")
@@ -2362,8 +2362,8 @@ local function RegisterUnlock()
                 if not anchorPoint then
                     return
                 end
-                local p = P()
-                if not p then
+                local profile = P()
+                if not profile then
                     return
                 end
                 -- Unlock mode hands us two conventions: a normal drag arrives
@@ -2380,10 +2380,10 @@ local function RegisterUnlock()
                 -- proxy the reseed stores a proxy into the real profile (the
                 -- hazard the P() comment documents). Writing THROUGH p.pos is
                 -- proxy-safe; storing it back is not.
-                if not p.pos then
+                if not profile.pos then
                     return
                 end
-                p.pos[toolKey] = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
+                profile.pos[toolKey] = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                 if not CludesUI._unlockActive then
                     ApplySectionPosition(toolKey)
                 end
@@ -2392,9 +2392,9 @@ local function RegisterUnlock()
                 return ((P() and P().pos) or {})[toolKey]
             end,
             clearPos = function()
-                local p = P()
-                if p and p.pos then
-                    p.pos[toolKey] = nil
+                local profile = P()
+                if profile and profile.pos then
+                    profile.pos[toolKey] = nil
                 end
             end,
             applyPos = function()
@@ -2430,23 +2430,23 @@ local function RegisterUnlock()
             return CompactWidth(), CompactHeight()
         end,
         setWidth = function(_, newW)
-            local p = P()
-            if not (p and newW) then
+            local profile = P()
+            if not (profile and newW) then
                 return
             end
             local Pix = CludesUI and CludesUI.PP
-            p.compactWidth = math.max(COMPACT_MIN_W, Pix and Pix.Snap(newW) or math.floor(newW + 0.5))
+            profile.compactWidth = math.max(COMPACT_MIN_W, Pix and Pix.Snap(newW) or math.floor(newW + 0.5))
             if sectionList.Group then
                 ApplyLayout()
             end
         end,
         setHeight = function(_, newH)
-            local p = P()
-            if not (p and newH) then
+            local profile = P()
+            if not (profile and newH) then
                 return
             end
             local Pix = CludesUI and CludesUI.PP
-            p.compactHeight = math.max(COMPACT_MIN_H, Pix and Pix.Snap(newH) or math.floor(newH + 0.5))
+            profile.compactHeight = math.max(COMPACT_MIN_H, Pix and Pix.Snap(newH) or math.floor(newH + 0.5))
             if sectionList.Group then
                 ApplyLayout()
             end
@@ -2455,15 +2455,15 @@ local function RegisterUnlock()
             if not anchorPoint then
                 return
             end
-            local p = P()
-            if not (p and p.pos) then
+            local profile = P()
+            if not (profile and profile.pos) then
                 return
             end
             if CludesUI.ConvertToCenterPos then
                 anchorPoint, relPoint, posX, posY =
                     CludesUI.ConvertToCenterPos(COMPACT_UNLOCK_KEY, anchorPoint, relPoint, posX, posY)
             end
-            p.pos.Compact = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
+            profile.pos.Compact = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
             if not CludesUI._unlockActive then
                 ApplySectionPosition("Group", COMPACT_UNLOCK_KEY, "Compact")
             end
@@ -2472,9 +2472,9 @@ local function RegisterUnlock()
             return ((P() and P().pos) or {}).Compact
         end,
         clearPos = function()
-            local p = P()
-            if p and p.pos then
-                p.pos.Compact = nil
+            local profile = P()
+            if profile and profile.pos then
+                profile.pos.Compact = nil
             end
         end,
         applyPos = function()

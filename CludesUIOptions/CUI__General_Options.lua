@@ -630,10 +630,10 @@ CludesUI.AtOptionsLogin(function()
             if curContrast <= 55 then
                 SetGfxCVar("Contrast", curContrast + 10)
             end
-            local rl = CludesUI._widgetRefreshList
-            if rl then
-                for idx = 1, #rl do
-                    rl[idx]()
+            local refreshList = CludesUI._widgetRefreshList
+            if refreshList then
+                for idx = 1, #refreshList do
+                    refreshList[idx]()
                 end
             end
         end

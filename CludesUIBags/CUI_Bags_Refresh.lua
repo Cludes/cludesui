@@ -300,14 +300,14 @@ do
             return
         end
         local skinData, conf = dragGrip._drag, dragGrip._cfg
-        local cx, cy = GetCursorPosition()
+        local curX, curY = GetCursorPosition()
         local es = dragGrip:GetParent():GetEffectiveScale()
         local step = conf.step
-        local dx = math.floor(cx / es - skinData.x + 0.5)
+        local dx = math.floor(curX / es - skinData.x + 0.5)
         dx = math.max((conf.minCols - skinData.cols) * step, math.min((skinData.maxCols - skinData.cols) * step, dx))
         local cols = skinData.cols + math.floor(dx / step)
         local bucket = math.floor(dx / (conf.relayoutStep or step))
-        local hgt = math.floor(skinData.h + (skinData.y - cy / es) + 0.5)
+        local hgt = math.floor(skinData.h + (skinData.y - curY / es) + 0.5)
         hgt = math.max(conf.minH, math.min(skinData.maxH, hgt))
         if dx == skinData.lastDX and hgt == skinData.lastH then
             return
@@ -336,13 +336,13 @@ do
         widget:ClearAllPoints()
         widget:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
         conf.savePos(left, top)
-        local cx, cy = GetCursorPosition()
+        local curX, curY = GetCursorPosition()
         local es = widget:GetEffectiveScale()
         local screenW = UIParent:GetRight() * UIParent:GetEffectiveScale() / es
         local cols, hgt = conf.getCols(), conf.getHeight()
         dragGrip._drag = {
-            x = cx / es,
-            y = cy / es,
+            x = curX / es,
+            y = curY / es,
             cols = cols,
             h = hgt,
             lastBucket = 0,
@@ -494,8 +494,8 @@ local _bagGripCfg = {
         BP().bagsPosition = { point = "TOPLEFT", relativePoint = "BOTTOMLEFT", x = left, y = top }
     end,
     reset = function()
-        local p = BP()
-        p.bagColumns, p.bagHeight, p.bagListWidth = nil, nil, nil
+        local profile = BP()
+        profile.bagColumns, profile.bagHeight, profile.bagListWidth = nil, nil, nil
         CUI_Bags:RefreshInventory()
     end,
     -- The gold display sits in the footer's bottom-right corner

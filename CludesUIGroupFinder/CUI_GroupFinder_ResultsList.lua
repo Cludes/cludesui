@@ -1828,14 +1828,14 @@ local function PvFit()
         - PV_MARGIN * 2
         - (pv.dd and (PV_DD_W + PV_DD_GAP) * 2 or 0)
     local userScale = (CludesUIDB and CludesUIDB.panelScale) or 1
-    local s = UIParent:GetEffectiveScale() / heading:GetEffectiveScale() * PV_SCALE * userScale
-    if fw * s > avail then
-        s = avail / fw
+    local uiScale = UIParent:GetEffectiveScale() / heading:GetEffectiveScale() * PV_SCALE * userScale
+    if fw * uiScale > avail then
+        uiScale = avail / fw
     end
-    frame:SetScale(s)
+    frame:SetScale(uiScale)
     frame:ClearAllPoints()
     frame:SetPoint("CENTER", heading, "CENTER", 0, 0)
-    return math.ceil(fh * s) + PV_MARGIN * 2
+    return math.ceil(fh * uiScale) + PV_MARGIN * 2
 end
 
 -- the tooltips' names: the suite's preview roster (CludesUI.PREVIEW_ROSTER,

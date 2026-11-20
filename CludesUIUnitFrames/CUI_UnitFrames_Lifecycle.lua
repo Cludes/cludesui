@@ -153,9 +153,9 @@ end
 --  (do-block: no persistent file-level locals.)
 -------------------------------------------------------------------------------
 do
-    local ev = CreateFrame("Frame")
+    local eventFrame = CreateFrame("Frame")
     local hadTarget = false
-    ev:SetScript("OnEvent", function()
+    eventFrame:SetScript("OnEvent", function()
         if UnitExists("target") then
             hadTarget = true
             if C_PlayerInteractionManager.IsReplacingUnit() then
@@ -185,9 +185,9 @@ do
             and mod.GetUnitFrameSource("target") ~= "blizzard"
         if enabled then
             hadTarget = UnitExists("target") and true or false
-            ev:RegisterEvent("PLAYER_TARGET_CHANGED")
+            eventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
         else
-            ev:UnregisterEvent("PLAYER_TARGET_CHANGED")
+            eventFrame:UnregisterEvent("PLAYER_TARGET_CHANGED")
         end
     end
 end
@@ -357,11 +357,11 @@ do
         UpdateTicker()
     end
 
-    local ev = CreateFrame("Frame")
-    ev:RegisterEvent("PLAYER_LOGIN")
-    ev:RegisterEvent("PLAYER_ENTERING_WORLD")
-    ev:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-    ev:SetScript("OnEvent", function()
+    local eventFrame = CreateFrame("Frame")
+    eventFrame:RegisterEvent("PLAYER_LOGIN")
+    eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    eventFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+    eventFrame:SetScript("OnEvent", function()
         ResolveRangeSpells()
         InstallHooks()
     end)

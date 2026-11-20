@@ -85,8 +85,8 @@ end
 -- Counting GCDs before the window opens and counting Barrages inside it are
 -- different questions, so they are separately answerable.
 local function PhaseMode(phaseNum)
-    local p = P()
-    local m = p and p.countMode
+    local profile = P()
+    local m = profile and profile.countMode
     if m == "gcd" then
         return "gcd"
     end
@@ -99,16 +99,16 @@ end
 -- Does any phase need a GCD length? Drives the one combat event this module
 -- registers, so a pure-seconds setup stays event-free in combat.
 local function NeedsGcd()
-    local p = P()
-    local m = p and p.countMode
+    local profile = P()
+    local m = profile and profile.countMode
     return m == "gcd" or m == "secondsGcd"
 end
 
 -- Seconds of Arcane Surge left at which "Soul in" starts showing. Floor 1,
 -- never 0: a 0 threshold would collide with the tenths breakpoint at 0.
 local function Thr()
-    local p = P()
-    local val = tonumber(p and p.threshold) or 5
+    local profile = P()
+    local val = tonumber(profile and profile.threshold) or 5
     if val < 1 then
         val = 1
     elseif val > 15 then
@@ -118,8 +118,8 @@ local function Thr()
 end
 
 local function TextSize()
-    local p = P()
-    local val = tonumber(p and p.textSize) or 24
+    local profile = P()
+    local val = tonumber(profile and profile.textSize) or 24
     if val < 10 then
         val = 10
     elseif val > 48 then
@@ -156,8 +156,8 @@ end
 -------------------------------------------------------------------------------
 
 local function GetASFont()
-    local p = P()
-    local cacheKey = (p and p.font) or "__global"
+    local profile = P()
+    local cacheKey = (profile and profile.font) or "__global"
     if cacheKey ~= "__global" and CludesUI and CludesUI.ResolveFontName then
         local filePath = CludesUI.ResolveFontName(cacheKey)
         if filePath then
@@ -168,8 +168,8 @@ local function GetASFont()
 end
 
 local function GetASOutline()
-    local p = P()
-    local modeName = (p and p.outlineMode) or "__global"
+    local profile = P()
+    local modeName = (profile and profile.outlineMode) or "__global"
     if modeName == "outline" then
         return (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     end
@@ -662,8 +662,8 @@ local function ApplyPosition()
         return
     end
 
-    local p = P()
-    local place = (p and p.unlockPos) or DEFAULT_POS
+    local profile = P()
+    local place = (profile and profile.unlockPos) or DEFAULT_POS
     local point = place.point or "CENTER"
     local px, py = place.x or 0, place.y or 0
     local PPa = CludesUI and CludesUI.PP
@@ -913,8 +913,8 @@ end
 -------------------------------------------------------------------------------
 
 local function EnabledForClass()
-    local p = P()
-    return (p and p.enabled and S.class == "MAGE" and not FOREVER) and true or false
+    local profile = P()
+    return (profile and profile.enabled and S.class == "MAGE" and not FOREVER) and true or false
 end
 
 local function GateOK()
@@ -1218,18 +1218,18 @@ function mod.AS_MakeUnlockElement(MK)
             if not anchorPoint then
                 return
             end
-            local p = P()
-            if not p then
+            local profile = P()
+            if not profile then
                 return
             end
-            p.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
+            profile.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
             if not CludesUI._unlockActive then
                 ApplyPosition()
             end
         end,
         loadPos = function()
-            local p = P()
-            local place = p and p.unlockPos
+            local profile = P()
+            local place = profile and profile.unlockPos
             if place and place.point then
                 return {
                     point = place.point,
@@ -1246,9 +1246,9 @@ function mod.AS_MakeUnlockElement(MK)
             }
         end,
         clearPos = function()
-            local p = P()
-            if p then
-                p.unlockPos = nil
+            local profile = P()
+            if profile then
+                profile.unlockPos = nil
             end
             if S.proxy then
                 ApplyPosition()

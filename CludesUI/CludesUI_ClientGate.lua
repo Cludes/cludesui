@@ -39,9 +39,9 @@ end
 
 CUI_CLIENT_BLOCKED = true
 
-local ev = CreateFrame("Frame")
-ev:RegisterEvent("PLAYER_ENTERING_WORLD")
-ev:SetScript("OnEvent", function(self)
+local eventFrame = CreateFrame("Frame")
+eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+eventFrame:SetScript("OnEvent", function(self)
     self:UnregisterAllEvents()
 
     local p = CreateFrame("Frame", "CUIClientGatePopup", UIParent)

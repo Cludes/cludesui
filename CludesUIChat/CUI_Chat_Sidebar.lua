@@ -426,9 +426,9 @@ local function EnableIconFreeMove(button)
             return
         end
         local es = self:GetEffectiveScale()
-        local cx, cy = GetCursorPosition()
-        local nx = baseOX + (cx / es - startX)
-        local ny = baseOY + (cy / es - startY)
+        local curX, curY = GetCursorPosition()
+        local nx = baseOX + (curX / es - startX)
+        local ny = baseOY + (curY / es - startY)
         self:ClearAllPoints()
         self:SetPoint(nat.edge, self:GetParent(), nat.edge, nx, nat.y + ny)
         SaveIconOffset(key, nx, ny)

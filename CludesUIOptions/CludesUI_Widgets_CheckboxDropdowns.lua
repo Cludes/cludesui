@@ -694,9 +694,9 @@ function CludesUI.BuildVisOptsCBDropdown(
                         self2:SetScript("OnUpdate", nil)
                         return
                     end
-                    local _, cy = GetCursorPosition()
-                    cy = cy / self2:GetEffectiveScale()
-                    local deltaY = dragStartY - cy
+                    local _, curY = GetCursorPosition()
+                    curY = curY / self2:GetEffectiveScale()
+                    local deltaY = dragStartY - curY
                     local trackH = cbTrack:GetHeight()
                     local maxTravel = trackH - self2:GetHeight()
                     if maxTravel <= 0 then
@@ -1760,8 +1760,8 @@ function CludesUI.AttachRowReorder(host, specInfo)
             if specInfo.canReorder and not specInfo.canReorder() then
                 return
             end
-            local _, cy = GetCursorPosition()
-            dsY = cy
+            local _, curY = GetCursorPosition()
+            dsY = curY
             self:SetScript("OnUpdate", DragUpdate)
         end)
         row:SetScript("OnMouseUp", function(self, b)
@@ -1782,8 +1782,8 @@ function CludesUI.AttachRowReorder(host, specInfo)
                 specInfo.refresh()
                 return
             end
-            local _, cy = GetCursorPosition()
-            cy = cy / host:GetEffectiveScale()
+            local _, curY = GetCursorPosition()
+            curY = curY / host:GetEffectiveScale()
             local from
             for mi = 1, #movable do
                 if movable[mi] == self._item then
@@ -1792,7 +1792,7 @@ function CludesUI.AttachRowReorder(host, specInfo)
                 end
             end
             -- Gap -> insertion index: removing the row first shifts everything after it up one, so downward moves adjust by -1 (same as the raid frames Sort By drop).
-            local iI = TargetGap(cy, from)
+            local iI = TargetGap(curY, from)
             if from and from < iI then
                 iI = iI - 1
             end
@@ -1814,14 +1814,14 @@ function CludesUI.AttachRowReorder(host, specInfo)
             if not dsY then
                 return
             end
-            local _, cy = GetCursorPosition()
+            local _, curY = GetCursorPosition()
             if not status.dragging then
-                if math.abs(cy - dsY) < 3 then
+                if math.abs(curY - dsY) < 3 then
                     return
                 end
                 status.dragging = true
                 local sc = host:GetEffectiveScale()
-                dgO = (cy / sc) - (self:GetTop() or 0)
+                dgO = (curY / sc) - (self:GetTop() or 0)
                 dgFrom = nil
                 for mi = 1, #movable do
                     if movable[mi] == self._item then
@@ -1836,7 +1836,7 @@ function CludesUI.AttachRowReorder(host, specInfo)
                 end
             end
             local sc = host:GetEffectiveScale()
-            local cY = cy / sc
+            local cY = curY / sc
             local mT = host:GetTop() or 0
             local lY = cY - (dgO or 0) - mT
             lY = math.max(SlotY(#movable), math.min(lY, SlotY(1)))

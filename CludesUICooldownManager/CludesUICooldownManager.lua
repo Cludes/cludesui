@@ -69,14 +69,14 @@ mod.ECME = ECME
 function mod.CdmIconStyle()
     local val = mod._cdmIconStyle
     if val == nil then
-        local p = ECME.db and ECME.db.profile
-        if not p then
+        local profile = ECME.db and ECME.db.profile
+        if not profile then
             return "cui"
         end
-        val = (p.useClassicStyle and "classic") or (p.useBlizzardStyle and "blizzard") or "cui"
+        val = (profile.useClassicStyle and "classic") or (profile.useBlizzardStyle and "blizzard") or "cui"
         mod._cdmIconStyle = val
         -- The WoW Forever variant of Blizzard Style, latched with it.
-        mod._cdmFvIcons = val == "blizzard" and CludesUI.IS_FOREVER == true and p.useForeverStyle == true
+        mod._cdmFvIcons = val == "blizzard" and CludesUI.IS_FOREVER == true and profile.useForeverStyle == true
     end
     return val
 end
@@ -91,13 +91,13 @@ end
 function mod.CdmBarStyle()
     local val = mod._cdmBarStyle
     if val == nil then
-        local p = ECME.db and ECME.db.profile
-        if not p then
+        local profile = ECME.db and ECME.db.profile
+        if not profile then
             return "cui"
         end
-        val = (p.useClassicStyleBars and "classic") or (p.useBlizzardStyleBars and "blizzard") or "cui"
+        val = (profile.useClassicStyleBars and "classic") or (profile.useBlizzardStyleBars and "blizzard") or "cui"
         mod._cdmBarStyle = val
-        mod._cdmFvBars = val == "blizzard" and CludesUI.IS_FOREVER == true and p.useForeverStyleBars == true
+        mod._cdmFvBars = val == "blizzard" and CludesUI.IS_FOREVER == true and profile.useForeverStyleBars == true
     end
     return val
 end

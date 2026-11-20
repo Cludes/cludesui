@@ -1708,8 +1708,8 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
             hoverBdr:SetPoint("TOPLEFT", btn, "TOPLEFT", -1, 1)
             hoverBdr:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 1, -1)
             hoverBdr:SetFrameLevel(btn:GetFrameLevel() + 2)
-            local ar, ag, ab = CludesUI.GetAccentColor()
-            Pix.CreateBorder(hoverBdr, ar, ag, ab, 1, 2)
+            local accR, accG, accB = CludesUI.GetAccentColor()
+            Pix.CreateBorder(hoverBdr, accR, accG, accB, 1, 2)
             hoverBdr:Hide()
             btn._hoverBdr = hoverBdr
 
@@ -2286,8 +2286,8 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                             if b ~= "LeftButton" then
                                 return
                             end
-                            local _, cy = GetCursorPosition()
-                            dsY = cy
+                            local _, curY = GetCursorPosition()
+                            dsY = curY
                         end)
                         row:SetScript("OnMouseUp", function(self, b)
                             if b ~= "LeftButton" then
@@ -2301,9 +2301,9 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                             insLine:Hide()
                             self:SetFrameLevel(menuFrame:GetFrameLevel() + 2)
                             self:SetAlpha(1)
-                            local _, cy = GetCursorPosition()
+                            local _, curY = GetCursorPosition()
                             local sc = menuFrame:GetEffectiveScale()
-                            cy = cy / sc
+                            curY = curY / sc
                             local from = self._cbIndex
                             -- Same logic as insertion line: skip the dragged row
                             local mT = menuFrame:GetTop() or 0
@@ -2311,7 +2311,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                             for ri, rf in ipairs(rowFrames) do
                                 if rf ~= self and rf._baseY then
                                     local rm = mT + rf._baseY - MH / 2
-                                    if cy > rm then
+                                    if curY > rm then
                                         iI = ri
                                         break
                                     end
@@ -2353,14 +2353,14 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                             if not dsY then
                                 return
                             end
-                            local _, cy = GetCursorPosition()
+                            local _, curY = GetCursorPosition()
                             if not isDragging then
-                                if math.abs(cy - dsY) < 3 then
+                                if math.abs(curY - dsY) < 3 then
                                     return
                                 end
                                 isDragging = true
                                 local sc = menuFrame:GetEffectiveScale()
-                                dgO = (cy / sc) - (self:GetTop() or 0)
+                                dgO = (curY / sc) - (self:GetTop() or 0)
                                 self:SetFrameLevel(menuFrame:GetFrameLevel() + 10)
                                 self:SetAlpha(0.8)
                                 for _, rf in ipairs(rowFrames) do
@@ -2370,7 +2370,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
                                 end
                             end
                             local sc = menuFrame:GetEffectiveScale()
-                            local cY = cy / sc
+                            local cY = curY / sc
                             local mT = menuFrame:GetTop() or 0
                             local lY = cY - (dgO or 0) - mT
                             lY = math.max(cbBaseY - (#cbItems - 1) * MH, math.min(lY, cbBaseY))

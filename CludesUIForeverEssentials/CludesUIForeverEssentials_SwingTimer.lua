@@ -145,8 +145,8 @@ function module.SwingLayout()
     holderFrame:SetSize(wid, math.max(1, isShown) * (hgt + GAP) - GAP)
 end
 
-local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, evt, duration, swingType)
+local eventFrame = CreateFrame("Frame")
+eventFrame:SetScript("OnEvent", function(_, evt, duration, swingType)
     if evt == "PLAYER_SWING" then
         local b = barList[swingType]
         if
@@ -173,14 +173,14 @@ end)
 local function Apply()
     if Enabled() then
         Build()
-        ev:RegisterEvent("PLAYER_SWING")
-        ev:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-        ev:RegisterEvent("PLAYER_ENTERING_WORLD")
+        eventFrame:RegisterEvent("PLAYER_SWING")
+        eventFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+        eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
         if not CludesUI._unlockActive then
             F.Place(holderFrame)
         end
     else
-        ev:UnregisterAllEvents()
+        eventFrame:UnregisterAllEvents()
         for _, bar in pairs(barList) do
             bar.started = nil
             bar:SetScript("OnUpdate", nil)

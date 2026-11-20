@@ -192,9 +192,9 @@ end
 -- Uninstall CUI: Sort to Bottom flips Blizzard's own sort direction, so the
 -- player's is handed back, as turning the option off does.
 CUI.OnUninstall(function()
-    local p = BP()
-    if p.bagSortToBottom and p.bagSortBlizzRTLWas ~= nil then
-        C_Container.SetSortBagsRightToLeft(p.bagSortBlizzRTLWas)
+    local profile = BP()
+    if profile.bagSortToBottom and profile.bagSortBlizzRTLWas ~= nil then
+        C_Container.SetSortBagsRightToLeft(profile.bagSortBlizzRTLWas)
     end
 end)
 
@@ -234,8 +234,8 @@ end
 -- Frame Strata: the layer of the bags and the bank. Unset reads the retired
 -- Allow Windows Over Bags toggle (off = High), so its choice carries over.
 function mod.BagFrameStrata()
-    local p = BP()
-    return p.bagFrameStrata or (p.bagAllowWindowsOverBags == false and "HIGH" or "MEDIUM")
+    local profile = BP()
+    return profile.bagFrameStrata or (profile.bagAllowWindowsOverBags == false and "HIGH" or "MEDIUM")
 end
 
 local layerUpdateFrame = CreateFrame("Frame")
@@ -640,10 +640,10 @@ function mod.OnSlotMetrics(func)
 end
 -- both refreshes call this first; a change made in combat waits for the next one
 function mod.ApplySlotMetrics()
-    local p = BP()
+    local profile = BP()
     -- the sliders' ranges: a hand-edited or imported 0 would divide by zero
-    local size = math.min(math.max(tonumber(p.bagSlotSize) or 34, 24), 56)
-    local gap = math.min(math.max(tonumber(p.bagSlotSpacing) or 4, 0), 12)
+    local size = math.min(math.max(tonumber(profile.bagSlotSize) or 34, 24), 56)
+    local gap = math.min(math.max(tonumber(profile.bagSlotSpacing) or 4, 0), 12)
     if (size == SLOT_SIZE and gap == SPACING) or InCombatLockdown() then
         return
     end

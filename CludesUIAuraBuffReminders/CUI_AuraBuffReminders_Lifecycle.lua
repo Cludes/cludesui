@@ -272,9 +272,9 @@ function REMIND:OnEnable()
         -- Cursor glue on the suite's shared cursor service (Tier A motionOnly: fires per render frame while the cursor MOVES, parked at rest). Subscription follows the frame's own OnShow/OnHide; OnShow snaps once via M.Get() so a cursor that moved while hidden never shows stale.
         local lastMX, lastMY
         local function GlueBody(rawX, rawY)
-            local s = UIParent:GetEffectiveScale()
-            local cursorX = floor(rawX / s + 0.5)
-            local cursorY = floor(rawY / s + 0.5)
+            local uiScale = UIParent:GetEffectiveScale()
+            local cursorX = floor(rawX / uiScale + 0.5)
+            local cursorY = floor(rawY / uiScale + 0.5)
             if cursorX ~= lastMX or cursorY ~= lastMY then
                 lastMX, lastMY = cursorX, cursorY
                 cursorHolder:ClearAllPoints()

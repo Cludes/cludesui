@@ -581,9 +581,9 @@ local function AttachHoverHooks(barId)
                 else
                     -- Bar frame itself (gaps between buttons): allow only if the
                     -- cursor is within pad of a shown button that is not parked.
-                    local cx, cy = GetCursorPosition()
+                    local curX, curY = GetCursorPosition()
                     local scale = widget:GetEffectiveScale()
-                    cx, cy = cx / scale, cy / scale
+                    curX, curY = curX / scale, curY / scale
                     local pad = (s.buttonPadding or 2) + 2
                     local nearVisible = false
                     for index = 1, #buttons do
@@ -592,10 +592,10 @@ local function AttachHoverHooks(barId)
                             local bl, bb, bw, bh = button:GetRect()
                             if
                                 bl
-                                and cx >= bl - pad
-                                and cx <= bl + bw + pad
-                                and cy >= bb - pad
-                                and cy <= bb + bh + pad
+                                and curX >= bl - pad
+                                and curX <= bl + bw + pad
+                                and curY >= bb - pad
+                                and curY <= bb + bh + pad
                             then
                                 nearVisible = true
                                 break

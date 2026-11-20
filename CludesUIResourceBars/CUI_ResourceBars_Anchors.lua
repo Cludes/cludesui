@@ -996,11 +996,11 @@ local function ApplyBarAnchor(widget, anchorKey, anchorPos, offsetX, offsetY, gr
         end
         widget._erbMouseShell:Show()
         widget._erbMouseShell:SetScript("OnUpdate", function()
-            local cx, cy = GetCursorPosition()
-            if cx ~= lastMX or cy ~= lastMY then
+            local curX, curY = GetCursorPosition()
+            if curX ~= lastMX or curY ~= lastMY then
                 local firstMove = lastMX == nil
-                lastMX, lastMY = cx, cy
-                local s = UIParent:GetEffectiveScale()
+                lastMX, lastMY = curX, curY
+                local uiScale = UIParent:GetEffectiveScale()
                 if firstMove then
                     widget:ClearAllPoints()
                 end
@@ -1008,8 +1008,8 @@ local function ApplyBarAnchor(widget, anchorKey, anchorPos, offsetX, offsetY, gr
                     pointFrom,
                     UIParent,
                     "BOTTOMLEFT",
-                    floor(cx / s + 0.5) + baseOX,
-                    floor(cy / s + 0.5) + baseOY
+                    floor(curX / uiScale + 0.5) + baseOX,
+                    floor(curY / uiScale + 0.5) + baseOY
                 )
             end
         end)

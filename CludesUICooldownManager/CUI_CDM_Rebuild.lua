@@ -52,18 +52,18 @@ end
 -- Ghost bars: ensure both buff and CD ghost bars exist in the bars array. Called from BuildAllCDMBars before iterating bars.
 mod.GHOST_CD_BAR_KEY = GHOST_CD_BAR_KEY
 local function EnsureGhostBars()
-    local p = ECME.db and ECME.db.profile
-    if not p or not p.cdmBars or not p.cdmBars.bars then
+    local profile = ECME.db and ECME.db.profile
+    if not profile or not profile.cdmBars or not profile.cdmBars.bars then
         return
     end
     local hasCD = false
-    for _, bar in ipairs(p.cdmBars.bars) do
+    for _, bar in ipairs(profile.cdmBars.bars) do
         if bar.key == GHOST_CD_BAR_KEY then
             hasCD = true
         end
     end
     if not hasCD then
-        p.cdmBars.bars[#p.cdmBars.bars + 1] = {
+        profile.cdmBars.bars[#profile.cdmBars.bars + 1] = {
             key = GHOST_CD_BAR_KEY,
             name = "Hidden CDs",
             barType = "cooldowns",
@@ -100,11 +100,11 @@ local BuildCustomBarSpellSet -- forward declare (defined below)
 -------------------------------------------------------------------------------
 BuildCustomBarSpellSet = function()
     local set = {}
-    local p = ECME.db and ECME.db.profile
-    if not p or not p.cdmBars or not p.cdmBars.bars then
+    local profile = ECME.db and ECME.db.profile
+    if not profile or not profile.cdmBars or not profile.cdmBars.bars then
         return set
     end
-    for _, edge in ipairs(p.cdmBars.bars) do
+    for _, edge in ipairs(profile.cdmBars.bars) do
         if not MAIN_BAR_KEYS[edge.key] then
             local spellData = mod.GetBarSpellData(edge.key)
             if spellData and spellData.assignedSpells then
@@ -152,8 +152,8 @@ function mod.BarUsesBuffViewer(barId)
 end
 
 _CDMApplyVisibility = function()
-    local p = ECME.db and ECME.db.profile
-    if not p then
+    local profile = ECME.db and ECME.db.profile
+    if not profile then
         return
     end
     local combatNow = _inCombat
@@ -168,7 +168,7 @@ _CDMApplyVisibility = function()
 
     local unlockActive = CludesUI._unlockActive
 
-    for _, barInfo in ipairs(p.cdmBars.bars) do
+    for _, barInfo in ipairs(profile.cdmBars.bars) do
         local widget = cdmBarFrames[barInfo.key]
         if widget then
             -- FocusKick is owned exclusively by ApplyFocusKickAnchor. Don't touch its alpha or
@@ -320,7 +320,7 @@ _CDMApplyVisibility = function()
             -- The viewer must stay visible if ANY bar that uses its icons is visible (each bar has
             -- independent visibility). Mapping: cooldowns/utility bars use the Essential/Utility viewers; buff bars use the BuffIcon viewer; custom_buff (aura timer) bars use their own frames, not a viewer.
             local anyVisible = false
-            for _, barInfo in ipairs(p.cdmBars.bars) do
+            for _, barInfo in ipairs(profile.cdmBars.bars) do
                 if barInfo.enabled then
                     local widget = cdmBarFrames[barInfo.key]
                     if widget and not widget._visHidden then
@@ -780,8 +780,8 @@ do
     -- == true read means a pre-merge call (key not seeded yet) falls back to
     -- the legacy live-page scan for that pass.
     local function StableKeybindsEnabled()
-        local p = ECME.db and ECME.db.profile
-        return (p and p.cdmBars and p.cdmBars.stableKeybinds) == true
+        local profile = ECME.db and ECME.db.profile
+        return (profile and profile.cdmBars and profile.cdmBars.stableKeybinds) == true
     end
     mod.CDMStableKeybindsEnabled = StableKeybindsEnabled
 
@@ -1035,22 +1035,22 @@ BuildAllCDMBars = function()
     mod.RescanTalentCondFlag() -- set the Talent Conditions gate (once) before refresh
     mod.RescanStanceBarFlag() -- set the Stance Bar gate (once) before refresh
 
-    local p = ECME.db.profile
+    local profile = ECME.db.profile
 
     -- Heal ghost bar entries: an override write to a numeric bar path whose bar no longer existed
     -- (profile import, or a deleted bar with a stored override still referencing its index) used to
     -- auto-create a skeleton table (e.g. { barVisibility = "always" }) with no key. Every keyed
     -- consumer (spell data, racial normalize, unlock snapshots) then errors on the nil key. The override writer no longer fabricates numeric containers; this prunes profiles that already carry ghosts.
-    if type(p.cdmBars.bars) == "table" then
-        for index = #p.cdmBars.bars, 1, -1 do
-            local edge = p.cdmBars.bars[index]
+    if type(profile.cdmBars.bars) == "table" then
+        for index = #profile.cdmBars.bars, 1, -1 do
+            local edge = profile.cdmBars.bars[index]
             if type(edge) ~= "table" or not edge.key then
-                table.remove(p.cdmBars.bars, index)
+                table.remove(profile.cdmBars.bars, index)
             end
         end
     end
 
-    if not p.cdmBars.enabled then
+    if not profile.cdmBars.enabled then
         -- Restore Blizzard CDM if we're disabled
         RestoreBlizzardCDM()
         for barKey, widget in pairs(cdmBarFrames) do
@@ -1072,13 +1072,13 @@ BuildAllCDMBars = function()
     EnforceCooldownViewerEditModeSettings()
 
     -- Hide Blizzard CDM
-    if p.cdmBars.hideBlizzard then
+    if profile.cdmBars.hideBlizzard then
         HideBlizzardCDM()
     end
 
     -- If user wants Blizzard's tracking bars instead of TBB, restore the secondary
     -- BuffBarCooldownViewer that HideBlizzardCDM moved offscreen. This only affects the bar-style buff viewer; CDM icon bars are untouched.
-    if p.cdmBars.useBlizzardBuffBars and p.cdmBars.hideBlizzard then
+    if profile.cdmBars.useBlizzardBuffBars and profile.cdmBars.hideBlizzard then
         RestoreBlizzardBuffFrame()
     end
 
@@ -1086,7 +1086,7 @@ BuildAllCDMBars = function()
     local hookActive = mod.IsViewerHooked and mod.IsViewerHooked()
     wipe(barDataByKey)
     mod._cdmAnyOverflowCfg = nil
-    for index, barInfo in ipairs(p.cdmBars.bars) do
+    for index, barInfo in ipairs(profile.cdmBars.bars) do
         barDataByKey[barInfo.key] = barInfo
         -- Live migration: buffGlowMode replaced buffGlowClassColor + "buffGlowR set" nil checks
         if not barInfo.buffGlowMode then
@@ -1162,12 +1162,12 @@ BuildAllCDMBars = function()
     end
     -- Re-apply saved positions now that LayoutCDMBar has set correct frame sizes. Positions are
     -- stored using the edge anchor directly (LEFT for RIGHT-grow, etc.), so SetPoint places the frame at its fixed edge and subsequent SetSize calls grow naturally from that edge.
-    for _, barInfo in ipairs(p.cdmBars.bars) do
+    for _, barInfo in ipairs(profile.cdmBars.bars) do
         if barInfo.enabled then
             local ak = barInfo.anchorTo
             if not ak or ak == "none" then
                 local widget = cdmBarFrames[barInfo.key]
-                local place = p.cdmBarPositions[barInfo.key]
+                local place = profile.cdmBarPositions[barInfo.key]
                 if widget and place and place.point then
                     local unlockKey = "CDM_" .. barInfo.key
                     local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(unlockKey)
@@ -1181,7 +1181,7 @@ BuildAllCDMBars = function()
     -- Second pass: reapply unlock-mode anchors now that ALL bars are positioned and sized. The
     -- first pass (inside LayoutCDMBar) may have run ReapplyOwnAnchor before the target bar was repositioned (e.g. cooldowns processed before utility). This corrects that.
     if CludesUI.ReapplyOwnAnchor then
-        for _, barInfo in ipairs(p.cdmBars.bars) do
+        for _, barInfo in ipairs(profile.cdmBars.bars) do
             CludesUI.ReapplyOwnAnchor("CDM_" .. barInfo.key)
         end
     end
@@ -1204,7 +1204,7 @@ BuildAllCDMBars = function()
     -- Match pads follow each bar's border settings: a bar whose pad changed is
     -- re-pushed through its matches once, deferred (compare-only here).
     if CludesUI.MatchPadChanged then
-        for _, edge in ipairs(p.cdmBars.bars) do
+        for _, edge in ipairs(profile.cdmBars.bars) do
             if edge.key then
                 CludesUI.MatchPadChanged(mod._cdmUKey[edge.key])
             end
@@ -1253,8 +1253,8 @@ function mod.NormalizeRacialAssignments()
     if not isActive or isActive <= 0 then
         return
     end
-    local p = ECME.db and ECME.db.profile
-    if not (p and p.cdmBars and p.cdmBars.bars) then
+    local profile = ECME.db and ECME.db.profile
+    if not (profile and profile.cdmBars and profile.cdmBars.bars) then
         return
     end
 
@@ -1262,7 +1262,7 @@ function mod.NormalizeRacialAssignments()
     -- each list's bar key so the keeper choice below can tell default bars
     -- from explicit custom placements.
     local lists, listBarKeys = {}, {}
-    for _, bar in ipairs(p.cdmBars.bars) do
+    for _, bar in ipairs(profile.cdmBars.bars) do
         local isBuff = (bar.barType == "custom_buff") or (mod.IsBarBuffFamily and mod.IsBarBuffFamily(bar))
         -- b.key guard: a ghost bar (keyless skeleton from a stale override write) would index barSpells with nil and error.
         if not isBuff and bar.key then

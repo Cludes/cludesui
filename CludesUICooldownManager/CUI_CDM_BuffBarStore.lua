@@ -365,8 +365,8 @@ local function AddTrackedBuffBarCore(tbb, targetGid)
     end
 
     -- Auto-position adjacent to the previous bar; matters only for independent bars (grouped bars chain off their group anchor).
-    local p = ECME and ECME.db and ECME.db.profile
-    if p then
+    local profile = ECME and ECME.db and ECME.db.profile
+    if profile then
         local _tbbPos = mod.GetTBBPositions()
         local prevIdx = #barList - 1
         if prevIdx >= 1 then

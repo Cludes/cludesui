@@ -98,9 +98,9 @@ local function Get(key)
 end
 
 local function Own()
-    local p = Profile()
-    p.selfCombatText = p.selfCombatText or {}
-    return p.selfCombatText
+    local profile = Profile()
+    profile.selfCombatText = profile.selfCombatText or {}
+    return profile.selfCombatText
 end
 
 local function Wanted()

@@ -2536,8 +2536,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                 local mult = (_PP and _PP.mult) or 1
                 timerFill:SetPoint("BOTTOMLEFT", anchorFrame, "BOTTOMLEFT", mult, mult)
                 timerFill:SetPoint("BOTTOMRIGHT", anchorFrame, "BOTTOMRIGHT", -mult, mult)
-                local ar, ag, ab = CludesUI.GetAccentColor()
-                timerFill:SetStatusBarColor(ar, ag, ab, 0.75)
+                local accR, accG, accB = CludesUI.GetAccentColor()
+                timerFill:SetStatusBarColor(accR, accG, accB, 0.75)
                 timerBg:SetColorTexture(0, 0, 0, 0.5)
                 timerEdge:Hide()
                 timerBg:Show()

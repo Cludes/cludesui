@@ -489,8 +489,8 @@ end
 -- further out rather than growing its own radius until the angle buys enough
 -- room, which is unbounded.
 function PaletteView:ChildGeom(isShown, slots)
-    local p = self:P()
-    if not p or not slots or isShown < 1 then
+    local profile = self:P()
+    if not profile or not slots or isShown < 1 then
         return nil
     end
     -- An editor draws no nests. What a nested entry holds is that palette's own
@@ -510,7 +510,7 @@ function PaletteView:ChildGeom(isShown, slots)
     -- layout it is showing can seat. Keep the two in step: this is the copy the
     -- LIVE menu uses, and it went on capping the arc at eight for a whole
     -- release after the other one stopped.
-    local cap = (self:IsGrid() and p.gridNestStyle == "HALO") and MAX_CHILDREN or MAX_SLOTS
+    local cap = (self:IsGrid() and profile.gridNestStyle == "HALO") and MAX_CHILDREN or MAX_SLOTS
     local claims
     for index = 1, isShown do
         local kids = ChildSlots(ChildIndex(slots[index]), cap)
@@ -545,20 +545,20 @@ function PaletteView:ChildGeom(isShown, slots)
     -- radius already carries that factor; a band read at its literal profile
     -- size would not, and the options preview would then draw its nests at
     -- full distance around a palette fitted to two-thirds.
-    local base = p.iconSize or 40
+    local base = profile.iconSize or 40
     local key = (base > 0) and (iconSize / base) or 1
-    local band = max(0, p.nestBand or NEST_BAND_DEFAULT) * key
-    local gap = ((p and p.fanGap) or 10) * key
+    local band = max(0, profile.nestBand or NEST_BAND_DEFAULT) * key
+    local gap = ((profile and profile.fanGap) or 10) * key
     -- Nested entries are drawn smaller than the palette's own, so a nest reads
     -- as subordinate to the entry it hangs off rather than as a second ring of
     -- equals. It costs nothing in the hit test: the sectors are angular, and an
     -- icon's size has no part in deciding which one the cursor is in.
-    local childIcon = iconSize * min(1, max(0.4, p.nestScale or 0.8))
+    local childIcon = iconSize * min(1, max(0.4, profile.nestScale or 0.8))
     local childPitch = childIcon + gap
-    local capHalf = min(180, max(10, p.arcChildMaxSpan or 90)) * pi / 180 * 0.5
+    local capHalf = min(180, max(10, profile.arcChildMaxSpan or 90)) * pi / 180 * 0.5
     -- Anything that is not the one opt-in value keeps clear of other claims,
     -- so a saved profile that never set this reads as the cautious side.
-    local keepClear = p.arcChildOverflow ~= "MIDPOINT"
+    local keepClear = profile.arcChildOverflow ~= "MIDPOINT"
     local total = #claims
 
     -- Angles for all of them before any of them is sized: a claim keeping clear
@@ -781,9 +781,9 @@ end
 -- MINUS ONE instead, which puts the first and last entries ON its ends rather
 -- than leaving a step-wide gap at the seam that belongs to no entry at all.
 function PaletteView:ArcGeom(isShown)
-    local p = self:P()
-    local deg = min(360, max(30, (p and p.arcSpan) or 360))
-    local rot = ((p and p.arcRotation) or 0) * pi / 180
+    local profile = self:P()
+    local deg = min(360, max(30, (profile and profile.arcSpan) or 360))
+    local rot = ((profile and profile.arcRotation) or 0) * pi / 180
 
     if deg >= 359.5 then
         return (isShown > 0) and (TWO_PI / isShown) or 0, rot, true
@@ -920,8 +920,8 @@ end
 -- from Layout and from every animation step; it never repaints icons, so it is
 -- cheap enough to run each frame while the strip settles.
 function PaletteView:ApplyFanGeometry()
-    local p = self:P()
-    if not p or not self:IsFan() then
+    local profile = self:P()
+    if not profile or not self:IsFan() then
         return
     end
 
@@ -931,10 +931,10 @@ function PaletteView:ApplyFanGeometry()
     end
 
     local _, iconSize = self:Geom()
-    local gap = p.fanGap or 10
-    local decay, aDecay = FalloffRatios(p)
-    local minS = p.fanMinScale or 0.30
-    local minA = p.fanMinAlpha or 0.12
+    local gap = profile.fanGap or 10
+    local decay, aDecay = FalloffRatios(profile)
+    local minS = profile.fanMinScale or 0.30
+    local minA = profile.fanMinAlpha or 0.12
     if self.opts.interactive then
         minS = max(minS, FAN_EDIT_MIN_SCALE)
         minA = max(minA, FAN_EDIT_MIN_ALPHA)
@@ -943,7 +943,7 @@ function PaletteView:ApplyFanGeometry()
     -- The editor windows exactly like play now: it draws the centre plus
     -- fanVisible each side and the wheel scrolls the rest into view, so what
     -- the preview shows is what a hold shows.
-    local window = p.fanVisible or 2
+    local window = profile.fanVisible or 2
 
     local widget = self.frame
     local center = self.fanVisual or 1

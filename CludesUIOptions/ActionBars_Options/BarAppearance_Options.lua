@@ -94,8 +94,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         local COLOR, SIZE = prefix .. "FontColor", prefix .. "FontSize"
         local OX, OY, ANCHOR = prefix .. "OffsetX", prefix .. "OffsetY", prefix .. "Anchor"
         BarSync(region, tooltip, function()
-            local s = SB()
-            return { c = s[COLOR], sz = s[SIZE] or 12, ox = s[OX] or 0, oy = s[OY] or 0, an = s[ANCHOR] }
+            local barCfg = SB()
+            return { c = barCfg[COLOR], sz = barCfg[SIZE] or 12, ox = barCfg[OX] or 0, oy = barCfg[OY] or 0, an = barCfg[ANCHOR] }
         end, function(bar, value, key)
             local c = value.c
             if c then
@@ -319,13 +319,13 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 end,
                 -- Exactly what the dropdown wrote for a non-custom shape: the label and its mirrors.
                 setStep = function(step)
-                    local s = SB()
+                    local barCfg = SB()
                     local labelText = CludesUI.BORDER_LABEL_OF_STEP[step]
-                    s.borderThickness = labelText
+                    barCfg.borderThickness = labelText
                     local record = mod.BORDER_THICKNESS[labelText]
                     if record then
-                        s.borderSize = record.regular
-                        s.borderEnabled = record.regular > 0
+                        barCfg.borderSize = record.regular
+                        barCfg.borderEnabled = record.regular > 0
                     end
                 end,
                 getTex = function()
@@ -590,17 +590,17 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         end
         local bsLeftRgn = abBsRow._leftRegion
         BarSync(bsLeftRgn, "Apply Border Style to all Bars", function()
-            local s = SB()
+            local barCfg = SB()
             return {
-                texture = s.borderTexture,
-                ox = s.borderTextureOffset,
-                oy = s.borderTextureOffsetY,
-                sx = s.borderTextureShiftX,
-                sy = s.borderTextureShiftY,
-                behind = s.borderBehind,
-                above = s.borderAboveEffects,
-                color = s.borderColor,
-                classColor = s.borderClassColor,
+                texture = barCfg.borderTexture,
+                ox = barCfg.borderTextureOffset,
+                oy = barCfg.borderTextureOffsetY,
+                sx = barCfg.borderTextureShiftX,
+                sy = barCfg.borderTextureShiftY,
+                behind = barCfg.borderBehind,
+                above = barCfg.borderAboveEffects,
+                color = barCfg.borderColor,
+                classColor = barCfg.borderClassColor,
             }
         end, function(bar, value, key)
             bar.borderTexture = value.texture or "solid"
@@ -721,13 +721,13 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     do
         local region = abBsRow._rightRegion
         BarSync(region, "Apply Border Size and Color to all Bars", function()
-            local s = SB()
+            local barCfg = SB()
             -- borderThicknessPx is copied as is (string, false or nil).
             return {
-                th = s.borderThickness,
-                px = s.borderThicknessPx,
-                c = s.borderColor,
-                cc = s.borderClassColor,
+                th = barCfg.borderThickness,
+                px = barCfg.borderThicknessPx,
+                c = barCfg.borderColor,
+                cc = barCfg.borderClassColor,
             }
         end, function(bar, value, key)
             bar.borderThickness = value.th
@@ -1800,8 +1800,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     do
         local region = rangeSwipeRow._leftRegion
         BarSync(region, "Apply Range Coloring to all Bars", function()
-            local s = SB()
-            return { on = s.outOfRangeColoring or false, color = s.outOfRangeColor }
+            local barCfg = SB()
+            return { on = barCfg.outOfRangeColoring or false, color = barCfg.outOfRangeColor }
         end, function(bar, value)
             bar.outOfRangeColoring = value.on
             local color = value.color
@@ -2268,19 +2268,19 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 elseif keyName == "skyriding" then
                     SSet("disableSkyridingPaging", not value, RebuildPaging)
                 else
-                    local s = SB()
+                    local barCfg = SB()
                     local mine = (keyName == "modifier") and "modifierPaging" or "targetPaging"
                     local other = (keyName == "modifier") and "targetPaging" or "modifierPaging"
-                    if s.modTargetPaging == false then
+                    if barCfg.modTargetPaging == false then
                         if value then
-                            s.modTargetPaging = nil
-                            s[other] = false
+                            barCfg.modTargetPaging = nil
+                            barCfg[other] = false
                         end
-                    elseif s[other] == nil and s.modTargetPaging == nil then
+                    elseif barCfg[other] == nil and barCfg.modTargetPaging == nil then
                         if keyName == "modifier" then
-                            s[other] = TargetOn()
+                            barCfg[other] = TargetOn()
                         else
-                            s[other] = ModifierOn()
+                            barCfg[other] = ModifierOn()
                         end
                     end
                     SSet(mine, value and true or false, RebuildPaging)
@@ -2313,12 +2313,12 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 "Paging Options",
                 "What switches this bar to another page.",
                 function()
-                    local s = SB()
-                    local _ = s.disableFormPaging
-                    _ = s.disableSkyridingPaging
-                    _ = s.modifierPaging
-                    _ = s.targetPaging
-                    _ = s.modTargetPaging
+                    local barCfg = SB()
+                    local _ = barCfg.disableFormPaging
+                    _ = barCfg.disableSkyridingPaging
+                    _ = barCfg.modifierPaging
+                    _ = barCfg.targetPaging
+                    _ = barCfg.modTargetPaging
                 end
             )
             if isMain then
@@ -2330,12 +2330,12 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                     order = { "never", "always", "paged" },
                     getValue = ArrowsMode,
                     setValue = function(value)
-                        local s = SB()
+                        local barCfg = SB()
                         if value == "always" then
-                            s.showPagingArrows = true
+                            barCfg.showPagingArrows = true
                         else
-                            s.showPagingArrows = false
-                            s.pagingArrowsWhilePaged = (value == "paged")
+                            barCfg.showPagingArrows = false
+                            barCfg.pagingArrowsWhilePaged = (value == "paged")
                         end
                         if mod.LayoutPagingFrame then
                             mod.LayoutPagingFrame()
@@ -2464,8 +2464,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         end,
         -- Charge Numbers with nothing ticked.
         charges = function()
-            local s = SB()
-            return (s.hideChargeCount and s.hideStackCount and s.hideItemCount) and true or false
+            local barCfg = SB()
+            return (barCfg.hideChargeCount and barCfg.hideStackCount and barCfg.hideItemCount) and true or false
         end,
         keybind = function()
             return SGet("hideKeybind") and true or false
@@ -2618,13 +2618,13 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
     do
         local region = cdTextRow._rightRegion
         BarSync(region, "Apply Cooldown Text Settings to all Bars", function()
-            local s = SB()
+            local barCfg = SB()
             return {
-                c = s.cooldownTextColor,
-                sz = s.cooldownFontSize or 12,
-                ox = s.cooldownTextXOffset or 0,
-                oy = s.cooldownTextYOffset or 0,
-                fit = s.cooldownFontFit or false,
+                c = barCfg.cooldownTextColor,
+                sz = barCfg.cooldownFontSize or 12,
+                ox = barCfg.cooldownTextXOffset or 0,
+                oy = barCfg.cooldownTextYOffset or 0,
+                fit = barCfg.cooldownFontFit or false,
             }
         end, function(bar, value, key)
             local c = value.c
@@ -2688,10 +2688,10 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         hostFrame,
         cursorY,
         ChecklistCfg("Charge Numbers", "Which counts show on this bar's buttons.", function()
-            local s = SB()
-            local _ = s.hideChargeCount
-            _ = s.hideStackCount
-            _ = s.hideItemCount
+            local barCfg = SB()
+            local _ = barCfg.hideChargeCount
+            _ = barCfg.hideStackCount
+            _ = barCfg.hideItemCount
         end),
         {
             type = "slider",

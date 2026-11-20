@@ -189,9 +189,9 @@ local function Build()
     return holderFrame
 end
 
-local ev = CreateFrame("Frame")
+local eventFrame = CreateFrame("Frame")
 local queued
-ev:SetScript("OnEvent", function(_, evt)
+eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "BAG_UPDATE_COOLDOWN" then
         return Paint()
     end
@@ -211,16 +211,16 @@ end)
 local function Apply()
     if Enabled() then
         Build()
-        ev:RegisterEvent("BAG_UPDATE_DELAYED")
-        ev:RegisterEvent("BAG_UPDATE_COOLDOWN")
-        ev:RegisterEvent("PLAYER_REGEN_ENABLED")
-        ev:RegisterEvent("PLAYER_ENTERING_WORLD")
-        ev:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+        eventFrame:RegisterEvent("BAG_UPDATE_DELAYED")
+        eventFrame:RegisterEvent("BAG_UPDATE_COOLDOWN")
+        eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+        eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+        eventFrame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
         if not CludesUI._unlockActive and not InCombatLockdown() then
             F.Place(holderFrame)
         end
     else
-        ev:UnregisterAllEvents()
+        eventFrame:UnregisterAllEvents()
     end
     Layout()
 end

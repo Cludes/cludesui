@@ -235,11 +235,11 @@ CUI_NS.unlockParts.Positions = function(LM)
                 local gl, gr, gt, gb = self:GetLeft(), self:GetRight(), self:GetTop(), self:GetBottom()
                 if gl then
                     local uiScale = UIParent:GetEffectiveScale()
-                    local mx, my = GetCursorPosition()
+                    local curX, curY = GetCursorPosition()
                     local gs = self:GetEffectiveScale() / uiScale
                     self._dragging = true
-                    self._dragCurX = mx / uiScale
-                    self._dragCurY = my / uiScale
+                    self._dragCurX = curX / uiScale
+                    self._dragCurY = curY / uiScale
                     self._dragStartCX = (gl + gr) * 0.5 * gs
                     self._dragStartCY = (gt + gb) * 0.5 * gs
                 end
@@ -286,10 +286,10 @@ CUI_NS.unlockParts.Positions = function(LM)
             ghost:SetScript("OnUpdate", function(self, elapsed)
                 if self._dragging then
                     local uiScale = UIParent:GetEffectiveScale()
-                    local mx, my = GetCursorPosition()
-                    mx, my = mx / uiScale, my / uiScale
-                    local ncx = self._dragStartCX + (mx - self._dragCurX)
-                    local ncy = self._dragStartCY + (my - self._dragCurY)
+                    local curX, curY = GetCursorPosition()
+                    curX, curY = curX / uiScale, curY / uiScale
+                    local ncx = self._dragStartCX + (curX - self._dragCurX)
+                    local ncy = self._dragStartCY + (curY - self._dragCurY)
                     self:ClearAllPoints()
                     self:SetPoint(
                         "CENTER",

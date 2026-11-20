@@ -351,8 +351,8 @@ local function Chat(event, text, sender, _, _, _, _, _, _, _, _, _, guid)
     end
 end
 
-local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, event, ...)
+local eventFrame = CreateFrame("Frame")
+eventFrame:SetScript("OnEvent", function(_, event, ...)
     if CHANNEL[event] then
         return Chat(event, ...)
     end
@@ -691,13 +691,13 @@ local function Apply()
             "ZONE_CHANGED_NEW_AREA",
             "PLAYER_LOGOUT",
         }) do
-            ev:RegisterEvent(event)
+            eventFrame:RegisterEvent(event)
         end
         for event in pairs(CHANNEL) do
             if Get("chats") then
-                ev:RegisterEvent(event)
+                eventFrame:RegisterEvent(event)
             else
-                ev:UnregisterEvent(event)
+                eventFrame:UnregisterEvent(event)
             end
         end
         if not active then
@@ -707,7 +707,7 @@ local function Apply()
         end
     elseif active then
         active = false
-        ev:UnregisterAllEvents()
+        eventFrame:UnregisterAllEvents()
         local now = time()
         for guid in pairs(open) do
             Close(guid, now)

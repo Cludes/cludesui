@@ -47,13 +47,13 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function ChatDB()
-        local p = DB()
-        return p and p.chat
+        local profile = DB()
+        return profile and profile.chat
     end
 
     local function MinimapDB()
-        local p = DB()
-        return p and p.minimap
+        local profile = DB()
+        return profile and profile.minimap
     end
 
     -- Square and Rectangular share the rect layout/border engine (not the circle wrap).
@@ -68,8 +68,8 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function FriendsDB()
-        local p = DB()
-        return p and p.friends
+        local profile = DB()
+        return profile and profile.friends
     end
 
     ---------------------------------------------------------------------------
@@ -744,8 +744,8 @@ CludesUI.AtOptionsLogin(function()
                 region,
                 borderRow:GetFrameLevel() + 3,
                 function()
-                    local ar, ag, ab = CludesUI.GetAccentColor()
-                    return ar, ag, ab, 1
+                    local accR, accG, accB = CludesUI.GetAccentColor()
+                    return accR, accG, accB, 1
                 end,
                 function() end,
                 false,
@@ -2497,8 +2497,8 @@ CludesUI.AtOptionsLogin(function()
                 region,
                 region:GetFrameLevel() + 5,
                 function()
-                    local ar, ag, ab = CludesUI.GetAccentColor()
-                    return ar, ag, ab, 1
+                    local accR, accG, accB = CludesUI.GetAccentColor()
+                    return accR, accG, accB, 1
                 end,
                 function() end,
                 false,

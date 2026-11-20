@@ -217,7 +217,7 @@ local function SaveCDMBarPosition(barId, widget)
     if not widget then
         return
     end
-    local p = ECME.db.profile
+    local profile = ECME.db.profile
     local scale = widget:GetScale() or 1
     local uiScale = UIParent:GetEffectiveScale()
     local fScale = widget:GetEffectiveScale()
@@ -272,7 +272,7 @@ local function SaveCDMBarPosition(barId, widget)
     -- by one offset per edit). In unlock mode both terms are already base:
     -- the frame carries no offset and CDMAddOffset returns 0.
     local aox, aoy = mod.CDMAddOffset(edge)
-    p.cdmBarPositions[barId] = {
+    profile.cdmBarPositions[barId] = {
         point = point,
         relPoint = "CENTER",
         x = (ax - uiW / 2) / scale - aox,
@@ -360,8 +360,8 @@ end
 --  Build a single CDM bar frame
 -------------------------------------------------------------------------------
 BuildCDMBar = function(barIndex)
-    local p = ECME.db.profile
-    local barList = p.cdmBars.bars
+    local profile = ECME.db.profile
+    local barList = profile.cdmBars.bars
     local barInfo = barList[barIndex]
     if not barInfo then
         return
@@ -404,8 +404,8 @@ BuildCDMBar = function(barIndex)
             end
             widget._mouseResume = nil
             widget._mouseTrack = nil
-            if widget._preMousePos and not p.cdmBarPositions[barKey] then
-                p.cdmBarPositions[barKey] = widget._preMousePos
+            if widget._preMousePos and not profile.cdmBarPositions[barKey] then
+                profile.cdmBarPositions[barKey] = widget._preMousePos
             end
             widget._preMousePos = nil
             SetFrameClickThrough(widget, false)
@@ -438,8 +438,8 @@ BuildCDMBar = function(barIndex)
         widget._mouseResume = nil
         widget._mouseTrack = nil
         -- Restore position/strata/mouse from before the cursor anchor
-        if widget._preMousePos and not p.cdmBarPositions[barKey] then
-            p.cdmBarPositions[barKey] = widget._preMousePos
+        if widget._preMousePos and not profile.cdmBarPositions[barKey] then
+            profile.cdmBarPositions[barKey] = widget._preMousePos
         end
         widget._preMousePos = nil
         widget:SetFrameStrata(barInfo.barStrata or "MEDIUM")
@@ -469,8 +469,8 @@ BuildCDMBar = function(barIndex)
     local anchorKey = barInfo.anchorTo
     if anchorKey == "mouse" then
         -- Stash saved position for restore on unanchor
-        if p.cdmBarPositions[barKey] then
-            widget._preMousePos = p.cdmBarPositions[barKey]
+        if profile.cdmBarPositions[barKey] then
+            widget._preMousePos = profile.cdmBarPositions[barKey]
         end
         -- Anchor position acts as build direction for cursor tracking
         local anchorPoint = barInfo.anchorPosition or "right"
@@ -526,7 +526,7 @@ BuildCDMBar = function(barIndex)
             if cx ~= lastMX or cy ~= lastMY then
                 local firstMove = lastMX == nil
                 lastMX, lastMY = cx, cy
-                local s = UIParent:GetEffectiveScale()
+                local uiScale = UIParent:GetEffectiveScale()
                 if firstMove then
                     widget:ClearAllPoints()
                 end
@@ -534,8 +534,8 @@ BuildCDMBar = function(barIndex)
                     pointFrom,
                     UIParent,
                     "BOTTOMLEFT",
-                    floor(cx / s + 0.5) + baseOX,
-                    floor(cy / s + 0.5) + baseOY
+                    floor(cx / uiScale + 0.5) + baseOX,
+                    floor(cy / uiScale + 0.5) + baseOY
                 )
             end
         end
@@ -656,7 +656,7 @@ BuildCDMBar = function(barIndex)
             end
         else
             -- No party frame: fall back to saved position
-            local place = p.cdmBarPositions[barKey]
+            local place = profile.cdmBarPositions[barKey]
             if place and place.point then
                 ApplyBarPositionCentered(widget, place, barKey)
             else
@@ -696,7 +696,7 @@ BuildCDMBar = function(barIndex)
             end
         else
             -- No player frame: fall back to saved position
-            local place = p.cdmBarPositions[barKey]
+            local place = profile.cdmBarPositions[barKey]
             if place and place.point then
                 ApplyBarPositionCentered(widget, place, barKey)
             else
@@ -750,7 +750,7 @@ BuildCDMBar = function(barIndex)
             end
         else
             -- ERB frame unavailable: fall back to saved position
-            local place = p.cdmBarPositions[barKey]
+            local place = profile.cdmBarPositions[barKey]
             if place and place.point then
                 ApplyBarPositionCentered(widget, place, barKey)
             else
@@ -768,7 +768,7 @@ BuildCDMBar = function(barIndex)
         if anchored and widget:GetLeft() then
             -- Unlock-anchored and already has bounds: leave position alone.
         else
-            local place = p.cdmBarPositions[barKey]
+            local place = profile.cdmBarPositions[barKey]
             if place and place.point then
                 ApplyBarPositionCentered(widget, place, barKey)
             elseif not anchored then

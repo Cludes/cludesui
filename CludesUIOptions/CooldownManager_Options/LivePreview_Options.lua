@@ -32,8 +32,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         environ.StartActiveStatePreview,
         environ.StopActiveStatePreview,
         environ.UpdateCDMPreviewAndResize
-    local p = DB()
-    if not p or not p.cdmBars then
+    local profile = DB()
+    if not profile or not profile.cdmBars then
         return 0
     end
 
@@ -1373,12 +1373,12 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 if not dragGhost or not dragGhost:IsShown() then
                     return
                 end
-                local cx, cy = GetCursorPosition()
-                local sc = UIParent:GetEffectiveScale()
-                cx, cy = cx / sc, cy / sc
+                local curX, curY = GetCursorPosition()
+                local uiScale = UIParent:GetEffectiveScale()
+                curX, curY = curX / uiScale, curY / uiScale
                 local gs = dragGhost:GetScale() or 1
                 dragGhost:ClearAllPoints()
-                dragGhost:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx / gs, cy / gs)
+                dragGhost:SetPoint("CENTER", UIParent, "BOTTOMLEFT", curX / gs, curY / gs)
                 TickAnimation(dt)
                 local tBd = SelectedCDMBar()
                 local tCount = 0
@@ -1395,7 +1395,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     end
                 end
                 local visCount = popFrame._gridSlots or tCount
-                local newMode, newTarget = FindDragTarget(cx, cy, visCount, dragIdx)
+                local newMode, newTarget = FindDragTarget(curX, curY, visCount, dragIdx)
                 if newMode and newTarget then
                     local isNoop = false
                     if newMode == "insert" then
@@ -1435,10 +1435,10 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             if bdDrag and bdDrag.key == mod.FOCUSKICK_BAR_KEY then
                 return
             end
-            local cx, cy = GetCursorPosition()
+            local curX, curY = GetCursorPosition()
             pendingDragSlot = self
-            pendingStartX = cx
-            pendingStartY = cy
+            pendingStartX = curX
+            pendingStartY = curY
             -- Use a lightweight OnUpdate to detect threshold
             self:SetScript("OnUpdate", function()
                 if not pendingDragSlot then
@@ -1503,8 +1503,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
     end
 
     addBtn:SetScript("OnEnter", function()
-        local ar, ag, ab = CludesUI.GetAccentColor()
-        addLbl:SetTextColor(ar, ag, ab, 1)
+        local accR, accG, accB = CludesUI.GetAccentColor()
+        addLbl:SetTextColor(accR, accG, accB, 1)
         if addBrd then
             addBrd:Show()
         end
@@ -1522,8 +1522,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         end
     end)
     addBtn:SetScript("OnLeave", function()
-        local ar, ag, ab = CludesUI.GetAccentColor()
-        addLbl:SetTextColor(ar, ag, ab, 0.6)
+        local accR, accG, accB = CludesUI.GetAccentColor()
+        addLbl:SetTextColor(accR, accG, accB, 0.6)
         if addBrd then
             addBrd:Hide()
         end
@@ -2435,9 +2435,9 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         if Pix.GetBorders(addBtn) then
             Pix.SetBorderSize(addBtn, 1)
         end
-        local ar, ag, ab = CludesUI.GetAccentColor()
+        local accR, accG, accB = CludesUI.GetAccentColor()
 
-        addLbl:SetTextColor(ar, ag, ab, 0.6)
+        addLbl:SetTextColor(accR, accG, accB, 0.6)
         addBtn:Show()
 
         -- Second "+" (buff) button sits one slot right of the standard "+", on CD/utility bars only (buff-family/custom_buff/focuskick bars track buffs their own way).

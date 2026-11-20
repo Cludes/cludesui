@@ -133,9 +133,9 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
     -- the full-size one belongs to Resource & Cast Bars, deep-linked here. The page
     -- fully rebuilds on unit change, so gating on selectedUnit re-evaluates per unit.
     if optionState.selectedUnit == "player" then
-        local ar, ag, ab = CludesUI.GetAccentColor()
-        ar, ag, ab = ar or 76 / 255, ag or 201 / 255, ab or 240 / 255
-        local accentHex = CludesUI.HexColor(ar, ag, ab)
+        local accR, accG, accB = CludesUI.GetAccentColor()
+        accR, accG, accB = accR or 76 / 255, accG or 201 / 255, accB or 240 / 255
+        local accentHex = CludesUI.HexColor(accR, accG, accB)
         local hintText = CludesUI.Lf(
             "For player frame, this provides a simple, mini castbar below player frame. To edit the main player cast bar, %sclick here|r",
             accentHex

@@ -170,8 +170,8 @@ function mod.PAB_EnchantsOn(conf)
     if not conf or (conf.showAllBuffs == false and conf.hasDuration ~= true) then
         return false
     end
-    local s = PAB()
-    return s ~= nil and s.defaultBuffs == conf
+    local pabCfg = PAB()
+    return pabCfg ~= nil and pabCfg.defaultBuffs == conf
 end
 
 -- Default Buffs bar display name. Returns the RAW English key: unlock mode

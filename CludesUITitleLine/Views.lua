@@ -334,8 +334,8 @@ local function SetUpScrolling(panelFrame)
         local _, posY = GetCursorPosition()
         self.dragging, self.startY, self.startOffset = true, posY / self:GetEffectiveScale(), st.offset
         self:SetScript("OnUpdate", function()
-            local _, cy = GetCursorPosition()
-            local moved = self.startY - cy / self:GetEffectiveScale()
+            local _, curY = GetCursorPosition()
+            local moved = self.startY - curY / self:GetEffectiveScale()
             local rowList = (#st.entries - st.capacity) * moved / self.travel
             ScrollBy(panelFrame, math.floor(self.startOffset + rowList + 0.5) - st.offset)
         end)

@@ -265,8 +265,8 @@ end
 local LOOT_SELF = LOOT_ITEM_SELF and LOOT_ITEM_SELF:match("^(.-)%%s")
 local LOOT_SELF_MULTI = LOOT_ITEM_SELF_MULTIPLE and LOOT_ITEM_SELF_MULTIPLE:match("^(.-)%%s")
 
-local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, evt, a1, a2)
+local eventFrame = CreateFrame("Frame")
+eventFrame:SetScript("OnEvent", function(_, evt, a1, a2)
     if evt == "PLAYER_ENTERING_WORLD" then
         local reload = a1 or a2 -- isInitialLogin, isReloadingUi
         -- A ghost running back from the graveyard is still on the run.
@@ -315,7 +315,7 @@ local function Apply()
             "PLAYER_XP_UPDATE",
             "CHAT_MSG_LOOT",
         }) do
-            ev:RegisterEvent(event)
+            eventFrame:RegisterEvent(event)
         end
         if not ticker then
             ticker = C_Timer.NewTicker(1, PaintHud)
@@ -327,7 +327,7 @@ local function Apply()
             StartVisit(true)
         end
     else
-        ev:UnregisterAllEvents()
+        eventFrame:UnregisterAllEvents()
         copyEvents:UnregisterAllEvents()
         if ticker then
             ticker:Cancel()

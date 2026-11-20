@@ -103,8 +103,8 @@ function mod.PaintTalentCondMark(slot, status)
     if status == "off" then
         mark._tex:SetColorTexture(NOT_TAKEN[1], NOT_TAKEN[2], NOT_TAKEN[3], 1)
     else
-        local ar, ag, ab = CludesUI.GetAccentColor()
-        mark._tex:SetColorTexture(ar, ag, ab, 1)
+        local accR, accG, accB = CludesUI.GetAccentColor()
+        mark._tex:SetColorTexture(accR, accG, accB, 1)
     end
     mark:Show()
 end

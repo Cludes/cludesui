@@ -753,8 +753,8 @@ function mod.FindTBBSoundKey(widget, spellRef, field)
     if not (ECME and ECME.db) then
         SetECME(mod.ECME)
     end
-    local p = ECME and ECME.db and ECME.db.profile
-    if not p or (p.cdmBars and p.cdmBars.useBlizzardBuffBars) then
+    local profile = ECME and ECME.db and ECME.db.profile
+    if not profile or (profile.cdmBars and profile.cdmBars.useBlizzardBuffBars) then
         return nil
     end
     local trackBars = mod.GetTrackedBuffBars()
@@ -875,8 +875,8 @@ function mod.TBBPresetSoundEdge(popularKey, gainEdge, expiry)
     if not (ECME and ECME.db) then
         SetECME(mod.ECME)
     end
-    local p = ECME and ECME.db and ECME.db.profile
-    if not p or (p.cdmBars and p.cdmBars.useBlizzardBuffBars) then
+    local profile = ECME and ECME.db and ECME.db.profile
+    if not profile or (profile.cdmBars and profile.cdmBars.useBlizzardBuffBars) then
         return
     end
     local trackBars = mod.GetTrackedBuffBars()
@@ -1063,8 +1063,8 @@ local function AutoAddReady()
     if not (ECME and ECME.db) then
         return nil
     end
-    local p = ECME.db.profile
-    if p.cdmBars and p.cdmBars.useBlizzardBuffBars then
+    local profile = ECME.db.profile
+    if profile.cdmBars and profile.cdmBars.useBlizzardBuffBars then
         return nil
     end
     if InCombatLockdown() then

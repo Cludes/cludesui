@@ -123,9 +123,9 @@ local function EnableFreeMove(widget)
                 GetFFD(self).freeMoveJustDragged = nil
             end)
             local es = self:GetEffectiveScale()
-            local cx, cy = GetCursorPosition()
-            cx, cy = cx / es, cy / es
-            local dx, dy = cx - startX, cy - startY
+            local curX, curY = GetCursorPosition()
+            curX, curY = curX / es, curY / es
+            local dx, dy = curX - startX, curY - startY
             SaveBtnOffset(key, origOffX + dx, origOffY + dy)
             if ApplyMinimap then
                 ApplyMinimap()
@@ -134,9 +134,9 @@ local function EnableFreeMove(widget)
         end
         -- Move the button directly during drag (no full relayout)
         local es = self:GetEffectiveScale()
-        local cx, cy = GetCursorPosition()
-        cx, cy = cx / es, cy / es
-        local dx, dy = cx - startX, cy - startY
+        local curX, curY = GetCursorPosition()
+        curX, curY = curX / es, curY / es
+        local dx, dy = curX - startX, curY - startY
         if origPoint then
             self:ClearAllPoints()
             self:SetPoint(origPoint, origRel, origRelPoint, origX + origOffX + dx, origY + origOffY + dy)
@@ -175,9 +175,9 @@ local function EnableFreeMove(widget)
         isDragging = false
         self:SetScript("OnUpdate", nil)
         local es = self:GetEffectiveScale()
-        local cx, cy = GetCursorPosition()
-        cx, cy = cx / es, cy / es
-        local dx, dy = cx - startX, cy - startY
+        local curX, curY = GetCursorPosition()
+        curX, curY = curX / es, curY / es
+        local dx, dy = curX - startX, curY - startY
         SaveBtnOffset(key, origOffX + dx, origOffY + dy)
         C_Timer.After(0, function()
             GetFFD(widget).freeMoveJustDragged = nil

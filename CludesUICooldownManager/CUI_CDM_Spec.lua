@@ -133,9 +133,9 @@ local function EnsureSpec(profile, key)
 end
 
 local function GetStore()
-    local p = ECME.db.profile
+    local profile = ECME.db.profile
     local specKey = mod.GetActiveSpecKey()
-    return EnsureSpec(p, specKey)
+    return EnsureSpec(profile, specKey)
 end
 
 local function EnsureMappings(storage)
@@ -319,7 +319,7 @@ end
 
 --- Save the current spec's non-spell per-spec data. Spell data lives directly in the global store via ns.GetBarSpellData() and never needs copying.
 local function SaveCurrentSpecProfile()
-    local p = ECME.db.profile
+    local profile = ECME.db.profile
     local specKey = mod.GetActiveSpecKey()
     if not specKey or specKey == "0" then
         return

@@ -149,8 +149,8 @@ mod.ERB_SimpleOverrideOverlay = function(hostFrame, topY, botY, sectionKey)
         olbl:SetTextColor(1, 1, 1, 0.7)
     end)
     shade:SetScript("OnClick", function()
-        local p = DB()
-        if not p then
+        local profile = DB()
+        if not profile then
             return
         end
         local position = GetSpecialization and GetSpecialization()
@@ -158,9 +158,9 @@ mod.ERB_SimpleOverrideOverlay = function(hostFrame, topY, botY, sectionKey)
             and C_SpecializationInfo
             and C_SpecializationInfo.GetSpecializationInfo(position)
         if current then
-            p.advancedSelectedSpec = current
+            profile.advancedSelectedSpec = current
         end
-        p.barDisplayMode = "advanced"
+        profile.barDisplayMode = "advanced"
         CludesUI:RefreshPage(true)
         -- Clicking to edit navigates to the top of the Advanced page
         CludesUI:ScrollToTop()

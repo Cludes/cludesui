@@ -76,8 +76,8 @@ local function Balance()
     end
 end
 
-local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", Balance)
+local eventFrame = CreateFrame("Frame")
+eventFrame:SetScript("OnEvent", Balance)
 local listening = false
 
 -- Listens for the bank only while the toggle is on and an amount is set.
@@ -88,9 +88,9 @@ function AutoGold.Sync()
     end
     listening = enabled
     if enabled then
-        ev:RegisterEvent("BANKFRAME_OPENED")
+        eventFrame:RegisterEvent("BANKFRAME_OPENED")
     else
-        ev:UnregisterEvent("BANKFRAME_OPENED")
+        eventFrame:UnregisterEvent("BANKFRAME_OPENED")
     end
 end
 

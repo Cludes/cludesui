@@ -866,8 +866,8 @@ local function UpdateCustomBuffBars()
     if not ECME then
         return
     end
-    local p = ECME.db and ECME.db.profile
-    if not p or not p.cdmBars or not p.cdmBars.bars then
+    local profile = ECME.db and ECME.db.profile
+    if not profile or not profile.cdmBars or not profile.cdmBars.bars then
         return
     end
     local LayoutCDMBar = mod.LayoutCDMBar
@@ -875,7 +875,7 @@ local function UpdateCustomBuffBars()
     local cdmPageOpen = mod._cdmBarsPageOpen or false
     local nowTime = GetTime()
 
-    for _, barInfo in ipairs(p.cdmBars.bars) do
+    for _, barInfo in ipairs(profile.cdmBars.bars) do
         if barInfo.enabled and barInfo.barType == "custom_buff" then
             local barId = barInfo.key
             local boxHolder = cdmBarFrames[barId]
@@ -1027,7 +1027,7 @@ local function UpdateCustomBuffBars()
     -- queue a reanchor so the icon appears. Expiry is handled by the frame's
     -- OnCooldownDone hook (which also reanchors to drop the icon).
     local needBuffReanchor = false
-    for _, barInfo in ipairs(p.cdmBars.bars) do
+    for _, barInfo in ipairs(profile.cdmBars.bars) do
         if barInfo.enabled and barInfo.barType == "buffs" then
             local sd = mod.GetBarSpellData(barInfo.key)
             local spellList = sd and sd.assignedSpells
@@ -1071,8 +1071,8 @@ mod.UpdateCustomBuffBars = UpdateCustomBuffBars
 -- the id list plus the baked styling inputs -- changes. Containers for
 -- bars that no longer have aura customs are hidden (dormant, zero cost).
 function mod.UpdateCustomBuffAuraTracking()
-    local p = ECME and ECME.db and ECME.db.profile
-    local barList = p and p.cdmBars and p.cdmBars.bars
+    local profile = ECME and ECME.db and ECME.db.profile
+    local barList = profile and profile.cdmBars and profile.cdmBars.bars
     local seen = {}
     if barList then
         for _, edge in ipairs(barList) do

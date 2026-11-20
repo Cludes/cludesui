@@ -412,14 +412,14 @@ end
 -- the mage armors, class buffs), labelled with the spell's name unless a
 -- label is given.
 function REMIND.FvSpellEntry(missing, ident, dismissKey, labelText)
-    local e = AcquireEntry()
-    e.mode = "spell"
-    e.spellID = ident
-    e.label = labelText or ShortLabel(SpellName(ident) or tostring(ident))
-    e.cat = "forever"
-    e.dismissKey = dismissKey
-    missing[#missing + 1] = e
-    return e
+    local entry = AcquireEntry()
+    entry.mode = "spell"
+    entry.spellID = ident
+    entry.label = labelText or ShortLabel(SpellName(ident) or tostring(ident))
+    entry.cat = "forever"
+    entry.dismissKey = dismissKey
+    missing[#missing + 1] = entry
+    return entry
 end
 
 -- Whether the player's own aura of a spell is up: true, false (absent or
@@ -880,36 +880,36 @@ local function FvWeaponEntry(missing, hand, labelText, dismissKey, buffRec, spel
     if buffRec.items and not itemId and hideNoItem then
         return
     end
-    local e = AcquireEntry()
+    local entry = AcquireEntry()
     if spellId then
-        e.mode = "spell"
-        e.spellID = spellId
+        entry.mode = "spell"
+        entry.spellID = spellId
     else
         local isShown = itemId or buffRec.items[#buffRec.items]
-        e.texture = C_Item.GetItemIconByID(isShown) or 134400
-        e.tooltipItem = isShown
-        e.bagCount = itemId and CachedGetItemCount(itemId) or 0
-        e.desaturated = not itemId
+        entry.texture = C_Item.GetItemIconByID(isShown) or 134400
+        entry.tooltipItem = isShown
+        entry.bagCount = itemId and CachedGetItemCount(itemId) or 0
+        entry.desaturated = not itemId
         if itemId then
             local macroText = hand.macros[itemId]
             if not macroText then
                 macroText = "/use item:" .. itemId .. "\n/use " .. hand.slot
                 hand.macros[itemId] = macroText
             end
-            e.mode = "macro"
-            e.macro = macroText
+            entry.mode = "macro"
+            entry.macro = macroText
         else
-            e.mode = "texture"
+            entry.mode = "texture"
         end
     end
     if leftX then
-        e.expireAt = GetTime() + leftX
-        e.expireTotal = leftX
+        entry.expireAt = GetTime() + leftX
+        entry.expireTotal = leftX
     end
-    e.label = labelText
-    e.cat = "forever"
-    e.dismissKey = dismissKey
-    missing[#missing + 1] = e
+    entry.label = labelText
+    entry.cat = "forever"
+    entry.dismissKey = dismissKey
+    missing[#missing + 1] = entry
 end
 
 function REMIND.CollectForeverWeapons(missing, frameOrder, classKey)
@@ -1052,14 +1052,14 @@ function REMIND.CollectForever(missing, inInstance, inPvP)
     if frameOrder.camp ~= false and open then
         ids[1] = REMIND.CAMP_BENEFITS
         if not PlayerHasAuraByID(ids) and not (auraLock and not REMIND.FvRanksReadable(ids)) then
-            local e = AcquireEntry()
-            e.mode = "texture"
-            e.spellID = REMIND.CAMP_BENEFITS
-            e.texture = Tex(REMIND.CAMP_BENEFITS)
-            e.label = CludesUI.L("Camp")
-            e.cat = "forever"
-            e.dismissKey = "forever:camp"
-            missing[#missing + 1] = e
+            local entry = AcquireEntry()
+            entry.mode = "texture"
+            entry.spellID = REMIND.CAMP_BENEFITS
+            entry.texture = Tex(REMIND.CAMP_BENEFITS)
+            entry.label = CludesUI.L("Camp")
+            entry.cat = "forever"
+            entry.dismissKey = "forever:camp"
+            missing[#missing + 1] = entry
         end
     end
     local sleepIDs = REMIND._fvSleepIDs
@@ -1126,14 +1126,14 @@ function REMIND.CollectForever(missing, inInstance, inPvP)
         local label = SpellName(REMIND.WELL_FED) or "Well Fed"
         local success, aura = pcall(C_UnitAuras.GetAuraDataBySpellName, "player", label, "HELPFUL")
         if success and not isSecret(aura) and not aura and not PlayerHasAuraByID(REMIND.FOOD_BUFFS) then
-            local e = AcquireEntry()
-            e.mode = "texture"
-            e.spellID = REMIND.WELL_FED
-            e.texture = Tex(REMIND.WELL_FED)
-            e.label = label
-            e.cat = "forever"
-            e.dismissKey = "forever:wellfed"
-            missing[#missing + 1] = e
+            local entry = AcquireEntry()
+            entry.mode = "texture"
+            entry.spellID = REMIND.WELL_FED
+            entry.texture = Tex(REMIND.WELL_FED)
+            entry.label = label
+            entry.cat = "forever"
+            entry.dismissKey = "forever:wellfed"
+            missing[#missing + 1] = entry
         end
     end
     if frameOrder.mageArmor and open and GetPlayerClass() == "MAGE" then
@@ -1182,21 +1182,21 @@ function REMIND.CollectForever(missing, inInstance, inPvP)
                         deathKnight = "forever:" .. ident
                         keyList[ident] = deathKnight
                     end
-                    local e = AcquireEntry()
+                    local entry = AcquireEntry()
                     -- A spell the character knows (a rank in the spellbook)
                     -- casts on click; any other (a buff someone else casts) is
                     -- only shown.
                     if label and fam and REMIND._fvKnownFams[fam] then
-                        CastByName(e, label, ident)
+                        CastByName(entry, label, ident)
                     else
-                        e.mode = "texture"
-                        e.spellID = ident
+                        entry.mode = "texture"
+                        entry.spellID = ident
                     end
-                    e.texture = Tex(ident)
-                    e.label = ShortLabel(label or tostring(ident))
-                    e.cat = "forever"
-                    e.dismissKey = deathKnight
-                    missing[#missing + 1] = e
+                    entry.texture = Tex(ident)
+                    entry.label = ShortLabel(label or tostring(ident))
+                    entry.cat = "forever"
+                    entry.dismissKey = deathKnight
+                    missing[#missing + 1] = entry
                 end
             end
         end
@@ -1464,26 +1464,26 @@ function REMIND.CollectForeverRaidBuffs(missing, classFile, inInstance)
                         end
                     end
                     if isMissing then
-                        local e = AcquireEntry()
-                        e.label = ShortLabel(SpellName(buffRec.castSpell) or buffRec.name)
-                        e.cat = "raidbuff"
-                        e.data = buffRec
-                        e.dismissKey = buffRec.dismissKey
+                        local entry = AcquireEntry()
+                        entry.label = ShortLabel(SpellName(buffRec.castSpell) or buffRec.name)
+                        entry.cat = "raidbuff"
+                        entry.data = buffRec
+                        entry.dismissKey = buffRec.dismissKey
                         if sum then
-                            e.groupHave = have
-                            e.groupTotal = sum
+                            entry.groupHave = have
+                            entry.groupTotal = sum
                         end
                         if iCast then
                             -- The provider button casts it; in combat it keeps
                             -- the cast bound before the pull.
-                            e.mode = "spell"
-                            e.spellID = castSpell or REMIND._providerCastSpell
+                            entry.mode = "spell"
+                            entry.spellID = castSpell or REMIND._providerCastSpell
                         else
-                            e.mode = "texture"
-                            e.spellID = buffRec.castSpell
-                            e.texture = Tex(buffRec.castSpell)
+                            entry.mode = "texture"
+                            entry.spellID = buffRec.castSpell
+                            entry.texture = Tex(buffRec.castSpell)
                         end
-                        missing[#missing + 1] = e
+                        missing[#missing + 1] = entry
                     end
                 end
             end
@@ -1706,18 +1706,18 @@ local function Refresh()
                 and not (REMIND._petRemountGrace and GetTime() < REMIND._petRemountGrace)
                 and not (UnitExists("pet") and not UnitIsDead("pet"))
             then
-                local e = AcquireEntry()
-                e.cat = "consumable"
-                e.dismissKey = "consumable:pet"
+                local entry = AcquireEntry()
+                entry.cat = "consumable"
+                entry.dismissKey = "consumable:pet"
                 local num = warlockEnforcedPets and #warlockEnforcedPets or 0
                 if num > 0 then
-                    REMIND.SetWarlockPetSpell(e, warlockEnforcedPets, petIcon)
+                    REMIND.SetWarlockPetSpell(entry, warlockEnforcedPets, petIcon)
                 else
-                    e.mode = "texture"
-                    e.texture = petIcon
-                    e.label = petLabel
+                    entry.mode = "texture"
+                    entry.texture = petIcon
+                    entry.label = petLabel
                 end
-                missing[#missing + 1] = e
+                missing[#missing + 1] = entry
             end
             if
                 not suppress
@@ -1737,11 +1737,11 @@ local function Refresh()
                     end
                 end
                 if #warlockEnforcedPets > 0 and not isAllowed then
-                    local e = AcquireEntry()
-                    REMIND.SetWarlockPetSpell(e, warlockEnforcedPets, 136216, CludesUI.L("Wrong Demon"))
-                    e.cat = "consumable"
-                    e.dismissKey = "consumable:wrong_pet"
-                    missing[#missing + 1] = e
+                    local entry = AcquireEntry()
+                    REMIND.SetWarlockPetSpell(entry, warlockEnforcedPets, 136216, CludesUI.L("Wrong Demon"))
+                    entry.cat = "consumable"
+                    entry.dismissKey = "consumable:wrong_pet"
+                    missing[#missing + 1] = entry
                 end
             end
             -- Pet on Passive: warns when an active pet is set to Passive stance. Combat-safe (pet command state isn't secret); skipped while mounted (pet is auto-forced to Passive).
@@ -1764,13 +1764,13 @@ local function Refresh()
                     end
                 end
                 if passiveActive then
-                    local e = AcquireEntry()
-                    e.mode = "texture"
-                    e.texture = (passiveIsToken and _G[passiveTex]) or passiveTex or petIcon
-                    e.label = PET_MODE_PASSIVE or "Passive"
-                    e.cat = "consumable"
-                    e.dismissKey = "consumable:pet_passive"
-                    missing[#missing + 1] = e
+                    local entry = AcquireEntry()
+                    entry.mode = "texture"
+                    entry.texture = (passiveIsToken and _G[passiveTex]) or passiveTex or petIcon
+                    entry.label = PET_MODE_PASSIVE or "Passive"
+                    entry.cat = "consumable"
+                    entry.dismissKey = "consumable:pet_passive"
+                    missing[#missing + 1] = entry
                 end
             end
         end
@@ -1837,8 +1837,8 @@ local function Refresh()
                         if frame and not m.isEating then
                             local p = saved.profile.display
                             local baseScale = p.scale or 1.0
-                            local sz = floor(ICON_SIZE * baseScale + 0.5)
-                            ApplyGlow(frame, p, sz)
+                            local iconSz = floor(ICON_SIZE * baseScale + 0.5)
+                            ApplyGlow(frame, p, iconSz)
                         end
                     end
                 end
@@ -1899,8 +1899,8 @@ local function Refresh()
                     if frame and not m.isEating then
                         local p = saved.profile.display
                         local baseScale = p.scale or 1.0
-                        local sz = floor(ICON_SIZE * baseScale + 0.5)
-                        ApplyGlow(frame, p, sz)
+                        local iconSz = floor(ICON_SIZE * baseScale + 0.5)
+                        ApplyGlow(frame, p, iconSz)
                     end
                 else
                     iconIdx = iconIdx + 1

@@ -85,10 +85,10 @@ function mod.ERB_ClassicBorderSizeCfg(cfgFn, offFn, offTip, rebuild, matchKey)
             return
         end
         c.stockBorderScale = value
-        local p = Profile()
-        local together = p and mod.ERB_GroupSettingOn and mod.ERB_GroupSettingOn(p)
+        local profile = Profile()
+        local together = profile and mod.ERB_GroupSettingOn and mod.ERB_GroupSettingOn(profile)
         if together then
-            ClassicScaleToAll(p, value)
+            ClassicScaleToAll(profile, value)
         end
         rebuild()
         if together then
@@ -1597,8 +1597,8 @@ CludesUI.AtOptionsLogin(function()
     end
 
     function UpdatePreviewHeader()
-        local p = DB()
-        if not p then
+        local profile = DB()
+        if not profile then
             return
         end
         -- The section headers' eyes (session only; BarDisplayPage_Options.lua).
@@ -1610,17 +1610,17 @@ CludesUI.AtOptionsLogin(function()
         end
         local barFrame = hasResource and _previewFrames.pipContainer
         if barFrame then
-            StyleClassResource(barFrame, p, pvHidden, holder)
+            StyleClassResource(barFrame, profile, pvHidden, holder)
         end
 
         local pb, hb = _previewFrames.powerBar, _previewFrames.healthBar
-        local showPower = pb and not pvHidden.power and not PreviewBar.Avail(p, "power")
-        local showHealth = hb and not pvHidden.health and not PreviewBar.Avail(p, "health")
+        local showPower = pb and not pvHidden.power and not PreviewBar.Avail(profile, "power")
+        local showHealth = hb and not pvHidden.health and not PreviewBar.Avail(profile, "health")
         if showPower then
-            PreviewBar.Style(pb, p, p.primary, "power")
+            PreviewBar.Style(pb, profile, profile.primary, "power")
         end
         if showHealth then
-            PreviewBar.Style(hb, p, p.health, "health")
+            PreviewBar.Style(hb, profile, profile.health, "health")
         end
         if pb then
             pb:SetShown(showPower and true or false)
@@ -1631,7 +1631,7 @@ CludesUI.AtOptionsLogin(function()
 
         local as = _previewFrames.arcaneSoul
         local styleAS = _G._CURB_StyleArcaneSoulSample
-        local showAS = as and styleAS and not pvHidden.arcaneSoul and not PreviewBar.Avail(p, "arcaneSoul")
+        local showAS = as and styleAS and not pvHidden.arcaneSoul and not PreviewBar.Avail(profile, "arcaneSoul")
         if showAS then
             StyleArcaneSoul(as, styleAS)
         end
@@ -1854,8 +1854,8 @@ CludesUI.AtOptionsLogin(function()
     _previewHeaderBuilder = function(heading, hdrW)
         HintBuildStart(PAGE_DISPLAY, heading)
         _classHdrEmpty = PoolGen(heading) ~= nil
-        local p = DB()
-        if not p then
+        local profile = DB()
+        if not profile then
             return 0
         end
         _previewBuilding = true
@@ -1874,12 +1874,12 @@ CludesUI.AtOptionsLogin(function()
             return math.floor(value * s + 0.5) / s
         end
 
-        local secondaryCfg = p.secondary
+        local secondaryCfg = profile.secondary
         local line = CreateFrame("Frame", nil, holder) -- the pips or the bar type
         line:SetPoint("CENTER", holder, "CENTER", 0, 0)
         _previewFrames.pipContainer = line
         _previewFrames.pips = {}
-        BuildResourceRow(line, p, secondaryCfg, class)
+        BuildResourceRow(line, profile, secondaryCfg, class)
         BuildCountText(line, secondaryCfg)
 
         -- Built for every spec (cheap, pooled); UpdatePreviewHeader shows what applies.
@@ -5244,12 +5244,12 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function UpdateCastBarPreview()
-        local p = DB()
+        local profile = DB()
         local castFrame = _castBarPreviewFrames
-        if not p or not castFrame.bar then
+        if not profile or not castFrame.bar then
             return
         end
-        local checkBtn = p.castBar
+        local checkBtn = profile.castBar
         -- Under a stock style (fixed per session, as the live bar): Blizzard
         -- Style's kit (stock background, fill, pip and text box) or Classic
         -- WoW UI (the vanilla frame and spark round the player's fill); the
@@ -5532,11 +5532,11 @@ CludesUI.AtOptionsLogin(function()
 
         _castBarPreviewBuilder = function(heading, hdrW)
             HintBuildStart(PAGE_CASTBAR, heading)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return 0
             end
-            local checkBtn = p.castBar
+            local checkBtn = profile.castBar
             local castFrame = _castBarPreviewFrames
             local Snap = Snapper()
             local boxFrame, barFrame, hasIcon, height = Shell(heading, hdrW, checkBtn, Snap)
@@ -5644,13 +5644,13 @@ CludesUI.AtOptionsLogin(function()
             label = "Textured Background",
             tooltip = "Draws the bar texture on the background too.",
             disabled = function()
-                local p = DB()
-                local t = p and p[keyName.tbl]
+                local profile = DB()
+                local t = profile and profile[keyName.tbl]
                 if not t then
                     return true
                 end
                 -- Split textures: the health and power bars may carry their own.
-                if kind == "bars" and p.splitTex == true then
+                if kind == "bars" and profile.splitTex == true then
                     return false
                 end
                 local tx = t[keyName.tex] or "none"
@@ -5658,13 +5658,13 @@ CludesUI.AtOptionsLogin(function()
             end,
             disabledTooltip = keyName.need,
             get = function()
-                local p = DB()
-                local t = p and p[keyName.tbl]
+                local profile = DB()
+                local t = profile and profile[keyName.tbl]
                 return (t and t[keyName.key]) or false
             end,
             set = function(value)
-                local p = DB()
-                local t = p and p[keyName.tbl]
+                local profile = DB()
+                local t = profile and profile[keyName.tbl]
                 if not t then
                     return
                 end
@@ -5735,11 +5735,11 @@ CludesUI.AtOptionsLogin(function()
         -- building: the header build itself (it returns the height); any
         -- other update resizes the shown header for the hint.
         local function UpdateGCDPreview(building)
-            local p = DB()
-            if not (p and popFrame.bar) then
+            local profile = DB()
+            if not (profile and popFrame.bar) then
                 return
             end
-            local g = p.gcdBar
+            local g = profile.gcdBar
             local boxHolder = popFrame.container
             local heading = boxHolder:GetParent()
 
@@ -5870,8 +5870,8 @@ CludesUI.AtOptionsLogin(function()
 
         environ._gcdPreviewBuilder = function(heading, hdrW)
             HintBuildStart(PAGE_GCD, heading)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return 0
             end
 
@@ -5912,7 +5912,7 @@ CludesUI.AtOptionsLogin(function()
             popFrame.hdrW = nil
 
             _headerBaseH = GCD_PREVIEW_H
-            return GCD_PREVIEW_H + PlaceHint(heading, p.gcdBar.enabled)
+            return GCD_PREVIEW_H + PlaceHint(heading, profile.gcdBar.enabled)
         end
 
         environ.RestoreGCDPreview = function()
@@ -5983,9 +5983,9 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local function UpdateTotemPreview(building)
-            local p = DB()
+            local profile = DB()
             local boxHolder = thresholdPane.container
-            if not (p and boxHolder) then
+            if not (profile and boxHolder) then
                 return
             end
             local heading = boxHolder:GetParent()
@@ -5997,8 +5997,8 @@ CludesUI.AtOptionsLogin(function()
             local GAP = 10
             local totalW, totalH, isShown = 0, 0, 0
             for gi, group in ipairs(thresholdPane.groups) do
-                local t = p[TOTEM_GROUPS[gi].key]
-                if gi == 2 and not CallTotemShown(p) then
+                local t = profile[TOTEM_GROUPS[gi].key]
+                if gi == 2 and not CallTotemShown(profile) then
                     t = nil
                 end
                 group.t = nil
@@ -6139,8 +6139,8 @@ CludesUI.AtOptionsLogin(function()
 
         environ._totemPreviewBuilder = function(heading, hdrW)
             HintBuildStart(PAGE_TOTEM, heading)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return 0
             end
 

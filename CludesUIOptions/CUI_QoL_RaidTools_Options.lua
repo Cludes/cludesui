@@ -45,14 +45,14 @@ CludesUI.AtLogin(function()
     end
 
     local function Cfg(key)
-        local p = DB()
-        return p and p[key]
+        local profile = DB()
+        return profile and profile[key]
     end
 
     local function Set(key, val)
-        local p = DB()
-        if p then
-            p[key] = val
+        local profile = DB()
+        if profile then
+            profile[key] = val
         end
     end
 

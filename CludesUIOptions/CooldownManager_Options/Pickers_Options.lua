@@ -509,7 +509,7 @@ end
 -- whitens under the cursor. The caller gives it its click.
 local function NewDialogButton(dialog, caption, primary)
     local env = mod._CDMO_OptEnv
-    local ar, ag, ab = CludesUI.GetAccentColor()
+    local accR, accG, accB = CludesUI.GetAccentColor()
     local button = CreateFrame("Button", nil, dialog)
     button:SetSize(80, 28)
     local fill = button:CreateTexture(nil, "BACKGROUND")
@@ -517,9 +517,9 @@ local function NewDialogButton(dialog, caption, primary)
     local restR, restG, restB, restA
     if primary then
         button:SetPoint("BOTTOMRIGHT", dialog, "BOTTOM", -4, 16)
-        fill:SetColorTexture(ar, ag, ab, 0.15)
-        CludesUI.MakeRoundedBorder(button, ar, ag, ab, 0.3, fill)
-        restR, restG, restB, restA = ar, ag, ab, 0.9
+        fill:SetColorTexture(accR, accG, accB, 0.15)
+        CludesUI.MakeRoundedBorder(button, accR, accG, accB, 0.3, fill)
+        restR, restG, restB, restA = accR, accG, accB, 0.9
     else
         button:SetPoint("BOTTOMLEFT", dialog, "BOTTOM", 4, 16)
         fill:SetColorTexture(0.12, 0.12, 0.12, 0.5)
@@ -871,8 +871,8 @@ local function AddBlizzardCDMFooter(menu, rows, y, question)
     text:SetAllPoints()
     text:SetJustifyH("CENTER")
     text:SetJustifyV("MIDDLE")
-    local ar, ag, ab = CludesUI.GetAccentColor()
-    text:SetTextColor(ar, ag, ab, 1)
+    local accR, accG, accB = CludesUI.GetAccentColor()
+    text:SetTextColor(accR, accG, accB, 1)
     text:SetText(CludesUI.L(question) .. "\n" .. CludesUI.L("Add in Blizzard CDM"))
     footer:SetScript("OnEnter", function()
         text:SetTextColor(1, 1, 1, 1)

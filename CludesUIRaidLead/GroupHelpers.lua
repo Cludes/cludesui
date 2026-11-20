@@ -232,17 +232,17 @@ end
 -------------------------------------------------------------------------------
 --  Events
 -------------------------------------------------------------------------------
-local ev = CreateFrame("Frame")
-ev:RegisterEvent("PLAYER_ENTERING_WORLD")
-ev:RegisterEvent("ACTIONBAR_UPDATE_USABLE")
-ev:RegisterEvent("GROUP_ROSTER_UPDATE")
-ev:RegisterEvent("COMBAT_RATING_UPDATE")
-ev:RegisterEvent("MASTERY_UPDATE")
-ev:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-ev:RegisterUnitEvent("UNIT_AURA", "player")
-ev:RegisterUnitEvent("UNIT_SPELL_HASTE", "player")
+local eventFrame = CreateFrame("Frame")
+eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+eventFrame:RegisterEvent("ACTIONBAR_UPDATE_USABLE")
+eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+eventFrame:RegisterEvent("COMBAT_RATING_UPDATE")
+eventFrame:RegisterEvent("MASTERY_UPDATE")
+eventFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+eventFrame:RegisterUnitEvent("UNIT_AURA", "player")
+eventFrame:RegisterUnitEvent("UNIT_SPELL_HASTE", "player")
 local registered
-ev:SetScript("OnEvent", function(_, evt)
+eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "PLAYER_ENTERING_WORLD" and not gate then
         gate = Movable(
             "CludesUIRaidLeadGateway",

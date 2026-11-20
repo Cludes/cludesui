@@ -147,8 +147,8 @@ end
 mod._missingFlipBars = {}
 
 local function CollectAndReanchor()
-    local p = ECME.db and ECME.db.profile
-    if not p or not p.cdmBars or not p.cdmBars.enabled then
+    local profile = ECME.db and ECME.db.profile
+    if not profile or not profile.cdmBars or not profile.cdmBars.enabled then
         return
     end
 
@@ -754,7 +754,7 @@ local function CollectAndReanchor()
     do
         local nowTime = GetTime()
         local cdmPageOpen = mod._cdmBarsPageOpen or false
-        for _, edge in ipairs(p.cdmBars.bars) do
+        for _, edge in ipairs(profile.cdmBars.bars) do
             if edge.enabled and edge.barType == "buffs" then
                 local injectedKey = edge.key
                 local sdInj = mod.GetBarSpellData(injectedKey)
@@ -853,7 +853,7 @@ local function CollectAndReanchor()
     -- Gated behind ns._cdmAnyCustomItem (set once from saved data / the picker) so
     -- this pass is skipped entirely for anyone who never adds a custom item.
     if mod._cdmAnyCustomItem then
-        for _, edge in ipairs(p.cdmBars.bars) do
+        for _, edge in ipairs(profile.cdmBars.bars) do
             if edge.enabled and edge.barType == "buffs" then
                 local injectedKey = edge.key
                 local sdInj = mod.GetBarSpellData(injectedKey)
@@ -1257,7 +1257,7 @@ local function CollectAndReanchor()
     end
 
     -- Clean up empty buff bars
-    for _, edge in ipairs(p.cdmBars.bars) do
+    for _, edge in ipairs(profile.cdmBars.bars) do
         if edge.enabled and mod.IsBarBuffFamily(edge) and not edge.isGhostBar and not perBarLists[edge.key] then
             local iconList = cdmBarIcons[edge.key]
             if iconList then
@@ -1293,7 +1293,7 @@ local function CollectAndReanchor()
     --  No allowSet, no entryBySpell, no dedup, no change detection.
     ---------------------------------------------------------------------------
     -- Ensure custom-frame-only CD/utility bars get processed
-    for _, edge in ipairs(p.cdmBars.bars) do
+    for _, edge in ipairs(profile.cdmBars.bars) do
         if
             edge.enabled
             and not edge.isGhostBar
@@ -2163,7 +2163,7 @@ local function CollectAndReanchor()
         end
         if mod._cdmAnyOverflowCfg then
             local moves -- flat pairs: frame, targetKey, frame, targetKey, ...
-            for _, edge in ipairs(p.cdmBars.bars) do
+            for _, edge in ipairs(profile.cdmBars.bars) do
                 local cap, tKey = edge.maxIcons, edge.overflowTarget
                 -- Legacy profiles carry nil barType on default bars; resolve
                 -- the family through the shared helper, never the raw field.
@@ -2461,7 +2461,7 @@ local function CollectAndReanchor()
     end
 
     -- Clean up empty CD/utility bars
-    for _, edge in ipairs(p.cdmBars.bars) do
+    for _, edge in ipairs(profile.cdmBars.bars) do
         if
             edge.enabled
             and not edge.isGhostBar

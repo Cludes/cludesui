@@ -182,7 +182,7 @@ local function Refresh()
     holderFrame:SetSize(math.max(1, #entries) * (size + GAP) - GAP, size)
 end
 
-local ev = CreateFrame("Frame")
+local eventFrame = CreateFrame("Frame")
 local EVENTS = {
     "MINIMAP_UPDATE_TRACKING",
     "SPELLS_CHANGED",
@@ -191,7 +191,7 @@ local EVENTS = {
     "PLAYER_ENTERING_WORLD",
 }
 local queued
-ev:SetScript("OnEvent", function(_, evt)
+eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "PLAYER_REGEN_ENABLED" and not dirty then
         return
     end
@@ -210,14 +210,14 @@ local function Apply()
     if Enabled() then
         Build()
         for _, event in ipairs(EVENTS) do
-            ev:RegisterEvent(event)
+            eventFrame:RegisterEvent(event)
         end
-        ev:RegisterUnitEvent("UNIT_AURA", "player")
+        eventFrame:RegisterUnitEvent("UNIT_AURA", "player")
         if not CludesUI._unlockActive and not InCombatLockdown() then
             F.Place(holderFrame)
         end
     else
-        ev:UnregisterAllEvents()
+        eventFrame:UnregisterAllEvents()
     end
     Refresh()
 end

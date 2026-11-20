@@ -98,8 +98,8 @@ local readOnly = {
 }
 
 local function Search()
-    local p = Profile()
-    return p and p.search or readOnly.search
+    local profile = Profile()
+    return profile and profile.search or readOnly.search
 end
 
 -- filters belong to the character, everything else to the profile
@@ -171,21 +171,21 @@ end
 -- until the profile's ready)
 local ownListRO = setmetatable({}, { __newindex = function() end })
 function mod.OwnListDB()
-    local p = Profile()
-    if not p then
+    local profile = Profile()
+    if not profile then
         return ownListRO
     end
-    local t = p.ownList
+    local t = profile.ownList
     if type(t) ~= "table" then
         t = {}
-        p.ownList = t
+        profile.ownList = t
     end
     return t
 end
 
 function mod.AppsCfg()
-    local p = Profile()
-    return p and p.apps or readOnly.apps
+    local profile = Profile()
+    return profile and profile.apps or readOnly.apps
 end
 
 function mod.AppCountsStore()

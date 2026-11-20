@@ -74,7 +74,7 @@ local CUI_CLASS_ICONS = "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\
 local BLIZZ_CLASS_ICONS = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
 local SHELL_ART = "Interface\\AddOns\\CludesUI\\media\\modern_blizz.png"
 
-local ev = CreateFrame("Frame")
+local eventFrame = CreateFrame("Frame")
 local panelFrame, titleText, emptyNote
 local bgArt, bgShade, bgFlat -- the CludesUI look's backdrop layers
 local rowList = {}
@@ -690,7 +690,7 @@ local function Install()
     if C_AddOns.IsAddOnLoaded("Blizzard_MailFrame") then
         HookMail()
     else
-        ev:RegisterEvent("ADDON_LOADED")
+        eventFrame:RegisterEvent("ADDON_LOADED")
     end
 end
 
@@ -780,7 +780,7 @@ end
 -------------------------------------------------------------------------------
 --  Boot: the roster at login and logout; the hooks once the list is on
 -------------------------------------------------------------------------------
-ev:SetScript("OnEvent", function(self, evt, arg1)
+eventFrame:SetScript("OnEvent", function(self, evt, arg1)
     if evt == "PLAYER_LOGIN" then
         self:UnregisterEvent("PLAYER_LOGIN")
         blizzLook = Skin.GetStyle("mail") == "off"
@@ -795,5 +795,5 @@ ev:SetScript("OnEvent", function(self, evt, arg1)
         HookMail()
     end
 end)
-ev:RegisterEvent("PLAYER_LOGIN")
-ev:RegisterEvent("PLAYER_LOGOUT")
+eventFrame:RegisterEvent("PLAYER_LOGIN")
+eventFrame:RegisterEvent("PLAYER_LOGOUT")

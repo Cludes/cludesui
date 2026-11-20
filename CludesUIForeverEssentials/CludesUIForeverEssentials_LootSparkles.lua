@@ -61,8 +61,8 @@ local function EnsureSoon(delay)
     end)
 end
 
-local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, evt, name)
+local eventFrame = CreateFrame("Frame")
+eventFrame:SetScript("OnEvent", function(_, evt, name)
     if evt == "PLAYER_REGEN_ENABLED" then
         if pending then
             pending = false
@@ -77,12 +77,12 @@ end)
 
 local function Apply()
     if Enabled() then
-        ev:RegisterEvent("PLAYER_REGEN_ENABLED")
-        pcall(ev.RegisterEvent, ev, "CVAR_UPDATE")
+        eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+        pcall(eventFrame.RegisterEvent, eventFrame, "CVAR_UPDATE")
         Ensure()
         EnsureSoon(5) -- the client can settle its graphics settings after login
     else
-        ev:UnregisterAllEvents()
+        eventFrame:UnregisterAllEvents()
         -- Only a switch from on: a login with it off leaves the setting alone.
         if wasOn or (F.Read().switchedOff and C_CVar.GetCVar(CVAR) == "1") then
             wasOn = false

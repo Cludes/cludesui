@@ -124,15 +124,15 @@ function mod.GetAllCDMBuffSpells()
     if not ECME or not ECME.db then
         return {}, {}
     end
-    local p = ECME.db.profile
-    if not p or not p.cdmBars or not p.cdmBars.bars then
+    local profile = ECME.db.profile
+    if not profile or not profile.cdmBars or not profile.cdmBars.bars then
         return {}, {}
     end
 
     local trackedSet = {}
     local trackedOrder = {}
 
-    for _, barFrame in ipairs(p.cdmBars.bars) do
+    for _, barFrame in ipairs(profile.cdmBars.bars) do
         if mod.IsBarBuffFamily(barFrame) then
             local spells = mod.GetCDMSpellsForBar and mod.GetCDMSpellsForBar(barFrame.key)
             if spells then

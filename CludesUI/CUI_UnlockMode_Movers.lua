@@ -1285,10 +1285,10 @@ CUI_NS.unlockParts.Movers = function(LM)
             if btnFrame ~= "LeftButton" then
                 return
             end
-            local sc = UIParent:GetEffectiveScale()
+            local uiScale = UIParent:GetEffectiveScale()
             linkDragStartX, linkDragStartY = GetCursorPosition()
-            linkDragStartX = linkDragStartX / sc
-            linkDragStartY = linkDragStartY / sc
+            linkDragStartX = linkDragStartX / uiScale
+            linkDragStartY = linkDragStartY / uiScale
             linkDragPending = true
             -- Poll for movement threshold before committing to drag
             handle:SetScript("OnUpdate", function(s)
@@ -1296,10 +1296,10 @@ CUI_NS.unlockParts.Movers = function(LM)
                     return
                 end
                 local sc2 = UIParent:GetEffectiveScale()
-                local mx, my = GetCursorPosition()
-                mx = mx / sc2
-                my = my / sc2
-                if abs(mx - linkDragStartX) > 1 or abs(my - linkDragStartY) > 1 then
+                local curX, curY = GetCursorPosition()
+                curX = curX / sc2
+                curY = curY / sc2
+                if abs(curX - linkDragStartX) > 1 or abs(curY - linkDragStartY) > 1 then
                     linkDragPending = false
                     -- Now fire the real drag start
                     local script = handle:GetScript("OnDragStart")
@@ -2154,14 +2154,14 @@ CUI_NS.unlockParts.Movers = function(LM)
 
             -- OnUpdate: move mover + real bar to cursor position with snap
             self:SetScript("OnUpdate", function(s)
-                local sc = UIParent:GetEffectiveScale()
-                local mx, my = GetCursorPosition()
-                mx = mx / sc
-                my = my / sc
+                local uiScale = UIParent:GetEffectiveScale()
+                local curX, curY = GetCursorPosition()
+                curX = curX / uiScale
+                curY = curY / uiScale
 
                 -- Raw center = cursor + offset
-                local rawCX = mx + s._dragOffX
-                local rawCY = my + s._dragOffY
+                local rawCX = curX + s._dragOffX
+                local rawCY = curY + s._dragOffY
 
                 -- Shift-axis-lock: constrain to one axis based on initial drag direction
                 if IsShiftKeyDown() then

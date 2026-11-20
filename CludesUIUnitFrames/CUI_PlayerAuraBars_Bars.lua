@@ -171,8 +171,8 @@ end
 -- enable verdict without un-suppressing anything (a bar built mid-ride used to
 -- come up at full alpha here).
 local function ApplyDefaultBarShown(buffSide)
-    local s = PAB()
-    if not s then
+    local pabCfg = PAB()
+    if not pabCfg then
         return
     end
     local hostFrame
@@ -184,13 +184,13 @@ local function ApplyDefaultBarShown(buffSide)
     if not hostFrame then
         return
     end
-    local conf = buffSide and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s)
+    local conf = buffSide and DefaultBuffsCfg(pabCfg) or DefaultDebuffsCfg(pabCfg)
     -- Master enable + Use Blizzard Buffs both stand the defaults down (the
     -- recovery lane can reach this while disabled-awaiting-reload).
     SetParentShownSafe(
         buffSide and "default-buffs" or "default-debuffs",
         hostFrame,
-        s.enabled == true and conf.enabled ~= false and s.useBlizzardBuffs ~= true,
+        pabCfg.enabled == true and conf.enabled ~= false and pabCfg.useBlizzardBuffs ~= true,
         function()
             ApplyDefaultBarShown(buffSide)
         end
@@ -486,11 +486,11 @@ local function ApplyBarPosition(hostFrame, buffSide, gridFrame)
         CludesUI.ReapplyOwnAnchor(unlockKey)
         return
     end
-    local s = PAB()
+    local pabCfg = PAB()
     local posKey = BarPositionKey(buffSide)
-    local place = s and s[posKey]
+    local place = pabCfg and pabCfg[posKey]
     local def = buffSide and DEFAULT_POS.buffs or DEFAULT_POS.debuffs
-    local conf = s and (buffSide and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s))
+    local conf = pabCfg and (buffSide and DefaultBuffsCfg(pabCfg) or DefaultDebuffsCfg(pabCfg))
     local p = (place and place.point) and place or def
     local posX, posY = p.x, p.y
     if conf then
@@ -500,7 +500,7 @@ local function ApplyBarPosition(hostFrame, buffSide, gridFrame)
     posX, posY = SnapBarPos(hostFrame, p.point, p.relPoint or p.point, posX, posY)
     hostFrame:SetPoint(p.point, UIParent, p.relPoint or p.point, posX, posY)
     if conf and (conf.growDirection == "CENTER_HORIZONTAL" or conf.growDirection == "CENTER_VERTICAL") then
-        s[posKey] = RebaseBarPositionToCenter(hostFrame, place)
+        pabCfg[posKey] = RebaseBarPositionToCenter(hostFrame, place)
     end
     if anchored and CludesUI.ReapplyOwnAnchor then
         CludesUI.ReapplyOwnAnchor(unlockKey)
@@ -519,8 +519,8 @@ local blizzardAurasHidden = false
 -- hooks below read this LIVE, so Disable All and Use Blizzard Buffs can
 -- hand the display back without a reload.
 local function PabOwnsNativeAuras()
-    local s = PAB()
-    return (s and s.enabled == true and s.useBlizzardBuffs ~= true) and true or false
+    local pabCfg = PAB()
+    return (pabCfg and pabCfg.enabled == true and pabCfg.useBlizzardBuffs ~= true) and true or false
 end
 
 local function HideBlizzardPlayerAuras()
@@ -740,8 +740,8 @@ local function CreateBars()
         return
     end -- 12.1 gated at file top; defensive only
 
-    local s = PAB()
-    if not s then
+    local pabCfg = PAB()
+    if not pabCfg then
         return
     end -- ns.db not ready yet; SetupOptionsPanel calls back once it is
 
@@ -749,16 +749,16 @@ local function CreateBars()
     -- BuffFrame/DebuffFrame stay untouched, no containers, no unlock elements, options
     -- page shows an activation overlay. One-shot seed: the retired Styled Player Auras
     -- module's enable toggle carries over, so its users come up enabled.
-    if not s.pabEnableSeeded then
-        s.pabEnableSeeded = true
-        if s.enabled == nil then
+    if not pabCfg.pabEnableSeeded then
+        pabCfg.pabEnableSeeded = true
+        if pabCfg.enabled == nil then
             local old = mod.db and mod.db.profile and mod.db.profile.playerAuras
             if old and old.enabled == true then
-                s.enabled = true
+                pabCfg.enabled = true
             end
         end
     end
-    if s.enabled ~= true then
+    if pabCfg.enabled ~= true then
         return
     end
 
@@ -770,10 +770,10 @@ local function CreateBars()
     -- Must run before DefaultBuffsCfg/DefaultDebuffsCfg are first called, so seeded
     -- values are what their first lazy-create populates. One-time-ever seed, not a
     -- re-appliable migration (see SeedDefaultBuffsDebuffsFromLegacySources).
-    SeedDefaultBuffsDebuffsFromLegacySources(s)
-    EnsureDebuffFilterV2(s)
-    EnsureFilterLanes(s)
-    EnsureBarEnable(s)
+    SeedDefaultBuffsDebuffsFromLegacySources(pabCfg)
+    EnsureDebuffFilterV2(pabCfg)
+    EnsureFilterLanes(pabCfg)
+    EnsureBarEnable(pabCfg)
 
     -- Must run before buffCfg/custom-bar spell resolution below: the curated presets
     -- are otherwise only imported when the options page opens, so a bar referencing a
@@ -786,13 +786,13 @@ local function CreateBars()
 
     -- After the import: the External Defensives seed references the imported
     -- "Externals" preset filter by id.
-    EnsureExtDefCustomBar(s)
+    EnsureExtDefCustomBar(pabCfg)
 
     -- Use Blizzard Buffs: PAB stands down for the DEFAULT bars only --
     -- Blizzard's native BuffFrame/DebuffFrame stay untouched and the default
     -- bars never build; custom bars (editing-spec buckets included) still
     -- run in full. Default-bar unlock elements drop via their isHidden.
-    if s.useBlizzardBuffs == true then
+    if pabCfg.useBlizzardBuffs == true then
         RegisterPABUnlock()
         ReloadAllCustomBars()
         SyncCancelCVar()
@@ -801,7 +801,7 @@ local function CreateBars()
 
     HideBlizzardPlayerAuras()
 
-    local buffConf, debuffConf = DefaultBuffsCfg(s), DefaultDebuffsCfg(s)
+    local buffConf, debuffConf = DefaultBuffsCfg(pabCfg), DefaultDebuffsCfg(pabCfg)
 
     AK.styles[STYLE_BUFFS] = BuildStyle(true, buffConf)
     AK.styles[STYLE_DEBUFFS] = BuildStyle(false, debuffConf)
@@ -1017,11 +1017,11 @@ function RegisterPABUnlock()
             -- parity). Master-disabled and Use Blizzard Buffs stand the
             -- defaults down entirely, mover included.
             isHidden = function()
-                local s = PAB()
-                if not s or s.enabled ~= true or s.useBlizzardBuffs == true then
+                local pabCfg = PAB()
+                if not pabCfg or pabCfg.enabled ~= true or pabCfg.useBlizzardBuffs == true then
                     return true
                 end
-                local conf = buffSide and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s)
+                local conf = buffSide and DefaultBuffsCfg(pabCfg) or DefaultDebuffsCfg(pabCfg)
                 return conf.enabled == false
             end,
             getFrame = function()
@@ -1032,28 +1032,28 @@ function RegisterPABUnlock()
             -- secret baseW). noResize is set anyway, so only a public number for the
             -- mover's label is needed.
             getSize = function()
-                local s = PAB()
-                if not s then
+                local pabCfg = PAB()
+                if not pabCfg then
                     return 32, 32
                 end
-                local gridFrame = ComputeGrid(buffSide, buffSide and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s))
+                local gridFrame = ComputeGrid(buffSide, buffSide and DefaultBuffsCfg(pabCfg) or DefaultDebuffsCfg(pabCfg))
                 return gridFrame.width, gridFrame.height
             end,
             -- The mover works in VISUAL positions (the snapped live frame): loadPos
             -- converts the stored one (BarAnchorOffset), savePos goes back through
             -- MoverStorePos, which leaves an unchanged position untouched.
             savePos = function(_, anchorPt, relPoint, posX, posY)
-                local s = PAB()
-                if not s then
+                local pabCfg = PAB()
+                if not pabCfg then
                     return
                 end
                 local posKey = BarPositionKey(buffSide)
-                local conf = buffSide and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s)
-                s[posKey] = MoverStorePos(
+                local conf = buffSide and DefaultBuffsCfg(pabCfg) or DefaultDebuffsCfg(pabCfg)
+                pabCfg[posKey] = MoverStorePos(
                     getParent(),
                     conf,
                     ComputeGrid(buffSide, conf),
-                    s[posKey],
+                    pabCfg[posKey],
                     anchorPt,
                     relPoint,
                     posX,
@@ -1061,12 +1061,12 @@ function RegisterPABUnlock()
                 )
             end,
             loadPos = function()
-                local s = PAB()
-                local place = s and s[BarPositionKey(buffSide)]
+                local pabCfg = PAB()
+                local place = pabCfg and pabCfg[BarPositionKey(buffSide)]
                 if not place then
                     return nil
                 end
-                local conf = buffSide and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s)
+                local conf = buffSide and DefaultBuffsCfg(pabCfg) or DefaultDebuffsCfg(pabCfg)
                 local posX, posY = BarAnchorOffset(getParent(), conf, ComputeGrid(buffSide, conf), place)
                 return { point = place.point, relPoint = place.relPoint, x = posX, y = posY }
             end,
@@ -1074,8 +1074,8 @@ function RegisterPABUnlock()
             -- these, not the visual position loadPos returns: a layer harvested at
             -- one resolution stays valid at another and keeps the design flag.
             loadRawPosition = function()
-                local s = PAB()
-                local place = s and s[BarPositionKey(buffSide)]
+                local pabCfg = PAB()
+                local place = pabCfg and pabCfg[BarPositionKey(buffSide)]
                 if not place then
                     return nil
                 end
@@ -1088,11 +1088,11 @@ function RegisterPABUnlock()
                 }
             end,
             saveRawPosition = function(_, p)
-                local s = PAB()
-                if not (s and p and p.point) then
+                local pabCfg = PAB()
+                if not (pabCfg and p and p.point) then
                     return
                 end
-                s[BarPositionKey(buffSide)] = {
+                pabCfg[BarPositionKey(buffSide)] = {
                     point = p.point,
                     relPoint = p.relPoint or p.point,
                     x = p.x,
@@ -1101,9 +1101,9 @@ function RegisterPABUnlock()
                 }
             end,
             clearPos = function()
-                local s = PAB()
-                if s then
-                    s[BarPositionKey(buffSide)] = nil
+                local pabCfg = PAB()
+                if pabCfg then
+                    pabCfg[BarPositionKey(buffSide)] = nil
                 end
             end,
             applyPos = function()
@@ -1119,8 +1119,8 @@ function RegisterPABUnlock()
     -- Baked in at registration -- CUI_UnlockMode.lua's GetBarLabel returns the
     -- stored string -- which is why ApplyLiveConfig re-registers when the name
     -- changes.
-    local s = PAB()
-    local buffLabel = mod.PAB_DefaultBuffsName(s and DefaultBuffsCfg(s) or nil)
+    local pabCfg = PAB()
+    local buffLabel = mod.PAB_DefaultBuffsName(pabCfg and DefaultBuffsCfg(pabCfg) or nil)
     lastUnlockBuffLabel = buffLabel
 
     local elements = {
@@ -1154,12 +1154,12 @@ end
 -- dispel colors, cooldown/stack text, icon zoom). iconSize also needs ApplyLiveConfig
 -- for both polarities, since it affects grid geometry.
 local function RestyleBars()
-    local s = PAB()
-    if not (AK and s) then
+    local pabCfg = PAB()
+    if not (AK and pabCfg) then
         return
     end
-    AK.styles[STYLE_BUFFS] = BuildStyle(true, DefaultBuffsCfg(s))
-    AK.styles[STYLE_DEBUFFS] = BuildStyle(false, DefaultDebuffsCfg(s))
+    AK.styles[STYLE_BUFFS] = BuildStyle(true, DefaultBuffsCfg(pabCfg))
+    AK.styles[STYLE_DEBUFFS] = BuildStyle(false, DefaultDebuffsCfg(pabCfg))
     AK.RestyleSoon(STYLE_BUFFS)
     AK.RestyleSoon(STYLE_DEBUFFS)
     SyncCancelCVar()
@@ -1236,11 +1236,11 @@ local function AnyRightClickCancelActive(s)
 end
 
 function SyncCancelCVar()
-    local s = PAB()
-    if not s or s.enabled ~= true then
+    local pabCfg = PAB()
+    if not pabCfg or pabCfg.enabled ~= true then
         return
     end
-    if not AnyRightClickCancelActive(s) then
+    if not AnyRightClickCancelActive(pabCfg) then
         return
     end
     if InCombatLockdown() then
@@ -1259,8 +1259,8 @@ end
 -- field (iconSize) call it for both. No-op before the container exists
 -- (SetupOptionsPanel calls CreateBars() once ns.db is ready).
 local function ApplyLiveConfig(buffSide)
-    local s = PAB()
-    if not (AK and s) then
+    local pabCfg = PAB()
+    if not (AK and pabCfg) then
         return
     end
     if
@@ -1270,7 +1270,7 @@ local function ApplyLiveConfig(buffSide)
                 ApplyLiveConfig(buffSide)
             end,
             buffSide and buffsContainer or debuffsContainer,
-            (buffSide and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s)).growDirection
+            (buffSide and DefaultBuffsCfg(pabCfg) or DefaultDebuffsCfg(pabCfg)).growDirection
         )
     then
         return
@@ -1281,7 +1281,7 @@ local function ApplyLiveConfig(buffSide)
         return
     end
 
-    local conf = buffSide and DefaultBuffsCfg(s) or DefaultDebuffsCfg(s)
+    local conf = buffSide and DefaultBuffsCfg(pabCfg) or DefaultDebuffsCfg(pabCfg)
     -- Enable toggle: a disabled bar hides its parent and skips every live
     -- apply below (geometry, enchant layout, group work) -- re-enabling runs
     -- the full pass. Same shape as the custom bars' early return. Use
@@ -1289,7 +1289,7 @@ local function ApplyLiveConfig(buffSide)
     -- same way. Weapon enchants ride the container, so they stand down with
     -- the bar's parent -- nothing extra to tear down here.
     ApplyDefaultBarShown(buffSide)
-    if s.enabled ~= true or conf.enabled == false or s.useBlizzardBuffs == true then
+    if pabCfg.enabled ~= true or conf.enabled == false or pabCfg.useBlizzardBuffs == true then
         if buffSide then
             SyncEnchantEvents(false)
         end
@@ -1304,7 +1304,7 @@ local function ApplyLiveConfig(buffSide)
     -- skips this: the parent center is its fixed anchor. Uses lastSize rather than live
     -- geometry so rapid slider updates cannot read a stale prior size.
     local posKey = BarPositionKey(buffSide)
-    local place = s[posKey]
+    local place = pabCfg[posKey]
     local centered = conf.growDirection == "CENTER_HORIZONTAL" or conf.growDirection == "CENTER_VERTICAL"
     -- The engine aura container anchored to `parent` makes the PARENT's own geometry
     -- protected in combat (anchor-ancestor rule): the SetSize/ClearAllPoints/SetPoint
@@ -1336,7 +1336,7 @@ local function ApplyLiveConfig(buffSide)
     else
         if centered then
             place = RebaseBarPositionToCenter(hostFrame, place)
-            s[posKey] = place
+            pabCfg[posKey] = place
         end
         local resized = not centered
             and previous
@@ -1521,15 +1521,15 @@ mod.PAB_ApplyLiveConfig = ApplyLiveConfig
 -- BuildContainerSpec/SetContainerGrowth directly, since the spell/class signature is
 -- unchanged and those already re-apply corner + growth cheaply.
 function mod.PAB_GetGrowDirection(barId)
-    local s = PAB()
-    if not s then
+    local pabCfg = PAB()
+    if not pabCfg then
         return "LEFT"
     end
     if barId == "PAB_Buffs" then
-        return DefaultBuffsCfg(s).growDirection or "LEFT"
+        return DefaultBuffsCfg(pabCfg).growDirection or "LEFT"
     end
     if barId == "PAB_Debuffs" then
-        return DefaultDebuffsCfg(s).growDirection or "LEFT"
+        return DefaultDebuffsCfg(pabCfg).growDirection or "LEFT"
     end
     local buffId = barId:match("^PAB_CustomBuff_(%d+)$")
     if buffId then
@@ -1545,17 +1545,17 @@ function mod.PAB_GetGrowDirection(barId)
 end
 
 function mod.PAB_SetGrowDirection(barId, direction)
-    local s = PAB()
-    if not s then
+    local pabCfg = PAB()
+    if not pabCfg then
         return
     end
     if barId == "PAB_Buffs" then
-        DefaultBuffsCfg(s).growDirection = direction
+        DefaultBuffsCfg(pabCfg).growDirection = direction
         RestyleBars()
         ApplyLiveConfig(true)
         return
     elseif barId == "PAB_Debuffs" then
-        DefaultDebuffsCfg(s).growDirection = direction
+        DefaultDebuffsCfg(pabCfg).growDirection = direction
         RestyleBars()
         ApplyLiveConfig(false)
         return

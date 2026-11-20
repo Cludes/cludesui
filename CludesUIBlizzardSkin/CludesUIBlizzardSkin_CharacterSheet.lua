@@ -711,9 +711,9 @@ local function PreSkinCharacterSheet()
                 return
             end
 
-            local cx, cy = GetCursorPosition()
+            local curX, curY = GetCursorPosition()
             local scale = self:GetEffectiveScale()
-            local posX, posY = cx / scale, cy / scale
+            local posX, posY = curX / scale, curY / scale
             local dx, dy = posX - lastX, posY - lastY
             lastX, lastY = posX, posY
 
@@ -729,9 +729,9 @@ local function PreSkinCharacterSheet()
         end
 
         mouseOverlay:SetScript("OnMouseDown", function(self, btnFrame)
-            local cx, cy = GetCursorPosition()
+            local curX, curY = GetCursorPosition()
             local scale = self:GetEffectiveScale()
-            lastX, lastY = cx / scale, cy / scale
+            lastX, lastY = curX / scale, curY / scale
             if btnFrame == "LeftButton" then
                 dragMode = "rotate"
             elseif btnFrame == "RightButton" then

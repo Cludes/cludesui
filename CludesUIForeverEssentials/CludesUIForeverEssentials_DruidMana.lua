@@ -121,19 +121,19 @@ local function Tick()
     line:SetValue(leftX)
 end
 
-local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", UpdateMana)
+local eventFrame = CreateFrame("Frame")
+eventFrame:SetScript("OnEvent", UpdateMana)
 local ticker
 
 local function Apply()
     if Enabled() then
         Build()
         Layout()
-        ev:RegisterUnitEvent("UNIT_POWER_FREQUENT", "player")
-        ev:RegisterUnitEvent("UNIT_MAXPOWER", "player")
-        ev:RegisterUnitEvent("UNIT_DISPLAYPOWER", "player")
-        ev:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
-        ev:RegisterEvent("PLAYER_ENTERING_WORLD")
+        eventFrame:RegisterUnitEvent("UNIT_POWER_FREQUENT", "player")
+        eventFrame:RegisterUnitEvent("UNIT_MAXPOWER", "player")
+        eventFrame:RegisterUnitEvent("UNIT_DISPLAYPOWER", "player")
+        eventFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+        eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
         if not ticker then
             ticker = C_Timer.NewTicker(0.05, Tick)
         end
@@ -141,7 +141,7 @@ local function Apply()
             F.Place(holderFrame)
         end
     else
-        ev:UnregisterAllEvents()
+        eventFrame:UnregisterAllEvents()
         if ticker then
             ticker:Cancel()
             ticker = nil

@@ -315,8 +315,8 @@ local function StartSelection()
 end
 
 function mod.Open(paletteIndex)
-    local p = P()
-    if not p or not p.enabled then
+    local profile = P()
+    if not profile or not profile.enabled then
         return
     end
     CreateLiveView()

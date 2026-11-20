@@ -31,7 +31,7 @@ local function Secret(val)
     return issecretvalue and issecretvalue(val)
 end
 
-local ev = CreateFrame("Frame")
+local eventFrame = CreateFrame("Frame")
 
 local function OnGossip()
     if Get("turnIn") then
@@ -71,7 +71,7 @@ local function OnGreeting()
 end
 
 local lastSaid = {}
-ev:SetScript("OnEvent", function(_, evt, a1, a2)
+eventFrame:SetScript("OnEvent", function(_, evt, a1, a2)
     if evt == "UI_INFO_MESSAGE" then
         if not (Get("progress") and IsInGroup(LE_PARTY_CATEGORY_HOME) and not IsInRaid()) then
             return
@@ -131,10 +131,10 @@ local EVENTS = {
 local function Apply()
     if Enabled() then
         for _, event in ipairs(EVENTS) do
-            ev:RegisterEvent(event)
+            eventFrame:RegisterEvent(event)
         end
     else
-        ev:UnregisterAllEvents()
+        eventFrame:UnregisterAllEvents()
     end
 end
 

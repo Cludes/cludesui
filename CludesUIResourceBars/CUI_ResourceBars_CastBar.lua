@@ -471,9 +471,9 @@ BuildCastBar = function()
 
         local fR, fG, fB, fA = callback.fillR, callback.fillG, callback.fillB, 1
         if callback.classColored then
-            local cc = CLASS_COLORS[cachedClass]
-            if cc then
-                fR, fG, fB = cc[1], cc[2], cc[3]
+            local classColor = CLASS_COLORS[cachedClass]
+            if classColor then
+                fR, fG, fB = classColor[1], classColor[2], classColor[3]
             end
         end
         fillTex:SetVertexColor(1, 1, 1, 1)
@@ -503,9 +503,9 @@ BuildCastBar = function()
         do
             local fR, fG, fB, fA = callback.fillR, callback.fillG, callback.fillB, 1
             if callback.classColored then
-                local cc = CLASS_COLORS[cachedClass]
-                if cc then
-                    fR, fG, fB = cc[1], cc[2], cc[3]
+                local classColor = CLASS_COLORS[cachedClass]
+                if classColor then
+                    fR, fG, fB = classColor[1], classColor[2], classColor[3]
                 end
             end
             fillTex:SetVertexColor(fR, fG, fB, fA * fillOp)
@@ -1983,9 +1983,9 @@ mod.ERB_RestoreCastFill = function()
     end
     local fR, fG, fB, fA = callback.fillR, callback.fillG, callback.fillB, 1
     if callback.classColored then
-        local cc = CLASS_COLORS[cachedClass]
-        if cc then
-            fR, fG, fB = cc[1], cc[2], cc[3]
+        local classColor = CLASS_COLORS[cachedClass]
+        if classColor then
+            fR, fG, fB = classColor[1], classColor[2], classColor[3]
         end
     end
     if castFrame._gradientFullBar and castFrame._gradTex then

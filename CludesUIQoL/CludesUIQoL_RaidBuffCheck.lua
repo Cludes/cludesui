@@ -57,7 +57,7 @@ local MIN_W = 400 -- fits the note line; the checkbox row can widen it
 local NOTE_H = 16
 local CB_H = 22 -- checkbox row between the totals and the note
 
-local ev = CreateFrame("Frame")
+local eventFrame = CreateFrame("Frame")
 local widget
 local rowList, heads = {}, {}
 local units = {} -- display order
@@ -402,15 +402,15 @@ end
 
 -- The window's events follow the window; READY_CHECK follows the option.
 local function Listen(isShown)
-    ev:UnregisterAllEvents()
+    eventFrame:UnregisterAllEvents()
     if Enabled() and OpenOnReady() then
-        ev:RegisterEvent("READY_CHECK")
+        eventFrame:RegisterEvent("READY_CHECK")
     end
     if isShown then
-        ev:RegisterEvent("UNIT_AURA")
-        ev:RegisterEvent("GROUP_ROSTER_UPDATE")
-        ev:RegisterEvent("UNIT_CONNECTION")
-        ev:RegisterEvent("PLAYER_REGEN_DISABLED")
+        eventFrame:RegisterEvent("UNIT_AURA")
+        eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+        eventFrame:RegisterEvent("UNIT_CONNECTION")
+        eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
     end
 end
 
@@ -486,7 +486,7 @@ local function Build()
 
     -- Checkbox row above the note, left to right; each label is part of its
     -- box's hit rect.
-    local ar, ag, ab = CludesUI.GetAccentColor()
+    local accR, accG, accB = CludesUI.GetAccentColor()
     local function MakeCheckbox(textValue, onClick)
         local callback = CreateFrame("Button", nil, widget)
         callback:SetSize(14, 14)
@@ -498,7 +498,7 @@ local function Build()
         callback.check:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
         callback.check:SetPoint("CENTER")
         callback.check:SetSize(16, 16)
-        callback.check:SetVertexColor(ar, ag, ab)
+        callback.check:SetVertexColor(accR, accG, accB)
         callback.label = Text(widget, 11, 0.85, 0.85, 0.85)
         callback.label:SetPoint("LEFT", callback, "RIGHT", 6, 0)
         callback.label:SetText(textValue)
@@ -1015,7 +1015,7 @@ function mod.BuffCheckSync()
     Listen(widget and widget:IsShown())
 end
 
-ev:SetScript("OnEvent", function(_, evt, unitToken)
+eventFrame:SetScript("OnEvent", function(_, evt, unitToken)
     if evt == "UNIT_AURA" then
         if not isMember[unitToken] then
             return

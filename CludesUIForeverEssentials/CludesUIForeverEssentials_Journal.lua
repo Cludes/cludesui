@@ -776,10 +776,10 @@ function module.ShowJournal(skinData)
 end
 
 -- Item names arrive after the window asks for them: repaint once they settle.
-local ev = CreateFrame("Frame")
-ev:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+local eventFrame = CreateFrame("Frame")
+eventFrame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 local queued
-ev:SetScript("OnEvent", function()
+eventFrame:SetScript("OnEvent", function()
     if not (win and win:IsShown()) or queued then
         return
     end

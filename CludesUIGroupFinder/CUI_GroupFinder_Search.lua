@@ -5421,11 +5421,11 @@ local function Init()
             Paint()
         end
     end)
-    local ev = CreateFrame("Frame")
-    ev:RegisterEvent("CHALLENGE_MODE_MAPS_UPDATE")
-    ev:RegisterEvent("LFG_LIST_SEARCH_FAILED")
+    local eventFrame = CreateFrame("Frame")
+    eventFrame:RegisterEvent("CHALLENGE_MODE_MAPS_UPDATE")
+    eventFrame:RegisterEvent("LFG_LIST_SEARCH_FAILED")
     XF.AdoptRating()
-    ev:SetScript("OnEvent", function(_, evt)
+    eventFrame:SetScript("OnEvent", function(_, evt)
         if evt == "LFG_LIST_SEARCH_FAILED" then
             -- server refused a search: wait longer.
             pending = true

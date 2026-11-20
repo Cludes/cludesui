@@ -616,9 +616,9 @@ local function BuildBars()
                 if hp.customColored then
                     fR, fG, fB, fA = hp.fillR, hp.fillG, hp.fillB, 1
                 else
-                    local cc = CLASS_COLORS[cachedClass]
-                    if cc then
-                        fR, fG, fB, fA = cc[1], cc[2], cc[3], 1
+                    local classColor = CLASS_COLORS[cachedClass]
+                    if classColor then
+                        fR, fG, fB, fA = classColor[1], classColor[2], classColor[3], 1
                     else
                         fR, fG, fB, fA = 0.15, 0.75, 0.30, 1
                     end
@@ -1242,9 +1242,9 @@ local function BuildBars()
                 -- Per-spec resource/power color; falls back to class color.
                 local rr, rg, rb = ERB.ResolveSecondaryResourceColor(cachedSecondary.power)
                 if not rr then
-                    local cc = CLASS_COLORS[cachedClass]
-                    if cc then
-                        rr, rg, rb = cc[1], cc[2], cc[3]
+                    local classColor = CLASS_COLORS[cachedClass]
+                    if classColor then
+                        rr, rg, rb = classColor[1], classColor[2], classColor[3]
                     else
                         rr, rg, rb = 1, 1, 1
                     end
@@ -1257,9 +1257,9 @@ local function BuildBars()
                 if pc2 then
                     secondaryBar:GetStatusBarTexture():SetVertexColor(pc2[1], pc2[2], pc2[3], 1)
                 else
-                    local cc = CLASS_COLORS[cachedClass]
-                    if cc then
-                        secondaryBar:GetStatusBarTexture():SetVertexColor(cc[1], cc[2], cc[3], 1)
+                    local classColor = CLASS_COLORS[cachedClass]
+                    if classColor then
+                        secondaryBar:GetStatusBarTexture():SetVertexColor(classColor[1], classColor[2], classColor[3], 1)
                     end
                 end
                 secondaryBar._bg:SetColorTexture(sp.bgR, sp.bgG, sp.bgB, sp.bgA)

@@ -334,9 +334,9 @@ function mod.ShowReadyWindow()
     window:Show()
 end
 
-local ev = CreateFrame("Frame")
-ev:RegisterEvent("READY_CHECK")
-ev:SetScript("OnEvent", function()
+local eventFrame = CreateFrame("Frame")
+eventFrame:RegisterEvent("READY_CHECK")
+eventFrame:SetScript("OnEvent", function()
     if not mod.ReadyCheckSettings().enabled then
         return
     end

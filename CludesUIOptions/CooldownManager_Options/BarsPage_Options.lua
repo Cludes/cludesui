@@ -57,12 +57,12 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     local cursorY = yOffset
     local _, height, heading
 
-    local p = DB()
-    if not p or not p.cdmBars then
+    local profile = DB()
+    if not profile or not profile.cdmBars then
         return math.abs(yOffset)
     end
 
-    local barList = p.cdmBars.bars
+    local barList = profile.cdmBars.bars
     if not barList or #barList == 0 then
         return math.abs(yOffset)
     end
@@ -648,7 +648,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     byKey[bar.key] = bar
                 end
             end
-            local saved = p.cdmBars.customBarMenuOrder
+            local saved = profile.cdmBars.customBarMenuOrder
             if type(saved) == "table" then
                 for _, keyName in ipairs(saved) do
                     if byKey[keyName] and not seen[keyName] then
@@ -901,9 +901,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 if mb ~= "LeftButton" then
                                     return
                                 end
-                                local _, cy = GetCursorPosition()
+                                local _, curY = GetCursorPosition()
                                 drag.row = entry
-                                drag.startY = cy
+                                drag.startY = curY
                                 drag.active = false
                                 drag.slot = nil
                             end)
@@ -911,9 +911,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 if drag.row ~= entry or not drag.startY then
                                     return
                                 end
-                                local _, cy = GetCursorPosition()
+                                local _, curY = GetCursorPosition()
                                 if not drag.active then
-                                    if math.abs(cy - drag.startY) < 3 then
+                                    if math.abs(curY - drag.startY) < 3 then
                                         return
                                     end
                                     drag.active = true
@@ -921,7 +921,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                     entry:SetAlpha(0.8)
                                     gripTex:SetTextColor(1, 1, 1, 0.6)
                                 end
-                                local cY = cy / dropMenu:GetEffectiveScale()
+                                local cY = curY / dropMenu:GetEffectiveScale()
                                 local mT = dropMenu:GetTop() or 0
                                 local iI = DropSlot(entry, cY, mT)
                                 drag.slot = iI
@@ -1107,7 +1107,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     addEntry:SetScript("OnClick", function()
                         dropMenu:Hide()
                         mod.AddCDMBar(bType)
-                        optionState.selectedCDMBarIndex = #p.cdmBars.bars
+                        optionState.selectedCDMBarIndex = #profile.cdmBars.bars
                         Refresh()
                         -- Other pages' saved headers name the bars; this
                         -- page's header is built by its own rebuild below.
@@ -4478,16 +4478,16 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 disabledTooltip = "This option requires Blizzard's Assisted Highlight to be enabled",
                 rawTooltip = true,
                 getValue = function()
-                    local p = DB()
-                    return p
-                        and p.cdmBars
-                        and not p.cdmBars.hideRotationHelper
+                    local profile = DB()
+                    return profile
+                        and profile.cdmBars
+                        and not profile.cdmBars.hideRotationHelper
                         and mod.RotationAssistAvailable()
                 end,
                 setValue = function(value)
-                    local p = DB()
-                    if p and p.cdmBars then
-                        p.cdmBars.hideRotationHelper = not value
+                    local profile = DB()
+                    if profile and profile.cdmBars then
+                        profile.cdmBars.hideRotationHelper = not value
                         if mod.UpdateRotationHighlights then
                             mod.UpdateRotationHighlights()
                         end
@@ -4800,15 +4800,15 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             text = "Show Glows Only in Combat (global)",
             tooltip = "Hide every Cooldown Manager glow out of combat and bring them all back the moment you enter combat.",
             getValue = function()
-                local p = DB()
-                return (p and p.cdmBars and p.cdmBars.glowsOnlyInCombat) == true
+                local profile = DB()
+                return (profile and profile.cdmBars and profile.cdmBars.glowsOnlyInCombat) == true
             end,
             setValue = function(value)
-                local p = DB()
-                if not p or not p.cdmBars then
+                local profile = DB()
+                if not profile or not profile.cdmBars then
                     return
                 end
-                p.cdmBars.glowsOnlyInCombat = value and true or false
+                profile.cdmBars.glowsOnlyInCombat = value and true or false
                 -- Re-read the cached gate, then let the sweep take the running
                 -- glows down (or bring the suppressed ones back) right away
                 -- instead of waiting for the next combat edge.

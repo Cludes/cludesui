@@ -929,9 +929,9 @@ do
         end
     end
 
-    local ev = CreateFrame("Frame")
-    ev:RegisterEvent("PLAYER_ENTERING_WORLD")
-    ev:SetScript("OnEvent", function(self)
+    local eventFrame = CreateFrame("Frame")
+    eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    eventFrame:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
         for _, delay in ipairs({ 0.25, 1, 3 }) do
             C_Timer.After(delay, ForceTextRepaint)

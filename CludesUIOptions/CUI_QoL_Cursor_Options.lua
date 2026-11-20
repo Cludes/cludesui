@@ -48,25 +48,25 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function GCD_DB()
-        local p = DB()
-        if not p then
+        local profile = DB()
+        if not profile then
             return {}
         end
-        if not p.gcd then
-            p.gcd = {}
+        if not profile.gcd then
+            profile.gcd = {}
         end
-        return p.gcd
+        return profile.gcd
     end
 
     local function Cast_DB()
-        local p = DB()
-        if not p then
+        local profile = DB()
+        if not profile then
             return {}
         end
-        if not p.castCircle then
-            p.castCircle = {}
+        if not profile.castCircle then
+            profile.castCircle = {}
         end
-        return p.castCircle
+        return profile.castCircle
     end
 
     ---------------------------------------------------------------------------
@@ -146,20 +146,20 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Enable Cursor Circle",
             getValue = function()
-                local p = DB()
-                return p and (p.enabled ~= false)
+                local profile = DB()
+                return profile and (profile.enabled ~= false)
             end,
             -- DependentSetValue: the rows below Row 1 are hidden while the
             -- circle is off; the flip forces the full rebuild.
             setValue = CludesUI.DependentSetValue(function()
-                local p = DB()
-                return p and (p.enabled ~= false)
+                local profile = DB()
+                return profile and (profile.enabled ~= false)
             end, function(val)
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return
                 end
-                p.enabled = val
+                profile.enabled = val
                 RefreshAddon()
                 CludesUI:RefreshPage()
             end),
@@ -171,29 +171,29 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Custom Color",
                     hasAlpha = false,
                     getValue = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return 76 / 255, 201 / 255, 240 / 255
                         end
-                        local red, green, b = HexToRGB(p.hex)
+                        local red, green, b = HexToRGB(profile.hex)
                         return red, green, b
                     end,
                     setValue = function(red, green, blue)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.hex = RGBToHex(red, green, blue)
+                        profile.hex = RGBToHex(red, green, blue)
                         RefreshAddon()
                     end,
                     onClick = function(self)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        if p.useClassColor or p.useAccentColor then
-                            p.useClassColor = false
-                            p.useAccentColor = false
+                        if profile.useClassColor or profile.useAccentColor then
+                            profile.useClassColor = false
+                            profile.useAccentColor = false
                             RefreshAddon()
                             CludesUI:RefreshPage()
                             return
@@ -203,11 +203,11 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end,
                     refreshAlpha = function()
-                        local p = DB()
-                        if not p or p.enabled == false then
+                        local profile = DB()
+                        if not profile or profile.enabled == false then
                             return 0.15
                         end
-                        return (p.useClassColor or p.useAccentColor) and 0.3 or 1
+                        return (profile.useClassColor or profile.useAccentColor) and 0.3 or 1
                     end,
                 },
                 {
@@ -223,21 +223,21 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.useClassColor = true
-                        p.useAccentColor = false
+                        profile.useClassColor = true
+                        profile.useAccentColor = false
                         RefreshAddon()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local p = DB()
-                        if not p or p.enabled == false then
+                        local profile = DB()
+                        if not profile or profile.enabled == false then
                             return 0.15
                         end
-                        return p.useClassColor and 1 or 0.3
+                        return profile.useClassColor and 1 or 0.3
                     end,
                 },
                 {
@@ -249,21 +249,21 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.useAccentColor = true
-                        p.useClassColor = false
+                        profile.useAccentColor = true
+                        profile.useClassColor = false
                         RefreshAddon()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local p = DB()
-                        if not p or p.enabled == false then
+                        local profile = DB()
+                        if not profile or profile.enabled == false then
                             return 0.15
                         end
-                        return p.useAccentColor and 1 or 0.3
+                        return profile.useAccentColor and 1 or 0.3
                     end,
                 },
             },
@@ -283,8 +283,8 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateCircleBlock()
-                local p = DB()
-                local off = not p or p.enabled == false
+                local profile = DB()
+                local off = not profile or profile.enabled == false
                 circleBlock:SetShown(off)
                 -- Dim the "Color" label with its swatches
                 if rightRegion._label then
@@ -320,15 +320,15 @@ CludesUI.AtOptionsLogin(function()
                     "ring_thick",
                 },
                 getValue = function()
-                    local p = DB()
-                    return p and p.texture or "ring_normal"
+                    local profile = DB()
+                    return profile and profile.texture or "ring_normal"
                 end,
                 setValue = function(val)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.texture = val
+                    profile.texture = val
                     RefreshAddon()
                 end,
             }, {
@@ -338,15 +338,15 @@ CludesUI.AtOptionsLogin(function()
                 max = 2.0,
                 step = 0.1,
                 getValue = function()
-                    local p = DB()
-                    return p and p.scale or 1
+                    local profile = DB()
+                    return profile and profile.scale or 1
                 end,
                 setValue = function(val)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.scale = val
+                    profile.scale = val
                     RefreshAddon()
                 end,
             })
@@ -360,30 +360,30 @@ CludesUI.AtOptionsLogin(function()
                 max = 100,
                 step = 1,
                 getValue = function()
-                    local p = DB()
-                    return p and (p.alpha or 100)
+                    local profile = DB()
+                    return profile and (profile.alpha or 100)
                 end,
                 setValue = function(val)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.alpha = val
+                    profile.alpha = val
                     RefreshAddon()
                 end,
             }, {
                 type = "toggle",
                 text = "Cursor Trail",
                 getValue = function()
-                    local p = DB()
-                    return p and p.trail or false
+                    local profile = DB()
+                    return profile and profile.trail or false
                 end,
                 setValue = function(val)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.trail = val
+                    profile.trail = val
                     if _G._CUCL_ApplyTrail then
                         _G._CUCL_ApplyTrail()
                     end
@@ -396,15 +396,15 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Only Show in Instances",
                 getValue = function()
-                    local p = DB()
-                    return p and p.instanceOnly
+                    local profile = DB()
+                    return profile and profile.instanceOnly
                 end,
                 setValue = function(val)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.instanceOnly = val
+                    profile.instanceOnly = val
                     if _G._CUCL_UpdateVisibility then
                         _G._CUCL_UpdateVisibility()
                     end
@@ -414,15 +414,15 @@ CludesUI.AtOptionsLogin(function()
                 text = "Only Show When Hidden",
                 tooltip = "Only shows the cursor circle while the mouse is hidden -- that is, while you hold the left and/or right mouse button to pan the camera or move your character.",
                 getValue = function()
-                    local p = DB()
-                    return p and p.onlyWhenHidden or false
+                    local profile = DB()
+                    return profile and profile.onlyWhenHidden or false
                 end,
                 setValue = function(val)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.onlyWhenHidden = val
+                    profile.onlyWhenHidden = val
                     if _G._CUCL_ApplyOnlyWhenHidden then
                         _G._CUCL_ApplyOnlyWhenHidden()
                     end
@@ -436,15 +436,15 @@ CludesUI.AtOptionsLogin(function()
                 text = "Combat Only",
                 tooltip = "Only shows the cursor circle while you are in combat.",
                 getValue = function()
-                    local p = DB()
-                    return p and p.combatOnly or false
+                    local profile = DB()
+                    return profile and profile.combatOnly or false
                 end,
                 setValue = function(val)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.combatOnly = val
+                    profile.combatOnly = val
                     if _G._CUCL_ApplyCombatOnlyEvents then
                         _G._CUCL_ApplyCombatOnlyEvents()
                     end
@@ -457,15 +457,15 @@ CludesUI.AtOptionsLogin(function()
                 text = "Center Reticle",
                 tooltip = "Adds a small filled dot at the center of the cursor circle. Uses the same color and opacity as the circle.",
                 getValue = function()
-                    local p = DB()
-                    return p and p.reticle or false
+                    local profile = DB()
+                    return profile and profile.reticle or false
                 end,
                 setValue = function(val)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.reticle = val
+                    profile.reticle = val
                     RefreshAddon()
                 end,
             })
@@ -485,8 +485,8 @@ CludesUI.AtOptionsLogin(function()
         CludesUI.BuildSectionUnlockJump(heading, {
             key = "ECL_GCD",
             disabled = function()
-                local g = GCD_DB()
-                return not (g.enabled and g.attached == false)
+                local gcdCfg = GCD_DB()
+                return not (gcdCfg.enabled and gcdCfg.attached == false)
             end,
             disabledTooltip = function()
                 return GCD_DB().enabled and "Attach to Cursor" or "GCD Circle"
@@ -520,8 +520,8 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Custom Color",
                     hasAlpha = false,
                     getValue = function()
-                        local g = GCD_DB()
-                        local r, ng, b = HexToRGB(g.hex)
+                        local gcdCfg = GCD_DB()
+                        local r, ng, b = HexToRGB(gcdCfg.hex)
                         return r, ng, b
                     end,
                     setValue = function(red, green, blue)
@@ -530,10 +530,10 @@ CludesUI.AtOptionsLogin(function()
                         RefreshGCD()
                     end,
                     onClick = function(self)
-                        local g = GCD_DB()
-                        if g.useClassColor or g.useAccentColor then
-                            g.useClassColor = false
-                            g.useAccentColor = false
+                        local gcdCfg = GCD_DB()
+                        if gcdCfg.useClassColor or gcdCfg.useAccentColor then
+                            gcdCfg.useClassColor = false
+                            gcdCfg.useAccentColor = false
                             RefreshGCD()
                             CludesUI:RefreshPage()
                             return
@@ -543,11 +543,11 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end,
                     refreshAlpha = function()
-                        local g = GCD_DB()
-                        if not g.enabled then
+                        local gcdCfg = GCD_DB()
+                        if not gcdCfg.enabled then
                             return 0.15
                         end
-                        return (g.useClassColor or g.useAccentColor) and 0.3 or 1
+                        return (gcdCfg.useClassColor or gcdCfg.useAccentColor) and 0.3 or 1
                     end,
                 },
                 {
@@ -563,18 +563,18 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local g = GCD_DB()
-                        g.useClassColor = true
-                        g.useAccentColor = false
+                        local gcdCfg = GCD_DB()
+                        gcdCfg.useClassColor = true
+                        gcdCfg.useAccentColor = false
                         RefreshGCD()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local g = GCD_DB()
-                        if not g.enabled then
+                        local gcdCfg = GCD_DB()
+                        if not gcdCfg.enabled then
                             return 0.15
                         end
-                        return g.useClassColor and 1 or 0.3
+                        return gcdCfg.useClassColor and 1 or 0.3
                     end,
                 },
                 {
@@ -586,18 +586,18 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local g = GCD_DB()
-                        g.useAccentColor = true
-                        g.useClassColor = false
+                        local gcdCfg = GCD_DB()
+                        gcdCfg.useAccentColor = true
+                        gcdCfg.useClassColor = false
                         RefreshGCD()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local g = GCD_DB()
-                        if not g.enabled then
+                        local gcdCfg = GCD_DB()
+                        if not gcdCfg.enabled then
                             return 0.15
                         end
-                        return g.useAccentColor and 1 or 0.3
+                        return gcdCfg.useAccentColor and 1 or 0.3
                     end,
                 },
             },

@@ -70,8 +70,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     end
 
     local castOff = function()
-        local p = DB()
-        return p and not p.castBar.enabled
+        local profile = DB()
+        return profile and not profile.castBar.enabled
     end
 
     local function RefreshCast()
@@ -87,22 +87,22 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     -- it is unset (no default: the value as stored, nil without a profile).
     local function Getter(key, default)
         return function()
-            local p = DB()
+            local profile = DB()
             if default == nil then
-                return p and p.castBar[key]
+                return profile and profile.castBar[key]
             end
-            return p and p.castBar[key] or default
+            return profile and profile.castBar[key] or default
         end
     end
     -- A setting row's setter for one cast bar key: written (when the profile
     -- exists), the cast bar redrawn, and with alsoPage the page rebuilt too.
     local function Setter(key, alsoPage)
         return function(val)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return
             end
-            p.castBar[key] = val
+            profile.castBar[key] = val
             RefreshCast()
             if alsoPage then
                 CludesUI:RefreshPage()
@@ -180,8 +180,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         disabled = castOff,
         disabledTooltip = "Player Cast Bar",
         getValue = function()
-            local p = DB()
-            return p and p.castBar.showIcon ~= false
+            local profile = DB()
+            return profile and profile.castBar.showIcon ~= false
         end,
         setValue = Setter("showIcon", true),
     }, {
@@ -198,12 +198,12 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         local region = iconRow._leftRegion
         local FREE_TIP = "This option requires the icon at bar size with no offset."
         local function IconFree()
-            local p = DB()
-            return p and mod.ERB_CastIconFree(p.castBar)
+            local profile = DB()
+            return profile and mod.ERB_CastIconFree(profile.castBar)
         end
         local function IconOnPortrait()
-            local p = DB()
-            return p and mod.ERB_CastIconPortrait(p.castBar) ~= nil
+            local profile = DB()
+            return profile and mod.ERB_CastIconPortrait(profile.castBar) ~= nil
         end
         -- Embed in Player Portrait: nil while a player portrait can take the icon, else why
         -- not ("uf": the Unit Frames player cast bar already shows its icon there).
@@ -240,27 +240,27 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 end,
                 requireState = "disabled",
                 get = function()
-                    local p = DB()
-                    return p and p.castBar[key] or 0
+                    local profile = DB()
+                    return profile and profile.castBar[key] or 0
                 end,
                 set = function(val)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.castBar[key] = val
+                    profile.castBar[key] = val
                     RefreshCast()
                 end,
             }
         end
         CludesUI.BuildInlineCog(region, {
             disabled = function()
-                local p = DB()
-                return p and (not p.castBar.enabled or p.castBar.showIcon == false)
+                local profile = DB()
+                return profile and (not profile.castBar.enabled or profile.castBar.showIcon == false)
             end,
             disabledTooltip = function()
-                local p = DB()
-                return (p and not p.castBar.enabled) and "Player Cast Bar" or "Show Spell Icon"
+                local profile = DB()
+                return (profile and not profile.castBar.enabled) and "Player Cast Bar" or "Show Spell Icon"
             end,
             title = "Spell Icon Settings",
             rows = {
@@ -277,15 +277,15 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     end,
                     rawTooltip = true,
                     get = function()
-                        local p = DB()
-                        return p and p.castBar.iconOnPortrait == true
+                        local profile = DB()
+                        return profile and profile.castBar.iconOnPortrait == true
                     end,
                     set = function(val)
-                        local p = DB()
-                        if not p or (val and PlayerPortraitOff()) then
+                        local profile = DB()
+                        if not profile or (val and PlayerPortraitOff()) then
                             return
                         end
-                        p.castBar.iconOnPortrait = val
+                        profile.castBar.iconOnPortrait = val
                         RefreshCast()
                     end,
                 },
@@ -323,11 +323,11 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     label = "Border Art Divider",
                     tooltip = "Draws the icon divider in the border style's art instead of a solid line.",
                     disabled = function()
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return true
                         end
-                        local checkBtn = p.castBar
+                        local checkBtn = profile.castBar
                         return IconOnPortrait()
                             or not checkBtn.showIconDivider
                             or CludesUI.BlizzStyle.Get("castbar")
@@ -340,8 +340,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         if CludesUI.BlizzStyle.Get("castbar") then
                             return CludesUI.DisabledTooltip(CludesUI.BlizzStyle.Label("castbar"), "disabled")
                         end
-                        local p = DB()
-                        if not (p and p.castBar.showIconDivider) then
+                        local profile = DB()
+                        if not (profile and profile.castBar.showIconDivider) then
                             return "Show Icon Divider"
                         end
                         return "This option requires a border style with matching art, such as Pixels."
@@ -350,16 +350,16 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         if CludesUI.BlizzStyle.Get("castbar") then
                             return true
                         end
-                        local p = DB()
-                        return (p and p.castBar.showIconDivider) and true or false
+                        local profile = DB()
+                        return (profile and profile.castBar.showIconDivider) and true or false
                     end,
                     get = Getter("iconDividerArt", false),
                     set = function(val)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.castBar.iconDividerArt = val and true or false
+                        profile.castBar.iconDividerArt = val and true or false
                         RefreshCast()
                     end,
                 },
@@ -392,18 +392,18 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         disabled = castOff,
         disabledTooltip = "Player Cast Bar",
         getValue = function()
-            local p = DB()
-            return not (p and p.castBar.smoothFill == false)
+            local profile = DB()
+            return not (profile and profile.castBar.smoothFill == false)
         end,
         setValue = function(val)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return
             end
             if val then
-                p.castBar.smoothFill = nil
+                profile.castBar.smoothFill = nil
             else
-                p.castBar.smoothFill = false
+                profile.castBar.smoothFill = false
             end
             RefreshCast()
         end,
@@ -434,27 +434,27 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 order = texOrder,
                 getValue = Getter("borderTexture", "solid"),
                 setValue = function(val)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.castBar.borderTexture = val
-                    p.castBar.borderTextureOffset = nil
-                    p.castBar.borderTextureOffsetY = nil
-                    p.castBar.borderTextureShiftX = nil
-                    p.castBar.borderTextureShiftY = nil
+                    profile.castBar.borderTexture = val
+                    profile.castBar.borderTextureOffset = nil
+                    profile.castBar.borderTextureOffsetY = nil
+                    profile.castBar.borderTextureShiftX = nil
+                    profile.castBar.borderTextureShiftY = nil
                     local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(val)
-                    p.castBar.borderR = _bcol.r
-                    p.castBar.borderG = _bcol.g
-                    p.castBar.borderB = _bcol.b
-                    p.castBar.borderA = 1
-                    p.castBar.borderBehind = _bbehind
+                    profile.castBar.borderR = _bcol.r
+                    profile.castBar.borderG = _bcol.g
+                    profile.castBar.borderB = _bcol.b
+                    profile.castBar.borderA = 1
+                    profile.castBar.borderBehind = _bbehind
                     local defSz = CludesUI.GetBorderDefaultSize("resourcebars", val)
                     if defSz then
-                        p.castBar.borderSize = defSz
+                        profile.castBar.borderSize = defSz
                     end
-                    if p.castBar.borderSizePx then
-                        p.castBar.borderSizePx = false
+                    if profile.castBar.borderSizePx then
+                        profile.castBar.borderSizePx = false
                     end
                     RefreshCast()
                     CludesUI:RefreshPage(true)
@@ -463,14 +463,14 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             -- Classic WoW UI: the slot sizes the vanilla frame instead.
             (CludesUI.BlizzStyle.Active("castbar") == "classic")
                     and CludesUI.BlizzStyle.ClassicBorderSizeCfg(function()
-                        local p = DB()
-                        return p and p.castBar.stockBorderScale
+                        local profile = DB()
+                        return profile and profile.castBar.stockBorderScale
                     end, function(val)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        p.castBar.stockBorderScale = val
+                        profile.castBar.stockBorderScale = val
                         RefreshCast()
                         CludesUI.ReapplyMatchPads("ERB_CastBar")
                     end, { disabled = castOff, disabledTooltip = "Player Cast Bar" })
@@ -481,27 +481,27 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         disabled = castOff,
                         disabledTooltip = "Player Cast Bar",
                         getStep = function()
-                            local p = DB()
-                            return p and (p.castBar.borderSize or 0) or 0
+                            local profile = DB()
+                            return profile and (profile.castBar.borderSize or 0) or 0
                         end,
                         setStep = function(val)
-                            local p = DB()
-                            if p then
-                                p.castBar.borderSize = val
+                            local profile = DB()
+                            if profile then
+                                profile.castBar.borderSize = val
                             end
                         end,
                         getTex = function()
-                            local p = DB()
-                            return p and (p.castBar.borderTexture or "solid") or "solid"
+                            local profile = DB()
+                            return profile and (profile.castBar.borderTexture or "solid") or "solid"
                         end,
                         getPx = function()
-                            local p = DB()
-                            return p and p.castBar.borderSizePx
+                            local profile = DB()
+                            return profile and profile.castBar.borderSizePx
                         end,
                         setPx = function(val)
-                            local p = DB()
-                            if p then
-                                p.castBar.borderSizePx = val
+                            local profile = DB()
+                            if profile then
+                                profile.castBar.borderSizePx = val
                             end
                         end,
                         apply = function()
@@ -514,45 +514,45 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         cursorY = cursorY - height
         -- Width Offset | Height Offset: own row while a textured style is selected (stock styles gate it away).
         do
-            local p = DB()
-            local texture = p and p.castBar.borderTexture or "solid"
+            local profile = DB()
+            local texture = profile and profile.castBar.borderTexture or "solid"
             if texture ~= "solid" and texture ~= "" then
                 local function step()
-                    local p = DB()
-                    return p and (p.castBar.borderSize or 0) or 0
+                    local profile = DB()
+                    return profile and (profile.castBar.borderSize or 0) or 0
                 end
                 local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                     addonKey = "resourcebars",
                     disabled = castOff,
                     disabledTooltip = "Player Cast Bar",
                     getTex = function()
-                        local p = DB()
-                        return p and (p.castBar.borderTexture or "solid") or "solid"
+                        local profile = DB()
+                        return profile and (profile.castBar.borderTexture or "solid") or "solid"
                     end,
                     getStep = step,
                     getSizeKey = step,
                     getPx = function()
-                        local p = DB()
-                        return p and p.castBar.borderSizePx
+                        local profile = DB()
+                        return profile and profile.castBar.borderSizePx
                     end,
                     getX = function()
-                        local p = DB()
-                        return p and p.castBar.borderTextureOffset
+                        local profile = DB()
+                        return profile and profile.castBar.borderTextureOffset
                     end,
                     setX = function(val)
-                        local p = DB()
-                        if p then
-                            p.castBar.borderTextureOffset = val
+                        local profile = DB()
+                        if profile then
+                            profile.castBar.borderTextureOffset = val
                         end
                     end,
                     getY = function()
-                        local p = DB()
-                        return p and p.castBar.borderTextureOffsetY
+                        local profile = DB()
+                        return profile and profile.castBar.borderTextureOffsetY
                     end,
                     setY = function(val)
-                        local p = DB()
-                        if p then
-                            p.castBar.borderTextureOffsetY = val
+                        local profile = DB()
+                        if profile then
+                            profile.castBar.borderTextureOffsetY = val
                         end
                     end,
                     apply = function()
@@ -578,18 +578,18 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 region,
                 cbBsRow:GetFrameLevel() + 3,
                 function()
-                    local p = DB()
-                    return (p and p.castBar.borderR or 0),
-                        (p and p.castBar.borderG or 0),
-                        (p and p.castBar.borderB or 0),
-                        (p and p.castBar.borderA or 1)
+                    local profile = DB()
+                    return (profile and profile.castBar.borderR or 0),
+                        (profile and profile.castBar.borderG or 0),
+                        (profile and profile.castBar.borderB or 0),
+                        (profile and profile.castBar.borderA or 1)
                 end,
                 function(red, green, blue, a)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    p.castBar.borderR, p.castBar.borderG, p.castBar.borderB, p.castBar.borderA = red, green, blue, a
+                    profile.castBar.borderR, profile.castBar.borderG, profile.castBar.borderB, profile.castBar.borderA = red, green, blue, a
                     RefreshCast()
                     CludesUI:RefreshPage()
                 end,
@@ -616,9 +616,9 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 CludesUI.HideWidgetTooltip()
             end)
             local function UpdateBorderSwatchState()
-                local p = DB()
-                local noBorder = not p
-                    or (p.castBar.borderSize or 0) == 0
+                local profile = DB()
+                local noBorder = not profile
+                    or (profile.castBar.borderSize or 0) == 0
                     or CludesUI.BlizzStyle.Get("castbar")
                 if noBorder then
                     borderSwatch:SetAlpha(0.3)
@@ -647,27 +647,27 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         max = 10,
                         step = 1,
                         get = function()
-                            local p = DB()
-                            if not p then
+                            local profile = DB()
+                            if not profile then
                                 return 0
                             end
-                            local val = p.castBar.borderTextureShiftX
+                            local val = profile.castBar.borderTextureShiftX
                             if val then
                                 return val
                             end
                             local _, _, dsx = CludesUI.GetBorderDefaults(
                                 "resourcebars",
-                                p.castBar.borderTexture or "solid",
-                                p.castBar.borderSize or 0
+                                profile.castBar.borderTexture or "solid",
+                                profile.castBar.borderSize or 0
                             )
                             return dsx
                         end,
                         set = function(val)
-                            local p = DB()
-                            if not p then
+                            local profile = DB()
+                            if not profile then
                                 return
                             end
-                            p.castBar.borderTextureShiftX = val == 0 and nil or val
+                            profile.castBar.borderTextureShiftX = val == 0 and nil or val
                             RefreshCast()
                             CludesUI:RefreshPage()
                         end,
@@ -679,27 +679,27 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         max = 10,
                         step = 1,
                         get = function()
-                            local p = DB()
-                            if not p then
+                            local profile = DB()
+                            if not profile then
                                 return 0
                             end
-                            local val = p.castBar.borderTextureShiftY
+                            local val = profile.castBar.borderTextureShiftY
                             if val then
                                 return val
                             end
                             local _, _, _, dsy = CludesUI.GetBorderDefaults(
                                 "resourcebars",
-                                p.castBar.borderTexture or "solid",
-                                p.castBar.borderSize or 0
+                                profile.castBar.borderTexture or "solid",
+                                profile.castBar.borderSize or 0
                             )
                             return dsy
                         end,
                         set = function(val)
-                            local p = DB()
-                            if not p then
+                            local profile = DB()
+                            if not profile then
                                 return
                             end
-                            p.castBar.borderTextureShiftY = val == 0 and nil or val
+                            profile.castBar.borderTextureShiftY = val == 0 and nil or val
                             RefreshCast()
                             CludesUI:RefreshPage()
                         end,
@@ -709,11 +709,11 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         label = "Show Behind",
                         get = Getter("borderBehind", false),
                         set = function(val)
-                            local p = DB()
-                            if not p then
+                            local profile = DB()
+                            if not profile then
                                 return
                             end
-                            p.castBar.borderBehind = val == false and nil or val
+                            profile.castBar.borderBehind = val == false and nil or val
                             RefreshCast()
                             CludesUI:RefreshPage()
                         end,
@@ -779,22 +779,22 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         disabled = castOff,
                         disabledTooltip = "Player Cast Bar",
                         get = function()
-                            local p = DB()
-                            if not (p and p.castBar.edgeSep) then
+                            local profile = DB()
+                            if not (profile and profile.castBar.edgeSep) then
                                 return "none"
                             end
-                            return p.castBar.edgeSepArt or "match"
+                            return profile.castBar.edgeSepArt or "match"
                         end,
                         set = function(val)
-                            local p = DB()
-                            if not p then
+                            local profile = DB()
+                            if not profile then
                                 return
                             end
                             if val == "none" then
-                                p.castBar.edgeSep = false
+                                profile.castBar.edgeSep = false
                             else
-                                p.castBar.edgeSep = true
-                                p.castBar.edgeSepArt = val
+                                profile.castBar.edgeSep = true
+                                profile.castBar.edgeSepArt = val
                             end
                             RefreshCast()
                             CludesUI:RefreshPage()
@@ -807,8 +807,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         max = 50,
                         step = 1,
                         disabled = function()
-                            local p = DB()
-                            return castOff() or not (p and p.castBar.edgeSep)
+                            local profile = DB()
+                            return castOff() or not (profile and profile.castBar.edgeSep)
                         end,
                         disabledTooltip = function()
                             return castOff() and "Player Cast Bar" or "Bottom Separator"
@@ -819,8 +819,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 },
             })
             local function UpdateCogVis()
-                local p = DB()
-                local texture = p and p.castBar.borderTexture or "solid"
+                local profile = DB()
+                local texture = profile and profile.castBar.borderTexture or "solid"
                 if texture == "solid" or CludesUI.BlizzStyle.Get("castbar") then
                     cogBtn:Hide()
                 else
@@ -848,8 +848,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             disabled = castOff,
             disabledTooltip = "Player Cast Bar",
             getValue = function()
-                local p = DB()
-                return p and (p.castBar.fillOpacity or 100) or 100
+                local profile = DB()
+                return profile and (profile.castBar.fillOpacity or 100) or 100
             end,
             setValue = Setter("fillOpacity"),
         },
@@ -862,15 +862,15 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             disabled = castOff,
             disabledTooltip = "Player Cast Bar",
             getValue = function()
-                local p = DB()
-                return math.floor(((p and p.castBar.bgA or 0.7) * 100) + 0.5)
+                local profile = DB()
+                return math.floor(((profile and profile.castBar.bgA or 0.7) * 100) + 0.5)
             end,
             setValue = function(val)
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return
                 end
-                p.castBar.bgA = val / 100
+                profile.castBar.bgA = val / 100
                 RefreshCast()
             end,
         })
@@ -887,8 +887,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         end
         CludesUI.BuildInlineCog(region, {
             disabled = function()
-                local p = DB()
-                return p and not p.castBar.enabled
+                local profile = DB()
+                return profile and not profile.castBar.enabled
             end,
             disabledTooltip = "Player Cast Bar",
             title = "Fill Settings",
@@ -918,8 +918,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     label = "Gray When Out of Range",
                     tooltip = "Grays the fill while your target is out of range of the spell being cast.",
                     get = function()
-                        local p = DB()
-                        return p and p.castBar.outOfRangeGray == true
+                        local profile = DB()
+                        return profile and profile.castBar.outOfRangeGray == true
                     end,
                     set = Setter("outOfRangeGray"),
                 },
@@ -932,8 +932,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     disabledTooltip = "Blizzard Style",
                     requireState = "disabled",
                     get = function()
-                        local p = DB()
-                        return p and p.castBar.channelOverride == true
+                        local profile = DB()
+                        return profile and profile.castBar.channelOverride == true
                     end,
                     set = Setter("channelOverride"),
                 },
@@ -941,23 +941,23 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     type = "colorpicker",
                     label = "Channel Color",
                     hidden = function()
-                        local p = DB()
-                        return not (p and p.castBar.channelOverride)
+                        local profile = DB()
+                        return not (profile and profile.castBar.channelOverride)
                     end,
                     disabled = gradientOff,
                     disabledTooltip = "Blizzard Style",
                     requireState = "disabled",
                     get = function()
-                        local p = DB()
-                        local c = p and p.castBar
+                        local profile = DB()
+                        local c = profile and profile.castBar
                         return c and c.channelR or 0.3, c and c.channelG or 0.8, c and c.channelB or 0.3
                     end,
                     set = function(red, green, blue)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        local c = p.castBar
+                        local c = profile.castBar
                         c.channelR, c.channelG, c.channelB = red, green, blue
                         RefreshCast()
                     end,
@@ -970,8 +970,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     disabledTooltip = "Blizzard Style",
                     requireState = "disabled",
                     get = function()
-                        local p = DB()
-                        return p and p.castBar.uninterruptibleOverride == true
+                        local profile = DB()
+                        return profile and profile.castBar.uninterruptibleOverride == true
                     end,
                     set = Setter("uninterruptibleOverride"),
                 },
@@ -979,25 +979,25 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     type = "colorpicker",
                     label = "Uninterruptible Color",
                     hidden = function()
-                        local p = DB()
-                        return not (p and p.castBar.uninterruptibleOverride)
+                        local profile = DB()
+                        return not (profile and profile.castBar.uninterruptibleOverride)
                     end,
                     disabled = gradientOff,
                     disabledTooltip = "Blizzard Style",
                     requireState = "disabled",
                     get = function()
-                        local p = DB()
-                        local c = p and p.castBar
+                        local profile = DB()
+                        local c = profile and profile.castBar
                         return c and c.uninterruptibleR or 0.5,
                             c and c.uninterruptibleG or 0.5,
                             c and c.uninterruptibleB or 0.5
                     end,
                     set = function(red, green, blue)
-                        local p = DB()
-                        if not p then
+                        local profile = DB()
+                        if not profile then
                             return
                         end
-                        local c = p.castBar
+                        local c = profile.castBar
                         c.uninterruptibleR, c.uninterruptibleG, c.uninterruptibleB = red, green, blue
                         RefreshCast()
                     end,
@@ -1013,35 +1013,35 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             tooltip = "Gradient End Color",
             hasAlpha = true,
             disabled = function()
-                local p = DB()
-                if not p or not p.castBar.enabled then
+                local profile = DB()
+                if not profile or not profile.castBar.enabled then
                     return true
                 end
-                return not p.castBar.gradientEnabled
+                return not profile.castBar.gradientEnabled
             end,
             disabledTooltip = function()
                 if castFillBlizz then
                     return "This option requires Blizzard Style to be disabled"
                 end
-                local p = DB()
-                if not p or not p.castBar.enabled then
+                local profile = DB()
+                if not profile or not profile.castBar.enabled then
                     return "Player Cast Bar"
                 end
                 return "Gradient"
             end,
             getValue = function()
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return 0.20, 0.20, 0.80, 1
                 end
-                return p.castBar.gradientR, p.castBar.gradientG, p.castBar.gradientB, p.castBar.gradientA
+                return profile.castBar.gradientR, profile.castBar.gradientG, profile.castBar.gradientB, profile.castBar.gradientA
             end,
             setValue = function(red, green, blue, a)
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return
                 end
-                p.castBar.gradientR, p.castBar.gradientG, p.castBar.gradientB, p.castBar.gradientA =
+                profile.castBar.gradientR, profile.castBar.gradientG, profile.castBar.gradientB, profile.castBar.gradientA =
                     red, green, blue, a
                 RefreshCast()
             end,
@@ -1050,33 +1050,33 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             tooltip = "Custom Colored",
             hasAlpha = false,
             getValue = function()
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     local _, castFrame = UnitClass("player")
                     local classColor = CLASS_COLORS[castFrame]
                     return classColor and classColor[1] or 1, classColor and classColor[2] or 0.70, classColor and classColor[3] or 0, 1
                 end
-                return p.castBar.fillR, p.castBar.fillG, p.castBar.fillB, 1
+                return profile.castBar.fillR, profile.castBar.fillG, profile.castBar.fillB, 1
             end,
             setValue = function(red, green, blue)
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return
                 end
-                p.castBar.fillR, p.castBar.fillG, p.castBar.fillB = red, green, blue
-                if p.castBar.classColored then
-                    p.castBar.classColored = false
+                profile.castBar.fillR, profile.castBar.fillG, profile.castBar.fillB = red, green, blue
+                if profile.castBar.classColored then
+                    profile.castBar.classColored = false
                 end
                 RefreshCast()
                 CludesUI:RefreshPage()
             end,
             onClick = function(self)
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return
                 end
-                if p.castBar.classColored then
-                    p.castBar.classColored = false
+                if profile.castBar.classColored then
+                    profile.castBar.classColored = false
                     RefreshCast()
                     CludesUI:RefreshPage()
                     return
@@ -1086,8 +1086,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 end
             end,
             refreshAlpha = function()
-                local p = DB()
-                return (p and not p.castBar.classColored) and 1 or 0.3
+                local profile = DB()
+                return (profile and not profile.castBar.classColored) and 1 or 0.3
             end,
         },
         {
@@ -1102,17 +1102,17 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             end,
             setValue = function() end,
             onClick = function()
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return
                 end
-                p.castBar.classColored = true
+                profile.castBar.classColored = true
                 RefreshCast()
                 CludesUI:RefreshPage()
             end,
             refreshAlpha = function()
-                local p = DB()
-                return (not p or p.castBar.classColored == true) and 1 or 0.3
+                local profile = DB()
+                return (not profile or profile.castBar.classColored == true) and 1 or 0.3
             end,
         },
     }, {
@@ -1136,15 +1136,15 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             region,
             castColorRow:GetFrameLevel() + 3,
             function()
-                local p = DB()
-                return (p and p.castBar.bgR or 0), (p and p.castBar.bgG or 0), (p and p.castBar.bgB or 0)
+                local profile = DB()
+                return (profile and profile.castBar.bgR or 0), (profile and profile.castBar.bgG or 0), (profile and profile.castBar.bgB or 0)
             end,
             function(red, green, blue)
-                local p = DB()
-                if not p then
+                local profile = DB()
+                if not profile then
                     return
                 end
-                p.castBar.bgR, p.castBar.bgG, p.castBar.bgB = red, green, blue
+                profile.castBar.bgR, profile.castBar.bgG, profile.castBar.bgB = red, green, blue
                 RefreshCast()
             end,
             nil,
@@ -1152,14 +1152,14 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         )
         Pix.Point(bgSwatch, "RIGHT", control, "LEFT", -8, 0)
         local function UpdateBgSwatch()
-            local p = DB()
+            local profile = DB()
             -- Gated with the Background slider beside it: Blizzard Style
             -- paints the stock background art; the classic bar keeps this colour.
             if CludesUI.BlizzStyle.Active("castbar") == "blizzard" then
                 bgSwatch:SetAlpha(0.15)
                 bgSwatch:Disable()
                 bgSwatch._disabledTooltip = CludesUI.BlizzStyle.Label("castbar")
-            elseif not p or not p.castBar.enabled then
+            elseif not profile or not profile.castBar.enabled then
                 bgSwatch:SetAlpha(0.15)
                 bgSwatch:Disable()
                 bgSwatch._disabledTooltip = "Player Cast Bar"
@@ -1199,22 +1199,22 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         values = { none = "None", left = "Left", right = "Right", center = "Center" },
         order = { "none", "left", "right", "center" },
         getValue = function()
-            local p = DB()
-            if not p or not p.castBar.showSpellText then
+            local profile = DB()
+            if not profile or not profile.castBar.showSpellText then
                 return "none"
             end
-            return p.castBar.spellTextSide or "left"
+            return profile.castBar.spellTextSide or "left"
         end,
         setValue = function(val)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return
             end
             if val == "none" then
-                p.castBar.showSpellText = false
+                profile.castBar.showSpellText = false
             else
-                p.castBar.showSpellText = true
-                p.castBar.spellTextSide = val
+                profile.castBar.showSpellText = true
+                profile.castBar.spellTextSide = val
             end
             RefreshCast()
             CludesUI:RefreshPage()
@@ -1248,8 +1248,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         local region = textRow._rightRegion
         CludesUI.BuildInlineCog(region, {
             disabled = function()
-                local p = DB()
-                return p and (not p.castBar.enabled or not p.castBar.showSpellText)
+                local profile = DB()
+                return profile and (not profile.castBar.enabled or not profile.castBar.showSpellText)
             end,
             disabledTooltip = "Player Cast Bar",
             title = "Spell Text Settings",
@@ -1300,26 +1300,26 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 tooltip = "Spell Text Color",
                 hasAlpha = true,
                 disabled = function()
-                    local p = DB()
-                    return not (p and p.castBar.enabled and p.castBar.showSpellText)
+                    local profile = DB()
+                    return not (profile and profile.castBar.enabled and profile.castBar.showSpellText)
                 end,
                 disabledTooltip = function()
                     return castOff() and "Player Cast Bar" or "Spell Text"
                 end,
                 getValue = function()
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return 1, 1, 1, 1
                     end
-                    local c = p.castBar
+                    local c = profile.castBar
                     return c.spellTextR or 1, c.spellTextG or 1, c.spellTextB or 1, c.spellTextA or 1
                 end,
                 setValue = function(red, green, blue, a)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    local c = p.castBar
+                    local c = profile.castBar
                     c.spellTextR, c.spellTextG, c.spellTextB, c.spellTextA = red, green, blue, a
                     RefreshCast()
                     CludesUI:RefreshPage()
@@ -1337,22 +1337,22 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         values = { none = "None", right = "Right", left = "Left" },
         order = { "none", "right", "left" },
         getValue = function()
-            local p = DB()
-            if not p or not p.castBar.showTimer then
+            local profile = DB()
+            if not profile or not profile.castBar.showTimer then
                 return "none"
             end
-            return p.castBar.timerSide or "right"
+            return profile.castBar.timerSide or "right"
         end,
         setValue = function(val)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return
             end
             if val == "none" then
-                p.castBar.showTimer = false
+                profile.castBar.showTimer = false
             else
-                p.castBar.showTimer = true
-                p.castBar.timerSide = val
+                profile.castBar.showTimer = true
+                profile.castBar.timerSide = val
             end
             RefreshCast()
             CludesUI:RefreshPage()
@@ -1362,8 +1362,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         text = "Show Total Duration",
         tooltip = "Shows elapsed / total duration (e.g. 0.4 / 2.0) instead of counting down from the total.",
         disabled = function()
-            local p = DB()
-            return castOff() or not (p and p.castBar.showTimer)
+            local profile = DB()
+            return castOff() or not (profile and profile.castBar.showTimer)
         end,
         disabledTooltip = "Duration Text",
         getValue = Getter("showTotalDuration"),
@@ -1375,8 +1375,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         local region = timerRow._leftRegion
         CludesUI.BuildInlineCog(region, {
             disabled = function()
-                local p = DB()
-                return p and (not p.castBar.enabled or not p.castBar.showTimer)
+                local profile = DB()
+                return profile and (not profile.castBar.enabled or not profile.castBar.showTimer)
             end,
             disabledTooltip = "Player Cast Bar",
             title = "Timer Settings",
@@ -1420,26 +1420,26 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 tooltip = "Duration Text Color",
                 hasAlpha = true,
                 disabled = function()
-                    local p = DB()
-                    return not (p and p.castBar.enabled and p.castBar.showTimer)
+                    local profile = DB()
+                    return not (profile and profile.castBar.enabled and profile.castBar.showTimer)
                 end,
                 disabledTooltip = function()
                     return castOff() and "Player Cast Bar" or "Duration Text"
                 end,
                 getValue = function()
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return 1, 1, 1, 1
                     end
-                    local c = p.castBar
+                    local c = profile.castBar
                     return c.timerR or 1, c.timerG or 1, c.timerB or 1, c.timerA or 1
                 end,
                 setValue = function(red, green, blue, a)
-                    local p = DB()
-                    if not p then
+                    local profile = DB()
+                    if not profile then
                         return
                     end
-                    local c = p.castBar
+                    local c = profile.castBar
                     c.timerR, c.timerG, c.timerB, c.timerA = red, green, blue, a
                     RefreshCast()
                     CludesUI:RefreshPage()
@@ -1459,36 +1459,36 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         values = { off = "Off", text = "Full Time Text", merge = "Merge Bar" },
         order = { "off", "text", "merge" },
         getValue = function()
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return "off"
             end
-            return p.castBar.mergeCrafts and "merge" or p.castBar.fullCraftTime and "text" or "off"
+            return profile.castBar.mergeCrafts and "merge" or profile.castBar.fullCraftTime and "text" or "off"
         end,
         setValue = function(val)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return
             end
-            p.castBar.fullCraftTime = val == "text"
-            p.castBar.mergeCrafts = val == "merge"
+            profile.castBar.fullCraftTime = val == "text"
+            profile.castBar.mergeCrafts = val == "merge"
         end,
     }, CludesUI.IS_FOREVER and {
         type = "toggle",
         text = "Show Spell Rank",
         tooltip = "Appends the spell's rank to the spell name, for spells that have one.",
         disabled = function()
-            local p = DB()
-            return castOff() or not (p and p.castBar.showSpellText)
+            local profile = DB()
+            return castOff() or not (profile and profile.castBar.showSpellText)
         end,
         disabledTooltip = "Spell Text",
         getValue = Getter("showSpellRank"),
         setValue = function(val)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return
             end
-            p.castBar.showSpellRank = val
+            profile.castBar.showSpellRank = val
         end,
     } or CludesUI.BlankRowCfg())
     cursorY = cursorY - height
@@ -1498,8 +1498,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     cursorY = cursorY - height
 
     local marksOff = function()
-        local p = DB()
-        return castOff() or not (p and p.castBar.showChannelTicks)
+        local profile = DB()
+        return castOff() or not (profile and profile.castBar.showChannelTicks)
     end
 
     -- Helper: attach an inline color swatch to a region with disabled overlay
@@ -1547,13 +1547,13 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         disabledTooltip = "Player Cast Bar",
         getValue = Getter("showChannelTicks"),
         setValue = function(val)
-            local p = DB()
-            if not p then
+            local profile = DB()
+            if not profile then
                 return
             end
-            p.castBar.showChannelTicks = val
-            if val and not (p.castBar.showTickMarks or p.castBar.showLastTick) then
-                p.castBar.showTickMarks = true
+            profile.castBar.showChannelTicks = val
+            if val and not (profile.castBar.showTickMarks or profile.castBar.showLastTick) then
+                profile.castBar.showTickMarks = true
             end
             RefreshCast()
             CludesUI:RefreshPage()
@@ -1570,23 +1570,23 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     cursorY = cursorY - height
 
     AttachInlineSwatch(marksRow1._rightRegion, function()
-        local p = DB()
-        if not p then
+        local profile = DB()
+        if not profile then
             return 1, 1, 1, 0.7
         end
-        return p.castBar.tickMarksR or 1,
-            p.castBar.tickMarksG or 1,
-            p.castBar.tickMarksB or 1,
-            p.castBar.tickMarksA or 0.7
+        return profile.castBar.tickMarksR or 1,
+            profile.castBar.tickMarksG or 1,
+            profile.castBar.tickMarksB or 1,
+            profile.castBar.tickMarksA or 0.7
     end, function(red, green, blue, a)
-        local p = DB()
-        if not p then
+        local profile = DB()
+        if not profile then
             return
         end
-        p.castBar.tickMarksR = red
-        p.castBar.tickMarksG = green
-        p.castBar.tickMarksB = blue
-        p.castBar.tickMarksA = a
+        profile.castBar.tickMarksR = red
+        profile.castBar.tickMarksG = green
+        profile.castBar.tickMarksB = blue
+        profile.castBar.tickMarksA = a
         RefreshCast()
     end, function()
         return marksOff() or not (DB() and DB().castBar.showTickMarks)
@@ -1614,23 +1614,23 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     cursorY = cursorY - height
 
     AttachInlineSwatch(marksRow2._leftRegion, function()
-        local p = DB()
-        if not p then
+        local profile = DB()
+        if not profile then
             return 1, 0.82, 0, 0.95
         end
-        return p.castBar.lastTickR or 1,
-            p.castBar.lastTickG or 0.82,
-            p.castBar.lastTickB or 0,
-            p.castBar.lastTickA or 0.95
+        return profile.castBar.lastTickR or 1,
+            profile.castBar.lastTickG or 0.82,
+            profile.castBar.lastTickB or 0,
+            profile.castBar.lastTickA or 0.95
     end, function(red, green, blue, a)
-        local p = DB()
-        if not p then
+        local profile = DB()
+        if not profile then
             return
         end
-        p.castBar.lastTickR = red
-        p.castBar.lastTickG = green
-        p.castBar.lastTickB = blue
-        p.castBar.lastTickA = a
+        profile.castBar.lastTickR = red
+        profile.castBar.lastTickG = green
+        profile.castBar.lastTickB = blue
+        profile.castBar.lastTickA = a
         RefreshCast()
     end, function()
         return marksOff() or not (DB() and DB().castBar.showLastTick)
@@ -1641,8 +1641,8 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     cursorY = cursorY - height
 
     local latOff = function()
-        local p = DB()
-        return castOff() or not (p and p.castBar.latencyEnabled)
+        local profile = DB()
+        return castOff() or not (profile and profile.castBar.latencyEnabled)
     end
 
     -- Latency Row 1: Enable Latency Overlay (+ color) | Show Latency Text
@@ -1667,23 +1667,23 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     cursorY = cursorY - height
 
     AttachInlineSwatch(latRow1._leftRegion, function()
-        local p = DB()
-        if not p then
+        local profile = DB()
+        if not profile then
             return 0.835, 0.290, 0.290, 1
         end
-        return p.castBar.latencyR or 0.835,
-            p.castBar.latencyG or 0.290,
-            p.castBar.latencyB or 0.290,
-            p.castBar.latencyA or 1
+        return profile.castBar.latencyR or 0.835,
+            profile.castBar.latencyG or 0.290,
+            profile.castBar.latencyB or 0.290,
+            profile.castBar.latencyA or 1
     end, function(red, green, blue, a)
-        local p = DB()
-        if not p then
+        local profile = DB()
+        if not profile then
             return
         end
-        p.castBar.latencyR = red
-        p.castBar.latencyG = green
-        p.castBar.latencyB = blue
-        p.castBar.latencyA = a
+        profile.castBar.latencyR = red
+        profile.castBar.latencyG = green
+        profile.castBar.latencyB = blue
+        profile.castBar.latencyA = a
         RefreshCast()
     end, latOff, "Latency Overlay")
 

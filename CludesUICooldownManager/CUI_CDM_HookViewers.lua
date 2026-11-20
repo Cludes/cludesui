@@ -559,12 +559,12 @@ function mod.SetupViewerHooks()
             mod._btCleanFires = 0
             mod._btDirty = nil
             local antiClip = mod.CDM_ANTI_CLIP
-            local p = ECME and ECME.db and ECME.db.profile
-            if not p or not p.cdmBars or not p.cdmBars.bars then
+            local profile = ECME and ECME.db and ECME.db.profile
+            if not profile or not profile.cdmBars or not profile.cdmBars.bars then
                 return true
             end
             local needsReanchor = false
-            for _, edge in ipairs(p.cdmBars.bars) do
+            for _, edge in ipairs(profile.cdmBars.bars) do
                 if edge.enabled then
                     local isBuff = (
                         edge.barType == "buffs"
@@ -1268,8 +1268,8 @@ end
 -- CDM viewers stay locked because CUI manages their position via icon-level anchoring.
 local function ShouldLockViewer(widget)
     if widget == _G["BuffBarCooldownViewer"] then
-        local p = ECME and ECME.db and ECME.db.profile
-        if p and p.cdmBars and p.cdmBars.useBlizzardBuffBars then
+        local profile = ECME and ECME.db and ECME.db.profile
+        if profile and profile.cdmBars and profile.cdmBars.useBlizzardBuffBars then
             return false
         end
     end

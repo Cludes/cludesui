@@ -492,8 +492,8 @@ end
 if PIT.AccountBanker then
     BANKERS[PIT.AccountBanker] = false
 end
-local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, evt, arg)
+local eventFrame = CreateFrame("Frame")
+eventFrame:SetScript("OnEvent", function(_, evt, arg)
     if evt == "BAG_UPDATE" then
         if BAG_POS[arg] then
             dirty[arg] = true
@@ -556,9 +556,9 @@ function Offline.Sync()
     listening = enabled
     for _, event in ipairs(EVENTS) do
         if enabled then
-            pcall(ev.RegisterEvent, ev, event)
+            pcall(eventFrame.RegisterEvent, eventFrame, event)
         else
-            ev:UnregisterEvent(event)
+            eventFrame:UnregisterEvent(event)
         end
     end
     if enabled then

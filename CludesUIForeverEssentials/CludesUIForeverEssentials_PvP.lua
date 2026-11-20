@@ -1579,9 +1579,9 @@ end
 -------------------------------------------------------------------------------
 --  Events
 -------------------------------------------------------------------------------
-local ev = CreateFrame("Frame")
+local eventFrame = CreateFrame("Frame")
 local ticker
-ev:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
+eventFrame:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
     if event == "CHAT_MSG_ADDON" then
         if a1 == PREFIX then
             OnShared(a2, a4)
@@ -1698,7 +1698,7 @@ local tipHooked
 local function Apply()
     if Enabled() then
         for _, event in ipairs(EVENTS) do
-            pcall(ev.RegisterEvent, ev, event)
+            pcall(eventFrame.RegisterEvent, eventFrame, event)
         end
         C_ChatInfo.RegisterAddonMessagePrefix(PREFIX)
         if not ticker then
@@ -1722,7 +1722,7 @@ local function Apply()
             )
         end
     else
-        ev:UnregisterAllEvents()
+        eventFrame:UnregisterAllEvents()
         if ticker then
             ticker:Cancel()
             ticker = nil

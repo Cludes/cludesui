@@ -26,20 +26,20 @@ local function P()
 end
 
 local function Cfg(key, fallback)
-    local p = P()
-    if not p then
+    local profile = P()
+    if not profile then
         return fallback
     end
-    if p[key] == nil then
+    if profile[key] == nil then
         return fallback
     end
-    return p[key]
+    return profile[key]
 end
 
 local function Set(key, val)
-    local p = P()
-    if p then
-        p[key] = val
+    local profile = P()
+    if profile then
+        profile[key] = val
     end
 end
 

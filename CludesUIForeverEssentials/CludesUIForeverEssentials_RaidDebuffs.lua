@@ -184,8 +184,8 @@ local function Build()
     return holderFrame
 end
 
-local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, evt)
+local eventFrame = CreateFrame("Frame")
+eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "PLAYER_REGEN_ENABLED" or evt == "ADDON_RESTRICTION_STATE_CHANGED" then
         if pending then
             Rebuild()
@@ -203,16 +203,16 @@ local function Apply()
             "PLAYER_REGEN_ENABLED",
             "PLAYER_ENTERING_WORLD",
         }) do
-            ev:RegisterEvent(event)
+            eventFrame:RegisterEvent(event)
         end
-        pcall(ev.RegisterEvent, ev, "ADDON_RESTRICTION_STATE_CHANGED")
-        ev:RegisterUnitEvent("UNIT_FACTION", "target")
-        ev:RegisterUnitEvent("UNIT_FLAGS", "target")
+        pcall(eventFrame.RegisterEvent, eventFrame, "ADDON_RESTRICTION_STATE_CHANGED")
+        eventFrame:RegisterUnitEvent("UNIT_FACTION", "target")
+        eventFrame:RegisterUnitEvent("UNIT_FLAGS", "target")
         if not CludesUI._unlockActive and not InCombatLockdown() then
             F.Place(holderFrame)
         end
     else
-        ev:UnregisterAllEvents()
+        eventFrame:UnregisterAllEvents()
     end
     Rebuild()
     UpdateShown()

@@ -91,8 +91,8 @@ do
     }
 
     local function _rotConfig()
-        local p = ECME.db and ECME.db.profile
-        return p and p.cdmBars
+        local profile = ECME.db and ECME.db.profile
+        return profile and profile.cdmBars
     end
 
     local function _rotCVarOn()
@@ -423,8 +423,8 @@ end
 
 -- Show Item Count "Out of Combat" mode: re-run the icon restyle for bars using it whenever combat starts or ends (the gate inside the restyle reads the event-tracked combat flag). No-ops instantly when no bar uses the mode.
 function mod.RefreshItemCountOOCBars()
-    local p = ECME.db and ECME.db.profile
-    local barList = p and p.cdmBars and p.cdmBars.bars
+    local profile = ECME.db and ECME.db.profile
+    local barList = profile and profile.cdmBars and profile.cdmBars.bars
     if not barList or not mod.RefreshCDMIconAppearance then
         return
     end

@@ -549,24 +549,24 @@ local function LayoutCombatIcons()
     local p = db.profile.display
     local spacing = p.iconSpacing or 8
     local baseScale = p.scale or 1.0
-    local sz = floor(ICON_SIZE * baseScale + 0.5)
-    local iconH = sz
+    local iconSz = floor(ICON_SIZE * baseScale + 0.5)
+    local iconH = iconSz
     if p.iconShape and p.iconShape ~= "none" then
-        sz, iconH = mod.IconDimensions(sz, p)
+        iconSz, iconH = mod.IconDimensions(iconSz, p)
     end
-    local xOff = reserveSlot and (sz + spacing) or 0
+    local xOff = reserveSlot and (iconSz + spacing) or 0
     local pt = "TOPLEFT"
     if p.growDirection == "LEFT" and not reserveSlot then
-        pt, xOff = "TOPRIGHT", -(count - 1) * (sz + spacing)
+        pt, xOff = "TOPRIGHT", -(count - 1) * (iconSz + spacing)
     end
     for index, frame in ipairs(combatActiveIcons) do
-        frame:SetSize(sz, iconH)
+        frame:SetSize(iconSz, iconH)
         frame:SetAlpha(p.opacity or 1.0)
         REMIND.ApplyIconBorder(frame, false)
-        REMIND.SizeIconQuality(frame, sz)
-        REMIND.SizeIconBagCount(frame, sz)
+        REMIND.SizeIconQuality(frame, iconSz)
+        REMIND.SizeIconBagCount(frame, iconSz)
         frame:ClearAllPoints()
-        frame:SetPoint(pt, combatAnchor, pt, xOff + (index - 1) * (sz + spacing), 0)
+        frame:SetPoint(pt, combatAnchor, pt, xOff + (index - 1) * (iconSz + spacing), 0)
     end
 end
 
@@ -679,21 +679,21 @@ local function LayoutCursorIcons()
     local p = db.profile.display
     local spacing = p.iconSpacing or 8
     local baseScale = p.scale or 1.0
-    local sz = floor(ICON_SIZE * baseScale + 0.5)
-    local iconH = sz
+    local iconSz = floor(ICON_SIZE * baseScale + 0.5)
+    local iconH = iconSz
     if p.iconShape and p.iconShape ~= "none" then
-        sz, iconH = mod.IconDimensions(sz, p)
+        iconSz, iconH = mod.IconDimensions(iconSz, p)
     end
-    local totalW = (count * sz) + ((count - 1) * spacing)
-    local startX = -(totalW / 2) + (sz / 2)
+    local totalW = (count * iconSz) + ((count - 1) * spacing)
+    local startX = -(totalW / 2) + (iconSz / 2)
     for index, frame in ipairs(cursorActiveIcons) do
-        frame:SetSize(sz, iconH)
+        frame:SetSize(iconSz, iconH)
         frame:SetAlpha(p.opacity or 1.0)
         REMIND.ApplyIconBorder(frame, false)
-        REMIND.SizeIconQuality(frame, sz)
-        REMIND.SizeIconBagCount(frame, sz)
+        REMIND.SizeIconQuality(frame, iconSz)
+        REMIND.SizeIconBagCount(frame, iconSz)
         frame:ClearAllPoints()
-        frame:SetPoint("CENTER", cursorAnchor, "CENTER", startX + (index - 1) * (sz + spacing), 0)
+        frame:SetPoint("CENTER", cursorAnchor, "CENTER", startX + (index - 1) * (iconSz + spacing), 0)
     end
 end
 
@@ -714,17 +714,17 @@ function REMIND.LayoutProviderCastHome()
     end
     local p = db and db.profile and db.profile.display
     local baseScale = (p and p.scale) or 1.0
-    local sz = floor(ICON_SIZE * baseScale + 0.5)
-    local iconH = sz
+    local iconSz = floor(ICON_SIZE * baseScale + 0.5)
+    local iconH = iconSz
     if p and p.iconShape and p.iconShape ~= "none" then
-        sz, iconH = mod.IconDimensions(sz, p)
+        iconSz, iconH = mod.IconDimensions(iconSz, p)
     end
-    button:SetSize(sz, iconH)
+    button:SetSize(iconSz, iconH)
     REMIND.ApplyIconBorder(button, true)
     button:ClearAllPoints()
     button:SetPoint("TOPLEFT", iconAnchor, "TOPLEFT", 0, 0)
-    REMIND.SizeIconQuality(button, sz)
-    REMIND.SizeIconBagCount(button, sz)
+    REMIND.SizeIconQuality(button, iconSz)
+    REMIND.SizeIconBagCount(button, iconSz)
 end
 
 function REMIND.ParkProviderCastButton()

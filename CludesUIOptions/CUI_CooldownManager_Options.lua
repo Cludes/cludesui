@@ -2253,8 +2253,8 @@ CludesUI.AtOptionsLogin(function()
     -- when a buff-family bar is selected). Sets the index immediately, like
     -- CludesUI._setUnitFrameUnit, so header and rebuilt page both reflect it.
     function CludesUI._setCDMBar(keyOrType)
-        local p = DB()
-        local barList = p and p.cdmBars and p.cdmBars.bars
+        local profile = DB()
+        local barList = profile and profile.cdmBars and profile.cdmBars.bars
         if not barList then
             return
         end
@@ -2326,11 +2326,11 @@ CludesUI.AtOptionsLogin(function()
 
     --- Get the currently selected CDM bar data
     local function SelectedCDMBar()
-        local p = DB()
-        if not p or not p.cdmBars or not p.cdmBars.bars then
+        local profile = DB()
+        if not profile or not profile.cdmBars or not profile.cdmBars.bars then
             return nil
         end
-        local barList = p.cdmBars.bars
+        local barList = profile.cdmBars.bars
         if optionState.selectedCDMBarIndex < 1 then
             optionState.selectedCDMBarIndex = 1
         end
@@ -2749,15 +2749,15 @@ CludesUI.AtOptionsLogin(function()
                         label = "Keep Keys on Bar Swap (global)",
                         tooltip = 'Keep keybind text identical when your action bar swaps -- rogue stealth, druid forms, skyriding. Also covers conditional macros like "/cast [bonusbar:1] Backstab; Shadow Dance", where the key would otherwise jump to whichever branch is live.\n\nThe key then only changes when you actually move the ability or rebind it.\n\nOn by default. Applies to every CDM bar at once.',
                         get = function()
-                            local p = DB()
-                            return (p and p.cdmBars and p.cdmBars.stableKeybinds) == true
+                            local profile = DB()
+                            return (profile and profile.cdmBars and profile.cdmBars.stableKeybinds) == true
                         end,
                         set = function(val)
-                            local p = DB()
-                            if not p or not p.cdmBars then
+                            local profile = DB()
+                            if not profile or not profile.cdmBars then
                                 return
                             end
-                            p.cdmBars.stableKeybinds = val and true or false
+                            profile.cdmBars.stableKeybinds = val and true or false
                             -- Changes how the cache is built, not just how it is
                             -- drawn -- needs a full rebuild, not an apply pass.
                             if mod.UpdateCDMKeybinds then
@@ -3189,8 +3189,8 @@ CludesUI.AtOptionsLogin(function()
             if pageTitle ~= PAGE_CDM_BARS then
                 return nil
             end
-            local p = DB()
-            local barList = p and p.cdmBars and p.cdmBars.bars
+            local profile = DB()
+            local barList = profile and profile.cdmBars and profile.cdmBars.bars
             if not barList or #barList == 0 then
                 return nil
             end

@@ -79,7 +79,7 @@ local function OwnFavorites()
     return entries
 end
 
-local ev = CreateFrame("Frame")
+local eventFrame = CreateFrame("Frame")
 local timer
 local hooked = false
 local userDismissed = false -- the player put the pet away themselves (also kept per character)
@@ -129,8 +129,8 @@ local function Summon()
     end
     -- A cast or a channel (a fishing line): again once it stops.
     if UnitCastingInfo("player") or UnitChannelInfo("player") then
-        ev:RegisterUnitEvent("UNIT_SPELLCAST_STOP", "player")
-        ev:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP", "player")
+        eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_STOP", "player")
+        eventFrame:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP", "player")
         return
     end
     local own = OwnFavorites()
@@ -161,7 +161,7 @@ local EVENTS = {
     "PLAYER_MOUNT_DISPLAY_CHANGED",
 }
 
-ev:SetScript("OnEvent", function(_, evt, arg1)
+eventFrame:SetScript("OnEvent", function(_, evt, arg1)
     if evt == "COMPANION_UPDATE" then
         if arg1 == "MOUNT" then
             return
@@ -174,8 +174,8 @@ ev:SetScript("OnEvent", function(_, evt, arg1)
         end
         return
     elseif evt == "UNIT_SPELLCAST_STOP" or evt == "UNIT_SPELLCAST_CHANNEL_STOP" then
-        ev:UnregisterEvent("UNIT_SPELLCAST_STOP")
-        ev:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+        eventFrame:UnregisterEvent("UNIT_SPELLCAST_STOP")
+        eventFrame:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
     elseif evt == "UNIT_EXITED_VEHICLE" and arg1 ~= "player" then
         return
     end
@@ -297,14 +297,14 @@ local function ApplyPetSummon(fresh)
     local on = IsEnabled()
     for index = 1, #EVENTS do
         if on then
-            ev:RegisterEvent(EVENTS[index])
+            eventFrame:RegisterEvent(EVENTS[index])
         else
-            ev:UnregisterEvent(EVENTS[index])
+            eventFrame:UnregisterEvent(EVENTS[index])
         end
     end
     if not on then
-        ev:UnregisterEvent("UNIT_SPELLCAST_STOP")
-        ev:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+        eventFrame:UnregisterEvent("UNIT_SPELLCAST_STOP")
+        eventFrame:UnregisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
         if timer then
             timer:Cancel()
             timer = nil

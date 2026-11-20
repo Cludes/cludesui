@@ -41,10 +41,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         if not glow then
             glow = _G.CreateFrame("Frame", nil, targetFrame)
             PoolAttach(targetFrame, glow, nil, StopGlow)
-            local ar, ag, ab = CludesUI.GetAccentColor()
+            local accR, accG, accB = CludesUI.GetAccentColor()
             local function MkEdge()
                 local t = glow:CreateTexture(nil, "OVERLAY", nil, 7)
-                t:SetColorTexture(ar, ag, ab, 1)
+                t:SetColorTexture(accR, accG, accB, 1)
                 glow["_c_" .. (glow._edgeN or 0)] = t
                 glow._edgeN = (glow._edgeN or 0) + 1
                 return t
@@ -68,11 +68,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             _syncGlowPool[targetFrame] = glow
         end
         -- Re-color edges in case accent changed
-        local ar, ag, ab = CludesUI.GetAccentColor()
+        local accR, accG, accB = CludesUI.GetAccentColor()
         for i = 0, (glow._edgeN or 0) - 1 do
             local e = glow["_c_" .. i]
             if e then
-                e:SetColorTexture(ar, ag, ab, 1)
+                e:SetColorTexture(accR, accG, accB, 1)
             end
         end
         glow:SetAllPoints(targetFrame)
@@ -610,7 +610,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             return nil
         end
 
-        local ar, ag, ab = CludesUI.GetAccentColor()
+        local accR, accG, accB = CludesUI.GetAccentColor()
 
         -- "Apply to:" prefix label + "All" clickable link
         local applyBtn = CreateFrame("Button", nil, region)
@@ -628,7 +628,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         allBtn:SetFrameLevel(region:GetFrameLevel() + 4)
         local allText = allBtn:CreateFontString(nil, "OVERLAY")
         allText:SetFont(EXPRESSWAY, 11, "")
-        allText:SetTextColor(ar, ag, ab, 0.65)
+        allText:SetTextColor(accR, accG, accB, 0.65)
         allText:SetText(CludesUI.L("All"))
         allText:SetPoint("CENTER", allBtn, "CENTER", 0, 0)
         allBtn:SetSize(20, 14)
@@ -662,7 +662,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             multiBtn:SetFrameLevel(region:GetFrameLevel() + 4)
             multiText = multiBtn:CreateFontString(nil, "OVERLAY")
             multiText:SetFont(EXPRESSWAY, 11, "")
-            multiText:SetTextColor(ar, ag, ab, 0.65)
+            multiText:SetTextColor(accR, accG, accB, 0.65)
             multiText:SetText(CludesUI.L("Multiple"))
             multiText:SetPoint("CENTER", multiBtn, "CENTER", 0, 0)
             multiBtn:SetSize(50, 14)

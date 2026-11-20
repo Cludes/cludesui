@@ -408,12 +408,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         local svDragging = false
         local function SVFromCursor()
-            local cx, cy = GetCursorPosition()
+            local curX, curY = GetCursorPosition()
             local scale = svPad:GetEffectiveScale()
-            cx, cy = cx / scale, cy / scale
+            curX, curY = curX / scale, curY / scale
             local leftX, bottom = svPad:GetLeft(), svPad:GetBottom()
-            local s = math.max(0, math.min(1, (cx - leftX) / SV_SIZE))
-            local val = math.max(0, math.min(1, (cy - bottom) / SV_SIZE))
+            local s = math.max(0, math.min(1, (curX - leftX) / SV_SIZE))
+            local val = math.max(0, math.min(1, (curY - bottom) / SV_SIZE))
             return s, val
         end
         svPad:SetScript("OnMouseDown", function(self, button)
@@ -490,9 +490,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         local hueDragging = false
         local function HueFromCursor()
-            local _, cy = GetCursorPosition()
-            cy = cy / hueBar:GetEffectiveScale()
-            return math.max(0, math.min(1, (hueBar:GetTop() - cy) / SV_SIZE)) * 360
+            local _, curY = GetCursorPosition()
+            curY = curY / hueBar:GetEffectiveScale()
+            return math.max(0, math.min(1, (hueBar:GetTop() - curY) / SV_SIZE)) * 360
         end
         hueBar:SetScript("OnMouseDown", function(self, button)
             if button == "LeftButton" then
@@ -563,9 +563,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         local alphaDragging = false
         local function AlphaFromCursor()
-            local _, cy = GetCursorPosition()
-            cy = cy / alphaBar:GetEffectiveScale()
-            return 1 - math.max(0, math.min(1, (alphaBar:GetTop() - cy) / SV_SIZE))
+            local _, curY = GetCursorPosition()
+            curY = curY / alphaBar:GetEffectiveScale()
+            return 1 - math.max(0, math.min(1, (alphaBar:GetTop() - curY) / SV_SIZE))
         end
         alphaBar:SetScript("OnMouseDown", function(self, button)
             if button == "LeftButton" then
@@ -1032,28 +1032,28 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
             dialog:ClearAllPoints()
             -- Horizontally centered on the cursor; vertical placement flips if needed
-            local cx, cy = GetCursorPosition()
+            local curX, curY = GetCursorPosition()
             local scale = dialog:GetEffectiveScale()
-            cx, cy = cx / scale, cy / scale
+            curX, curY = curX / scale, curY / scale
             -- Controller cursor: the hidden pointer is nowhere near the swatch it pressed.
             if anchor and CludesUI.PadCursorShown() then
                 padOpener = anchor
                 local ax, ay = anchor:GetCenter()
                 if ax and ay then
                     local ratio = anchor:GetEffectiveScale() / scale
-                    cx, cy = ax * ratio, ay * ratio
+                    curX, curY = ax * ratio, ay * ratio
                 end
             end
             local pw = dialog:GetWidth()
             local ph = dialog:GetHeight()
-            local posX = cx - pw * 0.5
-            local cursorY = cy - 30 -- popup top 30px below the cursor
+            local posX = curX - pw * 0.5
+            local cursorY = curY - 30 -- popup top 30px below the cursor
             -- Flip above the cursor if that would drop below the options window
             local mainFrame = CludesUI._mainFrame
             if mainFrame and mainFrame:IsShown() then
                 local mBot = mainFrame:GetBottom()
                 if mBot and (cursorY - ph) < mBot then
-                    cursorY = cy + 30 + ph -- popup bottom 30px above the cursor
+                    cursorY = curY + 30 + ph -- popup bottom 30px above the cursor
                 end
             end
             dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", posX, cursorY)

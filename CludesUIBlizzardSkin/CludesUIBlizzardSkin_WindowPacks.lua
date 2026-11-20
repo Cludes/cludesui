@@ -14664,11 +14664,11 @@ do
         -- leaves the first slotted item wearing Blizzard's backdrop until reopen.
         -- Listen for the upgrade events instead (debounced, registration pcall'd since the event set shifts between builds).
         if not fieldData.evt then
-            local ev = CreateFrame("Frame")
-            fieldData.evt = ev
+            local eventFrame = CreateFrame("Frame")
+            fieldData.evt = eventFrame
             -- Gated on visibility, NO global WSkin.Restrip(): fires on every item
             -- change, Skin_ItemUpgrade already re-clears this window's art, and the global sweep allocates a table per registered frame suite-wide.
-            ev:SetScript(
+            eventFrame:SetScript(
                 "OnEvent",
                 Skin.Debounce(function()
                     local uf = _G.ItemUpgradeFrame
@@ -14684,7 +14684,7 @@ do
                 "ITEM_UPGRADE_MASTER_CLOSED",
                 "ITEM_INTERACTION_ITEM_SELECTION_UPDATED",
             }) do
-                pcall(ev.RegisterEvent, ev, event)
+                pcall(eventFrame.RegisterEvent, eventFrame, event)
             end
         end
     end
@@ -15512,8 +15512,8 @@ do
         if skinData.toastEvt then
             return
         end
-        local ev = CreateFrame("Frame")
-        skinData.toastEvt = ev
+        local eventFrame = CreateFrame("Frame")
+        skinData.toastEvt = eventFrame
         -- Toasts are handed out by the pool, set up, then animated in over a few
         -- tenths of a second, and the setup can land AFTER the first pass. Sweep
         -- immediately and again across the animation window; only the FIRST pass walks UIParent, the rest re-skin the frames it found.
@@ -15528,7 +15528,7 @@ do
                 C_Timer.After(0.5, Shallow)
             end
         end)
-        ev:SetScript("OnEvent", sweep)
+        eventFrame:SetScript("OnEvent", sweep)
         -- Toast events ONLY. Never CURRENCY_DISPLAY_UPDATE: it fires on every
         -- currency change (quest turn-ins, vendoring, combat drops), far more often
         -- than a toast appears, and each fire costs a full sweep for nothing.
@@ -15548,7 +15548,7 @@ do
             "TRANSMOG_COSMETIC_COLLECTION_SOURCE_ADDED",
             "TRANSMOG_COLLECTION_SOURCE_ADDED",
         }) do
-            pcall(ev.RegisterEvent, ev, event)
+            pcall(eventFrame.RegisterEvent, eventFrame, event)
         end
         SweepAlerts(true)
     end
@@ -15943,9 +15943,9 @@ do
             func(_G[label])
             return
         end
-        local ev = CreateFrame("Frame")
-        ev:RegisterEvent("ADDON_LOADED")
-        ev:SetScript("OnEvent", function(self)
+        local eventFrame = CreateFrame("Frame")
+        eventFrame:RegisterEvent("ADDON_LOADED")
+        eventFrame:SetScript("OnEvent", function(self)
             local found = _G[label]
             if found then
                 self:UnregisterAllEvents()
@@ -16092,9 +16092,9 @@ do
         -- would leave the rest of that update, the managed-layout pass, under our taint.
 
         -- Fallback for clients where those two globals have gone: the roll event itself is what puts a frame on screen.
-        local ev = CreateFrame("Frame")
-        ev:RegisterEvent("START_LOOT_ROLL")
-        ev:SetScript("OnEvent", resweep)
+        local eventFrame = CreateFrame("Frame")
+        eventFrame:RegisterEvent("START_LOOT_ROLL")
+        eventFrame:SetScript("OnEvent", resweep)
 
         LP.SkinAllRolls()
     end
@@ -17133,9 +17133,9 @@ do
             func(_G[label])
             return
         end
-        local ev = CreateFrame("Frame")
-        ev:RegisterEvent("ADDON_LOADED")
-        ev:SetScript("OnEvent", function(self)
+        local eventFrame = CreateFrame("Frame")
+        eventFrame:RegisterEvent("ADDON_LOADED")
+        eventFrame:SetScript("OnEvent", function(self)
             local found = _G[label]
             if found then
                 self:UnregisterAllEvents()

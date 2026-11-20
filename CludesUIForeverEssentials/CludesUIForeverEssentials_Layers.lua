@@ -180,8 +180,8 @@ local function Forget()
     Update()
 end
 
-local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, evt, unitToken)
+local eventFrame = CreateFrame("Frame")
+eventFrame:SetScript("OnEvent", function(_, evt, unitToken)
     if evt == "NAME_PLATE_UNIT_ADDED" then
         if not (layer or Secret(unitToken)) then
             Read(unitToken)
@@ -270,7 +270,7 @@ local function Build()
 end
 
 local function Apply()
-    ev:UnregisterAllEvents()
+    eventFrame:UnregisterAllEvents()
     if not Enabled() then
         layer, isShown, wasKey, wasZone, refreshAt, pendingKey, pendingGuid =
             nil, nil, nil, nil, nil, nil, nil
@@ -294,7 +294,7 @@ local function Apply()
         "SHARD_TRANSFER_CANCELLED",
         "SHARD_TRANSFER",
     }) do
-        pcall(ev.RegisterEvent, ev, event)
+        pcall(eventFrame.RegisterEvent, eventFrame, event)
     end
     inside = IsInInstance()
     map = ZoneMap()

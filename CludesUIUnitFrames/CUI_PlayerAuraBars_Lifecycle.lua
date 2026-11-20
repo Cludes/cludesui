@@ -66,8 +66,8 @@ local vehicleHidden = false -- vehicle ride state; feeds pabSuppressed
 mod.PAB_CreateBars = CreateBars
 
 function mod.PAB_Enabled()
-    local s = PAB()
-    return (s and s.enabled == true) or false
+    local pabCfg = PAB()
+    return (pabCfg and pabCfg.enabled == true) or false
 end
 
 -- Called by the options page's activation overlay and the sidebar's Disable
@@ -78,11 +78,11 @@ end
 -- field bug was custom bars lingering through the "Later" window while the
 -- default bars hid: Disable All must be a complete visual no-op.
 function mod.PAB_SetEnabled(val)
-    local s = PAB()
-    if not s then
+    local pabCfg = PAB()
+    if not pabCfg then
         return
     end
-    s.enabled = val and true or nil
+    pabCfg.enabled = val and true or nil
     if val then
         -- A stand-down latched before the module went off has no lane to lift
         -- it while disabled, and the rebuild below would come up dimmed.
@@ -122,11 +122,11 @@ end
 function mod.PAB_Style()
     local val = mod._pabStyle
     if val == nil then
-        local s = PAB()
-        if not s then
+        local pabCfg = PAB()
+        if not pabCfg then
             return "cui"
         end
-        val = (s.useClassicStyle and "classic") or (s.useBlizzardStyle and "blizzard") or "cui"
+        val = (pabCfg.useClassicStyle and "classic") or (pabCfg.useBlizzardStyle and "blizzard") or "cui"
         mod._pabStyle = val
     end
     return val
@@ -144,8 +144,8 @@ end
 -- ApplyLiveConfig: its size-rebase writes assume lastSize belongs to the
 -- SAME profile and would corrupt the new profile's saved positions.
 function mod.PAB_ProfileResync()
-    local s = PAB()
-    if s and s.enabled == true and s.useBlizzardBuffs ~= true and not (buffsParent or debuffsParent) then
+    local pabCfg = PAB()
+    if pabCfg and pabCfg.enabled == true and pabCfg.useBlizzardBuffs ~= true and not (buffsParent or debuffsParent) then
         -- Enabled profile, module never built this session: full build
         -- (covers customs + unlock + natives itself).
         CreateBars()
@@ -157,8 +157,8 @@ function mod.PAB_ProfileResync()
     -- reconciled here. CreateBars is the safe lane for it: it applies the new
     -- profile's sizes and positions outright instead of running
     -- ApplyLiveConfig's size-rebase against the OLD profile's lastSize.
-    if s and s.enabled == true and s.useBlizzardBuffs ~= true and buffsParent then
-        local buffCfg = DefaultBuffsCfg(s)
+    if pabCfg and pabCfg.enabled == true and pabCfg.useBlizzardBuffs ~= true and buffsParent then
+        local buffCfg = DefaultBuffsCfg(pabCfg)
         local buffGrid = ComputeGrid(true, buffCfg)
         if BuffsContentSig(buffCfg, mod.PAB_ResolveSpells(buffCfg), buffGrid.enchSlots) ~= buffsSlotSig then
             CreateBars()
@@ -176,11 +176,11 @@ end
 -- live). OFF: a full CreateBars pass rebuilds the default bars and hides
 -- the natives again, entirely live. Custom bars run in both modes.
 function mod.PAB_ApplyUseBlizzard()
-    local s = PAB()
-    if not (s and s.enabled == true) then
+    local pabCfg = PAB()
+    if not (pabCfg and pabCfg.enabled == true) then
         return
     end
-    if s.useBlizzardBuffs == true then
+    if pabCfg.useBlizzardBuffs == true then
         ApplyDefaultBarShown(true)
         ApplyDefaultBarShown(false)
         SyncEnchantEvents(false)
@@ -250,7 +250,7 @@ local function ApplyVehicleHidden(hidden)
     -- hides for real and a reload that runs during the ride cannot un-suppress
     -- the parents behind our back.
     SetPabSuppressed(hidden)
-    local s = PAB()
+    local pabCfg = PAB()
     -- Regen replay re-derives from the LIVE vehicle state, not the argument.
     local function recompute()
         ApplyVehicleHidden(vehicleHidden)
@@ -262,8 +262,8 @@ local function ApplyVehicleHidden(hidden)
             "vehicle-buffs",
             buffsParent,
             (
-                not s
-                or (s.enabled == true and DefaultBuffsCfg(s).enabled ~= false and s.useBlizzardBuffs ~= true)
+                not pabCfg
+                or (pabCfg.enabled == true and DefaultBuffsCfg(pabCfg).enabled ~= false and pabCfg.useBlizzardBuffs ~= true)
             ),
             recompute
         )
@@ -273,11 +273,11 @@ local function ApplyVehicleHidden(hidden)
             "vehicle-debuffs",
             debuffsParent,
             (
-                not s
+                not pabCfg
                 or (
-                    s.enabled == true
-                    and DefaultDebuffsCfg(s).enabled ~= false
-                    and s.useBlizzardBuffs ~= true
+                    pabCfg.enabled == true
+                    and DefaultDebuffsCfg(pabCfg).enabled ~= false
+                    and pabCfg.useBlizzardBuffs ~= true
                 )
             ),
             recompute
@@ -453,8 +453,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
         -- GetSpecialization() answers, parking every bucket bar until the
         -- next spec change. Re-drive once per world entry (gated = one
         -- table read for profiles without buckets; idempotent otherwise).
-        local s = PAB()
-        if s and s.pabSpecBars then
+        local pabCfg = PAB()
+        if pabCfg and pabCfg.pabSpecBars then
             ReloadAllCustomBars()
         end
         return
@@ -471,8 +471,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
         -- profiles that actually built buckets -- everyone else pays one
         -- table read per spec change. Unlock elements re-sync through the
         -- per-bar reload wrappers.
-        local s = PAB()
-        if s and s.pabSpecBars then
+        local pabCfg = PAB()
+        if pabCfg and pabCfg.pabSpecBars then
             ReloadAllCustomBars()
         end
         return

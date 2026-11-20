@@ -4301,10 +4301,10 @@ end
 do
     local _, classFile = UnitClass("player")
     if classFile == "SHAMAN" then
-        local ev = CreateFrame("Frame")
-        ev:RegisterEvent("TRAIT_CONFIG_UPDATED")
-        ev:RegisterEvent("SPELLS_CHANGED")
-        ev:SetScript("OnEvent", function()
+        local eventFrame = CreateFrame("Frame")
+        eventFrame:RegisterEvent("TRAIT_CONFIG_UPDATED")
+        eventFrame:RegisterEvent("SPELLS_CHANGED")
+        eventFrame:SetScript("OnEvent", function()
             if mod.UF_RefreshPoisonTotem and mod.UF_RefreshPoisonTotem() then
                 mod.UF_ReloadPlayerDispelSlots()
             end

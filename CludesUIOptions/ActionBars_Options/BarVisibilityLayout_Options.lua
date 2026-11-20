@@ -154,9 +154,9 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             cursorY,
             {
                 getStore = function()
-                    local s = SB()
-                    GetVisibilityKey(s)
-                    return s
+                    local barCfg = SB()
+                    GetVisibilityKey(barCfg)
+                    return barCfg
                 end,
                 legacyKey = "barVisibility",
                 caps = visCaps,
@@ -198,9 +198,9 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 values = { __placeholder = "..." },
                 order = { "__placeholder" },
                 getValue = function()
-                    local s = SB()
-                    local _ = s.spellbookShow
-                    _ = s.dragShow
+                    local barCfg = SB()
+                    local _ = barCfg.spellbookShow
+                    _ = barCfg.dragShow
                     _ = ABAR.db.profile.mouseoverShowAll
                     return "__placeholder"
                 end,
@@ -270,8 +270,8 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             -- (other modes already surface during a drag); the item is always
             -- listed, locked with a requirement tooltip in the other modes.
             local function NeverOnly()
-                local s = SB()
-                return not (s.barVisibility == "never" or s.alwaysHidden)
+                local barCfg = SB()
+                return not (barCfg.barVisibility == "never" or barCfg.alwaysHidden)
             end
             -- Show All Bars on Mouseover is one setting for every bar (the
             -- profile's). It links every bar set to Mouseover, action bars, the
@@ -817,9 +817,9 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
             end,
             rawTooltip = true,
             getValue = function()
-                local s = SB()
-                if s.buttonWidth and s.buttonWidth > 0 then
-                    return s.buttonWidth
+                local barCfg = SB()
+                if barCfg.buttonWidth and barCfg.buttonWidth > 0 then
+                    return barCfg.buttonWidth
                 end
                 local details = BAR_LOOKUP[SelectedKey()]
                 local btn1 = FirstBarButton(SelectedKey())
@@ -858,10 +858,10 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 region = region,
                 tooltip = "Apply Icon Size to all Bars",
                 onClick = function()
-                    local s = SB()
+                    local barCfg = SB()
                     local details = BAR_LOOKUP[SelectedKey()]
                     local btn1 = FirstBarButton(SelectedKey())
-                    local value = (s.buttonWidth and s.buttonWidth > 0) and s.buttonWidth
+                    local value = (barCfg.buttonWidth and barCfg.buttonWidth > 0) and barCfg.buttonWidth
                         or (btn1 and math.floor((btn1:GetWidth() or 36) + 0.5))
                         or 36
                     for _, key in ipairs(GROUP_BAR_ORDER) do
@@ -872,10 +872,10 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                     CludesUI:RefreshPage()
                 end,
                 isSynced = function()
-                    local s = SB()
+                    local barCfg = SB()
                     local details = BAR_LOOKUP[SelectedKey()]
                     local btn1 = FirstBarButton(SelectedKey())
-                    local value = (s.buttonWidth and s.buttonWidth > 0) and s.buttonWidth
+                    local value = (barCfg.buttonWidth and barCfg.buttonWidth > 0) and barCfg.buttonWidth
                         or (btn1 and math.floor((btn1:GetWidth() or 36) + 0.5))
                         or 36
                     for _, key in ipairs(GROUP_BAR_ORDER) do
@@ -897,10 +897,10 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                         return SelectedKey()
                     end,
                     onApply = function(checkedKeys)
-                        local s = SB()
+                        local barCfg = SB()
                         local details = BAR_LOOKUP[SelectedKey()]
                         local btn1 = FirstBarButton(SelectedKey())
-                        local value = (s.buttonWidth and s.buttonWidth > 0) and s.buttonWidth
+                        local value = (barCfg.buttonWidth and barCfg.buttonWidth > 0) and barCfg.buttonWidth
                             or (btn1 and math.floor((btn1:GetWidth() or 36) + 0.5))
                             or 36
                         for _, key in ipairs(checkedKeys) do
@@ -971,9 +971,9 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 if value and value > 0 then
                     return value
                 end
-                local s = SB()
-                if s and s.numIcons and s.numIcons > 0 then
-                    return s.numIcons
+                local barCfg = SB()
+                if barCfg and barCfg.numIcons and barCfg.numIcons > 0 then
+                    return barCfg.numIcons
                 end
                 return 12
             end,
@@ -994,9 +994,9 @@ local function BuildBarVisibilityLayout(hostFrame, cursorY, context)
                 if value and value > 0 then
                     return value
                 end
-                local s = SB()
-                if s and s.numRows and s.numRows > 0 then
-                    return s.numRows
+                local barCfg = SB()
+                if barCfg and barCfg.numRows and barCfg.numRows > 0 then
+                    return barCfg.numRows
                 end
                 return 1
             end,

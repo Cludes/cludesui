@@ -1290,10 +1290,10 @@ function Graph.OnHover()
     if not view then
         return
     end
-    local cx = GetCursorPosition() / plot:GetEffectiveScale() - plot:GetLeft()
-    cx = math.max(0, math.min(PW, cx))
+    local curX = GetCursorPosition() / plot:GetEffectiveScale() - plot:GetLeft()
+    curX = math.max(0, math.min(PW, curX))
     -- Snap to whole days from the window's start: readers aim at a date.
-    local t = view.x0 + math.floor((cx / PW * (view.x1 - view.x0)) / DAY + 0.5) * DAY
+    local t = view.x0 + math.floor((curX / PW * (view.x1 - view.x0)) / DAY + 0.5) * DAY
     t = math.min(t, view.x1)
     local posX = X(t)
     if view.hoverX == posX then

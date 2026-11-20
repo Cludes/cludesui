@@ -160,12 +160,12 @@ local function LayoutIcons()
     local p = saved.profile.display
     local spacing = p.iconSpacing or 8
     local baseScale = p.scale or 1.0
-    local sz = floor(ICON_SIZE * baseScale + 0.5)
-    local iconH = sz
+    local iconSz = floor(ICON_SIZE * baseScale + 0.5)
+    local iconH = iconSz
     if p.iconShape and p.iconShape ~= "none" then
-        sz, iconH = mod.IconDimensions(sz, p)
+        iconSz, iconH = mod.IconDimensions(iconSz, p)
     end
-    local totalW = (total * sz) + ((total - 1) * spacing)
+    local totalW = (total * iconSz) + ((total - 1) * spacing)
     local textH = 0
     if p.showText then
         textH = (p.textSize or 11) + abs(p.textYOffset or -2)
@@ -173,30 +173,30 @@ local function LayoutIcons()
     -- Icons hang off the anchor's grow edge. Center-grow spreads them symmetrically so the row's center stays fixed
     -- as icons are added/removed; +textH/2 keeps the row at the icon+text box's top, matching the combat pool.
     -- Grow Right/Left hang them from the TOPLEFT/TOPRIGHT corner so that edge stays fixed instead.
-    local pt, startX, yOff = "CENTER", -(totalW / 2) + (sz / 2), textH / 2
+    local pt, startX, yOff = "CENTER", -(totalW / 2) + (iconSz / 2), textH / 2
     if p.growDirection == "RIGHT" then
         pt, startX, yOff = "TOPLEFT", 0, 0
     elseif p.growDirection == "LEFT" then
-        pt, startX, yOff = "TOPRIGHT", -(total - 1) * (sz + spacing), 0
+        pt, startX, yOff = "TOPRIGHT", -(total - 1) * (iconSz + spacing), 0
     end
     local g = _layoutGeom
     g.pt, g.startX, g.yOff, g.sz, g.spacing, g.alpha, g.fixed =
-        pt, startX, yOff, sz, spacing, p.opacity or 1.0, fixed
+        pt, startX, yOff, iconSz, spacing, p.opacity or 1.0, fixed
     if p.iconShape and p.iconShape ~= "none" then
         g.iconH = iconH
     elseif g.iconH then
         g.iconH = nil
     end
     for index, button in ipairs(allIcons) do
-        button:SetSize(sz, iconH)
+        button:SetSize(iconSz, iconH)
         button:SetAlpha(p.opacity or 1.0)
         -- This layout is OOC-only, so treating every entry as protected also
         -- covers the provider/main secure buttons without needing pool scans.
         REMIND.ApplyIconBorder(button, true)
-        REMIND.SizeIconQuality(button, sz)
-        REMIND.SizeIconBagCount(button, sz)
+        REMIND.SizeIconQuality(button, iconSz)
+        REMIND.SizeIconBagCount(button, iconSz)
         button:ClearAllPoints()
-        button:SetPoint(pt, iconAnchor, pt, startX + (index - 1) * (sz + spacing), yOff)
+        button:SetPoint(pt, iconAnchor, pt, startX + (index - 1) * (iconSz + spacing), yOff)
     end
     -- Size the anchor to the row so the unlock mode overlay covers it.
     ResizeAnchorCentered(totalW, iconH + textH)
@@ -235,8 +235,8 @@ local function ShowIcon(iconIdx, m)
     ApplySetup(button, m)
     local p = saved.profile.display
     local baseScale = p.scale or 1.0
-    local sz = floor(ICON_SIZE * baseScale + 0.5)
-    ApplyGlow(button, p, sz)
+    local iconSz = floor(ICON_SIZE * baseScale + 0.5)
+    ApplyGlow(button, p, iconSz)
     REMIND.ApplyEatingVisual(button, m)
     REMIND.ApplyIconExpiry(button, m)
     REMIND.ApplyIconQuality(button, (not m.isEating) and m.qualityAtlas or nil)
@@ -332,33 +332,33 @@ local function CollectRaidBuffs(missing, classFile, instanceNow, combatNow)
                             isMissing = not PlayerHasAuraByID(buffRec.buffIDs, "raidbuff")
                         end
                         if isMissing then
-                            local e = AcquireEntry()
+                            local entry = AcquireEntry()
                             local sname = _G._CUABR_SpellName(buffRec.castSpell, buffRec.name)
-                            e.spellID = buffRec.castSpell
-                            e.label = ShortLabel(sname)
+                            entry.spellID = buffRec.castSpell
+                            entry.label = ShortLabel(sname)
                             if buffRec.check == "huntersMark" then
-                                e.unit = "target"
+                                entry.unit = "target"
                             end
-                            e.cat = "raidbuff"
-                            e.data = buffRec
-                            e.dismissKey = buffRec.key and ("raidbuff:" .. buffRec.key) or nil
+                            entry.cat = "raidbuff"
+                            entry.data = buffRec
+                            entry.dismissKey = buffRec.key and ("raidbuff:" .. buffRec.key) or nil
                             if groupSize then
-                                e.groupHave = groupHave
-                                e.groupTotal = groupSize
+                                entry.groupHave = groupHave
+                                entry.groupTotal = groupSize
                             end
                             if doReceiver then
                                 -- Receiver reminders: texture mode, no cast; a
                                 -- left-click may ask the group for the buff.
-                                e.mode = "texture"
-                                e.texture = Tex(buffRec.castSpell)
+                                entry.mode = "texture"
+                                entry.texture = Tex(buffRec.castSpell)
                                 if rb.requestOnClick then
-                                    e.requestKey = buffRec.key
-                                    e.requestName = sname
+                                    entry.requestKey = buffRec.key
+                                    entry.requestName = sname
                                 end
                             else
-                                e.mode = "spell"
+                                entry.mode = "spell"
                             end
-                            missing[#missing + 1] = e
+                            missing[#missing + 1] = entry
                         end
                     end
                 end
@@ -519,14 +519,14 @@ local function CollectAuras(missing, classFile, specID, instanceNow, combatNow)
                             end
                         end
                         if isMissing then
-                            local e = AcquireEntry()
-                            e.mode = "spell"
-                            e.spellID = auraInfo.castSpell
-                            e.label = ShortLabel(_G._CUABR_SpellName(auraInfo.castSpell, auraInfo.name))
-                            e.cat = "aura"
-                            e.data = auraInfo
-                            e.dismissKey = "aura:" .. auraInfo.key
-                            missing[#missing + 1] = e
+                            local entry = AcquireEntry()
+                            entry.mode = "spell"
+                            entry.spellID = auraInfo.castSpell
+                            entry.label = ShortLabel(_G._CUABR_SpellName(auraInfo.castSpell, auraInfo.name))
+                            entry.cat = "aura"
+                            entry.data = auraInfo
+                            entry.dismissKey = "aura:" .. auraInfo.key
+                            missing[#missing + 1] = entry
                         end
                     end
                 end
@@ -561,19 +561,19 @@ function REMIND.EmitWeaponEnchantReminders(missing, collector)
         end
         if shouldRemind and region.itemID and (collector.showWithoutItem ~= false or region.hasBags) then
             local bestItemID = region.itemID
-            local e = AcquireEntry()
-            e.mode = "macro"
-            e.macro = "/use item:" .. bestItemID .. "\n/use " .. slot
-            e.texture = C_Item.GetItemIconByID(bestItemID) or 134400
+            local entry = AcquireEntry()
+            entry.mode = "macro"
+            entry.macro = "/use item:" .. bestItemID .. "\n/use " .. slot
+            entry.texture = C_Item.GetItemIconByID(bestItemID) or 134400
             -- Localizes the full slot name THEN shortens: ShortLabel truncates on whitespace (English -> Main/Off, space-less locales like zhTW stay intact). L() on the pre-truncated word would collide with the generic Off (disabled) translation.
-            e.label = ShortLabel(CludesUI.L(slot == 16 and "Main Hand" or "Off Hand"))
-            e.tooltipItem = bestItemID
-            e.qualityAtlas = REMIND.GetItemQualityAtlas(bestItemID)
-            e.bagCount = CachedGetItemCount(bestItemID)
-            e.desaturated = not region.hasBags
-            e.cat = "consumable"
-            e.dismissKey = "consumable:weapon_enchant_" .. slot
-            missing[#missing + 1] = e
+            entry.label = ShortLabel(CludesUI.L(slot == 16 and "Main Hand" or "Off Hand"))
+            entry.tooltipItem = bestItemID
+            entry.qualityAtlas = REMIND.GetItemQualityAtlas(bestItemID)
+            entry.bagCount = CachedGetItemCount(bestItemID)
+            entry.desaturated = not region.hasBags
+            entry.cat = "consumable"
+            entry.dismissKey = "consumable:weapon_enchant_" .. slot
+            missing[#missing + 1] = entry
         end
     end
 end
@@ -681,24 +681,24 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                 local reqL = min(knownL, hasDTB and 2 or 1)
                 local reqNL = min(knownNL, hasDTB and 2 or 1)
                 if missingL and activeL < reqL then
-                    local e = AcquireEntry()
-                    e.mode = "spell"
-                    e.spellID = missingL.castSpell
-                    e.label = ShortLabel(_G._CUABR_SpellName(missingL.castSpell, missingL.name), "ROGUE")
-                    e.cat = "consumable"
-                    e.data = missingL
-                    e.dismissKey = "consumable:rogue_lethal"
-                    missing[#missing + 1] = e
+                    local entry = AcquireEntry()
+                    entry.mode = "spell"
+                    entry.spellID = missingL.castSpell
+                    entry.label = ShortLabel(_G._CUABR_SpellName(missingL.castSpell, missingL.name), "ROGUE")
+                    entry.cat = "consumable"
+                    entry.data = missingL
+                    entry.dismissKey = "consumable:rogue_lethal"
+                    missing[#missing + 1] = entry
                 end
                 if missingNL and activeNL < reqNL then
-                    local e = AcquireEntry()
-                    e.mode = "spell"
-                    e.spellID = missingNL.castSpell
-                    e.label = ShortLabel(_G._CUABR_SpellName(missingNL.castSpell, missingNL.name), "ROGUE")
-                    e.cat = "consumable"
-                    e.data = missingNL
-                    e.dismissKey = "consumable:rogue_nonlethal"
-                    missing[#missing + 1] = e
+                    local entry = AcquireEntry()
+                    entry.mode = "spell"
+                    entry.spellID = missingNL.castSpell
+                    entry.label = ShortLabel(_G._CUABR_SpellName(missingNL.castSpell, missingNL.name), "ROGUE")
+                    entry.cat = "consumable"
+                    entry.data = missingNL
+                    entry.dismissKey = "consumable:rogue_nonlethal"
+                    missing[#missing + 1] = entry
                 end
             end
 
@@ -718,16 +718,16 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                             show = true
                         end
                         if show then
-                            local e = AcquireEntry()
+                            local entry = AcquireEntry()
                             local spellName = _G._CUABR_SpellName(rite.castSpell, rite.name)
-                            e.mode = "macro"
-                            e.spellID = rite.castSpell
-                            e.macro = "/cast " .. spellName .. "\n/use 16"
-                            e.label = ShortLabel(_G._CUABR_SpellName(rite.castSpell, rite.name))
-                            e.cat = "consumable"
-                            e.data = rite
-                            e.dismissKey = "consumable:" .. rite.key
-                            missing[#missing + 1] = e
+                            entry.mode = "macro"
+                            entry.spellID = rite.castSpell
+                            entry.macro = "/cast " .. spellName .. "\n/use 16"
+                            entry.label = ShortLabel(_G._CUABR_SpellName(rite.castSpell, rite.name))
+                            entry.cat = "consumable"
+                            entry.data = rite
+                            entry.dismissKey = "consumable:" .. rite.key
+                            missing[#missing + 1] = entry
                             break -- rites are mutually exclusive weapon enchants
                         end
                     end
@@ -773,15 +773,15 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                             end
                         end
                         if not found then
-                            local e = AcquireEntry()
-                            e.mode = "spell"
-                            e.spellID = imbue.castSpell
-                            e.label =
+                            local entry = AcquireEntry()
+                            entry.mode = "spell"
+                            entry.spellID = imbue.castSpell
+                            entry.label =
                                 ShortLabel(_G._CUABR_SpellName(imbue.castSpell, imbue.name), "SHAMAN_IMBUE")
-                            e.cat = "consumable"
-                            e.data = imbue
-                            e.dismissKey = "consumable:" .. imbue.key
-                            missing[#missing + 1] = e
+                            entry.cat = "consumable"
+                            entry.data = imbue
+                            entry.dismissKey = "consumable:" .. imbue.key
+                            missing[#missing + 1] = entry
                         end
                     end
                 end
@@ -805,14 +805,14 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                             success = false
                         end
                         if success and not PlayerHasAuraByID(shieldRec.buffIDs, "special") then
-                            local e = AcquireEntry()
-                            e.mode = "spell"
-                            e.spellID = castID
-                            e.label = ShortLabel(shieldRec.name, "SHAMAN_SHIELD")
-                            e.cat = "consumable"
-                            e.data = shieldRec
-                            e.dismissKey = "consumable:" .. shieldRec.key
-                            missing[#missing + 1] = e
+                            local entry = AcquireEntry()
+                            entry.mode = "spell"
+                            entry.spellID = castID
+                            entry.label = ShortLabel(shieldRec.name, "SHAMAN_SHIELD")
+                            entry.cat = "consumable"
+                            entry.data = shieldRec
+                            entry.dismissKey = "consumable:" .. shieldRec.key
+                            missing[#missing + 1] = entry
                         end
                     end
                 end
@@ -836,17 +836,17 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                     local rr = REMIND._resolved.rune
                     local runeItem = rr.itemID
                     if runeItem and (collector.showWithoutItem ~= false or rr.hasBags) then
-                        local e = AcquireEntry()
-                        e.mode = "item"
-                        e.itemID = runeItem
-                        e.texture = C_Item.GetItemIconByID(runeItem)
-                        e.label = CludesUI.L(ShortLabel("Augment Rune"))
-                        e.qualityAtlas = REMIND.GetItemQualityAtlas(runeItem)
-                        e.bagCount = CachedGetItemCount(runeItem)
-                        e.desaturated = not rr.hasBags
-                        e.cat = "consumable"
-                        e.dismissKey = "consumable:rune"
-                        missing[#missing + 1] = e
+                        local entry = AcquireEntry()
+                        entry.mode = "item"
+                        entry.itemID = runeItem
+                        entry.texture = C_Item.GetItemIconByID(runeItem)
+                        entry.label = CludesUI.L(ShortLabel("Augment Rune"))
+                        entry.qualityAtlas = REMIND.GetItemQualityAtlas(runeItem)
+                        entry.bagCount = CachedGetItemCount(runeItem)
+                        entry.desaturated = not rr.hasBags
+                        entry.cat = "consumable"
+                        entry.dismissKey = "consumable:rune"
+                        missing[#missing + 1] = entry
                     end
                 end
             end
@@ -875,17 +875,17 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                     local rf = REMIND._resolved.flask
                     local flaskItemID = rf.itemID
                     if flaskItemID and (collector.showWithoutItem ~= false or rf.hasBags) then
-                        local e = AcquireEntry()
-                        e.mode = "item"
-                        e.itemID = flaskItemID
-                        e.texture = C_Item.GetItemIconByID(flaskItemID) or 134830
-                        e.label = CludesUI.L("Flask")
-                        e.qualityAtlas = REMIND.GetItemQualityAtlas(flaskItemID)
-                        e.bagCount = CachedGetItemCount(flaskItemID)
-                        e.desaturated = not rf.hasBags
-                        e.cat = "consumable"
-                        e.dismissKey = "consumable:flask"
-                        missing[#missing + 1] = e
+                        local entry = AcquireEntry()
+                        entry.mode = "item"
+                        entry.itemID = flaskItemID
+                        entry.texture = C_Item.GetItemIconByID(flaskItemID) or 134830
+                        entry.label = CludesUI.L("Flask")
+                        entry.qualityAtlas = REMIND.GetItemQualityAtlas(flaskItemID)
+                        entry.bagCount = CachedGetItemCount(flaskItemID)
+                        entry.desaturated = not rf.hasBags
+                        entry.cat = "consumable"
+                        entry.dismissKey = "consumable:flask"
+                        missing[#missing + 1] = entry
                     end
                 end
             end
@@ -894,22 +894,22 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                 if not PlayerHasWellFed() then
                     local foodItemID = REMIND._resolved.food.itemID
                     if foodItemID and (collector.showWithoutItem ~= false or REMIND._resolved.food.hasBags) then
-                        local e = AcquireEntry()
-                        e.mode = "item"
-                        e.itemID = foodItemID
-                        e.texture = C_Item.GetItemIconByID(foodItemID) or 134062
-                        e.label = CludesUI.L("Food")
-                        e.qualityAtlas = REMIND.GetItemQualityAtlas(foodItemID)
-                        e.bagCount = CachedGetItemCount(foodItemID)
-                        e.desaturated = not REMIND._resolved.food.hasBags
-                        e.substitute = REMIND._resolved.food.isSubstitute
-                        e.cat = "consumable"
-                        e.dismissKey = "consumable:food"
+                        local entry = AcquireEntry()
+                        entry.mode = "item"
+                        entry.itemID = foodItemID
+                        entry.texture = C_Item.GetItemIconByID(foodItemID) or 134062
+                        entry.label = CludesUI.L("Food")
+                        entry.qualityAtlas = REMIND.GetItemQualityAtlas(foodItemID)
+                        entry.bagCount = CachedGetItemCount(foodItemID)
+                        entry.desaturated = not REMIND._resolved.food.hasBags
+                        entry.substitute = REMIND._resolved.food.isSubstitute
+                        entry.cat = "consumable"
+                        entry.dismissKey = "consumable:food"
                         if REMIND.IsPlayerEating() then
-                            e.isEating = true
-                            e.eatingExpirationTime = REMIND.GetEatingExpirationTime()
+                            entry.isEating = true
+                            entry.eatingExpirationTime = REMIND.GetEatingExpirationTime()
                         end
-                        missing[#missing + 1] = e
+                        missing[#missing + 1] = entry
                     end
                 end
             end
@@ -935,16 +935,16 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                     if inkyIndex.inZone then
                         local hasPotion = REMIND._resolved.inky.hasPotion
                         if not PlayerHasInkyBlackness() and hasPotion then
-                            local e = AcquireEntry()
-                            e.mode = "item"
-                            e.itemID = INKY_BLACK_ITEM
-                            e.texture = C_Item.GetItemIconByID(INKY_BLACK_ITEM)
-                            e.label = CludesUI.L(ShortLabel("Inky Black Potion"))
-                            e.qualityAtlas = REMIND.GetItemQualityAtlas(INKY_BLACK_ITEM)
-                            e.bagCount = CachedGetItemCount(INKY_BLACK_ITEM)
-                            e.cat = "consumable"
-                            e.dismissKey = "consumable:inky_black"
-                            missing[#missing + 1] = e
+                            local entry = AcquireEntry()
+                            entry.mode = "item"
+                            entry.itemID = INKY_BLACK_ITEM
+                            entry.texture = C_Item.GetItemIconByID(INKY_BLACK_ITEM)
+                            entry.label = CludesUI.L(ShortLabel("Inky Black Potion"))
+                            entry.qualityAtlas = REMIND.GetItemQualityAtlas(INKY_BLACK_ITEM)
+                            entry.bagCount = CachedGetItemCount(INKY_BLACK_ITEM)
+                            entry.cat = "consumable"
+                            entry.dismissKey = "consumable:inky_black"
+                            missing[#missing + 1] = entry
                         end
                     end
                 end
@@ -972,14 +972,14 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
             and Known(esOrbit.requireTalent)
         then
             if not (combatNow or inKeystone) and not PlayerHasAuraByID(esOrbit.buffIDs) then
-                local e = AcquireEntry()
-                e.mode = "spell"
-                e.spellID = esOrbit.castSpell
-                e.label = ShortLabel(esOrbit.name, "SHAMAN_SHIELD")
-                e.cat = "consumable"
-                e.data = esOrbit
-                e.dismissKey = "consumable:" .. esOrbit.key
-                missing[#missing + 1] = e
+                local entry = AcquireEntry()
+                entry.mode = "spell"
+                entry.spellID = esOrbit.castSpell
+                entry.label = ShortLabel(esOrbit.name, "SHAMAN_SHIELD")
+                entry.cat = "consumable"
+                entry.data = esOrbit
+                entry.dismissKey = "consumable:" .. esOrbit.key
+                missing[#missing + 1] = entry
             end
         end
         -- Our Earth Shield on a group member (es_ally, opt-in): grouped and
@@ -994,15 +994,15 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
             and (REMIND._ownOtherAuraCache[974] == false or REMIND.OwnOtherAuraNeedsRebuff(974, "special"))
             and REMIND.AnyReachableGroupMember()
         then
-            local e = AcquireEntry()
-            e.mode = "texture"
-            e.texture = Tex(esAlly.castSpell)
-            e.spellID = esAlly.castSpell -- tooltip only
-            e.label = CludesUI.L(ShortLabel(esAlly.name))
-            e.cat = "consumable"
-            e.data = esAlly
-            e.dismissKey = "consumable:" .. esAlly.key
-            missing[#missing + 1] = e
+            local entry = AcquireEntry()
+            entry.mode = "texture"
+            entry.texture = Tex(esAlly.castSpell)
+            entry.spellID = esAlly.castSpell -- tooltip only
+            entry.label = CludesUI.L(ShortLabel(esAlly.name))
+            entry.cat = "consumable"
+            entry.data = esAlly
+            entry.dismissKey = "consumable:" .. esAlly.key
+            missing[#missing + 1] = entry
         end
     end
 
@@ -1044,17 +1044,17 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
             end
             local hasHealthstone = REMIND._resolved.healthstone.hasStone
             if hasWarlock and not hasHealthstone then
-                local e = AcquireEntry()
-                e.mode = "texture"
-                e.texture = 538745
-                e.label = CludesUI.L("HS")
-                e.cat = "consumable"
-                e.dismissKey = "consumable:healthstone"
+                local entry = AcquireEntry()
+                entry.mode = "texture"
+                entry.texture = 538745
+                entry.label = CludesUI.L("HS")
+                entry.cat = "consumable"
+                entry.dismissKey = "consumable:healthstone"
                 if saved.profile.raidBuffs.requestOnClick and GetPlayerClass() ~= "WARLOCK" then
-                    e.requestKey = "healthstone"
-                    e.requestName = CludesUI.L("Healthstones")
+                    entry.requestKey = "healthstone"
+                    entry.requestName = CludesUI.L("Healthstones")
                 end
-                missing[#missing + 1] = e
+                missing[#missing + 1] = entry
             end
         end
     end
@@ -1075,13 +1075,13 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
         then
             local hasBuff = PlayerHasAuraByID(PARTNERED_TRINKET.buffIDs)
             if not hasBuff then
-                local e = AcquireEntry()
-                e.mode = "texture"
-                e.texture = PARTNERED_TRINKET.icon
-                e.label = CludesUI.L("Whistle")
-                e.cat = "consumable"
-                e.dismissKey = "consumable:coaches_whistle"
-                missing[#missing + 1] = e
+                local entry = AcquireEntry()
+                entry.mode = "texture"
+                entry.texture = PARTNERED_TRINKET.icon
+                entry.label = CludesUI.L("Whistle")
+                entry.cat = "consumable"
+                entry.dismissKey = "consumable:coaches_whistle"
+                missing[#missing + 1] = entry
             end
         end
     end
@@ -1106,13 +1106,13 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                 end
             end
             if needsRune then
-                local e = AcquireEntry()
-                e.mode = "texture"
-                e.texture = 135957
-                e.label = CludesUI.L("Rune")
-                e.cat = "consumable"
-                e.dismissKey = "consumable:runeforge"
-                missing[#missing + 1] = e
+                local entry = AcquireEntry()
+                entry.mode = "texture"
+                entry.texture = 135957
+                entry.label = CludesUI.L("Rune")
+                entry.cat = "consumable"
+                entry.dismissKey = "consumable:runeforge"
+                missing[#missing + 1] = entry
             end
         end
     end

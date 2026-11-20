@@ -800,8 +800,8 @@ end
 --  Events and apply
 -------------------------------------------------------------------------------
 local queued
-local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, evt)
+local eventFrame = CreateFrame("Frame")
+eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "TRADE_SKILL_SHOW" or evt == "TRADE_SKILL_LIST_UPDATE" or evt == "NEW_RECIPE_LEARNED" then
         ReadTradeSkill()
     elseif evt == "TRAINER_SHOW" or evt == "TRAINER_UPDATE" then
@@ -821,7 +821,7 @@ ev:SetScript("OnEvent", function(_, evt)
 end)
 
 local function Apply()
-    ev:UnregisterAllEvents()
+    eventFrame:UnregisterAllEvents()
     if not On() then
         if window then
             window:Hide()
@@ -838,7 +838,7 @@ local function Apply()
         "TRAINER_UPDATE",
         "LEARNED_SPELL_IN_TAB",
     }) do
-        pcall(ev.RegisterEvent, ev, event)
+        pcall(eventFrame.RegisterEvent, eventFrame, event)
     end
     if Get("rankAlert") then
         C_Timer.After(5, function()

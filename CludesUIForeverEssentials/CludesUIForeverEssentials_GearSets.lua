@@ -196,8 +196,8 @@ local function Build()
     return holderFrame
 end
 
-local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, evt)
+local eventFrame = CreateFrame("Frame")
+eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "PLAYER_REGEN_ENABLED" then
         if queuedSet then
             Wear(queuedSet)
@@ -227,13 +227,13 @@ local function Apply()
             "PLAYER_MOUNT_DISPLAY_CHANGED",
             "PLAYER_UPDATE_RESTING",
         }) do
-            ev:RegisterEvent(event)
+            eventFrame:RegisterEvent(event)
         end
         if not CludesUI._unlockActive then
             F.Place(holderFrame)
         end
     else
-        ev:UnregisterAllEvents()
+        eventFrame:UnregisterAllEvents()
         previous, queuedSet = nil, nil
     end
     Layout()

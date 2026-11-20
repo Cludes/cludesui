@@ -2234,10 +2234,10 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
         end,
         setValue = function(val)
             CludesUI.GetFontsDB().global = val
-            local rl = CludesUI._widgetRefreshList
-            if rl then
-                for i2 = 1, #rl do
-                    rl[i2]()
+            local refreshList = CludesUI._widgetRefreshList
+            if refreshList then
+                for i2 = 1, #refreshList do
+                    refreshList[i2]()
                 end
             end
             FontReload()
@@ -2257,10 +2257,10 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
         end,
         setValue = function(val)
             CludesUI.GetFontsDB().outlineMode = val
-            local rl = CludesUI._widgetRefreshList
-            if rl then
-                for i2 = 1, #rl do
-                    rl[i2]()
+            local refreshList = CludesUI._widgetRefreshList
+            if refreshList then
+                for i2 = 1, #refreshList do
+                    refreshList[i2]()
                 end
             end
             FontReload()

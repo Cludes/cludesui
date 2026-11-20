@@ -1331,20 +1331,20 @@ local function SkinOneScrollbar(scrollList, scrollBar)
         if GetExtent() >= 1 then
             return
         end
-        local _, cy = GetCursorPosition()
-        cy = cy / rail:GetEffectiveScale()
+        local _, curY = GetCursorPosition()
+        curY = curY / rail:GetEffectiveScale()
         local topY = rail:GetTop() or 0
         local trackH = rail:GetHeight()
         local thumbH = knob:GetHeight()
         if trackH <= thumbH then
             return
         end
-        local frac = (topY - cy - thumbH / 2) / (trackH - thumbH)
+        local frac = (topY - curY - thumbH / 2) / (trackH - thumbH)
         frac = math.max(0, math.min(1, frac))
         scrollBar:SetScrollPercentage(frac)
         UpdateScrollThumb()
         isDragging = true
-        dragStartY = cy
+        dragStartY = curY
         dragStartPct = frac
         knob:SetScript("OnUpdate", ScrollThumbOnUpdate)
     end)

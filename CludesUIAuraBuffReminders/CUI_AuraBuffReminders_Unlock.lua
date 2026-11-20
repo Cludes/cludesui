@@ -173,10 +173,10 @@ local function RegisterUnlockElements()
             getSize = function()
                 local p = saved.profile.display
                 local baseScale = p.scale or 1.0
-                local sz = floor(ICON_SIZE * baseScale + 0.5)
-                local iconH = sz
+                local iconSz = floor(ICON_SIZE * baseScale + 0.5)
+                local iconH = iconSz
                 if p.iconShape and p.iconShape ~= "none" then
-                    sz, iconH = mod.IconDimensions(sz, p)
+                    iconSz, iconH = mod.IconDimensions(iconSz, p)
                 end
                 local spacing = p.iconSpacing or 8
                 -- Fits all active icons (same set LayoutIcons places: reminders + merged beacon icons unless cursor-routed); falls back to a 2-wide grabbable box when empty so the mover overlay stays draggable.
@@ -192,7 +192,7 @@ local function RegisterUnlockElements()
                 if total < 1 then
                     total = 2
                 end
-                local wid = total * sz + (total - 1) * spacing
+                local wid = total * iconSz + (total - 1) * spacing
                 local textH = 0
                 if p.showText then
                     textH = (p.textSize or 11) + abs(p.textYOffset or -2)

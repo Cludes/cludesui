@@ -192,10 +192,10 @@ local function RefreshPage()
     end)
 end
 
-local ev = CreateFrame("Frame")
-ev:RegisterEvent("PLAYER_LEVEL_UP")
-ev:RegisterEvent("SPELLS_CHANGED")
-ev:SetScript("OnEvent", function(_, evt, newLevel)
+local eventFrame = CreateFrame("Frame")
+eventFrame:RegisterEvent("PLAYER_LEVEL_UP")
+eventFrame:RegisterEvent("SPELLS_CHANGED")
+eventFrame:SetScript("OnEvent", function(_, evt, newLevel)
     RefreshPage()
     if evt ~= "PLAYER_LEVEL_UP" or not Settings().levelUpMessage then
         return

@@ -1513,8 +1513,8 @@ end
 -------------------------------------------------------------------------------
 --  Events and apply
 -------------------------------------------------------------------------------
-local ev = CreateFrame("Frame")
-ev:SetScript("OnEvent", function(_, evt)
+local eventFrame = CreateFrame("Frame")
+eventFrame:SetScript("OnEvent", function(_, evt)
     if evt == "PLAYER_ENTERING_WORLD" or evt == "ZONE_CHANGED_NEW_AREA" then
         NearRefresh()
     elseif evt == "BAG_UPDATE_DELAYED" or evt == "QUEST_TURNED_IN" or evt == "QUEST_LOG_UPDATE" then
@@ -1530,7 +1530,7 @@ ev:SetScript("OnEvent", function(_, evt)
 end)
 
 local function Apply()
-    ev:UnregisterAllEvents()
+    eventFrame:UnregisterAllEvents()
     if On() then
         for _, event in ipairs({
             "PLAYER_ENTERING_WORLD",
@@ -1540,7 +1540,7 @@ local function Apply()
             "QUEST_LOG_UPDATE",
             "PLAYER_LEVEL_UP",
         }) do
-            ev:RegisterEvent(event)
+            eventFrame:RegisterEvent(event)
         end
     end
     NearRefresh()

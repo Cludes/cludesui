@@ -368,11 +368,11 @@ eventFrame:SetScript("OnEvent", function(_, evt, unitToken, updateInfo, arg3)
     end
     if evt == "CINEMATIC_STOP" or evt == "STOP_MOVIE" then
         -- Blizzard restores frame positions/alpha after cinematics end. Re-hide immediately so the Blizzard CDM doesn't reappear.
-        local p = ECME.db and ECME.db.profile
-        if p and p.cdmBars and p.cdmBars.hideBlizzard then
+        local profile = ECME.db and ECME.db.profile
+        if profile and profile.cdmBars and profile.cdmBars.hideBlizzard then
             C_Timer.After(0, function()
                 HideBlizzardCDM()
-                if p.cdmBars.useBlizzardBuffBars then
+                if profile.cdmBars.useBlizzardBuffBars then
                     RestoreBlizzardBuffFrame()
                 end
             end)
@@ -421,8 +421,8 @@ eventFrame:SetScript("OnEvent", function(_, evt, unitToken, updateInfo, arg3)
     end
     if evt == "UPDATE_SHAPESHIFT_FORM" then
         -- Bail fast if no bar actually uses visHideMounted: druids shift constantly in combat (Bear/Cat) and we don't want to re-run the visibility pipeline for nothing.
-        local p = ECME.db and ECME.db.profile
-        local barList = p and p.cdmBars and p.cdmBars.bars
+        local profile = ECME.db and ECME.db.profile
+        local barList = profile and profile.cdmBars and profile.cdmBars.bars
         if not barList then
             return
         end

@@ -57,11 +57,11 @@ local function GetSidebarWidth()
     if CUI_Bags.IsModernMode and CUI_Bags.IsModernMode() then
         return 0
     end
-    local p = BP()
-    if not p.bagSidebarCollapsed then
+    local profile = BP()
+    if not profile.bagSidebarCollapsed then
         return SIDEBAR_W_EXPANDED
     end
-    return p.bagHideSidebarIconsCollapsed == true and 0 or SIDEBAR_W_COLLAPSED
+    return profile.bagHideSidebarIconsCollapsed == true and 0 or SIDEBAR_W_COLLAPSED
 end
 
 -- The item grid starts after the full width, including the window rim.
@@ -317,11 +317,11 @@ _dragUpdateFrame:SetScript("OnUpdate", function()
 
     local dragShadow = _dragGhost
     if dragShadow and dragShadow:IsShown() then
-        local cx, rowY = GetCursorPosition()
-        local sc = UIParent:GetEffectiveScale()
+        local curX, rowY = GetCursorPosition()
+        local uiScale = UIParent:GetEffectiveScale()
         local gs = dragShadow:GetScale() or 1
         dragShadow:ClearAllPoints()
-        dragShadow:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx / (sc * gs), rowY / (sc * gs))
+        dragShadow:SetPoint("CENTER", UIParent, "BOTTOMLEFT", curX / (uiScale * gs), rowY / (uiScale * gs))
     end
 
     local goal, modeName, goalButton = ComputeDropZone()

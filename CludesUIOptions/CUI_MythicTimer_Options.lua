@@ -45,14 +45,14 @@ CludesUI.AtOptionsLogin(function()
     end
 
     local function Cfg(key)
-        local p = DB()
-        return p and p[key]
+        local profile = DB()
+        return profile and profile[key]
     end
 
     local function Set(key, val)
-        local p = DB()
-        if p then
-            p[key] = val
+        local profile = DB()
+        if profile then
+            profile[key] = val
         end
     end
 
@@ -1908,8 +1908,8 @@ CludesUI.AtOptionsLogin(function()
     -- A sub-table of the profile (nil until the profile exists).
     local function ProfilePart(key)
         return function()
-            local p = DB()
-            return p and p[key]
+            local profile = DB()
+            return profile and profile[key]
         end
     end
     local TSB = ProfilePart("tsb") -- Cast Bars
@@ -2820,8 +2820,8 @@ CludesUI.AtOptionsLogin(function()
     --  Run Summary page
     -----------------------------------------------------------------------
     local function RSCfg()
-        local p = DB()
-        return p and p.runSummary
+        local profile = DB()
+        return profile and profile.runSummary
     end
 
     -- A Run Summary setting, fallback while it was never stored.

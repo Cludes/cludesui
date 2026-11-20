@@ -243,16 +243,16 @@ CUI_NS.unlockParts.Tools = function(LM)
             end
 
             local scale = UIParent:GetEffectiveScale()
-            local cx, cy = GetCursorPosition()
-            cx = cx / scale
-            cy = cy / scale
+            local curX, curY = GetCursorPosition()
+            curX = curX / scale
+            curY = curY / scale
             local screenH = UIParent:GetHeight()
             local screenW = UIParent:GetWidth()
-            local cyFromTop = screenH - cy
+            local cyFromTop = screenH - curY
 
             -- Position ambient glow
             flashFill:ClearAllPoints()
-            flashFill:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx, cy)
+            flashFill:SetPoint("CENTER", UIParent, "BOTTOMLEFT", curX, curY)
             flashFill:Show()
 
             -- Highlight line segments
@@ -265,7 +265,7 @@ CUI_NS.unlockParts.Tools = function(LM)
                 if texture and texture:IsShown() and texture._baseAlpha then
                     local perpDist
                     if texture._isVert then
-                        perpDist = abs(texture._pos - cx)
+                        perpDist = abs(texture._pos - curX)
                     else
                         perpDist = abs(texture._pos - cyFromTop)
                     end
@@ -276,14 +276,14 @@ CUI_NS.unlockParts.Tools = function(LM)
                         local isW = texture._isWhite
 
                         if texture._isVert then
-                            local spanStart = max(0, cy - halfSpan)
-                            local spanEnd = min(screenH, cy + halfSpan)
+                            local spanStart = max(0, curY - halfSpan)
+                            local spanEnd = min(screenH, curY + halfSpan)
                             local segY = spanStart
                             while segY < spanEnd do
                                 local segEnd = min(segY + segSize, spanEnd)
                                 local midY = (segY + segEnd) * 0.5
-                                local deltaY = midY - cy
-                                local deltaX = texture._pos - cx
+                                local deltaY = midY - curY
+                                local deltaX = texture._pos - curX
                                 local d2 = deltaX * deltaX + deltaY * deltaY
                                 if d2 < R2 then
                                     local t = 1 - sqrt(d2) / LIGHT_RADIUS
@@ -305,13 +305,13 @@ CUI_NS.unlockParts.Tools = function(LM)
                                 segY = segEnd
                             end
                         else
-                            local spanStart = max(0, cx - halfSpan)
-                            local spanEnd = min(screenW, cx + halfSpan)
+                            local spanStart = max(0, curX - halfSpan)
+                            local spanEnd = min(screenW, curX + halfSpan)
                             local segX = spanStart
                             while segX < spanEnd do
                                 local segEnd = min(segX + segSize, spanEnd)
                                 local midX = (segX + segEnd) * 0.5
-                                local deltaX = midX - cx
+                                local deltaX = midX - curX
                                 local deltaY = texture._pos - cyFromTop
                                 local d2 = deltaX * deltaX + deltaY * deltaY
                                 if d2 < R2 then

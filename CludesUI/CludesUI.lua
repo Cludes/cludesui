@@ -3534,9 +3534,9 @@ function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
                 if not ty then
                     return
                 end
-                local _, cy = GetCursorPosition()
+                local _, curY = GetCursorPosition()
                 local amount = scrollFrame:GetHeight() * 0.9
-                PadScrollBy((cy / knob:GetEffectiveScale() > ty) and -amount or amount)
+                PadScrollBy((curY / knob:GetEffectiveScale() > ty) and -amount or amount)
             end)
             -- The controller cursor cannot aim a page click: its stops are the arrows.
             CludesUI.PadHint(strip, "nodeignore")
@@ -3554,8 +3554,8 @@ function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
             return
         end
         Stop()
-        local _, cy = GetCursorPosition()
-        local startY = cy / self:GetEffectiveScale()
+        local _, curY = GetCursorPosition()
+        local startY = curY / self:GetEffectiveScale()
         local startScroll = scrollFrame:GetVerticalScroll()
         self:SetScript("OnUpdate", function(self2)
             if not IsMouseButtonDown("LeftButton") then
@@ -5118,9 +5118,9 @@ do
     end
 
     -- CVars persist across sessions: check on login (deferred so the theme accent is fully resolved). PLAYER_LOGIN re-fires on /reload, so this covers both.
-    local ev = CreateFrame("Frame")
-    ev:RegisterEvent("PLAYER_LOGIN")
-    ev:SetScript("OnEvent", function(self)
+    local eventFrame = CreateFrame("Frame")
+    eventFrame:RegisterEvent("PLAYER_LOGIN")
+    eventFrame:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
         C_Timer.After(2, function()
             CludesUI.UpdateDevModeIndicator()
@@ -5182,8 +5182,8 @@ do
                     CludesUIDB.showMinimapButton = false
                     CludesUI.HideMinimapButton()
                     -- an open page re-reads its rows (a closed panel catches up when it next shows)
-                    local rl = CludesUI._widgetRefreshList
-                    if rl and #rl > 0 then
+                    local refreshList = CludesUI._widgetRefreshList
+                    if refreshList and #refreshList > 0 then
                         CludesUI:RefreshPage()
                     end
                 end

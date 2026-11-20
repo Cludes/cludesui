@@ -76,9 +76,9 @@ function PaletteView:ShowNeedle(index)
     -- rather than derived per frame: the geometry cannot move under a shown
     -- line -- any relayout goes through Layout, which hides it, and the
     -- reselect that follows lands back here.
-    local p = self:P()
+    local profile = self:P()
     local _, viewIcon = self:Geom()
-    local base = (p and p.iconSize) or 40
+    local base = (profile and profile.iconSize) or 40
     local key = (base > 0) and (viewIcon / base) or 1
     local logo = max(8, 40 * key) -- the hub logo's hardcoded height
     self._needleTrimS = logo * (2 / 3)
@@ -285,11 +285,11 @@ end
 function PaletteView:PointerPolar()
     local widget = self.frame
     local es = widget:GetEffectiveScale()
-    local mx, my = GetCursorPosition()
-    mx, my = mx / es, my / es
+    local curX, curY = GetCursorPosition()
+    curX, curY = curX / es, curY / es
 
     if not self._steered then
-        if abs(mx - self._gateX) < 1 and abs(my - self._gateY) < 1 then
+        if abs(curX - self._gateX) < 1 and abs(curY - self._gateY) < 1 then
             return nil
         end
         self._steered = true
@@ -300,7 +300,7 @@ function PaletteView:PointerPolar()
         return nil
     end
 
-    local dx, dy = mx - cx, my - cy
+    local dx, dy = curX - cx, curY - cy
     -- atan2(dx, dy) measures clockwise from straight up, matching the layout
     -- (slot 1 at 12 o'clock, index increasing clockwise).
     local theta = atan2(dx, dy)
@@ -411,9 +411,9 @@ end
 -- an entry that also slid along the ring would drag itself out from under the
 -- cursor that had just reached it.
 function PaletteView:AdvanceArc()
-    local p = self:P()
+    local profile = self:P()
     local isShown = self.shownCount
-    if not p or isShown < 1 then
+    if not profile or isShown < 1 then
         self:SetSelection(nil)
         return
     end
@@ -425,9 +425,9 @@ function PaletteView:AdvanceArc()
     local best = self:HitTest(theta, dist)
 
     local _, iconSize, deadZone = self:Geom()
-    local decay, aDecay = FalloffRatios(p)
-    local minS = p.fanMinScale or 0.30
-    local minA = p.fanMinAlpha or 0.12
+    local decay, aDecay = FalloffRatios(profile)
+    local minS = profile.fanMinScale or 0.30
+    local minA = profile.fanMinAlpha or 0.12
 
     local step, arcStart = self:ArcGeom(isShown)
     -- Inside the dead zone the cursor is not pointing anywhere yet: an angle

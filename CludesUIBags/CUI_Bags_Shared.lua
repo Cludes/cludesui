@@ -195,9 +195,9 @@ function mod.ApplyWindowBackground(backdrop, overlayFrame)
     if not (backdrop and overlayFrame) then
         return
     end
-    local p = BP()
-    local o = (p.bagBgOpacity or 100) / 100
-    local color = p.bagBgColor
+    local profile = BP()
+    local o = (profile.bagBgOpacity or 100) / 100
+    local color = profile.bagBgColor
     backdrop:SetAlpha(o)
     overlayFrame:SetColorTexture(color and color.r or 0, color and color.g or 0, color and color.b or 0, color and color.a or 0.25)
     overlayFrame:SetAlpha(o)
@@ -292,8 +292,8 @@ end
 -- icon's crop on every call (retail's keeps it), so the zoom goes back on.
 function mod.SetSlotIcon(button, texture)
     button:SetItemButtonTexture(texture)
-    local z = BP().bagItemIconZoom or 0.08
-    button.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+    local zoom = BP().bagItemIconZoom or 0.08
+    button.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
 end
 
 -- Flat look for a ContainerFrameItemButtonTemplate slot, plus the text overlay
@@ -321,8 +321,8 @@ function mod.SkinItemButton(button, options)
 
     mod.SizeSlot(button)
     if button.icon then
-        local z = BP().bagItemIconZoom or 0.08
-        button.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+        local zoom = BP().bagItemIconZoom or 0.08
+        button.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         if options.anchorIcon then
             button.icon:ClearAllPoints()
             button.icon:SetAllPoints(button)

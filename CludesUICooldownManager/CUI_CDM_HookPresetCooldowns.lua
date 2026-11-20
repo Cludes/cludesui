@@ -50,8 +50,8 @@ do
     -- The profile-wide switch the Extras section used to hold: the default of an
     -- icon whose own Swap Combat Pots When Missing was never set.
     function PotSwap.LegacySwap()
-        local p = ECME and ECME.db and ECME.db.profile
-        return (p and p.cdmBars and p.cdmBars.swapPotionsWhenMissing) == true
+        local profile = ECME and ECME.db and ECME.db.profile
+        return (profile and profile.cdmBars and profile.cdmBars.swapPotionsWhenMissing) == true
     end
 
     -- An icon's two Combat Potion Icon settings, from its customActiveStates entry
@@ -1247,11 +1247,11 @@ end
 -- True if any enabled Custom Auras (custom_buff) bar tracks the lust buff, so the
 -- shared lust-buff listener stays armed even with no Tracking Bar lust bar present.
 function mod.AnyCustomAuraLust()
-    local p = ECME and ECME.db and ECME.db.profile
-    if not (p and p.cdmBars and p.cdmBars.bars) then
+    local profile = ECME and ECME.db and ECME.db.profile
+    if not (profile and profile.cdmBars and profile.cdmBars.bars) then
         return false
     end
-    for _, edge in ipairs(p.cdmBars.bars) do
+    for _, edge in ipairs(profile.cdmBars.bars) do
         if edge.enabled and (edge.barType == "custom_buff" or edge.barType == "buffs") then
             local sd = mod.GetBarSpellData and mod.GetBarSpellData(edge.key)
             if sd and sd.assignedSpells then
@@ -1302,11 +1302,11 @@ end
 -- True if any enabled Custom Auras (custom_buff) / buff bar tracks Time Spiral,
 -- so the shared glow listener stays armed even with no Tracking Bar present.
 function mod.AnyCustomAuraTimeSpiral()
-    local p = ECME and ECME.db and ECME.db.profile
-    if not (p and p.cdmBars and p.cdmBars.bars) then
+    local profile = ECME and ECME.db and ECME.db.profile
+    if not (profile and profile.cdmBars and profile.cdmBars.bars) then
         return false
     end
-    for _, edge in ipairs(p.cdmBars.bars) do
+    for _, edge in ipairs(profile.cdmBars.bars) do
         if edge.enabled and (edge.barType == "custom_buff" or edge.barType == "buffs") then
             local sd = mod.GetBarSpellData and mod.GetBarSpellData(edge.key)
             if sd and sd.assignedSpells then
