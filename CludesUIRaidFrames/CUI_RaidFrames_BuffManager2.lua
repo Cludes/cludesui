@@ -373,7 +373,7 @@ end
 
 -- Seeds missing preset filters and merges only NEW curated ids: an id the
 -- filter has already seen keeps the user's checkbox state.
-local function EnsureFilters()
+local function FilterStore()
     local store = Store()
     if not store then return nil end
     for idx = 1, #PRESET_FILTERS do
@@ -422,7 +422,7 @@ end
 -- The filter list every picker and editor shows: the stored list itself, or,
 -- on a client missing presets the other one offers, a fresh copy without them.
 function mod.BM2_Filters()
-    local b = EnsureFilters()
+    local b = FilterStore()
     if not b then return nil end
     local entries = b.filters.list
     if next(OTHER_ONLY_PRESETS) == nil then return entries end
@@ -756,7 +756,7 @@ end
 
 -- key = healer spec key or "nonhealer" (editor); nil = player's ACTIVE key.
 function mod.BM2_SpecInds(key)
-    local b = EnsureFilters()
+    local b = FilterStore()
     if not b then return nil, nil end
     local specKey = key or mod.BM2_SpecKey()
     SeedSpec(b, specKey)
@@ -813,7 +813,7 @@ end
 function mod.BM2_SetInhDisabled(concreteKey, groupKey, ident, disabled)
     -- EnsureFilters (not bare Store): a healer key seeding here must see the
     -- preset filters or its starter groups would bake empty assignments.
-    local b = EnsureFilters()
+    local b = FilterStore()
     if not (b and concreteKey and groupKey and ident) then return end
     SeedSpec(b, concreteKey)
     local specInfo = b.specs[concreteKey]
@@ -834,7 +834,7 @@ end
 -- sibling id in the SOURCE bucket, which in the target would be an
 -- unrelated indicator (or dangle).
 function mod.BM2_CopyIndicator(srcInd, targetKey)
-    local b = EnsureFilters()
+    local b = FilterStore()
     if not (b and srcInd and targetKey) then return nil end
     SeedSpec(b, targetKey)
     local specInfo = b.specs[targetKey]

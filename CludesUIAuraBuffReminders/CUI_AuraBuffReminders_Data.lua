@@ -1034,7 +1034,7 @@ local function RebuildBagCounts()
     end
 end
 
-local function CachedGetItemCount(itemId)
+local function BagCount(itemId)
     if _itemCountDirty then
         RebuildBagCounts()
     end
@@ -1046,13 +1046,13 @@ end
 -------------------------------------------------------------------------------
 local function FindFlaskItem(preferredKey, lastUsedItemID)
     if preferredKey == "last_used" then
-        if lastUsedItemID and CachedGetItemCount(lastUsedItemID) > 0 then
+        if lastUsedItemID and BagCount(lastUsedItemID) > 0 then
             return lastUsedItemID
         end
         -- Fallback: first flask found in bags
         for _, frame in ipairs(FLASK_ITEMS) do
             for _, ident in ipairs(frame.items) do
-                if CachedGetItemCount(ident) > 0 then
+                if BagCount(ident) > 0 then
                     return ident
                 end
             end
@@ -1062,7 +1062,7 @@ local function FindFlaskItem(preferredKey, lastUsedItemID)
     for _, frame in ipairs(FLASK_ITEMS) do
         if frame.key == preferredKey then
             for _, ident in ipairs(frame.items) do
-                if CachedGetItemCount(ident) > 0 then
+                if BagCount(ident) > 0 then
                     return ident
                 end
             end
@@ -1074,7 +1074,7 @@ end
 local function FindFoodItem(preferredKey, lastUsedItemID)
     if preferredKey ~= "last_used" then
         for _, frame in ipairs(FOOD_ITEMS) do
-            if frame.key == preferredKey and CachedGetItemCount(frame.itemID) > 0 then
+            if frame.key == preferredKey and BagCount(frame.itemID) > 0 then
                 return frame.itemID
             end
         end
@@ -1083,12 +1083,12 @@ local function FindFoodItem(preferredKey, lastUsedItemID)
         local baseKey = preferredKey:gsub("^hearty_", "")
         if baseKey ~= preferredKey then
             for _, frame in ipairs(FOOD_ITEMS) do
-                if frame.key == baseKey and CachedGetItemCount(frame.itemID) > 0 then
+                if frame.key == baseKey and BagCount(frame.itemID) > 0 then
                     return frame.itemID
                 end
             end
         end
-    elseif lastUsedItemID and CachedGetItemCount(lastUsedItemID) > 0 then
+    elseif lastUsedItemID and BagCount(lastUsedItemID) > 0 then
         return lastUsedItemID
     end
     -- Fall back to the highest-quality food still in bags so the reminder
@@ -1096,7 +1096,7 @@ local function FindFoodItem(preferredKey, lastUsedItemID)
     -- edible remains. Runs only inside the resolve-on-change cache rebuild.
     local bestID, bestQ = nil, -1
     for _, frame in ipairs(FOOD_ITEMS) do
-        if CachedGetItemCount(frame.itemID) > 0 then
+        if BagCount(frame.itemID) > 0 then
             local q = 0
             if C_TradeSkillUI and C_TradeSkillUI.GetItemCraftedQualityByItemInfo then
                 local success, tier = pcall(C_TradeSkillUI.GetItemCraftedQualityByItemInfo, frame.itemID)
@@ -1115,13 +1115,13 @@ end
 
 local function FindWeaponEnchantItem(preferredKey, lastUsedItemID, targetCat)
     if preferredKey == "last_used" then
-        if lastUsedItemID and CachedGetItemCount(lastUsedItemID) > 0 then
+        if lastUsedItemID and BagCount(lastUsedItemID) > 0 then
             return lastUsedItemID
         end
         -- Fallback: first matching weapon enchant in bags
         for _, we in ipairs(WEAPON_ENCHANT_ITEMS) do
             local wt = we.weaponType
-            if ((wt == "NEUTRAL") or (wt == targetCat)) and CachedGetItemCount(we.itemID) > 0 then
+            if ((wt == "NEUTRAL") or (wt == targetCat)) and BagCount(we.itemID) > 0 then
                 return we.itemID
             end
         end
@@ -1131,7 +1131,7 @@ local function FindWeaponEnchantItem(preferredKey, lastUsedItemID, targetCat)
     for _, choice in ipairs(WEAPON_ENCHANT_CHOICES) do
         if choice.key == preferredKey then
             for _, we in ipairs(WEAPON_ENCHANT_ITEMS) do
-                if we.name == choice.name and CachedGetItemCount(we.itemID) > 0 then
+                if we.name == choice.name and BagCount(we.itemID) > 0 then
                     return we.itemID
                 end
             end
@@ -1175,11 +1175,11 @@ function REMIND.ResolveConsumables()
     -- Augment Rune: void, then ethereal, then Tidesworn (12.1); fall back to the
     -- void rune so an out-of-stock restock reminder can still render.
     local runeItem = nil
-    if CachedGetItemCount(259085) > 0 then
+    if BagCount(259085) > 0 then
         runeItem = 259085
-    elseif CachedGetItemCount(243191) > 0 then
+    elseif BagCount(243191) > 0 then
         runeItem = 243191
-    elseif CachedGetItemCount(274797) > 0 then
+    elseif BagCount(274797) > 0 then
         runeItem = 274797
     end
     R.rune.hasBags = (runeItem ~= nil)
@@ -1278,12 +1278,12 @@ function REMIND.ResolveConsumables()
     end
 
     -- Inky Black Potion: constant item; only availability is bag-derived.
-    R.inky.hasPotion = CachedGetItemCount(INKY_BLACK_ITEM) > 0
+    R.inky.hasPotion = BagCount(INKY_BLACK_ITEM) > 0
 
     -- Healthstone: constant texture; only availability is bag-derived.
     local hasStone = false
     for _, itemId in ipairs(HEALTHSTONE_ITEM_IDS) do
-        if CachedGetItemCount(itemId) > 0 then
+        if BagCount(itemId) > 0 then
             hasStone = true
             break
         end
@@ -1292,7 +1292,7 @@ function REMIND.ResolveConsumables()
 end
 
 Inner._bagCounts, Inner._IMBUE_EXCLUDE_SPELLS, Inner.AURAS = _bagCounts, _IMBUE_EXCLUDE_SPELLS, AURAS
-Inner.CachedGetItemCount, Inner.DTB_SPELL_ID = CachedGetItemCount, DTB_SPELL_ID
+Inner.CachedGetItemCount, Inner.DTB_SPELL_ID = BagCount, DTB_SPELL_ID
 Inner.FLASK_ITEMS, Inner.FOOD_ITEMS, Inner.INKY_BLACK_ITEM = FLASK_ITEMS, FOOD_ITEMS, INKY_BLACK_ITEM
 Inner.InvalidateItemCountCache, Inner.PALADIN_RITES = InvalidateItemCountCache, PALADIN_RITES
 Inner.PARTNERED_TRINKET, Inner.PET_CLASSES = PARTNERED_TRINKET, PET_CLASSES

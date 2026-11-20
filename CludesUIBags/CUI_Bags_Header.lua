@@ -186,21 +186,21 @@ local function CreateHeader()
     end
     -- The sort button is clickable only while no sort runs, and where it
     -- moves items only out of combat.
-    local function ApplySortEnabled()
+    local function SyncSortButton()
         local enabled = not sortLocked and not (InCombatLockdown() and SortMovesItems())
         sortBtn:EnableMouse(enabled)
         sortBtn.icon:SetAlpha(enabled and 0.9 or 0.2)
     end
     -- A view switch in combat re-runs it from the refresh (FinishRefresh).
-    CUI_Bags._applySortEnabled = ApplySortEnabled
+    CUI_Bags._applySortEnabled = SyncSortButton
     -- Combat edges only matter while the bags are open; the show edge catches
     -- up on any change while they were closed.
     local combatWatch = CreateFrame("Frame")
-    combatWatch:SetScript("OnEvent", ApplySortEnabled)
+    combatWatch:SetScript("OnEvent", SyncSortButton)
     CUI_Bags:HookScript("OnShow", function()
         combatWatch:RegisterEvent("PLAYER_REGEN_DISABLED")
         combatWatch:RegisterEvent("PLAYER_REGEN_ENABLED")
-        ApplySortEnabled()
+        SyncSortButton()
     end)
     CUI_Bags:HookScript("OnHide", function()
         combatWatch:UnregisterEvent("PLAYER_REGEN_DISABLED")
@@ -215,16 +215,16 @@ local function CreateHeader()
     local consolidator, retrier
     local function LockSort()
         sortLocked = true
-        ApplySortEnabled()
+        SyncSortButton()
     end
-    local function UnlockSort()
+    local function ReleaseSort()
         if not sortLocked then
             return
         end
         sortLocked = false
-        ApplySortEnabled()
+        SyncSortButton()
     end
-    CUI_Bags._unlockSort = UnlockSort
+    CUI_Bags._unlockSort = ReleaseSort
 
     local DoVisualSort -- forward declaration
 
@@ -552,13 +552,13 @@ local function CreateHeader()
             if combat then
                 CUI_Bags.refreshEnabled = true
                 CUI_Bags:RefreshInventory()
-                C_Timer.After(3, UnlockSort)
+                C_Timer.After(3, ReleaseSort)
                 return
             end
             C_Timer.After(0.3, function()
                 CUI_Bags.refreshEnabled = true
                 CUI_Bags:RefreshInventory()
-                C_Timer.After(3, UnlockSort)
+                C_Timer.After(3, ReleaseSort)
             end)
         end
 
@@ -708,7 +708,7 @@ local function CreateHeader()
             CUI_Bags:RefreshInventory()
         end
         LockSort()
-        C_Timer.After(3, UnlockSort)
+        C_Timer.After(3, ReleaseSort)
     end
 
     -- MultiBag sort defers to Blizzard's native sort (insecure-callable, no taint; BAG_UPDATE
@@ -724,7 +724,7 @@ local function CreateHeader()
             C_Container.SetSortBagsRightToLeft(false)
         end
         C_Container.SortBags()
-        C_Timer.After(3, UnlockSort)
+        C_Timer.After(3, ReleaseSort)
     end
 
     sortBtn:SetScript("OnClick", function()
@@ -787,7 +787,7 @@ local function CreateHeader()
     end)
     CUI_Bags._doVisualSort = DoVisualSort
     CUI_Bags._sortBtn = sortBtn
-    ApplySortEnabled() -- a /reload mid-combat builds the button locked
+    SyncSortButton() -- a /reload mid-combat builds the button locked
 
     local bagsButton = CreateFrame("Button", nil, headerBar)
     bagsButton:SetSize(24, 24)

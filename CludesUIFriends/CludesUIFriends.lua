@@ -1263,7 +1263,7 @@ local function SkinOneScrollbar(scrollList, scrollBar)
         knob:SetScript("OnUpdate", nil)
     end
 
-    local function UpdateScrollThumb()
+    local function SyncThumb()
         local ext = GetExtent()
         if ext >= 1 then
             rail:SetAlpha(0)
@@ -1286,7 +1286,7 @@ local function SkinOneScrollbar(scrollList, scrollBar)
         local step = StepToPct()
         local newPct = math.max(0, math.min(1, GetPct() - delta * step))
         scrollBar:SetScrollPercentage(newPct)
-        UpdateScrollThumb()
+        SyncThumb()
     end)
 
     local function ScrollThumbOnUpdate(self)
@@ -1304,7 +1304,7 @@ local function SkinOneScrollbar(scrollList, scrollBar)
         end
         local newPct = math.max(0, math.min(1, dragStartPct + deltaY / maxTravel))
         scrollBar:SetScrollPercentage(newPct)
-        UpdateScrollThumb()
+        SyncThumb()
     end
 
     knob:SetScript("OnMouseDown", function(self, mouseBtn)
@@ -1342,7 +1342,7 @@ local function SkinOneScrollbar(scrollList, scrollBar)
         local frac = (topY - curY - thumbH / 2) / (trackH - thumbH)
         frac = math.max(0, math.min(1, frac))
         scrollBar:SetScrollPercentage(frac)
-        UpdateScrollThumb()
+        SyncThumb()
         isDragging = true
         dragStartY = curY
         dragStartPct = frac
@@ -1356,12 +1356,12 @@ local function SkinOneScrollbar(scrollList, scrollBar)
     end)
 
     if scrollBar.RegisterCallback then
-        scrollBar:RegisterCallback("OnScroll", UpdateScrollThumb)
+        scrollBar:RegisterCallback("OnScroll", SyncThumb)
     end
     if scrollList.RegisterCallback then
-        scrollList:RegisterCallback("OnDataRangeChanged", UpdateScrollThumb)
+        scrollList:RegisterCallback("OnDataRangeChanged", SyncThumb)
     end
-    C_Timer.After(0.1, UpdateScrollThumb)
+    C_Timer.After(0.1, SyncThumb)
 end
 
 local function SkinBottomButton(button)
@@ -3054,7 +3054,7 @@ local function SkinFriendsFrame()
         _forceFriendSkin = false
         ProcessFriendButtons(force)
     end)
-    local function MarkSkinDirty(force)
+    local function QueueSkin(force)
         _forceFriendSkin = _forceFriendSkin or force
         local scrollBar = FriendsListFrame and FriendsListFrame.ScrollBox
         if not scrollBar or not scrollBar:IsVisible() or LegacyFriendsRetired() then
@@ -3077,7 +3077,7 @@ local function SkinFriendsFrame()
                 return
             end
             GetFFD(btnFrame).stampType = nil
-            MarkSkinDirty()
+            QueueSkin()
         end)
     end
 
@@ -3089,14 +3089,14 @@ local function SkinFriendsFrame()
     if FriendsListFrame then
         FriendsListFrame:HookScript("OnShow", function()
             _friendCacheDirty = true
-            MarkSkinDirty(true)
+            QueueSkin(true)
         end)
         FriendsListFrame:HookScript("OnHide", function()
             skinDriver:Hide()
             _forceFriendSkin = false
         end)
         if FriendsListFrame:IsVisible() then
-            MarkSkinDirty(true)
+            QueueSkin(true)
         end
     end
 
@@ -3104,7 +3104,7 @@ local function SkinFriendsFrame()
     friendsWatcher:SetScript("OnEvent", function(_, evt)
         _friendCacheDirty = true
         SyncFriendsTabLabels()
-        MarkSkinDirty(true)
+        QueueSkin(true)
     end)
 
     local function RegisterFriendsEvents()
@@ -3132,7 +3132,7 @@ local function SkinFriendsFrame()
     widget:HookScript("OnShow", function()
         RegisterFriendsEvents()
         _friendCacheDirty = true
-        MarkSkinDirty(true)
+        QueueSkin(true)
         local frameData = GetFFD(widget)
         if frameData.statusEvt then
             frameData.statusEvt:RegisterEvent("PLAYER_FLAGS_CHANGED")

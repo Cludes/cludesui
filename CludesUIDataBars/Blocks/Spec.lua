@@ -671,7 +671,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
         end
     end
 
-    local function HideAllPopups()
+    local function ClosePopups()
         if specPool and specPool._popup and specPool._popup:IsShown() then
             specPool._popup:Hide()
         end
@@ -914,10 +914,10 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
                     loadoutPool._popup:Hide()
                     return
                 end
-                HideAllPopups()
+                ClosePopups()
                 ToggleLoadoutPopup()
             elseif IsShiftKeyDown() then
-                HideAllPopups()
+                ClosePopups()
                 if PlayerSpellsUtil and PlayerSpellsUtil.ToggleClassTalentFrame then
                     PlayerSpellsUtil.ToggleClassTalentFrame()
                 elseif ToggleTalentFrame then
@@ -929,7 +929,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
                 lootPool._popup:Hide()
                 return
             end
-            HideAllPopups()
+            ClosePopups()
             ToggleLootSpecPopup()
         end
     end)
@@ -971,7 +971,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
 
     function instance:Disable()
         K.UnregisterInstEvents(self)
-        HideAllPopups()
+        ClosePopups()
         contentFrame:Hide()
     end
 
@@ -993,7 +993,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
     function instance:Destroy()
         self._dead = true
         blocks[self] = nil
-        HideAllPopups()
+        ClosePopups()
         contentFrame:Hide()
     end
 

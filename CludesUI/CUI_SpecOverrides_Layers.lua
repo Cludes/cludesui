@@ -69,7 +69,7 @@ end
 --  TBB_/TBBG_ keys are excluded (natively spec-scoped / globally shared).
 -------------------------------------------------------------------------------
 
-local function LiteProfile(folder)
+local function LiteProfileOf(folder)
     local valueA = CludesUI.Lite and CludesUI.Lite.GetAddon(folder, true)
     return valueA and valueA.db and valueA.db.profile or nil
 end
@@ -149,7 +149,7 @@ local function HarvestLayer(carry, base)
             end
         end
     end
-    local cdmStore = LiteProfile("CludesUICooldownManager")
+    local cdmStore = LiteProfileOf("CludesUICooldownManager")
     if cdmStore then
         layerRec.cdmPos = DeepCopy(cdmStore.cdmBarPositions or {})
         if cdmStore.cdmBars and cdmStore.cdmBars.bars then
@@ -160,7 +160,7 @@ local function HarvestLayer(carry, base)
             end
         end
     end
-    local ab = LiteProfile("CludesUIActionBars")
+    local ab = LiteProfileOf("CludesUIActionBars")
     if ab then
         layerRec.abPos = DeepCopy(ab.barPositions or {})
         if ab.bars then
@@ -454,7 +454,7 @@ local function ApplyLayer(layerRec, baseLayer)
             end
         end
     end
-    local cdmStore = LiteProfile("CludesUICooldownManager")
+    local cdmStore = LiteProfileOf("CludesUICooldownManager")
     if cdmStore then
         -- A layer harvested while CDM was disabled has no cdmPos; restore the
         -- baseline's instead of leaving the outgoing layer's positions live
@@ -508,7 +508,7 @@ local function ApplyLayer(layerRec, baseLayer)
             end
         end
     end
-    local ab = LiteProfile("CludesUIActionBars")
+    local ab = LiteProfileOf("CludesUIActionBars")
     if ab then
         local place = layerRec.abPos or (baseLayer and baseLayer.abPos)
         if place then
@@ -650,8 +650,8 @@ function CludesUI.SpecOverrides_ApplyUnlock(specId, force)
             end
             return added
         end
-        local cdmStore = LiteProfile("CludesUICooldownManager")
-        local ab = LiteProfile("CludesUIActionBars")
+        local cdmStore = LiteProfileOf("CludesUICooldownManager")
+        local ab = LiteProfileOf("CludesUIActionBars")
         local added = GapFill(cdmStore, "cdmBarPositions", goal and goal.cdmPos, base and base.cdmPos)
         if GapFill(ab, "barPositions", goal and goal.abPos, base and base.abPos) then
             added = true
@@ -1247,7 +1247,7 @@ end
 --- payload (bm2 spec forks) rides the same layer; 12.1-born profiles may have
 --- no legacy bmIndicators table at all, so either subtree qualifies the snap.
 local function BmHarvestLayer()
-    local rf = LiteProfile("CludesUIRaidFrames")
+    local rf = LiteProfileOf("CludesUIRaidFrames")
     if not rf then
         return nil
     end
@@ -1275,7 +1275,7 @@ local function BmApplyLayer(layerRec, skipPageRefresh)
     if not layerRec then
         return false
     end
-    local rf = LiteProfile("CludesUIRaidFrames")
+    local rf = LiteProfileOf("CludesUIRaidFrames")
     if not rf then
         return false
     end
@@ -2326,5 +2326,5 @@ Inner.BmSessionEngage, Inner.DmApplyLayer = BmSessionEngage, DmApplyLayer
 Inner.DmHarvestLayer, Inner.DmOwnerGid, Inner.DmSessionEngage = DmHarvestLayer, DmOwnerGid, DmSessionEngage
 Inner.GetBmStore, Inner.GetCondBmStore, Inner.GetCondDmStore = GetBmStore, GetCondBmStore, GetCondDmStore
 Inner.GetDmStore, Inner.IsTBBChildKey, Inner.LayerSkipsKey = GetDmStore, IsTBBChildKey, LayerSkipsKey
-Inner.LiteProfile = LiteProfile
+Inner.LiteProfile = LiteProfileOf
 Inner.broken = false

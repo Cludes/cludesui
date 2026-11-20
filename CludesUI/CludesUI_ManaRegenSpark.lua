@@ -191,7 +191,7 @@ end)
 -- The cast event is heard while at least one attached host bar is visible,
 -- UNIT_POWER_UPDATE while one of those is in Regen Ticks mode. When the last
 -- visible host goes, both are dropped and the cycle ends.
-local function Listen()
+local function SyncListeners()
     local enabled, tk = false, false
     for _, hgt in pairs(hosts) do
         if hgt.bar:IsVisible() then
@@ -227,7 +227,7 @@ end
 local function OnHostShow(bar)
     local hgt = built[bar]
     if hosts[hgt.key] == hgt then
-        Listen()
+        SyncListeners()
         Arm(hgt)
     end
 end
@@ -235,7 +235,7 @@ end
 local function OnHostHide(bar)
     local hgt = built[bar]
     if hosts[hgt.key] == hgt then
-        Listen()
+        SyncListeners()
     end
 end
 
@@ -270,7 +270,7 @@ function MRS.Attach(key, bar, ticks)
         -- Same bar: only a mode change needs the events and the spark redone.
         if hgt.ticks ~= ticks then
             hgt.ticks = ticks
-            Listen()
+            SyncListeners()
             Arm(hgt)
         end
         return
@@ -280,7 +280,7 @@ function MRS.Attach(key, bar, ticks)
     end
     hgt.key, hgt.ticks = key, ticks
     hosts[key] = hgt
-    Listen()
+    SyncListeners()
     Arm(hgt)
 end
 
@@ -291,7 +291,7 @@ function MRS.Detach(key)
     end
     hosts[key] = nil
     hgt.overlay:Hide()
-    Listen()
+    SyncListeners()
 end
 
 -- The host reports whether its bar shows mana. Kept while detached, so an

@@ -2018,7 +2018,7 @@ local function InitializeFrames()
     mod.UF_MINI_OF = { player = "pet", target = "targettarget", focus = "focustarget" }
 
     local _ufInCombat = InCombatLockdown()
-    local function UpdateFrameVisibility()
+    local function SyncFramesShown()
         -- Do NOT return early during combat lockdown. Alpha operations
         -- (SetAlpha) are not restricted and must run on combat transitions.
         -- Show/Hide and SetAttribute ARE restricted; those are guarded below.
@@ -2334,7 +2334,7 @@ local function InitializeFrames()
         end
         mod.SyncHealthVisibilityEvents()
     end
-    mod.UpdateFrameVisibility = UpdateFrameVisibility
+    mod.UpdateFrameVisibility = SyncFramesShown
 
     if not frameList._visFrame then
         frameList._visFrame = CreateFrame("Frame")
@@ -2368,16 +2368,16 @@ local function InitializeFrames()
             _ufInCombat = true
             -- Alpha-only update (SetAlpha is not restricted during lockdown).
             -- Show/Hide paths inside UpdateFrameVisibility are guarded by isLocked.
-            UpdateFrameVisibility()
+            SyncFramesShown()
         elseif evt == "PLAYER_REGEN_ENABLED" then
             _ufInCombat = false
-            UpdateFrameVisibility()
+            SyncFramesShown()
         else
             -- Defer to next frame to avoid taint from secure execution paths
-            C_Timer.After(0, UpdateFrameVisibility)
+            C_Timer.After(0, SyncFramesShown)
         end
     end)
-    UpdateFrameVisibility()
+    SyncFramesShown()
 
     ---------------------------------------------------------------------------
     --  Portrait border color: update when target/focus unit changes
@@ -2447,7 +2447,7 @@ local function InitializeFrames()
     -- time -- when "targettarget"/"focustarget"/"pet" was not yet a resolvable unit --
     -- falls back to white/reaction-nil and never recovers. Re-apply on the parent's
     -- target change and on its UNIT_TARGET, and on UNIT_PET for the pet frame.
-    local function ReapplyFrameTextClassColors(unitName)
+    local function RepaintTextClassColors(unitName)
         local widget = frameList[unitName]
         local cfg = widget and saved.profile[unitName]
         if not cfg then
@@ -2493,15 +2493,15 @@ local function InitializeFrames()
     end
     frameList._miniTextClassUpdater:SetScript("OnEvent", function(_, evt, arg1)
         if evt == "PLAYER_TARGET_CHANGED" then
-            ReapplyFrameTextClassColors("targettarget")
+            RepaintTextClassColors("targettarget")
         elseif evt == "PLAYER_FOCUS_CHANGED" then
-            ReapplyFrameTextClassColors("focustarget")
+            RepaintTextClassColors("focustarget")
         elseif evt == "UNIT_PET" then
-            ReapplyFrameTextClassColors("pet")
+            RepaintTextClassColors("pet")
         elseif arg1 == "target" then
-            ReapplyFrameTextClassColors("targettarget")
+            RepaintTextClassColors("targettarget")
         elseif arg1 == "focus" then
-            ReapplyFrameTextClassColors("focustarget")
+            RepaintTextClassColors("focustarget")
         end
     end)
 

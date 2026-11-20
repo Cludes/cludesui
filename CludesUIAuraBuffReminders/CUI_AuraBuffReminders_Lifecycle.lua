@@ -77,7 +77,7 @@ local pendingOOCRefresh = false
 local hostFrame = CreateFrame("Frame")
 
 -- Toggles broad vs player-only UNIT_AURA registration; file-scope so OnEnable and the event handler can both use it.
-local function _setBroad(on)
+local function _setBroadWatch(on)
     if on and not _groupAuraBroadActive then
         hostFrame:RegisterEvent("UNIT_AURA")
         _groupAuraBroadActive = true
@@ -466,12 +466,12 @@ function REMIND:OnEnable()
             -- Start broad if OOC; in combat only while a group reader needs it
             -- (the same predicate as the pull edge).
             if InCombat() and not REMIND.KeepGroupAuraInCombat() then
-                _setBroad(false)
+                _setBroadWatch(false)
             else
-                _setBroad(true)
+                _setBroadWatch(true)
             end
         else
-            _setBroad(false)
+            _setBroadWatch(false)
             hostFrame:UnregisterEvent("GROUP_JOINED")
             hostFrame:UnregisterEvent("GROUP_LEFT")
         end
@@ -645,7 +645,7 @@ hostFrame:SetScript("OnEvent", function(_, e, firstArg, arg2, arg3)
             MarkDungeonPullStarted()
             -- Drops broad UNIT_AURA in combat unless a group reader needs it (EABR.KeepGroupAuraInCombat).
             if _needGroupAura and not REMIND.KeepGroupAuraInCombat() then
-                _setBroad(false)
+                _setBroadWatch(false)
             end
             -- Only flag Hunter's Mark needed if the target doesn't already have it
             SetHuntersMarkNeeded(true)
@@ -684,7 +684,7 @@ hostFrame:SetScript("OnEvent", function(_, e, firstArg, arg2, arg3)
         SetInCombat(false)
         -- Restore broad UNIT_AURA for OOC group buff tracking
         if _needGroupAura then
-            _setBroad(true)
+            _setBroadWatch(true)
         end
         -- Leaving combat: clean up combat icons, do full OOC refresh with secure buttons
         SetHuntersMarkNeeded(false)

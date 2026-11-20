@@ -945,7 +945,7 @@ end
 -- CallbackHandler keys registrations by it, so reuse would clobber one module. The
 -- provider CHECKBOX key stays shared (ns.NICK_ADDON/"CUI") so one toggle drives raid AND unit frames.
 do
-    local function RefreshNames()
+    local function RedrawNames()
         if mod.RefreshAllUnitNames then
             mod.RefreshAllUnitNames()
         end
@@ -955,7 +955,7 @@ do
             return
         end
         if EasyNicknameAPI and EasyNicknameAPI.RegisterCallback then
-            EasyNicknameAPI.RegisterCallback("SurfaceNicknamesChanged", RefreshNames, "CludesUIUnitFrames")
+            EasyNicknameAPI.RegisterCallback("SurfaceNicknamesChanged", RedrawNames, "CludesUIUnitFrames")
             mod._methodInternalSurfaceNickHooked = true
         end
     end
@@ -964,8 +964,8 @@ do
             return true
         end
         if NSAPI and NSAPI.RegisterCallback then
-            NSAPI.RegisterCallback("CludesUIUnitFrames", "NSRT_NICKNAME_UPDATED", RefreshNames)
-            NSAPI.RegisterCallback("CludesUIUnitFrames", mod.EXT_NICK.nsToggle, RefreshNames)
+            NSAPI.RegisterCallback("CludesUIUnitFrames", "NSRT_NICKNAME_UPDATED", RedrawNames)
+            NSAPI.RegisterCallback("CludesUIUnitFrames", mod.EXT_NICK.nsToggle, RedrawNames)
             mod._nsrtNickHooked = true
             return true
         end
@@ -982,12 +982,12 @@ do
                 "TimelineReminders_NicknameToggle",
                 function(_, _, addOnName)
                     if addOnName == mod.NICK_ADDON then
-                        RefreshNames()
+                        RedrawNames()
                     end
                 end
             )
             TR.RegisterCallback("CludesUIUnitFrames", "TimelineReminders_NicknameUpdate", function()
-                RefreshNames()
+                RedrawNames()
             end)
             mod._trNickHooked = true
             return true
@@ -1020,7 +1020,7 @@ do
             local pending
             local function Flush()
                 pending = nil
-                RefreshNames()
+                RedrawNames()
             end
             local function QueueRefresh()
                 if pending then
@@ -1032,7 +1032,7 @@ do
             CN.RegisterCallback("CludesUIUnitFrames", "Name_Added", QueueRefresh)
             CN.RegisterCallback("CludesUIUnitFrames", "Name_Update", QueueRefresh)
             CN.RegisterCallback("CludesUIUnitFrames", "Name_Removed", QueueRefresh)
-            RefreshNames()
+            RedrawNames()
         end)
     end
 end

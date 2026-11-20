@@ -1109,27 +1109,27 @@ do
     -- so one call at load is not enough: re-apply on PLAYER_ENTERING_WORLD,
     -- EDIT_MODE_LAYOUTS_UPDATED, EditModeManagerFrame show/hide, and the
     -- CompactRaidFrameManager_UpdateShown global.
-    local function applyEditModeOverlaySuppression()
+    local function hideEditModeOverlays()
         -- Manager omitted on purpose: the shared "Hide Blizzard Party Panel" toggle owns it.
         hideEditModeOverlay(CompactRaidFrameContainer)
         -- Party overlays unconditional: Blizzard's party frame is empty/hidden when solo, so no group gate is needed.
         hideEditModeOverlay(PartyFrame)
         hideEditModeOverlay(_G["CompactPartyFrame"])
     end
-    mod._ApplyEditModeOverlaySuppression = applyEditModeOverlaySuppression
+    mod._ApplyEditModeOverlaySuppression = hideEditModeOverlays
 
     local editModeWatcher = mod.TakeShell()
     editModeWatcher:RegisterEvent("PLAYER_ENTERING_WORLD")
     editModeWatcher:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED")
     editModeWatcher:SetScript("OnEvent", function()
-        C_Timer.After(0, applyEditModeOverlaySuppression)
+        C_Timer.After(0, hideEditModeOverlays)
     end)
 
     -- Edit Mode and the raid manager re-show the container through this global;
     -- re-assert our suppression whenever it fires.
     if type(_G.CompactRaidFrameManager_UpdateShown) == "function" then
         hooksecurefunc("CompactRaidFrameManager_UpdateShown", function()
-            C_Timer.After(0, applyEditModeOverlaySuppression)
+            C_Timer.After(0, hideEditModeOverlays)
         end)
     end
 
@@ -1144,10 +1144,10 @@ do
         fd.rfOverlayHooked = true
         -- OnShow = Edit Mode entered (overlay appears); Hide = Edit Mode closed.
         EditModeManagerFrame:HookScript("OnShow", function()
-            C_Timer.After(0, applyEditModeOverlaySuppression)
+            C_Timer.After(0, hideEditModeOverlays)
         end)
         hooksecurefunc(EditModeManagerFrame, "Hide", function()
-            C_Timer.After(0, applyEditModeOverlaySuppression)
+            C_Timer.After(0, hideEditModeOverlays)
         end)
     end
     if EditModeManagerFrame then

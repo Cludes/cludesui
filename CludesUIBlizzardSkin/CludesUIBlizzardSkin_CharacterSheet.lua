@@ -2135,7 +2135,7 @@ local function SkinCharacterSheet()
         GameTooltip:Hide()
     end)
 
-    local function UpdateItemLevelDisplay()
+    local function SyncItemLevel()
         local avgItemLevel, avgItemLevelEquipped, avgItemLevelPvP = GetAverageItemLevel()
         local avgFormatted = format("%.2f", avgItemLevel)
         local avgEquippedFormatted = format("%.2f", avgItemLevelEquipped)
@@ -2234,7 +2234,7 @@ local function SkinCharacterSheet()
                 return
             end
             _betterDirty = true
-            UpdateItemLevelDisplay()
+            SyncItemLevel()
         end)
     end
     iLvlUpdateFrame:SetScript("OnEvent", function(_, evt, unitToken)
@@ -2253,17 +2253,17 @@ local function SkinCharacterSheet()
             return
         end
         _betterDirty = true
-        UpdateItemLevelDisplay()
+        SyncItemLevel()
     end)
     widget:HookScript("OnShow", function()
         _betterDirty = true
-        UpdateItemLevelDisplay()
+        SyncItemLevel()
     end)
-    UpdateItemLevelDisplay()
+    SyncItemLevel()
 
     -- Store callback for option changes (M+ rating and PvP ilvl)
     CludesUI._updateMythicRatingDisplay = function()
-        UpdateItemLevelDisplay()
+        SyncItemLevel()
         if CludesUI._updateScrollHeaderOffset then
             CludesUI._updateScrollHeaderOffset()
         end
@@ -5605,7 +5605,7 @@ local function SkinCharacterSheet()
     local MAX_WAIT = 5
 
     -- Event-driven per-slot label refresh; item-link cache guards redundant work, events catch upgrade/enchant/socket changes without polling.
-    local function RefreshAllSlotLabels()
+    local function RedrawSlotLabels()
         if CludesUIDB and (CludesUIDB.themedCharacterSheet == false or CludesUI.BlizzWindowSkinsKilled()) then
             return
         end
@@ -5651,7 +5651,7 @@ local function SkinCharacterSheet()
         for _, slotKey in ipairs(slotList) do
             itemCache[slotKey] = false
         end
-        RefreshAllSlotLabels()
+        RedrawSlotLabels()
     end
 
     if not GetFFD(widget).itemLevelMonitor then
@@ -5684,7 +5684,7 @@ local function SkinCharacterSheet()
         flushFn:Hide()
         flushFn:SetScript("OnUpdate", function(self)
             self:Hide()
-            RefreshAllSlotLabels()
+            RedrawSlotLabels()
         end)
         watcher:SetScript("OnEvent", function(_, evt, arg1)
             if evt == "GET_ITEM_INFO_RECEIVED" or evt == "TOOLTIP_DATA_UPDATE" then
@@ -5696,7 +5696,7 @@ local function SkinCharacterSheet()
                 end
                 retryTimer = C_Timer.NewTimer(0.12, function()
                     retryTimer = nil
-                    RefreshAllSlotLabels()
+                    RedrawSlotLabels()
                 end)
                 return
             end
@@ -5722,11 +5722,11 @@ local function SkinCharacterSheet()
             for slotKey in pairs(rereadOnShow) do
                 itemCache[slotKey], rereadOnShow[slotKey] = false, nil
             end
-            RefreshAllSlotLabels()
+            RedrawSlotLabels()
         end)
         -- Skinning is deferred to first open, so the hook above is installed
         -- mid-show and misses this open event; refresh now to decorate it.
-        RefreshAllSlotLabels()
+        RedrawSlotLabels()
     end
 
     -- Same deferred-skin timing for gem icons: the OnShow hook above is installed

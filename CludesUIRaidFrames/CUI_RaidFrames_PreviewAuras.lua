@@ -58,7 +58,7 @@ end
 -- the party frames (size, position, colors); raid preview reads the live profile
 -- through the real-preview effective overlay (below) so an open panel's view
 -- swap never leaks into the preview.
-local function PvSettings()
+local function PreviewCfg()
     return (mod._partyPvActive and mod._scaledPartyProxy) or mod._pvOverlayProxy or saved.profile
 end
 -- Class tokens for icon selection: ApplyPartyPreviewData hands the party tokens
@@ -241,7 +241,7 @@ end
 -- Pick a random icon for the given type and frame index
 local function PvAuraPickIcon(auraType, frameIndex)
     if auraType == "def" then
-        local s2 = PvSettings()
+        local s2 = PreviewCfg()
         local showDef = s2 and s2.showDefensives
         local showExt = s2 and s2.showExternals
         local pool = {}
@@ -270,7 +270,7 @@ end
 
 -- Position a preview aura icon on a frame (reuses anchor logic)
 local function PvAuraAnchor(iconTex, frame, auraType, slot, totalShown)
-    local s2 = PvSettings()
+    local s2 = PreviewCfg()
 
     -- Debuffs use the shared grid layout (same DebuffGridPoint helper as the live
     -- frames) so the preview matches exactly -- including row wrapping and CENTER
@@ -359,7 +359,7 @@ local function PvAuraApply(frameIndex, auraType, slotIndex)
         return
     end
 
-    local s2 = PvSettings()
+    local s2 = PreviewCfg()
     local dur = 8 + math.random() * 4 -- 8-12 seconds
     local startTime = GetTime()
 
@@ -506,7 +506,7 @@ local function PvAuraTick()
         return
     end
     local nowTime = GetTime()
-    local s2 = PvSettings()
+    local s2 = PreviewCfg()
     local wantDef = mod._defensivesPreviewVisible and (s2.showDefensives or s2.showExternals)
     local wantDb = mod._debuffsPreviewVisible and s2.debuffFilter ~= "none"
 
@@ -783,6 +783,6 @@ local function StopPvAuraTicker()
 end
 
 Inner.PvActive, Inner.PvAuraReanchorFrame, Inner.PvFrames = PvActive, PvAuraReanchorFrame, PvFrames
-Inner.PvSettings, Inner.StartPvAuraTicker = PvSettings, StartPvAuraTicker
+Inner.PvSettings, Inner.StartPvAuraTicker = PreviewCfg, StartPvAuraTicker
 Inner.StopPvAuraTicker = StopPvAuraTicker
 Inner.broken = false

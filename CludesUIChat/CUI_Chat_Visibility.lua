@@ -294,22 +294,22 @@ end
 -- idle-fade passthrough is engaged (never for the "never" hard hide, never
 -- while visible): one rect test 5x/sec, cancelled the moment chat reveals.
 local _ptWakeTicker
-local function StopPTWake()
+local function CancelWakeTicker()
     if _ptWakeTicker then
         _ptWakeTicker:Cancel()
         _ptWakeTicker = nil
     end
 end
 local function StartPTWake()
-    StopPTWake()
+    CancelWakeTicker()
     _ptWakeTicker = C_Timer.NewTicker(0.2, function()
         if not _chatPassthrough or not _idleFadeActive or not _visChatVisible then
-            StopPTWake()
+            CancelWakeTicker()
             return
         end
         local shade = mod._chatHoverOverlay
         if shade and shade:IsMouseOver() then
-            StopPTWake()
+            CancelWakeTicker()
             if CHAT.ResetIdleTimer then
                 CHAT.ResetIdleTimer()
             end
@@ -330,7 +330,7 @@ end
 local _chromeWasShown = setmetatable({}, { __mode = "k" })
 local _chromeList = {}
 
-local function SetChatStackShown(isShown)
+local function ShowChatStack(isShown)
     -- Gate for SyncChatFrameState: the panels' shown-follow must not undo
     -- this hide (the Blizzard frames stay shown, so the follow would).
     mod._chatStackHidden = not isShown
@@ -412,7 +412,7 @@ end
 local function ChatPMRegenReapply()
     PassthroughFrames(_chatPassthrough)
     if _chatPassthrough and not _visChatVisible then
-        SetChatStackShown(false)
+        ShowChatStack(false)
     end
 end
 ArmChatPMRegen = function()
@@ -434,12 +434,12 @@ local function SetChatMousePassthrough(enabled)
     -- The engage direction keeps the reverse order: sweep first (its
     -- passthrough flag alone forces click-off), stack-hide after.
     if not enabled then
-        SetChatStackShown(true)
+        ShowChatStack(true)
     end
     PassthroughFrames(enabled)
     if enabled then
         if not _visChatVisible then
-            SetChatStackShown(false)
+            ShowChatStack(false)
             -- A visibility hide counts as idle: the reveal then finds the chat
             -- already faded instead of showing it until the leftover idle delay
             -- runs out. Here, not at the flip, so the hide keeps its own fade speed.
@@ -464,7 +464,7 @@ local function SetChatMousePassthrough(enabled)
             StartPTWake()
         end
     else
-        StopPTWake()
+        CancelWakeTicker()
         -- Our sidebar always runs with motion on (hover fade/reveal); the
         -- mode-specific click state is re-derived by ApplySidebarVisibility.
         local cf1 = _G.ChatFrame1
@@ -498,7 +498,7 @@ local function RequestPassthroughSweep()
         end
         PassthroughFrames(true)
         if not _visChatVisible then
-            SetChatStackShown(false)
+            ShowChatStack(false)
         end
     end)
 end
@@ -669,13 +669,13 @@ function CHAT.SetChatAlpha(alpha)
     -- hover-wake poll / stack hide are never switched. Switch them here.
     if _chatPassthrough and wasVisible ~= _visChatVisible then
         if _visChatVisible then
-            SetChatStackShown(true)
+            ShowChatStack(true)
             if _idleFadeActive and CHAT.DB().idleFadeEnabled ~= false then
                 StartPTWake()
             end
         else
-            StopPTWake()
-            SetChatStackShown(false)
+            CancelWakeTicker()
+            ShowChatStack(false)
         end
     end
     _SetAlphaTarget(alpha)

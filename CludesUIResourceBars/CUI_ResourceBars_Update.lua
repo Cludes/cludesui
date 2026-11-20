@@ -1614,7 +1614,7 @@ IP.UpdateText = function()
     classFrame._countText:SetText(stacks > 0 and tostring(stacks) or "")
 end
 
-local function UpdateSecondaryResource()
+local function SyncSecondary()
     -- Blizzard Class Resource Art stands in: the pips are unseen, paint nothing.
     if mod._erbArtOn then
         return
@@ -3883,7 +3883,7 @@ mod.PollTick = CludesUI.Tick.NewAnimTicker(CreateFrame("Frame"), function()
     end
     local pwr, typ = cs.power, cs.type
     if _essenceNextTick and pwr == PT.ESSENCE then
-        UpdateSecondaryResource()
+        SyncSecondary()
         return true
     end
     mod._pollFlip = not mod._pollFlip
@@ -3894,12 +3894,12 @@ mod.PollTick = CludesUI.Tick.NewAnimTicker(CreateFrame("Frame"), function()
         -- cs.frac (Destruction shard fragments): sub-unit movement, including
         -- out-of-combat decay, has no reliable event. The fragment-aware value
         -- guard costs one UnitPower per fire when nothing moved.
-        UpdateSecondaryResource()
+        SyncSecondary()
         return true
     end
     -- Tracked buffs on an enabled bar: the safety poll behind UNIT_AURA.
     if mod.SecTracks() then
-        UpdateSecondaryResource()
+        SyncSecondary()
         return true
     end
 end, 0.05)
@@ -4007,7 +4007,7 @@ do
             local wid = mod.SpenderScan(t.entry)
             if wid ~= t.w then
                 t.w = wid
-                UpdateSecondaryResource()
+                SyncSecondary()
             end
         end
         if pspend then
@@ -4216,6 +4216,6 @@ end, 0.05)
 
 Inner.HandleIronfurCast, Inner.ShouldShowBar = HandleIronfurCast, ShouldShowBar
 Inner.ShouldShowSecondary, Inner.UpdateHealthBar = ShouldShowSecondary, UpdateHealthBar
-Inner.UpdatePrimaryBar, Inner.UpdateSecondaryResource = UpdatePrimaryBar, UpdateSecondaryResource
+Inner.UpdatePrimaryBar, Inner.UpdateSecondaryResource = UpdatePrimaryBar, SyncSecondary
 Inner.UpdateVisibility = UpdateVisibility
 Inner.broken = false

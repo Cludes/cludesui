@@ -607,7 +607,7 @@ end
 -- ends on the right and sweeps over a zone below it (back). Each is a
 -- back/front texture pair built on first enable and placed once per swing; GO
 -- draws over STILL. None on an idle, waiting or combined off-hand row.
-local function HideZone(z)
+local function HideSwingZone(z)
     if z then
         z.back:Hide()
         z.front:Hide()
@@ -617,8 +617,8 @@ end
 local function HideZones(swingRow)
     local zoneList = swingRow._zones
     if zoneList then
-        HideZone(zoneList.lat)
-        HideZone(zoneList.aim)
+        HideSwingZone(zoneList.lat)
+        HideSwingZone(zoneList.aim)
     end
 end
 
@@ -626,7 +626,7 @@ local function StyleZone(swingRow, key, enabled, texPath, red, green, blue, a, b
     local zoneList = swingRow._zones
     local z = zoneList and zoneList[key]
     if not enabled or swingRow._merged then
-        HideZone(z)
+        HideSwingZone(z)
         return
     end
     if not z then
@@ -652,7 +652,7 @@ end
 -- `offset`: seconds the zone sits back from that end (STILL, one latency).
 local function PlaceZone(swingRow, z, conf, secs, dur, deplete, offset)
     if not (secs and secs > 0 and dur and dur > 0) then
-        HideZone(z)
+        HideSwingZone(z)
         return
     end
     local wid = swingRow._clip:GetWidth()
@@ -662,7 +662,7 @@ local function PlaceZone(swingRow, z, conf, secs, dur, deplete, offset)
     local off = (offset and offset > 0) and wid * math.min(1, offset / dur) or 0
     local room = wid - off
     if room < 1 then
-        HideZone(z)
+        HideSwingZone(z)
         return
     end
     local zw = wid * math.min(1, secs / dur)
@@ -761,14 +761,14 @@ local function UpdateZones(swingRow, conf, dur)
         if GuideOn(conf) and not swingRow._merged and not WindRow(swingRow, conf) then
             PlaceZone(swingRow, lat, conf, rtt, dur, conf.depleteFill)
         else
-            HideZone(lat)
+            HideSwingZone(lat)
         end
     end
     if aimTex then
         if StillRow(swingRow, conf) then
             PlaceZone(swingRow, aimTex, conf, AIM_TIME, dur, conf.depleteFill, rtt)
         else
-            HideZone(aimTex)
+            HideSwingZone(aimTex)
         end
     end
 end

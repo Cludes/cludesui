@@ -673,7 +673,7 @@ end
 
 local MAX_TIER = 13 -- 1-11, then ? and ??
 
-local function ChosenTiers()
+local function PickedTiers()
     local tbl = FinderCfg().delveTiers
     if type(tbl) ~= "table" then
         return nil
@@ -688,7 +688,7 @@ local function ChosenTiers()
 end
 
 local function DelveFilterActive()
-    return SP and SP.categoryID == DELVES and (ChosenDelves() ~= nil or ChosenTiers() ~= nil) or false
+    return SP and SP.categoryID == DELVES and (ChosenDelves() ~= nil or PickedTiers() ~= nil) or false
 end
 
 -- delve / tier filter (unknown activity passes).
@@ -703,7 +703,7 @@ local function DelveKeep(details)
     if chosen and not chosen[skinData.groupID] then
         return false
     end
-    local tiers = ChosenTiers()
+    local tiers = PickedTiers()
     if tiers and skinData.tier and not tiers[skinData.tier] then
         return false
     end
@@ -3855,7 +3855,7 @@ local function BuildTierMenu()
         tierMenu.items[tier] = MenuItem(tierMenu, posY, XF.TierLabel(tier), function()
             local tbl = Tiers()
             tbl[tier] = (not tbl[tier]) or nil
-            local _, n = ChosenTiers()
+            local _, n = PickedTiers()
             if n == MAX_TIER then
                 wipe(tbl)
             end
@@ -3881,7 +3881,7 @@ local function PaintTierMenu()
     if not (tierMenu and tierMenu:IsShown()) then
         return
     end
-    local chosen = ChosenTiers()
+    local chosen = PickedTiers()
     tierMenu.items.all:SetChecked(chosen == nil)
     for tier = 1, MAX_TIER do
         tierMenu.items[tier]:SetChecked(chosen ~= nil and chosen[tier] == true)
@@ -3973,7 +3973,7 @@ Paint = function()
         XF.PaintLabel(difficultyBtn)
     end
     if tierBtn then
-        local chosen, n = ChosenTiers()
+        local chosen, n = PickedTiers()
         if chosen then
             local textValue = CludesUI.Lf("Tier (%d)", n)
             if n == 1 then
@@ -4490,7 +4490,7 @@ function mod.Search_Rows()
 end
 
 -- lays the panel out. blizzard's frames only move out of combat
-local function Layout()
+local function LayoutPanel()
     if not (SP and SP:IsVisible()) then
         return
     end
@@ -4735,8 +4735,8 @@ local function Layout()
     XF.PinBottomButtons(SP, XF.SEARCH_LEFT, "SignUpButton")
     Paint()
 end
-mod.Search_Layout = Layout
-XF.Layout = Layout
+mod.Search_Layout = LayoutPanel
+XF.Layout = LayoutPanel
 XF.SEARCH_LEFT = { "BackButton", "BackToGroupButton" }
 
 -- first show asks for this season's m+ maps
@@ -4748,7 +4748,7 @@ function XF.PanelShown()
             C_MythicPlus.RequestMapInfo()
         end
     end
-    Layout()
+    LayoutPanel()
 end
 
 -- bottom row: the buttons split the width.
@@ -5384,7 +5384,7 @@ local function Init()
     -- A new category: the row filters start over.
     hooksecurefunc("LFGListSearchPanel_SetCategory", function()
         XF.NewPass()
-        Layout()
+        LayoutPanel()
     end)
     -- remember results for the new-group color
     hooksecurefunc("LFGListSearchPanel_UpdateResultList", function()
@@ -5434,9 +5434,9 @@ local function Init()
         end
         -- new m+ maps: squares rebuild on the next layout
         XF.dungeonsDirty = true
-        Layout()
+        LayoutPanel()
     end)
-    Layout()
+    LayoutPanel()
 end
 
 function mod.Search_OnEnable()

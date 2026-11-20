@@ -543,7 +543,7 @@ CludesUI._Serializer = Serializer
 -------------------------------------------------------------------------------
 --  Deep copy utility
 -------------------------------------------------------------------------------
-local function DeepCopy(src, seen)
+local function CopyDeep(src, seen)
     if type(src) ~= "table" then
         return src
     end
@@ -558,7 +558,7 @@ local function DeepCopy(src, seen)
     for key, val in pairs(src) do
         -- Skip frame references and other userdata that can't be serialized
         if type(val) ~= "userdata" and type(val) ~= "function" then
-            duplicate[key] = DeepCopy(val, seen)
+            duplicate[key] = CopyDeep(val, seen)
         end
     end
     return duplicate
@@ -569,12 +569,12 @@ local function DeepMerge(destination, src)
         if type(val) == "table" and type(destination[key]) == "table" then
             DeepMerge(destination[key], val)
         else
-            destination[key] = DeepCopy(val)
+            destination[key] = CopyDeep(val)
         end
     end
 end
 
-CludesUI._DeepCopy = DeepCopy
+CludesUI._DeepCopy = CopyDeep
 
 -------------------------------------------------------------------------------
 --  Selective-layout core helpers (shared by export, import, and the
@@ -700,7 +700,7 @@ function CludesUI.FilterLayoutToFolders(layout, folderSet, keyToFolder)
                 and endpointOK(childFrame)
                 and (endpointOK(details.target) or (isEdge and isEdge(details.target)))
             then
-                output.anchors[childFrame] = DeepCopy(details)
+                output.anchors[childFrame] = CopyDeep(details)
             end
         end
     end
@@ -863,10 +863,10 @@ function CludesUI.MergeImportedLayout(baseTbl, incoming, importedFolders)
     incoming = (type(incoming) == "table") and incoming or {}
     importedFolders = importedFolders or {}
     local output = {
-        anchors = DeepCopy(baseTbl.anchors or {}),
-        widthMatch = DeepCopy(baseTbl.widthMatch or {}),
-        heightMatch = DeepCopy(baseTbl.heightMatch or {}),
-        phantomBounds = DeepCopy(baseTbl.phantomBounds or {}),
+        anchors = CopyDeep(baseTbl.anchors or {}),
+        widthMatch = CopyDeep(baseTbl.widthMatch or {}),
+        heightMatch = CopyDeep(baseTbl.heightMatch or {}),
+        phantomBounds = CopyDeep(baseTbl.phantomBounds or {}),
     }
     -- 1) Drop base entries OWNED by an imported module (child in importedFolders),
     --    so the imported module's layout fully replaces the base's for that module.
@@ -895,7 +895,7 @@ function CludesUI.MergeImportedLayout(baseTbl, incoming, importedFolders)
     -- 2) Overlay the imported entries (already filtered to the imported modules).
     if type(incoming.anchors) == "table" then
         for childFrame, details in pairs(incoming.anchors) do
-            output.anchors[childFrame] = DeepCopy(details)
+            output.anchors[childFrame] = CopyDeep(details)
         end
     end
     if type(incoming.widthMatch) == "table" then
@@ -1034,18 +1034,18 @@ local function SnapshotUnlockLayout()
         ba, bwm, bhm, bwx, bhx = CludesUI.SpecOverrides_UnlockBaselineLinks()
     end
     local layoutSnap = {
-        anchors = DeepCopy(ba or CludesUIDB.unlockAnchors or {}),
-        widthMatch = DeepCopy(bwm or CludesUIDB.unlockWidthMatch or {}),
-        heightMatch = DeepCopy(bhm or CludesUIDB.unlockHeightMatch or {}),
+        anchors = CopyDeep(ba or CludesUIDB.unlockAnchors or {}),
+        widthMatch = CopyDeep(bwm or CludesUIDB.unlockWidthMatch or {}),
+        heightMatch = CopyDeep(bhm or CludesUIDB.unlockHeightMatch or {}),
         -- Match extras ride with the links, from the same source.
-        widthMatchExtra = DeepCopy(bwx or CludesUIDB.unlockWidthMatchExtra or {}),
-        heightMatchExtra = DeepCopy(bhx or CludesUIDB.unlockHeightMatchExtra or {}),
-        phantomBounds = DeepCopy(CludesUIDB.phantomBounds or {}),
+        widthMatchExtra = CopyDeep(bwx or CludesUIDB.unlockWidthMatchExtra or {}),
+        heightMatchExtra = CopyDeep(bhx or CludesUIDB.unlockHeightMatchExtra or {}),
+        phantomBounds = CopyDeep(CludesUIDB.phantomBounds or {}),
     }
     if ba then
         for key, val in pairs(CludesUIDB.unlockAnchors or {}) do
             if type(key) == "string" and key:find("^TBB_%d+$") then
-                layoutSnap.anchors[key] = DeepCopy(val)
+                layoutSnap.anchors[key] = CopyDeep(val)
             end
         end
         for key, val in pairs(CludesUIDB.unlockWidthMatch or {}) do
@@ -1154,11 +1154,11 @@ local function RepointAllDBs(profName)
                     end
                     local destination = profileRec.addons[moduleFolder]
                     if not (exclusions and next(exclusions)) then
-                        profileRec.addons[moduleFolder] = DeepCopy(outProf.addons[moduleFolder])
+                        profileRec.addons[moduleFolder] = CopyDeep(outProf.addons[moduleFolder])
                     elseif type(destination) == "table" then
                         -- Overlay leaf-by-leaf so excluded keys (including
                         -- nested and wildcard paths) keep the dest's values
-                        CludesUI._SelectiveOverlay(outProf.addons[moduleFolder], destination, exclusions, DeepCopy)
+                        CludesUI._SelectiveOverlay(outProf.addons[moduleFolder], destination, exclusions, CopyDeep)
                     else
                         -- First sync to this profile: no dest values to preserve
                         profileRec.addons[moduleFolder] =
@@ -1200,14 +1200,14 @@ local function RepointAllDBs(profName)
         layout = profileRec.unlockLayout
     end
     if layout then
-        CludesUIDB.unlockAnchors = DeepCopy(layout.anchors or {})
-        CludesUIDB.unlockWidthMatch = DeepCopy(layout.widthMatch or {})
-        CludesUIDB.unlockHeightMatch = DeepCopy(layout.heightMatch or {})
-        CludesUIDB.phantomBounds = DeepCopy(layout.phantomBounds or {})
+        CludesUIDB.unlockAnchors = CopyDeep(layout.anchors or {})
+        CludesUIDB.unlockWidthMatch = CopyDeep(layout.widthMatch or {})
+        CludesUIDB.unlockHeightMatch = CopyDeep(layout.heightMatch or {})
+        CludesUIDB.phantomBounds = CopyDeep(layout.phantomBounds or {})
         -- Match extras always restore with the links: a snapshot without them
         -- restores none, never the outgoing profile's.
-        CludesUIDB.unlockWidthMatchExtra = DeepCopy(layout.widthMatchExtra or {})
-        CludesUIDB.unlockHeightMatchExtra = DeepCopy(layout.heightMatchExtra or {})
+        CludesUIDB.unlockWidthMatchExtra = CopyDeep(layout.widthMatchExtra or {})
+        CludesUIDB.unlockHeightMatchExtra = CopyDeep(layout.heightMatchExtra or {})
         -- unlockLayout snapshots always carry BASELINE links (CommitPositions
         -- sources them from the stored baseline layout while a group layer is
         -- live), so live now holds the baseline: reset the incoming profile's
@@ -1243,7 +1243,7 @@ local function RepointAllDBs(profName)
             fontsDB[key] = nil
         end
         for key, val in pairs(profileRec.fonts) do
-            fontsDB[key] = DeepCopy(val)
+            fontsDB[key] = CopyDeep(val)
         end
         if fontsDB.global == nil then
             fontsDB.global = CludesUI.DEFAULT_FONT_NAME
@@ -1408,17 +1408,17 @@ function CludesUI.SnapshotAllAddons()
         if CludesUI.IsModuleAddonLoaded(record.folder) then
             local activeProfile = GetAddonProfile(record)
             if activeProfile then
-                body.addons[record.folder] = DeepCopy(activeProfile)
+                body.addons[record.folder] = CopyDeep(activeProfile)
             end
         end
     end
     -- Include global font and color settings
-    body.fonts = DeepCopy(CludesUI.GetFontsDB())
+    body.fonts = CopyDeep(CludesUI.GetFontsDB())
     local cc = CludesUI.GetCustomColorsDB()
-    body.customColors = DeepCopy(cc)
+    body.customColors = CopyDeep(cc)
     -- Dark Mode palette + darken amounts (always the active profile's own).
-    body.darkMode = DeepCopy(CludesUI.GetDarkModeDB())
-    body.numberFormat = DeepCopy(CludesUI.GetNumberFormatDB())
+    body.darkMode = CopyDeep(CludesUI.GetDarkModeDB())
+    body.numberFormat = CopyDeep(CludesUI.GetNumberFormatDB())
     -- Spec Overrides ride with the profile (freshen the current spec's stored
     -- values from live first so exports never lag recent edits).
     if CludesUI.SpecOverrides_HarvestCurrent then
@@ -1429,38 +1429,38 @@ function CludesUI.SnapshotAllAddons()
             and CludesUIDB.profiles
             and CludesUIDB.profiles[CludesUIDB.activeProfile or "Default"]
         if profileTbl and type(profileTbl.specOverrides) == "table" and #profileTbl.specOverrides > 0 then
-            body.specOverrides = DeepCopy(profileTbl.specOverrides)
+            body.specOverrides = CopyDeep(profileTbl.specOverrides)
         end
         if profileTbl and type(profileTbl.specOverrideGroups) == "table" and #profileTbl.specOverrideGroups > 0 then
-            body.specOverrideGroups = DeepCopy(profileTbl.specOverrideGroups)
+            body.specOverrideGroups = CopyDeep(profileTbl.specOverrideGroups)
             body.specOverrideNextId = profileTbl.specOverrideNextId
         end
         if profileTbl and type(profileTbl.condOverrideGroups) == "table" and #profileTbl.condOverrideGroups > 0 then
-            body.condOverrideGroups = DeepCopy(profileTbl.condOverrideGroups)
+            body.condOverrideGroups = CopyDeep(profileTbl.condOverrideGroups)
         end
         if profileTbl and type(profileTbl.condOverrides) == "table" and #profileTbl.condOverrides > 0 then
-            body.condOverrides = DeepCopy(profileTbl.condOverrides)
+            body.condOverrides = CopyDeep(profileTbl.condOverrides)
         end
         if profileTbl and type(profileTbl.condUnlockOverrides) == "table" then
-            body.condUnlockOverrides = DeepCopy(profileTbl.condUnlockOverrides)
+            body.condUnlockOverrides = CopyDeep(profileTbl.condUnlockOverrides)
         end
         if profileTbl and type(profileTbl.specUnlockOverrides) == "table" then
-            body.specUnlockOverrides = DeepCopy(profileTbl.specUnlockOverrides)
+            body.specUnlockOverrides = CopyDeep(profileTbl.specUnlockOverrides)
         end
         if profileTbl and type(profileTbl.condBmOverrides) == "table" then
-            body.condBmOverrides = DeepCopy(profileTbl.condBmOverrides)
+            body.condBmOverrides = CopyDeep(profileTbl.condBmOverrides)
         end
         if profileTbl and type(profileTbl.specBmOverrides) == "table" then
-            body.specBmOverrides = DeepCopy(profileTbl.specBmOverrides)
+            body.specBmOverrides = CopyDeep(profileTbl.specBmOverrides)
         end
         if profileTbl and type(profileTbl.condDmOverrides) == "table" then
-            body.condDmOverrides = DeepCopy(profileTbl.condDmOverrides)
+            body.condDmOverrides = CopyDeep(profileTbl.condDmOverrides)
         end
         if profileTbl and type(profileTbl.specDmOverrides) == "table" then
-            body.specDmOverrides = DeepCopy(profileTbl.specDmOverrides)
+            body.specDmOverrides = CopyDeep(profileTbl.specDmOverrides)
         end
         if profileTbl and type(profileTbl.unlockOverrideAnchors) == "table" then
-            body.unlockOverrideAnchors = DeepCopy(profileTbl.unlockOverrideAnchors)
+            body.unlockOverrideAnchors = CopyDeep(profileTbl.unlockOverrideAnchors)
         end
     end
     -- Include unlock mode layout data (anchors, size matches). Baseline-
@@ -1528,7 +1528,7 @@ function CludesUI.ApplyProfileData(profileRec)
                     activeProfile[key] = nil
                 end
                 for key, val in pairs(layoutSnap) do
-                    activeProfile[key] = DeepCopy(val)
+                    activeProfile[key] = CopyDeep(val)
                 end
                 -- Pre-dropdown imports carry showPlayerAbsorb as the legacy boolean
                 -- toggle. The conversion migrations are SKIPPED for imported profiles
@@ -1558,10 +1558,10 @@ function CludesUI.ApplyProfileData(profileRec)
                 -- DeepMergeDefaults would otherwise fill in DEFAULT minis.
                 if record.folder == "CludesUIUnitFrames" and type(activeProfile.totPet) == "table" then
                     if activeProfile.targettarget == nil then
-                        activeProfile.targettarget = DeepCopy(activeProfile.totPet)
+                        activeProfile.targettarget = CopyDeep(activeProfile.totPet)
                     end
                     if activeProfile.focustarget == nil then
-                        activeProfile.focustarget = DeepCopy(activeProfile.totPet)
+                        activeProfile.focustarget = CopyDeep(activeProfile.totPet)
                     end
                 end
                 -- Old-profile imports carry customized boss regular text keys
@@ -1616,7 +1616,7 @@ function CludesUI.ApplyProfileData(profileRec)
                     and activeProfile.boss == nil
                     and type(activeProfile.miniboss) == "table"
                 then
-                    activeProfile.boss = DeepCopy(activeProfile.miniboss)
+                    activeProfile.boss = CopyDeep(activeProfile.miniboss)
                 end
                 -- Pre-dropdown imports carry the legacy coordsBelow / clockInside /
                 -- zoneInside toggles but none of the new mode keys. The minimap
@@ -1708,7 +1708,7 @@ function CludesUI.ApplyProfileData(profileRec)
             fontsDB[key] = nil
         end
         for key, val in pairs(profileRec.fonts) do
-            fontsDB[key] = DeepCopy(val)
+            fontsDB[key] = CopyDeep(val)
         end
         if fontsDB.global == nil then
             fontsDB.global = CludesUI.DEFAULT_FONT_NAME
@@ -1727,13 +1727,13 @@ function CludesUI.ApplyProfileData(profileRec)
     if CludesUIDB then
         local layout = profileRec.unlockLayout
         if layout then
-            CludesUIDB.unlockAnchors = DeepCopy(layout.anchors or {})
-            CludesUIDB.unlockWidthMatch = DeepCopy(layout.widthMatch or {})
-            CludesUIDB.unlockHeightMatch = DeepCopy(layout.heightMatch or {})
-            CludesUIDB.phantomBounds = DeepCopy(layout.phantomBounds or {})
+            CludesUIDB.unlockAnchors = CopyDeep(layout.anchors or {})
+            CludesUIDB.unlockWidthMatch = CopyDeep(layout.widthMatch or {})
+            CludesUIDB.unlockHeightMatch = CopyDeep(layout.heightMatch or {})
+            CludesUIDB.phantomBounds = CopyDeep(layout.phantomBounds or {})
             -- Match extras always restore with the links (none when absent).
-            CludesUIDB.unlockWidthMatchExtra = DeepCopy(layout.widthMatchExtra or {})
-            CludesUIDB.unlockHeightMatchExtra = DeepCopy(layout.heightMatchExtra or {})
+            CludesUIDB.unlockWidthMatchExtra = CopyDeep(layout.widthMatchExtra or {})
+            CludesUIDB.unlockHeightMatchExtra = CopyDeep(layout.heightMatchExtra or {})
             -- Tracking Bar link entries in the snapshot are stale copies of
             -- whichever spec last saved unlock mode -- TBB links are
             -- per-spec (CDM-owned buckets). Re-assert the active spec's own
@@ -2768,7 +2768,7 @@ local function SnapshotProfileCDMSpells(profName, includedFolders, cdmSpecs)
     local layoutSnap = {}
     for specKey, specProfile in pairs(specBucket.specProfiles) do
         if type(specProfile) == "table" and (not cdmSpecs or cdmSpecs[specKey]) then
-            local duplicate = DeepCopy(specProfile)
+            local duplicate = CopyDeep(specProfile)
             if type(duplicate.barSpells) == "table" then
                 duplicate.barSpells.__ghost_cd = nil
             end
@@ -3051,7 +3051,7 @@ local function SnapshotBlizzSkinGlobals()
     for _, key in ipairs(BLIZZ_SKIN_GLOBAL_KEYS) do
         local v = CludesUIDB[key]
         if v ~= nil then
-            output[key] = DeepCopy(v)
+            output[key] = CopyDeep(v)
         end
     end
     return output
@@ -3068,7 +3068,7 @@ function CludesUI.ApplyBlizzSkinGlobals(bundle)
         return
     end
     for _, key in ipairs(BLIZZ_SKIN_GLOBAL_KEYS) do
-        CludesUIDB[key] = DeepCopy(bundle[key])
+        CludesUIDB[key] = CopyDeep(bundle[key])
     end
 end
 
@@ -3121,12 +3121,12 @@ function CludesUI.ExportProfile(
     end
     -- If exporting the active profile, ensure fonts/colors/layout are current
     if profName == (saved.activeProfile or "Default") then
-        profileRec.fonts = DeepCopy(CludesUI.GetFontsDB())
-        profileRec.customColors = DeepCopy(CludesUI.GetCustomColorsDB())
-        profileRec.darkMode = DeepCopy(CludesUI.GetDarkModeDB())
+        profileRec.fonts = CopyDeep(CludesUI.GetFontsDB())
+        profileRec.customColors = CopyDeep(CludesUI.GetCustomColorsDB())
+        profileRec.darkMode = CopyDeep(CludesUI.GetDarkModeDB())
         profileRec.unlockLayout = SnapshotUnlockLayout()
     end
-    local exportCopy = DeepCopy(profileRec)
+    local exportCopy = CopyDeep(profileRec)
     -- Import-window guard flag (see ImportProfile) is recipient-local state;
     -- never let it ride an export string. The import-flow stamps below it are
     -- payload metadata, never profile data -- strip any stale copies too (the
@@ -3477,7 +3477,7 @@ function CludesUI.ExportFullAccountData()
     local output = {}
     for key, val in pairs(CludesUIDB) do
         if key ~= "profiles" and not FULL_EXPORT_EXCLUDED[key] then
-            output[key] = DeepCopy(val)
+            output[key] = CopyDeep(val)
         end
     end
     -- ONLY the active profile travels; the exporter's other profiles are
@@ -3485,13 +3485,13 @@ function CludesUI.ExportFullAccountData()
     output.profiles = {}
     local profileTbl = saved.profiles and saved.profiles[activeProfileName]
     if profileTbl then
-        local duplicate = DeepCopy(profileTbl)
+        local duplicate = CopyDeep(profileTbl)
         -- Freshen profile-global appearance and the unlock layout from live,
         -- mirroring what ExportProfile does for the active profile -- but on
         -- the COPY. A full export never mutates stored data.
-        duplicate.fonts = DeepCopy(CludesUI.GetFontsDB())
-        duplicate.customColors = DeepCopy(CludesUI.GetCustomColorsDB())
-        duplicate.darkMode = DeepCopy(CludesUI.GetDarkModeDB())
+        duplicate.fonts = CopyDeep(CludesUI.GetFontsDB())
+        duplicate.customColors = CopyDeep(CludesUI.GetCustomColorsDB())
+        duplicate.darkMode = CopyDeep(CludesUI.GetDarkModeDB())
         duplicate.unlockLayout = SnapshotUnlockLayout()
         -- Recipient-local import bookkeeping never rides a string.
         duplicate._importEstablishPending = nil
@@ -3580,7 +3580,7 @@ function CludesUI.ImportFullAccountData(bundle)
             and not FULL_EXPORT_EXCLUDED[key]
             and not (otherClient and (key == "spellAssignments" or key == "_tbbLinkOwner"))
         then
-            CludesUIDB[key] = DeepCopy(val)
+            CludesUIDB[key] = CopyDeep(val)
         end
     end
     for key, merge in pairs(FULL_IMPORT_MERGE) do
@@ -3626,7 +3626,7 @@ function CludesUI.ImportFullAccountData(bundle)
     end
     if type(body.profiles) == "table" then
         for label, pdata in pairs(body.profiles) do
-            local duplicate = DeepCopy(pdata)
+            local duplicate = CopyDeep(pdata)
             -- Legacy per-profile homes of the excluded blobs (see the export
             -- side): refused on the way in too.
             StripPrivateAddonData(duplicate.addons)
@@ -4333,7 +4333,7 @@ local function BuildImportedCDMSpellBucket(profName, activeProfileName, incoming
     if activeBucket and type(activeBucket.specProfiles) == "table" then
         for specKey, sp in pairs(activeBucket.specProfiles) do
             if type(sp) == "table" then
-                inherited[specKey] = DeepCopy(sp)
+                inherited[specKey] = CopyDeep(sp)
             end
         end
     end
@@ -4356,7 +4356,7 @@ local function BuildImportedCDMSpellBucket(profName, activeProfileName, incoming
     if CludesUI then
         CludesUI._cdmImportGhostDeferred = true
     end
-    for specKey, specProfile in pairs(DeepCopy(incomingSpecs)) do
+    for specKey, specProfile in pairs(CopyDeep(incomingSpecs)) do
         specBucket.specProfiles[specKey] = specProfile
         if type(specProfile) == "table" then
             if type(specProfile.barSpells) == "table" then
@@ -4493,7 +4493,7 @@ function CludesUI.ImportProfile(importText, profName)
         -- Merge import: start from the current profile and overlay imported
         -- addon data on top. This preserves settings for addons not present
         -- in the import (e.g. importing from a standalone install).
-        local incoming = DeepCopy(bundle.data)
+        local incoming = CopyDeep(bundle.data)
         -- Strip spell assignment data from imported profile (lives in dedicated store)
         if incoming.addons and incoming.addons["CludesUICooldownManager"] then
             incoming.addons["CludesUICooldownManager"].specProfiles = nil
@@ -4544,13 +4544,13 @@ function CludesUI.ImportProfile(importText, profName)
 
         -- Base: deep-copy current active profile, then overlay imported addons
         local current = saved.profiles[saved.activeProfile or "Default"]
-        local combined = current and DeepCopy(current) or {}
+        local combined = current and CopyDeep(current) or {}
         if not combined.addons then
             combined.addons = {}
         end
         if incoming.addons then
             for moduleFolder, layoutSnap in pairs(incoming.addons) do
-                combined.addons[moduleFolder] = DeepCopy(layoutSnap)
+                combined.addons[moduleFolder] = CopyDeep(layoutSnap)
             end
         end
         -- Per-profile migration stamps must reflect the PAYLOAD's data vintage, not the
@@ -4560,25 +4560,25 @@ function CludesUI.ImportProfile(importText, profName)
         -- export carries its own stamps; a genuinely old string carries none and still
         -- gets migrated, which is the intended behavior for old data.
         if type(incoming._migrations) == "table" then
-            combined._migrations = DeepCopy(incoming._migrations)
+            combined._migrations = CopyDeep(incoming._migrations)
         end
         -- Take fonts/colors from import if present. A string exported without
         -- "Global Settings" lacks these keys entirely, so the base copy's
         -- (recipient's) appearance stands; presence means the exporter chose
         -- to share the look, and it applies regardless of module selection.
         if incoming.fonts then
-            combined.fonts = DeepCopy(incoming.fonts)
+            combined.fonts = CopyDeep(incoming.fonts)
         end
         if incoming.customColors then
-            combined.customColors = DeepCopy(incoming.customColors)
+            combined.customColors = CopyDeep(incoming.customColors)
         end
         if incoming.darkMode then
-            combined.darkMode = DeepCopy(incoming.darkMode)
+            combined.darkMode = CopyDeep(incoming.darkMode)
         end
         -- numberFormat only exists once its owner changed something, so a string
         -- with the other global settings but none comes from the defaults.
         if incoming.numberFormat then
-            combined.numberFormat = DeepCopy(incoming.numberFormat)
+            combined.numberFormat = CopyDeep(incoming.numberFormat)
         elseif incoming.fonts then
             combined.numberFormat = nil
         end
@@ -4641,7 +4641,7 @@ function CludesUI.ImportProfile(importText, profName)
             local function overlayLive(destination, live)
                 if type(live) == "table" then
                     for key, val in pairs(live) do
-                        destination[key] = DeepCopy(val)
+                        destination[key] = CopyDeep(val)
                     end
                 end
             end
@@ -4699,18 +4699,18 @@ function CludesUI.ImportProfile(importText, profName)
             local s2 = combined.specUnlockOverrides
             local ul2 = combined.unlockLayout
             if type(s2) == "table" and type(s2.baselineLayout) == "table" and type(ul2) == "table" then
-                s2.baselineLayout.anchors = DeepCopy(ul2.anchors or {})
-                s2.baselineLayout.widthMatch = DeepCopy(ul2.widthMatch or {})
-                s2.baselineLayout.heightMatch = DeepCopy(ul2.heightMatch or {})
-                s2.baselineLayout.widthMatchExtra = DeepCopy(ul2.widthMatchExtra or {})
-                s2.baselineLayout.heightMatchExtra = DeepCopy(ul2.heightMatchExtra or {})
+                s2.baselineLayout.anchors = CopyDeep(ul2.anchors or {})
+                s2.baselineLayout.widthMatch = CopyDeep(ul2.widthMatch or {})
+                s2.baselineLayout.heightMatch = CopyDeep(ul2.heightMatch or {})
+                s2.baselineLayout.widthMatchExtra = CopyDeep(ul2.widthMatchExtra or {})
+                s2.baselineLayout.heightMatchExtra = CopyDeep(ul2.heightMatchExtra or {})
             end
         end
         -- UI accent color travels with the profile. A new-format string always
         -- carries cuiAccent, so the imported value wins; an old string leaves
         -- merged.cuiAccent inherited from the current profile (correct fallback).
         if incoming.cuiAccent then
-            combined.cuiAccent = DeepCopy(incoming.cuiAccent)
+            combined.cuiAccent = CopyDeep(incoming.cuiAccent)
         end
         -- The whole-UI window look is a profile-root key: take the exporter's
         -- value, never the recipient's (an absent key reads as the
@@ -4968,13 +4968,13 @@ function CludesUI.SaveCurrentAsProfile(label)
 
     -- Count existing profiles BEFORE adding the new one
     -- Deep-copy the current profile into the new name
-    local duplicate = src and DeepCopy(src) or {}
+    local duplicate = src and CopyDeep(src) or {}
     -- Never inherit the import-window guard flag (see ImportProfile).
     duplicate._importEstablishPending = nil
     -- Ensure fonts/colors/unlock layout are current
-    duplicate.fonts = DeepCopy(CludesUI.GetFontsDB())
-    duplicate.customColors = DeepCopy(CludesUI.GetCustomColorsDB())
-    duplicate.darkMode = DeepCopy(CludesUI.GetDarkModeDB())
+    duplicate.fonts = CopyDeep(CludesUI.GetFontsDB())
+    duplicate.customColors = CopyDeep(CludesUI.GetCustomColorsDB())
+    duplicate.darkMode = CopyDeep(CludesUI.GetDarkModeDB())
     duplicate.unlockLayout = SnapshotUnlockLayout()
     saved.profiles[label] = duplicate
 
@@ -4987,7 +4987,7 @@ function CludesUI.SaveCurrentAsProfile(label)
     -- etc). Without this the copy renders bars with no spells on them.
     local spellAssign = CludesUIDB and CludesUIDB.spellAssignments
     if spellAssign and type(spellAssign.profiles) == "table" and type(spellAssign.profiles[current]) == "table" then
-        spellAssign.profiles[label] = DeepCopy(spellAssign.profiles[current])
+        spellAssign.profiles[label] = CopyDeep(spellAssign.profiles[current])
     end
 
     local found = false
@@ -5169,7 +5169,7 @@ function CludesUI.SwitchProfile(label)
     -- snapshot and reset the user's custom power / class-resource colors.
     local outbound = saved.profiles[saved.activeProfile or "Default"]
     if outbound then
-        outbound.fonts = DeepCopy(CludesUI.GetFontsDB())
+        outbound.fonts = CopyDeep(CludesUI.GetFontsDB())
         -- Save unlock layout into outgoing profile (baseline-sourced while
         -- a group layer is live -- see SnapshotUnlockLayout).
         outbound.unlockLayout = SnapshotUnlockLayout()
@@ -5594,9 +5594,9 @@ do
             local label = saved.activeProfile or "Default"
             local profileRec = saved.profiles[label]
             if profileRec then
-                profileRec.fonts = DeepCopy(CludesUI.GetFontsDB())
-                profileRec.customColors = DeepCopy(CludesUI.GetCustomColorsDB())
-                profileRec.darkMode = DeepCopy(CludesUI.GetDarkModeDB())
+                profileRec.fonts = CopyDeep(CludesUI.GetFontsDB())
+                profileRec.customColors = CopyDeep(CludesUI.GetCustomColorsDB())
+                profileRec.darkMode = CopyDeep(CludesUI.GetDarkModeDB())
                 profileRec.unlockLayout = SnapshotUnlockLayout()
             end
             -- Track the last active profile that was NOT spec-assigned so

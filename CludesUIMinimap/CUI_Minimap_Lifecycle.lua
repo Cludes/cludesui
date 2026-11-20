@@ -316,7 +316,7 @@ do
         { text = "Support", microButton = "HelpMicroButton" },
     }
 
-    local function SetMenuVisible(visible)
+    local function ShowMenu(visible)
         if not menuFrame then
             return
         end
@@ -351,7 +351,7 @@ do
         menuFrame:SetScript("OnEvent", function(self, evt)
             if evt == "GLOBAL_MOUSE_DOWN" and menuOpen then
                 if not self:IsMouseOver() then
-                    SetMenuVisible(false)
+                    ShowMenu(false)
                 end
             end
         end)
@@ -385,7 +385,7 @@ do
 
                 local itemFn = entry.fn
                 button:SetScript("OnClick", function()
-                    SetMenuVisible(false)
+                    ShowMenu(false)
                     itemFn()
                 end)
 
@@ -445,7 +445,7 @@ do
 
                 button:HookScript("OnClick", function()
                     C_Timer.After(0, function()
-                        SetMenuVisible(false)
+                        ShowMenu(false)
                     end)
                 end)
 
@@ -455,7 +455,7 @@ do
 
         menuFrame:SetSize(MENU_WIDTH, -posY + PADDING)
         menuFrame:Show()
-        SetMenuVisible(false)
+        ShowMenu(false)
     end
 
     local function ToggleMicroMenu()
@@ -466,7 +466,7 @@ do
         if not menuFrame then
             CreateMenuFrame()
         end
-        SetMenuVisible(not menuOpen)
+        ShowMenu(not menuOpen)
     end
     SKIN._ToggleMicroMenu = ToggleMicroMenu
 
@@ -482,14 +482,14 @@ end
 --  The map as it shows, for Unlock Mode: the mover's box, and the edges an
 --  element linked to the minimap measures from.
 -------------------------------------------------------------------------------
-local function MDB()
+local function MapCfg()
     return SKIN.db and SKIN.db.profile.minimap
 end
 
 -- Inset from the square canvas (canvas units): a square frame's outer box,
 -- its title bar and rims included, or a cropped map's visible band.
 local function MoverInsets()
-    local m = MDB()
+    local m = MapCfg()
     local crop = m and SKIN._MapCrop(m, m.mapSize or 140) or 0
     if SKIN._MinimapFvSquare() then
         local o = SKIN._SqOut()
@@ -663,11 +663,11 @@ function SKIN:OnEnable()
                 end,
                 getInsets = MoverInsets,
                 isHidden = function()
-                    local m = MDB()
+                    local m = MapCfg()
                     return not m or not m.enabled
                 end,
                 savePos = function(_, anchorPoint, relPoint, posX, posY)
-                    local m = MDB()
+                    local m = MapCfg()
                     if not m then
                         return
                     end
@@ -677,21 +677,21 @@ function SKIN:OnEnable()
                     end
                 end,
                 loadPos = function()
-                    local m = MDB()
+                    local m = MapCfg()
                     if not m or not m.enabled then
                         return nil
                     end
                     return m.position
                 end,
                 clearPos = function()
-                    local m = MDB()
+                    local m = MapCfg()
                     if not m then
                         return
                     end
                     m.position = nil
                 end,
                 applyPos = function()
-                    local m = MDB()
+                    local m = MapCfg()
                     if not m or not m.enabled then
                         return
                     end

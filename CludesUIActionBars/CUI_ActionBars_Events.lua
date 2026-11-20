@@ -1485,7 +1485,7 @@ do
         -- per run at ~1-2 runs/sec in combat, pure GC food). Pool bounded by one
         -- generation's table count (~50); reuse is semantically identical since fresh
         -- and wiped groups both start with empty memo fields.
-        local function CdTakeTable()
+        local function TakeCdTable()
             local pool = mod._cdTablePool
             local num = pool and #pool or 0
             if num > 0 then
@@ -1554,7 +1554,7 @@ do
                 pn = pn + 1
                 pool[pn] = oldMacFast
             end
-            local _filled = CdTakeTable()
+            local _filled = TakeCdTable()
             mod._cdFilled = _filled
             -- SPELL-KEYED CLASSIFICATION for the targeted cooldown
             -- passes. Slots dedup to unique spells (pages duplicate
@@ -1573,9 +1573,9 @@ do
             --          lagged its own cooldown shortenings by up to 0.5s.
             --          Membership is decided here, so a macro rebuilt while
             --          a modifier resolved it elsewhere stays residual.
-            local fast, slow, residual = CdTakeTable(), CdTakeTable(), CdTakeTable()
+            local fast, slow, residual = TakeCdTable(), TakeCdTable(), TakeCdTable()
             mod._cdFastSpells, mod._cdSlowSpells, mod._cdResidual = fast, slow, residual
-            local macroFast = CdTakeTable()
+            local macroFast = TakeCdTable()
             mod._cdMacroFast = macroFast
             -- curated[sid] = true (Essential rotation kit -> fast
             -- tier) or false (other curated category -> slow). The fast tier
@@ -1649,7 +1649,7 @@ do
                             and barButtons[details.key]
                         or nil
                     if buttonList then
-                        local entries = CdTakeTable()
+                        local entries = TakeCdTable()
                         for _, button in ipairs(buttonList) do
                             local a = button:GetAttribute("action")
                             if a and HasAction(a) then
@@ -1674,7 +1674,7 @@ do
                                     end
                                     local g = tier[spellRef]
                                     if not g then
-                                        g = CdTakeTable()
+                                        g = TakeCdTable()
                                         tier[spellRef] = g
                                     end
                                     g[#g + 1] = button

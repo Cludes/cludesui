@@ -274,7 +274,7 @@ do
     local inLook = false
     local lastX, lastY = 0, 0
 
-    local function stopLook()
+    local function endMouselook()
         if inLook then
             MouselookStop()
             inLook = false
@@ -298,7 +298,7 @@ do
 
     local function onUpdate()
         if not IsMouseButtonDown(2) then
-            stopLook()
+            endMouselook()
             return
         end
         if inLook then
@@ -327,12 +327,12 @@ do
             watcher:SetScript("OnUpdate", onUpdate)
         elseif evt == "GLOBAL_MOUSE_UP" then
             if btnFrame == "RightButton" then
-                stopLook()
+                endMouselook()
             end
         elseif evt == "PLAYER_REGEN_ENABLED" then
             -- safety: never leave mouselook stuck after a combat-state change
             if not IsMouseButtonDown(2) then
-                stopLook()
+                endMouselook()
             end
         elseif evt == "PLAYER_LOGIN" then
             if mod.FRCM_Refresh then
@@ -352,7 +352,7 @@ do
             watcher:UnregisterEvent("GLOBAL_MOUSE_DOWN")
             watcher:UnregisterEvent("GLOBAL_MOUSE_UP")
             watcher:UnregisterEvent("PLAYER_REGEN_ENABLED")
-            stopLook()
+            endMouselook()
         end
     end
 end

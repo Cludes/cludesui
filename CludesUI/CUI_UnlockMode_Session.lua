@@ -690,7 +690,7 @@ CUI_NS.unlockParts.Session = function(LM)
     local cogHoveredMover = nil -- the mover whose cog button is currently hovered
 
     -- Internal close (actually hides everything and returns to options)
-    local function DoClose(closeAction)
+    local function CloseSession(closeAction)
         if not LM.isUnlocked then
             return
         end
@@ -960,12 +960,12 @@ CUI_NS.unlockParts.Session = function(LM)
         end
         if save then
             CommitPositions()
-            DoClose("save")
+            CloseSession("save")
             return
         end
         -- No changes -> just exit
         if not LM.hasChanges then
-            DoClose("exit")
+            CloseSession("exit")
             return
         end
         -- Has unsaved changes -> show confirm popup
@@ -977,11 +977,11 @@ CUI_NS.unlockParts.Session = function(LM)
             confirmText = "Save & Exit",
             onCancel = function()
                 RevertPositions()
-                DoClose("exit")
+                CloseSession("exit")
             end,
             onConfirm = function()
                 CommitPositions()
-                DoClose("save")
+                CloseSession("save")
             end,
             -- Dismiss (ESC / click-off) does nothing -- user stays in unlock mode,
             -- and any pending close callback is cleared since the close was abandoned
@@ -1020,7 +1020,7 @@ CUI_NS.unlockParts.Session = function(LM)
         if LM.hasChanges then
             pcall(RevertPositions)
         end
-        pcall(DoClose, "discard")
+        pcall(CloseSession, "discard")
     end
 
     -------------------------------------------------------------------------------

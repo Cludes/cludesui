@@ -62,7 +62,7 @@ local function PT_EnsureBorder(popFrame)
     return widget
 end
 
-local function PT_Hide()
+local function PT_HideGlow()
     local popFrame = frameList.player
     if popFrame and popFrame._threatShadowBorder then
         popFrame._threatShadowBorder:Hide()
@@ -90,14 +90,14 @@ end
 -- Re-evaluate the player's threat and paint/clear the additive shadow border.
 function mod.UpdatePlayerThreatBorder()
     if not (saved and saved.profile and saved.profile.playerThreatBorderEnabled) then
-        PT_Hide()
+        PT_HideGlow()
         return
     end
     if not frameList.player then
         return
     end
     if not PT_InInstancedContent() or not IsInGroup() then
-        PT_Hide()
+        PT_HideGlow()
         return
     end
     local status = UnitThreatSituation("player")
@@ -108,7 +108,7 @@ function mod.UpdatePlayerThreatBorder()
         -- status 1: higher threat than the tank but not tanking yet -- close to aggro.
         PT_Show("near", saved.profile.playerThreatNearAggroColor or { r = 0.81, g = 0.72, b = 0.19 })
     else
-        PT_Hide()
+        PT_HideGlow()
     end
 end
 
@@ -133,7 +133,7 @@ function mod.SetPlayerThreatEnabled(enabled)
         if _ptWatcher then
             _ptWatcher:UnregisterAllEvents()
         end
-        PT_Hide()
+        PT_HideGlow()
     end
 end
 

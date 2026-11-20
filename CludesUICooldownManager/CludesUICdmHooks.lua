@@ -482,7 +482,7 @@ do
     -- The WoW Forever anti-clip glow reads it too (CUI_CDM_ForeverAntiClip.lua).
     mod.ReadAuraExpiration = ReadExpiration
 
-    local function Disarm(fc)
+    local function DisarmMissing(fc)
         if fc._missingTimer then
             fc._missingTimer:Cancel()
             fc._missingTimer = nil
@@ -498,7 +498,7 @@ do
         if fc._missingTimer and fc._missingExp == exp then
             return
         end
-        Disarm(fc)
+        DisarmMissing(fc)
         fc._missingExp = exp
         fc._missingTimer = C_Timer.NewTimer(delay, function()
             fc._missingTimer = nil
@@ -512,7 +512,7 @@ do
     function mod.MissingShowBelow(widget, fc, seconds)
         if not seconds or seconds <= 0 then
             if fc._missingTimer or fc._missingLow or fc._missingN then
-                Disarm(fc)
+                DisarmMissing(fc)
                 fc._missingLow, fc._missingN = nil, nil
             end
             return false
@@ -521,12 +521,12 @@ do
         -- once any icon uses the option.
         mod._cdmAnyMissingBelow = true
         if fc._missingN ~= seconds then
-            Disarm(fc)
+            DisarmMissing(fc)
             fc._missingN = seconds
         end
         local exp, rate = ReadExpiration(widget)
         if not exp then
-            Disarm(fc)
+            DisarmMissing(fc)
             fc._missingLow = nil
             return false
         end
@@ -539,7 +539,7 @@ do
             if leftX > 0 then
                 Arm(widget, fc, exp, leftX * rate + 0.2)
             else
-                Disarm(fc)
+                DisarmMissing(fc)
             end
             return true
         end

@@ -1127,7 +1127,7 @@ local function CreateDMWindow(winIdx)
         -- An instance rule changed: re-apply every window now, and move the mouseover
         -- scan's cached predicate on next frame (deferred like the hotkey toggle), so a
         -- hover cannot reveal a window the new rule hides.
-        local function rulesChanged()
+        local function onRulesChanged()
             for _, wid in ipairs(_windows) do
                 wid.UpdateVisibility()
             end
@@ -1139,7 +1139,7 @@ local function CreateDMWindow(winIdx)
                 isActive = wdb.hideInDungeon,
                 onClick = function()
                     wdb.hideInDungeon = not wdb.hideInDungeon
-                    rulesChanged()
+                    onRulesChanged()
                 end,
             },
             {
@@ -1147,7 +1147,7 @@ local function CreateDMWindow(winIdx)
                 isActive = wdb.hideInRaid,
                 onClick = function()
                     wdb.hideInRaid = not wdb.hideInRaid
-                    rulesChanged()
+                    onRulesChanged()
                 end,
             },
             {
@@ -1156,7 +1156,7 @@ local function CreateDMWindow(winIdx)
                 isActive = wdb.hideInDelve,
                 onClick = function()
                     wdb.hideInDelve = not wdb.hideInDelve
-                    rulesChanged()
+                    onRulesChanged()
                 end,
             },
             {
@@ -1164,7 +1164,7 @@ local function CreateDMWindow(winIdx)
                 isActive = wdb.hideInPvP,
                 onClick = function()
                     wdb.hideInPvP = not wdb.hideInPvP
-                    rulesChanged()
+                    onRulesChanged()
                 end,
             },
             {
@@ -1172,7 +1172,7 @@ local function CreateDMWindow(winIdx)
                 isActive = wdb.hideOutOfInstance,
                 onClick = function()
                     wdb.hideOutOfInstance = not wdb.hideOutOfInstance
-                    rulesChanged()
+                    onRulesChanged()
                 end,
             },
             "---",

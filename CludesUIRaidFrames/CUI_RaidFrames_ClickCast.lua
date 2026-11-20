@@ -5737,7 +5737,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
         pillBg:SetAllPoints(L._frame)
         local knob = L._frame:CreateTexture(nil, "OVERLAY")
         L.track, L.knob, L.pad = pillBg, knob, 2
-        local function Refresh()
+        local function SyncToggle()
             local on = getValue()
             if on then
                 pillBg:SetVertexColor(accentColor.r, accentColor.g, accentColor.b, 1)
@@ -5752,19 +5752,19 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 knob:SetPoint("TOPLEFT", L._frame, "TOPLEFT", on and (L.wp - pad - L.d) or pad, -pad)
             end
         end
-        L.apply = Refresh
+        L.apply = SyncToggle
         L:Fit()
-        Refresh()
+        SyncToggle()
         pill:SetScript("OnClick", function()
             local gen = PoolGen(pill)
             setValue(not getValue())
             -- A setter that renders the page again dressed this pill again
             -- (maybe as another row's): that render painted it.
             if PoolGen(pill) == gen then
-                Refresh()
+                SyncToggle()
             end
         end)
-        return pill, Refresh
+        return pill, SyncToggle
     end
 
     -------------------------------------------------------------------

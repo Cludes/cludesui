@@ -50,7 +50,7 @@ end
 -- addon-conflict check (CludesUI.lua) holds on _styleChoicePending, armed
 -- at the parent's ADDON_LOADED below; every close that does not reload runs
 -- it here (a reload's next session runs its own).
-local function Release()
+local function ReleasePending()
     if not CludesUI._styleChoicePending then
         return
     end
@@ -100,12 +100,12 @@ local function ChooseOtherLook(styleKey, labelText, dimmer)
     if dimmer then
         dimmer:Hide()
     end
-    Release()
+    ReleasePending()
 end
 
 local function ShowStyleChoicePopup()
     if not (Pix and MakeBorder and CLUDES_GREEN and CludesUI.BuildStyleCards) then
-        Release()
+        ReleasePending()
         return
     end
     local FONT = CludesUI._font
@@ -168,7 +168,7 @@ local function ShowStyleChoicePopup()
     KeepLook = function()
         Stamp()
         dimmer:Hide()
-        Release()
+        ReleasePending()
     end
 
     OnPick = function(styleKey)
@@ -276,12 +276,12 @@ loader:SetScript("OnEvent", function(self, evt, addonName)
     -- A registered external installer owns the first-run experience.
     if CludesUI._externalInstaller then
         Stamp()
-        Release()
+        ReleasePending()
         return
     end
     local function TryShow()
         if not (CludesUIDB and CludesUIDB.styleChoicePending) then
-            Release()
+            ReleasePending()
             return
         end
         ShowStyleChoicePopup()

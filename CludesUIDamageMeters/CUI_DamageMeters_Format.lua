@@ -245,7 +245,7 @@ CludesUI.RegisterNumberFormatCallback(function()
     end
 end)
 
-local function AbbrevNumber(num)
+local function ShortNumber(num)
     if num == nil then
         return "0"
     end
@@ -260,15 +260,15 @@ local function FormatBarValue(amt, perSec, numFmt)
         end
     end
     if numFmt == 0 then
-        return AbbrevNumber(perSec)
+        return ShortNumber(perSec)
     end
     if numFmt == 2 and perSec then
-        return format("%s (%s)", AbbrevNumber(amt), AbbrevNumber(perSec))
+        return format("%s (%s)", ShortNumber(amt), ShortNumber(perSec))
     end
     if numFmt == 3 and perSec then
-        return format("%s | %s", AbbrevNumber(amt), AbbrevNumber(perSec))
+        return format("%s | %s", ShortNumber(amt), ShortNumber(perSec))
     end
-    return AbbrevNumber(amt)
+    return ShortNumber(amt)
 end
 
 -- A combatant's name without its realm. The Name Format (dm.nameFormat, the
@@ -894,7 +894,7 @@ local function BuildPlayerTargets(playerName, session, sessionID, maxTargets)
     return entries
 end
 
-Inner._srcKeyGuid, Inner.AbbrevNumber = _srcKeyGuid, AbbrevNumber
+Inner._srcKeyGuid, Inner.AbbrevNumber = _srcKeyGuid, ShortNumber
 Inner.AggregateEnemyPlayers, Inner.AppendDMSharedMedia = AggregateEnemyPlayers, AppendDMSharedMedia
 Inner.ApplyBarTexture, Inner.BuildPlayerTargets = ApplyBarTexture, BuildPlayerTargets
 Inner.FormatBarValue, Inner.FormatTimer = FormatBarValue, FormatTimer

@@ -388,7 +388,7 @@ local function GetTabPadding()
     end
     return conf.tabPadding or 0
 end
-local function GetTabAreaHeight()
+local function TabAreaHeight()
     return GetTabHeight() + GetTabPadding()
 end
 
@@ -563,7 +563,7 @@ function CHAT.ApplyExtendedBackground()
         ext = CreateFrame("Frame", nil, UIParent)
         ext:SetPoint("BOTTOMLEFT", bg1, "TOPLEFT", 0, 0)
         ext:SetPoint("BOTTOMRIGHT", bg1, "TOPRIGHT", 0, 0)
-        ext:SetHeight(GetTabAreaHeight())
+        ext:SetHeight(TabAreaHeight())
         local tex = ext:CreateTexture(nil, "BACKGROUND")
         tex._cuiOwned = true
         tex:SetAllPoints()
@@ -571,7 +571,7 @@ function CHAT.ApplyExtendedBackground()
         mod._chatBgExtTex = tex
     end
     if ext then
-        ext:SetHeight(GetTabAreaHeight())
+        ext:SetHeight(TabAreaHeight())
         if mod._chatBgExtTex then
             mod._chatBgExtTex:SetColorTexture(BG_R, BG_G, BG_B, BG_A)
         end
@@ -599,7 +599,7 @@ function CHAT.ApplyExtendedBackground()
             sext = CreateFrame("Frame", nil, scrollBar)
             sext:SetPoint("BOTTOMLEFT", scrollBar, "TOPLEFT", 0, 0)
             sext:SetPoint("BOTTOMRIGHT", scrollBar, "TOPRIGHT", 0, 0)
-            sext:SetHeight(GetTabAreaHeight())
+            sext:SetHeight(TabAreaHeight())
             sext:SetFrameLevel(scrollBar:GetFrameLevel())
             local tex = sext:CreateTexture(nil, "BACKGROUND")
             tex._cuiOwned = true
@@ -616,7 +616,7 @@ function CHAT.ApplyExtendedBackground()
             d1.sidebarExtDiv = div
         end
         if sext then
-            sext:SetHeight(GetTabAreaHeight())
+            sext:SetHeight(TabAreaHeight())
             if d1.sidebarExtTex then
                 d1.sidebarExtTex:SetColorTexture(BG_R, BG_G, BG_B, BG_A)
             end
@@ -659,7 +659,7 @@ function CHAT.ApplyExtendedBackground()
             -- A separate sidebar is its own island: excluded here, wrapped
             -- by its own border below.
             and conf.sidebarSeparate ~= true
-        local topExtension = extend and GetTabAreaHeight() or 0
+        local topExtension = extend and TabAreaHeight() or 0
         if includeSidebar and not conf.sidebarRight then
             border:SetPoint("TOPLEFT", scrollBar, "TOPLEFT", 0, topExtension)
             border:SetPoint("BOTTOMRIGHT", bg1, "BOTTOMRIGHT", 0, 0)
@@ -742,7 +742,7 @@ function CHAT.ApplyExtendedBackground()
             end
             if sbBorder then
                 if wantSbBorder then
-                    local sbTop = (extend and not conf.hideSidebarBg) and GetTabAreaHeight() or 0
+                    local sbTop = (extend and not conf.hideSidebarBg) and TabAreaHeight() or 0
                     sbBorder:ClearAllPoints()
                     sbBorder:SetPoint("TOPLEFT", scrollBar, "TOPLEFT", 0, sbTop)
                     sbBorder:SetPoint("BOTTOMRIGHT", scrollBar, "BOTTOMRIGHT", 0, 0)
@@ -1764,7 +1764,7 @@ CludesUI.NewInternals(mod, "_internals", {
     GetIdleFadeAlpha = GetIdleFadeAlpha,
     GetInnerBorderColor = GetInnerBorderColor,
     GetOutlineFlag = GetOutlineFlag,
-    GetTabAreaHeight = GetTabAreaHeight,
+    GetTabAreaHeight = TabAreaHeight,
     HideSidebarIconTooltip = HideSidebarIconTooltip,
     IDLE_FADE_OUT_DURATION = IDLE_FADE_OUT_DURATION,
     ShowSidebarIconTooltip = ShowSidebarIconTooltip,

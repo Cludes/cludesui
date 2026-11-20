@@ -1025,7 +1025,7 @@ local function EnsureBankTabConfigFrame()
             end
         end
 
-        local function ApplyVisual()
+        local function PaintToggle()
             local enabled = getValue()
             cbApply(enabled, isHovering)
             if enabled then
@@ -1035,24 +1035,24 @@ local function EnsureBankTabConfigFrame()
                 caption:SetTextColor(CUI.TEXT_WHITE.r * a, CUI.TEXT_WHITE.g * a, CUI.TEXT_WHITE.b * a, a)
             end
         end
-        ApplyVisual()
+        PaintToggle()
 
         button:SetScript("OnClick", function()
             local val = not getValue()
             setValue(val)
-            ApplyVisual()
+            PaintToggle()
         end)
         button:SetScript("OnEnter", function()
             isHovering = true
-            ApplyVisual()
+            PaintToggle()
         end)
         button:SetScript("OnLeave", function()
             isHovering = false
-            ApplyVisual()
+            PaintToggle()
         end)
 
         button.Refresh = function()
-            ApplyVisual()
+            PaintToggle()
         end
 
         return button
@@ -2345,7 +2345,7 @@ local function GetOrCreateBankHeader(position)
     return frame
 end
 
-local function DiscoverBankTabs()
+local function ReadBankTabs()
     _allTabs = {}
     local charTabs = GetCharacterBankTabs()
     for _, tab in ipairs(charTabs) do
@@ -2498,7 +2498,7 @@ function CUI_Bank:RefreshBank()
     -- Re-discover tabs if empty (data may not be ready on the same frame as
     -- BANKFRAME_OPENED; BAG_UPDATE fires shortly after with real slot counts).
     if #_allTabs == 0 then
-        DiscoverBankTabs()
+        ReadBankTabs()
         if #_allTabs == 0 then
             -- Still build sidebar so purchase buttons are visible
             BuildBankSidebar()
@@ -4302,7 +4302,7 @@ watcher:SetScript("OnEvent", function(_, evt)
             if not CUI_Bank:IsVisible() then
                 return
             end
-            DiscoverBankTabs()
+            ReadBankTabs()
             CUI_Bank:RefreshBank()
             if RefreshBankBags then
                 RefreshBankBags()
@@ -4338,7 +4338,7 @@ watcher:SetScript("OnEvent", function(_, evt)
     elseif evt == "BANK_TABS_CHANGED" or evt == "BANK_TAB_SETTINGS_UPDATED" then
         if CUI_Bank:IsVisible() then
             local prevCount = #_allTabs
-            DiscoverBankTabs()
+            ReadBankTabs()
             ScheduleBankRefresh()
             -- Server may not have slot data ready yet for a newly purchased tab.
             -- Poll until tab count changes or we give up after 300 frames. Only a
@@ -4359,7 +4359,7 @@ watcher:SetScript("OnEvent", function(_, evt)
                             self:Hide()
                             return
                         end
-                        DiscoverBankTabs()
+                        ReadBankTabs()
                         if #_allTabs ~= self.prevCount then
                             self:Hide()
                             CUI_Bank:RefreshBank()
@@ -4385,7 +4385,7 @@ watcher:SetScript("OnEvent", function(_, evt)
         -- removes that tab.
         if CUI_Bank:IsVisible() then
             local selTab = _selectedView > 0 and _allTabs[_selectedView]
-            DiscoverBankTabs()
+            ReadBankTabs()
             if selTab then
                 _selectedView = BankDefaultsToOne() and -1 or 0
                 for i, tabBtn in ipairs(_allTabs) do

@@ -991,7 +991,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
     local guildEmblem
     local lastRosterRequest = 0
 
-    local function D()
+    local function BlockSettings()
         return blockCfg.settings or {}
     end
     local function BC()
@@ -1037,7 +1037,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
     local function PlaceIcon(key)
         local iconTex, fontStr = icons[key], textFS[key]
         local drop = 0
-        if fontStr and fontStr:IsShown() and D().iconStyle == "wow" then
+        if fontStr and fontStr:IsShown() and BlockSettings().iconStyle == "wow" then
             drop = floor(SocialFontSize() * 0.45 + 0.5)
         end
         iconTex:ClearAllPoints()
@@ -1049,7 +1049,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         if not iconTex or not widget then
             return
         end
-        local painted = ApplyMicroIcon(iconTex, key, D().iconStyle == "wow", force)
+        local painted = ApplyMicroIcon(iconTex, key, BlockSettings().iconStyle == "wow", force)
         -- SetPortraitTexture can reset anchors; restore our slot after each paint.
         PlaceIcon(key)
         local size = max(8, GetIconSize() - 6)
@@ -1075,7 +1075,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
     -- Blizzard style only: the portrait and the guild tabard repaint from their
     -- own events, registered while the style and that button are on.
     local function SyncStyleEvents()
-        local mm = D()
+        local mm = BlockSettings()
         local wow = isActive and mm.iconStyle == "wow"
         local wanted = wow and MMButtonOn(mm, "char") and icons.char ~= nil
         if portraitEvents ~= wanted then
@@ -1242,7 +1242,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
             pcall(MMBuildSocialTip)
         end
         if name == "guild" then
-            pcall(MMBuildGuildTip, D())
+            pcall(MMBuildGuildTip, BlockSettings())
         end
 
         mod.Tip_Show()
@@ -1371,14 +1371,14 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
             AttachTextOffset(instance, textFS[key])
         end
         icons[key] = widget:CreateTexture(nil, "OVERLAY")
-        ApplyMicroIcon(icons[key], key, D().iconStyle == "wow")
+        ApplyMicroIcon(icons[key], key, BlockSettings().iconStyle == "wow")
         SetupButtonScripts(key, widget)
         return widget
     end
 
     -- Materialise buttons for every enabled key. Tolerates a nil/partial set in combat; the REGEN_ENABLED event retries.
     local function CreateFramesInner()
-        local mm = D()
+        local mm = BlockSettings()
         for _, def in ipairs(mmButtonDefs) do
             if MMButtonOn(mm, def.key) then
                 EnsureButtonFrame(def)
@@ -1403,7 +1403,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     local function UpdateGuildText()
-        local mm = D()
+        local mm = BlockSettings()
         if not textFS.guild or not mm.guild or mm.hideSocialText then
             return
         end
@@ -1426,7 +1426,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     local function UpdateFriendText()
-        local mm = D()
+        local mm = BlockSettings()
         if mm.hideSocialText or not mm.social or not textFS.social then
             return
         end
@@ -1441,7 +1441,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
             return
         end
 
-        local mm = D()
+        local mm = BlockSettings()
         wipe(counterShown) -- a full pass sets the counters' font again (it may have changed)
         -- Materialise any buttons enabled after creation (options toggle).
         CreateFramesInner()

@@ -877,7 +877,7 @@ local LayoutRail
 -- and hangConst undoes the chain's own length, so the element steps out
 -- exactly when a ready lane sits before it. A pooled icon is placed by its
 -- wrap (the cell fills it); a ghost or a rail by itself.
-local function AnchorIcon(b)
+local function PlaceIcon(b)
     local rel = (b.iconFrame and b.casting) and b.iconFrame or b.rel
     if b.row then
         PlaceEdge(b)
@@ -947,7 +947,7 @@ local function OnCastShown(self)
     local b = self.kickIcon
     b.casting = true
     if b.unit and b.iconFrame then
-        AnchorIcon(b)
+        PlaceIcon(b)
     end
 end
 
@@ -955,7 +955,7 @@ local function OnCastHidden(self)
     local b = self.kickIcon
     b.casting = false
     if b.unit and b.iconFrame then
-        AnchorIcon(b)
+        PlaceIcon(b)
     end
 end
 
@@ -1063,7 +1063,7 @@ local function Place(b, owner, isCUI)
     -- A Full Sized cast icon on the icon's side covers it during a cast.
     local iconFrame = isCUI and FullIconSide() == stackAnchor and owner.castIconFrame or nil
     WatchCast(b, iconFrame and owner.cast or nil, iconFrame)
-    AnchorIcon(b)
+    PlaceIcon(b)
     if isCUI then
         ArrowsFollow(owner)
     end
@@ -1136,7 +1136,7 @@ local function LayoutPlate(unitToken)
         local const = b.hang and track.shiftConst or 0
         if b.placedHost and (b.relink or b.hangConst ~= const) then
             b.relink, b.hangConst = nil, const
-            AnchorIcon(b)
+            PlaceIcon(b)
         end
         backing = backing or b.cuiPlate
     end
@@ -1195,7 +1195,7 @@ local function PutOnPlate(b, unitToken, owner, isCUI)
     if b.placedHost ~= owner or b.placedGen ~= styleStamp then
         Place(b, owner, isCUI)
     else
-        AnchorIcon(b)
+        PlaceIcon(b)
         if isCUI then
             ArrowsFollow(owner)
         end
@@ -3661,7 +3661,7 @@ end
 
 -- Every mode change drops what is showing: leaving live clears its icons,
 -- entering preview replaces them with samples, leaving preview clears those.
-local function SetMode(mode)
+local function SwitchMode(mode)
     if mode == currentMode then
         return
     end
@@ -3703,17 +3703,17 @@ local function SyncState()
     local conf = Cfg()
     if not Enabled(conf) then
         previewing = false
-        SetMode(MODE_OFF)
+        SwitchMode(MODE_OFF)
         return
     end
     if previewing then
-        SetMode(MODE_PREVIEW)
+        SwitchMode(MODE_PREVIEW)
         return
     end
     if KE.Allowed() and MTWhere.Shows(conf.whereToShow, WHERE_KEYS) then
-        SetMode(MODE_LIVE)
+        SwitchMode(MODE_LIVE)
     else
-        SetMode(MODE_OFF)
+        SwitchMode(MODE_OFF)
     end
 end
 
@@ -3906,7 +3906,7 @@ function mod.KT_Refresh()
     if not Enabled(conf) then
         MTWhere.Unsubscribe(WHERE_KEY)
         previewing = false
-        SetMode(MODE_OFF)
+        SwitchMode(MODE_OFF)
         return
     end
     ReadSettings(conf)
@@ -4148,7 +4148,7 @@ function mod.KT_PaintSampleIcon(owner)
         if widget.styleGen ~= styleStamp then
             StyleIcon(widget)
         end
-        AnchorIcon(widget)
+        PlaceIcon(widget)
         local classFile = SAMPLE_CLASSES[i]
         PaintKicker(widget, classFile, PreviewTexture(classFile))
         if i == 2 then

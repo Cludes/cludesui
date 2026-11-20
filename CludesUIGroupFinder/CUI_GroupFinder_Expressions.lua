@@ -148,14 +148,14 @@ local function Compile(source)
     local function peekKind()
         return toks[place] and toks[place].t
     end
-    local function take()
+    local function nextTok()
         place = place + 1
         return toks[place - 1]
     end
 
     local Or
     local function Primary()
-        local tk = take()
+        local tk = nextTok()
         if not tk then
             error(CludesUI.L("ends too soon"), 0)
         end
@@ -175,7 +175,7 @@ local function Compile(source)
             end
         elseif tk.t == "(" then
             local frame = Or()
-            if take() == nil or toks[place - 1].t ~= ")" then
+            if nextTok() == nil or toks[place - 1].t ~= ")" then
                 error(CludesUI.L("missing )"), 0)
             end
             return frame
@@ -184,7 +184,7 @@ local function Compile(source)
     end
     local function Unary()
         if peekKind() == "-" then
-            take()
+            nextTok()
             local frame = Unary()
             return function(environ)
                 return -frame(environ)
@@ -195,7 +195,7 @@ local function Compile(source)
     local function Mul()
         local frame = Unary()
         while peekKind() == "*" or peekKind() == "/" do
-            local op, a, b = take().t, frame, Unary()
+            local op, a, b = nextTok().t, frame, Unary()
             if op == "*" then
                 frame = function(environ)
                     return a(environ) * b(environ)
@@ -212,7 +212,7 @@ local function Compile(source)
     local function Add()
         local frame = Mul()
         while peekKind() == "+" or peekKind() == "-" do
-            local op, a, b = take().t, frame, Mul()
+            local op, a, b = nextTok().t, frame, Mul()
             if op == "+" then
                 frame = function(environ)
                     return a(environ) + b(environ)
@@ -249,7 +249,7 @@ local function Compile(source)
         local frame = Add()
         local test = CMP[peekKind() or ""]
         if test then
-            take()
+            nextTok()
             local a, b = frame, Add()
             frame = function(environ)
                 return test(a(environ), b(environ)) and 1 or 0
@@ -259,7 +259,7 @@ local function Compile(source)
     end
     local function Not()
         if peekKind() == "not" then
-            take()
+            nextTok()
             local frame = Not()
             return function(environ)
                 return Truth(frame(environ)) and 0 or 1
@@ -270,7 +270,7 @@ local function Compile(source)
     local function And()
         local frame = Not()
         while peekKind() == "and" do
-            take()
+            nextTok()
             local a, b = frame, Not()
             frame = function(environ)
                 return (Truth(a(environ)) and Truth(b(environ))) and 1 or 0
@@ -281,7 +281,7 @@ local function Compile(source)
     Or = function()
         local frame = And()
         while peekKind() == "or" do
-            take()
+            nextTok()
             local a, b = frame, And()
             frame = function(environ)
                 return (Truth(a(environ)) or Truth(b(environ))) and 1 or 0

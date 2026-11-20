@@ -102,7 +102,7 @@ do
     end
 
     -- keepShown: the frame stays shown in its home parent (homeParent[frame]).
-    local function HandleFrame(widget, doNotReparent, keepShown)
+    local function TakeOverFrame(widget, doNotReparent, keepShown)
         if type(widget) == "string" then
             widget = _G[widget]
         end
@@ -169,7 +169,7 @@ do
 
     -- One Blizzard frame on its own, the same treatment (Forever's classic
     -- ComboFrame, see InitializeFrames).
-    mod.UF_HideBlizzardFrame = HandleFrame
+    mod.UF_HideBlizzardFrame = TakeOverFrame
 
     -- WoW Forever's Gamepad interface style: the gamepad bar's inspect button
     -- (Y / Triangle) opens the target menu with Blizzard's TargetFrame as its
@@ -185,7 +185,7 @@ do
         local holderFrame = CreateFrame("Frame", nil, UIParent)
         holderFrame:SetAlpha(0)
         homeParent[targetFrame] = holderFrame
-        HandleFrame(targetFrame, false, true)
+        TakeOverFrame(targetFrame, false, true)
         targetFrame:EnableMouse(false)
         local main = targetFrame.TargetFrameContent and targetFrame.TargetFrameContent.TargetFrameContentMain
         local barList = main and main.HealthBarsContainer
@@ -208,29 +208,29 @@ do
             return
         end
         if unitToken == "player" then
-            HandleFrame(PlayerFrame)
+            TakeOverFrame(PlayerFrame)
             DisableAltPowerBars()
         elseif unitToken == "pet" then
-            HandleFrame(PetFrame)
+            TakeOverFrame(PetFrame)
         elseif unitToken == "target" then
             -- Once kept for the gamepad menu, a repeat call has nothing to do.
             if not mod.UF_TargetMenuOwner then
                 if CludesUI.PadGamepadUI() and TargetFrame then
                     KeepTargetMenuOwner(TargetFrame)
                 else
-                    HandleFrame(TargetFrame)
+                    TakeOverFrame(TargetFrame)
                 end
             end
         elseif unitToken == "focus" then
-            HandleFrame(FocusFrame)
+            TakeOverFrame(FocusFrame)
         elseif unitToken:match("boss%d?$") then
             if not bossHandled then
                 bossHandled = true
                 -- Container is reparented (Edit Mode can revive it); individual boss frames are
                 -- container-managed and must NOT be reparented or layout code breaks their sizes.
-                HandleFrame(BossTargetFrameContainer)
+                TakeOverFrame(BossTargetFrameContainer)
                 for index = 1, (_G.MAX_BOSS_FRAMES or 5) do
-                    HandleFrame("Boss" .. index .. "TargetFrame", true)
+                    TakeOverFrame("Boss" .. index .. "TargetFrame", true)
                 end
             end
         end

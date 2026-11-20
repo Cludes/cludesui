@@ -710,7 +710,7 @@ local pushDirty = false
 
 -- Bound palettes only: nested ones have no button of their own, and their
 -- entries are pushed as part of whichever palette nests them.
-local function PushAllPalettes()
+local function PushPalettes()
     if InCombatLockdown() then
         pushDirty = true
         return
@@ -761,7 +761,7 @@ local function QueuePush()
             return
         end
         pushQueued = false
-        PushAllPalettes()
+        PushPalettes()
     end)
 end
 
@@ -778,7 +778,7 @@ FlushPendingPush = function()
         return
     end
     pushQueued = false
-    PushAllPalettes()
+    PushPalettes()
 end
 
 local bindingsDirty = false
@@ -1107,7 +1107,7 @@ local function OnRegenEnabled()
     -- was skipped by PushPalette and the sandbox is still holding the old
     -- contents, but a fight nobody edited anything through needs nothing.
     if pushDirty then
-        PushAllPalettes()
+        PushPalettes()
     end
     -- A palette that closed unattended mid-fight could not give ESCAPE
     -- back at the time. Now it can. No live view means none was ever
@@ -1365,7 +1365,7 @@ function EQD:OnEnable()
         EnsurePalette(i)
     end
     mod.UpdateBindings()
-    PushAllPalettes()
+    PushPalettes()
     activeSig = ActiveSig()
     SetEventsEnabled(true)
 end

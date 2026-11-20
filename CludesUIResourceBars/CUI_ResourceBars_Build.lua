@@ -104,7 +104,7 @@ end
 -- UpdateSecondaryResource both memo/gate on those, so without the clear the next
 -- IDENTICAL call is a no-op and ticks never return (e.g. Balance Druid cat/bear back to
 -- Moonkin hits the same memo). Branch-switch edge only.
-local function HideResourceBarTicks(tickCache, ownerFrame)
+local function HideTicks(tickCache, ownerFrame)
     for index = 1, #tickCache do
         tickCache[index]:Hide()
     end
@@ -291,7 +291,7 @@ function mod.ApplyHashLines(scrollBar, conf, getMaxFn)
     local hashStr = ent and ent.hashValues
     if not hashStr or hashStr == "" then
         if tickCache then
-            HideResourceBarTicks(tickCache, scrollBar)
+            HideTicks(tickCache, scrollBar)
         end
         return
     end
@@ -1182,7 +1182,7 @@ local function BuildBars()
                     runeFrames[index]:Hide()
                 end
             end
-            HideResourceBarTicks(secondaryPipTicks, secondaryFrame)
+            HideTicks(secondaryPipTicks, secondaryFrame)
             ERB.ApplyGapFills(secondaryFrame, nil, 0, isVertical, isReversed, sp) -- no pips -> hide any gap fills
             mod.ERB_ClassSeps(sp) -- Separators: the bottom-edge line only (no gaps)
 
@@ -1309,13 +1309,13 @@ local function BuildBars()
             if cachedSecondary.power == "IRONFUR_BAR" then
                 -- Guardian Ironfur: no static threshold hash lines; the moving
                 -- per-cast hash lines are drawn live in UpdateIronfurBar.
-                HideResourceBarTicks(secondaryBarTicks, secondaryBar)
+                HideTicks(secondaryBarTicks, secondaryBar)
                 EnsureIronfurOverlay(secondaryBar)
             elseif cachedSecondary.power == "IGNOREPAIN_BAR" then
                 -- Prot Ignore Pain: no static threshold hash lines -- the absorb
                 -- value is secret, so value-positioned hashes are meaningless. The
                 -- moving duration hash line is drawn separately via IP.UpdateHash.
-                HideResourceBarTicks(secondaryBarTicks, secondaryBar)
+                HideTicks(secondaryBarTicks, secondaryBar)
             else
                 -- Resolve hash lines from thresholdSpecs entry (falls back to legacy tickValues)
                 local _buildTsEntry = ResolveThresholdSpecEntry(sp)
@@ -1472,7 +1472,7 @@ local function BuildBars()
             if secondaryBar then
                 secondaryBar:Hide()
             end
-            HideResourceBarTicks(secondaryBarTicks, secondaryBar)
+            HideTicks(secondaryBarTicks, secondaryBar)
             -- Hash lines for rune-type resources (drawn on secondaryFrame)
             local _runeTsEntry = ResolveThresholdSpecEntry(sp)
             local _runeTickStr = (_runeTsEntry and _runeTsEntry.hashValues ~= "") and _runeTsEntry.hashValues
@@ -1595,7 +1595,7 @@ local function BuildBars()
             if secondaryBar then
                 secondaryBar:Hide()
             end
-            HideResourceBarTicks(secondaryBarTicks, secondaryBar)
+            HideTicks(secondaryBarTicks, secondaryBar)
             -- Hash lines for pip-type resources (drawn on secondaryFrame)
             local _pipTsEntry = ResolveThresholdSpecEntry(sp)
             local _pipTickStr = (_pipTsEntry and _pipTsEntry.hashValues ~= "") and _pipTsEntry.hashValues

@@ -125,7 +125,7 @@ local function Fill(tbl)
 end
 
 local myKey
-local function Store()
+local function CountsStore()
     local a = mod.AppCountsStore()
     if type(a.account) ~= "table" then
         a.account = ZeroCounts()
@@ -140,7 +140,7 @@ local function Store()
 end
 
 local function Counts(scope)
-    local a = Store()
+    local a = CountsStore()
     if scope == "account" then
         return Fill(a.account)
     end
@@ -486,7 +486,7 @@ local function Count(status, oldStatus, resultID)
     if not key or status == oldStatus or counted ~= true then
         return
     end
-    local a = Store()
+    local a = CountsStore()
     local tbl = Fill(a.account)
     tbl[key] = tbl[key] + 1
     tbl = Fill(a.session)
@@ -500,7 +500,7 @@ function mod.ResetApplications(scope)
     if not mod.Enabled() then
         return
     end
-    local a = Store()
+    local a = CountsStore()
     if scope == "account" then
         a.account = ZeroCounts()
     elseif scope == "session" then
@@ -540,7 +540,7 @@ function mod.Apps_Enable()
     if name then
         myKey = name .. "-" .. (PlainString(realm) or MyRealm())
     end
-    local a = Store()
+    local a = CountsStore()
     if time() - (tonumber(a.session.t) or 0) > SESSION_GAP then
         a.session = ZeroCounts()
     end
@@ -563,7 +563,7 @@ function mod.Apps_Enable()
                 self:UnregisterEvent("ADDON_LOADED")
             end
         elseif evt == "PLAYER_LOGOUT" then
-            Store().session.t = time()
+            CountsStore().session.t = time()
         end
     end)
     HookPVE()

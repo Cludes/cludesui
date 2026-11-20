@@ -520,7 +520,7 @@ local COIN_TEX = {
 -- suffix letter (colored on request). Every money renderer routes through this so Coin
 -- Icons/Coin Colored/Show Silver&Copper compose identically everywhere --
 -- GetCoinTextureString can't, it always emits all three coins welded into one string.
-local function CoinMarker(i, coinIcons, coloured)
+local function CoinGlyph(i, coinIcons, coloured)
     if coinIcons then
         return COIN_TEX[i]
     end
@@ -554,11 +554,11 @@ function mod.MoneyTokens(amount, showSmall, coinIcons, coloured, abbreviate, for
     amount = floor(abs(amount or 0))
     wipe(_moneyTokens)
     local gold = floor(amount / DENOMINATIONS[1].divisor)
-    _moneyTokens[1] = GoldDisplay(gold, abbreviate, forceEnglish) .. CoinMarker(1, coinIcons, coloured)
+    _moneyTokens[1] = GoldDisplay(gold, abbreviate, forceEnglish) .. CoinGlyph(1, coinIcons, coloured)
     if showSmall ~= false or gold == 0 then
         local silver = floor((amount % DENOMINATIONS[1].divisor) / DENOMINATIONS[2].divisor)
-        _moneyTokens[2] = silver .. CoinMarker(2, coinIcons, coloured)
-        _moneyTokens[3] = (amount % DENOMINATIONS[2].divisor) .. CoinMarker(3, coinIcons, coloured)
+        _moneyTokens[2] = silver .. CoinGlyph(2, coinIcons, coloured)
+        _moneyTokens[3] = (amount % DENOMINATIONS[2].divisor) .. CoinGlyph(3, coinIcons, coloured)
     end
     return _moneyTokens
 end
@@ -573,13 +573,13 @@ function mod.FormatMoney(amount, useColors, showSmall, coinIcons, abbreviate, fo
         if i == 1 and val > 0 then
             foundGold = true
             parts[#parts + 1] = GoldDisplay(val, abbreviate, forceEnglish)
-                .. CoinMarker(i, coinIcons, coloured)
+                .. CoinGlyph(i, coinIcons, coloured)
         elseif i > 1 and (not foundGold or showSmall ~= false) and (val > 0 or (i == 3 and #parts == 0)) then
-            parts[#parts + 1] = val .. CoinMarker(i, coinIcons, coloured)
+            parts[#parts + 1] = val .. CoinGlyph(i, coinIcons, coloured)
         end
     end
     if #parts == 0 then
-        return "0" .. CoinMarker(3, coinIcons, coloured)
+        return "0" .. CoinGlyph(3, coinIcons, coloured)
     end
     return tconcat(parts, " ")
 end

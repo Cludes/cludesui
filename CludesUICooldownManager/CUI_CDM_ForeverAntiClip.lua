@@ -57,7 +57,7 @@ local hooked = setmetatable({}, { __mode = "k" })
 local nextWake = HUGE -- the earliest pending idle wake
 local ev = mod.TakeShell()
 
-local function Wake()
+local function WakeBuffTicker()
     mod._btDirty = true
     if mod.ArmBuffTicker then
         mod.ArmBuffTicker()
@@ -206,7 +206,7 @@ Probe = function()
         end
     end
     if flipped then
-        Wake()
+        WakeBuffTicker()
     end
 end
 
@@ -217,7 +217,7 @@ local function OnAuraEdge(widget)
         return
     end
     if status[widget] == nil then
-        Wake()
+        WakeBuffTicker()
     else
         Probe()
     end
@@ -227,7 +227,7 @@ end
 -- activation among them): let the ticker draw the icons it has not drawn yet.
 function mod.CDM_AntiClipPlaced()
     if armed then
-        Wake()
+        WakeBuffTicker()
     end
 end
 
@@ -309,7 +309,7 @@ local function SetArmed(wanted)
         wipe(status)
     end
     -- The next pass lights or takes down the glows under the new state.
-    Wake()
+    WakeBuffTicker()
 end
 
 -- End of every full rebuild (options, profile and spec swaps): does any enabled
@@ -329,7 +329,7 @@ function mod.CDM_AntiClipSync()
     wipe(status)
     if armed == (wantIcons or wantBars) then
         if armed then
-            Wake()
+            WakeBuffTicker()
         end
     else
         SetArmed(wantIcons or wantBars)

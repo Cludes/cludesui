@@ -88,7 +88,7 @@ local function IsFreshAccount(saved)
     return true
 end
 
-local function Record()
+local function UninstallRecord()
     local saved = CludesUIDB
     if type(saved) ~= "table" then
         saved = {}
@@ -109,7 +109,7 @@ local function CharRecord(peek)
     if not unitGuid then
         return nil
     end
-    local r = Record()
+    local r = UninstallRecord()
     local chars = r.chars
     if not chars then
         if peek then
@@ -152,7 +152,7 @@ CludesUI.Lite.OnSavedVariablesLoaded(function()
     frame:RegisterEvent("PLAYER_LOGIN")
     frame:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
-        Record()
+        UninstallRecord()
         if IS_STANDALONE then
             return
         end
@@ -178,7 +178,7 @@ local function CVarRoot(name)
     if perChar then
         return CharRecord()
     end
-    return Record()
+    return UninstallRecord()
 end
 
 -- What the game's own SetCVar passes on: true/false as "1"/"0", the rest as text.
@@ -210,7 +210,7 @@ local function Note(name, before, ownerFrame)
     if not e then
         e = {}
         tbl[key] = e
-        if Record().fresh then
+        if UninstallRecord().fresh then
             e.b = before
         end
     end
@@ -323,7 +323,7 @@ function CludesUI.SetCVarBitfield(name, index, value, ownerFrame)
         if not e then
             e = {}
             tbl[index] = e
-            if Record().fresh then
+            if UninstallRecord().fresh then
                 e.b = before
             end
         end
@@ -532,14 +532,14 @@ end
 -- At login (out of combat): the parent, which loads whenever any module does,
 -- puts back what a module that is off left behind.
 CheckModules = function()
-    RevertOffModules(Record(), true)
+    RevertOffModules(UninstallRecord(), true)
     local c = CharRecord(true)
     if not c then
         return
     end
     RevertOffModules(c, false)
     if next(c) == nil then
-        Record().chars[UnitGUID("player")] = nil
+        UninstallRecord().chars[UnitGUID("player")] = nil
     end
 end
 
@@ -620,7 +620,7 @@ end
 -- the first note with the value from before (fresh, a layout there was at
 -- the first note) or else fallback. nil while the character is unknown.
 local function EditModeEntry(layout, sysInfo, key, before, fallback)
-    local r = Record()
+    local r = UninstallRecord()
     local isChar = layout.layoutType == CHAR_LAYOUT
     local mine
     if r.fresh or isChar then
@@ -845,7 +845,7 @@ function CludesUI.SetChatWindowSize(index, size)
     if not e then
         e = {}
         tbl[index] = e
-        if Record().fresh then
+        if UninstallRecord().fresh then
             e.b = before
         end
     end
@@ -881,7 +881,7 @@ function CludesUI.NoteBinding(key, before)
     if GetCurrentBindingSet() == 2 then
         root = CharRecord()
     else
-        root = Record()
+        root = UninstallRecord()
     end
     if not root then
         return
@@ -964,7 +964,7 @@ function CludesUI.Uninstall()
     -- From here on nothing re-applies a setting, not even a handler the
     -- writes below wake.
     _uninstalled = true
-    local r = Record()
+    local r = UninstallRecord()
     local mine = CharRecord(true) or {}
     -- Each part in a pcall: one that fails never keeps CludesUI from turning
     -- off. What a part put back is dropped, so the next time CludesUI is

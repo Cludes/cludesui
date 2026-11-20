@@ -920,7 +920,7 @@ end
 
 -- Each member's spec icon from the meter's rows, where the GUIDs are readable
 -- (out of restricted combat). An inspect's answer is never overwritten.
-local function LearnSpecs()
+local function ReadSpecs()
     if InCombatLockdown() then
         return
     end
@@ -1776,7 +1776,7 @@ local function OnEvent(_, eventName, firstArg, a2, a3, a4, a5)
             rosterT = T
             SyncRoster()
             if not InCombatLockdown() then
-                LearnSpecs()
+                ReadSpecs()
             end
         elseif not rosterFlush then
             rosterFlush = true
@@ -1787,7 +1787,7 @@ local function OnEvent(_, eventName, firstArg, a2, a3, a4, a5)
                 end
                 SyncRoster()
                 if not InCombatLockdown() then
-                    LearnSpecs()
+                    ReadSpecs()
                 end
             end)
         end
@@ -1818,10 +1818,10 @@ local function OnEvent(_, eventName, firstArg, a2, a3, a4, a5)
         OnReadReady(firstArg)
     elseif eventName == "ADDON_RESTRICTION_STATE_CHANGED" then
         if firstArg == RT_COMBAT and a2 == RS_INACTIVE then
-            LearnSpecs()
+            ReadSpecs()
         end
     elseif eventName == "PLAYER_REGEN_ENABLED" then
-        LearnSpecs()
+        ReadSpecs()
         ReReadStale()
         ReadNext()
     elseif eventName == "CHALLENGE_MODE_START" then
@@ -1864,7 +1864,7 @@ local function Activate()
     SyncRoster()
     RegisterOwnCasts()
     if not InCombatLockdown() then
-        LearnSpecs()
+        ReadSpecs()
     end
     ReReadStale()
     ReadNext()

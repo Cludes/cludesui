@@ -103,7 +103,7 @@ local function TimerTick()
     end
 end
 
-local function StopTimerTicker()
+local function CancelTimerTicker()
     if _timerTicker then
         _timerTicker:Cancel()
         _timerTicker = nil
@@ -166,7 +166,7 @@ local function SharedRefreshTick()
                 _sharedTicker:Cancel()
                 SetSharedTicker(nil)
             end
-            StopTimerTicker()
+            CancelTimerTicker()
             return
         end
         -- Group still fighting: fall through to normal refresh
@@ -177,7 +177,7 @@ local function SharedRefreshTick()
             _sharedTicker:Cancel()
             SetSharedTicker(nil)
         end
-        StopTimerTicker()
+        CancelTimerTicker()
         return
     end
     -- (Threat windows, WoW Forever, are painted by their own list's updates.)
@@ -192,7 +192,7 @@ local function SharedRefreshTick()
     local val = AnyTickViewer()
     if val ~= true then
         if _needsFinalRefresh or val then
-            StopTimerTicker()
+            CancelTimerTicker()
         else
             StopSharedTicker()
         end
@@ -207,7 +207,7 @@ StartSharedTicker = function()
         _sharedTicker:Cancel()
         SetSharedTicker(nil)
     end
-    StopTimerTicker()
+    CancelTimerTicker()
     local viewers = AnyTickViewer()
     if not viewers and not _needsFinalRefresh then
         -- Data keeps moving with nothing refreshing it: mark every (hidden) window stale so
@@ -245,7 +245,7 @@ StopSharedTicker = function()
         _sharedTicker:Cancel()
         SetSharedTicker(nil)
     end
-    StopTimerTicker()
+    CancelTimerTicker()
 end
 SetStopSharedTicker(StopSharedTicker)
 

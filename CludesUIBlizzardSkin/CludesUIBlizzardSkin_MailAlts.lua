@@ -112,7 +112,7 @@ local function NumberSetting(key, default)
     return val and math.floor(val) or default
 end
 
-local function Roster()
+local function AltRoster()
     local saved = CludesUIDB
     if type(saved) ~= "table" then
         return nil
@@ -146,7 +146,7 @@ local function RecordPlayer()
     end
     -- The realm as mail addresses it ("Area52"): the normalized name.
     local realmKey = PlainString(GetNormalizedRealmName()) or (realm:gsub("[%s%-]", ""))
-    local roster = Roster()
+    local roster = AltRoster()
     if not roster then
         return
     end
@@ -239,7 +239,7 @@ local SORTS = { recent = ByRecent, level = ByLevel, name = ByName }
 local function Collect()
     wipe(isShown)
     mailable = 0
-    local roster = Roster()
+    local roster = AltRoster()
     local faction = PlainString((UnitFactionGroup("player")))
     paintedFaction = faction
     -- A character without a faction yet has no mail.
@@ -271,7 +271,7 @@ end
 local Paint, Place
 
 local function RowEnter(self)
-    local roster = Roster()
+    local roster = AltRoster()
     local e = self._guid and roster and roster[self._guid]
     if type(e) ~= "table" then
         return
@@ -464,7 +464,7 @@ Paint = function()
     dirty = false
     paintedGen = CUI._dmGen
     Collect()
-    local roster = Roster()
+    local roster = AltRoster()
     local own = PlainString(GetNormalizedRealmName())
     local realms = ConnectedRealms()
     local num = #isShown
@@ -630,7 +630,7 @@ MENU = {
         text = "Remove Character",
         tooltip = "Forgets a deleted or moved character.",
         onClick = function()
-            local roster = Roster()
+            local roster = AltRoster()
             local unitGuid = menuGuid
             local e = unitGuid and roster and roster[unitGuid]
             if type(e) ~= "table" then
@@ -729,7 +729,7 @@ end
 -- then by name. A fresh list per call (the menu builds on open).
 function mod.MailAlts.Entries()
     local result = {}
-    local roster = Roster()
+    local roster = AltRoster()
     if not roster then
         return result
     end

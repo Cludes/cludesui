@@ -1076,7 +1076,7 @@ do
     end
 
     -- Full and abbreviated amounts blank at zero, as the Unit Frames' Absorb Short.
-    local function Absorb(key, get)
+    local function AbsorbRow(key, get)
         local abr, sample = sfind(key, ":abr", 1, true) ~= nil, SCHEMA[key].sample
         return function(unitToken)
             if not unitToken then
@@ -1169,10 +1169,10 @@ do
         ["pp:max"] = Amount("pp:max"),
         ["pp:max:abr"] = Amount("pp:max:abr"),
         ["pp:pct"] = PowerPct,
-        ["absorb"] = Absorb("absorb", UnitGetTotalAbsorbs),
-        ["absorb:abr"] = Absorb("absorb:abr", UnitGetTotalAbsorbs),
-        ["healabsorb"] = Absorb("healabsorb", UnitGetTotalHealAbsorbs),
-        ["healabsorb:abr"] = Absorb("healabsorb:abr", UnitGetTotalHealAbsorbs),
+        ["absorb"] = AbsorbRow("absorb", UnitGetTotalAbsorbs),
+        ["absorb:abr"] = AbsorbRow("absorb:abr", UnitGetTotalAbsorbs),
+        ["healabsorb"] = AbsorbRow("healabsorb", UnitGetTotalHealAbsorbs),
+        ["healabsorb:abr"] = AbsorbRow("healabsorb:abr", UnitGetTotalHealAbsorbs),
         ["name"] = NamePiece("name"),
         ["name:first"] = NamePiece("name:first", "first"),
         ["name:last"] = NamePiece("name:last", "last"),

@@ -118,7 +118,7 @@ end
 -- One-shot: maps the retired Auras-tab preset onto the manager, runs ONLY
 -- while the profile has no dmDebuff yet (a brand-new profile maps nil/"all" preset to the defaults, harmless). No
 -- display/style key mapping needed; the base grid reads legacy debuff keys directly (nondestructive view).
-local function EnsureMigrated()
+local function MigrateOnce()
     local profile = mod.db and mod.db.profile
     if not profile then return end
     if profile.dmDebuff then
@@ -168,7 +168,7 @@ end
 function mod.DM_Active()
     -- ALWAYS ON: the manager IS the 12.1 debuff system, no disable (an empty grid is expressed via filters); kept
     -- as a function for the containers delegation and as the migration hook. Show All + cc default on for legacy parity.
-    EnsureMigrated()
+    MigrateOnce()
     return true
 end
 
@@ -1100,7 +1100,7 @@ local function BaseView(dmCfg)
 end
 
 function mod.DM_CfgFP()
-    EnsureMigrated() -- profile switches re-fingerprint before rendering
+    MigrateOnce() -- profile switches re-fingerprint before rendering
     local dmCfg = DM() or {}
     FxHeal(dmCfg)
     local baseView = BaseView(dmCfg)
@@ -3841,7 +3841,7 @@ end
 function _G._CURF_DMHarvestFork()
     local profile = mod.db and mod.db.profile
     if not profile then return nil end
-    EnsureMigrated()
+    MigrateOnce()
     local dmCfg = profile.dmDebuff
     if type(dmCfg) ~= "table" then return nil end
     return CopyTable(dmCfg)
@@ -3853,7 +3853,7 @@ function _G._CURF_DMApplyLayer(dmCfg, noPageRefresh)
     if type(dmCfg) ~= "table" then return false end
     local profile = mod.db and mod.db.profile
     if not profile then return false end
-    EnsureMigrated()
+    MigrateOnce()
     local live = profile.dmDebuff
     if type(live) ~= "table" then live = {}; profile.dmDebuff = live end
     wipe(live)

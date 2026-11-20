@@ -992,7 +992,7 @@ end
 -- Text Size) land here; the retail versions walk retail-only state.
 -- The version bump feeds every setting into the paint memo, so a hidden
 -- sheet repaints on its next show.
-local function RefreshSlotText()
+local function RedrawSlotText()
     textVer = textVer + 1
     if not TextEnabled() then
         return
@@ -1004,11 +1004,11 @@ local function RefreshSlotText()
         end
     end
 end
-CludesUI._refreshItemLevelVisibility = RefreshSlotText
-CludesUI._refreshUpgradeTrackVisibility = RefreshSlotText
-CludesUI._refreshEnchantsVisibility = RefreshSlotText
-CludesUI._refreshCharSheetSlotLabels = RefreshSlotText
-CludesUI._applyCharSheetTextSizes = RefreshSlotText
+CludesUI._refreshItemLevelVisibility = RedrawSlotText
+CludesUI._refreshUpgradeTrackVisibility = RedrawSlotText
+CludesUI._refreshEnchantsVisibility = RedrawSlotText
+CludesUI._refreshCharSheetSlotLabels = RedrawSlotText
+CludesUI._applyCharSheetTextSizes = RedrawSlotText
 
 -- Blizzard refreshes every shown slot through this on equipment changes and
 -- on show; the border and the slot text follow. Foreign item buttons (bags)

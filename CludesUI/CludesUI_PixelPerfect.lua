@@ -447,7 +447,7 @@ do
     end
 
     local _hookedMetatables = {}
-    local function HookPixelSnap(object)
+    local function HookSnap(object)
         local mk = getmetatable(object)
         if not mk then
             return
@@ -499,10 +499,10 @@ do
             Pix.RawSetColorTexture = mt.__index.SetColorTexture
         end
     end
-    HookPixelSnap(hookFrame)
-    HookPixelSnap(hookFrame:CreateTexture())
-    HookPixelSnap(hookFrame:CreateFontString())
-    HookPixelSnap(hookFrame:CreateMaskTexture())
+    HookSnap(hookFrame)
+    HookSnap(hookFrame:CreateTexture())
+    HookSnap(hookFrame:CreateFontString())
+    HookSnap(hookFrame:CreateMaskTexture())
 
     -- No frame-tree enumeration here, deliberately. An EnumerateFrames() walk
     -- used to run at this point "to catch any type we missed": 11,305 frames,
@@ -514,14 +514,14 @@ do
     -- so every type sharing one hooked here is covered anyway.
 
     -- Also hook ScrollFrame and StatusBar metatables
-    HookPixelSnap(CreateFrame("ScrollFrame"))
+    HookSnap(CreateFrame("ScrollFrame"))
     do
         local scrollBar = CreateFrame("StatusBar")
         scrollBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-        HookPixelSnap(scrollBar)
+        HookSnap(scrollBar)
         local sbt = scrollBar:GetStatusBarTexture()
         if sbt then
-            HookPixelSnap(sbt)
+            HookSnap(sbt)
         end
     end
 
@@ -1404,7 +1404,7 @@ do
     -- Border defaults tables shared by modules with the same size keys and
     -- tuning. Read-only: modules pass them to RegisterBorderDefaults as is.
     do
-        local function AllSizes(offX, offY, shiftAmtX, shiftAmtY)
+        local function SizeTable(offX, offY, shiftAmtX, shiftAmtY)
             local tbl = {}
             for k = 0, 4 do
                 tbl[k] = { offsetX = offX, offsetY = offY, shiftX = shiftAmtX, shiftY = shiftAmtY }
@@ -1414,7 +1414,7 @@ do
         CludesUI.BORDER_DEFAULTS_BARS = {
             ["glow"] = {
                 defaultSize = 1,
-                sizes = AllSizes(0, 0, 0, 0),
+                sizes = SizeTable(0, 0, 0, 0),
             },
             ["blizz"] = {
                 defaultSize = 3,
@@ -1450,7 +1450,7 @@ do
     end
     do
         local ALL_SIZES = { "none", "thin", "normal", "heavy", "strong" }
-        local function AllSizes(offX, offY, shiftAmtX, shiftAmtY)
+        local function SizeTable(offX, offY, shiftAmtX, shiftAmtY)
             local tbl = {}
             for _, key in ipairs(ALL_SIZES) do
                 tbl[key] = { offsetX = offX, offsetY = offY, shiftX = shiftAmtX, shiftY = shiftAmtY }
@@ -1460,7 +1460,7 @@ do
         CludesUI.BORDER_DEFAULTS_BUTTONS = {
             ["glow"] = {
                 defaultSize = "normal",
-                sizes = AllSizes(0, 0, 0, 0),
+                sizes = SizeTable(0, 0, 0, 0),
             },
             ["blizz"] = {
                 defaultSize = "heavy",
@@ -1474,17 +1474,17 @@ do
             },
             ["dialog"] = {
                 defaultSize = "normal",
-                sizes = AllSizes(4, 4, 0, 0),
+                sizes = SizeTable(4, 4, 0, 0),
             },
             ["sm:Blizzard Achievement Wood"] = {
                 defaultSize = "thin",
-                sizes = AllSizes(1, 1, 0, 0),
+                sizes = SizeTable(1, 1, 0, 0),
             },
         }
     end
     do
         local ALL_SIZES = { [0] = true, [1] = true, [2] = true, [3] = true, [4] = true }
-        local function AllSizes(offX, offY, shiftAmtX, shiftAmtY)
+        local function SizeTable(offX, offY, shiftAmtX, shiftAmtY)
             local tbl = {}
             for key in pairs(ALL_SIZES) do
                 tbl[key] = { offsetX = offX, offsetY = offY, shiftX = shiftAmtX, shiftY = shiftAmtY }
@@ -1494,7 +1494,7 @@ do
         CludesUI.BORDER_DEFAULTS_FRAMES = {
             ["glow"] = {
                 defaultSize = 1,
-                sizes = AllSizes(0, 0, 0, 0),
+                sizes = SizeTable(0, 0, 0, 0),
             },
             ["blizz"] = {
                 defaultSize = 4,
@@ -1518,7 +1518,7 @@ do
             },
             ["sm:Blizzard Achievement Wood"] = {
                 defaultSize = 1,
-                sizes = AllSizes(1, 1, 0, 0),
+                sizes = SizeTable(1, 1, 0, 0),
             },
         }
     end

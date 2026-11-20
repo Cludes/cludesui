@@ -887,7 +887,7 @@ CUI_NS.unlockParts.Movers = function(LM)
         end
 
         -- Update the name label color based on anchor state
-        local function RefreshAnchoredIdle()
+        local function SyncAnchoredIdle()
             -- A link on an element that places itself (ownsPosition) is inert.
             local anchorInfo = not (element and element.ownsPosition) and GetAnchorInfo(barId) or nil
             isAnchored = anchorInfo ~= nil or mod.IsMoverPosLocked(barId)
@@ -1042,7 +1042,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 nameText:SetAlpha(1)
                 nameText:Show()
             end
-            RefreshAnchoredIdle()
+            SyncAnchoredIdle()
             -- Cache hover dimensions once so ApplyHoverState avoids per-frame GetStringWidth
             if realW > 0 and realH > 0 then
                 local PAD = 5
@@ -1142,7 +1142,7 @@ CUI_NS.unlockParts.Movers = function(LM)
 
         -- Refresh the anchored text (called after anchor changes)
         function handle:RefreshAnchoredText()
-            RefreshAnchoredIdle()
+            SyncAnchoredIdle()
             SyncLinkStates()
             -- If not hovered, apply idle state to show/hide anchored text
             if not self:IsMouseOver() then
@@ -1435,7 +1435,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     end
                 end
                 LM.hasChanges = true
-                RefreshAnchoredIdle()
+                SyncAnchoredIdle()
                 SyncLinkStates()
                 LayoutActionRow()
                 if handles[barId] and handles[barId].RefreshAnchoredText then
@@ -1763,7 +1763,7 @@ CUI_NS.unlockParts.Movers = function(LM)
         handle:SetAlpha(LM.darkOverlaysEnabled and 1 or MOVER_ALPHA)
 
         -- Initialize anchored text and link states, then apply idle state
-        RefreshAnchoredIdle()
+        SyncAnchoredIdle()
         SyncLinkStates()
         PaintHover(0)
 
@@ -5381,7 +5381,7 @@ CUI_NS.unlockParts.Movers = function(LM)
         -- is what makes the change stick.
         function handle:UpdateLabel()
             labelText = LM.GetBarLabel(barId)
-            RefreshAnchoredIdle()
+            SyncAnchoredIdle()
         end
 
         -- Opt-in hover tooltip (element definition field `moverTooltip`, string or

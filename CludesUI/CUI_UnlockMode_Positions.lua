@@ -3053,7 +3053,7 @@ CUI_NS.unlockParts.Positions = function(LM)
         return true
     end
 
-    local function ApplySavedPositions()
+    local function RestorePositions()
         CludesUI._applyingSavedPositions = true
         local inCombat = InCombatLockdown()
 
@@ -3227,12 +3227,12 @@ CUI_NS.unlockParts.Positions = function(LM)
 
         -- If we skipped protected frames, re-run once combat drops
         if inCombat then
-            CludesUI._UnlockCombatQueue.Defer("ApplySavedPositions", ApplySavedPositions)
+            CludesUI._UnlockCombatQueue.Defer("ApplySavedPositions", RestorePositions)
         end
     end
 
     -- Expose for profile import/switch (called from CludesUI_Profiles.lua)
-    CludesUI._applySavedPositions = ApplySavedPositions
+    CludesUI._applySavedPositions = RestorePositions
 
     -- Expose for unlock spec-overrides (position override removal / NIL apply)
     CludesUI._UnlockClearSavedPosition = ClearBarPosition
@@ -3329,7 +3329,7 @@ CUI_NS.unlockParts.Positions = function(LM)
                 _origApplyAll(self)
                 -- Install anchor guards on first ApplyAll (bars exist by now)
                 InstallAllAnchorGuards()
-                C_Timer.After(0.6, ApplySavedPositions)
+                C_Timer.After(0.6, RestorePositions)
             end
         end
 
@@ -3340,7 +3340,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             function ABAR:OnInitialize()
                 _origOnInit(self)
                 InstallAllAnchorGuards()
-                ApplySavedPositions()
+                RestorePositions()
             end
         end
     end
@@ -3381,7 +3381,7 @@ CUI_NS.unlockParts.Positions = function(LM)
             -- -> dependency-sorted ReapplyAll cascade. No safety sweep timer: a missed
             -- emission should be found and fixed, not papered over with periodic re-applies that themselves cause visible shifts.
             C_Timer.After(1, function()
-                ApplySavedPositions()
+                RestorePositions()
                 if CludesUI.ReapplyAllUnlockAnchors then
                     CludesUI.ReapplyAllUnlockAnchors()
                 end

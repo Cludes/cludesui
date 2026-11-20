@@ -44,7 +44,7 @@ end
 
 local HIDDEN_CLASSES = {}
 
-local function VisibleTokenClasses()
+local function TokenClassesShown()
     local uf = mod.UF_TokenClasses
     if not uf then
         return nil
@@ -59,7 +59,7 @@ local function VisibleTokenClasses()
 end
 
 -- No candidate class is hidden today; kept behind an accessor so a future hide is one line.
-local function VisibleCandidateClasses()
+local function CandidateClassesShown()
     return mod.UF_CandidateClasses
 end
 
@@ -184,8 +184,8 @@ function mod.PAB_ClassItems(isBuff)
     -- Buffs: generic enumeration kept for signature compatibility; never called
     -- with isBuff=true today (buffs use Filters/Extra Spells).
     local itemList = {}
-    local tokenClasses = VisibleTokenClasses()
-    local candidateClasses = VisibleCandidateClasses()
+    local tokenClasses = TokenClassesShown()
+    local candidateClasses = CandidateClassesShown()
     if not (tokenClasses and candidateClasses) then
         return itemList
     end
@@ -655,8 +655,8 @@ end
 local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
     local chain, negations = {}, {}
     local excludeDispelTypes, npOwned, anyOwned, prOwned, boolOwned, subCand
-    local tokenClasses = VisibleTokenClasses()
-    local candidateClasses = VisibleCandidateClasses()
+    local tokenClasses = TokenClassesShown()
+    local candidateClasses = CandidateClassesShown()
     if not (tokenClasses and candidateClasses) then
         return chain
     end
@@ -1045,8 +1045,8 @@ CludesUI.NewInternals(mod, "_pabInternals", {
     PabShapeBorderSize = PabShapeBorderSize,
     PabShapedSize = PabShapedSize,
     PabSnap = PabSnap,
-    VisibleCandidateClasses = VisibleCandidateClasses,
-    VisibleTokenClasses = VisibleTokenClasses,
+    VisibleCandidateClasses = CandidateClassesShown,
+    VisibleTokenClasses = TokenClassesShown,
     AKSetters = {},
     buffsContainerSetters = {},
     debuffsContainerSetters = {},

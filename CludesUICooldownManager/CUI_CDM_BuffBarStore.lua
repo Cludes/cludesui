@@ -86,7 +86,7 @@ do
     end
 
     -- Copy a live store's TBB child entries into a bucket table (slot-keyed).
-    local function BankOne(storage, dest)
+    local function CopyOne(storage, dest)
         wipe(dest)
         if not storage then
             return
@@ -126,7 +126,7 @@ do
             dest = {}
             b[field] = dest
         end
-        BankOne(storage, dest)
+        CopyOne(storage, dest)
     end
 
     local function Bank(profileName, specKey)
@@ -148,9 +148,9 @@ do
             return
         end
         local an, wm, hm = LiveStores(false)
-        BankOne(an, b.anchors)
-        BankOne(wm, b.wm)
-        BankOne(hm, b.hm)
+        CopyOne(an, b.anchors)
+        CopyOne(wm, b.wm)
+        CopyOne(hm, b.hm)
         BankExtra(b, "wmx", "unlockWidthMatchExtra")
         BankExtra(b, "hmx", "unlockHeightMatchExtra")
     end
@@ -203,9 +203,9 @@ do
                 return
             end
             -- First view for this spec: seed from live entries, keeping only slots that have a bar here.
-            BankOne(an, b.anchors)
-            BankOne(wm, b.wm)
-            BankOne(hm, b.hm)
+            CopyOne(an, b.anchors)
+            CopyOne(wm, b.wm)
+            CopyOne(hm, b.hm)
             local tbl = mod.GetTrackedBuffBars and mod.GetTrackedBuffBars()
             local barList = (tbl and tbl.bars) or {}
             local sets = { b.anchors, b.wm, b.hm }

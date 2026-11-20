@@ -39,7 +39,7 @@ end
 
 -- The active CUI profile's spell-store bucket (holds specProfiles + rptSyncSpecs).
 -- Ensure it exists (GetActiveSpecProfiles seeds it), then return it.
-local function GetActiveBucket()
+local function ActiveBucket()
     local sa = GetSA()
     if not sa then
         return nil
@@ -279,7 +279,7 @@ end
 
 -- Active profile's synced-spec set, or nil. Read-only.
 function mod.GetRPTSyncSpecs()
-    local b = GetActiveBucket()
+    local b = ActiveBucket()
     return b and b.rptSyncSpecs or nil
 end
 
@@ -493,7 +493,7 @@ function mod.PropagateRPTFrom(sourceSpecKey)
     if not sourceSpecKey then
         return
     end
-    local b = GetActiveBucket()
+    local b = ActiveBucket()
     if not b or type(b.rptSyncSpecs) ~= "table" or not b.rptSyncSpecs[sourceSpecKey] then
         return
     end
@@ -535,7 +535,7 @@ end
 
 -- First-time setup: set the synced-spec set + align ALL of them to sourceSpecKey.
 function mod.SetupRPTSync(specsSet, sourceSpecKey)
-    local b = GetActiveBucket()
+    local b = ActiveBucket()
     if not b then
         return false
     end
@@ -561,7 +561,7 @@ end
 -- Update an existing sync's spec set: align only NEWLY-added specs (from a still-
 -- synced source, preferring the active spec); removed specs simply stop syncing.
 function mod.UpdateRPTSyncSpecs(specsSet)
-    local b = GetActiveBucket()
+    local b = ActiveBucket()
     if not b then
         return false
     end
@@ -599,7 +599,7 @@ function mod.UpdateRPTSyncSpecs(specsSet)
 end
 
 function mod.ClearRPTSync()
-    local b = GetActiveBucket()
+    local b = ActiveBucket()
     if b then
         b.rptSyncSpecs = nil
     end

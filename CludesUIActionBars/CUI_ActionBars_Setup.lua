@@ -1092,7 +1092,7 @@ function ABAR:FinishSetup()
     -- Override to "hide" in the same frame so the bar never visibly flashes. The
     -- deferred UpdateHousingVisibility that follows handles the general case and
     -- restores the normal driver string when the soft target clears.
-    local function ImmediateSoftTargetCheck()
+    local function CheckSoftTargetNow()
         -- Fully gated (same flag the 0.1s poll already uses): without a
         -- "Hide when No Target" bar, the four UnitExists calls and the
         -- all-bars walk below are dead weight on every soft-target flip --
@@ -1143,12 +1143,12 @@ function ABAR:FinishSetup()
         -- moment PLAYER_TARGET_CHANGED fires, so an immediate check can
         -- wrongly see no hard target and keep the bar hidden. Run next frame.
         C_Timer.After(0, function()
-            ImmediateSoftTargetCheck()
+            CheckSoftTargetNow()
             self:UpdateHousingVisibility()
         end)
     end)
     self:RegisterEvent("PLAYER_SOFT_INTERACT_CHANGED", function()
-        ImmediateSoftTargetCheck()
+        CheckSoftTargetNow()
         self:UpdateHousingVisibility()
     end)
     local function RegisterIfValid(evt, func)
@@ -1157,11 +1157,11 @@ function ABAR:FinishSetup()
         end
     end
     RegisterIfValid("PLAYER_SOFT_ENEMY_CHANGED", function()
-        ImmediateSoftTargetCheck()
+        CheckSoftTargetNow()
         self:UpdateHousingVisibility()
     end)
     RegisterIfValid("PLAYER_SOFT_FRIEND_CHANGED", function()
-        ImmediateSoftTargetCheck()
+        CheckSoftTargetNow()
         self:UpdateHousingVisibility()
     end)
     self:RegisterEvent("GROUP_ROSTER_UPDATE", function()
@@ -1197,7 +1197,7 @@ function ABAR:FinishSetup()
         local t = UnitExists("target") and true or false
         if index ~= lastI or e ~= lastE or fr ~= lastF or t ~= lastT then
             lastI, lastE, lastF, lastT = index, e, fr, t
-            ImmediateSoftTargetCheck()
+            CheckSoftTargetNow()
             self:UpdateHousingVisibility()
         end
     end

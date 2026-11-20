@@ -220,7 +220,7 @@ end
 -- OOC-only scan checks AuraKit.AurasRestricted() inline (no helper local).
 
 -- Shared helpers for group aura scanning (hoisted to avoid per-call closure allocation)
-local function _unitOk(unit)
+local function _unitUsable(unit)
     return UnitExists(unit) and UnitIsConnected(unit) and not UnitIsDeadOrGhost(unit)
 end
 local function _unitHasBuff(unit, spellIdList)
@@ -536,7 +536,7 @@ end
 local function CountGroupBuffCoverage(spellIdList, benefit)
     local have, sum = 0, 0
     if not IsInGroup() then
-        if REMIND.UnitBenefits("player", benefit) and _unitOk("player") then
+        if REMIND.UnitBenefits("player", benefit) and _unitUsable("player") then
             sum = 1
             if _unitHasBuff("player", spellIdList) then
                 have = 1
@@ -547,7 +547,7 @@ local function CountGroupBuffCoverage(spellIdList, benefit)
     if IsInRaid() then
         for auraIndex = 1, GetNumGroupMembers() do
             local u = "raid" .. auraIndex
-            if _unitOk(u) and UnitIsPlayer(u) and _unitInRange(u) then
+            if _unitUsable(u) and UnitIsPlayer(u) and _unitInRange(u) then
                 if REMIND.UnitBenefits(u, benefit) then
                     sum = sum + 1
                     if _unitHasBuff(u, spellIdList) then
@@ -557,7 +557,7 @@ local function CountGroupBuffCoverage(spellIdList, benefit)
             end
         end
     else
-        if REMIND.UnitBenefits("player", benefit) and _unitOk("player") then
+        if REMIND.UnitBenefits("player", benefit) and _unitUsable("player") then
             sum = sum + 1
             if _unitHasBuff("player", spellIdList) then
                 have = have + 1
@@ -565,7 +565,7 @@ local function CountGroupBuffCoverage(spellIdList, benefit)
         end
         for auraIndex = 1, GetNumSubgroupMembers() do
             local u = "party" .. auraIndex
-            if _unitOk(u) and UnitIsPlayer(u) and _unitInRange(u) then
+            if _unitUsable(u) and UnitIsPlayer(u) and _unitInRange(u) then
                 if REMIND.UnitBenefits(u, benefit) then
                     sum = sum + 1
                     if _unitHasBuff(u, spellIdList) then
@@ -837,14 +837,14 @@ function REMIND.AnyReachableGroupMember()
     if IsInRaid() then
         for auraIndex = 1, GetNumGroupMembers() do
             local u = "raid" .. auraIndex
-            if _unitOk(u) and not UnitIsUnit(u, "player") and _unitInRange(u) then
+            if _unitUsable(u) and not UnitIsUnit(u, "player") and _unitInRange(u) then
                 return true
             end
         end
     elseif IsInGroup() then
         for auraIndex = 1, GetNumSubgroupMembers() do
             local u = "party" .. auraIndex
-            if _unitOk(u) and _unitInRange(u) then
+            if _unitUsable(u) and _unitInRange(u) then
                 return true
             end
         end
@@ -861,7 +861,7 @@ local function PlayerOwnBuffOnAnyGroupMember(spellIdList)
     if IsInRaid() then
         for auraIndex = 1, GetNumGroupMembers() do
             local u = "raid" .. auraIndex
-            if _unitOk(u) and not UnitIsUnit(u, "player") then
+            if _unitUsable(u) and not UnitIsUnit(u, "player") then
                 if _unitHasBuffFromPlayer(u, spellIdList) then
                     return true
                 end
@@ -873,7 +873,7 @@ local function PlayerOwnBuffOnAnyGroupMember(spellIdList)
     elseif IsInGroup() then
         for auraIndex = 1, GetNumSubgroupMembers() do
             local u = "party" .. auraIndex
-            if _unitOk(u) then
+            if _unitUsable(u) then
                 if _unitHasBuffFromPlayer(u, spellIdList) then
                     return true
                 end
@@ -1060,7 +1060,7 @@ function REMIND.BuildGroupClassSet()
     if IsInRaid() then
         for auraIndex = 1, GetNumGroupMembers() do
             local u = "raid" .. auraIndex
-            if _unitOk(u) and UnitIsPlayer(u) and not UnitIsUnit(u, "player") and _unitInRange(u) then
+            if _unitUsable(u) and UnitIsPlayer(u) and not UnitIsUnit(u, "player") and _unitInRange(u) then
                 local _, classFile = UnitClass(u)
                 if classFile ~= nil and not isSecret(classFile) then
                     set[classFile] = true
@@ -1070,7 +1070,7 @@ function REMIND.BuildGroupClassSet()
     elseif IsInGroup() then
         for auraIndex = 1, GetNumSubgroupMembers() do
             local u = "party" .. auraIndex
-            if _unitOk(u) and UnitIsPlayer(u) and _unitInRange(u) then
+            if _unitUsable(u) and UnitIsPlayer(u) and _unitInRange(u) then
                 local _, classFile = UnitClass(u)
                 if classFile ~= nil and not isSecret(classFile) then
                     set[classFile] = true
@@ -1233,7 +1233,7 @@ end
 
 Inner._AC, Inner._ownOnRaidIDs = _AC, _ownOnRaidIDs
 Inner._preCombatOwnOnRaidCache, Inner._unitInRange = _preCombatOwnOnRaidCache, _unitInRange
-Inner._unitOk, Inner.BuffExistsOnAnyGroupMember = _unitOk, BuffExistsOnAnyGroupMember
+Inner._unitOk, Inner.BuffExistsOnAnyGroupMember = _unitUsable, BuffExistsOnAnyGroupMember
 Inner.BuildPlayerAuraCache, Inner.CountGroupBuffCoverage = BuildPlayerAuraCache, CountGroupBuffCoverage
 Inner.GetStanceState, Inner.GetWeaponCategory = GetStanceState, GetWeaponCategory
 Inner.IsAnyShapeshiftFormActive, Inner.IsUnderDuration = IsAnyShapeshiftFormActive, IsUnderDuration

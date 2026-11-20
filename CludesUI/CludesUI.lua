@@ -4777,7 +4777,7 @@ CludesUI._RunConflictCheck = function()
         -- "Okay"             -> dismiss this session only; re-shows next login.
         -- "Don't show again" -> permanently dismiss this specific addon.
         local pendingIndex = 0
-        local function ShowNextConflict()
+        local function NextConflict()
             pendingIndex = pendingIndex + 1
             local item = loading[pendingIndex]
             if not item then
@@ -4786,7 +4786,7 @@ CludesUI._RunConflictCheck = function()
             local record, touched = item.entry, item.affected
             -- Skip any conflict the user permanently dismissed previously.
             if dismissed[record.addon] then
-                ShowNextConflict()
+                NextConflict()
                 return
             end
             local nameList = {}
@@ -4810,20 +4810,20 @@ CludesUI._RunConflictCheck = function()
                     confirmText = "Okay",
                     cancelText = "Don't show again",
                     onConfirm = function()
-                        ShowNextConflict()
+                        NextConflict()
                     end,
                     onCancel = function()
                         dismissed[record.addon] = true
-                        ShowNextConflict()
+                        NextConflict()
                     end,
                     modal = true,
                 })
             else
                 CludesUI.PrintError(message:gsub("\n", " "))
-                ShowNextConflict()
+                NextConflict()
             end
         end
-        ShowNextConflict()
+        NextConflict()
     end
 end
 

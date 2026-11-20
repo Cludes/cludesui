@@ -165,7 +165,7 @@ end
 -- stays file-scope (shared with the calendar tooltip below); everything else lives
 -- in the do-block.
 -- Only ShowFriendsTooltip/HideFriendsTooltip are used outside, hence the forward declarations.
-local function FTT_FONT()
+local function TipFont()
     return (CludesUI.GetFontPath("minimap")) or CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
 end
 local ShowFriendsTooltip, HideFriendsTooltip
@@ -187,7 +187,7 @@ do
     -- outline, no shadow), so Cyrillic, Korean and Chinese letters draw in the
     -- client's own faces. Every font write to those two strings goes through here.
     local function FTTNameFont(fontStr, size)
-        CludesUI.SetFontFamily(fontStr, FTT_FONT(), size, "", false)
+        CludesUI.SetFontFamily(fontStr, TipFont(), size, "", false)
     end
 
     -- Hover-stable hide: small grace period so cursor can travel from button to tooltip
@@ -301,7 +301,7 @@ do
                 m:Hide()
             end)
             local fontStr = widget:CreateFontString(nil, "OVERLAY")
-            fontStr:SetFont(FTT_FONT(), 11, "")
+            fontStr:SetFont(TipFont(), 11, "")
             fontStr:SetJustifyH("LEFT")
             fontStr:SetPoint("LEFT", widget, "LEFT", 6, 0)
             fontStr:SetText(textValue)
@@ -429,7 +429,7 @@ do
         nameFS:SetJustifyH("LEFT")
         nameFS:SetPoint("LEFT", button, "TOPLEFT", 0, -FTT_ROW_H / 2)
         local zoneFS = button:CreateFontString(nil, "OVERLAY")
-        zoneFS:SetFont(FTT_FONT(), 10, "")
+        zoneFS:SetFont(TipFont(), 10, "")
         zoneFS:SetJustifyH("RIGHT")
         zoneFS:SetPoint("RIGHT", button, "TOPRIGHT", 0, -FTT_ROW_H / 2)
         -- Optional second line: guild/friend note, indented, truncated to the row width.
@@ -459,7 +459,7 @@ do
         end
         local tooltip = GetFriendsTT()
         local fontStr = tooltip:CreateFontString(nil, "OVERLAY")
-        fontStr:SetFont(FTT_FONT(), 12, "")
+        fontStr:SetFont(TipFont(), 12, "")
         fontStr:SetJustifyH("CENTER")
         fontStr:SetTextColor(1, 1, 1, 0.9)
         _friendsTTHeaders[position] = fontStr
@@ -502,7 +502,7 @@ do
         end
         local showNotes = mp and mp.friendsShowNotes
 
-        local fontFile = FTT_FONT()
+        local fontFile = TipFont()
         for i = 1, #_friendsTTRows do
             FTTNameFont(_friendsTTRows[i].name, 10)
             _friendsTTRows[i].zone:SetFont(fontFile, 10, "")
@@ -744,10 +744,10 @@ local function EnsureCalendarTTRow(position)
     end
     local tooltip = GetCalendarTT()
     local leftFS = tooltip:CreateFontString(nil, "OVERLAY")
-    leftFS:SetFont(FTT_FONT(), 10, "")
+    leftFS:SetFont(TipFont(), 10, "")
     leftFS:SetJustifyH("LEFT")
     local rightFS = tooltip:CreateFontString(nil, "OVERLAY")
-    rightFS:SetFont(FTT_FONT(), 10, "")
+    rightFS:SetFont(TipFont(), 10, "")
     rightFS:SetJustifyH("RIGHT")
     _calendarTTRows[position] = { left = leftFS, right = rightFS }
     return _calendarTTRows[position]
@@ -759,11 +759,11 @@ local function EnsureCalendarTTFooter(position)
     end
     local tooltip = GetCalendarTT()
     local leftFS = tooltip:CreateFontString(nil, "OVERLAY")
-    leftFS:SetFont(FTT_FONT(), 10, "")
+    leftFS:SetFont(TipFont(), 10, "")
     leftFS:SetJustifyH("LEFT")
     leftFS:SetTextColor(1, 1, 1, 0.65)
     local rightFS = tooltip:CreateFontString(nil, "OVERLAY")
-    rightFS:SetFont(FTT_FONT(), 10, "")
+    rightFS:SetFont(TipFont(), 10, "")
     rightFS:SetJustifyH("RIGHT")
     rightFS:SetTextColor(1, 1, 1, 0.80)
     _calendarTTFooters[position] = { left = leftFS, right = rightFS }
@@ -776,7 +776,7 @@ local function EnsureCalendarTTTitle()
     end
     local tooltip = GetCalendarTT()
     local fontStr = tooltip:CreateFontString(nil, "OVERLAY")
-    fontStr:SetFont(FTT_FONT(), 12, "")
+    fontStr:SetFont(TipFont(), 12, "")
     fontStr:SetJustifyH("CENTER")
     fontStr:SetTextColor(1, 1, 1, 0.90)
     _calendarTTTitle = fontStr
@@ -817,7 +817,7 @@ local function ShowCalendarTooltip(anchor, lockoutEntries)
     local tooltip = GetCalendarTT()
     -- Scale the whole tooltip to the user's Custom Tooltip Size (re-applied each show).
     tooltip:SetScale(GetCustomTooltipScale())
-    local fontFile = FTT_FONT()
+    local fontFile = TipFont()
 
     for i = 1, #_calendarTTRows do
         _calendarTTRows[i].left:Hide()

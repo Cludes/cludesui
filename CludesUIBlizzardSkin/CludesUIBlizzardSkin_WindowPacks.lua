@@ -1877,14 +1877,14 @@ do
         -- Breadcrumb bar: faint 5% white wash (no border), seated 8px lower and
         -- 35px left of Blizzard's spot, white crumbs with dividers. Reseat is idempotent (original anchors captured once).
         local navBar = win.navBar
-        local function RefreshNav()
+        local function RestyleNav()
             RestyleNavGeneric(navBar, -37, -8)
         end
-        _navReflow = RefreshNav
+        _navReflow = RestyleNav
         if navBar then
-            GetFFD(navBar).reflow = RefreshNav
+            GetFFD(navBar).reflow = RestyleNav
         end
-        RefreshNav()
+        RestyleNav()
 
         if win.LootJournalViewDropdown then
             Skin.Dropdown(win.LootJournalViewDropdown)
@@ -2198,7 +2198,7 @@ do
                     return
                 end
                 RefreshDetail()
-                RefreshNav()
+                RestyleNav()
                 if win.instanceSelect then
                     FlattenInstanceButtons(win.instanceSelect)
                     RestyleGreatVaultButton(win.instanceSelect.GreatVaultButton)
@@ -2234,7 +2234,7 @@ do
             if type(_G.NavBar_AddButton) == "function" then
                 hooksecurefunc("NavBar_AddButton", function(barFrame)
                     if barFrame == navBar then
-                        RefreshNav()
+                        RestyleNav()
                     end
                 end)
             end
@@ -2255,7 +2255,7 @@ do
             Skin.Debounce(function()
                 if win:IsVisible() then
                     RefreshDetail()
-                    RefreshNav()
+                    RestyleNav()
                     if win.instanceSelect then
                         RestyleGreatVaultButton(win.instanceSelect.GreatVaultButton)
                         RestyleInstanceScene(win.instanceSelect)
@@ -5668,7 +5668,7 @@ do
         Skin.ScrollBarsIn(win)
 
         -- List rows are ScrollBox-pooled; restyle realized rows on every list update (cost scales with visible rows only).
-        local function HookRows(hostFrame, func)
+        local function HookRowInit(hostFrame, func)
             local scrollBar = hostFrame and hostFrame.ScrollBox
             if not (scrollBar and scrollBar.ForEachFrame) then
                 return
@@ -5681,9 +5681,9 @@ do
                 end)
             end
         end
-        HookRows(_G.AchievementFrameCategories, SkinCategoryRow)
-        HookRows(_G.AchievementFrameAchievements, SkinAchRow)
-        HookRows(_G.AchievementFrameStats, SkinStatRow)
+        HookRowInit(_G.AchievementFrameCategories, SkinCategoryRow)
+        HookRowInit(_G.AchievementFrameAchievements, SkinAchRow)
+        HookRowInit(_G.AchievementFrameStats, SkinStatRow)
 
         -- Category sidebar sits 10px lower as a unit: shift its ScrollBox once, preserving every anchor.
         local catBox = _G.AchievementFrameCategories and _G.AchievementFrameCategories.ScrollBox
@@ -5955,9 +5955,9 @@ do
             Skin.Debounce(function()
                 if win:IsVisible() then
                     -- Re-run realized-row passes: first population can land before any ScrollBox Update the hooks see.
-                    HookRows(_G.AchievementFrameCategories, SkinCategoryRow)
-                    HookRows(_G.AchievementFrameAchievements, SkinAchRow)
-                    HookRows(_G.AchievementFrameStats, SkinStatRow)
+                    HookRowInit(_G.AchievementFrameCategories, SkinCategoryRow)
+                    HookRowInit(_G.AchievementFrameAchievements, SkinAchRow)
+                    HookRowInit(_G.AchievementFrameStats, SkinStatRow)
                     if _G.AchievementFrameSummary then
                         AchWhiteTextsIn(_G.AchievementFrameSummary)
                     end

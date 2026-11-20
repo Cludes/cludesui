@@ -73,7 +73,7 @@ end
 -- Poison/Bleed is the full harmful typed set (Enrage is buff-only).
 local DISPLOC_TYPES = { Magic = true, Curse = true, Disease = true, Poison = true, Bleed = true }
 
-local function DispLocActive(s)
+local function DispelIconsOn(s)
     -- Retired with the Auras tab (Dispellable now routes via a Debuff Manager tile).
     -- Constant false keeps every consumer (shell gating, config, shown state,
     -- candidate excludes, fingerprints) uniformly inert.
@@ -84,13 +84,13 @@ end
 -- so query every settings source: an unneeded shell just ends up a cheap hidden
 -- group-less container, but a MISSING shell can't be created in combat at all.
 local function DispLocAnyActive()
-    if mod._scaledProfile and DispLocActive(mod._scaledProfile) then
+    if mod._scaledProfile and DispelIconsOn(mod._scaledProfile) then
         return true
     end
-    if mod._scaledPartyProxy and DispLocActive(mod._scaledPartyProxy) then
+    if mod._scaledPartyProxy and DispelIconsOn(mod._scaledPartyProxy) then
         return true
     end
-    if mod._scaledExtraProxy and DispLocActive(mod._scaledExtraProxy) then
+    if mod._scaledExtraProxy and DispelIconsOn(mod._scaledExtraProxy) then
         return true
     end
     return false
@@ -98,7 +98,7 @@ end
 
 -- Effective icon size at the split anchor (0 = match Debuff Size; scaled proxies
 -- bake indicator scale into both keys, and 0 scales to 0, so the sentinel survives).
-local function DispLocSize(cfg)
+local function DispelIconSize(cfg)
     local val = cfg.dispellableDebuffSize
     if val and val > 0 then
         return mod.RFC_SnapSize(val)
@@ -138,7 +138,7 @@ local function ScaleProxy(d)
     return mod._scaledProfile
 end
 
-local function StyleKeyFor(d)
+local function StyleKeyOf(d)
     if d._isParty then
         return "rf:debuff:party"
     end
@@ -706,7 +706,7 @@ local function AnchorDispLocContainer(boxHolder, healthBar, cfg)
     AK.SetContainerAnchor(boxHolder, anchorPoint)
     AK.SetContainerGrowth(boxHolder, FlowDir(gH), FlowDir(gV))
 
-    local px = DispLocSize(cfg)
+    local px = DispelIconSize(cfg)
     local spacing = cfg.debuffSpacing or 1
     local perRow = cfg.debuffPerRow or 5
     local vertical = (growDir == "UP" or growDir == "DOWN")
@@ -1144,7 +1144,7 @@ local function DebuffCfgFP(cfg)
         cfg.debuffFilter,
         cfg.debuffCap,
         cfg.hideLustDebuff,
-        DispLocActive(cfg),
+        DispelIconsOn(cfg),
         cfg.powerUniformAnchors,
         (mod.DM_CfgFP and mod.DM_CfgFP()) or ""
     )
@@ -1152,17 +1152,17 @@ end
 
 local function DispLocStyleFP(s, font)
     -- The split styles are the debuff styles with only the size swapped.
-    return FP(DebuffStyleFP(s, font), DispLocSize(s), DispLocActive(s))
+    return FP(DebuffStyleFP(s, font), DispelIconSize(s), DispelIconsOn(s))
 end
 
 local function DispLocCfgFP(cfg)
     return FP(
-        DispLocActive(cfg),
+        DispelIconsOn(cfg),
         cfg.dispellableDebuffLocation,
         cfg.dispellableDebuffGrowDirection,
         cfg.dispellableDebuffOffsetX,
         cfg.dispellableDebuffOffsetY,
-        DispLocSize(cfg),
+        DispelIconSize(cfg),
         cfg.debuffSpacing,
         cfg.debuffPerRow,
         cfg.debuffWrapDirection,
@@ -1279,7 +1279,7 @@ local function ApplyDebuffConfig(boxHolder, d, s)
     -- Debuff Manager (12.1 redesign): while active it owns every group on
     -- this container (legacy preset groups park at 0 inside it).
     if mod.DM_Active and mod.DM_Active() and mod.DM_ApplyDebuffConfig then
-        mod.DM_ApplyDebuffConfig(boxHolder, d, s, StyleKeyFor(d))
+        mod.DM_ApplyDebuffConfig(boxHolder, d, s, StyleKeyOf(d))
         return
     end
     -- Legacy preset display is retired: Debuff Manager (default-ON) is the only
@@ -1299,7 +1299,7 @@ end
 -- split's own element size. Groups are on-demand; an undeclared-but-needed group
 -- queues its declaration on the combat-legal live lane and re-applies.
 local function ApplyDispLocConfig(boxHolder, d, cfg)
-    local isActive = DispLocActive(cfg)
+    local isActive = DispelIconsOn(cfg)
     local cap = 0
     if isActive and (cfg.debuffFilter or "all") ~= "none" then
         cap = cfg.debuffCap or 3
@@ -1316,7 +1316,7 @@ local function ApplyDispLocConfig(boxHolder, d, cfg)
     end
     local cand = { excludeSpellIDs = ex, includeDispelTypes = DISPLOC_TYPES }
 
-    local px = DispLocSize(cfg)
+    local px = DispelIconSize(cfg)
     local layout = {
         elementWidth = px,
         elementHeight = px,
@@ -1342,14 +1342,14 @@ local function ApplyDispLocConfig(boxHolder, d, cfg)
                     return
                 end
                 local s2 = ScaleProxy(d)
-                if not s2 or not DispLocActive(s2) then
+                if not s2 or not DispelIconsOn(s2) then
                     return
                 end
-                local lookKey = StyleKeyFor(d)
+                local lookKey = StyleKeyOf(d)
                 local dlStyleKey = lookKey:gsub("debuff", "disploc")
                 local dlCCStyleKey = lookKey:gsub("debuff", "disploccc")
-                AK.styles[dlStyleKey] = AK.styles[dlStyleKey] or BuildDebuffStyle(s2, DispLocSize(s2))
-                AK.styles[dlCCStyleKey] = AK.styles[dlCCStyleKey] or BuildDebuffCCStyle(s2, DispLocSize(s2))
+                AK.styles[dlStyleKey] = AK.styles[dlStyleKey] or BuildDebuffStyle(s2, DispelIconSize(s2))
+                AK.styles[dlCCStyleKey] = AK.styles[dlCCStyleKey] or BuildDebuffCCStyle(s2, DispelIconSize(s2))
                 for i = 1, #DEBUFF_GROUPS do
                     local group = DEBUFF_GROUPS[i]
                     if DispLocGroupWanted(s2, group.key) and not d.rfcDispLocGroups[group.key] then
@@ -3070,7 +3070,7 @@ local function BmAcquireChain(btnFrame, d, healthBar, childFrame, iconScale, cou
     local num = (counters[ck] or 0) + 1
     counters[ck] = num
     local poolKey = ck .. num
-    local styleBase = StyleKeyFor(d):gsub("debuff", "bmpool") .. ":" .. poolKey
+    local styleBase = StyleKeyOf(d):gsub("debuff", "bmpool") .. ":" .. poolKey
 
     -- Per-member styles (each group carries its own size/text styling).
     local font = (CludesUI.GetFontPath("raidFrames")) or ""
@@ -3238,7 +3238,7 @@ end
 -- overlay on adds them live (slot adds are combat-legal); switching it off leaves
 -- them drawing nothing until the next reload (slots cannot be removed).
 local function DispelSlotSpecs(btnFrame, healthBar, d, s)
-    local dispelStyleKey = StyleKeyFor(d):gsub("debuff", "dispel")
+    local dispelStyleKey = StyleKeyOf(d):gsub("debuff", "dispel")
     if not AK.styles[dispelStyleKey] then
         StoreDispelStyle(dispelStyleKey, s)
     end
@@ -3283,7 +3283,7 @@ local function CreateBmContainer(btnFrame, healthBar, d, unitToken)
     end
 
     local iconScale = BmScaleFor(d)
-    local styleBase = StyleKeyFor(d):gsub("debuff", "bm")
+    local styleBase = StyleKeyOf(d):gsub("debuff", "bm")
     local slots, metaRec, chains = BuildBmSlots(inds, d, healthBar, iconScale, styleBase)
 
     if #slots > 0 then
@@ -3385,7 +3385,7 @@ local function CreateBmContainer(btnFrame, healthBar, d, unitToken)
             end
         end
     end
-    bmOwnFP[StyleKeyFor(d)] = BmOwnKey(metaRec)
+    bmOwnFP[StyleKeyOf(d)] = BmOwnKey(metaRec)
 end
 
 -- Chains-only rebind for pool shells that finished building after the
@@ -3411,7 +3411,7 @@ local function BmRebindPendingChains(btnFrame, d, classFile)
     -- Chain collection + Anchor To composition are BuildBmSlots' job;
     -- re-running it here only re-derives spec tables (slot/style writes
     -- are idempotent -- no containers are touched by the call itself).
-    local styleBase = StyleKeyFor(d):gsub("debuff", "bm")
+    local styleBase = StyleKeyOf(d):gsub("debuff", "bm")
     local _, _, chains = BuildBmSlots(classFile.inds, d, healthBar, iconScale, styleBase)
     local chainContainers = nil
     local pending = false
@@ -3498,7 +3498,7 @@ local function BmClassPass(d)
     end
     classFile.sig = BmSignature(classFile.inds, classFile.specKey, classFile.mode)
     classFile.iscale = BmScaleFor(d)
-    classFile.styleKey = StyleKeyFor(d)
+    classFile.styleKey = StyleKeyOf(d)
     classFile.s = ScaleProxy(d)
     return classFile
 end
@@ -3739,7 +3739,7 @@ local function QueueDebuffPhase(btnFrame, healthBar, d)
                     return
                 end
             end
-            local lookKey = StyleKeyFor(d)
+            local lookKey = StyleKeyOf(d)
             local ccStyleKey = lookKey:gsub("debuff", "debuffcc")
             -- Prime here too: setup-time priming used the queue-time class,
             -- so a job-resolved class may not have style tables yet.
@@ -3794,14 +3794,14 @@ local function QueueDispLocPhase(btnFrame, healthBar, d)
                 return
             end
             local nowSec = ScaleProxy(d)
-            if not nowSec or not DispLocActive(nowSec) or not DispLocGroupWanted(nowSec, group.key) then
+            if not nowSec or not DispelIconsOn(nowSec) or not DispLocGroupWanted(nowSec, group.key) then
                 return
             end
-            local lookKey = StyleKeyFor(d)
+            local lookKey = StyleKeyOf(d)
             local dlStyleKey = lookKey:gsub("debuff", "disploc")
             local dlCCStyleKey = lookKey:gsub("debuff", "disploccc")
-            AK.styles[dlStyleKey] = AK.styles[dlStyleKey] or BuildDebuffStyle(nowSec, DispLocSize(nowSec))
-            AK.styles[dlCCStyleKey] = AK.styles[dlCCStyleKey] or BuildDebuffCCStyle(nowSec, DispLocSize(nowSec))
+            AK.styles[dlStyleKey] = AK.styles[dlStyleKey] or BuildDebuffStyle(nowSec, DispelIconSize(nowSec))
+            AK.styles[dlCCStyleKey] = AK.styles[dlCCStyleKey] or BuildDebuffCCStyle(nowSec, DispelIconSize(nowSec))
             AK.AddGroupToContainer(c, {
                 key = group.key,
                 filter = group.filter,
@@ -3824,7 +3824,7 @@ local function QueueDispLocPhase(btnFrame, healthBar, d)
         if nowSec then
             AnchorDispLocContainer(c, healthBar, nowSec)
             ApplyDispLocConfig(c, d, nowSec)
-            c:SetShown(DispLocActive(nowSec))
+            c:SetShown(DispelIconsOn(nowSec))
         end
     end, "rf:disploc-finish")
 end
@@ -3872,7 +3872,7 @@ local function QueueButtonGroups(btnFrame, healthBar, d)
         -- Everything above was configured from current settings; prime the class
         -- fingerprints so the first reload doesn't re-drive it all (class resolved
         -- here, not at queue time -- party self button).
-        PrimeClassFP(StyleKeyFor(d), ScaleProxy(d) or s)
+        PrimeClassFP(StyleKeyOf(d), ScaleProxy(d) or s)
         -- Clear state cached while this button was mid-build (unit assignments run
         -- the gate against partial containers): fresh containers need a full
         -- SetShown/range-alpha pass.
@@ -3897,7 +3897,7 @@ function mod.RFC_SetupButton(btnFrame, healthBar, d)
 
     local s = ScaleProxy(d)
     if s then
-        local lookKey = StyleKeyFor(d)
+        local lookKey = StyleKeyOf(d)
         if not AK.styles[lookKey] then
             StoreDebuffStyles(lookKey, s)
         end
@@ -4209,11 +4209,11 @@ local function ComputeClassFlags(lookKey, s)
         local dlStyleKey = lookKey:gsub("debuff", "disploc")
         -- Only rebuild once the split has ever materialized styles for this
         -- class -- keeps the feature literally zero-cost while unused.
-        if DispLocActive(s) or AK.styles[dlStyleKey] then
-            AK.styles[dlStyleKey] = BuildDebuffStyle(s, DispLocSize(s))
+        if DispelIconsOn(s) or AK.styles[dlStyleKey] then
+            AK.styles[dlStyleKey] = BuildDebuffStyle(s, DispelIconSize(s))
             AK.RestyleSoon(dlStyleKey)
             local dlCCStyleKey = lookKey:gsub("debuff", "disploccc")
-            AK.styles[dlCCStyleKey] = BuildDebuffCCStyle(s, DispLocSize(s))
+            AK.styles[dlCCStyleKey] = BuildDebuffCCStyle(s, DispelIconSize(s))
             AK.RestyleSoon(dlCCStyleKey)
         end
     end
@@ -4277,7 +4277,7 @@ function mod.RFC_ReloadAll()
         if boxHolder then
             local s = ScaleProxy(d)
             if s then
-                local lookKey = StyleKeyFor(d)
+                local lookKey = StyleKeyOf(d)
                 local flags = dirty[lookKey]
                 if not flags then
                     flags = ComputeClassFlags(lookKey, s)
@@ -4297,8 +4297,8 @@ function mod.RFC_ReloadAll()
                     if c2 then
                         AnchorDispLocContainer(c2, d.rfcHealth, s)
                         ApplyDispLocConfig(c2, d, s)
-                        c2:SetShown(DispLocActive(s))
-                    elseif DispLocActive(s) and not d.rfcDispLocShell and not d.rfcDispLocBuild then
+                        c2:SetShown(DispelIconsOn(s))
+                    elseif DispelIconsOn(s) and not d.rfcDispLocShell and not d.rfcDispLocBuild then
                         -- Split enabled mid-session: containers can't be created in
                         -- combat, so the shell build rides the OOC lane; groups+finish
                         -- follow the normal phase.
@@ -4309,7 +4309,7 @@ function mod.RFC_ReloadAll()
                                 return
                             end
                             local s2 = ScaleProxy(d)
-                            if not s2 or not DispLocActive(s2) then
+                            if not s2 or not DispelIconsOn(s2) then
                                 return
                             end
                             local healthBar = d.rfcHealth or d.rfcHealthRef

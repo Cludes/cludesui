@@ -518,7 +518,7 @@ local blizzardAurasHidden = false
 -- hidden): master-enabled and not in Use Blizzard Buffs mode. The re-hide
 -- hooks below read this LIVE, so Disable All and Use Blizzard Buffs can
 -- hand the display back without a reload.
-local function PabOwnsNativeAuras()
+local function OwnsNativeAuras()
     local pabCfg = PAB()
     return (pabCfg and pabCfg.enabled == true and pabCfg.useBlizzardBuffs ~= true) and true or false
 end
@@ -531,7 +531,7 @@ local function HideBlizzardPlayerAuras()
     if BuffFrame then
         BuffFrame:Hide()
         hooksecurefunc(BuffFrame, "Show", function()
-            if PabOwnsNativeAuras() then
+            if OwnsNativeAuras() then
                 BuffFrame:Hide()
             end
         end)
@@ -539,7 +539,7 @@ local function HideBlizzardPlayerAuras()
     if DebuffFrame then
         DebuffFrame:Hide()
         hooksecurefunc(DebuffFrame, "Show", function()
-            if PabOwnsNativeAuras() then
+            if OwnsNativeAuras() then
                 DebuffFrame:Hide()
             end
         end)
@@ -554,7 +554,7 @@ local function ShowBlizzardPlayerAuras()
     if not blizzardAurasHidden then
         return
     end
-    if PabOwnsNativeAuras() then
+    if OwnsNativeAuras() then
         return
     end
     if BuffFrame then
@@ -570,7 +570,7 @@ end
 -- the display -- the first hide installs the hooks, later ones re-assert
 -- past the latch -- show when it does not.
 local function SyncNativeAuras()
-    if PabOwnsNativeAuras() then
+    if OwnsNativeAuras() then
         if blizzardAurasHidden then
             if BuffFrame then
                 BuffFrame:Hide()
@@ -1153,7 +1153,7 @@ end
 -- layout, or parent frame size. Call for style-only fields (colors, fonts, border,
 -- dispel colors, cooldown/stack text, icon zoom). iconSize also needs ApplyLiveConfig
 -- for both polarities, since it affects grid geometry.
-local function RestyleBars()
+local function StyleAllBars()
     local pabCfg = PAB()
     if not (AK and pabCfg) then
         return
@@ -1164,7 +1164,7 @@ local function RestyleBars()
     AK.RestyleSoon(STYLE_DEBUFFS)
     SyncCancelCVar()
 end
-mod.PAB_Restyle = RestyleBars
+mod.PAB_Restyle = StyleAllBars
 
 -- CursorFreelookStartDelta is the fraction of the screen the cursor must move before a
 -- held mouse button counts as camera freelook instead of a click; Blizzard's own
@@ -1551,12 +1551,12 @@ function mod.PAB_SetGrowDirection(barId, direction)
     end
     if barId == "PAB_Buffs" then
         DefaultBuffsCfg(pabCfg).growDirection = direction
-        RestyleBars()
+        StyleAllBars()
         ApplyLiveConfig(true)
         return
     elseif barId == "PAB_Debuffs" then
         DefaultDebuffsCfg(pabCfg).growDirection = direction
-        RestyleBars()
+        StyleAllBars()
         ApplyLiveConfig(false)
         return
     end
