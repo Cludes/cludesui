@@ -2166,8 +2166,8 @@ CludesUI.AtOptionsLogin(function()
                                             local c = record.glowColor or { r = 1.0, g = 0.788, b = 0.137 }
                                             return c.r, c.g, c.b
                                         end,
-                                        setCustomRGB = function(r, g, b)
-                                            record.glowColor = { r = r, g = g, b = b }
+                                        setCustomRGB = function(red, green, blue)
+                                            record.glowColor = { r = red, g = green, b = blue }
                                         end,
                                         hasClassColor = true,
                                         onChange = function()
@@ -2685,11 +2685,11 @@ CludesUI.AtOptionsLogin(function()
                                 BD().keybindBackgroundB or 0,
                                 BD().keybindBackgroundA or 0
                         end,
-                        set = function(r, g, b, a)
+                        set = function(red, green, blue, a)
                             local d = BD()
-                            d.keybindBackgroundR = r
-                            d.keybindBackgroundG = g
-                            d.keybindBackgroundB = b
+                            d.keybindBackgroundR = red
+                            d.keybindBackgroundG = green
+                            d.keybindBackgroundB = blue
                             d.keybindBackgroundA = a
                             RefreshKeybindStyle()
                         end,
@@ -2705,11 +2705,11 @@ CludesUI.AtOptionsLogin(function()
                                 BD().keybindBorderB or 1,
                                 BD().keybindBorderA or 0
                         end,
-                        set = function(r, g, b, a)
+                        set = function(red, green, blue, a)
                             local d = BD()
-                            d.keybindBorderR = r
-                            d.keybindBorderG = g
-                            d.keybindBorderB = b
+                            d.keybindBorderR = red
+                            d.keybindBorderG = green
+                            d.keybindBorderB = blue
                             d.keybindBorderA = a
                             RefreshKeybindStyle()
                         end,
@@ -2775,10 +2775,10 @@ CludesUI.AtOptionsLogin(function()
                 function()
                     return BD().keybindR or 1, BD().keybindG or 1, BD().keybindB or 1, BD().keybindA or 0.9
                 end,
-                function(r, g, b, a)
-                    BD().keybindR = r
-                    BD().keybindG = g
-                    BD().keybindB = b
+                function(red, green, blue, a)
+                    BD().keybindR = red
+                    BD().keybindG = green
+                    BD().keybindB = blue
                     BD().keybindA = a
                     RefreshKeybindStyle()
                 end,

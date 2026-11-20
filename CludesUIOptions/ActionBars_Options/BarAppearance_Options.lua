@@ -667,12 +667,12 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 end
                 return c.r, c.g, c.b
             end,
-            function(r, g, b)
-                SSetColor("borderColor", r, g, b, nil, function(keyName)
+            function(red, green, blue)
+                SSetColor("borderColor", red, green, blue, nil, function(keyName)
                     ABAR:ApplyBordersForBar(keyName)
                     ABAR:ApplyShapesForBar(keyName)
                 end)
-                SSetColor("shapeBorderColor", r, g, b, nil, function(keyName)
+                SSetColor("shapeBorderColor", red, green, blue, nil, function(keyName)
                     ABAR:ApplyShapesForBar(keyName)
                 end)
                 SUpdatePreview()
@@ -1008,8 +1008,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 local c = ABAR.db.profile.slotBgColor or { r = 0.15, g = 0.15, b = 0.15 }
                 return c.r, c.g, c.b, 1
             end,
-            function(r, g, b)
-                ABAR.db.profile.slotBgColor = { r = r, g = g, b = b }
+            function(red, green, blue)
+                ABAR.db.profile.slotBgColor = { r = red, g = green, b = blue }
                 ABAR:ApplySlotBackgroundColor()
             end,
             false,
@@ -1128,9 +1128,9 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                     local c = SGet("bgColor") or { r = 0, g = 0, b = 0, a = 0.5 }
                     return c.r, c.g, c.b, 1
                 end,
-                setValue = function(r, g, b)
+                setValue = function(red, green, blue)
                     local old = SGet("bgColor") or { a = 0.5 }
-                    SSetColor("bgColor", r, g, b, old.a or 0.5, function(keyName)
+                    SSetColor("bgColor", red, green, blue, old.a or 0.5, function(keyName)
                         ABAR:ApplyBackgroundForBar(keyName)
                     end)
                     SUpdatePreview()
@@ -1322,8 +1322,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                             local c = SGet("bgBorderColor") or { r = 0, g = 0, b = 0, a = 1 }
                             return c.r, c.g, c.b, c.a
                         end,
-                        function(r, g, b, a)
-                            SSetColor("bgBorderColor", r, g, b, a, function(keyName)
+                        function(red, green, blue, a)
+                            SSetColor("bgBorderColor", red, green, blue, a, function(keyName)
                                 ABAR:ApplyBackgroundForBar(keyName)
                             end)
                             SUpdatePreview()
@@ -1823,8 +1823,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
             end
             return c.r, c.g, c.b
         end
-        local rangeColorSet = function(r, g, b)
-            SSetColor("outOfRangeColor", r, g, b, nil, function()
+        local rangeColorSet = function(red, green, blue)
+            SSetColor("outOfRangeColor", red, green, blue, nil, function()
                 ABAR:ApplyRangeColoring()
             end)
         end
@@ -1873,8 +1873,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 local c = ABAR.db.profile.cdSwipeColor or {}
                 return c.r or 0, c.g or 0, c.b or 0
             end,
-            function(r, g, b)
-                ABAR.db.profile.cdSwipeColor = { r = r, g = g, b = b }
+            function(red, green, blue)
+                ABAR.db.profile.cdSwipeColor = { r = red, g = green, b = blue }
                 if ABAR.ApplyCooldownSwipeColor then
                     ABAR:ApplyCooldownSwipeColor()
                 end
@@ -2510,8 +2510,8 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                     end
                     return c.r, c.g, c.b
                 end,
-                setValue = function(r, g, b)
-                    SSetColor(key, r, g, b, nil, apply)
+                setValue = function(red, green, blue)
+                    SSetColor(key, red, green, blue, nil, apply)
                     SUpdatePreview()
                 end,
             },

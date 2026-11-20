@@ -393,11 +393,11 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             local c = (DB() and DB().castBgColor) or defaultSet.castBgColor
             return c.r, c.g, c.b
         end
-        local castBgColorSet = function(r, g, b)
-            DB().castBgColor = { r = r, g = g, b = b }
+        local castBgColorSet = function(red, green, blue)
+            DB().castBgColor = { r = red, g = green, b = blue }
             local a = DBVal("castBgAlpha") or defaultSet.castBgAlpha
             for _, backing in pairs(plates) do
-                backing.castBG:SetColorTexture(r, g, b, a)
+                backing.castBG:SetColorTexture(red, green, blue, a)
             end
             UpdatePreview()
         end
@@ -425,8 +425,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             local c = (DB() and DB().castBorderColor) or defaultSet.castBorderColor
             return c.r, c.g, c.b
         end
-        local castBorderColorSet = function(r, g, b)
-            DB().castBorderColor = { r = r, g = g, b = b }
+        local castBorderColorSet = function(red, green, blue)
+            DB().castBorderColor = { r = red, g = green, b = blue }
             mod.RefreshCastBorderColor()
             UpdatePreview()
         end
@@ -502,11 +502,11 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             local c = (DB() and DB().castTimerColor) or defaultSet.castTimerColor
             return c.r, c.g, c.b
         end
-        local ctColorSet = function(r, g, b)
-            DB().castTimerColor = { r = r, g = g, b = b }
+        local ctColorSet = function(red, green, blue)
+            DB().castTimerColor = { r = red, g = green, b = blue }
             for _, backing in pairs(plates) do
                 if backing.castTimer then
-                    backing.castTimer:SetTextColor(r, g, b, 1)
+                    backing.castTimer:SetTextColor(red, green, blue, 1)
                 end
             end
             UpdatePreview()
@@ -580,8 +580,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 getValue = function()
                     return DBColor("castBar")
                 end,
-                setValue = function(r, g, b)
-                    DB().castBar = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().castBar = { r = red, g = green, b = blue }
                     RefreshAllPlates()
                     UpdatePreview()
                 end,
@@ -591,8 +591,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 getValue = function()
                     return DBColor("interruptReady")
                 end,
-                setValue = function(r, g, b)
-                    DB().interruptReady = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().interruptReady = { r = red, g = green, b = blue }
                     RefreshAllPlates()
                 end,
             },
@@ -601,8 +601,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 getValue = function()
                     return DBColor("castBarUninterruptible")
                 end,
-                setValue = function(r, g, b)
-                    DB().castBarUninterruptible = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().castBarUninterruptible = { r = red, g = green, b = blue }
                     RefreshAllPlates()
                 end,
             }),
@@ -611,8 +611,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 getValue = function()
                     return DBColor("castBarImportant")
                 end,
-                setValue = function(r, g, b)
-                    DB().castBarImportant = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().castBarImportant = { r = red, g = green, b = blue }
                     RefreshAllPlates()
                 end,
                 disabled = function()
@@ -692,8 +692,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     local c = DB().interruptMidCastColor or defaultSet.interruptMidCastColor
                     return c.r, c.g, c.b
                 end,
-                function(r, g, b)
-                    DB().interruptMidCastColor = { r = r, g = g, b = b }
+                function(red, green, blue)
+                    DB().interruptMidCastColor = { r = red, g = green, b = blue }
                     mod.RefreshAllSettings()
                 end,
                 nil,
@@ -958,8 +958,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         local c = DB().interruptedFlashColor or defaultSet.interruptedFlashColor
                         return c.r, c.g, c.b
                     end,
-                    function(r, g, b)
-                        DB().interruptedFlashColor = { r = r, g = g, b = b }
+                    function(red, green, blue)
+                        DB().interruptedFlashColor = { r = red, g = green, b = blue }
                         RefreshAllPlates()
                     end,
                     nil,
@@ -1174,8 +1174,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                             local c = mod.GetTargetHighlightColor()
                             return c.r, c.g, c.b
                         end,
-                        set = function(r, g, b)
-                            DB().targetHighlightColor = { r = r, g = g, b = b }
+                        set = function(red, green, blue)
+                            DB().targetHighlightColor = { r = red, g = green, b = blue }
                             for _, backing in pairs(plates) do
                                 backing:ApplyTarget()
                             end
@@ -1270,8 +1270,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 local c = mod.GetTargetBorderColor()
                 return c.r, c.g, c.b
             end,
-            function(r, g, b)
-                DB().targetBorderColor = { r = r, g = g, b = b }
+            function(red, green, blue)
+                DB().targetBorderColor = { r = red, g = green, b = blue }
                 for _, backing in pairs(plates) do
                     backing:ApplyTarget()
                 end
@@ -1304,8 +1304,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 local c = mod.GetTargetGlowColor()
                 return c.r, c.g, c.b
             end,
-            function(r, g, b)
-                DB().targetGlowColor = { r = r, g = g, b = b }
+            function(red, green, blue)
+                DB().targetGlowColor = { r = red, g = green, b = blue }
                 for _, backing in pairs(plates) do
                     backing:ApplyTarget()
                 end
@@ -1399,8 +1399,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 local c = DBVal("targetArrowColor") or defaultSet.targetArrowColor
                 return c.r, c.g, c.b
             end,
-            function(r, g, b)
-                DB().targetArrowColor = { r = r, g = g, b = b }
+            function(red, green, blue)
+                DB().targetArrowColor = { r = red, g = green, b = blue }
                 DB().targetArrowClassColor = false
                 for _, backing in pairs(plates) do
                     backing:ApplyTarget()
@@ -1605,8 +1605,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         local targetColorGet = function()
             return DBColor("target")
         end
-        local targetColorSet = function(r, g, b)
-            DB().target = { r = r, g = g, b = b }
+        local targetColorSet = function(red, green, blue)
+            DB().target = { r = red, g = green, b = blue }
             RefreshAllPlates()
             if targetPreview then
                 targetPreview.UpdateColor()
@@ -1638,8 +1638,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         local focusColorGet = function()
             return DBColor("focus")
         end
-        local focusColorSet = function(r, g, b)
-            DB().focus = { r = r, g = g, b = b }
+        local focusColorSet = function(red, green, blue)
+            DB().focus = { r = red, g = green, b = blue }
             RefreshAllPlates()
             if focusPreview then
                 focusPreview.UpdateColor()
@@ -1814,8 +1814,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             local c = (DB() and DB().targetOverlayColor) or defaultSet.targetOverlayColor
             return c.r, c.g, c.b
         end
-        local targetTexColorSet = function(r, g, b)
-            DB().targetOverlayColor = { r = r, g = g, b = b }
+        local targetTexColorSet = function(red, green, blue)
+            DB().targetOverlayColor = { r = red, g = green, b = blue }
             RefreshAllPlates()
             if targetPreview and targetPreview.UpdateOverlay then
                 targetPreview.UpdateOverlay()
@@ -1903,8 +1903,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             local c = (DB() and DB().focusOverlayColor) or defaultSet.focusOverlayColor
             return c.r, c.g, c.b
         end
-        local focusTexColorSet = function(r, g, b)
-            DB().focusOverlayColor = { r = r, g = g, b = b }
+        local focusTexColorSet = function(red, green, blue)
+            DB().focusOverlayColor = { r = red, g = green, b = blue }
             RefreshAllPlates()
             if focusPreview and focusPreview.UpdateOverlay then
                 focusPreview.UpdateOverlay()
@@ -2196,8 +2196,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                                 local c = (DB() and DB().hoverColor) or defaultSet.hoverColor
                                 return c.r, c.g, c.b
                             end,
-                            set = function(r, g, b)
-                                DB().hoverColor = { r = r, g = g, b = b }
+                            set = function(red, green, blue)
+                                DB().hoverColor = { r = red, g = green, b = blue }
                                 mod.RefreshHoverEffect()
                                 UpdatePreview()
                             end,
@@ -2271,8 +2271,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     local c = mod.GetHoverBorderColor()
                     return c.r, c.g, c.b
                 end,
-                function(r, g, b)
-                    DB().hoverBorderColor = { r = r, g = g, b = b }
+                function(red, green, blue)
+                    DB().hoverBorderColor = { r = red, g = green, b = blue }
                     mod.RefreshHoverEffect()
                 end,
                 nil,
@@ -2298,8 +2298,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     local c = mod.GetHoverGlowColor()
                     return c.r, c.g, c.b
                 end,
-                function(r, g, b)
-                    DB().hoverGlowColor = { r = r, g = g, b = b }
+                function(red, green, blue)
+                    DB().hoverGlowColor = { r = red, g = green, b = blue }
                     mod.RefreshHoverEffect()
                 end,
                 nil,
@@ -2391,8 +2391,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     local c = (DB() and DB().classPowerCustomColor) or defaultSet.classPowerCustomColor
                     return c.r, c.g, c.b
                 end,
-                setValue = function(r, g, b)
-                    DB().classPowerCustomColor = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().classPowerCustomColor = { r = red, g = green, b = blue }
                     mod.RefreshClassPower()
                     UpdatePreview()
                 end,
@@ -2542,8 +2542,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 local c = (DB() and DB().classPowerBgColor) or defaultSet.classPowerBgColor
                 return c.r, c.g, c.b, c.a
             end,
-            setValue = function(r, g, b, a)
-                DB().classPowerBgColor = { r = r, g = g, b = b, a = a }
+            setValue = function(red, green, blue, a)
+                DB().classPowerBgColor = { r = red, g = green, b = blue, a = a }
                 mod.RefreshClassPower()
                 UpdatePreview()
             end,
@@ -2618,8 +2618,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 local c = (DB() and DB().classPowerBorderColor) or defaultSet.classPowerBorderColor
                 return c.r, c.g, c.b
             end
-            local colorSet = function(r, g, b)
-                DB().classPowerBorderColor = { r = r, g = g, b = b, a = 1 }
+            local colorSet = function(red, green, blue)
+                DB().classPowerBorderColor = { r = red, g = green, b = blue, a = 1 }
                 mod.RefreshClassPower()
                 UpdatePreview()
             end
@@ -2725,8 +2725,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 local c = AuraDurationVal(kind, "Color")
                 return c.r, c.g, c.b
             end
-            local colorSet = function(r, g, b)
-                DB()[kind .. "DurationTextColor"] = { r = r, g = g, b = b }
+            local colorSet = function(red, green, blue)
+                DB()[kind .. "DurationTextColor"] = { r = red, g = green, b = blue }
                 RefreshDuration()
             end
 
@@ -2829,8 +2829,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 local c = (DB() and DB().auraStackTextColor) or defaultSet.auraStackTextColor
                 return c.r, c.g, c.b
             end
-            local asColorSet = function(r, g, b)
-                DB().auraStackTextColor = { r = r, g = g, b = b }
+            local asColorSet = function(red, green, blue)
+                DB().auraStackTextColor = { r = red, g = green, b = blue }
                 LiveApplyAuraText()
                 UpdatePreview()
             end
@@ -2957,11 +2957,11 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         local snColorGet = function()
             return DBColor("castNameColor")
         end
-        local snColorSet = function(r, g, b)
-            DB().castNameColor = { r = r, g = g, b = b }
+        local snColorSet = function(red, green, blue)
+            DB().castNameColor = { r = red, g = green, b = blue }
             for _, backing in pairs(plates) do
                 if backing.castName then
-                    backing.castName:SetTextColor(r, g, b, 1)
+                    backing.castName:SetTextColor(red, green, blue, 1)
                 end
             end
             UpdatePreview()
@@ -3136,8 +3136,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         local stColorGet = function()
             return DBColor("castTargetColor")
         end
-        local stColorSet = function(r, g, b)
-            DB().castTargetColor = { r = r, g = g, b = b }
+        local stColorSet = function(red, green, blue)
+            DB().castTargetColor = { r = red, g = green, b = blue }
             for _, backing in pairs(plates) do
                 backing:UpdateHealth()
             end

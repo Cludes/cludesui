@@ -673,8 +673,8 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                         local c = MR.Get("color")
                         return c.r, c.g, c.b, c.a
                     end,
-                    set = function(r, g, b, a)
-                        MR.Cfg().color = { r = r, g = g, b = b, a = a or 1 }
+                    set = function(red, green, blue, a)
+                        MR.Cfg().color = { r = red, g = green, b = blue, a = a or 1 }
                         MR.Apply()
                     end,
                 },
@@ -955,9 +955,9 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
                     function()
                         return AF.Get("borderR"), AF.Get("borderG"), AF.Get("borderB"), AF.Get("borderA")
                     end,
-                    function(r, g, b, a)
+                    function(red, green, blue, a)
                         local c = AF.Cfg()
-                        c.borderR, c.borderG, c.borderB, c.borderA = r, g, b, a or 1
+                        c.borderR, c.borderG, c.borderB, c.borderA = red, green, blue, a or 1
                         AF.Apply()
                     end,
                     true,

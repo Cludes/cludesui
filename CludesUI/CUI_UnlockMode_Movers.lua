@@ -4981,9 +4981,9 @@ CUI_NS.unlockParts.Movers = function(LM)
                         else
                             disabled = not centered and nowT == nil and curEdge == nil
                         end
-                        local r, g, b, a = 0.75, 0.75, 0.75, 0.9
+                        local red, green, blue, a = 0.75, 0.75, 0.75, 0.9
                         if checked then
-                            r, g, b, a = 1, 0.7, 0.3, 1
+                            red, green, blue, a = 1, 0.7, 0.3, 1
                         end
                         if disabled then
                             a = 0.3
@@ -4991,7 +4991,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                         local subItem, subHighlight, subLabel = MenuPool.Item(edgeFlyout, seY, ITEM_H)
                         MenuPool.Check(subItem, checked, disabled)
                         subHighlight:SetColorTexture(1, 1, 1, checked and 0.04 or 0)
-                        subLabel:SetTextColor(r, g, b, a)
+                        subLabel:SetTextColor(red, green, blue, a)
                         subLabel:SetPoint("RIGHT", subItem, "RIGHT", -8, 0)
                         subLabel:SetWordWrap(false)
                         subLabel:SetText(CludesUI.L(e.text))
@@ -5011,7 +5011,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                             subItem:SetScript("OnEnter", OnEnter)
                             subItem:SetScript("OnLeave", function()
                                 subHighlight:SetColorTexture(1, 1, 1, checked and 0.04 or 0)
-                                subLabel:SetTextColor(r, g, b, a)
+                                subLabel:SetTextColor(red, green, blue, a)
                                 if e.key then
                                     CludesUI._HideScreenEdgeMarker(e.key)
                                 end

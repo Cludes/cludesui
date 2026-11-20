@@ -1917,8 +1917,8 @@ local function DecorateStockRow(btnFrame, restore)
             -- channel on this client, and Blizzard's name sits at our alpha 0
             -- from the last pass (its 3-arg SetTextColor keeps it), so a full
             -- copy would hand ours alpha 0 from the second update on.
-            local r, g, b = name:GetTextColor()
-            shade:SetTextColor(r, g, b, 1)
+            local red, green, blue = name:GetTextColor()
+            shade:SetTextColor(red, green, blue, 1)
             shade:SetText(textValue)
             shade:Show()
             name:SetAlpha(0)

@@ -446,15 +446,15 @@ function mod.BuildBarGlowWhenRow(W, hostFrame, cursorY, record, onChange, ownSid
             font, size = f, s or size
         end
     end
-    local r, g, b = 1, 1, 1
+    local red, green, blue = 1, 1, 1
     if lRef and lRef.GetTextColor then
-        r, g, b = lRef:GetTextColor()
+        red, green, blue = lRef:GetTextColor()
     end
     local CTL_H = 30 -- the options dropdown height (Glow Type)
     local function Word(host, textValue)
         local fontStr = host:CreateFontString(nil, "OVERLAY")
         fontStr:SetFont(font, size, "")
-        fontStr:SetTextColor(r, g, b, 1)
+        fontStr:SetTextColor(red, green, blue, 1)
         fontStr:SetText(textValue)
         return fontStr
     end
@@ -692,9 +692,9 @@ function mod.BuildBarGlowHeader(hostFrame, cursorY, record, aIdx, ownSid)
         arrows[idx] = t
     end
     local arrow = arrows[1]
-    local function PaintArrow(r, g, b, a)
+    local function PaintArrow(red, green, blue, a)
         for _, t in ipairs(arrows) do
-            t:SetVertexColor(r, g, b)
+            t:SetVertexColor(red, green, blue)
             t:SetAlpha(a)
         end
     end

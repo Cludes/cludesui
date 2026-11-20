@@ -330,20 +330,20 @@ do
     -- CLASS_COLOR_MAP is defined below: parse time resolves presets only; Class/Custom resolve at PLAYER_LOGIN.
     local saved = CludesUIDB or {}
     local skinName = ResolveFactionTheme(saved.activeTheme or CludesUI.DEFAULT_THEME)
-    local r, g, b
+    local red, green, blue
     if skinName == "Custom Color" then
         local sa = saved.accentColor
-        r, g, b =
+        red, green, blue =
             sa and sa.r or DEFAULT_ACCENT_R, sa and sa.g or DEFAULT_ACCENT_G, sa and sa.b or DEFAULT_ACCENT_B
     else
         local presetRec = THEME_PRESETS[skinName]
         if presetRec then
-            r, g, b = presetRec.r, presetRec.g, presetRec.b
+            red, green, blue = presetRec.r, presetRec.g, presetRec.b
         else
-            r, g, b = DEFAULT_ACCENT_R, DEFAULT_ACCENT_G, DEFAULT_ACCENT_B
+            red, green, blue = DEFAULT_ACCENT_R, DEFAULT_ACCENT_G, DEFAULT_ACCENT_B
         end
     end
-    CLUDES_GREEN = { r = r, g = g, b = b, _themeEnabled = true }
+    CLUDES_GREEN = { r = red, g = green, b = blue, _themeEnabled = true }
 end
 
 -- Registry of accent-colored elements (sidebar indicators, glows, tab underlines,
@@ -1488,18 +1488,18 @@ end
 -------------------------------------------------------------------------------
 --  Utilities
 -------------------------------------------------------------------------------
-local function MakeFont(hostFrame, px, flags, r, g, b, a)
+local function MakeFont(hostFrame, px, flags, red, green, blue, a)
     local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
     fontStr:SetFont(LOCALE_FONT_FALLBACK or EXPRESSWAY, px, flags or "")
-    if r then
-        fontStr:SetTextColor(r, g, b, a or 1)
+    if red then
+        fontStr:SetTextColor(red, green, blue, a or 1)
     end
     return fontStr
 end
 
-local function SolidTex(hostFrame, layer, r, g, b, a)
+local function SolidTex(hostFrame, layer, red, green, blue, a)
     local texture = hostFrame:CreateTexture(nil, layer or "BACKGROUND")
-    texture:SetColorTexture(r, g, b, a or 1)
+    texture:SetColorTexture(red, green, blue, a or 1)
     return texture
 end
 
@@ -1546,13 +1546,13 @@ if type(POOL) ~= "table" then
     CludesUI._Pool = POOL
 end
 
-local function MakeBorder(hostFrame, r, g, b, a, ppOverride)
+local function MakeBorder(hostFrame, red, green, blue, a, ppOverride)
     -- PP.CreateBorder wrapper returning the MakeBorder API. ppOverride: PanelPP for panel context, else real PP (game context).
     local pp = ppOverride or Pix
     local alpha = a or 1
-    r = r or 0
-    g = g or 0
-    b = b or 0
+    red = red or 0
+    green = green or 0
+    blue = blue or 0
     -- On a page-pool host the border frame is pooled with it (PP.CreateBorder
     -- dresses its kept strips again); anywhere else a plain new frame.
     local bf = POOL.CreateFrame("Frame", nil, hostFrame)
@@ -1562,7 +1562,7 @@ local function MakeBorder(hostFrame, r, g, b, a, ppOverride)
 
     -- PP.CreateBorder's four strips. A border inside the options panel re-snaps with
     -- the rest of it in SetPanelScale's settle pass, never through a hook of its own.
-    local brd = Pix.CreateBorder(bf, r, g, b, alpha, 1, "BORDER", 7)
+    local brd = Pix.CreateBorder(bf, red, green, blue, alpha, 1, "BORDER", 7)
 
     return {
         _frame = bf,
@@ -1835,12 +1835,12 @@ CludesUI.COLOR_CODES = {
 }
 
 -- 0-1 r, g, b -> "|cffRRGGBB" (each channel rounded).
-function CludesUI.HexColor(r, g, b)
+function CludesUI.HexColor(red, green, blue)
     return string.format(
         "|cff%02x%02x%02x",
-        math.floor(r * 255 + 0.5),
-        math.floor(g * 255 + 0.5),
-        math.floor(b * 255 + 0.5)
+        math.floor(red * 255 + 0.5),
+        math.floor(green * 255 + 0.5),
+        math.floor(blue * 255 + 0.5)
     )
 end
 
@@ -2514,8 +2514,8 @@ do
                 return crafted
             end
             if (not CludesUIDB or CludesUIDB.charSheetColorItemLevel ~= false) and itemQuality then
-                local r, g, b = C_Item.GetItemQualityColor(itemQuality)
-                return { r = r, g = g, b = b }
+                local red, green, blue = C_Item.GetItemQualityColor(itemQuality)
+                return { r = red, g = green, b = blue }
             end
             return { r = 1, g = 1, b = 1 }
         end
@@ -5623,8 +5623,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
                         and CludesUI._getPopupMenuElementMode() ~= "native"
                         and CludesUI._getPopupMenuButtonTextColor
                     then
-                        local r, g, b = CludesUI._getPopupMenuButtonTextColor()
-                        cfs:SetTextColor(r, g, b, 1)
+                        local red, green, blue = CludesUI._getPopupMenuButtonTextColor()
+                        cfs:SetTextColor(red, green, blue, 1)
                     end
                 end
             end
@@ -5645,8 +5645,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
                     local headerText = headerText.Text
                     if headerText and headerText.SetTextColor then
                         if CludesUI._getPopupMenuButtonTextColor then
-                            local r, g, b = CludesUI._getPopupMenuButtonTextColor()
-                            headerText:SetTextColor(r, g, b, 1)
+                            local red, green, blue = CludesUI._getPopupMenuButtonTextColor()
+                            headerText:SetTextColor(red, green, blue, 1)
                         end
                     end
                 end
@@ -5716,8 +5716,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
                     if fontStr then
                         fontStr:SetFont(cuiFont, btnFontSize, "")
                         if not brandHex and CludesUI._getPopupMenuButtonTextColor then
-                            local r, g, b = CludesUI._getPopupMenuButtonTextColor()
-                            fontStr:SetTextColor(r, g, b, 1)
+                            local red, green, blue = CludesUI._getPopupMenuButtonTextColor()
+                            fontStr:SetTextColor(red, green, blue, 1)
                         end
                     end
                 end
@@ -5738,8 +5738,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
                     if fs2 then
                         fs2:SetFont(cuiFont, btnFontSize, "")
                         if not brandHex and CludesUI._getPopupMenuButtonTextColor then
-                            local r, g, b = CludesUI._getPopupMenuButtonTextColor()
-                            fs2:SetTextColor(r, g, b, 1)
+                            local red, green, blue = CludesUI._getPopupMenuButtonTextColor()
+                            fs2:SetTextColor(red, green, blue, 1)
                         end
                     end
                 end

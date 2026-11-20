@@ -449,8 +449,8 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     end
                     return 220 / 255, 167 / 255, 127 / 255, 0.9
                 end,
-                setValue = function(r, g, b, a)
-                    S().tick5Color = { r = r, g = g, b = b, a = a or 0.9 }
+                setValue = function(red, green, blue, a)
+                    S().tick5Color = { r = red, g = green, b = blue, a = a or 0.9 }
                     mod.ApplyDataBarLayout(XP)
                 end,
             },
@@ -464,8 +464,8 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     end
                     return 1, 1, 1, 0.9
                 end,
-                setValue = function(r, g, b, a)
-                    S().tick10Color = { r = r, g = g, b = b, a = a or 0.9 }
+                setValue = function(red, green, blue, a)
+                    S().tick10Color = { r = red, g = green, b = blue, a = a or 0.9 }
                     mod.ApplyDataBarLayout(XP)
                 end,
             },
@@ -570,8 +570,8 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                             end
                             return 1, 1, 1
                         end,
-                        set = function(r, g, b)
-                            S().dividerTextColor = { r = r, g = g, b = b }
+                        set = function(red, green, blue)
+                            S().dividerTextColor = { r = red, g = green, b = blue }
                             mod.ApplyDataBarLayout(XP)
                         end,
                     },
@@ -1146,9 +1146,9 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         -- The name takes the chevron's colour while lit (its own white back).
         local function Lit(on)
             if on then
-                local r, g, b = ChevronHoverColor()
-                arrow:SetVertexColor(r, g, b)
-                labelText:SetTextColor(r, g, b)
+                local red, green, blue = ChevronHoverColor()
+                arrow:SetVertexColor(red, green, blue)
+                labelText:SetTextColor(red, green, blue)
             else
                 arrow:SetVertexColor(1, 1, 1)
                 labelText:SetTextColor(CludesUI.TEXT_WHITE_R, CludesUI.TEXT_WHITE_G, CludesUI.TEXT_WHITE_B)
@@ -1454,8 +1454,8 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     end
                     return 0.06, 0.06, 0.08, 0.9
                 end,
-                setValue = function(r, g, b, a)
-                    S().textBgColor = { r = r, g = g, b = b, a = a or 0.9 }
+                setValue = function(red, green, blue, a)
+                    S().textBgColor = { r = red, g = green, b = blue, a = a or 0.9 }
                     mod.ApplyDataBarLayout(XP)
                 end,
             },
@@ -1559,8 +1559,8 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             end
             return 0.15, 0.30, 0.60, 0.5
         end,
-        setValue = function(r, g, b, a)
-            S().restedColor = { r = r, g = g, b = b, a = a or 0.5 }
+        setValue = function(red, green, blue, a)
+            S().restedColor = { r = red, g = green, b = blue, a = a or 0.5 }
             mod.ApplyDataBarLayout(XP)
         end,
     })
@@ -1579,11 +1579,11 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     tooltip = "Gradient Start Color",
                     hasAlpha = true,
                     getValue = function()
-                        local _, r, g, b, a = mod.XPBarGradient(S())
-                        return r, g, b, a
+                        local _, red, green, blue, a = mod.XPBarGradient(S())
+                        return red, green, blue, a
                     end,
-                    setValue = function(r, g, b, a)
-                        S().fillGradStart = { r = r, g = g, b = b, a = a or 1 }
+                    setValue = function(red, green, blue, a)
+                        S().fillGradStart = { r = red, g = green, b = blue, a = a or 1 }
                         mod.ApplyDataBarLayout(XP)
                     end,
                 },
@@ -1591,11 +1591,11 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                     tooltip = "Gradient End Color",
                     hasAlpha = true,
                     getValue = function()
-                        local _, _, _, _, _, r, g, b, a = mod.XPBarGradient(S())
-                        return r, g, b, a
+                        local _, _, _, _, _, red, green, blue, a = mod.XPBarGradient(S())
+                        return red, green, blue, a
                     end,
-                    setValue = function(r, g, b, a)
-                        S().fillGradEnd = { r = r, g = g, b = b, a = a or 1 }
+                    setValue = function(red, green, blue, a)
+                        S().fillGradEnd = { r = red, g = green, b = blue, a = a or 1 }
                         mod.ApplyDataBarLayout(XP)
                     end,
                 },
@@ -1699,11 +1699,11 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
             {
                 tooltip = "Background Color",
                 getValue = function()
-                    local r, g, b = mod.XPBarBackground(S())
-                    return r, g, b
+                    local red, green, b = mod.XPBarBackground(S())
+                    return red, green, b
                 end,
-                setValue = function(r, g, b)
-                    S().barBgColor = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    S().barBgColor = { r = red, g = green, b = blue }
                     mod.ApplyDataBarLayout(XP)
                 end,
             },
@@ -1797,8 +1797,8 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 getValue = function()
                     return mod.XPQuestColor(S(), true)
                 end,
-                setValue = function(r, g, b, a)
-                    S().questOverlayDoneColor = { r = r, g = g, b = b, a = a or 0.6 }
+                setValue = function(red, green, blue, a)
+                    S().questOverlayDoneColor = { r = red, g = green, b = blue, a = a or 0.6 }
                     mod.ApplyDataBarLayout(XP)
                 end,
             },
@@ -1826,8 +1826,8 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 getValue = function()
                     return mod.XPQuestColor(S(), false)
                 end,
-                setValue = function(r, g, b, a)
-                    S().questOverlayColor = { r = r, g = g, b = b, a = a or 0.6 }
+                setValue = function(red, green, blue, a)
+                    S().questOverlayColor = { r = red, g = green, b = blue, a = a or 0.6 }
                     mod.ApplyDataBarLayout(XP)
                 end,
             },

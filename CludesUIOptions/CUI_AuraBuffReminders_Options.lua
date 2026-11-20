@@ -2004,10 +2004,10 @@ CludesUI.AtOptionsLogin(function()
                 (d and d.borderG) or 0,
                 (d and d.borderB) or 0,
                 (d and d.borderA) or 1
-        end, function(r, g, b, a)
+        end, function(red, green, blue, a)
             local d = DDB()
             if d then
-                d.borderR, d.borderG, d.borderB, d.borderA = r, g, b, a or 1
+                d.borderR, d.borderG, d.borderB, d.borderA = red, green, blue, a or 1
                 RefreshBorders()
             end
         end, true, 20)
@@ -2092,10 +2092,10 @@ CludesUI.AtOptionsLogin(function()
             local d = DDB()
             local textColor = d and d.textColor or { r = 1, g = 1, b = 1 }
             return textColor.r, textColor.g, textColor.b, 1
-        end, function(r, g, b)
+        end, function(red, green, blue)
             local d = DDB()
             if d then
-                d.textColor = { r = r, g = g, b = b }
+                d.textColor = { r = red, g = green, b = blue }
                 Live()
             end
         end, false, 20)
@@ -3037,10 +3037,10 @@ CludesUI.AtOptionsLogin(function()
                 return math.min(mana.r * 1.5, 1), math.min(mana.g * 1.5, 1), math.min(mana.b * 1.5, 1), 1
             end
             return 0, 0.825, 1, 1
-        end, function(r, g, b)
+        end, function(red, green, blue)
             local c = CDB()
             if c then
-                c.rcManaWarnColor = { r = r, g = g, b = b }
+                c.rcManaWarnColor = { r = red, g = green, b = blue }
                 ApplyManaWarning()
             end
         end, false, 20)

@@ -1451,8 +1451,8 @@ local function BuildCoreFields(widget, fontFile, startY, rowConf, applyFn, buffB
         })
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(region, dsRow:GetFrameLevel() + 3, function()
             return (rowConf.durationColorR or 1), (rowConf.durationColorG or 1), (rowConf.durationColorB or 1), 1
-        end, function(r, g, b)
-            rowConf.durationColorR, rowConf.durationColorG, rowConf.durationColorB = r, g, b
+        end, function(red, green, blue)
+            rowConf.durationColorR, rowConf.durationColorG, rowConf.durationColorB = red, green, blue
             applyFn()
         end, false, 20)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1503,8 +1503,8 @@ local function BuildCoreFields(widget, fontFile, startY, rowConf, applyFn, buffB
         })
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(region, dsRow:GetFrameLevel() + 3, function()
             return (rowConf.stackColorR or 1), (rowConf.stackColorG or 1), (rowConf.stackColorB or 1), 1
-        end, function(r, g, b)
-            rowConf.stackColorR, rowConf.stackColorG, rowConf.stackColorB = r, g, b
+        end, function(red, green, blue)
+            rowConf.stackColorR, rowConf.stackColorG, rowConf.stackColorB = red, green, blue
             applyFn()
         end, false, 20)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1913,8 +1913,8 @@ local function BuildDisplayFields(widget, fontFile, startY, rowConf, applyFn, bu
             function()
                 return (rowConf.borderR or 0), (rowConf.borderG or 0), (rowConf.borderB or 0), (rowConf.borderA or 1)
             end,
-            function(r, g, b, a)
-                rowConf.borderR, rowConf.borderG, rowConf.borderB, rowConf.borderA = r, g, b, a
+            function(red, green, blue, a)
+                rowConf.borderR, rowConf.borderG, rowConf.borderB, rowConf.borderA = red, green, blue, a
                 applyFn()
             end,
             true,
@@ -1965,14 +1965,14 @@ local function BuildDisplayFields(widget, fontFile, startY, rowConf, applyFn, bu
             end,
             isSynced = function()
                 local size = rowConf.borderSize or 1
-                local r, g, b, a = rowConf.borderR or 0, rowConf.borderG or 0, rowConf.borderB or 0, rowConf.borderA or 1
+                local red, green, blue, a = rowConf.borderR or 0, rowConf.borderG or 0, rowConf.borderB or 0, rowConf.borderA or 1
                 for _, record in ipairs(PabAllBarEntries()) do
                     local c = record.cfg
                     if
                         (c.borderSize or 1) ~= size
-                        or (c.borderR or 0) ~= r
-                        or (c.borderG or 0) ~= g
-                        or (c.borderB or 0) ~= b
+                        or (c.borderR or 0) ~= red
+                        or (c.borderG or 0) ~= green
+                        or (c.borderB or 0) ~= blue
                         or (c.borderA or 1) ~= a
                         or (c.borderSizePx or false) ~= (rowConf.borderSizePx or false)
                     then
@@ -2393,8 +2393,8 @@ local function BuildDispelColorFields(widget, fontFile, startY, rowConf, applyFn
                 return c.r or 1, c.g or 1, c.b or 1, 1
             end
             return record.fallback[1], record.fallback[2], record.fallback[3], 1
-        end, function(r, g, b)
-            rowConf[record.key] = { r = r, g = g, b = b }
+        end, function(red, green, blue)
+            rowConf[record.key] = { r = red, g = green, b = blue }
             applyFn()
         end, false, 18)
         Pix.Point(colorSwatch, "RIGHT", region, "RIGHT", -20, 0)

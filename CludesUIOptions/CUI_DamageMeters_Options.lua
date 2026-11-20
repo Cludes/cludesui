@@ -366,8 +366,8 @@ CludesUI.AtOptionsLogin(function()
                     local c = Cfg("windowBorderColor") or {}
                     return c.r or 0, c.g or 0, c.b or 0, c.a or 1
                 end,
-                function(r, g, b, a)
-                    Set("windowBorderColor", { r = r, g = g, b = b, a = a or 1 })
+                function(red, green, blue, a)
+                    Set("windowBorderColor", { r = red, g = green, b = blue, a = a or 1 })
                     ApplyWindowBrd()
                 end,
                 true,
@@ -493,10 +493,10 @@ CludesUI.AtOptionsLogin(function()
                 function()
                     return (Cfg("bgR") or 0), (Cfg("bgG") or 0), (Cfg("bgB") or 0)
                 end,
-                function(r, g, b)
-                    Set("bgR", r)
-                    Set("bgG", g)
-                    Set("bgB", b)
+                function(red, green, blue)
+                    Set("bgR", red)
+                    Set("bgG", green)
+                    Set("bgB", blue)
                     if mod.ApplyBackground then
                         mod.ApplyBackground()
                     end
@@ -646,8 +646,8 @@ CludesUI.AtOptionsLogin(function()
                     end
                     return 0x1B / 255, 0x1B / 255, 0x1B / 255
                 end,
-                function(r, g, b)
-                    Set("hdrBgColor", { r = r, g = g, b = b })
+                function(red, green, blue)
+                    Set("hdrBgColor", { r = red, g = green, b = blue })
                     ApplyHdr()
                 end,
                 false,
@@ -733,8 +733,8 @@ CludesUI.AtOptionsLogin(function()
                     local c = Cfg("hdrBottomBorderColor") or {}
                     return c.r or 0, c.g or 0, c.b or 0, c.a or 1
                 end,
-                function(r, g, b, a)
-                    Set("hdrBottomBorderColor", { r = r, g = g, b = b, a = a or 1 })
+                function(red, green, blue, a)
+                    Set("hdrBottomBorderColor", { r = red, g = green, b = blue, a = a or 1 })
                     ApplyHdr()
                 end,
                 true,
@@ -776,9 +776,9 @@ CludesUI.AtOptionsLogin(function()
                     end
                     return 1, 1, 1
                 end,
-                function(r, g, b)
+                function(red, green, blue)
                     Set("iconColorUseAccent", false)
-                    Set("iconColor", { r = r, g = g, b = b })
+                    Set("iconColor", { r = red, g = green, b = blue })
                     if mod.ApplyIconColor then
                         mod.ApplyIconColor()
                     end
@@ -918,9 +918,9 @@ CludesUI.AtOptionsLogin(function()
                     end
                     return 1, 1, 1
                 end,
-                function(r, g, b)
+                function(red, green, blue)
                     Set("hdrTextUseAccent", false)
-                    Set("hdrTextColor", { r = r, g = g, b = b })
+                    Set("hdrTextColor", { r = red, g = green, b = blue })
                     ApplyHdr()
                     CludesUI:RefreshPage()
                 end,
@@ -1049,8 +1049,8 @@ CludesUI.AtOptionsLogin(function()
                         end
                         return 0.35, 0.55, 0.8
                     end,
-                    setValue = function(r, g, b)
-                        Set("barColor", { r = r, g = g, b = b })
+                    setValue = function(red, green, blue)
+                        Set("barColor", { r = red, g = green, b = blue })
                         Set("showClassColor", false)
                         Set("barColorUseAccent", false)
                         Refresh()
@@ -1439,10 +1439,10 @@ CludesUI.AtOptionsLogin(function()
                 function()
                     return Cfg("borderR") or 0, Cfg("borderG") or 0, Cfg("borderB") or 0, Cfg("borderA") or 1
                 end,
-                function(r, g, b, a)
-                    Set("borderR", r)
-                    Set("borderG", g)
-                    Set("borderB", b)
+                function(red, green, blue, a)
+                    Set("borderR", red)
+                    Set("borderG", green)
+                    Set("borderB", blue)
                     Set("borderA", a)
                     ApplyBrd()
                 end,
@@ -1642,10 +1642,10 @@ CludesUI.AtOptionsLogin(function()
                             Cfg("iconBorderB") or 0,
                             Cfg("iconBorderA") or 1
                     end,
-                    function(r, g, b, a)
-                        Set("iconBorderR", r)
-                        Set("iconBorderG", g)
-                        Set("iconBorderB", b)
+                    function(red, green, blue, a)
+                        Set("iconBorderR", red)
+                        Set("iconBorderG", green)
+                        Set("iconBorderB", blue)
                         Set("iconBorderA", a)
                         ApplyIconBrd()
                     end,
@@ -1699,11 +1699,11 @@ CludesUI.AtOptionsLogin(function()
                 function()
                     return (Cfg("barBgR") or 0), (Cfg("barBgG") or 0), (Cfg("barBgB") or 0)
                 end,
-                function(r, g, b)
+                function(red, green, blue)
                     Set("barBgUseClassColor", false)
-                    Set("barBgR", r)
-                    Set("barBgG", g)
-                    Set("barBgB", b)
+                    Set("barBgR", red)
+                    Set("barBgG", green)
+                    Set("barBgB", blue)
                     if mod.ApplyBarBg then
                         mod.ApplyBarBg()
                     end
@@ -1981,9 +1981,9 @@ CludesUI.AtOptionsLogin(function()
                     end
                     return 1, 1, 1
                 end,
-                function(r, g, b)
+                function(red, green, blue)
                     Set("leftTextUseClassColor", false)
-                    Set("leftTextColor", { r = r, g = g, b = b })
+                    Set("leftTextColor", { r = red, g = green, b = blue })
                     Refresh()
                     CludesUI:RefreshPage()
                 end,
@@ -2092,10 +2092,10 @@ CludesUI.AtOptionsLogin(function()
                     end
                     return 1, 1, 1
                 end,
-                function(r, g, b)
+                function(red, green, blue)
                     Set("rightTextUseClassColor", false)
                     Set("rightTextUseThreatGradient", false)
-                    Set("rightTextColor", { r = r, g = g, b = b })
+                    Set("rightTextColor", { r = red, g = green, b = blue })
                     Refresh()
                     CludesUI:RefreshPage()
                 end,
@@ -2256,8 +2256,8 @@ CludesUI.AtOptionsLogin(function()
                         end
                         return 1, 1, 1
                     end,
-                    setValue = function(r, g, b)
-                        Set("standaloneTimerColor", { r = r, g = g, b = b })
+                    setValue = function(red, green, blue)
+                        Set("standaloneTimerColor", { r = red, g = green, b = blue })
                         ApplySAT()
                     end,
                     onClick = function(self)
@@ -2408,8 +2408,8 @@ CludesUI.AtOptionsLogin(function()
                             local c = Cfg("standaloneTimerBackgroundColor") or { r = 0, g = 0, b = 0, a = 0 }
                             return c.r, c.g, c.b, c.a
                         end,
-                        set = function(r, g, b, a)
-                            Set("standaloneTimerBackgroundColor", { r = r, g = g, b = b, a = a })
+                        set = function(red, green, blue, a)
+                            Set("standaloneTimerBackgroundColor", { r = red, g = green, b = blue, a = a })
                             ApplySAT()
                         end,
                     },
@@ -2421,8 +2421,8 @@ CludesUI.AtOptionsLogin(function()
                             local c = Cfg("standaloneTimerBorderColor") or { r = 0, g = 0, b = 0, a = 1 }
                             return c.r, c.g, c.b, c.a
                         end,
-                        set = function(r, g, b, a)
-                            Set("standaloneTimerBorderColor", { r = r, g = g, b = b, a = a })
+                        set = function(red, green, blue, a)
+                            Set("standaloneTimerBorderColor", { r = red, g = green, b = blue, a = a })
                             ApplySAT()
                         end,
                     },
@@ -2987,10 +2987,10 @@ CludesUI.AtOptionsLogin(function()
                 function()
                     return (SHDB().bgR or 0), (SHDB().bgG or 0), (SHDB().bgB or 0)
                 end,
-                function(r, g, b)
-                    SHDB().bgR = r
-                    SHDB().bgG = g
-                    SHDB().bgB = b
+                function(red, green, blue)
+                    SHDB().bgR = red
+                    SHDB().bgG = green
+                    SHDB().bgB = blue
                     RefreshSH()
                 end,
                 false,
@@ -3140,8 +3140,8 @@ CludesUI.AtOptionsLogin(function()
                         end
                         return 0.298, 0.565, 0.494
                     end,
-                    setValue = function(r, g, b)
-                        SHDB().barColor = { r = r, g = g, b = b }
+                    setValue = function(red, green, blue)
+                        SHDB().barColor = { r = red, g = green, b = blue }
                         SHDB().barColorUseClass = false
                         SHDB().barColorUseAccent = false
                         RefreshSH()
@@ -3219,9 +3219,9 @@ CludesUI.AtOptionsLogin(function()
                     end
                     return 1, 1, 1
                 end,
-                function(r, g, b)
+                function(red, green, blue)
                     SHDB().textColorUseAccent = false
-                    SHDB().textColor = { r = r, g = g, b = b }
+                    SHDB().textColor = { r = red, g = green, b = blue }
                     RefreshSH()
                     CludesUI:RefreshPage()
                 end,

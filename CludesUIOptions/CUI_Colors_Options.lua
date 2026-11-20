@@ -155,11 +155,11 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                         local c = entry.getColor()
                         return c.r, c.g, c.b, 1
                     end,
-                    function(r, g, b)
+                    function(red, green, blue)
                         local c = entry.getColor()
-                        c.r = r
-                        c.g = g
-                        c.b = b
+                        c.r = red
+                        c.g = green
+                        c.b = blue
                         entry.setColor(c)
                         local rl = CludesUI._widgetRefreshList
                         if rl then
@@ -397,9 +397,9 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                         local d = CludesUI.GetDarkModeDB()
                         return d.fillR or DM_DEF.fillR, d.fillG or DM_DEF.fillG, d.fillB or DM_DEF.fillB, 1
                     end,
-                    setValue = function(r, g, b)
+                    setValue = function(red, green, blue)
                         local d = CludesUI.GetDarkModeDB()
-                        d.fillR, d.fillG, d.fillB = r, g, b
+                        d.fillR, d.fillG, d.fillB = red, green, blue
                         CludesUI.RefreshDarkMode()
                     end,
                 },
@@ -411,9 +411,9 @@ function _G._CUI_BuildColorsPage(page, hostFrame, yOffset)
                         local d = CludesUI.GetDarkModeDB()
                         return d.bgR or DM_DEF.bgR, d.bgG or DM_DEF.bgG, d.bgB or DM_DEF.bgB, 1
                     end,
-                    setValue = function(r, g, b)
+                    setValue = function(red, green, blue)
                         local d = CludesUI.GetDarkModeDB()
-                        d.bgR, d.bgG, d.bgB = r, g, b
+                        d.bgR, d.bgG, d.bgB = red, green, blue
                         CludesUI.RefreshDarkMode()
                     end,
                 },

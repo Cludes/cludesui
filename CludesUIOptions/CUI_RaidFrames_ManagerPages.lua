@@ -190,8 +190,8 @@ function mod.RFO_AuraBorderSettings(hostFrame, cursorY, W, get, set, apply, disa
         local swatch, refresh = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
             local c = Val("Color", {})
             return c.r or 0, c.g or 0, c.b or 0, c.a or 1
-        end, function(r, g, b, a)
-            set("Color", { r = r, g = g, b = b, a = a })
+        end, function(red, green, blue, a)
+            set("Color", { r = red, g = green, b = blue, a = a })
             apply()
         end, true, 20)
         swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1522,8 +1522,8 @@ local function BuildBaseDetailDM(widget, fontFile)
         local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
             local c = p.debuffDurTextColor or { r = 1, g = 1, b = 1 }
             return c.r or 1, c.g or 1, c.b or 1, 1
-        end, function(r, g, b)
-            p.debuffDurTextColor = { r = r, g = g, b = b }
+        end, function(red, green, blue)
+            p.debuffDurTextColor = { r = red, g = green, b = blue }
             DmApply()
         end, false, 20)
         swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1567,8 +1567,8 @@ local function BuildBaseDetailDM(widget, fontFile)
         local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
             local c = p.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
             return c.r or 1, c.g or 1, c.b or 1, 1
-        end, function(r, g, b)
-            p.debuffStacksTextColor = { r = r, g = g, b = b }
+        end, function(red, green, blue)
+            p.debuffStacksTextColor = { r = red, g = green, b = blue }
             DmApply()
         end, false, 20)
         swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1939,8 +1939,8 @@ local function BuildTileDetail(widget, fontFile, t)
             local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
                 local c = t.durTextColor or p.debuffDurTextColor or { r = 1, g = 1, b = 1 }
                 return c.r or 1, c.g or 1, c.b or 1, 1
-            end, function(r, g, b)
-                t.durTextColor = { r = r, g = g, b = b }
+            end, function(red, green, blue)
+                t.durTextColor = { r = red, g = green, b = blue }
                 DmApply()
             end, false, 20)
             swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1990,8 +1990,8 @@ local function BuildTileDetail(widget, fontFile, t)
             local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
                 local c = t.stacksTextColor or p.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
                 return c.r or 1, c.g or 1, c.b or 1, 1
-            end, function(r, g, b)
-                t.stacksTextColor = { r = r, g = g, b = b }
+            end, function(red, green, blue)
+                t.stacksTextColor = { r = red, g = green, b = blue }
                 DmApply()
             end, false, 20)
             swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -2036,8 +2036,8 @@ local function BuildTileDetail(widget, fontFile, t)
                     local c = t.color or { r = 1, g = 0.35, b = 0.35, a = 1 }
                     return c.r or 1, c.g or 0.35, c.b or 0.35, c.a or 1
                 end,
-                setValue = function(r, g, b, a)
-                    t.color = { r = r, g = g, b = b, a = a or 1 }
+                setValue = function(red, green, blue, a)
+                    t.color = { r = red, g = green, b = blue, a = a or 1 }
                     DmApply()
                 end,
             }, { type = "label", text = "" })
@@ -2086,9 +2086,9 @@ local function BuildTileDetail(widget, fontFile, t)
         local swatch = CludesUI.BuildColorSwatch(region, catRow:GetFrameLevel() + 3, function()
             local c = t.color or { r = 1, g = 1, b = 1 }
             return c.r or 1, c.g or 1, c.b or 1, 1
-        end, function(r, g, b)
+        end, function(red, green, blue)
             local c = t.color or {}
-            c.r, c.g, c.b = r, g, b
+            c.r, c.g, c.b = red, green, blue
             t.color = c
             DmApply()
         end, false, 20)
@@ -2252,8 +2252,8 @@ local function BuildTileDetail(widget, fontFile, t)
             local colorSwatch = CludesUI.BuildColorSwatch(region, barBgRow:GetFrameLevel() + 3, function()
                 local c = t.color or { r = 0.25, g = 0.8, b = 0.45 }
                 return c.r or 0.25, c.g or 0.8, c.b or 0.45, 1
-            end, function(r, g, b)
-                t.color = { r = r, g = g, b = b }
+            end, function(red, green, blue)
+                t.color = { r = red, g = green, b = blue }
                 DmApply()
             end, false, 20)
             colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -2264,8 +2264,8 @@ local function BuildTileDetail(widget, fontFile, t)
             local bgSwatch = CludesUI.BuildColorSwatch(region, barBgRow:GetFrameLevel() + 3, function()
                 local c = t.barBgColor or { r = 0, g = 0, b = 0 }
                 return c.r or 0, c.g or 0, c.b or 0, 1
-            end, function(r, g, b)
-                t.barBgColor = { r = r, g = g, b = b }
+            end, function(red, green, blue)
+                t.barBgColor = { r = red, g = green, b = blue }
                 DmApply()
             end, false, 20)
             bgSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)

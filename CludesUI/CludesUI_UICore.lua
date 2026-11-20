@@ -151,11 +151,11 @@ CludesUI.RB_COLOURS = RB_COLOURS
 local TIP_BG_R, TIP_BG_G, TIP_BG_B = 0.062, 0.070, 0.082
 local TIP_ARROW = 16
 
-local function TipArrowTex(holderFrame, drawLayer, flyout, size, r, g, b, a)
+local function TipArrowTex(holderFrame, drawLayer, flyout, size, red, green, blue, a)
     local t = holderFrame:CreateTexture(nil, drawLayer, nil, flyout)
     t:SetSize(size, size)
     t:SetPoint("CENTER")
-    t:SetColorTexture(r, g, b, a)
+    t:SetColorTexture(red, green, blue, a)
     t:SetRotation(math.rad(45))
     if t.SetSnapToPixelGrid then
         t:SetSnapToPixelGrid(false)
@@ -623,28 +623,28 @@ CludesUI.ResolveThemeColor = ResolveThemeColor
 local _gradStart = CreateColor(0, 0, 0, 0)
 local _gradEnd = CreateColor(0, 0, 0, 0)
 
-local function UpdateAccentElements(r, g, b)
+local function UpdateAccentElements(red, green, blue)
     for _, record in ipairs(CludesUI._accentElements) do
         if record.type == "solid" and record.obj then
-            record.obj:SetColorTexture(r, g, b, record.a or 1)
+            record.obj:SetColorTexture(red, green, blue, record.a or 1)
         elseif record.type == "gradient" and record.obj then
-            record.obj:SetColorTexture(r, g, b, 1)
-            _gradStart.r, _gradStart.g, _gradStart.b, _gradStart.a = r, g, b, record.startA or 0.15
-            _gradEnd.r, _gradEnd.g, _gradEnd.b, _gradEnd.a = r, g, b, 0
+            record.obj:SetColorTexture(red, green, blue, 1)
+            _gradStart.r, _gradStart.g, _gradStart.b, _gradStart.a = red, green, blue, record.startA or 0.15
+            _gradEnd.r, _gradEnd.g, _gradEnd.b, _gradEnd.a = red, green, blue, 0
             record.obj:SetGradient("HORIZONTAL", _gradStart, _gradEnd)
         elseif record.type == "vertex" and record.obj then
-            record.obj:SetVertexColor(r, g, b, 1)
+            record.obj:SetVertexColor(red, green, blue, 1)
         elseif record.type == "callback" and record.fn then
-            record.fn(r, g, b)
+            record.fn(red, green, blue)
         end
     end
 end
 
 --- Internal: apply accent instantly (for color picker dragging, resets, etc.)
-local function ApplyAccentLive(r, g, b)
+local function ApplyAccentLive(red, green, blue)
     -- Canonical colour table updated in place, then registered one-time elements
-    CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b = r, g, b
-    UpdateAccentElements(r, g, b)
+    CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b = red, green, blue
+    UpdateAccentElements(red, green, blue)
 
     -- The cached confirm popup repaints its accent parts
     CludesUI._InvalidateConfirmPopup()
@@ -660,26 +660,26 @@ CludesUI.SetActiveTheme = function(skinName)
     end
     CludesUIDB.activeTheme = skinName
     CLUDES_GREEN._themeEnabled = true
-    local r, g, b = ResolveThemeColor(skinName)
+    local red, green, blue = ResolveThemeColor(skinName)
 
     if CludesUI._applyThemeBG then
-        CludesUI._applyThemeBG(skinName, r, g, b)
+        CludesUI._applyThemeBG(skinName, red, green, blue)
     end
 end
 
 --- SetAccentColor: persists accent color (per-profile) and applies live.
-CludesUI.SetAccentColor = function(r, g, b)
+CludesUI.SetAccentColor = function(red, green, blue)
     if not CludesUIDB then
         CludesUIDB = {}
     end
     -- Persist on the active profile; the global root stays frozen as fallback.
-    CludesUI.SetActiveProfileAccent({ r = r, g = g, b = b }, false)
-    ApplyAccentLive(r, g, b)
+    CludesUI.SetActiveProfileAccent({ r = red, g = green, b = blue }, false)
+    ApplyAccentLive(red, green, blue)
 end
 
 --- Applies accent live without persisting (custom/class accent mode switches).
-CludesUI.ApplyAccentColorLive = function(r, g, b)
-    ApplyAccentLive(r, g, b)
+CludesUI.ApplyAccentColorLive = function(red, green, blue)
+    ApplyAccentLive(red, green, blue)
 end
 
 -------------------------------------------------------------------------------
@@ -766,14 +766,14 @@ end
 
 -- Live accent RGB for the active profile (used at login / on profile swap).
 function CludesUI.ResolveActiveAccent()
-    local _, r, g, b = CludesUI.ResolveProfileAccent(CludesUI.GetActiveProfileData())
-    return r, g, b
+    local _, red, green, blue = CludesUI.ResolveProfileAccent(CludesUI.GetActiveProfileData())
+    return red, green, blue
 end
 
 -- Single live re-apply entrypoint: re-resolves the active profile's accent and applies it to CLUDES_GREEN + all registered elements without persisting.
 function CludesUI.RefreshAccent()
-    local r, g, b = CludesUI.ResolveActiveAccent()
-    ApplyAccentLive(r, g, b)
+    local red, green, blue = CludesUI.ResolveActiveAccent()
+    ApplyAccentLive(red, green, blue)
 end
 
 --- Class color for the current player
@@ -791,8 +791,8 @@ CludesUI.ResetAccentColor = function()
         CludesUIDB.accentColor = nil
     end
     local skinName = CludesUI.GetActiveTheme()
-    local r, g, b = ResolveThemeColor(skinName)
-    ApplyAccentLive(r, g, b)
+    local red, green, blue = ResolveThemeColor(skinName)
+    ApplyAccentLive(red, green, blue)
 end
 
 --- Wipes all style/theme settings back to defaults; called by the global "Reset to Defaults" button before ReloadUI().

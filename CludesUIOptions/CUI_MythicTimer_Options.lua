@@ -770,10 +770,10 @@ CludesUI.AtOptionsLogin(function()
                 local anchor = right._control
                 local sw, repaint = CludesUI.BuildColorSwatch(right, right:GetFrameLevel() + 3, function()
                     return Cfg("borderR") or 0, Cfg("borderG") or 0, Cfg("borderB") or 0, Cfg("borderA") or 1
-                end, function(r, g, b, a)
-                    Set("borderR", r)
-                    Set("borderG", g)
-                    Set("borderB", b)
+                end, function(red, green, blue, a)
+                    Set("borderR", red)
+                    Set("borderG", green)
+                    Set("borderB", blue)
                     Set("borderA", a)
                     ApplyBorder()
                 end, true, 20)
@@ -806,10 +806,10 @@ CludesUI.AtOptionsLogin(function()
                 region,
                 region:GetFrameLevel() + 5,
                 StoredRgb(colorKey, defR, defG, defB),
-                function(r, g, b)
-                    Set(colorKey, { r = r, g = g, b = b })
+                function(red, green, blue)
+                    Set(colorKey, { r = red, g = green, b = blue })
                     if afterSet then
-                        afterSet(r, g, b)
+                        afterSet(red, green, blue)
                     end
                     Refresh()
                 end,
@@ -858,13 +858,13 @@ CludesUI.AtOptionsLogin(function()
                 region,
                 region:GetFrameLevel() + 5,
                 function()
-                    local r, g, b
+                    local red, green, blue
                     if followColor then
-                        r, g, b = followColor()
+                        red, green, blue = followColor()
                     else
-                        r, g, b = CludesUI.ResolveActiveAccent()
+                        red, green, blue = CludesUI.ResolveActiveAccent()
                     end
-                    return r, g, b, 1
+                    return red, green, blue, 1
                 end,
                 function() end,
                 false,
@@ -879,8 +879,8 @@ CludesUI.AtOptionsLogin(function()
                 region,
                 region:GetFrameLevel() + 5,
                 StoredRgb(colorKey, defR, defG, defB),
-                function(r, g, b)
-                    Set(colorKey, { r = r, g = g, b = b })
+                function(red, green, blue)
+                    Set(colorKey, { r = red, g = green, b = blue })
                     Refresh()
                 end,
                 false,
@@ -1419,8 +1419,8 @@ CludesUI.AtOptionsLogin(function()
             0.4,
             1,
             0.4,
-            function(r, g, b)
-                Set("timerPlusThreeColor", { r = r, g = g, b = b })
+            function(red, green, blue)
+                Set("timerPlusThreeColor", { r = red, g = green, b = blue })
             end
         )
         local p2cfg, p2attach = _ThresholdWidget(
@@ -1434,8 +1434,8 @@ CludesUI.AtOptionsLogin(function()
             0.3,
             0.8,
             1,
-            function(r, g, b)
-                Set("timerPlusTwoColor", { r = r, g = g, b = b })
+            function(red, green, blue)
+                Set("timerPlusTwoColor", { r = red, g = green, b = blue })
             end
         )
         local p1cfg, p1attach = _ThresholdWidget(
@@ -2003,12 +2003,12 @@ CludesUI.AtOptionsLogin(function()
                 local c = tbl()
                 local col = c and c[key]
                 return (col and col.r) or r0, (col and col.g) or g0, (col and col.b) or b0
-            end, function(r, g, b)
+            end, function(red, green, blue)
                 local c = tbl()
                 if not c then
                     return
                 end
-                c[key] = { r = r, g = g, b = b }
+                c[key] = { r = red, g = green, b = blue }
                 redraw()
             end
         end
@@ -2047,8 +2047,8 @@ CludesUI.AtOptionsLogin(function()
     -- The four cast colour swatches the Cast Bars and Target/Focus Bars pages
     -- share (firstKey: where the interruptible colour lives).
     local function CastColorSwatches(A, firstKey)
-        local function Swatch(tooltip, key, r, g, b)
-            local get, set = A.Rgb(key, r, g, b)
+        local function Swatch(tooltip, key, red, green, blue)
+            local get, set = A.Rgb(key, red, green, blue)
             return { tooltip = tooltip, getValue = get, setValue = set }
         end
         local important = Swatch("Important Cast", "importantColor", 1, 0.2, 0.2)
@@ -2390,10 +2390,10 @@ CludesUI.AtOptionsLogin(function()
                                 (col and col.b) or 0,
                                 (col and col.a) or 0.45
                         end,
-                        setValue = function(r, g, b, a)
+                        setValue = function(red, green, blue, a)
                             local c = TSB()
                             if c then
-                                c.bgColor = { r = r, g = g, b = b, a = a }
+                                c.bgColor = { r = red, g = green, b = blue, a = a }
                                 TSBRefresh()
                             end
                         end,

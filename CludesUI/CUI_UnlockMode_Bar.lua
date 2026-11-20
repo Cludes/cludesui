@@ -308,9 +308,9 @@ CUI_NS.unlockParts.Bar = function(LM)
         local glow = bar:CreateTexture(nil, "ARTWORK", nil, 1)
         Span(glow, -BAR_H, 14)
         glow:SetColorTexture(1, 1, 1, 1)
-        repaint[#repaint + 1] = function(r, g, b)
-            line:SetColorTexture(r, g, b, 0.9)
-            glow:SetGradient("VERTICAL", CreateColor(r, g, b, 0), CreateColor(r, g, b, 0.2))
+        repaint[#repaint + 1] = function(red, green, blue)
+            line:SetColorTexture(red, green, blue, 0.9)
+            glow:SetGradient("VERTICAL", CreateColor(red, green, blue, 0), CreateColor(red, green, blue, 0.2))
         end
 
         ---------------------------------------------------------------------------
@@ -365,12 +365,12 @@ CUI_NS.unlockParts.Bar = function(LM)
 
             local hover = false
             local function Paint()
-                local r, g, b = Accent()
+                local red, green, blue = Accent()
                 local lv = def.level()
-                wash:SetColorTexture(r, g, b, 0.16 * lv)
-                cap:SetColorTexture(r, g, b, lv)
+                wash:SetColorTexture(red, green, blue, 0.16 * lv)
+                cap:SetColorTexture(red, green, blue, lv)
                 if lv > 0 then
-                    icon:SetVertexColor(r, g, b)
+                    icon:SetVertexColor(red, green, blue)
                 else
                     icon:SetVertexColor(1, 1, 1)
                 end
@@ -379,8 +379,8 @@ CUI_NS.unlockParts.Bar = function(LM)
                     brd:SetColor(1, 1, 1, 0.35)
                     caption:SetTextColor(1, 1, 1, 0.95)
                 elseif lv > 0 then
-                    brd:SetColor(r, g, b, 0.5)
-                    caption:SetTextColor(r, g, b, 0.95)
+                    brd:SetColor(red, green, blue, 0.5)
+                    caption:SetTextColor(red, green, blue, 0.95)
                 else
                     brd:SetColor(1, 1, 1, 0.12)
                     caption:SetTextColor(1, 1, 1, 0.55)
@@ -467,13 +467,13 @@ CUI_NS.unlockParts.Bar = function(LM)
             labelText:SetText(L(textValue))
             local hover = false
             local function Paint()
-                local r, g, b = 1, 1, 1
+                local red, green, blue = 1, 1, 1
                 if primary then
-                    r, g, b = Accent()
+                    red, green, blue = Accent()
                 end
-                backdrop:SetColorTexture(r, g, b, hover and 0.14 or 0.06)
-                brd:SetColor(r, g, b, hover and (primary and 1 or 0.5) or (primary and 0.7 or 0.3))
-                labelText:SetTextColor(r, g, b, hover and 1 or (primary and 0.9 or 0.7))
+                backdrop:SetColorTexture(red, green, blue, hover and 0.14 or 0.06)
+                brd:SetColor(red, green, blue, hover and (primary and 1 or 0.5) or (primary and 0.7 or 0.3))
+                labelText:SetTextColor(red, green, blue, hover and 1 or (primary and 0.9 or 0.7))
             end
             button:SetScript("OnEnter", function()
                 hover = true
@@ -504,8 +504,8 @@ CUI_NS.unlockParts.Bar = function(LM)
         title:SetText(L("LAYOUT MODE"))
         brand:SetSize(LOGO_SZ + 8 + math.ceil(title:GetStringWidth() or 90), CHIP)
         bar._badgeLogo = logo
-        repaint[#repaint + 1] = function(r, g, b)
-            logo:SetVertexColor(r, g, b, 1)
+        repaint[#repaint + 1] = function(red, green, blue)
+            logo:SetVertexColor(red, green, blue, 1)
         end
 
         local leftX = { brand, "|" }
@@ -733,9 +733,9 @@ CUI_NS.unlockParts.Bar = function(LM)
         --  Colour
         ---------------------------------------------------------------------------
         function LM.PaintBanner()
-            local r, g, b = Accent()
+            local red, green, blue = Accent()
             for idx = 1, #repaint do
-                repaint[idx](r, g, b)
+                repaint[idx](red, green, blue)
             end
         end
         CludesUI.RegAccent({

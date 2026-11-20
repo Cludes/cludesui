@@ -504,16 +504,16 @@ end
 -- Recolor active dashes in place. Secret-safe: r,g,b,a flow straight into
 -- SetVertexColor with no arithmetic, so a secret (restricted) color is fine.
 -- Used by the Raid Frames Frame-Border threshold recolor.
-local function SetProceduralAntsColor(holder, r, g, b, a)
+local function SetProceduralAntsColor(holder, red, green, blue, a)
     local glowData = holder._cuiScrollData
     if not glowData then
         return
     end
     a = a or 1
-    glowData.top:SetVertexColor(r, g, b, a)
-    glowData.bottom:SetVertexColor(r, g, b, a)
-    glowData.left:SetVertexColor(r, g, b, a)
-    glowData.right:SetVertexColor(r, g, b, a)
+    glowData.top:SetVertexColor(red, green, blue, a)
+    glowData.bottom:SetVertexColor(red, green, blue, a)
+    glowData.left:SetVertexColor(red, green, blue, a)
+    glowData.right:SetVertexColor(red, green, blue, a)
 end
 
 -------------------------------------------------------------------------------
@@ -1812,7 +1812,7 @@ do
     -- Color for a mode. nil = the suite default (StartSpecGlow resolves it per
     -- style). A nil mode is a legacy site that never stored one: it reads as
     -- custom with the site's own default, so its look is unchanged.
-    function G.ResolveColor(mode, r, g, b, defR, defG, defB)
+    function G.ResolveColor(mode, red, green, blue, defR, defG, defB)
         if mode == "default" then
             return nil
         end
@@ -1821,8 +1821,8 @@ do
             local c = CludesUI.GetClassColor(CludesUI._playerClass)
             return c.r, c.g, c.b
         end
-        if r ~= nil then
-            return r, g or 0, b or 0
+        if red ~= nil then
+            return red, green or 0, blue or 0
         end
         return defR, defG, defB
     end
@@ -1996,9 +1996,9 @@ do
         -- The static borders: no glow, no parameters. Blizzard Border: nil
         -- color = Blizzard's art. Blizzard Pandemic Border: always untinted.
         if position == STEALABLE_BORDER or position == PANDEMIC_BORDER then
-            local r, g, b
+            local red, green, blue
             if position == STEALABLE_BORDER then
-                r, g, b = specInfo.r, specInfo.g, specInfo.b
+                red, green, blue = specInfo.r, specInfo.g, specInfo.b
             end
             if rec and BoundBlocked(rec) then
                 return
@@ -2011,9 +2011,9 @@ do
                 and s.idx == position
                 and s.w == wid
                 and s.h == hgt
-                and s.r == r
-                and s.g == g
-                and s.b == b
+                and s.r == red
+                and s.g == green
+                and s.b == blue
             then
                 return position, false
             end
@@ -2032,7 +2032,7 @@ do
                 end
             end
             if position == STEALABLE_BORDER then
-                G.ShowStealableBorder(holder, wid, hgt, r, g, b)
+                G.ShowStealableBorder(holder, wid, hgt, red, green, blue)
             else
                 G.ShowPandemicBorder(holder, wid, hgt)
             end
@@ -2044,19 +2044,19 @@ do
                 s = {}
                 holder._cuiSpecSig = s
             end
-            s.idx, s.host, s.w, s.h, s.r, s.g, s.b = position, owner, wid, hgt, r, g, b
+            s.idx, s.host, s.w, s.h, s.r, s.g, s.b = position, owner, wid, hgt, red, green, blue
             return position, false
         end
         -- A shown static border needs no separate hide: every start below
         -- runs StopAllGlows first, which hides it and clears the signature.
         local engineHost = (owner == "engine") or rec ~= nil
         local record = GLOW_STYLES[position]
-        local r, g, b = specInfo.r, specInfo.g, specInfo.b
+        local red, green, blue = specInfo.r, specInfo.g, specInfo.b
         local isFlip = not (record.procedural or record.buttonGlow or record.autocast or record.shapeGlow)
         -- Default look: FlipBooks stay untinted (nil). The engine-hosted ABG
         -- twin takes nil too (white ants, gold halo); everything else is gold.
-        if r == nil and not isFlip and not (engineHost and record.buttonGlow) then
-            r, g, b = DEF_R, DEF_G, DEF_B
+        if red == nil and not isFlip and not (engineHost and record.buttonGlow) then
+            red, green, blue = DEF_R, DEF_G, DEF_B
         end
         local N, th, period = specInfo.lines or 8, specInfo.thickness or 2, specInfo.speed or 4
         if extra and extra.panel then
@@ -2080,9 +2080,9 @@ do
             and s.host == owner
             and s.w == wid
             and s.h == hgt
-            and s.r == r
-            and s.g == g
-            and s.b == b
+            and s.r == red
+            and s.g == green
+            and s.b == blue
             and s.N == N
             and s.th == th
             and s.period == period
@@ -2108,7 +2108,7 @@ do
         else
             o.bg = nil
         end
-        o.untinted = (r == nil) or nil
+        o.untinted = (red == nil) or nil
         o.abgHalo, o.haloR, o.haloG, o.haloB = nil, nil, nil, nil
         o.maskWith = maskTex
         o.maskPath = maskPath
@@ -2116,9 +2116,9 @@ do
         o.shapeMask = shapeMask
         o.anchorFrame = extra and extra.anchorFrame or nil
         if engineHost then
-            StartEngineGlow(holder, position, wid, r, g, b, o, hgt)
+            StartEngineGlow(holder, position, wid, red, green, blue, o, hgt)
         else
-            StartGlow(holder, position, wid, r, g, b, o, hgt)
+            StartGlow(holder, position, wid, red, green, blue, o, hgt)
         end
         -- The start's StopAllGlows left the signature unset, so a failed
         -- registration retries on the next call (at the lift when deferred).
@@ -2132,7 +2132,7 @@ do
             s = {}
             holder._cuiSpecSig = s
         end
-        s.idx, s.host, s.w, s.h, s.r, s.g, s.b = position, owner, wid, hgt, r, g, b
+        s.idx, s.host, s.w, s.h, s.r, s.g, s.b = position, owner, wid, hgt, red, green, blue
         s.N, s.th, s.period = N, th, period
         s.bg, s.bgR, s.bgG, s.bgB, s.mask = bgOn, bgR, bgG, bgB, maskTex
         s.maskPath, s.shapeMask = maskPath, shapeMask

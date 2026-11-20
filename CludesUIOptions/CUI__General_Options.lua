@@ -958,9 +958,9 @@ CludesUI.AtOptionsLogin(function()
                             CludesUI.DEFAULT_ACCENT_B,
                             1
                     end,
-                    setValue = function(r, g, b)
+                    setValue = function(red, green, blue)
                         -- Persists per-profile (custom + useClass=false), applies live.
-                        CludesUI.SetAccentColor(r, g, b)
+                        CludesUI.SetAccentColor(red, green, blue)
                     end,
                     onClick = function(self)
                         if select(1, CludesUI.GetActiveAccentState()) then
@@ -997,11 +997,11 @@ CludesUI.AtOptionsLogin(function()
                 end
                 return CludesUI.GetAccentColor()
             end
-            local tcSet = function(r, g, b)
-                Account().accentColor = { r = r, g = g, b = b }
+            local tcSet = function(red, green, blue)
+                Account().accentColor = { r = red, g = green, b = blue }
                 -- Only update the window background, not the accent color
                 if CludesUI._applyBgTint then
-                    CludesUI._applyBgTint(r, g, b)
+                    CludesUI._applyBgTint(red, green, blue)
                 end
             end
             local tcSwatch, tcUpdateSwatch =
@@ -1332,8 +1332,8 @@ CludesUI.AtOptionsLogin(function()
                     getValue = function()
                         return CludesUI.GetPointAnchorColor("line")
                     end,
-                    setValue = function(r, g, b, a)
-                        CludesUI.SetPointAnchorColor("line", r, g, b, a)
+                    setValue = function(red, green, blue, a)
+                        CludesUI.SetPointAnchorColor("line", red, green, blue, a)
                     end,
                 },
                 {
@@ -1342,8 +1342,8 @@ CludesUI.AtOptionsLogin(function()
                     getValue = function()
                         return CludesUI.GetPointAnchorColor("border")
                     end,
-                    setValue = function(r, g, b, a)
-                        CludesUI.SetPointAnchorColor("border", r, g, b, a)
+                    setValue = function(red, green, blue, a)
+                        CludesUI.SetPointAnchorColor("border", red, green, blue, a)
                     end,
                 },
                 {
@@ -1352,8 +1352,8 @@ CludesUI.AtOptionsLogin(function()
                     getValue = function()
                         return CludesUI.GetPointAnchorColor("point")
                     end,
-                    setValue = function(r, g, b, a)
-                        CludesUI.SetPointAnchorColor("point", r, g, b, a)
+                    setValue = function(red, green, blue, a)
+                        CludesUI.SetPointAnchorColor("point", red, green, blue, a)
                     end,
                 },
             }, {

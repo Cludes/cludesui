@@ -505,11 +505,11 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
             UpdateProcGlowPreview(_procGlowPreview)
         end
 
-        local function SetUnifiedColor(r, g, b, a)
-            p.pushedCustomColor = { r = r, g = g, b = b, a = a }
-            p.highlightCustomColor = { r = r, g = g, b = b, a = a }
-            p.cooldownEdgeColor = { r = r, g = g, b = b, a = a }
-            p.procGlowColor = { r = r, g = g, b = b }
+        local function SetUnifiedColor(red, green, blue, a)
+            p.pushedCustomColor = { r = red, g = green, b = blue, a = a }
+            p.highlightCustomColor = { r = red, g = green, b = blue, a = a }
+            p.cooldownEdgeColor = { r = red, g = green, b = blue, a = a }
+            p.procGlowColor = { r = red, g = green, b = blue }
             -- A Default-mode proc glow would ignore the pick; it takes the unified color as before.
             if p.procGlowColorMode == "default" then
                 p.procGlowColorMode = "custom"
@@ -551,8 +551,8 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                 end
                 return c.r, c.g, c.b, c.a
             end,
-            setValue = function(r, g, b, a)
-                SetUnifiedColor(r, g, b, a)
+            setValue = function(red, green, blue, a)
+                SetUnifiedColor(red, green, blue, a)
             end,
             hasAlpha = true,
         }, {
@@ -936,8 +936,8 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                         local c = p.assistGlowColor or { r = 0.15, g = 0.5, b = 1 }
                         return c.r, c.g, c.b
                     end,
-                    setValue = function(r, g, b)
-                        p.assistGlowColor = { r = r, g = g, b = b }
+                    setValue = function(red, green, blue)
+                        p.assistGlowColor = { r = red, g = green, b = blue }
                         mod.UpdateAssistHighlights()
                         UpdateAssistGlowPreview(_assistGlowPreview)
                     end,
@@ -1018,8 +1018,8 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                         local c = p.assistGlowOverlayColor or { r = 0.15, g = 0.5, b = 1 }
                         return c.r, c.g, c.b
                     end,
-                    setValue = function(r, g, b)
-                        p.assistGlowOverlayColor = { r = r, g = g, b = b }
+                    setValue = function(red, green, blue)
+                        p.assistGlowOverlayColor = { r = red, g = green, b = blue }
                         mod.UpdateAssistHighlights()
                         UpdateAssistGlowPreview(_assistGlowPreview)
                     end,

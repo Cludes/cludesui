@@ -1470,11 +1470,11 @@ function CludesUI.SnapshotAllAddons()
         -- UI accent color (per-profile). Serialize the RESOLVED accent so an
         -- imported profile reproduces the source's visible accent regardless of
         -- whether it came from an explicit per-profile value or the fallback.
-        local u, r, g, b = CludesUI.ResolveProfileAccent(CludesUI.GetActiveProfileData())
+        local u, red, green, blue = CludesUI.ResolveProfileAccent(CludesUI.GetActiveProfileData())
         -- Serialize useClass explicitly (false included) so an imported custom
         -- profile reports the right mode to the swatch on a character whose
         -- global useClassAccentColor is true.
-        body.cuiAccent = { useClass = u, custom = (not u) and { r = r, g = g, b = b } or nil }
+        body.cuiAccent = { useClass = u, custom = (not u) and { r = red, g = green, b = blue } or nil }
     end
     return body
 end
@@ -3143,9 +3143,9 @@ function CludesUI.ExportProfile(
     -- (works for active and non-active profiles; never mutates the stored profile, and
     -- is rename-immune since it is a data-root field, not an addons[] folder key).
     do
-        local u, r, g, b = CludesUI.ResolveProfileAccent(profileRec)
+        local u, red, green, blue = CludesUI.ResolveProfileAccent(profileRec)
         -- Serialize useClass explicitly (see SnapshotAllAddons).
-        exportCopy.cuiAccent = { useClass = u, custom = (not u) and { r = r, g = g, b = b } or nil }
+        exportCopy.cuiAccent = { useClass = u, custom = (not u) and { r = red, g = green, b = blue } or nil }
     end
     -- UI scale (account-wide) rides with a FULL profile so an importer can opt
     -- to match the scale the profile was designed at. Concrete number; absent

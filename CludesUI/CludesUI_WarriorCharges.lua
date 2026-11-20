@@ -115,9 +115,9 @@ local function EnsureLift()
                 H.dirty = nil
                 if H.armed and H.pendR then
                     local key = H.armed
-                    local r, g, b, a = H.pendR, H.pendG, H.pendB, H.pendA
+                    local red, green, blue, a = H.pendR, H.pendG, H.pendB, H.pendA
                     H.lastR = nil -- force the change gate open
-                    HostRecolor(H, key, r, g, b, a)
+                    HostRecolor(H, key, red, green, blue, a)
                 end
                 if H.armed and H.syncFrame then
                     HostSyncByKey(H, H.syncFrame, H.armed, H.syncOpts)
@@ -130,21 +130,21 @@ end
 -- Change-gated live recolor (a few compares per call). The latest color is
 -- always stashed as pend: the creation-window bake reads it (the only write
 -- that always lands) and the lift re-applies it.
-HostRecolor = function(H, powerKey, r, g, b, a)
+HostRecolor = function(H, powerKey, red, green, blue, a)
     if H.armed ~= powerKey then
         return
     end
-    H.pendR, H.pendG, H.pendB, H.pendA = r, g, b, a
+    H.pendR, H.pendG, H.pendB, H.pendA = red, green, blue, a
     local st = H.ph[powerKey]
     local bft = st and st.bft
     if not bft then
         return
     end -- not built yet: stash only, no write to try
-    if H.lastR == r and H.lastG == g and H.lastB == b and H.lastA == a then
+    if H.lastR == red and H.lastG == green and H.lastB == blue and H.lastA == a then
         return
     end
-    if pcall(bft.SetVertexColor, bft, r, g, b, a or 1) then
-        H.lastR, H.lastG, H.lastB, H.lastA = r, g, b, a
+    if pcall(bft.SetVertexColor, bft, red, green, blue, a or 1) then
+        H.lastR, H.lastG, H.lastB, H.lastA = red, green, blue, a
     else
         H.dirty = true
         EnsureLift()
@@ -377,15 +377,15 @@ local function StyleSeparators(H, widget, sp, num)
     local sep = sp.sep or {}
     -- Color: an explicit sep color from the host, else the legacy gap-strip
     -- chain (explicit gap color > opaque black in dark theme > bar bg color).
-    local r, g, b, a
+    local red, green, blue, a
     if sep.r then
-        r, g, b, a = sep.r, sep.g or 0, sep.b or 0, sep.a or 1
+        red, green, blue, a = sep.r, sep.g or 0, sep.b or 0, sep.a or 1
     elseif sp.gapColorEnabled then
-        r, g, b, a = sp.gapR or 0, sp.gapG or 0, sp.gapB or 0, sp.gapA or 1
+        red, green, blue, a = sp.gapR or 0, sp.gapG or 0, sp.gapB or 0, sp.gapA or 1
     elseif sp.darkTheme then
-        r, g, b, a = 0, 0, 0, 1
+        red, green, blue, a = 0, 0, 0, 1
     else
-        r, g, b, a = sp.barBgR or 0, sp.barBgG or 0, sp.barBgB or 0, sp.barBgA or 0.5
+        red, green, blue, a = sp.barBgR or 0, sp.barBgG or 0, sp.barBgB or 0, sp.barBgA or 0.5
     end
     local ori = sp.pipOrientation or "HORIZONTAL"
     local vertical = ori ~= "HORIZONTAL"
@@ -449,7 +449,7 @@ local function StyleSeparators(H, widget, sp, num)
             t = H.sepHost:CreateTexture(nil, "ARTWORK")
             H.seps[idx] = t
         end
-        t:SetColorTexture(r, g, b, a)
+        t:SetColorTexture(red, green, blue, a)
         t:ClearAllPoints()
         -- Snap the tick's EDGE offset, not just the boundary center: a
         -- half-pixel-offset 1px line can disappear into the pixel grid.
@@ -562,7 +562,7 @@ end
 -- Threshold inputs, handed raw from the consumer's paint pass and
 -- change-gated here with ALLOC-FREE field compares (the pass cadence is the
 -- class bar tick; a rebuild only runs on a real settings/spec/cap change).
-local function HostThresholds(H, powerKey, mode, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
+local function HostThresholds(H, powerKey, mode, total, red, green, blue, a, bandOn, bands, bandReverse, reverse)
     if H.armed ~= powerKey then
         return
     end
@@ -584,9 +584,9 @@ local function HostThresholds(H, powerKey, mode, total, r, g, b, a, bandOn, band
     local changed = inp.mode ~= mode
         or inp.count ~= total
         or inp.n ~= num
-        or inp.r ~= r
-        or inp.g ~= g
-        or inp.b ~= b
+        or inp.r ~= red
+        or inp.g ~= green
+        or inp.b ~= blue
         or inp.a ~= a
         or inp.bn ~= bn
     if not changed and bn > 0 then
@@ -609,7 +609,7 @@ local function HostThresholds(H, powerKey, mode, total, r, g, b, a, bandOn, band
         return
     end
     inp.mode, inp.count, inp.n = mode, total, num
-    inp.r, inp.g, inp.b, inp.a, inp.bn = r, g, b, a, bn
+    inp.r, inp.g, inp.b, inp.a, inp.bn = red, green, blue, a, bn
     local specInfo = H.thSpecStore
     if not specInfo then
         specInfo = {}
@@ -649,7 +649,7 @@ local function HostThresholds(H, powerKey, mode, total, r, g, b, a, bandOn, band
             e = {}
             specInfo[1] = e
         end
-        e.start, e.r, e.g, e.b, e.a = start, r or 1, g or 1, b or 1, a or 1
+        e.start, e.r, e.g, e.b, e.a = start, red or 1, green or 1, blue or 1, a or 1
     end
     for idx = used + 1, #specInfo do
         specInfo[idx] = nil
@@ -784,10 +784,10 @@ _G._EWC = {
     Sync = function(hostKey, widget, powerKey, options)
         HostSyncByKey(Host(hostKey), widget, powerKey, options)
     end,
-    Thresholds = function(hostKey, powerKey, mode, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
+    Thresholds = function(hostKey, powerKey, mode, total, red, green, blue, a, bandOn, bands, bandReverse, reverse)
         local H = S.hosts[hostKey]
         if H then
-            HostThresholds(H, powerKey, mode, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
+            HostThresholds(H, powerKey, mode, total, red, green, blue, a, bandOn, bands, bandReverse, reverse)
         end
     end,
     Gate = function(hostKey)
@@ -799,10 +799,10 @@ _G._EWC = {
     EngineOn = function(hostKey, powerKey)
         return HostEngineOn(S.hosts[hostKey], powerKey)
     end,
-    Recolor = function(hostKey, powerKey, r, g, b, a)
+    Recolor = function(hostKey, powerKey, red, green, blue, a)
         local H = S.hosts[hostKey]
         if H then
-            HostRecolor(H, powerKey, r, g, b, a)
+            HostRecolor(H, powerKey, red, green, blue, a)
         end
     end,
     -- Talent-aware registration cap for a power key (0 for unknown keys) --

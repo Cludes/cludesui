@@ -635,15 +635,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         allBtn:SetPoint("LEFT", prefixText, "RIGHT", 4, 0)
 
         allBtn:SetScript("OnEnter", function()
-            local r, g, b = CludesUI.GetAccentColor()
-            allText:SetTextColor(r, g, b, 1)
+            local red, green, blue = CludesUI.GetAccentColor()
+            allText:SetTextColor(red, green, blue, 1)
             if opts.tooltip then
                 ShowWidgetTooltip(allBtn, opts.tooltip, opts.tooltipOpts)
             end
         end)
         allBtn:SetScript("OnLeave", function()
-            local r, g, b = CludesUI.GetAccentColor()
-            allText:SetTextColor(r, g, b, 0.65)
+            local red, green, blue = CludesUI.GetAccentColor()
+            allText:SetTextColor(red, green, blue, 0.65)
             if opts.tooltip then
                 HideWidgetTooltip()
             end
@@ -669,12 +669,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             multiBtn:SetPoint("LEFT", sepText, "RIGHT", 4, 0)
 
             multiBtn:SetScript("OnEnter", function()
-                local r, g, b = CludesUI.GetAccentColor()
-                multiText:SetTextColor(r, g, b, 1)
+                local red, green, blue = CludesUI.GetAccentColor()
+                multiText:SetTextColor(red, green, blue, 1)
             end)
             multiBtn:SetScript("OnLeave", function()
-                local r, g, b = CludesUI.GetAccentColor()
-                multiText:SetTextColor(r, g, b, 0.65)
+                local red, green, blue = CludesUI.GetAccentColor()
+                multiText:SetTextColor(red, green, blue, 0.65)
             end)
         end
 
@@ -924,11 +924,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 return
             end
             -- Re-color accent in case it changed
-            local r, g, b = CludesUI.GetAccentColor()
+            local red, green, blue = CludesUI.GetAccentColor()
             prefixText:SetTextColor(1, 1, 1, 0.65)
-            allText:SetTextColor(r, g, b, 0.65)
+            allText:SetTextColor(red, green, blue, 0.65)
             if multiText then
-                multiText:SetTextColor(r, g, b, 0.65)
+                multiText:SetTextColor(red, green, blue, 0.65)
             end
             ResizeBtn()
 

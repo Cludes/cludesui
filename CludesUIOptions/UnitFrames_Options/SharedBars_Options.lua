@@ -205,8 +205,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     end
                     return 0.20, 0.20, 0.80
                 end,
-                setValue = function(r, g, b)
-                    UNIT_DB_MAP[optionState.selectedUnit]().gradientColor = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    UNIT_DB_MAP[optionState.selectedUnit]().gradientColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                     UpdatePreview()
                 end,
@@ -231,8 +231,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     end
                     return 37 / 255, 193 / 255, 29 / 255
                 end,
-                setValue = function(r, g, b)
-                    UNIT_DB_MAP[optionState.selectedUnit]().customFillColor = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    UNIT_DB_MAP[optionState.selectedUnit]().customFillColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                     UpdatePreview()
                 end,
@@ -562,8 +562,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                     local c = SGet(dropdown.key) or dropdown.def
                     return c.r, c.g, c.b, 1
                 end,
-                function(r, g, b)
-                    UNIT_DB_MAP[optionState.selectedUnit]()[dropdown.key] = { r = r, g = g, b = b }
+                function(red, green, blue)
+                    UNIT_DB_MAP[optionState.selectedUnit]()[dropdown.key] = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                     UpdatePreview()
                 end,
@@ -902,8 +902,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                         end
                                         return 1, 1, 1
                                     end,
-                                    setValue = function(r, g, b)
-                                        SSet("leftTextTargetSepColor", { r = r, g = g, b = b })
+                                    setValue = function(red, green, blue)
+                                        SSet("leftTextTargetSepColor", { r = red, g = green, b = blue })
                                         UpdatePreview()
                                     end,
                                     onClick = function(self)
@@ -1014,10 +1014,10 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 local ltSwGet = function()
                     return SVal("leftTextColorR", 1), SVal("leftTextColorG", 1), SVal("leftTextColorB", 1)
                 end
-                local ltSwSet = function(r, g, b)
-                    SSet("leftTextColorR", r)
-                    SSet("leftTextColorG", g)
-                    SSet("leftTextColorB", b)
+                local ltSwSet = function(red, green, blue)
+                    SSet("leftTextColorR", red)
+                    SSet("leftTextColorG", green)
+                    SSet("leftTextColorB", blue)
                     UpdatePreview()
                 end
                 local ltSwatch, ltUpdateSwatch =
@@ -1252,8 +1252,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                         end
                                         return 1, 1, 1
                                     end,
-                                    setValue = function(r, g, b)
-                                        SSet("rightTextTargetSepColor", { r = r, g = g, b = b })
+                                    setValue = function(red, green, blue)
+                                        SSet("rightTextTargetSepColor", { r = red, g = green, b = blue })
                                         UpdatePreview()
                                     end,
                                     onClick = function(self)
@@ -1361,10 +1361,10 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 local rtSwGet = function()
                     return SVal("rightTextColorR", 1), SVal("rightTextColorG", 1), SVal("rightTextColorB", 1)
                 end
-                local rtSwSet = function(r, g, b)
-                    SSet("rightTextColorR", r)
-                    SSet("rightTextColorG", g)
-                    SSet("rightTextColorB", b)
+                local rtSwSet = function(red, green, blue)
+                    SSet("rightTextColorR", red)
+                    SSet("rightTextColorG", green)
+                    SSet("rightTextColorB", blue)
                     UpdatePreview()
                 end
                 local rtSwatch, rtUpdateSwatch = CludesUI.BuildColorSwatch(
@@ -1598,8 +1598,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                         end
                                         return 1, 1, 1
                                     end,
-                                    setValue = function(r, g, b)
-                                        SSet("centerTextTargetSepColor", { r = r, g = g, b = b })
+                                    setValue = function(red, green, blue)
+                                        SSet("centerTextTargetSepColor", { r = red, g = green, b = blue })
                                         UpdatePreview()
                                     end,
                                     onClick = function(self)
@@ -1704,10 +1704,10 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                         SVal("centerTextColorG", 1),
                         SVal("centerTextColorB", 1)
                 end
-                local ctSwSet = function(r, g, b)
-                    SSet("centerTextColorR", r)
-                    SSet("centerTextColorG", g)
-                    SSet("centerTextColorB", b)
+                local ctSwSet = function(red, green, blue)
+                    SSet("centerTextColorR", red)
+                    SSet("centerTextColorG", green)
+                    SSet("centerTextColorB", blue)
                     UpdatePreview()
                 end
                 local ctSwatch, ctUpdateSwatch =
@@ -1938,8 +1938,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                                         end
                                         return 1, 1, 1
                                     end,
-                                    setValue = function(r, g, b)
-                                        SSet("extraTextTargetSepColor", { r = r, g = g, b = b })
+                                    setValue = function(red, green, blue)
+                                        SSet("extraTextTargetSepColor", { r = red, g = green, b = blue })
                                         UpdatePreview()
                                     end,
                                     onClick = function(self)
@@ -2042,10 +2042,10 @@ function mod.UFO_BuildHealthBarSection(hostFrame, cursorY, context)
                 local etSwGet = function()
                     return SVal("extraTextColorR", 1), SVal("extraTextColorG", 1), SVal("extraTextColorB", 1)
                 end
-                local etSwSet = function(r, g, b)
-                    SSet("extraTextColorR", r)
-                    SSet("extraTextColorG", g)
-                    SSet("extraTextColorB", b)
+                local etSwSet = function(red, green, blue)
+                    SSet("extraTextColorR", red)
+                    SSet("extraTextColorG", green)
+                    SSet("extraTextColorB", blue)
                     UpdatePreview()
                 end
                 local etSwatch, etUpdateSwatch =
@@ -2459,8 +2459,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     end
                     return 0.20, 0.20, 0.80
                 end,
-                setValue = function(r, g, b)
-                    UNIT_DB_MAP[optionState.selectedUnit]().powerGradientColor = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    UNIT_DB_MAP[optionState.selectedUnit]().powerGradientColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                     UpdatePreview()
                 end,
@@ -2475,8 +2475,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     end
                     return 0, 0, 1
                 end,
-                setValue = function(r, g, b)
-                    UNIT_DB_MAP[optionState.selectedUnit]().customPowerFillColor = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    UNIT_DB_MAP[optionState.selectedUnit]().customPowerFillColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                     UpdatePreview()
                 end,
@@ -2769,8 +2769,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                     end
                     return 1, 1, 1
                 end,
-                setValue = function(r, g, b)
-                    UNIT_DB_MAP[optionState.selectedUnit]().powerTextColor = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    UNIT_DB_MAP[optionState.selectedUnit]().powerTextColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                     UpdatePreview()
                 end,
@@ -3102,8 +3102,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                 local c = SGet("powerBorderColor") or { r = 0, g = 0, b = 0 }
                 return c.r, c.g, c.b, SVal("powerBorderAlpha", 1)
             end,
-            function(r, g, b, a)
-                UNIT_DB_MAP[optionState.selectedUnit]().powerBorderColor = { r = r, g = g, b = b }
+            function(red, green, blue, a)
+                UNIT_DB_MAP[optionState.selectedUnit]().powerBorderColor = { r = red, g = green, b = blue }
                 UNIT_DB_MAP[optionState.selectedUnit]().powerBorderAlpha = a
                 ReloadAndUpdate()
             end,
@@ -3145,11 +3145,11 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
             end,
             disabledTooltip = "Spell Cost Prediction",
             getValue = function()
-                local r, g, b = mod.UF_PowerCostColor(SDB())
-                return r, g, b
+                local red, green, b = mod.UF_PowerCostColor(SDB())
+                return red, green, b
             end,
-            setValue = function(r, g, b)
-                SSet("powerCostColor", { r = r, g = g, b = b })
+            setValue = function(red, green, blue)
+                SSet("powerCostColor", { r = red, g = green, b = blue })
                 UpdatePreview()
             end,
         })
@@ -3370,9 +3370,9 @@ function mod.UFO_BuildPowerBarSection(hostFrame, cursorY, context)
                                 end
                                 return 1, 1, 1
                             end,
-                            setValue = function(r, g, b)
+                            setValue = function(red, green, blue)
                                 SDB().foreverFormTextPowerColor = false
-                                SetForm("foreverFormTextColor", { r = r, g = g, b = b })
+                                SetForm("foreverFormTextColor", { r = red, g = green, b = blue })
                             end,
                             onClick = function(self)
                                 if FormPowerColored() then
@@ -3732,9 +3732,9 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                         c = c or { r = 1, g = 0.82, b = 0 }
                         return c.r, c.g, c.b, 1
                     end,
-                    setValue = function(r, g, b)
+                    setValue = function(red, green, blue)
                         UNIT_DB_MAP[optionState.selectedUnit]().classPowerCustomColor =
-                            { r = r, g = g, b = b }
+                            { r = red, g = green, b = blue }
                         if mod.frames and mod.frames._toggleClassPower then
                             mod.frames._toggleClassPower()
                         end
@@ -3791,9 +3791,9 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                 local c = SGetSupported("classPowerEmptyColor")
                 c = c or { r = 0.2, g = 0.2, b = 0.2, a = 1.0 }
                 return c.r, c.g, c.b, c.a or 1
-            end, function(r, g, b, a)
+            end, function(red, green, blue, a)
                 UNIT_DB_MAP[optionState.selectedUnit]().classPowerEmptyColor =
-                    { r = r, g = g, b = b, a = a or 1 }
+                    { r = red, g = green, b = blue, a = a or 1 }
                 if mod.frames and mod.frames._toggleClassPower then
                     mod.frames._toggleClassPower()
                 end
@@ -4001,8 +4001,8 @@ function mod.UFO_BuildClassResourceSection(hostFrame, cursorY, context)
                     c = c or { r = 0.082, g = 0.082, b = 0.082, a = 1.0 }
                     return c.r, c.g, c.b, c.a
                 end,
-                setValue = function(r, g, b, a)
-                    SSetSupported("classPowerBgColor", { r = r, g = g, b = b, a = a or 1 })
+                setValue = function(red, green, blue, a)
+                    SSetSupported("classPowerBgColor", { r = red, g = green, b = blue, a = a or 1 })
                     UpdatePreview()
                 end,
             })
@@ -4476,8 +4476,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                     return c.r, c.g, c.b, 1
                 end
                 return 1, 1, 1, 1
-            end, function(r, g, b)
-                UNIT_DB_MAP[optionState.selectedUnit]().absorbColor = { r = r, g = g, b = b }
+            end, function(red, green, blue)
+                UNIT_DB_MAP[optionState.selectedUnit]().absorbColor = { r = red, g = green, b = blue }
                 ReloadAndUpdate()
                 UpdatePreview()
             end, false, 20)
@@ -4608,8 +4608,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                     return c.r or 0.8, c.g or 0.15, c.b or 0.15, 1
                 end
                 return 0.8, 0.15, 0.15, 1
-            end, function(r, g, b)
-                UNIT_DB_MAP[optionState.selectedUnit]().healAbsorbColor = { r = r, g = g, b = b }
+            end, function(red, green, blue)
+                UNIT_DB_MAP[optionState.selectedUnit]().healAbsorbColor = { r = red, g = green, b = blue }
                 ReloadAndUpdate()
                 UpdatePreview()
             end, false, 20)
@@ -4682,8 +4682,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                     return c.r, c.g, c.b, c.a or 1
                 end
                 return 1, 1, 1, 1
-            end, function(r, g, b, a)
-                UNIT_DB_MAP[optionState.selectedUnit]().absorbBarColor = { r = r, g = g, b = b, a = a }
+            end, function(red, green, blue, a)
+                UNIT_DB_MAP[optionState.selectedUnit]().absorbBarColor = { r = red, g = green, b = blue, a = a }
                 ReloadAndUpdate()
                 UpdatePreview()
             end, true, 20)
@@ -4756,9 +4756,9 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                     end
                     return 200 / 255, 29 / 255, 29 / 255, 1
                 end,
-                function(r, g, b, a)
+                function(red, green, blue, a)
                     UNIT_DB_MAP[optionState.selectedUnit]().healAbsorbBarColor =
-                        { r = r, g = g, b = b, a = a }
+                        { r = red, g = green, b = blue, a = a }
                     ReloadAndUpdate()
                     UpdatePreview()
                 end,
@@ -4833,8 +4833,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                     return c.r or 0.7, c.g or 0.1, c.b or 0.1, 1
                 end
                 return 0.7, 0.1, 0.1, 1
-            end, function(r, g, b)
-                UNIT_DB_MAP[optionState.selectedUnit]().maxHealthColor = { r = r, g = g, b = b }
+            end, function(red, green, blue)
+                UNIT_DB_MAP[optionState.selectedUnit]().maxHealthColor = { r = red, g = green, b = blue }
                 ReloadAndUpdate()
                 UpdatePreview()
             end, false, 20)
@@ -4892,8 +4892,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
                 local colorSwatch = CludesUI.BuildColorSwatch(region, healPredRow:GetFrameLevel() + 3, function()
                     local c = SGetSupported(settingKey) or default
                     return c.r, c.g, c.b, 1
-                end, function(r, g, b)
-                    UNIT_DB_MAP[optionState.selectedUnit]()[settingKey] = { r = r, g = g, b = b }
+                end, function(red, green, blue)
+                    UNIT_DB_MAP[optionState.selectedUnit]()[settingKey] = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                     UpdatePreview()
                 end, false, 20)

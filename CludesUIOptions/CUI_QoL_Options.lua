@@ -407,8 +407,8 @@ local function BuildSelfCombatTextSection(hostFrame, cursorY)
                     local c = SCTGet(colorKey)
                     return c.r, c.g, c.b
                 end,
-                setValue = function(r, g, b)
-                    SCTSet(colorKey, { r = r, g = g, b = b })
+                setValue = function(red, green, blue)
+                    SCTSet(colorKey, { r = red, g = green, b = blue })
                 end,
             },
         })
@@ -1314,8 +1314,8 @@ CludesUI.AtOptionsLogin(function()
                 end
                 return 1, 1, 1, 1
             end
-            local fpsSwSet = function(r, g, b, a)
-                CludesUI.QoLExtrasSet("fpsColor", { r = r, g = g, b = b, a = a })
+            local fpsSwSet = function(red, green, blue, a)
+                CludesUI.QoLExtrasSet("fpsColor", { r = red, g = green, b = blue, a = a })
                 CludesUI.QoLExtrasSet("fpsColorMode", "custom")
                 if CludesUI._applyFPSDisplay then
                     CludesUI._applyFPSDisplay()
@@ -1716,8 +1716,8 @@ CludesUI.AtOptionsLogin(function()
                 end
                 return 1, 0.27, 0.27
             end
-            local durSwSet = function(r, g, b)
-                Account().durWarnColor = { r = r, g = g, b = b }
+            local durSwSet = function(red, green, blue)
+                Account().durWarnColor = { r = red, g = green, b = blue }
                 if CludesUI._applyDurWarn then
                     CludesUI._applyDurWarn()
                 end
@@ -2143,8 +2143,8 @@ CludesUI.AtOptionsLogin(function()
                                     end
                                     return 1, 1, 1
                                 end,
-                                setValue = function(r, g, b)
-                                    CludesUI.QoLExtrasSet("tertiaryStatsColor", { r = r, g = g, b = b })
+                                setValue = function(red, green, blue)
+                                    CludesUI.QoLExtrasSet("tertiaryStatsColor", { r = red, g = green, b = blue })
                                     CludesUI.QoLExtrasSet("tertiaryStatsColorMode", "custom")
                                     if CludesUI._applySecondaryStats then
                                         CludesUI._applySecondaryStats()
@@ -2212,8 +2212,8 @@ CludesUI.AtOptionsLogin(function()
                     end
                     return 1, 1, 1
                 end,
-                function(r, g, b)
-                    CludesUI.QoLExtrasSet("secondaryStatsColor", { r = r, g = g, b = b })
+                function(red, green, blue)
+                    CludesUI.QoLExtrasSet("secondaryStatsColor", { r = red, g = green, b = blue })
                     CludesUI.QoLExtrasSet("secondaryStatsColorMode", "custom")
                     if CludesUI._applySecondaryStats then
                         CludesUI._applySecondaryStats()
@@ -2963,8 +2963,8 @@ CludesUI.AtOptionsLogin(function()
                         end
                         return 0, 0, 0, 1
                     end,
-                    set = function(r, g, b, a)
-                        cset("crosshairBorderColor", { r = r, g = g, b = b, a = a or 1 })
+                    set = function(red, green, blue, a)
+                        cset("crosshairBorderColor", { r = red, g = green, b = blue, a = a or 1 })
                         applyCH()
                     end,
                 },
@@ -3047,8 +3047,8 @@ CludesUI.AtOptionsLogin(function()
                 end
                 return 1, 1, 1, 0.75
             end
-            local chSwSet = function(r, g, b, a)
-                cset("crosshairColor", { r = r, g = g, b = b, a = a or 1 })
+            local chSwSet = function(red, green, blue, a)
+                cset("crosshairColor", { r = red, g = green, b = blue, a = a or 1 })
                 if CludesUI._applyCrosshair then
                     CludesUI._applyCrosshair()
                 end
@@ -3129,8 +3129,8 @@ CludesUI.AtOptionsLogin(function()
                 end
                 return 1, 0, 0, 1
             end
-            local mcSet = function(r, g, b, a)
-                cset("crosshairMeleeColor", { r = r, g = g, b = b, a = a or 1 })
+            local mcSet = function(red, green, blue, a)
+                cset("crosshairMeleeColor", { r = red, g = green, b = blue, a = a or 1 })
                 if CludesUI._applyCrosshair then
                     CludesUI._applyCrosshair()
                 end

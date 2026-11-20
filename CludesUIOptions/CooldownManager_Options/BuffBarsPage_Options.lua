@@ -699,10 +699,10 @@ local function InitBuffBarsPage(
     end)
 
     -- A popup line of text in the CDM options font.
-    local function PopupText(parent, size, r, g, b, a, text, layer)
+    local function PopupText(parent, size, red, green, blue, a, text, layer)
         local fs = parent:CreateFontString(nil, layer or "OVERLAY")
         fs:SetFont(FONT_PATH, size, GetCDMOptOutline())
-        fs:SetTextColor(r, g, b, a)
+        fs:SetTextColor(red, green, blue, a)
         fs:SetText(text)
         return fs
     end
@@ -1172,8 +1172,8 @@ local function InitBuffBarsPage(
             text:SetJustifyH("CENTER")
             text:SetJustifyV("MIDDLE")
             local function Accented()
-                local r, g, b = CludesUI.GetAccentColor()
-                text:SetTextColor(r, g, b, 1)
+                local red, green, blue = CludesUI.GetAccentColor()
+                text:SetTextColor(red, green, blue, 1)
             end
             Accented()
             text:SetText(
@@ -1574,10 +1574,10 @@ local function InitBuffBarsPage(
                 return ST_DEF_R, ST_DEF_G, ST_DEF_B, ST_DEF_A
             end
             return entryRec.r or ST_DEF_R, entryRec.g or ST_DEF_G, entryRec.b or ST_DEF_B, entryRec.a or ST_DEF_A
-        end, function(r, g, b, a)
+        end, function(red, green, blue, a)
             local _, _, entryRec = ThresholdEntry(line._idx)
             if entryRec then
-                entryRec.r, entryRec.g, entryRec.b, entryRec.a = r, g, b, a
+                entryRec.r, entryRec.g, entryRec.b, entryRec.a = red, green, blue, a
                 ThresholdsChanged()
             end
         end, true, 19)
@@ -3971,11 +3971,11 @@ local function InitBuffBarsPage(
                 regionFrame,
                 line:GetFrameLevel() + 3,
                 GetColor,
-                function(r, g, b, a)
+                function(red, green, blue, a)
                     local barData = SelectedTBB()
                     if barData then
-                        barData[prefix .. "TextR"], barData[prefix .. "TextG"] = r, g
-                        barData[prefix .. "TextB"], barData[prefix .. "TextA"] = b, a
+                        barData[prefix .. "TextR"], barData[prefix .. "TextG"] = red, green
+                        barData[prefix .. "TextB"], barData[prefix .. "TextA"] = blue, a
                         RefreshTBB()
                     end
                 end,
@@ -4392,11 +4392,11 @@ local function InitBuffBarsPage(
                             barData.chargeHashLineB or 0,
                             a == nil and 1 or a
                     end,
-                    set = function(r, g, b, a)
+                    set = function(red, green, blue, a)
                         local barData = SelectedTBB()
                         if barData then
-                            barData.chargeHashLineR, barData.chargeHashLineG = r, g
-                            barData.chargeHashLineB, barData.chargeHashLineA = b, a
+                            barData.chargeHashLineR, barData.chargeHashLineG = red, green
+                            barData.chargeHashLineB, barData.chargeHashLineA = blue, a
                             RefreshTBB()
                         end
                     end,
@@ -4563,10 +4563,10 @@ local function InitBuffBarsPage(
                             (barData and barData.bgB or 0),
                             (barData and barData.bgA or 0.4)
                     end,
-                    setValue = function(r, g, b, a)
+                    setValue = function(red, green, blue, a)
                         local barData = SelectedTBB()
                         if barData then
-                            barData.bgR, barData.bgG, barData.bgB, barData.bgA = r, g, b, a
+                            barData.bgR, barData.bgG, barData.bgB, barData.bgA = red, green, blue, a
                             RefreshTBB()
                         end
                     end,
@@ -4637,11 +4637,11 @@ local function InitBuffBarsPage(
                     end
                     return barData.fillR, barData.fillG, barData.fillB, barData.fillA
                 end,
-                function(r, g, b, a)
+                function(red, green, blue, a)
                     local barData = SelectedTBB()
                     if barData then
                         barData.fillColorMode = "custom"
-                        barData.fillR, barData.fillG, barData.fillB, barData.fillA = r, g, b, a
+                        barData.fillR, barData.fillG, barData.fillB, barData.fillA = red, green, blue, a
                         RefreshTBB()
                     end
                 end,
@@ -4661,10 +4661,10 @@ local function InitBuffBarsPage(
                     end
                     return barData.gradientR, barData.gradientG, barData.gradientB, barData.gradientA
                 end,
-                function(r, g, b, a)
+                function(red, green, blue, a)
                     local barData = SelectedTBB()
                     if barData then
-                        barData.gradientR, barData.gradientG, barData.gradientB, barData.gradientA = r, g, b, a
+                        barData.gradientR, barData.gradientG, barData.gradientB, barData.gradientA = red, green, blue, a
                         RefreshTBB()
                     end
                 end,
@@ -4862,10 +4862,10 @@ local function InitBuffBarsPage(
                         local barData = SelectedTBB()
                         return (barData and barData.borderR or 0), (barData and barData.borderG or 0), (barData and barData.borderB or 0)
                     end,
-                    function(r, g, b)
+                    function(red, green, blue)
                         local barData = SelectedTBB()
                         if barData then
-                            barData.borderR, barData.borderG, barData.borderB = r, g, b
+                            barData.borderR, barData.borderG, barData.borderB = red, green, blue
                             RefreshTBB()
                         end
                     end,
@@ -5150,11 +5150,11 @@ local function InitBuffBarsPage(
                     barData.stackThresholdTickG or 1,
                     barData.stackThresholdTickB or 1,
                     a == nil and 1 or a
-            end, function(r, g, b, a)
+            end, function(red, green, blue, a)
                 local barData = SelectedTBB()
                 if barData then
-                    barData.stackThresholdTickR, barData.stackThresholdTickG = r, g
-                    barData.stackThresholdTickB, barData.stackThresholdTickA = b, a
+                    barData.stackThresholdTickR, barData.stackThresholdTickG = red, green
+                    barData.stackThresholdTickB, barData.stackThresholdTickA = blue, a
                     RefreshTBB()
                 end
             end, true, 20)
@@ -5259,11 +5259,11 @@ local function InitBuffBarsPage(
                         barData.stackThresholdB or 0.1,
                         barData.stackThresholdA or 1
                 end,
-                function(r, g, b, a)
+                function(red, green, blue, a)
                     local barData = SelectedTBB()
                     if barData then
                         barData.stackThresholdR, barData.stackThresholdG, barData.stackThresholdB, barData.stackThresholdA =
-                            r, g, b, a
+                            red, green, blue, a
                         RefreshTBB()
                     end
                 end,

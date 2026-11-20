@@ -118,8 +118,8 @@ local function MakeBorderColorSwatches()
                 end
                 return 0, 0, 0
             end,
-            setValue = function(r, g, b)
-                Set("borderColor", { r = r, g = g, b = b, a = 1 })
+            setValue = function(red, green, blue)
+                Set("borderColor", { r = red, g = green, b = blue, a = 1 })
                 Refresh()
             end,
             onClick = function(self)
@@ -687,8 +687,8 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                         end
                         return 1, 1, 1
                     end,
-                    function(r, g, b)
-                        Set(colorKey, { r = r, g = g, b = b })
+                    function(red, green, blue)
+                        Set(colorKey, { r = red, g = green, b = blue })
                         Refresh()
                     end,
                     nil,
@@ -870,8 +870,8 @@ local function MakeBloodlustBorderColorSwatches()
                 end
                 return 0, 0, 0
             end,
-            setValue = function(r, g, b)
-                BL_Set("borderColor", { r = r, g = g, b = b, a = 1 })
+            setValue = function(red, green, blue)
+                BL_Set("borderColor", { r = red, g = green, b = blue, a = 1 })
                 BL_Refresh()
             end,
             onClick = function(self)
@@ -1234,8 +1234,8 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                         end
                         return 1, 1, 1
                     end,
-                    function(r, g, b)
-                        BL_Set("readyColor", { r = r, g = g, b = b })
+                    function(red, green, blue)
+                        BL_Set("readyColor", { r = red, g = green, b = blue })
                         BL_Refresh()
                     end,
                     false,

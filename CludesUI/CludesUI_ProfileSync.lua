@@ -743,23 +743,23 @@ do
         end
         local f = CludesUI._syncConfirmFrame
 
-        local function MakeFont(hostFrame, size, r, g, b, a)
+        local function MakeFont(hostFrame, size, red, green, blue, a)
             local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
             if CludesUI and CludesUI.PrimeFontShadow then
                 CludesUI.PrimeFontShadow(fontStr, true)
             end
             fontStr:SetFont(fontFile, size, "")
-            fontStr:SetTextColor(r or 1, g or 1, b or 1, a or 1)
+            fontStr:SetTextColor(red or 1, green or 1, blue or 1, a or 1)
             return fontStr
         end
 
-        local function MakeBtn(labelText, r, g, b, a, hr, hg, hb)
+        local function MakeBtn(labelText, red, green, blue, a, hr, hg, hb)
             local button = CreateFrame("Button", nil, f)
             button:SetSize(120, 26)
             button:SetFrameLevel(f:GetFrameLevel() + 1)
             local bgT = button:CreateTexture(nil, "BACKGROUND")
             bgT:SetAllPoints()
-            bgT:SetColorTexture(r, g, b, a)
+            bgT:SetColorTexture(red, green, blue, a)
             local labelFS = button:CreateFontString(nil, "OVERLAY")
             if CludesUI and CludesUI.PrimeFontShadow then
                 CludesUI.PrimeFontShadow(labelFS, false)
@@ -772,11 +772,11 @@ do
                 bgT:SetColorTexture(hr, hg, hb, 1)
             end)
             button:SetScript("OnLeave", function()
-                bgT:SetColorTexture(r, g, b, a)
+                bgT:SetColorTexture(red, green, blue, a)
             end)
             -- Back to rest (each show starts un-hovered), in the font path given.
             button._reset = function(fp)
-                bgT:SetColorTexture(r, g, b, a)
+                bgT:SetColorTexture(red, green, blue, a)
                 labelFS:SetFont(fp, 10, "")
             end
             return button
@@ -1092,13 +1092,13 @@ do
             dialog:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
         end
 
-        local function MakeFont(hostFrame, size, r, g, b, a)
+        local function MakeFont(hostFrame, size, red, green, blue, a)
             local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
             if CludesUI and CludesUI.PrimeFontShadow then
                 CludesUI.PrimeFontShadow(fontStr, true)
             end
             fontStr:SetFont(fontFile, size, "")
-            fontStr:SetTextColor(r or 1, g or 1, b or 1, a or 1)
+            fontStr:SetTextColor(red or 1, green or 1, blue or 1, a or 1)
             return fontStr
         end
 

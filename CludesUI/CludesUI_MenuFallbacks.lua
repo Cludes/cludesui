@@ -62,9 +62,9 @@ local function ResolveTheme()
         and (not CludesUI.GetFontUseShadow or CludesUI.GetFontUseShadow("blizzardSkin"))
 end
 
-local function SolidTex(hostFrame, layer, r, g, b, a, sublevel)
+local function SolidTex(hostFrame, layer, red, green, blue, a, sublevel)
     local t = hostFrame:CreateTexture(nil, layer, nil, sublevel)
-    t:SetColorTexture(r, g, b, a)
+    t:SetColorTexture(red, green, blue, a)
     return t
 end
 
@@ -83,7 +83,7 @@ end
 
 -- family: a text that shows other players' writing (house and owner names)
 -- takes the font as a font family, which draws the scripts the font lacks.
-local function MakeText(hostFrame, size, r, g, b, family)
+local function MakeText(hostFrame, size, red, green, blue, family)
     local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
     if family then
         CludesUI.SetFontFamily(fontStr, T.fontPath, size, T.fontFlag or "", T.fontShadow)
@@ -91,16 +91,16 @@ local function MakeText(hostFrame, size, r, g, b, family)
         CludesUI.PrimeFontShadow(fontStr, T.fontShadow)
         fontStr:SetFont(T.fontPath, size, T.fontFlag or "")
     end
-    fontStr:SetTextColor(r or 1, g or 1, b or 1, 1)
+    fontStr:SetTextColor(red or 1, green or 1, blue or 1, 1)
     return fontStr
 end
 
 local function Panel(widget, inset)
-    local r, g, b, a = T.bgR, T.bgG, T.bgB, T.bgA
+    local red, green, blue, a = T.bgR, T.bgG, T.bgB, T.bgA
     if inset then
-        r, g, b, a = T.insetR, T.insetG, T.insetB, T.insetA
+        red, green, blue, a = T.insetR, T.insetG, T.insetB, T.insetA
     end
-    local backdrop = SolidTex(widget, "BACKGROUND", r, g, b, a, -6)
+    local backdrop = SolidTex(widget, "BACKGROUND", red, green, blue, a, -6)
     backdrop:SetAllPoints(widget)
     AddBorder(widget)
     return backdrop

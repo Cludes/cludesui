@@ -334,12 +334,12 @@ local function SlotReads(conf)
     return {}
 end
 
-local function MakeBorderHost(regionFrame, r, g, b)
+local function MakeBorderHost(regionFrame, red, green, blue)
     local host = CreateFrame("Frame", nil, regionFrame)
     host:SetAllPoints()
     host:SetFrameLevel(regionFrame:GetFrameLevel() + 30)
     if CludesUI.PP and CludesUI.PP.CreateBorder then
-        CludesUI.PP.CreateBorder(host, r, g, b, 0.9, 1, "OVERLAY", 7)
+        CludesUI.PP.CreateBorder(host, red, green, blue, 0.9, 1, "OVERLAY", 7)
     end
     return host
 end

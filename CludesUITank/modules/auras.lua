@@ -108,9 +108,9 @@ function mod.CreateEdges(hostFrame, thickness)
     return edges
 end
 
-function mod.ColorEdges(edges, r, g, b)
+function mod.ColorEdges(edges, red, green, blue)
     for _, t in ipairs(edges) do
-        t:SetColorTexture(r, g, b, 1)
+        t:SetColorTexture(red, green, blue, 1)
     end
 end
 

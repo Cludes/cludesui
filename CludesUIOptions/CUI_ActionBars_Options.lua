@@ -716,8 +716,8 @@ CludesUI.AtOptionsLogin(function()
             local value = SB()[key]
             return value ~= nil and value or default
         end
-        local function SSetColor(key, r, g, b, a, applyFn)
-            SB()[key] = { r = r, g = g, b = b, a = a }
+        local function SSetColor(key, red, green, blue, a, applyFn)
+            SB()[key] = { r = red, g = green, b = blue, a = a }
             if applyFn then
                 applyFn(SelectedKey())
             end

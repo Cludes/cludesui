@@ -51,9 +51,9 @@ local strip
 local chips = {}
 
 local function PaintChip(chip, on)
-    local r, g, b = GetAccentRGB()
+    local red, green, blue = GetAccentRGB()
     if on then
-        chip._fill:SetColorTexture(r, g, b, 1)
+        chip._fill:SetColorTexture(red, green, blue, 1)
         chip._label:SetTextColor(0.04, 0.05, 0.06, 1)
     elseif chip._hovered then
         chip._fill:SetColorTexture(1, 1, 1, 0.10)

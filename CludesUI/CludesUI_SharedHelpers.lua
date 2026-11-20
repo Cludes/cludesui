@@ -877,8 +877,8 @@ do
         end
         hooked[texture] = true
         local vcGuard = false
-        hooksecurefunc(texture, "SetVertexColor", function(_, r, g, b)
-            if not vcGuard and isEnabled() and not (r == 1 and g == 1 and b == 1) then
+        hooksecurefunc(texture, "SetVertexColor", function(_, red, green, blue)
+            if not vcGuard and isEnabled() and not (red == 1 and green == 1 and blue == 1) then
                 vcGuard = true
                 texture:SetVertexColor(1, 1, 1)
                 vcGuard = false
@@ -956,14 +956,14 @@ function CludesUI.GetLevelColor(unitToken, lvl, includeFriendly)
     end
     return CludesUI.GetLevelDifficultyColor(lvl, attackable)
 end
-function CludesUI.ColorText(textValue, r, g, b)
-    if not r then
+function CludesUI.ColorText(textValue, red, green, blue)
+    if not red then
         return textValue
     end
     return ("|cff%02x%02x%02x%s|r"):format(
-        math.floor(r * 255 + 0.5),
-        math.floor(g * 255 + 0.5),
-        math.floor(b * 255 + 0.5),
+        math.floor(red * 255 + 0.5),
+        math.floor(green * 255 + 0.5),
+        math.floor(blue * 255 + 0.5),
         textValue
     )
 end

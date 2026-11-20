@@ -697,9 +697,9 @@ local function ShowMarkerPopup(spec, barId, onAdded)
         _G[spec.name] = dialog
     end
 
-    local function SetStatus(textValue, r, g, b)
+    local function SetStatus(textValue, red, green, blue)
         dialog._status:SetText(CludesUI.L(textValue))
-        dialog._status:SetTextColor(r or 1, g or 0.3, b or 0.3, 1)
+        dialog._status:SetTextColor(red or 1, green or 0.3, blue or 0.3, 1)
         if dialog._statusTimer then
             dialog._statusTimer:Cancel()
         end
@@ -878,8 +878,8 @@ local function AddBlizzardCDMFooter(menu, rows, y, question)
         text:SetTextColor(1, 1, 1, 1)
     end)
     footer:SetScript("OnLeave", function()
-        local r, g, b = CludesUI.GetAccentColor()
-        text:SetTextColor(r, g, b, 1)
+        local red, green, blue = CludesUI.GetAccentColor()
+        text:SetTextColor(red, green, blue, 1)
     end)
     footer:SetScript("OnClick", function()
         menu:Hide()

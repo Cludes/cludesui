@@ -384,8 +384,8 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                     end
                     return 0.1, 0.1, 0.1, 1
                 end,
-                set = function(r, g, b, a)
-                    PtSet("partyPortraitBgColor", { r = r, g = g, b = b, a = a or 1 })
+                set = function(red, green, blue, a)
+                    PtSet("partyPortraitBgColor", { r = red, g = green, b = blue, a = a or 1 })
                 end,
             },
         },
@@ -564,8 +564,8 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                     local c = db.profile.partyPortraitBorderColor or { r = 0, g = 0, b = 0 }
                     return c.r, c.g, c.b
                 end,
-                setValue = function(r, g, b)
-                    PtSet("partyPortraitBorderColor", { r = r, g = g, b = b })
+                setValue = function(red, green, blue)
+                    PtSet("partyPortraitBorderColor", { r = red, g = green, b = blue })
                 end,
                 onClick = function(self)
                     if PV("partyPortraitBorderClassColor", true) then
@@ -768,8 +768,8 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
                 return c.r, c.g, c.b, 1
             end
             return 37 / 255, 193 / 255, 29 / 255, 1
-        end, function(r, g, b)
-            PtSet("partyTargetCustomFillColor", { r = r, g = g, b = b })
+        end, function(red, green, blue)
+            PtSet("partyTargetCustomFillColor", { r = red, g = green, b = blue })
         end, false, 20)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = colorSwatch
@@ -824,8 +824,8 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
                 return c.r, c.g, c.b, 1
             end
             return 17 / 255, 17 / 255, 17 / 255, 1
-        end, function(r, g, b)
-            PtSet("partyTargetCustomBgColor", { r = r, g = g, b = b })
+        end, function(red, green, blue)
+            PtSet("partyTargetCustomBgColor", { r = red, g = green, b = blue })
         end, false, 20)
         bgSwatch._eabOrigClick = bgSwatch:GetScript("OnClick")
         bgSwatch:SetScript("OnClick", function(self)
@@ -1681,11 +1681,11 @@ CludesUI.AtLogin(function()
             -- checkbox with its mark, each Edit button's background and label.
             local fonts, checks, editParts = {}, {}, {}
 
-            local function MakeFont(p, size, r, g, b, a)
+            local function MakeFont(p, size, red, green, blue, a)
                 local fontStr = p:CreateFontString(nil, "OVERLAY")
                 CludesUI.PrimeFontShadow(fontStr, true)
                 fontStr:SetFont(fontFile, size, "")
-                fontStr:SetTextColor(r or 1, g or 1, b or 1, a or 1)
+                fontStr:SetTextColor(red or 1, green or 1, blue or 1, a or 1)
                 fonts[#fonts + 1] = fontStr
                 fonts[#fonts + 1] = size
                 return fontStr

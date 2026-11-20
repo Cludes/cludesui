@@ -42,16 +42,16 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     -- Paints one preview fill the way the live bars do: a flat tint, or with
     -- the gradient on, the bar colour fading into the gradient colour.
     local GRADIENT_FALLBACK = { r = 0.20, g = 0.20, b = 0.80 }
-    local function PV_FillColor(texture, texPath, r, g, b, useGradient, toColor, direction, alpha)
+    local function PV_FillColor(texture, texPath, red, green, blue, useGradient, toColor, direction, alpha)
         if not texture then
             return
         end
         if not useGradient then
             if texPath then
                 texture:SetTexture(texPath)
-                texture:SetVertexColor(r, g, b, 1)
+                texture:SetVertexColor(red, green, blue, 1)
             else
-                texture:SetColorTexture(r, g, b, 1)
+                texture:SetColorTexture(red, green, blue, 1)
             end
             return
         end
@@ -67,7 +67,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         local endA = alpha or 1
         texture:SetGradient(
             direction or "HORIZONTAL",
-            CreateColor(r, g, b, endA),
+            CreateColor(red, green, blue, endA),
             CreateColor(to.r, to.g, to.b, endA)
         )
     end
@@ -335,22 +335,22 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             return 37 / 255, 193 / 255, 29 / 255
         end
         -- The boss preview stays hostile red: the live boss frame never class-colours.
-        local r, g, b
+        local red, green, blue
         local ownFill = s.customFillColor
         if s.healthClassColored and unitName ~= "boss" then
-            r, g, b = PlayerClassRGB()
+            red, green, blue = PlayerClassRGB()
         elseif ownFill then
-            r, g, b = ownFill.r, ownFill.g, ownFill.b
+            red, green, blue = ownFill.r, ownFill.g, ownFill.b
         elseif unitName == "player" then
-            r, g, b = PlayerClassRGB()
+            red, green, blue = PlayerClassRGB()
         elseif unitName == "pet" then
-            r, g, b = 37 / 255, 193 / 255, 29 / 255
+            red, green, blue = 37 / 255, 193 / 255, 29 / 255
         else
-            r, g, b = 0.8, 0.2, 0.2
+            red, green, blue = 0.8, 0.2, 0.2
         end
         local dynR, dynG, dynB = mod.UF_PreviewDynamicColor(s, optionState._previewHealthPct or 0.70)
         if dynR then
-            r, g, b = dynR, dynG, dynB
+            red, green, blue = dynR, dynG, dynB
         end
         -- Backing: the player's class colour (the designer shows your class)
         -- while Class Colored Background is on, else the custom pick.
@@ -361,9 +361,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         end
         local backPick = classBack or s.customBgColor
         if backPick then
-            return r, g, b, backPick.r, backPick.g, backPick.b
+            return red, green, blue, backPick.r, backPick.g, backPick.b
         end
-        return r, g, b, 17 / 255, 17 / 255, 17 / 255
+        return red, green, blue, 17 / 255, 17 / 255, 17 / 255
     end
     local hR, hG, hB, hA, bgR, bgG, bgB, bgA
     local isDarkTheme = mod.UF_DarkThemeOn(prefs)
@@ -482,8 +482,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             end
             return shown
         end
-        local function Tint(text, r, g, b)
-            return string.format("%s%s|r", CludesUI.HexColor(r, g, b), text)
+        local function Tint(text, red, green, blue)
+            return string.format("%s%s|r", CludesUI.HexColor(red, green, blue), text)
         end
         -- " > Target", mirroring the live [cui-tgtsep(...)] tag: the slot's
         -- separator padded with spaces, in the class colour (the preview's
@@ -717,9 +717,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         if not (fontStr and usePowerColor and mod.UF_IsPowerContent(contentKey, customFmt)) then
             return
         end
-        local r, g, b = CludesUI.ResolveUnitPowerColor("player")
-        if r then
-            fontStr:SetTextColor(r, g, b)
+        local red, green, blue = CludesUI.ResolveUnitPowerColor("player")
+        if red then
+            fontStr:SetTextColor(red, green, blue)
         else
             fontStr:SetTextColor(1, 1, 1)
         end
@@ -830,14 +830,14 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         end
         return 0, 0, 1
     end
-    local function PaintPowerFill(fill, texPath, r, g, b)
+    local function PaintPowerFill(fill, texPath, red, green, blue)
         local opacity = (prefs.powerBarOpacity or 100) / 100
         PV_FillColor(
             fill,
             texPath,
-            r,
-            g,
-            b,
+            red,
+            green,
+            blue,
             prefs.powerGradientEnabled,
             prefs.powerGradientColor,
             prefs.powerGradientDir,
@@ -950,9 +950,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             )
         end
         if popFrame._powerFill and powerH > 0 then
-            local r, g, b = PowerFillRGB()
-            popFrame._pR, popFrame._pG, popFrame._pB = r, g, b
-            PaintPowerFill(popFrame._powerFill, texPath, r, g, b)
+            local red, green, blue = PowerFillRGB()
+            popFrame._pR, popFrame._pG, popFrame._pB = red, green, blue
+            PaintPowerFill(popFrame._powerFill, texPath, red, green, blue)
         end
     end
 
@@ -1202,8 +1202,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                     )
                     fs:SetText(PreviewTextForContent(content, s, prefix))
                     fs:Show()
-                    local r, g, b = s[prefix .. "ColorR"], s[prefix .. "ColorG"], s[prefix .. "ColorB"]
-                    PreviewClassColor(fs, s[prefix .. "ClassColor"], r, g, b)
+                    local red, green, blue = s[prefix .. "ColorR"], s[prefix .. "ColorG"], s[prefix .. "ColorB"]
+                    PreviewClassColor(fs, s[prefix .. "ClassColor"], red, green, blue)
                     PreviewPowerColor(fs, content, s[prefix .. "PowerColor"], s[prefix .. "CustomFormat"])
                 end
             end
@@ -1397,7 +1397,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     -- go through the bar texture lookup), tiled where the style tiles, at the
     -- given draw sublevel and colour, placed for its edge mode. Shared with
     -- pf:Update (reached through pf: Update is at the upvalue cap).
-    local function PaintAbsorb(barFrame, s, style, fallbackTex, sublevel, r, g, b, a, edgeMode)
+    local function PaintAbsorb(barFrame, s, style, fallbackTex, sublevel, red, green, blue, a, edgeMode)
         barFrame:SetStatusBarTexture(mod.ResolveAbsorbStyleTex(style, fallbackTex))
         local fill = barFrame:GetStatusBarTexture()
         if fill then
@@ -1406,7 +1406,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             fill:SetHorizTile(tiled)
             fill:SetVertTile(tiled)
         end
-        barFrame:SetStatusBarColor(r, g, b, a)
+        barFrame:SetStatusBarColor(red, green, blue, a)
         PositionPreviewAbsorb(barFrame, edgeMode or "overlay", s.healthReverseFill, s.healthVerticalFill)
     end
     -- The shield absorb's look. Its opacity follows the live GetAbsorbOpacity
@@ -2902,13 +2902,13 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                     seg = powerBar:CreateTexture(nil, "ARTWORK", nil, 2)
                     popFrame._pvCostSeg = seg
                 end
-                local r, g, b = mod.UF_PowerCostColor(s)
+                local red, green, blue = mod.UF_PowerCostColor(s)
                 local curTP = (mod.healthBarTextures or {})[s.healthBarTexture or saved.profile.healthBarTexture or "none"]
                 if curTP then
                     seg:SetTexture(curTP)
-                    seg:SetVertexColor(r, g, b, 1)
+                    seg:SetVertexColor(red, green, blue, 1)
                 else
-                    seg:SetColorTexture(r, g, b, 1)
+                    seg:SetColorTexture(red, green, blue, 1)
                 end
                 seg:SetAlpha(pOpacity)
                 seg:ClearAllPoints()

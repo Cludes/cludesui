@@ -179,8 +179,8 @@ CludesUI.AtOptionsLogin(function()
                 right,
                 right:GetFrameLevel() + 5,
                 getColor,
-                function(r, g, b, a)
-                    CludesUIDB[colorKey or (prefixText .. "BorderColor")] = { r = r, g = g, b = b }
+                function(red, green, blue, a)
+                    CludesUIDB[colorKey or (prefixText .. "BorderColor")] = { r = red, g = green, b = blue }
                     CludesUIDB[prefixText .. "BorderOpacity"] = a
                     CludesUIDB[prefixText .. "BorderColorMode"] = mode
                     if apply then
@@ -511,8 +511,8 @@ CludesUI.AtOptionsLogin(function()
                 local c = CludesUIDB.popupMenuButtonBackgroundColor or { r = 0.1, g = 0.1, b = 0.1, a = 0.8 }
                 return c.r, c.g, c.b, c.a
             end,
-            setValue = function(r, g, b, a)
-                CludesUIDB.popupMenuButtonBackgroundColor = { r = r, g = g, b = b, a = a }
+            setValue = function(red, green, blue, a)
+                CludesUIDB.popupMenuButtonBackgroundColor = { r = red, g = green, b = blue, a = a }
                 PopupPreviewRepaint()
             end,
         }, {
@@ -567,9 +567,9 @@ CludesUI.AtOptionsLogin(function()
                         local c = CludesUIDB.popupMenuButtonTextColor or { r = 1, g = 1, b = 1 }
                         return c.r, c.g, c.b
                     end,
-                    setValue = function(r, g, b)
+                    setValue = function(red, green, blue)
                         CludesUIDB.popupMenuButtonTextColorMode = "custom"
-                        CludesUIDB.popupMenuButtonTextColor = { r = r, g = g, b = b }
+                        CludesUIDB.popupMenuButtonTextColor = { r = red, g = green, b = blue }
                         PopupPreviewRepaint()
                     end,
                     onClick = function(self)
@@ -1402,8 +1402,8 @@ CludesUI.AtOptionsLogin(function()
                         local R = CludesUI.RESKIN
                         return R.BG_R, R.BG_G, R.BG_B, 1
                     end,
-                    setValue = function(r, g, b)
-                        Account().tooltipBgColor = { r = r, g = g, b = b }
+                    setValue = function(red, green, blue)
+                        Account().tooltipBgColor = { r = red, g = green, b = blue }
                         if CludesUI.SyncAuraTooltipSkin then
                             CludesUI.SyncAuraTooltipSkin()
                         end
@@ -1713,8 +1713,8 @@ CludesUI.AtOptionsLogin(function()
                     local c = CludesUIDB and CludesUIDB.queueTimerTextColor
                     return (c and c.r) or QT.TEXT_R, (c and c.g) or QT.TEXT_G, (c and c.b) or QT.TEXT_B
                 end,
-                function(r, g, b)
-                    Set("queueTimerTextColor", { r = r, g = g, b = b })
+                function(red, green, blue)
+                    Set("queueTimerTextColor", { r = red, g = green, b = blue })
                 end,
                 false,
                 20
@@ -2405,7 +2405,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return def.r, def.g, def.b, 1
                         end,
-                        set = function(r, g, b)
+                        set = function(red, green, blue)
                             if not CludesUIDB then
                                 CludesUIDB = {}
                             end
@@ -2415,7 +2415,7 @@ CludesUI.AtOptionsLogin(function()
                             if not CludesUIDB.statCategoryUseColor then
                                 CludesUIDB.statCategoryUseColor = {}
                             end
-                            CludesUIDB.statCategoryColors[colorKey] = { r = r, g = g, b = b }
+                            CludesUIDB.statCategoryColors[colorKey] = { r = red, g = green, b = blue }
                             CludesUIDB.statCategoryUseColor[colorKey] = true
                             if CludesUI._refreshCharacterSheetColors then
                                 CludesUI._refreshCharacterSheetColors()
@@ -3553,8 +3553,8 @@ CludesUI.AtOptionsLogin(function()
         end
         return 0.067, 0.067, 0.067, 0.97
     end
-    local function WSModernSet(r, g, b, a)
-        Account().blizzWindowModernDefault = { r = r, g = g, b = b, a = a }
+    local function WSModernSet(red, green, blue, a)
+        Account().blizzWindowModernDefault = { r = red, g = green, b = blue, a = a }
         if CludesUI._WSkinRefreshStyles then
             CludesUI._WSkinRefreshStyles()
         end
@@ -3567,8 +3567,8 @@ CludesUI.AtOptionsLogin(function()
     local function AttachModernSwatch(owner, anchorTo, isOff)
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(owner, owner:GetFrameLevel() + 5, function()
             return WSModernGet()
-        end, function(r, g, b, a)
-            WSModernSet(r, g, b, a)
+        end, function(red, green, blue, a)
+            WSModernSet(red, green, blue, a)
         end, true, 20)
         CludesUI.PanelPP.Point(colorSwatch, "RIGHT", anchorTo, "LEFT", -8, 0)
         colorSwatch:HookScript("OnEnter", function(s)
@@ -3635,8 +3635,8 @@ CludesUI.AtOptionsLogin(function()
                 end
                 return 1, 1, 1
             end,
-            function(r, g, b)
-                WSLookSet(settingKey, "color", { r = r, g = g, b = b })
+            function(red, green, blue)
+                WSLookSet(settingKey, "color", { r = red, g = green, b = blue })
                 WSLookSet(settingKey, "useCustom", true)
                 CludesUI:RefreshPage()
             end,
@@ -4920,8 +4920,8 @@ CludesUI.AtOptionsLogin(function()
                         end
                         return 1, 1, 1
                     end,
-                    setValue = function(r, g, b)
-                        WSLookSet("blizzWinLinks", "color", { r = r, g = g, b = b })
+                    setValue = function(red, green, blue)
+                        WSLookSet("blizzWinLinks", "color", { r = red, g = green, b = blue })
                         WSLookSet("blizzWinLinks", "useCustom", true)
                         CludesUI:RefreshPage()
                     end,
@@ -5350,11 +5350,11 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.BuildInlineSwatches(fontBorderRow._leftRegion, {
                 {
                     getValue = function()
-                        local r, g, b = CBColor("textColor")
-                        return r, g, b, 1
+                        local red, green, b = CBColor("textColor")
+                        return red, green, b, 1
                     end,
-                    setValue = function(r, g, b)
-                        CBSetStyle("textColor", { r = r, g = g, b = b })
+                    setValue = function(red, green, blue)
+                        CBSetStyle("textColor", { r = red, g = green, b = blue })
                     end,
                     -- Two reasons this swatch can be dead, so the tip is resolved per reason.
                     disabled = function()
@@ -5374,8 +5374,8 @@ CludesUI.AtOptionsLogin(function()
                     getValue = function()
                         return CBColor("borderColor")
                     end,
-                    setValue = function(r, g, b, a)
-                        CBSetStyle("borderColor", { r = r, g = g, b = b, a = a })
+                    setValue = function(red, green, blue, a)
+                        CBSetStyle("borderColor", { r = red, g = green, b = blue, a = a })
                     end,
                     hasAlpha = true,
                 },
@@ -5528,15 +5528,15 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.BuildInlineSwatches(bgRow._leftRegion, {
                 {
                     getValue = function()
-                        local r, g, b = CBColor("bgColor")
-                        return r, g, b, CBVal("bgAlpha")
+                        local red, green, b = CBColor("bgColor")
+                        return red, green, b, CBVal("bgAlpha")
                     end,
-                    setValue = function(r, g, b, a)
+                    setValue = function(red, green, blue, a)
                         local saved = BBDB()
                         if not saved then
                             return
                         end
-                        saved.bgColor = { r = r, g = g, b = b }
+                        saved.bgColor = { r = red, g = green, b = blue }
                         saved.bgAlpha = a
                         CBM.RefreshStyle()
                     end,
@@ -5886,9 +5886,9 @@ CludesUI.AtOptionsLogin(function()
                         local t = EDR_Cfg("borderColor")
                         return t.r, t.g, t.b, t.a
                     end,
-                    function(r, g, b, a)
+                    function(red, green, blue, a)
                         local p = EDR_Cfg("borderColor")
-                        p.r, p.g, p.b, p.a = r, g, b, a
+                        p.r, p.g, p.b, p.a = red, green, blue, a
                         EDR_Redraw()
                     end,
                     true,
@@ -5952,9 +5952,9 @@ CludesUI.AtOptionsLogin(function()
                                     local t = EDR_Cfg("skyridingBg")
                                     return t.r, t.g, t.b, t.a
                                 end,
-                                setValue = function(r, g, b, a)
+                                setValue = function(red, green, blue, a)
                                     local p = EDR_Cfg("skyridingBg")
-                                    p.r, p.g, p.b, p.a = r, g, b, a
+                                    p.r, p.g, p.b, p.a = red, green, blue, a
                                     EDR_Redraw()
                                 end,
                                 hasAlpha = true,
@@ -5966,9 +5966,9 @@ CludesUI.AtOptionsLogin(function()
                                     local t = EDR_Cfg("skyridingFilled")
                                     return t.r, t.g, t.b, t.a
                                 end,
-                                setValue = function(r, g, b, a)
+                                setValue = function(red, green, blue, a)
                                     local p = EDR_Cfg("skyridingFilled")
-                                    p.r, p.g, p.b, p.a = r, g, b, a
+                                    p.r, p.g, p.b, p.a = red, green, blue, a
                                     EDR_Redraw()
                                 end,
                                 hasAlpha = true,
@@ -5999,9 +5999,9 @@ CludesUI.AtOptionsLogin(function()
                                     local t = EDR_Cfg("secondWindBg")
                                     return t.r, t.g, t.b, t.a
                                 end,
-                                setValue = function(r, g, b, a)
+                                setValue = function(red, green, blue, a)
                                     local p = EDR_Cfg("secondWindBg")
-                                    p.r, p.g, p.b, p.a = r, g, b, a
+                                    p.r, p.g, p.b, p.a = red, green, blue, a
                                     EDR_Redraw()
                                 end,
                                 hasAlpha = true,
@@ -6013,9 +6013,9 @@ CludesUI.AtOptionsLogin(function()
                                     local t = EDR_Cfg("secondWindFilled")
                                     return t.r, t.g, t.b, t.a
                                 end,
-                                setValue = function(r, g, b, a)
+                                setValue = function(red, green, blue, a)
                                     local p = EDR_Cfg("secondWindFilled")
-                                    p.r, p.g, p.b, p.a = r, g, b, a
+                                    p.r, p.g, p.b, p.a = red, green, blue, a
                                     EDR_Redraw()
                                 end,
                                 hasAlpha = true,
@@ -6065,9 +6065,9 @@ CludesUI.AtOptionsLogin(function()
                                 local t = EDR_Cfg("speedBarBg")
                                 return t.r, t.g, t.b, t.a
                             end,
-                            setValue = function(r, g, b, a)
+                            setValue = function(red, green, blue, a)
                                 local p = EDR_Cfg("speedBarBg")
-                                p.r, p.g, p.b, p.a = r, g, b, a
+                                p.r, p.g, p.b, p.a = red, green, blue, a
                                 EDR_Redraw()
                             end,
                             hasAlpha = true,
@@ -6079,9 +6079,9 @@ CludesUI.AtOptionsLogin(function()
                                 local t = EDR_Cfg("normalColor")
                                 return t.r, t.g, t.b, t.a
                             end,
-                            setValue = function(r, g, b, a)
+                            setValue = function(red, green, blue, a)
                                 local p = EDR_Cfg("normalColor")
-                                p.r, p.g, p.b, p.a = r, g, b, a
+                                p.r, p.g, p.b, p.a = red, green, blue, a
                                 EDR_Redraw()
                             end,
                             hasAlpha = true,
@@ -6098,9 +6098,9 @@ CludesUI.AtOptionsLogin(function()
                                 local t = EDR_Cfg("tickColor")
                                 return t.r, t.g, t.b, t.a
                             end,
-                            setValue = function(r, g, b, a)
+                            setValue = function(red, green, blue, a)
                                 local p = EDR_Cfg("tickColor")
-                                p.r, p.g, p.b, p.a = r, g, b, a
+                                p.r, p.g, p.b, p.a = red, green, blue, a
                                 EDR_Redraw()
                             end,
                             hasAlpha = true,
@@ -6112,9 +6112,9 @@ CludesUI.AtOptionsLogin(function()
                                 local t = EDR_Cfg("thrillColor")
                                 return t.r, t.g, t.b, t.a
                             end,
-                            setValue = function(r, g, b, a)
+                            setValue = function(red, green, blue, a)
                                 local p = EDR_Cfg("thrillColor")
-                                p.r, p.g, p.b, p.a = r, g, b, a
+                                p.r, p.g, p.b, p.a = red, green, blue, a
                                 EDR_Redraw()
                             end,
                             hasAlpha = true,

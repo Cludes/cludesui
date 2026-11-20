@@ -50,17 +50,17 @@ local function AppendSharedMediaBarTextures()
 end
 mod.AppendSharedMediaBarTextures = AppendSharedMediaBarTextures
 
-local function ApplyBarTexture(texture, texKey, r, g, b, a)
+local function ApplyBarTexture(texture, texKey, red, green, blue, a)
     if not texture then
         return
     end
     local filePath = CludesUI.ResolveTexturePath(barTextures, texKey or "none", nil)
     if filePath then
         texture:SetTexture(filePath)
-        texture:SetVertexColor(r, g, b, a)
+        texture:SetVertexColor(red, green, blue, a)
     else
         texture:SetVertexColor(1, 1, 1, 1)
-        texture:SetColorTexture(r, g, b, a)
+        texture:SetColorTexture(red, green, blue, a)
     end
 end
 
@@ -1504,7 +1504,7 @@ local unlockLayoutActive = false -- force preview layout while Unlock Mode is op
 -- textured border if the border lived inside the host. Frame level is raised
 -- above the host's tick layer every apply so the continuous TICKS fill cannot
 -- paint over the border strips.
-local function ApplyBorderTo(hostFrame, anchor, key, p, size, texKey, r, g, b, a, px)
+local function ApplyBorderTo(hostFrame, anchor, key, p, size, texKey, red, green, blue, a, px)
     if not hostFrame or not anchor then
         return
     end
@@ -1539,7 +1539,7 @@ local function ApplyBorderTo(hostFrame, anchor, key, p, size, texKey, r, g, b, a
 
     if size <= 0 or not anchor:IsShown() then
         bf:Hide()
-        CludesUI.ApplyBorderStyle(bf, 0, r, g, b, a, texKey)
+        CludesUI.ApplyBorderStyle(bf, 0, red, green, blue, a, texKey)
         return
     end
 
@@ -1547,9 +1547,9 @@ local function ApplyBorderTo(hostFrame, anchor, key, p, size, texKey, r, g, b, a
     CludesUI.ApplyBorderStyle(
         bf,
         size,
-        r,
-        g,
-        b,
+        red,
+        green,
+        blue,
         a,
         texKey,
         p.borderTextureOffset,
@@ -1590,7 +1590,7 @@ mod.ApplyBorder = function()
         return
     end
     local texKey = p.borderTexture or "solid"
-    local r, g, b, a = p.borderR or 0, p.borderG or 0, p.borderB or 0, p.borderA or 1
+    local red, green, blue, a = p.borderR or 0, p.borderG or 0, p.borderB or 0, p.borderA or 1
     -- Exact pixel size (nil = the legacy path), resolved once against the bar's
     -- own step: every carrier below draws either this size or a forced 0.
     local px = CludesUI.BorderPx(p.borderSizePx, size, texKey)
@@ -1604,9 +1604,9 @@ mod.ApplyBorder = function()
     local isSegmented = (p.timerBarStyle == "SEGMENTS")
     local barAnchor = frame._barHost or frame._barBg
     if isSegmented then
-        ApplyBorderTo(frame, barAnchor, "_emtBarBorderFrame", p, 0, texKey, r, g, b, a, nil)
+        ApplyBorderTo(frame, barAnchor, "_emtBarBorderFrame", p, 0, texKey, red, green, blue, a, nil)
     else
-        ApplyBorderTo(frame, barAnchor, "_emtBarBorderFrame", p, size, texKey, r, g, b, a, px)
+        ApplyBorderTo(frame, barAnchor, "_emtBarBorderFrame", p, size, texKey, red, green, blue, a, px)
     end
 
     -- Forces bar (skipped when "Apply to Forces Bar" is off in the border cog).
@@ -1621,9 +1621,9 @@ mod.ApplyBorder = function()
         p,
         forcesSize,
         texKey,
-        r,
-        g,
-        b,
+        red,
+        green,
+        blue,
         a,
         forcesPx
     )
@@ -1635,13 +1635,13 @@ mod.ApplyBorder = function()
     end
     if frame._timerSegHosts then
         for i, owner in ipairs(frame._timerSegHosts) do
-            ApplyBorderTo(frame, owner, "_emtSegBorderFrame" .. i, p, segSize, texKey, r, g, b, a, segPx)
+            ApplyBorderTo(frame, owner, "_emtSegBorderFrame" .. i, p, segSize, texKey, red, green, blue, a, segPx)
         end
     elseif frame._timerSegBgs then
         -- Legacy texture-only segments (pre-shell); keep border working if hosts
         -- were never built this session.
         for i, segment in ipairs(frame._timerSegBgs) do
-            ApplyBorderTo(frame, segment, "_emtSegBorderFrame" .. i, p, segSize, texKey, r, g, b, a, segPx)
+            ApplyBorderTo(frame, segment, "_emtSegBorderFrame" .. i, p, segSize, texKey, red, green, blue, a, segPx)
         end
     end
 end
@@ -1926,9 +1926,9 @@ do
             frame._pullSegs = {}
         end
 
-        local r, g, b = barR, barG, barB
+        local red, green, blue = barR, barG, barB
         if p.pullBarUseBarColor == false then
-            r, g, b = GetColor(p.pullBarColor, 1, 0.55, 0.1)
+            red, green, blue = GetColor(p.pullBarColor, 1, 0.55, 0.1)
         end
         local a = p.pullBarAlpha or 0.35
         local texPath = CludesUI.ResolveTexturePath(barTextures, p.enemyBarTexture or "none", nil)
@@ -1936,16 +1936,16 @@ do
 
         if
             frame._pullTex ~= texPath
-            or frame._pullR ~= r
-            or frame._pullG ~= g
-            or frame._pullB ~= b
+            or frame._pullR ~= red
+            or frame._pullG ~= green
+            or frame._pullB ~= blue
             or frame._pullA ~= a
             or frame._pullTotal ~= sum
             or frame._pullW ~= wid
             or frame._pullH ~= hgt
             or frame._pullClip ~= clip
         then
-            frame._pullTex, frame._pullR, frame._pullG, frame._pullB, frame._pullA = texPath, r, g, b, a
+            frame._pullTex, frame._pullR, frame._pullG, frame._pullB, frame._pullA = texPath, red, green, blue, a
             frame._pullTotal, frame._pullW, frame._pullH, frame._pullClip = sum, wid, hgt, clip
             frame._pullStyleVer = (frame._pullStyleVer or 0) + 1
         end

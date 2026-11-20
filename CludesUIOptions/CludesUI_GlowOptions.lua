@@ -452,11 +452,11 @@ local function CogRows(desc)
             type = "colorpicker",
             label = "Background Color",
             get = function()
-                local r, g, b = desc.get("bgColor")
-                return r or 0, g or 0, b or 0
+                local red, green, b = desc.get("bgColor")
+                return red or 0, green or 0, b or 0
             end,
-            set = function(r, g, b)
-                desc.set("bgColor", r, g, b)
+            set = function(red, green, blue)
+                desc.set("bgColor", red, green, blue)
                 CogChanged(desc)
             end,
             disabled = function()
@@ -513,11 +513,11 @@ local function ColorRow(desc, off)
                 tooltip = "Custom Color",
                 refreshAlpha = modeAlpha("custom"),
                 getValue = function()
-                    local r, g, b = desc.get("color")
-                    return r or (dc and dc.r) or 1, g or (dc and dc.g) or 1, b or (dc and dc.b) or 1, 1
+                    local red, green, b = desc.get("color")
+                    return red or (dc and dc.r) or 1, green or (dc and dc.g) or 1, b or (dc and dc.b) or 1, 1
                 end,
-                setValue = function(r, g, b)
-                    desc.set("color", r, g, b)
+                setValue = function(red, green, blue)
+                    desc.set("color", red, green, blue)
                     CogChanged(desc)
                 end,
                 -- Suite convention: an inactive custom swatch only selects custom mode.
@@ -716,12 +716,12 @@ function GO.AttachInline(region, desc, colorRgn)
                 desc.set("mode", m)
             end,
             getCustomRGB = function()
-                local r, g, b = desc.get("color")
+                local red, green, b = desc.get("color")
                 local dc = desc.defaultColor
-                return r or (dc and dc.r) or 1, g or (dc and dc.g) or 1, b or (dc and dc.b) or 1
+                return red or (dc and dc.r) or 1, green or (dc and dc.g) or 1, b or (dc and dc.b) or 1
             end,
-            setCustomRGB = function(r, g, b)
-                desc.set("color", r, g, b)
+            setCustomRGB = function(red, green, blue)
+                desc.set("color", red, green, blue)
             end,
             -- Mode clicks: the trio's highlight and page status refresh via widget refresh.
             onChange = function()
@@ -1046,8 +1046,8 @@ function GO.MatchesTemplate(desc, t)
         return false
     end
     if mode == "custom" and t.r then
-        local r, g, b = desc.get("color")
-        if r ~= t.r or g ~= t.g or b ~= t.b then
+        local red, green, blue = desc.get("color")
+        if red ~= t.r or green ~= t.g or blue ~= t.b then
             return false
         end
     end
@@ -1204,8 +1204,8 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
             local swatch = CludesUI.BuildColorSwatch(region, bRow:GetFrameLevel() + 3, function()
                 local c = e.borderColor or { r = 0, g = 0, b = 0 }
                 return c.r or 0, c.g or 0, c.b or 0, 1
-            end, function(r, g, b)
-                e.borderColor = { r = r, g = g, b = b }
+            end, function(red, green, blue)
+                e.borderColor = { r = red, g = green, b = blue }
                 opts.apply()
             end, false, 20)
             swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)

@@ -172,8 +172,8 @@ function mod.UFO_SwatchPair(region, opts)
             local c = store()[opts.colorKey] or def
             return c.r, c.g, c.b
         end,
-        function(r, g, b)
-            store()[opts.colorKey] = { r = r, g = g, b = b }
+        function(red, green, blue)
+            store()[opts.colorKey] = { r = red, g = green, b = blue }
             apply()
         end,
         opts.customTip,
@@ -984,8 +984,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                 local c = SGet("borderColor") or { r = 0, g = 0, b = 0 }
                 return c.r, c.g, c.b, SVal("borderAlpha", 1)
             end,
-            function(r, g, b, a)
-                UNIT_DB_MAP[optionState.selectedUnit]().borderColor = { r = r, g = g, b = b }
+            function(red, green, blue, a)
+                UNIT_DB_MAP[optionState.selectedUnit]().borderColor = { r = red, g = green, b = blue }
                 UNIT_DB_MAP[optionState.selectedUnit]().borderAlpha = a
                 ReloadAndUpdate()
             end,
@@ -1335,11 +1335,11 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
         local hlSwatch, updHl = CludesUI.BuildColorSwatch(rightRegion, lvl, function()
             local c = UNIT_DB_MAP.player().highlightColor or { r = 1, g = 1, b = 1 }
             return c.r, c.g, c.b, UNIT_DB_MAP.player().highlightAlpha or 1
-        end, function(r, g, b, a)
+        end, function(red, green, blue, a)
             -- Shared across all 3 main frames (see Highlight enable above).
             for _, settingKey in ipairs(GROUP_UNIT_ORDER) do
                 local d = UNIT_DB_MAP[settingKey]()
-                d.highlightColor = { r = r, g = g, b = b }
+                d.highlightColor = { r = red, g = green, b = blue }
                 d.highlightAlpha = a
             end
             ReloadAndUpdate()
@@ -1354,8 +1354,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             hasSwatch, updHas = CludesUI.BuildColorSwatch(rightRegion, lvl, function()
                 local c = saved.profile.playerThreatHasAggroColor or { r = 1, g = 0.5, b = 0 }
                 return c.r, c.g, c.b, 1
-            end, function(r, g, b)
-                saved.profile.playerThreatHasAggroColor = { r = r, g = g, b = b }
+            end, function(red, green, blue)
+                saved.profile.playerThreatHasAggroColor = { r = red, g = green, b = blue }
                 if mod.UpdatePlayerThreatBorder then
                     mod.UpdatePlayerThreatBorder()
                 end
@@ -1368,8 +1368,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             nearSwatch, updNear = CludesUI.BuildColorSwatch(rightRegion, lvl, function()
                 local c = saved.profile.playerThreatNearAggroColor or { r = 0.81, g = 0.72, b = 0.19 }
                 return c.r, c.g, c.b, 1
-            end, function(r, g, b)
-                saved.profile.playerThreatNearAggroColor = { r = r, g = g, b = b }
+            end, function(red, green, blue)
+                saved.profile.playerThreatNearAggroColor = { r = red, g = green, b = blue }
                 if mod.UpdatePlayerThreatBorder then
                     mod.UpdatePlayerThreatBorder()
                 end
@@ -1780,8 +1780,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                     end
                     return 0.1, 0.1, 0.1, 1
                 end,
-                set = function(r, g, b, a)
-                    SSet("detachedPortraitBgColor", { r = r, g = g, b = b, a = a or 1 })
+                set = function(red, green, blue, a)
+                    SSet("detachedPortraitBgColor", { r = red, g = green, b = blue, a = a or 1 })
                     UpdatePreview()
                 end,
             }
@@ -2128,9 +2128,9 @@ function mod.UFO_BuildPortraitSection(hostFrame, cursorY, context)
                         c = c or { r = 0, g = 0, b = 0 }
                         return c.r, c.g, c.b
                     end,
-                    setValue = function(r, g, b)
+                    setValue = function(red, green, blue)
                         UNIT_DB_MAP[optionState.selectedUnit]().detachedPortraitBorderColor =
-                            { r = r, g = g, b = b }
+                            { r = red, g = green, b = blue }
                         ReloadAndUpdate()
                         UpdatePreview()
                     end,
@@ -2610,8 +2610,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                 c = c or { r = 0.2, g = 0.2, b = 0.2 }
                 local a = SGet("btbBgOpacity")
                 return c.r, c.g, c.b, a or 1.0
-            end, function(r, g, b, a)
-                UNIT_DB_MAP[optionState.selectedUnit]().btbBgColor = { r = r, g = g, b = b }
+            end, function(red, green, blue, a)
+                UNIT_DB_MAP[optionState.selectedUnit]().btbBgColor = { r = red, g = green, b = blue }
                 UNIT_DB_MAP[optionState.selectedUnit]().btbBgOpacity = a
                 ReloadAndUpdate()
                 UpdatePreview()
@@ -2917,8 +2917,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                     end
                                     return 1, 1, 1
                                 end,
-                                setValue = function(r, g, b)
-                                    SSet("btbLeftTargetSepColor", { r = r, g = g, b = b })
+                                setValue = function(red, green, blue)
+                                    SSet("btbLeftTargetSepColor", { r = red, g = green, b = blue })
                                     UpdatePreview()
                                 end,
                                 onClick = function(self)
@@ -3007,10 +3007,10 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             local blSwGet = function()
                 return SVal("btbLeftColorR", 1), SVal("btbLeftColorG", 1), SVal("btbLeftColorB", 1)
             end
-            local blSwSet = function(r, g, b)
-                SSet("btbLeftColorR", r)
-                SSet("btbLeftColorG", g)
-                SSet("btbLeftColorB", b)
+            local blSwSet = function(red, green, blue)
+                SSet("btbLeftColorR", red)
+                SSet("btbLeftColorG", green)
+                SSet("btbLeftColorB", blue)
                 UpdatePreview()
             end
             local blSwatch, blUpdateSwatch =
@@ -3147,8 +3147,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                     end
                                     return 1, 1, 1
                                 end,
-                                setValue = function(r, g, b)
-                                    SSet("btbRightTargetSepColor", { r = r, g = g, b = b })
+                                setValue = function(red, green, blue)
+                                    SSet("btbRightTargetSepColor", { r = red, g = green, b = blue })
                                     UpdatePreview()
                                 end,
                                 onClick = function(self)
@@ -3237,10 +3237,10 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             local brSwGet = function()
                 return SVal("btbRightColorR", 1), SVal("btbRightColorG", 1), SVal("btbRightColorB", 1)
             end
-            local brSwSet = function(r, g, b)
-                SSet("btbRightColorR", r)
-                SSet("btbRightColorG", g)
-                SSet("btbRightColorB", b)
+            local brSwSet = function(red, green, blue)
+                SSet("btbRightColorR", red)
+                SSet("btbRightColorG", green)
+                SSet("btbRightColorB", blue)
                 UpdatePreview()
             end
             local brSwatch, brUpdateSwatch =
@@ -3425,8 +3425,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                                     end
                                     return 1, 1, 1
                                 end,
-                                setValue = function(r, g, b)
-                                    SSet("btbCenterTargetSepColor", { r = r, g = g, b = b })
+                                setValue = function(red, green, blue)
+                                    SSet("btbCenterTargetSepColor", { r = red, g = green, b = blue })
                                     UpdatePreview()
                                 end,
                                 onClick = function(self)
@@ -3515,10 +3515,10 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
             local bcSwGet = function()
                 return SVal("btbCenterColorR", 1), SVal("btbCenterColorG", 1), SVal("btbCenterColorB", 1)
             end
-            local bcSwSet = function(r, g, b)
-                SSet("btbCenterColorR", r)
-                SSet("btbCenterColorG", g)
-                SSet("btbCenterColorB", b)
+            local bcSwSet = function(red, green, blue)
+                SSet("btbCenterColorR", red)
+                SSet("btbCenterColorG", green)
+                SSet("btbCenterColorB", blue)
                 UpdatePreview()
             end
             local bcSwatch, bcUpdateSwatch =
@@ -3765,9 +3765,9 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
                     end
                     return dr, dg, dbb
                 end,
-                setValue = function(r, g, b)
+                setValue = function(red, green, blue)
                     saved.profile.enemyColors = saved.profile.enemyColors or {}
-                    saved.profile.enemyColors[settingKey] = { r = r, g = g, b = b }
+                    saved.profile.enemyColors[settingKey] = { r = red, g = green, b = blue }
                     if mod.ApplyEnemyColors then
                         mod.ApplyEnemyColors()
                     end
@@ -3938,8 +3938,8 @@ function mod.UFO_BuildExtrasSection(hostFrame, cursorY, context)
                 local classColor = SGetSupported("combatIndicatorCustomColor")
                 classColor = classColor or { r = 1, g = 1, b = 1 }
                 return classColor.r, classColor.g, classColor.b, 1
-            end, function(r, g, b)
-                UNIT_DB_MAP[optionState.selectedUnit]().combatIndicatorCustomColor = { r = r, g = g, b = b }
+            end, function(red, green, blue)
+                UNIT_DB_MAP[optionState.selectedUnit]().combatIndicatorCustomColor = { r = red, g = green, b = blue }
                 ReloadAndUpdate()
                 UpdatePreview()
             end, false, 20)

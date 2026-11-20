@@ -79,8 +79,8 @@ local function AlertCogRows(prefixText, applyFrame, preview)
                 local c = saved("Color") or D.color
                 return c.r, c.g, c.b
             end,
-            set = function(r, g, b)
-                put("Color", { r = r, g = g, b = b })
+            set = function(red, green, blue)
+                put("Color", { r = red, g = green, b = blue })
                 if CludesUI[preview] then
                     CludesUI[preview]()
                 end
@@ -256,8 +256,8 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
                             or { r = 1.00, g = 1.00, b = 1.00 }
                         return c.r, c.g, c.b
                     end,
-                    set = function(r, g, b)
-                        Account().combatAlertEnterColor = { r = r, g = g, b = b }
+                    set = function(red, green, blue)
+                        Account().combatAlertEnterColor = { r = red, g = green, b = blue }
                         if CludesUI._combatAlertPreview then
                             CludesUI._combatAlertPreview("enter")
                         end
@@ -301,8 +301,8 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
                             or { r = 1.00, g = 1.00, b = 1.00 }
                         return c.r, c.g, c.b
                     end,
-                    set = function(r, g, b)
-                        Account().combatAlertLeaveColor = { r = r, g = g, b = b }
+                    set = function(red, green, blue)
+                        Account().combatAlertLeaveColor = { r = red, g = green, b = blue }
                         if CludesUI._combatAlertPreview then
                             CludesUI._combatAlertPreview("leave")
                         end

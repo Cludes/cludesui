@@ -847,7 +847,7 @@ end
 -- every other style (solid, textured glow/shadow/blizz/lightspark/dialog,
 -- LibSharedMedia) goes through CludesUI.ApplyBorderStyle (PP-vs-
 -- BackdropTemplate swap; one renderer active, style stamped on frame). r,g,b,a are non-secret configured values; callers Show().
-local function ApplyEffectBorder(borderFrame, indicator, r, g, b, a, wid, hgt)
+local function ApplyEffectBorder(borderFrame, indicator, red, green, blue, a, wid, hgt)
     local style = indicator.borderStyle or "solid"
     -- Sweep is not offered: no secret-safe way to drive the perimeter reveal on containers, and a full ring duplicates Solid. Stale picks render Solid.
     if style == "sweepcw" or style == "sweepccw" then
@@ -868,9 +868,9 @@ local function ApplyEffectBorder(borderFrame, indicator, r, g, b, a, wid, hgt)
             bw,
             nil,
             nil,
-            r,
-            g,
-            b,
+            red,
+            green,
+            blue,
             nil,
             nil,
             nil,
@@ -879,7 +879,7 @@ local function ApplyEffectBorder(borderFrame, indicator, r, g, b, a, wid, hgt)
             nil,
             true
         )
-        Glows.SetProceduralAntsColor(borderFrame, r, g, b, a)
+        Glows.SetProceduralAntsColor(borderFrame, red, green, blue, a)
     else
         Glows.StopProceduralAnts(borderFrame)
         if CludesUI.ApplyBorderStyle then
@@ -889,9 +889,9 @@ local function ApplyEffectBorder(borderFrame, indicator, r, g, b, a, wid, hgt)
             CludesUI.ApplyBorderStyle(
                 borderFrame,
                 sz,
-                r,
-                g,
-                b,
+                red,
+                green,
+                blue,
                 a,
                 style,
                 nil,
@@ -913,7 +913,7 @@ end
 -- the C-side animated engine instead (identical in/out of secret; w/h come from OUR frame -- the engine never measures there).
 -- Where the client can, the host is bound to its slot button (BmEffectInit), which runs the march itself while it shows an aura: a start
 -- or stop the button refuses while auras are restricted re-runs at the lift (the glow engine defers it).
-function mod.BM_ApplyEffectBorder(borderFrame, indicator, r, g, b, a, wid, hgt)
+function mod.BM_ApplyEffectBorder(borderFrame, indicator, red, green, blue, a, wid, hgt)
     local Glows = CludesUI.Glows
     if wid and (indicator.borderStyle or "solid") == "dashed" then
         CludesUI.HideBorderStyle(borderFrame)
@@ -926,9 +926,9 @@ function mod.BM_ApplyEffectBorder(borderFrame, indicator, r, g, b, a, wid, hgt)
             indicator.borderDashCount or 8,
             indicator.borderWidth or 2,
             nil,
-            r,
-            g,
-            b,
+            red,
+            green,
+            blue,
             wid,
             hgt,
             a
@@ -939,7 +939,7 @@ function mod.BM_ApplyEffectBorder(borderFrame, indicator, r, g, b, a, wid, hgt)
     if wid then
         Glows.StopAnimatedAnts(borderFrame)
     end
-    ApplyEffectBorder(borderFrame, indicator, r, g, b, a, wid, hgt)
+    ApplyEffectBorder(borderFrame, indicator, red, green, blue, a, wid, hgt)
 end
 
 -------------------------------------------------------------------------------
@@ -4178,8 +4178,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         local c = indicator.thresholdColor or { r = 1, g = 0.2, b = 0.2 }
                         return c.r, c.g, c.b
                     end,
-                    function(r, g, b)
-                        indicator.thresholdColor = { r = r, g = g, b = b }
+                    function(red, green, blue)
+                        indicator.thresholdColor = { r = red, g = green, b = blue }
                         ReloadAndUpdate()
                     end,
                     false,
@@ -4681,8 +4681,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 local colorSwatch = CludesUI.BuildColorSwatch(region, durRow:GetFrameLevel() + 3, function()
                     local c = indicator.durationTextColor or { r = 1, g = 1, b = 1 }
                     return c.r, c.g, c.b, 1
-                end, function(r, g, b)
-                    indicator.durationTextColor = { r = r, g = g, b = b }
+                end, function(red, green, blue)
+                    indicator.durationTextColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                 end, false, 20)
                 colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -4748,8 +4748,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 local colorSwatch = CludesUI.BuildColorSwatch(region, durRow:GetFrameLevel() + 3, function()
                     local c = indicator.stacksTextColor or { r = 1, g = 1, b = 1 }
                     return c.r, c.g, c.b, 1
-                end, function(r, g, b)
-                    indicator.stacksTextColor = { r = r, g = g, b = b }
+                end, function(red, green, blue)
+                    indicator.stacksTextColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                 end, false, 20)
                 colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -4811,11 +4811,11 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     local colorSwatch = CludesUI.BuildColorSwatch(region, extraRow:GetFrameLevel() + 3, function()
                         local c = (indicator.spellColors and indicator.spellColors[mySid]) or indicator.color or DEFAULT_SQ
                         return c.r, c.g, c.b, 1
-                    end, function(r, g, b)
+                    end, function(red, green, blue)
                         if not indicator.spellColors then
                             indicator.spellColors = {}
                         end
-                        indicator.spellColors[mySid] = { r = r, g = g, b = b }
+                        indicator.spellColors[mySid] = { r = red, g = green, b = blue }
                         ReloadAndUpdate()
                     end, false, 20)
                     if prev then
@@ -4859,11 +4859,11 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                                     or DEFAULT_SQ
                                 return c.r, c.g, c.b, 1
                             end,
-                            function(r, g, b)
+                            function(red, green, blue)
                                 if not indicator.filterColors then
                                     indicator.filterColors = {}
                                 end
-                                indicator.filterColors[myFid] = { r = r, g = g, b = b }
+                                indicator.filterColors[myFid] = { r = red, g = green, b = blue }
                                 ReloadAndUpdate()
                             end,
                             false,
@@ -4973,8 +4973,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             local c = indicator.pandemicBorderColor or { r = 1, g = 0.2, b = 0.2 }
                             return c.r, c.g, c.b, 1
                         end,
-                        setValue = function(r, g, b)
-                            indicator.pandemicBorderColor = { r = r, g = g, b = b }
+                        setValue = function(red, green, blue)
+                            indicator.pandemicBorderColor = { r = red, g = green, b = blue }
                             ReloadAndUpdate()
                         end,
                     },
@@ -5210,8 +5210,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             local c = indicator.color or { r = 0x0C / 255, g = 0xD2 / 255, b = 0x9D / 255 }
                             return c.r, c.g, c.b, 1
                         end,
-                        function(r, g, b)
-                            indicator.color = { r = r, g = g, b = b }
+                        function(red, green, blue)
+                            indicator.color = { r = red, g = green, b = blue }
                             ReloadAndUpdate()
                         end,
                         false,
@@ -5229,8 +5229,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             local c = indicator.barBgColor or { r = 0, g = 0, b = 0 }
                             return c.r, c.g, c.b, 1
                         end,
-                        function(r, g, b)
-                            indicator.barBgColor = { r = r, g = g, b = b }
+                        function(red, green, blue)
+                            indicator.barBgColor = { r = red, g = green, b = blue }
                             ReloadAndUpdate()
                         end,
                         false,
@@ -5470,8 +5470,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             local c = indicator.color or { r = ac.r, g = ac.g, b = ac.b }
                             return c.r, c.g, c.b, 1
                         end,
-                        function(r, g, b)
-                            indicator.color = { r = r, g = g, b = b }
+                        function(red, green, blue)
+                            indicator.color = { r = red, g = green, b = blue }
                             ReloadAndUpdate()
                         end,
                         false,
@@ -5529,8 +5529,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         local c = indicator.color or { r = 0x0C / 255, g = 0xD2 / 255, b = 0x9D / 255 }
                         return c.r, c.g, c.b
                     end,
-                    setValue = function(r, g, b)
-                        indicator.color = { r = r, g = g, b = b }
+                    setValue = function(red, green, blue)
+                        indicator.color = { r = red, g = green, b = blue }
                         ReloadAndUpdate()
                     end,
                 }, {

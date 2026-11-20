@@ -328,7 +328,7 @@ local function BuildFrame()
     -- frame (frost blue), so desaturating removes the hue and vertex colour re-tints
     -- it to the theme's accent. The house themes show the frame as drawn: TintColor
     -- returns nil for those, else the vertex colour of the desaturated art.
-    function titleBoxes.TintColor(skinName, r, g, b)
+    function titleBoxes.TintColor(skinName, red, green, blue)
         -- CludesUI Forever has its own frame art (bronze, its own logo), also as drawn.
         if skinName == "CludesUI" or skinName == "CludesUI Original" or skinName == "CludesUI Forever" then
             return nil
@@ -336,15 +336,15 @@ local function BuildFrame()
         local minBright = 1.10
         local maxBright = 1.60
         local floor = 0.08
-        local lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+        local lum = 0.2126 * red + 0.7152 * green + 0.0722 * blue
         local darkFactor = 1 - lum
         local bright = minBright + darkFactor * (maxBright - minBright)
-        return math.min(floor + r * bright, 1),
-            math.min(floor + g * bright, 1),
-            math.min(floor + b * bright, 1)
+        return math.min(floor + red * bright, 1),
+            math.min(floor + green * bright, 1),
+            math.min(floor + blue * bright, 1)
     end
-    local function ApplyBgTintToLayer(layer, skinName, r, g, b)
-        local fr, fg, fb = titleBoxes.TintColor(skinName, r, g, b)
+    local function ApplyBgTintToLayer(layer, skinName, red, green, blue)
+        local fr, fg, fb = titleBoxes.TintColor(skinName, red, green, blue)
         if fr then
             layer:SetDesaturated(true)
             layer:SetVertexColor(fr, fg, fb, 1)
@@ -355,12 +355,12 @@ local function BuildFrame()
     end
 
     -- A colour picked off the art (r, g, b), as the art shows it under the theme's tint.
-    function titleBoxes.Tinted(skinName, tr, tg, tb, r, g, b)
+    function titleBoxes.Tinted(skinName, tr, tg, tb, red, green, blue)
         local fr, fg, fb = titleBoxes.TintColor(skinName, tr, tg, tb)
         if not fr then
-            return r, g, b
+            return red, green, blue
         end
-        local lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+        local lum = 0.2126 * red + 0.7152 * green + 0.0722 * blue
         return lum * fr, lum * fg, lum * fb
     end
 
@@ -416,8 +416,8 @@ local function BuildFrame()
             local acc = boxState.acc
             RegAccent({
                 type = "callback",
-                fn = function(r, g, b)
-                    acc:SetVertexColor(r, g, b, acc:GetAlpha())
+                fn = function(red, green, blue)
+                    acc:SetVertexColor(red, green, blue, acc:GetAlpha())
                 end,
             })
         end
@@ -509,8 +509,8 @@ local function BuildFrame()
                 boxState.base:SetPoint("CENTER", boxState.anchor, "TOPLEFT", cx, -centerY)
                 boxState.acc:ClearAllPoints()
                 boxState.acc:SetPoint("CENTER", boxState.anchor, "TOPLEFT", cx, -centerY)
-                local r, g, b = titleBoxes.Tinted(skinName, tr, tg, tb, artSpec.r, artSpec.g, artSpec.b)
-                boxState.base:SetVertexColor(r, g, b, 1)
+                local red, green, blue = titleBoxes.Tinted(skinName, tr, tg, tb, artSpec.r, artSpec.g, artSpec.b)
+                boxState.base:SetVertexColor(red, green, blue, 1)
                 boxState.acc:SetVertexColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
             end
         end
@@ -625,8 +625,8 @@ local function BuildFrame()
             -- (every theme pick re-applies the accent right after starting it).
             RegAccent({
                 type = "callback",
-                fn = function(r, g, b)
-                    overlay:SetVertexColor(r, g, b, overlay:GetAlpha())
+                fn = function(red, green, blue)
+                    overlay:SetVertexColor(red, green, blue, overlay:GetAlpha())
                 end,
             })
         end
@@ -651,7 +651,7 @@ local function BuildFrame()
     end
 
     --- Apply the full theme: crossfade to new background image + tint
-    local function ApplyThemeBG(skinName, r, g, b)
+    local function ApplyThemeBG(skinName, red, green, blue)
         skinName = ResolveFactionTheme(skinName)
         local file = THEME_BG_FILES[skinName] or THEME_BG_FILES["CludesUI"]
         local newPath = MEDIA_PATH .. file
@@ -662,7 +662,7 @@ local function BuildFrame()
         -- New front layer gets the target texture + tint on top; this SetTexture is also
         -- the lazy cleanup of the previous transition's idle layer.
         frontBg:SetTexture(newPath)
-        ApplyBgTintToLayer(frontBg, skinName, r, g, b)
+        ApplyBgTintToLayer(frontBg, skinName, red, green, blue)
         frontBg:SetDrawLayer("BACKGROUND", 1)
         frontBg:SetAlpha(0)
 
@@ -675,11 +675,11 @@ local function BuildFrame()
         titleBoxes.Layer(titleBoxes.front, 4, 1)
         titleBoxes.Layer(titleBoxes.back, 3, 0)
         titleBoxes.front.alpha = 0
-        titleBoxes.Paint(titleBoxes.front, skinName, r, g, b)
+        titleBoxes.Paint(titleBoxes.front, skinName, red, green, blue)
         titleBoxes.Alpha(titleBoxes.back, 1)
         -- A collapsed window shows the mini instead: it takes the new art at once.
         if CludesUI._panelCollapsed then
-            titleBoxes.SkinMini(skinName, r, g, b)
+            titleBoxes.SkinMini(skinName, red, green, blue)
         end
 
         -- Start crossfade (the accent overlay, if either theme has one, rides it)
@@ -694,12 +694,12 @@ local function BuildFrame()
     end
 
     -- For tint-only updates (Custom Color picker dragging), update the front layer directly
-    local function ApplyBgTint(r, g, b)
+    local function ApplyBgTint(red, green, blue)
         local skinName = ResolveFactionTheme((CludesUIDB or {}).activeTheme or CludesUI.DEFAULT_THEME)
-        ApplyBgTintToLayer(frontBg, skinName, r, g, b)
-        titleBoxes.Paint(titleBoxes.front, skinName, r, g, b)
+        ApplyBgTintToLayer(frontBg, skinName, red, green, blue)
+        titleBoxes.Paint(titleBoxes.front, skinName, red, green, blue)
         if CludesUI._panelCollapsed then
-            titleBoxes.SkinMini(skinName, r, g, b)
+            titleBoxes.SkinMini(skinName, red, green, blue)
         end
     end
 
@@ -904,9 +904,9 @@ local function BuildFrame()
         end
         RegAccent({
             type = "callback",
-            fn = function(r, g, b)
-                barOv:SetVertexColor(r, g, b, 1)
-                badgeOv:SetVertexColor(r, g, b, 1)
+            fn = function(red, green, blue)
+                barOv:SetVertexColor(red, green, blue, 1)
+                badgeOv:SetVertexColor(red, green, blue, 1)
             end,
         })
 
@@ -1054,11 +1054,11 @@ local function BuildSidebar()
 
     -- Flat wash across a sidebar button, anchored top+bottom so it scales with
     -- the row height (group headers and child rows differ).
-    local function MakeNavGradient(button, r, g, b, startA)
+    local function MakeNavGradient(button, red, green, blue, startA)
         local texture = button:CreateTexture(nil, "BACKGROUND")
         texture:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
         texture:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0)
-        texture:SetColorTexture(r, g, b, startA)
+        texture:SetColorTexture(red, green, blue, startA)
         texture:Hide()
         return texture
     end
@@ -1874,15 +1874,15 @@ local function BuildSidebar()
         local cr, cg, cb = EG.r, EG.g, EG.b
         local function Paint(lit)
             local m = lit and 1.25 or 1
-            local r, g, b = math.min(1, cr * m), math.min(1, cg * m), math.min(1, cb * m)
-            navLabel:SetTextColor(r, g, b, 1)
-            toggleBtn:SetVertexColor(r, g, b, 1)
+            local red, green, blue = math.min(1, cr * m), math.min(1, cg * m), math.min(1, cb * m)
+            navLabel:SetTextColor(red, green, blue, 1)
+            toggleBtn:SetVertexColor(red, green, blue, 1)
             toggleBtn:SetShown(lit)
         end
         RegAccent({
             type = "callback",
-            fn = function(r, g, b)
-                cr, cg, cb = r, g, b
+            fn = function(red, green, blue)
+                cr, cg, cb = red, green, blue
                 Paint(line:IsMouseOver())
             end,
         })
@@ -3808,9 +3808,9 @@ local function BuildFooter(rightW, rightX)
         -- Register for accent updates
         RegAccent({
             type = "callback",
-            fn = function(r, g, b)
-                captionText:SetTextColor(r, g, b, lerp(0.7, 1, fadeProgress))
-                brd:SetColor(r, g, b, lerp(0.7, 1, fadeProgress))
+            fn = function(red, green, blue)
+                captionText:SetTextColor(red, green, blue, lerp(0.7, 1, fadeProgress))
+                brd:SetColor(red, green, blue, lerp(0.7, 1, fadeProgress))
             end,
         })
     end
@@ -4558,9 +4558,9 @@ do
             PanelPP.Point(arrow, "LEFT", linkFS, "RIGHT", 4, 0)
             RegAccent({
                 type = "callback",
-                fn = function(r, g, b)
-                    linkFS:SetTextColor(r, g, b, 1)
-                    arrow:SetVertexColor(r, g, b, 1)
+                fn = function(red, green, blue)
+                    linkFS:SetTextColor(red, green, blue, 1)
+                    arrow:SetVertexColor(red, green, blue, 1)
                 end,
             })
             PanelPP.Size(linkText, linkFS:GetStringWidth() + 16, 18)

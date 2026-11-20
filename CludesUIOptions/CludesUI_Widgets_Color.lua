@@ -48,38 +48,38 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local c = val * s
         local posX = c * (1 - math.abs((height / 60) % 2 - 1))
         local m = val - c
-        local r, g, b
+        local red, green, blue
         if height < 60 then
-            r, g, b = c, posX, 0
+            red, green, blue = c, posX, 0
         elseif height < 120 then
-            r, g, b = posX, c, 0
+            red, green, blue = posX, c, 0
         elseif height < 180 then
-            r, g, b = 0, c, posX
+            red, green, blue = 0, c, posX
         elseif height < 240 then
-            r, g, b = 0, posX, c
+            red, green, blue = 0, posX, c
         elseif height < 300 then
-            r, g, b = posX, 0, c
+            red, green, blue = posX, 0, c
         else
-            r, g, b = c, 0, posX
+            red, green, blue = c, 0, posX
         end
-        return r + m, g + m, b + m
+        return red + m, green + m, blue + m
     end
 
-    local function RGBtoHSV(r, g, b)
-        local mx = math.max(r, g, b)
-        local mn = math.min(r, g, b)
+    local function RGBtoHSV(red, green, blue)
+        local mx = math.max(red, green, blue)
+        local mn = math.min(red, green, blue)
         local d = mx - mn
         local height, s, val
         val = mx
         s = (mx == 0) and 0 or (d / mx)
         if d == 0 then
             height = 0
-        elseif mx == r then
-            height = 60 * (((g - b) / d) % 6)
-        elseif mx == g then
-            height = 60 * (((b - r) / d) + 2)
+        elseif mx == red then
+            height = 60 * (((green - blue) / d) % 6)
+        elseif mx == green then
+            height = 60 * (((blue - red) / d) + 2)
         else
-            height = 60 * (((r - g) / d) + 4)
+            height = 60 * (((red - green) / d) + 4)
         end
         return height, s, val
     end
@@ -112,29 +112,29 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
         return saved.favorites
     end
-    local function ColorKey(r, g, b)
+    local function ColorKey(red, green, blue)
         return string.format(
             "%d-%d-%d",
-            math.floor(r * 255 + 0.5),
-            math.floor(g * 255 + 0.5),
-            math.floor(b * 255 + 0.5)
+            math.floor(red * 255 + 0.5),
+            math.floor(green * 255 + 0.5),
+            math.floor(blue * 255 + 0.5)
         )
     end
-    local function RecordRecentColor(r, g, b)
+    local function RecordRecentColor(red, green, blue)
         local saved = GetRecentColorsDB()
-        local key = ColorKey(r, g, b)
+        local key = ColorKey(red, green, blue)
         for idx = #saved, 1, -1 do
             if ColorKey(saved[idx][1], saved[idx][2], saved[idx][3]) == key then
                 table.remove(saved, idx)
             end
         end
-        table.insert(saved, 1, { r, g, b })
+        table.insert(saved, 1, { red, green, blue })
         while #saved > PICKER_MAX_SWATCHES do
             table.remove(saved)
         end
     end
-    local function IsFavorite(r, g, b)
-        local key = ColorKey(r, g, b)
+    local function IsFavorite(red, green, blue)
+        local key = ColorKey(red, green, blue)
         for _, c in ipairs(GetFavoritesDB()) do
             if ColorKey(c[1], c[2], c[3]) == key then
                 return true
@@ -142,16 +142,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
         return false
     end
-    local function ToggleFavorite(r, g, b)
+    local function ToggleFavorite(red, green, blue)
         local saved = GetFavoritesDB()
-        local key = ColorKey(r, g, b)
+        local key = ColorKey(red, green, blue)
         for idx = #saved, 1, -1 do
             if ColorKey(saved[idx][1], saved[idx][2], saved[idx][3]) == key then
                 table.remove(saved, idx)
                 return false
             end
         end
-        table.insert(saved, 1, { r, g, b })
+        table.insert(saved, 1, { red, green, blue })
         while #saved > PICKER_MAX_SWATCHES do
             table.remove(saved)
         end
@@ -318,8 +318,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 return
             end
             updating = true
-            local r, g, b = HSVtoRGB(currentH, currentS, currentV)
-            outR, outG, outB, outA = r, g, b, currentA
+            local red, green, blue = HSVtoRGB(currentH, currentS, currentV)
+            outR, outG, outB, outA = red, green, blue, currentA
             if UpdateSVPadHue then
                 UpdateSVPadHue(currentH)
             end
@@ -330,16 +330,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 UpdateHueIndicator(currentH)
             end
             if UpdateAlphaBar then
-                UpdateAlphaBar(r, g, b, currentA)
+                UpdateAlphaBar(red, green, blue, currentA)
             end
             if UpdateHexInput then
-                UpdateHexInput(r, g, b)
+                UpdateHexInput(red, green, blue)
             end
             if UpdateOpacityInput then
                 UpdateOpacityInput(currentA)
             end
             if newPreviewTex then
-                newPreviewTex:SetColorTexture(r, g, b, currentA)
+                newPreviewTex:SetColorTexture(red, green, blue, currentA)
             end
             updating = false
         end
@@ -390,8 +390,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         chR:SetColorTexture(1, 1, 1, 0.9)
 
         UpdateSVPadHue = function(height)
-            local r, g, b = HSVtoRGB(height, 1, 1)
-            svHue:SetColorTexture(r, g, b, 1)
+            local red, green, blue = HSVtoRGB(height, 1, 1)
+            svHue:SetColorTexture(red, green, blue, 1)
         end
         UpdateSVCrosshair = function(s, val)
             local posX = s * SV_SIZE
@@ -553,9 +553,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local alphaColorBot = CreateColor(0, 0, 0, 0)
         local alphaColorTop = CreateColor(0, 0, 0, 1)
 
-        UpdateAlphaBar = function(r, g, b, a)
-            alphaColorBot.r, alphaColorBot.g, alphaColorBot.b, alphaColorBot.a = r, g, b, 0
-            alphaColorTop.r, alphaColorTop.g, alphaColorTop.b, alphaColorTop.a = r, g, b, 1
+        UpdateAlphaBar = function(red, green, blue, a)
+            alphaColorBot.r, alphaColorBot.g, alphaColorBot.b, alphaColorBot.a = red, green, blue, 0
+            alphaColorTop.r, alphaColorTop.g, alphaColorTop.b, alphaColorTop.a = red, green, blue, 1
             alphaGrad:SetGradient("VERTICAL", alphaColorBot, alphaColorTop)
             alphaInd:ClearAllPoints()
             alphaInd:SetPoint("CENTER", alphaBar, "TOPLEFT", BAR_W / 2, -(1 - a) * SV_SIZE)
@@ -664,11 +664,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         local lastValidHex = "FFFFFF"
         local lastHexR, lastHexG, lastHexB = -1, -1, -1
-        UpdateHexInput = function(r, g, b)
+        UpdateHexInput = function(red, green, blue)
             if hexBox:HasFocus() then
                 return
             end
-            local ri, gi, bi = math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5)
+            local ri, gi, bi = math.floor(red * 255 + 0.5), math.floor(green * 255 + 0.5), math.floor(blue * 255 + 0.5)
             if ri == lastHexR and gi == lastHexG and bi == lastHexB then
                 return
             end
@@ -1007,12 +1007,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             opacityFunc = details.opacityFunc
             cancelFunc = details.cancelFunc
             hasOpacity = details.hasOpacity or false
-            local r, g, b = details.r or 0, details.g or 0, details.b or 0
+            local red, green, blue = details.r or 0, details.g or 0, details.b or 0
             local a = details.opacity or 1
-            prevR, prevG, prevB, prevA = r, g, b, a
-            currentH, currentS, currentV = RGBtoHSV(r, g, b)
+            prevR, prevG, prevB, prevA = red, green, blue, a
+            currentH, currentS, currentV = RGBtoHSV(red, green, blue)
             currentA = hasOpacity and a or 1
-            prevPreviewTex:SetColorTexture(r, g, b, hasOpacity and a or 1)
+            prevPreviewTex:SetColorTexture(red, green, blue, hasOpacity and a or 1)
             -- Reposition the right column by alpha-bar visibility. With an alpha slider ONLY the right column grows taller, so OK/Cancel clear the Opacity input below Hex#. Favorites/recent rows sit on the LEFT, clear of that column, so they and the popup height stay put.
             rightCol:ClearAllPoints()
             if hasOpacity then
@@ -1040,8 +1040,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 padOpener = anchor
                 local ax, ay = anchor:GetCenter()
                 if ax and ay then
-                    local r = anchor:GetEffectiveScale() / scale
-                    cx, cy = ax * r, ay * r
+                    local ratio = anchor:GetEffectiveScale() / scale
+                    cx, cy = ax * ratio, ay * ratio
                 end
             end
             local pw = dialog:GetWidth()
@@ -1124,14 +1124,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
 
         local function UpdateSwatch()
-            local r, g, b, a = getValue()
-            sFill:SetColorTexture(r or 0, g or 0, b or 0, a or 1)
+            local red, green, blue, a = getValue()
+            sFill:SetColorTexture(red or 0, green or 0, blue or 0, a or 1)
         end
 
         -- Initial fill color (no border needed yet)
         do
-            local r, g, b, a = getValue()
-            sFill:SetColorTexture(r or 0, g or 0, b or 0, a or 1)
+            local red, green, blue, a = getValue()
+            sFill:SetColorTexture(red or 0, green or 0, blue or 0, a or 1)
         end
 
         -- Border builds lazily on first show, or now if already visible
@@ -1145,9 +1145,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
 
         colorSwatch:SetScript("OnClick", function()
-            local r, g, b, a = getValue()
-            r, g, b, a = r or 0, g or 0, b or 0, a or 1
-            local snapR, snapG, snapB, snapA = r, g, b, a
+            local red, green, blue, a = getValue()
+            red, green, blue, a = red or 0, green or 0, blue or 0, a or 1
+            local snapR, snapG, snapB, snapA = red, green, blue, a
             -- The dress the picker opens on. A page rebuild while the picker is
             -- open (page reuse) can dress this swatch again for another use, or
             -- leave it idle; what shows then is that rebuild's own paint.
@@ -1198,9 +1198,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         UpdateSwatch()
                     end
                 end,
-                r = r,
-                g = g,
-                b = b,
+                r = red,
+                g = green,
+                b = blue,
             }
             CludesUI:ShowColorPicker(details, colorSwatch)
         end)
@@ -1231,10 +1231,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     local DEFAULT_UNTINTED_R, DEFAULT_UNTINTED_G, DEFAULT_UNTINTED_B = 1.0, 0.788, 0.137
     local function BuildTrioColorSwatch(parentFrame, baseLevel, options)
         local customSwatch, updateCustom = BuildColorSwatch(parentFrame, baseLevel, function()
-            local r, g, b = options.getCustomRGB()
-            return r, g, b, 1
-        end, function(r, g, b)
-            options.setCustomRGB(r, g, b)
+            local red, green, blue = options.getCustomRGB()
+            return red, green, blue, 1
+        end, function(red, green, blue)
+            options.setCustomRGB(red, green, blue)
             options.setMode("custom")
             if options.onChange then
                 options.onChange()

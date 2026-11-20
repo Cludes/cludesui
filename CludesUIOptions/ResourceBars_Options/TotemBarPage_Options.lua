@@ -316,14 +316,14 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                         (t and t.borderB or 0),
                         (t and t.borderA or 1)
                 end,
-                function(r, g, b, a)
+                function(red, green, blue, a)
                     local t = T()
                     if not t then
                         return
                     end
-                    t.borderR = r
-                    t.borderG = g
-                    t.borderB = b
+                    t.borderR = red
+                    t.borderG = green
+                    t.borderB = blue
                     t.borderA = a
                     RefreshTotem()
                     CludesUI:RefreshPage()

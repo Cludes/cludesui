@@ -125,9 +125,9 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
                 getValue = function()
                     return LF.Get(prefixText .. "R"), LF.Get(prefixText .. "G"), LF.Get(prefixText .. "B"), 1
                 end,
-                setValue = function(r, g, b)
+                setValue = function(red, green, blue)
                     local c = LF.Cfg()
-                    c[prefixText .. "R"], c[prefixText .. "G"], c[prefixText .. "B"] = r, g, b
+                    c[prefixText .. "R"], c[prefixText .. "G"], c[prefixText .. "B"] = red, green, blue
                     if prefixText == "border" and style() == "BAR" then
                         c.borderTexture = LF.Get("borderTexture") or "solid"
                     end

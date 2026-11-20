@@ -233,15 +233,15 @@ CludesUI.AtOptionsLogin(function()
                         hasAlpha = false,
                         getValue = function()
                             if Cfg("customZoneUseAccent") == nil and not ZoneAccent() then
-                                local r, g, b = EQT.CustomZoneRGB()
-                                return r, g, b
+                                local red, green, b = EQT.CustomZoneRGB()
+                                return red, green, b
                             end
                             return Cfg("customZoneR") or 1, Cfg("customZoneG") or 1, Cfg("customZoneB") or 1
                         end,
-                        setValue = function(r, g, b)
-                            Set("customZoneR", r)
-                            Set("customZoneG", g)
-                            Set("customZoneB", b)
+                        setValue = function(red, green, blue)
+                            Set("customZoneR", red)
+                            Set("customZoneG", green)
+                            Set("customZoneB", blue)
                             PickZone(false)
                         end,
                         onClick = function(self)
@@ -565,10 +565,10 @@ CludesUI.AtOptionsLogin(function()
                     function()
                         return (Cfg("bgR") or 0), (Cfg("bgG") or 0), (Cfg("bgB") or 0)
                     end,
-                    function(r, g, b)
-                        Set("bgR", r)
-                        Set("bgG", g)
-                        Set("bgB", b)
+                    function(red, green, blue)
+                        Set("bgR", red)
+                        Set("bgG", green)
+                        Set("bgB", blue)
                         if EQT.ApplyBackground then
                             EQT.ApplyBackground()
                         end
@@ -847,10 +847,10 @@ CludesUI.AtOptionsLogin(function()
                             (Cfg(gKey) or customDefault[2]),
                             (Cfg(bKey) or customDefault[3])
                     end,
-                    setValue = function(r, g, b)
-                        Set(rKey, r)
-                        Set(gKey, g)
-                        Set(bKey, b)
+                    setValue = function(red, green, blue)
+                        Set(rKey, red)
+                        Set(gKey, green)
+                        Set(bKey, blue)
                         Set(classKey, false)
                         Set(accentKey, false)
                         RefreshAll()

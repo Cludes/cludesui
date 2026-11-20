@@ -120,9 +120,9 @@ CludesUI.CLASS_RESOURCE_MAP = {
 }
 
 -- Darken a color by a fraction (for default gradient secondary)
-function CludesUI.DarkenColor(r, g, b, frac)
+function CludesUI.DarkenColor(red, green, blue, frac)
     frac = frac or 0.10
-    return r * (1 - frac), g * (1 - frac), b * (1 - frac)
+    return red * (1 - frac), green * (1 - frac), blue * (1 - frac)
 end
 
 -- Effective in-game custom colours for all rendering consumers (lazy-init). Stored PER
@@ -700,7 +700,7 @@ function CludesUI.GetClassColorForRestrictedUnit(unitToken, secretClassToken)
     if not base then
         return false
     end
-    local r, g, b = base.r, base.g, base.b
+    local red, green, blue = base.r, base.g, base.b
     local canCompare = C_Secrets and C_Secrets.CanCompareUnitTokens
     for idx = 1, total, 2 do
         local u = candidates[idx]
@@ -712,13 +712,13 @@ function CludesUI.GetClassColorForRestrictedUnit(unitToken, secretClassToken)
             -- secret boolean -- the whole point of this fold -- passes here.
             if type(isSameUnit) == "boolean" then
                 local col = candidates[idx + 1]
-                r = pick(isSameUnit, col.r, r)
-                g = pick(isSameUnit, col.g, g)
-                b = pick(isSameUnit, col.b, b)
+                red = pick(isSameUnit, col.r, red)
+                green = pick(isSameUnit, col.g, green)
+                blue = pick(isSameUnit, col.b, blue)
             end
         end
     end
-    return true, r, g, b
+    return true, red, green, blue
 end
 
 -- Get power color (cached, darken baked in). Returns nil for unknown keys.
@@ -905,9 +905,9 @@ function CludesUI.ApplyColorsToOUF()
     -- 7. A class-colored accent or cursor follows a class swatch edit; the accent
     -- re-applies only when it changed (that path redraws the options page).
     do
-        local r, g, b = CludesUI.ResolveActiveAccent()
+        local red, green, blue = CludesUI.ResolveActiveAccent()
         local cr, cg, cb = CludesUI.GetAccentColor()
-        if r ~= cr or g ~= cg or b ~= cb then
+        if red ~= cr or green ~= cg or blue ~= cb then
             CludesUI.RefreshAccent()
         end
     end

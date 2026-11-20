@@ -743,8 +743,8 @@ local function DataBarKit(hostFrame)
                         end
                         return 0, 0, 0, 1
                     end,
-                    setValue = function(r, g, b, a)
-                        Wr().borderColor = { r = r, g = g, b = b, a = a or 1 }
+                    setValue = function(red, green, blue, a)
+                        Wr().borderColor = { r = red, g = green, b = blue, a = a or 1 }
                         Done()
                     end,
                 },
@@ -852,8 +852,8 @@ local function DataBarKit(hostFrame)
                     end
                     return 1, 1, 1
                 end,
-                setValue = function(r, g, b)
-                    S().customColor = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    S().customColor = { r = red, g = green, b = blue }
                     S().colorMode = "custom"
                     RefreshDataBar(barId)
                 end,

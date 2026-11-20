@@ -229,8 +229,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                 local c = Get(key)
                 return c.r, c.g, c.b
             end,
-            setValue = function(r, g, b)
-                Set(key, { r = r, g = g, b = b })
+            setValue = function(red, green, blue)
+                Set(key, { r = red, g = green, b = blue })
             end,
         }
     end
@@ -240,16 +240,16 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
             sc.getValue = function()
                 return GetStyle(set, key[1]), GetStyle(set, key[2]), GetStyle(set, key[3])
             end
-            sc.setValue = function(r, g, b)
-                mod.SetStyleValues(set, { [key[1]] = r, [key[2]] = g, [key[3]] = b })
+            sc.setValue = function(red, green, blue)
+                mod.SetStyleValues(set, { [key[1]] = red, [key[2]] = green, [key[3]] = blue })
             end
         else
             sc.getValue = function()
                 local c = GetStyle(set, key)
                 return c.r, c.g, c.b
             end
-            sc.setValue = function(r, g, b)
-                mod.SetStyleValue(set, key, { r = r, g = g, b = b, a = 1 })
+            sc.setValue = function(red, green, blue)
+                mod.SetStyleValue(set, key, { r = red, g = green, b = blue, a = 1 })
             end
         end
         return sc
@@ -630,8 +630,8 @@ _G._CUI_BuildThreatMeterPage = function(page, hostFrame, yOffset)
                                 end
                                 return 1, 1, 1
                             end,
-                            setValue = function(r, g, b)
-                                PSet(key, { r = r, g = g, b = b })
+                            setValue = function(red, green, blue)
+                                PSet(key, { r = red, g = green, b = blue })
                             end,
                         }
                     end

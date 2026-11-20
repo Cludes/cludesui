@@ -808,12 +808,12 @@ CludesUI.AtOptionsLogin(function()
                     end
                     return 0, 0, 0, 1
                 end,
-                function(r, g, b, a)
+                function(red, green, blue, a)
                     local m = MinimapDB()
                     if not m then
                         return
                     end
-                    m.borderColor = { r = r, g = g, b = b }
+                    m.borderColor = { r = red, g = green, b = blue }
                     m.borderA = a
                     RefreshMinimap()
                 end,
@@ -2528,12 +2528,12 @@ CludesUI.AtOptionsLogin(function()
                     end
                     return 1, 1, 1, 1
                 end,
-                function(r, g, b)
+                function(red, green, blue)
                     local m = MinimapDB()
                     if not m then
                         return
                     end
-                    m.fpsColor = { r = r, g = g, b = b }
+                    m.fpsColor = { r = red, g = green, b = blue }
                     RefreshMinimap()
                 end,
                 false,

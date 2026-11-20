@@ -523,9 +523,9 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
             local s = settingGet()
             local c = s.castBorderColor
             return c and c.r or 0, c and c.g or 0, c and c.b or 0, s.castBorderAlpha or 1
-        end, function(r, g, b, a)
+        end, function(red, green, blue, a)
             local s = settingGet()
-            s.castBorderColor = { r = r, g = g, b = b }
+            s.castBorderColor = { r = red, g = green, b = blue }
             s.castBorderAlpha = a
             changed()
         end, true, 20)
@@ -998,8 +998,8 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
             local s = Src()
             local c = s.borderColor
             return c and c.r or 0, c and c.g or 0, c and c.b or 0, s.borderAlpha or 1
-        end, function(r, g, b, a)
-            B.borderColor = { r = r, g = g, b = b }
+        end, function(red, green, blue, a)
+            B.borderColor = { r = red, g = green, b = blue }
             B.borderAlpha = a
             changed()
         end, true, 20)

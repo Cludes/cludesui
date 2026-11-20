@@ -272,9 +272,9 @@ function mod.NPO_PreviewSlotColor(slotKey)
     if mode == "class" then
         return (saved and saved.enemyNameHostileColor) or defaultSet.hostile
     elseif mode == "level" then
-        local r, g, b = CludesUI.GetLevelColor("player", UnitEffectiveLevel("player"), true)
-        if r then
-            PV_LVL_COLOR.r, PV_LVL_COLOR.g, PV_LVL_COLOR.b = r, g, b
+        local red, green, blue = CludesUI.GetLevelColor("player", UnitEffectiveLevel("player"), true)
+        if red then
+            PV_LVL_COLOR.r, PV_LVL_COLOR.g, PV_LVL_COLOR.b = red, green, blue
             return PV_LVL_COLOR
         end
     end
@@ -444,14 +444,14 @@ local function BuildNameplatePreview(hostFrame, parentW)
         else
             alpha = mod.NP_ABSORB_STYLE_ALPHA[style] or 0.8
         end
-        local r, g, b = 1, 1, 1
+        local red, green, blue = 1, 1, 1
         if style ~= "blizzard" then
             local c = (DB() and DB().absorbColor) or defaultSet.absorbColor or { r = 1, g = 1, b = 1 }
-            r, g, b = c.r, c.g, c.b
+            red, green, blue = c.r, c.g, c.b
         end
         for _, bar in ipairs({ previewAbsorb.absorb, previewAbsorb.absorbForward }) do
             bar:SetStatusBarTexture(texture)
-            bar:SetStatusBarColor(r, g, b, alpha)
+            bar:SetStatusBarColor(red, green, blue, alpha)
             local fill = bar:GetStatusBarTexture()
             if fill then
                 fill:SetDrawLayer("ARTWORK", 1)
@@ -775,7 +775,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
     end
     -- Its colour: in Class mode the player's class colour (the sample target),
     -- else the slot colour passed in.
-    popFrame._totSampleColor = function(slotKey, r, g, b)
+    popFrame._totSampleColor = function(slotKey, red, green, blue)
         if slotKey and mod.NP_SlotColorMode(slotKey, DB()) == "class" then
             local _, ct = UnitClass("player")
             local classColor = ct and CludesUI.GetClassColor(ct)
@@ -783,7 +783,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 return classColor.r, classColor.g, classColor.b
             end
         end
-        return r, g, b
+        return red, green, blue
     end
 
     -- Raid marker: custom marker.png image, position/size from settings

@@ -455,17 +455,17 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     (p and p.health.bgG or 0x11 / 255),
                     (p and p.health.bgB or 0x11 / 255)
             end,
-            function(r, g, b)
+            function(red, green, blue)
                 local p = DB()
                 if not p then
                     return
                 end
                 if p.splitBg == true then
-                    p.secondary.barBgR, p.secondary.barBgG, p.secondary.barBgB = r, g, b
+                    p.secondary.barBgR, p.secondary.barBgG, p.secondary.barBgB = red, green, blue
                 else
-                    p.health.bgR, p.health.bgG, p.health.bgB = r, g, b
-                    p.primary.bgR, p.primary.bgG, p.primary.bgB = r, g, b
-                    p.secondary.barBgR, p.secondary.barBgG, p.secondary.barBgB = r, g, b
+                    p.health.bgR, p.health.bgG, p.health.bgB = red, green, blue
+                    p.primary.bgR, p.primary.bgG, p.primary.bgB = red, green, blue
+                    p.secondary.barBgR, p.secondary.barBgG, p.secondary.barBgB = red, green, blue
                 end
                 SmoothRefresh()
                 CludesUI:RefreshPage()
@@ -539,12 +539,12 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                             (p and p.health.bgG or 0x11 / 255),
                             (p and p.health.bgB or 0x11 / 255)
                     end,
-                    function(r, g, b)
+                    function(red, green, blue)
                         local p = DB()
                         if not p then
                             return
                         end
-                        p.health.bgR, p.health.bgG, p.health.bgB = r, g, b
+                        p.health.bgR, p.health.bgG, p.health.bgB = red, green, blue
                         SmoothRefresh()
                         CludesUI:RefreshPage()
                     end,
@@ -566,12 +566,12 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                             (p and p.primary.bgG or 0x11 / 255),
                             (p and p.primary.bgB or 0x11 / 255)
                     end,
-                    function(r, g, b)
+                    function(red, green, blue)
                         local p = DB()
                         if not p then
                             return
                         end
-                        p.primary.bgR, p.primary.bgG, p.primary.bgB = r, g, b
+                        p.primary.bgR, p.primary.bgG, p.primary.bgB = red, green, blue
                         SmoothRefresh()
                         CludesUI:RefreshPage()
                     end,
@@ -949,13 +949,13 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                             (g and g.classicBorderAllSepB) or 0,
                             1
                     end,
-                    set = function(r, g, b)
+                    set = function(red, green, blue)
                         local p = DB()
                         if not p then
                             return
                         end
                         p.general.classicBorderAllSepR, p.general.classicBorderAllSepG, p.general.classicBorderAllSepB =
-                            r, g, b
+                            red, green, blue
                         redraw()
                     end,
                 },
@@ -1476,15 +1476,15 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         tooltip = "Spell Cost Color",
                         getValue = function()
                             local p = DB()
-                            local r, g, b = SCP.Color(p and p.primary)
-                            return r, g, b, 1
+                            local red, green, b = SCP.Color(p and p.primary)
+                            return red, green, b, 1
                         end,
-                        setValue = function(r, g, b)
+                        setValue = function(red, green, blue)
                             local p = DB()
                             if not p then
                                 return
                             end
-                            p.primary.powerCostColor = { r = r, g = g, b = b }
+                            p.primary.powerCostColor = { r = red, g = green, b = blue }
                         end,
                     },
                 }, {
@@ -1852,12 +1852,12 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                 end
                                 return t.textFillR or 1, t.textFillG or 1, t.textFillB or 1, t.textFillA or 1
                             end,
-                            setValue = function(r, g, b, a)
+                            setValue = function(red, green, blue, a)
                                 local t = FdmCfg()
                                 if not t then
                                     return
                                 end
-                                t.textFillR, t.textFillG, t.textFillB, t.textFillA = r, g, b, a
+                                t.textFillR, t.textFillG, t.textFillB, t.textFillA = red, green, blue, a
                                 RefreshFDM()
                             end,
                             onClick = function(self)
@@ -2238,13 +2238,13 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         local a = p.arcaneSoul
                         return a.preR or 0.64, a.preG or 0.21, a.preB or 0.93
                     end,
-                    setValue = function(r, g, b)
+                    setValue = function(red, green, blue)
                         local p = DB()
                         if not p then
                             return
                         end
                         local a = p.arcaneSoul
-                        a.preR, a.preG, a.preB = r, g, b
+                        a.preR, a.preG, a.preB = red, green, blue
                         RefreshAS()
                     end,
                 },
@@ -2259,13 +2259,13 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         local a = p.arcaneSoul
                         return a.soulR or 0.64, a.soulG or 0.21, a.soulB or 0.93
                     end,
-                    setValue = function(r, g, b)
+                    setValue = function(red, green, blue)
                         local p = DB()
                         if not p then
                             return
                         end
                         local a = p.arcaneSoul
-                        a.soulR, a.soulG, a.soulB = r, g, b
+                        a.soulR, a.soulG, a.soulB = red, green, blue
                         RefreshAS()
                     end,
                 },
@@ -2286,13 +2286,13 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         local a = p.arcaneSoul
                         return a.lastR or 1.0, a.lastG or 0.25, a.lastB or 0.25
                     end,
-                    setValue = function(r, g, b)
+                    setValue = function(red, green, blue)
                         local p = DB()
                         if not p then
                             return
                         end
                         local a = p.arcaneSoul
-                        a.lastR, a.lastG, a.lastB = r, g, b
+                        a.lastR, a.lastG, a.lastB = red, green, blue
                         RefreshAS()
                     end,
                 },

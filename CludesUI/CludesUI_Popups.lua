@@ -175,7 +175,7 @@ end
 -- secondary; hoverA (secondary border alpha on hover); hoverRGB {r,g,b} (secondary
 -- hovers to that colour instead, border alpha 0.95); square (the square outline,
 -- for a window that is square by design). The caller anchors it.
-function CludesUI.MakeActionButton(parent, font, text, r, g, b, options)
+function CludesUI.MakeActionButton(parent, font, text, red, green, blue, options)
     local secondary, hoverRGB = options.secondary, options.hoverRGB
     local button = CreateFrame("Button", nil, parent)
     button:SetFrameLevel(parent:GetFrameLevel() + 2)
@@ -185,27 +185,27 @@ function CludesUI.MakeActionButton(parent, font, text, r, g, b, options)
     bbg:SetColorTexture(0.062, 0.070, 0.082, 0.92)
     local brd
     if options.square then
-        brd = MakeBorder(button, r, g, b, secondary and 0.35 or 0.9, PanelPP)
+        brd = MakeBorder(button, red, green, blue, secondary and 0.35 or 0.9, PanelPP)
     else
-        brd = CludesUI.MakeRoundedBorder(button, r, g, b, secondary and 0.35 or 0.9, bbg)
+        brd = CludesUI.MakeRoundedBorder(button, red, green, blue, secondary and 0.35 or 0.9, bbg)
     end
     local caption = button:CreateFontString(nil, "OVERLAY")
     caption:SetFont(font, 15, "")
     PanelPP.Point(caption, "CENTER", button, "CENTER", 0, 0)
-    caption:SetTextColor(r, g, b, secondary and 0.55 or 0.9)
+    caption:SetTextColor(red, green, blue, secondary and 0.55 or 0.9)
     caption:SetText(text)
     button:SetScript("OnEnter", function()
         if secondary and hoverRGB then
             caption:SetTextColor(hoverRGB[1], hoverRGB[2], hoverRGB[3], 1)
             brd:SetColor(hoverRGB[1], hoverRGB[2], hoverRGB[3], 0.95)
         else
-            caption:SetTextColor(r, g, b, 1)
-            brd:SetColor(r, g, b, secondary and options.hoverA or 1)
+            caption:SetTextColor(red, green, blue, 1)
+            brd:SetColor(red, green, blue, secondary and options.hoverA or 1)
         end
     end)
     button:SetScript("OnLeave", function()
-        caption:SetTextColor(r, g, b, secondary and 0.55 or 0.9)
-        brd:SetColor(r, g, b, secondary and 0.35 or 0.9)
+        caption:SetTextColor(red, green, blue, secondary and 0.55 or 0.9)
+        brd:SetColor(red, green, blue, secondary and 0.35 or 0.9)
     end)
     -- The label, for a popup that changes its font later (the Talent Conditions
     -- picker takes its opener's module font).
@@ -1701,8 +1701,8 @@ function CludesUI:ShowInputPopup(options)
             if not swatchOpts then
                 return
             end
-            local r, g, b = swatchOpts.get()
-            fill:SetColorTexture(r or 1, g or 1, b or 1, 1)
+            local red, green, blue = swatchOpts.get()
+            fill:SetColorTexture(red or 1, green or 1, blue or 1, 1)
         end
         dialog._closePicker = function()
             local picker = dialog._swatchOpts and CludesUI._colorPickerPopup

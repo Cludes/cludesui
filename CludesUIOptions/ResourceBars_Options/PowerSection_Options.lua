@@ -424,12 +424,12 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             (c and c.borderB or 0),
                             (c and c.borderA or 1)
                     end,
-                    function(r, g, b, a)
+                    function(red, green, blue, a)
                         local c = rowConf()
                         if not c then
                             return
                         end
-                        c.borderR, c.borderG, c.borderB, c.borderA = r, g, b, a
+                        c.borderR, c.borderG, c.borderB, c.borderA = red, green, blue, a
                         SmoothRefresh()
                         CludesUI:RefreshPage()
                     end,
@@ -764,19 +764,19 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             return
                         end
                         local was = mod.ERB_TexturedBars(p)
-                        local r, g, b, a =
+                        local red, green, blue, a =
                             p.primary.borderR, p.primary.borderG, p.primary.borderB, p.primary.borderA
                         local sz = p.primary.borderSize or 1
                         local bt = p.primary.borderTexture or "solid"
                         local cr, cm = p.primary.cornerRadius or 0, p.primary.cornerMask
                         p.secondary.borderR, p.secondary.borderG, p.secondary.borderB, p.secondary.borderA =
-                            r, g, b, a
+                            red, green, blue, a
                         p.secondary.borderSize = sz
                         p.secondary.borderTexture = bt
                         p.secondary.cornerRadius = cr
                         p.secondary.cornerMask = cm
                         mod.ERB_CopyBorderPx(p.secondary, p.primary)
-                        p.health.borderR, p.health.borderG, p.health.borderB, p.health.borderA = r, g, b, a
+                        p.health.borderR, p.health.borderG, p.health.borderB, p.health.borderA = red, green, blue, a
                         p.health.borderSize = sz
                         p.health.borderTexture = bt
                         p.health.cornerRadius = cr
@@ -956,12 +956,12 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         end
                         return c.gradientR, c.gradientG, c.gradientB, c.gradientA
                     end,
-                    setValue = function(r, g, b, a)
+                    setValue = function(red, green, blue, a)
                         local c = rowConf()
                         if not c then
                             return
                         end
-                        c.gradientR, c.gradientG, c.gradientB, c.gradientA = r, g, b, a
+                        c.gradientR, c.gradientG, c.gradientB, c.gradientA = red, green, blue, a
                         SmoothRefresh()
                     end,
                 },
@@ -975,12 +975,12 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         end
                         return c.fillR, c.fillG, c.fillB, 1
                     end,
-                    setValue = function(r, g, b)
+                    setValue = function(red, green, blue)
                         local c = rowConf()
                         if not c then
                             return
                         end
-                        c.fillR, c.fillG, c.fillB = r, g, b
+                        c.fillR, c.fillG, c.fillB = red, green, blue
                         RebuildPower()
                         SmoothRefresh()
                     end,
@@ -1227,12 +1227,12 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         end
                         return c.textFillR, c.textFillG, c.textFillB, c.textFillA
                     end,
-                    setValue = function(r, g, b, a)
+                    setValue = function(red, green, blue, a)
                         local c = rowConf()
                         if not c then
                             return
                         end
-                        c.textFillR, c.textFillG, c.textFillB, c.textFillA = r, g, b, a
+                        c.textFillR, c.textFillG, c.textFillB, c.textFillA = red, green, blue, a
                         RebuildPower()
                         SmoothRefresh()
                     end,

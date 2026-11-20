@@ -39,8 +39,8 @@ function mod.UFO_EditCustomText(prefixText, db, unitToken, onSave)
     -- else the player, as the unit preview shows it.
     local function PowerColor()
         local u = unitToken == "boss" and "boss1" or unitToken
-        local r, g, b = CludesUI.ResolveUnitPowerColor((u and UnitExists(u)) and u or "player")
-        return r and { r = r, g = g, b = b }
+        local red, green, blue = CludesUI.ResolveUnitPowerColor((u and UnitExists(u)) and u or "player")
+        return red and { r = red, g = green, b = blue }
     end
     if prefixText == "powerText" then
         -- The power text's own keys: Power Colored, else powerTextColor.

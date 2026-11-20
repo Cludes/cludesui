@@ -107,8 +107,8 @@ CludesUI.AtOptionsLogin(function()
             getValue = function()
                 return mod.FontColor(key)
             end,
-            setValue = function(r, g, b)
-                mod.SetFontColor(key, r, g, b)
+            setValue = function(red, green, blue)
+                mod.SetFontColor(key, red, green, blue)
                 if apply then
                     apply()
                 end

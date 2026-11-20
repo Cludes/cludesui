@@ -603,10 +603,10 @@ local function GlowOn(state, edgeTex, backdrop, cornerRadius)
         right:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -o, runs[4])
         right:SetWidth(band)
     end
-    local r, g, b, a = backdrop:GetBackdropBorderColor()
+    local red, green, blue, a = backdrop:GetBackdropBorderColor()
     for idx = 1, 4 do
-        glowTex.corner[idx]:SetVertexColor(r, g, b, a)
-        glowTex.edge[idx]:SetVertexColor(r, g, b, a)
+        glowTex.corner[idx]:SetVertexColor(red, green, blue, a)
+        glowTex.edge[idx]:SetVertexColor(red, green, blue, a)
     end
     backdrop:SetAlpha(0)
     f:Show()
@@ -639,7 +639,7 @@ local function Clear(state)
     CludesUI.RegisterPxReapply(state.owner, nil)
 end
 
-local function OnBorderColor(borderFrame, r, g, b, a)
+local function OnBorderColor(borderFrame, red, green, blue, a)
     local state = byBorder[borderFrame]
     if not state then
         return
@@ -647,13 +647,13 @@ local function OnBorderColor(borderFrame, r, g, b, a)
     a = a or 1
     local shadow = state.solid
     if shadow and shadow.on then
-        shadow.fill:SetVertexColor(r, g, b, a)
+        shadow.fill:SetVertexColor(red, green, blue, a)
     end
     local glowTex = state.glow
     if glowTex and glowTex.on then
         for idx = 1, 4 do
-            glowTex.corner[idx]:SetVertexColor(r, g, b, a)
-            glowTex.edge[idx]:SetVertexColor(r, g, b, a)
+            glowTex.corner[idx]:SetVertexColor(red, green, blue, a)
+            glowTex.edge[idx]:SetVertexColor(red, green, blue, a)
         end
     end
 end
@@ -1028,15 +1028,15 @@ local function HouseRadius(halfSize)
     return (halfSize and halfSize * 2 >= PANEL_SIDE) and OUTLINE_RADIUS or CONTROL_RADIUS
 end
 
-local function OutlineSetColor(self, r, g, b, a)
-    self._fill:SetVertexColor(r, g, b, a or 1)
+local function OutlineSetColor(self, red, green, blue, a)
+    self._fill:SetVertexColor(red, green, blue, a or 1)
 end
 
 -- o:SetCover(r, g, b): an opaque fill in the colour the control sits on,
 -- under the outline, over its band and the corners outside it. A control of
 -- stacked layers drawn square below it then reads rounded with its edge
 -- blended once, where masks on each layer let the lower ones show through.
-local function OutlineSetCover(self, r, g, b)
+local function OutlineSetCover(self, red, green, blue)
     local coverTex = self.cover
     if not coverTex then
         coverTex = self._frame:CreateTexture(nil, "BORDER", nil, 6)
@@ -1046,7 +1046,7 @@ local function OutlineSetCover(self, r, g, b)
             AddMask(coverTex, self.hole)
         end
     end
-    coverTex:SetColorTexture(r, g, b, 1)
+    coverTex:SetColorTexture(red, green, blue, 1)
 end
 
 -- The radius in whole pixels from the parent's scale (at most what the height
@@ -1282,12 +1282,12 @@ local function InnerMask(o)
     return innerMask
 end
 
-function CludesUI.MakeRoundedBorder(hostFrame, r, g, b, a, body, cornerRadius, clip, width)
+function CludesUI.MakeRoundedBorder(hostFrame, red, green, blue, a, body, cornerRadius, clip, width)
     local o = CludesUI.MakePixelLayer(hostFrame, FitOutline)
     local drawLayer = o._frame
     local fillTex = drawLayer:CreateTexture(nil, "BORDER", nil, 7)
     fillTex:SetAllPoints(drawLayer)
-    fillTex:SetVertexColor(r or 0, g or 0, b or 0, a or 1)
+    fillTex:SetVertexColor(red or 0, green or 0, blue or 0, a or 1)
     -- One unit is one pixel on the layer: width px in from every edge.
     local wid = width or 1
     o.width = wid
@@ -1365,10 +1365,10 @@ local function CardClip(o, texture)
     MaskWhenLoaded(texture, InnerMask(o))
 end
 
-function CludesUI.MakeRoundedCard(hostFrame, brdA, bgA, accentH, r, g, b)
+function CludesUI.MakeRoundedCard(hostFrame, brdA, bgA, accentH, red, green, blue)
     local backdrop = hostFrame:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    backdrop:SetColorTexture(r or CARD_R, g or CARD_G, b or CARD_B, bgA or 0.5)
+    backdrop:SetColorTexture(red or CARD_R, green or CARD_G, blue or CARD_B, bgA or 0.5)
     local o = CludesUI.MakeRoundedBorder(hostFrame, 1, 1, 1, brdA or 0.12, backdrop)
     o.bg, o.Clip = backdrop, CardClip
     if accentH then
@@ -1409,9 +1409,9 @@ function CludesUI.OutlineButton(button, backdrop, primary)
         return 1, 1, 1
     end
     local rest, lit = primary and 0.7 or 0.22, primary and 1 or 0.45
-    local r, g, b = Colour()
-    backdrop:SetColorTexture(r, g, b, 0.06)
-    local brd = CludesUI.MakeRoundedBorder(button, r, g, b, rest, backdrop, 2)
+    local red, green, blue = Colour()
+    backdrop:SetColorTexture(red, green, blue, 0.06)
+    local brd = CludesUI.MakeRoundedBorder(button, red, green, blue, rest, backdrop, 2)
     local function Label()
         for _, regionFrame in ipairs({ button:GetRegions() }) do
             if regionFrame:GetObjectType() == "FontString" then

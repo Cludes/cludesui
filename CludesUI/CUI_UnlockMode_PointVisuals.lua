@@ -20,18 +20,18 @@ end
 
 function visuals.ColorDot(art, alpha)
     art.colorAlpha = alpha
-    local r, g, b, a = CludesUI.GetPointAnchorColor("point")
-    art.fill:SetVertexColor(r, g, b, a * alpha)
-    r, g, b, a = CludesUI.GetPointAnchorColor("border")
-    art.border:SetVertexColor(r, g, b, a * alpha)
+    local red, green, blue, a = CludesUI.GetPointAnchorColor("point")
+    art.fill:SetVertexColor(red, green, blue, a * alpha)
+    red, green, blue, a = CludesUI.GetPointAnchorColor("border")
+    art.border:SetVertexColor(red, green, blue, a * alpha)
 end
 
-function CludesUI.SetPointAnchorColor(kind, r, g, b, a)
+function CludesUI.SetPointAnchorColor(kind, red, green, blue, a)
     if not defaultSet[kind] then
         return
     end
     CludesUIDB.unlockPointColors = CludesUIDB.unlockPointColors or {}
-    CludesUIDB.unlockPointColors[kind] = { r, g, b, a }
+    CludesUIDB.unlockPointColors[kind] = { red, green, blue, a }
     if dots and kind ~= "line" then
         for idx = 1, #dots do
             visuals.ColorDot(dots[idx], dots[idx].colorAlpha)

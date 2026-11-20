@@ -179,10 +179,10 @@ local function BuildPage(_, host, yOffset)
                         end
                         return s.borderR, s.borderG, s.borderB
                     end,
-                    setValue = function(r, g, b)
+                    setValue = function(red, green, blue)
                         local s = Settings()
                         if s then
-                            s.borderR, s.borderG, s.borderB = r, g, b
+                            s.borderR, s.borderG, s.borderB = red, green, blue
                             Reapply()
                         end
                     end,

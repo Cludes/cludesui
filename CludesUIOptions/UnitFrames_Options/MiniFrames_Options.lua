@@ -267,8 +267,8 @@ local function BuildMiniTextAndSize(
             local hoverSwatch, updHover = CludesUI.BuildColorSwatch(rightRegion, lvl, function()
                 local c = unitSettings.bossHoverBorderColor or { r = 1, g = 1, b = 1 }
                 return c.r, c.g, c.b, unitSettings.bossHoverBorderAlpha or 1
-            end, function(r, g, b, a)
-                unitSettings.bossHoverBorderColor = { r = r, g = g, b = b }
+            end, function(red, green, blue, a)
+                unitSettings.bossHoverBorderColor = { r = red, g = green, b = blue }
                 unitSettings.bossHoverBorderAlpha = a
                 ReloadAndUpdate()
             end, true, 20)
@@ -279,8 +279,8 @@ local function BuildMiniTextAndSize(
             local targetSwatch, updTarget = CludesUI.BuildColorSwatch(rightRegion, lvl, function()
                 local c = unitSettings.bossTargetBorderColor or { r = 1, g = 1, b = 1 }
                 return c.r, c.g, c.b, unitSettings.bossTargetBorderAlpha or 1
-            end, function(r, g, b, a)
-                unitSettings.bossTargetBorderColor = { r = r, g = g, b = b }
+            end, function(red, green, blue, a)
+                unitSettings.bossTargetBorderColor = { r = red, g = green, b = blue }
                 unitSettings.bossTargetBorderAlpha = a
                 ReloadAndUpdate()
             end, true, 20)
@@ -536,8 +536,8 @@ local function BuildMiniTextAndSize(
                         end
                         return 37 / 255, 193 / 255, 29 / 255
                     end,
-                    setValue = function(r, g, b)
-                        unitSettings.customFillColor = { r = r, g = g, b = b }
+                    setValue = function(red, green, blue)
+                        unitSettings.customFillColor = { r = red, g = green, b = blue }
                         ReloadAndUpdate()
                     end,
                     onClick = function(self)
@@ -724,8 +724,8 @@ local function BuildMiniTextAndSize(
                         end
                         return 17 / 255, 17 / 255, 17 / 255
                     end,
-                    setValue = function(r, g, b)
-                        unitSettings.customBgColor = { r = r, g = g, b = b }
+                    setValue = function(red, green, blue)
+                        unitSettings.customBgColor = { r = red, g = green, b = blue }
                         ReloadAndUpdate()
                     end,
                     onClick = function(self)
@@ -938,8 +938,8 @@ local function BuildMiniTextAndSize(
                         end
                         return 1, 1, 1
                     end,
-                    setValue = function(r, g, b)
-                        MSet(sepKey, { r = r, g = g, b = b })
+                    setValue = function(red, green, blue)
+                        MSet(sepKey, { r = red, g = green, b = blue })
                     end,
                     onClick = function(self)
                         if MVal(sepClassKey, false) then
@@ -1064,10 +1064,10 @@ local function BuildMiniTextAndSize(
                 CludesUI.HoverTip(classSw, "Class Colored")
                 local sw, swUp = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
                     return MVal(settingKey .. "ColorR", 1), MVal(settingKey .. "ColorG", 1), MVal(settingKey .. "ColorB", 1)
-                end, function(r, g, b)
-                    unitSettings[settingKey .. "ColorR"] = r
-                    unitSettings[settingKey .. "ColorG"] = g
-                    unitSettings[settingKey .. "ColorB"] = b
+                end, function(red, green, blue)
+                    unitSettings[settingKey .. "ColorR"] = red
+                    unitSettings[settingKey .. "ColorG"] = green
+                    unitSettings[settingKey .. "ColorB"] = blue
                     ReloadAndUpdate()
                 end, nil, 20)
                 Pix.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
@@ -1297,8 +1297,8 @@ local function BuildMiniTextAndSize(
                 end
                 return 0, 0, 1
             end
-            local fSet = function(r, g, b)
-                unitSettings.customPowerFillColor = { r = r, g = g, b = b }
+            local fSet = function(red, green, blue)
+                unitSettings.customPowerFillColor = { r = red, g = green, b = blue }
                 ReloadAndUpdate()
             end
             local fSw, fSwUp =
@@ -1431,8 +1431,8 @@ local function BuildMiniTextAndSize(
                     end
                     return 1, 1, 1
                 end,
-                function(r, g, b)
-                    unitSettings.powerTextColor = { r = r, g = g, b = b }
+                function(red, green, blue)
+                    unitSettings.powerTextColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                 end,
                 false,
@@ -1552,8 +1552,8 @@ local function BuildMiniTextAndSize(
                     local c = MGet("powerBorderColor") or { r = 0, g = 0, b = 0 }
                     return c.r, c.g, c.b, MVal("powerBorderAlpha", 1)
                 end,
-                function(r, g, b, a)
-                    unitSettings.powerBorderColor = { r = r, g = g, b = b }
+                function(red, green, blue, a)
+                    unitSettings.powerBorderColor = { r = red, g = green, b = blue }
                     unitSettings.powerBorderAlpha = a
                     ReloadAndUpdate()
                 end,
@@ -2394,8 +2394,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 return c.r, c.g, c.b
             end
             return 1, 1, 1
-        end, function(r, g, b)
-            saved.profile.boss[settingKey] = { r = r, g = g, b = b }
+        end, function(red, green, blue)
+            saved.profile.boss[settingKey] = { r = red, g = green, b = blue }
             ReloadAndUpdate()
         end, false, 20)
         sw:HookScript("OnEnter", function()
@@ -3920,10 +3920,10 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                                 B.auraBorderB or 0,
                                 B.auraBorderA or 1
                         end,
-                        function(r, g, b, a)
-                            B.auraBorderR = r
-                            B.auraBorderG = g
-                            B.auraBorderB = b
+                        function(red, green, blue, a)
+                            B.auraBorderR = red
+                            B.auraBorderG = green
+                            B.auraBorderB = blue
                             B.auraBorderA = a
                             ReloadAndUpdate()
                         end,
@@ -4535,8 +4535,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 local sw, updateSw = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
                     local c = B[colorKey] or fallback
                     return c.r, c.g, c.b, 1
-                end, function(r, g, b)
-                    B[colorKey] = { r = r, g = g, b = b }
+                end, function(red, green, blue)
+                    B[colorKey] = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                 end, false, 20)
                 sw:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -4748,8 +4748,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         return c.r, c.g, c.b
                     end
                     return 0, 0, 0
-                end, function(r, g, b)
-                    B.castBgColor = { r = r, g = g, b = b }
+                end, function(red, green, blue)
+                    B.castBgColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                 end, false, 20)
                 sw:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -4846,8 +4846,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 local sw = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
                     local c = B.castSpellNameColor or { r = 1, g = 1, b = 1 }
                     return c.r, c.g, c.b
-                end, function(r, g, b)
-                    B.castSpellNameColor = { r = r, g = g, b = b }
+                end, function(red, green, blue)
+                    B.castSpellNameColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                 end, false, 20)
                 sw:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -4891,8 +4891,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 local sw = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
                     local c = B.castDurationColor or { r = 1, g = 1, b = 1 }
                     return c.r, c.g, c.b
-                end, function(r, g, b)
-                    B.castDurationColor = { r = r, g = g, b = b }
+                end, function(red, green, blue)
+                    B.castDurationColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                 end, false, 20)
                 sw:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)

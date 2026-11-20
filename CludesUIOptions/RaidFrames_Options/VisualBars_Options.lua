@@ -180,12 +180,12 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                                 local g = pct > 0.5 and 1 or (pct * 2)
                                 f._health:SetStatusBarColor(r, g, 0, (s.healthBarOpacity or 100) / 100)
                             elseif s.healthColorMode == "customDynamic" then
-                                local r, g, b = mod.ResolveDynamicColor(s, st.current / 100)
-                                f._health:SetStatusBarColor(r, g, b, (s.healthBarOpacity or 100) / 100)
+                                local red, green, blue = mod.ResolveDynamicColor(s, st.current / 100)
+                                f._health:SetStatusBarColor(red, green, blue, (s.healthBarOpacity or 100) / 100)
                             elseif s.healthColorMode == "classReactive" then
-                                local r, g, b =
+                                local red, green, blue =
                                     mod.ResolveClassReactiveColor(s, f._classToken, st.current / 100)
-                                f._health:SetStatusBarColor(r, g, b, (s.healthBarOpacity or 100) / 100)
+                                f._health:SetStatusBarColor(red, green, blue, (s.healthBarOpacity or 100) / 100)
                             end
                         end -- snapTimer ready
                     end
@@ -406,8 +406,8 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                 return c.r, c.g, c.b, 1
             end
             return 37 / 255, 193 / 255, 29 / 255, 1
-        end, function(r, g, b)
-            SWrite("customFillColor", { r = r, g = g, b = b })
+        end, function(red, green, blue)
+            SWrite("customFillColor", { r = red, g = green, b = blue })
             ReloadAndUpdate()
         end, false, 20)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -449,8 +449,8 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
             local sw = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
                 local c = SGet(dropdown.key) or dropdown.def
                 return c.r, c.g, c.b, 1
-            end, function(r, g, b)
-                SWrite(dropdown.key, { r = r, g = g, b = b })
+            end, function(red, green, blue)
+                SWrite(dropdown.key, { r = red, g = green, b = blue })
                 ReloadAndUpdate()
             end, false, 18)
             sw:SetPoint("RIGHT", prevAnchor, "LEFT", (prevAnchor == region._control) and -8 or -6, 0)
@@ -528,8 +528,8 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                 return c.r, c.g, c.b, 1
             end
             return 17 / 255, 17 / 255, 17 / 255, 1
-        end, function(r, g, b)
-            SWrite("customBgColor", { r = r, g = g, b = b })
+        end, function(red, green, blue)
+            SWrite("customBgColor", { r = red, g = green, b = blue })
             ReloadAndUpdate()
         end, false, 20)
         bgSwatch._eabOrigClick = bgSwatch:GetScript("OnClick")
@@ -620,8 +620,8 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                 return c.r, c.g, c.b, 1
             end
             return 102 / 255, 243 / 255, 102 / 255, 1
-        end, function(r, g, b)
-            SWrite("healPredColor", { r = r, g = g, b = b })
+        end, function(red, green, blue)
+            SWrite("healPredColor", { r = red, g = green, b = blue })
             ReloadAndUpdate()
         end, false, 20)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -976,8 +976,8 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                 return c.r, c.g, c.b, 1
             end
             return 1, 1, 1, 1
-        end, function(r, g, b)
-            SWrite("absorbColor", { r = r, g = g, b = b })
+        end, function(red, green, blue)
+            SWrite("absorbColor", { r = red, g = green, b = blue })
             ReloadAndUpdate()
         end, false, 20)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1090,8 +1090,8 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                 return c.r, c.g, c.b, c.a or 1
             end
             return 1, 1, 1, 1
-        end, function(r, g, b, a)
-            SWrite("absorbBarColor", { r = r, g = g, b = b, a = a })
+        end, function(red, green, blue, a)
+            SWrite("absorbBarColor", { r = red, g = green, b = blue, a = a })
             ReloadAndUpdate()
         end, true, 20)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1207,8 +1207,8 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                 return c.r or 0.8, c.g or 0.15, c.b or 0.15, 1
             end
             return 0.8, 0.15, 0.15, 1
-        end, function(r, g, b)
-            SWrite("healAbsorbColor", { r = r, g = g, b = b })
+        end, function(red, green, blue)
+            SWrite("healAbsorbColor", { r = red, g = green, b = blue })
             ReloadAndUpdate()
         end, false, 20)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1296,8 +1296,8 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                     end
                     return 200 / 255, 29 / 255, 29 / 255, 1
                 end,
-                function(r, g, b, a)
-                    SWrite("healAbsorbBarColor", { r = r, g = g, b = b, a = a })
+                function(red, green, blue, a)
+                    SWrite("healAbsorbBarColor", { r = red, g = green, b = blue, a = a })
                     ReloadAndUpdate()
                 end,
                 true,
@@ -1407,8 +1407,8 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                     return c.r or 0.7, c.g or 0.1, c.b or 0.1, 1
                 end
                 return 0.7, 0.1, 0.1, 1
-            end, function(r, g, b)
-                SWrite("maxHealthColor", { r = r, g = g, b = b })
+            end, function(red, green, blue)
+                SWrite("maxHealthColor", { r = red, g = green, b = blue })
                 ReloadAndUpdate()
             end, false, 20)
             colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1827,8 +1827,8 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                 end
                 return 0, 0, 0, 1
             end,
-            function(r, g, b, a)
-                SWrite("powerBorderColor", { r = r, g = g, b = b })
+            function(red, green, blue, a)
+                SWrite("powerBorderColor", { r = red, g = green, b = blue })
                 SWrite("powerBorderAlpha", a)
                 ReloadAndUpdate()
             end,
@@ -1930,8 +1930,8 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                 return c.r, c.g, c.b, 1
             end
             return 0, 0, 0, 1
-        end, function(r, g, b)
-            SWrite("powerBgColor", { r = r, g = g, b = b })
+        end, function(red, green, blue)
+            SWrite("powerBgColor", { r = red, g = green, b = blue })
             ReloadAndUpdate()
         end, false, 20)
         bgSwatch._eabOrigClick = bgSwatch:GetScript("OnClick")

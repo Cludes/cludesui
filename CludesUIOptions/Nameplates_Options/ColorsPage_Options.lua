@@ -53,8 +53,8 @@ if CludesUI.IS_FOREVER then
                     end
                     return 1, 1, 1
                 end,
-                set = function(r, g, b)
-                    set(colorKey, { r = r, g = g, b = b })
+                set = function(red, green, blue)
+                    set(colorKey, { r = red, g = green, b = blue })
                 end,
             }
         end
@@ -795,13 +795,13 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
                     local c = e and e.color or DC.SINGLE_COLOR
                     return c.r, c.g, c.b
                 end,
-                setValue = function(r, g, b)
+                setValue = function(red, green, blue)
                     local singles, combos = Read(swatchCell.class)
                     local e = singles[swatchCell.n]
                     if not e then
                         return
                     end
-                    e.color = { r = r, g = g, b = b }
+                    e.color = { r = red, g = green, b = blue }
                     Write(swatchCell.class, singles, combos)
                 end,
                 disabled = function()
@@ -981,13 +981,13 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
                     local c = keyName and keyName.color or DC.COMBO_COLOR
                     return c.r, c.g, c.b
                 end,
-                setValue = function(r, g, b)
+                setValue = function(red, green, blue)
                     local singles, combos = Read(swatchCell.class)
                     local keyName = combos[swatchCell.n]
                     if not keyName then
                         return
                     end
-                    keyName.color = { r = r, g = g, b = b }
+                    keyName.color = { r = red, g = green, b = blue }
                     Write(swatchCell.class, singles, combos)
                 end,
             },
@@ -1389,9 +1389,9 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
                 if mode == "class" then
                     swatchColor = (DB() and DB().enemyNameHostileColor) or defaultSet.hostile
                 elseif mode == "level" then
-                    local r, g, b = mod.NP_UnitLevelColor("player")
-                    if r then
-                        swatchColor = { r = r, g = g, b = b }
+                    local red, green, blue = mod.NP_UnitLevelColor("player")
+                    if red then
+                        swatchColor = { r = red, g = green, b = blue }
                     end
                 end
                 if element == "healthPercent" or element == "healthPercentNoSign" then
@@ -1831,8 +1831,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function()
                     return DBColor("enemyInCombat")
                 end,
-                setValue = function(r, g, b)
-                    DB().enemyInCombat = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().enemyInCombat = { r = red, g = green, b = blue }
                     RefreshAllPlates()
                 end,
             },
@@ -1841,8 +1841,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function()
                     return DBColor("caster")
                 end,
-                setValue = function(r, g, b)
-                    DB().caster = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().caster = { r = red, g = green, b = blue }
                     RefreshAllPlates()
                 end,
             },
@@ -1851,8 +1851,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function()
                     return DBColor("miniboss")
                 end,
-                setValue = function(r, g, b)
-                    DB().miniboss = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().miniboss = { r = red, g = green, b = blue }
                     RefreshAllPlates()
                 end,
             },
@@ -1861,8 +1861,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function()
                     return DBColor("boss")
                 end,
-                setValue = function(r, g, b)
-                    DB().boss = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().boss = { r = red, g = green, b = blue }
                     RefreshAllPlates()
                 end,
             },
@@ -1908,8 +1908,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                     local c = (saved and saved.darkenOOCColor) or defaultSet.darkenOOCColor
                     return c.r, c.g, c.b
                 end,
-                setValue = function(r, g, b)
-                    DB().darkenOOCColor = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().darkenOOCColor = { r = red, g = green, b = blue }
                     if mod.NP_CastTintsDirty then
                         mod.NP_CastTintsDirty()
                     end
@@ -1955,8 +1955,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                     get = function()
                         return DBColor("owBasicColor")
                     end,
-                    set = function(r, g, b)
-                        DB().owBasicColor = { r = r, g = g, b = b }
+                    set = function(red, green, blue)
+                        DB().owBasicColor = { r = red, g = green, b = blue }
                         RefreshAllPlates()
                     end,
                     disabled = isOWOff,
@@ -1977,8 +1977,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function()
                     return DBColor("neutral")
                 end,
-                setValue = function(r, g, b)
-                    DB().neutral = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().neutral = { r = red, g = green, b = blue }
                     RefreshAllPlates()
                 end,
             },
@@ -1992,8 +1992,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                         or defaultSet.enemyInCombat
                     return c.r, c.g, c.b
                 end,
-                setValue = function(r, g, b)
-                    DB().miniEnemy = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().miniEnemy = { r = red, g = green, b = blue }
                     RefreshAllPlates()
                 end,
             },
@@ -2022,8 +2022,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
             local c = DB().questMobColor or defaultSet.questMobColor
             return c.r, c.g, c.b
         end
-        local questColorSet = function(r, g, b)
-            DB().questMobColor = { r = r, g = g, b = b }
+        local questColorSet = function(red, green, blue)
+            DB().questMobColor = { r = red, g = green, b = blue }
             RefreshAllPlates()
         end
         local isQuestOff = function()
@@ -2146,8 +2146,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function()
                     return DBColor("castingIntColor")
                 end,
-                setValue = function(r, g, b)
-                    DB().castingIntColor = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().castingIntColor = { r = red, g = green, b = blue }
                     RefreshAllPlates()
                 end,
             },
@@ -2156,8 +2156,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function()
                     return DBColor("castingUnintColor")
                 end,
-                setValue = function(r, g, b)
-                    DB().castingUnintColor = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().castingUnintColor = { r = red, g = green, b = blue }
                     RefreshAllPlates()
                 end,
             },
@@ -2215,8 +2215,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function()
                     return DBColor("tankLosingAggro")
                 end,
-                setValue = function(r, g, b)
-                    DB().tankLosingAggro = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().tankLosingAggro = { r = red, g = green, b = blue }
                     RefreshAllPlates()
                 end,
             },
@@ -2225,8 +2225,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function()
                     return DBColor("tankNoAggro")
                 end,
-                setValue = function(r, g, b)
-                    DB().tankNoAggro = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().tankNoAggro = { r = red, g = green, b = blue }
                     RefreshAllPlates()
                 end,
             },
@@ -2312,8 +2312,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function()
                     return DBColor("dpsHasAggro")
                 end,
-                setValue = function(r, g, b)
-                    DB().dpsHasAggro = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().dpsHasAggro = { r = red, g = green, b = blue }
                     RefreshAllPlates()
                 end,
             },
@@ -2322,8 +2322,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
                 getValue = function()
                     return DBColor("dpsNearAggro")
                 end,
-                setValue = function(r, g, b)
-                    DB().dpsNearAggro = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().dpsNearAggro = { r = red, g = green, b = blue }
                     RefreshAllPlates()
                 end,
             },
@@ -2386,8 +2386,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         local dpsNoAggroColorGet = function()
             return DBColor("dpsNoAggro")
         end
-        local dpsNoAggroColorSet = function(r, g, b)
-            DB().dpsNoAggro = { r = r, g = g, b = b }
+        local dpsNoAggroColorSet = function(red, green, blue)
+            DB().dpsNoAggro = { r = red, g = green, b = blue }
             RefreshAllPlates()
         end
 
@@ -2519,8 +2519,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         local aggroColorGet = function()
             return DBColor("tankHasAggro")
         end
-        local aggroColorSet = function(r, g, b)
-            DB().tankHasAggro = { r = r, g = g, b = b }
+        local aggroColorSet = function(red, green, blue)
+            DB().tankHasAggro = { r = red, g = green, b = blue }
             RefreshAllPlates()
         end
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
@@ -2541,8 +2541,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         local tankAggroColorGet = function()
             return DBColor("tankHasAggro")
         end
-        local tankAggroColorSet = function(r, g, b)
-            DB().tankHasAggro = { r = r, g = g, b = b }
+        local tankAggroColorSet = function(red, green, blue)
+            DB().tankHasAggro = { r = red, g = green, b = blue }
             RefreshAllPlates()
         end
 
@@ -2688,8 +2688,8 @@ local function BuildColorsPage(page, hostFrame, yOffset)
         local otColorGet = function()
             return DBColor("offTankAggro")
         end
-        local otColorSet = function(r, g, b)
-            DB().offTankAggro = { r = r, g = g, b = b }
+        local otColorSet = function(red, green, blue)
+            DB().offTankAggro = { r = red, g = green, b = blue }
             RefreshAllPlates()
         end
         local colorSwatch, updateSwatch =

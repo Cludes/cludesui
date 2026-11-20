@@ -195,10 +195,10 @@ CludesUI.AtOptionsLogin(function()
                         function()
                             return (Cfg("bgR") or 0.03), (Cfg("bgG") or 0.045), (Cfg("bgB") or 0.05)
                         end,
-                        function(r, g, b)
-                            Set("bgR", r)
-                            Set("bgG", g)
-                            Set("bgB", b)
+                        function(red, green, blue)
+                            Set("bgR", red)
+                            Set("bgG", green)
+                            Set("bgB", blue)
                             RefreshAll()
                         end,
                         false,
@@ -547,8 +547,8 @@ CludesUI.AtOptionsLogin(function()
                             local c = Cfg("panelBorderColor") or { r = 1, g = 1, b = 1 }
                             return c.r, c.g, c.b, Cfg("panelBorderOpacity") or 0.18
                         end,
-                        function(r, g, b, a)
-                            Set("panelBorderColor", { r = r, g = g, b = b })
+                        function(red, green, blue, a)
+                            Set("panelBorderColor", { r = red, g = green, b = blue })
                             Set("panelBorderOpacity", a)
                             Set("panelBorderColorMode", "custom")
                             if CHAT.ApplyExtendedBackground then
@@ -863,10 +863,10 @@ CludesUI.AtOptionsLogin(function()
                         getValue = function()
                             return (Cfg("iconR") or 1), (Cfg("iconG") or 1), (Cfg("iconB") or 1)
                         end,
-                        setValue = function(r, g, b)
-                            Set("iconR", r)
-                            Set("iconG", g)
-                            Set("iconB", b)
+                        setValue = function(red, green, blue)
+                            Set("iconR", red)
+                            Set("iconG", green)
+                            Set("iconB", blue)
                             if CHAT.ApplyIconColor then
                                 CHAT.ApplyIconColor()
                             end
@@ -1237,12 +1237,12 @@ CludesUI.AtOptionsLogin(function()
                             local c = Cfg(key) or fallback
                             return c.r, c.g, c.b, c.a == nil and fallback.a or c.a
                         end,
-                        setValue = function(r, g, b, a)
+                        setValue = function(red, green, blue, a)
                             if not withAlpha then
                                 local c = Cfg(key) or fallback
                                 a = c.a == nil and fallback.a or c.a
                             end
-                            Set(key, { r = r, g = g, b = b, a = a })
+                            Set(key, { r = red, g = green, b = blue, a = a })
                             Set(modeKey, "custom")
                             ApplyTabs()
                         end,
@@ -1329,10 +1329,10 @@ CludesUI.AtOptionsLogin(function()
                                 local c = Cfg("tabBackgroundColor") or fallback
                                 return c.r, c.g, c.b, c.a == nil and fallback.a or c.a
                             end,
-                            setValue = function(r, g, b)
+                            setValue = function(red, green, blue)
                                 local c = Cfg("tabBackgroundColor") or fallback
                                 local a = c.a == nil and fallback.a or c.a
-                                Set("tabBackgroundColor", { r = r, g = g, b = b, a = a })
+                                Set("tabBackgroundColor", { r = red, g = green, b = blue, a = a })
                                 if CHAT.ApplyTabAppearance then
                                     CHAT.ApplyTabAppearance()
                                 end
@@ -1409,8 +1409,8 @@ CludesUI.AtOptionsLogin(function()
                                     or { r = 0.05, g = 0.82, b = 0.61, a = 1 }
                                 return c.r, c.g, c.b, c.a == nil and 1 or c.a
                             end,
-                            setValue = function(r, g, b, a)
-                                Set("activeUnderlineColor", { r = r, g = g, b = b, a = a })
+                            setValue = function(red, green, blue, a)
+                                Set("activeUnderlineColor", { r = red, g = green, b = blue, a = a })
                                 Set("activeUnderlineColorMode", "custom")
                                 if CHAT.ApplyTabAppearance then
                                     CHAT.ApplyTabAppearance()
@@ -1799,8 +1799,8 @@ CludesUI.AtOptionsLogin(function()
                             local c = Cfg("tabBorderColor") or { r = 1, g = 1, b = 1 }
                             return c.r, c.g, c.b, Cfg("tabBorderOpacity") or 0.18
                         end,
-                        function(r, g, b, a)
-                            Set("tabBorderColor", { r = r, g = g, b = b })
+                        function(red, green, blue, a)
+                            Set("tabBorderColor", { r = red, g = green, b = blue })
                             Set("tabBorderOpacity", a)
                             Set("tabBorderColorMode", "custom")
                             CHAT.ApplyTabBorders()
@@ -1861,8 +1861,8 @@ CludesUI.AtOptionsLogin(function()
                             local c = Cfg("tabBorderColorActive") or { r = 1, g = 1, b = 1 }
                             return c.r, c.g, c.b, c.a == nil and 0.18 or c.a
                         end,
-                        function(r, g, b, a)
-                            Set("tabBorderColorActive", { r = r, g = g, b = b, a = a })
+                        function(red, green, blue, a)
+                            Set("tabBorderColorActive", { r = red, g = green, b = blue, a = a })
                             if CHAT.ApplyTabBorders then
                                 CHAT.ApplyTabBorders()
                             end
@@ -2114,8 +2114,8 @@ CludesUI.AtOptionsLogin(function()
                         local c = Cfg("innerBorderColor") or { r = 1, g = 1, b = 1, a = 0.06 }
                         return c.r, c.g, c.b, c.a == nil and 0.06 or c.a
                     end,
-                    function(r, g, b, a)
-                        Set("innerBorderColor", { r = r, g = g, b = b, a = a })
+                    function(red, green, blue, a)
+                        Set("innerBorderColor", { r = red, g = green, b = blue, a = a })
                         Set("innerBorderColorMode", "custom")
                         if CHAT.ApplyBorders then
                             CHAT.ApplyBorders()

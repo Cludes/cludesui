@@ -140,8 +140,8 @@ CludesUI.AtLogin(function()
                         end
                         return 0, 0, 0, 0.62
                     end,
-                    setValue = function(r, g, b, a)
-                        mod.SetWindowLook("windowBgColor", { r = r, g = g, b = b, a = a })
+                    setValue = function(red, green, blue, a)
+                        mod.SetWindowLook("windowBgColor", { r = red, g = green, b = blue, a = a })
                     end,
                 },
             })
@@ -442,8 +442,8 @@ CludesUI.AtLogin(function()
                         end
                         return line[2], line[3], line[4]
                     end,
-                    set = function(r, g, b)
-                        mod.SetOwnListValue(line[5], { r = r, g = g, b = b })
+                    set = function(red, green, blue)
+                        mod.SetOwnListValue(line[5], { r = red, g = green, b = blue })
                     end,
                 }
             end
@@ -601,11 +601,11 @@ CludesUI.AtLogin(function()
                     region,
                     region:GetFrameLevel() + 5,
                     function()
-                        local r, g, b = mod.OwnListBorderColor()
-                        return r, g, b, 1
+                        local red, green, blue = mod.OwnListBorderColor()
+                        return red, green, blue, 1
                     end,
-                    function(r, g, b)
-                        mod.SetOwnListValue("borderColor", { r = r, g = g, b = b })
+                    function(red, green, blue)
+                        mod.SetOwnListValue("borderColor", { r = red, g = green, b = blue })
                     end,
                     false,
                     20

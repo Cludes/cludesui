@@ -286,11 +286,11 @@ function CludesUI.ForeverBorderSeat(ring, rel, tp, x1, y1, x2, y2)
     box:SetPoint("BOTTOMRIGHT", rel, "BOTTOMRIGHT", (x2 or 0) + RM, (y2 or 0) - RM)
 end
 
-function CludesUI.ForeverBorderPaint(ring, r, g, b, a, desat)
+function CludesUI.ForeverBorderPaint(ring, red, green, blue, a, desat)
     desat = desat and true or false
     for idx = 1, 8 do
         local t = ring[idx]
-        t:SetVertexColor(r, g, b, a or 1)
+        t:SetVertexColor(red, green, blue, a or 1)
         t:SetDesaturated(desat)
     end
 end
@@ -555,10 +555,10 @@ function CludesUI.ForeverHeavyFill(ring, texture, rel, tp, x1, y1, x2, y2)
     texture:SetPoint("BOTTOMRIGHT", rel, "BOTTOMRIGHT", (x2 or 0) / k - f, (y2 or 0) / k + f)
 end
 
-function CludesUI.ForeverHeavyPaint(ring, r, g, b, a, desat)
+function CludesUI.ForeverHeavyPaint(ring, red, green, blue, a, desat)
     desat = desat and true or false
     for _, t in pairs(ring.p) do
-        t:SetVertexColor(r, g, b, a or 1)
+        t:SetVertexColor(red, green, blue, a or 1)
         t:SetDesaturated(desat)
     end
 end

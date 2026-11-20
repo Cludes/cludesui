@@ -366,8 +366,8 @@ local function FP(...)
 end
 
 local function CK(c)
-    local r, g, b = ColorParts(c, 0, 0, 0)
-    return string.format("%.3f,%.3f,%.3f", r, g, b)
+    local red, green, blue = ColorParts(c, 0, 0, 0)
+    return string.format("%.3f,%.3f,%.3f", red, green, blue)
 end
 
 -- Shared by buff icons, debuff grids and their previews. Unset styles keep the
@@ -380,10 +380,10 @@ function mod.RFC_AuraBorder(s, prefixText, into)
         return nil
     end
     local color = s[prefixText .. "Color"]
-    local r, g, b = ColorParts(color, 0, 0, 0)
+    local red, green, blue = ColorParts(color, 0, 0, 0)
     local texture = s[prefixText .. "Texture"]
     local t = into or {}
-    t[1], t[2], t[3], t[4] = r, g, b, color and color.a or 1
+    t[1], t[2], t[3], t[4] = red, green, blue, color and color.a or 1
     t.size, t.texture = px, texture
     t.edgePx = CludesUI.BorderPx(s[prefixText .. "SizePx"], px, texture or "solid")
     t.offsetX, t.offsetY = s[prefixText .. "TextureOffset"], s[prefixText .. "TextureOffsetY"]
@@ -464,9 +464,9 @@ function mod.RF_GlowClassFP(mode, classFlag)
     if G.DeriveColorMode(mode, classFlag) ~= "class" then
         return ""
     end
-    local r, g, b = G.ResolveColor("class")
-    mod._rfGlowClassR, mod._rfGlowClassG, mod._rfGlowClassB = r, g, b
-    return string.format("cc%.3f,%.3f,%.3f", r, g, b)
+    local red, green, blue = G.ResolveColor("class")
+    mod._rfGlowClassR, mod._rfGlowClassG, mod._rfGlowClassB = red, green, blue
+    return string.format("cc%.3f,%.3f,%.3f", red, green, blue)
 end
 
 -- Aura icon sizes on whole physical pixels: a fractional button leaves the
@@ -850,7 +850,7 @@ local function ApplyRFDispelSlot(btnFrame, dropdown, look)
     end
 
     local c = look.typeColors and look.typeColors[defaults.token]
-    local r, g, b = c and c.r or 1, c and c.g or 1, c and c.b or 1
+    local red, green, blue = c and c.r or 1, c and c.g or 1, c and c.b or 1
     -- Per-type alpha (0 = user opted this type out of the dispel visuals)
     local typeA = (c and c.a) or 1
     local alpha = (look.opacity or 100) / 100 * typeA
@@ -880,12 +880,12 @@ local function ApplyRFDispelSlot(btnFrame, dropdown, look)
         else
             texture:SetTexCoord(0, 1, 0, 1)
         end
-        texture:SetVertexColor(r, g, b, alpha)
+        texture:SetVertexColor(red, green, blue, alpha)
     elseif look.mode == "full" then
         texture:Show()
         texture:SetAllPoints(healthBar)
         texture:SetTexCoord(0, 1, 0, 1)
-        texture:SetColorTexture(r, g, b, alpha)
+        texture:SetColorTexture(red, green, blue, alpha)
         texture:SetVertexColor(1, 1, 1, 1)
     else -- "fill"
         texture:Show()
@@ -896,7 +896,7 @@ local function ApplyRFDispelSlot(btnFrame, dropdown, look)
         -- full health still shows the wash.
         mod.RF_AnchorCurHealth(texture, healthBar, fill, look.fillVert, look.fillInvert)
         texture:SetTexCoord(0, 1, 0, 1)
-        texture:SetColorTexture(r, g, b, alpha)
+        texture:SetColorTexture(red, green, blue, alpha)
         texture:SetVertexColor(1, 1, 1, 1)
     end
 
@@ -918,9 +918,9 @@ local function ApplyRFDispelSlot(btnFrame, dropdown, look)
             dropdown.borderHost:SetFrameLevel(bLvl)
         end
         if dropdown.borderMade then
-            Pix.UpdateBorder(dropdown.borderHost, look.borderSize, r, g, b, typeA)
+            Pix.UpdateBorder(dropdown.borderHost, look.borderSize, red, green, blue, typeA)
         else
-            Pix.CreateBorder(dropdown.borderHost, r, g, b, typeA, look.borderSize, "OVERLAY", 2 + defaults.level)
+            Pix.CreateBorder(dropdown.borderHost, red, green, blue, typeA, look.borderSize, "OVERLAY", 2 + defaults.level)
             dropdown.borderMade = true
         end
         if relevel then
@@ -973,9 +973,9 @@ local function ApplyRFDispelSlot(btnFrame, dropdown, look)
             dropdown.cbHost,
             dropdown.cbState,
             cb.size,
-            r,
-            g,
-            b,
+            red,
+            green,
+            blue,
             typeA,
             cb.tex,
             cb.offX,
@@ -1803,7 +1803,7 @@ local function ApplyBmPandemicBorder(btnFrame, dropdown, look)
         holderFrame:SetFrameLevel(dropdown.stackCarrier:GetFrameLevel() - 1)
     end
     local width = look.bmPandemicWidth or 2
-    local r, g, b = BmColor(look.bmPandemicColor, 1, 0.2, 0.2)
+    local red, green, blue = BmColor(look.bmPandemicColor, 1, 0.2, 0.2)
     local alpha = look.bmPandemicEnabled and not look.hideIcon and 1 or 0
     local border = look.bmPandemicEnabled and look.bmPandemicTextured and look.border
     if
@@ -1835,9 +1835,9 @@ local function ApplyBmPandemicBorder(btnFrame, dropdown, look)
             ring,
             ring,
             border.size,
-            r,
-            g,
-            b,
+            red,
+            green,
+            blue,
             alpha,
             border.texture,
             border.offsetX,
@@ -1868,7 +1868,7 @@ local function ApplyBmPandemicBorder(btnFrame, dropdown, look)
         else
             edge:SetWidth(width)
         end
-        edge:SetColorTexture(r, g, b, border and 0 or alpha)
+        edge:SetColorTexture(red, green, blue, border and 0 or alpha)
     end
     if not dropdown.bmPandemicBound then
         btnFrame:AddPandemicRegion(holderFrame)
@@ -1998,16 +1998,16 @@ end
 
 -- PP border on a bare-slot host with create-once semantics, so border size
 -- can toggle from 0 without a container swap.
-local function BmUpdateBorder(dropdown, host, px, r, g, b, a)
+local function BmUpdateBorder(dropdown, host, px, red, green, blue, a)
     local Pix = CludesUI.PP
     if not (Pix and host) then
         return
     end
     if (px or 0) > 0 then
         if dropdown.bmBorderMade then
-            Pix.UpdateBorder(host, px, r, g, b, a)
+            Pix.UpdateBorder(host, px, red, green, blue, a)
         else
-            Pix.CreateBorder(host, r, g, b, a, px, "OVERLAY", 7)
+            Pix.CreateBorder(host, red, green, blue, a, px, "OVERLAY", 7)
             dropdown.bmBorderMade = true
         end
         host:Show()
@@ -2024,8 +2024,8 @@ local function BmApplySquare(btnFrame, dropdown, look)
         return
     end
     local indicator = look.ind
-    local r, g, b = BmColor(look.sqColor, 76 / 255, 201 / 255, 240 / 255)
-    dropdown.tex:SetColorTexture(r, g, b, 1)
+    local red, green, blue = BmColor(look.sqColor, 76 / 255, 201 / 255, 240 / 255)
+    dropdown.tex:SetColorTexture(red, green, blue, 1)
     -- Same hidden-swipe gate as AuraKit's style pass (engine SetCooldown re-shows
     -- a hidden swipe on aura churn; SetDrawSwipe is the persistent style knob
     -- that survives it), needed here too because square cooldowns are created
@@ -2107,8 +2107,8 @@ local function BmApplyBar(btnFrame, dropdown, look)
         end
     end
     local indicator = look.ind
-    local r, g, b = BmColor(indicator.color, 76 / 255, 201 / 255, 240 / 255)
-    dropdown.bar:GetStatusBarTexture():SetVertexColor(r, g, b, (indicator.barColorOpacity or 100) / 100)
+    local red, green, blue = BmColor(indicator.color, 76 / 255, 201 / 255, 240 / 255)
+    dropdown.bar:GetStatusBarTexture():SetVertexColor(red, green, blue, (indicator.barColorOpacity or 100) / 100)
     -- Fill AXIS, mirroring what the preview has always done in BM_PlaceBar.
     -- Change-guarded like the frame-level write below: SetOrientation resets the
     -- bar's fill, so calling it on every restyle would visibly stutter a running
@@ -2149,15 +2149,15 @@ local function BmApplyEffect(btnFrame, dropdown, look)
     local indicator = look.ind
     if indicator.type == "healthcolor" or indicator.type == "bgcolor" then
         if dropdown.tex then
-            local r, g, b = BmColor(indicator.color, 0, 1, 0)
+            local red, green, blue = BmColor(indicator.color, 0, 1, 0)
             local a = (indicator.opacity or 100) / 100
             -- healthcolor rides the fill and borrows its texture; bgcolor covers
             -- the bar's background, which is a flat color fill, so it stays flat.
             if indicator.type == "healthcolor" then
-                mod.RF_TintOverBarFill(dropdown.tex, dropdown.bmHealthBar, r, g, b, a)
+                mod.RF_TintOverBarFill(dropdown.tex, dropdown.bmHealthBar, red, green, blue, a)
             else
                 mod.RF_TexBgTint(dropdown.tex, look.texBgPath, look.texBgVert)
-                dropdown.tex:SetColorTexture(r, g, b, a)
+                dropdown.tex:SetColorTexture(red, green, blue, a)
             end
         end
     elseif indicator.type == "border" then
@@ -2166,7 +2166,7 @@ local function BmApplyEffect(btnFrame, dropdown, look)
         -- ticker under secrecy); dashed uses the C-side animated ants (w/h from the
         -- unit frame's own rect -- the forbidden host is never measured).
         if dropdown.borderHost and mod.BM_ApplyEffectBorder then
-            local r, g, b = BmColor(indicator.color, 0.30, 0.79, 0.94)
+            local red, green, blue = BmColor(indicator.color, 0.30, 0.79, 0.94)
             local host = dropdown.bmFxHost
             local wid, hgt
             if host then
@@ -2175,9 +2175,9 @@ local function BmApplyEffect(btnFrame, dropdown, look)
             mod.BM_ApplyEffectBorder(
                 dropdown.borderHost,
                 indicator,
-                r,
-                g,
-                b,
+                red,
+                green,
+                blue,
                 (indicator.borderOpacity or 100) / 100,
                 wid,
                 hgt
@@ -4370,8 +4370,8 @@ do
         if r0 == nil then
             return
         end
-        local r, g, b = CludesUI.Glows.ResolveColor("class")
-        if r ~= r0 or g ~= mod._rfGlowClassG or b ~= mod._rfGlowClassB then
+        local red, green, blue = CludesUI.Glows.ResolveColor("class")
+        if red ~= r0 or green ~= mod._rfGlowClassG or blue ~= mod._rfGlowClassB then
             mod.RFC_ReloadAll()
         end
     end)

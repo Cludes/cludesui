@@ -171,14 +171,14 @@ local function Show(h)
     seg:SetOrientation(vert and "VERTICAL" or "HORIZONTAL")
     seg:SetRotatesTexture(rot)
     seg:SetReverseFill(not rev)
-    local r, g, b, a = cb.Color(power)
-    seg:SetStatusBarColor(r, g, b, a)
+    local red, green, blue, a = cb.Color(power)
+    seg:SetStatusBarColor(red, green, blue, a)
     seg:SetMinMaxValues(0, UnitPowerMax("player", MANA))
     seg:SetValue(cost)
     seg:Show()
     h.drawn = castSeq
     h.pfill, h.rev, h.vert, h.rot = pfill, rev, vert, rot
-    h.r, h.g, h.b, h.a = r, g, b, a
+    h.r, h.g, h.b, h.a = red, green, blue, a
 end
 
 -- True when a repeat Attach must draw the cast again: this cast is not the
@@ -201,8 +201,8 @@ local function Stale(h)
     then
         return true
     end
-    local r, g, b, a = cb.Color(bar)
-    return r ~= h.r or g ~= h.g or b ~= h.b or a ~= h.a
+    local red, green, blue, a = cb.Color(bar)
+    return red ~= h.r or green ~= h.g or blue ~= h.b or a ~= h.a
 end
 
 local function HideAll()

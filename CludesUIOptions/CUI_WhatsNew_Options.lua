@@ -124,13 +124,13 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         local backdrop, accent = brd.bg, brd.accent
 
         accent:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.6)
-        OnAccent(accent, function(r, g, b)
-            accent:SetColorTexture(r, g, b, 0.6)
+        OnAccent(accent, function(red, green, blue)
+            accent:SetColorTexture(red, green, blue, 0.6)
         end)
 
         local titleFs = MakeFont(cardFrame, 14, nil, ACC.r, ACC.g, ACC.b, 0.9)
-        OnAccent(titleFs, function(r, g, b)
-            titleFs:SetTextColor(r, g, b, 0.9)
+        OnAccent(titleFs, function(red, green, blue)
+            titleFs:SetTextColor(red, green, blue, 0.9)
         end)
         Pix.Point(titleFs, "TOPLEFT", cardFrame, "TOPLEFT", 16, -14)
         Pix.Point(titleFs, "RIGHT", cardFrame, "RIGHT", -16, 0)
@@ -194,8 +194,8 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
             end
         end
         accent:SetColorTexture(ac.r, ac.g, ac.b, 0.9)
-        OnBannerAccent(accent, function(r, g, b)
-            accent:SetColorTexture(r, g, b, 0.9)
+        OnBannerAccent(accent, function(red, green, blue)
+            accent:SetColorTexture(red, green, blue, 0.9)
         end)
 
         -- Flanking decorative bar-charts: dim white steps, accent "now" bar, faint baseline.
@@ -220,8 +220,8 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
                 local a = alphas[i]
                 if a == "green" then
                     bar:SetColorTexture(ac.r, ac.g, ac.b, 0.9)
-                    OnBannerAccent(bar, function(r, g, b)
-                        bar:SetColorTexture(r, g, b, 0.9)
+                    OnBannerAccent(bar, function(red, green, blue)
+                        bar:SetColorTexture(red, green, blue, 0.9)
                     end)
                 else
                     bar:SetColorTexture(1, 1, 1, a)
@@ -240,8 +240,8 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
         end
 
         local eyebrow = MakeFont(cardFrame, 11, nil, ac.r, ac.g, ac.b, 0.9)
-        OnBannerAccent(eyebrow, function(r, g, b)
-            eyebrow:SetTextColor(r, g, b, 0.9)
+        OnBannerAccent(eyebrow, function(red, green, blue)
+            eyebrow:SetTextColor(red, green, blue, 0.9)
         end)
         Pix.Point(eyebrow, "TOP", cardFrame, "TOP", 0, -18)
         eyebrow:SetJustifyH("CENTER")
@@ -360,8 +360,8 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
     -- drawn on `host` (above the patch card's fill) from x to the card's inset.
     local function MakeFixLine(host, posX, rightInset, cy, textValue)
         local dot = MakeFont(host, 12, nil, ACC.r, ACC.g, ACC.b, 0.55)
-        OnAccent(dot, function(r, g, b)
-            dot:SetTextColor(r, g, b, 0.55)
+        OnAccent(dot, function(red, green, blue)
+            dot:SetTextColor(red, green, blue, 0.55)
         end)
         Pix.Point(dot, "TOPLEFT", hostFrame, "TOPLEFT", posX + 2, cy - 1)
         dot:SetText("\226\128\162") -- bullet glyph (ASCII-safe UTF-8 escape)
@@ -595,8 +595,8 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
                 end
                 if newest then
                     icon:SetVertexColor(ACC.r, ACC.g, ACC.b, 0.9)
-                    OnAccent(icon, function(r, g, b)
-                        icon:SetVertexColor(r, g, b, 0.9)
+                    OnAccent(icon, function(red, green, blue)
+                        icon:SetVertexColor(red, green, blue, 0.9)
                     end)
                 else
                     icon:SetVertexColor(1, 1, 1, 0.45)
@@ -608,8 +608,8 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
             local _, title = tile._descFS:GetPoint(1)
             if title then
                 local tag = MakeFont(tile._hdr, 11, nil, ACC.r, ACC.g, ACC.b, 0.9)
-                OnAccent(tag, function(r, g, b)
-                    tag:SetTextColor(r, g, b, 0.9)
+                OnAccent(tag, function(red, green, blue)
+                    tag:SetTextColor(red, green, blue, 0.9)
                 end)
                 Pix.Point(tag, "LEFT", title, "RIGHT", 10, 0)
                 tag:SetText(CludesUI.L("Latest"))

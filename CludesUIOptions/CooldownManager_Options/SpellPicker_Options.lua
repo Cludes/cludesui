@@ -2958,8 +2958,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 local function ShowState(sel)
                                     isSelected = sel
                                     if sel then
-                                        local r, g, b = CludesUI.GetAccentColor()
-                                        sLbl:SetTextColor(r, g, b, 1)
+                                        local red, green, blue = CludesUI.GetAccentColor()
+                                        sLbl:SetTextColor(red, green, blue, 1)
                                     else
                                         sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                                     end
@@ -3507,10 +3507,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         access.get("thresholdColorB") or 0.2,
                                         1
                                 end,
-                                function(r, g, b)
-                                    access.set("thresholdColorR", r)
-                                    access.set("thresholdColorG", g)
-                                    access.set("thresholdColorB", b)
+                                function(red, green, blue)
+                                    access.set("thresholdColorR", red)
+                                    access.set("thresholdColorG", green)
+                                    access.set("thresholdColorB", blue)
                                     access.refresh()
                                 end,
                                 false,
@@ -3932,11 +3932,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                             spellSettings.cooldownTextG or (cdmBd and cdmBd.cooldownTextG) or 1,
                                             spellSettings.cooldownTextB or (cdmBd and cdmBd.cooldownTextB) or 1
                                     end,
-                                    set = function(r, g, b)
+                                    set = function(red, green, blue)
                                         EnsureSS()
-                                        spellSettings.cooldownTextR = r
-                                        spellSettings.cooldownTextG = g
-                                        spellSettings.cooldownTextB = b
+                                        spellSettings.cooldownTextR = red
+                                        spellSettings.cooldownTextG = green
+                                        spellSettings.cooldownTextB = blue
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
@@ -4161,11 +4161,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                             spellSettings.stackCountG or (cdmBd and cdmBd.stackCountG) or 1,
                                             spellSettings.stackCountB or (cdmBd and cdmBd.stackCountB) or 1
                                     end,
-                                    set = function(r, g, b)
+                                    set = function(red, green, blue)
                                         EnsureSS()
-                                        spellSettings.stackCountR = r
-                                        spellSettings.stackCountG = g
-                                        spellSettings.stackCountB = b
+                                        spellSettings.stackCountR = red
+                                        spellSettings.stackCountG = green
+                                        spellSettings.stackCountB = blue
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
@@ -4307,11 +4307,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                             spellSettings.borderG or (cdmBd and cdmBd.borderG) or 0,
                                             spellSettings.borderB or (cdmBd and cdmBd.borderB) or 0
                                     end,
-                                    set = function(r, g, b)
+                                    set = function(red, green, blue)
                                         EnsureSS()
-                                        spellSettings.borderR = r
-                                        spellSettings.borderG = g
-                                        spellSettings.borderB = b
+                                        spellSettings.borderR = red
+                                        spellSettings.borderG = green
+                                        spellSettings.borderB = blue
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
                                         end
@@ -4683,8 +4683,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         local function MakeColorSwatch(subItem, getR, getG, getB, onChanged)
                             AB.ItemSwatch(subItem, function()
                                 return getR(), getG(), getB(), 1
-                            end, function(r, g, b)
-                                onChanged(r, g, b)
+                            end, function(red, green, blue)
+                                onChanged(red, green, blue)
                             end, false)
                         end
 
@@ -5363,13 +5363,13 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         return (customState and customState.activeSwipeG) or 0.776
                                     end, function()
                                         return (customState and customState.activeSwipeB) or 0.376
-                                    end, function(r, g, b)
+                                    end, function(red, green, blue)
                                         local e = EnsureCAS()
                                         e.activeSwipeMode = "custom"
                                         SetCasOwn("activeSwipeClassColor", nil)
-                                        e.activeSwipeR = r
-                                        e.activeSwipeG = g
-                                        e.activeSwipeB = b
+                                        e.activeSwipeR = red
+                                        e.activeSwipeG = green
+                                        e.activeSwipeB = blue
                                         e.activeSwipeA = e.activeSwipeA or 0.7
                                     end)
                                 end
@@ -5481,12 +5481,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     return (customState and customState.glowColorG) or 0.788
                                 end, function()
                                     return (customState and customState.glowColorB) or 0.137
-                                end, function(r, g, b)
+                                end, function(red, green, blue)
                                     local e = EnsureCAS()
                                     e.glowColor = "custom"
-                                    e.glowColorR = r
-                                    e.glowColorG = g
-                                    e.glowColorB = b
+                                    e.glowColorR = red
+                                    e.glowColorG = green
+                                    e.glowColorB = blue
                                 end)
                             end
                         end, {
@@ -5678,10 +5678,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                             spellSettings.activeSwipeB or 0.376,
                                             spellSettings.activeSwipeA or 0.7
                                     end,
-                                    function(r, g, b, a)
-                                        spellSettings.activeSwipeR = r
-                                        spellSettings.activeSwipeG = g
-                                        spellSettings.activeSwipeB = b
+                                    function(red, green, blue, a)
+                                        spellSettings.activeSwipeR = red
+                                        spellSettings.activeSwipeG = green
+                                        spellSettings.activeSwipeB = blue
                                         spellSettings.activeSwipeA = a
                                         if mod.QueueReanchor then
                                             mod.QueueReanchor()
@@ -5722,10 +5722,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                             spellSettings.activeBorderB or 0.376,
                                             spellSettings.activeBorderA or 1
                                     end,
-                                    function(r, g, b, a)
-                                        spellSettings.activeBorderR = r
-                                        spellSettings.activeBorderG = g
-                                        spellSettings.activeBorderB = b
+                                    function(red, green, blue, a)
+                                        spellSettings.activeBorderR = red
+                                        spellSettings.activeBorderG = green
+                                        spellSettings.activeBorderB = blue
                                         spellSettings.activeBorderA = a
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
@@ -7069,8 +7069,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
         text:SetJustifyH("CENTER")
         text:SetJustifyV("MIDDLE")
         local function Accented()
-            local r, g, b = CludesUI.GetAccentColor()
-            text:SetTextColor(r, g, b, 1)
+            local red, green, blue = CludesUI.GetAccentColor()
+            text:SetTextColor(red, green, blue, 1)
         end
         Accented()
         text:SetText(CludesUI.L("Missing Spells?") .. "\n" .. CludesUI.L("Add in Blizzard CDM"))

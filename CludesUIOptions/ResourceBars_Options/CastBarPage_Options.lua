@@ -584,12 +584,12 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         (p and p.castBar.borderB or 0),
                         (p and p.castBar.borderA or 1)
                 end,
-                function(r, g, b, a)
+                function(red, green, blue, a)
                     local p = DB()
                     if not p then
                         return
                     end
-                    p.castBar.borderR, p.castBar.borderG, p.castBar.borderB, p.castBar.borderA = r, g, b, a
+                    p.castBar.borderR, p.castBar.borderG, p.castBar.borderB, p.castBar.borderA = red, green, blue, a
                     RefreshCast()
                     CludesUI:RefreshPage()
                 end,
@@ -952,13 +952,13 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local c = p and p.castBar
                         return c and c.channelR or 0.3, c and c.channelG or 0.8, c and c.channelB or 0.3
                     end,
-                    set = function(r, g, b)
+                    set = function(red, green, blue)
                         local p = DB()
                         if not p then
                             return
                         end
                         local c = p.castBar
-                        c.channelR, c.channelG, c.channelB = r, g, b
+                        c.channelR, c.channelG, c.channelB = red, green, blue
                         RefreshCast()
                     end,
                 },
@@ -992,13 +992,13 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                             c and c.uninterruptibleG or 0.5,
                             c and c.uninterruptibleB or 0.5
                     end,
-                    set = function(r, g, b)
+                    set = function(red, green, blue)
                         local p = DB()
                         if not p then
                             return
                         end
                         local c = p.castBar
-                        c.uninterruptibleR, c.uninterruptibleG, c.uninterruptibleB = r, g, b
+                        c.uninterruptibleR, c.uninterruptibleG, c.uninterruptibleB = red, green, blue
                         RefreshCast()
                     end,
                 },
@@ -1036,13 +1036,13 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 end
                 return p.castBar.gradientR, p.castBar.gradientG, p.castBar.gradientB, p.castBar.gradientA
             end,
-            setValue = function(r, g, b, a)
+            setValue = function(red, green, blue, a)
                 local p = DB()
                 if not p then
                     return
                 end
                 p.castBar.gradientR, p.castBar.gradientG, p.castBar.gradientB, p.castBar.gradientA =
-                    r, g, b, a
+                    red, green, blue, a
                 RefreshCast()
             end,
         },
@@ -1058,12 +1058,12 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 end
                 return p.castBar.fillR, p.castBar.fillG, p.castBar.fillB, 1
             end,
-            setValue = function(r, g, b)
+            setValue = function(red, green, blue)
                 local p = DB()
                 if not p then
                     return
                 end
-                p.castBar.fillR, p.castBar.fillG, p.castBar.fillB = r, g, b
+                p.castBar.fillR, p.castBar.fillG, p.castBar.fillB = red, green, blue
                 if p.castBar.classColored then
                     p.castBar.classColored = false
                 end
@@ -1139,12 +1139,12 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 local p = DB()
                 return (p and p.castBar.bgR or 0), (p and p.castBar.bgG or 0), (p and p.castBar.bgB or 0)
             end,
-            function(r, g, b)
+            function(red, green, blue)
                 local p = DB()
                 if not p then
                     return
                 end
-                p.castBar.bgR, p.castBar.bgG, p.castBar.bgB = r, g, b
+                p.castBar.bgR, p.castBar.bgG, p.castBar.bgB = red, green, blue
                 RefreshCast()
             end,
             nil,
@@ -1314,13 +1314,13 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     local c = p.castBar
                     return c.spellTextR or 1, c.spellTextG or 1, c.spellTextB or 1, c.spellTextA or 1
                 end,
-                setValue = function(r, g, b, a)
+                setValue = function(red, green, blue, a)
                     local p = DB()
                     if not p then
                         return
                     end
                     local c = p.castBar
-                    c.spellTextR, c.spellTextG, c.spellTextB, c.spellTextA = r, g, b, a
+                    c.spellTextR, c.spellTextG, c.spellTextB, c.spellTextA = red, green, blue, a
                     RefreshCast()
                     CludesUI:RefreshPage()
                 end,
@@ -1434,13 +1434,13 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     local c = p.castBar
                     return c.timerR or 1, c.timerG or 1, c.timerB or 1, c.timerA or 1
                 end,
-                setValue = function(r, g, b, a)
+                setValue = function(red, green, blue, a)
                     local p = DB()
                     if not p then
                         return
                     end
                     local c = p.castBar
-                    c.timerR, c.timerG, c.timerB, c.timerA = r, g, b, a
+                    c.timerR, c.timerG, c.timerB, c.timerA = red, green, blue, a
                     RefreshCast()
                     CludesUI:RefreshPage()
                 end,
@@ -1578,14 +1578,14 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             p.castBar.tickMarksG or 1,
             p.castBar.tickMarksB or 1,
             p.castBar.tickMarksA or 0.7
-    end, function(r, g, b, a)
+    end, function(red, green, blue, a)
         local p = DB()
         if not p then
             return
         end
-        p.castBar.tickMarksR = r
-        p.castBar.tickMarksG = g
-        p.castBar.tickMarksB = b
+        p.castBar.tickMarksR = red
+        p.castBar.tickMarksG = green
+        p.castBar.tickMarksB = blue
         p.castBar.tickMarksA = a
         RefreshCast()
     end, function()
@@ -1622,14 +1622,14 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             p.castBar.lastTickG or 0.82,
             p.castBar.lastTickB or 0,
             p.castBar.lastTickA or 0.95
-    end, function(r, g, b, a)
+    end, function(red, green, blue, a)
         local p = DB()
         if not p then
             return
         end
-        p.castBar.lastTickR = r
-        p.castBar.lastTickG = g
-        p.castBar.lastTickB = b
+        p.castBar.lastTickR = red
+        p.castBar.lastTickG = green
+        p.castBar.lastTickB = blue
         p.castBar.lastTickA = a
         RefreshCast()
     end, function()
@@ -1675,14 +1675,14 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             p.castBar.latencyG or 0.290,
             p.castBar.latencyB or 0.290,
             p.castBar.latencyA or 1
-    end, function(r, g, b, a)
+    end, function(red, green, blue, a)
         local p = DB()
         if not p then
             return
         end
-        p.castBar.latencyR = r
-        p.castBar.latencyG = g
-        p.castBar.latencyB = b
+        p.castBar.latencyR = red
+        p.castBar.latencyG = green
+        p.castBar.latencyB = blue
         p.castBar.latencyA = a
         RefreshCast()
     end, latOff, "Latency Overlay")

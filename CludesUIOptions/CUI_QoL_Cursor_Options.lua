@@ -82,8 +82,8 @@ CludesUI.AtOptionsLogin(function()
             tonumber(strsub(hex, 5, 6), 16) / 255
     end
 
-    local function RGBToHex(r, g, b)
-        return string.format("%02X%02X%02X", floor(r * 255 + 0.5), floor(g * 255 + 0.5), floor(b * 255 + 0.5))
+    local function RGBToHex(red, green, blue)
+        return string.format("%02X%02X%02X", floor(red * 255 + 0.5), floor(green * 255 + 0.5), floor(blue * 255 + 0.5))
     end
 
     ---------------------------------------------------------------------------
@@ -175,15 +175,15 @@ CludesUI.AtOptionsLogin(function()
                         if not p then
                             return 76 / 255, 201 / 255, 240 / 255
                         end
-                        local r, g, b = HexToRGB(p.hex)
-                        return r, g, b
+                        local red, green, b = HexToRGB(p.hex)
+                        return red, green, b
                     end,
-                    setValue = function(r, g, b)
+                    setValue = function(red, green, blue)
                         local p = DB()
                         if not p then
                             return
                         end
-                        p.hex = RGBToHex(r, g, b)
+                        p.hex = RGBToHex(red, green, blue)
                         RefreshAddon()
                     end,
                     onClick = function(self)
@@ -524,9 +524,9 @@ CludesUI.AtOptionsLogin(function()
                         local r, ng, b = HexToRGB(g.hex)
                         return r, ng, b
                     end,
-                    setValue = function(r, g, b)
+                    setValue = function(red, green, blue)
                         local gd = GCD_DB()
-                        gd.hex = RGBToHex(r, g, b)
+                        gd.hex = RGBToHex(red, green, blue)
                         RefreshGCD()
                     end,
                     onClick = function(self)
@@ -772,9 +772,9 @@ CludesUI.AtOptionsLogin(function()
                         local r, ng, b = HexToRGB(c.hex)
                         return r, ng, b
                     end,
-                    setValue = function(r, g, b)
+                    setValue = function(red, green, blue)
                         local cd = Cast_DB()
-                        cd.hex = RGBToHex(r, g, b)
+                        cd.hex = RGBToHex(red, green, blue)
                         RefreshCast()
                     end,
                     onClick = function(self)

@@ -452,8 +452,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 local c = SGetSupported(colorKey)
                 c = c or fallback
                 return c.r, c.g, c.b, 1
-            end, function(r, g, b)
-                SSetSupported(colorKey, { r = r, g = g, b = b })
+            end, function(red, green, blue)
+                SSetSupported(colorKey, { r = red, g = green, b = blue })
                 ReloadAndUpdate()
                 UpdatePreview()
             end, false, 20)
@@ -843,8 +843,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 end
                 return 0, 0, 0
             end
-            local bgSwSet = function(r, g, b)
-                UNIT_DB_MAP[optionState.selectedUnit]().castBgColor = { r = r, g = g, b = b }
+            local bgSwSet = function(red, green, blue)
+                UNIT_DB_MAP[optionState.selectedUnit]().castBgColor = { r = red, g = green, b = blue }
                 ReloadAndUpdate()
                 UpdatePreview()
             end
@@ -1021,8 +1021,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 local c = SGetSupported("castSpellNameColor")
                 c = c or { r = 1, g = 1, b = 1 }
                 return c.r, c.g, c.b, 1
-            end, function(r, g, b)
-                UNIT_DB_MAP[optionState.selectedUnit]().castSpellNameColor = { r = r, g = g, b = b }
+            end, function(red, green, blue)
+                UNIT_DB_MAP[optionState.selectedUnit]().castSpellNameColor = { r = red, g = green, b = blue }
                 ReloadAndUpdate()
                 UpdatePreview()
             end, false, 20)
@@ -1085,8 +1085,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 local c = SGetSupported("castDurationColor")
                 c = c or { r = 1, g = 1, b = 1 }
                 return c.r, c.g, c.b, 1
-            end, function(r, g, b)
-                UNIT_DB_MAP[optionState.selectedUnit]().castDurationColor = { r = r, g = g, b = b }
+            end, function(red, green, blue)
+                UNIT_DB_MAP[optionState.selectedUnit]().castDurationColor = { r = red, g = green, b = blue }
                 ReloadAndUpdate()
                 UpdatePreview()
             end, false, 20)
@@ -1199,8 +1199,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 local c = SGetSupported("castSpellTargetColor")
                 c = c or { r = 1, g = 1, b = 1 }
                 return c.r, c.g, c.b, 1
-            end, function(r, g, b)
-                UNIT_DB_MAP[optionState.selectedUnit]().castSpellTargetColor = { r = r, g = g, b = b }
+            end, function(red, green, blue)
+                UNIT_DB_MAP[optionState.selectedUnit]().castSpellTargetColor = { r = red, g = green, b = blue }
                 ReloadAndUpdate()
                 UpdatePreview()
             end, false, 20)
@@ -2402,11 +2402,11 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                             SVal("auraBorderB", 0),
                             SVal("auraBorderA", 1)
                     end,
-                    function(r, g, b, a)
+                    function(red, green, blue, a)
                         local s = SDB()
-                        s.auraBorderR = r
-                        s.auraBorderG = g
-                        s.auraBorderB = b
+                        s.auraBorderR = red
+                        s.auraBorderG = green
+                        s.auraBorderB = blue
                         s.auraBorderA = a
                         ReloadAndUpdate()
                         UpdatePreview()
@@ -3259,8 +3259,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         end
                         return 0.349, 0.475, 1.0
                     end,
-                    setValue = function(r, g, b)
-                        saved.profile.dispelColorMagic = { r = r, g = g, b = b }
+                    setValue = function(red, green, blue)
+                        saved.profile.dispelColorMagic = { r = red, g = green, b = blue }
                         PaletteRefresh()
                     end,
                 },
@@ -3274,8 +3274,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         end
                         return 0.636, 0.0, 0.64
                     end,
-                    setValue = function(r, g, b)
-                        saved.profile.dispelColorCurse = { r = r, g = g, b = b }
+                    setValue = function(red, green, blue)
+                        saved.profile.dispelColorCurse = { r = red, g = green, b = blue }
                         PaletteRefresh()
                     end,
                 },
@@ -3289,8 +3289,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         end
                         return 0.671, 0.384, 0.098
                     end,
-                    setValue = function(r, g, b)
-                        saved.profile.dispelColorDisease = { r = r, g = g, b = b }
+                    setValue = function(red, green, blue)
+                        saved.profile.dispelColorDisease = { r = red, g = green, b = blue }
                         PaletteRefresh()
                     end,
                 },
@@ -3304,8 +3304,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         end
                         return 0.0, 0.706, 0.286
                     end,
-                    setValue = function(r, g, b)
-                        saved.profile.dispelColorPoison = { r = r, g = g, b = b }
+                    setValue = function(red, green, blue)
+                        saved.profile.dispelColorPoison = { r = red, g = green, b = blue }
                         PaletteRefresh()
                     end,
                 },
@@ -3319,8 +3319,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         end
                         return 0.75, 0.15, 0.15
                     end,
-                    setValue = function(r, g, b)
-                        saved.profile.dispelColorBleed = { r = r, g = g, b = b }
+                    setValue = function(red, green, blue)
+                        saved.profile.dispelColorBleed = { r = red, g = green, b = blue }
                         PaletteRefresh()
                     end,
                 },

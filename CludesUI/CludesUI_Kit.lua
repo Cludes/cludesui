@@ -55,8 +55,8 @@ end
 --- Colours a font string in the accent now and each time its frame shows.
 function Kit.AccentText(fontStr, alpha)
     local function Paint()
-        local r, g, b = Kit.Accent()
-        fontStr:SetTextColor(r, g, b, alpha or 1)
+        local red, green, blue = Kit.Accent()
+        fontStr:SetTextColor(red, green, blue, alpha or 1)
     end
     Paint()
     local ownerFrame = fontStr:GetParent()
@@ -70,12 +70,12 @@ function Kit.Font(fontStr, size, key, flags)
     CludesUI.ApplyModuleFont(fontStr, nil, size, key, flags)
 end
 
-local function Border(widget, r, g, b, a)
+local function Border(widget, red, green, blue, a)
     local pp = Pix()
     if pp.GetBorders and pp.GetBorders(widget) then
-        pp.SetBorderColor(widget, r, g, b, a)
+        pp.SetBorderColor(widget, red, green, blue, a)
     else
-        pp.CreateBorder(widget, r, g, b, a, 1, "OVERLAY", 7)
+        pp.CreateBorder(widget, red, green, blue, a, 1, "OVERLAY", 7)
     end
 end
 Kit.Border = Border
@@ -148,9 +148,9 @@ function Kit.Window(name, wid, hgt, title, options)
     end, nil, options.key)
     window.close:SetPoint("TOPRIGHT", -5, -5)
     local function Paint()
-        local r, g, b = Kit.Accent()
-        window.title:SetTextColor(r, g, b)
-        window.header:SetColorTexture(r, g, b, 0.35)
+        local red, green, blue = Kit.Accent()
+        window.title:SetTextColor(red, green, blue)
+        window.header:SetColorTexture(red, green, blue, 0.35)
     end
     Paint()
     window:HookScript("OnShow", Paint)
@@ -239,9 +239,9 @@ function Kit.Check(hostFrame, labelText, onClick, key)
     c.text:SetText(labelText or "")
     c.text:SetTextColor(IDLE[1], IDLE[2], IDLE[3])
     local function Paint()
-        local r, g, b = Kit.Accent()
-        Border(c, r, g, b, c:IsMouseOver() and 1 or 0.6)
-        c.mark:SetColorTexture(r, g, b, 1)
+        local red, green, blue = Kit.Accent()
+        Border(c, red, green, blue, c:IsMouseOver() and 1 or 0.6)
+        c.mark:SetColorTexture(red, green, blue, 1)
         c.mark:SetShown(c._checked == true)
     end
     function c:SetChecked(enabled)
@@ -284,8 +284,8 @@ function Kit.Input(hostFrame, wid, hgt, placeholder, key)
     e.hint:SetTextColor(0.5, 0.5, 0.5)
     e.hint:SetText(placeholder or "")
     local function Paint()
-        local r, g, b = Kit.Accent()
-        Border(e, r, g, b, e:HasFocus() and 1 or 0.45)
+        local red, green, blue = Kit.Accent()
+        Border(e, red, green, blue, e:HasFocus() and 1 or 0.45)
         e.hint:SetShown(e:GetText() == "" and not e:HasFocus())
     end
     e:HookScript("OnEditFocusGained", Paint)
@@ -329,8 +329,8 @@ function Kit.Scroll(hostFrame)
             return
         end
         track:Show()
-        local r, g, b = Kit.Accent()
-        thumbTex:SetColorTexture(r, g, b, 0.7)
+        local red, green, blue = Kit.Accent()
+        thumbTex:SetColorTexture(red, green, blue, 0.7)
         local th = math.max(20, hgt * hgt / (hgt + range))
         thumb:SetHeight(th)
         local place = (scroll:GetVerticalScroll() / range) * (hgt - th)

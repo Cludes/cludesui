@@ -66,8 +66,8 @@ do
         local SVal = mod._RFO_OptEnv.SVal
         local _, cls = UnitClass("player")
         local _, pTok = UnitPowerType("player")
-        local r, g, b = mod.RF_PreviewTextColor(SVal(t.cm, "custom"), SVal(t.col), cls, 1, 1, 1, pTok)
-        return { r = r, g = g, b = b }
+        local red, green, blue = mod.RF_PreviewTextColor(SVal(t.cm, "custom"), SVal(t.col), cls, 1, 1, 1, pTok)
+        return { r = red, g = green, b = blue }
     end
 
     -- key: the format key (party-aware through the page's SVal/SWrite); onSave
@@ -379,8 +379,8 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                     return c.r or 1, c.g or 1, c.b or 1, 1
                 end
                 return 1, 1, 1, 1
-            end, function(r, g, b)
-                SWrite(t.col, { r = r, g = g, b = b })
+            end, function(red, green, blue)
+                SWrite(t.col, { r = red, g = green, b = blue })
                 ReloadAndUpdate()
             end, "custom", true, "Custom Color")
             AddSwatch(function()
@@ -392,8 +392,8 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 return 1, 1, 1, 1
             end, function() end, "class", false, "Class Color")
             AddSwatch(function()
-                local r, g, b = CludesUI.ResolveActiveAccent()
-                return r or 1, g or 1, b or 1, 1
+                local red, green, blue = CludesUI.ResolveActiveAccent()
+                return red or 1, green or 1, blue or 1, 1
             end, function() end, "accent", false, "Accent Color")
             if AllowsPower(t) then
                 AddSwatch(function()

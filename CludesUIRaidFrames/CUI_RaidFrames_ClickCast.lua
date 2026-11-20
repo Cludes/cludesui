@@ -3645,22 +3645,22 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
     -- a card behind a centre section, from its heading down to bottomY.
     local CC = {}
     function CC.Button(btn, backdrop, labelFS, primary)
-        local r, g, b = 1, 1, 1
+        local red, green, blue = 1, 1, 1
         if primary then
-            r, g, b = accentColor.r, accentColor.g, accentColor.b
+            red, green, blue = accentColor.r, accentColor.g, accentColor.b
         end
         local rest, lit = primary and 0.7 or 0.22, primary and 1 or 0.45
-        backdrop:SetColorTexture(r, g, b, 0.06)
-        labelFS:SetTextColor(r, g, b, primary and 1 or 0.8)
+        backdrop:SetColorTexture(red, green, blue, 0.06)
+        labelFS:SetTextColor(red, green, blue, primary and 1 or 0.8)
         labelFS:SetAlpha(1)
-        local brd = CludesUI.MakeRoundedBorder(btn, r, g, b, rest, backdrop, 2)
+        local brd = CludesUI.MakeRoundedBorder(btn, red, green, blue, rest, backdrop, 2)
         btn:SetScript("OnEnter", function()
-            backdrop:SetColorTexture(r, g, b, 0.14)
-            brd:SetColor(r, g, b, lit)
+            backdrop:SetColorTexture(red, green, blue, 0.14)
+            brd:SetColor(red, green, blue, lit)
         end)
         btn:SetScript("OnLeave", function()
-            backdrop:SetColorTexture(r, g, b, 0.06)
-            brd:SetColor(r, g, b, rest)
+            backdrop:SetColorTexture(red, green, blue, 0.06)
+            brd:SetColor(red, green, blue, rest)
         end)
     end
     local function Edge(host, layer, a)
@@ -3729,14 +3729,14 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
 
     -- StyleFont dresses a font string the way MakeFont makes one; the reused
     -- picker strings are re-dressed with it on every open.
-    local function StyleFont(fontStr, size, r, g, b, a)
+    local function StyleFont(fontStr, size, red, green, blue, a)
         CludesUI.PrimeFontShadow(fontStr, outlineFlag == "" and useShadow)
         fontStr:SetFont(fontFile, size, outlineFlag)
-        fontStr:SetTextColor(r or 1, g or 1, b or 1, a or 1)
+        fontStr:SetTextColor(red or 1, green or 1, blue or 1, a or 1)
     end
-    local function MakeFont(p, size, r, g, b, a)
+    local function MakeFont(p, size, red, green, blue, a)
         local fontStr = p:CreateFontString(nil, "OVERLAY")
-        StyleFont(fontStr, size, r, g, b, a)
+        StyleFont(fontStr, size, red, green, blue, a)
         return fontStr
     end
 

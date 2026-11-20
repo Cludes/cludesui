@@ -542,8 +542,8 @@ CludesUI.AtOptionsLogin(function()
                         end
                         return 0, 0, 0, 0.25
                     end,
-                    setValue = function(r, g, b, a)
-                        saved.profile.bagBgColor = { r = r, g = g, b = b, a = a }
+                    setValue = function(red, green, blue, a)
+                        saved.profile.bagBgColor = { r = red, g = green, b = blue, a = a }
                         ApplyBackgrounds()
                     end,
                 }
@@ -576,8 +576,8 @@ CludesUI.AtOptionsLogin(function()
                         end
                         return 1, 1, 1, 1
                     end,
-                    setValue = function(r, g, b, a)
-                        saved.profile.bagSlotBgColor = { r = r, g = g, b = b, a = a }
+                    setValue = function(red, green, blue, a)
+                        saved.profile.bagSlotBgColor = { r = red, g = green, b = blue, a = a }
                         -- the picker fires every frame while dragging: retint, don't re-lay out
                         BagsNS.RetintSlotBackgrounds()
                     end,
@@ -1012,8 +1012,8 @@ CludesUI.AtOptionsLogin(function()
                                 end
                                 return 1, 1, 1, 1
                             end,
-                            function(r, g, b)
-                                saved.profile.itemlevelCustomColor = { r = r, g = g, b = b }
+                            function(red, green, blue)
+                                saved.profile.itemlevelCustomColor = { r = red, g = green, b = blue }
                                 if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                                     _G.CUI_Bags:RefreshInventory()
                                 end

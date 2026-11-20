@@ -1427,18 +1427,18 @@ CUI_NS.unlockParts.Session = function(LM)
 
         -- The accent colour, or gold for a spec-override session (as the bar).
         function A.Paint(special)
-            local r, g, b = 1, 0.82, 0.30
+            local red, green, blue = 1, 0.82, 0.30
             if not special then
                 local c = CludesUI.CLUDES_GREEN
-                r, g, b = c.r, c.g, c.b
+                red, green, blue = c.r, c.g, c.b
             end
-            logo:SetVertexColor(r, g, b, 1)
+            logo:SetVertexColor(red, green, blue, 1)
             for i = 1, 8 do
-                arms[i]:SetColorTexture(r, g, b, 1)
+                arms[i]:SetColorTexture(red, green, blue, 1)
             end
-            guide:SetColorTexture(r, g, b, 0.9)
-            above:SetGradient("VERTICAL", CreateColor(r, g, b, 0.22), CreateColor(r, g, b, 0))
-            below:SetGradient("VERTICAL", CreateColor(r, g, b, 0), CreateColor(r, g, b, 0.22))
+            guide:SetColorTexture(red, green, blue, 0.9)
+            above:SetGradient("VERTICAL", CreateColor(red, green, blue, 0.22), CreateColor(red, green, blue, 0))
+            below:SetGradient("VERTICAL", CreateColor(red, green, blue, 0), CreateColor(red, green, blue, 0.22))
         end
 
         A:Hide()

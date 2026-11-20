@@ -859,8 +859,8 @@ CludesUI.AtLogin(function()
         end
 
         local function ClassText(class, textValue, fallback)
-            local r, g, b = S.ClassColor(class)
-            return S.Colorize(r and { r, g, b } or fallback or S.color.text, textValue)
+            local red, green, blue = S.ClassColor(class)
+            return S.Colorize(red and { red, green, blue } or fallback or S.color.text, textValue)
         end
         local function PlayerText(fullName)
             local record = slc.Player:Get(fullName)
@@ -1280,8 +1280,8 @@ CludesUI.AtLogin(function()
                             getValue = function()
                                 return entry.r or 0.8, entry.g or 0.8, entry.b or 0.8, 1
                             end,
-                            setValue = function(r, g, b)
-                                specInfo.setColour(entry, r, g, b)
+                            setValue = function(red, green, blue)
+                                specInfo.setColour(entry, red, green, blue)
                             end,
                         },
                     })
@@ -1765,8 +1765,8 @@ CludesUI.AtLogin(function()
                     return S.Colorize(S.color.textMuted, specInfo.unknownText)
                 end
                 local character, realm, colour = specInfo.nameParts(fullName, function(class)
-                    local r, g, b = S.ClassColor(class)
-                    return r and { r = r, g = g, b = b } or nil
+                    local red, green, blue = S.ClassColor(class)
+                    return red and { r = red, g = green, b = blue } or nil
                 end)
                 return S.Colorize(colour and { colour.r, colour.g, colour.b } or S.color.text, character)
                     .. S.Colorize(S.color.text, realm)

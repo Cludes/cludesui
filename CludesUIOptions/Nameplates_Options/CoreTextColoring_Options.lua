@@ -148,8 +148,8 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                         get = function()
                             return PartColor(nameColorKey)
                         end,
-                        set = function(r, g, b)
-                            DB()[nameColorKey] = { r = r, g = g, b = b }
+                        set = function(red, green, blue)
+                            DB()[nameColorKey] = { r = red, g = green, b = blue }
                             Apply()
                         end,
                     },
@@ -176,8 +176,8 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                         get = function()
                             return PartColor(lvlColorKey)
                         end,
-                        set = function(r, g, b)
-                            DB()[lvlColorKey] = { r = r, g = g, b = b }
+                        set = function(red, green, blue)
+                            DB()[lvlColorKey] = { r = red, g = green, b = blue }
                             Apply()
                         end,
                     },
@@ -211,8 +211,8 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
         local custom, updateCustom = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
             local c = (DB() and DB()[colorKey]) or defaultSet[colorKey]
             return c.r, c.g, c.b
-        end, function(r, g, b)
-            DB()[colorKey] = { r = r, g = g, b = b }
+        end, function(red, green, blue)
+            DB()[colorKey] = { r = red, g = green, b = blue }
             Apply()
         end, nil, 20)
         Pix.Point(custom, "RIGHT", anchor, "LEFT", gap, 0)
@@ -242,8 +242,8 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                         return c.r, c.g, c.b
                     end,
                     -- Read live by the per-unit painter, so a health colour pass repaints.
-                    function(r, g, b)
-                        DB()[key] = { r = r, g = g, b = b }
+                    function(red, green, blue)
+                        DB()[key] = { r = red, g = green, b = blue }
                         RefreshAllPlates()
                         UpdatePreview()
                         for idx = 1, #npcSwatchUpdates do

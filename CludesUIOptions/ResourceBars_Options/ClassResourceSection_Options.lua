@@ -722,12 +722,12 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                             (c and c.borderB or 0),
                             (c and c.borderA or 1)
                     end,
-                    function(r, g, b, a)
+                    function(red, green, blue, a)
                         local c = rowConf()
                         if not c then
                             return
                         end
-                        c.borderR, c.borderG, c.borderB, c.borderA = r, g, b, a
+                        c.borderR, c.borderG, c.borderB, c.borderA = red, green, blue, a
                         SmoothRefresh()
                         CludesUI:RefreshPage()
                     end,
@@ -1083,19 +1083,19 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                             return
                         end
                         local was = mod.ERB_TexturedBars(p)
-                        local r, g, b, a =
+                        local red, green, blue, a =
                             p.secondary.borderR, p.secondary.borderG, p.secondary.borderB, p.secondary.borderA
                         local sz = p.secondary.borderSize or 1
                         local bt = p.secondary.borderTexture or "solid"
                         local cr, cm = p.secondary.cornerRadius or 0, p.secondary.cornerMask
                         p.primary.borderR, p.primary.borderG, p.primary.borderB, p.primary.borderA =
-                            r, g, b, a
+                            red, green, blue, a
                         p.primary.borderSize = sz
                         p.primary.borderTexture = bt
                         p.primary.cornerRadius = cr
                         p.primary.cornerMask = cm
                         mod.ERB_CopyBorderPx(p.primary, p.secondary)
-                        p.health.borderR, p.health.borderG, p.health.borderB, p.health.borderA = r, g, b, a
+                        p.health.borderR, p.health.borderG, p.health.borderB, p.health.borderA = red, green, blue, a
                         p.health.borderSize = sz
                         p.health.borderTexture = bt
                         p.health.cornerRadius = cr
@@ -1262,12 +1262,12 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                             (c and c.gapB or 0),
                             (c and c.gapA or 1)
                     end,
-                    function(r, g, b, a)
+                    function(red, green, blue, a)
                         local c = rowConf()
                         if not c then
                             return
                         end
-                        c.gapR, c.gapG, c.gapB, c.gapA = r, g, b, a
+                        c.gapR, c.gapG, c.gapB, c.gapA = red, green, blue, a
                         SmoothRefresh()
                         CludesUI:RefreshPage()
                     end,
@@ -1323,12 +1323,12 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         local c = rowConf()
                         return (c and c.bgR or 1), (c and c.bgG or 1), (c and c.bgB or 1), 1
                     end,
-                    function(r, g, b)
+                    function(red, green, blue)
                         local c = rowConf()
                         if not c then
                             return
                         end
-                        c.bgR, c.bgG, c.bgB = r, g, b
+                        c.bgR, c.bgG, c.bgB = red, green, blue
                         RefreshClass()
                         CludesUI:RefreshPage()
                     end,
@@ -1447,12 +1447,12 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         end
                         return c.fillR, c.fillG, c.fillB, 1
                     end,
-                    setValue = function(r, g, b)
+                    setValue = function(red, green, blue)
                         local c = rowConf()
                         if not c then
                             return
                         end
-                        c.fillR, c.fillG, c.fillB = r, g, b
+                        c.fillR, c.fillG, c.fillB = red, green, blue
                         RebuildClass()
                         SmoothRefresh()
                     end,
@@ -1861,12 +1861,12 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     end
                     return p.secondary.textR or 1, p.secondary.textG or 1, p.secondary.textB or 1, 1
                 end,
-                function(r, g, b)
+                function(red, green, blue)
                     local p = DB()
                     if not p then
                         return
                     end
-                    p.secondary.textR, p.secondary.textG, p.secondary.textB = r, g, b
+                    p.secondary.textR, p.secondary.textG, p.secondary.textB = red, green, blue
                     RefreshClass()
                 end,
                 false,
@@ -2290,14 +2290,14 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                                 c.runesRechargeB or 0.5,
                                 c.runesRechargeA or 1
                         end,
-                        function(r, g, b, a)
+                        function(red, green, blue, a)
                             local c = rowConf()
                             if not c then
                                 return
                             end
-                            c.runesRechargeR = r
-                            c.runesRechargeG = g
-                            c.runesRechargeB = b
+                            c.runesRechargeR = red
+                            c.runesRechargeG = green
+                            c.runesRechargeB = blue
                             c.runesRechargeA = a
                             SmoothRefresh()
                         end,
@@ -2394,14 +2394,14 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                             c.enhanceOverflowG or 0.6,
                             c.enhanceOverflowB or 0.2,
                             1
-                    end, function(r, g, b)
+                    end, function(red, green, blue)
                         local c = rowConf()
                         if not c then
                             return
                         end
-                        c.enhanceOverflowR = r
-                        c.enhanceOverflowG = g
-                        c.enhanceOverflowB = b
+                        c.enhanceOverflowR = red
+                        c.enhanceOverflowG = green
+                        c.enhanceOverflowB = blue
                         SmoothRefresh()
                     end, false, 20)
                     colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)

@@ -775,8 +775,8 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         if not c then
                             return 0.2, 0.2, 0.2
                         end
-                        local r, g, b = c:GetRGB()
-                        return r * 0.3, g * 0.3, b * 0.3
+                        local red, green, b = c:GetRGB()
+                        return red * 0.3, green * 0.3, b * 0.3
                     end,
                     setValue = function() end,
                     onClick = function()
@@ -797,12 +797,12 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                             (col and col.b) or 0,
                             (col and col.a) or 0.45
                     end,
-                    setValue = function(r, g, b, a)
+                    setValue = function(red, green, blue, a)
                         local c = KT()
                         if not c then
                             return
                         end
-                        c.barBgColor = { r = r, g = g, b = b, a = a }
+                        c.barBgColor = { r = red, g = green, b = blue, a = a }
                         Set("barBgMode", "custom")
                     end,
                     onClick = function(self)

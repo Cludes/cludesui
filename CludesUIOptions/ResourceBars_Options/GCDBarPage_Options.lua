@@ -474,12 +474,12 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         (p and p.gcdBar.borderB or 0),
                         (p and p.gcdBar.borderA or 1)
                 end,
-                function(r, g, b, a)
+                function(red, green, blue, a)
                     local p = DB()
                     if not p then
                         return
                     end
-                    p.gcdBar.borderR, p.gcdBar.borderG, p.gcdBar.borderB, p.gcdBar.borderA = r, g, b, a
+                    p.gcdBar.borderR, p.gcdBar.borderG, p.gcdBar.borderB, p.gcdBar.borderA = red, green, blue, a
                     RefreshGCD()
                     CludesUI:RefreshPage()
                 end,
@@ -730,13 +730,13 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     end
                     return p.gcdBar.gradientR, p.gcdBar.gradientG, p.gcdBar.gradientB, p.gcdBar.gradientA
                 end,
-                setValue = function(r, g, b, a)
+                setValue = function(red, green, blue, a)
                     local p = DB()
                     if not p then
                         return
                     end
                     p.gcdBar.gradientR, p.gcdBar.gradientG, p.gcdBar.gradientB, p.gcdBar.gradientA =
-                        r, g, b, a
+                        red, green, blue, a
                     RefreshGCD()
                 end,
             },
@@ -752,12 +752,12 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     end
                     return p.gcdBar.fillR, p.gcdBar.fillG, p.gcdBar.fillB, p.gcdBar.fillA
                 end,
-                setValue = function(r, g, b, a)
+                setValue = function(red, green, blue, a)
                     local p = DB()
                     if not p then
                         return
                     end
-                    p.gcdBar.fillR, p.gcdBar.fillG, p.gcdBar.fillB, p.gcdBar.fillA = r, g, b, a
+                    p.gcdBar.fillR, p.gcdBar.fillG, p.gcdBar.fillB, p.gcdBar.fillA = red, green, blue, a
                     if p.gcdBar.classColored then
                         p.gcdBar.classColored = false
                     end
@@ -893,12 +893,12 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 local p = DB()
                 return (p and p.gcdBar.bgR or 0), (p and p.gcdBar.bgG or 0), (p and p.gcdBar.bgB or 0)
             end,
-            function(r, g, b)
+            function(red, green, blue)
                 local p = DB()
                 if not p then
                     return
                 end
-                p.gcdBar.bgR, p.gcdBar.bgG, p.gcdBar.bgB = r, g, b
+                p.gcdBar.bgR, p.gcdBar.bgG, p.gcdBar.bgB = red, green, blue
                 RefreshGCD()
             end,
             nil,

@@ -837,8 +837,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             function()
                 return ma.textColorR or 1, ma.textColorG or 1, ma.textColorB or 1
             end,
-            function(r, g, b)
-                ma.textColorR, ma.textColorG, ma.textColorB = r, g, b
+            function(red, green, blue)
+                ma.textColorR, ma.textColorG, ma.textColorB = red, green, blue
                 Refresh()
             end,
             nil,
@@ -1379,8 +1379,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     get = function()
                         return ma.tsColorR or 0.53, ma.tsColorG or 1, ma.tsColorB or 0
                     end,
-                    set = function(r, g, b)
-                        ma.tsColorR, ma.tsColorG, ma.tsColorB = r, g, b
+                    set = function(red, green, blue)
+                        ma.tsColorR, ma.tsColorG, ma.tsColorB = red, green, blue
                         Refresh()
                     end,
                 },
@@ -1492,8 +1492,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     get = function()
                         return ma.gwColorR or 0.7, ma.gwColorG or 0, ma.gwColorB or 1
                     end,
-                    set = function(r, g, b)
-                        ma.gwColorR, ma.gwColorG, ma.gwColorB = r, g, b
+                    set = function(red, green, blue)
+                        ma.gwColorR, ma.gwColorG, ma.gwColorB = red, green, blue
                         Refresh()
                     end,
                 },

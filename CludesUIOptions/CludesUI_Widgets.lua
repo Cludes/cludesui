@@ -3586,7 +3586,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             entries[#entries + 1] = glowTex
         end
 
-        local function TakeGlow(itemKey, r, g, b, px, noSnap)
+        local function TakeGlow(itemKey, red, green, blue, px, noSnap)
             local entries = freeGlows[itemKey]
             if not entries then
                 entries = {}
@@ -3602,7 +3602,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local glowTex = CreateFrame("Frame")
             local function MkEdge()
                 local t = glowTex:CreateTexture(nil, "OVERLAY", nil, 7)
-                t:SetColorTexture(r, g, b, 1)
+                t:SetColorTexture(red, green, blue, 1)
                 if noSnap and t.SetSnapToPixelGrid then
                     t:SetSnapToPixelGrid(false)
                     t:SetTexelSnappingBias(0)

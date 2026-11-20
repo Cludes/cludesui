@@ -681,13 +681,13 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                             (p and p.swingTimer.borderB or 0),
                             (p and p.swingTimer.borderA or 1)
                     end,
-                    setValue = function(r, g, b, a)
+                    setValue = function(red, green, blue, a)
                         local p = DB()
                         if not p then
                             return
                         end
                         p.swingTimer.borderR, p.swingTimer.borderG, p.swingTimer.borderB, p.swingTimer.borderA =
-                            r, g, b, a
+                            red, green, blue, a
                         RefreshST()
                         CludesUI:RefreshPage()
                     end,
@@ -871,13 +871,13 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         p.swingTimer.gradientB,
                         p.swingTimer.gradientA
                 end,
-                setValue = function(r, g, b, a)
+                setValue = function(red, green, blue, a)
                     local p = DB()
                     if not p then
                         return
                     end
                     p.swingTimer.gradientR, p.swingTimer.gradientG, p.swingTimer.gradientB, p.swingTimer.gradientA =
-                        r, g, b, a
+                        red, green, blue, a
                     RefreshST()
                 end,
             },
@@ -969,12 +969,12 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         (p and p.swingTimer.bgG or 0),
                         (p and p.swingTimer.bgB or 0)
                 end,
-                setValue = function(r, g, b)
+                setValue = function(red, green, blue)
                     local p = DB()
                     if not p then
                         return
                     end
-                    p.swingTimer.bgR, p.swingTimer.bgG, p.swingTimer.bgB = r, g, b
+                    p.swingTimer.bgR, p.swingTimer.bgG, p.swingTimer.bgB = red, green, blue
                     RefreshST()
                 end,
             },

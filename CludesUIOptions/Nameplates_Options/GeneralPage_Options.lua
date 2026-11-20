@@ -298,8 +298,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                         local c = DBVal("friendlyBarColor") or defaultSet.friendlyBarColor
                         return c.r, c.g, c.b
                     end,
-                    set = function(r, g, b)
-                        DB().friendlyBarColor = { r = r, g = g, b = b }
+                    set = function(red, green, blue)
+                        DB().friendlyBarColor = { r = red, g = green, b = blue }
                         mod.RefreshFriendlyColors()
                     end,
                 },
@@ -453,8 +453,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     local c = DBVal("friendlyBelowNameColor") or defaultSet.friendlyBelowNameColor
                     return c.r, c.g, c.b
                 end,
-                setValue = function(r, g, b)
-                    DB().friendlyBelowNameColor = { r = r, g = g, b = b }
+                setValue = function(red, green, blue)
+                    DB().friendlyBelowNameColor = { r = red, g = green, b = blue }
                     if mod.RefreshFriendlyBelowName then
                         mod.RefreshFriendlyBelowName()
                     end
@@ -753,8 +753,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                         local c = DBVal("friendlyNPCNameColor") or defaultSet.friendlyNPCNameColor
                         return c.r, c.g, c.b
                     end,
-                    set = function(r, g, b)
-                        DB().friendlyNPCNameColor = { r = r, g = g, b = b }
+                    set = function(red, green, blue)
+                        DB().friendlyNPCNameColor = { r = red, g = green, b = blue }
                         if mod.RefreshNPCOverlayStyle then
                             mod.RefreshNPCOverlayStyle()
                         end
@@ -768,8 +768,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                         local c = DBVal("friendlyNPCTitleColor") or defaultSet.friendlyNPCTitleColor
                         return c.r, c.g, c.b, c.a or 1
                     end,
-                    set = function(r, g, b, a)
-                        DB().friendlyNPCTitleColor = { r = r, g = g, b = b, a = a or 1 }
+                    set = function(red, green, blue, a)
+                        DB().friendlyNPCTitleColor = { r = red, g = green, b = blue, a = a or 1 }
                         if mod.RefreshNPCOverlayStyle then
                             mod.RefreshNPCOverlayStyle()
                         end
@@ -796,8 +796,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         npcSwatch, updateNpcSwatch = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
             local c = DBVal("friendlyNPCColor") or defaultSet.friendlyNPCColor
             return c.r, c.g, c.b
-        end, function(r, g, b)
-            DB().friendlyNPCColor = { r = r, g = g, b = b }
+        end, function(red, green, blue)
+            DB().friendlyNPCColor = { r = red, g = green, b = blue }
             mod.RefreshFriendlyColors()
             refreshNpcSwatch()
         end, nil, 20)
@@ -1387,8 +1387,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             local c = (DB() and DB().hashLineColor) or defaultSet.hashLineColor
             return c.r, c.g, c.b
         end
-        local hashColorSet = function(r, g, b)
-            DB().hashLineColor = { r = r, g = g, b = b }
+        local hashColorSet = function(red, green, blue)
+            DB().hashLineColor = { r = red, g = green, b = blue }
             RefreshAllPlates()
             UpdatePreview()
         end
@@ -1751,8 +1751,8 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             local c = (DB() and DB().rangeTextColor) or defaultSet.rangeTextColor
             return c.r, c.g, c.b
         end
-        local rangeColorSet = function(r, g, b)
-            DB().rangeTextColor = { r = r, g = g, b = b }
+        local rangeColorSet = function(red, green, blue)
+            DB().rangeTextColor = { r = red, g = green, b = blue }
             if mod.RangeText_Refresh then
                 mod.RangeText_Refresh()
             end

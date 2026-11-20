@@ -504,8 +504,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             local c = (DB() and DB().borderColor) or defaultSet.borderColor
             return c.r, c.g, c.b
         end
-        local borderColorSet = function(r, g, b)
-            DB().borderColor = { r = r, g = g, b = b }
+        local borderColorSet = function(red, green, blue)
+            DB().borderColor = { r = red, g = green, b = blue }
             mod.RefreshBorderColor()
             UpdatePreview()
         end
@@ -899,8 +899,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 local c = (DB() and DB().customBorderColor) or defaultSet.customBorderColor
                 return c.r, c.g, c.b, (DBVal("customBorderAlpha") or defaultSet.customBorderAlpha or 1)
             end
-            local cbColSet = function(r, g, b, a)
-                DB().customBorderColor = { r = r, g = g, b = b }
+            local cbColSet = function(red, green, blue, a)
+                DB().customBorderColor = { r = red, g = green, b = blue }
                 if a ~= nil then
                     DB().customBorderAlpha = a
                 end
@@ -1025,11 +1025,11 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             local c = (DB() and DB().bgColor) or defaultSet.bgColor
             return c.r, c.g, c.b
         end
-        local cbColorSet = function(r, g, b)
-            DB().bgColor = { r = r, g = g, b = b }
+        local cbColorSet = function(red, green, blue)
+            DB().bgColor = { r = red, g = green, b = blue }
             local a = DBVal("bgAlpha") or defaultSet.bgAlpha
             for _, backing in pairs(plates) do
-                backing.healthBG:SetColorTexture(r, g, b, a)
+                backing.healthBG:SetColorTexture(red, green, blue, a)
             end
             UpdatePreview()
         end
@@ -1110,8 +1110,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             local c = (DB() and DB().absorbColor) or defaultSet.absorbColor or { r = 1, g = 1, b = 1 }
             return c.r, c.g, c.b
         end
-        local acColorSet = function(r, g, b)
-            DB().absorbColor = { r = r, g = g, b = b }
+        local acColorSet = function(red, green, blue)
+            DB().absorbColor = { r = red, g = green, b = blue }
             mod.ApplyAbsorbStyleAll()
             UpdatePreview()
         end
@@ -2978,8 +2978,8 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         CludesUI.RegAccent({
             type = "callback",
             obj = lfs,
-            fn = function(r, g, b)
-                lfs:SetTextColor(r, g, b)
+            fn = function(red, green, blue)
+                lfs:SetTextColor(red, green, blue)
             end,
         })
         lfs:SetAlpha(0.85)

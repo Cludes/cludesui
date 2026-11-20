@@ -361,13 +361,13 @@ CludesUI.AtOptionsLogin(function()
 
     -- A pixel-perfect border round hostFrame (the shared PP border; raw
     -- integer sizes, never scaled), as a small handle.
-    local function MakePreviewBorder(hostFrame, r, g, b, a, size)
+    local function MakePreviewBorder(hostFrame, red, green, blue, a, size)
         local holder = CreateFrame("Frame", nil, hostFrame)
         holder:SetAllPoints(hostFrame)
         holder:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
         local PP = CludesUI and CludesUI.PP
         if PP then
-            PP.CreateBorder(holder, r, g, b, a or 1, size or 1, "BORDER", 7)
+            PP.CreateBorder(holder, red, green, blue, a or 1, size or 1, "BORDER", 7)
         end
         local handle = { _frame = holder, edges = (PP and PP.GetBorders(holder)) or {} }
         function handle.SetColor(_, cr, cg, checkBtn, ca)
@@ -855,9 +855,9 @@ CludesUI.AtOptionsLogin(function()
             local get, resolve = _G._CURB_GetSecondaryResource, _G._CURB_ResolveSecondaryResourceColor
             local info = get and resolve and get()
             if info and info.power ~= nil then
-                local r, g, b = resolve(info.power)
-                if r then
-                    return r, g, b
+                local red, green, blue = resolve(info.power)
+                if red then
+                    return red, green, blue
                 end
             end
             return Class()
@@ -869,18 +869,18 @@ CludesUI.AtOptionsLogin(function()
 
     -- A resource background colour: dark mode, a darker class tint (dim =
     -- 0.3 for the bar type, 0.5 for pips), or the custom background.
-    local function ResourceBg(secondaryCfg, r, g, b, dim)
+    local function ResourceBg(secondaryCfg, red, green, blue, dim)
         if secondaryCfg.darkTheme then
             local dr, dg, db = CludesUI.GetDarkModeBg()
             return dr, dg, db, 1
         elseif secondaryCfg.classColored then
-            return r * dim, g * dim, b * dim, 0.5
+            return red * dim, green * dim, blue * dim, 0.5
         end
         return secondaryCfg.bgR, secondaryCfg.bgG, secondaryCfg.bgB, secondaryCfg.bgA
     end
 
     -- The bar texture behind a background (Textured Background), as live.
-    local function TexturedBg(texture, p, secondaryCfg, allowed, r, g, b, a)
+    local function TexturedBg(texture, p, secondaryCfg, allowed, red, green, blue, a)
         if not (p.general.barTextureBg or texture._erbBgTex) then
             return
         end
@@ -888,7 +888,7 @@ CludesUI.AtOptionsLogin(function()
             and allowed
             and (secondaryCfg.fillOpacity or 100) >= 100
             and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, p.general.barTexture, nil)
-        mod.ERB_BgTexture(texture, path, r, g, b, a)
+        mod.ERB_BgTexture(texture, path, red, green, blue, a)
     end
 
     local function FillPath(p)
@@ -903,21 +903,21 @@ CludesUI.AtOptionsLogin(function()
     end
 
     -- A bar-type class resource: one fill over one background, with hash lines.
-    local function StyleResourceBar(barFrame, p, secondaryCfg, height, r, g, b)
+    local function StyleResourceBar(barFrame, p, secondaryCfg, height, red, green, blue)
         local width = p.primary.width or 214
         barFrame:SetSize(width, height)
         local bgTex = barFrame._barBg
         if bgTex then
-            bgTex:SetColorTexture(ResourceBg(secondaryCfg, r, g, b, 0.3))
+            bgTex:SetColorTexture(ResourceBg(secondaryCfg, red, green, blue, 0.3))
             UnsnapTex(bgTex)
-            TexturedBg(bgTex, p, secondaryCfg, true, ResourceBg(secondaryCfg, r, g, b, 0.3))
+            TexturedBg(bgTex, p, secondaryCfg, true, ResourceBg(secondaryCfg, red, green, blue, 0.3))
         end
         local fill = barFrame._barFill
         if fill then
             fill:SetWidth(width * _previewBarFillPct / 100)
             fill:SetHeight(height)
             fill:SetTexture(FillPath(p))
-            fill:SetVertexColor(r, g, b, 1)
+            fill:SetVertexColor(red, green, blue, 1)
             UnsnapTex(fill)
             fill:Show()
             -- Fill Opacity: a see-through fill and the background over the
@@ -1094,7 +1094,7 @@ CludesUI.AtOptionsLogin(function()
     local RUNE_SECONDS = { 2, 4, 6, 7, 9, 10 } -- made-up rune cooldowns, longer to the right
 
     -- One pip: place, background, fill, border, colour and (DK) its rune timer.
-    local function StylePip(i, pipTex, barFrame, p, secondaryCfg, geo, alert, r, g, b, pipBg, isDK)
+    local function StylePip(i, pipTex, barFrame, p, secondaryCfg, geo, alert, red, green, blue, pipBg, isDK)
         pipTex:SetSize(geo.ws[i], geo.height)
         pipTex:ClearAllPoints()
         pipTex:SetPoint("LEFT", barFrame, "LEFT", geo.xs[i], 0)
@@ -1102,10 +1102,10 @@ CludesUI.AtOptionsLogin(function()
         if pipBg then
             pipTex._bg:SetColorTexture(mod.ERB.PipBgColor(secondaryCfg, true))
         else
-            pipTex._bg:SetColorTexture(ResourceBg(secondaryCfg, r, g, b, 0.5))
+            pipTex._bg:SetColorTexture(ResourceBg(secondaryCfg, red, green, blue, 0.5))
         end
         UnsnapTex(pipTex._bg)
-        TexturedBg(pipTex._bg, p, secondaryCfg, not pipBg, ResourceBg(secondaryCfg, r, g, b, 0.5))
+        TexturedBg(pipTex._bg, p, secondaryCfg, not pipBg, ResourceBg(secondaryCfg, red, green, blue, 0.5))
 
         local fill = pipTex._fill
         fill:SetTexture(FillPath(p))
@@ -1158,7 +1158,7 @@ CludesUI.AtOptionsLogin(function()
             if alert.active and not (not alert.bands and alert.partial and i < alert.at) then
                 fill:SetVertexColor(alert.r, alert.g, alert.b, 1)
             else
-                fill:SetVertexColor(r, g, b, 1)
+                fill:SetVertexColor(red, green, blue, 1)
             end
             fill:Show()
         else
@@ -1228,7 +1228,7 @@ CludesUI.AtOptionsLogin(function()
     end
 
     -- A pip-type class resource (always horizontal in the preview).
-    local function StylePips(barFrame, p, secondaryCfg, r, g, b, isDK)
+    local function StylePips(barFrame, p, secondaryCfg, red, green, blue, isDK)
         local count = PreviewPipCount()
         local width, height, xs, ws, slots = PipGeometry(barFrame, secondaryCfg, count)
         barFrame:SetSize(width, height)
@@ -1250,7 +1250,7 @@ CludesUI.AtOptionsLogin(function()
         end
         local geo = { width = width, height = height, xs = xs, ws = ws }
         for i = 1, math.min(count, #pips) do
-            StylePip(i, pips[i], barFrame, p, secondaryCfg, geo, alert, r, g, b, pipBg, isDK)
+            StylePip(i, pips[i], barFrame, p, secondaryCfg, geo, alert, red, green, blue, pipBg, isDK)
         end
         for i = count + 1, #pips do
             pips[i]:Hide()
@@ -1468,7 +1468,7 @@ CludesUI.AtOptionsLogin(function()
         local secondaryCfg = p.secondary
         local isBar = mod.IsBarTypeSecondary()
         local _, class = UnitClass("player")
-        local r, g, b = ResourceColour(secondaryCfg, CLASS_COLORS[class])
+        local red, green, blue = ResourceColour(secondaryCfg, CLASS_COLORS[class])
         -- Its place in the stack (_pvY) is set by LayoutStack; scale stays 1.
         SmoothAnimate(barFrame, "scale", 1.0, function()
             barFrame:SetScale(barFrame["_anim_scale"] or 1.0)
@@ -1477,9 +1477,9 @@ CludesUI.AtOptionsLogin(function()
         end)
         local isDK = class == "DEATHKNIGHT"
         if isBar then
-            StyleResourceBar(barFrame, p, secondaryCfg, secondaryCfg.pipHeight, r, g, b)
+            StyleResourceBar(barFrame, p, secondaryCfg, secondaryCfg.pipHeight, red, green, blue)
         else
-            StylePips(barFrame, p, secondaryCfg, r, g, b, isDK)
+            StylePips(barFrame, p, secondaryCfg, red, green, blue, isDK)
         end
         ResourceChrome(barFrame, secondaryCfg, isBar)
         RoundResource(barFrame, secondaryCfg, isBar)
@@ -1708,8 +1708,8 @@ CludesUI.AtOptionsLogin(function()
             local bgTex = pipTex:CreateTexture(nil, "BACKGROUND")
             bgTex:SetAllPoints()
             if secondaryCfg.darkTheme then
-                local r, g, b = CludesUI.GetDarkModeBg()
-                bgTex:SetColorTexture(r, g, b, 1)
+                local red, green, blue = CludesUI.GetDarkModeBg()
+                bgTex:SetColorTexture(red, green, blue, 1)
             elseif secondaryCfg.classColored then
                 local r = classColour and classColour[1] or 0.95
                 local g = classColour and classColour[2] or 0.90
@@ -2075,10 +2075,10 @@ CludesUI.AtOptionsLogin(function()
                     end
                     return c.hashColorR or 1, c.hashColorG or 1, c.hashColorB or 1, c.hashColorA or 0.7
                 end,
-                set = function(r, g, b, a)
+                set = function(red, green, blue, a)
                     local c = Bar()
                     if c then
-                        c.hashColorR, c.hashColorG, c.hashColorB, c.hashColorA = r, g, b, a
+                        c.hashColorR, c.hashColorG, c.hashColorB, c.hashColorA = red, green, blue, a
                         after()
                     end
                 end,
@@ -2529,10 +2529,10 @@ CludesUI.AtOptionsLogin(function()
                 return d[1], d[2], d[3], d[4]
             end
             return band.r or d[1], band.g or d[2], band.b or d[3], band.a or d[4]
-        end, function(r, g, b, a)
+        end, function(red, green, blue, a)
             local band = RowBand(line)
             if band then
-                band.r, band.g, band.b, band.a = r, g, b, a
+                band.r, band.g, band.b, band.a = red, green, blue, a
                 BandChanged(false)
             end
         end, true, 19)
@@ -2894,10 +2894,10 @@ CludesUI.AtOptionsLogin(function()
                     return d[1], d[2], d[3], d[4]
                 end
                 return entry.r or d[1], entry.g or d[2], entry.b or d[3], entry.a or d[4]
-            end, function(r, g, b, a)
+            end, function(red, green, blue, a)
                 local entry = Item(line)
                 if entry then
-                    entry.r, entry.g, entry.b, entry.a = r, g, b, a
+                    entry.r, entry.g, entry.b, entry.a = red, green, blue, a
                     Changed()
                 end
             end, true, 19)
@@ -3148,9 +3148,9 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local function Update()
-            local r, g, b = CludesUI.GetAccentColor()
-            THR_NOTE_IDLE[1], THR_NOTE_IDLE[2], THR_NOTE_IDLE[3] = r, g, b
-            THR_NOTE_IDLE[4] = CludesUI.HexColor(r, g, b):sub(5)
+            local red, green, blue = CludesUI.GetAccentColor()
+            THR_NOTE_IDLE[1], THR_NOTE_IDLE[2], THR_NOTE_IDLE[3] = red, green, blue
+            THR_NOTE_IDLE[4] = CludesUI.HexColor(red, green, blue):sub(5)
             local list, applies = mod.ThresholdNoticeInfo(getBarData())
             if not list then
                 if CludesUI.HideWidgetTooltip and badgeTex:IsMouseOver() then
@@ -4103,10 +4103,10 @@ CludesUI.AtOptionsLogin(function()
                         entry.hashColorB or 1,
                         entry.hashColorA or 0.7
                 end,
-                function(r, g, b, a)
+                function(red, green, blue, a)
                     local entry = CurEntry()
                     if entry then
-                        entry.hashColorR, entry.hashColorG, entry.hashColorB, entry.hashColorA = r, g, b, a
+                        entry.hashColorR, entry.hashColorG, entry.hashColorB, entry.hashColorA = red, green, blue, a
                         rowConf.rebuildFn()
                     end
                 end,
@@ -4184,10 +4184,10 @@ CludesUI.AtOptionsLogin(function()
                         entry.thresholdB or barRef.thresholdB or defB,
                         entry.thresholdA or barRef.thresholdA or defA
                 end,
-                function(r, g, b, a)
+                function(red, green, blue, a)
                     local entry = CurEntry()
                     if entry then
-                        entry.thresholdR, entry.thresholdG, entry.thresholdB, entry.thresholdA = r, g, b, a;
+                        entry.thresholdR, entry.thresholdG, entry.thresholdB, entry.thresholdA = red, green, blue, a;
                         (rowConf.swatchRefreshFn or rowConf.refreshFn)()
                     end
                 end,
@@ -5057,12 +5057,12 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local fill = barRef:GetStatusBarTexture()
-        local r, g, b = checkBtn.fillR, checkBtn.fillG, checkBtn.fillB
+        local red, green, blue = checkBtn.fillR, checkBtn.fillG, checkBtn.fillB
         if checkBtn.classColored == true then
             local _, class = UnitClass("player")
             local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
             if c then
-                r, g, b = c.r, c.g, c.b
+                red, green, blue = c.r, c.g, c.b
             end
         end
         local opacity = (checkBtn.fillOpacity or 100) / 100
@@ -5071,11 +5071,11 @@ CludesUI.AtOptionsLogin(function()
         elseif checkBtn.gradientEnabled then
             fill:SetGradient(
                 checkBtn.gradientDir or "HORIZONTAL",
-                CreateColor(r, g, b, opacity),
+                CreateColor(red, green, blue, opacity),
                 CreateColor(checkBtn.gradientR, checkBtn.gradientG, checkBtn.gradientB, checkBtn.gradientA * opacity)
             )
         else
-            fill:SetVertexColor(r, g, b, opacity)
+            fill:SetVertexColor(red, green, blue, opacity)
         end
         if texKey ~= "blizzard" and not blizzKit then
             local bgTex = castFrame.bg
@@ -5508,7 +5508,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- One of the bar's texts on the overlay, anchored and justified to
         -- its side; text only while it is on.
-        local function BarText(layer, barRef, side, x, y, size, on, textObj, r, g, b, a)
+        local function BarText(layer, barRef, side, x, y, size, on, textObj, red, green, blue, a)
             local fs = layer:CreateFontString(nil, "OVERLAY")
             SetPVFont(fs, FONT_PATH, size or 11)
             fs:SetPoint(side, barRef, side, x, y)
@@ -5518,7 +5518,7 @@ CludesUI.AtOptionsLogin(function()
             else
                 fs:Hide()
             end
-            mod.ERB_CastTextColor(fs, r, g, b, a)
+            mod.ERB_CastTextColor(fs, red, green, blue, a)
             return fs
         end
 

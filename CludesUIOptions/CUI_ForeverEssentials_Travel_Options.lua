@@ -344,9 +344,9 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                 getValue = function()
                     return FT.Get("borderR"), FT.Get("borderG"), FT.Get("borderB"), 1
                 end,
-                setValue = function(r, g, b)
+                setValue = function(red, green, blue)
                     local c = FT.Cfg()
-                    c.borderR, c.borderG, c.borderB = r, g, b
+                    c.borderR, c.borderG, c.borderB = red, green, blue
                     FT.ApplyStyle()
                 end,
             },
@@ -422,9 +422,9 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                     local ACC = CludesUI.CLUDES_GREEN
                     return ACC.r, ACC.g, ACC.b, 1
                 end,
-                setValue = function(r, g, b)
+                setValue = function(red, green, blue)
                     local c = FT.Cfg()
-                    c.fillR, c.fillG, c.fillB = r, g, b
+                    c.fillR, c.fillG, c.fillB = red, green, blue
                     c.classColored = false
                     FT.ApplyStyle()
                     CludesUI:RefreshPage()
@@ -469,9 +469,9 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                 getValue = function()
                     return FT.Get("bgR"), FT.Get("bgG"), FT.Get("bgB"), 1
                 end,
-                setValue = function(r, g, b)
+                setValue = function(red, green, blue)
                     local c = FT.Cfg()
-                    c.bgR, c.bgG, c.bgB = r, g, b
+                    c.bgR, c.bgG, c.bgB = red, green, blue
                     FT.ApplyStyle()
                 end,
             },
@@ -681,9 +681,9 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                 getValue = function()
                     return FT.Get("sparkR"), FT.Get("sparkG"), FT.Get("sparkB"), 1
                 end,
-                setValue = function(r, g, b)
+                setValue = function(red, green, blue)
                     local c = FT.Cfg()
-                    c.sparkR, c.sparkG, c.sparkB = r, g, b
+                    c.sparkR, c.sparkG, c.sparkB = red, green, blue
                     FT.ApplyStyle()
                 end,
             },

@@ -614,8 +614,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         CludesUI.RegAccent({
                             type = "callback",
                             obj = heading,
-                            fn = function(r, g, b)
-                                heading:SetTextColor(r, g, b)
+                            fn = function(red, green, blue)
+                                heading:SetTextColor(red, green, blue)
                             end,
                         })
                         curY = curY - HDR_H - HDR_GAP
@@ -925,8 +925,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         function()
                             return row.get()
                         end,
-                        function(r, g, b, a)
-                            row.set(r, g, b, a)
+                        function(red, green, blue, a)
+                            row.set(red, green, blue, a)
                             if popFrame._refresh then
                                 popFrame._refresh()
                             end
@@ -1020,11 +1020,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             popFrame,
                             popFrame:GetFrameLevel() + 2,
                             sc.getValue,
-                            function(r, g, b, a)
+                            function(red, green, blue, a)
                                 local f = popupOwner or options.captureRegion
                                 local snap = CludesUI._SOAttribution(f)
                                 if sc.setValue then
-                                    sc.setValue(r, g, b, a)
+                                    sc.setValue(red, green, blue, a)
                                 end
                                 CludesUI._NotifySettingWrite(f, snap)
                                 if popFrame._refresh then

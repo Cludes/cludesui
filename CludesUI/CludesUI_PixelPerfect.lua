@@ -826,10 +826,10 @@ do
     -- A border on a frame the options page pool handed out again (its dress
     -- generation changed since the border was made): the kept container and
     -- strips take this call's look, exactly as a new border would.
-    local function RedressBorder(widget, backdrop, gen, r, g, b, a, borderSize, drawLayer, subLevel, scaleGuard)
-        r = r or 0
-        g = g or 0
-        b = b or 0
+    local function RedressBorder(widget, backdrop, gen, red, green, blue, a, borderSize, drawLayer, subLevel, scaleGuard)
+        red = red or 0
+        green = green or 0
+        blue = blue or 0
         a = a or 1
         borderSize = borderSize or 1
         drawLayer = drawLayer or "OVERLAY"
@@ -840,9 +840,9 @@ do
         backdrop.colDirty = nil
         local colour = backdrop.borderColor
         if colour then
-            colour[1], colour[2], colour[3], colour[4] = r, g, b, a
+            colour[1], colour[2], colour[3], colour[4] = red, green, blue, a
         else
-            colour = { r, g, b, a }
+            colour = { red, green, blue, a }
             backdrop.borderColor = colour
         end
         c._bdColor = colour
@@ -883,7 +883,7 @@ do
         return c
     end
 
-    function Pix.CreateBorder(widget, r, g, b, a, borderSize, drawLayer, subLevel, scaleGuard)
+    function Pix.CreateBorder(widget, red, green, blue, a, borderSize, drawLayer, subLevel, scaleGuard)
         local backdrop = _ppBorderData[widget]
         if backdrop then
             -- A border made on a frame of the options page pool (bd.gen) is dressed
@@ -896,9 +896,9 @@ do
                         widget,
                         backdrop,
                         gen,
-                        r,
-                        g,
-                        b,
+                        red,
+                        green,
+                        blue,
                         a,
                         borderSize,
                         drawLayer,
@@ -916,9 +916,9 @@ do
             end
             return backdrop.container
         end
-        r = r or 0
-        g = g or 0
-        b = b or 0
+        red = red or 0
+        green = green or 0
+        blue = blue or 0
         a = a or 1
         borderSize = borderSize or 1
         drawLayer = drawLayer or "OVERLAY"
@@ -943,12 +943,12 @@ do
         boxHolder._left = MakeTex()
         boxHolder._right = MakeTex()
 
-        boxHolder._bdColor = { r, g, b, a }
+        boxHolder._bdColor = { red, green, blue, a }
         boxHolder._scaleGuard = scaleGuard or nil
         if scaleGuard then
             DecoupleBorderScale(boxHolder)
         end
-        backdrop = { container = boxHolder, borderSize = borderSize, borderColor = { r, g, b, a } }
+        backdrop = { container = boxHolder, borderSize = borderSize, borderColor = { red, green, blue, a } }
         _ppBorderData[widget] = backdrop
         -- A frame of the options page pool keeps its border through every reuse:
         -- the container rides on it (hidden at its reset) and the next call on
@@ -1006,7 +1006,7 @@ do
         backdrop.borderSize = borderSize
     end
 
-    function Pix.SetBorderColor(widget, r, g, b, a)
+    function Pix.SetBorderColor(widget, red, green, blue, a)
         local backdrop = _ppBorderData[widget]
         if backdrop and backdrop.gen ~= nil and Pool.Gen(widget) ~= backdrop.gen then
             backdrop = nil
@@ -1024,17 +1024,17 @@ do
         -- compare too); secrets skip the guard, leave the cache on the last CLEAN color, and mark dirty so the next clean color repaints.
         local colour = backdrop.borderColor
         local secret = issecretvalue
-            and (issecretvalue(r) or issecretvalue(g) or issecretvalue(b) or issecretvalue(a))
+            and (issecretvalue(red) or issecretvalue(green) or issecretvalue(blue) or issecretvalue(a))
         if secret then
             backdrop.colDirty = true
         elseif colour then
-            if not backdrop.colDirty and colour[1] == r and colour[2] == g and colour[3] == b and colour[4] == a then
+            if not backdrop.colDirty and colour[1] == red and colour[2] == green and colour[3] == blue and colour[4] == a then
                 return -- unchanged; the four texture writes below are redundant
             end
             backdrop.colDirty = nil
-            colour[1], colour[2], colour[3], colour[4] = r, g, b, a
+            colour[1], colour[2], colour[3], colour[4] = red, green, blue, a
         else
-            colour = { r, g, b, a }
+            colour = { red, green, blue, a }
             backdrop.borderColor = colour
         end
         if colour then
@@ -1043,22 +1043,22 @@ do
 
         local c = backdrop.container
         if c._top then
-            c._top:SetVertexColor(r, g, b, a)
+            c._top:SetVertexColor(red, green, blue, a)
         end
         if c._bottom then
-            c._bottom:SetVertexColor(r, g, b, a)
+            c._bottom:SetVertexColor(red, green, blue, a)
         end
         if c._left then
-            c._left:SetVertexColor(r, g, b, a)
+            c._left:SetVertexColor(red, green, blue, a)
         end
         if c._right then
-            c._right:SetVertexColor(r, g, b, a)
+            c._right:SetVertexColor(red, green, blue, a)
         end
     end
 
-    function Pix.UpdateBorder(widget, borderSize, r, g, b, a)
-        if r then
-            Pix.SetBorderColor(widget, r, g, b, a)
+    function Pix.UpdateBorder(widget, borderSize, red, green, blue, a)
+        if red then
+            Pix.SetBorderColor(widget, red, green, blue, a)
         end
         Pix.SetBorderSize(widget, borderSize)
     end
@@ -1087,7 +1087,7 @@ do
     -- 7px thick), scaled by (7 - rawBorderSize) and clipped by `mask`. Called with `:`
     -- so self.Point resolves to whichever PP module owns host's frame hierarchy
     -- (world PP vs PanelPP) -- calling with `.` shifts every argument left by one.
-    function Pix:ApplyMaskedShapeBorder(owner, mask, texPath, rawBorderSize, r, g, b, a)
+    function Pix:ApplyMaskedShapeBorder(owner, mask, texPath, rawBorderSize, red, green, blue, a)
         if not owner then
             return
         end
@@ -1099,7 +1099,7 @@ do
             end
             return
         end
-        r, g, b, a = r or 0, g or 0, b or 0, a or 1
+        red, green, blue, a = red or 0, green or 0, blue or 0, a or 1
         -- Every field guarded: callers invoke this on every restyle pass regardless
         -- of whether the border changed, and Remove/AddMaskTexture aren't cheap.
         if
@@ -1107,9 +1107,9 @@ do
             and owner._sbTex == texPath
             and owner._sbSize == rawBorderSize
             and owner._sbMask == mask
-            and owner._sbR == r
-            and owner._sbG == g
-            and owner._sbB == b
+            and owner._sbR == red
+            and owner._sbG == green
+            and owner._sbB == blue
             and owner._sbA == a
         then
             return
@@ -1132,10 +1132,10 @@ do
             pcall(texture.AddMaskTexture, texture, mask)
         end
         texture:SetTexture(texPath)
-        texture:SetVertexColor(r, g, b, a)
+        texture:SetVertexColor(red, green, blue, a)
         texture:Show()
         owner._sbTex, owner._sbSize, owner._sbMask, owner._sbR, owner._sbG, owner._sbB, owner._sbA =
-            texPath, rawBorderSize, mask, r, g, b, a
+            texPath, rawBorderSize, mask, red, green, blue, a
         owner._shapeBorderShown = true
     end
 
@@ -2896,7 +2896,7 @@ do
     end
 
     --- Set border color on whichever system is active (PP or backdrop); used for hover highlights and other dynamic color changes.
-    function CludesUI.SetBorderStyleColor(edgeFrame, r, g, b, a)
+    function CludesUI.SetBorderStyleColor(edgeFrame, red, green, blue, a)
         local Pix = CludesUI.PP
         if not Pix or not edgeFrame then
             return
@@ -2904,12 +2904,12 @@ do
         a = a or 1
         local ppContainer = Pix.GetBorders(edgeFrame)
         if ppContainer and ppContainer:IsShown() then
-            Pix.SetBorderColor(edgeFrame, r, g, b, a)
+            Pix.SetBorderColor(edgeFrame, red, green, blue, a)
             return
         end
         local backdropFrame = BdFrameFor(edgeFrame)
         if backdropFrame and backdropFrame:IsShown() then
-            backdropFrame:SetBackdropBorderColor(r, g, b, a)
+            backdropFrame:SetBackdropBorderColor(red, green, blue, a)
         end
     end
 

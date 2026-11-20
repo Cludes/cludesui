@@ -210,12 +210,12 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         end
                         return keyName.r, keyName.g, keyName.b, keyName.a
                     end,
-                    set = function(r, g, b, a)
+                    set = function(red, green, blue, a)
                         local c = rowConf()
                         if not c then
                             return
                         end
-                        c[keyName.color] = { r = r, g = g, b = b, a = a }
+                        c[keyName.color] = { r = red, g = green, b = blue, a = a }
                         RefreshHealth()
                     end,
                 },
@@ -458,12 +458,12 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         end
                         return keyName.r, keyName.g, keyName.b, 1
                     end,
-                    function(r, g, b)
+                    function(red, green, blue)
                         local c = rowConf()
                         if not c then
                             return
                         end
-                        c[keyName.color] = { r = r, g = g, b = b }
+                        c[keyName.color] = { r = red, g = green, b = blue }
                         RefreshHealth()
                     end,
                     false,
@@ -816,12 +816,12 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                             (c and c.borderB or 0),
                             (c and c.borderA or 1)
                     end,
-                    function(r, g, b, a)
+                    function(red, green, blue, a)
                         local c = rowConf()
                         if not c then
                             return
                         end
-                        c.borderR, c.borderG, c.borderB, c.borderA = r, g, b, a
+                        c.borderR, c.borderG, c.borderB, c.borderA = red, green, blue, a
                         SmoothRefresh()
                         CludesUI:RefreshPage()
                     end,
@@ -1020,20 +1020,20 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                             return
                         end
                         local was = mod.ERB_TexturedBars(p)
-                        local r, g, b, a =
+                        local red, green, blue, a =
                             p.health.borderR, p.health.borderG, p.health.borderB, p.health.borderA
                         local sz = p.health.borderSize or 1
                         local bt = p.health.borderTexture or "solid"
                         local cr, cm = p.health.cornerRadius or 0, p.health.cornerMask
                         p.secondary.borderR, p.secondary.borderG, p.secondary.borderB, p.secondary.borderA =
-                            r, g, b, a
+                            red, green, blue, a
                         p.secondary.borderSize = sz
                         p.secondary.borderTexture = bt
                         p.secondary.cornerRadius = cr
                         p.secondary.cornerMask = cm
                         mod.ERB_CopyBorderPx(p.secondary, p.health)
                         p.primary.borderR, p.primary.borderG, p.primary.borderB, p.primary.borderA =
-                            r, g, b, a
+                            red, green, blue, a
                         p.primary.borderSize = sz
                         p.primary.borderTexture = bt
                         p.primary.cornerRadius = cr
@@ -1189,12 +1189,12 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         end
                         return c.gradientR, c.gradientG, c.gradientB, c.gradientA
                     end,
-                    setValue = function(r, g, b, a)
+                    setValue = function(red, green, blue, a)
                         local c = rowConf()
                         if not c then
                             return
                         end
-                        c.gradientR, c.gradientG, c.gradientB, c.gradientA = r, g, b, a
+                        c.gradientR, c.gradientG, c.gradientB, c.gradientA = red, green, blue, a
                         SmoothRefresh()
                     end,
                 },
@@ -1208,12 +1208,12 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         end
                         return c.fillR, c.fillG, c.fillB, 1
                     end,
-                    setValue = function(r, g, b)
+                    setValue = function(red, green, blue)
                         local c = rowConf()
                         if not c then
                             return
                         end
-                        c.fillR, c.fillG, c.fillB = r, g, b
+                        c.fillR, c.fillG, c.fillB = red, green, blue
                         if not c.customColored then
                             c.customColored = true
                         end
@@ -1423,12 +1423,12 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         end
                         return c.textFillR, c.textFillG, c.textFillB, c.textFillA
                     end,
-                    setValue = function(r, g, b, a)
+                    setValue = function(red, green, blue, a)
                         local c = rowConf()
                         if not c then
                             return
                         end
-                        c.textFillR, c.textFillG, c.textFillB, c.textFillA = r, g, b, a
+                        c.textFillR, c.textFillG, c.textFillB, c.textFillA = red, green, blue, a
                         RebuildHealth()
                         SmoothRefresh()
                     end,

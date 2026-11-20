@@ -617,8 +617,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                             local c = SGet(colorKey) or mod._internals.defaults.profile[colorKey]
                             return c.r, c.g, c.b
                         end,
-                        set = function(r, g, b)
-                            SSet(colorKey, { r = r, g = g, b = b })
+                        set = function(red, green, blue)
+                            SSet(colorKey, { r = red, g = green, b = blue })
                             if mod._UpdateRoleIcons then
                                 mod._UpdateRoleIcons()
                             end
@@ -1033,8 +1033,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     return c.r, c.g, c.b, 1
                 end
                 return 1, 1, 1, 1
-            end, function(r, g, b)
-                SWrite("statusTextColor", { r = r, g = g, b = b })
+            end, function(red, green, blue)
+                SWrite("statusTextColor", { r = red, g = green, b = blue })
                 ReloadAndUpdate()
             end, false, 20)
             colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1294,8 +1294,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     return c.r, c.g, c.b, 1
                 end
                 return 1, 0.2, 0.2, 1
-            end, function(r, g, b)
-                SWrite("combatIndicatorCustomColor", { r = r, g = g, b = b })
+            end, function(red, green, blue)
+                SWrite("combatIndicatorCustomColor", { r = red, g = green, b = blue })
                 if mod._UpdateCombatIcons then
                     mod._UpdateCombatIcons()
                 end
@@ -1330,8 +1330,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         return c.r, c.g, c.b, c.a or 0.75
                     end
                     return 1, 1, 1, 0.75
-                end, function(r, g, b, a)
-                    SWrite("groupNumberColor", { r = r, g = g, b = b, a = a })
+                end, function(red, green, blue, a)
+                    SWrite("groupNumberColor", { r = red, g = green, b = blue, a = a })
                     ReloadAndUpdate()
                 end, true, 20)
                 colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1738,8 +1738,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     end
                     return 0.354, 0.396, 0.74, 1
                 end,
-                setValue = function(r, g, b, a)
-                    SWrite("dispelColorMagic", { r = r, g = g, b = b, a = a or 1 })
+                setValue = function(red, green, blue, a)
+                    SWrite("dispelColorMagic", { r = red, g = green, b = blue, a = a or 1 })
                     ReloadAndUpdate()
                 end,
             },
@@ -1753,8 +1753,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     end
                     return 0.636, 0.0, 0.64, 1
                 end,
-                setValue = function(r, g, b, a)
-                    SWrite("dispelColorCurse", { r = r, g = g, b = b, a = a or 1 })
+                setValue = function(red, green, blue, a)
+                    SWrite("dispelColorCurse", { r = red, g = green, b = blue, a = a or 1 })
                     ReloadAndUpdate()
                 end,
             },
@@ -1768,8 +1768,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     end
                     return 0.71, 0.379, 0.0, 1
                 end,
-                setValue = function(r, g, b, a)
-                    SWrite("dispelColorDisease", { r = r, g = g, b = b, a = a or 1 })
+                setValue = function(red, green, blue, a)
+                    SWrite("dispelColorDisease", { r = red, g = green, b = blue, a = a or 1 })
                     ReloadAndUpdate()
                 end,
             },
@@ -1783,8 +1783,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     end
                     return 0.052, 0.586, 0.62, 1
                 end,
-                setValue = function(r, g, b, a)
-                    SWrite("dispelColorPoison", { r = r, g = g, b = b, a = a or 1 })
+                setValue = function(red, green, blue, a)
+                    SWrite("dispelColorPoison", { r = red, g = green, b = blue, a = a or 1 })
                     ReloadAndUpdate()
                 end,
             },
@@ -1798,8 +1798,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     end
                     return 0.75, 0.15, 0.15, 1
                 end,
-                setValue = function(r, g, b, a)
-                    SWrite("dispelColorBleed", { r = r, g = g, b = b, a = a or 1 })
+                setValue = function(red, green, blue, a)
+                    SWrite("dispelColorBleed", { r = red, g = green, b = blue, a = a or 1 })
                     ReloadAndUpdate()
                 end,
             },
@@ -1918,8 +1918,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         return c.r, c.g, c.b, 1
                     end
                     return 17 / 255, 17 / 255, 17 / 255, 1
-                end, function(r, g, b)
-                    SWrite("topNameBarBgColor", { r = r, g = g, b = b })
+                end, function(red, green, blue)
+                    SWrite("topNameBarBgColor", { r = red, g = green, b = blue })
                     ReloadAndUpdate()
                 end, false, 20)
                 bgSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -2015,8 +2015,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         return c.r, c.g, c.b, 1
                     end
                     return 1, 1, 1, 1
-                end, function(r, g, b)
-                    SWrite("topNameBarTextColor", { r = r, g = g, b = b })
+                end, function(red, green, blue)
+                    SWrite("topNameBarTextColor", { r = red, g = green, b = blue })
                     ReloadAndUpdate()
                 end, "custom", true, "Custom Color")
                 AddTNBSwatch(function()
@@ -2221,8 +2221,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         return c.r, c.g, c.b, 1
                     end
                     return 23 / 255, 172 / 255, 49 / 255, 1
-                end, function(r, g, b)
-                    FBSet().healthColor = { r = r, g = g, b = b }
+                end, function(red, green, blue)
+                    FBSet().healthColor = { r = red, g = green, b = blue }
                     mod.FB_Apply()
                 end, false, 20)
                 colorSwatch:SetPoint("RIGHT", region, "RIGHT", -20, 0)
@@ -2931,9 +2931,9 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     local c = HMS().color
                     return (c and c.r) or 1, (c and c.g) or 1, (c and c.b) or 1, 1
                 end,
-                setValue = function(r, g, b)
+                setValue = function(red, green, blue)
                     local hm = HMS()
-                    hm.color = { r = r, g = g, b = b }
+                    hm.color = { r = red, g = green, b = blue }
                     hm.colorMode = "custom"
                     HMRefresh()
                 end,
@@ -3161,8 +3161,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         local c = mod._PGCustomColor(colorKey)
                         return c.r, c.g, c.b, c.a or 1
                     end,
-                    setValue = function(r, g, b, a)
-                        PGS()[colorKey] = { r = r, g = g, b = b, a = a }
+                    setValue = function(red, green, blue, a)
+                        PGS()[colorKey] = { r = red, g = green, b = blue, a = a }
                         PGRefresh()
                     end,
                     onClick = function(self)
@@ -3192,8 +3192,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     hasAlpha = false,
                     refreshAlpha = Alpha("accent"),
                     getValue = function()
-                        local r, g, b = CludesUI.ResolveActiveAccent()
-                        return r or 1, g or 1, b or 1, 1
+                        local red, green, b = CludesUI.ResolveActiveAccent()
+                        return red or 1, green or 1, b or 1, 1
                     end,
                     setValue = function() end,
                     onClick = Pick("accent"),
@@ -3241,8 +3241,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         local c = select(3, mod._PGStyle())
                         return c.r, c.g, c.b, c.a or 1
                     end,
-                    setValue = function(r, g, b, a)
-                        PGS().bgColor = { r = r, g = g, b = b, a = a }
+                    setValue = function(red, green, blue, a)
+                        PGS().bgColor = { r = red, g = green, b = blue, a = a }
                         PGRefresh()
                     end,
                 },
@@ -3411,8 +3411,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     end
                     return 0x66 / 255, 0x66 / 255, 0x66 / 255
                 end,
-                setValue = function(r, g, b)
-                    SWrite("statusColorOffline", { r = r, g = g, b = b })
+                setValue = function(red, green, blue)
+                    SWrite("statusColorOffline", { r = red, g = green, b = blue })
                     ReloadAndUpdate()
                 end,
             },
@@ -3426,8 +3426,8 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     end
                     return 0x24 / 255, 0x17 / 255, 0x17 / 255
                 end,
-                setValue = function(r, g, b)
-                    SWrite("statusColorDead", { r = r, g = g, b = b })
+                setValue = function(red, green, blue)
+                    SWrite("statusColorDead", { r = red, g = green, b = blue })
                     ReloadAndUpdate()
                 end,
             },

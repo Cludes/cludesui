@@ -460,9 +460,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local ring = layer:CreateTexture(nil, "OVERLAY")
             note = layer:CreateTexture(nil, "OVERLAY", nil, 1)
             L.note, L.ring = note, ring
-            local r, g, b = CludesUI.GetAccentColor()
-            note:SetVertexColor(r, g, b, 1)
-            ring:SetVertexColor(r, g, b, 1)
+            local red, green, blue = CludesUI.GetAccentColor()
+            note:SetVertexColor(red, green, blue, 1)
+            ring:SetVertexColor(red, green, blue, 1)
             ring:SetAlpha(0)
             -- Keyed by the textures: the page pool forgets the entries when it resets them.
             CludesUI.RegAccent({ type = "vertex", obj = note })
@@ -720,8 +720,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- disabled (owner 2026-10-23).
     local function UnlockJumpPaint(button, off, hot)
         button:SetAlpha(off and 0.2 or (hot and 1 or 0.7))
-        local r, g, b = CludesUI.GetAccentColor()
-        button._icon:SetVertexColor(r, g, b)
+        local red, green, blue = CludesUI.GetAccentColor()
+        button._icon:SetVertexColor(red, green, blue)
     end
 
     function CludesUI.BuildUnlockJump(region, options)
@@ -855,9 +855,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local dropMenu
         local function Lit(enabled)
             if enabled then
-                local r, g, b = RowMenuLitColor()
-                arrow:SetVertexColor(r, g, b)
-                labelText:SetTextColor(r, g, b)
+                local red, green, blue = RowMenuLitColor()
+                arrow:SetVertexColor(red, green, blue)
+                labelText:SetTextColor(red, green, blue)
             else
                 arrow:SetVertexColor(1, 1, 1)
                 labelText:SetTextColor(CludesUI.TEXT_WHITE_R, CludesUI.TEXT_WHITE_G, CludesUI.TEXT_WHITE_B)

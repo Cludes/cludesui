@@ -95,6 +95,6 @@ function mod.FontColor(key)
         tonumber(stored[3]) or default[3]
 end
 
-function mod.SetFontColor(key, r, g, b)
-    mod.DB()[key] = { r, g, b }
+function mod.SetFontColor(key, red, green, blue)
+    mod.DB()[key] = { red, green, blue }
 end

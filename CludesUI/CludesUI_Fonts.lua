@@ -859,7 +859,7 @@ function CludesUI.SetFontFamily(fontStr, filePath, size, outlineFlags, shadow)
     -- The getters may hand back secret values (a text colour set from secret
     -- data), so they are tested with type() only and passed straight back.
     local justifyH, justifyV = fontStr:GetJustifyH(), fontStr:GetJustifyV()
-    local r, g, b, a = fontStr:GetTextColor()
+    local red, green, blue, a = fontStr:GetTextColor()
     fontStr:SetFontObject(fam)
     if type(justifyH) == "string" then
         fontStr:SetJustifyH(justifyH)
@@ -867,8 +867,8 @@ function CludesUI.SetFontFamily(fontStr, filePath, size, outlineFlags, shadow)
     if type(justifyV) == "string" then
         fontStr:SetJustifyV(justifyV)
     end
-    if type(r) == "number" then
-        fontStr:SetTextColor(r, g, b, a)
+    if type(red) == "number" then
+        fontStr:SetTextColor(red, green, blue, a)
     end
 end
 

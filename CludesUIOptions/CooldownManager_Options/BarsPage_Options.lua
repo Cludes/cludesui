@@ -1398,10 +1398,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     function()
                         return BD().barBgR or 0, BD().barBgG or 0, BD().barBgB or 0, BD().barBgA or 0.5
                     end,
-                    function(r, g, b, a)
-                        BD().barBgR = r
-                        BD().barBgG = g
-                        BD().barBgB = b
+                    function(red, green, blue, a)
+                        BD().barBgR = red
+                        BD().barBgG = green
+                        BD().barBgB = blue
                         BD().barBgA = a
                         RebuildBars()
                     end,
@@ -2081,8 +2081,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     local edge = BD()
                     return edge.focusReminderR or 1, edge.focusReminderG or 1, edge.focusReminderB or 1
                 end,
-                function(r, g, b)
-                    BD().focusReminderR, BD().focusReminderG, BD().focusReminderB = r, g, b
+                function(red, green, blue)
+                    BD().focusReminderR, BD().focusReminderG, BD().focusReminderB = red, green, blue
                     BD().focusReminderUseAccent = false
                     RefreshReminders()
                 end,
@@ -3074,10 +3074,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     function()
                         return BD().borderR or 0, BD().borderG or 0, BD().borderB or 0
                     end,
-                    function(r, g, b)
+                    function(red, green, blue)
                         -- Picking a color always switches off class color so the chosen custom color actually applies.
                         BD().borderClassColor = false
-                        BD().borderR, BD().borderG, BD().borderB = r, g, b
+                        BD().borderR, BD().borderG, BD().borderB = red, green, blue
                         mod.RefreshCDMIconAppearance(BD().key)
                         Refresh()
                         UpdateCDMPreview()
@@ -3559,8 +3559,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     function()
                         return BD().borderR or 0, BD().borderG or 0, BD().borderB or 0
                     end,
-                    function(r, g, b)
-                        BD().borderR, BD().borderG, BD().borderB = r, g, b
+                    function(red, green, blue)
+                        BD().borderR, BD().borderG, BD().borderB = red, green, blue
                         mod.RefreshCDMIconAppearance(BD().key)
                         Refresh()
                         UpdateCDMPreview()
@@ -3850,10 +3850,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             function()
                 return BD().cooldownTextR or 1, BD().cooldownTextG or 1, BD().cooldownTextB or 1
             end,
-            function(r, g, b)
-                BD().cooldownTextR = r
-                BD().cooldownTextG = g
-                BD().cooldownTextB = b
+            function(red, green, blue)
+                BD().cooldownTextR = red
+                BD().cooldownTextG = green
+                BD().cooldownTextB = blue
                 mod.RefreshCDMIconAppearance(BD().key)
                 Refresh()
                 UpdateCDMPreview()
@@ -4033,10 +4033,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             function()
                 return BD().stackCountR or 1, BD().stackCountG or 1, BD().stackCountB or 1
             end,
-            function(r, g, b)
-                BD().stackCountR = r
-                BD().stackCountG = g
-                BD().stackCountB = b
+            function(red, green, blue)
+                BD().stackCountR = red
+                BD().stackCountG = green
+                BD().stackCountB = blue
                 mod.RefreshCDMIconAppearance(BD().key)
                 RebuildBars()
             end,
@@ -4164,10 +4164,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                     BD().pixelGlowBackgroundG or 0,
                                     BD().pixelGlowBackgroundB or 0
                             end,
-                            set = function(r, g, b)
-                                BD().pixelGlowBackgroundR = r
-                                BD().pixelGlowBackgroundG = g
-                                BD().pixelGlowBackgroundB = b
+                            set = function(red, green, blue)
+                                BD().pixelGlowBackgroundR = red
+                                BD().pixelGlowBackgroundG = green
+                                BD().pixelGlowBackgroundB = blue
                                 mod.BuildAllCDMBars()
                                 if mod.RequestBarGlowUpdate then
                                     mod.RequestBarGlowUpdate()
@@ -4276,10 +4276,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 BD().buffGlowBackgroundG or 0,
                                 BD().buffGlowBackgroundB or 0
                         end,
-                        set = function(r, g, b)
-                            BD().buffGlowBackgroundR = r
-                            BD().buffGlowBackgroundG = g
-                            BD().buffGlowBackgroundB = b
+                        set = function(red, green, blue)
+                            BD().buffGlowBackgroundR = red
+                            BD().buffGlowBackgroundG = green
+                            BD().buffGlowBackgroundB = blue
                             mod.BuildAllCDMBars()
                             if mod.RefreshBuffGlows then
                                 mod.RefreshBuffGlows()
@@ -4534,12 +4534,12 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 RotGet("rotationAssistColorG", 0),
                 RotGet("rotationAssistColorB", 0)
         end
-        local function RotSetCustomRGB(r, g, b)
+        local function RotSetCustomRGB(red, green, blue)
             local c = RotationBars()
             if c then
-                c.rotationAssistColorR = r
-                c.rotationAssistColorG = g
-                c.rotationAssistColorB = b
+                c.rotationAssistColorR = red
+                c.rotationAssistColorG = green
+                c.rotationAssistColorB = blue
             end
             RotRedraw()
         end
@@ -4670,8 +4670,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 type = "colorpicker",
                                 text = "Rotation Assist Custom Color",
                                 getValue = function()
-                                    local r, g, b = RotCustomRGB()
-                                    return r, g, b, 1
+                                    local red, green, b = RotCustomRGB()
+                                    return red, green, b, 1
                                 end,
                                 setValue = RotSetCustomRGB,
                             },
