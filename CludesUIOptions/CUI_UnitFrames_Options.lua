@@ -504,7 +504,7 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
                 },
             },
         })
-        local function UpdateCogVis()
+        local function SyncCastBorderCog()
             local texture = settingGet().castBorderStyle or "solid"
             if texture == "solid" or texture == "" or BS.Get("unitframes") then
                 cogBtn:Hide()
@@ -512,8 +512,8 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
                 cogBtn:Show()
             end
         end
-        CludesUI.RegisterWidgetRefresh(UpdateCogVis)
-        UpdateCogVis()
+        CludesUI.RegisterWidgetRefresh(SyncCastBorderCog)
+        SyncCastBorderCog()
     end
 
     -- Colour swatch (with alpha) on Border Size; greyed and blocked at 0.
@@ -542,7 +542,7 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
         block:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        local function UpdateSw()
+        local function SyncCastSwatch()
             updateSw()
             if (settingGet().castBorderSize or 1) == 0 then
                 sw:SetAlpha(0.3)
@@ -552,8 +552,8 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
                 block:Hide()
             end
         end
-        CludesUI.RegisterWidgetRefresh(UpdateSw)
-        UpdateSw()
+        CludesUI.RegisterWidgetRefresh(SyncCastSwatch)
+        SyncCastSwatch()
     end
 
     -- Apply-to-all links (main frames page): the style link carries the style,
@@ -925,7 +925,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
                 },
             },
         })
-        local function UpdateCogVis()
+        local function SyncCastBorderCog()
             local texture = B.borderTexture or "solid"
             if Inheriting() or texture == "solid" or texture == "" or BS.Get("unitframes") then
                 cogBtn:Hide()
@@ -933,8 +933,8 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
                 cogBtn:Show()
             end
         end
-        CludesUI.RegisterWidgetRefresh(UpdateCogVis)
-        UpdateCogVis()
+        CludesUI.RegisterWidgetRefresh(SyncCastBorderCog)
+        SyncCastBorderCog()
     end
 
     -- Colour swatch (with alpha) on Border Size: shows what is drawn; greyed
@@ -1014,7 +1014,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
         block:SetScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        local function UpdateSw()
+        local function SyncCastSwatch()
             updateSw()
             if Inheriting() or (B.borderSize or 1) == 0 then
                 sw:SetAlpha(0.3)
@@ -1024,8 +1024,8 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
                 block:Hide()
             end
         end
-        CludesUI.RegisterWidgetRefresh(UpdateSw)
-        UpdateSw()
+        CludesUI.RegisterWidgetRefresh(SyncCastSwatch)
+        SyncCastSwatch()
     end
     return y0 - cursorY
 end

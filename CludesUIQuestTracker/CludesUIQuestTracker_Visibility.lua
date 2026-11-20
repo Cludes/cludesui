@@ -189,7 +189,7 @@ local function HookShow()
     end)
 end
 
-local function UpdateVisibility()
+local function SyncTrackerShown()
     HookShow()
     local byPlace = HiddenByPlace()
     if suppressed or byPlace then
@@ -236,11 +236,11 @@ local function UpdateVisibility()
         EQT.ResizeBGToContent()
     end
 end
-EQT.UpdateVisibility = UpdateVisibility
+EQT.UpdateVisibility = SyncTrackerShown
 
 -- The options once rebuilt a state driver through this; it stays for them.
 function EQT.RefreshStateDriver()
-    UpdateVisibility()
+    SyncTrackerShown()
 end
 
 -------------------------------------------------------------------------------
@@ -561,14 +561,14 @@ function EQT.InitVisibility()
             end
         end
         instanceType = select(2, GetInstanceInfo()) or "none"
-        UpdateVisibility()
+        SyncTrackerShown()
         MatchBackground()
     end)
 
     -- The shared visibility pass (combat, mounted and the other modes).
     CludesUI.RegisterVisibilityUpdater(function()
         if not suppressed then
-            UpdateVisibility()
+            SyncTrackerShown()
         end
     end)
 
@@ -583,5 +583,5 @@ function EQT.InitVisibility()
         end)
     end
 
-    C_Timer.After(0.5, UpdateVisibility)
+    C_Timer.After(0.5, SyncTrackerShown)
 end

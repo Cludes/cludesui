@@ -120,13 +120,13 @@ qolFrame:SetScript("OnEvent", function(self)
         local rollBtn, passBtn, rollCover, passCover
         local waiting
 
-        local function Enabled()
+        local function RollConfirmOn()
             return CludesUIDB
                 and CludesUIDB.bonusRollConfirmation == true
                 and not C_AddOns.IsAddOnLoaded("BonusRollConfirm")
         end
 
-        local function Invalidate()
+        local function DropWaiting()
             local old = waiting
             waiting = nil
             -- The house popup is shared: the handle closes it only while it
@@ -151,7 +151,7 @@ qolFrame:SetScript("OnEvent", function(self)
         local function IsCurrent(pendingRequest)
             local widget = BonusRollFrame
             return isActive
-                and Enabled()
+                and RollConfirmOn()
                 and widget
                 and widget:IsShown()
                 and widget.state == "prompt"
@@ -166,10 +166,10 @@ qolFrame:SetScript("OnEvent", function(self)
         end
 
         local function Click(forRoll, btnFrame, mouseButton, down)
-            if not isActive or not Enabled() then
+            if not isActive or not RollConfirmOn() then
                 return
             end
-            Invalidate()
+            DropWaiting()
             local widget = BonusRollFrame
             if not widget then
                 return
@@ -205,7 +205,7 @@ qolFrame:SetScript("OnEvent", function(self)
                         return
                     end
                     local valid = IsCurrent(pendingRequest)
-                    Invalidate()
+                    DropWaiting()
                     if valid then
                         btnFrame:Click(mouseButton, down)
                     end
@@ -213,12 +213,12 @@ qolFrame:SetScript("OnEvent", function(self)
             })
         end
 
-        local function SyncOverlays()
+        local function SyncRollCovers()
             if not rollCover then
                 return
             end
             local widget = BonusRollFrame
-            local shouldShow = isActive and Enabled() and widget and widget:IsShown() and widget.state == "prompt"
+            local shouldShow = isActive and RollConfirmOn() and widget and widget:IsShown() and widget.state == "prompt"
             rollCover:SetShown(shouldShow and true or false)
             passCover:SetShown(shouldShow and CludesUIDB.bonusRollOnly == false or false)
         end
@@ -243,7 +243,7 @@ qolFrame:SetScript("OnEvent", function(self)
 
         local function Install()
             if rollBtn then
-                SyncOverlays()
+                SyncRollCovers()
                 return
             end
             local widget = BonusRollFrame
@@ -262,8 +262,8 @@ qolFrame:SetScript("OnEvent", function(self)
                 lifecycleHooked = true
                 local function Changed()
                     if isActive then
-                        Invalidate()
-                        SyncOverlays()
+                        DropWaiting()
+                        SyncRollCovers()
                     end
                 end
                 -- Secure post-hooks only: every prompt opens and closes through
@@ -273,14 +273,14 @@ qolFrame:SetScript("OnEvent", function(self)
                 hooksecurefunc("BonusRollFrame_StartBonusRoll", Changed)
                 hooksecurefunc("BonusRollFrame_CloseBonusRoll", Changed)
             end
-            SyncOverlays()
+            SyncRollCovers()
         end
 
         local function Apply()
-            Invalidate()
-            isActive = Enabled()
+            DropWaiting()
+            isActive = RollConfirmOn()
             if not isActive then
-                SyncOverlays()
+                SyncRollCovers()
                 if eventWatcher then
                     eventWatcher:UnregisterAllEvents()
                 end
@@ -294,8 +294,8 @@ qolFrame:SetScript("OnEvent", function(self)
                             CludesUI._applyBonusRollConfirmation()
                         end
                     else
-                        Invalidate()
-                        SyncOverlays()
+                        DropWaiting()
+                        SyncRollCovers()
                     end
                 end)
             end
@@ -5008,7 +5008,7 @@ end
 --  Hide Tutorial Pop-ups
 -------------------------------------------------------------------------------
 do
-    local function Enabled()
+    local function RollConfirmOn()
         return CludesUIDB and CludesUIDB.hideTutorials
     end
 
@@ -5095,14 +5095,14 @@ do
         coreHooked = true
         if HelpTip and HelpTip.Show then
             hooksecurefunc(HelpTip, "Show", function()
-                if Enabled() then
+                if RollConfirmOn() then
                     HideOpenTips()
                 end
             end)
         end
         if ShowUIPanel then
             hooksecurefunc("ShowUIPanel", function(widget)
-                if Enabled() and widget then
+                if RollConfirmOn() and widget then
                     HideButtonsUnder(widget)
                     HideOpenTips()
                 end
@@ -5118,14 +5118,14 @@ do
         tooltipHooked = true
         if HelpPlate and HelpPlate.ShowTutorialTooltip then
             hooksecurefunc(HelpPlate, "ShowTutorialTooltip", function()
-                if Enabled() and HelpPlateTooltip then
+                if RollConfirmOn() and HelpPlateTooltip then
                     HelpPlateTooltip:Hide()
                 end
             end)
         end
         if HelpPlateTooltip.Init then
             hooksecurefunc(HelpPlateTooltip, "Init", function(self)
-                if Enabled() then
+                if RollConfirmOn() then
                     self:Hide()
                 end
             end)
@@ -5134,7 +5134,7 @@ do
 
     local weSetCVar = false
     local function ApplyHideTutorials()
-        if Enabled() then
+        if RollConfirmOn() then
             InstallCoreHooks()
             InstallTooltipHook()
             pcall(CludesUI.SetCVar, "hideHelptips", "1", "CludesUIQoL")
@@ -5160,7 +5160,7 @@ do
     frame:SetScript("OnEvent", function(_, eventName, addon)
         if eventName == "ADDON_LOADED" then
             -- Gated: nothing is hooked while the feature is off.
-            if addon == "Blizzard_HelpPlate" and Enabled() then
+            if addon == "Blizzard_HelpPlate" and RollConfirmOn() then
                 InstallTooltipHook()
             end
             return
@@ -5792,7 +5792,7 @@ do
         end
     end
 
-    local function CreateDistFrame()
+    local function BuildRangePanel()
         if distancePanel then
             return
         end
@@ -5810,7 +5810,7 @@ do
     end
 
     local function ShowSample()
-        CreateDistFrame()
+        BuildRangePanel()
         ApplyRangeFrame()
         local textValue, colorY = SampleForFormat()
         distancePanel._text:SetText(textValue)
@@ -5894,7 +5894,7 @@ do
             end
             return
         end
-        CreateDistFrame()
+        BuildRangePanel()
         ApplyRangeFrame()
         distancePanel._text:SetText(textValue)
         distancePanel._text:SetTextColor(ColorForYards(colorY))
@@ -5920,7 +5920,7 @@ do
         if not AutoOpenOn() then
             return
         end
-        CreateDistFrame()
+        BuildRangePanel()
         ApplyRangeFrame()
         Tick()
     end
@@ -5947,7 +5947,7 @@ do
                     if not AutoOpenOn() then
                         return nil
                     end
-                    CreateDistFrame()
+                    BuildRangePanel()
                     if CludesUI._unlockActive then
                         ShowSample()
                     end
@@ -5994,7 +5994,7 @@ do
                     if not AutoOpenOn() then
                         return
                     end
-                    CreateDistFrame()
+                    BuildRangePanel()
                     ApplyRangeFrame()
                     if CludesUI._unlockActive then
                         ShowSample()

@@ -141,7 +141,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
             return ProfileVal(key, default)
         end
     end
-    local function Refresh()
+    local function SyncProxyModes()
         if mod._RefreshProxyModes then
             mod._RefreshProxyModes()
         end
@@ -154,7 +154,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
     end
     local function PtSet(keyName, value)
         db.profile[keyName] = value
-        Refresh()
+        SyncProxyModes()
     end
     -- Row setters over PtSet: the key written with the row's value.
     local function PtSetRow(key)
@@ -195,7 +195,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                 profile.partyPortraitSide = "left"
             end
         end
-        Refresh()
+        SyncProxyModes()
     end
 
     -- Art Style: 2D, 3D, or class art in one of seven sets (the flyout).
@@ -1597,7 +1597,7 @@ CludesUI.AtLogin(function()
         local testModeFrame = nil
         local testModeActive = false
 
-        local function CloseTestMode()
+        local function EndTestMode()
             testModeActive = false
             mod._testMode = false
             if testModeFrame then
@@ -1734,11 +1734,11 @@ CludesUI.AtLogin(function()
                 checks[#checks + 1] = checkBtn
                 checks[#checks + 1] = checkMark
 
-                local function Refresh()
+                local function SyncProxyModes()
                     local value = getVal()
                     checkMark:SetShown(value)
                 end
-                Refresh()
+                SyncProxyModes()
 
                 local function DoToggle()
                     setVal(not getVal())
@@ -1787,7 +1787,7 @@ CludesUI.AtLogin(function()
                         eLbl:SetAlpha(0.4)
                     end)
                     editBtn:SetScript("OnClick", function()
-                        CloseTestMode()
+                        EndTestMode()
                         if editTarget.page then
                             CludesUI:SelectPage(editTarget.page)
                             -- Scroll to + highlight the target row once the page builds.
@@ -1833,8 +1833,8 @@ CludesUI.AtLogin(function()
                 end
 
                 cy = cy - ROW_H
-                allRefreshFns[#allRefreshFns + 1] = Refresh
-                return checkBtn, Refresh, row
+                allRefreshFns[#allRefreshFns + 1] = SyncProxyModes
+                return checkBtn, SyncProxyModes, row
             end
 
             local nonIndicatorRows = {}
@@ -2042,7 +2042,7 @@ CludesUI.AtLogin(function()
                 clBg:SetColorTexture(0.25, 0.25, 0.25, 0.6)
                 clLbl:SetAlpha(0.7)
             end)
-            closeBtn:SetScript("OnClick", CloseTestMode)
+            closeBtn:SetScript("OnClick", EndTestMode)
 
             -- Dead space closes.
             testModeFrame:SetScript("OnMouseDown", function()
@@ -2050,7 +2050,7 @@ CludesUI.AtLogin(function()
                 if (panelFrame and panelFrame:IsMouseOver()) or (oc and oc:IsMouseOver()) then
                     return
                 end
-                CloseTestMode()
+                EndTestMode()
             end)
 
             testModeFrame:SetScript("OnKeyDown", function(self, key)
@@ -2059,7 +2059,7 @@ CludesUI.AtLogin(function()
                 end
                 if key == "ESCAPE" then
                     self:SetPropagateKeyboardInput(false)
-                    CloseTestMode()
+                    EndTestMode()
                 else
                     self:SetPropagateKeyboardInput(true)
                 end
@@ -2103,7 +2103,7 @@ CludesUI.AtLogin(function()
 
         local function OpenTestMode()
             if testModeActive then
-                CloseTestMode()
+                EndTestMode()
                 return
             end
             testModeActive = true
@@ -2177,7 +2177,7 @@ CludesUI.AtLogin(function()
         end
 
         mod.OpenTestMode = OpenTestMode
-        mod.CloseTestMode = CloseTestMode
+        mod.CloseTestMode = EndTestMode
 
         -- Test button appears on the tab bar while the RF module is selected.
         local testTabBtn = nil

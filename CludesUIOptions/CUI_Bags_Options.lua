@@ -37,7 +37,7 @@ CludesUI.AtOptionsLogin(function()
                     -- The Bags module namespace: its bank display resolver
                     local BagsNS = CludesUI._ModuleNS["CludesUIBags"]
 
-                    local function RefreshBank()
+                    local function RedrawBank()
                         local bank = _G.CUI_BankFrame
                         if bank and bank.RefreshBank then
                             bank:RefreshBank()
@@ -121,7 +121,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             saved.profile.bankNestByExpansion = val and true or false
-                            RefreshBank()
+                            RedrawBank()
                             CludesUI:RefreshPage()
                         end,
                     }, {
@@ -133,7 +133,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             saved.profile.bankGroupByCategory = val and true or false
-                            RefreshBank()
+                            RedrawBank()
                             CludesUI:RefreshPage()
                         end,
                     })
@@ -151,7 +151,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             saved.profile.bankCategorySidebar = val and true or false
-                            RefreshBank()
+                            RedrawBank()
                             CludesUI:RefreshPage()
                         end,
                     }, {
@@ -167,7 +167,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             saved.profile.bankHideTabsInSidebar = val and true or false
-                            RefreshBank()
+                            RedrawBank()
                         end,
                     })
                     cursorY = cursorY - height
@@ -194,7 +194,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             saved.profile.bankHideEmptyWhenNested = val and true or false
-                            RefreshBank()
+                            RedrawBank()
                         end,
                     }, CludesUI.BlankRowCfg())
                     cursorY = cursorY - height

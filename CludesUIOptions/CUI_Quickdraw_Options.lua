@@ -1035,7 +1035,7 @@ CludesUI.AtOptionsLogin(function()
 
     local function ItemEntries()
         local result, seen = {}, {}
-        local function ScanBag(bag)
+        local function ScanBagSlots(bag)
             for ent = 1, C_Container.GetContainerNumSlots(bag) do
                 local details = C_Container.GetContainerItemInfo(bag, ent)
                 local itemId = details and details.itemID
@@ -1052,12 +1052,12 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         for bag = Enum.BagIndex.Backpack, NUM_BAG_SLOTS do
-            ScanBag(bag)
+            ScanBagSlots(bag)
         end
         -- The reagent bag is outside that range and easy to forget, but it is
         -- where a lot of players keep their potions and phials -- exactly the
         -- items someone puts on a palette.
-        ScanBag(Enum.BagIndex.ReagentBag)
+        ScanBagSlots(Enum.BagIndex.ReagentBag)
         return result
     end
 
@@ -2309,7 +2309,7 @@ CludesUI.AtOptionsLogin(function()
     -- finer rows exist only as these constants (ItemDocumentation.lua).
     local function PotionSlots()
         local result, seen = {}, {}
-        local function ScanBag(bag)
+        local function ScanBagSlots(bag)
             for ent = 1, C_Container.GetContainerNumSlots(bag) do
                 local details = C_Container.GetContainerItemInfo(bag, ent)
                 local itemId = details and details.itemID
@@ -2326,9 +2326,9 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         for bag = Enum.BagIndex.Backpack, NUM_BAG_SLOTS do
-            ScanBag(bag)
+            ScanBagSlots(bag)
         end
-        ScanBag(Enum.BagIndex.ReagentBag)
+        ScanBagSlots(Enum.BagIndex.ReagentBag)
         return result
     end
 
@@ -2441,7 +2441,7 @@ CludesUI.AtOptionsLogin(function()
                 spill = spill + 1
             end
         end
-        local function ScanBag(bag)
+        local function ScanBagSlots(bag)
             for ent = 1, C_Container.GetContainerNumSlots(bag) do
                 local details = C_Container.GetContainerItemInfo(bag, ent)
                 local itemId = details and details.itemID
@@ -2454,9 +2454,9 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         for bag = Enum.BagIndex.Backpack, NUM_BAG_SLOTS do
-            ScanBag(bag)
+            ScanBagSlots(bag)
         end
-        ScanBag(Enum.BagIndex.ReagentBag)
+        ScanBagSlots(Enum.BagIndex.ReagentBag)
 
         for i = 1, C_QuestLog.GetNumQuestLogEntries() do
             local details = C_QuestLog.GetInfo(i)

@@ -64,7 +64,7 @@ local snap = { n = {}, i = {}, b = {} } -- both macro lists as the page last sho
 local evf, pendingEvent, pendingRebuild, textDirty, isShown, hiddenAt
 local HeaderBuilder, CellClick, CellDrag
 
-local function Rebuild()
+local function RebuildPage()
     CludesUI:RefreshPage(true)
 end
 local function Refresh()
@@ -1218,7 +1218,7 @@ local function UpdateMacroText()
     end
 end
 
-local function Dirty()
+local function MarkUnsaved()
     cur.dirty = true
     SetStatus(CludesUI.L("Unsaved changes"))
 end
@@ -1226,7 +1226,7 @@ end
 local function RebuildIfPending()
     if isShown and pendingRebuild then
         pendingRebuild = nil
-        Rebuild()
+        RebuildPage()
     end
 end
 
@@ -1268,14 +1268,14 @@ local function ApplyEdit(structural, clean)
         return
     end
     if not clean then
-        Dirty()
+        MarkUnsaved()
         if not cur.nameTouched and not cur.ref then
             cur.name = MM.CleanName(B.FirstSpell(cur.model))
         end
     end
     UpdateMacroText()
     if structural then
-        Rebuild()
+        RebuildPage()
         return
     end
     UpdateHeaders(edCtx)
@@ -1410,7 +1410,7 @@ end
 local function OnMacrosChanged()
     Follow()
     if cur ~= builtFor or (cur.ref ~= nil) ~= builtHadRef then
-        Rebuild()
+        RebuildPage()
         return
     end
     if hdrDD and hdrDD:IsVisible() then
@@ -1596,7 +1596,7 @@ CellClick = function(self, button)
     FlushField() -- a value typed but not committed lands first, so Guard sees it
     Guard(function()
         SetCur(m and StateOf(m) or NewState(perChar))
-        Rebuild()
+        RebuildPage()
     end)
 end
 
@@ -1631,7 +1631,7 @@ HeaderBuilder = function(heading, width)
             if not cur.dirty and cur.perChar ~= (val == "char") then
                 SetCur(NewState(val == "char"))
             end
-            Rebuild()
+            RebuildPage()
         end
     )
     Pix.Point(hdrDD, "TOP", heading, "TOP", 0, -20)
@@ -1731,7 +1731,7 @@ local function BuildMacroBody(hostFrame, cursorY, enable)
                 return
             end
             cur.name, cur.nameTouched = t, true
-            Dirty()
+            MarkUnsaved()
         end, { width = 170, ph = "Max. 16 characters", maxLetters = MM.MAX_NAME }),
         {
             type = "dropdown",
@@ -1744,7 +1744,7 @@ local function BuildMacroBody(hostFrame, cursorY, enable)
             end,
             setValue = function(val)
                 cur.perChar = val == "char"
-                Dirty()
+                MarkUnsaved()
             end,
             -- A saved macro moves through Move, which warns that its bar buttons go.
             disabled = function()
@@ -1761,7 +1761,7 @@ local function BuildMacroBody(hostFrame, cursorY, enable)
             onClick = function()
                 OpenPicker(function(icon)
                     cur.icon, cur.iconSet = icon or MM.QUESTION, true
-                    Dirty()
+                    MarkUnsaved()
                     Refresh()
                 end)
             end,
@@ -1825,7 +1825,7 @@ local function BuildMacroBody(hostFrame, cursorY, enable)
             return
         end
         cur.text, textDirty = textValue, true
-        Dirty()
+        MarkUnsaved()
         PaintCounter(total, strlenutf8(textValue))
     end
     boxFrame.onBlur = ReadText
@@ -1870,7 +1870,7 @@ _G._CUI_BuildForeverMacrosPage = function(page, hostFrame, yOffset)
                 -- The header cached while it was on must not come back over the bare page.
                 CludesUI:InvalidateContentHeaderCache()
             end
-            Rebuild()
+            RebuildPage()
         end,
     }
     -- Off, and in the search pre-build: the switch alone.

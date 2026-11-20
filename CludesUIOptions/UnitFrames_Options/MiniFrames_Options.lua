@@ -4365,7 +4365,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             block:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            local function Update()
+            local function SyncCastAlpha()
                 if B.showCastbar == false then
                     region:SetAlpha(0.3)
                     block:Show()
@@ -4374,8 +4374,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     block:Hide()
                 end
             end
-            Update()
-            CludesUI.RegisterWidgetRefresh(Update)
+            SyncCastAlpha()
+            CludesUI.RegisterWidgetRefresh(SyncCastAlpha)
         end
 
         bossCastHeader, hh = Ww:SectionHeader(profile, "CAST BAR", rowY)
@@ -4554,7 +4554,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     end,
                 }
                 if disabledFn then
-                    local function Update()
+                    local function SyncCastAlpha()
                         local off = disabledFn()
                         swatch:SetAlpha(off and 0.3 or 1)
                         swatch:EnableMouse(not off)
@@ -4562,8 +4562,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             updateSw()
                         end
                     end
-                    Update()
-                    CludesUI.RegisterWidgetRefresh(Update)
+                    SyncCastAlpha()
+                    CludesUI.RegisterWidgetRefresh(SyncCastAlpha)
                 end
             end
             AddCastColorSwatch(

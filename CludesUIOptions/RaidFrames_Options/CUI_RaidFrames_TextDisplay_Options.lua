@@ -168,7 +168,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
     local function Notify(tbl)
         mod._rfTextNotify = { page = options.page, key = tbl.id }
     end
-    local function Apply()
+    local function ApplyTextDisplay()
         ReloadAndUpdate()
         CludesUI:RefreshPage(true)
     end
@@ -195,7 +195,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
         elseif val ~= SVal(tbl.mode, "none") then
             SWrite(tbl.mode, val)
         end
-        Apply()
+        ApplyTextDisplay()
     end
     local function Move(tbl, place)
         if place == PosOf(tbl) then
@@ -203,7 +203,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
         end
         SWrite(tbl.pos, place)
         Notify(tbl)
-        Apply()
+        ApplyTextDisplay()
     end
     -- "+ Add Text": a hidden text comes back with its own stored settings; a
     -- Custom text asks for its template first.
@@ -212,7 +212,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
             CustomText.Edit(tbl.fmt, CustomText.Color(tbl), function()
                 SWrite(tbl.pos, FreePos("center"))
                 Notify(tbl)
-                Apply()
+                ApplyTextDisplay()
             end)
             return
         end
@@ -229,7 +229,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
             SWrite(tbl.mode, FIRST_MODE[tbl.kind])
         end
         Notify(tbl)
-        Apply()
+        ApplyTextDisplay()
     end
 
     -- The cog (nearest the dropdown), the swatches left of it (Custom first,
@@ -470,7 +470,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
         rowConf.values = CustomText.Values(MODE_VALUES[tbl.kind], tbl.kind == "custom" and function()
             CustomText.Edit(tbl.fmt, CustomText.Color(tbl), function()
                 Notify(tbl)
-                Apply()
+                ApplyTextDisplay()
             end)
         end or nil)
         cell.cfg = rowConf

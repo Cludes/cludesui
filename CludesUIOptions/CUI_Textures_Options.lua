@@ -670,7 +670,7 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
     -- RF's own copy keeps the separator in the order array.
     local hbtValues, hbtOrder =
         CopyBarDD(mod.healthBarTextureNames, mod.healthBarTextureOrder, mod.healthBarTextures, false)
-    local function RFReload()
+    local function ReloadRaidFrames()
         if mod.ReloadFrames then
             mod.ReloadFrames()
         end
@@ -793,7 +793,7 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
             if mod._BumpAbsorbGen then
                 mod._BumpAbsorbGen()
             end
-            RFReload()
+            ReloadRaidFrames()
         end,
     }, {
         type = "dropdown",
@@ -821,7 +821,7 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
             elseif value ~= "blizzardModern" then
                 profile.absorbOpacity = 90
             end
-            RFReload()
+            ReloadRaidFrames()
         end,
     })
     cursorY = cursorY - height
@@ -843,7 +843,7 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
         if mod._BumpAbsorbGen then
             mod._BumpAbsorbGen()
         end
-        RFReload()
+        ReloadRaidFrames()
     end
     AddTexBgCog(texRow._leftRegion, function()
         local environ = mod._RFO_OptEnv
@@ -865,7 +865,7 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
             end
             profile.healAbsorbStyle = value
             profile.healAbsorbOpacity = (value == "clean") and 50 or 75
-            RFReload()
+            ReloadRaidFrames()
         end,
     }, {
         type = "dropdown",
@@ -882,7 +882,7 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
                 return
             end
             profile.maxHealthStyle = value
-            RFReload()
+            ReloadRaidFrames()
         end,
     })
     cursorY = cursorY - height

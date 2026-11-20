@@ -77,7 +77,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         return borderOff() or LF.Get("borderSize") == 0
     end
     -- Switching a source re-registers the feed's events.
-    local function Reapply()
+    local function ApplyLootFeed()
         LF.Apply()
         LF.RefreshPreview()
         CludesUI:RefreshPage()
@@ -156,7 +156,7 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
         end,
         setValue = function(val)
             LF.Cfg().enabled = val
-            Reapply()
+            ApplyLootFeed()
         end,
     }, {
         type = "labeledButton",
@@ -214,8 +214,8 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        Toggle("items", "Items", "Items you loot or receive.", Reapply),
-        Toggle("money", "Money", "Money you loot.", Reapply)
+        Toggle("items", "Items", "Items you loot or receive.", ApplyLootFeed),
+        Toggle("money", "Money", "Money you loot.", ApplyLootFeed)
     )
     cursorY = cursorY - height
 
@@ -226,21 +226,21 @@ _G._CUI_BuildLootFeedPage = function(page, hostFrame, yOffset)
             "reputation",
             "Reputation",
             "Reputation gains and losses, with your progress in the current standing.",
-            Reapply
+            ApplyLootFeed
         ),
-        Toggle("currency", "Currencies", "Honor, badges and other currencies, with your total.", Reapply)
+        Toggle("currency", "Currencies", "Honor, badges and other currencies, with your total.", ApplyLootFeed)
     )
     cursorY = cursorY - height
 
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        Toggle("skills", "Skill Ups", "Weapon and profession skill increases.", Reapply),
+        Toggle("skills", "Skill Ups", "Weapon and profession skill increases.", ApplyLootFeed),
         Toggle(
             "rolls",
             "Loot Rolls",
             "Who won each group loot roll and with what roll. Your own wins add the roll to the item's row.",
-            Reapply
+            ApplyLootFeed
         )
     )
     cursorY = cursorY - height

@@ -36,7 +36,7 @@ for _, spell in ipairs(mod.DebuffColorPresets) do
     mod.DebuffColorPresetByID[spell[1]] = spell
 end
 
-local function Value(colorKey)
+local function ColorVal(colorKey)
     local p = mod.NP_GetProfile()
     if p and p[colorKey] ~= nil then
         return p[colorKey]
@@ -145,7 +145,7 @@ end
 
 -- A class's lists; get reads the caller's profile (the plates' by default).
 function DC.Read(class, get)
-    return DC.Parse((get or Value)(DC.Key(class)))
+    return DC.Parse((get or ColorVal)(DC.Key(class)))
 end
 
 -- What the color goes on: "nameplate" (the health fill, in the bar's texture),
@@ -153,7 +153,7 @@ end
 -- view over debuffColorsMode, which holds only the last two, and the older
 -- debuffColorsBorder (Color Border, else Color Nameplate).
 function DC.Mode(get)
-    get = get or Value
+    get = get or ColorVal
     local m = get("debuffColorsMode")
     if m == "texture" or m == "name" then
         return m
@@ -174,7 +174,7 @@ end
 
 -- Extra Border Size (whole pixels), for the borders drawn as plain strips.
 local function ExtraBorderPx()
-    local val = tonumber(Value("debuffColorsBorderExtra")) or 0
+    local val = tonumber(ColorVal("debuffColorsBorderExtra")) or 0
     return math.max(0, math.floor(val + 0.5))
 end
 
@@ -190,18 +190,18 @@ local function BorderSpec()
     end
     local s
     if mod.IsCustomBorderEnabled() then
-        local texture = Value("customBorderTexture")
-        local size = Value("customBorderSize") or 0
+        local texture = ColorVal("customBorderTexture")
+        local size = ColorVal("customBorderSize") or 0
         if size <= 0 then
             return nil
         end
-        local px = CludesUI.BorderPx(Value("customBorderSizePx"), size, texture)
+        local px = CludesUI.BorderPx(ColorVal("customBorderSizePx"), size, texture)
         -- On MEDIUM strata. The border frame sits one level above the bar (one
         -- below it when drawn behind); a textured border draws on that frame,
         -- a Solid one on the pixel border's container one level higher. The
         -- color goes one level above whichever draws: up = levels above the
         -- border frame (MakeBorderInit places that frame's level).
-        local behind = Value("customBorderBehind") == true
+        local behind = ColorVal("customBorderBehind") == true
         if not texture or texture == "" or texture == "solid" then
             s = {
                 kind = "strips",
@@ -224,10 +224,10 @@ local function BorderSpec()
                 strata = "MEDIUM",
                 behind = behind,
                 up = 1,
-                offX = Value("customBorderOffset"),
-                offY = Value("customBorderOffsetY"),
-                shX = Value("customBorderShiftX"),
-                shY = Value("customBorderShiftY"),
+                offX = ColorVal("customBorderOffset"),
+                offY = ColorVal("customBorderOffsetY"),
+                shX = ColorVal("customBorderShiftX"),
+                shY = ColorVal("customBorderShiftY"),
             }
         end
     elseif mod.IsBorderEnabled() then
@@ -261,9 +261,9 @@ end
 local function ReadConfig()
     local _, class = UnitClass("player")
     local singles, comboList = DC.Read(class or "")
-    local playerOnly = Value("debuffColorsPlayerOnly") ~= false
+    local playerOnly = ColorVal("debuffColorsPlayerOnly") ~= false
     local c = {
-        enabled = Value("debuffColorsEnabled") == true,
+        enabled = ColorVal("debuffColorsEnabled") == true,
         filterTokens = playerOnly and { "HARMFUL", "PLAYER" } or { "HARMFUL" },
         singles = {},
         combos = {},
@@ -281,9 +281,9 @@ local function ReadConfig()
     elseif mode == "name" then
         c.name, c.channel = true, "name"
     else
-        local colorKey = Value("healthBarTexture")
+        local colorKey = ColorVal("healthBarTexture")
         if mode == "texture" then
-            colorKey = Value("debuffColorsTexture") or colorKey
+            colorKey = ColorVal("debuffColorsTexture") or colorKey
         end
         c.texture = CludesUI.ResolveTexturePath(mod.healthBarTextures, colorKey, WHITE)
         c.channel = "health"
@@ -1333,7 +1333,7 @@ local function EnsureWorker()
 end
 
 function mod.DebuffColors_Refresh()
-    if not settings and Value("debuffColorsEnabled") ~= true then
+    if not settings and ColorVal("debuffColorsEnabled") ~= true then
         return
     end
     -- Profile/spec swaps can arrive in combat. Rebuilding secure decoration is
@@ -1426,7 +1426,7 @@ end
 -- bundle, so while one is dragged the refresh waits for its release (the
 -- slider runs the deferred checks once).
 function mod.DebuffColors_RequestRefresh()
-    if not settings and Value("debuffColorsEnabled") ~= true then
+    if not settings and ColorVal("debuffColorsEnabled") ~= true then
         return
     end
     if CludesUI._sliderDragging then

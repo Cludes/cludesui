@@ -79,7 +79,7 @@ local function InitBuffBarsPage(
         return boxFrame
     end
 
-    local function HideTBBPopout()
+    local function CloseBuffBarPopout()
         if _tbbPopout then
             _tbbPopout:Hide()
         end
@@ -405,12 +405,12 @@ local function InitBuffBarsPage(
 
     local function SyncBuffBarPopout()
         if not TBBPreviewAllowed() then
-            HideTBBPopout()
+            CloseBuffBarPopout()
             return
         end
         local entries, mode = PopoutEntries()
         if #entries == 0 then
-            HideTBBPopout()
+            CloseBuffBarPopout()
             return
         end
         local popout = GetTBBPopout()
@@ -552,7 +552,7 @@ local function InitBuffBarsPage(
                     ph:Hide()
                 end
             end
-            HideTBBPopout()
+            CloseBuffBarPopout()
             return
         end
         mod._tbbPlaceholderMode = true
@@ -603,7 +603,7 @@ local function InitBuffBarsPage(
         end
         -- The popout preview lives and dies with the page, same as placeholders
         -- (runs on every page-leave/panel-close path).
-        HideTBBPopout()
+        CloseBuffBarPopout()
     end
     mod.HideTBBPlaceholders = HideTBBPlaceholder
     mod.ShowTBBPlaceholders = UpdateTBBPlaceholder
@@ -624,7 +624,7 @@ local function InitBuffBarsPage(
     -- and comes back with it (the live-bar placeholders stay up as the preview).
     CludesUI:RegisterOnCollapse(function(on)
         if on then
-            HideTBBPopout()
+            CloseBuffBarPopout()
         else
             ReassertTBBPreviews()
         end

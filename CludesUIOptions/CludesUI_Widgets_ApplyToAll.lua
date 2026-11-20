@@ -843,7 +843,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
                 ApplyState(animState)
             end
-            local function HoverTo(t)
+            local function FadeHoverTo(t)
                 hoverTarget = t
                 if hoverState ~= t then
                     hoverFrame:SetScript("OnUpdate", HoverStep)
@@ -868,7 +868,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 if hit:IsMouseOver() then
                     return
                 end
-                HoverTo(0)
+                FadeHoverTo(0)
             end
             hit:SetScript("OnEnter", function()
                 if Redressed() then
@@ -878,7 +878,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 if not holding then
                     foreign = OpenList()
                 end
-                HoverTo(1)
+                FadeHoverTo(1)
             end)
             hit:SetScript("OnLeave", function()
                 if Redressed() then
@@ -894,7 +894,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 if lingering then
                     return
                 end
-                HoverTo(0)
+                FadeHoverTo(0)
             end)
             hit:SetPropagateMouseClicks(true)
             hit:SetPropagateMouseMotion(true)
@@ -904,9 +904,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
                 lingering = on
                 if on then
-                    HoverTo(1)
+                    FadeHoverTo(1)
                 elseif not (hovered or holding) and not hit:IsMouseOver() then
-                    HoverTo(0)
+                    FadeHoverTo(0)
                 end
             end
             region._cuiSyncLinger = SetLinger

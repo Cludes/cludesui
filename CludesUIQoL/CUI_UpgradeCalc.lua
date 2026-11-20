@@ -775,7 +775,7 @@ local function FlatTex(p, l, red, green, blue, a)
     return CUI.SolidTex(p, l, red, green, blue, a)
 end
 
-local function MFont(p, s, _, red, green, blue, a)
+local function CalcLabel(p, s, _, red, green, blue, a)
     local fontStr = p:CreateFontString(nil, "OVERLAY")
     CludesUI.ApplyModuleFont(fontStr, nil, s, "extras")
     if red then
@@ -926,14 +926,14 @@ Pix.Point(titleBg, "TOPLEFT", frame, "TOPLEFT", 1, -1)
 Pix.Point(titleBg, "TOPRIGHT", frame, "TOPRIGHT", -1, 0)
 Pix.Height(titleBg, 32)
 
-local titleTxt = MFont(frame, 13, "OUTLINE", 1, 1, 1, 1)
+local titleTxt = CalcLabel(frame, 13, "OUTLINE", 1, 1, 1, 1)
 Pix.Point(titleTxt, "TOPLEFT", frame, "TOPLEFT", 10, -10)
 titleTxt:SetText(CUI.L("Upgrade Calculator"))
 
 local closeBtn = CreateFrame("Button", nil, frame)
 Pix.Size(closeBtn, 24, 24)
 closeBtn:SetPoint("RIGHT", titleBg, "RIGHT", -5, 5)
-local closeTxt = MFont(closeBtn, 16, "", 1, 1, 1, 0.75)
+local closeTxt = CalcLabel(closeBtn, 16, "", 1, 1, 1, 0.75)
 closeTxt:SetPoint("CENTER", -2, -3)
 closeTxt:SetText("x")
 closeBtn:SetScript("OnEnter", function()
@@ -963,7 +963,7 @@ local function MakeRow(hostFrame, cols, yOffset, isAlt)
         row.altBg = backdrop -- stored so PopulateGear can reposition and hide/show it
     end
     for _, colour in ipairs(cols) do
-        local cell = MFont(hostFrame, 11, nil, 0.85, 0.85, 0.85, 1)
+        local cell = CalcLabel(hostFrame, 11, nil, 0.85, 0.85, 0.85, 1)
         Pix.Point(cell, "TOPLEFT", hostFrame, "TOPLEFT", colour.x + 4, yOffset - 2)
         Pix.Width(cell, colour.w - 8)
         cell:SetJustifyH(colour.align)
@@ -982,7 +982,7 @@ local function MakeButton(hostFrame, labelText, wid, hgt, yOff, xOff)
     if bb.SetColor then
         bb:SetColor(0.2, 0.2, 0.2, 1)
     end
-    local txt = MFont(button, 10, "OUTLINE", 1, 1, 1, 0.75)
+    local txt = CalcLabel(button, 10, "OUTLINE", 1, 1, 1, 0.75)
     txt:SetAllPoints()
     txt:SetJustifyH("CENTER")
     txt:SetText(labelText)
@@ -999,10 +999,10 @@ end
 frame.charPane = CreateFrame("Frame", nil, frame)
 frame.charPane:SetAllPoints(frame)
 
-local ilvlStatLbl = MFont(frame.charPane, 12, "OUTLINE", 1, 1, 1, 1)
+local ilvlStatLbl = CalcLabel(frame.charPane, 12, "OUTLINE", 1, 1, 1, 1)
 Pix.Point(ilvlStatLbl, "TOPLEFT", frame.charPane, "TOPLEFT", 10, tabY - 11)
 ilvlStatLbl:SetText(CUI.L("Current iLvl: -   Max Possible: -"))
-local ilvlEstLbl = MFont(frame.charPane, 10, "OUTLINE", 0.53, 0.53, 0.53, 1)
+local ilvlEstLbl = CalcLabel(frame.charPane, 10, "OUTLINE", 0.53, 0.53, 0.53, 1)
 Pix.Point(ilvlEstLbl, "LEFT", ilvlStatLbl, "RIGHT", 4, 0)
 ilvlEstLbl:SetText(CUI.L(""))
 
@@ -1054,31 +1054,31 @@ for i = 1, 18 do
     queueOv:SetFrameLevel(button:GetFrameLevel() + 5)
     local queueOvBg = FlatTex(queueOv, "BACKGROUND", 0, 0, 0, 0.75)
     queueOvBg:SetAllPoints()
-    local queueOvTxt = MFont(queueOv, 11, "OUTLINE", 1, 1, 1, 0.9)
+    local queueOvTxt = CalcLabel(queueOv, 11, "OUTLINE", 1, 1, 1, 0.9)
     queueOvTxt:SetPoint("CENTER", queueOv, "CENTER", 0, 0)
     queueOvTxt:SetText(CUI.L("In Queue"))
     queueOv:Hide()
     button.selHL = queueOv
     -- Top-left: slot name
-    local sLbl = MFont(button, 12, "OUTLINE", 0.9, 0.9, 0.9, 1)
+    local sLbl = CalcLabel(button, 12, "OUTLINE", 0.9, 0.9, 0.9, 1)
     Pix.Point(sLbl, "TOPLEFT", button, "TOPLEFT", 7, -4)
     Pix.Width(sLbl, TILE_W - 82)
     sLbl:SetJustifyH("LEFT")
     button.sLbl = sLbl
     -- Top-right: current ^ max ilvl
-    local iLbl = MFont(button, 11, "OUTLINE", 0.8, 0.8, 0.8, 1)
+    local iLbl = CalcLabel(button, 11, "OUTLINE", 0.8, 0.8, 0.8, 1)
     Pix.Point(iLbl, "TOPRIGHT", button, "TOPRIGHT", -5, -4)
     Pix.Width(iLbl, 76)
     iLbl:SetJustifyH("RIGHT")
     button.iLbl = iLbl
     -- Bottom-left: track name
-    local tLbl = MFont(button, 11, "OUTLINE", 0.55, 0.55, 0.55, 1)
+    local tLbl = CalcLabel(button, 11, "OUTLINE", 0.55, 0.55, 0.55, 1)
     Pix.Point(tLbl, "BOTTOMLEFT", button, "BOTTOMLEFT", 7, 5)
     Pix.Width(tLbl, TILE_W - 82)
     tLbl:SetJustifyH("LEFT")
     button.tLbl = tLbl
     -- Bottom-right: rank badge
-    local rLbl = MFont(button, 11, "OUTLINE", 0.8, 0.8, 0.8, 1)
+    local rLbl = CalcLabel(button, 11, "OUTLINE", 0.8, 0.8, 0.8, 1)
     Pix.Point(rLbl, "BOTTOMRIGHT", button, "BOTTOMRIGHT", -5, 5)
     Pix.Width(rLbl, 76)
     rLbl:SetJustifyH("RIGHT")
@@ -1148,8 +1148,8 @@ for i = 1, 18 do
 end
 
 -- Section header labels and group separator line (repositioned each refresh)
-local sHdrNeeds = MFont(cc, 11, "OUTLINE", 1, 1, 1, 1)
-local sHdrMax = MFont(cc, 10, "OUTLINE", 0.48, 0.48, 0.48, 1)
+local sHdrNeeds = CalcLabel(cc, 11, "OUTLINE", 1, 1, 1, 1)
+local sHdrMax = CalcLabel(cc, 10, "OUTLINE", 0.48, 0.48, 0.48, 1)
 local groupSepLine = FlatTex(cc, "BORDER", 0.2, 0.2, 0.2, 1)
 groupSepLine:SetHeight(Pix.mult)
 Pix.Width(groupSepLine, TILE_ROW_W)
@@ -1159,14 +1159,14 @@ local queuePanel = CreateFrame("Frame", nil, cc)
 Pix.Size(queuePanel, QUEUE_W, FRAME_H - 140)
 Pix.Point(queuePanel, "TOPLEFT", cc, "TOPLEFT", QUEUE_X_OFF, -10)
 
-local qHdrLbl = MFont(queuePanel, 11, "OUTLINE", 1, 1, 1, 1)
+local qHdrLbl = CalcLabel(queuePanel, 11, "OUTLINE", 1, 1, 1, 1)
 Pix.Point(qHdrLbl, "TOPLEFT", queuePanel, "TOPLEFT", 0, 0)
 qHdrLbl:SetText(CUI.L("Upgrade Queue"))
 
 -- Sort-by-crest button sits in the header bar, right-aligned (swaps with qSubLbl)
 local queueSortBtn = CreateFrame("Button", nil, queuePanel)
 queueSortBtn:SetHeight(16)
-local qSortTxt = MFont(queueSortBtn, 11, "OUTLINE", 1, 1, 1, 0.75)
+local qSortTxt = CalcLabel(queueSortBtn, 11, "OUTLINE", 1, 1, 1, 0.75)
 qSortTxt:SetPoint("RIGHT", queueSortBtn, "RIGHT", 0, 0)
 qSortTxt:SetText(CUI.L("Sort"))
 queueSortBtn:SetWidth(qSortTxt:GetStringWidth() + 4)
@@ -1189,7 +1189,7 @@ local qHdrSepTex = qHdrSep:CreateTexture(nil, "OVERLAY")
 qHdrSepTex:SetAllPoints()
 qHdrSepTex:SetColorTexture(1, 1, 1, 0.15)
 
-local qEmptyLbl = MFont(queuePanel, 10, "OUTLINE", 0.32, 0.32, 0.32, 1)
+local qEmptyLbl = CalcLabel(queuePanel, 10, "OUTLINE", 0.32, 0.32, 0.32, 1)
 Pix.Point(qEmptyLbl, "TOPLEFT", queuePanel, "TOPLEFT", 4, -23)
 Pix.Point(qEmptyLbl, "TOPRIGHT", queuePanel, "TOPRIGHT", -4, -23)
 qEmptyLbl:SetJustifyH("LEFT")
@@ -1207,11 +1207,11 @@ for i = 1, 16 do
     ef:Hide()
     local ebg = FlatTex(ef, "BACKGROUND", 1, 1, 1, 0.05)
     ebg:SetAllPoints(ef)
-    local nLbl = MFont(ef, 10, "OUTLINE", 0.8, 0.8, 0.8, 1)
+    local nLbl = CalcLabel(ef, 10, "OUTLINE", 0.8, 0.8, 0.8, 1)
     Pix.Point(nLbl, "LEFT", ef, "LEFT", 4, 0)
     Pix.Width(nLbl, QUEUE_W - 84)
     nLbl:SetJustifyH("LEFT")
-    local cLbl = MFont(ef, 10, nil, 0.8, 0.8, 0.8, 1)
+    local cLbl = CalcLabel(ef, 10, nil, 0.8, 0.8, 0.8, 1)
     Pix.Point(cLbl, "RIGHT", ef, "RIGHT", -4, 0)
     Pix.Width(cLbl, 82)
     cLbl:SetJustifyH("RIGHT")
@@ -1230,7 +1230,7 @@ qTotalSepTex:SetAllPoints()
 qTotalSepTex:SetColorTexture(1, 1, 1, 0.15)
 qTotalSep:Hide()
 
-local qTotalLbl = MFont(queuePanel, 10, "OUTLINE", G.r, G.g, G.b, 1)
+local qTotalLbl = CalcLabel(queuePanel, 10, "OUTLINE", G.r, G.g, G.b, 1)
 Pix.Point(qTotalLbl, "TOPRIGHT", queuePanel, "TOPRIGHT", -4, -46)
 qTotalLbl:SetJustifyH("RIGHT")
 qTotalLbl:SetText("")
@@ -1409,12 +1409,12 @@ gearSep:SetHeight(Pix.mult)
 local PopulateGear
 
 -- Summary text labels
-local missingLbl = MFont(crestSection, 11, "OUTLINE", 1, 1, 1, 1)
+local missingLbl = CalcLabel(crestSection, 11, "OUTLINE", 1, 1, 1, 1)
 Pix.Point(missingLbl, "TOPLEFT", crestSection, "TOPLEFT", 4, 0)
 missingLbl:SetJustifyH("LEFT")
 missingLbl:SetText(CUI.L("Total Missing Upgrades: -"))
 
-local crestsLbl = MFont(crestSection, 11, "OUTLINE", 1, 1, 1, 1)
+local crestsLbl = CalcLabel(crestSection, 11, "OUTLINE", 1, 1, 1, 1)
 Pix.Point(crestsLbl, "TOPLEFT", missingLbl, "BOTTOMLEFT", 0, -4)
 Pix.Width(crestsLbl, TILE_ROW_W)
 crestsLbl:SetJustifyH("LEFT")
@@ -1442,7 +1442,7 @@ Pix.Size(crestTblHdr, TILE_ROW_W, CROW_H)
 local cHdrBg = FlatTex(crestTblHdr, "BACKGROUND", 0, 0, 0, 0.35)
 cHdrBg:SetAllPoints()
 local function MakeCHdr(hostFrame, textValue, posX, wid, align)
-    local labelFS = MFont(hostFrame, 10, "OUTLINE", 1, 1, 1, 0.9)
+    local labelFS = CalcLabel(hostFrame, 10, "OUTLINE", 1, 1, 1, 0.9)
     Pix.Point(labelFS, "LEFT", hostFrame, "TOPLEFT", posX + 4, -CROW_H / 2)
     Pix.Width(labelFS, wid - 8)
     labelFS:SetJustifyH(align or "LEFT")
@@ -1467,7 +1467,7 @@ for ri, trackLabel in ipairs(Data.trackOrder) do
         altBg:SetAllPoints()
     end
     local function MakeCell(posX, wid, align)
-        local labelFS = MFont(row, 11, nil, 0.85, 0.85, 0.85, 1)
+        local labelFS = CalcLabel(row, 11, nil, 0.85, 0.85, 0.85, 1)
         Pix.Point(labelFS, "TOPLEFT", row, "TOPLEFT", posX + 4, -3)
         Pix.Width(labelFS, wid - 8)
         labelFS:SetJustifyH(align or "LEFT")
@@ -1475,7 +1475,7 @@ for ri, trackLabel in ipairs(Data.trackOrder) do
         return labelFS
     end
     local hexColor = trackData and trackData.hexColor or CludesUI.COLOR_CODES.WHITE
-    local nameLbl = MFont(row, 11, nil, 0.85, 0.85, 0.85, 1)
+    local nameLbl = CalcLabel(row, 11, nil, 0.85, 0.85, 0.85, 1)
     Pix.Point(nameLbl, "TOPLEFT", row, "TOPLEFT", CC_NAME_X + 4, -3)
     Pix.Width(nameLbl, CC_NAME_W - 8)
     nameLbl:SetJustifyH("LEFT")

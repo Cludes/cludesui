@@ -77,7 +77,7 @@ local fonted = {} -- [i] = { fs, size }
 local buttonLabels = {} -- the footer buttons' labels
 local fontKey, fontFile, fontFlags
 
-local function SetTCFont(fontStr, size)
+local function SetPopupFont(fontStr, size)
     fonted[#fonted + 1] = { fs = fontStr, size = size }
     CludesUI.ApplyModuleFont(fontStr, nil, size, fontKey)
 end
@@ -577,7 +577,7 @@ local function MakeChip(idx)
     chip.x:SetTexture(CLOSE_ICON)
     chip.x:SetAlpha(0.6)
     chip.label = chip:CreateFontString(nil, "OVERLAY")
-    SetTCFont(chip.label, 11)
+    SetPopupFont(chip.label, 11)
     chip.label:SetPoint("LEFT", chip.icon, "RIGHT", 6, 0)
     chip.label:SetPoint("RIGHT", chip.x, "LEFT", -6, 0)
     chip.label:SetJustifyH("LEFT")
@@ -653,7 +653,7 @@ local function MakePanel(index)
     CludesUI.MakeBorder(widget, 1, 1, 1, 0.10, Pix)
 
     local labelText = widget:CreateFontString(nil, "OVERLAY")
-    SetTCFont(labelText, 12)
+    SetPopupFont(labelText, 12)
     labelText:SetPoint("TOPLEFT", widget, "TOPLEFT", AREA_PAD, -6)
     labelText:SetTextColor(0.85, 0.85, 0.85, 1)
 
@@ -662,7 +662,7 @@ local function MakePanel(index)
     area:SetPoint("TOPLEFT", widget, "TOPLEFT", AREA_PAD, -PANEL_LABEL_H)
 
     local empty = widget:CreateFontString(nil, "OVERLAY")
-    SetTCFont(empty, 11)
+    SetPopupFont(empty, 11)
     empty:SetPoint("CENTER")
     empty:SetTextColor(0.6, 0.6, 0.6, 0.8)
     empty:SetText(CludesUI.L("Talent data is not available right now."))
@@ -730,12 +730,12 @@ local function Build()
     CludesUI._popupFrames[#CludesUI._popupFrames + 1] = { popup = dialog, dimmer = shade }
 
     titleFS = dialog:CreateFontString(nil, "OVERLAY")
-    SetTCFont(titleFS, 16)
+    SetPopupFont(titleFS, 16)
     titleFS:SetPoint("TOP", dialog, "TOP", 0, -16)
     titleFS:SetTextColor(1, 1, 1, 1)
 
     hintFS = dialog:CreateFontString(nil, "OVERLAY")
-    SetTCFont(hintFS, 11)
+    SetPopupFont(hintFS, 11)
     hintFS:SetPoint("TOP", titleFS, "BOTTOM", 0, -6)
     hintFS:SetTextColor(0.7, 0.7, 0.7, 0.85)
 
@@ -748,7 +748,7 @@ local function Build()
     offFrame:SetWidth(POPUP_W - SIDE_PAD * 2)
     offFrame:Hide()
     local offLabel = offFrame:CreateFontString(nil, "OVERLAY")
-    SetTCFont(offLabel, 11)
+    SetPopupFont(offLabel, 11)
     offLabel:SetPoint("TOPLEFT", offFrame, "TOPLEFT", 0, -2)
     offLabel:SetTextColor(0.7, 0.7, 0.7, 0.85)
     offLabel:SetText(CludesUI.L("Conditions on talents not shown above (they still apply):"))
@@ -795,7 +795,7 @@ local function Build()
     -- Status line: left of the buttons, on their centre line.
     local statusY = BTN_BOTTOM + BTN_H / 2
     statusFS = dialog:CreateFontString(nil, "OVERLAY")
-    SetTCFont(statusFS, 11)
+    SetPopupFont(statusFS, 11)
     statusFS:SetPoint("LEFT", dialog, "BOTTOMLEFT", SIDE_PAD, statusY)
     statusFS:SetPoint("RIGHT", dialog, "BOTTOMRIGHT", -(SIDE_PAD + 3 * BTN_W + 3 * BTN_GAP), statusY)
     statusFS:SetJustifyH("LEFT")

@@ -102,7 +102,7 @@ local function EnsureAnchor()
     PositionAnchor()
 end
 
-local function Layout()
+local function LayoutAlerts()
     if not anchor then
         return
     end
@@ -167,12 +167,12 @@ local function NewLine(def)
     s1:SetDuration(0.15)
     s1:SetOrder(1)
 
-    frame:SetScript("OnShow", Layout)
+    frame:SetScript("OnShow", LayoutAlerts)
     frame:SetScript("OnHide", function()
         short:Stop()
         stay:Stop()
         line.persistentShown = false
-        Layout()
+        LayoutAlerts()
     end)
 
     -- preview: play the short animation even on a persistent line, and never
@@ -246,7 +246,7 @@ function Alerts.Refresh()
     for _, line in pairs(lines) do
         Style(line)
     end
-    Layout()
+    LayoutAlerts()
 end
 
 -- Custom color, or the player's class color when that toggle is on.
@@ -297,7 +297,7 @@ local function RegisterUnlock()
                 CludesUIDB.alertsPos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                 if anchor and not CUI._unlockActive then
                     PositionAnchor()
-                    Layout()
+                    LayoutAlerts()
                 end
             end,
             loadPos = function()
@@ -311,14 +311,14 @@ local function RegisterUnlock()
                 end
                 if anchor then
                     PositionAnchor()
-                    Layout()
+                    LayoutAlerts()
                 end
             end,
             applyPos = function()
                 if anchor or AnyEnabled() then
                     EnsureAnchor()
                     PositionAnchor()
-                    Layout()
+                    LayoutAlerts()
                 end
             end,
         }),
@@ -522,7 +522,7 @@ do
         end
     end
 
-    local function Apply()
+    local function ApplyPotionAlert()
         local enabled = DB("potionAlertEnabled")
         if enabled and not installed then
             watcher:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
@@ -546,7 +546,7 @@ do
     watcher = CreateFrame("Frame")
     watcher:SetScript("OnEvent", OnEvent)
 
-    CUI._applyPotionAlert = Apply
+    CUI._applyPotionAlert = ApplyPotionAlert
     CUI._potionAlertFrame = Alerts.Refresh
     CUI._potionAlertPreview = function()
         ShowAlert(true)
@@ -556,7 +556,7 @@ do
     boot:RegisterEvent("PLAYER_LOGIN")
     boot:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
-        Apply()
+        ApplyPotionAlert()
     end)
 end
 
@@ -641,7 +641,7 @@ do
     end
 
     local listening = false
-    local function Apply()
+    local function ApplyPotionAlert()
         local enabled = DB("talentAlertEnabled")
         if enabled and not installed then
             for _, event in ipairs(EVENTS) do
@@ -681,7 +681,7 @@ do
         MarkDirty()
     end)
 
-    CUI._applyTalentAlert = Apply
+    CUI._applyTalentAlert = ApplyPotionAlert
     CUI._talentAlertFrame = Alerts.Refresh
     CUI._talentAlertPreview = function()
         -- A live alert gets its text/color refreshed; otherwise a short sample.
@@ -692,6 +692,6 @@ do
     boot:RegisterEvent("PLAYER_LOGIN")
     boot:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
-        Apply()
+        ApplyPotionAlert()
     end)
 end

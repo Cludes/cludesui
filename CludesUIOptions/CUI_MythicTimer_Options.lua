@@ -334,7 +334,7 @@ CludesUI.AtOptionsLogin(function()
         end
         hostFrame._showRowDivider = true
 
-        local function ApplyBorder()
+        local function ApplyTimerBorder()
             if mod.ApplyBorder then
                 mod.ApplyBorder()
             end
@@ -586,7 +586,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = IsTrue("customBorderStyle"),
             setValue = function(value)
                 Set("customBorderStyle", value)
-                ApplyBorder()
+                ApplyTimerBorder()
                 CludesUI:RefreshPage(true)
             end,
         })
@@ -666,7 +666,7 @@ CludesUI.AtOptionsLogin(function()
                         if TimerCfg("borderSizePx") then
                             Set("borderSizePx", false)
                         end
-                        ApplyBorder()
+                        ApplyTimerBorder()
                         CludesUI:RefreshPage(true)
                     end,
                 },
@@ -680,7 +680,7 @@ CludesUI.AtOptionsLogin(function()
                     getPx = Raw("borderSizePx"),
                     setPx = Quiet("borderSizePx"),
                     apply = function()
-                        ApplyBorder()
+                        ApplyTimerBorder()
                         CludesUI:RefreshPage()
                     end,
                 })
@@ -701,7 +701,7 @@ CludesUI.AtOptionsLogin(function()
                     setX = Quiet("borderTextureOffset"),
                     getY = Raw("borderTextureOffsetY"),
                     setY = Quiet("borderTextureOffsetY"),
-                    apply = ApplyBorder,
+                    apply = ApplyTimerBorder,
                 })
                 for _, half in ipairs({ ocfgL, ocfgR }) do
                     half.disabled, half.disabledTooltip = _borderOff, _borderReq
@@ -738,7 +738,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         set = function(value)
                             Set(key, value)
-                            ApplyBorder()
+                            ApplyTimerBorder()
                         end,
                     }
                 end
@@ -755,7 +755,7 @@ CludesUI.AtOptionsLogin(function()
                             get = NotOff("borderApplyToForces"),
                             set = function(value)
                                 Set("borderApplyToForces", value)
-                                ApplyBorder()
+                                ApplyTimerBorder()
                                 CludesUI:RefreshPage()
                             end,
                         },
@@ -775,7 +775,7 @@ CludesUI.AtOptionsLogin(function()
                     Set("borderG", green)
                     Set("borderB", blue)
                     Set("borderA", a)
-                    ApplyBorder()
+                    ApplyTimerBorder()
                 end, true, 20)
                 Pix.Point(sw, "RIGHT", anchor, "LEFT", -8, 0)
                 local cover = Cover(sw, _borderReq)

@@ -891,7 +891,7 @@ CludesUI.AtLogin(function()
             pending, lastRightId = nil, ident
         end
 
-        local function Flush()
+        local function FlushPending()
             if not pending then
                 return
             end
@@ -1397,7 +1397,7 @@ CludesUI.AtLogin(function()
                     end,
                 })
             end
-            Flush()
+            FlushPending()
         end
 
         local PRIDE_ON = { ["i am gay"] = true, ["im gay"] = true }
@@ -1816,7 +1816,7 @@ CludesUI.AtLogin(function()
             end
             Place(Box(specInfo.addText, specInfo.addAlt))
             Place(showCfg)
-            Flush()
+            FlushPending()
             if prebuild then
                 return
             end
@@ -1859,17 +1859,17 @@ CludesUI.AtLogin(function()
                 elseif row.type == "checks" or row.type == "multiselect" then
                     Place(ChecksCfg(row), ChecksDecorator(row), row.id, row.dependsOn)
                 elseif row.id == "council" then
-                    Flush()
+                    FlushPending()
                     custom.councilPair(row, Schema.Row("councilRanks"))
                 elseif row.id == "councilRanks" then
                 elseif row.custom then
-                    Flush()
+                    FlushPending()
                     custom[row.id](row)
                 else
                     Place(Cfg(row), Decorator(row), row.id, row.dependsOn)
                 end
             end
-            Flush()
+            FlushPending()
 
             local reason = section.locked and section.locked()
             if

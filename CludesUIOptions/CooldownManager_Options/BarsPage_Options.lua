@@ -3023,7 +3023,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         },
                     },
                 })
-                local function UpdateCogVis()
+                local function SyncBorderCog()
                     local texture = BarList().borderTexture or "solid"
                     if texture == "solid" or CludesUI.BlizzStyle.Get("cdmicons") then
                         cogBtn:Hide()
@@ -3031,8 +3031,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         cogBtn:Show()
                     end
                 end
-                CludesUI.RegisterWidgetRefresh(UpdateCogVis)
-                UpdateCogVis()
+                CludesUI.RegisterWidgetRefresh(SyncBorderCog)
+                SyncBorderCog()
             end
             -- Inline border color swatches on Border Size (left region of row 4)
             if not CludesUI._prebuilding then
@@ -3505,7 +3505,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         },
                     },
                 })
-                local function UpdateCogVis()
+                local function SyncBorderCog()
                     local texture = BarList().borderTexture or "solid"
                     if texture == "solid" or CludesUI.BlizzStyle.Get("cdmicons") then
                         cogBtn:Hide()
@@ -3513,8 +3513,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         cogBtn:Show()
                     end
                 end
-                CludesUI.RegisterWidgetRefresh(UpdateCogVis)
-                UpdateCogVis()
+                CludesUI.RegisterWidgetRefresh(SyncBorderCog)
+                SyncBorderCog()
             end
             -- Sync icon: Border Style (left region of bsRow)
             BorderStyleSync(bsRow._leftRegion)

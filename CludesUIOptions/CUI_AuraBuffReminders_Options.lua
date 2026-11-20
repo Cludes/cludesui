@@ -900,7 +900,7 @@ CludesUI.AtOptionsLogin(function()
     -- dropdown (+ reminder-sound cog beside it); for a section with a sound
     -- a full "Reminder Sound" dropdown fills the slot instead of a cog; else
     -- the section's own cfg.rightCfg (the caller dresses row._rightRegion).
-    local function SectionControlRow(parent, y, settings)
+    local function SectionToggleRow(parent, y, settings)
         local rightCfg = settings.rightCfg
         if settings.showWhenStore then
             rightCfg = Placeholder("Show When", settings.showWhenTooltip)
@@ -2449,7 +2449,7 @@ CludesUI.AtOptionsLogin(function()
         local _
         local header, h = W:SectionHeader(parent, SECTION_RAID_BUFFS, y)
         y = y - h
-        _, h = SectionControlRow(parent, y, {
+        _, h = SectionToggleRow(parent, y, {
             whereStore = RWhere,
             whereItems = FOREVER and FOREVER_WHERE_ITEMS or nil,
             whereTooltip = "Pick which content this section's reminders appear in.\nRested areas (cities and inns) always stay hidden.",
@@ -2487,7 +2487,7 @@ CludesUI.AtOptionsLogin(function()
         local _
         local header, h = W:SectionHeader(parent, SECTION_AURAS, y)
         y = y - h
-        _, h = SectionControlRow(parent, y, {
+        _, h = SectionToggleRow(parent, y, {
             whereStore = AWhere,
             whereTooltip = "Pick which content these aura reminders appear in.\nRested areas (cities and inns) always stay hidden.",
             soundSec = ADB,
@@ -2515,7 +2515,7 @@ CludesUI.AtOptionsLogin(function()
         local h
         _, h = W:SectionHeader(parent, title, y)
         y = y - h
-        _, h = SectionControlRow(parent, y, {
+        _, h = SectionToggleRow(parent, y, {
             whereStore = CSpecialWhere(class),
             whereTooltip = SPECIAL_WHERE_TIP,
             soundSec = CDB,
@@ -2594,7 +2594,7 @@ CludesUI.AtOptionsLogin(function()
         local h
         _, h = W:SectionHeader(parent, "PETS", y)
         y = y - h
-        _, h = SectionControlRow(parent, y, {
+        _, h = SectionToggleRow(parent, y, {
             whereStore = CSpecialWhere("PET"),
             whereTooltip = "Pick which content the Missing Pet and Passive Pet reminders appear in.\nWarlock's Wrong Demon reminder uses the Where to Show in the Warlock section.\nRested areas (cities and inns) always stay hidden.",
             onChange = RequestRefresh,
@@ -2654,7 +2654,7 @@ CludesUI.AtOptionsLogin(function()
         local header, h = W:SectionHeader(parent, SECTION_WARLOCK, y)
         y = y - h
         local ctrlRow
-        ctrlRow, h = SectionControlRow(parent, y, {
+        ctrlRow, h = SectionToggleRow(parent, y, {
             whereStore = CWarlockWhere,
             whereTooltip = "Pick which content these Warlock reminders appear in.\nMissing Pet and Passive Pet use the Where to Show in the Pets section.\nRested areas (cities and inns) always stay hidden.",
             onChange = RequestRefresh,
@@ -2902,7 +2902,7 @@ CludesUI.AtOptionsLogin(function()
         local h
         rows.header, h = W:SectionHeader(parent, SECTION_CONSUMABLES, y)
         y = y - h
-        _, h = SectionControlRow(parent, y, {
+        _, h = SectionToggleRow(parent, y, {
             whereStore = CWhere,
             whereTooltip = "Pick which content these consumable reminders appear in.\nRested areas (cities and inns) always stay hidden.",
             soundSec = CDB,
@@ -3350,7 +3350,7 @@ CludesUI.AtOptionsLogin(function()
         local building = not CludesUI._prebuilding
         _, h = W:SectionHeader(parent, SECTION_FOREVER, y)
         y = y - h
-        _, h = SectionControlRow(parent, y, {
+        _, h = SectionToggleRow(parent, y, {
             whereStore = FWhere,
             whereItems = FOREVER_SECTION_WHERE_ITEMS,
             whereTooltip = "Pick which content the WoW Forever reminders appear in.\nRested areas (cities and inns) always stay hidden.",

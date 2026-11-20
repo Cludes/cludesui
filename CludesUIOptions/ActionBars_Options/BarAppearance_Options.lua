@@ -225,7 +225,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         local value = SGet("buttonShape")
         return value == "none" or value == "cropped" or value == nil
     end
-    local function ShapeIsCustom()
+    local function HasCustomShape()
         return not ShapeIsNone()
     end
 
@@ -261,7 +261,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
         -- its borderThicknessPx companion. The shape setter rebuilds the page so the
         -- slot follows the shape; a bar switch already rebuilds.
         local sizeCfg
-        if ShapeIsCustom() then
+        if HasCustomShape() then
             sizeCfg = {
                 type = "dropdown",
                 text = "Border Size",
@@ -271,13 +271,13 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 values = mod.BORDER_THICKNESS_LABELS,
                 order = mod.BORDER_THICKNESS_ORDER,
                 itemDisabled = function(val)
-                    if ShapeIsCustom() and (val == "thin" or val == "normal" or val == "heavy") then
+                    if HasCustomShape() and (val == "thin" or val == "normal" or val == "heavy") then
                         return true
                     end
                     return false
                 end,
                 itemDisabledTooltip = function(val)
-                    if ShapeIsCustom() and (val == "thin" or val == "normal" or val == "heavy") then
+                    if HasCustomShape() and (val == "thin" or val == "normal" or val == "heavy") then
                         return "This option requires a non-custom shape to be selected"
                     end
                 end,
@@ -353,10 +353,10 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 type = "dropdown",
                 text = "Border Style",
                 disabled = function()
-                    return BlizzStyleOn() or ShapeIsCustom()
+                    return BlizzStyleOn() or HasCustomShape()
                 end,
                 disabledTooltip = function()
-                    if ShapeIsCustom() then
+                    if HasCustomShape() then
                         return "This option requires a non-custom button shape"
                     end
                     return CludesUI.DisabledTooltip(CludesUI.BlizzStyle.Label("actionbars"), "disabled")
@@ -552,7 +552,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                         tooltip = "Draws this bar's button borders over proc glows, the assisted highlight and the cooldown swipe.",
                         disabled = function()
                             return BlizzStyleOn()
-                                or ShapeIsCustom()
+                                or HasCustomShape()
                                 or (SGet("borderBehind") and true or false)
                         end,
                         disabledTooltip = function()
@@ -562,7 +562,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                                     "disabled"
                                 )
                             end
-                            if ShapeIsCustom() then
+                            if HasCustomShape() then
                                 return "This option requires a non-custom button shape"
                             end
                             return CludesUI.DisabledTooltip("Show Behind", "disabled")
@@ -2155,7 +2155,7 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 end
             end
 
-            local function PagingDropdown(stateId, textValue)
+            local function PagingRow(stateId, textValue)
                 return {
                     type = "dropdown",
                     text = textValue,
@@ -2346,19 +2346,19 @@ local function BuildBarAppearance(hostFrame, cursorY, context)
                 }
             end
             if modOn then
-                slots[#slots + 1] = PagingDropdown("shift", "Shift Modifier")
-                slots[#slots + 1] = PagingDropdown("ctrl", "Ctrl Modifier")
-                slots[#slots + 1] = PagingDropdown("alt", "Alt Modifier")
+                slots[#slots + 1] = PagingRow("shift", "Shift Modifier")
+                slots[#slots + 1] = PagingRow("ctrl", "Ctrl Modifier")
+                slots[#slots + 1] = PagingRow("alt", "Alt Modifier")
             end
             if targetOn then
-                slots[#slots + 1] = PagingDropdown("help", "Friendly Target")
-                slots[#slots + 1] = PagingDropdown("harm", "Hostile Target")
+                slots[#slots + 1] = PagingRow("help", "Friendly Target")
+                slots[#slots + 1] = PagingRow("harm", "Hostile Target")
             end
             -- Class form dropdowns
             local classStatesLocal = PG_STATES.class and PG_STATES.class[playerClass]
             if classStatesLocal then
                 for _, st in ipairs(classStatesLocal) do
-                    slots[#slots + 1] = PagingDropdown(st.id, st.label)
+                    slots[#slots + 1] = PagingRow(st.id, st.label)
                 end
             end
             -- Both entries open Action Bar 1, whichever bar is built first:

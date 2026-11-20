@@ -49,7 +49,7 @@ CludesUI.AtOptionsLogin(function()
         DB()[keyName] = val
     end
 
-    local function RefreshAll()
+    local function ApplyChatLook()
         if CHAT.ApplyBackground then
             CHAT.ApplyBackground()
         end
@@ -119,9 +119,9 @@ CludesUI.AtOptionsLogin(function()
                     if CHAT.ApplyIdleFadeHoverMotion then
                         CHAT.ApplyIdleFadeHoverMotion()
                     end
-                    RefreshAll()
+                    ApplyChatLook()
                 end,
-                onOptionChanged = RefreshAll,
+                onOptionChanged = ApplyChatLook,
             }, {
                 type = "toggle",
                 text = "Lock Main Chat Size",
@@ -172,7 +172,7 @@ CludesUI.AtOptionsLogin(function()
                     getValue = CfgOr("bgAlpha", 0.65),
                     setValue = function(val)
                         ChatSet("bgAlpha", val)
-                        RefreshAll()
+                        ApplyChatLook()
                     end,
                 }, {
                     type = "dropdown",
@@ -183,7 +183,7 @@ CludesUI.AtOptionsLogin(function()
                     getValue = CfgOr("bgTexture", "none"),
                     setValue = function(val)
                         ChatSet("bgTexture", val)
-                        RefreshAll()
+                        ApplyChatLook()
                     end,
                 })
                 if not CludesUI._prebuilding then
@@ -199,7 +199,7 @@ CludesUI.AtOptionsLogin(function()
                             ChatSet("bgR", red)
                             ChatSet("bgG", green)
                             ChatSet("bgB", blue)
-                            RefreshAll()
+                            ApplyChatLook()
                         end,
                         false,
                         20
@@ -1559,10 +1559,10 @@ CludesUI.AtOptionsLogin(function()
                 local syncTabs = function()
                     return ChatCfg("syncTabBorder") ~= false
                 end
-                local tabBordersDisabled = function()
+                local tabBordersOff = function()
                     return ChatCfg("extendBgBehindTabs") == true or syncTabs()
                 end
-                local function TabBorderDisabledTip()
+                local function TabBorderOffTip()
                     if ChatCfg("extendBgBehindTabs") then
                         return "Tabs Inside Chat Panel"
                     end
@@ -1576,8 +1576,8 @@ CludesUI.AtOptionsLogin(function()
                     {
                         type = "dropdown",
                         text = "Border Style",
-                        disabled = tabBordersDisabled,
-                        disabledTooltip = TabBorderDisabledTip,
+                        disabled = tabBordersOff,
+                        disabledTooltip = TabBorderOffTip,
                         requireState = "disabled",
                         values = texValues,
                         order = texOrder,
@@ -1618,8 +1618,8 @@ CludesUI.AtOptionsLogin(function()
                     },
                     CludesUI.BorderPxSliderCfg({
                         text = "Border Size",
-                        disabled = tabBordersDisabled,
-                        disabledTooltip = TabBorderDisabledTip,
+                        disabled = tabBordersOff,
+                        disabledTooltip = TabBorderOffTip,
                         requireState = "disabled",
                         -- The step a tab renders with from its own keys: its label as a step, anything unknown = thin.
                         getStep = function()
@@ -1655,8 +1655,8 @@ CludesUI.AtOptionsLogin(function()
                     if tTex and tTex ~= "" and tTex ~= "solid" then
                         local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                             addonKey = "chat",
-                            disabled = tabBordersDisabled,
-                            disabledTooltip = TabBorderDisabledTip,
+                            disabled = tabBordersOff,
+                            disabledTooltip = TabBorderOffTip,
                             requireState = "disabled",
                             getTex = function()
                                 return ChatCfg("tabBorderTexture") or "solid"
@@ -1697,8 +1697,8 @@ CludesUI.AtOptionsLogin(function()
                     local region = borderRow._leftRegion
                     CludesUI.BuildInlineCog(region, {
                         chain = false,
-                        disabled = tabBordersDisabled,
-                        disabledTooltip = TabBorderDisabledTip,
+                        disabled = tabBordersOff,
+                        disabledTooltip = TabBorderOffTip,
                         title = "Tab Border Options",
                         captureRegion = region,
                         rows = {
@@ -1755,7 +1755,7 @@ CludesUI.AtOptionsLogin(function()
                 if not CludesUI._prebuilding then
                     local region, control = borderRow._rightRegion, borderRow._rightRegion._control
                     local function SetMode(mode)
-                        if tabBordersDisabled() then
+                        if tabBordersOff() then
                             return
                         end
                         ChatSet("tabBorderColorMode", mode)
@@ -1811,7 +1811,7 @@ CludesUI.AtOptionsLogin(function()
                     Pix.Point(customSw, "RIGHT", accentSw, "LEFT", -8, 0)
                     local orig = customSw:GetScript("OnClick")
                     customSw:SetScript("OnClick", function(self, ...)
-                        if tabBordersDisabled() then
+                        if tabBordersOff() then
                             return
                         end
                         if (ChatCfg("tabBorderColorMode") or "custom") ~= "custom" then
@@ -1824,7 +1824,7 @@ CludesUI.AtOptionsLogin(function()
                         refreshClass()
                         refreshAccent()
                         refreshCustom()
-                        local off, mode = tabBordersDisabled(), ChatCfg("tabBorderColorMode") or "custom"
+                        local off, mode = tabBordersOff(), ChatCfg("tabBorderColorMode") or "custom"
                         customSw:SetAlpha(off and 0.15 or (mode == "custom" and 1 or 0.3))
                         accentSw:SetAlpha(off and 0.15 or (mode == "accent" and 1 or 0.3))
                         classSw:SetAlpha(off and 0.15 or (mode == "class" and 1 or 0.3))
@@ -1839,8 +1839,8 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     text = "Active Tab Border",
                     tooltip = "Gives the selected tab its own border color.",
-                    disabled = tabBordersDisabled,
-                    disabledTooltip = TabBorderDisabledTip,
+                    disabled = tabBordersOff,
+                    disabledTooltip = TabBorderOffTip,
                     getValue = function()
                         return ChatCfg("activeTabBorder") ~= false
                     end,
@@ -1878,7 +1878,7 @@ CludesUI.AtOptionsLogin(function()
                     colorSwatch:SetScript("OnLeave", CludesUI.HideWidgetTooltip)
                     local function RefreshActiveSwatch()
                         refreshSwatch()
-                        local off = tabBordersDisabled() or ChatCfg("activeTabBorder") == false
+                        local off = tabBordersOff() or ChatCfg("activeTabBorder") == false
                         colorSwatch:SetAlpha(off and 0.3 or 1)
                     end
                     CludesUI.RegisterWidgetRefresh(RefreshActiveSwatch)
@@ -2338,7 +2338,7 @@ CludesUI.AtOptionsLogin(function()
             if db and db.ResetProfile then
                 db:ResetProfile()
             end
-            RefreshAll()
+            ApplyChatLook()
             CludesUI:InvalidatePageCache()
         end,
     })

@@ -163,7 +163,7 @@ CludesUI.AtOptionsLogin(function()
                 mod.ApplyBorder()
             end
         end
-        local function ApplyWindowBrd()
+        local function ApplyWindowBorderLook()
             if mod.ApplyWindowBorder then
                 mod.ApplyWindowBorder()
             end
@@ -297,7 +297,7 @@ CludesUI.AtOptionsLogin(function()
                         MeterSet("windowBorderSizePx", false)
                     end
                     -- force: the offset row below exists only for a textured style
-                    ApplyWindowBrd()
+                    ApplyWindowBorderLook()
                     CludesUI:RefreshPage(true)
                 end,
             }),
@@ -320,7 +320,7 @@ CludesUI.AtOptionsLogin(function()
                     setPx = function(val)
                         MeterSet("windowBorderSizePx", val)
                     end,
-                    apply = ApplyWindowBrd,
+                    apply = ApplyWindowBorderLook,
                 })
             )
         )
@@ -337,7 +337,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         set = function(val)
                             MeterSet("windowBorderIncludeHeader", val)
-                            ApplyWindowBrd()
+                            ApplyWindowBorderLook()
                             CludesUI:RefreshPage()
                         end,
                     },
@@ -347,7 +347,7 @@ CludesUI.AtOptionsLogin(function()
                         get = CfgOr("windowBorderBehind", false),
                         set = function(val)
                             MeterSet("windowBorderBehind", val)
-                            ApplyWindowBrd()
+                            ApplyWindowBorderLook()
                         end,
                     },
                 },
@@ -368,7 +368,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 function(red, green, blue, a)
                     MeterSet("windowBorderColor", { r = red, g = green, b = blue, a = a or 1 })
-                    ApplyWindowBrd()
+                    ApplyWindowBorderLook()
                 end,
                 true,
                 20
@@ -413,7 +413,7 @@ CludesUI.AtOptionsLogin(function()
                     setY = function(val)
                         MeterSet("windowBorderOffsetY", val)
                     end,
-                    apply = ApplyWindowBrd,
+                    apply = ApplyWindowBorderLook,
                 })
                 _, height = W:DualRow(
                     hostFrame,

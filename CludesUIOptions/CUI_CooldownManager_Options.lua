@@ -2848,7 +2848,7 @@ CludesUI.AtOptionsLogin(function()
         local function Settings()
             return DB().rotationAssistIcon
         end
-        local function Apply()
+        local function ApplyAssistIcon()
             mod.RefreshRotationAssistIcon()
             CludesUI:RefreshPage()
         end
@@ -2899,7 +2899,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(val)
                 Settings().enabled = val
-                Apply()
+                ApplyAssistIcon()
             end,
         }, {
             type = "slider",
@@ -2930,7 +2930,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(val)
                 Settings().onlyInCombat = val
-                Apply()
+                ApplyAssistIcon()
             end,
         }, {
             type = "toggle",
@@ -2943,11 +2943,11 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(val)
                 Settings().showKeybind = val
-                Apply()
+                ApplyAssistIcon()
             end,
         })
         cursorY = cursorY - height
-        BuildKeybindStyleControls(kbRow, Settings, Apply, IconLockTip)
+        BuildKeybindStyleControls(kbRow, Settings, ApplyAssistIcon, IconLockTip)
         _, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "X Offset",
@@ -2991,7 +2991,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(val)
                 Settings().showGCD = val
-                Apply()
+                ApplyAssistIcon()
             end,
         }, CludesUI.BlankRowCfg())
         cursorY = cursorY - height

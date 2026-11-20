@@ -1698,13 +1698,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             brd:SetColor(cfg[9], cfg[10], cfg[11], cfg[12])
             backdrop:SetColorTexture(cfg[1], cfg[2], cfg[3], cfg[4])
         end
-        local function ApplyHover()
+        local function PaintCaptionHover()
             dropCaption:SetTextColor(cfg[21], cfg[22], cfg[23], dropdownBtn._valueDimA or cfg[24])
             brd:SetColor(cfg[13], cfg[14], cfg[15], cfg[16])
             backdrop:SetColorTexture(cfg[5], cfg[6], cfg[7], cfg[8])
         end
         dropdownBtn:SetScript("OnEnter", function()
-            ApplyHover()
+            PaintCaptionHover()
             if dropdownBtn._ttText and not dropMenu:IsShown() then
                 ShowWidgetTooltip(dropdownBtn, dropdownBtn._ttText, dropdownBtn._ttOpts)
             end
@@ -1764,7 +1764,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
             -- Track the open menu globally so popups don't treat clicks on it (which can extend outside the popup/panel) as a dismissing outside click.
             CludesUI._openDropdownMenu = self
-            ApplyHover()
+            PaintCaptionHover()
             refresh()
             -- This SetScript replaces BuildDropdownMenu's OnShow hook, so drive its search auto-focus directly.
             if dropMenu._focusSearch then
@@ -1837,7 +1837,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
             end
             if dropdownBtn:IsMouseOver() then
-                ApplyHover()
+                PaintCaptionHover()
                 if dropdownBtn._ttText then
                     ShowWidgetTooltip(dropdownBtn, dropdownBtn._ttText, dropdownBtn._ttOpts)
                 end
@@ -3060,13 +3060,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             brd:SetColor(cfg[9], cfg[10], cfg[11], cfg[12])
             backdrop:SetColorTexture(cfg[1], cfg[2], cfg[3], cfg[4])
         end
-        local function ApplyHover()
+        local function PaintCaptionHover()
             dropCaption:SetTextColor(cfg[21], cfg[22], cfg[23], dropdownBtn._valueDimA or cfg[24])
             brd:SetColor(cfg[13], cfg[14], cfg[15], cfg[16])
             backdrop:SetColorTexture(cfg[5], cfg[6], cfg[7], cfg[8])
         end
         dropdownBtn:SetScript("OnEnter", function()
-            ApplyHover()
+            PaintCaptionHover()
             if dropdownBtn._ttText then
                 ShowWidgetTooltip(dropdownBtn, dropdownBtn._ttText, dropdownBtn._ttOpts)
             end

@@ -559,7 +559,7 @@ local function FormatRemaining(remaining)
     return TimeText(remaining)
 end
 
-local function RoundToInt(amount)
+local function RoundInt(amount)
     if not amount then
         return 0
     end
@@ -788,22 +788,22 @@ local function FormatEnemyForcesText(enemyLine, formatId, compact)
     local suffix = compact and "" or CludesUI.L(" Enemy Forces")
 
     if formatId == "COUNT" then
-        return format("%d/%d%s", RoundToInt(rawCurrent), RoundToInt(rawTotal), suffix)
+        return format("%d/%d%s", RoundInt(rawCurrent), RoundInt(rawTotal), suffix)
     elseif formatId == "COUNT_PERCENT" then
-        return format("%d/%d - %.2f%%%s", RoundToInt(rawCurrent), RoundToInt(rawTotal), percent, suffix)
+        return format("%d/%d - %.2f%%%s", RoundInt(rawCurrent), RoundInt(rawTotal), percent, suffix)
     elseif formatId == "COUNT_REMAINING" then
         return format(
             "%d/%d (%d left)%s",
-            RoundToInt(rawCurrent),
-            RoundToInt(rawTotal),
-            RoundToInt(remaining),
+            RoundInt(rawCurrent),
+            RoundInt(rawTotal),
+            RoundInt(remaining),
             suffix
         )
     elseif formatId == "REMAINING" then
         if compact then
-            return format("%d left", RoundToInt(remaining))
+            return format("%d left", RoundInt(remaining))
         end
-        return format("%d remaining%s", RoundToInt(remaining), suffix)
+        return format("%d remaining%s", RoundInt(remaining), suffix)
     end
 
     return format("%.2f%%%s", percent, suffix)

@@ -105,7 +105,7 @@ local SyncWhereActive
 --  delta, same contract as the timer frame -- scale division never leaves the
 --  module's own SetPoint).
 --------------------------------------------------------------------------------
-local function ApplyContainerPosition()
+local function PlaceContainer()
     if not boxHolder then
         return
     end
@@ -125,7 +125,7 @@ local function EnsureContainer()
     end
     boxHolder = CreateFrame("Frame", nil, UIParent)
     boxHolder:SetSize(240, 20)
-    ApplyContainerPosition()
+    PlaceContainer()
     return boxHolder
 end
 
@@ -1424,7 +1424,7 @@ function mod.TSB_Refresh()
     styleGen = styleGen + 1 -- O3: invalidate every bar's cached style stamp
     if boxHolder then
         boxHolder:SetSize(conf.width or 240, conf.height or 20)
-        ApplyContainerPosition()
+        PlaceContainer()
     end
     if previewOn then
         ShowPreview()
@@ -1512,7 +1512,7 @@ local function RegisterUnlock()
                 end
                 conf.pos = { centerX = posX, centerY = posY }
                 if not CludesUI._unlockActive then
-                    ApplyContainerPosition()
+                    PlaceContainer()
                 end
             end,
             loadPos = function()
@@ -1530,7 +1530,7 @@ local function RegisterUnlock()
                 end
             end,
             applyPos = function()
-                ApplyContainerPosition()
+                PlaceContainer()
             end,
         }),
     }, "CludesUIMythicTimer")
@@ -1545,7 +1545,7 @@ local function RegisterUnlock()
             mod.TSB_SetPreview(unlockActive == true)
             local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("EMT_TargetedSpellBars")
             if not anchored then
-                ApplyContainerPosition()
+                PlaceContainer()
             end
         end)
     end

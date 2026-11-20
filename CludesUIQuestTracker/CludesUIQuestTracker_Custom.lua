@@ -1719,7 +1719,7 @@ local function GrowSpot()
     return Anchored(SavedPos())
 end
 
-local function Place()
+local function PlaceTracker()
     local p = GrowSpot()
     widget:ClearAllPoints()
     widget:SetPoint(p.point, UIParent, p.relPoint or p.point, p.x or 0, p.y or 0)
@@ -1830,7 +1830,7 @@ local function ApplySpot()
     if CludesUI._unlockActive then
         widget:SetHeight(TrackerCfg("customMaxHeight") or DEF_HEIGHT)
     else
-        Place()
+        PlaceTracker()
     end
     Queue()
 end
@@ -2210,7 +2210,7 @@ function EQT.InitCustom()
                     Anchored({ point = anchorPoint, relPoint = relPoint, x = posX, y = posY })
                 )
                 if not CludesUI._unlockActive then
-                    Place()
+                    PlaceTracker()
                 end
             end,
             loadPos = GrowSpot,
@@ -2218,9 +2218,9 @@ function EQT.InitCustom()
             clearPos = function()
                 EQT.Set("customPos", nil)
                 ApplySpot()
-                Place()
+                PlaceTracker()
             end,
-            applyPos = Place,
+            applyPos = PlaceTracker,
         }),
     }, "CludesUIQuestTracker")
 
@@ -2232,7 +2232,7 @@ function EQT.InitCustom()
         if isActive then
             widget:SetHeight(TrackerCfg("customMaxHeight") or DEF_HEIGHT)
         else
-            Place()
+            PlaceTracker()
         end
         Render()
     end)

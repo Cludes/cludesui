@@ -1044,13 +1044,13 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         end)
         -- The list has no disabled state of its own: grey it and block clicks;
         -- the row's disabled overlay explains the lock.
-        local function SyncLock()
+        local function SyncLockedLook()
             local off = EntryLocked(e)
             checkDrop:SetAlpha(off and 0.3 or 1)
             checkDrop:EnableMouse(not off)
         end
-        SyncLock()
-        CludesUI.RegisterWidgetRefresh(SyncLock)
+        SyncLockedLook()
+        CludesUI.RegisterWidgetRefresh(SyncLockedLook)
     end
     -- A text's cog (all but the bar text): its Size, offsets and Show Rested.
     local function SlotCog(region, e)
@@ -1250,11 +1250,11 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
                 dropMenu:Hide()
             end
         end)
-        local function SyncLock()
+        local function SyncLockedLook()
             arrow:SetShown(not EntryLocked(e))
         end
-        CludesUI.RegisterWidgetRefresh(SyncLock)
-        SyncLock()
+        CludesUI.RegisterWidgetRefresh(SyncLockedLook)
+        SyncLockedLook()
     end
 
     -- Add Text Slot opens the list of positions (the standard dropdown menu,

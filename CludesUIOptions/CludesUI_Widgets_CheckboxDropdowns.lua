@@ -449,7 +449,7 @@ function CludesUI.BuildVisOptsCBDropdown(
         return row
     end
 
-    local function EnsureMenu()
+    local function BuildMenuOnce()
         if dropMenu and not menuStale then
             return
         end
@@ -950,7 +950,7 @@ function CludesUI.BuildVisOptsCBDropdown(
                     end
                     return lt
                 end
-                local function UpdateCheck()
+                local function SyncCheck()
                     if chk then
                         if getFn(entry.key) then
                             chk:Show()
@@ -996,8 +996,8 @@ function CludesUI.BuildVisOptsCBDropdown(
                         labelFS:SetTextColor(RestColor())
                     end
                 end
-                UpdateCheck()
-                row._updateCheck = UpdateCheck
+                SyncCheck()
+                row._updateCheck = SyncCheck
                 row:SetScript("OnEnter", function()
                     if row._isLocked then
                         -- Locked rows keep the gray look (no highlight); if the item explains its lock, show that instead of the normal tooltip.
@@ -1416,7 +1416,7 @@ function CludesUI.BuildVisOptsCBDropdown(
         ddBrd:SetColor(1, 1, 1, CludesUI.DD_BRD_A)
         ddBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_A)
     end
-    local function ApplyHover()
+    local function PaintDropHover()
         if PoolGen(dropdownBtn) ~= dressGen then
             return
         end
@@ -1425,7 +1425,7 @@ function CludesUI.BuildVisOptsCBDropdown(
         ddBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_HA)
     end
     dropdownBtn:SetScript("OnEnter", function()
-        ApplyHover()
+        PaintDropHover()
     end)
     dropdownBtn:SetScript("OnLeave", function()
         if not (dropMenu and dropMenu:IsShown()) then
@@ -1443,7 +1443,7 @@ function CludesUI.BuildVisOptsCBDropdown(
             end
             SyncCaption()
         end
-        EnsureMenu()
+        BuildMenuOnce()
         if dropMenu:IsShown() then
             dropMenu:Hide()
             return
@@ -1467,7 +1467,7 @@ function CludesUI.BuildVisOptsCBDropdown(
         local uiScale = UIParent:GetEffectiveScale()
         dropMenu:SetScale(btnScale / uiScale)
         CludesUI.SeatDropdownMenu(dropMenu)
-        ApplyHover()
+        PaintDropHover()
         dropMenu:Show()
         -- Track the open menu globally so popup outside-click watchers don't treat clicks on rows that extend below the popup as a dismissing outside click.
         CludesUI._openDropdownMenu = dropMenu
@@ -1520,7 +1520,7 @@ function CludesUI.BuildVisOptsCBDropdown(
                 CludesUI._openDropdownMenu = nil
             end
             if dropdownBtn:IsMouseOver() then
-                ApplyHover()
+                PaintDropHover()
             else
                 ApplyNormal()
             end
@@ -1987,7 +1987,7 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
     local HINT_H = options.hint2 and 32 or 18
     local DIV_H = 7
 
-    local function EnsureMenu()
+    local function BuildMenuOnce()
         if dropMenu then
             return
         end
@@ -2146,7 +2146,7 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
                     bar:SetColorTexture(1, 1, 1, 0.35)
                 end
             end
-            local function UpdateCheck()
+            local function SyncCheck()
                 if getFn(row._item.key) then
                     chk:Show()
                     boxBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.8)
@@ -2155,8 +2155,8 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
                     boxBrd:SetColor(0.4, 0.4, 0.4, 0.6)
                 end
             end
-            UpdateCheck()
-            row._updateCheck = UpdateCheck
+            SyncCheck()
+            row._updateCheck = SyncCheck
             row._lbl = labelFS
             row:SetScript("OnEnter", function()
                 if dragState.dragging then
@@ -2341,7 +2341,7 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
         ddBrd:SetColor(1, 1, 1, CludesUI.DD_BRD_A)
         ddBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_A)
     end
-    local function ApplyHover()
+    local function PaintDropHover()
         if PoolGen(dropdownBtn) ~= dressGen then
             return
         end
@@ -2349,7 +2349,7 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
         ddBrd:SetColor(1, 1, 1, CludesUI.DD_BRD_HA)
         ddBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_HA)
     end
-    dropdownBtn:SetScript("OnEnter", ApplyHover)
+    dropdownBtn:SetScript("OnEnter", PaintDropHover)
     dropdownBtn:SetScript("OnLeave", function()
         if not (dropMenu and dropMenu:IsShown()) then
             ApplyNormal()
@@ -2357,7 +2357,7 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
     end)
 
     local function ShowMenu()
-        EnsureMenu()
+        BuildMenuOnce()
         if dropMenu:IsShown() then
             dropMenu:Hide()
             return
@@ -2366,7 +2366,7 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
         local uiScale = UIParent:GetEffectiveScale()
         dropMenu:SetScale(btnScale / uiScale)
         CludesUI.SeatDropdownMenu(dropMenu)
-        ApplyHover()
+        PaintDropHover()
         dropMenu:Show()
         dropMenu:SetScript("OnUpdate", function(self)
             if not self:IsMouseOver() and not dropdownBtn:IsMouseOver() and IsMouseButtonDown("LeftButton") then
@@ -2477,7 +2477,7 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, option
 
     local dropMenu, refreshers
     local ROW_H, PAD, TRACK_W = 34, 6, 140
-    local function EnsureMenu()
+    local function BuildMenuOnce()
         if dropMenu then
             return
         end
@@ -2586,7 +2586,7 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, option
     -- Whether the button scrolls with the page (decided on the first open).
     local inScroll
     local function ShowMenu()
-        EnsureMenu()
+        BuildMenuOnce()
         if dropMenu:IsShown() then
             dropMenu:Hide()
             return

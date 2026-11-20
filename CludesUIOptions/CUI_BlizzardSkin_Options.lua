@@ -351,7 +351,7 @@ CludesUI.AtOptionsLogin(function()
             end,
         },
     })
-    local function TooltipPreviewRepaint()
+    local function RepaintTooltipPreview()
         if CludesUI._repaintTooltipPreview then
             CludesUI._repaintTooltipPreview()
         end
@@ -627,7 +627,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(val)
                 Account().tooltipFontScale = val
-                TooltipPreviewRepaint()
+                RepaintTooltipPreview()
             end,
         }, {
             type = "toggle",
@@ -1058,7 +1058,7 @@ CludesUI.AtOptionsLogin(function()
                         CludesUI.SetCVar("UberTooltips", val and "1" or "0", "CludesUIBlizzardSkin")
                     else
                         CludesUIDB[key] = val
-                        TooltipPreviewRepaint()
+                        RepaintTooltipPreview()
                     end
                 end
             )
@@ -1456,7 +1456,7 @@ CludesUI.AtOptionsLogin(function()
                 if CludesUI.SyncAuraTooltipSkin then
                     CludesUI.SyncAuraTooltipSkin()
                 else
-                    TooltipPreviewRepaint()
+                    RepaintTooltipPreview()
                 end
             end
             AttachBorderControls(tooltipBorder, "tooltip", tipReskinOff, true, { apply = TooltipBorderApply })
@@ -2104,11 +2104,11 @@ CludesUI.AtOptionsLogin(function()
                     },
                 },
             })
-            local function UpdateCogVis()
+            local function SyncEnchantCog()
                 cogBtn:SetShown(EnchantTextShown("showEnchants", "charSheetEnchantNames"))
             end
-            CludesUI.RegisterWidgetRefresh(UpdateCogVis)
-            UpdateCogVis()
+            CludesUI.RegisterWidgetRefresh(SyncEnchantCog)
+            SyncEnchantCog()
         end
 
         -- Durability | Season Panel. The panel greys out with the sheet off;
@@ -2669,11 +2669,11 @@ CludesUI.AtOptionsLogin(function()
                     },
                 },
             })
-            local function UpdateCogVis()
+            local function SyncEnchantCog()
                 cogBtn:SetShown(EnchantTextShown("inspectShowEnchants", "inspectEnchantNames"))
             end
-            CludesUI.RegisterWidgetRefresh(UpdateCogVis)
-            UpdateCogVis()
+            CludesUI.RegisterWidgetRefresh(SyncEnchantCog)
+            SyncEnchantCog()
         end
 
         local inspectRow
@@ -3599,7 +3599,7 @@ CludesUI.AtOptionsLogin(function()
 
     -- Global look settings (Global Options section): central tables, nil =
     -- defaults, resolved by the window-skin engine and applied live.
-    local function WSLook(settingKey)
+    local function SkinSetting(settingKey)
         return CludesUIDB and CludesUIDB[settingKey]
     end
     local function WSLookSet(settingKey, field, val)
@@ -3628,7 +3628,7 @@ CludesUI.AtOptionsLogin(function()
             region,
             row:GetFrameLevel() + 3,
             function()
-                local c = WSLook(settingKey)
+                local c = SkinSetting(settingKey)
                 local col = c and c.color
                 if col then
                     return col.r or 1, col.g or 1, col.b or 1
@@ -3646,7 +3646,7 @@ CludesUI.AtOptionsLogin(function()
         Pix.Point(customSwatch, "RIGHT", control, "LEFT", -8, 0)
         local origClick = customSwatch:GetScript("OnClick")
         customSwatch:SetScript("OnClick", function(self, ...)
-            local c = WSLook(settingKey)
+            local c = SkinSetting(settingKey)
             if not (c and c.useCustom) then
                 WSLookSet(settingKey, "useCustom", true)
                 CludesUI:RefreshPage()
@@ -3682,7 +3682,7 @@ CludesUI.AtOptionsLogin(function()
         local function refreshPair()
             updateCustom()
             updateAccent()
-            local c = WSLook(settingKey)
+            local c = SkinSetting(settingKey)
             local useCustom = c and c.useCustom
             customSwatch:SetAlpha(useCustom and 1 or 0.3)
             accentSwatch:SetAlpha(useCustom and 0.3 or 1)
@@ -4865,7 +4865,7 @@ CludesUI.AtOptionsLogin(function()
             text = "Show Accent Bar",
             tooltip = "Accent bar on the active tab of reskinned windows.",
             getValue = function()
-                local c = WSLook("blizzWinAccentBar")
+                local c = SkinSetting("blizzWinAccentBar")
                 return not (c and c.enabled == false)
             end,
             setValue = function(val)
@@ -4878,7 +4878,7 @@ CludesUI.AtOptionsLogin(function()
             max = 100,
             step = 1,
             getValue = function()
-                local c = WSLook("blizzWinBarFill")
+                local c = SkinSetting("blizzWinBarFill")
                 return math.floor(((c and c.alpha) or 0.95) * 100 + 0.5)
             end,
             setValue = function(val)
@@ -4906,14 +4906,14 @@ CludesUI.AtOptionsLogin(function()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        local c = WSLook("blizzWinLinks")
+                        local c = SkinSetting("blizzWinLinks")
                         return (c and c.useCustom) and 0.3 or 1
                     end,
                 },
                 {
                     tooltip = "Custom Color",
                     getValue = function()
-                        local c = WSLook("blizzWinLinks")
+                        local c = SkinSetting("blizzWinLinks")
                         local col = c and c.color
                         if col then
                             return col.r or 1, col.g or 1, col.b or 1
@@ -4926,7 +4926,7 @@ CludesUI.AtOptionsLogin(function()
                         CludesUI:RefreshPage()
                     end,
                     onClick = function(self)
-                        local c = WSLook("blizzWinLinks")
+                        local c = SkinSetting("blizzWinLinks")
                         if not (c and c.useCustom) then
                             WSLookSet("blizzWinLinks", "useCustom", true)
                             CludesUI:RefreshPage()
@@ -4937,7 +4937,7 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end,
                     refreshAlpha = function()
-                        local c = WSLook("blizzWinLinks")
+                        local c = SkinSetting("blizzWinLinks")
                         return (c and c.useCustom) and 1 or 0.3
                     end,
                 },
@@ -6220,7 +6220,7 @@ CludesUI.AtOptionsLogin(function()
     -- sample catches up on writes it skipped while hidden (Unlock Mode, other pages). Each
     -- repaint checks that its own sample is the one on screen.
     local function CatchUpPreviews()
-        TooltipPreviewRepaint()
+        RepaintTooltipPreview()
         RepaintPopupPreview()
         if mod.EDR_RepaintSample then
             mod.EDR_RepaintSample()
@@ -6271,7 +6271,7 @@ CludesUI.AtOptionsLogin(function()
         -- Unlock Mode and a profile switch write its keys from elsewhere).
         onPageCacheRestore = function(pageTitle)
             if pageTitle == PAGE_TOOLTIPS then
-                TooltipPreviewRepaint()
+                RepaintTooltipPreview()
                 RepaintPopupPreview()
             end
             if pageTitle == PAGE_DRAGONRIDING and mod.EDR_RepaintSample then

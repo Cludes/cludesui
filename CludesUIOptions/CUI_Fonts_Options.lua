@@ -1258,7 +1258,7 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
             end,
         }
     end
-    local function subSize(labelText, getT, minV, maxV, def, key, applyName)
+    local function subSizeSlider(labelText, getT, minV, maxV, def, key, applyName)
         return {
             type = "slider",
             text = labelText,
@@ -1352,43 +1352,43 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        subSize("Cast Bars Name Size", tsb, 6, 20, 10, "nameSize", "TSB_Refresh"),
-        subSize("Cast Bars Timer Size", tsb, 6, 20, 10, "timerSize", "TSB_Refresh")
+        subSizeSlider("Cast Bars Name Size", tsb, 6, 20, 10, "nameSize", "TSB_Refresh"),
+        subSizeSlider("Cast Bars Timer Size", tsb, 6, 20, 10, "timerSize", "TSB_Refresh")
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        subSize("Cast Bars Target Size", tsb, 6, 20, 10, "targetSize", "TSB_Refresh"),
-        subSize("Target Cast Bar Name Size", tfbT, 6, 22, 11, "nameSize", "TFB_Refresh")
+        subSizeSlider("Cast Bars Target Size", tsb, 6, 20, 10, "targetSize", "TSB_Refresh"),
+        subSizeSlider("Target Cast Bar Name Size", tfbT, 6, 22, 11, "nameSize", "TFB_Refresh")
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        subSize("Target Cast Bar Timer Size", tfbT, 6, 22, 11, "timerSize", "TFB_Refresh"),
-        subSize("Target Cast Bar Target Size", tfbT, 6, 20, 10, "targetSize", "TFB_Refresh")
+        subSizeSlider("Target Cast Bar Timer Size", tfbT, 6, 22, 11, "timerSize", "TFB_Refresh"),
+        subSizeSlider("Target Cast Bar Target Size", tfbT, 6, 20, 10, "targetSize", "TFB_Refresh")
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        subSize("Focus Cast Bar Name Size", tfbF, 6, 22, 11, "nameSize", "TFB_Refresh"),
-        subSize("Focus Cast Bar Timer Size", tfbF, 6, 22, 11, "timerSize", "TFB_Refresh")
+        subSizeSlider("Focus Cast Bar Name Size", tfbF, 6, 22, 11, "nameSize", "TFB_Refresh"),
+        subSizeSlider("Focus Cast Bar Timer Size", tfbF, 6, 22, 11, "timerSize", "TFB_Refresh")
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        subSize("Focus Cast Bar Target Size", tfbF, 6, 20, 10, "targetSize", "TFB_Refresh"),
-        subSize("Kick Tracker Timer Size", kt, 6, 24, 11, "timerSize", "KT_Refresh")
+        subSizeSlider("Focus Cast Bar Target Size", tfbF, 6, 20, 10, "targetSize", "TFB_Refresh"),
+        subSizeSlider("Kick Tracker Timer Size", kt, 6, 24, 11, "timerSize", "KT_Refresh")
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        subSize("Kick Tracker Bar Name Size", kt, 6, 24, 11, "barNameSize", "KT_Refresh"),
-        subSize("Kick Tracker Bar Timer Size", kt, 6, 24, 11, "barTimerSize", "KT_Refresh")
+        subSizeSlider("Kick Tracker Bar Name Size", kt, 6, 24, 11, "barNameSize", "KT_Refresh"),
+        subSizeSlider("Kick Tracker Bar Timer Size", kt, 6, 24, 11, "barTimerSize", "KT_Refresh")
     )
     cursorY = cursorY - height
     return cursorY

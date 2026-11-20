@@ -770,7 +770,7 @@ end
 --  Apply (settings entry point)
 -------------------------------------------------------------------------------
 local _syncEventRegistration -- defined in the event section below
-local function Apply()
+local function ApplyResTracker()
     if not addonName.db then
         return
     end
@@ -805,7 +805,7 @@ local function Apply()
     _syncEventRegistration()
     UpdateVisibility()
 end
-_G._CUI_BattleRes_Apply = Apply
+_G._CUI_BattleRes_Apply = ApplyResTracker
 
 -- QoL Reset: the Battle Res and Bloodlust slices back to their defaults (both
 -- live in this file's defaults table).
@@ -816,7 +816,7 @@ function _G._CUI_BattleRes_Reset()
     end
     prof.battleRes, prof.bloodlust = {}, {}
     CludesUI.Lite.DeepMergeDefaults(prof, defaultSet.profile)
-    Apply()
+    ApplyResTracker()
     if _G._CUI_Bloodlust_Apply then
         _G._CUI_Bloodlust_Apply()
     end
@@ -925,7 +925,7 @@ local function RegisterUnlock()
                 end
                 local PPb = CludesUI and CludesUI.PP
                 profile.iconSize = math.max(16, PPb and PPb.Snap(wid) or math.floor(wid + 0.5))
-                Apply()
+                ApplyResTracker()
                 if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
                     CludesUI.RepositionBarToMover("CUI_BattleRes")
                 end
@@ -948,7 +948,7 @@ local function RegisterUnlock()
                     local PPb = CludesUI and CludesUI.PP
                     profile.iconSize = math.max(16, PPb and PPb.Snap(hgt) or math.floor(hgt + 0.5))
                 end
-                Apply()
+                ApplyResTracker()
                 if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
                     CludesUI.RepositionBarToMover("CUI_BattleRes")
                 end
@@ -989,6 +989,6 @@ boot:SetScript("OnEvent", function(self)
     CreateBrezFrame()
     -- Apply registers events (gated on enabled + visibility) and refreshes
     -- encounter/keystone state as part of _syncEventRegistration
-    Apply()
+    ApplyResTracker()
     RegisterUnlock()
 end)

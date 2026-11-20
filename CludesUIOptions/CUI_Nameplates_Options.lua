@@ -1413,7 +1413,7 @@ CludesUI.AtOptionsLogin(function()
         -- The row's dress this bar belongs to (page reuse): once the row is dressed
         -- again for a later build, this proxy and its bar are that build's no more.
         local rowGen = PoolGen(parentRow)
-        local function Built()
+        local function BuiltRow()
             if real and PoolGen(parentRow) == rowGen then
                 return real
             end
@@ -1454,32 +1454,32 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         proxy.RefreshBorderStyle = function()
-            local r = Built()
+            local r = BuiltRow()
             if r and r.RefreshBorderStyle then
                 r.RefreshBorderStyle()
             end
         end
         proxy.RefreshBorderColor = function()
-            local r = Built()
+            local r = BuiltRow()
             if r and r.RefreshBorderColor then
                 r.RefreshBorderColor()
             end
         end
         proxy.Randomize = function()
-            local r = Built()
+            local r = BuiltRow()
             if r and r.Randomize then
                 r.Randomize()
             end
         end
         proxy.RefreshHealthText = function()
-            local r = Built()
+            local r = BuiltRow()
             if r and r.RefreshHealthText then
                 r.RefreshHealthText()
             end
         end
         proxy.SetDisabled = function(off)
             _disabled = off
-            local r = Built()
+            local r = BuiltRow()
             if r and r._health then
                 r._health:SetAlpha(off and 0.3 or 1)
             end

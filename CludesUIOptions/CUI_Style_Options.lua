@@ -1025,7 +1025,7 @@ end
 -- names the look a font or window record from before the slots belongs to.
 -- WoW Forever counts as Blizzard Style (it shares that look's font slot, and
 -- such records predate its own window slot).
-local function InferredStockStyle()
+local function GuessStockStyle()
     local b, c = 0, 0
     for idx = 1, #MODULES do
         local module = MODULES[idx]
@@ -1118,7 +1118,7 @@ local function FontSlots(legacy)
         -- A one-way seed from before the slots (fontStockSeeded): the live
         -- font belongs to a stock look, and Expressway was the one it replaced.
         if db.fontStockSeeded then
-            s = { active = legacy or InferredStockStyle(), cui = { global = "Expressway" } }
+            s = { active = legacy or GuessStockStyle(), cui = { global = "Expressway" } }
         else
             s = { active = "cui" }
         end
@@ -1173,14 +1173,14 @@ end
 -- recorded before that slot existed stays as it is.
 local function WholeUIWindowsPending(styleKey)
     local swap = CludesUI.SwapWindowSkinStyle
-    return swap ~= nil and swap(styleKey, true, InferredStockStyle())
+    return swap ~= nil and swap(styleKey, true, GuessStockStyle())
 end
 local function ApplyWholeUIWindows(styleKey, legacy)
     local swap = CludesUI.SwapWindowSkinStyle
     if not swap then
         return
     end
-    swap(styleKey, false, legacy or InferredStockStyle())
+    swap(styleKey, false, legacy or GuessStockStyle())
     local prof = CludesUI.GetActiveProfileData()
     if prof then
         prof.windowSkinLook = styleKey
@@ -1201,7 +1201,7 @@ function BlizzStyle.ApplyAll(styleKey)
     elseif not STYLE_VALUES[styleKey] then
         styleKey = "cui"
     end
-    local legacy = InferredStockStyle()
+    local legacy = GuessStockStyle()
     for idx = 1, #MODULES do
         local module = MODULES[idx]
         if module.firstInstall ~= false and SupportsStyle(module, styleKey) and module.profile() then
@@ -1396,7 +1396,7 @@ local function PromptStyleChanges(changes, wholeUIStyle)
             if CludesUI.IS_FOREVER and CludesUIDB then
                 CludesUIDB.styleChoicePending = nil
             end
-            local legacy = wholeUIStyle and InferredStockStyle()
+            local legacy = wholeUIStyle and GuessStockStyle()
             for idx = 1, #changes do
                 SwitchModuleStyle(changes[idx].m, changes[idx].key)
             end

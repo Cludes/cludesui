@@ -35,7 +35,7 @@ local TEMPLATE_DEFAULTS = { style = 1, mode = "default", lines = 8, thickness = 
 
 -- Read: the saved template, else the defaults. A read never writes, so a page
 -- build (the hidden search pass included) saves nothing.
-local function Template()
+local function GlowTemplate()
     return CludesUIDB.glowTemplate or TEMPLATE_DEFAULTS
 end
 
@@ -61,7 +61,7 @@ local function TemplateDesc()
         excludes = { [4] = true },
         caps = { mode = true, params = true, bg = true },
         get = function(f)
-            local color = Template()
+            local color = GlowTemplate()
             if f == "style" then
                 return color.style or 1
             elseif f == "mode" then
@@ -383,7 +383,7 @@ end
 
 -- anyState: a row's or a module's Apply (see Eligible).
 local function ConfirmApply(sites, anyState)
-    local t = Template()
+    local t = GlowTemplate()
     local num, conv, turnOn = PreviewCounts(sites, t, anyState)
     if num == 0 then
         CludesUI:ShowInfoPopup({
@@ -619,7 +619,7 @@ local function SiteRow(hostFrame, cursorY, W, site)
     else
         leftX = GO.DropdownSpec(desc, site.label)
     end
-    local color, short, long = SiteStatus(site, Template())
+    local color, short, long = SiteStatus(site, GlowTemplate())
     local statusCfg = CludesUI.BlankRowCfg()
     statusCfg.tooltip = long
     local row, height = W:DualRow(hostFrame, cursorY, leftX, statusCfg)
@@ -661,16 +661,16 @@ local function SiteRow(hostFrame, cursorY, W, site)
         end, {
             width = 110,
             disabled = function()
-                return ApplyBlockedTip(site, Template()) ~= nil
+                return ApplyBlockedTip(site, GlowTemplate()) ~= nil
             end,
             disabledTooltip = function()
-                return ApplyBlockedTip(site, Template())
+                return ApplyBlockedTip(site, GlowTemplate())
             end,
             rawTooltip = true,
         })
         -- Row edits only refresh widgets (no rebuild): keep the status current.
         CludesUI.RegisterWidgetRefresh(function()
-            local c, s, l = SiteStatus(site, Template())
+            local c, s, l = SiteStatus(site, GlowTemplate())
             local labelFS = rrgn._label
             if labelFS then
                 labelFS:SetText(s)
@@ -717,7 +717,7 @@ end
 
 -- Is every site of the card already matching or locked (nothing for its Apply)?
 local function ModuleBlocked(tile)
-    local t = Template()
+    local t = GlowTemplate()
     for _, site in ipairs(tile.sites) do
         if not ApplyBlockedTip(site, t) then
             return false
@@ -807,7 +807,7 @@ end
 
 local function BuildTileList(sites, infos)
     local byModule, infosByModule, tiles = {}, {}, {}
-    local t = Template()
+    local t = GlowTemplate()
     for _, site in ipairs(sites) do
         local entries = byModule[site.module]
         if not entries then
@@ -878,7 +878,7 @@ local function BuildGlowCard(hostFrame, cursorY, W, tile)
     -- moves rows, so rebuild once.
     if #tile.sites > 0 and not CludesUI._prebuilding then
         CludesUI.RegisterWidgetRefresh(function()
-            local summary, isActive = CardSummary(tile.sites, Template())
+            local summary, isActive = CardSummary(tile.sites, GlowTemplate())
             if summary ~= tile.desc and isActive == tile.active then
                 if tile._descFS then
                     tile._descFS:SetText(summary)

@@ -278,7 +278,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- Controller buttons: padArmed while they are captured; padHeld is the button
         -- whose press ended capture, kept captured until its release.
         local padArmed, padWired, padHeld = false, false, nil
-        local function Stop()
+        local function StopListening()
             listening = false
             button:EnableKeyboard(false)
             if padArmed and not padHeld then
@@ -302,7 +302,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             parts[#parts + 1] = key:match("[^%-]+$") or key
             return table.concat(parts, " + ")
         end
-        local function Refresh()
+        local function SyncRowState()
             if disabled then
                 local off = disabled()
                 -- Mouse stays on so the disabled tooltip can show; OnClick refuses.
@@ -311,7 +311,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     hostFrame._label:SetAlpha(off and 0.3 or 1)
                 end
                 if off and listening then
-                    Stop()
+                    StopListening()
                 end
             end
             if not listening then
@@ -319,7 +319,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
         end
         local function Commit(chord)
-            Stop()
+            StopListening()
             local gen = PoolGen(button)
             options.set(chord)
             -- A setter that rebuilt the page dressed this button again (page
@@ -327,7 +327,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if PoolGen(button) ~= gen then
                 return
             end
-            Refresh()
+            SyncRowState()
         end
 
         button:SetScript("OnClick", function(self, btnFrame)
@@ -384,8 +384,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         if GetBindingFromClick(key) == "TOGGLEGAMEMENU" then
                             s:SetPropagateKeyboardInput(false)
                             padHeld = key
-                            Stop()
-                            Refresh()
+                            StopListening()
+                            SyncRowState()
                             return
                         end
                         local keyName = GetConvertedKeyOrButton(key)
@@ -433,8 +433,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
             self:SetPropagateKeyboardInput(false)
             if key == "ESCAPE" then
-                Stop()
-                Refresh()
+                StopListening()
+                SyncRowState()
                 return
             end
             Commit(CreateKeyChordStringUsingMetaKeyState(key))
@@ -465,8 +465,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end)
         button:SetScript("OnHide", function()
             if listening then
-                Stop()
-                Refresh()
+                StopListening()
+                SyncRowState()
             end
             -- A hidden button gets no release: drop a controller press still held.
             if padHeld then
@@ -480,8 +480,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             HideWidgetTooltip()
         end)
 
-        Refresh()
-        return button, Refresh
+        SyncRowState()
+        return button, SyncRowState
     end
 
     -- DualRow: two widgets side by side on one full-width row, 1px center divider.
@@ -804,15 +804,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     AddLabelTooltipHit(regionFrame, labelText, rowConf, dropdownBtn)
                 end
                 if rowConf.labelOnlyDisabled and rowConf.disabled then
-                    local function ApplyLabelOnly()
+                    local function PaintLabelOnly()
                         local off = rowConf.disabled()
                         labelText:SetAlpha(1)
                     end
                     RegisterWidgetRefresh(function()
                         dropCaption:SetText(DDResolveLabel(rowConf.values, rowConf.order or {}, rowConf.getValue()))
-                        ApplyLabelOnly()
+                        PaintLabelOnly()
                     end)
-                    ApplyLabelOnly()
+                    PaintLabelOnly()
                 else
                     RegisterWidgetRefresh(function()
                         dropCaption:SetText(DDResolveLabel(rowConf.values, rowConf.order or {}, rowConf.getValue()))
@@ -1257,7 +1257,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     AddLabelTooltipHit(regionFrame, labelText, rowConf, dropdownBtn)
                 end
                 if rowConf.labelOnlyDisabled and rowConf.disabled then
-                    local function ApplyLabelOnly()
+                    local function PaintLabelOnly()
                         local off = rowConf.disabled()
                         labelText:SetAlpha(1)
                         -- Gray the button label when the current value is disabled,
@@ -1272,12 +1272,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                     RegisterWidgetRefresh(function()
                         dropCaption:SetText(DDResolveLabel(rowConf.values, rowConf.order or {}, rowConf.getValue()))
-                        ApplyLabelOnly()
+                        PaintLabelOnly()
                         if dropdownBtn._ddRefresh then
                             dropdownBtn._ddRefresh()
                         end
                     end)
-                    ApplyLabelOnly()
+                    PaintLabelOnly()
                 else
                     RegisterWidgetRefresh(function()
                         dropCaption:SetText(DDResolveLabel(rowConf.values, rowConf.order or {}, rowConf.getValue()))
@@ -1331,7 +1331,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 cbLabel:SetText(CludesUI.L(rowConf.text or ""))
 
                 local isHovering = false
-                local function ApplyCBVisual()
+                local function PaintCheckbox()
                     local enabled = rowConf.getValue()
                     cbApply(enabled, isHovering)
                     if enabled then
@@ -1341,7 +1341,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         cbLabel:SetTextColor(TEXT_WHITE_R * a, TEXT_WHITE_G * a, TEXT_WHITE_B * a, a)
                     end
                 end
-                ApplyCBVisual()
+                PaintCheckbox()
 
                 button:SetScript("OnClick", function()
                     local gen = PoolGen(button)
@@ -1353,20 +1353,20 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     if PoolGen(button) ~= gen then
                         return
                     end
-                    ApplyCBVisual()
+                    PaintCheckbox()
                 end)
                 button:SetScript("OnEnter", function()
                     isHovering = true
-                    ApplyCBVisual()
+                    PaintCheckbox()
                 end)
                 button:SetScript("OnLeave", function()
                     isHovering = false
-                    ApplyCBVisual()
+                    PaintCheckbox()
                 end)
 
                 controlFrame = button
                 RegisterWidgetRefresh(function()
-                    ApplyCBVisual()
+                    PaintCheckbox()
                     SyncDisabled()
                 end)
                 SyncDisabled()

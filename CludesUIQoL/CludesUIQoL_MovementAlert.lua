@@ -1442,7 +1442,7 @@ local buffAlertContainer, buffAlertAssist, buffAlertVehicle
 -- keepBuffLane: the cooldown display is going away but the buffActive lane is
 -- not. A buffActive spell takes no slot, so an empty cooldown stack is its
 -- NORMAL state -- parking the host there would hide the alert permanently.
-local function HideMovementDisplay(keepBuffLane)
+local function HideAlertDisplay(keepBuffLane)
     wipe(readyAlertShown)
     -- Taken down for good (not the empty end of a check): the next check starts
     -- the callout over, see readyAlertArmed.
@@ -2166,15 +2166,15 @@ CheckMovementCooldown = function()
     end
     local alertCfg = AlertCfg()
     if not MovementEnabled() then
-        HideMovementDisplay()
+        HideAlertDisplay()
         return
     end
     if alertCfg.combatOnly and not inCombat then
-        HideMovementDisplay()
+        HideAlertDisplay()
         return
     end
     if #cachedMovementSpells == 0 then
-        HideMovementDisplay()
+        HideAlertDisplay()
         return
     end
 
@@ -2287,7 +2287,7 @@ CheckMovementCooldown = function()
         activeSlotCount = 0
         -- EnsureBuffAlertLane just showed/parked the host for this pass; leave
         -- its verdict alone (see keepBuffLane).
-        HideMovementDisplay(true)
+        HideAlertDisplay(true)
     end
 end
 CludesUI._CheckMovementCooldown = function()
@@ -2374,7 +2374,7 @@ local function StopMovementPreview()
     movementPreviewTicker:Cancel()
     movementPreviewTicker = nil
     previewEntry = nil
-    HideMovementDisplay()
+    HideAlertDisplay()
     -- Hand the display back to the real tracker state.
     CheckMovementCooldown()
 end

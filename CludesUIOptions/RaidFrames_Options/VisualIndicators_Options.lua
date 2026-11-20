@@ -2429,7 +2429,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             -- Attached positions need none of this -- they stack group-sized runs of 5 along the raid's own growth settings, like extra raid groups.
             -- Grow Direction defaults from the legacy freeHorizontal key, so existing layouts read back unchanged.
             if ExtraFramesCfg().position == "free" then
-                local function XFGrowDir()
+                local function ExtraGrowDir()
                     local set = ExtraFramesCfg()
                     return set.growDirection or (set.freeHorizontal and "RIGHT" or "DOWN")
                 end
@@ -2441,14 +2441,14 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 end
 
                 -- The wrap dropdown only offers the two directions perpendicular to the primary run, so a grow change forces a full rebuild to swap its value set.
-                local xfHoriz = (XFGrowDir() == "RIGHT" or XFGrowDir() == "LEFT")
+                local xfHoriz = (ExtraGrowDir() == "RIGHT" or ExtraGrowDir() == "LEFT")
                 row, height = W:DualRow(hostFrame, cursorY, {
                     type = "dropdown",
                     text = "Grow Direction",
                     tooltip = "Direction the frames are laid out.",
                     values = { DOWN = "Down", UP = "Up", RIGHT = "Right", LEFT = "Left" },
                     order = { "DOWN", "UP", "RIGHT", "LEFT" },
-                    getValue = XFGrowDir,
+                    getValue = ExtraGrowDir,
                     setValue = function(val)
                         local set = ExtraFramesCfg()
                         set.growDirection = val
@@ -2465,7 +2465,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     order = xfHoriz and { "DOWN", "UP" } or { "RIGHT", "LEFT" },
                     getValue = function()
                         local wd = ExtraFramesCfg().wrapDirection
-                        if XFGrowDir() == "RIGHT" or XFGrowDir() == "LEFT" then
+                        if ExtraGrowDir() == "RIGHT" or ExtraGrowDir() == "LEFT" then
                             return (wd == "UP" or wd == "DOWN") and wd or "DOWN"
                         end
                         return (wd == "LEFT" or wd == "RIGHT") and wd or "RIGHT"
@@ -2600,7 +2600,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         end
         -- Only a preview already on screen: starting one here would show the raid preview on the
         -- party tab, or a preview with Preview Mode set to None.
-        local function PFRefreshPreview()
+        local function RedrawPetPreview()
             if mod.previewActive() then
                 mod.ShowPreview()
             end
@@ -2633,7 +2633,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 if not val and mod.PF_IsMoverShown(tabKey) then
                     mod.PF_SetMoverShown(false)
                 end
-                PFRefreshPreview()
+                RedrawPetPreview()
                 CludesUI:RefreshPage()
             end),
         }, (not PFEnabled()) and BLANK() or {
@@ -2657,7 +2657,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     mod.PF_SetMoverShown(false)
                 end
                 mod.PF_Apply()
-                PFRefreshPreview()
+                RedrawPetPreview()
                 -- A new last row needs the full rebuild.
                 CludesUI:RefreshPage(PFPlacement() ~= before)
             end,
@@ -2679,7 +2679,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     PFTab().extraWidth = val
                     mod.PF_Apply()
                     mod.PF_PlaceMover(tabKey)
-                    PFRefreshPreview()
+                    RedrawPetPreview()
                 end,
             }, {
                 type = "slider",
@@ -2695,7 +2695,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     PFTab().extraHeight = val
                     mod.PF_Apply()
                     mod.PF_PlaceMover(tabKey)
-                    PFRefreshPreview()
+                    RedrawPetPreview()
                 end,
             })
             cursorY = cursorY - height
@@ -2759,7 +2759,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     setValue = function(val)
                         PFSet().ownerSide = val
                         mod.PF_Apply()
-                        PFRefreshPreview()
+                        RedrawPetPreview()
                     end,
                 }, BLANK())
                 cursorY = cursorY - height

@@ -3413,7 +3413,7 @@ CludesUI.AtOptionsLogin(function()
         local _roleSpecs -- [role shortcut key] = its spec IDs
         local rules = {} -- the selected entry's rules (RefreshDetail fills them)
         local RefreshDetail, RefreshSpecEntries
-        local function RedrawDetail()
+        local function RepaintDetail()
             if RefreshDetail then
                 RefreshDetail()
             end
@@ -3783,7 +3783,7 @@ CludesUI.AtOptionsLogin(function()
                         wipe(_tempSpecSel)
                         RefreshPicker()
                         RefreshSpecEntries(true)
-                        RedrawDetail()
+                        RepaintDetail()
                         rowConf.refreshFn()
                     end
                 )
@@ -4048,7 +4048,7 @@ CludesUI.AtOptionsLogin(function()
                     if entry then
                         entry.hashMode = value and "percent" or "value"
                         rowConf.rebuildFn()
-                        RedrawDetail()
+                        RepaintDetail()
                     end
                 end,
             }
@@ -4142,7 +4142,7 @@ CludesUI.AtOptionsLogin(function()
                     frameStrata = "FULLSCREEN_DIALOG",
                     frameLevel = 500,
                     minWidth = cog.minWidth,
-                    rows = cog.rows(CurEntry, RedrawDetail),
+                    rows = cog.rows(CurEntry, RepaintDetail),
                     size = 20,
                     anchorTo = threshRow,
                     relPoint = "RIGHT",
@@ -4164,7 +4164,7 @@ CludesUI.AtOptionsLogin(function()
                     if entry then
                         entry.thresholdEnabled = value
                         rowConf.refreshFn()
-                        RedrawDetail()
+                        RepaintDetail()
                     end
                 end,
                 { sizeRatio = 0.95 }
@@ -4315,7 +4315,7 @@ CludesUI.AtOptionsLogin(function()
                     params.defR, params.defG, params.defB, params.defA = defR, defG, defB, defA
                     ShowBandEditor(params)
                 end,
-                RedrawDetail
+                RepaintDetail
             )
             -- Covers the toggle and Bands when multi-band cannot apply (rules.multiBlock).
             local multiDis = MakeBlocker(multiRow, multiToggle, bandsBtn, 3, 8)
@@ -4670,7 +4670,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 _specDDRefresh()
                 RefreshSpecEntries()
-                RedrawDetail()
+                RepaintDetail()
                 rowConf.refreshFn()
             end)
             line._delBtn = remove
@@ -4696,7 +4696,7 @@ CludesUI.AtOptionsLogin(function()
                 table.insert(specs, line._entryIdx + 1, copy)
                 _selectedIdx = line._entryIdx + 1
                 RefreshSpecEntries()
-                RedrawDetail()
+                RepaintDetail()
                 rowConf.rebuildFn()
             end)
             line._varBtn = variant
@@ -4714,7 +4714,7 @@ CludesUI.AtOptionsLogin(function()
                 if self._entryIdx then
                     _selectedIdx = self._entryIdx
                     RepaintRows()
-                    RedrawDetail()
+                    RepaintDetail()
                 end
             end)
             line:SetScript("OnEnter", function(self)
