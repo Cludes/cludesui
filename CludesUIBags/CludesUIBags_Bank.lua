@@ -13,7 +13,7 @@ local GetItemInfoInstant = C_Item.GetItemInfoInstant
 local GetItemQualityColor = C_Item.GetItemQualityColor
 -- Profile access helper (DB created in CUI_Bags_Options.lua, loaded first per TOC)
 local _emptyP = {}
-local function BP()
+local function BagsProfile()
     return (CUI._bagsDB and CUI._bagsDB.profile) or _emptyP
 end
 
@@ -44,10 +44,10 @@ local SIDEBAR_ICON_SIZE = 18
 local SIDEBAR_PAD = 2
 -- Grid columns and window height; the resize grip saves both
 local function GetBankColumns()
-    return BP().bankColumns or 14
+    return BagsProfile().bankColumns or 14
 end
 local function GetBankHeight()
-    return BP().bankHeight or 500
+    return BagsProfile().bankHeight or 500
 end
 local SCROLLBAR_HIT_W = 16
 
@@ -63,7 +63,7 @@ local _catSel = nil
 local _catIndex = nil -- rebuilt every refresh; see BuildBankCategoryIndex
 
 local function GetBankSidebarWidth()
-    local navCollapsed = BP().bankSidebarCollapsed
+    local navCollapsed = BagsProfile().bankSidebarCollapsed
     return navCollapsed and SIDEBAR_W_COLLAPSED or SIDEBAR_W
 end
 
@@ -406,7 +406,7 @@ sortButton:SetScript("OnClick", function()
     -- container (our top); clearing it packs items into the last slots instead.
     -- Written only while Sort to Bottom is on, so an untouched setup keeps the
     -- player's own cleanup direction.
-    if BP().bagSortToBottom and C_Container.SetSortBagsRightToLeft then
+    if BagsProfile().bagSortToBottom and C_Container.SetSortBagsRightToLeft then
         C_Container.SetSortBagsRightToLeft(false)
     end
     local warbandBank = (_selectedView == -2 or _selectedView == -3)
@@ -519,7 +519,7 @@ if CUI.IS_FOREVER then
         button.icon = button:CreateTexture(nil, "ARTWORK")
         button.icon:SetAllPoints()
         button.Count = button:CreateFontString(nil, "OVERLAY")
-        CludesUI.ApplyIconTextFont(button.Count, GetFont(), BP().bagCountFontSize or 11, "bags")
+        CludesUI.ApplyIconTextFont(button.Count, GetFont(), BagsProfile().bagCountFontSize or 11, "bags")
         button.Count:SetPoint("BOTTOMRIGHT", -2, 2)
         button.Count:SetTextColor(1, 1, 1)
         mod.CreateInsetBorder(button, true)
@@ -551,7 +551,7 @@ if CUI.IS_FOREVER then
         end
         local maxBags = C_Bank.FetchMaxNumBankTabs(Enum.BankType.Character)
         local bought = C_Bank.FetchPurchasedBankTabData(Enum.BankType.Character)
-        local zoom = BP().bagItemIconZoom or 0.08
+        local zoom = BagsProfile().bagItemIconZoom or 0.08
         local num = 0
         -- Slot 1 is the bank itself; bag slots start at 2.
         for bagSlot = 2, maxBags do
@@ -833,7 +833,7 @@ end
 CUI_Bank:SetScript("OnMouseDown", function(self, btnFrame)
     self:Raise()
     self:RepinIconLevels()
-    if btnFrame == "LeftButton" and not BP().bankWindowLocked then
+    if btnFrame == "LeftButton" and not BagsProfile().bankWindowLocked then
         self:StartMoving()
         self._moving = true
     end
@@ -845,7 +845,7 @@ CUI_Bank:SetScript("OnMouseUp", function(self, btnFrame)
         -- Save position
         local anchorPoint, _, relPoint, posX, posY = self:GetPoint(1)
         if anchorPoint then
-            BP().bankPosition = { point = anchorPoint, relativePoint = relPoint, x = posX, y = posY }
+            BagsProfile().bankPosition = { point = anchorPoint, relativePoint = relPoint, x = posX, y = posY }
         end
     end
 end)
@@ -1269,7 +1269,7 @@ collapseBtn:SetScript("OnClick", function()
     local onRightSide = center and screenW and (center > screenW / 2)
     local oldWidth = onRightSide and CUI_Bank:GetWidth() or nil
 
-    BP().bankSidebarCollapsed = not BP().bankSidebarCollapsed
+    BagsProfile().bankSidebarCollapsed = not BagsProfile().bankSidebarCollapsed
     UpdateBankCollapseArrow()
     sideBar:SetWidth(GetBankSidebarContentWidth())
     CUI_Bank:RefreshBank()
@@ -1282,7 +1282,7 @@ collapseBtn:SetScript("OnClick", function()
             local anchorPoint, relTo, relPoint, posX, posY = CUI_Bank:GetPoint()
             CUI_Bank:ClearAllPoints()
             CUI_Bank:SetPoint(anchorPoint, relTo, relPoint, posX + shift, posY)
-            BP().bankPosition = { point = anchorPoint, relativePoint = relPoint, x = posX + shift, y = posY }
+            BagsProfile().bankPosition = { point = anchorPoint, relativePoint = relPoint, x = posX + shift, y = posY }
         end
     end
 end)
@@ -1754,7 +1754,7 @@ function CUI_Bank.IsListMode()
         if not CUI.Lite.IsDBReady() then
             return nil
         end
-        _bankMode = mod.BankDisplayMode(BP())
+        _bankMode = mod.BankDisplayMode(BagsProfile())
     end
     return _bankMode == "list"
 end
@@ -2362,9 +2362,9 @@ end
 
 -- Fast font size update for bank slots (mirrors bags RefreshTextSizes)
 local function RefreshBankTextSizes()
-    local countSize = BP().bagCountFontSize or 11
-    local ilvlSize = BP().itemlevelFontSize or 12
-    local bindTypeSize = BP().bagBindTypeFontSize or 11
+    local countSize = BagsProfile().bagCountFontSize or 11
+    local ilvlSize = BagsProfile().itemlevelFontSize or 12
+    local bindTypeSize = BagsProfile().bagBindTypeFontSize or 11
     for _, button in pairs(_bankSlots) do
         if button.Count then
             CludesUI.ApplyIconTextFont(button.Count, GetFont(), countSize, "bags")
@@ -2389,7 +2389,7 @@ CUI_Bank.RefreshTextSizes = RefreshBankTextSizes
 
 -- Fast icon-zoom update for bank slots (mirrors bags RefreshIconZoom)
 local function RefreshBankIconZoom()
-    local zoom = BP().bagItemIconZoom or 0.08
+    local zoom = BagsProfile().bagItemIconZoom or 0.08
     for _, button in pairs(_bankSlots) do
         if button.icon then
             button.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
@@ -2418,17 +2418,17 @@ local _bankGripCfg = {
     getCols = GetBankColumns,
     getHeight = GetBankHeight,
     save = function(cols, hgt)
-        BP().bankColumns, BP().bankHeight = cols, hgt
+        BagsProfile().bankColumns, BagsProfile().bankHeight = cols, hgt
         UpdateThumb()
     end,
     finish = function()
         CUI_Bank:RefreshBank()
     end,
     savePos = function(leftX, topY)
-        BP().bankPosition = { point = "TOPLEFT", relativePoint = "BOTTOMLEFT", x = leftX, y = topY }
+        BagsProfile().bankPosition = { point = "TOPLEFT", relativePoint = "BOTTOMLEFT", x = leftX, y = topY }
     end,
     reset = function()
-        local profile = BP()
+        local profile = BagsProfile()
         profile.bankColumns, profile.bankHeight, profile.bankListWidth = nil, nil, nil
         CUI_Bank:RefreshBank()
     end,
@@ -2447,10 +2447,10 @@ local _bankGripCfg = {
         end
     end,
     isLocked = function()
-        return BP().bankWindowLocked == true
+        return BagsProfile().bankWindowLocked == true
     end,
     setLocked = function(val)
-        BP().bankWindowLocked = val and true or false
+        BagsProfile().bankWindowLocked = val and true or false
     end,
 }
 
@@ -2462,10 +2462,10 @@ local _bankListGripCfg = setmetatable({
     relayoutStep = LIST_PITCH,
     minCols = 300,
     getCols = function()
-        return BP().bankListWidth or GetBankColumns() * LIST_PITCH
+        return BagsProfile().bankListWidth or GetBankColumns() * LIST_PITCH
     end,
     save = function(wid, hgt)
-        BP().bankListWidth, BP().bankHeight = wid, hgt
+        BagsProfile().bankListWidth, BagsProfile().bankHeight = wid, hgt
         UpdateThumb()
     end,
 }, { __index = _bankGripCfg })
@@ -2538,7 +2538,7 @@ function CUI_Bank:RefreshBank()
     local gridWidth = COLUMNS * (SLOT_SIZE + SPACING)
     -- List rows take the grip-set width, by default the default pitch's
     if CUI_Bank.IsListMode() then
-        gridWidth = BP().bankListWidth or COLUMNS * LIST_PITCH
+        gridWidth = BagsProfile().bankListWidth or COLUMNS * LIST_PITCH
     end
     local startX = gridPadX + 5
     local contentPad = gridPadX * 2 + SCROLLBAR_HIT_W + 1 - rightInset
@@ -2690,8 +2690,8 @@ function CUI_Bank:RefreshBank()
     -- Nest by Expansion is on, category nests inside it, and the per-category
     -- detail split sits inside that. Either toggle works on its own.
     local function LayoutGroupedSlots(slotArray, headerLabel)
-        local byExp = BP().bankNestByExpansion
-        local byCat = BP().bankGroupByCategory
+        local byExp = BagsProfile().bankNestByExpansion
+        local byCat = BagsProfile().bankGroupByCategory
         if not byExp and not byCat then
             return LayoutFlatSlots(slotArray, headerLabel)
         end
@@ -2724,7 +2724,7 @@ function CUI_Bank:RefreshBank()
             LayoutCategoryRun(filled, 0)
         end
 
-        if #emptySlots > 0 and not BP().bankHideEmptyWhenNested then
+        if #emptySlots > 0 and not BagsProfile().bankHideEmptyWhenNested then
             EmitHeader(CludesUI.L("Empty Slots"), #emptySlots, 0)
             EmitSlots(emptySlots)
         end
@@ -2765,7 +2765,7 @@ function CUI_Bank:RefreshBank()
             end
             EmitSlots(entries)
         end
-        if BP().bankNestByExpansion then
+        if BagsProfile().bankNestByExpansion then
             for _, editField in ipairs(BuildBankBuckets(slotArray, "expansion")) do
                 EmitHeader(editField.label, #editField.slots, 0)
                 Inner(editField.slots, 1)
@@ -2860,7 +2860,7 @@ function CUI_Bank:RefreshBank()
 
     -- Category index spans whatever the sidebar can browse: warband only for
     -- a portable warbank, otherwise both banks together.
-    if BP().bankCategorySidebar then
+    if BagsProfile().bankCategorySidebar then
         _catIndex = BuildBankCategoryIndex(_warbandOnly and warbTabs or _allTabs, PassesSearch)
     else
         _catIndex = nil
@@ -2941,8 +2941,8 @@ function CUI_Bank:RefreshBank()
     local listCols, listRowW
     if CUI_Bank.IsListMode() then
         -- Left / Right Gap: space between the list area edges and the rows
-        local listX = BP().bagListGapL or 15
-        listRowW = math.max(100, gridWidth + contentPad - listX - (BP().bagListGapR or 23))
+        local listX = BagsProfile().bagListGapL or 15
+        listRowW = math.max(100, gridWidth + contentPad - listX - (BagsProfile().bagListGapR or 23))
         _layout, nextY = ToListLayout(_layout, startX, listX)
         listCols = mod.ListLayoutColumns(listRowW)
         local hdrH = mod.UpdateListHeaderBar(CUI_Bank, listCols, sidebarW, -HEADER_H, listX)
@@ -2989,7 +2989,7 @@ function CUI_Bank:RefreshBank()
     -- Junk Item Visuals' Desaturate greys grey items and Junk Marker junk here
     -- as on the bank's list rows (read once per refresh)
     local junkOn = _G.CUI_CategoryManager:IsJunkMarkerEnabled()
-    local desatJunk = BP().bagDesaturateJunkItems == true
+    local desatJunk = BagsProfile().bagDesaturateJunkItems == true
     local function RenderSlotContent(button, bagId, slotBtn, cachedInfo)
         if button.ProfessionQualityOverlay then
             button.ProfessionQualityOverlay:SetAlpha(0)
@@ -3102,8 +3102,8 @@ function CUI_Bank:RefreshBank()
             -- One gear check + one GetItemInfo fetch shared by the bind-type
             -- and item-level texts
             local isGear = linkText and IsGearItem(linkText)
-            local showBindType = isGear and not details.isBound and BP().bagDisplayBindType
-            local showIlvl = isGear and BP().showItemlevelInBags ~= false
+            local showBindType = isGear and not details.isBound and BagsProfile().bagDisplayBindType
+            local showIlvl = isGear and BagsProfile().showItemlevelInBags ~= false
             local giIlvl, giBindType
             local loc
             if showBindType or showIlvl then
@@ -3133,11 +3133,11 @@ function CUI_Bank:RefreshBank()
                     local red, green, blue
                     if GetUpgradeTrack then
                         local rankText, trackColor = GetUpgradeTrack(linkText)
-                        if BP().itemlevelUseCustomColor and BP().itemlevelCustomColor then
+                        if BagsProfile().itemlevelUseCustomColor and BagsProfile().itemlevelCustomColor then
                             red, green, blue =
-                                BP().itemlevelCustomColor.r,
-                                BP().itemlevelCustomColor.g,
-                                BP().itemlevelCustomColor.b
+                                BagsProfile().itemlevelCustomColor.r,
+                                BagsProfile().itemlevelCustomColor.g,
+                                BagsProfile().itemlevelCustomColor.b
                         elseif rankText and rankText ~= "" and trackColor then
                             red, green, blue = trackColor.r, trackColor.g, trackColor.b
                         else
@@ -3406,7 +3406,7 @@ local function DragVisuals(button)
     dragShade._icon:SetTexture(button._icon:GetTexture())
     dragShade._icon:SetTexCoord(button._icon:GetTexCoord())
     dragShade._label:SetText(button._entryName or "")
-    local navCollapsed = BP().bankSidebarCollapsed and mod.BagsForever()
+    local navCollapsed = BagsProfile().bankSidebarCollapsed and mod.BagsForever()
     mod.AnchorBagSidebarIcon(dragShade._icon, navCollapsed, 6)
     dragShade._label:SetShown(not navCollapsed)
     dragShade:SetWidth(
@@ -3587,7 +3587,7 @@ end
 -- closing the bank mid-drag hides the rows, so the drop just goes nowhere
 
 function BuildBankSidebar()
-    local navCollapsed = BP().bankSidebarCollapsed
+    local navCollapsed = BagsProfile().bankSidebarCollapsed
     local sidebarW = GetBankSidebarContentWidth()
     local posY = 0
     local accR, accG, accB = GetAccentRGB()
@@ -3641,7 +3641,7 @@ function BuildBankSidebar()
             if not self._isSelected then
                 self._bg:SetColorTexture(1, 1, 1, 0.06)
             end
-            if BP().bankSidebarCollapsed and CUI.ShowWidgetTooltip then
+            if BagsProfile().bankSidebarCollapsed and CUI.ShowWidgetTooltip then
                 CUI.ShowWidgetTooltip(
                     self,
                     (self._entryName or "?")
@@ -3655,7 +3655,7 @@ function BuildBankSidebar()
                         )
                 )
             end
-            if not BP().bankSidebarCollapsed and showEditableTabTooltip then
+            if not BagsProfile().bankSidebarCollapsed and showEditableTabTooltip then
                 CUI.ShowWidgetTooltip(self, "|cffdab842" .. BANK_TAB_TOOLTIP_CLICK_INSTRUCTION .. "|r")
             end
         end)
@@ -3875,7 +3875,7 @@ function BuildBankSidebar()
     -- Physical tabs can be hidden once the category list is doing the
     -- navigating, but only when it is actually on -- otherwise the sidebar
     -- would have nothing left to click.
-    local showTabs = not (BP().bankHideTabsInSidebar and BP().bankCategorySidebar and _catIndex)
+    local showTabs = not (BagsProfile().bankHideTabsInSidebar and BagsProfile().bankCategorySidebar and _catIndex)
 
     -- offline bank on: tabs nest under their all entry, a divider splits the
     -- bank and warbank views and the buy entries go last (an alt's bank draws
@@ -3979,7 +3979,7 @@ function BuildBankSidebar()
     -- members indented under it, then the per-category detail split as a third
     -- level -- shown only for the selected branch, or the sidebar would run to
     -- fifty-odd entries on a full bank.
-    if _catIndex and BP().bankCategorySidebar then
+    if _catIndex and BagsProfile().bankCategorySidebar then
         local CM = _G.CUI_CategoryManager
         local categories = (CM and CM:GetCategories()) or {}
 
@@ -4249,8 +4249,8 @@ watcher:SetScript("OnEvent", function(_, evt)
         end
         -- Position
         CUI_Bank:ClearAllPoints()
-        if BP().bankPosition then
-            local place = BP().bankPosition
+        if BagsProfile().bankPosition then
+            local place = BagsProfile().bankPosition
             CUI_Bank:SetPoint(place.point, UIParent, place.relativePoint, place.x, place.y)
         else
             CUI_Bank:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 15, -100)
@@ -4261,7 +4261,7 @@ watcher:SetScript("OnEvent", function(_, evt)
             CUI_Bank._searchBox:ClearFocus()
         end
         CUI_Bags.ClearSearch()
-        local bankScale = BP().bagScale or 1
+        local bankScale = BagsProfile().bagScale or 1
         CUI_Bank:SetScale(bankScale)
         CUI_Bank:Show()
         CUI_Bank:Raise()

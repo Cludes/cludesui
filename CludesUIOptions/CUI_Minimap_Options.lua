@@ -81,7 +81,7 @@ CludesUI.AtOptionsLogin(function()
         end
     end
 
-    local function RefreshMinimap()
+    local function ApplyMinimap()
         if _G._CUMM_ApplyMinimap then
             _G._CUMM_ApplyMinimap()
         end
@@ -106,7 +106,7 @@ CludesUI.AtOptionsLogin(function()
             return false
         end
         mapDB[key] = value
-        RefreshMinimap()
+        ApplyMinimap()
         return true
     end
     -- Row setters over MapSet: the key written with the row's value.
@@ -137,7 +137,7 @@ CludesUI.AtOptionsLogin(function()
         if _G._CUMM_FullRebuildMinimap then
             _G._CUMM_FullRebuildMinimap()
         else
-            RefreshMinimap()
+            ApplyMinimap()
         end
     end
 
@@ -352,7 +352,7 @@ CludesUI.AtOptionsLogin(function()
             })
         end
         local visRow
-        height, visRow = BuildVisibilityRow(W, hostFrame, cursorY, MinimapDB, RefreshMinimap, shapeCfg)
+        height, visRow = BuildVisibilityRow(W, hostFrame, cursorY, MinimapDB, ApplyMinimap, shapeCfg)
         cursorY = cursorY - height
         -- Inline cog on Visibility: Opacity of the shown map (showing and hiding stay
         -- with Visibility). Greyed while the map never shows; the checklist refreshes
@@ -430,7 +430,7 @@ CludesUI.AtOptionsLogin(function()
                     end
                     sizeDragOverlay:Show()
                 end
-                RefreshMinimap()
+                ApplyMinimap()
                 if not _G._CUBS_SizeDragTimer then
                     _G._CUBS_SizeDragTimer = C_Timer.NewTimer(0, function() end)
                 end
@@ -531,7 +531,7 @@ CludesUI.AtOptionsLogin(function()
                     if mapDB.borderSizePx then
                         mapDB.borderSizePx = false
                     end
-                    RefreshMinimap()
+                    ApplyMinimap()
                     -- Rebuild: the Width | Height Offset row follows the Solid / textured pick.
                     CludesUI:RefreshPage(true)
                 end,
@@ -578,7 +578,7 @@ CludesUI.AtOptionsLogin(function()
                             mapDB.borderSizePx = value
                         end
                     end,
-                    apply = RefreshMinimap,
+                    apply = ApplyMinimap,
                 })
             )
         )
@@ -631,7 +631,7 @@ CludesUI.AtOptionsLogin(function()
                             mapDB.borderTextureOffsetY = value
                         end
                     end,
-                    apply = RefreshMinimap,
+                    apply = ApplyMinimap,
                 })
                 _, height = W:DualRow(
                     hostFrame,
@@ -678,7 +678,7 @@ CludesUI.AtOptionsLogin(function()
                                 return
                             end
                             mapDB.borderTextureShiftX = (value ~= 0) and value or nil
-                            RefreshMinimap()
+                            ApplyMinimap()
                         end,
                     },
                     {
@@ -703,7 +703,7 @@ CludesUI.AtOptionsLogin(function()
                                 return
                             end
                             mapDB.borderTextureShiftY = (value ~= 0) and value or nil
-                            RefreshMinimap()
+                            ApplyMinimap()
                         end,
                     },
                     {
@@ -758,7 +758,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 mapDB.useClassColor = true
                 mapDB.borderUseClassColor = false
-                RefreshMinimap()
+                ApplyMinimap()
                 CludesUI:RefreshPage()
             end)
             PPl.Point(accentSwatch, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -786,7 +786,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 mapDB.borderUseClassColor = true
                 mapDB.useClassColor = false
-                RefreshMinimap()
+                ApplyMinimap()
                 CludesUI:RefreshPage()
             end)
             PPl.Point(classSwatch, "RIGHT", region._lastInline, "LEFT", -8, 0)
@@ -815,7 +815,7 @@ CludesUI.AtOptionsLogin(function()
                     end
                     mapDB.borderColor = { r = red, g = green, b = blue }
                     mapDB.borderA = a
-                    RefreshMinimap()
+                    ApplyMinimap()
                 end,
                 true,
                 18
@@ -828,7 +828,7 @@ CludesUI.AtOptionsLogin(function()
                 if mapDB and (mapDB.borderUseClassColor or mapDB.useClassColor) then
                     mapDB.borderUseClassColor = false
                     mapDB.useClassColor = false
-                    RefreshMinimap()
+                    ApplyMinimap()
                     CludesUI:RefreshPage()
                     return
                 end
@@ -1125,7 +1125,7 @@ CludesUI.AtOptionsLogin(function()
                 local mapDB = MinimapDB()
                 if mapDB then
                     mapDB.mouseoverExtraBtns = value
-                    RefreshMinimap()
+                    ApplyMinimap()
                 end
             end,
         })
@@ -1197,7 +1197,7 @@ CludesUI.AtOptionsLogin(function()
                         mapDB.hideExtraBtns = {}
                     end
                     mapDB.hideExtraBtns[keyName] = not value
-                    RefreshMinimap()
+                    ApplyMinimap()
                 end,
                 {
                     hint = "Drag to Reorder Buttons",
@@ -1211,7 +1211,7 @@ CludesUI.AtOptionsLogin(function()
                             tbl[idx] = keyName
                         end
                         mapDB.extraBtnOrder = tbl
-                        RefreshMinimap()
+                        ApplyMinimap()
                     end,
                 }
             )
@@ -1377,7 +1377,7 @@ CludesUI.AtOptionsLogin(function()
                 if not value then
                     mapDB.btnPositions = {}
                 end
-                RefreshMinimap()
+                ApplyMinimap()
                 CludesUI:RefreshPage()
             end,
         })
@@ -1464,7 +1464,7 @@ CludesUI.AtOptionsLogin(function()
                     return
                 end
                 mapDB.btnPositions = {}
-                RefreshMinimap()
+                ApplyMinimap()
             end)
             local function UpdateResetVis()
                 local mapDB = MinimapDB()
@@ -1611,7 +1611,7 @@ CludesUI.AtOptionsLogin(function()
                     return
                 end
                 mapDB.hideAddonCompartment = not value
-                RefreshMinimap()
+                ApplyMinimap()
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -1759,7 +1759,7 @@ CludesUI.AtOptionsLogin(function()
                             break
                         end
                     end
-                    RefreshMinimap()
+                    ApplyMinimap()
                     CludesUI:RefreshPage()
                 end
             )
@@ -2357,7 +2357,7 @@ CludesUI.AtOptionsLogin(function()
                     return
                 end
                 mapDB.diffTextEnabled = value and true or false
-                RefreshMinimap()
+                ApplyMinimap()
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -2484,7 +2484,7 @@ CludesUI.AtOptionsLogin(function()
                             mapDB.diffTextAccent = false
                         end
                     end
-                    RefreshMinimap()
+                    ApplyMinimap()
                 end
             )
             CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
@@ -2510,7 +2510,7 @@ CludesUI.AtOptionsLogin(function()
                     return
                 end
                 mapDB.fpsUseAccent = true
-                RefreshMinimap()
+                ApplyMinimap()
                 CludesUI:RefreshPage()
             end)
             Pix.Point(accentSwatch, "RIGHT", checkDrop, "LEFT", -12, 0)
@@ -2534,7 +2534,7 @@ CludesUI.AtOptionsLogin(function()
                         return
                     end
                     mapDB.fpsColor = { r = red, g = green, b = blue }
-                    RefreshMinimap()
+                    ApplyMinimap()
                 end,
                 false,
                 18
@@ -2544,7 +2544,7 @@ CludesUI.AtOptionsLogin(function()
                 local mapDB = MinimapDB()
                 if mapDB and mapDB.fpsUseAccent then
                     mapDB.fpsUseAccent = false
-                    RefreshMinimap()
+                    ApplyMinimap()
                     CludesUI:RefreshPage()
                     return
                 end

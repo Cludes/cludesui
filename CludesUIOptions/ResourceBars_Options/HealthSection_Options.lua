@@ -316,7 +316,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         edgeLabels.left = vertical and "From Bottom Edge" or "From Left Edge"
                         return true
                     end
-                    local function get(key, fallback)
+                    local function readValue(key, fallback)
                         local rowCfg = rowConf()
                         if rowCfg and rowCfg[key] ~= nil then
                             return rowCfg[key]
@@ -332,7 +332,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         RefreshHealth()
                     end
                     local function glowUnavailable()
-                        return styleOff() or isVertical() or get("absorbEdgeMode", "overlayReverse") == "left"
+                        return styleOff() or isVertical() or readValue("absorbEdgeMode", "overlayReverse") == "left"
                     end
                     syncLabels()
                     local rowList = {
@@ -347,7 +347,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                             disabledTooltip = styleText,
                             get = function()
                                 syncLabels()
-                                return get(edgeKey, edgeDefault)
+                                return readValue(edgeKey, edgeDefault)
                             end,
                             set = function(val)
                                 set(edgeKey, val)
@@ -364,7 +364,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                             disabled = styleOff,
                             disabledTooltip = styleText,
                             get = function()
-                                return get("healAbsorbBgOpacity", 0)
+                                return readValue("healAbsorbBgOpacity", 0)
                             end,
                             set = function(val)
                                 set("healAbsorbBgOpacity", val)
@@ -379,10 +379,10 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                             order = { "never", "always", "fromleft" },
                             itemDisabled = function(val)
                                 return val == "fromleft"
-                                    and get("absorbEdgeMode", "overlayReverse") ~= "overlay"
+                                    and readValue("absorbEdgeMode", "overlayReverse") ~= "overlay"
                             end,
                             get = function()
-                                return get("overshieldMode", "always")
+                                return readValue("overshieldMode", "always")
                             end,
                             set = function(val)
                                 set("overshieldMode", val)
@@ -401,7 +401,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                             end,
                             rawTooltip = true,
                             get = function()
-                                return get("absorbGlowLine", false) == true
+                                return readValue("absorbGlowLine", false) == true
                             end,
                             set = function(val)
                                 set("absorbGlowLine", val)
@@ -418,11 +418,11 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                             },
                             order = { "blizzard", "pixelsGlow", "pixelsOvershield" },
                             disabled = function()
-                                return glowUnavailable() or get("absorbGlowLine", false) ~= true
+                                return glowUnavailable() or readValue("absorbGlowLine", false) ~= true
                             end,
                             disabledTooltip = "Blizzard Glow Line",
                             get = function()
-                                return get("absorbGlowLineTexture", "blizzard")
+                                return readValue("absorbGlowLineTexture", "blizzard")
                             end,
                             set = function(val)
                                 set("absorbGlowLineTexture", val)

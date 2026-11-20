@@ -783,7 +783,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     spellSettings = type(source) == "table" and CopyTable(source) or {}
                 end
                 mod.ChainSettings(spellSettings, (not isHostedBuff) and mod.GetBarTierSettings(spellData, barId) or nil)
-                local function EnsureSS()
+                local function EnsureStored()
                     -- An entry found under another form of the spell is stored already.
                     if
                         storage
@@ -892,7 +892,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end,
                             false,
                             function()
-                                EnsureSS()
+                                EnsureStored()
                                 spellSettings[key] = "custom"
                                 if not spellSettings[rKey] then
                                     spellSettings[rKey], spellSettings[gKey], spellSettings[bKey] = 1, g, b
@@ -2125,7 +2125,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 -- entry it empties from the store (a spell whose ONLY settings were
                                 -- the swept keys), leaving this closure's ss orphaned -- a seed into it
                                 -- would be lost. EnsureSS re-persists the same table (no-op when it is still in the store).
-                                local target = EnsureSS()
+                                local target = EnsureStored()
                                 for _, keyName in ipairs(keyList) do
                                     local own
                                     if everySpec then
@@ -2223,7 +2223,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             context.writeOwn(value)
                             return
                         end
-                        EnsureSS()
+                        EnsureStored()
                         if AB.TouchesCdState(context.keys) then
                             mod.CdStateSplitLegacy(spellSettings)
                         end
@@ -2475,7 +2475,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- spell's own saved value counts, so re-picks never prompt).
                 AB.SsGlowSet = function(value)
                     local function commit()
-                        mod.CdStateWriteGlow(EnsureSS(), value)
+                        mod.CdStateWriteGlow(EnsureStored(), value)
                         if mod.RefreshCDMIconAppearance then
                             mod.RefreshCDMIconAppearance(barId)
                         end
@@ -2652,7 +2652,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     { val = true, label = "On" },
                 }
                 local function SetGlowWhenVisible(value)
-                    EnsureSS()
+                    EnsureStored()
                     SetOwn("glowWhenVisible", value or nil)
                     if mod.RefreshCDMIconAppearance then
                         mod.RefreshCDMIconAppearance(barId)
@@ -3131,7 +3131,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     -- A settings toggle (charge styles, Border Color). It never
                                     -- touches the row's own value.
                                     if ssKey then
-                                        EnsureSS()
+                                        EnsureStored()
                                         if spellSettings[ssKey] == true then
                                             SetOwn(ssKey, nil)
                                         else
@@ -3557,7 +3557,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         MakeSubnavRow("Visibility When Missing", MISSING_VIS_ITEMS, function()
                             return spellSettings.hostedMissingVis
                         end, function(value)
-                            EnsureSS()
+                            EnsureStored()
                             SetOwn("hostedMissingVis", value)
                             -- Re-collect so the placeholder is re-injected, skipped, or re-marked immediately.
                             if mod.QueueReanchor then
@@ -3618,7 +3618,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 if value ~= nil and value ~= "on" and value ~= "off" and value ~= "missing" then
                                     return
                                 end
-                                EnsureSS()
+                                EnsureStored()
                                 SetOwn("alwaysShow", value)
                                 -- Refresh the page so "Keep Buffs in Same Place" grays/ungrays as this per-icon override flips.
                                 CludesUI:RefreshPage()
@@ -3637,7 +3637,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     ShowThresholdSecondsPopup(
                                         current > 0 and current or nil,
                                         function(value)
-                                            EnsureSS()
+                                            EnsureStored()
                                             SetOwn("missingShowBelow", (value and value > 0) and value or nil)
                                             mod.QueueReanchor()
                                         end,
@@ -3690,7 +3690,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             return spellSettings.buffGlow
                         end,
                         function(value)
-                            EnsureSS()
+                            EnsureStored()
                             SetOwn("buffGlow", value)
                         end,
                         function()
@@ -3735,7 +3735,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             return spellSettings.buffGlowColor
                         end,
                         function(value)
-                            EnsureSS()
+                            EnsureStored()
                             SetOwn("buffGlowColor", value)
                             if value == "custom" and not spellSettings.buffGlowColorR then
                                 spellSettings.buffGlowColorR = 1
@@ -3765,7 +3765,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             return spellSettings.cdSwipeColor
                         end,
                         function(value)
-                            EnsureSS()
+                            EnsureStored()
                             SetOwn("cdSwipeColor", value)
                             if value == "custom" and not spellSettings.cdSwipeColorR then
                                 spellSettings.cdSwipeColorR = 1
@@ -3893,7 +3893,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         return (cdmBd and cdmBd.showCooldownText) ~= false
                                     end,
                                     set = function(value)
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.showCooldownText = value
                                         mod._cdmAnySpellDurationText = true
                                         if mod.RefreshCDMIconAppearance then
@@ -3914,7 +3914,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         return spellSettings.cooldownFontSize or (cdmBd and cdmBd.cooldownFontSize) or 12
                                     end,
                                     set = function(value)
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.cooldownFontSize = value
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
@@ -3933,7 +3933,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                             spellSettings.cooldownTextB or (cdmBd and cdmBd.cooldownTextB) or 1
                                     end,
                                     set = function(red, green, blue)
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.cooldownTextR = red
                                         spellSettings.cooldownTextG = green
                                         spellSettings.cooldownTextB = blue
@@ -3956,7 +3956,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                             or "center"
                                     end,
                                     set = function(value)
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.cooldownTextPosition = value
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
@@ -3976,7 +3976,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         return spellSettings.cooldownTextX or (cdmBd and cdmBd.cooldownTextX) or 0
                                     end,
                                     set = function(value)
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.cooldownTextX = value
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
@@ -3996,7 +3996,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         return spellSettings.cooldownTextY or (cdmBd and cdmBd.cooldownTextY) or 0
                                     end,
                                     set = function(value)
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.cooldownTextY = value
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
@@ -4044,7 +4044,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         return spellSettings.buffGlowStackEnabled == true
                                     end,
                                     set = function(value)
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.buffGlowStackEnabled = value or nil
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
@@ -4073,7 +4073,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         return spellSettings.buffGlowStackOperator or "gte"
                                     end,
                                     set = function(value)
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.buffGlowStackOperator = value ~= "gte" and value or nil
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
@@ -4103,7 +4103,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         if t > 99 then
                                             t = 99
                                         end
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.buffGlowStackThreshold = t
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
@@ -4123,7 +4123,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         return (cdmBd and cdmBd.showChargeStackText) ~= false
                                     end,
                                     set = function(value)
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.showChargeStackText = value
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
@@ -4143,7 +4143,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         return spellSettings.stackCountSize or (cdmBd and cdmBd.stackCountSize) or 11
                                     end,
                                     set = function(value)
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.stackCountSize = value
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
@@ -4162,7 +4162,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                             spellSettings.stackCountB or (cdmBd and cdmBd.stackCountB) or 1
                                     end,
                                     set = function(red, green, blue)
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.stackCountR = red
                                         spellSettings.stackCountG = green
                                         spellSettings.stackCountB = blue
@@ -4205,7 +4205,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                             or "bottomright"
                                     end,
                                     set = function(value)
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.stackCountPosition = value
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
@@ -4225,7 +4225,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         return spellSettings.stackCountX or (cdmBd and cdmBd.stackCountX) or 0
                                     end,
                                     set = function(value)
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.stackCountX = value
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
@@ -4245,7 +4245,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         return spellSettings.stackCountY or (cdmBd and cdmBd.stackCountY) or 0
                                     end,
                                     set = function(value)
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.stackCountY = value
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
@@ -4289,7 +4289,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         return spellSettings.borderSize or (cdmBd and cdmBd.borderSize) or 1
                                     end,
                                     set = function(value)
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.borderSize = value
                                         if mod.RefreshCDMIconAppearance then
                                             mod.RefreshCDMIconAppearance(barId)
@@ -4308,7 +4308,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                             spellSettings.borderB or (cdmBd and cdmBd.borderB) or 0
                                     end,
                                     set = function(red, green, blue)
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.borderR = red
                                         spellSettings.borderG = green
                                         spellSettings.borderB = blue
@@ -4340,7 +4340,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return spellSettings.buffActiveSoundKey or "none"
                             end,
                             function(value)
-                                EnsureSS()
+                                EnsureStored()
                                 SetOwn("buffActiveSoundKey", (value ~= "none" and value) or nil)
                                 -- Flip the 0-cost gate live so the edge hook/cast timer starts playing on the next activation.
                                 if spellSettings.buffActiveSoundKey then
@@ -4372,7 +4372,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return spellSettings.buffLostSoundKey or "none"
                             end,
                             function(value)
-                                EnsureSS()
+                                EnsureStored()
                                 SetOwn("buffLostSoundKey", (value ~= "none" and value) or nil)
                                 if spellSettings.buffLostSoundKey then
                                     mod._cdmAnyBuffSound = true
@@ -4414,7 +4414,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     return spellSettings.desatInactive
                                 end,
                                 function(value)
-                                    EnsureSS()
+                                    EnsureStored()
                                     SetOwn("desatInactive", value)
                                 end,
                                 function()
@@ -4449,7 +4449,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             return spellSettings.reverseSwipe and true or nil
                         end,
                         function(value)
-                            EnsureSS()
+                            EnsureStored()
                             SetOwn("reverseSwipe", value or nil)
                             if value then
                                 mod._cdmAnyReverseSwipe = true
@@ -4482,11 +4482,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             return spellSettings[keyName]
                         end
                         access.set = function(keyName, value)
-                            EnsureSS()
+                            EnsureStored()
                             spellSettings[keyName] = value
                         end
                         access.clear = function(keyName)
-                            EnsureSS()
+                            EnsureStored()
                             SetOwn(keyName, nil)
                         end
                         access.refresh = function()
@@ -5580,7 +5580,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return spellSettings.procGlow
                             end,
                             function(value)
-                                EnsureSS()
+                                EnsureStored()
                                 SetOwn("procGlow", value)
                             end,
                             function()
@@ -5629,7 +5629,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end
                             return "custom"
                         end, function(value)
-                            EnsureSS()
+                            EnsureStored()
                             if value == "class" then
                                 SetOwn("activeSwipeMode", nil)
                                 spellSettings.activeSwipeClassColor = true
@@ -5693,7 +5693,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         -- (e.g. a freshly added Hero-talent spell like Wither/Celestial
                                         -- Conduit), `ss` is a throwaway {} -- without EnsureSS the picked
                                         -- colour is written to a temporary table and lost, so the swipe never changes and reverts to default on reopen.
-                                        EnsureSS()
+                                        EnsureStored()
                                         -- Ensure custom mode is selected. SetOwn: a plain nil write would inherit a bar-tier "none"/class value instead of meaning custom.
                                         SetOwn("activeSwipeMode", nil)
                                         SetOwn("activeSwipeClassColor", nil)
@@ -5736,7 +5736,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     end,
                                     true,
                                     function()
-                                        EnsureSS()
+                                        EnsureStored()
                                         spellSettings.activeBorderEnabled = true
                                         if not spellSettings.activeBorderR then
                                             spellSettings.activeBorderR = 1
@@ -5803,7 +5803,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return spellSettings.activeGlow
                             end,
                             function(value)
-                                EnsureSS()
+                                EnsureStored()
                                 SetOwn("activeGlow", value)
                                 if value and value > 0 then
                                     mod._cdmAnyActiveGlow = true
@@ -5836,7 +5836,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return spellSettings.maxStacksGlow
                             end,
                             function(value)
-                                EnsureSS()
+                                EnsureStored()
                                 SetOwn("maxStacksGlow", value)
                                 if value and value > 0 then
                                     mod._cdmAnyMaxStacksGlow = true
@@ -5869,7 +5869,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return spellSettings.desatNotActive and true or nil
                             end,
                             function(value)
-                                EnsureSS()
+                                EnsureStored()
                                 SetOwn("desatNotActive", value or nil)
                                 if value then
                                     mod._cdmAnyDesatNotActive = true
@@ -5905,7 +5905,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     return spellSettings.noResourceTint == true
                                 end,
                                 toggleSet = function(value)
-                                    EnsureSS()
+                                    EnsureStored()
                                     SetOwn("noResourceTint", value or nil)
                                     if value then
                                         mod._cdmAnyNoResourceTint = true
@@ -5927,7 +5927,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return spellSettings.noDesatOnCD and true or nil
                             end,
                             function(value)
-                                EnsureSS()
+                                EnsureStored()
                                 SetOwn("noDesatOnCD", value or nil)
                                 if value then
                                     mod._cdmAnyNoDesatOnCD = true
@@ -5961,7 +5961,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         local cdStateRow = MakeSubnavRow("Cooldown State Effect", CD_STATE_ITEMS, function()
                             return mod.CdStateHideOf(spellSettings)
                         end, function(value)
-                            mod.CdStateWriteHide(EnsureSS(), value)
+                            mod.CdStateWriteHide(EnsureStored(), value)
                             if mod.RefreshCDMIconAppearance then
                                 mod.RefreshCDMIconAppearance(barId)
                             end
@@ -5982,7 +5982,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     -- Close the per-spell dropdown so only the popup shows.
                                     dropMenu:Hide()
                                     ShowAlphaPopup(current, function(percent)
-                                        local e = EnsureSS()
+                                        local e = EnsureStored()
                                         e.cdStateLowerAlpha = percent / 100
                                         mod.CdStateWriteHide(e, "lowerAlphaOnCD")
                                         if mod.RefreshCDMIconAppearance then
@@ -6014,7 +6014,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                             math.floor(((spellSettings.cdStateLowerAlpha or 0.5) * 100) + 0.5)
                                         dropMenu:Hide()
                                         ShowAlphaPopup(current, function(percent)
-                                            local e = EnsureSS()
+                                            local e = EnsureStored()
                                             e.cdStateLowerAlpha = percent / 100
                                             mod.CdStateWriteHide(e, "lowerAlphaOnCD")
                                             if mod.RefreshCDMIconAppearance then
@@ -6023,7 +6023,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         end)
                                         return
                                     end
-                                    local e = EnsureSS()
+                                    local e = EnsureStored()
                                     mod.CdStateWriteHide(e, value or false)
                                     e.cdStateLowerAlpha = nil
                                 end,
@@ -6039,7 +6039,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             MakeSubnavRow("Glow Style", CD_READY_STYLE_ITEMS, function()
                                 return mod.CdReadyGlowStyle(mod.CdStateGlowOf(spellSettings), spellSettings)
                             end, function(value)
-                                EnsureSS()
+                                EnsureStored()
                                 SetOwn("cdStateGlowStyle", value)
                                 if mod.RefreshCDMIconAppearance then
                                     mod.RefreshCDMIconAppearance(barId)
@@ -6064,7 +6064,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         ShowAlphaPopup(
                                             current,
                                             function(percent)
-                                                EnsureSS()
+                                                EnsureStored()
                                                 spellSettings.cdStateGlowAlpha = percent / 100
                                                 SetOwn("cdStateGlowStyle", 8)
                                                 if mod.RefreshCDMIconAppearance then
@@ -6101,11 +6101,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return spellSettings[keyName]
                             end
                             access.set = function(keyName, value)
-                                EnsureSS()
+                                EnsureStored()
                                 spellSettings[keyName] = value
                             end
                             access.clear = function(keyName)
-                                EnsureSS()
+                                EnsureStored()
                                 SetOwn(keyName, nil)
                             end
                             access.refresh = function()
@@ -6137,7 +6137,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return nil
                             end,
                             function(value)
-                                EnsureSS()
+                                EnsureStored()
                                 SetOwn("reverseSwipe", (value == "reverse") or nil)
                                 SetOwn("hideCDSwipe", (value == "hide") or nil)
                                 if spellSettings.reverseSwipe then
@@ -6178,7 +6178,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     return spellSettings.stanceBarHide or nil
                                 end,
                                 function(value)
-                                    EnsureSS()
+                                    EnsureStored()
                                     SetOwn("stanceBarHide", value)
                                     if value then
                                         mod._cdmAnyStanceBar = true
@@ -6217,7 +6217,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return spellSettings.cdReadySoundKey or "none"
                             end,
                             function(value)
-                                EnsureSS()
+                                EnsureStored()
                                 SetOwn("cdReadySoundKey", (value ~= "none" and value) or nil)
                                 -- Flip the 0-cost gate live so the edge hook starts evaluating on the next
                                 -- desaturation tick, and refresh so a CHARGE spell registers on the SPELL_UPDATE_CHARGES watcher immediately.
@@ -6266,7 +6266,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 return nil
                             end,
                             function(value)
-                                EnsureSS()
+                                EnsureStored()
                                 SetOwn("glowColor", value)
                                 if value == "custom" and not spellSettings.glowColorR then
                                     spellSettings.glowColorR = 1
@@ -6351,7 +6351,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         or (spellData.customSpellIDs and spellData.customSpellIDs[spellId])
                     )
                 then
-                    AddTalentConditionsRow(spellId, spellSettings, EnsureSS)
+                    AddTalentConditionsRow(spellId, spellSettings, EnsureStored)
                 end
 
                 -- Custom Icon (per-spell ONLY -- deliberately outside the Apply-to-Bar
@@ -6375,7 +6375,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             -- Close the per-spell dropdown so only the popup shows.
                             dropMenu:Hide()
                             mod.ShowCDMCustomIconPopup(rawget(spellSettings, "customIcon"), function(ident)
-                                EnsureSS()
+                                EnsureStored()
                                 spellSettings.customIcon = ident
                                 if ident then
                                     -- Live-arm the session gate (monotonic; the login rescan covers already-saved settings).

@@ -51,7 +51,7 @@ CludesUI.AtOptionsLogin(function()
         DB()[keyName] = val
     end
 
-    local function RefreshAll()
+    local function RefreshTracker()
         if EQT.RefreshStateDriver then
             EQT.RefreshStateDriver()
         end
@@ -77,7 +77,7 @@ CludesUI.AtOptionsLogin(function()
     local function SetRowThen(key)
         return function(value)
             Set(key, value)
-            RefreshAll()
+            RefreshTracker()
         end
     end
 
@@ -206,7 +206,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = function(val)
                     Set("customGroupByZone", val)
-                    RefreshAll()
+                    RefreshTracker()
                     CludesUI:RefreshPage()
                 end,
             })
@@ -476,10 +476,10 @@ CludesUI.AtOptionsLogin(function()
             legacyKey = "visibility",
             caps = { partyIncludesRaid = false, luaDragonriding = true },
             onChanged = function()
-                RefreshAll()
+                RefreshTracker()
             end,
             onOptionChanged = function()
-                RefreshAll()
+                RefreshTracker()
             end,
         }, {
             type = "dropdown",
@@ -625,7 +625,7 @@ CludesUI.AtOptionsLogin(function()
                         Set("font", val)
                         -- The custom tracker restyles live.
                         if CUSTOM then
-                            RefreshAll()
+                            RefreshTracker()
                             return
                         end
                         CludesUI:ShowConfirmPopup({
@@ -715,7 +715,7 @@ CludesUI.AtOptionsLogin(function()
                     Set(keyList.r, cr)
                     Set(keyList.g, cg)
                     Set(keyList.b, checkBtn)
-                    RefreshAll()
+                    RefreshTracker()
                 end
             end
             local function WireColorSwatch(r, region, keyList, default)
@@ -768,7 +768,7 @@ CludesUI.AtOptionsLogin(function()
                             val and "1" or "0",
                             "CludesUIQuestTracker"
                         )
-                        RefreshAll()
+                        RefreshTracker()
                         CludesUI:RefreshPage()
                     end,
                 }, { type = "label", text = "Completed Color" })
@@ -831,7 +831,7 @@ CludesUI.AtOptionsLogin(function()
                     onClick = function()
                         Set(classKey, true)
                         Set(accentKey, false)
-                        RefreshAll()
+                        RefreshTracker()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
@@ -853,14 +853,14 @@ CludesUI.AtOptionsLogin(function()
                         Set(bKey, blue)
                         Set(classKey, false)
                         Set(accentKey, false)
-                        RefreshAll()
+                        RefreshTracker()
                         CludesUI:RefreshPage()
                     end,
                     onClick = function(self)
                         if isClass() or isAccent() then
                             Set(classKey, false)
                             Set(accentKey, false)
-                            RefreshAll()
+                            RefreshTracker()
                             CludesUI:RefreshPage()
                             return
                         end
@@ -886,7 +886,7 @@ CludesUI.AtOptionsLogin(function()
                     onClick = function()
                         Set(classKey, false)
                         Set(accentKey, true)
-                        RefreshAll()
+                        RefreshTracker()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
@@ -917,7 +917,7 @@ CludesUI.AtOptionsLogin(function()
                             Set("focusR", cr)
                             Set("focusG", cg)
                             Set("focusB", checkBtn)
-                            RefreshAll()
+                            RefreshTracker()
                         end,
                         false,
                         20
@@ -948,7 +948,7 @@ CludesUI.AtOptionsLogin(function()
                                 getValue = CfgOr("objProgressColor", false),
                                 setValue = function(val)
                                     Set("objProgressColor", val)
-                                    RefreshAll()
+                                    RefreshTracker()
                                     CludesUI:RefreshPage()
                                 end,
                             }
@@ -968,7 +968,7 @@ CludesUI.AtOptionsLogin(function()
                                 Set(kr, cr)
                                 Set(kg, cg)
                                 Set(kb, checkBtn)
-                                RefreshAll()
+                                RefreshTracker()
                             end,
                         }
                     end
@@ -997,7 +997,7 @@ CludesUI.AtOptionsLogin(function()
                     getValue = CfgOr("objDimCompleted", false),
                     setValue = function(val)
                         Set("objDimCompleted", val)
-                        RefreshAll()
+                        RefreshTracker()
                         CludesUI:RefreshPage()
                     end,
                 }, CludesUI.BlankRowCfg())
@@ -1462,7 +1462,7 @@ CludesUI.AtOptionsLogin(function()
             if db and db.ResetProfile then
                 db:ResetProfile()
             end
-            RefreshAll()
+            RefreshTracker()
             CludesUI:InvalidatePageCache()
         end,
     })

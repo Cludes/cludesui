@@ -4364,7 +4364,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
     -- render again, on the same kept root. The root stays shown until the
     -- render resets it (that reset is the teardown), so the frame under the
     -- cursor, dressed again in place, gets its OnEnter back from the pool.
-    local function RebuildPage()
+    local function RedrawPage()
         -- Hides any open popups (QB stays open -- it's parented to UIParent).
         if mod._ccGridPopup then
             mod._ccGridPopup:Hide()
@@ -4380,7 +4380,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
     local function SelectBinding(side, position)
         mod._ccSelSide = side
         mod._ccSelIndex = position
-        RebuildPage()
+        RedrawPage()
     end
 
     ---------------------------------------------------------------------------
@@ -4431,7 +4431,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             mod.CC_RemoveGlobalBinding(idx2)
             mod._ccSelSide = nil
             mod._ccSelIndex = nil
-            RebuildPage()
+            RedrawPage()
         end or nil)
         listY = listY - TILE_H
     end
@@ -4660,7 +4660,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                     })
                     mod._ccSelSide = "global"
                     mod._ccSelIndex = #(GetGlobalBindings())
-                    RebuildPage()
+                    RedrawPage()
                 end)
             elseif picker.mode == "item" then
                 local eqItems = mod.CC_GetEquippedItems()
@@ -4678,7 +4678,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                     })
                     mod._ccSelSide = "global"
                     mod._ccSelIndex = #(GetGlobalBindings())
-                    RebuildPage()
+                    RedrawPage()
                 end)
             else -- "action"
                 PopulateGridG(CC_GetActionItems(), function(gridItem)
@@ -4691,7 +4691,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                     })
                     mod._ccSelSide = "global"
                     mod._ccSelIndex = #(GetGlobalBindings())
-                    RebuildPage()
+                    RedrawPage()
                 end)
             end
         end
@@ -4816,7 +4816,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             mod.CC_RemoveSpecBinding(idx2)
             mod._ccSelSide = nil
             mod._ccSelIndex = nil
-            RebuildPage()
+            RedrawPage()
         end)
         rightY = rightY - TILE_H
     end
@@ -5174,7 +5174,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                                 true
                         end
                         UpdateToggleQB()
-                        RebuildPage()
+                        RedrawPage()
                     end
                 end)
                 -- Mouse click while hovering: bind with modifier+button
@@ -5237,7 +5237,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                                 true
                         end
                         UpdateToggleQB()
-                        RebuildPage()
+                        RedrawPage()
                     end
                 end)
             end
@@ -5280,9 +5280,9 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             end
             -- A close in combat rebuilds the page once combat ends.
             if InCombatLockdown() then
-                mod.CombatQueue.Defer("CC_QuickbindPage", RebuildPage)
+                mod.CombatQueue.Defer("CC_QuickbindPage", RedrawPage)
             else
-                RebuildPage()
+                RedrawPage()
             end
         end)
 
@@ -5506,7 +5506,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                     })
                     mod._ccSelSide = "spec"
                     mod._ccSelIndex = #(GetSpecBindings())
-                    RebuildPage()
+                    RedrawPage()
                 end)
             elseif picker.mode == "macro" then
                 local macros = mod.CC_GetAllMacros()
@@ -5535,7 +5535,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                     })
                     mod._ccSelSide = "spec"
                     mod._ccSelIndex = #(GetSpecBindings())
-                    RebuildPage()
+                    RedrawPage()
                 end)
             elseif picker.mode == "item" then
                 local eqItems = mod.CC_GetEquippedItems()
@@ -5553,7 +5553,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                     })
                     mod._ccSelSide = "spec"
                     mod._ccSelIndex = #(GetSpecBindings())
-                    RebuildPage()
+                    RedrawPage()
                 end)
             else -- "action"
                 PopulateGrid(CC_GetActionItems(), function(entry)
@@ -5565,7 +5565,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                     })
                     mod._ccSelSide = "spec"
                     mod._ccSelIndex = #(GetSpecBindings())
-                    RebuildPage()
+                    RedrawPage()
                 end)
             end
         end
@@ -5958,7 +5958,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             local function ApplyKey(newKey)
                 pickedBinding.key = newKey
                 mod.CC_ApplyBindings()
-                RebuildPage()
+                RedrawPage()
             end
             local keybindBtn = BuildKeybindButton(line, 180, function()
                 return pickedBinding.key
@@ -5967,7 +5967,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
             end, function()
                 pickedBinding.key = nil
                 mod.CC_ApplyBindings()
-                RebuildPage()
+                RedrawPage()
             end)
             Pix.Point(keybindBtn, "RIGHT", line, "RIGHT", -SIDE_PAD, 0)
             midY = midY - ROW_H
@@ -6128,7 +6128,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                             or (v == "units" and true)
                             or false
                         mod.CC_ApplyBindings()
-                        RebuildPage()
+                        RedrawPage()
                     end,
                     function(bindKey)
                         if isBareMouseBtn and bindKey ~= "frames" then
@@ -6157,7 +6157,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                     end, function(v)
                         pickedBinding.hoverEnemy = v
                         mod.CC_ApplyBindings()
-                        RebuildPage()
+                        RedrawPage()
                     end)
                     local eLbl = MakeFont(line, 13, 1, 1, 1, 0.8)
                     eLbl:SetPoint("RIGHT", ePill, "LEFT", -8, 0)
@@ -6168,7 +6168,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                     end, function(v)
                         pickedBinding.hoverFriendly = v
                         mod.CC_ApplyBindings()
-                        RebuildPage()
+                        RedrawPage()
                     end)
                     fPill:ClearAllPoints()
                     Pix.Point(fPill, "RIGHT", eLbl, "LEFT", -18, 0)
@@ -6357,7 +6357,7 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
                 })
                 mod._ccSelSide = "spec"
                 mod._ccSelIndex = #(GetSpecBindings())
-                RebuildPage()
+                RedrawPage()
             end)
 
             stripY = stripY - (SS_ICON + SS_GAP)

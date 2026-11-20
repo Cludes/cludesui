@@ -20,13 +20,13 @@ local L = CludesUI.L
 local GetItemInfo = C_Item.GetItemInfo
 local GetItemInfoInstant = C_Item.GetItemInfoInstant
 local _emptyP = {}
-local function BP()
+local function BagsProfile()
     return (CUI._bagsDB and CUI._bagsDB.profile) or _emptyP
 end
 
 local ROW_H, ICON_SIZE, COL_GAP = 24, 20, 6
 local function RowH()
-    return BP().bagListRowHeight or ROW_H
+    return BagsProfile().bagListRowHeight or ROW_H
 end
 local COLHDR_H = 20
 local SECTION_H, SUBSECTION_H = 22, 18
@@ -74,19 +74,19 @@ local COLUMN_ORDER = { "icon", "name", "ilvl", "track", "reqlvl", "type", "bind"
 local DEFAULT_COLUMNS = { "icon", "name", "ilvl", "count", "sell" }
 
 local function GetColumns()
-    return BP().bagListColumns or DEFAULT_COLUMNS
+    return BagsProfile().bagListColumns or DEFAULT_COLUMNS
 end
 
 -- Always writes a fresh copy so DEFAULT_COLUMNS is never mutated.
 local function SetColumns(entries)
-    BP().bagListColumns = CopyTable(entries)
+    BagsProfile().bagListColumns = CopyTable(entries)
 end
 
 -- List font: resolved once per layout pass, applied only when it changed
 local _lfPath, _lfSize, _lfFlag
 local function ResolveListFont()
     _lfPath = CUI.GetFontPath("bags")
-    _lfSize = BP().bagListFontSize or 11
+    _lfSize = BagsProfile().bagListFontSize or 11
     _lfFlag = CUI.GetFontOutlineFlag("bags")
 end
 local function SetListFont(fontStr, size)
@@ -182,7 +182,7 @@ local function StampItem(skinData)
         skinData._lvBind = bindType and BIND_ABBR[bindType] and L(BIND_ABBR[bindType]) or ""
     end
     local key = classID and SPLIT_KEY[classID]
-    skinData._lvSub = (key and BP()[key] and subType) or ""
+    skinData._lvSub = (key and BagsProfile()[key] and subType) or ""
 end
 mod.StampListItem = StampItem
 
@@ -419,7 +419,7 @@ end
 -- A virtual category's ("Virtual:...") state lasts the session: nothing of it is saved.
 local _virtualCollapsed = {}
 local function IsCollapsed(key)
-    return _virtualCollapsed[key] or (BP().bagListCollapsed or _emptyP)[key] == true
+    return _virtualCollapsed[key] or (BagsProfile().bagListCollapsed or _emptyP)[key] == true
 end
 local function SetCollapsed(set, key, val)
     if key:find("^Virtual:") then
@@ -429,7 +429,7 @@ local function SetCollapsed(set, key, val)
     end
 end
 local function ToggleCollapsed(self)
-    local profile = BP()
+    local profile = BagsProfile()
     local set = profile.bagListCollapsed
     if not set then
         set = {}
@@ -498,7 +498,7 @@ local function FixedWidth(ident)
     if ident == "icon" then
         return def.width
     end
-    local saved = BP().bagListColWidths
+    local saved = BagsProfile().bagListColWidths
     return (saved and saved[ident]) or def.width
 end
 
@@ -571,7 +571,7 @@ end
 
 -- True while a column is shown or still sorts the list (its data is needed)
 function mod.ListUsesColumn(ident)
-    return IndexOf(GetColumns(), ident) ~= nil or BP().bagListSortKey == ident
+    return IndexOf(GetColumns(), ident) ~= nil or BagsProfile().bagListSortKey == ident
 end
 
 local function ShowColumnMenu(ownerFrame, ident)
@@ -602,15 +602,15 @@ local function ShowColumnMenu(ownerFrame, ident)
             end)
         end
         root:CreateCheckbox(L("Round Icons"), function()
-            return BP().bagListRoundIcons == true
+            return BagsProfile().bagListRoundIcons == true
         end, function()
-            BP().bagListRoundIcons = not BP().bagListRoundIcons
+            BagsProfile().bagListRoundIcons = not BagsProfile().bagListRoundIcons
             Refresh()
         end)
         root:CreateButton(L("Reset Columns"), function()
-            BP().bagListColumns = nil
-            BP().bagListSortKey = nil
-            BP().bagListColWidths = nil
+            BagsProfile().bagListColumns = nil
+            BagsProfile().bagListSortKey = nil
+            BagsProfile().bagListColWidths = nil
             Refresh()
         end)
     end)
@@ -676,7 +676,7 @@ local function OnHeaderMouseUp(self, btnFrame)
     if not def.field then
         return
     end
-    local profile = BP()
+    local profile = BagsProfile()
     if profile.bagListSortKey == self._colId then
         profile.bagListSortAsc = not profile.bagListSortAsc
     else
@@ -737,7 +737,7 @@ local function SizerOnUpdate(self)
         return
     end
     self._lastW = wid
-    local profile = BP()
+    local profile = BagsProfile()
     local tbl = profile.bagListColWidths
     if not tbl then
         tbl = {}
@@ -873,7 +873,7 @@ function mod.UpdateListHeaderBar(owner, cols, leftX, topY, startX, noSort)
             btn:Hide()
         end
     end
-    local sortKey = not noSort and BP().bagListSortKey
+    local sortKey = not noSort and BagsProfile().bagListSortKey
     for i, ident in ipairs(cols) do
         local widget = GetOrCreateHeaderBtn(barFrame, ident)
         SetListFont(widget._label, 10)
@@ -900,7 +900,7 @@ function mod.UpdateListHeaderBar(owner, cols, leftX, topY, startX, noSort)
             else
                 widget._arrow:SetPoint("LEFT", widget._label, "LEFT", widget._label:GetStringWidth() + 3, 0)
             end
-            widget._arrow:SetRotation(BP().bagListSortAsc and -math.pi / 2 or math.pi / 2)
+            widget._arrow:SetRotation(BagsProfile().bagListSortAsc and -math.pi / 2 or math.pi / 2)
             widget._arrow:Show()
         else
             widget._arrow:Hide()
@@ -912,9 +912,9 @@ end
 
 -- Sets the ListCompare sort field from the saved header sort.
 function mod.ListSortSetup()
-    local sortDef = BP().bagListSortKey and COLUMNS[BP().bagListSortKey]
+    local sortDef = BagsProfile().bagListSortKey and COLUMNS[BagsProfile().bagListSortKey]
     if sortDef and sortDef.field then
-        _sk, _sa = sortDef.field, BP().bagListSortAsc == true
+        _sk, _sa = sortDef.field, BagsProfile().bagListSortAsc == true
     else
         _sk, _sa = "_lvQuality", false
     end
@@ -940,7 +940,7 @@ local function RenderRow(button, payload, cols, rowW, posX, posY, stripe, dim)
     hostFrame:Show()
     button:Show()
     button:SetAlpha(dim and 0.2 or 1)
-    button._stripe:SetShown(stripe and BP().bagListHideStripes ~= true)
+    button._stripe:SetShown(stripe and BagsProfile().bagListHideStripes ~= true)
 
     local details = payload.info
     local q = details.quality or 1
@@ -957,15 +957,15 @@ local function RenderRow(button, payload, cols, rowW, posX, posY, stripe, dim)
             iconTex:ClearAllPoints()
             iconTex:SetPoint("LEFT", button, "LEFT", cx, 0)
             iconTex:SetTexture(details.iconFileID)
-            local round = BP().bagListRoundIcons == true
+            local round = BagsProfile().bagListRoundIcons == true
             SetRoundIcon(button, round)
             -- Round: fixed crop past the icon's baked-in border so the circle edge stays clean
-            local z = round and ROUND_ZOOM or (BP().bagItemIconZoom or 0.08)
+            local z = round and ROUND_ZOOM or (BagsProfile().bagItemIconZoom or 0.08)
             iconTex:SetTexCoord(z, 1 - z, z, 1 - z)
             -- Junk Item Visuals' Desaturate greys grey items and Junk Marker junk
             iconTex:SetDesaturated(
                 details.isLocked
-                    or (BP().bagDesaturateJunkItems == true and (q == 0 or CUI_CategoryManager:IsJunk(
+                    or (BagsProfile().bagDesaturateJunkItems == true and (q == 0 or CUI_CategoryManager:IsJunk(
                         details.itemID,
                         q
                     )))
@@ -979,7 +979,7 @@ local function RenderRow(button, payload, cols, rowW, posX, posY, stripe, dim)
             iconTex:Show()
             -- Quality Item Border: square icons only
             local shade = button._textOverlay
-            if not round and (BP().bagQualityBorder ~= false or mod.BagsForever()) then
+            if not round and (BagsProfile().bagQualityBorder ~= false or mod.BagsForever()) then
                 if not (shade._brdT or shade._fvSlotBorder) then
                     mod.CreateInsetBorder(shade, true, iconTex)
                 end
@@ -1058,7 +1058,7 @@ function mod.ListPaintJunk(button, details)
     local q = details.quality or 1
     button._lvIcon:SetDesaturated(
         details.isLocked
-            or (BP().bagDesaturateJunkItems == true and (q == 0 or CUI_CategoryManager:IsJunk(
+            or (BagsProfile().bagDesaturateJunkItems == true and (q == 0 or CUI_CategoryManager:IsJunk(
                 details.itemID,
                 q
             )))
@@ -1088,7 +1088,7 @@ local function RenderEmptyRow(button, cols, skinData, rowW, posX, posY, stripe)
     hostFrame:Show()
     button:Show()
     button:SetAlpha(1)
-    button._stripe:SetShown(stripe and BP().bagListHideStripes ~= true)
+    button._stripe:SetShown(stripe and BagsProfile().bagListHideStripes ~= true)
     button._lvIcon:Hide()
     for _, fontStr in pairs(button._cells) do
         fontStr:Hide()
@@ -1152,7 +1152,7 @@ end
 function mod.RenderListView(itemList, options)
     local childFrame = CUI_Bags._scrollChild
     local cats = CUI_CategoryManager:GetCategories()
-    local hidden = options.allItems and BP().bagHiddenInAllItems or _emptyP
+    local hidden = options.allItems and BagsProfile().bagHiddenInAllItems or _emptyP
     local rowW = options.rowW
 
     -- Bucket: section key (category index, "pinned" or "junk") -> sub label -> items.
@@ -1281,7 +1281,7 @@ function mod.RenderListView(itemList, options)
     end
     _sectionsUsed, _rowsUsed = 0, 0
     local posX, posY = options.startX, -4
-    local showValue = BP().bagListSectionValue == true
+    local showValue = BagsProfile().bagListSectionValue == true
     local rowH = RowH()
 
     for _, b in ipairs(sequence) do
@@ -1312,7 +1312,7 @@ function mod.RenderListView(itemList, options)
             count = count .. "  " .. C_CurrencyInfo.GetCoinTextureString(b.sell)
         end
         local hgt, collapsed = PlaceSection(secKey, labelText, count, posX, posY, rowW, false)
-        if secKey == "recent" and BP().bagShowRecentClear == true then
+        if secKey == "recent" and BagsProfile().bagShowRecentClear == true then
             local cfg = _sections[_sectionsUsed]
             cfg._line:SetPoint("RIGHT", mod.ShowRecentClearButton(cfg), "LEFT", -6, 0)
         end

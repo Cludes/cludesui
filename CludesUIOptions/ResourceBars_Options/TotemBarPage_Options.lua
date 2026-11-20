@@ -40,7 +40,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
         return profile and profile[S.key]
     end
 
-    local function RefreshTotem()
+    local function ApplyTotemBar()
         if _G._CURB_Apply then
             _G._CURB_Apply()
         end
@@ -86,9 +86,9 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                 return
             end
             sectionCfg.iconSize = val
-            RefreshTotem()
+            ApplyTotemBar()
         end,
-    }, RefreshTotem)
+    }, ApplyTotemBar)
     cursorY = cursorY - height
 
     -- Spacing cog on Icon Size (right region)
@@ -113,7 +113,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                             return
                         end
                         sectionCfg.spacing = val
-                        RefreshTotem()
+                        ApplyTotemBar()
                     end,
                 },
             },
@@ -140,7 +140,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                 return
             end
             sectionCfg.timerSize = val
-            RefreshTotem()
+            ApplyTotemBar()
         end,
     }, {
         type = "toggle",
@@ -158,7 +158,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                 return
             end
             sectionCfg.showTimer = val
-            RefreshTotem()
+            ApplyTotemBar()
             CludesUI:RefreshPage()
         end,
     })
@@ -206,7 +206,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                     if sectionCfg.borderSizePx then
                         sectionCfg.borderSizePx = false
                     end
-                    RefreshTotem()
+                    ApplyTotemBar()
                     CludesUI:RefreshPage(true)
                 end,
             },
@@ -240,7 +240,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                     end
                 end,
                 apply = function()
-                    RefreshTotem()
+                    ApplyTotemBar()
                     CludesUI:RefreshPage()
                 end,
             })
@@ -291,7 +291,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                         end
                     end,
                     apply = function()
-                        RefreshTotem()
+                        ApplyTotemBar()
                         CludesUI:RefreshPage()
                     end,
                 })
@@ -325,7 +325,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                     sectionCfg.borderG = green
                     sectionCfg.borderB = blue
                     sectionCfg.borderA = a
-                    RefreshTotem()
+                    ApplyTotemBar()
                     CludesUI:RefreshPage()
                 end,
                 true,
@@ -399,7 +399,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                                 return
                             end
                             sectionCfg.borderTextureShiftX = val == 0 and nil or val
-                            RefreshTotem()
+                            ApplyTotemBar()
                             CludesUI:RefreshPage()
                         end,
                     },
@@ -431,7 +431,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                                 return
                             end
                             sectionCfg.borderTextureShiftY = val == 0 and nil or val
-                            RefreshTotem()
+                            ApplyTotemBar()
                             CludesUI:RefreshPage()
                         end,
                     },
@@ -448,7 +448,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                                 return
                             end
                             sectionCfg.borderBehind = val == false and nil or val
-                            RefreshTotem()
+                            ApplyTotemBar()
                             CludesUI:RefreshPage()
                         end,
                     },
@@ -490,7 +490,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                 return
             end
             sectionCfg.frameStrata = val
-            RefreshTotem()
+            ApplyTotemBar()
         end,
     }, {
         type = "segmented",
@@ -510,7 +510,7 @@ local function BuildTotemSection(hostFrame, cursorY, S)
                 return
             end
             sectionCfg.orientation = val
-            RefreshTotem()
+            ApplyTotemBar()
         end,
     })
     cursorY = cursorY - height
@@ -558,7 +558,7 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
         req = "Select a class above",
         raw = true,
         -- Enabled Classes dropdown (built over a blank label slot)
-        enableRow = function(ry, sizeCfg, RefreshTotem)
+        enableRow = function(ry, sizeCfg, ApplyTotemBar)
             local ALL_CLASSES = CludesUI.CLASS_TOKEN_ORDER
             local classItems = {}
             classItems[#classItems + 1] = { key = "NONE", label = CludesUI.L("None (Disabled)") }
@@ -624,7 +624,7 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
                                 end
                             end
                         end
-                        RefreshTotem()
+                        ApplyTotemBar()
                         CludesUI:RefreshPage()
                     end,
                     nil,
@@ -658,7 +658,7 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
                 return not (c and c.enabled)
             end,
             req = "Call Totem Bar",
-            enableRow = function(ry, sizeCfg, RefreshTotem)
+            enableRow = function(ry, sizeCfg, ApplyTotemBar)
                 return W:DualRow(hostFrame, ry, {
                     type = "toggle",
                     text = "Enable Call Totem Bar",
@@ -675,7 +675,7 @@ function mod.ERB_BuildTotemBarPage(page, hostFrame, yOffset)
                             return
                         end
                         c.enabled = val
-                        RefreshTotem()
+                        ApplyTotemBar()
                         CludesUI:RefreshPage()
                     end,
                 }, sizeCfg)

@@ -2606,7 +2606,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     -- in one column, the Slot rows last. Every aura row shares the Auras
     -- section, which reads the slot's first aura row and writes them all.
     function CoreCog.Sections(posKey)
-        local function refresh()
+        local function redraw()
             RefreshAllSlots()
             UpdatePreview()
         end
@@ -2628,7 +2628,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 end,
                 set = function(val)
                     DB()[key] = val
-                    refresh()
+                    redraw()
                 end,
             }
         end
@@ -2646,7 +2646,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 set = function(val)
                     DB()[key] = val and true or false
                     mod.RefreshQuestObjective()
-                    refresh()
+                    redraw()
                 end,
             }
         end
@@ -2692,7 +2692,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                 end,
                 set = function(val)
                     DB()[growthKey] = val
-                    refresh()
+                    redraw()
                 end,
             }
         end
@@ -2714,7 +2714,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             end,
             set = function(val)
                 DB()[esKey] = val
-                refresh()
+                redraw()
             end,
         }
         -- Raise Strata: bumps the slot's elements one strata level up so they
@@ -2729,7 +2729,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             end,
             set = function(val)
                 DB()[rsKey] = val and true or false
-                refresh()
+                redraw()
             end,
         }
 
@@ -2756,7 +2756,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         end,
                         set = function(val)
                             CoreCog.AuraSet(posKey, "size", val)
-                            refresh()
+                            redraw()
                         end,
                     },
                     {
@@ -2770,7 +2770,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         end,
                         set = function(val)
                             CoreCog.AuraSet(posKey, "spacing", val)
-                            refresh()
+                            redraw()
                         end,
                     },
                     -- Blizzard Style: the stock aura ring replaces the 1px border.
@@ -2787,7 +2787,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                             CoreCog.AuraSet(posKey, "border", val and true or false)
                             -- The live slot borders only catch up through a full settings pass.
                             mod.RefreshAllSettings()
-                            refresh()
+                            redraw()
                         end,
                     },
                     {
@@ -2798,7 +2798,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         end,
                         set = function(val)
                             CoreCog.AuraSet(posKey, "crop", val and true or false)
-                            refresh()
+                            redraw()
                         end,
                     },
                     -- Adjust Crop: per-side trim percentage for the cropped mode.
@@ -2818,7 +2818,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         end,
                         set = function(val)
                             CoreCog.AuraSet(posKey, "cropPct", val)
-                            refresh()
+                            redraw()
                         end,
                     },
                 },
@@ -2848,7 +2848,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         set = function(val)
                             DB().showQuestObjectiveTypeIcon = val
                             mod.RefreshQuestObjective()
-                            refresh()
+                            redraw()
                         end,
                     },
                     {
@@ -2865,7 +2865,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         end,
                         set = function(val)
                             DB().questObjectiveTypeIconScale = val
-                            refresh()
+                            redraw()
                         end,
                     },
                     {
@@ -2881,7 +2881,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         set = function(val)
                             DB().questObjectiveTextSize = val
                             mod.RefreshQuestObjective()
-                            refresh()
+                            redraw()
                         end,
                     },
                     InstancesRow("questtext"),
@@ -2902,7 +2902,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         end,
                         set = function(val)
                             DB().factionPvP = val
-                            refresh()
+                            redraw()
                         end,
                     },
                     {
@@ -2915,7 +2915,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         end,
                         set = function(val)
                             DB().factionStyle = val
-                            refresh()
+                            redraw()
                         end,
                     },
                     {
@@ -2926,7 +2926,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         end,
                         set = function(val)
                             DB().factionOppositeOnly = val and true or false
-                            refresh()
+                            redraw()
                         end,
                     },
                     {
@@ -2938,7 +2938,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
                         end,
                         set = function(val)
                             DB().factionPlayersOnly = val and true or false
-                            refresh()
+                            redraw()
                         end,
                     },
                 },
@@ -3648,12 +3648,12 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
     end
 
     local function TextCellCfg(cfg)
-        local function get()
+        local function readValue()
             return DBVal(cfg.key)
         end
         -- Custom opens its popup; a saved template selects it (the new cell reports
         -- the write to Spec Overrides, as Add Text Slot does).
-        local values = mod.NPO_CustomTextValues(textElementValues, get, function()
+        local values = mod.NPO_CustomTextValues(textElementValues, readValue, function()
             mod.NPO_EditCustomText(cfg.key, function()
                 optionState._npNotifySlot = cfg.key
                 TextSlotSetValue(cfg.key, "custom")
@@ -3665,7 +3665,7 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
             text = cfg.label,
             values = values,
             order = textElementOrder,
-            getValue = get,
+            getValue = readValue,
             setValue = function(val)
                 TextSlotSetValue(cfg.key, val)
             end,

@@ -1817,7 +1817,7 @@ local function InitBuffBarsPage(
 
         -- An edit's refresh, coalesced over 50ms: settings, live bars, preview, placeholders.
         local _tbbRefreshTimer
-        local function RefreshTBB()
+        local function QueueBuffBarRefresh()
             if _tbbRefreshTimer then
                 _tbbRefreshTimer:Cancel()
             end
@@ -1831,7 +1831,7 @@ local function InitBuffBarsPage(
         end
         -- The spec-change watcher outside uses this build's refresh, so a spec swap
         -- with the page open rebuilds the dropdown and preview.
-        _tbbRefreshFn = RefreshTBB
+        _tbbRefreshFn = QueueBuffBarRefresh
 
         -- Drag-and-drop move into another group (or out to independent). Joining a
         -- group takes its current look, as a freshly added bar does; the moved bar
@@ -3376,7 +3376,7 @@ local function InitBuffBarsPage(
                 return button
             end
             local function Applied()
-                RefreshTBB()
+                QueueBuffBarRefresh()
                 CludesUI:RefreshPage()
             end
             PresetBtn(
@@ -3549,7 +3549,7 @@ local function InitBuffBarsPage(
                     if mod.TBBSetGroupName then
                         mod.TBBSetGroupName(groupId, textValue)
                     end
-                    RefreshTBB()
+                    QueueBuffBarRefresh()
                     -- Soft refresh: the "Currently Editing:" label picks up the new name now.
                     CludesUI:RefreshPage()
                 end,
@@ -3822,7 +3822,7 @@ local function InitBuffBarsPage(
                                 bar[barKey] = val
                             end
                         end
-                        RefreshTBB()
+                        QueueBuffBarRefresh()
                         CludesUI:RefreshPage()
                     end,
                 })
@@ -3858,7 +3858,7 @@ local function InitBuffBarsPage(
                     mod.TBBSetGroupGrow(groupId, grow)
                 end
             end
-            RefreshTBB()
+            QueueBuffBarRefresh()
             -- Full rebuild: the sync tooltips follow the orientation.
             CludesUI:RefreshPage(true)
         end
@@ -3888,7 +3888,7 @@ local function InitBuffBarsPage(
                     local barData = SelectedTBB()
                     if barData then
                         barData.texture = value
-                        RefreshTBB()
+                        QueueBuffBarRefresh()
                     end
                 end,
             })
@@ -3976,7 +3976,7 @@ local function InitBuffBarsPage(
                     if barData then
                         barData[prefix .. "TextR"], barData[prefix .. "TextG"] = red, green
                         barData[prefix .. "TextB"], barData[prefix .. "TextA"] = blue, a
-                        RefreshTBB()
+                        QueueBuffBarRefresh()
                     end
                 end,
                 true,
@@ -4030,7 +4030,7 @@ local function InitBuffBarsPage(
                     if showKey then
                         barData[showKey] = (value ~= "none")
                     end
-                    RefreshTBB()
+                    QueueBuffBarRefresh()
                     CludesUI:RefreshPage()
                 end,
             }
@@ -4068,7 +4068,7 @@ local function InitBuffBarsPage(
                     local barData = SelectedTBB()
                     if barData then
                         barData[barKey] = value
-                        RefreshTBB()
+                        QueueBuffBarRefresh()
                     end
                 end,
             }
@@ -4090,7 +4090,7 @@ local function InitBuffBarsPage(
                     local barData = SelectedTBB()
                     if barData then
                         barData[barKey] = value or nil
-                        RefreshTBB()
+                        QueueBuffBarRefresh()
                     end
                 end,
             }
@@ -4130,7 +4130,7 @@ local function InitBuffBarsPage(
                             bar[showKey] = (place ~= "none")
                         end
                     end
-                    RefreshTBB()
+                    QueueBuffBarRefresh()
                     CludesUI:RefreshPage()
                 end,
             })
@@ -4165,7 +4165,7 @@ local function InitBuffBarsPage(
                         if barData then
                             textValue = strtrim(textValue or "")
                             barData.customName = textValue ~= "" and textValue or nil
-                            RefreshTBB()
+                            QueueBuffBarRefresh()
                         end
                     end,
                 },
@@ -4229,7 +4229,7 @@ local function InitBuffBarsPage(
                 EachGroupMate(barData, function(b)
                     b.strata = value
                 end)
-                RefreshTBB()
+                QueueBuffBarRefresh()
             end,
         })
         cursorY = cursorY - height
@@ -4280,7 +4280,7 @@ local function InitBuffBarsPage(
                 local barData = SelectedTBB()
                 if barData then
                     barData.reverseFill = value
-                    RefreshTBB()
+                    QueueBuffBarRefresh()
                 end
             end,
         }, {
@@ -4311,7 +4311,7 @@ local function InitBuffBarsPage(
                 local barData = SelectedTBB()
                 if barData then
                     barData.fillUp = value and true or nil
-                    RefreshTBB()
+                    QueueBuffBarRefresh()
                 end
             end,
         })
@@ -4346,7 +4346,7 @@ local function InitBuffBarsPage(
                     return
                 end
                 barData.chargeHashLines = value and true or nil
-                RefreshTBB()
+                QueueBuffBarRefresh()
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -4397,7 +4397,7 @@ local function InitBuffBarsPage(
                         if barData then
                             barData.chargeHashLineR, barData.chargeHashLineG = red, green
                             barData.chargeHashLineB, barData.chargeHashLineA = blue, a
-                            RefreshTBB()
+                            QueueBuffBarRefresh()
                         end
                     end,
                 },
@@ -4424,7 +4424,7 @@ local function InitBuffBarsPage(
                         local barData = SelectedTBB()
                         if barData then
                             barData.chargeHashShadeAlpha = (value or 50) / 100
-                            RefreshTBB()
+                            QueueBuffBarRefresh()
                         end
                     end,
                 },
@@ -4479,7 +4479,7 @@ local function InitBuffBarsPage(
                 local barData = SelectedTBB()
                 if barData then
                     barData[barKey] = value
-                    RefreshTBB()
+                    QueueBuffBarRefresh()
                 end
             end
         end
@@ -4493,10 +4493,10 @@ local function InitBuffBarsPage(
             legacyKey = "barVisibility",
             caps = { partyIncludesRaid = false, noMouseover = true, luaDragonriding = true },
             onChanged = function()
-                RefreshTBB()
+                QueueBuffBarRefresh()
             end,
             onOptionChanged = function()
-                RefreshTBB()
+                QueueBuffBarRefresh()
             end,
             extraItems = {
                 {
@@ -4546,7 +4546,7 @@ local function InitBuffBarsPage(
                 local barData = SelectedTBB()
                 if barData then
                     barData.opacity = value / 100
-                    RefreshTBB()
+                    QueueBuffBarRefresh()
                 end
             end,
         }, {
@@ -4567,7 +4567,7 @@ local function InitBuffBarsPage(
                         local barData = SelectedTBB()
                         if barData then
                             barData.bgR, barData.bgG, barData.bgB, barData.bgA = red, green, blue, a
-                            RefreshTBB()
+                            QueueBuffBarRefresh()
                         end
                     end,
                 }),
@@ -4607,7 +4607,7 @@ local function InitBuffBarsPage(
                     if value ~= "none" then
                         barData.gradientDir = value
                     end
-                    RefreshTBB()
+                    QueueBuffBarRefresh()
                     CludesUI:RefreshPage()
                 end,
             }),
@@ -4642,7 +4642,7 @@ local function InitBuffBarsPage(
                     if barData then
                         barData.fillColorMode = "custom"
                         barData.fillR, barData.fillG, barData.fillB, barData.fillA = red, green, blue, a
-                        RefreshTBB()
+                        QueueBuffBarRefresh()
                     end
                 end,
                 true,
@@ -4665,7 +4665,7 @@ local function InitBuffBarsPage(
                     local barData = SelectedTBB()
                     if barData then
                         barData.gradientR, barData.gradientG, barData.gradientB, barData.gradientA = red, green, blue, a
-                        RefreshTBB()
+                        QueueBuffBarRefresh()
                     end
                 end,
                 true,
@@ -4721,7 +4721,7 @@ local function InitBuffBarsPage(
             return barData and barData.borderSize or 0
         end
         local function Repaint()
-            RefreshTBB()
+            QueueBuffBarRefresh()
         end
 
         -- A new border style starts from that style's own colour, layering and
@@ -4741,7 +4741,7 @@ local function InitBuffBarsPage(
             if barData.borderSizePx then
                 barData.borderSizePx = false
             end
-            RefreshTBB()
+            QueueBuffBarRefresh()
             CludesUI:RefreshPage(true)
         end
 
@@ -4778,7 +4778,7 @@ local function InitBuffBarsPage(
                     local barData = SelectedTBB()
                     if barData then
                         barData[barKey] = value
-                        RefreshTBB()
+                        QueueBuffBarRefresh()
                     end
                 end,
             }
@@ -4797,7 +4797,7 @@ local function InitBuffBarsPage(
                     local barData = SelectedTBB()
                     if barData then
                         barData.stockBorderScale = value
-                        RefreshTBB()
+                        QueueBuffBarRefresh()
                     end
                 end)
             else
@@ -4866,7 +4866,7 @@ local function InitBuffBarsPage(
                         local barData = SelectedTBB()
                         if barData then
                             barData.borderR, barData.borderG, barData.borderB = red, green, blue
-                            RefreshTBB()
+                            QueueBuffBarRefresh()
                         end
                     end,
                     false,
@@ -4895,7 +4895,7 @@ local function InitBuffBarsPage(
                             local barData = SelectedTBB()
                             if barData then
                                 barData.borderBehind = value
-                                RefreshTBB()
+                                QueueBuffBarRefresh()
                             end
                         end,
                     },
@@ -4947,7 +4947,7 @@ local function InitBuffBarsPage(
         do
             local GO = CludesUI.GlowOptions
             local glowDesc = mod._CDM_TbbGlowDesc(SelectedTBB, function()
-                RefreshTBB()
+                QueueBuffBarRefresh()
             end)
             local selection = SelectedTBB()
             local stackSlot = { type = "label", text = "" }
@@ -4964,7 +4964,7 @@ local function InitBuffBarsPage(
                         local barData = SelectedTBB()
                         if barData then
                             barData.stackBasedBar = value and true or false
-                            RefreshTBB()
+                            QueueBuffBarRefresh()
                         end
                     end,
                 }
@@ -5002,7 +5002,7 @@ local function InitBuffBarsPage(
                         local source = SelectedTBB()
                         if source then
                             CludesUI.ApplyPandemicGlowToAll(Payload(source))
-                            RefreshTBB()
+                            QueueBuffBarRefresh()
                         end
                     end,
                 })
@@ -5027,7 +5027,7 @@ local function InitBuffBarsPage(
                 local barData = SelectedTBB()
                 if barData then
                     barData.stackThresholdMaxEnabled = value
-                    RefreshTBB()
+                    QueueBuffBarRefresh()
                     CludesUI:RefreshPage()
                 end
             end,
@@ -5060,7 +5060,7 @@ local function InitBuffBarsPage(
                     local barData = SelectedTBB()
                     if barData then
                         barData.stackThresholdMax = value
-                        RefreshTBB()
+                        QueueBuffBarRefresh()
                     end
                 end,
                 true
@@ -5131,7 +5131,7 @@ local function InitBuffBarsPage(
                 local barData = SelectedTBB()
                 if barData then
                     barData.stackThresholdTicks = self:GetText()
-                    RefreshTBB()
+                    QueueBuffBarRefresh()
                 end
             end)
             boxFrame:SetScript("OnEscapePressed", function(self)
@@ -5155,7 +5155,7 @@ local function InitBuffBarsPage(
                 if barData then
                     barData.stackThresholdTickR, barData.stackThresholdTickG = red, green
                     barData.stackThresholdTickB, barData.stackThresholdTickA = blue, a
-                    RefreshTBB()
+                    QueueBuffBarRefresh()
                 end
             end, true, 20)
             Pix.Point(swatch, "RIGHT", boxFrame, "LEFT", -8, 0)
@@ -5199,7 +5199,7 @@ local function InitBuffBarsPage(
                 local barData = SelectedTBB()
                 if barData then
                     barData.stackThresholdEnabled = value
-                    RefreshTBB()
+                    QueueBuffBarRefresh()
                     CludesUI:RefreshPage()
                 end
             end,
@@ -5223,7 +5223,7 @@ local function InitBuffBarsPage(
                 local barData = SelectedTBB()
                 if barData then
                     barData.stackThreshold = value
-                    RefreshTBB()
+                    QueueBuffBarRefresh()
                 end
             end,
         })
@@ -5235,7 +5235,7 @@ local function InitBuffBarsPage(
                 show = function(self)
                     ShowStackThreshEditor({
                         getCfg = SelectedTBB,
-                        refreshFn = RefreshTBB,
+                        refreshFn = QueueBuffBarRefresh,
                         anchor = self,
                     })
                 end,
@@ -5264,7 +5264,7 @@ local function InitBuffBarsPage(
                     if barData then
                         barData.stackThresholdR, barData.stackThresholdG, barData.stackThresholdB, barData.stackThresholdA =
                             red, green, blue, a
-                        RefreshTBB()
+                        QueueBuffBarRefresh()
                     end
                 end,
                 true,

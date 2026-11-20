@@ -2604,7 +2604,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
     end
 
     -- Light update: rebuild lookup + refresh frames/preview, no page rebuild (sliders/settings that don't change structure).
-    local function ReloadAndUpdate()
+    local function RebuildAndReload()
         RebuildLookup(saved)
         if mod.ReloadFrames then
             mod.ReloadFrames()
@@ -2616,7 +2616,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
     end
     -- The Assigned Buffs filter picks (the manager-pages file) update the
     -- frames and preview in place through this.
-    mod._bmReloadAndUpdate = ReloadAndUpdate
+    mod._bmReloadAndUpdate = RebuildAndReload
 
     -- Full update: also rebuilds the page (preview, sidebar, settings) -- used by create/delete/toggle/dropdown changes that alter structure.
     local function ReloadAndRebuild()
@@ -4104,7 +4104,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 end,
                 setValue = function(v)
                     indicator.ownOnly = v and true or false
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             }, { type = "label", text = "" })
         end
@@ -4147,7 +4147,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 end,
                 setValue = function(v)
                     indicator.thresholdEnabled = v
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     CludesUI:RefreshPage()
                 end,
             }, {
@@ -4164,7 +4164,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 end,
                 setValue = function(v)
                     indicator.threshold = v
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             })
 
@@ -4180,7 +4180,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     function(red, green, blue)
                         indicator.thresholdColor = { r = red, g = green, b = blue }
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                     false,
                     20
@@ -4237,7 +4237,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 end,
                 setValue = function(v)
                     indicator.ownOnly = v and true or false
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             }
             -- Position gains an "Anchor To" subnav (v2): picking another indicator
@@ -4305,7 +4305,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             local tid = type(childKey) == "string" and string.match(childKey, "^@(%d+)$")
                             if tid then
                                 indicator.anchorTo = tonumber(tid)
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                                 CludesUI:RefreshPage()
                             end
                         end,
@@ -4349,7 +4349,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         indicator.position = v
                         indicator.growDirection = GetDefaultGrow(v)
                     end
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     CludesUI:RefreshPage()
                 end,
             }
@@ -4365,7 +4365,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 end,
                 setValue = function(v)
                     indicator.growDirection = v
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             }
             -- Grid wrap+cap is a container capability (chain groups wrap natively; live
@@ -4386,7 +4386,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 end,
                 setValue = function(v)
                     indicator.iconsPerRow = (v and v > 0) and v or nil
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             }
             local row1, posRow, perRgn
@@ -4411,7 +4411,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 indicator.maxIcons = (v and v > 0) and v or nil
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                             end,
                         },
                     },
@@ -4464,7 +4464,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 indicator.offsetX = v
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                             end,
                         },
                         {
@@ -4482,7 +4482,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 indicator.offsetY = v
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                             end,
                         },
                         {
@@ -4499,7 +4499,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 indicator.frameLevel = v
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                             end,
                         },
                     },
@@ -4526,7 +4526,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 end,
                 setValue = function(v)
                     indicator.size = v
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             }, {
                 type = "slider",
@@ -4540,7 +4540,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 end,
                 setValue = function(v)
                     indicator.spacing = v
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             })
 
@@ -4564,7 +4564,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 mod.db.profile.bmIconZoom = v
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                             end,
                         },
                     },
@@ -4585,7 +4585,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 end,
                 setValue = function(v)
                     indicator.iconOpacity = v
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             }, {
                 type = "toggle",
@@ -4598,14 +4598,14 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 end,
                 setValue = function(v)
                     indicator.showDuration = v
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             })
             sy = mod.RFO_AuraBorderSettings(leftFrame, sy, W, function(k)
                 return indicator["indBorder" .. k]
             end, function(key, v)
                 indicator["indBorder" .. key] = v
-            end, ReloadAndUpdate, IconHidden)
+            end, RebuildAndReload, IconHidden)
 
             local durRow = SettingsRow({
                 type = "toggle",
@@ -4615,7 +4615,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 end,
                 setValue = function(v)
                     indicator.showDurationText = v
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             }, {
                 type = "toggle",
@@ -4625,7 +4625,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                 end,
                 setValue = function(v)
                     indicator.showStacks = v
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end,
             })
             do
@@ -4644,7 +4644,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 indicator.durationTextSize = v
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                             end,
                         },
                         {
@@ -4658,7 +4658,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 indicator.durationTextOffsetX = v
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                             end,
                         },
                         {
@@ -4672,7 +4672,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 indicator.durationTextOffsetY = v
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                             end,
                         },
                     },
@@ -4683,7 +4683,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     return color.r, color.g, color.b, 1
                 end, function(red, green, blue)
                     indicator.durationTextColor = { r = red, g = green, b = blue }
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end, false, 20)
                 colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                 region._lastInline = colorSwatch
@@ -4709,7 +4709,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 indicator.stacksTextSize = v
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                             end,
                         },
                         {
@@ -4723,7 +4723,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 indicator.stacksOffsetX = v
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                             end,
                         },
                         {
@@ -4737,7 +4737,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 indicator.stacksOffsetY = v
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                             end,
                         },
                     },
@@ -4750,7 +4750,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     return color.r, color.g, color.b, 1
                 end, function(red, green, blue)
                     indicator.stacksTextColor = { r = red, g = green, b = blue }
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                 end, false, 20)
                 colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
                 region._lastInline = colorSwatch
@@ -4761,7 +4761,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
             local GO = CludesUI.GlowOptions
             local glowDesc = GO.PrefixSite(function()
                 return indicator
-            end, "displayGlow", "engine", ReloadAndUpdate)
+            end, "displayGlow", "engine", RebuildAndReload)
             -- The color swatches take the free right half.
             local mdRow =
                 SettingsRow(GO.DropdownSpec(glowDesc, "Icon Glow"), { type = "label", text = "Glow Color" })
@@ -4791,7 +4791,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.hideIcon = v
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                         CludesUI:RefreshPage()
                     end,
                 }
@@ -4816,7 +4816,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             indicator.spellColors = {}
                         end
                         indicator.spellColors[mySid] = { r = red, g = green, b = blue }
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end, false, 20)
                     if prev then
                         colorSwatch:SetPoint("RIGHT", prev, "LEFT", -8, 0)
@@ -4864,7 +4864,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                                     indicator.filterColors = {}
                                 end
                                 indicator.filterColors[myFid] = { r = red, g = green, b = blue }
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                             end,
                             false,
                             20
@@ -4920,7 +4920,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.pandemicBorderEnabled = v
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                         CludesUI:RefreshPage()
                     end,
                 }, extraCfg)
@@ -4942,7 +4942,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 indicator.pandemicBorderTextured = v
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                                 CludesUI:RefreshPage()
                             end,
                         },
@@ -4961,7 +4961,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 indicator.pandemicBorderWidth = v
-                                ReloadAndUpdate()
+                                RebuildAndReload()
                             end,
                         },
                     },
@@ -4975,7 +4975,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         end,
                         setValue = function(red, green, blue)
                             indicator.pandemicBorderColor = { r = red, g = green, b = blue }
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                         end,
                     },
                 }, {
@@ -5008,7 +5008,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     -- Width/Height labels re-evaluate isVert and flip live (fast path only re-reads values, not static labels).
                     setValue = function(v)
                         indicator.orientation = v
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                         CludesUI:RefreshPage(true)
                     end,
                 }, {
@@ -5020,7 +5020,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.ownOnly = v and true or false
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 })
 
@@ -5034,7 +5034,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.position = v
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                         CludesUI:RefreshPage()
                     end,
                 }, {
@@ -5045,7 +5045,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.reverseFill = v
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 })
                 do
@@ -5064,7 +5064,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                                 end,
                                 set = function(v)
                                     indicator.offsetX = v
-                                    ReloadAndUpdate()
+                                    RebuildAndReload()
                                 end,
                             },
                             {
@@ -5078,7 +5078,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                                 end,
                                 set = function(v)
                                     indicator.offsetY = v
-                                    ReloadAndUpdate()
+                                    RebuildAndReload()
                                 end,
                             },
                             {
@@ -5091,7 +5091,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                                 end,
                                 set = function(v)
                                     indicator.frameLevel = v
-                                    ReloadAndUpdate()
+                                    RebuildAndReload()
                                 end,
                             },
                         },
@@ -5124,7 +5124,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.barWidth = v
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 }, {
                     type = "slider",
@@ -5142,7 +5142,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.barHeight = v
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 })
 
@@ -5156,7 +5156,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.barFullWidth = v
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                         CludesUI:RefreshPage()
                     end,
                 }, {
@@ -5167,7 +5167,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.barFullHeight = v
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                         CludesUI:RefreshPage()
                     end,
                 })
@@ -5184,7 +5184,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.barColorOpacity = v
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 }, {
                     type = "slider",
@@ -5198,7 +5198,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.barBgOpacity = v
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 })
                 do
@@ -5212,7 +5212,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         end,
                         function(red, green, blue)
                             indicator.color = { r = red, g = green, b = blue }
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                         end,
                         false,
                         20
@@ -5231,7 +5231,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         end,
                         function(red, green, blue)
                             indicator.barBgColor = { r = red, g = green, b = blue }
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                         end,
                         false,
                         20
@@ -5256,7 +5256,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.position = v
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                         CludesUI:RefreshPage()
                     end,
                 }, { type = "label", text = "" })
@@ -5276,7 +5276,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                                 end,
                                 set = function(v)
                                     indicator.offsetX = v
-                                    ReloadAndUpdate()
+                                    RebuildAndReload()
                                 end,
                             },
                             {
@@ -5290,7 +5290,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                                 end,
                                 set = function(v)
                                     indicator.offsetY = v
-                                    ReloadAndUpdate()
+                                    RebuildAndReload()
                                 end,
                             },
                         },
@@ -5319,7 +5319,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.showWhen = "present"
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 }, {
                     type = "toggle",
@@ -5330,7 +5330,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.ownOnly = v and true or false
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 })
 
@@ -5375,7 +5375,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         end,
                         setValue = function(v)
                             indicator.borderWidth = v
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                         end,
                     }
                 else
@@ -5403,7 +5403,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         setPx = function(v)
                             indicator.borderWidthPx = v
                         end,
-                        apply = ReloadAndUpdate,
+                        apply = RebuildAndReload,
                     })
                     -- This surface never allowed 0 (the dashed style would inherit it).
                     bwSlot.min = 1
@@ -5440,7 +5440,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         end,
                         setValue = function(v)
                             indicator.borderDashCount = v
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                         end,
                     }
                 else
@@ -5458,7 +5458,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.borderOpacity = v
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 }, dashesSlot)
                 do
@@ -5472,7 +5472,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         end,
                         function(red, green, blue)
                             indicator.color = { r = red, g = green, b = blue }
-                            ReloadAndUpdate()
+                            RebuildAndReload()
                         end,
                         false,
                         20
@@ -5500,7 +5500,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.showWhen = "present"
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 }, {
                     type = "toggle",
@@ -5511,7 +5511,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.ownOnly = v and true or false
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 })
 
@@ -5531,7 +5531,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(red, green, blue)
                         indicator.color = { r = red, g = green, b = blue }
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 }, {
                     type = "slider",
@@ -5544,7 +5544,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.opacity = v
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 })
             else
@@ -5565,7 +5565,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.showWhen = v
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 }, {
                     type = "toggle",
@@ -5576,7 +5576,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.ownOnly = v and true or false
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 })
 
@@ -5597,7 +5597,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     end,
                     setValue = function(v)
                         indicator.alpha = v / 100
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                     end,
                 }, { type = "label", text = "" })
                 -- Frame Alpha has no Threshold section: its alpha multiplies with the range-fade alpha and two secret values can't be combined.

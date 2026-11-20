@@ -3374,7 +3374,7 @@ CludesUI.AtOptionsLogin(function()
         local function On()
             return CludesUIDB and CludesUIDB.mailAltList == true
         end
-        local function Off()
+        local function SkinsOff()
             return not On()
         end
         local function Get(settingKey, default)
@@ -3422,7 +3422,7 @@ CludesUI.AtOptionsLogin(function()
             type = "dropdown",
             text = "Shown Characters",
             tooltip = "Untick a character to leave it off the list.",
-            disabled = Off,
+            disabled = SkinsOff,
             disabledTooltip = REQ,
             values = { __placeholder = "..." },
             order = { "__placeholder" },
@@ -3436,7 +3436,7 @@ CludesUI.AtOptionsLogin(function()
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(row._leftRegion, {
                 title = "Alt List",
-                disabled = Off,
+                disabled = SkinsOff,
                 disabledTooltip = REQ,
                 rows = {
                     {
@@ -3497,7 +3497,7 @@ CludesUI.AtOptionsLogin(function()
                 #MA.Entries() > 12,
                 nil,
                 nil,
-                { disabled = Off, disabledTooltip = REQ, countLabel = true }
+                { disabled = SkinsOff, disabledTooltip = REQ, countLabel = true }
             )
             CludesUI.PanelPP.Point(dropdown, "RIGHT", region, "RIGHT", -20, 0)
             region._control = dropdown
@@ -5123,7 +5123,7 @@ CludesUI.AtOptionsLogin(function()
             end
             return color.r, color.g, color.b, color.a or 1
         end
-        local function Off()
+        local function SkinsOff()
             return CBVal("enabled") ~= true
         end
         local GATE = "Enable Chat Bubbles Customization"
@@ -5183,7 +5183,7 @@ CludesUI.AtOptionsLogin(function()
             type = "dropdown",
             text = "Channels",
             tooltip = "Choose which channels get a bubble.",
-            disabled = Off,
+            disabled = SkinsOff,
             disabledTooltip = GATE_REQ,
             values = { __placeholder = "..." },
             order = { "__placeholder" },
@@ -5223,7 +5223,7 @@ CludesUI.AtOptionsLogin(function()
                 nil,
                 nil,
                 nil,
-                { disabled = Off, disabledTooltip = GATE_REQ }
+                { disabled = SkinsOff, disabledTooltip = GATE_REQ }
             )
             CludesUI.PanelPP.Point(chDD, "RIGHT", region, "RIGHT", -20, 0)
             region._control = chDD
@@ -5243,7 +5243,7 @@ CludesUI.AtOptionsLogin(function()
             setValue = function(val)
                 CBSet("hideInInstances", val)
             end,
-            disabled = Off,
+            disabled = SkinsOff,
             disabledTooltip = GATE_REQ,
         }, { type = "label", text = "" })
         cursorY = cursorY - height
@@ -5260,7 +5260,7 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Space between the text and the edge of the bubble.",
             getValue = CBGetter("padding"),
             setValue = CBSetter("padding"),
-            disabled = Off,
+            disabled = SkinsOff,
             disabledTooltip = GATE_REQ,
         }, {
             type = "slider",
@@ -5270,7 +5270,7 @@ CludesUI.AtOptionsLogin(function()
             step = 10,
             getValue = CBGetter("maxWidth"),
             setValue = CBSetter("maxWidth"),
-            disabled = Off,
+            disabled = SkinsOff,
             disabledTooltip = GATE_REQ,
         })
         cursorY = cursorY - height
@@ -5284,7 +5284,7 @@ CludesUI.AtOptionsLogin(function()
             order = fontOrder,
             getValue = CBGetter("font"),
             setValue = CBSetter("font"),
-            disabled = Off,
+            disabled = SkinsOff,
             disabledTooltip = GATE_REQ,
         }, {
             type = "slider",
@@ -5294,7 +5294,7 @@ CludesUI.AtOptionsLogin(function()
             step = 1,
             getValue = CBGetter("borderSize"),
             setValue = CBSetter("borderSize"),
-            disabled = Off,
+            disabled = SkinsOff,
             disabledTooltip = GATE_REQ,
         })
         cursorY = cursorY - height
@@ -5303,7 +5303,7 @@ CludesUI.AtOptionsLogin(function()
             -- Built BEFORE the swatch on purpose: the cog sits beside the control, and
             -- BuildInlineSwatches chains _lastInline, so the swatch lands to its left.
             CludesUI.BuildInlineCog(fontBorderRow._leftRegion, {
-                disabled = Off,
+                disabled = SkinsOff,
                 disabledTooltip = GATE_REQ,
                 title = "Font",
                 rows = {
@@ -5358,16 +5358,16 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     -- Two reasons this swatch can be dead, so the tip is resolved per reason.
                     disabled = function()
-                        return Off() or CBVal("followBlizzardColor") == true
+                        return SkinsOff() or CBVal("followBlizzardColor") == true
                     end,
                     disabledTooltip = function()
-                        return Off() and GATE_REQ or "Follow Blizzard Default Color"
+                        return SkinsOff() and GATE_REQ or "Follow Blizzard Default Color"
                     end,
                     requireState = function()
-                        return Off() and "enabled" or "disabled"
+                        return SkinsOff() and "enabled" or "disabled"
                     end,
                 },
-            }, { disabled = Off, disabledTooltip = GATE_REQ })
+            }, { disabled = SkinsOff, disabledTooltip = GATE_REQ })
 
             CludesUI.BuildInlineSwatches(fontBorderRow._rightRegion, {
                 {
@@ -5379,7 +5379,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     hasAlpha = true,
                 },
-            }, { disabled = Off, disabledTooltip = GATE_REQ })
+            }, { disabled = SkinsOff, disabledTooltip = GATE_REQ })
         end
 
         local nameRow
@@ -5387,7 +5387,7 @@ CludesUI.AtOptionsLogin(function()
             type = "dropdown",
             text = "Show Speaker Name",
             tooltip = "Choose which channels show the speaker.",
-            disabled = Off,
+            disabled = SkinsOff,
             disabledTooltip = GATE_REQ,
             values = { __placeholder = "..." },
             order = { "__placeholder" },
@@ -5403,7 +5403,7 @@ CludesUI.AtOptionsLogin(function()
             step = 2,
             getValue = CBGetter("offsetY"),
             setValue = CBSetter("offsetY"),
-            disabled = Off,
+            disabled = SkinsOff,
             disabledTooltip = GATE_REQ,
         })
         cursorY = cursorY - height
@@ -5447,7 +5447,7 @@ CludesUI.AtOptionsLogin(function()
                 nil,
                 nil,
                 nil,
-                { disabled = Off, disabledTooltip = GATE_REQ }
+                { disabled = SkinsOff, disabledTooltip = GATE_REQ }
             )
             CludesUI.PanelPP.Point(nmDD, "RIGHT", region, "RIGHT", -20, 0)
             region._control = nmDD
@@ -5455,7 +5455,7 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.RegisterWidgetRefresh(nmDDRefresh)
 
             CludesUI.BuildInlineCog(region, {
-                disabled = Off,
+                disabled = SkinsOff,
                 disabledTooltip = GATE_REQ,
                 title = "Speaker Name",
                 rows = {
@@ -5517,7 +5517,7 @@ CludesUI.AtOptionsLogin(function()
                 CBSetStyle("background", val)
                 CludesUI:RefreshPage()
             end,
-            disabled = Off,
+            disabled = SkinsOff,
             disabledTooltip = GATE_REQ,
         }, { type = "label", text = "" })
         cursorY = cursorY - height
@@ -5542,10 +5542,10 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     hasAlpha = true,
                     disabled = function()
-                        return Off() or CBVal("background") == false
+                        return SkinsOff() or CBVal("background") == false
                     end,
                     disabledTooltip = function()
-                        return Off() and GATE_REQ or "Background"
+                        return SkinsOff() and GATE_REQ or "Background"
                     end,
                 },
             })

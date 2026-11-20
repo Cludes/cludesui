@@ -289,13 +289,13 @@ function CludesUI.BuildVisOptsCBDropdown(
         end
         return base
     end
-    local function UpdateLabel()
+    local function SyncCaption()
         if PoolGen(dropdownBtn) ~= dressGen then
             return
         end
         dropCaption:SetText(SummaryLabel())
     end
-    UpdateLabel()
+    SyncCaption()
 
     -- The menu and its fixed parts are built on the first open. A dynamic list
     -- (itemsFn) marks it stale on every open, and EnsureMenu then lays the same
@@ -851,7 +851,7 @@ function CludesUI.BuildVisOptsCBDropdown(
                     for idx = 1, #_taTints do
                         _taTints[idx]()
                     end
-                    UpdateLabel()
+                    SyncCaption()
                 end)
                 _allRows[#_allRows + 1] = {
                     frame = row,
@@ -1064,7 +1064,7 @@ function CludesUI.BuildVisOptsCBDropdown(
                     if options.notifyWrites then
                         CludesUI._NotifySettingWrite(dropdownBtn, snap)
                     end
-                    UpdateLabel()
+                    SyncCaption()
                     -- Refresh checkbox visuals + dynamic action labels, so items whose checked state depends on others (e.g. "Always" in crosshair) update live. Locked visuals refresh too, so rows whose lockedFn depends on the current selection never show a stale gray/active state.
                     for _, r in ipairs(_allRows) do
                         if r.frame._updateCheck then
@@ -1441,7 +1441,7 @@ function CludesUI.BuildVisOptsCBDropdown(
                 dropMenu:Hide()
                 menuStale = true
             end
-            UpdateLabel()
+            SyncCaption()
         end
         EnsureMenu()
         if dropMenu:IsShown() then
@@ -1558,7 +1558,7 @@ function CludesUI.BuildVisOptsCBDropdown(
         if reread == true and itemsFn and not (dropMenu and dropMenu:IsShown()) then
             itemList = itemsFn() or {}
         end
-        UpdateLabel()
+        SyncCaption()
         if dropMenu then
             for _, r in ipairs(dropMenu._rows or {}) do
                 if r.frame._updateCheck then
@@ -1971,13 +1971,13 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
         end
         return table.concat(nameList, ", ")
     end
-    local function UpdateLabel()
+    local function SyncCaption()
         if PoolGen(dropdownBtn) ~= dressGen then
             return
         end
         dropCaption:SetText(SummaryLabel())
     end
-    UpdateLabel()
+    SyncCaption()
 
     local dropMenu
     local orderChanged = false
@@ -2079,7 +2079,7 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
                     onPick(entry.key)
                 end
                 dropMenu:Hide()
-                UpdateLabel()
+                SyncCaption()
             end)
         end
         for idx = 1, #head do
@@ -2189,7 +2189,7 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
                     return
                 end
                 setFn(row._item.key, not getFn(row._item.key), MovableKeys())
-                UpdateLabel()
+                SyncCaption()
                 for _, r in ipairs(allRows) do
                     if r._updateCheck then
                         r._updateCheck()
@@ -2238,7 +2238,7 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
                 if options.setOrder then
                     options.setOrder(keyList)
                 end
-                UpdateLabel()
+                SyncCaption()
             end,
         })
 
@@ -2391,7 +2391,7 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
         if PoolGen(dropdownBtn) ~= dressGen then
             return
         end
-        UpdateLabel()
+        SyncCaption()
         for _, r in ipairs(allRows) do
             if r._updateCheck then
                 r._updateCheck()
@@ -2454,7 +2454,7 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, option
     end
     Paint(false)
 
-    local function UpdateLabel()
+    local function SyncCaption()
         if PoolGen(dropdownBtn) ~= dressGen then
             return
         end
@@ -2473,7 +2473,7 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, option
             dropCaption:SetText(table.concat(nameList, ", "))
         end
     end
-    UpdateLabel()
+    SyncCaption()
 
     local dropMenu, refreshers
     local ROW_H, PAD, TRACK_W = 34, 6, 140
@@ -2533,7 +2533,7 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, option
                     -- the page can dress ddBtn for another slot.
                     local snap = CludesUI._SOAttribution(dropdownBtn)
                     entry.set(val)
-                    UpdateLabel()
+                    SyncCaption()
                     CludesUI._NotifySettingWrite(dropdownBtn, snap)
                 end,
                 true
@@ -2658,7 +2658,7 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, option
         if PoolGen(dropdownBtn) ~= dressGen then
             return
         end
-        UpdateLabel()
+        SyncCaption()
         if dropMenu and dropMenu:IsShown() then
             for idx = 1, #refreshers do
                 refreshers[idx]()

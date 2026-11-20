@@ -43,7 +43,7 @@ local function Set(key, val)
     end
 end
 
-local function Refresh()
+local function ApplyBattleRes()
     if _G._CUI_BattleRes_Apply then
         _G._CUI_BattleRes_Apply()
     end
@@ -52,7 +52,7 @@ end
 local function SetRowThen(key)
     return function(value)
         Set(key, value)
-        Refresh()
+        ApplyBattleRes()
     end
 end
 
@@ -120,12 +120,12 @@ local function MakeBorderColorSwatches()
             end,
             setValue = function(red, green, blue)
                 Set("borderColor", { r = red, g = green, b = blue, a = 1 })
-                Refresh()
+                ApplyBattleRes()
             end,
             onClick = function(self)
                 if Cfg("borderUseClass") then
                     Set("borderUseClass", false)
-                    Refresh()
+                    ApplyBattleRes()
                     CludesUI:RefreshPage()
                     return
                 end
@@ -154,7 +154,7 @@ local function MakeBorderColorSwatches()
             setValue = function() end,
             onClick = function()
                 Set("borderUseClass", true)
-                Refresh()
+                ApplyBattleRes()
                 CludesUI:RefreshPage()
             end,
             refreshAlpha = function()
@@ -215,7 +215,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
         end,
         setValue = function(val)
             Set("visibility", val)
-            Refresh()
+            ApplyBattleRes()
             CludesUI:RefreshPage()
         end,
     }, {
@@ -265,7 +265,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
     row, height = W:DualRow(
         hostFrame,
         cursorY,
-        BorderSizeSliderCfg(Cfg, Set, Refresh, function()
+        BorderSizeSliderCfg(Cfg, Set, ApplyBattleRes, function()
             return Cfg("visibility") == "NEVER"
         end, "BattleRes Icon"),
         {
@@ -347,7 +347,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
                         end,
                         set = function(val)
                             Set(xKey, val)
-                            Refresh()
+                            ApplyBattleRes()
                         end,
                     },
                     {
@@ -361,7 +361,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
                         end,
                         set = function(val)
                             Set(yKey, val)
-                            Refresh()
+                            ApplyBattleRes()
                         end,
                     },
                 },
@@ -477,7 +477,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             return Cfg("visibility") ~= "NEVER"
         end, function(val)
             Set("visibility", val)
-            Refresh()
+            ApplyBattleRes()
             CludesUI:RefreshPage()
         end),
     }, {
@@ -537,7 +537,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         cursorY = cursorY - height
 
         row, height =
-            W:DualRow(hostFrame, cursorY, BorderSizeSliderCfg(Cfg, Set, Refresh, TextModeOn, ICON_ROWS_TIP), {
+            W:DualRow(hostFrame, cursorY, BorderSizeSliderCfg(Cfg, Set, ApplyBattleRes, TextModeOn, ICON_ROWS_TIP), {
                 type = "slider",
                 text = "Icon Zoom",
                 disabled = function()
@@ -609,7 +609,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                             end,
                             set = function(val)
                                 Set(xKey, val)
-                                Refresh()
+                                ApplyBattleRes()
                             end,
                         },
                         {
@@ -623,7 +623,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                             end,
                             set = function(val)
                                 Set(yKey, val)
-                                Refresh()
+                                ApplyBattleRes()
                             end,
                         },
                     },
@@ -650,7 +650,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             end,
             setValue = function(val)
                 Set("displayMode", val)
-                Refresh()
+                ApplyBattleRes()
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -689,7 +689,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                     end,
                     function(red, green, blue)
                         Set(colorKey, { r = red, g = green, b = blue })
-                        Refresh()
+                        ApplyBattleRes()
                     end,
                     nil,
                     20
@@ -728,7 +728,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                 return Cfg("desaturateNoCharges") ~= false
             end, function(val)
                 Set("desaturateNoCharges", val)
-                Refresh()
+                ApplyBattleRes()
             end, TextModeOn, ICON_ROWS_TIP)
 
             local timerSwatch =
@@ -852,7 +852,7 @@ local function BL_Set(key, val)
     end
 end
 
-local function BL_Refresh()
+local function ApplyBloodlust()
     if _G._CUI_Bloodlust_Apply then
         _G._CUI_Bloodlust_Apply()
     end
@@ -872,12 +872,12 @@ local function MakeBloodlustBorderColorSwatches()
             end,
             setValue = function(red, green, blue)
                 BL_Set("borderColor", { r = red, g = green, b = blue, a = 1 })
-                BL_Refresh()
+                ApplyBloodlust()
             end,
             onClick = function(self)
                 if BL_Cfg("borderUseClass") then
                     BL_Set("borderUseClass", false)
-                    BL_Refresh()
+                    ApplyBloodlust()
                     CludesUI:RefreshPage()
                     return
                 end
@@ -906,7 +906,7 @@ local function MakeBloodlustBorderColorSwatches()
             setValue = function() end,
             onClick = function()
                 BL_Set("borderUseClass", true)
-                BL_Refresh()
+                ApplyBloodlust()
                 CludesUI:RefreshPage()
             end,
             refreshAlpha = function()
@@ -977,7 +977,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
             if was == "NEVER" and val ~= "NEVER" and _G._CUI_Bloodlust_SeedPos then
                 _G._CUI_Bloodlust_SeedPos()
             end
-            BL_Refresh()
+            ApplyBloodlust()
             CludesUI:RefreshPage()
         end),
     }, {
@@ -996,7 +996,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
         end,
         setValue = function(val)
             BL_Set("iconSize", val)
-            BL_Refresh()
+            ApplyBloodlust()
         end,
     })
     cursorY = cursorY - height
@@ -1014,7 +1014,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
             end,
             setValue = function(val)
                 BL_Set("shape", val)
-                BL_Refresh()
+                ApplyBloodlust()
             end,
         }, {
             type = "multiSwatch",
@@ -1033,7 +1033,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
         end
         cursorY = cursorY - height
 
-        row, height = W:DualRow(hostFrame, cursorY, BorderSizeSliderCfg(BL_Cfg, BL_Set, BL_Refresh), {
+        row, height = W:DualRow(hostFrame, cursorY, BorderSizeSliderCfg(BL_Cfg, BL_Set, ApplyBloodlust), {
             type = "slider",
             text = "Icon Zoom",
             disabled = function()
@@ -1050,7 +1050,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
             end,
             setValue = function(val)
                 BL_Set("iconZoom", val)
-                BL_Refresh()
+                ApplyBloodlust()
             end,
         })
         cursorY = cursorY - height
@@ -1067,7 +1067,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
             end,
             setValue = function(val)
                 BL_Set("durationSize", val)
-                BL_Refresh()
+                ApplyBloodlust()
             end,
         }, {
             type = "slider",
@@ -1081,7 +1081,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
             end,
             setValue = function(val)
                 BL_Set("countSize", val)
-                BL_Refresh()
+                ApplyBloodlust()
             end,
         })
         cursorY = cursorY - height
@@ -1116,7 +1116,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                             end,
                             set = function(val)
                                 BL_Set(xKey, val)
-                                BL_Refresh()
+                                ApplyBloodlust()
                             end,
                         },
                         {
@@ -1130,7 +1130,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                             end,
                             set = function(val)
                                 BL_Set(yKey, val)
-                                BL_Refresh()
+                                ApplyBloodlust()
                             end,
                         },
                     },
@@ -1159,7 +1159,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                 end,
                 setValue = function(val)
                     BL_Set("showSated", val)
-                    BL_Refresh()
+                    ApplyBloodlust()
                     CludesUI:RefreshPage()
                 end,
             }, {
@@ -1171,7 +1171,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                 end,
                 setValue = function(val)
                     BL_Set("showReady", val)
-                    BL_Refresh()
+                    ApplyBloodlust()
                     CludesUI:RefreshPage()
                 end,
             })
@@ -1182,7 +1182,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                     return BL_Cfg("desaturateSated") ~= false
                 end, function(val)
                     BL_Set("desaturateSated", val)
-                    BL_Refresh()
+                    ApplyBloodlust()
                 end, function()
                     return BL_Cfg("showSated") == false
                 end, "Show Icon when Sated")
@@ -1208,7 +1208,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                 end,
                 setValue = function(val)
                     BL_Set("readySize", val)
-                    BL_Refresh()
+                    ApplyBloodlust()
                 end,
             }, { type = "label", text = "" })
             cursorY = cursorY - height
@@ -1236,7 +1236,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                     end,
                     function(red, green, blue)
                         BL_Set("readyColor", { r = red, g = green, b = blue })
-                        BL_Refresh()
+                        ApplyBloodlust()
                     end,
                     false,
                     20

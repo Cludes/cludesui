@@ -17,7 +17,7 @@ end
 
 local CUI = CludesUI
 local _emptyP = {}
-local function BP()
+local function BagsProfile()
     return (CUI._bagsDB and CUI._bagsDB.profile) or _emptyP
 end
 local GetItemInfo = C_Item.GetItemInfo
@@ -118,7 +118,7 @@ local function GetOrCreateSlot(position)
     end)
 
     local textOverlay = mod.SkinItemButton(button, { anchorIcon = true, cooldownFont = true })
-    local countSize = BP().bagCountFontSize or 11
+    local countSize = BagsProfile().bagCountFontSize or 11
     local fontFile = GetFont()
 
     -- Keystone level text (top-left, same as item level)
@@ -155,7 +155,7 @@ mod.GetOrCreateSlot = GetOrCreateSlot
 -- Item Visuals' Desaturate is on) and its Junk Marker coin badge (its Show Coin
 -- Icon): the game's coin, cropped round, lifted past the bottom-left corner.
 local function PaintJunkState(button, details, markerJunk)
-    local profile = BP()
+    local profile = BagsProfile()
     local quality = details.quality or 1
     SetItemButtonDesaturated(
         button,
@@ -317,18 +317,18 @@ local function RenderButton(button, payload, _, colour, row, startX, currentY, _
         -- Item Level + Upgrade Rank (gear only)
         if button.ItemLevelText then
             if payload._isGear then
-                local showIlvl = BP().showItemlevelInBags ~= false
+                local showIlvl = BagsProfile().showItemlevelInBags ~= false
                 if showIlvl then
                     button.ItemLevelText:SetText(payload._giIlvl or "")
                     -- Track color + rank (pre-cached on data table)
                     local red, green, blue
                     local rankText = payload._giTrackRank or ""
                     local trackColor = payload._giTrackColor
-                    if BP().itemlevelUseCustomColor and BP().itemlevelCustomColor then
+                    if BagsProfile().itemlevelUseCustomColor and BagsProfile().itemlevelCustomColor then
                         red, green, blue =
-                            BP().itemlevelCustomColor.r,
-                            BP().itemlevelCustomColor.g,
-                            BP().itemlevelCustomColor.b
+                            BagsProfile().itemlevelCustomColor.r,
+                            BagsProfile().itemlevelCustomColor.g,
+                            BagsProfile().itemlevelCustomColor.b
                     elseif trackColor then
                         red, green, blue = trackColor.r, trackColor.g, trackColor.b
                     else
@@ -336,7 +336,7 @@ local function RenderButton(button, payload, _, colour, row, startX, currentY, _
                     end
                     button.ItemLevelText:SetTextColor(red, green, blue, 1)
                     local countFS = button.Count
-                    if countFS and BP().bagShowTrackRank and rankText ~= "" then
+                    if countFS and BagsProfile().bagShowTrackRank and rankText ~= "" then
                         countFS:SetText(rankText:match("^(%d+)/") or rankText)
                         countFS:SetTextColor(red, green, blue, 1)
                         countFS:Show()
@@ -372,7 +372,7 @@ local function RenderButton(button, payload, _, colour, row, startX, currentY, _
                 payload._isGear
                 and not payload.info.isBound
                 and not payload._isQuestStarter
-                and BP().bagDisplayBindType
+                and BagsProfile().bagDisplayBindType
             then
                 CUI_Bags.SetBindTypeText(button.BindTypeText, payload._isWuE, payload._giBindType, quality)
             else
@@ -388,8 +388,8 @@ local function RenderButton(button, payload, _, colour, row, startX, currentY, _
             -- Yields when the upgrade-track rank occupies Count in the same row
             -- (mirrors the rank-display condition in the ItemLevelText block above)
             local rankShown = payload._isGear
-                and BP().bagShowTrackRank
-                and BP().showItemlevelInBags ~= false
+                and BagsProfile().bagShowTrackRank
+                and BagsProfile().showItemlevelInBags ~= false
                 and (payload._giTrackRank or "") ~= ""
             if not rankShown then
                 if not button.SetNameText then
@@ -403,7 +403,7 @@ local function RenderButton(button, payload, _, colour, row, startX, currentY, _
                     button.SetNameText:SetMaxLines(1)
                     button.SetNameText:SetFont(
                         GetFont(),
-                        BP().bagSetNameFontSize or 9,
+                        BagsProfile().bagSetNameFontSize or 9,
                         (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
                     )
                 end
@@ -576,7 +576,7 @@ local function GetHeaderHideButton(heading)
         CUI.HideWidgetTooltip()
     end)
     headerBtn:SetScript("OnClick", function(self)
-        BP()[self._dbKey] = false
+        BagsProfile()[self._dbKey] = false
         CUI_Bags:RefreshInventory()
     end)
     heading._hideBtn = headerBtn
@@ -741,7 +741,7 @@ function mod.RenderGridView(
     -- and assignment pools; only the coordinates differ from the full-row path.
     local armorySlotGrouping = ArmorySlotGroupingEnabled()
     local RenderCompactSlotBuckets
-    if not compact and BP().bagCompactArmorySlotGroups and armorySlotGrouping then
+    if not compact and BagsProfile().bagCompactArmorySlotGroups and armorySlotGrouping then
         RenderCompactSlotBuckets = function(bucketList, subHeaderIdx, assignCatKey)
             local stride = SLOT_SIZE + SPACING
             local usableWidth = colCount * stride - SPACING
@@ -956,7 +956,7 @@ function mod.RenderGridView(
         local isMulti = (selectedCategoryIndex == -2)
 
         -- Pinned Items quickview (display-only duplicates)
-        local showPinnedOneBag = (BP().bagPinnedInOneBag ~= false) and showPinned
+        local showPinnedOneBag = (BagsProfile().bagPinnedInOneBag ~= false) and showPinned
         if showPinnedOneBag then
             local pinItems = {}
             if pinnedSet then
@@ -1036,8 +1036,8 @@ function mod.RenderGridView(
         end
 
         -- Recent Items quickview (display-only duplicates)
-        local showRecentOneBag = BP().bagRecentInOneBag == true
-        local showRecent = BP().bagShowRecentItems ~= false
+        local showRecentOneBag = BagsProfile().bagRecentInOneBag == true
+        local showRecent = BagsProfile().bagShowRecentItems ~= false
         if showRecentOneBag and showRecent then
             local recentList = {}
             if CUI_Bags._recentItems then
@@ -1078,7 +1078,7 @@ function mod.RenderGridView(
                 recentHeader._hideBtn:Show()
                 local recLineAnchor = recentHeader._hideBtn
                 if
-                    BP().bagShowRecentClear == true
+                    BagsProfile().bagShowRecentClear == true
                     and CUI_Bags._recentItems
                     and next(CUI_Bags._recentItems)
                 then
@@ -1313,7 +1313,7 @@ function mod.RenderGridView(
                 and not alwaysShow
 
             local useExpNest = nestByExpansion
-                and BP().bagNestByExpansion
+                and BagsProfile().bagNestByExpansion
                 and not useSlotNest
                 and itemTotal > 0
                 and not showPinAdd
@@ -1369,7 +1369,7 @@ function mod.RenderGridView(
                 if
                     alwaysShow
                     and not showPinAdd
-                    and BP().bagShowRecentClear == true
+                    and BagsProfile().bagShowRecentClear == true
                     and CUI_Bags._recentItems
                     and next(CUI_Bags._recentItems)
                 then
@@ -1541,7 +1541,7 @@ function mod.RenderGridView(
             nextY = nextY - (sectionRows * (SLOT_SIZE + SPACING)) - 6
         end
 
-        local hiddenSet = BP().bagHiddenInAllItems or {}
+        local hiddenSet = BagsProfile().bagHiddenInAllItems or {}
         for ci, category in ipairs(categories) do
             if category.isPinned then
                 -- Pinned Items quickview
@@ -1563,7 +1563,7 @@ function mod.RenderGridView(
                 end
             elseif category.isRecent then
                 -- Recent Items: display-only duplicate (items also appear in their normal category)
-                if CUI_Bags._recentItems and (BP().bagShowRecentItems ~= false) then
+                if CUI_Bags._recentItems and (BagsProfile().bagShowRecentItems ~= false) then
                     local recentList = {}
                     for _, payload in ipairs(displayItems) do
                         if
@@ -1595,7 +1595,7 @@ function mod.RenderGridView(
                             end
                             -- The Item Set Gear anchor folds in its set children's items
                             if
-                                BP().bagSplitSetGearBySet
+                                BagsProfile().bagSplitSetGearBySet
                                 and categories[mi]
                                 and categories[mi].isSetGear
                                 and not categories[mi].isEquipSet
@@ -1621,7 +1621,7 @@ function mod.RenderGridView(
                 if not hiddenSet[category._defaultName] then
                     local catItems = itemsByCat[ci] or {}
                     -- The Item Set Gear anchor folds in its set children's items
-                    if category.isSetGear and BP().bagSplitSetGearBySet then
+                    if category.isSetGear and BagsProfile().bagSplitSetGearBySet then
                         local folded = nil
                         for i, c in ipairs(categories) do
                             if c.isEquipSet and itemsByCat[i] then
@@ -1666,7 +1666,7 @@ function mod.RenderGridView(
             end
             -- Split-mode set children fold into their anchor member's section
             local anchorMi, childSet
-            if BP().bagSplitSetGearBySet then
+            if BagsProfile().bagSplitSetGearBySet then
                 for _, mi in ipairs(members) do
                     if categories[mi] and categories[mi].isSetGear and not categories[mi].isEquipSet then
                         anchorMi = mi
@@ -1691,7 +1691,7 @@ function mod.RenderGridView(
                 end
             end
 
-            local hideEmpty = BP().bagHideEmptyCategories ~= false
+            local hideEmpty = BagsProfile().bagHideEmptyCategories ~= false
             for _, mi in ipairs(members) do
                 local memberCat = categories[mi]
                 local memberItems = itemsByMember[mi] or {}

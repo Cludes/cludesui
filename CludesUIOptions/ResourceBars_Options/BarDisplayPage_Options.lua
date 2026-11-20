@@ -1567,7 +1567,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     end
                     return "This option requires a Mana Bar Text format other than None"
                 end
-                local function RefreshFDM()
+                local function ApplyDruidMana()
                     if mod.FDM_Apply then
                         mod.FDM_Apply()
                     end
@@ -1589,7 +1589,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                             return
                         end
                         druidMana.enabled = value
-                        RefreshFDM()
+                        ApplyDruidMana()
                         CludesUI:RefreshPage()
                     end,
                 }, {
@@ -1624,7 +1624,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                             return
                         end
                         druidMana.textFormat = value
-                        RefreshFDM()
+                        ApplyDruidMana()
                         CludesUI:RefreshPage()
                     end,
                 })
@@ -1652,7 +1652,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                         return
                                     end
                                     druidMana.position = value
-                                    RefreshFDM()
+                                    ApplyDruidMana()
                                 end,
                             },
                             {
@@ -1677,7 +1677,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                         return
                                     end
                                     druidMana.gap = value
-                                    RefreshFDM()
+                                    ApplyDruidMana()
                                 end,
                             },
                             {
@@ -1696,7 +1696,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                         return
                                     end
                                     druidMana.height = value
-                                    RefreshFDM()
+                                    ApplyDruidMana()
                                 end,
                             },
                             {
@@ -1715,7 +1715,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                         return
                                     end
                                     druidMana.offsetX = value
-                                    RefreshFDM()
+                                    ApplyDruidMana()
                                 end,
                             },
                             {
@@ -1734,7 +1734,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                         return
                                     end
                                     druidMana.offsetY = value
-                                    RefreshFDM()
+                                    ApplyDruidMana()
                                 end,
                             },
                         },
@@ -1761,7 +1761,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                         return
                                     end
                                     druidMana.textSize = value
-                                    RefreshFDM()
+                                    ApplyDruidMana()
                                 end,
                             },
                             {
@@ -1777,7 +1777,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                         return
                                     end
                                     druidMana.showPercent = value
-                                    RefreshFDM()
+                                    ApplyDruidMana()
                                 end,
                             },
                             {
@@ -1796,7 +1796,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                         return
                                     end
                                     druidMana.textAnchor = value
-                                    RefreshFDM()
+                                    ApplyDruidMana()
                                 end,
                             },
                             {
@@ -1815,7 +1815,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                         return
                                     end
                                     druidMana.textXOffset = value
-                                    RefreshFDM()
+                                    ApplyDruidMana()
                                 end,
                             },
                             {
@@ -1834,7 +1834,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                         return
                                     end
                                     druidMana.textYOffset = value
-                                    RefreshFDM()
+                                    ApplyDruidMana()
                                 end,
                             },
                         },
@@ -1858,7 +1858,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                     return
                                 end
                                 druidMana.textFillR, druidMana.textFillG, druidMana.textFillB, druidMana.textFillA = red, green, blue, a
-                                RefreshFDM()
+                                ApplyDruidMana()
                             end,
                             onClick = function(self)
                                 local druidMana = FdmCfg()
@@ -1867,7 +1867,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                 end
                                 if druidMana.textCustomColored == false then
                                     druidMana.textCustomColored = true
-                                    RefreshFDM()
+                                    ApplyDruidMana()
                                     CludesUI:RefreshPage()
                                     return
                                 end
@@ -1896,7 +1896,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                                     return
                                 end
                                 druidMana.textCustomColored = false
-                                RefreshFDM()
+                                ApplyDruidMana()
                                 CludesUI:RefreshPage()
                             end,
                             refreshAlpha = function()

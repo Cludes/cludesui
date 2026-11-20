@@ -139,7 +139,7 @@ local function BuildStatRules()
             merge = merge and type(ITEM_MOD_SPELL_POWER_SHORT) == "string" or nil,
         }
     end
-    local function Pair(key, labelText, hex, label2, hex2)
+    local function AddPair(key, labelText, hex, label2, hex2)
         for _, skinData in ipairs({ { "+", "_INCREASE" }, { "-", "_DECREASE" } }) do
             local outs = { { 1, skinData[1], labelText, hex } }
             if label2 then
@@ -150,9 +150,9 @@ local function BuildStatRules()
     end
     -- One figure for damage and healing: Spell Damage + Spell Healing, or one
     -- Spell Power line with Merge.
-    Pair("SPELL_POWER", "ITEM_MOD_SPELL_DAMAGE_DONE_SHORT", SP, "ITEM_MOD_SPELL_HEALING_DONE_SHORT", HEAL)
-    Pair("SPELL_DAMAGE", "ITEM_MOD_SPELL_DAMAGE_DONE_SHORT", SP)
-    Pair("SPELL_HEALING", "ITEM_MOD_SPELL_HEALING_DONE_SHORT", HEAL)
+    AddPair("SPELL_POWER", "ITEM_MOD_SPELL_DAMAGE_DONE_SHORT", SP, "ITEM_MOD_SPELL_HEALING_DONE_SHORT", HEAL)
+    AddPair("SPELL_DAMAGE", "ITEM_MOD_SPELL_DAMAGE_DONE_SHORT", SP)
+    AddPair("SPELL_HEALING", "ITEM_MOD_SPELL_HEALING_DONE_SHORT", HEAL)
     -- "healing done by up to %1$d and damage done by up to %2$d"
     for _, hgt in ipairs({ { "+", "INCREASE" }, { "-", "DECREASE" } }) do
         for _, skinData in ipairs({ { "+", "INCREASE" }, { "-", "DECREASE" } }) do
@@ -170,24 +170,24 @@ local function BuildStatRules()
         { "SHADOW", HUE.shadow },
         { "ARCANE", HUE.arcane },
     }) do
-        Pair(s[1] .. "_DAMAGE", "ITEM_MOD_" .. s[1] .. "_DAMAGE_DONE_SHORT", s[2])
-        Pair(s[1] .. "_PENETRATION", "ITEM_MOD_" .. s[1] .. "_PENETRATION_SHORT", s[2])
+        AddPair(s[1] .. "_DAMAGE", "ITEM_MOD_" .. s[1] .. "_DAMAGE_DONE_SHORT", s[2])
+        AddPair(s[1] .. "_PENETRATION", "ITEM_MOD_" .. s[1] .. "_PENETRATION_SHORT", s[2])
     end
-    Pair("SPELL_PENETRATION", "ITEM_MOD_SPELL_PENETRATION_SHORT", HUE.spen)
-    Pair("ARMOR_PENETRATION", "ITEM_MOD_ARMOR_PENETRATION_RATING_SHORT", GRAY)
-    Pair("ATTACK_POWER", "ITEM_MOD_ATTACK_POWER_SHORT", HUE.ap)
-    Pair("RANGED_ATTACK_POWER", "ITEM_MOD_RANGED_ATTACK_POWER_SHORT", HUE.ap)
-    Pair("CRIT_PERCENT", "ITEM_MOD_CRIT_RATING_SHORT", HUE.crit)
-    Pair("HIT_PERCENT", "ITEM_MOD_HIT_RATING_SHORT", HUE.hit)
-    Pair("EXPERTISE_PCT", "ITEM_MOD_EXPERTISE_RATING_SHORT", HUE.hit)
-    Pair("HASTE_PCT", "ITEM_MOD_HASTE_RATING_SHORT", HUE.haste)
-    Pair("DEFENSE", "ITEM_MOD_DEFENSE_SKILL_RATING_SHORT", GRAY)
-    Pair("DODGE_PCT", "ITEM_MOD_DODGE_RATING_SHORT", AVOID)
-    Pair("PARRY_PCT", "ITEM_MOD_PARRY_RATING_SHORT", AVOID)
-    Pair("BLOCK_CHANCE", "ITEM_MOD_BLOCK_RATING_SHORT", AVOID)
-    Pair("BLOCK_VALUE", "ITEM_MOD_BLOCK_VALUE_SHORT", AVOID)
-    Pair("MANA_REGEN", "ITEM_MOD_POWER_REGEN0_SHORT", HUE.mp5)
-    Pair("HEALTH_REGEN", "ITEM_MOD_HEALTH_REGEN_SHORT", HUE.hp5)
+    AddPair("SPELL_PENETRATION", "ITEM_MOD_SPELL_PENETRATION_SHORT", HUE.spen)
+    AddPair("ARMOR_PENETRATION", "ITEM_MOD_ARMOR_PENETRATION_RATING_SHORT", GRAY)
+    AddPair("ATTACK_POWER", "ITEM_MOD_ATTACK_POWER_SHORT", HUE.ap)
+    AddPair("RANGED_ATTACK_POWER", "ITEM_MOD_RANGED_ATTACK_POWER_SHORT", HUE.ap)
+    AddPair("CRIT_PERCENT", "ITEM_MOD_CRIT_RATING_SHORT", HUE.crit)
+    AddPair("HIT_PERCENT", "ITEM_MOD_HIT_RATING_SHORT", HUE.hit)
+    AddPair("EXPERTISE_PCT", "ITEM_MOD_EXPERTISE_RATING_SHORT", HUE.hit)
+    AddPair("HASTE_PCT", "ITEM_MOD_HASTE_RATING_SHORT", HUE.haste)
+    AddPair("DEFENSE", "ITEM_MOD_DEFENSE_SKILL_RATING_SHORT", GRAY)
+    AddPair("DODGE_PCT", "ITEM_MOD_DODGE_RATING_SHORT", AVOID)
+    AddPair("PARRY_PCT", "ITEM_MOD_PARRY_RATING_SHORT", AVOID)
+    AddPair("BLOCK_CHANCE", "ITEM_MOD_BLOCK_RATING_SHORT", AVOID)
+    AddPair("BLOCK_VALUE", "ITEM_MOD_BLOCK_VALUE_SHORT", AVOID)
+    AddPair("MANA_REGEN", "ITEM_MOD_POWER_REGEN0_SHORT", HUE.mp5)
+    AddPair("HEALTH_REGEN", "ITEM_MOD_HEALTH_REGEN_SHORT", HUE.hp5)
     -- TOOLTIP_ITEM_STAT_SKILL_<k> -> ITEM_MOD_<v>_SHORT
     for k, val in pairs({
         ALCHEMY = "ALCHEMY",
@@ -217,7 +217,7 @@ local function BuildStatRules()
         THROWN_WEAPONS = "THROWN",
         WANDS = "WANDS",
     }) do
-        Pair("SKILL_" .. k, "ITEM_MOD_" .. val .. "_SHORT", GRAY)
+        AddPair("SKILL_" .. k, "ITEM_MOD_" .. val .. "_SHORT", GRAY)
     end
 
     local function Name(labelText, hex)

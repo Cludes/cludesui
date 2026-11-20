@@ -235,7 +235,7 @@ CludesUI.AtOptionsLogin(function()
     -- page build sets the header itself (zero bars = NO content header at
     -- all: the page falls back to the full-body starting screen, template
     -- cards, same as first open), so one forced refresh builds both.
-    local function HardRefresh()
+    local function FullRefresh()
         CludesUI:RefreshPage(true)
     end
 
@@ -282,7 +282,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 mod.RenameBar(rowConf.id, newName)
                 CludesUI:InvalidateModulePageCache("CludesUIDataBars")
-                HardRefresh()
+                FullRefresh()
             end,
         })
     end
@@ -305,7 +305,7 @@ CludesUI.AtOptionsLogin(function()
                     profile.selectedBarId = barList[1].id
                 end
                 CludesUI:InvalidateModulePageCache("CludesUIDataBars")
-                HardRefresh()
+                FullRefresh()
                 -- The rebuilt page (possibly the zero-bar empty state) can
                 -- be shorter than the old scroll offset, which leaves the
                 -- viewport past the content = blank page. Always return to
@@ -320,7 +320,7 @@ CludesUI.AtOptionsLogin(function()
     local function CreateBarFromTemplate(barKey)
         mod.CreateBar(barKey)
         _cardsExpanded = false
-        HardRefresh()
+        FullRefresh()
     end
 
     ---------------------------------------------------------------------------
@@ -663,7 +663,7 @@ CludesUI.AtOptionsLogin(function()
                         if profile then
                             profile.selectedBarId = entry._bar.id
                         end
-                        HardRefresh()
+                        FullRefresh()
                     end)
                     return entry
                 end
@@ -1305,7 +1305,7 @@ CludesUI.AtOptionsLogin(function()
             mod.MoveBlockTo(rowConf.id, blocks[from].id, targetIdx)
             -- Full refresh: the preview strip lives in the content header,
             -- which a plain RefreshPage never rebuilds.
-            HardRefresh()
+            FullRefresh()
         end
 
         local function BeginDrag(fromIdx)
@@ -1379,7 +1379,7 @@ CludesUI.AtOptionsLogin(function()
                     mod.RemoveBlock(dropMenu._barId, dropMenu._blockId)
                     -- Full refresh: the preview strip lives in the content
                     -- header, which a plain RefreshPage never rebuilds.
-                    HardRefresh()
+                    FullRefresh()
                     -- The page just lost a whole section; a bottom-scrolled view
                     -- would be left staring at blank space.
                     if CludesUI.SmoothScrollTo then
@@ -1540,7 +1540,7 @@ CludesUI.AtOptionsLogin(function()
                     entry:SetScript("OnClick", function()
                         dropMenu:Hide()
                         local nb = mod.AddBlock(dropMenu._barId, typeKey)
-                        HardRefresh()
+                        FullRefresh()
                         if nb then
                             -- A Currency or broker block lands unusable until its
                             -- currency or plugin is picked, so aim at that picker: it
@@ -1808,7 +1808,7 @@ CludesUI.AtOptionsLogin(function()
             rowConf.theme = skinName
         end
 
-        local function Apply()
+        local function ApplyBar()
             mod.ApplyBar(barId)
         end
 
@@ -1838,7 +1838,7 @@ CludesUI.AtOptionsLogin(function()
                     end
                     rowConf.sizingMode = barKey
                     mod.ApplyBar(barId)
-                    HardRefresh()
+                    FullRefresh()
                 end,
             })
             segment:SetPoint("TOP", hostFrame, "TOP", 0, cursorY)
@@ -1956,7 +1956,7 @@ CludesUI.AtOptionsLogin(function()
                     rowConf.snapEdge = "bottom"
                 end
                 mod.ApplyBar(barId)
-                HardRefresh()
+                FullRefresh()
             end,
         }, {
             type = "segmented",
@@ -1982,7 +1982,7 @@ CludesUI.AtOptionsLogin(function()
                     color.a = 0.95
                 end
                 mod.ApplyTheme(barId)
-                HardRefresh()
+                FullRefresh()
             end,
         })
         cursorY = cursorY - height
@@ -2064,7 +2064,7 @@ CludesUI.AtOptionsLogin(function()
                 if mod.ApplyTheme then
                     mod.ApplyTheme(barId)
                 end
-                Apply()
+                ApplyBar()
             end,
         }
         local scaleCfg = {
@@ -2083,7 +2083,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(val)
                 rowConf.fontScale = val
-                Apply()
+                ApplyBar()
             end,
         }
         -- One bar-wide switch (was a per-block toggle).
@@ -2096,7 +2096,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(val)
                 rowConf.hoverHighlight = val and true or false
-                Apply()
+                ApplyBar()
             end,
         }
         -- Bar Opacity drives BOTH styles: the Modern flat color's alpha or
@@ -2287,7 +2287,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(val)
                 rowConf.thickness = val
-                Apply()
+                ApplyBar()
             end,
         })
         cursorY = cursorY - height
@@ -2323,7 +2323,7 @@ CludesUI.AtOptionsLogin(function()
             local function SFieldThen(barKey)
                 return function(value)
                     cfg[barKey] = value
-                    Apply()
+                    ApplyBar()
                 end
             end
             local function SFieldOr(barKey, default)
@@ -2372,7 +2372,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     setValue = function(val)
                         block.contentGapL = val
-                        Apply()
+                        ApplyBar()
                         if _edbStripRelayout then
                             _edbStripRelayout()
                         end
@@ -2390,7 +2390,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     setValue = function(val)
                         block.contentGapR = val
-                        Apply()
+                        ApplyBar()
                         if _edbStripRelayout then
                             _edbStripRelayout()
                         end
@@ -2415,7 +2415,7 @@ CludesUI.AtOptionsLogin(function()
                     setValue = function(val)
                         if val then
                             mod.SetFillBlock(barId, blockId)
-                            HardRefresh()
+                            FullRefresh()
                         end
                     end,
                 }, {
@@ -2431,7 +2431,7 @@ CludesUI.AtOptionsLogin(function()
                         elseif rowConf.centerBlockId == blockId then
                             mod.SetCenterBlock(barId, nil)
                         end
-                        HardRefresh()
+                        FullRefresh()
                     end,
                 })
                 cursorY = cursorY - height
@@ -2477,7 +2477,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             cfg.hideSocialText = not val
-                            Apply()
+                            ApplyBar()
                         end,
                     }
                 else
@@ -2501,7 +2501,7 @@ CludesUI.AtOptionsLogin(function()
                             if block.type == "xprep" then
                                 block.labelAlign = val
                             end
-                            Apply()
+                            ApplyBar()
                         end,
                     }
                 end
@@ -2522,7 +2522,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     setValue = function(val)
                         block.scale = val
-                        Apply()
+                        ApplyBar()
                     end,
                 })
                 cursorY = cursorY - height
@@ -2595,7 +2595,7 @@ CludesUI.AtOptionsLogin(function()
                                 end,
                                 set = function(val)
                                     block.xOff = val
-                                    Apply()
+                                    ApplyBar()
                                 end,
                             },
                             {
@@ -2613,7 +2613,7 @@ CludesUI.AtOptionsLogin(function()
                                 end,
                                 set = function(val)
                                     block.yOff = val
-                                    Apply()
+                                    ApplyBar()
                                 end,
                             },
                         },
@@ -2627,7 +2627,7 @@ CludesUI.AtOptionsLogin(function()
             -- still ride this color). (Hover Highlight is a bar-level setting in BAR
             -- SETTINGS now.) Colors apply during block re-render, so force a full
             -- reflow (a plain apply skips blocks whose width did not change).
-            local function ApplyBlockColor()
+            local function ReflowBar()
                 if mod.ReflowBlocks then
                     mod.ReflowBlocks(barId)
                 end
@@ -2648,13 +2648,13 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(red, green, blue)
                             block.color = { r = red, g = green, b = blue }
-                            ApplyBlockColor()
+                            ReflowBar()
                         end,
                         onClick = function(self)
                             if block.useClassColor or block.useAccentColor then
                                 block.useClassColor = nil
                                 block.useAccentColor = nil
-                                ApplyBlockColor()
+                                ReflowBar()
                                 CludesUI:RefreshPage()
                                 return
                             end
@@ -2681,7 +2681,7 @@ CludesUI.AtOptionsLogin(function()
                         onClick = function()
                             block.useClassColor = true
                             block.useAccentColor = nil
-                            ApplyBlockColor()
+                            ReflowBar()
                             CludesUI:RefreshPage()
                         end,
                         refreshAlpha = function()
@@ -2698,7 +2698,7 @@ CludesUI.AtOptionsLogin(function()
                         onClick = function()
                             block.useAccentColor = true
                             block.useClassColor = nil
-                            ApplyBlockColor()
+                            ReflowBar()
                             CludesUI:RefreshPage()
                         end,
                         refreshAlpha = function()
@@ -2728,7 +2728,7 @@ CludesUI.AtOptionsLogin(function()
                         if opts.toCustom then
                             opts.toCustom()
                         end
-                        ApplyBlockColor()
+                        ReflowBar()
                         CludesUI:RefreshPage()
                         return
                     end
@@ -2756,7 +2756,7 @@ CludesUI.AtOptionsLogin(function()
                         block[flag] = true
                         block.useClassColor = nil
                         block.useAccentColor = nil
-                        ApplyBlockColor()
+                        ReflowBar()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
@@ -2837,7 +2837,7 @@ CludesUI.AtOptionsLogin(function()
                     else
                         block.bg = nil
                     end
-                    Apply()
+                    ApplyBar()
                     CludesUI:RefreshPage()
                 end,
             }, bgRightCfg)
@@ -2873,7 +2873,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     function(red, green, blue, a)
                         block.bg = { r = red, g = green, b = blue, a = a }
-                        Apply()
+                        ApplyBar()
                     end,
                     true,
                     20
@@ -2897,7 +2897,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     setValue = function(val)
                         cfg[barKey] = val and true or false
-                        Apply()
+                        ApplyBar()
                     end,
                 }
             end
@@ -2949,7 +2949,7 @@ CludesUI.AtOptionsLogin(function()
                             end,
                             setValue = function(red, green, blue)
                                 block.iconColor = { r = red, g = green, b = blue }
-                                ApplyBlockColor()
+                                ReflowBar()
                             end,
                             onClick = function(self)
                                 -- Switching from Class/Accent/Default: SEED the custom color
@@ -2966,7 +2966,7 @@ CludesUI.AtOptionsLogin(function()
                                         local dr, dg2, db2 = mod.BlockIconDefault(block.type, cfg)
                                         block.iconColor = { r = dr, g = dg2, b = db2 }
                                     end
-                                    ApplyBlockColor()
+                                    ReflowBar()
                                     CludesUI:RefreshPage()
                                     return
                                 end
@@ -2994,7 +2994,7 @@ CludesUI.AtOptionsLogin(function()
                                 block.useIconClassColor = true
                                 block.useIconAccentColor = nil
                                 block.useIconDefaultColor = nil
-                                ApplyBlockColor()
+                                ReflowBar()
                                 CludesUI:RefreshPage()
                             end,
                             refreshAlpha = function()
@@ -3012,7 +3012,7 @@ CludesUI.AtOptionsLogin(function()
                                 block.useIconAccentColor = true
                                 block.useIconClassColor = nil
                                 block.useIconDefaultColor = nil
-                                ApplyBlockColor()
+                                ReflowBar()
                                 CludesUI:RefreshPage()
                             end,
                             refreshAlpha = function()
@@ -3032,7 +3032,7 @@ CludesUI.AtOptionsLogin(function()
                                 block.useIconDefaultColor = true
                                 block.useIconClassColor = nil
                                 block.useIconAccentColor = nil
-                                ApplyBlockColor()
+                                ReflowBar()
                                 CludesUI:RefreshPage()
                             end,
                             refreshAlpha = function()
@@ -3088,7 +3088,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             cfg.clickableTeleports = val and true or false
-                            Apply()
+                            ApplyBar()
                         end,
                     }
                 end
@@ -3104,7 +3104,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             cfg.showIcon = val and true or false
-                            Apply()
+                            ApplyBar()
                         end,
                     }
                 end
@@ -3120,7 +3120,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             cfg.showIcon = val and true or false
-                            Apply()
+                            ApplyBar()
                         end,
                     }
                 end
@@ -3136,7 +3136,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             cfg.showIcon = val and true or false
-                            Apply()
+                            ApplyBar()
                         end,
                     }
                 end
@@ -3162,7 +3162,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             cfg.showIcon = val and true or false
-                            Apply()
+                            ApplyBar()
                         end,
                     }
                 end
@@ -3200,7 +3200,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             cfg.showSmall = val and true or false
-                            Apply()
+                            ApplyBar()
                         end,
                     }
                 end
@@ -3224,7 +3224,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     setValue = function(val)
                         cfg[barKey] = val and true or false
-                        Apply()
+                        ApplyBar()
                     end,
                 }
             end
@@ -3267,7 +3267,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             cfg.localTime = val and true or false
-                            Apply()
+                            ApplyBar()
                         end,
                     },
                     {
@@ -3282,7 +3282,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             cfg.twentyFour = val and true or false
-                            Apply()
+                            ApplyBar()
                         end,
                     },
                     MkToggle("Mail Alert", "showMail", "Shows an envelope icon when you have unread mail."),
@@ -3325,7 +3325,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             cfg.showIcon = val and true or false
-                            Apply()
+                            ApplyBar()
                             CludesUI:RefreshPage()
                         end,
                     },
@@ -3366,7 +3366,7 @@ CludesUI.AtOptionsLogin(function()
                             -- slider is the control that just took over, so it
                             -- has to announce itself each time.
                             _edbWidthPulse[block] = (val == "manual") or nil
-                            Apply()
+                            ApplyBar()
                             -- The slider's disabled state keys off this value.
                             CludesUI:RefreshPage()
                             -- Deferred so the REBUILT row is the one that lights
@@ -3414,7 +3414,7 @@ CludesUI.AtOptionsLogin(function()
                             cfg.maxWidth = val
                             -- Touched: the pulse has done its job.
                             _edbWidthPulse[block] = nil
-                            Apply()
+                            ApplyBar()
                         end,
                     },
                     MkToggleOn(
@@ -3669,7 +3669,7 @@ CludesUI.AtOptionsLogin(function()
                             if button == 1 then
                                 cfg.randomizeHs = (val == "random")
                             end
-                            Apply()
+                            ApplyBar()
                             CludesUI:RefreshPage()
                         end,
                     }
@@ -3684,7 +3684,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             cfg[TEXT_KEYS[button]] = val
-                            Apply()
+                            ApplyBar()
                         end,
                         disabled = function()
                             return ChoiceOf(button) == "none"
@@ -3747,7 +3747,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             block.align = val
-                            Apply()
+                            ApplyBar()
                         end,
                     },
                     MkToggle(
@@ -3832,7 +3832,7 @@ CludesUI.AtOptionsLogin(function()
                             else
                                 cfg.currencyId = val
                             end
-                            Apply()
+                            ApplyBar()
                         end,
                     },
                     MkToggle("Show Icon", "showIcon", "Shows the currency icon next to the amount."),
@@ -3906,7 +3906,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             cfg.reverse = (val == "desc")
-                            Apply()
+                            ApplyBar()
                         end,
                     },
                 }
@@ -3944,7 +3944,7 @@ CludesUI.AtOptionsLogin(function()
                         setValue = function(val)
                             local wasOn = (cfg.lowThreshold or 0) > 0
                             cfg.lowThreshold = val
-                            Apply()
+                            ApplyBar()
                             -- Swatch enable state flips only when crossing zero.
                             if wasOn ~= (val > 0) then
                                 CludesUI:RefreshPage()
@@ -4033,7 +4033,7 @@ CludesUI.AtOptionsLogin(function()
                             else
                                 cfg.source = val
                             end
-                            Apply()
+                            ApplyBar()
                         end,
                     },
                     MkToggleOn("Show Icon", "showIcon", "Shows the plugin's own icon next to its text."),
@@ -4066,7 +4066,7 @@ CludesUI.AtOptionsLogin(function()
                             else
                                 cfg.maxWidth = val
                             end
-                            Apply()
+                            ApplyBar()
                         end,
                     },
                 }
@@ -4101,7 +4101,7 @@ CludesUI.AtOptionsLogin(function()
                     getValue = SFieldOr("iconStyle", "custom"),
                     setValue = function(val)
                         cfg.iconStyle = val
-                        Apply()
+                        ApplyBar()
                         -- Rebuild: the icon color swatches depend on the style.
                         CludesUI:RefreshPage(true)
                     end,
@@ -4137,7 +4137,7 @@ CludesUI.AtOptionsLogin(function()
                         function(barKey, value)
                             cfg.hiddenItems = cfg.hiddenItems or {}
                             cfg.hiddenItems[barKey] = not value
-                            Apply()
+                            ApplyBar()
                         end,
                         nil,
                         10,
@@ -4248,7 +4248,7 @@ CludesUI.AtOptionsLogin(function()
                         click = function()
                             ClearFlags()
                             block.useIconAccentColor = true
-                            ApplyBlockColor()
+                            ReflowBar()
                             CludesUI:RefreshPage()
                         end,
                         on = function()
@@ -4268,7 +4268,7 @@ CludesUI.AtOptionsLogin(function()
                         click = function()
                             ClearFlags()
                             block.useIconClassColor = true
-                            ApplyBlockColor()
+                            ReflowBar()
                             CludesUI:RefreshPage()
                         end,
                         on = function()
@@ -4286,7 +4286,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         set = function(red, green, blue)
                             block.iconColor = { r = red, g = green, b = blue }
-                            ApplyBlockColor()
+                            ReflowBar()
                         end,
                         -- House multiSwatch convention: a click on an inactive
                         -- custom swatch only selects custom; the picker opens on
@@ -4294,7 +4294,7 @@ CludesUI.AtOptionsLogin(function()
                         click = function(self)
                             if not FlagsOff() then
                                 ClearFlags()
-                                ApplyBlockColor()
+                                ReflowBar()
                                 CludesUI:RefreshPage()
                                 return
                             end
@@ -4358,7 +4358,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     function(red, green, blue)
                         cfg.lowColor = { r = red, g = green, b = blue }
-                        Apply()
+                        ApplyBar()
                     end,
                     false,
                     20
@@ -4454,7 +4454,7 @@ CludesUI.AtOptionsLogin(function()
                             else
                                 cfg[keyName] = false
                             end
-                            Apply()
+                            ApplyBar()
                         end
                     )
                     CludesUI.PanelPP.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
@@ -4540,12 +4540,12 @@ CludesUI.AtOptionsLogin(function()
                             else
                                 cfg[keyName] = false
                             end
-                            Apply()
+                            ApplyBar()
                         end,
                         {
                             setOrder = function(keyList)
                                 mod.SetMicroMenuOrder(cfg, keyList)
-                                Apply()
+                                ApplyBar()
                             end,
                         }
                     )
@@ -4567,7 +4567,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     setValue = function(val)
                         cfg.showGuildNotes = val and true or false
-                        Apply()
+                        ApplyBar()
                         CludesUI:RefreshPage()
                     end,
                 }, CludesUI.BlankRowCfg())
@@ -4586,7 +4586,7 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         function(red, green, blue)
                             cfg.guildNoteColor = { r = red, g = green, b = blue }
-                            Apply()
+                            ApplyBar()
                         end,
                         false,
                         20

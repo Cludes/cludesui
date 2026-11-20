@@ -68,7 +68,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         return profile and not profile.gcdBar.enabled
     end
 
-    local function RefreshGCD()
+    local function ApplyGcdBar()
         if _G._CURB_Apply then
             _G._CURB_Apply()
         end
@@ -97,7 +97,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 return
             end
             profile.gcdBar[key] = val
-            RefreshGCD()
+            ApplyGcdBar()
             if alsoPage then
                 CludesUI:RefreshPage()
             end
@@ -176,7 +176,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         else
                             gcdCfg.anchorX = val
                         end
-                        RefreshGCD()
+                        ApplyGcdBar()
                     end,
                 },
                 {
@@ -207,7 +207,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         else
                             gcdCfg.anchorY = val
                         end
-                        RefreshGCD()
+                        ApplyGcdBar()
                     end,
                 },
             },
@@ -317,7 +317,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         else
                             profile.gcdBar.idleShowFill = nil
                         end
-                        RefreshGCD()
+                        ApplyGcdBar()
                     end,
                 },
             },
@@ -368,7 +368,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     if profile.gcdBar.borderSizePx then
                         profile.gcdBar.borderSizePx = false
                     end
-                    RefreshGCD()
+                    ApplyGcdBar()
                     CludesUI:RefreshPage(true)
                 end,
             },
@@ -401,7 +401,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     end
                 end,
                 apply = function()
-                    RefreshGCD()
+                    ApplyGcdBar()
                     CludesUI:RefreshPage()
                 end,
             })
@@ -451,7 +451,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         end
                     end,
                     apply = function()
-                        RefreshGCD()
+                        ApplyGcdBar()
                         CludesUI:RefreshPage()
                     end,
                 })
@@ -480,7 +480,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         return
                     end
                     profile.gcdBar.borderR, profile.gcdBar.borderG, profile.gcdBar.borderB, profile.gcdBar.borderA = red, green, blue, a
-                    RefreshGCD()
+                    ApplyGcdBar()
                     CludesUI:RefreshPage()
                 end,
                 true,
@@ -549,7 +549,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                                 return
                             end
                             profile.gcdBar.borderTextureShiftX = val == 0 and nil or val
-                            RefreshGCD()
+                            ApplyGcdBar()
                             CludesUI:RefreshPage()
                         end,
                     },
@@ -581,7 +581,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                                 return
                             end
                             profile.gcdBar.borderTextureShiftY = val == 0 and nil or val
-                            RefreshGCD()
+                            ApplyGcdBar()
                             CludesUI:RefreshPage()
                         end,
                     },
@@ -595,7 +595,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                                 return
                             end
                             profile.gcdBar.borderBehind = val == false and nil or val
-                            RefreshGCD()
+                            ApplyGcdBar()
                             CludesUI:RefreshPage()
                         end,
                     },
@@ -676,7 +676,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                                 profile.gcdBar.edgeSep = true
                                 profile.gcdBar.edgeSepArt = val
                             end
-                            RefreshGCD()
+                            ApplyGcdBar()
                             CludesUI:RefreshPage()
                         end,
                     },
@@ -737,7 +737,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     end
                     profile.gcdBar.gradientR, profile.gcdBar.gradientG, profile.gcdBar.gradientB, profile.gcdBar.gradientA =
                         red, green, blue, a
-                    RefreshGCD()
+                    ApplyGcdBar()
                 end,
             },
             {
@@ -761,7 +761,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     if profile.gcdBar.classColored then
                         profile.gcdBar.classColored = false
                     end
-                    RefreshGCD()
+                    ApplyGcdBar()
                     CludesUI:RefreshPage()
                 end,
                 onClick = function(self)
@@ -771,7 +771,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     end
                     if profile.gcdBar.classColored then
                         profile.gcdBar.classColored = false
-                        RefreshGCD()
+                        ApplyGcdBar()
                         CludesUI:RefreshPage()
                         return
                     end
@@ -801,7 +801,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         return
                     end
                     profile.gcdBar.classColored = true
-                    RefreshGCD()
+                    ApplyGcdBar()
                     CludesUI:RefreshPage()
                 end,
                 refreshAlpha = function()
@@ -828,7 +828,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 return
             end
             profile.gcdBar.bgA = val / 100
-            RefreshGCD()
+            ApplyGcdBar()
         end,
     })
     cursorY = cursorY - height
@@ -899,7 +899,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     return
                 end
                 profile.gcdBar.bgR, profile.gcdBar.bgG, profile.gcdBar.bgB = red, green, blue
-                RefreshGCD()
+                ApplyGcdBar()
             end,
             nil,
             20
@@ -949,7 +949,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             disabled = gcdOff,
             disabledTooltip = "GCD Bar",
             title = "Texture Settings",
-            rows = { TexBgRowCfg("gcd", RefreshGCD) },
+            rows = { TexBgRowCfg("gcd", ApplyGcdBar) },
         })
     end
 

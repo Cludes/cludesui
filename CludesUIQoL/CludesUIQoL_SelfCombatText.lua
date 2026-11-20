@@ -88,7 +88,7 @@ local function Profile()
     return db.profile
 end
 
-local function Get(key)
+local function SctGet(key)
     local tbl = Profile().selfCombatText
     local value = tbl and tbl[key]
     if value == nil then
@@ -104,13 +104,13 @@ local function Own()
 end
 
 local function Wanted()
-    return Get("enabled") == true
+    return SctGet("enabled") == true
 end
 
 -- The font follows these settings only (a global or QoL font change asks
 -- for a reload).
 local function ReadSettings()
-    local font = Get("font")
+    local font = SctGet("font")
     if font == "__global" then
         S.font = CludesUI.GetFontPath("extras")
     elseif font ~= "__combat" then
@@ -119,7 +119,7 @@ local function ReadSettings()
         local frame = _G.CombatTextFont
         S.font = frame and frame:GetFont() or STANDARD_TEXT_FONT
     end
-    local outline = Get("outline")
+    local outline = SctGet("outline")
     if outline == "OUTLINE" then
         S.flags = CludesUI.SlugFlag("OUTLINE, SLUG")
     elseif outline == "THICKOUTLINE" then
@@ -127,16 +127,16 @@ local function ReadSettings()
     else
         S.flags = ""
     end
-    S.shadow = Get("shadow") == true
-    S.size = Get("size")
-    S.critSize = S.size * Get("critScale")
+    S.shadow = SctGet("shadow") == true
+    S.size = SctGet("size")
+    S.critSize = S.size * SctGet("critScale")
     S.fontGen = S.fontGen + 1
-    S.anim, S.rise, S.duration = Get("anim"), Get("rise"), Get("duration")
-    S.dy = Get("direction") == "down" and -S.rise or S.rise
-    S.stagger, S.abbreviate = Get("stagger"), Get("abbreviate")
-    S.damage, S.heal, S.avoid, S.combat = Get("damage"), Get("heal"), Get("avoid"), Get("combat")
-    S.damageColor, S.healColor = Get("damageColor"), Get("healColor")
-    S.avoidColor, S.combatColor = Get("avoidColor"), Get("combatColor")
+    S.anim, S.rise, S.duration = SctGet("anim"), SctGet("rise"), SctGet("duration")
+    S.dy = SctGet("direction") == "down" and -S.rise or S.rise
+    S.stagger, S.abbreviate = SctGet("stagger"), SctGet("abbreviate")
+    S.damage, S.heal, S.avoid, S.combat = SctGet("damage"), SctGet("heal"), SctGet("avoid"), SctGet("combat")
+    S.damageColor, S.healColor = SctGet("damageColor"), SctGet("healColor")
+    S.avoidColor, S.combatColor = SctGet("avoidColor"), SctGet("combatColor")
 end
 
 -------------------------------------------------------------------------------
@@ -146,7 +146,7 @@ local function Place()
     if not box then
         return
     end
-    local position = Get("pos")
+    local position = SctGet("pos")
     box:ClearAllPoints()
     if position then
         box:SetPoint(position.point, UIParent, position.relPoint or position.point, position.x, position.y)
@@ -187,7 +187,7 @@ local function AddToLayoutMode()
                 end
             end,
             loadPos = function()
-                local position = Get("pos")
+                local position = SctGet("pos")
                 if position then
                     return { point = position.point, relPoint = position.relPoint or position.point, x = position.x, y = position.y }
                 end
@@ -448,7 +448,7 @@ local function Refresh()
 end
 
 mod.SCT_Refresh = Refresh
-mod.SCT_Get = Get
+mod.SCT_Get = SctGet
 CludesUI._applySelfCombatText = Refresh -- profile swaps (RefreshAllAddons)
 
 function mod.SCT_Set(key, value)

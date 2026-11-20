@@ -656,7 +656,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local controlFrame -- the clickable control (dropdown btn, toggle, etc.)
             local controlAnchor -- main control frame for inline element anchoring
 
-            local function ApplyDisabledState()
+            local function SyncDisabled()
                 if not rowConf.disabled then
                     return
                 end
@@ -754,9 +754,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     if segRefresh then
                         segRefresh()
                     end
-                    ApplyDisabledState()
+                    SyncDisabled()
                 end)
-                ApplyDisabledState()
+                SyncDisabled()
             elseif t == "dropdown" then
                 local DD_W = rowConf.dropdownWidth or 170
                 -- Bridge itemDisabled/itemDisabledTooltip into disabledValuesFn
@@ -816,9 +816,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 else
                     RegisterWidgetRefresh(function()
                         dropCaption:SetText(DDResolveLabel(rowConf.values, rowConf.order or {}, rowConf.getValue()))
-                        ApplyDisabledState()
+                        SyncDisabled()
                     end)
-                    ApplyDisabledState()
+                    SyncDisabled()
                 end
             elseif t == "toggle" then
                 local toggle, _, tgSnap =
@@ -830,9 +830,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 AddControlDisabledTooltip(toggle, rowConf)
                 RegisterWidgetRefresh(function()
                     tgSnap()
-                    ApplyDisabledState()
+                    SyncDisabled()
                 end)
-                ApplyDisabledState()
+                SyncDisabled()
             elseif t == "colorpicker" then
                 local colorSwatch, _updateSwatch = BuildColorSwatch(
                     regionFrame,
@@ -847,9 +847,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 AddControlDisabledTooltip(colorSwatch, rowConf)
                 RegisterWidgetRefresh(function()
                     _updateSwatch()
-                    ApplyDisabledState()
+                    SyncDisabled()
                 end)
-                ApplyDisabledState()
+                SyncDisabled()
             elseif t == "button" then
                 -- Half-row button: label hidden, the button IS the content
                 labelText:Hide()
@@ -862,9 +862,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 controlAnchor = button
                 AddControlDisabledTooltip(button, rowConf)
                 RegisterWidgetRefresh(function()
-                    ApplyDisabledState()
+                    SyncDisabled()
                 end)
-                ApplyDisabledState()
+                SyncDisabled()
             elseif t == "labeledButton" then
                 -- Standard left label, button anchored right
                 local button = CreateFrame("Button", nil, regionFrame)
@@ -876,9 +876,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 controlAnchor = button
                 AddControlDisabledTooltip(button, rowConf)
                 RegisterWidgetRefresh(function()
-                    ApplyDisabledState()
+                    SyncDisabled()
                 end)
-                ApplyDisabledState()
+                SyncDisabled()
             elseif t == "multiSwatch" then
                 -- Label + N swatches laid out right-to-left from the right edge
                 local SWATCH_SZ = 24
@@ -963,9 +963,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
                 controlAnchor = leftmostSwatch
                 RegisterWidgetRefresh(function()
-                    ApplyDisabledState()
+                    SyncDisabled()
                 end)
-                ApplyDisabledState()
+                SyncDisabled()
             elseif t == "input" then
                 -- Free-text entry box, right-anchored. getValue returns the display
                 -- string; setValue receives raw text and parses/validates it. Commits
@@ -1052,9 +1052,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 AddControlDisabledTooltip(boxFrame, rowConf)
                 RegisterWidgetRefresh(function()
                     RefreshInput()
-                    ApplyDisabledState()
+                    SyncDisabled()
                 end)
-                ApplyDisabledState()
+                SyncDisabled()
             end
             regionFrame._control = controlAnchor or controlFrame
             -- Truncation is deferred (QueueLabelClamp) and the right bound applies ONLY on actual overflow: a bound stretches the label's rect, so anything anchored to its RIGHT edge (e.g. "(Applies to ...)" subtitles) would slide to the far side of the slot on short labels.
@@ -1169,7 +1169,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
 
             local controlFrame, controlAnchor
-            local function ApplyDisabledState()
+            local function SyncDisabled()
                 if not rowConf.disabled then
                     return
                 end
@@ -1281,12 +1281,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 else
                     RegisterWidgetRefresh(function()
                         dropCaption:SetText(DDResolveLabel(rowConf.values, rowConf.order or {}, rowConf.getValue()))
-                        ApplyDisabledState()
+                        SyncDisabled()
                         if dropdownBtn._ddRefresh then
                             dropdownBtn._ddRefresh()
                         end
                     end)
-                    ApplyDisabledState()
+                    SyncDisabled()
                 end
             elseif t == "toggle" then
                 local toggle, _, tgSnap =
@@ -1297,9 +1297,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 AddControlDisabledTooltip(toggle, rowConf)
                 RegisterWidgetRefresh(function()
                     tgSnap()
-                    ApplyDisabledState()
+                    SyncDisabled()
                 end)
-                ApplyDisabledState()
+                SyncDisabled()
             elseif t == "colorpicker" then
                 local colorSwatch, _updateSwatch = BuildColorSwatch(
                     regionFrame,
@@ -1312,9 +1312,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 controlFrame = colorSwatch
                 RegisterWidgetRefresh(function()
                     _updateSwatch()
-                    ApplyDisabledState()
+                    SyncDisabled()
                 end)
-                ApplyDisabledState()
+                SyncDisabled()
             elseif t == "checkbox" then
                 -- Generic label hidden: the checkbox draws its own label + box
                 labelText:Hide()
@@ -1367,9 +1367,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 controlFrame = button
                 RegisterWidgetRefresh(function()
                     ApplyCBVisual()
-                    ApplyDisabledState()
+                    SyncDisabled()
                 end)
-                ApplyDisabledState()
+                SyncDisabled()
             elseif t == "button" then
                 labelText:Hide()
                 local button = CreateFrame("Button", nil, regionFrame)
@@ -1379,9 +1379,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 MakeStyledButton(button, rowConf.text or "", 13, RB_COLOURS, rowConf.onClick)
                 controlFrame = button
                 RegisterWidgetRefresh(function()
-                    ApplyDisabledState()
+                    SyncDisabled()
                 end)
-                ApplyDisabledState()
+                SyncDisabled()
             elseif t == "labeledButton" then
                 local button = CreateFrame("Button", nil, regionFrame)
                 Pix.Size(button, rowConf.width or 140, 32)
@@ -1390,9 +1390,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 MakeStyledButton(button, rowConf.buttonText or rowConf.text or "", 13, RB_COLOURS, rowConf.onClick)
                 controlFrame = button
                 RegisterWidgetRefresh(function()
-                    ApplyDisabledState()
+                    SyncDisabled()
                 end)
-                ApplyDisabledState()
+                SyncDisabled()
             end
             regionFrame._control = controlAnchor or controlFrame
             -- Truncation is deferred (QueueLabelClamp) and the right bound applies ONLY on actual overflow: a bound stretches the label's rect, so anything anchored to its RIGHT edge (e.g. "(Applies to ...)" subtitles) would slide to the far side of the slot on short labels.

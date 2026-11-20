@@ -56,7 +56,7 @@ CludesUI.AtLogin(function()
         end
     end
 
-    local function Refresh()
+    local function ApplyRaidTools()
         if _G._CUI_RaidTools_Apply then
             _G._CUI_RaidTools_Apply()
         end
@@ -108,7 +108,7 @@ CludesUI.AtLogin(function()
             return
         end
         tbl[idx] = value
-        Refresh()
+        ApplyRaidTools()
     end
 
     local function BuildPage(page, hostFrame, yOffset)
@@ -168,7 +168,7 @@ CludesUI.AtLogin(function()
             end,
             setValue = function(value)
                 Set("mode", value)
-                Refresh()
+                ApplyRaidTools()
                 CludesUI:RefreshPage()
             end,
         }, { type = "label", text = "Toggle Raid Tools" })
@@ -193,7 +193,7 @@ CludesUI.AtLogin(function()
                 set = function(value)
                     local snap = CludesUI._SOAttribution(region)
                     Set("toggleKey", value or false)
-                    Refresh()
+                    ApplyRaidTools()
                     CludesUI._NotifySettingWrite(region, snap)
                 end,
                 disabled = Disabled,
@@ -213,7 +213,7 @@ CludesUI.AtLogin(function()
                 end,
                 setValue = function(value)
                     Set("toggleKey", value)
-                    Refresh()
+                    ApplyRaidTools()
                     refresh()
                 end,
             })
@@ -230,7 +230,7 @@ CludesUI.AtLogin(function()
             end,
             setValue = function(value)
                 Set("collapsedIcon", value)
-                Refresh()
+                ApplyRaidTools()
             end,
         }, {
             type = "dropdown",
@@ -250,7 +250,7 @@ CludesUI.AtLogin(function()
             end,
             setValue = function(value)
                 Set("showAs", value)
-                Refresh()
+                ApplyRaidTools()
                 CludesUI:RefreshPage()
             end,
         })
@@ -269,7 +269,7 @@ CludesUI.AtLogin(function()
             end,
             setValue = function(value)
                 Set("scale", value)
-                Refresh()
+                ApplyRaidTools()
             end,
         }, {
             type = "dropdown",
@@ -288,7 +288,7 @@ CludesUI.AtLogin(function()
             end,
             setValue = function(value)
                 Set("growDir", value)
-                Refresh()
+                ApplyRaidTools()
             end,
         })
         cursorY = cursorY - height
@@ -309,7 +309,7 @@ CludesUI.AtLogin(function()
             end,
             setValue = function(value)
                 Set("quickFire", value)
-                Refresh()
+                ApplyRaidTools()
                 CludesUI:RefreshPage()
             end,
         }, { type = "label", text = "Place World Marker" })
@@ -339,7 +339,7 @@ CludesUI.AtLogin(function()
                     set = function(value)
                         local snap = CludesUI._SOAttribution(regionFrame)
                         Set(key, value or false)
-                        Refresh()
+                        ApplyRaidTools()
                         CludesUI._NotifySettingWrite(regionFrame, snap)
                     end,
                     disabled = QuickFireDisabled,
@@ -357,7 +357,7 @@ CludesUI.AtLogin(function()
                     end,
                     setValue = function(value)
                         Set(key, value)
-                        Refresh()
+                        ApplyRaidTools()
                         refresh()
                     end,
                 })
@@ -387,7 +387,7 @@ CludesUI.AtLogin(function()
                 end,
                 setValue = function(value)
                     Set(key, value)
-                    Refresh()
+                    ApplyRaidTools()
                 end,
             }
         end
@@ -440,7 +440,7 @@ CludesUI.AtLogin(function()
                     end,
                     setValue = function(value)
                         Set("showBuffCheck", value)
-                        Refresh()
+                        ApplyRaidTools()
                     end,
                 }
         )
@@ -460,7 +460,7 @@ CludesUI.AtLogin(function()
                 end,
                 setValue = function(value)
                     Set("buffCheck", value)
-                    Refresh()
+                    ApplyRaidTools()
                     CludesUI:RefreshPage()
                 end,
             }, {
@@ -474,7 +474,7 @@ CludesUI.AtLogin(function()
                 end,
                 setValue = function(value)
                     Set("buffCheckOnReady", value)
-                    Refresh()
+                    ApplyRaidTools()
                 end,
             })
             cursorY = cursorY - height

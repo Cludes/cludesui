@@ -17,7 +17,7 @@ end
 local _, mod = ...
 local EQT = mod.EQT
 local IsSecret = CludesUI.IsSecret
-local function Cfg(key)
+local function TrackerCfg(key)
     return EQT.Cfg(key)
 end
 
@@ -189,7 +189,7 @@ local function BuildList()
         end
         SortByRank()
     end
-    if not Cfg("customGroupByZone") then
+    if not TrackerCfg("customGroupByZone") then
         return
     end
     -- Zones in order of their first quest.
@@ -245,7 +245,7 @@ local function AcquireLine(kind, ident, textValue, posX, posY, width, key)
     end
     if l.kind ~= kind or l.gen ~= fontGen then
         l.kind, l.gen = kind, fontGen
-        StyleText(l.text, Cfg(SIZE_KEY[kind]) or SIZE_DEF[kind])
+        StyleText(l.text, TrackerCfg(SIZE_KEY[kind]) or SIZE_DEF[kind])
         l:EnableMouse(kind ~= "obj")
         l.lastText = nil
         l.dashW = nil -- a timer bar's indent, measured in this font
@@ -267,7 +267,7 @@ local function AcquireLine(kind, ident, textValue, posX, posY, width, key)
         l.bar:Hide()
     end
     -- Only a changed row is measured or moved.
-    local wrap = Cfg(kind == "obj" and "customWrapObjectives" or "customWrapTitles") ~= false
+    local wrap = TrackerCfg(kind == "obj" and "customWrapObjectives" or "customWrapTitles") ~= false
     if l.lastText ~= textValue or l.lastWidth ~= width or l.lastWrap ~= wrap then
         l.lastText, l.lastWidth, l.lastWrap = textValue, width, wrap
         l.text:SetWordWrap(wrap)
@@ -364,7 +364,7 @@ local function ObjectiveRGBA(object)
     if object.finished then
         red, green, blue = DONE_RGB.r, DONE_RGB.g, DONE_RGB.b
     end
-    if Cfg("objProgressColor") then
+    if TrackerCfg("objProgressColor") then
         local req = object.numRequired
         if object.finished then
             red, green, blue = EQT.ProgressRGB(1)
@@ -372,7 +372,7 @@ local function ObjectiveRGBA(object)
             red, green, blue = EQT.ProgressRGB(math.min((object.numFulfilled or 0) / req, 1))
         end
     end
-    local a = (object.finished and Cfg("objDimCompleted")) and (Cfg("objDimAlpha") or 45) / 100 or 1
+    local a = (object.finished and TrackerCfg("objDimCompleted")) and (TrackerCfg("objDimAlpha") or 45) / 100 or 1
     return red, green, blue, a
 end
 
@@ -399,14 +399,14 @@ end
 -- Scrollbar mode; the wheel scrolls in every mode. A drag in progress
 -- keeps a hover-mode bar up.
 local function BarMode()
-    return Cfg("customScrollbar") or "always"
+    return TrackerCfg("customScrollbar") or "always"
 end
 
 local function Hovered()
     return widget:IsMouseOver() or knob:GetScript("OnUpdate") ~= nil
 end
 local function HoverWanted()
-    return BarMode() == "hover" or Cfg("customBgHover")
+    return BarMode() == "hover" or TrackerCfg("customBgHover")
 end
 
 local function BarVisible()
@@ -427,9 +427,9 @@ local FADE_TIME = 0.2
 
 local function ShowBackground(instant)
     local hgt = widget.bgHolder
-    widget.topLine:SetShown(Cfg("showTopLine") ~= false)
-    local target = (not Cfg("customBgHover") or Hovered()) and 1 or 0
-    if instant or not Cfg("customBgFade") then
+    widget.topLine:SetShown(TrackerCfg("showTopLine") ~= false)
+    local target = (not TrackerCfg("customBgHover") or Hovered()) and 1 or 0
+    if instant or not TrackerCfg("customBgFade") then
         hgt.fade:Stop()
         hgt.target = target
         hgt:SetAlpha(target)
@@ -458,7 +458,7 @@ local function UpdateHover()
     if BarMode() == "hover" and MaxScroll() > 0 then
         rail:SetShown(BarVisible())
     end
-    if Cfg("customBgHover") then
+    if TrackerCfg("customBgHover") then
         ShowBackground()
     end
 end
@@ -545,7 +545,7 @@ local function ShowFocusButton(line, questId, isComplete, px)
     widget.ring:SetSize(art, art)
     widget.hl:SetSize(art, art)
     widget:ClearAllPoints()
-    widget:SetPoint("TOPRIGHT", line, "TOPLEFT", -FOCUS_GAP, (px - (Cfg("titleFontSize") or 12)) / 2)
+    widget:SetPoint("TOPRIGHT", line, "TOPLEFT", -FOCUS_GAP, (px - (TrackerCfg("titleFontSize") or 12)) / 2)
     if isComplete then
         widget.ring:SetAtlas("UI-QuestIcon-TurnIn-Normal")
         widget.icon:Hide()
@@ -560,7 +560,7 @@ local function ShowFocusButton(line, questId, isComplete, px)
 end
 
 local function AddObjectives(questId, posY, width, posX)
-    local gap = Cfg("customObjSpacing") or 1
+    local gap = TrackerCfg("customObjSpacing") or 1
     local wid = width - posX
     local l, hgt
     if C_QuestLog.IsFailed(questId) then
@@ -583,8 +583,8 @@ local function AddObjectives(questId, posY, width, posX)
         return posY
     end
     -- First sight of a quest records its texts without flashing.
-    local previous = Cfg("customFlashUpdates") and prevObj[questId]
-    if Cfg("customFlashUpdates") and not previous then
+    local previous = TrackerCfg("customFlashUpdates") and prevObj[questId]
+    if TrackerCfg("customFlashUpdates") and not previous then
         previous = {}
         prevObj[questId] = previous
     end
@@ -733,7 +733,7 @@ local function AddTimer(questId, posY, width, posX)
     local nowTime = GetTime()
     local l, hgt =
         AcquireLine("obj", questId, TimerText(math.max(ends - nowTime, 0)), posX, posY, width - posX)
-    posY = posY + hgt + (Cfg("customObjSpacing") or 1)
+    posY = posY + hgt + (TrackerCfg("customObjSpacing") or 1)
     local sum = C_QuestLog.GetTimeAllowed(questId)
     l.timerQuest = questId
     l.timerTotal = (sum and sum > 0) and sum or nil
@@ -819,7 +819,7 @@ local function AddReagent(ident, slotFrame, posY, width, posX)
         width - posX
     )
     l.text:SetTextColor(ObjectiveRGBA(reagentState))
-    return posY + hgt + (Cfg("customObjSpacing") or 1)
+    return posY + hgt + (TrackerCfg("customObjSpacing") or 1)
 end
 
 -- id: the recipe, negative for a recraft, as Blizzard keys its blocks.
@@ -855,7 +855,7 @@ local function AddRecipeList(entries, isRecraft, posY, width, titleX, objX)
                 posY = AddReagent(ident, slotFrame, posY, width, objX)
             end
         end
-        posY = posY + (Cfg("customQuestSpacing") or 4)
+        posY = posY + (TrackerCfg("customQuestSpacing") or 4)
     end
     return posY
 end
@@ -1060,7 +1060,7 @@ local function Render()
     stale = false
     HideOverlay()
     widget:SetMouseMotionEnabled(HoverWanted() and true or false)
-    if not Cfg("customFlashUpdates") then
+    if not TrackerCfg("customFlashUpdates") then
         wipe(prevObj)
     end
     itemN = 0
@@ -1077,16 +1077,16 @@ local function Render()
     end
     BuildList()
     local isCollapsed = CharDB().ctCollapsed
-    local width = (Cfg("customWidth") or DEF_WIDTH) - PAD * 2 - BAR_GAP
+    local width = (TrackerCfg("customWidth") or DEF_WIDTH) - PAD * 2 - BAR_GAP
     childFrame:SetWidth(width)
     used = 0
     local posY = 0
-    local itemSize = Cfg("customItemButtons") and (Cfg("titleFontSize") or 12) + 12
+    local itemSize = TrackerCfg("customItemButtons") and (TrackerCfg("titleFontSize") or 12) + 12
     if not isCollapsed.all then
-        local set = Cfg("customGroupByZone")
+        local set = TrackerCfg("customGroupByZone")
         -- Focus buttons take a column left of the titles.
-        local titleSize = Cfg("titleFontSize") or 12
-        local focusPx = Cfg("customFocusClick") and titleSize + 6 or 0
+        local titleSize = TrackerCfg("titleFontSize") or 12
+        local focusPx = TrackerCfg("customFocusClick") and titleSize + 6 or 0
         -- The art overhangs the button by 0.3x each side; keep it off the clip edge, less 2
         -- (the ring's outer edge is the atlas padding).
         local titleX = focusPx > 0 and focusPx * 1.3 - 2 + FOCUS_GAP or 0
@@ -1094,7 +1094,7 @@ local function Render()
         -- focused glow reaches 0.5x past it. A quest on the first row starts that far down.
         local focusRise = focusPx > 0 and math.ceil((focusPx - titleSize) / 2 + focusPx * 0.5) or 0
         local objX = math.max(OBJ_IND, titleX)
-        local collapseDone = Cfg("customCollapseCompleted")
+        local collapseDone = TrackerCfg("customCollapseCompleted")
         local doneOpen = CharDB().ctDoneOpen
         local lastZone
         local zr, zg, zb = ZoneRGB()
@@ -1170,7 +1170,7 @@ local function Render()
                 if entry then
                     posY = math.max(posY, topY + itemSize + 2)
                 end
-                posY = posY + (Cfg("customQuestSpacing") or 4)
+                posY = posY + (TrackerCfg("customQuestSpacing") or 4)
             end
         end
         posY = AddRecipes(posY, width, titleX, objX, isCollapsed, zr, zg, zb)
@@ -1185,7 +1185,7 @@ local function Render()
 
     contentH = posY
     childFrame:SetHeight(math.max(posY, 1))
-    local maxH = Cfg("customMaxHeight") or DEF_HEIGHT
+    local maxH = TrackerCfg("customMaxHeight") or DEF_HEIGHT
     local body = posY > 0 and (posY + PAD) or 0
     -- Unlock Mode shows the whole area the tracker may grow into, so its
     -- mover and Height row match what is being set.
@@ -1300,7 +1300,7 @@ local MENU_OPTS = { fontKey = "questTracker" }
 local function ShowMenu(ownerFrame, questId)
     local itemList =
         { { text = C_QuestLog.GetTitleForQuestID(questId) or "", noLoc = true, isDisabled = Disabled } }
-    if Cfg("customFocusClick") then
+    if TrackerCfg("customFocusClick") then
         local focused = C_SuperTrack.GetSuperTrackedQuestID() == questId
         itemList[#itemList + 1] = {
             text = focused and STOP_SUPER_TRACK_QUEST or SUPER_TRACK_QUEST,
@@ -1377,7 +1377,7 @@ function OnLineClick(self, btnFrame)
             Untrack(ident)
             return
         end
-        local action = Cfg("customClickAction") or "collapse"
+        local action = TrackerCfg("customClickAction") or "collapse"
         if action ~= "collapse" and not IsModifierKeyDown() then
             if action == "details" then
                 EQT.ShowQuestDetails(ident)
@@ -1385,7 +1385,7 @@ function OnLineClick(self, btnFrame)
             -- map: the overlay's job; reached only in combat, where it is off.
             return
         end
-        if Cfg("customCollapseCompleted") and C_QuestLog.IsComplete(ident) then
+        if TrackerCfg("customCollapseCompleted") and C_QuestLog.IsComplete(ident) then
             local open = CharDB().ctDoneOpen
             open[ident] = not open[ident] or nil
             Queue()
@@ -1504,7 +1504,7 @@ local function ShowOverlay(l)
     o:SetSize(l:GetWidth() * s, (topY - bottom) * s)
     -- Plain left click: Open Quest Log only. The untrack modifier: always.
     -- A recipe: every left and right click.
-    local map = recipe or Cfg("customClickAction") == "map"
+    local map = recipe or TrackerCfg("customClickAction") == "map"
     o:SetAttribute("type1", map and "click" or nil)
     o:SetAttribute("clickbutton1", map and headerFrame or nil)
     local untrack = UNTRACK_PREFIX[GetModifiedClick("QUESTWATCHTOGGLE") or ""]
@@ -1628,16 +1628,16 @@ local function RefreshFonts()
         return
     end
     fontGen = fontGen + 1
-    local px = Cfg("headerFontSize") or 13
+    local px = TrackerCfg("headerFontSize") or 13
     StyleText(headerFrame.text, px)
     StyleText(headerFrame.toggle, px)
-    StyleText(headerFrame.count, Cfg("objectiveFontSize") or 10)
+    StyleText(headerFrame.count, TrackerCfg("objectiveFontSize") or 10)
     headerFrame.text:SetText(TRACKER_HEADER_QUESTS)
     Queue()
 end
 
 local function SavedPos()
-    local p = Cfg("customPos")
+    local p = TrackerCfg("customPos")
     return p and p.point and p or { point = "TOPRIGHT", relPoint = "TOPRIGHT", x = -80, y = -280 }
 end
 
@@ -1678,7 +1678,7 @@ local OTHER_EDGE = {
 -- Grow Direction: the tracker keeps its top edge and grows down, or keeps its
 -- bottom edge and grows up.
 local function GrowsUp()
-    return Cfg("customGrowUp") == true
+    return TrackerCfg("customGrowUp") == true
 end
 
 -- Same spot, anchored by the edge the tracker keeps, so a height change grows
@@ -1693,7 +1693,7 @@ local function Anchored(profile)
         return profile
     end
     if OTHER_EDGE[anchorPoint] then
-        local maxH = Cfg("customMaxHeight") or DEF_HEIGHT
+        local maxH = TrackerCfg("customMaxHeight") or DEF_HEIGHT
         return {
             point = OTHER_EDGE[anchorPoint],
             relPoint = rel,
@@ -1772,7 +1772,7 @@ local function BlizzardPanel()
     if EQT.Blizz() then
         return leftX * s, topY * s, wid * s, hgt * s
     end
-    local padLeft = Cfg("showQuestIcons") and SKIN_LEFT_ICONS or SKIN_LEFT
+    local padLeft = TrackerCfg("showQuestIcons") and SKIN_LEFT_ICONS or SKIN_LEFT
     local panelTop = topY
     local headerFrame = objectiveTracker.HeaderMenu or objectiveTracker.Header
     if headerFrame and EQT.ShouldHideMasterHeader() then
@@ -1816,7 +1816,7 @@ end
 -- login) the frame sits at the fallback spot; Edit Mode's layout event, heard
 -- only while a spot is still to be taken, moves it once (SeedSoon).
 local function ApplySpot()
-    local wait = Cfg("customPos") == nil and not TakeBlizzardSpot()
+    local wait = TrackerCfg("customPos") == nil and not TakeBlizzardSpot()
     if wait ~= seedWait then
         seedWait = wait
         if wait then
@@ -1826,9 +1826,9 @@ local function ApplySpot()
             eventTag:UnregisterEvent("EDIT_MODE_LAYOUTS_UPDATED")
         end
     end
-    widget:SetWidth(Cfg("customWidth") or DEF_WIDTH)
+    widget:SetWidth(TrackerCfg("customWidth") or DEF_WIDTH)
     if CludesUI._unlockActive then
-        widget:SetHeight(Cfg("customMaxHeight") or DEF_HEIGHT)
+        widget:SetHeight(TrackerCfg("customMaxHeight") or DEF_HEIGHT)
     else
         Place()
     end
@@ -1863,9 +1863,9 @@ end
 local function BuildFrame()
     widget = CreateFrame("Frame", "CUI_CustomQuestTracker", UIParent)
     widget:SetFrameStrata("LOW")
-    widget:SetWidth(Cfg("customWidth") or DEF_WIDTH)
+    widget:SetWidth(TrackerCfg("customWidth") or DEF_WIDTH)
     widget:SetHeight(HEADER_H)
-    widget:SetClampedToScreen(Cfg("forceOnScreen") == true)
+    widget:SetClampedToScreen(TrackerCfg("forceOnScreen") == true)
     widget:SetScript("OnShow", function()
         itemLayer:SetAlpha(widget:GetAlpha())
         if stale then
@@ -1983,7 +1983,7 @@ local function AutoHidden()
         return true
     end
     if instanceType == "raid" then
-        local mode = Cfg("hideInRaidMode")
+        local mode = TrackerCfg("hideInRaidMode")
         return mode == "always" or (mode ~= "never" and inEncounter)
     end
     return false
@@ -2005,7 +2005,7 @@ local FIGHT_STATIC = {
 -- group rule, or any other visibility option (target, mounted, vehicle, Party Mode).
 local function CanHideInCombat()
     local _, instanceType = IsInInstance()
-    if instanceType == "raid" and Cfg("hideInRaidMode") ~= "never" then
+    if instanceType == "raid" and TrackerCfg("hideInRaidMode") ~= "never" then
         return true
     end
     local saved = EQT.DB()
@@ -2025,7 +2025,7 @@ local function CanHideInCombat()
 end
 
 local function Blocked()
-    return Cfg("enabled") == false or EQT.IsSuppressed() or AutoHidden()
+    return TrackerCfg("enabled") == false or EQT.IsSuppressed() or AutoHidden()
 end
 
 local function UpdateVisibility()
@@ -2141,7 +2141,7 @@ function EQT.InitCustom()
         RefreshFonts()
     end
     EQT.ApplyForceOnScreen = function()
-        widget:SetClampedToScreen(Cfg("forceOnScreen") == true)
+        widget:SetClampedToScreen(TrackerCfg("forceOnScreen") == true)
     end
     EQT.ApplyMasterHeaderVisibility = Noop
     EQT.QueueResize = Noop
@@ -2175,21 +2175,21 @@ function EQT.InitCustom()
                 return widget
             end,
             isHidden = function()
-                return not Cfg("enabled")
+                return not TrackerCfg("enabled")
             end,
             -- One spot for every spec, like Blizzard's tracker under this key.
             noSpecLayout = true,
             -- Width, and the height the tracker may grow to: in Unlock Mode the
             -- frame fills that whole area (Render), so the mover outlines it.
             getSize = function()
-                return Cfg("customWidth") or DEF_WIDTH, Cfg("customMaxHeight") or DEF_HEIGHT
+                return TrackerCfg("customWidth") or DEF_WIDTH, TrackerCfg("customMaxHeight") or DEF_HEIGHT
             end,
             -- Unlock Mode also calls these with no size, to lay the element out again.
             setWidth = function(_, wid)
                 if wid then
                     EQT.Set("customWidth", Clamp(math.floor(wid + 0.5), WIDTH_MIN, WIDTH_MAX))
                 end
-                widget:SetWidth(Cfg("customWidth") or DEF_WIDTH)
+                widget:SetWidth(TrackerCfg("customWidth") or DEF_WIDTH)
                 Queue()
             end,
             setHeight = function(_, hgt)
@@ -2197,7 +2197,7 @@ function EQT.InitCustom()
                     EQT.Set("customMaxHeight", Clamp(math.floor(hgt + 0.5), HEIGHT_MIN, HEIGHT_MAX))
                 end
                 if CludesUI._unlockActive then
-                    widget:SetHeight(Cfg("customMaxHeight") or DEF_HEIGHT)
+                    widget:SetHeight(TrackerCfg("customMaxHeight") or DEF_HEIGHT)
                 end
                 Queue()
             end,
@@ -2230,7 +2230,7 @@ function EQT.InitCustom()
     -- it keeps.
     CludesUI:RegisterUnlockModeListener("CludesUIQuestTracker", function(isActive)
         if isActive then
-            widget:SetHeight(Cfg("customMaxHeight") or DEF_HEIGHT)
+            widget:SetHeight(TrackerCfg("customMaxHeight") or DEF_HEIGHT)
         else
             Place()
         end
@@ -2255,7 +2255,7 @@ function EQT.SetCustomGrowUp(up)
         return
     end
     EQT.Set("customGrowUp", up)
-    local p = Cfg("customPos")
+    local p = TrackerCfg("customPos")
     if p and p.point then
         EQT.Set("customPos", Anchored(p))
     end

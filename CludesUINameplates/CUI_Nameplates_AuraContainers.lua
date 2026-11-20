@@ -73,7 +73,7 @@ local function FP(...)
     return table.concat(FP_JOIN, "|")
 end
 
-local function PVal(auraKey)
+local function ProfileVal(auraKey)
     local p = mod.NP_GetProfile and mod.NP_GetProfile()
     if p and p[auraKey] ~= nil then
         return p[auraKey]
@@ -161,11 +161,11 @@ local function AuraDurCfg(kindKey)
 end
 local function StackCfg()
     return {
-        size = PVal("auraStackTextSize") or 11,
-        color = PVal("auraStackTextColor") or { r = 1, g = 1, b = 1 },
-        x = PVal("auraStackTextX") or 0,
-        y = PVal("auraStackTextY") or 0,
-        pos = PVal("auraStackTextPosition") or "bottomright",
+        size = ProfileVal("auraStackTextSize") or 11,
+        color = ProfileVal("auraStackTextColor") or { r = 1, g = 1, b = 1 },
+        x = ProfileVal("auraStackTextX") or 0,
+        y = ProfileVal("auraStackTextY") or 0,
+        pos = ProfileVal("auraStackTextPosition") or "bottomright",
     }
 end
 
@@ -452,7 +452,7 @@ end
 -- aura icons wear the plate's custom border. The toggle is read first, so off it costs
 -- one field read.
 local function NPIconCustomBorderOn()
-    return PVal("auraIconCustomBorder") == true and mod.IsCustomBorderEnabled()
+    return ProfileVal("auraIconCustomBorder") == true and mod.IsCustomBorderEnabled()
 end
 
 -- The plate's custom border as an AuraKit border table. Solid sets no texture key, so
@@ -460,21 +460,21 @@ end
 -- eight-slice lane with the nameplate registry offsets (addonKey), its step (sizeKey)
 -- and exact px. Show Behind is not carried: behind the opaque icon it would vanish.
 local function NPCustomIconBorder()
-    local texture = PVal("customBorderTexture")
-    local sz = PVal("customBorderSize") or 1
-    local colour = PVal("customBorderColor")
+    local texture = ProfileVal("customBorderTexture")
+    local sz = ProfileVal("customBorderSize") or 1
+    local colour = ProfileVal("customBorderColor")
     local tbl = {
         colour.r,
         colour.g,
         colour.b,
-        PVal("customBorderAlpha") or 1,
+        ProfileVal("customBorderAlpha") or 1,
         size = sz,
-        edgePx = CludesUI.BorderPx(PVal("customBorderSizePx"), sz, texture),
+        edgePx = CludesUI.BorderPx(ProfileVal("customBorderSizePx"), sz, texture),
     }
     if texture and texture ~= "" and texture ~= "solid" then
         tbl.texture, tbl.sizeKey, tbl.addonKey = texture, sz, "nameplates"
-        tbl.offsetX, tbl.offsetY = PVal("customBorderOffset"), PVal("customBorderOffsetY")
-        tbl.shiftX, tbl.shiftY = PVal("customBorderShiftX"), PVal("customBorderShiftY")
+        tbl.offsetX, tbl.offsetY = ProfileVal("customBorderOffset"), ProfileVal("customBorderOffsetY")
+        tbl.shiftX, tbl.shiftY = ProfileVal("customBorderShiftX"), ProfileVal("customBorderShiftY")
     end
     return tbl
 end
@@ -514,7 +514,7 @@ local function BuildNPStyle(kindName, variant)
         blizzBorder = harmfulClassic,
         cooldownReverse = true,
         noDefaultFonts = true,
-        noTooltips = PVal("showAuraTooltips") ~= true,
+        noTooltips = ProfileVal("showAuraTooltips") ~= true,
         applyExtra = ApplyNPText,
         durSize = duration.size,
         durColor = duration.color,
@@ -598,7 +598,7 @@ function mod.NPF_Root()
     end
     local tbl = p.npAuraFilters
     if not tbl then
-        tbl = { debuffs = { all = PVal("showAllDebuffs") == true }, fv3 = true }
+        tbl = { debuffs = { all = ProfileVal("showAllDebuffs") == true }, fv3 = true }
         p.npAuraFilters = tbl
     elseif not tbl.fv3 then
         -- One-shot (per profile, first touch): category selections moved
@@ -713,14 +713,14 @@ end
 -- The debuff container renders the dcc config when the combined
 -- "Debuffs + CC" element is assigned (p.debuffIncludeCC), else debuffs.
 local function NPF_DebuffKind()
-    return PVal("debuffIncludeCC") and "dcc" or "debuffs"
+    return ProfileVal("debuffIncludeCC") and "dcc" or "debuffs"
 end
 
 local function DebuffSort()
     local c = mod.NPF_Config(NPF_DebuffKind())
     local all = c and c.all
     if all == nil then
-        all = PVal("showAllDebuffs")
+        all = ProfileVal("showAllDebuffs")
     end -- pre-seed fallback
     if all then
         return SORT_DEFAULT
@@ -810,7 +810,7 @@ local NPF_SUNDER_IDS = {
 }
 local _, playerClass = UnitClass("player")
 local function NPF_SunderOn()
-    return CludesUI.IS_FOREVER and playerClass == "WARRIOR" and PVal("showSunderArmor") == true
+    return CludesUI.IS_FOREVER and playerClass == "WARRIOR" and ProfileVal("showSunderArmor") == true
 end
 
 -- Active-only include maps for engine candidates (false entries stay
@@ -881,7 +881,7 @@ local function NPF_Cand(extra, edgeSide)
     -- Show-once exceptions render through their own single-frame groups
     -- (debuff side only, while the option is on), so no other group may
     -- render a copy. Option off = the id is an ordinary debuff again.
-    if edgeSide ~= "cc" and PVal("hideBloodPlagueCopies") ~= false then
+    if edgeSide ~= "cc" and ProfileVal("hideBloodPlagueCopies") ~= false then
         for ident in pairs(NPF_ONCE_DEBUFFS) do
             m = m or {}
             m[ident] = true
@@ -975,7 +975,7 @@ local function NPF_ApplyContainer(boxHolder, kindKey, styleKey, cap)
     -- is simply not wanted (an existing one parks to 0 in the loop below; a
     -- never-declared one costs nothing). Every other debuff-side group
     -- excludes these ids while on (NPF_Cand), so this group is the sole renderer.
-    if edgeSide ~= "cc" and PVal("hideBloodPlagueCopies") ~= false then
+    if edgeSide ~= "cc" and ProfileVal("hideBloodPlagueCopies") ~= false then
         local ex = mod.NPF_Exclude(edgeSide)
         for ident in pairs(NPF_ONCE_DEBUFFS) do
             if not (ex and ex[ident]) then
@@ -1120,7 +1120,7 @@ local function NPF_ApplyContainer(boxHolder, kindKey, styleKey, cap)
 end
 
 local function NPF_EnsureRecords(b)
-    NPF_ApplyContainer(b.containers.debuffs, NPF_DebuffKind(), "np:debuffs", PVal("maxDebuffs") or 5)
+    NPF_ApplyContainer(b.containers.debuffs, NPF_DebuffKind(), "np:debuffs", ProfileVal("maxDebuffs") or 5)
     NPF_ApplyContainer(b.containers.cc, "cc", "np:cc", 2)
 end
 
@@ -1193,7 +1193,7 @@ end
 -- deleted). The Dispel Glow setting never touches these filters -- it is only
 -- the style the "np" group wears, so every shown dispellable buff glows.
 local function BuffMode()
-    local m = PVal("npEnemyBuffFilter")
+    local m = ProfileVal("npEnemyBuffFilter")
     if m == "dispellable" or m == "showall" then
         return m
     end
@@ -1207,7 +1207,7 @@ local function BuffDispelByMe()
     return not CludesUI.IS_FOREVER
         and RAID_DISPELLABLE ~= nil
         and mode ~= "showall"
-        and PVal("npEnemyBuffDispelByMe") == true
+        and ProfileVal("npEnemyBuffDispelByMe") == true
 end
 
 local function BuffFilterGlow()
@@ -1253,7 +1253,7 @@ local function AddBundleDebuffs(b)
     b.containers.debuffs = BundleContainer(b, "debuffs", {
         key = "np",
         filter = { "HARMFUL", "PLAYER", "INCLUDE_NAME_PLATE_ONLY", "!CROWD_CONTROL" },
-        maxFrameCount = PVal("maxDebuffs") or 5,
+        maxFrameCount = ProfileVal("maxDebuffs") or 5,
         sortMethod = DebuffSort(),
         candidateFilters = DebuffCand(),
         style = "np:debuffs",
@@ -1502,7 +1502,7 @@ local function AnchorNPContainer(boxHolder, kindName, backing, slotValue)
     elseif slotValue == "topleft" or slotValue == "topright" then
         local debuffY = (mod.GetDebuffYOffset and mod.GetDebuffYOffset()) or 2
         local cpPush = mod.NP_ClassPowerTopPush and mod.NP_ClassPowerTopPush(backing) or 0
-        local growth = PVal(slotValue .. "SlotGrowth") or (slotValue == "topleft" and "left" or "right")
+        local growth = ProfileVal(slotValue .. "SlotGrowth") or (slotValue == "topleft" and "left" or "right")
         local corner = (slotValue == "topleft") and "BOTTOMLEFT" or "BOTTOMRIGHT"
         local healthCorner = (slotValue == "topleft") and "TOPLEFT" or "TOPRIGHT"
         -- Above the corner's Top Left / Top Right text while it shows one.
@@ -1537,7 +1537,7 @@ local function AnchorNPContainer(boxHolder, kindName, backing, slotValue)
             if slotValue == "left" then
                 boxHolder:SetPoint("BOTTOMRIGHT", lk, "BOTTOMLEFT", -spacing, 0)
             elseif slotValue == "topleft" or slotValue == "topright" then
-                local growth = PVal(slotValue .. "SlotGrowth") or (slotValue == "topleft" and "left" or "right")
+                local growth = ProfileVal(slotValue .. "SlotGrowth") or (slotValue == "topleft" and "left" or "right")
                 if growth == "up" then
                     local edgeSide = (slotValue == "topleft") and "LEFT" or "RIGHT"
                     boxHolder:SetPoint("BOTTOM" .. edgeSide, lk, "TOP" .. edgeSide, 0, spacing)
@@ -1698,7 +1698,7 @@ end
 -- follow in the default order, except the Quest Objective Text, which a saved order that
 -- holds the Quest Indicator but not it reads right after the Quest Indicator.
 local function ChainOrder(place)
-    local source = PVal(ChainKeys(place).order)
+    local source = ProfileVal(ChainKeys(place).order)
     if type(source) ~= "string" then
         source = Chain.DEFAULT
     end
@@ -1744,13 +1744,13 @@ local function ChainMembers(place)
     local ds, bs, cs = mod.GetAuraSlots()
     local raid, class = mod.GetRaidMarkerPos(), mod.GetClassificationSlot()
     if
-        PVal("classificationHideRare")
+        ProfileVal("classificationHideRare")
         and not mod.NP_QuestIconOn()
-        and PVal("classificationIncludeFaction") ~= true
+        and ProfileVal("classificationIncludeFaction") ~= true
     then
         class = "none"
     end
-    local fac = (PVal("classificationIncludeFaction") ~= true) and mod.NP_GetFactionSlot() or "none"
+    local fac = (ProfileVal("classificationIncludeFaction") ~= true) and mod.NP_GetFactionSlot() or "none"
     local qtext = mod.NP_GetQuestTextSlot()
     local sequence = ChainOrder(place)
     for i = 1, #sequence do
@@ -1797,7 +1797,7 @@ end
 -- The spacing between the slot's elements: its own, else the first aura row's Spacing in
 -- the slot's order, else the global aura spacing. ChainMembers has filled Chain.m.
 local function ChainSpacing(place)
-    local val = PVal(ChainKeys(place).spacing)
+    local val = ProfileVal(ChainKeys(place).spacing)
     if type(val) == "number" then
         return val
     end
@@ -1858,7 +1858,7 @@ local function ChainShown(backing, place, num)
         elseif ident == "class" then
             leadSlot = backing.classFrame
             -- Rare/Quest + Faction with no mark: the badge stands in for the pair.
-            if not (leadSlot and leadSlot:IsShown()) and PVal("classificationIncludeFaction") == true then
+            if not (leadSlot and leadSlot:IsShown()) and ProfileVal("classificationIncludeFaction") == true then
                 leadSlot = backing.factionFrame
             end
         elseif ident == "qtext" then
@@ -1905,7 +1905,7 @@ local function ChainDir(place)
         return "left"
     end
     if place == "topleft" or place == "topright" then
-        local g = PVal(ChainKeys(place).growth) or ((place == "topleft") and "left" or "right")
+        local g = ProfileVal(ChainKeys(place).growth) or ((place == "topleft") and "left" or "right")
         if g == "up" or g == "left" then
             return g
         end
@@ -2050,13 +2050,13 @@ local function NPLockoutBorder(frame)
             callback:EnableMouse(false)
             frame._npCB = callback
         end
-        local texture = PVal("customBorderTexture")
-        local sz = PVal("customBorderSize") or 1
-        local px = CludesUI.BorderPx(PVal("customBorderSizePx"), sz, texture)
-        local colour = PVal("customBorderColor")
-        local a = PVal("customBorderAlpha") or 1
-        local ox, oy = PVal("customBorderOffset"), PVal("customBorderOffsetY")
-        local sx, sy = PVal("customBorderShiftX"), PVal("customBorderShiftY")
+        local texture = ProfileVal("customBorderTexture")
+        local sz = ProfileVal("customBorderSize") or 1
+        local px = CludesUI.BorderPx(ProfileVal("customBorderSizePx"), sz, texture)
+        local colour = ProfileVal("customBorderColor")
+        local a = ProfileVal("customBorderAlpha") or 1
+        local ox, oy = ProfileVal("customBorderOffset"), ProfileVal("customBorderOffsetY")
+        local sx, sy = ProfileVal("customBorderShiftX"), ProfileVal("customBorderShiftY")
         -- Above the swipe, as AuraKit seats its aura borders.
         local lvl = frame.cd:GetFrameLevel() + 1
         if
@@ -2508,19 +2508,19 @@ local function StyleFPFor(kindName, position)
     -- in as exact strings, not FP's two-decimal numbers.
     local cbFP = "-"
     if NPIconCustomBorderOn() then
-        local colour = PVal("customBorderColor")
+        local colour = ProfileVal("customBorderColor")
         cbFP = FP(
-            PVal("customBorderTexture"),
-            PVal("customBorderSize"),
-            tostring(PVal("customBorderSizePx")),
+            ProfileVal("customBorderTexture"),
+            ProfileVal("customBorderSize"),
+            tostring(ProfileVal("customBorderSizePx")),
             tostring(colour.r),
             tostring(colour.g),
             tostring(colour.b),
-            tostring(PVal("customBorderAlpha")),
-            PVal("customBorderOffset"),
-            PVal("customBorderOffsetY"),
-            PVal("customBorderShiftX"),
-            PVal("customBorderShiftY")
+            tostring(ProfileVal("customBorderAlpha")),
+            ProfileVal("customBorderOffset"),
+            ProfileVal("customBorderOffsetY"),
+            ProfileVal("customBorderShiftX"),
+            ProfileVal("customBorderShiftY")
         )
     end
     return FP(
@@ -2536,7 +2536,7 @@ local function StyleFPFor(kindName, position)
         -- the toggle never restyles (the ternary-falsy trap).
         (not mod.GetIconBorderEnabled) or mod.GetIconBorderEnabled(kindName),
         cbFP,
-        PVal("showAuraTooltips") == true
+        ProfileVal("showAuraTooltips") == true
     )
 end
 
@@ -2566,9 +2566,9 @@ local function GeoFP()
         mod.GetAuraCrop and tostring(mod.GetAuraCrop("ccs")) or "-",
         mod.GetDebuffYOffset and mod.GetDebuffYOffset() or 0,
         mod.GetSideAuraXOffset and mod.GetSideAuraXOffset() or 0,
-        PVal("textSlotTop"),
-        PVal("topleftSlotGrowth"),
-        PVal("toprightSlotGrowth"),
+        ProfileVal("textSlotTop"),
+        ProfileVal("topleftSlotGrowth"),
+        ProfileVal("toprightSlotGrowth"),
         -- The corner rows rise above a Top Left / Top Right text (its element, Size, Y
         -- offset and the name Y offset, all in the lift).
         mod.NP_TopCornerLift("topleft"),
@@ -2580,28 +2580,28 @@ local function GeoFP()
         mod.GetSlotRaiseStrata and mod.GetSlotRaiseStrata(cs) or false,
         -- The Core Positions chains (order and spacing per slot) and the other members'
         -- slots: ReanchorActive runs every chain again.
-        PVal("topSlotOrder"),
-        PVal("rightSlotOrder"),
-        PVal("leftSlotOrder"),
-        PVal("toprightSlotOrder"),
-        PVal("topleftSlotOrder"),
-        PVal("bottomSlotOrder"),
-        PVal("topSlotElementSpacing"),
-        PVal("rightSlotElementSpacing"),
-        PVal("leftSlotElementSpacing"),
-        PVal("toprightSlotElementSpacing"),
-        PVal("topleftSlotElementSpacing"),
-        PVal("bottomSlotElementSpacing"),
-        PVal("raidMarkerPos"),
-        PVal("classificationSlot"),
-        PVal("factionSlot"),
-        PVal("classificationIncludeFaction"),
+        ProfileVal("topSlotOrder"),
+        ProfileVal("rightSlotOrder"),
+        ProfileVal("leftSlotOrder"),
+        ProfileVal("toprightSlotOrder"),
+        ProfileVal("topleftSlotOrder"),
+        ProfileVal("bottomSlotOrder"),
+        ProfileVal("topSlotElementSpacing"),
+        ProfileVal("rightSlotElementSpacing"),
+        ProfileVal("leftSlotElementSpacing"),
+        ProfileVal("toprightSlotElementSpacing"),
+        ProfileVal("topleftSlotElementSpacing"),
+        ProfileVal("bottomSlotElementSpacing"),
+        ProfileVal("raidMarkerPos"),
+        ProfileVal("classificationSlot"),
+        ProfileVal("factionSlot"),
+        ProfileVal("classificationIncludeFaction"),
         -- The Rare/Quest member's halves decide whether it is a member at all.
-        PVal("classificationHideRare") and true or false,
+        ProfileVal("classificationHideRare") and true or false,
         mod.NP_QuestIconOn(),
         -- The Quest Objective Text's slot: its own key and, while that is unset, the legacy
         -- view (Replace Quest Icon with Objective, the Quest Indicator box and slot).
-        PVal("questTextSlot"),
+        ProfileVal("questTextSlot"),
         mod.NP_GetQuestTextSlot()
     )
 end
@@ -2610,13 +2610,13 @@ local function CfgFP()
     -- NPB.Split decides how many groups the buff row runs, so it belongs
     -- with the container config rather than with the styles.
     return FP(
-        PVal("maxDebuffs"),
-        PVal("showAllDebuffs"),
+        ProfileVal("maxDebuffs"),
+        ProfileVal("showAllDebuffs"),
         BuffMode(),
         NPB.Split(),
-        PVal("debuffIncludeCC"),
+        ProfileVal("debuffIncludeCC"),
         mod.NPF_FP(),
-        PVal("hideBloodPlagueCopies") ~= false,
+        ProfileVal("hideBloodPlagueCopies") ~= false,
         NPF_SunderOn(),
         BuffDispelByMe()
     )
@@ -2700,12 +2700,12 @@ function NPB.SnapClassColor()
     local PB = CludesUI.Glows.PANDEMIC_BORDER
     local class = (
         PurgeGlowActive()
-        and PVal("dispelGlowColorMode") == "class"
+        and ProfileVal("dispelGlowColorMode") == "class"
         and mod.GetDispelGlowStyle() ~= PB
     )
         or (
             mod.GetPandemicGlow()
-            and PVal("pandemicGlowMode") == "class"
+            and ProfileVal("pandemicGlowMode") == "class"
             and mod.GetPandemicGlowStyle() ~= PB
         )
     if class then
@@ -2777,7 +2777,7 @@ function mod.NPC_ReloadAll()
     val = CfgFP()
     if npFP.cfg ~= val then
         npFP.cfg = val
-        local maxDbf = PVal("maxDebuffs") or 5
+        local maxDbf = ProfileVal("maxDebuffs") or 5
         local sort = DebuffSort()
         local dbfCand = DebuffCand()
         -- Empty table (not nil) when nothing narrows: guarantees the setter

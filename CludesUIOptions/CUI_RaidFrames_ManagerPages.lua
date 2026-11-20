@@ -116,7 +116,7 @@ local dmSpecSel = "allspecs"
 -- Inherited-tile selection ({ group, id }); wins over dmSel while set.
 local inheritSel = nil
 
-local function L(s)
+local function Loc(s)
     return CludesUI.L(s) or s
 end
 
@@ -290,7 +290,7 @@ local function GetPvCDSeed(idx)
     return val
 end
 
-local function DmApply()
+local function ApplyDebuffManager()
     if mod.ReloadFrames then
         mod.ReloadFrames()
     end
@@ -302,7 +302,7 @@ local function DmApply()
 end
 -- After a change: the frames re-applied and the page built again.
 local function ApplyAndRedraw()
-    DmApply()
+    ApplyDebuffManager()
     CludesUI:RefreshPage(true)
 end
 
@@ -374,26 +374,26 @@ local function TileSubtitle(tbl)
     -- Match All joins the filters the way they combine.
     local nameList = {}
     if tbl.all == true then
-        nameList[#nameList + 1] = L("All Debuffs")
+        nameList[#nameList + 1] = Loc("All Debuffs")
     end
     if tbl.hasDuration == true then
-        nameList[#nameList + 1] = L("Has Duration")
+        nameList[#nameList + 1] = Loc("Has Duration")
     end
     local cats = {}
     if tbl.claim then
         for _, category in ipairs(CAT_ORDER) do
             if tbl.claim[category] then
-                cats[#cats + 1] = L(CAT_VALUES[category])
+                cats[#cats + 1] = Loc(CAT_VALUES[category])
             end
         end
         for _, category in ipairs(LESS_CAT_ORDER) do
             if tbl.claim[category] then
-                cats[#cats + 1] = L(LESS_CAT_VALUES[category])
+                cats[#cats + 1] = Loc(LESS_CAT_VALUES[category])
             end
         end
     end
     if #nameList == 0 and #cats == 0 then
-        return L("No filters routed")
+        return Loc("No filters routed")
     end
     if #cats > 0 then
         nameList[#nameList + 1] = table.concat(cats, mod.DM_TileMatchOn(tbl) and " & " or ", ")
@@ -403,7 +403,7 @@ end
 
 -- An indicator's display name, as its sidebar row titles it.
 local function TileName(tbl)
-    return tbl.name or L(TYPE_NAMES[tbl.type] or tbl.type)
+    return tbl.name or Loc(TYPE_NAMES[tbl.type] or tbl.type)
 end
 
 -- The category a Filters row edits: the two dispel rows and the two
@@ -485,11 +485,11 @@ local function BuildFilterCBDropdown(region, claimKey, dmConf)
                 else
                     claimKey.dispel = false
                 end
-                DmApply()
+                ApplyDebuffManager()
                 return
             end
             claimKey[keyName] = val and true or false
-            DmApply()
+            ApplyDebuffManager()
         end,
         nil,
         12
@@ -768,7 +768,7 @@ local function BuildTileFiltersDD(region, tbl, dmConf)
             if keyName == TILE_MATCH_ANY or keyName == TILE_MATCH_ALL then
                 -- Radio pair: the clicked row wins whatever its checked state.
                 tbl.match = (keyName == TILE_MATCH_ALL) and "all" or nil
-                DmApply()
+                ApplyDebuffManager()
                 CludesUI:RefreshPage()
                 return
             end
@@ -780,13 +780,13 @@ local function BuildTileFiltersDD(region, tbl, dmConf)
                 else
                     tbl.hasDuration = val and true or nil
                 end
-                DmApply()
+                ApplyDebuffManager()
                 CludesUI:RefreshPage()
                 return
             end
             -- The dispel and nonplayer flavors are shared with the base grid.
             DmSetLane(claimKey, tbl, dmConf, keyName, val, negated)
-            DmApply()
+            ApplyDebuffManager()
             -- Non-force: re-evaluates the base dropdown's empty-selection
             -- warning (tile claims count as grid content) without closing
             -- the menu.
@@ -842,7 +842,7 @@ local function BuildFxEffects(widget, sy, effectOwner)
     end
     return CludesUI.BuildIconEffects(widget, sy, {
         entries = effectOwner.fxList or {},
-        apply = DmApply,
+        apply = ApplyDebuffManager,
         -- The SAME filter dropdown as Assigned Debuffs / tile panes
         -- (shared items incl. the split dispel entries + tooltips).
         filters = function(region, e)
@@ -885,7 +885,7 @@ local function BuildBaseDetailDM(widget, fontFile)
     local function PFieldThen(filterKey)
         return function(value)
             profile[filterKey] = value
-            DmApply()
+            ApplyDebuffManager()
         end
     end
     local function PFieldOr(filterKey, default)
@@ -929,7 +929,7 @@ local function BuildBaseDetailDM(widget, fontFile)
             return dmConf.maxDurSec
         end, function(val)
             dmConf.maxDurSec = val
-        end, DmApply)
+        end, ApplyDebuffManager)
     )
     sy = sy - hh
     do
@@ -1122,7 +1122,7 @@ local function BuildBaseDetailDM(widget, fontFile)
         -- while All Debuffs already shows everything). Has Duration is an
         -- AND-modifier, not a mode: it never locks the lane.
         do
-            local lockedTip = L(
+            local lockedTip = Loc(
                 "All Debuffs is selected, so every debuff already shows. Use the red Hide box to exclude these instead."
             )
             for idx = 1, #FILTER_ITEMS do
@@ -1270,7 +1270,7 @@ local function BuildBaseDetailDM(widget, fontFile)
                     -- Lanes persist across mode flips (the hide lane subtracts in
                     -- both modes; the show lane goes dormant while All is on).
                     dmConf.all = val and true or false
-                    DmApply()
+                    ApplyDebuffManager()
                     CludesUI:RefreshPage()
                     return
                 end
@@ -1278,13 +1278,13 @@ local function BuildBaseDetailDM(widget, fontFile)
                     -- AND-modifier: combines with All Debuffs or any show-lane
                     -- selection; checked alone it acts as the timed catch-all.
                     dmConf.hasDuration = val or nil
-                    DmApply()
+                    ApplyDebuffManager()
                     CludesUI:RefreshPage()
                     return
                 end
                 if keyName == DM_HIDE_EXH then
                     profile.hideLustDebuff = val and true or false
-                    DmApply()
+                    ApplyDebuffManager()
                     CludesUI:RefreshPage()
                     return
                 end
@@ -1292,12 +1292,12 @@ local function BuildBaseDetailDM(widget, fontFile)
                     -- Radio pair: the clicked row wins whatever its checked
                     -- state (re-clicking the active row keeps it).
                     dmConf.match = (keyName == DM_MATCH_ALL) and "all" or nil
-                    DmApply()
+                    ApplyDebuffManager()
                     CludesUI:RefreshPage()
                     return
                 end
                 DmSetLane(dmConf, dmConf, dmConf, keyName, val, negated)
-                DmApply()
+                ApplyDebuffManager()
                 -- Non-force: re-evaluates the empty-selection warning (and
                 -- any other widget refreshers) without closing the menu.
                 CludesUI:RefreshPage()
@@ -1328,7 +1328,7 @@ local function BuildBaseDetailDM(widget, fontFile)
         warnClosed = CludesUI.AttachEmptyFilterWarn(
             region,
             checkDrop,
-            L("You are displaying NO debuffs at all."),
+            Loc("You are displaying NO debuffs at all."),
             DmHasContent
         )
     end
@@ -1387,7 +1387,7 @@ local function BuildBaseDetailDM(widget, fontFile)
         setValue = function(val)
             profile.debuffPosition = val
             profile.debuffGrowDirection = DmDefaultGrow(val)
-            DmApply()
+            ApplyDebuffManager()
             CludesUI:RefreshPage()
         end,
     }, {
@@ -1464,7 +1464,7 @@ local function BuildBaseDetailDM(widget, fontFile)
         return profile["debuffBorder" .. keyName]
     end, function(keyName, val)
         profile["debuffBorder" .. keyName] = val
-    end, DmApply, nil, true)
+    end, ApplyDebuffManager, nil, true)
 
     -- Row: Show Duration Text (+ cog + swatch) | Show Stacks (+ cog + swatch)
     local dtRow
@@ -1524,7 +1524,7 @@ local function BuildBaseDetailDM(widget, fontFile)
             return color.r or 1, color.g or 1, color.b or 1, 1
         end, function(red, green, blue)
             profile.debuffDurTextColor = { r = red, g = green, b = blue }
-            DmApply()
+            ApplyDebuffManager()
         end, false, 20)
         swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = swatch
@@ -1569,7 +1569,7 @@ local function BuildBaseDetailDM(widget, fontFile)
             return color.r or 1, color.g or 1, color.b or 1, 1
         end, function(red, green, blue)
             profile.debuffStacksTextColor = { r = red, g = green, b = blue }
-            DmApply()
+            ApplyDebuffManager()
         end, false, 20)
         swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = swatch
@@ -1589,7 +1589,7 @@ local function BuildBaseDetailDM(widget, fontFile)
         end,
         setValue = function(keyName)
             profile.debuffHideTooltips = TipModeStore(keyName)
-            DmApply()
+            ApplyDebuffManager()
             CludesUI:RefreshPage() -- update the Use Modifier cog disabled state
         end,
     }, {
@@ -1626,7 +1626,7 @@ local function BuildBaseDetailDM(widget, fontFile)
                     get = PFieldOr("debuffTooltipModifier", "none"),
                     set = function(val)
                         profile.debuffTooltipModifier = val
-                        DmApply()
+                        ApplyDebuffManager()
                         CludesUI:RefreshPage() -- clear/raise the no-key warning bubble
                     end,
                 },
@@ -1648,7 +1648,7 @@ local function BuildBaseDetailDM(widget, fontFile)
             -- Persistent red bubble above the cog while Shown on Modifier is
             -- selected with no key picked (the standard empty-selection warning);
             -- the hover tooltip above keeps the explanation.
-            CludesUI.AttachEmptyFilterWarn(leftRegion, tipModBtn, L("Select a Modifier"), function()
+            CludesUI.AttachEmptyFilterWarn(leftRegion, tipModBtn, Loc("Select a Modifier"), function()
                 return tipOff() or (profile.debuffTooltipModifier or "none") ~= "none"
             end)
         end
@@ -1676,7 +1676,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
 
     local function TSet(filterKey, val)
         tbl[filterKey] = val
-        DmApply()
+        ApplyDebuffManager()
     end
     -- Row setters over TSet: the key written with the row's value.
     local function TSetRow(filterKey)
@@ -1738,7 +1738,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                 return tbl.maxDurSec
             end, function(val)
                 tbl.maxDurSec = val
-            end, DmApply)
+            end, ApplyDebuffManager)
         )
         sy = sy - hh
         BuildTileFiltersDD(fRow._leftRegion, tbl, dmConf)
@@ -1871,7 +1871,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
             return TEff("border" .. keyName, "debuffBorder" .. keyName)
         end, function(keyName, val)
             tbl["border" .. keyName] = val
-        end, DmApply, nil, true)
+        end, ApplyDebuffManager, nil, true)
 
         -- Row: Show Duration Text (+ cog + swatch) | Show Stacks (+ cog + swatch)
         local dtRow
@@ -1941,7 +1941,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                 return color.r or 1, color.g or 1, color.b or 1, 1
             end, function(red, green, blue)
                 tbl.durTextColor = { r = red, g = green, b = blue }
-                DmApply()
+                ApplyDebuffManager()
             end, false, 20)
             swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
             region._lastInline = swatch
@@ -1992,7 +1992,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                 return color.r or 1, color.g or 1, color.b or 1, 1
             end, function(red, green, blue)
                 tbl.stacksTextColor = { r = red, g = green, b = blue }
-                DmApply()
+                ApplyDebuffManager()
             end, false, 20)
             swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
             region._lastInline = swatch
@@ -2038,7 +2038,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                 end,
                 setValue = function(red, green, blue, a)
                     tbl.color = { r = red, g = green, b = blue, a = a or 1 }
-                    DmApply()
+                    ApplyDebuffManager()
                 end,
             }, { type = "label", text = "" })
             sy = sy - hh
@@ -2055,7 +2055,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
     local GO = CludesUI.GlowOptions
     local glowDesc
     if tbl.type == "glow" then
-        glowDesc = TileGlowDesc(tbl, DmApply)
+        glowDesc = TileGlowDesc(tbl, ApplyDebuffManager)
     end
     local catRow
     catRow, hh = W:DualRow(
@@ -2090,7 +2090,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
             local color = tbl.color or {}
             color.r, color.g, color.b = red, green, blue
             tbl.color = color
-            DmApply()
+            ApplyDebuffManager()
         end, false, 20)
         -- Label slots have no _control: anchor to the region itself.
         swatch:SetPoint("RIGHT", region, "RIGHT", -20, 0)
@@ -2254,7 +2254,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                 return color.r or 0.25, color.g or 0.8, color.b or 0.45, 1
             end, function(red, green, blue)
                 tbl.color = { r = red, g = green, b = blue }
-                DmApply()
+                ApplyDebuffManager()
             end, false, 20)
             colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
             region._lastInline = colorSwatch
@@ -2266,7 +2266,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                 return color.r or 0, color.g or 0, color.b or 0, 1
             end, function(red, green, blue)
                 tbl.barBgColor = { r = red, g = green, b = blue }
-                DmApply()
+                ApplyDebuffManager()
             end, false, 20)
             bgSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
             region._lastInline = bgSwatch
@@ -2288,7 +2288,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                 return tbl.maxDurSec
             end, function(val)
                 tbl.maxDurSec = val
-            end, DmApply)
+            end, ApplyDebuffManager)
         )
         sy = sy - hh
     elseif tbl.type == "glow" then
@@ -2301,7 +2301,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                 return tbl.maxDurSec
             end, function(val)
                 tbl.maxDurSec = val
-            end, DmApply),
+            end, ApplyDebuffManager),
             CludesUI.BlankRowCfg()
         )
         sy = sy - hh
@@ -3002,8 +3002,8 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     local baseOwn = (dmSpecSel == "allspecs")
     local baseInherited = (inhGroups ~= nil)
     local allSpecsName = (mod.BM_GROUP_BUCKET_INFO and mod.BM_GROUP_BUCKET_INFO.allspecs)
-            and L(mod.BM_GROUP_BUCKET_INFO.allspecs.name)
-        or L("All Specs")
+            and Loc(mod.BM_GROUP_BUCKET_INFO.allspecs.name)
+        or Loc("All Specs")
 
     -- Inherited selection: resolve against the owning group's bucket; drop
     -- it when the view no longer inherits that group or the tile is gone.
@@ -3104,19 +3104,19 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     -- at a position; the base grid at the debuff position.
     local function TilePosText(tbl)
         if tbl.type == "icons" or tbl.type == "square" or tbl.type == "bar" then
-            return "(" .. L(POS_VALUES[tbl.position or "top"] or "") .. ")"
+            return "(" .. Loc(POS_VALUES[tbl.position or "top"] or "") .. ")"
         end
     end
-    local basePosText = "(" .. L(POS_VALUES[profile.debuffPosition or "bottomright"] or "") .. ")"
+    local basePosText = "(" .. Loc(POS_VALUES[profile.debuffPosition or "bottomright"] or "") .. ")"
 
     -- Pinned Base Icons tile (All Specs view): undeletable, no toggle (an
     -- empty grid is expressed through the filters).
     if baseOwn then
         AddTile({
             icon = SampleDebuffTexture(1),
-            title = L("Base Icons"),
+            title = Loc("Base Icons"),
             posText = basePosText,
-            subtitle = L("The standard debuff grid"),
+            subtitle = Loc("The standard debuff grid"),
             selected = (dmSel == "base" and not inheritSel),
             enabled = true,
             onSelect = function()
@@ -3131,7 +3131,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         local disHere = mod.DM_BaseDisabled and mod.DM_BaseDisabled(dmSpecSel)
         AddTile({
             icon = SampleDebuffTexture(1),
-            title = L("Base Icons"),
+            title = Loc("Base Icons"),
             posText = basePosText,
             subtitle = allSpecsName,
             inheritedTooltip = CludesUI.Lf("Inherited from %1$s. Editable only there.", allSpecsName),
@@ -3155,7 +3155,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         for gi = 1, #inhGroups do
             local gkey = inhGroups[gi]
             local ginfo = mod.BM_GROUP_BUCKET_INFO and mod.BM_GROUP_BUCKET_INFO[gkey]
-            local gname = ginfo and L(ginfo.name) or gkey
+            local gname = ginfo and Loc(ginfo.name) or gkey
             local gl = (mod.DM_BucketTiles and mod.DM_BucketTiles(gkey)) or {}
             for idx = 1, #gl do
                 local tbl = gl[idx]
@@ -3216,7 +3216,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     return
                 end
                 CludesUI.ShowPickMenu(tileFrame, {
-                    title = L("Add To"),
+                    title = Loc("Add To"),
                     fontPath = fontFile,
                     items = CludesUI.SpecBucketMenuItems(dmSpecSel, nil, mod.DM_ForeverKey),
                     onPick = function(filterKey)
@@ -3230,15 +3230,15 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                 tbl.enabled = val and true or false
                 ApplyAndRedraw()
             end,
-            editTooltip = L("Rename Indicator"),
+            editTooltip = Loc("Rename Indicator"),
             onEdit = function()
                 local current = TileName(tbl)
                 CludesUI:ShowInputPopup({
-                    title = L("Rename Indicator"),
-                    message = L("Enter a new name for this indicator:"),
+                    title = Loc("Rename Indicator"),
+                    message = Loc("Enter a new name for this indicator:"),
                     placeholder = current,
-                    confirmText = L("Rename"),
-                    cancelText = L("Cancel"),
+                    confirmText = Loc("Rename"),
+                    cancelText = Loc("Cancel"),
                     onConfirm = function(textValue)
                         textValue = textValue and textValue:gsub("^%s+", ""):gsub("%s+$", "") or ""
                         -- Empty reverts to the type-name default.
@@ -3249,10 +3249,10 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             end,
             onDelete = function()
                 CludesUI:ShowConfirmPopup({
-                    title = L("Delete Indicator"),
-                    message = L("Delete this indicator? Its settings are removed from the profile."),
-                    confirmText = L("Delete"),
-                    cancelText = L("Cancel"),
+                    title = Loc("Delete Indicator"),
+                    message = Loc("Delete this indicator? Its settings are removed from the profile."),
+                    confirmText = Loc("Delete"),
+                    cancelText = Loc("Cancel"),
                     onConfirm = function()
                         if mod.DM_DeleteTile then
                             mod.DM_DeleteTile(tbl.id)
@@ -3292,7 +3292,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         CludesUI.PrimeFontShadow(addLabel, true)
         addLabel:SetFont(fontFile, 12, "")
         addLabel:SetPoint("CENTER")
-        addLabel:SetText(L("Add New"))
+        addLabel:SetText(Loc("Add New"))
         addLabel:SetTextColor(1, 1, 1)
 
         newBtn:SetScript("OnEnter", nil) -- CludesUI.OutlineButton below sets the hover
@@ -3382,7 +3382,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                 local fltLbl = dialog:CreateFontString(nil, "OVERLAY")
                 fltLbl:SetFont(fontFile, 11, "")
                 fltLbl:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, paneY)
-                fltLbl:SetText(L("Filters"))
+                fltLbl:SetText(Loc("Filters"))
                 fltLbl:SetTextColor(1, 1, 1, 0.6)
                 paneY = paneY - LABEL_H - LBL_GAP
 
@@ -3444,7 +3444,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                 local indLbl = dialog:CreateFontString(nil, "OVERLAY")
                 indLbl:SetFont(fontFile, 11, "")
                 indLbl:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, paneY)
-                indLbl:SetText(L("Indicator"))
+                indLbl:SetText(Loc("Indicator"))
                 indLbl:SetTextColor(1, 1, 1, 0.6)
                 paneY = paneY - LABEL_H - LBL_GAP
 
@@ -3477,7 +3477,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                 local cTx = cBtn:CreateFontString(nil, "OVERLAY")
                 cTx:SetPoint("CENTER")
                 cTx:SetFont(fontFile, 12, "")
-                cTx:SetText(L("Create"))
+                cTx:SetText(Loc("Create"))
                 cTx:SetTextColor(1, 1, 1)
                 cBtn:SetScript("OnEnter", nil) -- CludesUI.OutlineButton below sets the hover
                 CludesUI.OutlineButton(cBtn, cBg, true)
@@ -3649,7 +3649,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         specLabel:SetFont(fontFile, 12, "")
         specLabel:SetPoint("TOP", leftPane, "TOPLEFT", specCenterX, groupTopY)
         specLabel:SetJustifyH("CENTER")
-        specLabel:SetText(L("Editing Spec"))
+        specLabel:SetText(Loc("Editing Spec"))
         specLabel:SetTextColor(1, 1, 1, 0.75)
 
         local specDDW = specSplitW - PAD - 50
@@ -3724,27 +3724,27 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     local groupEmpty = (dmSel == "base" and not inheritSel and not baseOwn and not baseInherited)
     if inheritSel and inhSelTile then
         local ginfo2 = mod.BM_GROUP_BUCKET_INFO and mod.BM_GROUP_BUCKET_INFO[inheritSel.group]
-        local gname2 = ginfo2 and L(ginfo2.name) or inheritSel.group
+        local gname2 = ginfo2 and Loc(ginfo2.name) or inheritSel.group
         settingsHeading:SetTextColor(0.55, 0.72, 1)
         settingsHeading:SetText(TileName(inhSelTile))
         subHeading:SetText("(" .. CludesUI.Lf("Inherited from %1$s", gname2) .. ")")
     elseif inheritSel and inhSelBase then
         settingsHeading:SetTextColor(0.55, 0.72, 1)
-        settingsHeading:SetText(L("Base Icons"))
+        settingsHeading:SetText(Loc("Base Icons"))
         subHeading:SetText("(" .. CludesUI.Lf("Inherited from %1$s", allSpecsName) .. ")")
     elseif selTile then
-        settingsHeading:SetText(L(TYPE_NAMES[selTile.type] or selTile.type))
+        settingsHeading:SetText(Loc(TYPE_NAMES[selTile.type] or selTile.type))
         subHeading:SetText("(" .. TileSubtitle(selTile) .. ")")
         CludesUI.RegisterWidgetRefresh(function()
             subHeading:SetText("(" .. TileSubtitle(selTile) .. ")")
         end)
     elseif groupEmpty then
         local ginfo3 = mod.BM_GROUP_BUCKET_INFO and mod.BM_GROUP_BUCKET_INFO[dmSpecSel]
-        settingsHeading:SetText(ginfo3 and L(ginfo3.name) or dmSpecSel)
-        subHeading:SetText("(" .. L("No indicator selected") .. ")")
+        settingsHeading:SetText(ginfo3 and Loc(ginfo3.name) or dmSpecSel)
+        subHeading:SetText("(" .. Loc("No indicator selected") .. ")")
     else
-        settingsHeading:SetText(L("Base Icons"))
-        subHeading:SetText("(" .. L("The standard debuff grid") .. ")")
+        settingsHeading:SetText(Loc("Base Icons"))
+        subHeading:SetText("(" .. Loc("The standard debuff grid") .. ")")
     end
 
     layoutY = layoutY - 18 - 10
@@ -3835,7 +3835,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     local sy
     if inheritSel and inhSelTile then
         local ginfo2 = mod.BM_GROUP_BUCKET_INFO and mod.BM_GROUP_BUCKET_INFO[inheritSel.group]
-        local gname2 = ginfo2 and L(ginfo2.name) or inheritSel.group
+        local gname2 = ginfo2 and Loc(ginfo2.name) or inheritSel.group
         sy = BuildInheritedPane(gname2, inheritSel.group, inheritSel.id)
     elseif inheritSel and inhSelBase then
         sy = BuildInheritedPane(allSpecsName, "allspecs", "base")

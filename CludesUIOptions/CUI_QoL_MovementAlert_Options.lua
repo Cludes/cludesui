@@ -30,7 +30,7 @@ local function MA()
     return profile and profile.profile and profile.profile.movementAlert
 end
 
-local function Refresh()
+local function ApplyMovementAlert()
     if CludesUI._applyMovementAlert then
         CludesUI._applyMovementAlert()
     end
@@ -409,7 +409,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
     local function MaFieldThen(key)
         return function(value)
             ma[key] = value
-            Refresh()
+            ApplyMovementAlert()
         end
     end
     local function MaFieldOr(key, default)
@@ -580,7 +580,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 if CludesUI._UpdateMovementAlertEvents then
                     CludesUI._UpdateMovementAlertEvents()
                 end
-                Refresh()
+                ApplyMovementAlert()
                 CludesUI:RefreshPage()
             end,
             nil,
@@ -685,7 +685,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             if wasText ~= isText then
                 ma.textSize = isText and 24 or 12
             end
-            Refresh()
+            ApplyMovementAlert()
             CludesUI:RefreshPage()
         end,
     }, {
@@ -791,7 +791,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     end,
                     set = function(val)
                         ma.precision = val and 1 or 0
-                        Refresh()
+                        ApplyMovementAlert()
                     end,
                 },
             },
@@ -824,7 +824,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 return
             end
             ma.textColorUseClass = true
-            Refresh()
+            ApplyMovementAlert()
             CludesUI:RefreshPage()
         end)
         CludesUI.HoverTip(dmClassSwatch, "Class Colored")
@@ -839,7 +839,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             end,
             function(red, green, blue)
                 ma.textColorR, ma.textColorG, ma.textColorB = red, green, blue
-                Refresh()
+                ApplyMovementAlert()
             end,
             nil,
             20
@@ -853,7 +853,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             end
             if ma.textColorUseClass then
                 ma.textColorUseClass = false
-                Refresh()
+                ApplyMovementAlert()
                 CludesUI:RefreshPage()
                 return
             end
@@ -976,7 +976,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             if CludesUI._CacheMovementSpells then
                 CludesUI._CacheMovementSpells()
             end
-            Refresh()
+            ApplyMovementAlert()
         end
 
         -- Cell list: presets (all classes), then customs, then the add cell.
@@ -1241,7 +1241,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                                 if CludesUI._CacheMovementSpells then
                                     CludesUI._CacheMovementSpells()
                                 end
-                                Refresh()
+                                ApplyMovementAlert()
                             end)
                             return
                         end
@@ -1332,7 +1332,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             if CludesUI._UpdateMovementAlertEvents then
                 CludesUI._UpdateMovementAlertEvents()
             end
-            Refresh()
+            ApplyMovementAlert()
             CludesUI:RefreshPage()
         end,
     }, {
@@ -1347,7 +1347,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             if CludesUI._UpdateMovementAlertEvents then
                 CludesUI._UpdateMovementAlertEvents()
             end
-            Refresh()
+            ApplyMovementAlert()
             CludesUI:RefreshPage()
         end,
     })
@@ -1381,7 +1381,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     end,
                     set = function(red, green, blue)
                         ma.tsColorR, ma.tsColorG, ma.tsColorB = red, green, blue
-                        Refresh()
+                        ApplyMovementAlert()
                     end,
                 },
                 {
@@ -1494,7 +1494,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     end,
                     set = function(red, green, blue)
                         ma.gwColorR, ma.gwColorG, ma.gwColorB = red, green, blue
-                        Refresh()
+                        ApplyMovementAlert()
                     end,
                 },
                 {

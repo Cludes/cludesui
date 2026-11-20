@@ -54,7 +54,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
             end
         end
     end
-    local function powerOff()
+    local function powerBarOff()
         local rowCfg = rowConf()
         return not (rowCfg and rowCfg.enabled)
     end
@@ -66,7 +66,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
     -- Move in Unlock Mode on the title; handed back so the page's preview eye sits after it.
     local unlockJump = CludesUI.BuildSectionUnlockJump(
         heading,
-        { key = "ERB_Power", disabled = powerOff, disabledTooltip = powerDisTip }
+        { key = "ERB_Power", disabled = powerBarOff, disabledTooltip = powerDisTip }
     )
 
     local _advTop = cursorY -- content top; also used by the Simple override overlay
@@ -92,7 +92,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
     }, {
         type = "dropdown",
         text = "Orientation",
-        disabled = powerOff,
+        disabled = powerBarOff,
         disabledTooltip = powerDisTip,
         values = { HORIZONTAL = "Horizontal", VERTICAL_UP = "Vertical Up", VERTICAL_DOWN = "Vertical Down" },
         order = { "HORIZONTAL", "VERTICAL_UP", "VERTICAL_DOWN" },
@@ -111,14 +111,14 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
     -- Per-spec power enables live in Spec Overrides: "Show Power Bar" is captured while editing as a group.
 
     -- Everything below Row 1 is hidden entirely while the bar is off.
-    if not powerOff() then
+    if not powerBarOff() then
         -- Row 2: Height | Width (MatchGuard in both modes, sync icons Simple-only). Orientation-aware, as on the health bar above.
         local function powerOri()
             local c, p = rowConf(), DB()
             return (c and c.orientation) or (p and p.general and p.general.orientation)
         end
         local function guard(propKey)
-            return mod.OrientedMatchGuard("ERB_Power", propKey, powerOri, powerOff, powerDisTip)
+            return mod.OrientedMatchGuard("ERB_Power", propKey, powerOri, powerBarOff, powerDisTip)
         end
         local phDis, phTip, phRaw = guard("Height")
         local pwDis, pwTip, pwRaw = guard("Width")
@@ -228,7 +228,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                 CludesUI.BlizzStyle.Gate("resourcebars", {
                     type = "dropdown",
                     text = "Border Style",
-                    disabled = powerOff,
+                    disabled = powerBarOff,
                     disabledTooltip = powerDisTip,
                     values = texValues,
                     order = texOrder,
@@ -263,7 +263,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                 mod.ERB_ClassicBorderRow()
                         and mod.ERB_ClassicBorderSizeCfg(
                             rowConf,
-                            powerOff,
+                            powerBarOff,
                             powerDisTip,
                             RebuildPower,
                             "ERB_Power"
@@ -272,7 +272,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         "resourcebars",
                         CludesUI.BorderPxSliderCfg({
                             text = "Border Size",
-                            disabled = powerOff,
+                            disabled = powerBarOff,
                             disabledTooltip = powerDisTip,
                             getStep = function()
                                 local rowCfg = rowConf()
@@ -317,7 +317,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     end
                     local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                         addonKey = "resourcebars",
-                        disabled = powerOff,
+                        disabled = powerBarOff,
                         disabledTooltip = powerDisTip,
                         getTex = function()
                             local rowCfg = rowConf()
@@ -373,7 +373,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         title = "Corner Radius",
                         tip = "Corner Radius",
                         disabled = function()
-                            if powerOff() or CludesUI.BlizzStyle.Get("resourcebars") then
+                            if powerBarOff() or CludesUI.BlizzStyle.Get("resourcebars") then
                                 return true
                             end
                             local rowCfg = rowConf()
@@ -383,7 +383,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             if CludesUI.BlizzStyle.Get("resourcebars") then
                                 return CludesUI.BlizzStyle.Label("resourcebars")
                             end
-                            if powerOff() then
+                            if powerBarOff() then
                                 return powerDisTip
                             end
                             return "This option requires the Solid, Glow or Shadow border style."
@@ -449,7 +449,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                     CludesUI.HideWidgetTooltip()
                 end)
                 local function UpdateBorderSwDis()
-                    if powerOff() then
+                    if powerBarOff() then
                         borderSwatch:SetAlpha(0.3)
                         swBlock:Show()
                     else
@@ -553,12 +553,12 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             tooltip = "Draws the power bar's border above the GCD bar where the two overlap.",
                             disabled = function()
                                 local p, c = DB(), rowConf()
-                                return (powerOff() or not (p and p.gcdBar.enabled) or (c and c.borderBehind))
+                                return (powerBarOff() or not (p and p.gcdBar.enabled) or (c and c.borderBehind))
                                         and true
                                     or false
                             end,
                             disabledTooltip = function()
-                                if powerOff() then
+                                if powerBarOff() then
                                     return powerDisTip
                                 end
                                 local profile = DB()
@@ -569,7 +569,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             end,
                             rawTooltip = function()
                                 local profile = DB()
-                                return not powerOff() and (profile and profile.gcdBar.enabled) and true or false
+                                return not powerBarOff() and (profile and profile.gcdBar.enabled) and true or false
                             end,
                             get = ConfGetter("borderAboveGCD", false),
                             set = function(val)
@@ -591,7 +591,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             max = 50,
                             step = 1,
                             tooltip = "Grows the border past the bar's top edge on screen without resizing the bar.",
-                            disabled = powerOff,
+                            disabled = powerBarOff,
                             disabledTooltip = powerDisTip,
                             get = ConfGetter("borderExtendTop", 0),
                             set = ConfSetter("borderExtendTop", RebuildPower, true),
@@ -603,7 +603,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             max = 50,
                             step = 1,
                             tooltip = "Grows the border past the bar's bottom edge on screen without resizing the bar.",
-                            disabled = powerOff,
+                            disabled = powerBarOff,
                             disabledTooltip = powerDisTip,
                             get = ConfGetter("borderExtendBottom", 0),
                             set = ConfSetter("borderExtendBottom", RebuildPower, true),
@@ -615,7 +615,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             max = 300,
                             step = 1,
                             tooltip = "Grows the border past the bar's left edge on screen without resizing the bar.",
-                            disabled = powerOff,
+                            disabled = powerBarOff,
                             disabledTooltip = powerDisTip,
                             get = ConfGetter("borderExtendLeft", 0),
                             set = ConfSetter("borderExtendLeft", RebuildPower, true),
@@ -627,7 +627,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             max = 300,
                             step = 1,
                             tooltip = "Grows the border past the bar's right edge on screen without resizing the bar.",
-                            disabled = powerOff,
+                            disabled = powerBarOff,
                             disabledTooltip = powerDisTip,
                             get = ConfGetter("borderExtendRight", 0),
                             set = ConfSetter("borderExtendRight", RebuildPower, true),
@@ -640,7 +640,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             values = sepValues,
                             order = sepOrder,
                             tooltip = "Draws a separator line along the bar's bottom edge.",
-                            disabled = powerOff,
+                            disabled = powerBarOff,
                             disabledTooltip = powerDisTip,
                             get = function()
                                 local rowCfg = rowConf()
@@ -672,10 +672,10 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                             step = 1,
                             disabled = function()
                                 local rowCfg = rowConf()
-                                return powerOff() or not (rowCfg and rowCfg.edgeSep)
+                                return powerBarOff() or not (rowCfg and rowCfg.edgeSep)
                             end,
                             disabledTooltip = function()
-                                return powerOff() and powerDisTip or "Bottom Separator"
+                                return powerBarOff() and powerDisTip or "Bottom Separator"
                             end,
                             get = ConfGetter("edgeSepY", 0),
                             set = ConfSetter("edgeSepY", RebuildPower, true),
@@ -832,7 +832,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
             min = 0,
             max = 100,
             step = 5,
-            disabled = powerOff,
+            disabled = powerBarOff,
             disabledTooltip = powerDisTip,
             getValue = function()
                 local rowCfg = rowConf()
@@ -855,7 +855,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
             step = 1,
             trackWidth = 120,
             tooltip = "Opacity of the bar fill; below 100 the world shows through the fill instead of the background.",
-            disabled = powerOff,
+            disabled = powerBarOff,
             disabledTooltip = powerDisTip,
             getValue = function()
                 local rowCfg = rowConf()
@@ -1035,7 +1035,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                         return isPowerColored and 1 or 0.3
                     end,
                 },
-            }, { size = 20, disabled = powerOff, disabledTooltip = powerDisTip })
+            }, { size = 20, disabled = powerBarOff, disabledTooltip = powerDisTip })
         end
         if not context.advanced and context.syncRows and not CludesUI._prebuilding then
             context.syncRows.powerOpacity = powerBorderRow._leftRegion
@@ -1194,7 +1194,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
         powerTextSizeRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Power Text",
-            disabled = powerOff,
+            disabled = powerBarOff,
             disabledTooltip = powerDisTip,
             values = {
                 none = "None",
@@ -1374,7 +1374,7 @@ function mod.ERB_BuildPowerSection(hostFrame, cursorY, context)
                 rebuildFn = function()
                     RebuildPower()
                 end,
-                disabledFn = powerOff,
+                disabledFn = powerBarOff,
                 disabledTip = "Power Bar",
                 roleShortcuts = true,
                 partialDefault = true,

@@ -1531,7 +1531,7 @@ function XF.RefilterEntry(record)
         record:SetAlpha(XF.PassesFilters(ident) and 1 or XF.DIM_ALPHA)
     end
 end
-local function Refilter()
+local function RunFilters()
     XF.NewPass()
     if mod.ExtraRefilter then
         mod.ExtraRefilter()
@@ -2423,7 +2423,7 @@ local function AddPlaystyleItems(menu, posY, raids)
                 if n == #PLAYSTYLES then
                     wipe(cfg.raidPlaystyles)
                 end
-                Refilter()
+                RunFilters()
                 Paint()
             else
                 local frame = XF.GetFilter()
@@ -2476,7 +2476,7 @@ local function AddRoleItems(menu, posY, raids)
     local K = mod.ExtraClassRows
         and {
             Cfg = Cfg,
-            Refilter = Refilter,
+            Refilter = RunFilters,
             Paint = Paint,
             Font = XF.Font,
             ITEM_H = ITEM_H,
@@ -2508,7 +2508,7 @@ local function AddRoleItems(menu, posY, raids)
                     cfg.raidRoles = {}
                 end
                 cfg.raidRoles[filterKey] = (not cfg.raidRoles[filterKey]) or nil
-                Refilter()
+                RunFilters()
                 Paint()
             else
                 local frame = XF.GetFilter()
@@ -2587,7 +2587,7 @@ function XF.OpenOpList(button, roleName)
                 region.op = o.key
                 cfg.roleCounts[L.role] = region
                 L:Hide()
-                Refilter()
+                RunFilters()
                 Paint()
             end)
             L.items[index] = entry
@@ -2671,7 +2671,7 @@ function XF.AddCountRow(menu, posY, roleName, textValue)
         local region = Rule()
         region.on = (not region.on) or nil
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
-        Refilter()
+        RunFilters()
         Paint()
         if region.on and menu.counts and menu.counts[roleName] then
             menu.counts[roleName].box:SetFocus()
@@ -2701,7 +2701,7 @@ function XF.AddCountRow(menu, posY, roleName, textValue)
             return
         end
         Rule().n = tonumber(self:GetText())
-        Refilter()
+        RunFilters()
         Paint()
     end)
     local labelText = rowF:CreateFontString(nil, "OVERLAY")
@@ -2751,7 +2751,7 @@ function XF.AddFlagItem(menu, posY, filterKey, textValue, tipText)
     local entry = MenuItem(menu, posY, textValue, function()
         local cfg = Cfg()
         cfg[filterKey] = (not cfg[filterKey]) or nil
-        Refilter()
+        RunFilters()
         Paint()
     end)
     menu.items["flag_" .. filterKey] = entry
@@ -2920,7 +2920,7 @@ local function AddRegionItems(menu, posY)
             if count == #Regions() then
                 wipe(cfg.regions)
             end
-            Refilter()
+            RunFilters()
             Paint()
         end)
         menu.items["region_" .. filterKey] = entry
@@ -3150,7 +3150,7 @@ local function BuildRaidDiffMenu()
             if n == #RAID_DIFFS_MENU then
                 wipe(tbl)
             end
-            Refilter()
+            RunFilters()
             Paint()
         end)
         posY = posY + ITEM_H
@@ -3421,7 +3421,7 @@ local function MakeDelveSquare(hostFrame)
         if count == #(delves or {}) then
             wipe(cfg.delves)
         end
-        Refilter()
+        RunFilters()
         Paint()
         if XF.tipOwner == self then
             DelveEnter(self)
@@ -3575,7 +3575,7 @@ local function BossPickList()
                 cfg.bosses = {}
             end
             cfg.bosses[skinData.key] = p.value
-            Refilter()
+            RunFilters()
             Paint()
         end)
         entries.rows[index] = entry
@@ -3719,7 +3719,7 @@ local function BuildRaidMenu()
             end
         end
         mod.Search_Layout()
-        Refilter()
+        RunFilters()
     end)
     posY = posY + ITEM_H
     local sdiv = raidMenu:CreateTexture(nil, "ARTWORK")
@@ -3756,7 +3756,7 @@ local function BuildRaidMenu()
                 end
             end
             mod.Search_Layout()
-            Refilter()
+            RunFilters()
         end)
         posY = posY + ITEM_H
     end
@@ -3769,7 +3769,7 @@ local function BuildRaidMenu()
     raidMenu.items.worldBosses = MenuItem(raidMenu, posY, CludesUI.L("World Bosses"), function()
         local cfg = Cfg()
         cfg.hideWorldBosses = (not cfg.hideWorldBosses) or nil
-        Refilter()
+        RunFilters()
         Paint()
     end)
     posY = posY + ITEM_H
@@ -3841,7 +3841,7 @@ local function BuildTierMenu()
     local posY = 3
     tierMenu.items.all = MenuItem(tierMenu, posY, ALL or "All", function()
         wipe(Tiers())
-        Refilter()
+        RunFilters()
         Paint()
     end)
     posY = posY + ITEM_H
@@ -3859,7 +3859,7 @@ local function BuildTierMenu()
             if n == MAX_TIER then
                 wipe(tbl)
             end
-            Refilter()
+            RunFilters()
             Paint()
         end)
         posY = posY + ITEM_H
@@ -4249,7 +4249,7 @@ local function CogFilterButton(button)
         end
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         Apply(frame)
-        Refilter()
+        RunFilters()
     end)
     resetBtn:SetScript("OnEnter", function(self)
         self.Glyph:SetAlpha(1)
@@ -4596,7 +4596,7 @@ local function Layout()
             GlyphButton = GlyphButton,
             ROW1_H = ROW1_H,
             GAP = SQ_GAP,
-            Refilter = Refilter,
+            Refilter = RunFilters,
             Tip = XF.Tip,
             Untip = XF.Untip,
             ClickOff = XF.ClickOff,

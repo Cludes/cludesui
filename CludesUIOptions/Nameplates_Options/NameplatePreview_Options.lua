@@ -317,13 +317,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
         return CludesUI._sliderDragging and CludesUI._sliderDragging > 0
     end
 
-    local function Snap(val)
+    local function SnapPx(val)
         local s = popFrame:GetEffectiveScale()
         return math.floor(val * s + 0.5) / s
     end
 
     -- 1px in preview-scale coordinates (used for borders and icon insets)
-    local px = Snap(1)
+    local px = SnapPx(1)
 
     -- Icon textures whose insets (px, -px) need refreshing when scale changes
     local _insetIcons = {}
@@ -340,7 +340,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
             end
             return posX
         end
-        local px = Snap(1)
+        local px = SnapPx(1)
         local t = mkB()
         t:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
         t:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
@@ -360,7 +360,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         r:SetWidth(px)
         frame._cuiIconEdges = { t, widget, l, r }
         _borderRefreshers[#_borderRefreshers + 1] = function()
-            local npx = Snap(1)
+            local npx = SnapPx(1)
             t:SetHeight(npx)
             widget:SetHeight(npx)
             l:SetWidth(npx)
@@ -419,7 +419,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
     local previewHashLine = healthBar:CreateTexture(nil, "OVERLAY", nil, 3)
     previewHashLine:SetColorTexture(1, 1, 1, 0.8)
     UnsnapTex(previewHashLine)
-    previewHashLine:SetWidth(Snap(2))
+    previewHashLine:SetWidth(SnapPx(2))
     previewHashLine:SetPoint("TOP", healthBar, "TOP", 0, 0)
     previewHashLine:SetPoint("BOTTOM", healthBar, "BOTTOM", 0, 0)
     previewHashLine:Hide()
@@ -1255,9 +1255,9 @@ local function BuildNameplatePreview(hostFrame, parentW)
         local widget = CP.offBadge
         widget:SetText(string.format("%+d", math.floor(realOff + 0.5)))
         local textH = widget:GetStringHeight()
-        local cy = Snap(edgeInboard + dirInboard * (textH / 2 + 3))
+        local cy = SnapPx(edgeInboard + dirInboard * (textH / 2 + 3))
         widget:ClearAllPoints()
-        widget:SetPoint("CENTER", popFrame, "TOPLEFT", Snap(centerX), cy)
+        widget:SetPoint("CENTER", popFrame, "TOPLEFT", SnapPx(centerX), cy)
         widget:Show()
         local a = CP.offArrow
         a:SetTexture((dirInboard == -1) and CP.ARROW_UP or CP.ARROW_DOWN)
@@ -1507,10 +1507,10 @@ local function BuildNameplatePreview(hostFrame, parentW)
         local fontFile = (CludesUI.GetFontPath("nameplates")) or DBVal("font")
         -- Body-text outline, already slug-gated at the source (GetFontOutlineFlag).
         local npOutline = (CludesUI.GetFontOutlineFlag("nameplates")) or "OUTLINE, SLUG"
-        local barH = Snap(DBVal("healthBarHeight"))
+        local barH = SnapPx(DBVal("healthBarHeight"))
         local rawBarW = BAR_W + DBVal("healthBarWidth")
-        local barW = IsDragging() and rawBarW or Snap(rawBarW)
-        local castH = Snap(DBVal("castBarHeight") or defaultSet.castBarHeight)
+        local barW = IsDragging() and rawBarW or SnapPx(rawBarW)
+        local castH = SnapPx(DBVal("castBarHeight") or defaultSet.castBarHeight)
         local showArrows = DBVal("showTargetArrows") == true
         local arrowStyleKey = DBVal("targetArrowStyle")
             or (DBVal("targetArrowDouble") and "double")
@@ -1796,7 +1796,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         end
 
         -- Refresh icon insets (1px from border) for current scale
-        local curPx = Snap(1)
+        local curPx = SnapPx(1)
         for _, record in ipairs(_insetIcons) do
             local inset = curPx
             if record.kind and mod.GetIconBorderEnabled and not mod.GetIconBorderEnabled(record.kind) then
@@ -3100,7 +3100,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
             end
         end
 
-        local function AuraDurationVal(kind, suffix)
+        local function DurationTextVal(kind, suffix)
             local saved = DB()
             local key = kind .. "DurationText" .. suffix
             local oldKey = "auraDurationText" .. suffix
@@ -3112,18 +3112,18 @@ local function BuildNameplatePreview(hostFrame, parentW)
             end
             return defaultSet[oldKey]
         end
-        local debuffDurSz = AuraDurationVal("debuff", "Size")
-        local debuffDurX = AuraDurationVal("debuff", "X")
-        local debuffDurY = AuraDurationVal("debuff", "Y")
-        local debuffDurC = AuraDurationVal("debuff", "Color")
-        local buffDurSz = AuraDurationVal("buff", "Size")
-        local buffDurX = AuraDurationVal("buff", "X")
-        local buffDurY = AuraDurationVal("buff", "Y")
-        local buffDurC = AuraDurationVal("buff", "Color")
-        local ccDurSz = AuraDurationVal("cc", "Size")
-        local ccDurX = AuraDurationVal("cc", "X")
-        local ccDurY = AuraDurationVal("cc", "Y")
-        local ccDurC = AuraDurationVal("cc", "Color")
+        local debuffDurSz = DurationTextVal("debuff", "Size")
+        local debuffDurX = DurationTextVal("debuff", "X")
+        local debuffDurY = DurationTextVal("debuff", "Y")
+        local debuffDurC = DurationTextVal("debuff", "Color")
+        local buffDurSz = DurationTextVal("buff", "Size")
+        local buffDurX = DurationTextVal("buff", "X")
+        local buffDurY = DurationTextVal("buff", "Y")
+        local buffDurC = DurationTextVal("buff", "Color")
+        local ccDurSz = DurationTextVal("cc", "Size")
+        local ccDurX = DurationTextVal("cc", "X")
+        local ccDurY = DurationTextVal("cc", "Y")
+        local ccDurC = DurationTextVal("cc", "Color")
         local auraStackSz = DBVal("auraStackTextSize") or defaultSet.auraStackTextSize
         local auraStackC = (DB() and DB().auraStackTextColor) or defaultSet.auraStackTextColor
         local auraStackX = DBVal("auraStackTextX") or defaultSet.auraStackTextX
@@ -3212,7 +3212,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 debuffs[i]:Hide()
             else
                 debuffs[i]:Show()
-                debuffs[i]:SetSize(Snap(debuffSz), Snap(debuffH))
+                debuffs[i]:SetSize(SnapPx(debuffSz), SnapPx(debuffH))
                 mod.SetAuraIconCrop(debuffs[i].icon, debuffCrop, debuffSz, debuffH)
                 debuffs[i].durationText:SetFont(fontFile, debuffDurSz, CludesUI.SlugFlag("OUTLINE, SLUG"))
                 debuffs[i].durationText:SetTextColor(debuffDurC.r, debuffDurC.g, debuffDurC.b, 1)
@@ -3249,7 +3249,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 end
             else
                 buffs[i]:Show()
-                buffs[i]:SetSize(Snap(buffSz), Snap(buffH))
+                buffs[i]:SetSize(SnapPx(buffSz), SnapPx(buffH))
                 mod.SetAuraIconCrop(buffs[i].icon, buffCrop, buffSz, buffH)
                 buffs[i].durationText:SetFont(fontFile, buffDurSz, CludesUI.SlugFlag("OUTLINE, SLUG"))
                 buffs[i].durationText:SetTextColor(buffDurC.r, buffDurC.g, buffDurC.b, 1)
@@ -3290,7 +3290,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 ccs[i]:Hide()
             else
                 ccs[i]:Show()
-                ccs[i]:SetSize(Snap(ccSz), Snap(ccH))
+                ccs[i]:SetSize(SnapPx(ccSz), SnapPx(ccH))
                 mod.SetAuraIconCrop(ccs[i].icon, ccCrop, ccSz, ccH)
                 ccs[i].durationText:SetFont(fontFile, ccDurSz, CludesUI.SlugFlag("OUTLINE, SLUG"))
                 ccs[i].durationText:SetTextColor(ccDurC.r, ccDurC.g, ccDurC.b, 1)
@@ -3528,7 +3528,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
             local effectiveDebuffY = (hasTopAura or slotTop ~= "none") and debuffY or 0
             local topStackH = topTextH + effectiveDebuffY + stackExtent
             -- 15 matches the bottom margin below the cast bar in totalH
-            healthFromTop = Snap(15 + math.max(topStackH, cornerExtent) + cpPush)
+            healthFromTop = SnapPx(15 + math.max(topStackH, cornerExtent) + cpPush)
         end
         healthBar:ClearAllPoints()
         healthBar:SetSize(barW, barH)
@@ -3546,7 +3546,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
             healthBar:SetPoint("TOPLEFT", popFrame, "TOPLEFT", xOff, -healthFromTop)
             healthHolder:SetPoint("TOPLEFT", popFrame, "TOPLEFT", xOff, -healthFromTop)
         else
-            xOff = Snap((pfW - barW) / 2)
+            xOff = SnapPx((pfW - barW) / 2)
             _cachedRawBarW = rawBarW
             _cachedXOff = xOff
             healthBar:SetPoint("TOPLEFT", popFrame, "TOPLEFT", xOff, -healthFromTop)
@@ -3666,8 +3666,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     local cpYOff = DBVal("classPowerYOffset") or defaultSet.classPowerYOffset
                     local cpXOff = DBVal("classPowerXOffset") or defaultSet.classPowerXOffset
                     local cpPos = DBVal("classPowerPos") or defaultSet.classPowerPos
-                    local scaledH = Snap(CP.PIP_H * cpScale)
-                    local barW = Snap(CP.PIP_W * cpScale * 6)
+                    local scaledH = SnapPx(CP.PIP_H * cpScale)
+                    local barW = SnapPx(CP.PIP_W * cpScale * 6)
 
                     local anchorPoint, anchorRelPoint, anchorFrame, yDir
                     if cpPos == "top" then
@@ -3691,8 +3691,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         anchorPoint,
                         anchorFrame,
                         anchorRelPoint,
-                        Snap(cpXOff),
-                        Snap(yDir * cpYShown)
+                        SnapPx(cpXOff),
+                        SnapPx(yDir * cpYShown)
                     )
                     bar:SetMinMaxValues(0, 100)
                     bar:SetValue(45) -- preview at 45% (moderate stagger)
@@ -3727,13 +3727,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     local cpBorderCol = (DB() and DB().classPowerBorderColor)
                         or defaultSet.classPowerBorderColor
                     local cpBorderPx = cpBorderOn
-                            and Snap(DBVal("classPowerBorderSize") or defaultSet.classPowerBorderSize)
+                            and SnapPx(DBVal("classPowerBorderSize") or defaultSet.classPowerBorderSize)
                         or 0
                     local cpIconKind = mod.GetPipIconKind(cpShape)
                     local cpSquare = CP.SQUARE_SHAPE[cpShape] or (cpIconKind ~= nil)
-                    local scaledW = Snap(CP.PIP_W * cpScale)
-                    local scaledH = cpSquare and scaledW or Snap(CP.PIP_H * cpScale)
-                    local scaledGap = Snap(cpGap * cpScale)
+                    local scaledW = SnapPx(CP.PIP_W * cpScale)
+                    local scaledH = cpSquare and scaledW or SnapPx(CP.PIP_H * cpScale)
+                    local scaledGap = SnapPx(cpGap * cpScale)
                     local totalPipW = comboMax * scaledW + (comboMax - 1) * scaledGap
 
                     -- Determine anchor frame and direction
@@ -3758,10 +3758,10 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     -- Pre-compute each pip's left-edge X in group-local coords; anchor via BOTTOMLEFT/TOPLEFT to avoid half-pixel center offsets.
                     local pipPositions = {}
                     for i = 1, comboMax do
-                        pipPositions[i] = Snap((i - 1) * (scaledW + scaledGap))
+                        pipPositions[i] = SnapPx((i - 1) * (scaledW + scaledGap))
                     end
                     local groupW = pipPositions[comboMax] + scaledW
-                    local halfGroup = Snap(groupW / 2)
+                    local halfGroup = SnapPx(groupW / 2)
 
                     local leftAnchor = (anchorPoint == "BOTTOM") and "BOTTOMLEFT" or "TOPLEFT"
 
@@ -3770,13 +3770,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         if i <= comboMax then
                             pipTex:ClearAllPoints()
                             pipTex:SetSize(scaledW, scaledH)
-                            local pipLeftX = Snap(pipPositions[i] - halfGroup + cpXOff)
+                            local pipLeftX = SnapPx(pipPositions[i] - halfGroup + cpXOff)
                             pipTex:SetPoint(
                                 leftAnchor,
                                 anchorFrame,
                                 anchorRelPoint,
                                 pipLeftX,
-                                Snap(yDir * cpYShown)
+                                SnapPx(yDir * cpYShown)
                             )
 
                             -- Background behind each pip
@@ -3873,7 +3873,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
         end
         local cpExtraH = popFrame.UpdateCP()
 
-        local totalH = Snap(healthFromTop + barH + castH + cpExtraH + 15)
+        local totalH = SnapPx(healthFromTop + barH + castH + cpExtraH + 15)
         -- Add extra height for auras in the "bottom" slot (below cast bar)
         local bottomExtent = 0
         local function isBottomSlot(s)

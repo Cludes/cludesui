@@ -747,7 +747,7 @@ _absorberMeta = {
         return "CUIAbsorber"
     end,
 }
-local function NewAbsorber()
+local function MakeAbsorber()
     return setmetatable({}, _absorberMeta)
 end
 
@@ -782,11 +782,11 @@ local AbsorberW = {}
 function AbsorberW:SectionHeader(hostFrame, textValue, yOffset)
     _absSection = textValue
     AbsorberRegister(textValue, nil, true)
-    return NewAbsorber(), 40
+    return MakeAbsorber(), 40
 end
 function AbsorberW:Toggle(hostFrame, textValue, yOffset, getValue, setValue, tipText)
     AbsorberRegister(textValue, tipText)
-    return NewAbsorber(), 40
+    return MakeAbsorber(), 40
 end
 function AbsorberW:Slider(
     hostFrame,
@@ -801,58 +801,58 @@ function AbsorberW:Slider(
     pixel
 )
     AbsorberRegister(textValue, tipText)
-    return NewAbsorber(), 40
+    return MakeAbsorber(), 40
 end
 function AbsorberW:Dropdown(hostFrame, textValue, yOffset, values, getValue, setValue, sequence, tipText)
     AbsorberRegister(textValue, tipText)
-    return NewAbsorber(), 40
+    return MakeAbsorber(), 40
 end
 function AbsorberW:Checkbox(hostFrame, textValue, yOffset, getValue, setValue, tipText)
     AbsorberRegister(textValue, tipText)
-    return NewAbsorber(), 40
+    return MakeAbsorber(), 40
 end
 function AbsorberW:ColorPicker(hostFrame, textValue, yOffset, getValue, setValue, hasAlpha)
     AbsorberRegister(textValue, nil)
-    return NewAbsorber(), 40
+    return MakeAbsorber(), 40
 end
 function AbsorberW:Button(hostFrame, textValue, yOffset, onClick)
     AbsorberRegister(textValue, nil)
-    return NewAbsorber(), 40
+    return MakeAbsorber(), 40
 end
 function AbsorberW:WideButton(hostFrame, textValue, yOffset, onClick, btnWidth)
     AbsorberRegister(textValue, nil)
-    return NewAbsorber(), 40
+    return MakeAbsorber(), 40
 end
 function AbsorberW:DualRow(hostFrame, yOffset, leftConfig, rightConfig)
     -- A row the live factory hides for Blizzard Style has nothing to find.
     local BS = CludesUI.BlizzStyle
     if BS and BS.RowHidden and BS.RowHidden(leftConfig, rightConfig) then
-        return NewAbsorber(), 0
+        return MakeAbsorber(), 0
     end
     AbsorberRegister(leftConfig and leftConfig.text, leftConfig and leftConfig.tooltip)
     AbsorberRegister(rightConfig and rightConfig.text, rightConfig and rightConfig.tooltip)
-    return NewAbsorber(), 40
+    return MakeAbsorber(), 40
 end
 function AbsorberW:TripleRow(hostFrame, yOffset, leftConfig, midCfg, rightConfig, splits)
     AbsorberRegister(leftConfig and leftConfig.text, leftConfig and leftConfig.tooltip)
     AbsorberRegister(midCfg and midCfg.text, midCfg and midCfg.tooltip)
     AbsorberRegister(rightConfig and rightConfig.text, rightConfig and rightConfig.tooltip)
-    return NewAbsorber(), 40
+    return MakeAbsorber(), 40
 end
 function AbsorberW:MultiSwatchRow(hostFrame, yOffset, conf)
     AbsorberRegister(conf and conf.text, nil)
-    return NewAbsorber(), 40
+    return MakeAbsorber(), 40
 end
 function AbsorberW:DropdownWithOffsets(hostFrame, yOffset, dropdownCfg, xSliderCfg, ySliderCfg)
     AbsorberRegister(dropdownCfg and dropdownCfg.text, dropdownCfg and dropdownCfg.tooltip)
     AbsorberRegister(xSliderCfg and xSliderCfg.text, xSliderCfg and xSliderCfg.tooltip)
     AbsorberRegister(ySliderCfg and ySliderCfg.text, ySliderCfg and ySliderCfg.tooltip)
-    return NewAbsorber(), 40
+    return MakeAbsorber(), 40
 end
 function AbsorberW:WideDualButton(hostFrame, text1, text2, yOffset, onClick1, onClick2, btnWidth)
     AbsorberRegister(text1, nil)
     AbsorberRegister(text2, nil)
-    return NewAbsorber(), 40
+    return MakeAbsorber(), 40
 end
 function AbsorberW:WideTripleButton(
     hostFrame,
@@ -869,7 +869,7 @@ function AbsorberW:WideTripleButton(
     AbsorberRegister(text1, nil)
     AbsorberRegister(text2, nil)
     AbsorberRegister(text3, nil)
-    return NewAbsorber(), 40
+    return MakeAbsorber(), 40
 end
 function AbsorberW:WideDropdown(
     hostFrame,
@@ -883,21 +883,21 @@ function AbsorberW:WideDropdown(
     disabledValuesFn
 )
     AbsorberRegister(title, nil)
-    return NewAbsorber(), 40
+    return MakeAbsorber(), 40
 end
 function AbsorberW:TripleDropdown(hostFrame, configList, yOffset)
     AbsorberRegister(configList and configList[1] and configList[1][1], nil)
     AbsorberRegister(configList and configList[2] and configList[2][1], nil)
     AbsorberRegister(configList and configList[3] and configList[3][1], nil)
-    return NewAbsorber(), 40
+    return MakeAbsorber(), 40
 end
 function AbsorberW:TripleSlider(hostFrame, configList, yOffset)
     -- Parity with the real factory: it tags an EMPTY row label and indexes
     -- no slots, so the absorber registers nothing either.
-    return NewAbsorber(), 40
+    return MakeAbsorber(), 40
 end
 function AbsorberW:Spacer(hostFrame, yOffset, height)
-    return NewAbsorber(), height or 20
+    return MakeAbsorber(), height or 20
 end
 -- Any factory method NOT stubbed above (added later, or missed): absorb it
 -- rather than erroring the whole page -- the page still indexes everything
@@ -913,7 +913,7 @@ setmetatable(AbsorberW, {
             )
         end
         return function()
-            return NewAbsorber(), 40
+            return MakeAbsorber(), 40
         end
     end,
 })

@@ -487,7 +487,7 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
     --  Format: same as GENERAL_DEFS but fixedBody only (no checkboxes).
     --  Each entry: { name, icon, label, fixedBody, fixedTooltip (optional) }
     ---------------------------------------------------------------------------
-    local function mergeMacros(...)
+    local function combineMacros(...)
         local t = {}
         for i = 1, select("#", ...) do
             local source = select(i, ...)
@@ -1519,58 +1519,58 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
 
     local SPEC_DEFS = {
         -- Death Knight
-        [250] = mergeMacros(DK_BLOOD, DK_GEN),
-        [251] = mergeMacros(DK_FROST, DK_GEN),
-        [252] = mergeMacros(DK_UNHOLY, DK_GEN),
+        [250] = combineMacros(DK_BLOOD, DK_GEN),
+        [251] = combineMacros(DK_FROST, DK_GEN),
+        [252] = combineMacros(DK_UNHOLY, DK_GEN),
         -- Demon Hunter (577=Havoc, 581=Vengeance, 1480=Devourer -- Midnight Void spec)
-        [577] = mergeMacros(DH_HAVOC, DH_GEN),
-        [581] = mergeMacros(DH_VENG, DH_GEN),
-        [1480] = mergeMacros(DH_DEVOURER, DH_GEN),
+        [577] = combineMacros(DH_HAVOC, DH_GEN),
+        [581] = combineMacros(DH_VENG, DH_GEN),
+        [1480] = combineMacros(DH_DEVOURER, DH_GEN),
         -- Druid
-        [102] = mergeMacros(DRUID_BAL, DRUID_GEN),
-        [103] = mergeMacros(DRUID_FERAL, DRUID_GEN),
-        [104] = mergeMacros(DRUID_GUARD, DRUID_GEN),
-        [105] = mergeMacros(DRUID_RESTO, DRUID_GEN),
+        [102] = combineMacros(DRUID_BAL, DRUID_GEN),
+        [103] = combineMacros(DRUID_FERAL, DRUID_GEN),
+        [104] = combineMacros(DRUID_GUARD, DRUID_GEN),
+        [105] = combineMacros(DRUID_RESTO, DRUID_GEN),
         -- Evoker
-        [1467] = mergeMacros(EVOKER_DEV, EVOKER_GEN),
-        [1468] = mergeMacros(EVOKER_PRES, EVOKER_GEN),
-        [1473] = mergeMacros(EVOKER_AUG, EVOKER_GEN),
+        [1467] = combineMacros(EVOKER_DEV, EVOKER_GEN),
+        [1468] = combineMacros(EVOKER_PRES, EVOKER_GEN),
+        [1473] = combineMacros(EVOKER_AUG, EVOKER_GEN),
         -- Hunter
-        [253] = mergeMacros(HUNTER_BM, HUNTER_GEN),
-        [254] = mergeMacros(HUNTER_MM, HUNTER_GEN),
-        [255] = mergeMacros(HUNTER_SURV, HUNTER_GEN),
+        [253] = combineMacros(HUNTER_BM, HUNTER_GEN),
+        [254] = combineMacros(HUNTER_MM, HUNTER_GEN),
+        [255] = combineMacros(HUNTER_SURV, HUNTER_GEN),
         -- Mage
-        [62] = mergeMacros(MAGE_ARCANE, MAGE_GEN),
-        [63] = mergeMacros(MAGE_FIRE, MAGE_GEN),
-        [64] = mergeMacros(MAGE_FROST_SPEC, MAGE_GEN),
+        [62] = combineMacros(MAGE_ARCANE, MAGE_GEN),
+        [63] = combineMacros(MAGE_FIRE, MAGE_GEN),
+        [64] = combineMacros(MAGE_FROST_SPEC, MAGE_GEN),
         -- Monk
-        [268] = mergeMacros(MONK_BREW, MONK_GEN),
-        [269] = mergeMacros(MONK_WW, MONK_GEN),
-        [270] = mergeMacros(MONK_MW, MONK_GEN),
+        [268] = combineMacros(MONK_BREW, MONK_GEN),
+        [269] = combineMacros(MONK_WW, MONK_GEN),
+        [270] = combineMacros(MONK_MW, MONK_GEN),
         -- Paladin
-        [65] = mergeMacros(PALA_HOLY, PALA_GEN),
-        [66] = mergeMacros(PALA_PROT, PALA_GEN),
-        [70] = mergeMacros(PALA_RET, PALA_GEN),
+        [65] = combineMacros(PALA_HOLY, PALA_GEN),
+        [66] = combineMacros(PALA_PROT, PALA_GEN),
+        [70] = combineMacros(PALA_RET, PALA_GEN),
         -- Priest
-        [256] = mergeMacros(PRIEST_DISC, PRIEST_GEN),
-        [257] = mergeMacros(PRIEST_HOLY, PRIEST_GEN),
-        [258] = mergeMacros(PRIEST_SHADOW, PRIEST_GEN),
+        [256] = combineMacros(PRIEST_DISC, PRIEST_GEN),
+        [257] = combineMacros(PRIEST_HOLY, PRIEST_GEN),
+        [258] = combineMacros(PRIEST_SHADOW, PRIEST_GEN),
         -- Rogue
-        [259] = mergeMacros(ROGUE_ASS, ROGUE_GEN),
-        [260] = mergeMacros(ROGUE_OUTLAW, ROGUE_GEN),
-        [261] = mergeMacros(ROGUE_SUB, ROGUE_GEN),
+        [259] = combineMacros(ROGUE_ASS, ROGUE_GEN),
+        [260] = combineMacros(ROGUE_OUTLAW, ROGUE_GEN),
+        [261] = combineMacros(ROGUE_SUB, ROGUE_GEN),
         -- Shaman
-        [262] = mergeMacros(SHAMAN_ELE, SHAMAN_GEN),
-        [263] = mergeMacros(SHAMAN_ENH, SHAMAN_GEN),
-        [264] = mergeMacros(SHAMAN_RESTO, SHAMAN_GEN),
+        [262] = combineMacros(SHAMAN_ELE, SHAMAN_GEN),
+        [263] = combineMacros(SHAMAN_ENH, SHAMAN_GEN),
+        [264] = combineMacros(SHAMAN_RESTO, SHAMAN_GEN),
         -- Warlock
-        [265] = mergeMacros(LOCK_GEN),
-        [266] = mergeMacros(LOCK_DEMO, LOCK_GEN),
-        [267] = mergeMacros(LOCK_DESTRO, LOCK_GEN),
+        [265] = combineMacros(LOCK_GEN),
+        [266] = combineMacros(LOCK_DEMO, LOCK_GEN),
+        [267] = combineMacros(LOCK_DESTRO, LOCK_GEN),
         -- Warrior
-        [71] = mergeMacros(WARRIOR_ARMS, WARRIOR_GEN),
-        [72] = mergeMacros(WARRIOR_FURY, WARRIOR_GEN),
-        [73] = mergeMacros(WARRIOR_PROT, WARRIOR_GEN),
+        [71] = combineMacros(WARRIOR_ARMS, WARRIOR_GEN),
+        [72] = combineMacros(WARRIOR_FURY, WARRIOR_GEN),
+        [73] = combineMacros(WARRIOR_PROT, WARRIOR_GEN),
     }
 
     -- Detect current spec and class

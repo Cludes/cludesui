@@ -101,7 +101,7 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  Refresh
     ---------------------------------------------------------------------------
-    local function RefreshAll()
+    local function RequestRefresh()
         if _G._CUABR_RequestRefresh then
             _G._CUABR_RequestRefresh()
         end
@@ -401,7 +401,7 @@ CludesUI.AtOptionsLogin(function()
         if _G._CUABR_ApplyAllIconBorders then
             _G._CUABR_ApplyAllIconBorders()
         end
-        RefreshAll()
+        RequestRefresh()
         UpdatePreviewHeader()
     end
 
@@ -1124,11 +1124,11 @@ CludesUI.AtOptionsLogin(function()
     -- After a list edit: refresh the reminders and rebuild the page, now or
     -- (soon) a frame later, once an edit box has finished its commit.
     local function Rebuild()
-        RefreshAll()
+        RequestRefresh()
         CludesUI:RefreshPage(true)
     end
     local function RebuildSoon()
-        RefreshAll()
+        RequestRefresh()
         C_Timer.After(0, function()
             CludesUI:RefreshPage(true)
         end)
@@ -1327,7 +1327,7 @@ CludesUI.AtOptionsLogin(function()
             all[id] = isOff
             isOff[token] = false
         end
-        RefreshAll()
+        RequestRefresh()
     end
 
     -- The class checklist's items: Remove at the top, then each class in its colour.
@@ -1429,7 +1429,7 @@ CludesUI.AtOptionsLogin(function()
                 caps = { mode = true, params = true, bg = true },
                 defaultColor = { r = 1.0, g = 0.788, b = 0.137 },
                 onChange = function()
-                    RefreshAll()
+                    RequestRefresh()
                     UpdatePreviewHeader()
                 end,
                 get = function(f)
@@ -1547,7 +1547,7 @@ CludesUI.AtOptionsLogin(function()
     -- display[key] (default when unset or false), Set(key, after) writes it
     -- and runs after (default: refresh the reminders and the preview).
     local function Live()
-        RefreshAll()
+        RequestRefresh()
         UpdatePreviewHeader()
     end
     local function Get(key, default)
@@ -1680,7 +1680,7 @@ CludesUI.AtOptionsLogin(function()
                 if _G._CUABR_UpdateGroupAuraRegistration then
                     _G._CUABR_UpdateGroupAuraRegistration()
                 end
-                RefreshAll()
+                RequestRefresh()
                 CludesUI:RefreshPage()
             end),
         })
@@ -1696,7 +1696,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = Get("growDirection", "CENTER"),
             setValue = function(value)
                 CludesUI.SetAuraBuffGrowDir(value)
-                RefreshAll()
+                RequestRefresh()
                 RelayoutPreviewIcons()
             end,
         }, {
@@ -1727,7 +1727,7 @@ CludesUI.AtOptionsLogin(function()
                     local display = DDB()
                     if display then
                         display.beaconMPlus = value or nil
-                        RefreshAll()
+                        RequestRefresh()
                     end
                 end,
             }, CludesUI.BlankRowCfg())
@@ -2149,7 +2149,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 disabledTooltip = "Show Item Count",
                 rows = {
-                    CogFont("Item Count Font", "countFont", RefreshAll),
+                    CogFont("Item Count Font", "countFont", RequestRefresh),
                     CogSlider("Text Size", "countSize", 6, 30, 16),
                     CogSlider("X Offset", "countXOffset", -50, 50, 0),
                     CogSlider("Y Offset", "countYOffset", -50, 50, 0),
@@ -2169,7 +2169,7 @@ CludesUI.AtOptionsLogin(function()
                 tooltip = "This option only affects Raid Buffs and Paladin Beacons",
                 getValue = Raw("cursorAttach"),
                 setValue = Set("cursorAttach", function()
-                    RefreshAll()
+                    RequestRefresh()
                     CludesUI:RefreshPage()
                 end),
             }
@@ -2195,7 +2195,7 @@ CludesUI.AtOptionsLogin(function()
                             local display = DDB()
                             return display and display.cursorAttachCombatOnly == true
                         end,
-                        set = Set("cursorAttachCombatOnly", RefreshAll),
+                        set = Set("cursorAttachCombatOnly", RequestRefresh),
                     },
                 },
             })
@@ -2228,7 +2228,7 @@ CludesUI.AtOptionsLogin(function()
             step = 1,
             getValue = Get("iconSpacing", 8),
             setValue = Set("iconSpacing", function()
-                RefreshAll()
+                RequestRefresh()
                 RelayoutPreviewIcons()
             end),
         }, {
@@ -2267,7 +2267,7 @@ CludesUI.AtOptionsLogin(function()
                 step = 1,
                 tooltip = SHOW_BELOW_TIP,
                 getValue = Get("showUnder", 5),
-                setValue = Set("showUnder", RefreshAll),
+                setValue = Set("showUnder", RequestRefresh),
             }, {
                 type = "slider",
                 text = "Show Below Pre-Key",
@@ -2276,7 +2276,7 @@ CludesUI.AtOptionsLogin(function()
                 step = 1,
                 tooltip = PRE_KEY_TIP,
                 getValue = Get("showUnderMPlus", 40),
-                setValue = Set("showUnderMPlus", RefreshAll),
+                setValue = Set("showUnderMPlus", RequestRefresh),
             })
             y = y - h
             AddMinSuffix(timingRow, "Show Below", "Show Below Pre-Key")
@@ -2315,7 +2315,7 @@ CludesUI.AtOptionsLogin(function()
                     local foreverCfg = FDB()
                     if foreverCfg then
                         foreverCfg.pickerEnabled = value
-                        RefreshAll()
+                        RequestRefresh()
                     end
                 end,
             }, CludesUI.BlankRowCfg())
@@ -2354,7 +2354,7 @@ CludesUI.AtOptionsLogin(function()
             if groupAuras and _G._CUABR_UpdateGroupAuraRegistration then
                 _G._CUABR_UpdateGroupAuraRegistration()
             end
-            RefreshAll()
+            RequestRefresh()
             RebuildPreviewHeader()
         end
     end
@@ -2380,7 +2380,7 @@ CludesUI.AtOptionsLogin(function()
                     local r = RDB()
                     if r then
                         r.requestOnClick = value
-                        RefreshAll()
+                        RequestRefresh()
                     end
                 end,
             },
@@ -2459,7 +2459,7 @@ CludesUI.AtOptionsLogin(function()
             soundField = "sectionSound",
             cogTitle = (not FOREVER) and "Raid Buff Options" or nil,
             cogRows = (not FOREVER) and RequestRows() or nil,
-            onChange = RefreshAll,
+            onChange = RequestRefresh,
             onShowWhenChange = function()
                 if _G._CUABR_UpdateGroupAuraRegistration then
                     _G._CUABR_UpdateGroupAuraRegistration()
@@ -2492,7 +2492,7 @@ CludesUI.AtOptionsLogin(function()
             whereTooltip = "Pick which content these aura reminders appear in.\nRested areas (cities and inns) always stay hidden.",
             soundSec = ADB,
             soundField = "sectionSound",
-            onChange = RefreshAll,
+            onChange = RequestRefresh,
         })
         y = y - h
         local items = {}
@@ -2520,7 +2520,7 @@ CludesUI.AtOptionsLogin(function()
             whereTooltip = SPECIAL_WHERE_TIP,
             soundSec = CDB,
             specialClass = class,
-            onChange = RefreshAll,
+            onChange = RequestRefresh,
         })
         y = y - h
         y = y - BuildCheckboxGrid(parent, y, items, GridChanged(groupAuras), refs)
@@ -2579,7 +2579,7 @@ CludesUI.AtOptionsLogin(function()
                 local tbl = section()
                 if tbl and tbl.enabled then
                     tbl.enabled[key] = value
-                    RefreshAll()
+                    RequestRefresh()
                     RebuildPreviewHeader()
                 end
             end,
@@ -2597,7 +2597,7 @@ CludesUI.AtOptionsLogin(function()
         _, h = SectionControlRow(parent, y, {
             whereStore = CSpecialWhere("PET"),
             whereTooltip = "Pick which content the Missing Pet and Passive Pet reminders appear in.\nWarlock's Wrong Demon reminder uses the Where to Show in the Warlock section.\nRested areas (cities and inns) always stay hidden.",
-            onChange = RefreshAll,
+            onChange = RequestRefresh,
             rightCfg = EnabledToggle(
                 CDB,
                 "pet",
@@ -2657,7 +2657,7 @@ CludesUI.AtOptionsLogin(function()
         ctrlRow, h = SectionControlRow(parent, y, {
             whereStore = CWarlockWhere,
             whereTooltip = "Pick which content these Warlock reminders appear in.\nMissing Pet and Passive Pet use the Where to Show in the Pets section.\nRested areas (cities and inns) always stay hidden.",
-            onChange = RefreshAll,
+            onChange = RequestRefresh,
             rightCfg = Placeholder(
                 "Allowed Demons",
                 "Pick which demons count as correct for Wrong Demon. A demon only counts while its summon spell is known; with none picked (or everything picked), the reminder never fires."
@@ -2722,7 +2722,7 @@ CludesUI.AtOptionsLogin(function()
                         cfg.wrongPetAllowed = cfg.wrongPetAllowed or {}
                         cfg.wrongPetAllowed[keyName] = value
                     end
-                    RefreshAll()
+                    RequestRefresh()
                     RebuildPreviewHeader()
                 end,
                 nil,
@@ -2768,7 +2768,7 @@ CludesUI.AtOptionsLogin(function()
                 local cfg = CDB()
                 if cfg and cfg.enabled then
                     cfg.enabled[key] = value
-                    RefreshAll()
+                    RequestRefresh()
                     RebuildPreviewHeader()
                 end
                 if after then
@@ -2800,7 +2800,7 @@ CludesUI.AtOptionsLogin(function()
                 local cfg = CDB()
                 if cfg then
                     cfg[prefKey] = value
-                    RefreshAll()
+                    RequestRefresh()
                 end
             end,
         })
@@ -2832,7 +2832,7 @@ CludesUI.AtOptionsLogin(function()
                 local classColor = CDB()
                 if classColor then
                     classColor.inkyBlackZones = text or ""
-                    RefreshAll()
+                    RequestRefresh()
                 end
             end,
         })
@@ -2907,7 +2907,7 @@ CludesUI.AtOptionsLogin(function()
             whereTooltip = "Pick which content these consumable reminders appear in.\nRested areas (cities and inns) always stay hidden.",
             soundSec = CDB,
             soundField = "sectionSound",
-            onChange = RefreshAll,
+            onChange = RequestRefresh,
         })
         y = y - h
         rows.flask, h = PreferredRow(parent, y, "flask", "Flask", _G._CUABR_FLASK_ITEMS, "preferredFlask")
@@ -3112,7 +3112,7 @@ CludesUI.AtOptionsLogin(function()
                 local cfg = CDB()
                 if cfg then
                     cfg.showWithoutItem = value
-                    RefreshAll()
+                    RequestRefresh()
                 end
             end,
         }, {
@@ -3163,7 +3163,7 @@ CludesUI.AtOptionsLogin(function()
                     return
                 end
                 foreverCfg[key] = value
-                RefreshAll()
+                RequestRefresh()
                 if rebuild then
                     CludesUI:RefreshPage()
                 end
@@ -3218,7 +3218,7 @@ CludesUI.AtOptionsLogin(function()
                 if foreverCfg then
                     foreverCfg.classBuffPicks = foreverCfg.classBuffPicks or {}
                     foreverCfg.classBuffPicks[key] = value and true or false
-                    RefreshAll()
+                    RequestRefresh()
                 end
             end
         )
@@ -3263,7 +3263,7 @@ CludesUI.AtOptionsLogin(function()
                     foreverCfg.weaponHands = foreverCfg.weaponHands or {}
                     foreverCfg.weaponHands[class] = foreverCfg.weaponHands[class] or {}
                     foreverCfg.weaponHands[class][field] = value ~= "auto" and value or nil
-                    RefreshAll()
+                    RequestRefresh()
                 end,
             }
         end
@@ -3296,7 +3296,7 @@ CludesUI.AtOptionsLogin(function()
                 local foreverCfg = FDB()
                 if foreverCfg then
                     foreverCfg.weaponLowRank = value == "low"
-                    RefreshAll()
+                    RequestRefresh()
                 end
             end,
         }
@@ -3312,7 +3312,7 @@ CludesUI.AtOptionsLogin(function()
                 local foreverCfg = FDB()
                 if foreverCfg then
                     foreverCfg.weaponHideNoItem = value
-                    RefreshAll()
+                    RequestRefresh()
                 end
             end,
         }
@@ -3331,7 +3331,7 @@ CludesUI.AtOptionsLogin(function()
                 local foreverCfg = FDB()
                 if foreverCfg then
                     foreverCfg.weaponShowBelow = value
-                    RefreshAll()
+                    RequestRefresh()
                 end
             end,
         }
@@ -3356,7 +3356,7 @@ CludesUI.AtOptionsLogin(function()
             whereTooltip = "Pick which content the WoW Forever reminders appear in.\nRested areas (cities and inns) always stay hidden.",
             soundSec = FDB,
             soundField = "sectionSound",
-            onChange = RefreshAll,
+            onChange = RequestRefresh,
         })
         y = y - h
         _, h = W:DualRow(
@@ -3414,7 +3414,7 @@ CludesUI.AtOptionsLogin(function()
                             local foreverCfg = FDB()
                             if foreverCfg then
                                 foreverCfg.gatherClassTrack = value
-                                RefreshAll()
+                                RequestRefresh()
                             end
                         end,
                     },

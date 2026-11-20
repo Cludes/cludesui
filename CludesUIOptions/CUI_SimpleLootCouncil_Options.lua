@@ -82,7 +82,7 @@ CludesUI.AtLogin(function()
         return CludesUI:IsShown() and CludesUI:GetActiveModule() == ADDON_NAME
     end
 
-    local function Invalidate()
+    local function InvalidateOptions()
         local slc = SLC()
         if slc then
             slc.Callbacks:Invalidate("options")
@@ -118,7 +118,7 @@ CludesUI.AtLogin(function()
         if councilEvents[evt] then
             councilDirty = true
         end
-        Invalidate()
+        InvalidateOptions()
     end
     local watcher = _G.CreateFrame("Frame")
     watcher:SetScript("OnEvent", function(_, evt)
@@ -138,7 +138,7 @@ CludesUI.AtLogin(function()
             elseif evt == "SessionChanged" then
                 slc.Callbacks:Register(evt, function(_, kind)
                     if kind == nil or Schema.SESSION_KINDS[kind] then
-                        Invalidate()
+                        InvalidateOptions()
                     end
                 end)
             else
@@ -191,7 +191,7 @@ CludesUI.AtLogin(function()
             if not LockReason() then
                 row.setValue(value)
             end
-            Invalidate()
+            InvalidateOptions()
         end
 
         if disabled then
@@ -321,7 +321,7 @@ CludesUI.AtLogin(function()
                     then
                         row.setValue(key, value)
                     end
-                    Invalidate()
+                    InvalidateOptions()
                 end,
                 nil,
                 nil,
@@ -780,7 +780,7 @@ CludesUI.AtLogin(function()
 
         local T, Format = slc.Locale.Text, slc.Locale.Format
         local refreshes = {}
-        local function OnRefresh(func)
+        local function AddRefresh(func)
             refreshes[#refreshes + 1] = func
         end
 
@@ -814,7 +814,7 @@ CludesUI.AtLogin(function()
             lockLabel:SetText(textValue)
             local entry = { cover = cover, locked = locked }
             covers[#covers + 1] = entry
-            OnRefresh(function()
+            AddRefresh(function()
                 if onLock and locked() then
                     onLock()
                 end
@@ -979,7 +979,7 @@ CludesUI.AtLogin(function()
                     end,
                 },
             })
-            OnRefresh(function()
+            AddRefresh(function()
                 cards[1]:SetCardContent(ICON_OPEN, main.openText, main.openDesc())
 
                 if cards[1].SetPulse then
@@ -1034,12 +1034,12 @@ CludesUI.AtLogin(function()
             local statusTags = Schema.Row("statusTags")
             local activeTag = StyledTag(block, 90, function(btnFrame)
                 if btnFrame == "LeftButton" and statusTags.clickActive() then
-                    Invalidate()
+                    InvalidateOptions()
                 end
             end)
             activeTag:Hide()
             Pix.Point(activeTag, "TOPLEFT", block, "TOPLEFT", 16, -12)
-            OnRefresh(function()
+            AddRefresh(function()
                 local title, tone, lines = statusTags.activeTooltip()
 
                 if tone == "accent" and not slc.PlayerIsMasterLooter() then
@@ -1055,11 +1055,11 @@ CludesUI.AtLogin(function()
 
             local liveTag = StyledTag(block, 60, function(btnFrame)
                 if statusTags.clickLive(btnFrame) then
-                    Invalidate()
+                    InvalidateOptions()
                 end
             end)
             liveTag:Hide()
-            OnRefresh(function()
+            AddRefresh(function()
                 local live = statusTags.live()
                 liveTag:SetShown(live)
                 if not live then
@@ -1136,7 +1136,7 @@ CludesUI.AtLogin(function()
             local emptyLabel = CludesUI.MakeFont(block, 13, nil, 1, 1, 1)
             emptyLabel:SetPoint("TOP", block, "TOP", 0, -(LIST_Y + 4))
 
-            OnRefresh(function()
+            AddRefresh(function()
                 local master = lootMaster.fullName()
                 mlName:SetText(
                     master and PlayerText(master) or S.Colorize(S.color.textFaint, lootMaster.unknown)
@@ -1155,7 +1155,7 @@ CludesUI.AtLogin(function()
                 end
                 mlNote:SetText(note or "")
             end)
-            OnRefresh(function()
+            AddRefresh(function()
                 local entries, count = CouncilMembers(inForce, PlayerText, RankText)
                 voters:SetText(S.Colorize(count == 0 and S.color.bad or S.color.accentPale, tostring(count)))
                 local headW = math.ceil(heading:GetStringWidth() or 0)
@@ -1241,7 +1241,7 @@ CludesUI.AtLogin(function()
         function custom.responses(specInfo)
             for index, built in ipairs(specInfo.list()) do
                 local entry = built
-                OnRefresh(function()
+                AddRefresh(function()
                     entry = specInfo.list()[index] or entry
                 end)
                 Place({
@@ -1256,7 +1256,7 @@ CludesUI.AtLogin(function()
 
                     setValue = function(textValue)
                         specInfo.setName(index, textValue)
-                        Invalidate()
+                        InvalidateOptions()
                     end,
                 }, function(regionFrame)
                     if regionFrame._label then
@@ -1324,9 +1324,9 @@ CludesUI.AtLogin(function()
                             end
                             specInfo.setAutoroll(entry, not (entry.autoroll == true))
                             Paint()
-                            Invalidate()
+                            InvalidateOptions()
                         end)
-                        OnRefresh(Paint)
+                        AddRefresh(Paint)
                         Paint()
                         auto:ClearAllPoints()
                         Pix.Point(auto, "LEFT", boxFrame, "RIGHT", 8, 0)
@@ -1348,7 +1348,7 @@ CludesUI.AtLogin(function()
                                 accept = copy.accept,
                                 onAccept = function()
                                     if specInfo.remove(index) then
-                                        Invalidate()
+                                        InvalidateOptions()
                                     end
                                 end,
                             })
@@ -1392,7 +1392,7 @@ CludesUI.AtLogin(function()
                         local index = specInfo.add(accent.r, accent.g, accent.b)
                         if index then
                             focusResponse = index
-                            Invalidate()
+                            InvalidateOptions()
                         end
                     end,
                 })
@@ -1462,7 +1462,7 @@ CludesUI.AtLogin(function()
                 return
             end
             local status = Note("", 0.85)
-            OnRefresh(function()
+            AddRefresh(function()
                 local good, warn =
                     S.ColorStart(S.Flatten(S.color.good)), S.ColorStart(S.Flatten(S.color.warn))
                 local state, leader = specInfo.authorship()
@@ -1489,7 +1489,7 @@ CludesUI.AtLogin(function()
                 end
                 boxFrame:ClearFocus()
                 councilDirty = true
-                Invalidate()
+                InvalidateOptions()
             end
 
             local isShown = {}
@@ -1586,7 +1586,7 @@ CludesUI.AtLogin(function()
             addHandlers.arrow, addHandlers.enter = Arrow, Enter
 
             local entries, here = CouncilEntries(specInfo), slc.GetCandidates()
-            OnRefresh(function()
+            AddRefresh(function()
                 entries, here = CouncilEntries(specInfo), slc.GetCandidates()
             end)
             for index = 1, #entries do
@@ -1597,7 +1597,7 @@ CludesUI.AtLogin(function()
                 labelText:SetJustifyH("LEFT")
                 labelText:SetWordWrap(false)
                 local entry, present
-                OnRefresh(function()
+                AddRefresh(function()
                     entry = entries[index]
                     present = entry.kind ~= "rank" and (here[entry.fullName] and true or false)
                     local nowTime = present
@@ -1652,7 +1652,7 @@ CludesUI.AtLogin(function()
                     end
                     specInfo.remove(entry)
                     councilDirty = true
-                    Invalidate()
+                    InvalidateOptions()
                 end, { width = 70 })
             end
             if #entries == 0 then
@@ -1687,7 +1687,7 @@ CludesUI.AtLogin(function()
                         panelWheel = true,
                         passWheel = true,
                     })
-                    OnRefresh(updateThumb)
+                    AddRefresh(updateThumb)
                 end
                 for index = 1, count do
                     local name = ranks[index].name
@@ -1722,9 +1722,9 @@ CludesUI.AtLogin(function()
                         Paint()
 
                         councilDirty = true
-                        Invalidate()
+                        InvalidateOptions()
                     end)
-                    OnRefresh(Paint)
+                    AddRefresh(Paint)
                     Paint()
                 end
             end
@@ -1773,7 +1773,7 @@ CludesUI.AtLogin(function()
             end
             if not prebuild then
                 local mainLine = Note("", 0.85)
-                OnRefresh(function()
+                AddRefresh(function()
                     mainLine:SetText(Format(T["Main: %s"], Qualified(specInfo.main())))
                 end)
             end
@@ -1794,7 +1794,7 @@ CludesUI.AtLogin(function()
                         local done = submit(value)
                         kept = done == false and value or ""
                         if done then
-                            Invalidate()
+                            InvalidateOptions()
                         end
                     end,
                 }
@@ -1807,7 +1807,7 @@ CludesUI.AtLogin(function()
                 getValue = showAlts.getValue,
                 setValue = function(value)
                     showAlts.setValue(value)
-                    Invalidate()
+                    InvalidateOptions()
                 end,
             }
 
@@ -1821,7 +1821,7 @@ CludesUI.AtLogin(function()
                 return
             end
 
-            OnRefresh(function()
+            AddRefresh(function()
                 alts = specInfo.alts(specInfo.main())
             end)
             for index = 1, #alts do
@@ -1830,7 +1830,7 @@ CludesUI.AtLogin(function()
                 local labelText = CludesUI.MakeFont(row, 13, nil, 1, 1, 1)
                 labelText:SetPoint("LEFT", row, "LEFT", 20, 0)
 
-                OnRefresh(function()
+                AddRefresh(function()
                     labelText:SetText(Qualified(alts[index]))
                 end)
                 local copy = specInfo.confirmRemove()
@@ -1842,7 +1842,7 @@ CludesUI.AtLogin(function()
                         accept = copy.accept,
                         onAccept = function()
                             specInfo.removeAlt(alt)
-                            Invalidate()
+                            InvalidateOptions()
                         end,
                     })
                 end, { width = 70 })

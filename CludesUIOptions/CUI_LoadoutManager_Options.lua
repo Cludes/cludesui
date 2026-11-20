@@ -23,7 +23,7 @@ CludesUI.AtOptionsLogin(function()
         return mod.DB()
     end
 
-    local function Refresh(force)
+    local function ApplyLoadouts(force)
         CludesUI:RefreshPage(force and true or nil)
     end
 
@@ -32,7 +32,7 @@ CludesUI.AtOptionsLogin(function()
         if CludesUI:GetActiveModule() ~= ADDON_NAME then
             return
         end
-        Refresh()
+        ApplyLoadouts()
     end
 
     local function NotEnabled()
@@ -134,7 +134,7 @@ CludesUI.AtOptionsLogin(function()
 
     local function SetScopeKey(key)
         mod.SetScope(key ~= ALL_SPECS and tonumber(key) or nil)
-        Refresh(true) -- the page's tooltips and the copy cog name the scope
+        ApplyLoadouts(true) -- the page's tooltips and the copy cog name the scope
     end
 
     local function ScopeLabel()
@@ -238,7 +238,7 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
         end
-        Refresh()
+        ApplyLoadouts()
     end
 
     ---------------------------------------------------------------------------
@@ -442,7 +442,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = function(val)
                     mod.SetEnabled(val)
-                    Refresh()
+                    ApplyLoadouts()
                 end,
             },
             -- Placeholder for the checkbox dropdown built below: it gives the
@@ -569,7 +569,7 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Check Now applies what is assigned here.",
             onClick = function()
                 mod.CheckAndSwap()
-                Refresh()
+                ApplyLoadouts()
             end,
         }, {
             type = "label",
@@ -686,7 +686,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(val)
                 mod.SetSelectedSet(val ~= NONE and val or nil)
-                Refresh()
+                ApplyLoadouts()
             end,
         }, {
             type = "dropdown",
@@ -741,7 +741,7 @@ CludesUI.AtOptionsLogin(function()
                 onClick = function()
                     PrunePicks()
                     mod.EquipSelected()
-                    Refresh()
+                    ApplyLoadouts()
                 end,
                 disabled = function()
                     return not HasSelection()
@@ -778,7 +778,7 @@ CludesUI.AtOptionsLogin(function()
                             cancelText = "Cancel",
                             onConfirm = function()
                                 mod.CopyScopeFrom(sourceID)
-                                Refresh()
+                                ApplyLoadouts()
                             end,
                         })
                     end,
@@ -840,7 +840,7 @@ CludesUI.AtOptionsLogin(function()
                 "Clear",
                 function()
                     mod.ClearCurrent(perDiff)
-                    Refresh()
+                    ApplyLoadouts()
                 end,
                 clearTip,
                 function()
@@ -856,7 +856,7 @@ CludesUI.AtOptionsLogin(function()
                 function()
                     PrunePicks()
                     mod.AssignCurrent(perDiff)
-                    Refresh()
+                    ApplyLoadouts()
                 end,
                 saveTip,
                 function()
@@ -903,7 +903,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(val)
                 pickedSaved = (val ~= NONE) and val or nil
-                Refresh()
+                ApplyLoadouts()
             end,
         }, {
             type = "label",
@@ -922,7 +922,7 @@ CludesUI.AtOptionsLogin(function()
                 if e then
                     mod.ClearInstanceAssignment(e.key)
                 end
-                Refresh()
+                ApplyLoadouts()
             end,
             CludesUI.Lf("Clear the picked instance for %1$s.", scopeName),
             function()
@@ -969,7 +969,7 @@ CludesUI.AtOptionsLogin(function()
                 "Clear",
                 function()
                     mod.ClearType(key)
-                    Refresh()
+                    ApplyLoadouts()
                 end,
                 CludesUI.Lf("Clear the %1$s default for %2$s.", typeName, scopeName),
                 function()
@@ -983,7 +983,7 @@ CludesUI.AtOptionsLogin(function()
                 function()
                     PrunePicks()
                     mod.AssignType(key)
-                    Refresh()
+                    ApplyLoadouts()
                 end,
                 CludesUI.Lf("Save the picked loadout as the %1$s default for %2$s.", typeName, scopeName),
                 function()

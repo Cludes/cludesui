@@ -236,7 +236,7 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
     local DEF = mod.defaults or {}
     -- applyFn: named ns refresher when the module publishes one, otherwise the
     -- module-wide reapply (same repaint the module's own castbar size rows use).
-    local function size(labelText, key, minV, maxV, def, applyName, legacyKey)
+    local function sizeSlider(labelText, key, minV, maxV, def, applyName, legacyKey)
         return {
             type = "slider",
             text = labelText,
@@ -268,7 +268,7 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
         hostFrame,
         cursorY,
         ModuleOutlineCfg(tile.folder, tile.display),
-        size(
+        sizeSlider(
             "Friendly Name Size (Bar Mode)",
             "friendlyNameTextSize",
             6,
@@ -281,46 +281,46 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Friendly Name Size (Name Only)", "friendlyNameSize", 8, 30, 15, "RefreshFriendlyNameSize"),
-        size("Friendly NPC Name Size", "friendlyNPCNameSize", 6, 30, 13, "RefreshAllNPCOverlays")
+        sizeSlider("Friendly Name Size (Name Only)", "friendlyNameSize", 8, 30, 15, "RefreshFriendlyNameSize"),
+        sizeSlider("Friendly NPC Name Size", "friendlyNPCNameSize", 6, 30, 13, "RefreshAllNPCOverlays")
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Top Text Size", "textSlotTopSize", 6, 30, 10),
-        size("Center Text Size", "textSlotCenterSize", 6, 30, 10)
+        sizeSlider("Top Text Size", "textSlotTopSize", 6, 30, 10),
+        sizeSlider("Center Text Size", "textSlotCenterSize", 6, 30, 10)
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Left Text Size", "textSlotLeftSize", 6, 30, 10),
-        size("Right Text Size", "textSlotRightSize", 6, 30, 10)
+        sizeSlider("Left Text Size", "textSlotLeftSize", 6, 30, 10),
+        sizeSlider("Right Text Size", "textSlotRightSize", 6, 30, 10)
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Top Left Text Size", "textSlotTopLeftSize", 6, 30, 10),
-        size("Top Right Text Size", "textSlotTopRightSize", 6, 30, 10)
+        sizeSlider("Top Left Text Size", "textSlotTopLeftSize", 6, 30, 10),
+        sizeSlider("Top Right Text Size", "textSlotTopRightSize", 6, 30, 10)
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Bottom Left Text Size", "textSlotBottomLeftSize", 6, 30, 10),
-        size("Bottom Right Text Size", "textSlotBottomRightSize", 6, 30, 10)
+        sizeSlider("Bottom Left Text Size", "textSlotBottomLeftSize", 6, 30, 10),
+        sizeSlider("Bottom Right Text Size", "textSlotBottomRightSize", 6, 30, 10)
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Cast Name Size", "castNameSize", 6, 20, 10),
-        size("Cast Timer Size", "castTimerSize", 6, 20, 10)
+        sizeSlider("Cast Name Size", "castNameSize", 6, 20, 10),
+        sizeSlider("Cast Timer Size", "castTimerSize", 6, 20, 10)
     )
     cursorY = cursorY - height
-    _, height = W:DualRow(hostFrame, cursorY, size("Cast Target Size", "castTargetSize", 6, 20, 10), {
+    _, height = W:DualRow(hostFrame, cursorY, sizeSlider("Cast Target Size", "castTargetSize", 6, 20, 10), {
         type = "slider",
         text = "Aura Stacks Size",
         min = 6,
@@ -348,22 +348,22 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Buff Duration Size", "buffDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize"),
-        size("Debuff Duration Size", "debuffDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize")
+        sizeSlider("Buff Duration Size", "buffDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize"),
+        sizeSlider("Debuff Duration Size", "debuffDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize")
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("CC Duration Size", "ccDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize"),
-        size("Focus Letter Size", "focusLetterSize", 6, 40, 18)
+        sizeSlider("CC Duration Size", "ccDurationTextSize", 6, 20, 11, nil, "auraDurationTextSize"),
+        sizeSlider("Focus Letter Size", "focusLetterSize", 6, 40, 18)
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Distance Text Size", "rangeTextSize", 6, 32, 11, "RangeText_Refresh"),
-        size("Quest Objective Text Size", "questObjectiveTextSize", 6, 24, 14, "RefreshQuestObjective")
+        sizeSlider("Distance Text Size", "rangeTextSize", 6, 32, 11, "RangeText_Refresh"),
+        sizeSlider("Quest Objective Text Size", "questObjectiveTextSize", 6, 24, 14, "RefreshQuestObjective")
     )
     cursorY = cursorY - height
     return cursorY
@@ -426,7 +426,7 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
             mod.ReloadPartyFrames()
         end
     end
-    local function size(labelText, key, minV, maxV, def)
+    local function sizeSlider(labelText, key, minV, maxV, def)
         return {
             type = "slider",
             text = labelText,
@@ -451,28 +451,28 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
         hostFrame,
         cursorY,
         ModuleOutlineCfg(tile.folder, tile.display),
-        size("Name Size", "nameSize", 6, 26, 10)
+        sizeSlider("Name Size", "nameSize", 6, 26, 10)
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Health Text Size", "healthTextSize", 6, 26, 9),
-        size("Power Text Size", "powerTextSize", 6, 26, 8)
+        sizeSlider("Health Text Size", "healthTextSize", 6, 26, 9),
+        sizeSlider("Power Text Size", "powerTextSize", 6, 26, 8)
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Heal Absorb Text Size", "healAbsorbTextSize", 6, 26, 9),
-        size("Status Text Size", "statusTextSize", 6, 30, 14)
+        sizeSlider("Heal Absorb Text Size", "healAbsorbTextSize", 6, 26, 9),
+        sizeSlider("Status Text Size", "statusTextSize", 6, 30, 14)
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Group Number Size", "groupNumberSize", 6, 30, 10),
-        size("Top Name Bar Text Size", "topNameBarTextSize", 6, 30, 11)
+        sizeSlider("Group Number Size", "groupNumberSize", 6, 30, 10),
+        sizeSlider("Top Name Bar Text Size", "topNameBarTextSize", 6, 30, 11)
     )
     cursorY = cursorY - height
     _, height = W:DualRow(hostFrame, cursorY, {
@@ -501,7 +501,7 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
                 RFApply()
             end
         end,
-    }, size("Level Size", "levelTextSize", 6, 26, 10))
+    }, sizeSlider("Level Size", "levelTextSize", 6, 26, 10))
     cursorY = cursorY - height
     cursorY = LinkRow(hostFrame, cursorY, "Party-Specific Text Sizes", tile.folder, "Party", "TEXT DISPLAY")
     cursorY = LinkRow(hostFrame, cursorY, "Buff Manager Text (per indicator)", tile.folder, "Buff Manager", nil)
@@ -561,7 +561,7 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
             _G._CURB_Apply()
         end
     end
-    local function size(labelText, tableKey, key, minV, maxV, def)
+    local function sizeSlider(labelText, tableKey, key, minV, maxV, def)
         return {
             type = "slider",
             text = labelText,
@@ -588,24 +588,24 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
         hostFrame,
         cursorY,
         ModuleOutlineCfg(tile.folder, tile.display),
-        size("Health Text Size", "health", "textSize", 8, 24, 11)
+        sizeSlider("Health Text Size", "health", "textSize", 8, 24, 11)
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Power Text Size", "primary", "textSize", 8, 24, 11),
-        size("Class Resource Text Size", "secondary", "textSize", 8, 24, 11)
+        sizeSlider("Power Text Size", "primary", "textSize", 8, 24, 11),
+        sizeSlider("Class Resource Text Size", "secondary", "textSize", 8, 24, 11)
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Cast Bar Text Size", "castBar", "spellTextSize", 8, 24, 11),
-        size("Cast Bar Timer Size", "castBar", "timerSize", 8, 24, 11)
+        sizeSlider("Cast Bar Text Size", "castBar", "spellTextSize", 8, 24, 11),
+        sizeSlider("Cast Bar Timer Size", "castBar", "timerSize", 8, 24, 11)
     )
     cursorY = cursorY - height
-    _, height = W:DualRow(hostFrame, cursorY, size("Totem Timer Size", "totemBar", "timerSize", 6, 24, 11), BLANK())
+    _, height = W:DualRow(hostFrame, cursorY, sizeSlider("Totem Timer Size", "totemBar", "timerSize", 6, 24, 11), BLANK())
     cursorY = cursorY - height
     return cursorY
 end
@@ -1234,7 +1234,7 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
             _G._CUMT_ApplyTimer()
         end
     end
-    local function size(labelText, key, minV, maxV, def, fallbackKey)
+    local function sizeSlider(labelText, key, minV, maxV, def, fallbackKey)
         return {
             type = "slider",
             text = labelText,
@@ -1324,29 +1324,29 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Title Size", "titleSize", 8, 24, 16),
-        size("Affix Size", "affixSize", 6, 20, 12)
+        sizeSlider("Title Size", "titleSize", 8, 24, 16),
+        sizeSlider("Affix Size", "affixSize", 6, 20, 12)
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Timer Size", "timerTextSize", 10, 32, 20),
-        size("Objectives Size", "objectivesSize", 8, 20, 12)
+        sizeSlider("Timer Size", "timerTextSize", 10, 32, 20),
+        sizeSlider("Objectives Size", "objectivesSize", 8, 20, 12)
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("+3 Threshold Text Size", "thresholdPlusThreeSize", 6, 20, 12, "thresholdSize"),
-        size("+2 Threshold Text Size", "thresholdPlusTwoSize", 6, 20, 12, "thresholdSize")
+        sizeSlider("+3 Threshold Text Size", "thresholdPlusThreeSize", 6, 20, 12, "thresholdSize"),
+        sizeSlider("+2 Threshold Text Size", "thresholdPlusTwoSize", 6, 20, 12, "thresholdSize")
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("+1 Threshold Text Size", "thresholdPlusOneSize", 6, 20, 12, "thresholdSize"),
-        size("Enemy Forces Text Size", "enemyForcesTextSize", 8, 24, 12, "objectivesSize")
+        sizeSlider("+1 Threshold Text Size", "thresholdPlusOneSize", 6, 20, 12, "thresholdSize"),
+        sizeSlider("Enemy Forces Text Size", "enemyForcesTextSize", 8, 24, 12, "objectivesSize")
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
@@ -1530,7 +1530,7 @@ local function TileBags(hostFrame, cursorY, W, tile)
             _G.CUI_BankFrame:RefreshTextSizes()
         end
     end
-    local function size(labelText, key, minV, maxV, def, applyFn)
+    local function sizeSlider(labelText, key, minV, maxV, def, applyFn)
         return {
             type = "slider",
             text = labelText,
@@ -1555,7 +1555,7 @@ local function TileBags(hostFrame, cursorY, W, tile)
         hostFrame,
         cursorY,
         ModuleOutlineCfg(tile.folder, tile.display),
-        size("Category Title Size", "bagCatTitleSize", 8, 16, 11, function()
+        sizeSlider("Category Title Size", "bagCatTitleSize", 8, 16, 11, function()
             if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                 _G.CUI_Bags:RefreshInventory()
             end
@@ -1565,21 +1565,21 @@ local function TileBags(hostFrame, cursorY, W, tile)
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Item Count Text Size", "bagCountFontSize", 8, 16, 11, TextSizes),
-        size("Item Level Text Size", "itemlevelFontSize", 8, 16, 12, TextSizes)
+        sizeSlider("Item Count Text Size", "bagCountFontSize", 8, 16, 11, TextSizes),
+        sizeSlider("Item Level Text Size", "itemlevelFontSize", 8, 16, 12, TextSizes)
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Set Name Text Size", "bagSetNameFontSize", 7, 14, 9, TextSizes),
-        size("BoE / Warbound Text Size", "bagBindTypeFontSize", 8, 16, 11, TextSizes)
+        sizeSlider("Set Name Text Size", "bagSetNameFontSize", 7, 14, 9, TextSizes),
+        sizeSlider("BoE / Warbound Text Size", "bagBindTypeFontSize", 8, 16, 11, TextSizes)
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("List Text Size", "bagListFontSize", 8, 16, 11, function()
+        sizeSlider("List Text Size", "bagListFontSize", 8, 16, 11, function()
             if _G.CUI_Bags and _G.CUI_Bags.RefreshInventory then
                 _G.CUI_Bags:RefreshInventory()
             end
@@ -1608,7 +1608,7 @@ local function TileMinimap(hostFrame, cursorY, W, tile)
     local function saved()
         return _G._CUMM_DB and _G._CUMM_DB.profile and _G._CUMM_DB.profile.minimap
     end
-    local function size(labelText, key, minV, maxV, def)
+    local function sizeSlider(labelText, key, minV, maxV, def)
         return {
             type = "slider",
             text = labelText,
@@ -1661,13 +1661,13 @@ local function TileMinimap(hostFrame, cursorY, W, tile)
         hostFrame,
         cursorY,
         ModuleOutlineCfg(tile.folder, tile.display),
-        size("FPS Text Size", "fpsTextSize", 8, 30, 12)
+        sizeSlider("FPS Text Size", "fpsTextSize", 8, 30, 12)
     )
     cursorY = cursorY - height
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Difficulty Text Size", "diffTextSize", 8, 24, 12),
+        sizeSlider("Difficulty Text Size", "diffTextSize", 8, 24, 12),
         scale("Clock Scale", "clockScale", 1.15, "_CUBS_ClockBg")
     )
     cursorY = cursorY - height
@@ -1729,7 +1729,7 @@ local function TileQuestTracker(hostFrame, cursorY, W, tile)
             EQT.RefreshStateDriver()
         end
     end
-    local function size(labelText, key, def)
+    local function sizeSlider(labelText, key, def)
         return {
             type = "slider",
             text = labelText,
@@ -1780,20 +1780,20 @@ local function TileQuestTracker(hostFrame, cursorY, W, tile)
     _, height = W:DualRow(
         hostFrame,
         cursorY,
-        size("Header Font Size", "headerFontSize", 13),
-        size("Title Font Size", "titleFontSize", 12)
+        sizeSlider("Header Font Size", "headerFontSize", 13),
+        sizeSlider("Title Font Size", "titleFontSize", 12)
     )
     cursorY = cursorY - height
     if mod.UseCustomTracker and mod.UseCustomTracker() then
         _, height = W:DualRow(
             hostFrame,
             cursorY,
-            size("Objective Font Size", "objectiveFontSize", 10),
-            size("Zone Header Font Size", "customZoneFontSize", 13)
+            sizeSlider("Objective Font Size", "objectiveFontSize", 10),
+            sizeSlider("Zone Header Font Size", "customZoneFontSize", 13)
         )
         cursorY = cursorY - height
     else
-        _, height = W:DualRow(hostFrame, cursorY, size("Objective Font Size", "objectiveFontSize", 10), BLANK())
+        _, height = W:DualRow(hostFrame, cursorY, sizeSlider("Objective Font Size", "objectiveFontSize", 10), BLANK())
         cursorY = cursorY - height
     end
     return cursorY

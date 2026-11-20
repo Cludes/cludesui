@@ -85,7 +85,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         return profile and not profile.swingTimer.enabled
     end
 
-    local function RefreshST()
+    local function ApplySwingTimer()
         if _G._CURB_Apply then
             _G._CURB_Apply()
         end
@@ -113,7 +113,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 return
             end
             profile.swingTimer[key] = val
-            RefreshST()
+            ApplySwingTimer()
             if alsoPage then
                 CludesUI:RefreshPage()
             end
@@ -190,7 +190,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         else
                             swingCfg.anchorX = val
                         end
-                        RefreshST()
+                        ApplySwingTimer()
                     end,
                 },
                 {
@@ -221,7 +221,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         else
                             swingCfg.anchorY = val
                         end
-                        RefreshST()
+                        ApplySwingTimer()
                     end,
                 },
             },
@@ -302,7 +302,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         return
                     end
                     profile.swingTimer[key] = val
-                    RefreshST()
+                    ApplySwingTimer()
                 end,
             }
         end
@@ -331,10 +331,10 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabledFn = stOff,
         disabledTooltip = ST_TIP,
         onChanged = function()
-            RefreshST()
+            ApplySwingTimer()
         end,
         onOptionChanged = function()
-            RefreshST()
+            ApplySwingTimer()
         end,
     }, {
         type = "toggle",
@@ -391,11 +391,11 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                             q.classTalentConditions = nil
                         end
                     end
-                    RefreshST()
+                    ApplySwingTimer()
                 end,
             })
         end
-        local formRows = environ.FormToggleRows(STCfg, RefreshST, "barDisabledForms")
+        local formRows = environ.FormToggleRows(STCfg, ApplySwingTimer, "barDisabledForms")
         if formRows then
             formRows[#formRows + 1] = { type = "button", label = "Talent Conditions", action = OpenTalents }
             _, condShow = CludesUI.BuildInlineCog(stShowRow._leftRegion, {
@@ -436,7 +436,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         else
                             profile.swingTimer.idleShowFill = nil
                         end
-                        RefreshST()
+                        ApplySwingTimer()
                     end,
                 },
             },
@@ -504,7 +504,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     if swingCfg.borderSizePx then
                         swingCfg.borderSizePx = false
                     end
-                    RefreshST()
+                    ApplySwingTimer()
                     CludesUI:RefreshPage(true)
                 end,
             }),
@@ -518,7 +518,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                             return
                         end
                         profile.swingTimer.stockBorderScale = val
-                        RefreshST()
+                        ApplySwingTimer()
                         CludesUI.ReapplyMatchPads("ERB_SwingTimer")
                         CludesUI:RefreshPage()
                     end, { disabled = stOff, disabledTooltip = ST_TIP })
@@ -551,7 +551,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         end
                     end,
                     apply = function()
-                        RefreshST()
+                        ApplySwingTimer()
                         CludesUI:RefreshPage()
                     end,
                 }))
@@ -601,7 +601,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         end
                     end,
                     apply = function()
-                        RefreshST()
+                        ApplySwingTimer()
                         CludesUI:RefreshPage()
                     end,
                 })
@@ -657,7 +657,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         return
                     end
                     profile.swingTimer.cornerMask = val
-                    RefreshST()
+                    ApplySwingTimer()
                 end),
             })
             CludesUI.BuildInlineSwatches(bsRow._rightRegion, {
@@ -688,7 +688,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         end
                         profile.swingTimer.borderR, profile.swingTimer.borderG, profile.swingTimer.borderB, profile.swingTimer.borderA =
                             red, green, blue, a
-                        RefreshST()
+                        ApplySwingTimer()
                         CludesUI:RefreshPage()
                     end,
                 },
@@ -727,7 +727,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                                 return
                             end
                             profile.swingTimer.borderTextureShiftX = val == 0 and nil or val
-                            RefreshST()
+                            ApplySwingTimer()
                             CludesUI:RefreshPage()
                         end,
                     },
@@ -759,7 +759,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                                 return
                             end
                             profile.swingTimer.borderTextureShiftY = val == 0 and nil or val
-                            RefreshST()
+                            ApplySwingTimer()
                             CludesUI:RefreshPage()
                         end,
                     },
@@ -773,7 +773,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                                 return
                             end
                             profile.swingTimer.borderBehind = val == false and nil or val
-                            RefreshST()
+                            ApplySwingTimer()
                             CludesUI:RefreshPage()
                         end,
                     },
@@ -817,7 +817,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 if swingCfg.classColored then
                     swingCfg.classColored = false
                 end
-                RefreshST()
+                ApplySwingTimer()
                 CludesUI:RefreshPage()
             end,
             onClick = function(self)
@@ -827,7 +827,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 end
                 if profile.swingTimer.classColored then
                     profile.swingTimer.classColored = false
-                    RefreshST()
+                    ApplySwingTimer()
                     CludesUI:RefreshPage()
                     return
                 end
@@ -878,7 +878,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     end
                     profile.swingTimer.gradientR, profile.swingTimer.gradientG, profile.swingTimer.gradientB, profile.swingTimer.gradientA =
                         red, green, blue, a
-                    RefreshST()
+                    ApplySwingTimer()
                 end,
             },
             RowSwatch("mh", "Main Hand Color"),
@@ -901,7 +901,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         return
                     end
                     profile.swingTimer.classColored = true
-                    RefreshST()
+                    ApplySwingTimer()
                     CludesUI:RefreshPage()
                 end,
                 refreshAlpha = function()
@@ -928,7 +928,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 return
             end
             profile.swingTimer.bgA = val / 100
-            RefreshST()
+            ApplySwingTimer()
         end,
     })
     cursorY = cursorY - height
@@ -975,7 +975,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         return
                     end
                     profile.swingTimer.bgR, profile.swingTimer.bgG, profile.swingTimer.bgB = red, green, blue
-                    RefreshST()
+                    ApplySwingTimer()
                 end,
             },
         }, { size = 20, disabled = stOff, disabledTooltip = ST_TIP })
@@ -1061,7 +1061,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     local swingCfg = profile.swingTimer
                     swingCfg[prefixText .. "R"], swingCfg[prefixText .. "G"], swingCfg[prefixText .. "B"], swingCfg[prefixText .. "A"] =
                         r, gg, b, a
-                    RefreshST()
+                    ApplySwingTimer()
                 end,
             }
         end
@@ -1130,7 +1130,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 end
                 profile.swingTimer[keyName] = val
                 -- The cog's Combine Hands greys out while a hand is off.
-                RefreshST()
+                ApplySwingTimer()
                 CludesUI:RefreshPage()
             end
         )
@@ -1268,7 +1268,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 local swingCfg = profile.swingTimer
                 swingCfg[prefixText .. "R"], swingCfg[prefixText .. "G"], swingCfg[prefixText .. "B"], swingCfg[prefixText .. "A"] =
                     r, gg, b, a
-                RefreshST()
+                ApplySwingTimer()
             end,
         }
     end
@@ -1403,7 +1403,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                             return
                         end
                         profile.swingTimer.outOfRangeAlpha = val / 100
-                        RefreshST()
+                        ApplySwingTimer()
                     end,
                 },
             },
