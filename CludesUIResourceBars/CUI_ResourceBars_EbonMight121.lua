@@ -84,11 +84,11 @@ local function Build()
     -- flat or gradient per settings).
     local ft = rb.GetStatusBarTexture and rb:GetStatusBarTexture()
     local texPath = (ft and ft.GetTexture and ft:GetTexture()) or "Interface\\Buttons\\WHITE8x8"
-    local region, g, b, a = 1, 1, 1, 1
+    local red, green, blue, a = 1, 1, 1, 1
     if pp.customColored and ft and ft.GetVertexColor then
-        region, g, b, a = ft:GetVertexColor()
+        red, green, blue, a = ft:GetVertexColor()
     elseif pc then
-        region, g, b = pc[1] or 1, pc[2] or 1, pc[3] or 1
+        red, green, blue = pc[1] or 1, pc[2] or 1, pc[3] or 1
     end
 
     -- Text bake source: the bar's own text FS (font + anchor), so the
@@ -141,16 +141,16 @@ local function Build()
                     bft:SetVertexColor(1, 1, 1, 1)
                     bft:SetGradient(
                         pp.gradientDir or "HORIZONTAL",
-                        CreateColor(region, g, b, 1),
+                        CreateColor(red, green, blue, 1),
                         CreateColor(
-                            pp.gradientR or region,
-                            pp.gradientG or g,
-                            pp.gradientB or b,
+                            pp.gradientR or red,
+                            pp.gradientG or green,
+                            pp.gradientB or blue,
                             pp.gradientA or 1
                         )
                     )
                 else
-                    bft:SetVertexColor(region, g, b, a or 1)
+                    bft:SetVertexColor(red, green, blue, a or 1)
                 end
             end
             local options = {}

@@ -463,22 +463,22 @@ function mod.HealthIndicatorsApply(barFrame, conf, orientation)
             end
             shade:SetRotatesTexture(vertical and not tiled)
             local c = conf[k.color]
-            local region, g, b, a = k.r, k.g, k.b, k.a
+            local red, green, blue, a = k.r, k.g, k.b, k.a
             if c then
-                region, g, b, a = c.r or region, c.g or g, c.b or b, c.a or a
+                red, green, blue, a = c.r or red, c.g or green, c.b or blue, c.a or a
             end
             if k.opacity then
                 a = (conf[k.opacity] or k.opacityDef) / 100
             end
             -- The outlined stripes carry their own colours: only the alpha tints them.
             if style == "largeOutlinedStripes" or style == "largeOutlinedStripesR" then
-                region, g, b = 1, 1, 1
+                red, green, blue = 1, 1, 1
             end
-            shade:SetStatusBarColor(region, g, b, a)
+            shade:SetStatusBarColor(red, green, blue, a)
             if fw then
                 fw:SetFrameLevel(level + 1)
                 fw:SetRotatesTexture(vertical and not tiled)
-                fw:SetStatusBarColor(region, g, b, a)
+                fw:SetStatusBarColor(red, green, blue, a)
             end
             if k.key == "healAbsorb" then
                 ApplyHealBacking(shade, conf)

@@ -1105,19 +1105,19 @@ function EQT.ColorObjectiveLines(questBlock)
         if text and o then
             if Stale(text, gen) then
                 local style = text.colorStyle
-                local region, g, b = 1, 1, 1
+                local red, green, blue = 1, 1, 1
                 if style then
-                    region, g, b = style.r, style.g, style.b
+                    red, green, blue = style.r, style.g, style.b
                 end
                 if gradient then
                     -- Finished lines take the End colour, not Blizzard's grey.
                     if o.finished then
-                        region, g, b = ProgressRGB(1)
+                        red, green, blue = ProgressRGB(1)
                     elseif type(o.numRequired) == "number" and o.numRequired > 0 then
-                        region, g, b = ProgressRGB((o.numFulfilled or 0) / o.numRequired)
+                        red, green, blue = ProgressRGB((o.numFulfilled or 0) / o.numRequired)
                     end
                 end
-                text:SetTextColor(region, g, b, (dim and o.finished) and alpha or 1)
+                text:SetTextColor(red, green, blue, (dim and o.finished) and alpha or 1)
                 painted[text] = true
                 Stamp(text, gen)
             end

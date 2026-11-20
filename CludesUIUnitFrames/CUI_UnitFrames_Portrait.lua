@@ -1199,14 +1199,14 @@ function mod.UF_PortraitExtras(owner, s, shapeKey)
         end
         if ringTex._path then
             local bc = s.borderColor
-            local region, g, b = 0, 0, 0
+            local red, green, blue = 0, 0, 0
             if bc then
-                region, g, b = bc.r, bc.g, bc.b
+                red, green, blue = bc.r, bc.g, bc.b
             end
             local a = s.borderAlpha or 1
-            if ringTex._r ~= region or ringTex._g ~= g or ringTex._b ~= b or ringTex._a ~= a then
-                ringTex._r, ringTex._g, ringTex._b, ringTex._a = region, g, b, a
-                ringTex:SetVertexColor(region, g, b, a)
+            if ringTex._r ~= red or ringTex._g ~= green or ringTex._b ~= blue or ringTex._a ~= a then
+                ringTex._r, ringTex._g, ringTex._b, ringTex._a = red, green, blue, a
+                ringTex:SetVertexColor(red, green, blue, a)
             end
             ringTex:Show()
         else

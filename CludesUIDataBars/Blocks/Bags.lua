@@ -197,8 +197,8 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
         mod.Tip_AddLine(" ")
         mod.Tip_AddDouble(L["FREE"], free .. "/" .. total, 1, 1, 1, 1, 1, 1)
         mod.Tip_AddLine(" ")
-        local region, g, b = mod.GetAccent()
-        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_BAGS"], 1, 1, 1, region, g, b)
+        local red, green, blue = mod.GetAccent()
+        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_BAGS"], 1, 1, 1, red, green, blue)
         mod.Tip_Show()
     end
 

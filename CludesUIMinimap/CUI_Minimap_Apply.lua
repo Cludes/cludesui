@@ -292,7 +292,7 @@ local function ApplyMinimap()
         GetFFD(mapFrame).bg:SetAlpha(0)
     end
 
-    local region, g, b, borderA = GetBorderStyleColor(p)
+    local red, green, blue, borderA = GetBorderStyleColor(p)
     -- Hide the circular quest area ring on square minimaps
     if mapFrame.SetArchBlobRingScalar then
         mapFrame:SetArchBlobRingScalar(round and 1 or 0)
@@ -416,9 +416,9 @@ local function ApplyMinimap()
         CludesUI.ApplyBorderStyle(
             owner,
             bs,
-            region,
-            g,
-            b,
+            red,
+            green,
+            blue,
             borderA,
             p.borderTexture or "solid",
             p.borderTextureOffset,
@@ -455,7 +455,7 @@ local function ApplyMinimap()
         circBorder:ClearAllPoints()
         circBorder:SetPoint("TOPLEFT", mapFrame, "TOPLEFT", -bs, bs)
         circBorder:SetPoint("BOTTOMRIGHT", mapFrame, "BOTTOMRIGHT", bs, -bs)
-        circBorder._tex:SetVertexColor(region, g, b, 1)
+        circBorder._tex:SetVertexColor(red, green, blue, 1)
         circBorder:Show()
         if GetFFD(mapFrame).texCircBorder then
             GetFFD(mapFrame).texCircBorder:Hide()
@@ -478,7 +478,7 @@ local function ApplyMinimap()
         texCircBorder:ClearAllPoints()
         texCircBorder:SetPoint("TOPLEFT", mapFrame, "TOPLEFT", -inset, inset)
         texCircBorder:SetPoint("BOTTOMRIGHT", mapFrame, "BOTTOMRIGHT", inset, -inset)
-        texCircBorder:SetVertexColor(region, g, b, 1)
+        texCircBorder:SetVertexColor(red, green, blue, 1)
         texCircBorder:Show()
     end
 

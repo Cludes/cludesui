@@ -235,10 +235,10 @@ mod._ixPaint = function(button, fd)
         end
     end
     if c then
-        local region, g, b, a = c[1], c[2], c[3], c[4]
-        if fd.ixR ~= region or fd.ixG ~= g or fd.ixB ~= b or fd.ixA ~= a then
-            fd.ixR, fd.ixG, fd.ixB, fd.ixA = region, g, b, a
-            edge:SetBackdropBorderColor(region, g, b, a)
+        local red, green, blue, a = c[1], c[2], c[3], c[4]
+        if fd.ixR ~= red or fd.ixG ~= green or fd.ixB ~= blue or fd.ixA ~= a then
+            fd.ixR, fd.ixG, fd.ixB, fd.ixA = red, green, blue, a
+            edge:SetBackdropBorderColor(red, green, blue, a)
         end
         if not fd.ixLit then
             fd.ixLit = true

@@ -622,7 +622,7 @@ local function HideZones(swingRow)
     end
 end
 
-local function StyleZone(swingRow, key, enabled, texPath, region, g, b, a, backSub, frontSub)
+local function StyleZone(swingRow, key, enabled, texPath, red, green, blue, a, backSub, frontSub)
     local zoneList = swingRow._zones
     local z = zoneList and zoneList[key]
     if not enabled or swingRow._merged then
@@ -643,9 +643,9 @@ local function StyleZone(swingRow, key, enabled, texPath, region, g, b, a, backS
         zoneList[key] = z
     end
     z.back:SetTexture(texPath)
-    z.back:SetVertexColor(region, g, b, a)
+    z.back:SetVertexColor(red, green, blue, a)
     z.front:SetTexture(texPath)
-    z.front:SetVertexColor(region, g, b, a)
+    z.front:SetVertexColor(red, green, blue, a)
 end
 
 -- `deplete`: the phase ends on the left (its fill drains), else on the right.

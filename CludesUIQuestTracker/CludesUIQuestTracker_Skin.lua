@@ -368,8 +368,8 @@ local function EnsureAccentDivider(headerFrame)
     local es = headerFrame.GetEffectiveScale and headerFrame:GetEffectiveScale() or 1
     local onePixel = (es and es > 0) and (perfect / es) or (PP_SEC and PP_SEC.mult) or 1
     texture:SetHeight(onePixel)
-    local region, g, b = GetLineRGB()
-    texture:SetColorTexture(region, g, b, 1)
+    local red, green, blue = GetLineRGB()
+    texture:SetColorTexture(red, green, blue, 1)
     texture:Show()
     return texture
 end
@@ -507,7 +507,7 @@ local function SkinHeader(headerFrame, knownCollapsed)
         -- Tint the +/- minimize button with the header color. Desaturate
         -- first so the base atlas's built-in tint doesn't multiply with ours.
         if minimizeBtn then
-            local region, g, b = GetHeaderRGB()
+            local red, green, blue = GetHeaderRGB()
             local function tint(texture)
                 if not texture then
                     return
@@ -516,7 +516,7 @@ local function SkinHeader(headerFrame, knownCollapsed)
                     texture:SetDesaturated(true)
                 end
                 if texture.SetVertexColor then
-                    texture:SetVertexColor(region, g, b)
+                    texture:SetVertexColor(red, green, blue)
                 end
             end
             tint(minimizeBtn.GetNormalTexture and minimizeBtn:GetNormalTexture())
@@ -542,8 +542,8 @@ local function SkinHeader(headerFrame, knownCollapsed)
         if not STOCK then
             local textValue = headerFrame.Text
             if textValue then
-                local region, g, b = GetHeaderRGB()
-                textValue:SetTextColor(region, g, b)
+                local red, green, blue = GetHeaderRGB()
+                textValue:SetTextColor(red, green, blue)
                 StyleHeaderFS(textValue)
             end
 
@@ -1004,22 +1004,22 @@ local function ApplyFocusHighlight(questBlock)
     if IS_FOREVER and (isFocus or not diff) then
         StripTitleColorCodes(fontStr)
     end
-    local region, g, b
+    local red, green, blue
     if isFocus then
-        region, g, b = GetFocusRGB()
+        red, green, blue = GetFocusRGB()
     elseif isDone then
-        region, g, b = GetCompletedRGB()
+        red, green, blue = GetCompletedRGB()
     else
         -- On: the quest's difficulty color, for a title Blizzard has not set
         -- again since the option came on (it carries no code yet).
         if diff and questId then
-            region, g, b = QuestDifficultyRGB(questId)
+            red, green, blue = QuestDifficultyRGB(questId)
         end
-        if not region then
-            region, g, b = GetTitleRGB()
+        if not red then
+            red, green, blue = GetTitleRGB()
         end
     end
-    fontStr:SetTextColor(region, g, b)
+    fontStr:SetTextColor(red, green, blue)
 end
 
 -- Shared with the custom tracker (Custom.lua) and the options.

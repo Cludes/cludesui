@@ -566,27 +566,27 @@ function mod.XPBarBackground(s)
     local fitWidth = mod.XPArtFit(s)
     local art = fitWidth and not fitWidth.ring
     local c = s.barBgColor
-    local region, g, b
+    local red, green, blue
     if c then
-        region, g, b = c.r or 0, c.g or 0, c.b or 0
+        red, green, blue = c.r or 0, c.g or 0, c.b or 0
     elseif art then
-        region, g, b = 1, 1, 1
+        red, green, blue = 1, 1, 1
     else
-        region, g, b = 0.06, 0.06, 0.08
+        red, green, blue = 0.06, 0.06, 0.08
     end
-    return region, g, b, s.barBgOpacity or (art and 100 or 85)
+    return red, green, blue, s.barBgOpacity or (art and 100 or 85)
 end
 
 -- The Professions trough is art, so it is tinted and faded; every other
 -- style's background is a flat colour.
 local function PaintXPBackground(widget, s)
     local backdrop = widget._bg
-    local region, g, b, op = mod.XPBarBackground(s)
+    local red, green, blue, op = mod.XPBarBackground(s)
     if widget._xpArtOn == "frame" then
-        backdrop:SetVertexColor(region, g, b, op / 100)
+        backdrop:SetVertexColor(red, green, blue, op / 100)
     else
         backdrop:SetVertexColor(1, 1, 1, 1)
-        backdrop:SetColorTexture(region, g, b, op / 100)
+        backdrop:SetColorTexture(red, green, blue, op / 100)
     end
 end
 

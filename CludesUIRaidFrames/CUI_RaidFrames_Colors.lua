@@ -212,12 +212,12 @@ end
 -- while the fill is opaque, with the flat background under it painted clear.
 do
     local SetColor -- the stock SetColorTexture
-    local function PaintTinted(self, region, g, b, a)
-        self:SetVertexColor(region, g, b, a)
+    local function PaintTinted(self, red, green, blue, a)
+        self:SetVertexColor(red, green, blue, a)
     end
-    local function PaintLayer(self, region, g, b, a)
-        SetColor(self, region, g, b, 0)
-        self._rfTexBgLayer:SetVertexColor(region, g, b, a)
+    local function PaintLayer(self, red, green, blue, a)
+        SetColor(self, red, green, blue, 0)
+        self._rfTexBgLayer:SetVertexColor(red, green, blue, a)
     end
     -- The background texture path in settings s (nil = flat); the previews share it.
     function mod.RF_TexBgPath(s)
@@ -894,7 +894,7 @@ end
 -- A preview text's colour for its colour mode: accent, class (classToken: the sample member's
 -- class; none, as for a pet, reads white), power (pToken: the sample member's power type) or
 -- custom (custom: the colour). r, g, b: the colour without one.
-function mod.RF_PreviewTextColor(mode, custom, classToken, region, g, b, pToken)
+function mod.RF_PreviewTextColor(mode, custom, classToken, red, green, blue, pToken)
     if mode == "accent" then
         local ar, ag, ab = CludesUI.ResolveActiveAccent()
         if ar then
@@ -911,7 +911,7 @@ function mod.RF_PreviewTextColor(mode, custom, classToken, region, g, b, pToken)
     elseif custom then
         return custom.r, custom.g, custom.b
     end
-    return region, g, b
+    return red, green, blue
 end
 
 -- Anchor a FontString to the health bar using the shared position scheme of the texts.

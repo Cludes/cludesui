@@ -88,8 +88,8 @@ function mod.ComputeOffTankFold(unitToken, br, backdrop, bb, otr, otg, otb)
     end
     -- All colors arrive from the caller: the _C accessor is declared far BELOW
     -- this function, so resolving colors here read a nil global (field crash).
-    local region, g, b, a = br, backdrop, bb, 0
-    if not (region and otr) then
+    local red, green, blue, a = br, backdrop, bb, 0
+    if not (red and otr) then
         return false
     end
     for index = 1, #toks do
@@ -98,13 +98,13 @@ function mod.ComputeOffTankFold(unitToken, br, backdrop, bb, otr, otg, otb)
         -- check admits both plain and secret booleans; a refused call (nil)
         -- skips and the accumulator keeps the safe tankNoAggro color.
         if type(isTanking) == "boolean" then
-            region = eval(isTanking, otr, region)
-            g = eval(isTanking, otg, g)
-            b = eval(isTanking, otb, b)
+            red = eval(isTanking, otr, red)
+            green = eval(isTanking, otg, green)
+            blue = eval(isTanking, otb, blue)
             a = eval(isTanking, 1, a)
         end
     end
-    return true, region, g, b, a
+    return true, red, green, blue, a
 end
 
 -- A damage dealer's or healer's threat colors mean something only while someone else can
@@ -875,15 +875,15 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
             end
         end
         if not painted then
-            local region, g, b
+            local red, green, blue
             if tok and tok ~= true then
                 local c = CludesUI.GetClassColor(tok)
-                region, g, b = c.r, c.g, c.b
+                red, green, blue = c.r, c.g, c.b
             elseif UnitIsTapDenied(unitToken) then
                 local c = (p and p.enemyNameTappedColor) or _C("tapped")
-                region, g, b = c.r, c.g, c.b
+                red, green, blue = c.r, c.g, c.b
             else
-                region, g, b = GetEnemyNameReactionColor(unitToken)
+                red, green, blue = GetEnemyNameReactionColor(unitToken)
             end
             for index = 1, #L do
                 local colorKey = L[index]
@@ -894,11 +894,11 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
                 end
                 if skipName and colorKey == "name" then
                     e[1] = nil
-                elseif e[1] ~= region or e[2] ~= g or e[3] ~= b then
-                    e[1], e[2], e[3] = region, g, b
+                elseif e[1] ~= red or e[2] ~= green or e[3] ~= blue then
+                    e[1], e[2], e[3] = red, green, blue
                     local fontStr = backing[colorKey]
                     if fontStr then
-                        fontStr:SetTextColor(region, g, b, 1)
+                        fontStr:SetTextColor(red, green, blue, 1)
                     end
                 end
             end
@@ -906,7 +906,7 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
     end
     local V = mod._npSlotLevelFS
     if V[1] then
-        local region, g, b = mod.NP_UnitLevelColor(unitToken)
+        local red, green, blue = mod.NP_UnitLevelColor(unitToken)
         for index = 1, #V do
             local colorKey = V[index]
             local e = m[colorKey]
@@ -916,7 +916,7 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
             end
             if skipName and colorKey == "name" then
                 e[1] = nil
-            elseif not region then
+            elseif not red then
                 if e[1] ~= false then
                     e[1] = false
                     local ck = mod._npSlotLevelCK[index]
@@ -926,11 +926,11 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
                         fontStr:SetTextColor(c.r, c.g, c.b, 1)
                     end
                 end
-            elseif e[1] ~= region or e[2] ~= g or e[3] ~= b then
-                e[1], e[2], e[3] = region, g, b
+            elseif e[1] ~= red or e[2] ~= green or e[3] ~= blue then
+                e[1], e[2], e[3] = red, green, blue
                 local fontStr = backing[colorKey]
                 if fontStr then
-                    fontStr:SetTextColor(region, g, b, 1)
+                    fontStr:SetTextColor(red, green, blue, 1)
                 end
             end
         end

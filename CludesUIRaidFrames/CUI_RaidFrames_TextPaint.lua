@@ -241,9 +241,9 @@ end
 local function TextColor(e, unitToken, s, pr, pg, pb)
     local mode, P = s[e.k.ColorMode], e.prop
     if mode == "accent" then
-        local region, g, b = mod.CludesUI.ResolveActiveAccent()
-        if region then
-            return region, g, b
+        local red, green, blue = mod.CludesUI.ResolveActiveAccent()
+        if red then
+            return red, green, blue
         end
     elseif mode == "class" then
         local _, tok = UnitClass(unitToken)
@@ -269,10 +269,10 @@ end
 
 -- Stamped on the FontString (ours) so a repaint with the same colour sets nothing.
 local function Tint(fontStr, e, unitToken, s, pr, pg, pb)
-    local region, g, b = TextColor(e, unitToken, s, pr, pg, pb)
-    if fontStr._r ~= region or fontStr._g ~= g or fontStr._b ~= b then
-        fontStr._r, fontStr._g, fontStr._b = region, g, b
-        fontStr:SetTextColor(region, g, b, e.prop.a)
+    local red, green, blue = TextColor(e, unitToken, s, pr, pg, pb)
+    if fontStr._r ~= red or fontStr._g ~= green or fontStr._b ~= blue then
+        fontStr._r, fontStr._g, fontStr._b = red, green, blue
+        fontStr:SetTextColor(red, green, blue, e.prop.a)
     end
 end
 
@@ -704,7 +704,7 @@ local function PvPaint(fontStr, e, s, pv, fb)
         mod.FormatHealAbsorbInto(fontStr, pv.ha or 0, e.mode)
     end
     local P = e.prop
-    local region, g, b = mod.RF_PreviewTextColor(
+    local red, green, blue = mod.RF_PreviewTextColor(
         s[e.k.ColorMode],
         s[e.k.Color],
         pv.class,
@@ -713,7 +713,7 @@ local function PvPaint(fontStr, e, s, pv, fb)
         P.b or 1,
         pv.pToken
     )
-    fontStr:SetTextColor(region, g, b, P.a)
+    fontStr:SetTextColor(red, green, blue, P.a)
 end
 
 -- Lays out and paints every shown text of a preview frame (d: the frame or a state with

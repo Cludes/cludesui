@@ -125,8 +125,8 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
             mod.Tip_AddDouble(L["PVP_ITEM_LEVEL"], format("%.2f", pvp), 0.6, 0.6, 0.6, 1, 1, 1)
         end
         mod.Tip_AddLine(" ")
-        local region, g, b = mod.GetAccent()
-        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_CHARACTER"], 1, 1, 1, region, g, b)
+        local red, green, blue = mod.GetAccent()
+        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_CHARACTER"], 1, 1, 1, red, green, blue)
         mod.Tip_Show()
     end
 

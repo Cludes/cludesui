@@ -346,19 +346,19 @@ do
         if mode == "custom" then
             return custom
         end
-        local region, g, b
+        local red, green, blue
         if mode == "class" then
             local cc = CludesUI.GetClassColor(CludesUI._playerClass)
             if cc then
-                region, g, b = cc.r, cc.g, cc.b
+                red, green, blue = cc.r, cc.g, cc.b
             end
         else
-            region, g, b = CludesUI.ResolveActiveAccent()
+            red, green, blue = CludesUI.ResolveActiveAccent()
         end
-        if not region then
+        if not red then
             return custom
         end
-        return { r = region, g = g, b = b, a = 1 }
+        return { r = red, g = green, b = blue, a = 1 }
     end
 
     local function CustomColor(key)

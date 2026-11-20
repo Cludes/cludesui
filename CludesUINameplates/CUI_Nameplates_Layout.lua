@@ -265,15 +265,15 @@ do
     -- (the profile merge fills the key, so it is compared, not nil-tested)
     -- keeps Blizzard's own stealable art. Per-type colours always tint.
     mod.GetDispelBorderColor = function(dispelType)
-        local region, g, b = mod.GetDispelGlowColor(dispelType)
+        local red, green, blue = mod.GetDispelGlowColor(dispelType)
         if dispelType and mod.GetDispelGlowUseTypeColor() then
-            return region, g, b
+            return red, green, blue
         end
         local skinData = defaultSet.dispelGlowColor
-        if region == nil or (skinData and region == skinData.r and g == skinData.g and b == skinData.b) then
+        if red == nil or (skinData and red == skinData.r and green == skinData.g and blue == skinData.b) then
             return nil, nil, nil
         end
-        return region, g, b
+        return red, green, blue
     end
 end
 local function GetCastBarHeight()
@@ -1815,13 +1815,13 @@ function mod.ApplyCastIconBorder(backing)
     local texture = p.customBorderTexture or defaultSet.customBorderTexture
     local sz = p.customBorderSize or defaultSet.customBorderSize
     local px = CludesUI.BorderPx(p.customBorderSizePx, sz, texture)
-    local region, g, b, a
+    local red, green, blue, a
     if p.castIconTargetBorder and backing._isTarget and mod.GetTargetGlowBorderColor() then
         local c = mod.GetTargetBorderColor()
-        region, g, b, a = c.r, c.g, c.b, 1
+        red, green, blue, a = c.r, c.g, c.b, 1
     else
         local c = p.customBorderColor or defaultSet.customBorderColor
-        region, g, b, a = c.r, c.g, c.b, p.customBorderAlpha or defaultSet.customBorderAlpha or 1
+        red, green, blue, a = c.r, c.g, c.b, p.customBorderAlpha or defaultSet.customBorderAlpha or 1
     end
     local strata = backing._castOverlayLifted and backing.cast:GetFrameStrata() or "MEDIUM"
     local level = iconTex:GetFrameLevel() + 3
@@ -1846,9 +1846,9 @@ function mod.ApplyCastIconBorder(backing)
         CludesUI.ApplyBorderStyle(
             barFrame,
             sz,
-            region,
-            g,
-            b,
+            red,
+            green,
+            blue,
             a,
             texture,
             offX,
@@ -1866,7 +1866,7 @@ function mod.ApplyCastIconBorder(backing)
         barFrame._sTex, barFrame._sSz, barFrame._sPx = texture, sz, px
         barFrame._sOX, barFrame._sOY, barFrame._sSX, barFrame._sSY = offX, offY, shX, shY
     else
-        CludesUI.SetBorderStyleColor(barFrame, region, g, b, a)
+        CludesUI.SetBorderStyleColor(barFrame, red, green, blue, a)
     end
 end
 local function GetBorderColor()

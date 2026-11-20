@@ -410,19 +410,19 @@ function CHAT._SB_SyncBackdropImpl(force)
     if not GetChatWindowInfo then
         return
     end
-    local _, _, region, g, b, a = GetChatWindowInfo(ident)
-    if type(a) ~= "number" or (issecretvalue and (issecretvalue(region) or issecretvalue(a))) then
+    local _, _, red, green, blue, a = GetChatWindowInfo(ident)
+    if type(a) ~= "number" or (issecretvalue and (issecretvalue(red) or issecretvalue(a))) then
         return
     end
     local m = CHAT._sbBdMemo
-    if not force and m[1] == region and m[2] == g and m[3] == b and m[4] == a then
+    if not force and m[1] == red and m[2] == green and m[3] == blue and m[4] == a then
         return
     end
-    m[1], m[2], m[3], m[4] = region, g, b, a
-    fillTex:SetColorTexture(region, g, b, a)
+    m[1], m[2], m[3], m[4] = red, green, blue, a
+    fillTex:SetColorTexture(red, green, blue, a)
     local rims = skinData.sbRims
     for index = 1, #rims do
-        rims[index]:SetVertexColor(region, g, b, a)
+        rims[index]:SetVertexColor(red, green, blue, a)
     end
 end
 

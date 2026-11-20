@@ -190,15 +190,15 @@ local function ApplyBarGradient(ft, direction, br, backdrop, bb, ba, er, eg, eb,
 end
 
 -- Flat-color a bar fill (no gradient).
-local function ApplyBarFlat(ft, region, g, b, a)
+local function ApplyBarFlat(ft, red, green, blue, a)
     -- As ApplyBarGradient: re-asserting an unchanged colour every event is waste.
     a = a or 1
-    if ft._lfOn and ft._lfR == region and ft._lfG == g and ft._lfB == b and ft._lfA == a then
+    if ft._lfOn and ft._lfR == red and ft._lfG == green and ft._lfB == blue and ft._lfA == a then
         return
     end
-    ft._lfOn, ft._lfR, ft._lfG, ft._lfB, ft._lfA = true, region, g, b, a
+    ft._lfOn, ft._lfR, ft._lfG, ft._lfB, ft._lfA = true, red, green, blue, a
     ft._lgOn = nil -- a flat fill invalidates any cached gradient
-    ft:SetVertexColor(region, g, b, a)
+    ft:SetVertexColor(red, green, blue, a)
 end
 -- Shared with CUI_ResourceBars_SwingTimer.lua, which paints its rows the way the
 -- GCD bar paints its fill. Exported, not duplicated, so the change-gates stay one.
@@ -389,10 +389,10 @@ end
 -- Textured Background: the bar's own texture on a background, tinted by the
 -- background colour. Callers repaint the flat colour around it; nil path clears
 -- the tint a texture left behind (SetColorTexture keeps it).
-function mod.ERB_BgTexture(backdrop, filePath, region, g, b, a)
+function mod.ERB_BgTexture(backdrop, filePath, red, green, blue, a)
     if filePath then
         backdrop:SetTexture(filePath)
-        backdrop:SetVertexColor(region, g, b, a)
+        backdrop:SetVertexColor(red, green, blue, a)
         backdrop._erbBgTex = true
     elseif backdrop._erbBgTex then
         backdrop._erbBgTex = nil
@@ -503,7 +503,7 @@ function mod.ERB_AnchorBorderHost(bf, hostFrame, topY, bottom, leftX, right)
     end
 end
 
-local function MakePixelBorder(hostFrame, region, g, b, a, size, textureKey, texOffset, texOffsetY, shiftX, shiftY)
+local function MakePixelBorder(hostFrame, red, green, blue, a, size, textureKey, texOffset, texOffsetY, shiftX, shiftY)
     local alpha = a or 1
     local sz = size or 1
     local bf = CreateFrame("Frame", nil, hostFrame)
@@ -513,9 +513,9 @@ local function MakePixelBorder(hostFrame, region, g, b, a, size, textureKey, tex
     CludesUI.ApplyBorderStyle(
         bf,
         sz,
-        region,
-        g,
-        b,
+        red,
+        green,
+        blue,
         alpha,
         textureKey or "solid",
         texOffset,
@@ -943,10 +943,10 @@ local function CreatePip(hostFrame, wid, hgt, position, borderSize, borderR, bor
     pip._active = false
     pip._idx = position
 
-    function pip:SetActive(isActive, region, g, b, a)
+    function pip:SetActive(isActive, red, green, blue, a)
         self._active = isActive
         if isActive then
-            self._fill:SetVertexColor(region, g, b, a or 1)
+            self._fill:SetVertexColor(red, green, blue, a or 1)
             -- Fill Opacity on: re-assert fill alpha (unified channel, wiped by the
             -- SetVertexColor above) and hide bg so the translucent fill shows the
             -- world. _fillOp is nil unless below 100 (inert default). At
@@ -1030,13 +1030,13 @@ function ERB.ApplyGapFills(widget, slots, total, isVertical, isReversed, sp, pip
         fills = {}
         widget._gapFills = fills
     end
-    local region, g, b, a
+    local red, green, blue, a
     if sp.gapColorEnabled then
-        region, g, b, a = sp.gapR or 0, sp.gapG or 0, sp.gapB or 0, sp.gapA or 1
+        red, green, blue, a = sp.gapR or 0, sp.gapG or 0, sp.gapB or 0, sp.gapA or 1
     elseif sp.darkTheme then
-        region, g, b, a = 0, 0, 0, 1
+        red, green, blue, a = 0, 0, 0, 1
     else
-        region, g, b, a = sp.barBgR or 0, sp.barBgG or 0, sp.barBgB or 0, sp.barBgA or 0.5
+        red, green, blue, a = sp.barBgR or 0, sp.barBgG or 0, sp.barBgB or 0, sp.barBgA or 0.5
     end
     local num = 0
     for i = 1, total - 1 do
@@ -1050,7 +1050,7 @@ function ERB.ApplyGapFills(widget, slots, total, isVertical, isReversed, sp, pip
                 texture = widget:CreateTexture(nil, "BACKGROUND", nil, 0) -- above _barBg (sublevel -1)
                 fills[num] = texture
             end
-            texture:SetColorTexture(region, g, b, a)
+            texture:SetColorTexture(red, green, blue, a)
             texture:ClearAllPoints()
             if isVertical then
                 if isReversed then

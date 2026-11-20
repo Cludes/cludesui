@@ -702,13 +702,13 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
     -- Text and icon colours (the accent on hover).
     local function Paint()
         if mouseOver then
-            local region, g, b = mod.GetAccent()
-            specText:SetTextColor(region, g, b, 1)
-            specIcon:SetVertexColor(region, g, b, 1)
+            local red, green, blue = mod.GetAccent()
+            specText:SetTextColor(red, green, blue, 1)
+            specIcon:SetVertexColor(red, green, blue, 1)
         else
-            local region, g, b = BlockColorOf(blockCfg)
+            local red, green, blue = BlockColorOf(blockCfg)
             local ir, ig, ib = IconColorOf(blockCfg)
-            specText:SetTextColor(region, g, b, 1)
+            specText:SetTextColor(red, green, blue, 1)
             specIcon:SetVertexColor(ir, ig, ib, 1)
         end
     end

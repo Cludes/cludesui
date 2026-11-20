@@ -125,8 +125,8 @@ local function GetInsetBorderStyle(button)
     if not topY then
         return
     end
-    local region, g, b, a = topY:GetVertexColor()
-    return region, g, b, a, topY:GetHeight()
+    local red, green, blue, a = topY:GetVertexColor()
+    return red, green, blue, a, topY:GetHeight()
 end
 
 -- Border thickness in px (1 normally, 2 for quest items); must be re-applied per render because item buttons are pooled.

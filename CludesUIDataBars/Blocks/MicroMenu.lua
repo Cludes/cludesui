@@ -1136,7 +1136,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         if not def then
             return
         end
-        local region, g, b = 1, 1, 1
+        local red, green, blue = 1, 1, 1
         mod.Tip_Begin(widget)
         local title = "|cFFFFFFFF" .. (def.label or name) .. "|r"
         if def.binding then
@@ -1152,14 +1152,14 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
                 title = title .. " |cFFFFD200(" .. tconcat(keyList, " / ") .. ")|r"
             end
         end
-        mod.Tip_AddLine(title, region, g, b)
+        mod.Tip_AddLine(title, red, green, blue)
 
         if name == "ach" then
             local pts = 0
             if GetTotalAchievementPoints then
                 pts = GetTotalAchievementPoints() or 0
             end
-            local hexAccent = format("%02x%02x%02x", floor(region * 255), floor(g * 255), floor(b * 255))
+            local hexAccent = format("%02x%02x%02x", floor(red * 255), floor(green * 255), floor(blue * 255))
             mod.Tip_AddLine(" ")
             mod.Tip_AddDouble(
                 "|cFFFFFFFF" .. L["ACH_POINTS"] .. "|r",
@@ -1167,15 +1167,15 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
                 1,
                 1,
                 1,
-                region,
-                g,
-                b
+                red,
+                green,
+                blue
             )
         end
 
         -- Delve Journey and Companion Level rows: WoW Forever has no Delves.
         if name == "journal" and not CludesUI.IS_FOREVER then
-            local hexAccent = format("%02x%02x%02x", floor(region * 255), floor(g * 255), floor(b * 255))
+            local hexAccent = format("%02x%02x%02x", floor(red * 255), floor(green * 255), floor(blue * 255))
             mod.Tip_AddLine(" ")
             local delveRank, delveMax = 0, "?"
             if
@@ -1201,9 +1201,9 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
                 1,
                 1,
                 1,
-                region,
-                g,
-                b
+                red,
+                green,
+                blue
             )
             local companionLvl = 0
             if
@@ -1226,9 +1226,9 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
                 1,
                 1,
                 1,
-                region,
-                g,
-                b
+                red,
+                green,
+                blue
             )
         end
 
@@ -1271,13 +1271,13 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         -- OnEnter / OnLeave are never protected, safe on all button types.
         widget:SetScript("OnEnter", function()
             -- Hover tint stays alive in combat (our textures/fonts only).
-            local region, g, b = mod.GetAccent()
+            local red, green, blue = mod.GetAccent()
             if icons[name] then
-                icons[name]:SetVertexColor(region, g, b, 1)
+                icons[name]:SetVertexColor(red, green, blue, 1)
             end
             -- The counter text (guild/social) follows its button's hover.
             if textFS[name] then
-                textFS[name]:SetTextColor(region, g, b, 1)
+                textFS[name]:SetTextColor(red, green, blue, 1)
             end
             if InCombatLockdown() then
                 -- The FULL tooltip reads combat-restricted surfaces (char stat

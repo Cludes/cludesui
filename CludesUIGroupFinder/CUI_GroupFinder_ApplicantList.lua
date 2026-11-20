@@ -367,14 +367,14 @@ local function PrivateTooltip(rowLine, ident)
     local label, classFile, localClass, _, ilvl, _, _, _, _, _, _, score, pvpIlvl, _, _, specID =
         C_LFGList.GetApplicantMemberInfo(ident, k)
     local classColor = classFile and RAID_CLASS_COLORS[classFile]
-    local region, g, b = 1, 1, 1
+    local red, green, blue = 1, 1, 1
     if classColor then
-        region, g, b = classColor.r, classColor.g, classColor.b
+        red, green, blue = classColor.r, classColor.g, classColor.b
     end
     GameTooltip:SetOwner(rowLine, "ANCHOR_NONE")
     GameTooltip:SetPoint("BOTTOMLEFT", rowLine, "TOPLEFT", 105, 0)
     local isShown = mod.OwnListGet("streamerNames") and localClass or label
-    GameTooltip:SetText(isShown or " ", region, g, b)
+    GameTooltip:SetText(isShown or " ", red, green, blue)
     if not mod.OwnListGet("streamerSpec") and type(specID) == "number" and specID > 0 then
         local specName = select(2, GetSpecializationInfoByID(specID))
         if specName then
@@ -981,12 +981,12 @@ local function FillLine(l, ident, k, grey, noTouch)
     end
     if baseCols == COLS_KEYS then
         if type(score) == "number" then
-            local region, g, b = 1, 1, 1
+            local red, green, blue = 1, 1, 1
             if mod.GFRatingColor then
-                region, g, b = mod.GFRatingColor(score)
+                red, green, blue = mod.GFRatingColor(score)
             end
             c.rating:SetText(score)
-            c.rating:SetTextColor(region, g, b)
+            c.rating:SetTextColor(red, green, blue)
         else
             c.rating:SetText("-")
         end

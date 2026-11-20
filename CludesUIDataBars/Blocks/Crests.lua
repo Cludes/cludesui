@@ -196,7 +196,7 @@ mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     local function ShowTooltip()
-        local region, g, b = mod.GetAccent()
+        local red, green, blue = mod.GetAccent()
         mod.Tip_Begin(button)
         -- The header names the dimmed figure, as the game's own tooltip does.
         mod.Tip_AddDouble(L["CRESTS"], L["SEASON_MAXIMUM"], 1, 1, 1, 0.667, 0.667, 0.667)
@@ -209,7 +209,7 @@ mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
             end
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_CURRENCIES"], 1, 1, 1, region, g, b)
+        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_CURRENCIES"], 1, 1, 1, red, green, blue)
         mod.Tip_Show()
     end
 

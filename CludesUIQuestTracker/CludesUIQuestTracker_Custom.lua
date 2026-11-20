@@ -333,9 +333,9 @@ local function TitleRGB(questId, isComplete)
     end
     -- Title Difficulty Colors: the game's own option (EQT.TitleDifficultyOn)
     if EQT.TitleDifficultyOn() then
-        local region, g, b = EQT.QuestDifficultyRGB(questId)
-        if region then
-            return region, g, b
+        local red, green, blue = EQT.QuestDifficultyRGB(questId)
+        if red then
+            return red, green, blue
         end
     end
     return EQT.GetTitleRGB()
@@ -348,8 +348,8 @@ local function ZoneRGB()
     local c = EQT.DB()
     local accent = c.customZoneUseAccent
     if accent == nil then
-        local region, g, b = EQT.GetHeaderRGB()
-        return region, g, b, not (c.headerShowClassColor or c.headerUseAccent == false)
+        local red, green, blue = EQT.GetHeaderRGB()
+        return red, green, blue, not (c.headerShowClassColor or c.headerUseAccent == false)
     end
     if accent then
         local a = CludesUI.CLUDES_GREEN
@@ -360,20 +360,20 @@ end
 EQT.CustomZoneRGB = ZoneRGB
 
 local function ObjectiveRGBA(object)
-    local region, g, b = OBJ_RGB.r, OBJ_RGB.g, OBJ_RGB.b
+    local red, green, blue = OBJ_RGB.r, OBJ_RGB.g, OBJ_RGB.b
     if object.finished then
-        region, g, b = DONE_RGB.r, DONE_RGB.g, DONE_RGB.b
+        red, green, blue = DONE_RGB.r, DONE_RGB.g, DONE_RGB.b
     end
     if Cfg("objProgressColor") then
         local req = object.numRequired
         if object.finished then
-            region, g, b = EQT.ProgressRGB(1)
+            red, green, blue = EQT.ProgressRGB(1)
         elseif type(req) == "number" and req > 0 then
-            region, g, b = EQT.ProgressRGB(math.min((object.numFulfilled or 0) / req, 1))
+            red, green, blue = EQT.ProgressRGB(math.min((object.numFulfilled or 0) / req, 1))
         end
     end
     local a = (object.finished and Cfg("objDimCompleted")) and (Cfg("objDimAlpha") or 45) / 100 or 1
-    return region, g, b, a
+    return red, green, blue, a
 end
 
 -- "[12+] Title (Elite)", as Blizzard's Forever tracker writes it.
@@ -574,8 +574,8 @@ local function AddObjectives(questId, posY, width, posX)
             or C_QuestLog.GetNextWaypointText(questId)
             or QUEST_WATCH_QUEST_READY
         l, hgt = AcquireLine("obj", questId, "- " .. textValue, posX, posY, wid)
-        local region, g, b = EQT.GetCompletedRGB()
-        l.text:SetTextColor(region, g, b, 1)
+        local red, green, blue = EQT.GetCompletedRGB()
+        l.text:SetTextColor(red, green, blue, 1)
         return posY + hgt + gap
     end
     local objectives = C_QuestLog.GetQuestObjectives(questId)

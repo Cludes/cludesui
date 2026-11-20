@@ -111,12 +111,12 @@ local function SetupThinLine(fillTex, edge)
         fillTex._thinLine = tl
         -- Hook SetStatusBarColor to forward to overlay
         local origSSBC = fillTex.SetStatusBarColor
-        fillTex.SetStatusBarColor = function(self, region, g, b, a)
+        fillTex.SetStatusBarColor = function(self, red, green, blue, a)
             if self._thinLine and self._thinLineActive then
-                self._thinLine:SetStatusBarColor(region, g, b, a)
+                self._thinLine:SetStatusBarColor(red, green, blue, a)
                 origSSBC(self, 0, 0, 0, 0)
             else
-                origSSBC(self, region, g, b, a)
+                origSSBC(self, red, green, blue, a)
             end
         end
         -- Hook SetMinMaxValues + SetValue to sync overlay

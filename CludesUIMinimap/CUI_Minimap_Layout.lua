@@ -866,7 +866,7 @@ function SKIN._ClassicRingButton(button, crop, ...)
                 local atlas = texture:GetAtlas()
                 local details = atlas and C_Texture.GetAtlasInfo(atlas)
                 if details and (details.file or details.filename) then
-                    local region, g, b, a = texture:GetVertexColor()
+                    local red, green, blue, a = texture:GetVertexColor()
                     texture:SetTexture(details.file or details.filename)
                     local l, rt, t, bt =
                         details.leftTexCoord,
@@ -875,7 +875,7 @@ function SKIN._ClassicRingButton(button, crop, ...)
                         details.bottomTexCoord
                     local dw, dh = (rt - l) * crop, (bt - t) * crop
                     texture:SetTexCoord(l + dw, rt - dw, t + dh, bt - dh)
-                    texture:SetVertexColor(region, g, b, a)
+                    texture:SetVertexColor(red, green, blue, a)
                 end
             end
             if not texture._classicMasked then

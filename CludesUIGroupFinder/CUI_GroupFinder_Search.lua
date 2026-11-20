@@ -181,8 +181,8 @@ function XF.PickBorder(square, edge, isOn)
     end
 end
 mod.BOTTOM_Y = BOTTOM_Y
-local function SetBorderColor(widget, region, g, b, a)
-    CM.PanelPP.SetBorderColor(widget, region, g, b, a)
+local function SetBorderColor(widget, red, green, blue, a)
+    CM.PanelPP.SetBorderColor(widget, red, green, blue, a)
 end
 
 -------------------------------------------------------------------------------
@@ -1640,9 +1640,9 @@ local function RatingColor(score)
         rioApi = _G.RaiderIO or false
     end
     if Opt("rioRatingColors") and rioApi and rioApi.GetScoreColor then
-        local success, region, g, b = pcall(rioApi.GetScoreColor, score)
-        if success and type(region) == "number" then
-            return region, g, b
+        local success, red, green, blue = pcall(rioApi.GetScoreColor, score)
+        if success and type(red) == "number" then
+            return red, green, blue
         end
     end
     local c = C_ChallengeMode
@@ -1914,8 +1914,8 @@ local function DecorateIcons(record, resultID, details, activityInfo)
                         skinData.circle:Show()
                         if specInfo then
                             skinData.circle:Hide()
-                            local region, g, b = ThemeBorder()
-                            skinData.ring:SetColorTexture(region, g, b, disabled and 0.5 or 1)
+                            local red, green, blue = ThemeBorder()
+                            skinData.ring:SetColorTexture(red, green, blue, disabled and 0.5 or 1)
                             skinData.ring:Show()
                             skinData.spec:SetTexture(specInfo)
                             skinData.spec:SetDesaturated(disabled)
@@ -1930,8 +1930,8 @@ local function DecorateIcons(record, resultID, details, activityInfo)
                     elseif bgAtlas then
                         if specInfo then
                             skinData.circle:Hide()
-                            local region, g, b = ThemeBorder()
-                            skinData.ring:SetColorTexture(region, g, b, disabled and 0.5 or 1)
+                            local red, green, blue = ThemeBorder()
+                            skinData.ring:SetColorTexture(red, green, blue, disabled and 0.5 or 1)
                             skinData.ring:Show()
                             skinData.spec:SetTexture(specInfo)
                             skinData.spec:SetDesaturated(disabled)
@@ -2349,11 +2349,11 @@ local function MenuItem(hostFrame, posY, textValue, onClick)
         self:SetAlpha(off and 0.35 or 1)
     end
     function entry:SetChecked(isOn)
-        local region, g, b = Accent()
-        self.fill:SetColorTexture(region, g, b, 1)
+        local red, green, blue = Accent()
+        self.fill:SetColorTexture(red, green, blue, 1)
         self.fill:SetShown(isOn)
         if isOn then
-            self.ring:SetColor(region, g, b, 0.8)
+            self.ring:SetColor(red, green, blue, 0.8)
         else
             self.ring:SetColor(0.25, 0.25, 0.25, 0.6)
         end
@@ -3011,8 +3011,8 @@ local function BuildSidePanel(m, raids)
     side:SetPoint("TOPRIGHT", m, "TOPLEFT", 0, 0)
     local backdrop = side:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    local region, g, b = ThemeFill()
-    backdrop:SetColorTexture(region, g, b, 0.98)
+    local red, green, blue = ThemeFill()
+    backdrop:SetColorTexture(red, green, blue, 0.98)
     side.items = {}
     local posY = 3
     posY = AddRegionItems(side, posY)
@@ -3089,8 +3089,8 @@ local function BuildMenu()
     dropMenu:SetClampedToScreen(true)
     local backdrop = dropMenu:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    local region, g, b = ThemeFill()
-    backdrop:SetColorTexture(region, g, b, 0.98)
+    local red, green, blue = ThemeFill()
+    backdrop:SetColorTexture(red, green, blue, 0.98)
     dropMenu.items = {}
     local posY = 3
     posY = AddSection(dropMenu, posY, CludesUI.L("Difficulty"))
@@ -3129,8 +3129,8 @@ local function BuildRaidDiffMenu()
     m:SetClampedToScreen(true)
     local backdrop = m:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    local region, g, b = ThemeFill()
-    backdrop:SetColorTexture(region, g, b, 0.98)
+    local red, green, blue = ThemeFill()
+    backdrop:SetColorTexture(red, green, blue, 0.98)
     local function Diffs()
         local c = Cfg()
         if type(c.raidDiffs) ~= "table" then
@@ -3544,8 +3544,8 @@ local function BossPickList()
     entries:EnableMouse(true)
     local backdrop = entries:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    local region, g, b = ThemeFill()
-    backdrop:SetColorTexture(region, g, b, 0.98)
+    local red, green, blue = ThemeFill()
+    backdrop:SetColorTexture(red, green, blue, 0.98)
     CM.MakeBorder(entries, ThemeBorder())
     entries.rows = {}
     for index, p in ipairs(BOSS_PICKS) do
@@ -3697,8 +3697,8 @@ local function BuildRaidMenu()
     raidMenu:SetWidth(190)
     local backdrop = raidMenu:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    local region, g, b = ThemeFill()
-    backdrop:SetColorTexture(region, g, b, 0.98)
+    local red, green, blue = ThemeFill()
+    backdrop:SetColorTexture(red, green, blue, 0.98)
     local S = Skin()
     if S and S.AddBorder then
         S.AddBorder(raidMenu)
@@ -3822,8 +3822,8 @@ local function BuildTierMenu()
     tierMenu:SetClampedToScreen(true)
     local backdrop = tierMenu:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    local region, g, b = ThemeFill()
-    backdrop:SetColorTexture(region, g, b, 0.98)
+    local red, green, blue = ThemeFill()
+    backdrop:SetColorTexture(red, green, blue, 0.98)
     local S = Skin()
     if S and S.AddBorder then
         S.AddBorder(tierMenu)
@@ -5056,8 +5056,8 @@ local function PaintSwitch(callback)
     local raw = callback:GetChecked()
     local enabled = callback:IsEnabled()
     local swatchBtn = skinData.switch
-    local region, g, b = Accent()
-    swatchBtn.trackOn:SetColorTexture(region, g, b, 0.75)
+    local red, green, blue = Accent()
+    swatchBtn.trackOn:SetColorTexture(red, green, blue, 0.75)
     if IsSecret(raw) then
         -- secret: draw both looks and let the value pick one.
         swatchBtn.trackOn:SetAlphaFromBoolean(raw, 1, 0)

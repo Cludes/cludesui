@@ -397,16 +397,16 @@ local function StyleBorder(ownerFrame, isExit)
             CludesUI.HideBorderStyle(owner)
             owner:Hide()
         end
-        local size, region, g, b = 1, 0, 0, 0
+        local size, red, green, blue = 1, 0, 0, 0
         if not isExit then
             local cap = math.floor((Get("trackHeight") / (Pix.mult or 1) - 1) / 2)
             size = math.max(0, math.min(Get("borderSize"), cap))
-            region, g, b = Get("borderR"), Get("borderG"), Get("borderB")
+            red, green, blue = Get("borderR"), Get("borderG"), Get("borderB")
         end
         if Pix.GetBorders(ownerFrame) then
-            Pix.UpdateBorder(ownerFrame, size, region, g, b, 1)
+            Pix.UpdateBorder(ownerFrame, size, red, green, blue, 1)
         else
-            Pix.CreateBorder(ownerFrame, region, g, b, 1, size, "OVERLAY", 2)
+            Pix.CreateBorder(ownerFrame, red, green, blue, 1, size, "OVERLAY", 2)
         end
         if size > 0 then
             Pix.ShowBorder(ownerFrame)

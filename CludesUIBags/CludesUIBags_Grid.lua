@@ -321,24 +321,24 @@ local function RenderButton(button, payload, _, colour, row, startX, currentY, _
                 if showIlvl then
                     button.ItemLevelText:SetText(payload._giIlvl or "")
                     -- Track color + rank (pre-cached on data table)
-                    local region, g, b
+                    local red, green, blue
                     local rankText = payload._giTrackRank or ""
                     local trackColor = payload._giTrackColor
                     if BP().itemlevelUseCustomColor and BP().itemlevelCustomColor then
-                        region, g, b =
+                        red, green, blue =
                             BP().itemlevelCustomColor.r,
                             BP().itemlevelCustomColor.g,
                             BP().itemlevelCustomColor.b
                     elseif trackColor then
-                        region, g, b = trackColor.r, trackColor.g, trackColor.b
+                        red, green, blue = trackColor.r, trackColor.g, trackColor.b
                     else
-                        region, g, b = GetItemQualityColor(payload._giQuality or 1)
+                        red, green, blue = GetItemQualityColor(payload._giQuality or 1)
                     end
-                    button.ItemLevelText:SetTextColor(region, g, b, 1)
+                    button.ItemLevelText:SetTextColor(red, green, blue, 1)
                     local countFS = button.Count
                     if countFS and BP().bagShowTrackRank and rankText ~= "" then
                         countFS:SetText(rankText:match("^(%d+)/") or rankText)
-                        countFS:SetTextColor(region, g, b, 1)
+                        countFS:SetTextColor(red, green, blue, 1)
                         countFS:Show()
                     end
                 else
@@ -469,8 +469,8 @@ local function RenderButton(button, payload, _, colour, row, startX, currentY, _
         -- thickness is re-set every render because buttons are pooled.
         local _bpx = (CUI and CUI.PP and CUI.PP.mult) or 1
         if button._fvSlotBorder then
-            local region, g, b = QualityBorderColor(quality)
-            SetInsetBorderColor(button, region, g, b, 1)
+            local red, green, blue = QualityBorderColor(quality)
+            SetInsetBorderColor(button, red, green, blue, 1)
             mod.SetForeverSlotQuestBorder(button, payload._isQuest, payload._isQuestStarter)
         elseif payload._isQuest then
             SetInsetBorderThickness(button, _bpx * 2)
@@ -483,8 +483,8 @@ local function RenderButton(button, payload, _, colour, row, startX, currentY, _
             )
         else
             SetInsetBorderThickness(button, _bpx)
-            local region, g, b = QualityBorderColor(quality)
-            SetInsetBorderColor(button, region, g, b, filtered and 0.2 or 1)
+            local red, green, blue = QualityBorderColor(quality)
+            SetInsetBorderColor(button, red, green, blue, filtered and 0.2 or 1)
         end
         -- Quest marker atlas (lazy, reused). Only for items that START a quest you
         -- have not accepted; active-quest objective items get the border, no marker.

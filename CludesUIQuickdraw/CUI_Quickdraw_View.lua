@@ -152,7 +152,7 @@ local function ApplySlotVisual(widget, selected, armed)
         return
     end
 
-    local region, g, b = SelectColor(widget.view:P())
+    local red, green, blue = SelectColor(widget.view:P())
     -- The unusable tint MULTIPLIES whatever the selection state asked for, so
     -- an out-of-range entry the cursor is on still reads as the selected one.
     local tint = USABILITY_TINT[widget.usability or ""]
@@ -168,18 +168,18 @@ local function ApplySlotVisual(widget, selected, armed)
         widget:SetSize(base * z, base * z)
     end
     if armed then
-        local lr = region + (1 - region) * ARM_LIFT
-        local lg = g + (1 - g) * ARM_LIFT
-        local lb = b + (1 - b) * ARM_LIFT
+        local lr = red + (1 - red) * ARM_LIFT
+        local lg = green + (1 - green) * ARM_LIFT
+        local lb = blue + (1 - blue) * ARM_LIFT
         CludesUI.PP.UpdateBorder(widget.bhost, t, lr, lg, lb, 1)
-        widget.bg:SetVertexColor(region * 0.22, g * 0.22, b * 0.22, 0.9)
+        widget.bg:SetVertexColor(red * 0.22, green * 0.22, blue * 0.22, 0.9)
         widget.icon:SetVertexColor(ur, ug, ub)
         widget.label:SetTextColor(lr, lg, lb)
     elseif selected then
-        CludesUI.PP.UpdateBorder(widget.bhost, t, region, g, b, 1)
-        widget.bg:SetVertexColor(region * 0.22, g * 0.22, b * 0.22, 0.9)
+        CludesUI.PP.UpdateBorder(widget.bhost, t, red, green, blue, 1)
+        widget.bg:SetVertexColor(red * 0.22, green * 0.22, blue * 0.22, 0.9)
         widget.icon:SetVertexColor(ur, ug, ub)
-        widget.label:SetTextColor(region, g, b)
+        widget.label:SetTextColor(red, green, blue)
     else
         CludesUI.PP.UpdateBorder(widget.bhost, t, 0, 0, 0, 0.9)
         -- Plate opacity is FIXED -- 0.65 idle, 0.9 selected and armed above

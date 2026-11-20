@@ -218,8 +218,8 @@ local function _applyBorder(owner, shapeTex, level)
                 brd:SetFrameLevel(level)
             end
             if bs > 0 then
-                local region, g, b, a = _resolveBorderColor()
-                Pix.UpdateBorder(owner, bs, region, g, b, a)
+                local red, green, blue, a = _resolveBorderColor()
+                Pix.UpdateBorder(owner, bs, red, green, blue, a)
                 Pix.ShowBorder(owner)
             else
                 Pix.HideBorder(owner)
@@ -232,8 +232,8 @@ local function _applyBorder(owner, shapeTex, level)
         Pix.HideBorder(owner)
     end
     shapeTex:Hide()
-    local region, g, b, a = _resolveBorderColor()
-    _applyShapeOutline(owner, shapeKey, bs, region, g, b, a)
+    local red, green, blue, a = _resolveBorderColor()
+    _applyShapeOutline(owner, shapeKey, bs, red, green, blue, a)
 end
 
 -- Configure the buff overlay (texture coords + optional shape mask) so it

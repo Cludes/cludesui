@@ -259,9 +259,9 @@ local function Layout()
         if lpath then
             labelFS:SetFont(lpath, TITLE_SIZE, lflags)
         end
-        local region, g, b = labelFS:GetTextColor()
-        if region then
-            cardFrame.title:SetTextColor(region, g, b, 1)
+        local red, green, blue = labelFS:GetTextColor()
+        if red then
+            cardFrame.title:SetTextColor(red, green, blue, 1)
         end
     end
     local texPath = TexturePath()
@@ -362,8 +362,8 @@ BuildCardInto = function()
     if S and S.AddBorder then
         S.AddBorder(box)
     else
-        local region, g, b, a = mod.ThemeBorder()
-        CM.MakeBorder(box, region, g, b, a)
+        local red, green, blue, a = mod.ThemeBorder()
+        CM.MakeBorder(box, red, green, blue, a)
     end
     cardFrame.box = box
     local px = CM.PP.mult

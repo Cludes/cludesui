@@ -159,13 +159,13 @@ local function ShowLift(box, isShown)
     CUI.ForeverBorderShown(lift, isShown)
 end
 
-local function PaintFill(t, texture, region, g, b, a)
+local function PaintFill(t, texture, red, green, blue, a)
     if texture then
         t:SetTexture(texture)
-        t:SetVertexColor(region, g, b, a)
+        t:SetVertexColor(red, green, blue, a)
     else
         t:SetVertexColor(1, 1, 1, 1)
-        t:SetColorTexture(region, g, b, a)
+        t:SetColorTexture(red, green, blue, a)
     end
 end
 
@@ -249,15 +249,15 @@ function CHAT.FV_BuildPanel(castFrame, backdrop, inputH)
 end
 
 -- The chat background colour/texture (Chat page) fills both boxes.
-function CHAT.FV_PaintFills(texture, region, g, b, a)
+function CHAT.FV_PaintFills(texture, red, green, blue, a)
     local p = FV._fill
-    p.tex, p.r, p.g, p.b, p.a = texture, region, g, b, a
+    p.tex, p.r, p.g, p.b, p.a = texture, red, green, blue, a
     for index = 1, 20 do
         local castFrame = _G["ChatFrame" .. index]
         local skinData = castFrame and CFD(castFrame)
         if skinData and skinData.fvHost then
-            PaintFill(skinData.fvMsg.fill, texture, region, g, b, a)
-            PaintFill(skinData.fvIn.fill, texture, region, g, b, a)
+            PaintFill(skinData.fvMsg.fill, texture, red, green, blue, a)
+            PaintFill(skinData.fvIn.fill, texture, red, green, blue, a)
         end
     end
 end

@@ -1273,7 +1273,7 @@ do
     -- Tip_Show sizes via GetStringWidth, which errors on a SECRET-fed
     -- FontString. Rows carrying a secret are dropped here, so the tooltip
     -- shortens instead of erroring. Add functions return true when added.
-    function mod.Tip_AddLine(textValue, region, g, b)
+    function mod.Tip_AddLine(textValue, red, green, blue)
         if not tipText then
             return
         end
@@ -1291,9 +1291,9 @@ do
             payload[dataCount] = skinData
         end
         skinData.l = textValue or " "
-        skinData.lr = region
-        skinData.lg = g
-        skinData.lb = b
+        skinData.lr = red
+        skinData.lg = green
+        skinData.lb = blue
         skinData.r = nil
         skinData.wrap = nil
         skinData.action = nil
@@ -1309,11 +1309,11 @@ do
 
     -- Long prose (currency descriptions etc.): word-wraps at maxWidth px
     -- instead of blowing the tooltip out to the widest single line.
-    function mod.Tip_AddWrappedLine(textValue, maxWidth, region, g, b)
+    function mod.Tip_AddWrappedLine(textValue, maxWidth, red, green, blue)
         if not tipText then
             return
         end
-        if mod.Tip_AddLine(textValue, region, g, b) then
+        if mod.Tip_AddLine(textValue, red, green, blue) then
             payload[dataCount].wrap = maxWidth or 280
         end
     end

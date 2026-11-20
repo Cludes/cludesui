@@ -195,13 +195,13 @@ local function ApplyFsLook(phaseNum, fontStr)
     local flags = GetASOutline()
     CludesUI.PrimeFontShadow(fontStr, flags == "")
     fontStr:SetFont(GetASFont(), TextSize(), flags)
-    local region, g, b
+    local red, green, blue
     if phaseNum == "soul" then
-        region, g, b = SoulColor()
+        red, green, blue = SoulColor()
     else
-        region, g, b = PreColor()
+        red, green, blue = PreColor()
     end
-    fontStr:SetTextColor(region, g, b, 1)
+    fontStr:SetTextColor(red, green, blue, 1)
 end
 
 -------------------------------------------------------------------------------
@@ -494,9 +494,9 @@ end
 -- Visible below the threshold, alpha 0 above it: the second, independent hide
 -- for the pre-Soul text (the formatter's empty-format rule is the first).
 local function SurgeCurve(thresholdVal)
-    local region, g, b = PreColor()
-    local cacheKey = string.format("s|%d|%.3f|%.3f|%.3f", thresholdVal, region, g, b)
-    return StepCurve(cacheKey, { { 0, region, g, b, 1 }, { thresholdVal, region, g, b, 0 } })
+    local red, green, blue = PreColor()
+    local cacheKey = string.format("s|%d|%.3f|%.3f|%.3f", thresholdVal, red, green, blue)
+    return StepCurve(cacheKey, { { 0, red, green, blue, 1 }, { thresholdVal, red, green, blue, 0 } })
 end
 
 -- Seconds mode is one flat color; GCD mode flips to the Last color for the
@@ -525,8 +525,8 @@ end
 
 local function StampFor(phaseNum, modeName, thresholdVal, gcdInfo)
     if phaseNum == "surge" then
-        local region, g, b = PreColor()
-        return string.format("%s|%d|%.2f|%.3f|%.3f|%.3f", modeName, thresholdVal, gcdInfo or 0, region, g, b)
+        local red, green, blue = PreColor()
+        return string.format("%s|%d|%.2f|%.3f|%.3f|%.3f", modeName, thresholdVal, gcdInfo or 0, red, green, blue)
     end
     local sr, sg, scrollBar = SoulColor()
     local lr, lg, lb = LastColor()
@@ -841,7 +841,7 @@ local function DemoText(fontStr, t, gcdInfo)
         fontStr:SetText("")
         return
     end
-    local region, g, b
+    local red, green, blue
     if t < thresholdVal then
         -- The hide rule owns thr itself: the first visible value is below it.
         local leftX = math.min(thresholdVal - t, thresholdVal - 0.01)
@@ -850,24 +850,24 @@ local function DemoText(fontStr, t, gcdInfo)
         else
             fontStr:SetFormattedText(CludesUI.L("Soul in %.1f"), math.floor(leftX * 10) / 10)
         end
-        region, g, b = PreColor()
+        red, green, blue = PreColor()
     else
         local leftX = thresholdVal + SOUL_LEN - t
         if PhaseMode("soul") ~= "gcd" then
             fontStr:SetFormattedText("%.1f", math.floor(leftX * 10) / 10)
-            region, g, b = SoulColor()
+            red, green, blue = SoulColor()
         else
             local num = DemoGcdCount(leftX, gcdInfo)
             if num == 1 then
                 fontStr:SetText(CludesUI.L("LAST"))
-                region, g, b = LastColor()
+                red, green, blue = LastColor()
             else
                 fontStr:SetFormattedText("%d", num)
-                region, g, b = SoulColor()
+                red, green, blue = SoulColor()
             end
         end
     end
-    fontStr:SetTextColor(region, g, b, 1)
+    fontStr:SetTextColor(red, green, blue, 1)
 end
 
 -- One step for a driver frame holding its font string in _fs. The GCD is the

@@ -590,10 +590,10 @@ local function UpdateButton(btnFrame)
         end
 
         if connected and not deadOrGhost then
-            local region, g, b = GetHealthColor(unitToken, s)
+            local red, green, blue = GetHealthColor(unitToken, s)
             local fillTex = health:GetStatusBarTexture()
             if s.healthColorMode == "dark" then
-                health:SetStatusBarColor(region, g, b, 1)
+                health:SetStatusBarColor(red, green, blue, 1)
                 -- 4th return of GetDarkModeFill() is the Dark Mode Fill Opacity.
                 if fillTex then
                     fillTex:SetAlpha(select(4, CludesUI.GetDarkModeFill()))
@@ -602,7 +602,7 @@ local function UpdateButton(btnFrame)
                 if fillTex then
                     fillTex:SetAlpha(1)
                 end
-                health:SetStatusBarColor(region, g, b, (s.healthBarOpacity or 100) / 100)
+                health:SetStatusBarColor(red, green, blue, (s.healthBarOpacity or 100) / 100)
             end
         end
     end
@@ -1481,7 +1481,7 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
         -- (every static-mode component is a plain value by construction).
         if connected and not deadOrGhost then
             local mode = s.healthColorMode
-            local region, g, b
+            local red, green, blue
             if mode == nil or mode == "class" then
                 -- Class color is identity, not health: resolve the class token
                 -- once per occupant and reuse it per tick. Cleared on unit
@@ -1500,26 +1500,26 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
                 end
                 local cc = tok and mod.CludesUI.GetClassColor(tok)
                 if cc then
-                    region, g, b = cc.r, cc.g, cc.b
+                    red, green, blue = cc.r, cc.g, cc.b
                 else
-                    region, g, b = 0.5, 0.5, 0.5
+                    red, green, blue = 0.5, 0.5, 0.5
                 end
             else
-                region, g, b = GetHealthColor(unitToken, s)
+                red, green, blue = GetHealthColor(unitToken, s)
             end
             if mode == "classic" or mode == "customDynamic" or mode == "classReactive" then
                 local fillTex = health:GetStatusBarTexture()
                 if fillTex then
                     fillTex:SetAlpha(1)
                 end
-                health:SetStatusBarColor(region, g, b, (s.healthBarOpacity or 100) / 100)
+                health:SetStatusBarColor(red, green, blue, (s.healthBarOpacity or 100) / 100)
             else
                 local a = (mode == "dark") and 1 or (s.healthBarOpacity or 100) / 100
-                if skinData._hcR ~= region or skinData._hcG ~= g or skinData._hcB ~= b or skinData._hcA ~= a or skinData._hcM ~= mode then
-                    skinData._hcR, skinData._hcG, skinData._hcB, skinData._hcA, skinData._hcM = region, g, b, a, mode
+                if skinData._hcR ~= red or skinData._hcG ~= green or skinData._hcB ~= blue or skinData._hcA ~= a or skinData._hcM ~= mode then
+                    skinData._hcR, skinData._hcG, skinData._hcB, skinData._hcA, skinData._hcM = red, green, blue, a, mode
                     local fillTex = health:GetStatusBarTexture()
                     if mode == "dark" then
-                        health:SetStatusBarColor(region, g, b, 1)
+                        health:SetStatusBarColor(red, green, blue, 1)
                         -- 4th return of GetDarkModeFill() is the Dark Mode Fill Opacity.
                         if fillTex then
                             fillTex:SetAlpha(select(4, CludesUI.GetDarkModeFill()))
@@ -1528,7 +1528,7 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
                         if fillTex then
                             fillTex:SetAlpha(1)
                         end
-                        health:SetStatusBarColor(region, g, b, a)
+                        health:SetStatusBarColor(red, green, blue, a)
                     end
                 end
             end

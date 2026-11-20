@@ -771,15 +771,15 @@ end
 --  UI
 -------------------------------------------------------------------------------
 
-local function SolidTex(p, l, region, g, b, a)
-    return CUI.SolidTex(p, l, region, g, b, a)
+local function SolidTex(p, l, red, green, blue, a)
+    return CUI.SolidTex(p, l, red, green, blue, a)
 end
 
-local function MFont(p, s, _, region, g, b, a)
+local function MFont(p, s, _, red, green, blue, a)
     local fontStr = p:CreateFontString(nil, "OVERLAY")
     CludesUI.ApplyModuleFont(fontStr, nil, s, "extras")
-    if region then
-        fontStr:SetTextColor(region, g or 1, b or 1, a or 1)
+    if red then
+        fontStr:SetTextColor(red, green or 1, blue or 1, a or 1)
     end
     return fontStr
 end

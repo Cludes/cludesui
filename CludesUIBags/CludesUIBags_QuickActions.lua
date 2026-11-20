@@ -185,8 +185,8 @@ local function CastOnEnter(self)
     end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:SetBagItem(self.bag, self.slot)
-    local region, g, b = CUI.GetAccentColor()
-    GameTooltip:AddLine(CludesUI.Lf("Click: %s", C_Spell.GetSpellName(self.spell) or ""), region, g, b)
+    local red, green, blue = CUI.GetAccentColor()
+    GameTooltip:AddLine(CludesUI.Lf("Click: %s", C_Spell.GetSpellName(self.spell) or ""), red, green, blue)
     GameTooltip:Show()
 end
 

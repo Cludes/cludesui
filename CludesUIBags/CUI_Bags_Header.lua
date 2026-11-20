@@ -70,11 +70,11 @@ function CUI_Bags:FitHeaderText()
             end
         end
         local _, size = total:GetFont()
-        local region, g, b = total:GetTextColor()
+        local red, green, blue = total:GetTextColor()
         for i = 1, 2 do
             local divider = heading.slotLines[i]
             divider:SetFont(total:GetFont())
-            divider:SetTextColor(region, g, b, 1)
+            divider:SetTextColor(red, green, blue, 1)
             divider:SetPoint("LEFT", title, "RIGHT", 8, i == 1 and size / 2 or -size / 2)
             divider:SetText(i == 1 and first or second)
             divider:SetWidth(math.max(math.min(divider:GetUnboundedStringWidth() + 1, countRoom), 1))

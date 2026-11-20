@@ -704,16 +704,16 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
             end
         end
         local labelText = CludesUI.L("Targeting:")
-        local tName, region, g, b
+        local tName, red, green, blue
         if UnitExists(tu) then
             if UnitIsUnit(tu, "player") then
                 tName = CludesUI.L("You")
-                region, g, b = 0.1, 1, 0.1
+                red, green, blue = 0.1, 1, 0.1
             else
                 local num = UnitName(tu)
                 if num and not (_isSecret and _isSecret(num)) then
                     tName = num
-                    region, g, b = 0.9, 0.9, 0.9
+                    red, green, blue = 0.9, 0.9, 0.9
                     if UnitIsPlayer(tu) then
                         local _, castFrame = UnitClass(tu)
                         local classColor = castFrame
@@ -721,7 +721,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                             and _RAID_CC
                             and _RAID_CC[castFrame]
                         if classColor then
-                            region, g, b = classColor.r, classColor.g, classColor.b
+                            red, green, blue = classColor.r, classColor.g, classColor.b
                         end
                     else
                         local reaction = UnitReaction and UnitReaction(tu, "player")
@@ -730,7 +730,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                             and FACTION_BAR_COLORS
                             and FACTION_BAR_COLORS[reaction]
                         if fc then
-                            region, g, b = fc.r, fc.g, fc.b
+                            red, green, blue = fc.r, fc.g, fc.b
                         end
                     end
                 end
@@ -744,7 +744,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                 if lineR then
                     if tName then
                         lineR:SetText(tName)
-                        lineR:SetTextColor(region, g, b)
+                        lineR:SetTextColor(red, green, blue)
                     else
                         -- Target dropped mid-hover: blank the value, keep the row.
                         lineR:SetText("-")
@@ -755,7 +755,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
             end
         end
         if tName then
-            tip:AddDoubleLine(labelText, tName, 1, 1, 1, region, g, b)
+            tip:AddDoubleLine(labelText, tName, 1, 1, 1, red, green, blue)
         end
     end
 
@@ -982,19 +982,19 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
             and not (UnitIsWildBattlePet(unitToken) or UnitIsBattlePetCompanion(unitToken))
         then
             local lvl = known or UnitEffectiveLevel(unitToken)
-            local region, g, b
+            local red, green, blue
             if saved.tooltipLevelColor then
-                region, g, b = CludesUI.GetLevelColor(unitToken, lvl, true)
+                red, green, blue = CludesUI.GetLevelColor(unitToken, lvl, true)
             end
-            if region then
-                hex = CludesUI.ColorText("%0", region, g, b)
+            if red then
+                hex = CludesUI.ColorText("%0", red, green, blue)
             end
             -- Compact line: "90 Tauren" for players, "90 Elite Humanoid" for NPCs.
             local player = UnitIsPlayer(unitToken)
             if saved.tooltipCompactLevel and not (_isSecret and (_isSecret(lvl) or _isSecret(player))) then
                 local parts = _compactParts
                 wipe(parts)
-                parts[1] = CludesUI.ColorText(lvl > 0 and lvl or "??", region, g, b)
+                parts[1] = CludesUI.ColorText(lvl > 0 and lvl or "??", red, green, blue)
                 if player then
                     parts[2] = UnitRace(unitToken)
                 else
@@ -1205,11 +1205,11 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                 local sColor = C_ChallengeMode
                     and C_ChallengeMode.GetDungeonScoreRarityColor
                     and C_ChallengeMode.GetDungeonScoreRarityColor(score)
-                local region, g, b = 1, 1, 1
+                local red, green, blue = 1, 1, 1
                 if sColor then
-                    region, g, b = sColor.r, sColor.g, sColor.b
+                    red, green, blue = sColor.r, sColor.g, sColor.b
                 end
-                tip:AddDoubleLine(CludesUI.L("M+ Score:"), score, 1, 1, 1, region, g, b)
+                tip:AddDoubleLine(CludesUI.L("M+ Score:"), score, 1, 1, 1, red, green, blue)
             end
         end
         -- Mount name from the live helpful aura MountJournal recognizes. Opt-in (default off); per-GUID cached so refresh ticks on an unmounted player never re-walk the aura list.
@@ -1371,8 +1371,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                 _nameL1 = _G.GameTooltipTextLeft1
             end
             if _nameL1 then
-                local region, g, b = _getElementColor()
-                _nameL1:SetTextColor(region, g, b)
+                local red, green, blue = _getElementColor()
+                _nameL1:SetTextColor(red, green, blue)
             end
         end
         if
@@ -1589,8 +1589,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                             if _elementColorMode() == "native" then
                                 fontStr:SetTextColor(1, 1, 1, 1)
                             else
-                                local region, g, b = _getElementColor()
-                                fontStr:SetTextColor(region, g, b, 1)
+                                local red, green, blue = _getElementColor()
+                                fontStr:SetTextColor(red, green, blue, 1)
                             end
                         else
                             fontStr:SetTextColor(0.4, 0.4, 0.4, 1)
@@ -1927,16 +1927,16 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
         if _isSecret and _isSecret(lvl) then
             lvl = 0
         end
-        local region, g, b
+        local red, green, blue
         if posX.tooltipLevelColor and CludesUI.GetLevelColor then
-            region, g, b = CludesUI.GetLevelColor("player", lvl, true)
+            red, green, blue = CludesUI.GetLevelColor("player", lvl, true)
         end
         if posX.tooltipCompactLevel then
-            _pvLine(tip, CludesUI.ColorText(lvl, region, g, b) .. " " .. race)
+            _pvLine(tip, CludesUI.ColorText(lvl, red, green, blue) .. " " .. race)
         else
             local textValue = UNIT_TYPE_LEVEL_TEMPLATE:format(lvl, race)
-            if region then
-                textValue = textValue:gsub("%d+", CludesUI.ColorText("%0", region, g, b), 1)
+            if red then
+                textValue = textValue:gsub("%d+", CludesUI.ColorText("%0", red, green, blue), 1)
             end
             _pvLine(tip, textValue)
         end
@@ -2421,8 +2421,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                             if _elementColorMode() == "native" then
                                 fontStr:SetTextColor(1, 1, 1, 1)
                             else
-                                local region, g, b = _getElementColor()
-                                fontStr:SetTextColor(region, g, b, 1)
+                                local red, green, blue = _getElementColor()
+                                fontStr:SetTextColor(red, green, blue, 1)
                             end
                         end
                     end
@@ -2516,8 +2516,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                     type = "callback",
                     fn = function()
                         if GetFFD(timerFill).style then
-                            local region, g, b = CludesUI.GetAccentColor()
-                            timerFill:SetStatusBarColor(region, g, b, 0.75)
+                            local red, green, b = CludesUI.GetAccentColor()
+                            timerFill:SetStatusBarColor(red, green, b, 0.75)
                         end
                     end,
                 })
@@ -2698,8 +2698,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                 if _elementColorMode() == "native" then
                     fontStr:SetTextColor(1, 1, 1, 1)
                 else
-                    local region, g, b = _getElementColor()
-                    fontStr:SetTextColor(region, g, b, 1)
+                    local red, green, blue = _getElementColor()
+                    fontStr:SetTextColor(red, green, blue, 1)
                 end
             end
         end

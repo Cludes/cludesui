@@ -50,15 +50,15 @@ end
 -- accent, the chosen colour, or white; the values themselves stay white.
 -- Returns r, g, b and the hex.
 local function GetDescColor(mp)
-    local region, g, b = 1, 1, 1
+    local red, green, blue = 1, 1, 1
     if mp and mp.fpsUseAccent then
-        region, g, b = ACCENT.r, ACCENT.g, ACCENT.b
+        red, green, blue = ACCENT.r, ACCENT.g, ACCENT.b
     elseif mp and mp.fpsColor then
         local c = mp.fpsColor
-        region, g, b = c.r or 1, c.g or 1, c.b or 1
+        red, green, blue = c.r or 1, c.g or 1, c.b or 1
     end
-    local hex = format("%02x%02x%02x", floor(region * 255 + 0.5), floor(g * 255 + 0.5), floor(b * 255 + 0.5))
-    return region, g, b, hex
+    local hex = format("%02x%02x%02x", floor(red * 255 + 0.5), floor(green * 255 + 0.5), floor(blue * 255 + 0.5))
+    return red, green, blue, hex
 end
 
 -------------------------------------------------------------------------------
@@ -277,8 +277,8 @@ local function UpdateLocation()
     -- The colour first: a setting change or a new ruleset repaints the same name.
     local mp = Profile()
     if mp and mp.zoneReactiveColor then
-        local region, g, b = GetZoneReactionColor()
-        locationFrame:SetTextColor(region, g, b, 0.9)
+        local red, green, blue = GetZoneReactionColor()
+        locationFrame:SetTextColor(red, green, blue, 0.9)
     else
         locationFrame:SetTextColor(1, 1, 1, 0.9)
     end

@@ -68,12 +68,12 @@ end
 
 -- Color mode per bar: nil/reactive = state-driven defaults, "accent" = live
 -- accent color, "custom" = stored custom color.
-function mod.ResolveDataBarColor(s, region, g, b)
+function mod.ResolveDataBarColor(s, red, green, blue)
     local mode = s and s.colorMode
     if mode == "accent" then
         local ACC = CludesUI.CLUDES_GREEN
         if ACC then
-            return ACC.r or region, ACC.g or g, ACC.b or b
+            return ACC.r or red, ACC.g or green, ACC.b or blue
         end
     elseif mode == "custom" then
         local c = s.customColor
@@ -82,7 +82,7 @@ function mod.ResolveDataBarColor(s, region, g, b)
         end
         return 1, 1, 1
     end
-    return region, g, b
+    return red, green, blue
 end
 
 -- Accent-mode bars repaint live when the user changes the accent color.

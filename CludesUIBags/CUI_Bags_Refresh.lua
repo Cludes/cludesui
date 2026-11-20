@@ -1389,16 +1389,16 @@ function CUI_BagsReagent:RefreshInventory()
                                     (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
                                 )
                                 button.ItemLevelText:SetText(level or "")
-                                local region, g, b
+                                local red, green, blue
                                 if BP().itemlevelUseCustomColor and BP().itemlevelCustomColor then
-                                    region, g, b =
+                                    red, green, blue =
                                         BP().itemlevelCustomColor.r,
                                         BP().itemlevelCustomColor.g,
                                         BP().itemlevelCustomColor.b
                                 else
-                                    region, g, b = GetItemQualityColor(quality or 1)
+                                    red, green, blue = GetItemQualityColor(quality or 1)
                                 end
-                                button.ItemLevelText:SetTextColor(region, g, b, 1)
+                                button.ItemLevelText:SetTextColor(red, green, blue, 1)
                             else
                                 button.ItemLevelText:SetText("")
                             end
@@ -1410,8 +1410,8 @@ function CUI_BagsReagent:RefreshInventory()
                     end
                 end
 
-                local region, g, b = mod.QualityBorderColor(payload.info.quality or 1)
-                SetInsetBorderColor(button, region, g, b, 1)
+                local red, green, blue = mod.QualityBorderColor(payload.info.quality or 1)
+                SetInsetBorderColor(button, red, green, blue, 1)
                 if button._fvSlotBorder then
                     mod.SetForeverSlotQuestBorder(button, mod.GetSlotQuestFlags(payload.bag, payload.slot))
                 end

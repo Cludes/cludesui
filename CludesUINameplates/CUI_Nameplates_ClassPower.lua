@@ -1191,23 +1191,23 @@ ApplyClassPowerSetting = function()
 end
 mod.ApplyClassPowerSetting = ApplyClassPowerSetting
 mod.RefreshClassPower = RefreshClassPowerFull
-local function DarkenColor(region, g, b, factor)
+local function DarkenColor(red, green, blue, factor)
     factor = factor or 0.60
-    return region * factor, g * factor, b * factor
+    return red * factor, green * factor, blue * factor
 end
 -- Out-of-combat darkening, gated by "Modify Out of Combat". On (default): enemies
 -- confirmed in combat (clean boolean) keep full colour, out-of-combat/secret states darken --
 -- or, with "Change Color", take the flat Out of Combat Color rather than dimming.
-local function MaybeDarken(region, g, b, inCombat)
+local function MaybeDarken(red, green, blue, inCombat)
     local enabled = (p and p.darkenEnemiesOOC)
     if enabled == nil then
         enabled = defaultSet.darkenEnemiesOOC
     end
     if not enabled then
-        return region, g, b
+        return red, green, blue
     end
     if type(inCombat) == "boolean" and inCombat then
-        return region, g, b
+        return red, green, blue
     end
     local recolor = (p and p.darkenOOCRecolor)
     if recolor == nil then
@@ -1217,7 +1217,7 @@ local function MaybeDarken(region, g, b, inCombat)
         local c = (p and p.darkenOOCColor) or defaultSet.darkenOOCColor
         return c.r, c.g, c.b
     end
-    return DarkenColor(region, g, b)
+    return DarkenColor(red, green, blue)
 end
 
 Inner.ApplyClassPowerSetting, Inner.EnsureClassPowerPips = ApplyClassPowerSetting, EnsureClassPowerPips

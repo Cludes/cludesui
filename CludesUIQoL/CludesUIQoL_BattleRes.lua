@@ -177,7 +177,7 @@ end
 
 -- Custom-shape outline: the shape's mask grown by the border size and filled with
 -- the border colour behind the masked icon, leaving a ring exactly that thick.
-local function _applyShapeOutline(owner, shapeKey, bs, region, g, b, a)
+local function _applyShapeOutline(owner, shapeKey, bs, red, green, blue, a)
     local t = owner._cuiOutline
     local maskFile = shapeKey and CludesUI.SHAPE_MASKS[shapeKey]
     local Pix = CludesUI and CludesUI.PP
@@ -204,7 +204,7 @@ local function _applyShapeOutline(owner, shapeKey, bs, region, g, b, a)
     m:SetTexture(maskFile, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
     t:ClearAllPoints()
     t:SetAllPoints(m)
-    t:SetColorTexture(region, g, b, a)
+    t:SetColorTexture(red, green, blue, a)
     t:Show()
 end
 -- Shared with the Bloodlust tracker (this file loads first).
@@ -304,8 +304,8 @@ local function ApplyShape()
                 Pix.CreateBorder(widget, 0, 0, 0, 1, 1, "OVERLAY", 2)
             end
             if bs > 0 then
-                local region, g, b, a = _resolveBorderColor(p)
-                Pix.UpdateBorder(widget, bs, region, g, b, a)
+                local red, green, blue, a = _resolveBorderColor(p)
+                Pix.UpdateBorder(widget, bs, red, green, blue, a)
                 Pix.ShowBorder(widget)
             else
                 Pix.HideBorder(widget)
@@ -352,8 +352,8 @@ local function ApplyShape()
     end
 
     borderTex:Hide()
-    local region, g, b, a = _resolveBorderColor(p)
-    _applyShapeOutline(widget, shapeKey, bs, region, g, b, a)
+    local red, green, blue, a = _resolveBorderColor(p)
+    _applyShapeOutline(widget, shapeKey, bs, red, green, blue, a)
 end
 
 -------------------------------------------------------------------------------

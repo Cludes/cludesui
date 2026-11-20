@@ -523,14 +523,14 @@ end
 
 -- Text style, same keys and colour rule as the Power Bar's text (custom, or
 -- the power colour: here mana's).
-local function ApplyText(c, region, g, b)
+local function ApplyText(c, red, green, blue)
     local fontStr = S.text
     mod.SetRBFont(fontStr, mod.GetRBFont(), c.textSize or 8)
     fontStr:ClearAllPoints()
     local a = c.textAnchor or "CENTER"
     fontStr:SetPoint(a, S.host, a, c.textXOffset or 0, c.textYOffset or 0)
     if c.textCustomColored == false then
-        fontStr:SetTextColor(region, g, b, 1)
+        fontStr:SetTextColor(red, green, blue, 1)
     else
         fontStr:SetTextColor(c.textFillR or 1, c.textFillG or 1, c.textFillB or 1, c.textFillA or 1)
     end

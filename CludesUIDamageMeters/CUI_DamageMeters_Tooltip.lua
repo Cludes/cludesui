@@ -431,8 +431,8 @@ end
 -- The tooltip's own background colour, opaque, so a panel covers the note.
 local function TooltipBgRGB()
     if BlizzardSkinBordersAvailable() and CUI.GetTooltipBg then
-        local region, g, b = CUI.GetTooltipBg()
-        return region, g, b
+        local red, green, blue = CUI.GetTooltipBg()
+        return red, green, blue
     end
     return 0, 0, 0
 end

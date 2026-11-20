@@ -107,15 +107,15 @@ end
 local function Color()
     local s, barFrame = S.settings, S.bar
     local details = S.token and CludesUI.GetPowerColor(S.token)
-    local region, g, b = 1, 1, 1
+    local red, green, blue = 1, 1, 1
     if details then
-        region, g, b = details.r, details.g, details.b
+        red, green, blue = details.r, details.g, details.b
     end
     local op = s.powerBarOpacity or 100
     if op <= 1.0 then
         op = op * 100
     end
-    barFrame:SetStatusBarColor(region, g, b, op / 100)
+    barFrame:SetStatusBarColor(red, green, blue, op / 100)
     -- Form Text Color: power-coloured takes the form's colour, else custom or
     -- white. Neither set follows the power bar's Text Color.
     local pc, tc = s.foreverFormTextPowerColor, s.foreverFormTextColor
@@ -123,7 +123,7 @@ local function Color()
         pc, tc = s.powerPercentTextPowerColor, s.powerTextColor
     end
     if pc then
-        barFrame.text:SetTextColor(region, g, b)
+        barFrame.text:SetTextColor(red, green, blue)
     elseif tc then
         barFrame.text:SetTextColor(tc.r, tc.g, tc.b, tc.a or 1)
     else
@@ -131,7 +131,7 @@ local function Color()
     end
     if s.powerBgPowerColored then
         local frame = CludesUI.GetPowerBgDarkenFactor()
-        barFrame.bg:SetColorTexture(region * frame, g * frame, b * frame, 1)
+        barFrame.bg:SetColorTexture(red * frame, green * frame, blue * frame, 1)
     else
         local c = s.customPowerBgColor
         if c then

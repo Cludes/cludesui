@@ -1765,8 +1765,8 @@ local function SetRowFS(fontStr, size, flags)
     CUI.SetFontFamily(fontStr, filePath, size or FONT_SZ, outline, false)
 end
 
-local function Hex(region, g, b)
-    return format("%02x%02x%02x", floor((region or 1) * 255), floor((g or 1) * 255), floor((b or 1) * 255))
+local function Hex(red, green, blue)
+    return format("%02x%02x%02x", floor((red or 1) * 255), floor((green or 1) * 255), floor((blue or 1) * 255))
 end
 
 -- Shared number engine: K/M/B, or thousand/wan/yi grouping on koKR/zhCN/zhTW.

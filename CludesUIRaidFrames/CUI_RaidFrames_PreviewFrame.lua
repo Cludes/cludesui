@@ -400,35 +400,35 @@ local function CreatePreviewFrame(index, party)
             mod.RF_StockHighlight(frame, bdrFrame, s, hover, frame._isTarget and s.targetBorderEnabled ~= false)
             return
         end
-        local region, g, b, a
+        local red, green, blue, a
         local raised, hlSize, hlPx = false, nil, nil
         if frame._pvDispelBdrC and s.borderBehind then
             -- Show Behind: the live copy sits over the never-raised base border, so the
             -- type color covers hover/target there too.
             local c = frame._pvDispelBdrC
-            region, g, b, a = c.r, c.g, c.b, c.a or 1
+            red, green, blue, a = c.r, c.g, c.b, c.a or 1
         elseif frame._hovered and s.hoverBorderEnabled ~= false then
             local c = s.hoverBorderColor or { r = 1, g = 1, b = 1 }
-            region, g, b, a = c.r, c.g, c.b, s.hoverBorderAlpha or 1
+            red, green, blue, a = c.r, c.g, c.b, s.hoverBorderAlpha or 1
             raised, hlSize = true, s.hoverBorderSize or 1
             hlPx = CludesUI.BorderPx(s.hoverBorderSizePx, hlSize, s.borderTexture or "solid")
         elseif frame._isTarget and s.targetBorderEnabled ~= false then
             local c = s.targetBorderColor or { r = 1, g = 1, b = 1 }
-            region, g, b, a = c.r, c.g, c.b, s.targetBorderAlpha or 1
+            red, green, blue, a = c.r, c.g, c.b, s.targetBorderAlpha or 1
             raised, hlSize = true, s.targetBorderSize or 1
             hlPx = CludesUI.BorderPx(s.targetBorderSizePx, hlSize, s.borderTexture or "solid")
         elseif frame._pvAggroBdr then
             -- Threat Borders' Color Custom Borders (set by ApplyPreviewData): the threat
             -- color, raised like the real frames, below hover/target and above dispel.
-            region, g, b, a = 1, 0, 0, 1
+            red, green, blue, a = 1, 0, 0, 1
             raised = true
         elseif frame._pvDispelBdrC then
             -- Color Custom Borders (set by ApplyPreviewData): the type color, below hover/target.
             local c = frame._pvDispelBdrC
-            region, g, b, a = c.r, c.g, c.b, c.a or 1
+            red, green, blue, a = c.r, c.g, c.b, c.a or 1
         else
             local c = s.borderColor or { r = 0, g = 0, b = 0 }
-            region, g, b, a = c.r, c.g, c.b, s.borderAlpha or 1
+            red, green, blue, a = c.r, c.g, c.b, s.borderAlpha or 1
         end
         -- Match real frames: raise the inset border above overlapping neighbors
         -- while highlighted (handles negative Frame Spacing in the preview too).
@@ -448,23 +448,23 @@ local function CreatePreviewFrame(index, party)
             end
         end
         if (s.borderSize or 1) <= 0 then
-            mod.ApplyHighlightBorder(bdrFrame, s, hlSize, region, g, b, a, hlPx)
+            mod.ApplyHighlightBorder(bdrFrame, s, hlSize, red, green, blue, a, hlPx)
             return
         end
         if hlSize then
-            region, g, b = mod.RF_VisibleHighlight(s, region, g, b)
+            red, green, blue = mod.RF_VisibleHighlight(s, red, green, blue)
         end
         bdrFrame._hlBorderSize = nil
-        CludesUI.SetBorderStyleColor(bdrFrame, region, g, b, a)
+        CludesUI.SetBorderStyleColor(bdrFrame, red, green, blue, a)
         if
             s.powerBorderMatchColor == true
             and frame._powerBorder
             and frame._powerBorder._powerArtMode == "divider"
         then
-            mod.RF_ColorPowerDivider(frame._powerBorder, region, g, b, a)
+            mod.RF_ColorPowerDivider(frame._powerBorder, red, green, blue, a)
         end
         if s.topNameBarDividerMatchColor == true and frame._topNameBar and frame._topNameBar._divider then
-            mod.RF_ColorPowerDivider(frame._topNameBar._divider, region, g, b, a)
+            mod.RF_ColorPowerDivider(frame._topNameBar._divider, red, green, blue, a)
         end
     end
     frame._ApplyBorderColor = PvApplyBorderColor

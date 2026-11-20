@@ -86,13 +86,13 @@ end
 local function ResolveOutline()
     return (CUI.GetFontOutlineFlag("extras")) or ""
 end
-local function MakeLabel(hostFrame, size, region, g, b, a)
+local function MakeLabel(hostFrame, size, red, green, blue, a)
     local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
     local flags = ResolveOutline()
     CUI.PrimeFontShadow(fontStr, flags == "")
     fontStr:SetFont(ResolveFont(), size, flags)
-    if region then
-        fontStr:SetTextColor(region, g or 1, b or 1, a or 1)
+    if red then
+        fontStr:SetTextColor(red, green or 1, blue or 1, a or 1)
     end
     return fontStr
 end

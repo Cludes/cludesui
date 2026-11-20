@@ -111,8 +111,8 @@ end
 -- Resolve a color table honoring the shared custom/accent/class mode keys.
 local function ResolveModeColor(mode, stored, fallback)
     if mode == "accent" and CUI.GetAccentColor then
-        local region, g, b = CUI.GetAccentColor()
-        return region, g, b, (stored and stored.a) or fallback.a or 1
+        local red, green, blue = CUI.GetAccentColor()
+        return red, green, blue, (stored and stored.a) or fallback.a or 1
     end
     if mode == "class" then
         local _, class = UnitClass("player")

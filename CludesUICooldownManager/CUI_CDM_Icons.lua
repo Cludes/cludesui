@@ -541,7 +541,7 @@ do
     -- it manages (the all-off case is one weak-table read). Weak keys: pooled frames drop out on their own. State lives HERE, never on the frames (many are Blizzard-owned).
     local attached = setmetatable({}, { __mode = "k" })
 
-    local function BuildFormatter(seconds, dec, colour, region, g, b)
+    local function BuildFormatter(seconds, dec, colour, red, green, blue)
         if
             not (C_StringUtil and C_StringUtil.CreateNumericRuleFormatter and Enum.NumericRuleFormatRounding)
         then
@@ -553,7 +553,7 @@ do
             if not colour then
                 return fmt
             end
-            return CreateColor(region, g, b, 1):WrapTextInColorCode(fmt)
+            return CreateColor(red, green, blue, 1):WrapTextInColorCode(fmt)
         end
         local pointList = {}
         if dec then
@@ -613,17 +613,17 @@ do
         if not (dec or colour) then
             return nil
         end
-        local region, g, b = 1, 0.2, 0.2
+        local red, green, blue = 1, 0.2, 0.2
         if colour then
-            region = spellSettings.thresholdColorR or 1
-            g = spellSettings.thresholdColorG or 0.2
-            b = spellSettings.thresholdColorB or 0.2
+            red = spellSettings.thresholdColorR or 1
+            green = spellSettings.thresholdColorG or 0.2
+            blue = spellSettings.thresholdColorB or 0.2
         end
         local sig = string.format(
             "%d|%s|%s",
             seconds,
             dec and "1" or "0",
-            colour and string.format("%.3f,%.3f,%.3f", region, g, b) or "0"
+            colour and string.format("%.3f,%.3f,%.3f", red, green, blue) or "0"
         )
         local frame = formatters[sig]
         if frame == nil and not unsupported then
@@ -632,7 +632,7 @@ do
                 formatters = {}
                 formatterCount = 0
             end
-            frame = BuildFormatter(seconds, dec, colour, region, g, b)
+            frame = BuildFormatter(seconds, dec, colour, red, green, blue)
             if frame then
                 formatters[sig] = frame
                 formatterCount = formatterCount + 1

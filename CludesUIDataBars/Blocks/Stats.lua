@@ -40,11 +40,11 @@ end
 
 -- Latency in three bands (ms), in the client's own green / yellow / red.
 local LAT_GOOD, LAT_FAIR = 100, 250
-local function FontColour(color, region, g, b)
+local function FontColour(color, red, green, blue)
     if color and color.GetRGB then
         return color:GetRGB()
     end
-    return region, g, b
+    return red, green, blue
 end
 local function LatencyColour(ms)
     if ms <= LAT_GOOD then
@@ -96,18 +96,18 @@ local function SingleValueBlock(blockCfg, slot, contentFrame, barCtx, spec)
     ruler:Hide()
 
     local function Paint()
-        local region, g, b
+        local red, green, blue
         if hovered then
-            region, g, b = mod.GetAccent()
+            red, green, blue = mod.GetAccent()
         else
-            region, g, b = K.BlockColorOf(blockCfg)
+            red, green, blue = K.BlockColorOf(blockCfg)
         end
-        label:SetTextColor(region, g, b, 1)
+        label:SetTextColor(red, green, blue, 1)
         if iconTex then
             if not hovered then
-                region, g, b = K.IconColorOf(blockCfg)
+                red, green, blue = K.IconColorOf(blockCfg)
             end
-            iconTex:SetVertexColor(region, g, b, 1)
+            iconTex:SetVertexColor(red, green, blue, 1)
         end
     end
 
@@ -350,8 +350,8 @@ mod.BlockFactories.fps = function(blockCfg, slot, contentFrame, barCtx)
     local function Tooltip(_, fromTick)
         mod.Tip_Begin(contentFrame)
         local fps = floor(GetFramerate())
-        local region, g, b = FPSColour(fps)
-        mod.Tip_AddDouble(L["FPS"], fps .. mod.GetFPSSuffix(), 0.6, 0.6, 0.6, region, g, b)
+        local red, green, blue = FPSColour(fps)
+        mod.Tip_AddDouble(L["FPS"], fps .. mod.GetFPSSuffix(), 0.6, 0.6, 0.6, red, green, blue)
         if not fromTick then
             ScanMemory()
         end
@@ -437,16 +437,16 @@ mod.BlockFactories.ms = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     local function Paint()
-        local region, g, b, ir, ig, ib
+        local red, green, blue, ir, ig, ib
         if hovered then
-            region, g, b = mod.GetAccent()
-            ir, ig, ib = region, g, b
+            red, green, blue = mod.GetAccent()
+            ir, ig, ib = red, green, blue
         else
-            region, g, b = K.BlockColorOf(blockCfg)
+            red, green, blue = K.BlockColorOf(blockCfg)
             ir, ig, ib = K.IconColorOf(blockCfg)
         end
         for i = 1, 2 do
-            parts[i].text:SetTextColor(region, g, b, 1)
+            parts[i].text:SetTextColor(red, green, blue, 1)
             parts[i].icon:SetVertexColor(ir, ig, ib, 1)
         end
     end

@@ -90,11 +90,11 @@ mod.Look = Look
 function Look.IconSize(px)
     return px
 end
-function Look.WindowBg(texture, region, g, b, a)
-    texture:SetColorTexture(region, g, b, a)
+function Look.WindowBg(texture, red, green, blue, a)
+    texture:SetColorTexture(red, green, blue, a)
 end
-function Look.HeaderBg(texture, region, g, b, a)
-    texture:SetColorTexture(region, g, b, a)
+function Look.HeaderBg(texture, red, green, blue, a)
+    texture:SetColorTexture(red, green, blue, a)
 end
 function Look.HeaderRail()
     return 0
@@ -122,8 +122,8 @@ function Look.SeatFill(line, iconWidth)
     fillTex:SetPoint("BOTTOMRIGHT", line, "BOTTOMRIGHT", 0, 0)
     return iconWidth, 0
 end
-function Look.RowBg(texture, region, g, b, a)
-    texture:SetColorTexture(region, g, b, a)
+function Look.RowBg(texture, red, green, blue, a)
+    texture:SetColorTexture(red, green, blue, a)
 end
 function Look.RowStyled() end
 local GlyphIcon, GlyphHover = Look.HeaderIcon, Look.HeaderHover
@@ -200,21 +200,21 @@ function Blizzard.WindowBg(texture, _, _, _, a)
 end
 
 -- The header colour is not used; its opacity is.
-function Blizzard.HeaderBg(texture, region, g, b, a)
+function Blizzard.HeaderBg(texture, red, green, blue, a)
     if HasAtlas(BLIZZ_HEADER) then
         texture:SetAtlas(BLIZZ_HEADER)
         texture:SetVertexColor(1, 1, 1, a)
     else
-        texture:SetColorTexture(region, g, b, a)
+        texture:SetColorTexture(red, green, blue, a)
     end
 end
 
 -- The stock track (set up with the row's art) takes no colour.
-function Blizzard.RowBg(texture, region, g, b, a)
+function Blizzard.RowBg(texture, red, green, blue, a)
     if HasAtlas(BLIZZ_TRACK) then
         return
     end
-    texture:SetColorTexture(region, g, b, a)
+    texture:SetColorTexture(red, green, blue, a)
 end
 
 -- The stock track 2px outside the fill and its edge highlight over it, set
@@ -334,14 +334,14 @@ local CLASSIC_EDGE_UV = {
 }
 
 -- The tiled tooltip background tinted r, g, b, a (the file is near-white).
-local function Tile(texture, region, g, b, a)
+local function Tile(texture, red, green, blue, a)
     if not tiled[texture] then
         tiled[texture] = true
         texture:SetHorizTile(true)
         texture:SetVertTile(true)
         texture:SetTexture(CLASSIC_TILE, "REPEAT", "REPEAT")
     end
-    texture:SetVertexColor(region, g, b, a)
+    texture:SetVertexColor(red, green, blue, a)
 end
 
 local function PaintArt(texture, artTex)
@@ -365,7 +365,7 @@ end
 -- corner pixels round its corners) and the eight edge pieces along the
 -- inside of the window's rect, all regions of the window, so every child
 -- draws above them. The bg texture itself paints nothing.
-function Classic.WindowBg(texture, region, g, b, a)
+function Classic.WindowBg(texture, red, green, blue, a)
     local tile = windowArt[texture]
     if not tile then
         local window = texture:GetParent()
@@ -395,7 +395,7 @@ function Classic.WindowBg(texture, region, g, b, a)
         windowArt[texture] = tile
         texture:SetColorTexture(0, 0, 0, 0)
     end
-    Tile(tile, region, g, b, a)
+    Tile(tile, red, green, blue, a)
 end
 
 -- A lighter band of the window's tile (the header colour is not used; its

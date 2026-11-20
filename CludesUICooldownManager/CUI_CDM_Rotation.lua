@@ -128,7 +128,7 @@ do
         return overlayFrame
     end
 
-    local function _rotSolidBorder(overlayFrame, thickness, region, g, b)
+    local function _rotSolidBorder(overlayFrame, thickness, red, green, blue)
         local t = overlayFrame._rotSolid
         if not t then
             t = {}
@@ -151,7 +151,7 @@ do
         t[3]:SetWidth(px)
         t[4]:SetWidth(px)
         for index = 1, 4 do
-            t[index]:SetColorTexture(region, g, b, 1)
+            t[index]:SetColorTexture(red, green, blue, 1)
             t[index]:Show()
         end
     end

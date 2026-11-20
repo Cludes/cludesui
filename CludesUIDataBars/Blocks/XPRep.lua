@@ -114,16 +114,16 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
         if context then
             label = label .. (values and " XP" or "") .. " to level " .. (level + 1)
         end
-        local region, g, b = mod.GetAccent()
+        local red, green, blue = mod.GetAccent()
         return {
             label = label,
             tooltipLabel = "Level " .. level .. " XP",
             minV = 0,
             maxV = maxXP,
             curV = current,
-            r = region,
-            g = g,
-            b = b,
+            r = red,
+            g = green,
+            b = blue,
             rested = GetXPExhaustion() or 0,
             isXP = true,
         }
@@ -179,11 +179,11 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
             label = short .. " " .. label
         end
         local color = FACTION_BAR_COLORS and FACTION_BAR_COLORS[reaction]
-        local region, g, b
+        local red, green, blue
         if color then
-            region, g, b = color.r, color.g, color.b
+            red, green, blue = color.r, color.g, color.b
         else
-            region, g, b = mod.GetAccent()
+            red, green, blue = mod.GetAccent()
         end
         return {
             label = label,
@@ -191,9 +191,9 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
             minV = low,
             maxV = high,
             curV = current,
-            r = region,
-            g = g,
-            b = b,
+            r = red,
+            g = green,
+            b = blue,
             rested = 0,
         }
     end
@@ -262,8 +262,8 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
         -- XP's bar runs 40px past the label; GetAutoLength counts it in.
         self._xpExtend = state.isXP and 40 or 0
         -- The block colour is the label's; the bar keeps its own colour.
-        local region, g, b = K.BlockColorOf(blockCfg)
-        label:SetTextColor(region, g, b, 1)
+        local red, green, blue = K.BlockColorOf(blockCfg)
+        label:SetTextColor(red, green, blue, 1)
         Fill(state)
         -- A font first: SetText on a FontString that never had one errors.
         mod.SetFont(label, fontSize, barCtx.cfg)
@@ -351,7 +351,7 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
         if not state then
             return
         end
-        local region, g, b = mod.GetAccent()
+        local red, green, blue = mod.GetAccent()
         mod.Tip_Begin(hit)
         -- With the text off there is no label, so the bar is named instead.
         mod.Tip_AddLine(state.label ~= "" and state.label or state.tooltipLabel, 1, 1, 1)
@@ -372,7 +372,7 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
         end
         mod.Tip_AddLine(" ")
         local switch = mode == "xp" and L["SWITCH_TO_REP"] or L["SWITCH_TO_XP"]
-        mod.Tip_AddDouble(L["RIGHT_CLICK"], switch, 1, 1, 1, region, g, b)
+        mod.Tip_AddDouble(L["RIGHT_CLICK"], switch, 1, 1, 1, red, green, blue)
         mod.Tip_Show()
     end)
     hit:SetScript("OnLeave", function()

@@ -308,11 +308,11 @@ local function PaintMember(row, settings, class, kick, name)
     row.icon:SetTexture(kick and C_Spell.GetSpellTexture(kick) or WHITE)
     row.name:SetText(name or "")
     local color = class and C_ClassColor.GetClassColor(class)
-    local region, g, b = 0.6, 0.6, 0.6
+    local red, green, blue = 0.6, 0.6, 0.6
     if color then
-        region, g, b = color:GetRGB()
+        red, green, blue = color:GetRGB()
     end
-    row.sb:SetStatusBarColor(region, g, b)
+    row.sb:SetStatusBarColor(red, green, blue)
     local br, bgTex, bb, ba
     if settings.barBgMode == "custom" then
         local c = settings.barBgColor
@@ -322,7 +322,7 @@ local function PaintMember(row, settings, class, kick, name)
             br, bgTex, bb, ba = 0, 0, 0, 0.45
         end
     else
-        br, bgTex, bb, ba = region * DARK_SHARE, g * DARK_SHARE, b * DARK_SHARE, DARK_ALPHA
+        br, bgTex, bb, ba = red * DARK_SHARE, green * DARK_SHARE, blue * DARK_SHARE, DARK_ALPHA
     end
     row.bg:SetColorTexture(br, bgTex, bb, ba)
     if row.cover then

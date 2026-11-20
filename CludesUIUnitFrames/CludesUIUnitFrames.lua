@@ -1774,12 +1774,12 @@ do
         return CludesUI.ResolveTexturePath(healthBarTextures, texKey or "none", nil)
     end
 
-    local function PaintTinted(self, region, g, b, a)
-        self:SetVertexColor(region, g, b, a)
+    local function PaintTinted(self, red, green, blue, a)
+        self:SetVertexColor(red, green, blue, a)
     end
-    local function PaintHealth(self, region, g, b, a)
-        TexM.SetColorTexture(self, region, g, b, a)
-        self._cuiBgTex:SetVertexColor(region, g, b, a)
+    local function PaintHealth(self, red, green, blue, a)
+        TexM.SetColorTexture(self, red, green, blue, a)
+        self._cuiBgTex:SetVertexColor(red, green, blue, a)
     end
     local function AlphaHealth(self, a)
         TexM.SetAlpha(self, a)
@@ -1804,17 +1804,17 @@ do
     end
 
     -- One paint of a background that is never swapped (the options preview).
-    function mod.UF_TexBgPaint(texture, filePath, region, g, b, a)
+    function mod.UF_TexBgPaint(texture, filePath, red, green, blue, a)
         if filePath then
             texture:SetTexture(filePath)
-            texture:SetVertexColor(region, g, b, a)
+            texture:SetVertexColor(red, green, blue, a)
             texture._cuiTexPath = filePath
         else
             if texture._cuiTexPath then
                 texture._cuiTexPath = nil
                 texture:SetVertexColor(1, 1, 1, 1)
             end
-            texture:SetColorTexture(region, g, b, a)
+            texture:SetColorTexture(red, green, blue, a)
         end
     end
 
@@ -2318,8 +2318,8 @@ do
         if not (rgb and rgb.GetRGB) then
             return false
         end
-        local region, g, b = rgb:GetRGB()
-        return true, region, g, b, issecretvalue(region)
+        local red, green, blue = rgb:GetRGB()
+        return true, red, green, blue, issecretvalue(red)
     end
 
     -- Clean-number twins for the options previews, where the health percent is a
@@ -2426,9 +2426,9 @@ local function UF_SecretSafeHealthColor(self, evt, unitToken)
             -- Blizzard's shade. GetClassColorForRestrictedUnit recovers the user's custom
             -- class color for group members with the compare done in C; its r/g/b are secret,
             -- so they go into a scratch ColorMixin (plain field writes) and are never read.
-            local success, region, g, b = CludesUI.GetClassColorForRestrictedUnit(unitToken, class)
+            local success, red, green, blue = CludesUI.GetClassColorForRestrictedUnit(unitToken, class)
             if success then
-                SECRET_CLASS_COLOR:SetRGB(region, g, b)
+                SECRET_CLASS_COLOR:SetRGB(red, green, blue)
                 rgb = SECRET_CLASS_COLOR
             elseif C_ClassColor and C_ClassColor.GetClassColor then
                 rgb = C_ClassColor.GetClassColor(class)
@@ -2628,14 +2628,14 @@ local function ApplyDarkTheme(healthBar, unitToken)
                 elseif customFillRGB and not classColored then
                     self.bg:SetColorTexture(customFillRGB.r * 0.2, customFillRGB.g * 0.2, customFillRGB.b * 0.2, 1)
                 elseif rgb and rgb.GetRGB then
-                    local region, g, b = rgb:GetRGB()
+                    local red, green, blue = rgb:GetRGB()
                     -- SetColorTexture takes secrets; the multiply does not, and there is no
                     -- C-side blend to darken one with. So a restricted unit's background
                     -- degrades to the default dark rather than throwing on the tint.
-                    if issecretvalue(region) then
+                    if issecretvalue(red) then
                         self.bg:SetColorTexture(DARK_HEALTH_R, DARK_HEALTH_G, DARK_HEALTH_B, 1)
                     else
-                        self.bg:SetColorTexture(region * 0.2, g * 0.2, b * 0.2, 1)
+                        self.bg:SetColorTexture(red * 0.2, green * 0.2, blue * 0.2, 1)
                     end
                 else
                     -- No color source (e.g. no target): default bg.

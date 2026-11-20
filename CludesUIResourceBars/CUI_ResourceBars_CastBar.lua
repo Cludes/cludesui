@@ -1281,15 +1281,15 @@ SetUpdateCastBar(function(dt)
         then
             local numStages = castFrame._numStages or 0
             local stage = GetCurrentEmpowerStage(progress, numStages)
-            local region, g, b = GetEmpowerStageColor(stage, numStages)
+            local red, green, blue = GetEmpowerStageColor(stage, numStages)
 
             -- Apply color to bar or gradient (fill alpha keeps Fill Opacity)
             if castFrame._gradientFullBar and castFrame._gradTex then
-                empowerColorA:SetRGBA(region, g, b, 1)
-                empowerColorB:SetRGBA(region, g, b, 1)
+                empowerColorA:SetRGBA(red, green, blue, 1)
+                empowerColorB:SetRGBA(red, green, blue, 1)
                 castFrame._gradTex:SetGradient("HORIZONTAL", empowerColorA, empowerColorB)
             else
-                castFrame._cstFillTex:SetVertexColor(region, g, b, castFrame._cstFillAlpha)
+                castFrame._cstFillTex:SetVertexColor(red, green, blue, castFrame._cstFillAlpha)
             end
             castFrame._empowerColorApplied = true
         end

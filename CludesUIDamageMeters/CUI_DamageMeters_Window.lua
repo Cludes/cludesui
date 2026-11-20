@@ -510,11 +510,11 @@ local function CreateDMWindow(winIdx)
                 end
                 local ft = barFrame.fill:GetStatusBarTexture()
                 local anchorL = c.borderFollowFillIcon and barFrame.row or barFrame.fill
-                local region, g, b, a = c.borderR or 0, c.borderG or 0, c.borderB or 0, c.borderA or 1
-                fb.top:SetColorTexture(region, g, b, a)
-                fb.bottom:SetColorTexture(region, g, b, a)
-                fb.left:SetColorTexture(region, g, b, a)
-                fb.right:SetColorTexture(region, g, b, a)
+                local red, green, blue, a = c.borderR or 0, c.borderG or 0, c.borderB or 0, c.borderA or 1
+                fb.top:SetColorTexture(red, green, blue, a)
+                fb.bottom:SetColorTexture(red, green, blue, a)
+                fb.left:SetColorTexture(red, green, blue, a)
+                fb.right:SetColorTexture(red, green, blue, a)
                 fb.top:ClearAllPoints()
                 fb.top:SetPoint("TOPLEFT", anchorL, "TOPLEFT", 0, 0)
                 fb.top:SetPoint("TOPRIGHT", ft, "TOPRIGHT", 0, 0)
@@ -1014,7 +1014,7 @@ local function CreateDMWindow(winIdx)
         -- Refresh), and home screen cards (via RefreshHome), each gated on its own accent-use toggle
         CUI.RegAccent({
             type = "callback",
-            fn = function(region, g, b)
+            fn = function(red, green, blue)
                 -- A parked window re-reads the accent when it is brought back (W.Reapply).
                 if W._parked then
                     return
@@ -1022,12 +1022,12 @@ local function CreateDMWindow(winIdx)
                 local c = DB()
                 -- (WoW Forever's title keeps its gold.)
                 if c.hdrTextUseAccent ~= false and not mod.DMForever() then
-                    W.titleText:SetTextColor(region, g, b, 1)
+                    W.titleText:SetTextColor(red, green, blue, 1)
                 end
                 if c.iconColorUseAccent then
                     for _, ic in ipairs(W.hdrIcons) do
                         if not ic._hdrArt then
-                            ic:SetVertexColor(region, g, b, ICON_ALPHA)
+                            ic:SetVertexColor(red, green, blue, ICON_ALPHA)
                         end
                     end
                 end
@@ -1072,8 +1072,8 @@ local function CreateDMWindow(winIdx)
         W.hdrIcons[#W.hdrIcons + 1] = iconTex
         button:SetScript("OnEnter", function(self)
             if not mod.DMHdrHover(iconTex, true) then
-                local region, g, b = GetIconColor()
-                iconTex:SetVertexColor(region, g, b, ICON_HOVER_ALPHA)
+                local red, green, blue = GetIconColor()
+                iconTex:SetVertexColor(red, green, blue, ICON_HOVER_ALPHA)
             end
             -- Suppress tooltip while this button's menu is open
             if _edmMenu and _edmMenu:IsShown() and _edmMenuAnchor == self then
@@ -1083,8 +1083,8 @@ local function CreateDMWindow(winIdx)
         end)
         button:SetScript("OnLeave", function()
             if not mod.DMHdrHover(iconTex, false) then
-                local region, g, b = GetIconColor()
-                iconTex:SetVertexColor(region, g, b, ICON_ALPHA)
+                local red, green, blue = GetIconColor()
+                iconTex:SetVertexColor(red, green, blue, ICON_ALPHA)
             end
             CUI.HideWidgetTooltip()
         end)

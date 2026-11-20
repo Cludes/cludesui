@@ -983,8 +983,8 @@ local function RenderRow(button, payload, cols, rowW, posX, posY, stripe, dim)
                 if not (shade._brdT or shade._fvSlotBorder) then
                     mod.CreateInsetBorder(shade, true, iconTex)
                 end
-                local region, g, b = mod.QualityBorderColor(q)
-                mod.SetInsetBorderColor(shade, region, g, b, 1)
+                local red, green, blue = mod.QualityBorderColor(q)
+                mod.SetInsetBorderColor(shade, red, green, blue, 1)
                 if shade._fvSlotBorder then
                     mod.SetForeverSlotQuestBorder(shade, payload._isQuest, payload._isQuestStarter)
                 end

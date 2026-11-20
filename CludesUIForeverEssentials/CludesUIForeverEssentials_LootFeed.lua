@@ -202,10 +202,10 @@ end
 
 -- Solid, or a two-colour fade to transparent (BAR).
 local function PaintBackground(texture, fade)
-    local region, g, b, a = Get("bgR"), Get("bgG"), Get("bgB"), Get("bgA")
+    local red, green, blue, a = Get("bgR"), Get("bgG"), Get("bgB"), Get("bgA")
     SetBackgroundTexture(texture)
-    gradFrom:SetRGBA(region, g, b, a)
-    gradTo:SetRGBA(region, g, b, fade and 0 or a)
+    gradFrom:SetRGBA(red, green, blue, a)
+    gradTo:SetRGBA(red, green, blue, fade and 0 or a)
     texture:SetGradient("HORIZONTAL", gradFrom, gradTo)
 end
 

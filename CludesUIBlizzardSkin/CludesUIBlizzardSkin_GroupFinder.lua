@@ -54,7 +54,7 @@ local function SkinEnabled()
 end
 
 -- Unlike WSkin.AddBorder: OVERLAY/7 strips at the default container level.
-local function AddBorder(widget, region, g, b, a)
+local function AddBorder(widget, red, green, blue, a)
     if GetFFD(widget).border then
         return
     end
@@ -62,9 +62,9 @@ local function AddBorder(widget, region, g, b, a)
     if Pix and Pix.CreateBorder then
         Pix.CreateBorder(
             widget,
-            region or Theme.brdR,
-            g or Theme.brdG,
-            b or Theme.brdB,
+            red or Theme.brdR,
+            green or Theme.brdG,
+            blue or Theme.brdB,
             a or Theme.brdA,
             1,
             "OVERLAY",
@@ -236,12 +236,12 @@ local function SkinPanel(widget, options)
     FadeRegions(widget, keep)
     Register(widget, true)
     if not skinData.bg and not options.noBg then
-        local region, g, b, a = Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA
+        local red, green, blue, a = Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA
         if options.inset then
-            region, g, b, a = Theme.insetR, Theme.insetG, Theme.insetB, Theme.insetA
+            red, green, blue, a = Theme.insetR, Theme.insetG, Theme.insetB, Theme.insetA
         end
         local backdrop = widget:CreateTexture(nil, "BACKGROUND", nil, -7)
-        backdrop:SetColorTexture(region, g, b, a)
+        backdrop:SetColorTexture(red, green, blue, a)
         backdrop:SetAllPoints(widget)
         skinData.bg = backdrop
     end
@@ -1414,13 +1414,13 @@ local function SkinRewardTile(button)
     if not (wsk and wsk.SquareIcon and button.Icon) then
         return
     end
-    local region, g, b = RewardQualityColor(button)
-    if region then
+    local red, green, blue = RewardQualityColor(button)
+    if red then
         -- Crop first, and only border what actually cropped: SquareIcon leaves a
         -- masked icon fully native, and a square border round something the mask
         -- renders as a different shape is worse than no border.
         if wsk.SquareIcon(button.Icon, nil) and wsk.QualityBorder then
-            wsk.QualityBorder(button, button.Icon, region, g, b)
+            wsk.QualityBorder(button, button.Icon, red, green, blue)
         end
     else
         -- No rarity worth showing: let the engine draw its black edge.

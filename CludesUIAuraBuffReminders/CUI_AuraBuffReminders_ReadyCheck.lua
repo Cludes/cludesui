@@ -87,17 +87,17 @@ local SetupReadyCheckManaWarning = function()
         warnFS:SetFont(font, (c and c.rcManaWarnSize) or 48, outline)
         -- Explicit white instance color: tinted purely via SetVertexColor (curve result); with no instance color it would inherit the primed shadow FontObject's color, which resolves BLACK.
         warnFS:SetTextColor(1, 1, 1, 1)
-        local region, g, b = REMIND.RCWColor()
+        local red, green, blue = REMIND.RCWColor()
         -- Curve: alpha 1 at/below 80%, alpha 0 above; colors the FontString directly via SetVertexColor, using alpha for visibility -- no secret value reads.
         if C_CurveUtil and C_CurveUtil.CreateColorCurve then
             warnCurve = C_CurveUtil.CreateColorCurve()
-            warnCurve:AddPoint(0.0, CreateColor(region, g, b, 1))
-            warnCurve:AddPoint(0.80, CreateColor(region, g, b, 1))
-            warnCurve:AddPoint(0.8001, CreateColor(region, g, b, 0))
-            warnCurve:AddPoint(1.0, CreateColor(region, g, b, 0))
+            warnCurve:AddPoint(0.0, CreateColor(red, green, blue, 1))
+            warnCurve:AddPoint(0.80, CreateColor(red, green, blue, 1))
+            warnCurve:AddPoint(0.8001, CreateColor(red, green, blue, 0))
+            warnCurve:AddPoint(1.0, CreateColor(red, green, blue, 0))
         end
         if warnFrame:IsShown() then
-            warnFS:SetVertexColor(region, g, b, 1)
+            warnFS:SetVertexColor(red, green, blue, 1)
         end
     end
 
@@ -214,8 +214,8 @@ local SetupReadyCheckManaWarning = function()
             warnTimer:Cancel()
             warnTimer = nil
         end
-        local region, g, b = REMIND.RCWColor()
-        warnFS:SetVertexColor(region, g, b, 1)
+        local red, green, blue = REMIND.RCWColor()
+        warnFS:SetVertexColor(red, green, blue, 1)
         warnFrame:Show()
         if warnFrame._breathe and not warnFrame._breathe:IsPlaying() then
             warnFrame._breathe:Play()

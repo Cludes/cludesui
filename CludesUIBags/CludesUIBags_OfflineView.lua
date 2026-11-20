@@ -925,7 +925,7 @@ end
 local function Signature(val, list, source, query)
     local p = BP()
     local sel, set = mod.GetSelection()
-    local region, g, b = CUI.GetAccentColor()
+    local red, green, blue = CUI.GetAccentColor()
     local dis = DisabledKey()
     return strjoin(
         "|",
@@ -953,9 +953,9 @@ local function Signature(val, list, source, query)
         tostring(p.bankCategorySidebar),
         tostring(mod.BankDefaultsToOne()),
         dis,
-        region,
-        g,
-        b
+        red,
+        green,
+        blue
     )
 end
 
@@ -1375,7 +1375,7 @@ if CUI_Bank then
 
         local collapsed = BP().bankSidebarCollapsed
         local wid = sidePane:GetWidth()
-        local region, g, b = CUI.GetAccentColor()
+        local red, green, blue = CUI.GetAccentColor()
         local posY = 0
         local px = CUI.PP.mult
         if not sidePane._div then
@@ -1409,9 +1409,9 @@ if CUI_Bank then
             row.label:SetText(entry.name)
             row.label:SetTextColor(1, 1, 1, row.on and 1 or 0.75)
             row.count:SetText(entry.n)
-            row.ind:SetColorTexture(region, g, b, 1)
+            row.ind:SetColorTexture(red, green, blue, 1)
             row.ind:SetShown(row.on)
-            row.bg:SetColorTexture(region, g, b, row.on and 0.1 or 0)
+            row.bg:SetColorTexture(red, green, blue, row.on and 0.1 or 0)
             if not row.on then
                 row.bg:SetColorTexture(1, 1, 1, 0)
             end

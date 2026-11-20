@@ -261,11 +261,11 @@ local function UpdateIndicator()
         return
     end
     BuildIndicator()
-    local region, g, b = 1, 0.2, 0.2
+    local red, green, blue = 1, 0.2, 0.2
     if reeling then
-        region, g, b = 0.2, 1, 0.3
+        red, green, blue = 0.2, 1, 0.3
     end
-    CludesUI.PP.SetBorderColor(indicator, region, g, b, 1)
+    CludesUI.PP.SetBorderColor(indicator, red, green, blue, 1)
     indicator.icon:SetDesaturated(not reeling)
     indicator.key:SetText(GetBindingText(F.Get("key"), true))
     indicator:Show()

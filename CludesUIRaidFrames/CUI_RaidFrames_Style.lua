@@ -364,14 +364,14 @@ end
 -- companion key against `size` and the drawn texture), nil = the legacy size. The drawn size
 -- (and px) is cached on the border frame so a group-wide target swap is a color write per
 -- button rather than a restyle; callers clear it when the base border returns.
-function mod.ApplyHighlightBorder(bf, s, size, region, g, b, a, px)
+function mod.ApplyHighlightBorder(bf, s, size, red, green, blue, a, px)
     if not (Pix and bf) then
         return
     end
     local texKey = s.borderTexture or "solid"
     if not size or size <= 0 then
         if bf._hlBorderSize then
-            CludesUI.ApplyBorderStyle(bf, 0, region, g, b, a, texKey)
+            CludesUI.ApplyBorderStyle(bf, 0, red, green, blue, a, texKey)
             -- Keep the cache when the style call bailed (still shown) so the next one retries the hide.
             if not bf:IsShown() then
                 bf._hlBorderSize = nil
@@ -382,15 +382,15 @@ function mod.ApplyHighlightBorder(bf, s, size, region, g, b, a, px)
     -- IsShown: a base restyle to Border Size 0 hides the frame without clearing the cache,
     -- so the size alone would let a hover/target repaint after one land on a hidden border.
     if bf._hlBorderSize == size and bf._hlBorderPx == px and bf:IsShown() then
-        CludesUI.SetBorderStyleColor(bf, region, g, b, a)
+        CludesUI.SetBorderStyleColor(bf, red, green, blue, a)
         return
     end
     CludesUI.ApplyBorderStyle(
         bf,
         size,
-        region,
-        g,
-        b,
+        red,
+        green,
+        blue,
         a,
         texKey,
         s.borderTextureOffset,
@@ -410,14 +410,14 @@ end
 -- color (nearly) equal to the border's own shows no change at all: every
 -- textured style but Pixels seeds a white border and the highlight defaults
 -- to white. Such a highlight draws gold instead (white on a gold border).
-function mod.RF_VisibleHighlight(s, region, g, b)
+function mod.RF_VisibleHighlight(s, red, green, blue)
     local c = s.borderColor
     local br, backdrop, bb = 0, 0, 0
     if c then
         br, backdrop, bb = c.r, c.g, c.b
     end
-    if math.abs(region - br) + math.abs(g - backdrop) + math.abs(b - bb) >= 0.15 then
-        return region, g, b
+    if math.abs(red - br) + math.abs(green - backdrop) + math.abs(blue - bb) >= 0.15 then
+        return red, green, blue
     end
     if math.abs(1 - br) + math.abs(0.82 - backdrop) + math.abs(bb) >= 0.15 then
         return 1, 0.82, 0
@@ -425,12 +425,12 @@ function mod.RF_VisibleHighlight(s, region, g, b)
     return 1, 1, 1
 end
 
-function mod.RF_ColorPowerDivider(owner, region, g, b, a)
+function mod.RF_ColorPowerDivider(owner, red, green, blue, a)
     if not owner or owner._powerArtMode ~= "divider" then
         return
     end
-    owner._powerArtR, owner._powerArtG, owner._powerArtB, owner._powerArtAlpha = region, g, b, a
-    owner._powerArtTex:SetVertexColor(region, g, b, a)
+    owner._powerArtR, owner._powerArtG, owner._powerArtB, owner._powerArtAlpha = red, green, blue, a
+    owner._powerArtTex:SetVertexColor(red, green, blue, a)
 end
 
 function mod.RF_ClearPowerBorderArt(owner)
@@ -1161,47 +1161,47 @@ local function StyleButton(btnFrame)
             mod.RF_StockHighlight(skinData, skinData.borderFrame, s, hover, skinData._isTarget and s.targetBorderEnabled ~= false)
             return
         end
-        local region, g, b, a
+        local red, green, blue, a
         local raised, hlSize, hlPx = false, nil, nil
         if skinData._hovered and s.hoverBorderEnabled ~= false then
             local c = s.hoverBorderColor or { r = 1, g = 1, b = 1 }
-            region, g, b, a = c.r, c.g, c.b, s.hoverBorderAlpha or 1
+            red, green, blue, a = c.r, c.g, c.b, s.hoverBorderAlpha or 1
             raised, hlSize = true, s.hoverBorderSize or 1
             hlPx = CludesUI.BorderPx(s.hoverBorderSizePx, hlSize, s.borderTexture or "solid")
         elseif skinData._isTarget and s.targetBorderEnabled ~= false then
             local c = s.targetBorderColor or { r = 1, g = 1, b = 1 }
-            region, g, b, a = c.r, c.g, c.b, s.targetBorderAlpha or 1
+            red, green, blue, a = c.r, c.g, c.b, s.targetBorderAlpha or 1
             raised, hlSize = true, s.targetBorderSize or 1
             hlPx = CludesUI.BorderPx(s.targetBorderSizePx, hlSize, s.borderTexture or "solid")
         elseif skinData._aggroBdr and s.threatCustomBorder == true and mod.RF_CustomBorderOn(s) then
             -- The threat color, raised like hover/target so it also covers the dispel
             -- Color Custom Borders copies (base + 9). Settings re-checked live: a
             -- restyle can run before the next threat paint clears the flag.
-            region, g, b, a = 1, 0, 0, 1
+            red, green, blue, a = 1, 0, 0, 1
             raised = true
         else
             local c = s.borderColor or { r = 0, g = 0, b = 0 }
-            region, g, b, a = c.r, c.g, c.b, s.borderAlpha or 1
+            red, green, blue, a = c.r, c.g, c.b, s.borderAlpha or 1
         end
         ApplyBorderLevel(raised, s)
         if (s.borderSize or 1) <= 0 then
-            mod.ApplyHighlightBorder(skinData.borderFrame, s, hlSize, region, g, b, a, hlPx)
+            mod.ApplyHighlightBorder(skinData.borderFrame, s, hlSize, red, green, blue, a, hlPx)
             return
         end
         if hlSize then
-            region, g, b = mod.RF_VisibleHighlight(s, region, g, b)
+            red, green, blue = mod.RF_VisibleHighlight(s, red, green, blue)
         end
         skinData.borderFrame._hlBorderSize = nil
-        CludesUI.SetBorderStyleColor(skinData.borderFrame, region, g, b, a)
+        CludesUI.SetBorderStyleColor(skinData.borderFrame, red, green, blue, a)
         if
             s.powerBorderMatchColor == true
             and skinData.powerBorderFrame
             and skinData.powerBorderFrame._powerArtMode == "divider"
         then
-            mod.RF_ColorPowerDivider(skinData.powerBorderFrame, region, g, b, a)
+            mod.RF_ColorPowerDivider(skinData.powerBorderFrame, red, green, blue, a)
         end
         if s.topNameBarDividerMatchColor == true and skinData.topNameBar and skinData.topNameBar._divider then
-            mod.RF_ColorPowerDivider(skinData.topNameBar._divider, region, g, b, a)
+            mod.RF_ColorPowerDivider(skinData.topNameBar._divider, red, green, blue, a)
         end
     end
     skinData.ApplyBorderColor = ApplyBorderColor

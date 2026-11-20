@@ -593,15 +593,15 @@ if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         if not lockName then
             ReadSkill()
         end
-        local region, g, b
+        local red, green, blue
         if not lockSkill then
-            region, g, b = 1, 0.8, 0.2
+            red, green, blue = 1, 0.8, 0.2
         elseif lockSkill < need then
-            region, g, b = 1, 0.3, 0.3
+            red, green, blue = 1, 0.3, 0.3
         else
-            region, g, b = 0.4, 0.9, 0.5
+            red, green, blue = 0.4, 0.9, 0.5
         end
-        tooltip:AddLine(ITEM_MIN_SKILL:format(lockName, need), region, g, b)
+        tooltip:AddLine(ITEM_MIN_SKILL:format(lockName, need), red, green, blue)
     end)
 end
 L.Start(function()

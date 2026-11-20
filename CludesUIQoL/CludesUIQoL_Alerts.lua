@@ -177,7 +177,7 @@ local function NewLine(def)
 
     -- preview: play the short animation even on a persistent line, and never
     -- disturb a real persistent alert that is already up.
-    function line.Show(textValue, region, g, b, preview)
+    function line.Show(textValue, red, green, blue, preview)
         if CUI._unlockActive then
             return
         end
@@ -189,7 +189,7 @@ local function NewLine(def)
         PlaceAnchor()
         Style(line)
         fontStr:SetText(textValue)
-        fontStr:SetTextColor(region or 1, g or 1, b or 1)
+        fontStr:SetTextColor(red or 1, green or 1, blue or 1)
         if real and line.persistentShown then
             return
         end -- already up: only the text changed
@@ -355,8 +355,8 @@ do
 
     local function ShowAlert(preview)
         local D = Alerts.DEFAULTS.potionAlert
-        local region, g, b = Alerts.Color("potionAlert", D.color.r, D.color.g, D.color.b)
-        Alerts.Line("potion").Show(DB("potionAlertText") or D.text, region, g, b, preview)
+        local red, green, blue = Alerts.Color("potionAlert", D.color.r, D.color.g, D.color.b)
+        Alerts.Line("potion").Show(DB("potionAlertText") or D.text, red, green, blue, preview)
     end
 
     -- start, duration; nil if the item has no cooldown data.
@@ -604,8 +604,8 @@ do
 
     local function ShowAlert(preview)
         local D = Alerts.DEFAULTS.talentAlert
-        local region, g, b = Alerts.Color("talentAlert", D.color.r, D.color.g, D.color.b)
-        Line().Show(DB("talentAlertText") or D.text, region, g, b, preview)
+        local red, green, blue = Alerts.Color("talentAlert", D.color.r, D.color.g, D.color.b)
+        Line().Show(DB("talentAlertText") or D.text, red, green, blue, preview)
     end
 
     local function Evaluate()

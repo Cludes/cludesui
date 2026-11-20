@@ -173,11 +173,11 @@ mod.BlockFactories.mplussummary = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     local function ShowTooltip()
-        local region, g, b = mod.GetAccent()
+        local red, green, blue = mod.GetAccent()
         local runs = Runs()
         local count = runs and #runs or 0
         mod.Tip_Begin(button)
-        mod.Tip_AddLine("|cFFFFFFFF[|r" .. CludesUI.L("Run Summary") .. "|cFFFFFFFF]|r", region, g, b)
+        mod.Tip_AddLine("|cFFFFFFFF[|r" .. CludesUI.L("Run Summary") .. "|cFFFFFFFF]|r", red, green, blue)
         mod.Tip_AddLine(" ")
         if count == 0 then
             mod.Tip_AddLine(CludesUI.L("No runs recorded yet"), 0.6, 0.6, 0.6)
@@ -187,9 +187,9 @@ mod.BlockFactories.mplussummary = function(blockCfg, slot, contentFrame, barCtx)
             mod.Tip_AddDouble(RunName(runs[i]), time, 0.8, 0.8, 0.8, tr, tg, tb)
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["LEFT_CLICK"], CludesUI.L("Open Run Summary"), 1, 1, 1, region, g, b)
+        mod.Tip_AddDouble(L["LEFT_CLICK"], CludesUI.L("Open Run Summary"), 1, 1, 1, red, green, blue)
         if count > 0 then
-            mod.Tip_AddDouble(L["RIGHT_CLICK"], CludesUI.L("Clear Run History"), 1, 1, 1, region, g, b)
+            mod.Tip_AddDouble(L["RIGHT_CLICK"], CludesUI.L("Clear Run History"), 1, 1, 1, red, green, blue)
         end
         mod.Tip_Show()
     end

@@ -101,11 +101,11 @@ function CHAT.ApplyIconColor()
     if CHAT.SB_KIT then
         return
     end
-    local region, g, b
+    local red, green, blue
     if conf.iconUseAccent and CludesUI.GetAccentColor then
-        region, g, b = CludesUI.GetAccentColor()
+        red, green, blue = CludesUI.GetAccentColor()
     else
-        region, g, b = conf.iconR or 1, conf.iconG or 1, conf.iconB or 1
+        red, green, blue = conf.iconR or 1, conf.iconG or 1, conf.iconB or 1
     end
     local ICON_ALPHA = 0.4
     local ICON_HOVER_ALPHA = 0.9
@@ -137,59 +137,59 @@ function CHAT.ApplyIconColor()
     }) do
         local button = CFD(cf1)[key]
         if button and button._icon then
-            button._icon:SetVertexColor(region, g, b, ICON_ALPHA)
+            button._icon:SetVertexColor(red, green, blue, ICON_ALPHA)
             local labelText = ICON_LABELS[key]
             if key == "friendsBtn" and fc then
-                fc:SetTextColor(region, g, b, 0.5)
+                fc:SetTextColor(red, green, blue, 0.5)
                 button:SetScript("OnEnter", function(self)
-                    button._icon:SetVertexColor(region, g, b, ICON_HOVER_ALPHA)
-                    fc:SetTextColor(region, g, b, 0.9)
+                    button._icon:SetVertexColor(red, green, blue, ICON_HOVER_ALPHA)
+                    fc:SetTextColor(red, green, blue, 0.9)
                     if not self._freeMoveJustDragged then
                         ShowSidebarIconTooltip(self, labelText)
                     end
                 end)
                 button:SetScript("OnLeave", function(self)
-                    button._icon:SetVertexColor(region, g, b, ICON_ALPHA)
-                    fc:SetTextColor(region, g, b, 0.5)
+                    button._icon:SetVertexColor(red, green, blue, ICON_ALPHA)
+                    fc:SetTextColor(red, green, blue, 0.5)
                     HideSidebarIconTooltip(self)
                 end)
             elseif key == "guildBtn" and gc then
-                gc:SetTextColor(region, g, b, 0.5)
+                gc:SetTextColor(red, green, blue, 0.5)
                 button:SetScript("OnEnter", function(self)
-                    button._icon:SetVertexColor(region, g, b, ICON_HOVER_ALPHA)
-                    gc:SetTextColor(region, g, b, 0.9)
+                    button._icon:SetVertexColor(red, green, blue, ICON_HOVER_ALPHA)
+                    gc:SetTextColor(red, green, blue, 0.9)
                     if not self._freeMoveJustDragged then
                         ShowSidebarIconTooltip(self, labelText)
                     end
                 end)
                 button:SetScript("OnLeave", function(self)
-                    button._icon:SetVertexColor(region, g, b, ICON_ALPHA)
-                    gc:SetTextColor(region, g, b, 0.5)
+                    button._icon:SetVertexColor(red, green, blue, ICON_ALPHA)
+                    gc:SetTextColor(red, green, blue, 0.5)
                     HideSidebarIconTooltip(self)
                 end)
             elseif key == "durabilityBtn" and dp then
-                dp:SetTextColor(region, g, b, 0.5)
+                dp:SetTextColor(red, green, blue, 0.5)
                 button:SetScript("OnEnter", function(self)
-                    button._icon:SetVertexColor(region, g, b, ICON_HOVER_ALPHA)
-                    dp:SetTextColor(region, g, b, 0.9)
+                    button._icon:SetVertexColor(red, green, blue, ICON_HOVER_ALPHA)
+                    dp:SetTextColor(red, green, blue, 0.9)
                     if not self._freeMoveJustDragged then
                         ShowSidebarIconTooltip(self, labelText)
                     end
                 end)
                 button:SetScript("OnLeave", function(self)
-                    button._icon:SetVertexColor(region, g, b, ICON_ALPHA)
-                    dp:SetTextColor(region, g, b, 0.5)
+                    button._icon:SetVertexColor(red, green, blue, ICON_ALPHA)
+                    dp:SetTextColor(red, green, blue, 0.5)
                     HideSidebarIconTooltip(self)
                 end)
             else
                 button:SetScript("OnEnter", function(self)
-                    button._icon:SetVertexColor(region, g, b, ICON_HOVER_ALPHA)
+                    button._icon:SetVertexColor(red, green, blue, ICON_HOVER_ALPHA)
                     if not self._freeMoveJustDragged then
                         ShowSidebarIconTooltip(self, labelText)
                     end
                 end)
                 button:SetScript("OnLeave", function(self)
-                    button._icon:SetVertexColor(region, g, b, ICON_ALPHA)
+                    button._icon:SetVertexColor(red, green, blue, ICON_ALPHA)
                     HideSidebarIconTooltip(self)
                 end)
             end

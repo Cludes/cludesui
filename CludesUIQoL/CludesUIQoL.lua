@@ -4913,7 +4913,7 @@ do
     -- Nothing is drawn while Blizzard holds its messages back, or once
     -- another addon has switched the type back on (Blizzard then drew the
     -- line itself).
-    local function ShowLine(msgKind, message, region, g, b)
+    local function ShowLine(msgKind, message, red, green, blue)
         local widget = UIErrorsFrame
         local ok, isShown = pcall(widget.ShouldDisplayMessageType, widget, msgKind, PROBE)
         if not ok then
@@ -4936,7 +4936,7 @@ do
                 end
             end
         end
-        widget:AddMessage(message, region, g, b, 1.0, msgKind)
+        widget:AddMessage(message, red, green, blue, 1.0, msgKind)
         local _, soundKitID, voiceID = GetGameMessageInfo(msgKind)
         if voiceID then
             C_Sound.PlayVocalErrorSound(voiceID)
@@ -5572,8 +5572,8 @@ do
     end
 
     local function ShowAlert(which, preview)
-        local region, g, b = ResolveColor(which)
-        CludesUI.Alerts.Line("combat").Show(AlertText(which), region, g, b, preview)
+        local red, green, blue = ResolveColor(which)
+        CludesUI.Alerts.Line("combat").Show(AlertText(which), red, green, blue, preview)
     end
 
     local function OnCombatEvent(_, eventName)

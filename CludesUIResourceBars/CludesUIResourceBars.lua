@@ -569,14 +569,14 @@ local IP = {
 -- shared counter is safe. On IP, not new locals.
 IP.layers = {}
 IP.layerN = 0
-function IP.push(step, region, g, b, a)
+function IP.push(step, red, green, blue, a)
     IP.layerN = IP.layerN + 1
     local t = IP.layers[IP.layerN]
     if not t then
         t = {}
         IP.layers[IP.layerN] = t
     end
-    t.step, t.r, t.g, t.b, t.a = step, region, g, b, a
+    t.step, t.r, t.g, t.b, t.a = step, red, green, blue, a
 end
 
 local function GetIcicleCount()

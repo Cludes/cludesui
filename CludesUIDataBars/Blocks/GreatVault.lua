@@ -247,14 +247,14 @@ end
 -- tables: the sort swaps references, so they survive to be refilled.
 local rows, rowCount, byShort = {}, 0, {}
 
-local function AddRow(name, dungeon, level, region, g, b)
+local function AddRow(name, dungeon, level, red, green, blue)
     rowCount = rowCount + 1
     local row = rows[rowCount]
     if not row then
         row = {}
         rows[rowCount] = row
     end
-    row.name, row.dungeon, row.level, row.r, row.g, row.b = name, dungeon, level, region, g, b
+    row.name, row.dungeon, row.level, row.r, row.g, row.b = name, dungeon, level, red, green, blue
 end
 
 local function Before(a, b)
@@ -345,12 +345,12 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
     -- Text and icon colours (both the accent on hover).
     local function Paint()
         if hovered then
-            local region, g, b = mod.GetAccent()
-            label:SetTextColor(region, g, b, 1)
-            iconTex:SetVertexColor(region, g, b, 1)
+            local red, green, blue = mod.GetAccent()
+            label:SetTextColor(red, green, blue, 1)
+            iconTex:SetVertexColor(red, green, blue, 1)
         else
-            local region, g, b = K.BlockColorOf(blockCfg)
-            label:SetTextColor(region, g, b, 1)
+            local red, green, blue = K.BlockColorOf(blockCfg)
+            label:SetTextColor(red, green, blue, 1)
             local ir, ig, ib = K.IconColorOf(blockCfg)
             iconTex:SetVertexColor(ir, ig, ib, 1)
         end
@@ -392,9 +392,9 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
 
     -- Returns how many party rows it showed.
     local function ShowTooltip()
-        local region, g, b = mod.GetAccent()
+        local red, green, blue = mod.GetAccent()
         mod.Tip_Begin(button)
-        mod.Tip_AddLine("|cFFFFFFFF[|r" .. CludesUI.L("Great Vault") .. "|cFFFFFFFF]|r", region, g, b)
+        mod.Tip_AddLine("|cFFFFFFFF[|r" .. CludesUI.L("Great Vault") .. "|cFFFFFFFF]|r", red, green, blue)
         mod.Tip_AddLine(" ")
         mod.Tip_AddColumns(CludesUI.L("Raids"), RewardCells(RAID, true), 0.8, 0.8, 0.8)
         mod.Tip_AddColumns(CludesUI.L("Mythic+"), RewardCells(MPLUS, false), 0.8, 0.8, 0.8)
@@ -402,13 +402,13 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
         local dungeon, level = MyKeystone()
         if dungeon then
             mod.Tip_AddLine(" ")
-            mod.Tip_AddLine(CludesUI.L("Your Keystone"), region, g, b)
+            mod.Tip_AddLine(CludesUI.L("Your Keystone"), red, green, blue)
             mod.Tip_AddDouble(dungeon, "+" .. level, 0.8, 0.8, 0.8, 1, 1, 1)
         end
         local count = PartyRows()
         if count > 0 then
             mod.Tip_AddLine(" ")
-            mod.Tip_AddLine(CludesUI.L("Party Keystones"), region, g, b)
+            mod.Tip_AddLine(CludesUI.L("Party Keystones"), red, green, blue)
             for i = 1, count do
                 local row = rows[i]
                 local right = row.dungeon .. " |cffffffff+" .. row.level .. "|r"
@@ -416,7 +416,7 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
             end
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["LEFT_CLICK"], CludesUI.L("Open Great Vault"), 1, 1, 1, region, g, b)
+        mod.Tip_AddDouble(L["LEFT_CLICK"], CludesUI.L("Open Great Vault"), 1, 1, 1, red, green, blue)
         mod.Tip_Show()
         return count
     end

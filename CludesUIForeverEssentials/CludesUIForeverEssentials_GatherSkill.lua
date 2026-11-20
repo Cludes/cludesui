@@ -171,8 +171,8 @@ local function OddsColor(skill, need)
     return 0.5, 0.5, 0.5
 end
 
-local function Hex(region, g, b)
-    return ("|cff%02x%02x%02x"):format(region * 255, g * 255, b * 255)
+local function Hex(red, green, blue)
+    return ("|cff%02x%02x%02x"):format(red * 255, green * 255, blue * 255)
 end
 
 -- A minimap tooltip line rewritten: one name per line inside it (several

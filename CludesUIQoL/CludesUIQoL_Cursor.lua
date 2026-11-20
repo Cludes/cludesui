@@ -114,7 +114,7 @@ local function CursorSize(p)
     return size
 end
 
-local function ApplyReticle(p, size, region, g, b, a)
+local function ApplyReticle(p, size, red, green, blue, a)
     if not reticleTex then
         return
     end
@@ -125,7 +125,7 @@ local function ApplyReticle(p, size, region, g, b, a)
     -- ~20% of the ring so the mask has enough pixels to stay circular.
     local dotTex = max(4, floor(size * 0.2 + 0.5))
     reticleTex:SetSize(dotTex, dotTex)
-    reticleTex:SetColorTexture(region, g, b, a)
+    reticleTex:SetColorTexture(red, green, blue, a)
     reticleTex:Show()
 end
 
@@ -149,12 +149,12 @@ local function Apply()
     -- changed. Accent mode also needs per-frame re-read since CLUDES_GREEN
     -- mutates in place when the user changes their accent color mid-session.
     local a = (p.alpha or 100) / 100
-    local region, g, b
+    local red, green, blue
     if hexColor ~= lastHex or p.useClassColor or p.useAccentColor or colorModeChanged or a ~= lastAlpha then
         lastHex = hexColor
         lastAlpha = a
-        region, g, b = ResolveColor(p)
-        t:SetVertexColor(region, g, b, a)
+        red, green, blue = ResolveColor(p)
+        t:SetVertexColor(red, green, blue, a)
     end
 
     local texture = p.texture or DEF_TEX
@@ -168,10 +168,10 @@ local function Apply()
 
     -- Reticle is cheap and Apply() only runs on setting changes, so always
     -- refresh it (toggle, scale, and color all land here).
-    if not region then
-        region, g, b = ResolveColor(p)
+    if not red then
+        red, green, blue = ResolveColor(p)
     end
-    ApplyReticle(p, size, region, g, b, a)
+    ApplyReticle(p, size, red, green, blue, a)
 
     UpdateVisibility()
 end
@@ -222,9 +222,9 @@ local function SpawnTrailDot(cursorX, cursorY)
     local dotTex = trailList[#trailList]
     trailList[#trailList] = nil
     local s = UIParent:GetEffectiveScale()
-    local region, g, b = GetTrailColor()
+    local red, green, blue = GetTrailColor()
     local baseSize = TRAIL_DOT_BASE_SIZE * 0.8
-    dotTex:SetVertexColor(region, g, b, 1)
+    dotTex:SetVertexColor(red, green, blue, 1)
     dotTex:SetSize(baseSize, baseSize)
     dotTex:ClearAllPoints()
     dotTex:SetPoint("CENTER", trailHolder, "BOTTOMLEFT", cursorX / s, cursorY / s)
@@ -363,7 +363,7 @@ end
 --- @param b number  blue
 --- @param a number  alpha
 --- @return Frame  the ring frame with :StartRing / :StopRing / :SetRingColor / :SetRingTexture
-local function CreateRing(hostFrame, ringRadius, ringTex, region, g, b, a)
+local function CreateRing(hostFrame, ringRadius, ringTex, red, green, blue, a)
     local ring = CreateFrame("Frame", nil, hostFrame)
     ring:SetSize(ringRadius * 2, ringRadius * 2)
     ring:SetPoint("CENTER", hostFrame, "CENTER", 0, 0)
@@ -372,7 +372,7 @@ local function CreateRing(hostFrame, ringRadius, ringTex, region, g, b, a)
     ring.radius = ringRadius
     ring.dur = 0
     ring.maxDur = 0
-    ring._r, ring._g, ring._b, ring._a = region, g, b, a
+    ring._r, ring._g, ring._b, ring._a = red, green, blue, a
 
     local texPath = RING_TEXTURES[ringTex] or RING_TEXTURES.normal
 
@@ -380,7 +380,7 @@ local function CreateRing(hostFrame, ringRadius, ringTex, region, g, b, a)
     ring._fg = ring:CreateTexture(nil, "ARTWORK")
     ring._fg:SetAllPoints(ring)
     ring._fg:SetTexture(texPath)
-    ring._fg:SetVertexColor(region, g, b, a)
+    ring._fg:SetVertexColor(red, green, blue, a)
     ring._fg:Hide()
 
     -- Cooldown swipe for smooth progress using the ring texture directly.
@@ -392,7 +392,7 @@ local function CreateRing(hostFrame, ringRadius, ringTex, region, g, b, a)
     ring._cd:SetDrawBling(false)
     ring._cd:SetReverse(true)
     ring._cd:SetSwipeTexture(texPath)
-    ring._cd:SetSwipeColor(region, g, b, a)
+    ring._cd:SetSwipeColor(red, green, blue, a)
     ring._cd:Hide()
 
     function ring:SetRingColor(newR, newG, newB, newA)

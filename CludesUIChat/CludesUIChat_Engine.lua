@@ -965,7 +965,7 @@ local function ExtractLineID(eventArgs)
     return nil
 end
 
-local function EngineTail(castFrame, message, region, g, b, chatTypeID, accessID, typeID, evt, eventArgs)
+local function EngineTail(castFrame, message, red, green, blue, chatTypeID, accessID, typeID, evt, eventArgs)
     -- Cheap per-message probe: catches protected-state flips that have no
     -- zone-in edge (dev mode toggles) before the next line renders.
     if EngineUpdateProtectedState then
@@ -992,7 +992,7 @@ local function EngineTail(castFrame, message, region, g, b, chatTypeID, accessID
         end
     end
     if window then
-        window.smf:AddMessage(display, region, g, b, chatTypeID, ExtractLineID(eventArgs), evt)
+        window.smf:AddMessage(display, red, green, blue, chatTypeID, ExtractLineID(eventArgs), evt)
         -- Scrolled-view DOUBLE-PIN fix (field report 2026-08-16: "chat moves
         -- one line on a new message while scrolled, every zone off by one
         -- message after"): SMF:AddMessage auto-pins a scrolled view via an
@@ -1018,7 +1018,7 @@ local function EngineTail(castFrame, message, region, g, b, chatTypeID, accessID
     if EngineTailObserver then
         -- Session history captures the display form (what the user saw), so
         -- replayed lines match the surrounding scrollback.
-        EngineTailObserver(castFrame, display, region, g, b, chatTypeID, evt)
+        EngineTailObserver(castFrame, display, red, green, blue, chatTypeID, evt)
     end
     if EngineTabObserver then
         EngineTabObserver(castFrame, evt)
@@ -1174,7 +1174,7 @@ local function RebuildWindowFromBuffer(castFrame)
         nowT, nowG = time(), GetTime()
     end
     for i = 1, num do
-        local message, region, g, b, chatTypeID, accessID, typeID, evt, eventArgs = castFrame:GetMessageInfo(i)
+        local message, red, green, blue, chatTypeID, accessID, typeID, evt, eventArgs = castFrame:GetMessageInfo(i)
         if message ~= nil then
             local display = DisplayText(message, evt)
             local record = hb and hb:GetEntryAtIndex(hb:GetNumElements() - i + 1)
@@ -1195,7 +1195,7 @@ local function RebuildWindowFromBuffer(castFrame)
             then
                 record.message = display
             end
-            messageFrame:AddMessage(display, region, g, b, chatTypeID, ExtractLineID(eventArgs), evt)
+            messageFrame:AddMessage(display, red, green, blue, chatTypeID, ExtractLineID(eventArgs), evt)
         end
     end
     messageFrame:ScrollToBottom()
@@ -1382,7 +1382,7 @@ QueueDivergedRebuild = function(castFrame)
     end)
 end
 
-local function RecolorOurWindows(chatType, region, g, b)
+local function RecolorOurWindows(chatType, red, green, blue)
     local details = ChatTypeInfo[strupper(chatType)]
         or (ChatAdditionalColors and ChatAdditionalColors[strupper(chatType)])
     if not details or not details.id then
@@ -1391,7 +1391,7 @@ local function RecolorOurWindows(chatType, region, g, b)
     local targetID = details.id
     local function Recolor(message, mr, mg, mb, chatTypeID)
         if chatTypeID == targetID then
-            return true, region, g, b
+            return true, red, green, blue
         end
         return false
     end
@@ -1403,11 +1403,11 @@ end
 mirrorFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 mirrorFrame:SetScript("OnEvent", function(_, evt, ...)
     if evt == "UPDATE_CHAT_COLOR" then
-        local chatType, region, g, b = ...
+        local chatType, red, green, blue = ...
         if type(chatType) == "string" then
-            RecolorOurWindows(chatType, region, g, b)
+            RecolorOurWindows(chatType, red, green, blue)
             if strupper(chatType) == "WHISPER" then
-                RecolorOurWindows("REPLY", region, g, b)
+                RecolorOurWindows("REPLY", red, green, blue)
             end
         end
     elseif evt == "PLAYER_ENTERING_WORLD" then
@@ -1473,7 +1473,7 @@ end
 -- BackFillMessage is one of the ScrollingMessageFrame methods Blizzard
 -- exposes to addons through the secure mixin, which elevates the call, so the
 -- replayed line is stored exactly as one of its own.
-function CHAT.EngineBackfillLine(castFrame, textValue, region, g, b, ident)
+function CHAT.EngineBackfillLine(castFrame, textValue, red, green, blue, ident)
     local window = WINS[castFrame]
     if not window then
         return false
@@ -1483,8 +1483,8 @@ function CHAT.EngineBackfillLine(castFrame, textValue, region, g, b, ident)
     -- were captured already shortened. The SAME string lands on both
     -- surfaces, which is what keeps the zones under the rendered glyphs.
     local display = StripBNetLinks(DisplayText(textValue))
-    castFrame:BackFillMessage(display, region, g, b, ident)
-    window.smf:BackFillMessage(display, region, g, b, ident)
+    castFrame:BackFillMessage(display, red, green, blue, ident)
+    window.smf:BackFillMessage(display, red, green, blue, ident)
     return true
 end
 

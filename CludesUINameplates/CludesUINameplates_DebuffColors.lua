@@ -77,12 +77,12 @@ function DC.SpellID(val)
 end
 
 local function ParseColor(s, skinData)
-    local region, g, b = s:match("^([%d%.]+),([%d%.]+),([%d%.]+)$")
-    region, g, b = tonumber(region), tonumber(g), tonumber(b)
-    if not (region and g and b) then
+    local red, green, blue = s:match("^([%d%.]+),([%d%.]+),([%d%.]+)$")
+    red, green, blue = tonumber(red), tonumber(green), tonumber(blue)
+    if not (red and green and blue) then
         return { r = skinData.r, g = skinData.g, b = skinData.b }
     end
-    return { r = math.min(region, 1), g = math.min(g, 1), b = math.min(b, 1) }
+    return { r = math.min(red, 1), g = math.min(green, 1), b = math.min(blue, 1) }
 end
 
 local function Num(val)

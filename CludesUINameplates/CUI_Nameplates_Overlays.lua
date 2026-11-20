@@ -1134,22 +1134,22 @@ function mod.NP_ApplyCastTints(backing, tier, lit, fold)
             local success = true
             if intOn then
                 local c = (p and p.castingIntColor) or defaultSet.castingIntColor
-                local region, g, b = MaybeDarken(c.r, c.g, c.b, lit)
+                local red, green, blue = MaybeDarken(c.r, c.g, c.b, lit)
                 local okI
-                okI, region, g, b = mod.ComputeOffTankFold(backing.unit, region, g, b, otc.r, otc.g, otc.b)
+                okI, red, green, blue = mod.ComputeOffTankFold(backing.unit, red, green, blue, otc.r, otc.g, otc.b)
                 if okI then
-                    ti:SetVertexColor(region, g, b)
+                    ti:SetVertexColor(red, green, blue)
                 else
                     success = false
                 end
             end
             if success and unintOn then
                 local c = (p and p.castingUnintColor) or defaultSet.castingUnintColor
-                local region, g, b = MaybeDarken(c.r, c.g, c.b, lit)
+                local red, green, blue = MaybeDarken(c.r, c.g, c.b, lit)
                 local okU
-                okU, region, g, b = mod.ComputeOffTankFold(backing.unit, region, g, b, otc.r, otc.g, otc.b)
+                okU, red, green, blue = mod.ComputeOffTankFold(backing.unit, red, green, blue, otc.r, otc.g, otc.b)
                 if okU then
-                    tu:SetVertexColor(region, g, b)
+                    tu:SetVertexColor(red, green, blue)
                 else
                     success = false
                 end

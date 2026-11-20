@@ -100,17 +100,17 @@ mod.BlockFactories.audio = function(blockCfg, slot, contentFrame, barCtx)
     -- Colours and the bar's value: red when the channel cannot be heard, the
     -- accent on hover, else the block's icon colour (the bar is accent-filled).
     local function Paint()
-        local region, g, b = mod.GetAccent()
+        local red, green, blue = mod.GetAccent()
         if not Audible(Channel()) then
-            region, g, b = MUTED[1], MUTED[2], MUTED[3]
-            iconTex:SetVertexColor(region, g, b, 1)
+            red, green, blue = MUTED[1], MUTED[2], MUTED[3]
+            iconTex:SetVertexColor(red, green, blue, 1)
         elseif hovered then
-            iconTex:SetVertexColor(region, g, b, 1)
+            iconTex:SetVertexColor(red, green, blue, 1)
         else
             local ir, ig, ib = K.IconColorOf(blockCfg)
             iconTex:SetVertexColor(ir, ig, ib, 1)
         end
-        fillTex:SetStatusBarColor(region, g, b, 1)
+        fillTex:SetStatusBarColor(red, green, blue, 1)
         fillTex:SetValue(Volume(Channel()))
     end
 

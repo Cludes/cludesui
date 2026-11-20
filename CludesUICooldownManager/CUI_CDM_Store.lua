@@ -1084,9 +1084,9 @@ end
 -- CD Ready glow color: the icon's pick, else white for the drawn styles (their
 -- long-standing look) and nil for FlipBooks (the atlas's own untinted look).
 function mod.CdReadyGlowColor(style, prefs)
-    local region, g, b = mod.ResolveGlowColor(prefs)
-    if region then
-        return region, g, b
+    local red, green, blue = mod.ResolveGlowColor(prefs)
+    if red then
+        return red, green, blue
     end
     local e = mod.GLOW_STYLES[style]
     if e and not (e.procedural or e.buttonGlow or e.autocast or e.shapeGlow) then

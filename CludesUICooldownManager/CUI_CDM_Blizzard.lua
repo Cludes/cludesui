@@ -25,13 +25,13 @@ local ECME, FC, _ecmeFC, cdmBarFrames = Inner.ECME, Inner.FC, Inner._ecmeFC, Inn
 local function GetCDMFont()
     return CludesUI.GetFontPath("cdm")
 end
-local function SetBlizzCDMFont(fontStr, font, size, region, g, b)
+local function SetBlizzCDMFont(fontStr, font, size, red, green, blue)
     if not (fontStr and fontStr.SetFont) then
         return
     end
     CludesUI.ApplyIconTextFont(fontStr, font, size, "cdm")
-    if region then
-        fontStr:SetTextColor(region, g, b)
+    if red then
+        fontStr:SetTextColor(red, green, blue)
     end
 end
 

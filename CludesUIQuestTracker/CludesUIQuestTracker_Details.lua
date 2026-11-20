@@ -117,7 +117,7 @@ end
 local INNER = WIDTH - PAD * 2
 
 -- Wrapped text at x, y in the scrolled content; returns its height.
-local function AddText(value, x, y, size, region, g, b, a)
+local function AddText(value, x, y, size, red, green, blue, a)
     nTexts = nTexts + 1
     local text = texts[nTexts]
     if not text then
@@ -129,7 +129,7 @@ local function AddText(value, x, y, size, region, g, b, a)
     Style(text, size)
     text:SetSpacing(2)
     text:SetWidth(INNER - x)
-    text:SetTextColor(region, g, b, a or 1)
+    text:SetTextColor(red, green, blue, a or 1)
     text:SetText(value)
     text:ClearAllPoints()
     text:SetPoint("TOPLEFT", content, "TOPLEFT", x, -y)
@@ -139,8 +139,8 @@ end
 
 -- A section heading: small capitals in the accent colour.
 local function AddHeading(value, y)
-    local region, g, b = Accent()
-    return AddText(value:upper(), 0, y, 11, region, g, b) + 6
+    local red, green, blue = Accent()
+    return AddText(value:upper(), 0, y, 11, red, green, blue) + 6
 end
 
 -- An objective's mark: a tick when done, else a small accent square.
@@ -158,8 +158,8 @@ local function AddMark(done, y)
         mark:SetSize(12, 12)
         mark:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -y)
     else
-        local region, g, b = Accent()
-        mark:SetColorTexture(region, g, b, 0.9)
+        local red, green, blue = Accent()
+        mark:SetColorTexture(red, green, blue, 0.9)
         mark:SetSize(4, 4)
         mark:SetPoint("TOPLEFT", content, "TOPLEFT", 4, -(y + 5))
     end
@@ -172,8 +172,8 @@ local function TileAtRest(tile)
 end
 
 local function TileEnter(self)
-    local region, g, b = Accent()
-    self.frame:SetColor(region, g, b, 0.6)
+    local red, green, blue = Accent()
+    self.frame:SetColor(red, green, blue, 0.6)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     if self.entry.currency then
         GameTooltip:SetQuestLogCurrency(self.entry.type, self.entry.index, questID)

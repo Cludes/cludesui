@@ -405,9 +405,9 @@ local EDIT_BG_R, EDIT_BG_G, EDIT_BG_B = 0.05, 0.065, 0.08
 
 local function GetInnerBorderColor(conf)
     if conf.innerBorderColorMode == "accent" and CludesUI.GetAccentColor then
-        local region, g, b = CludesUI.GetAccentColor()
+        local red, green, blue = CludesUI.GetAccentColor()
         local c = conf.innerBorderColor
-        return region, g, b, (c and c.a) or 0.06
+        return red, green, blue, (c and c.a) or 0.06
     end
     local c = conf.innerBorderColor or { r = 1, g = 1, b = 1, a = 0.06 }
     return c.r or 1, c.g or 1, c.b or 1, c.a == nil and 0.06 or c.a
@@ -689,8 +689,8 @@ function CHAT.ApplyExtendedBackground()
             local mode = conf.panelBorderColorMode or "custom"
             local color
             if mode == "accent" then
-                local region, g, b = CludesUI.GetAccentColor()
-                color = { r = region, g = g, b = b }
+                local red, green, blue = CludesUI.GetAccentColor()
+                color = { r = red, g = green, b = blue }
             elseif mode == "class" then
                 local _, class = UnitClass("player")
                 color = class and RAID_CLASS_COLORS[class] or { r = 1, g = 1, b = 1 }
@@ -992,16 +992,16 @@ end
 function CHAT.ApplyBorders()
     local conf = CHAT.DB()
     local hide = CHAT.BordersHidden(conf)
-    local region, g, b, a = GetInnerBorderColor(conf)
+    local red, green, blue, a = GetInnerBorderColor(conf)
 
     for index = 1, 20 do
         local castFrame = _G["ChatFrame" .. index]
         if castFrame and CFD(castFrame).bg and Pix.GetBorders(CFD(castFrame).bg) then
-            Pix.SetBorderColor(CFD(castFrame).bg, region, g, b, a)
+            Pix.SetBorderColor(CFD(castFrame).bg, red, green, blue, a)
             Pix.GetBorders(CFD(castFrame).bg):SetShown(not hide)
         end
         if castFrame and CFD(castFrame).inputDiv then
-            CFD(castFrame).inputDiv:SetColorTexture(region, g, b, a)
+            CFD(castFrame).inputDiv:SetColorTexture(red, green, blue, a)
             -- Input-on-top: the divider marks the overlaid input's edge, so it
             -- shares that input's shown state (ECHAT.ApplyInputTopStrip) --
             -- otherwise it cuts across a message once the strip is released.
@@ -1014,11 +1014,11 @@ function CHAT.ApplyBorders()
     if cf1 and CFD(cf1).sidebar then
         local sbBgHidden = conf.hideSidebarBg
         if Pix.GetBorders(CFD(cf1).sidebar) then
-            Pix.SetBorderColor(CFD(cf1).sidebar, region, g, b, a)
+            Pix.SetBorderColor(CFD(cf1).sidebar, red, green, blue, a)
             Pix.GetBorders(CFD(cf1).sidebar):SetShown(not hide and not sbBgHidden)
         end
         if CFD(cf1).sidebarDiv then
-            CFD(cf1).sidebarDiv:SetColorTexture(region, g, b, a)
+            CFD(cf1).sidebarDiv:SetColorTexture(red, green, blue, a)
             CFD(cf1).sidebarDiv:SetShown(not hide)
         end
     end

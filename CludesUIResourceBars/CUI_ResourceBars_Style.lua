@@ -455,7 +455,7 @@ function mod.ERB_SepPlace(owner)
         return false
     end
     local es = owner:GetEffectiveScale()
-    local region, g, b, a = c.borderR or 0, c.borderG or 0, c.borderB or 0, c.borderA or 1
+    local red, green, blue, a = c.borderR or 0, c.borderG or 0, c.borderB or 0, c.borderA or 1
     local exact = false
     local hgt = owner._erbH
     if owner._erbHOn then
@@ -470,7 +470,7 @@ function mod.ERB_SepPlace(owner)
             mod.ERB_BorderExtents((not c.borderOnPips or mod.IsBarTypeSecondary()) and c or nil)
         hgt:SetTexture(filePath)
         hgt:SetTexCoord(0, 1, 1, 0)
-        hgt:SetVertexColor(region, g, b, a)
+        hgt:SetVertexColor(red, green, blue, a)
         hgt:ClearAllPoints()
         hgt:SetPoint("BOTTOMLEFT", owner, "BOTTOMLEFT", -Pix.SnapForES(leftX, es), posY)
         hgt:SetPoint("BOTTOMRIGHT", owner, "BOTTOMRIGHT", Pix.SnapForES(right, es), posY)
@@ -501,7 +501,7 @@ function mod.ERB_SepPlace(owner)
             end
             t:SetTexture(filePath)
             t:SetTexCoord(0, 1, 0, 1)
-            t:SetVertexColor(region, g, b, a)
+            t:SetVertexColor(red, green, blue, a)
             t:ClearAllPoints()
             if vert and rev then
                 local off = Pix.SnapForES(mids[index] + lead, es)
@@ -769,11 +769,11 @@ end
 -- Spell Text / Duration Text colour on a cast bar FontString of ours (live bar
 -- and preview): written only while set off white, or once more to restore white
 -- after an earlier tint, so an untouched profile never recolours the text.
-function mod.ERB_CastTextColor(fontStr, region, g, b, a)
-    region, g, b, a = region or 1, g or 1, b or 1, a or 1
-    local tinted = (region ~= 1 or g ~= 1 or b ~= 1 or a ~= 1)
+function mod.ERB_CastTextColor(fontStr, red, green, blue, a)
+    red, green, blue, a = red or 1, green or 1, blue or 1, a or 1
+    local tinted = (red ~= 1 or green ~= 1 or blue ~= 1 or a ~= 1)
     if tinted or fontStr._erbTint then
-        fontStr:SetTextColor(region, g, b, a)
+        fontStr:SetTextColor(red, green, blue, a)
         fontStr._erbTint = tinted or nil
     end
 end

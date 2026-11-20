@@ -161,11 +161,11 @@ end
 
 local Get
 
-local function Triplet(region, g, b)
-    if region == nil then
+local function Triplet(red, green, blue)
+    if red == nil then
         return nil
     end
-    return { r = region, g = g or 0, b = b or 0 }
+    return { r = red, g = green or 0, b = blue or 0 }
 end
 
 -- Earlier versions saved these settings under other names (and scales). A
@@ -599,27 +599,27 @@ end
 -- The window border takes the plain border defaults (as the Damage Meters
 -- window does), the bars this meter's own. A stock look draws neither.
 local function Border(targetUnit, dm, window)
-    local dim, texture, exact, region, g, b, a
+    local dim, texture, exact, red, green, blue, a
     if window then
         local color = dm.windowBorderColor
         dim, texture, exact = dm.windowBorderSize, dm.windowBorderTexture, dm.windowBorderSizePx
-        region, g, b, a = color.r or 0, color.g or 0, color.b or 0, color.a or 1
+        red, green, blue, a = color.r or 0, color.g or 0, color.b or 0, color.a or 1
     else
         dim, texture, exact = dm.borderSize, dm.borderTexture, dm.borderSizePx
-        region, g, b, a = dm.borderR, dm.borderG, dm.borderB, dm.borderA
+        red, green, blue, a = dm.borderR, dm.borderG, dm.borderB, dm.borderA
     end
     dim = (Look.stock or (not window and dm.barSeparatorsOn)) and 0 or (dim or 0)
     local px = dim > 0 and CUI.BorderPx(exact, dim, texture) or nil
     if window then
-        CUI.ApplyBorderStyle(targetUnit, dim, region, g, b, a, texture, nil, nil, nil, nil, nil, nil, nil, px)
+        CUI.ApplyBorderStyle(targetUnit, dim, red, green, blue, a, texture, nil, nil, nil, nil, nil, nil, nil, px)
         return
     end
     CUI.ApplyBorderStyle(
         targetUnit,
         dim,
-        region,
-        g,
-        b,
+        red,
+        green,
+        blue,
         a,
         texture,
         dm.borderTextureOffset or nil,
@@ -643,7 +643,7 @@ end
 local function PlaceSeparators(hostRegion)
     local s, dm = hostRegion.surface, hostRegion.style
     local Pix, es = CUI.PP, hostRegion:GetEffectiveScale()
-    local function Place(texture, key, dim, exact, posY, region, g, b, a)
+    local function Place(texture, key, dim, exact, posY, red, green, blue, a)
         local px = CUI.BorderPx(exact, dim, key)
         local thick = CUI.BorderCompanionThickness(key, dim, px, es)
         local lead = Pix.SnapForES(thick * 2 / CUI.GetBorderCompanion(key, "sepSize"), es)
@@ -654,7 +654,7 @@ local function PlaceSeparators(hostRegion)
         end
         texture:SetTexture(CUI.GetBorderCompanion(key, "sepH"))
         texture:SetTexCoord(0, 1, 1, 0)
-        texture:SetVertexColor(region, g, b, a)
+        texture:SetVertexColor(red, green, blue, a)
         texture:ClearAllPoints()
         texture:SetPoint("BOTTOMLEFT", s, "TOPLEFT", dm.inset, bottom)
         texture:SetPoint("BOTTOMRIGHT", s, "TOPRIGHT", -dm.inset, bottom)

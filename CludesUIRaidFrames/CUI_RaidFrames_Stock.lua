@@ -143,12 +143,12 @@ function mod.RF_StockBuild(ownerFrame, stockStyle, powerBar)
             stockStyle.stockDiv = { greyColor, blackColor, powerBar }
         end
     else
-        local region, g, b = BLIZZ_EDGE_R, BLIZZ_EDGE_G, BLIZZ_EDGE_B
+        local red, green, blue = BLIZZ_EDGE_R, BLIZZ_EDGE_G, BLIZZ_EDGE_B
         local backdrop = _G.COMPACT_UNIT_FRAME_FRIENDLY_HEALTH_COLOR_BG
         if type(backdrop) == "table" and backdrop.GetRGB then
-            region, g, b = backdrop:GetRGB()
+            red, green, blue = backdrop:GetRGB()
         end
-        Pix.CreateBorder(edgeTex, region, g, b, 1, 1)
+        Pix.CreateBorder(edgeTex, red, green, blue, 1, 1)
     end
     -- Highlights: textures made on first need (login budget).
     local highlight = CreateFrame("Frame", nil, ownerFrame)
@@ -264,22 +264,22 @@ function mod.RF_StockAggro(stockStyle, status)
         stockStyle._stAggTex = texture
     end
     if status then
-        local region, g, b
+        local red, green, blue
         -- The stock party frame (the Party Frames kit's Flash) colours its
         -- aggro by threat status too.
         if (mod.RF_Classic() or stockStyle.kit) and GetThreatStatusColor then
-            region, g, b = GetThreatStatusColor(status)
+            red, green, blue = GetThreatStatusColor(status)
         else
             local c = (status == 3) and _G.HIGH_THREAT_COLOR or _G.GAINING_THREAT_COLOR
             if c and c.GetRGB then
-                region, g, b = c:GetRGB()
+                red, green, blue = c:GetRGB()
             elseif status == 3 then
-                region, g, b = 1, 0.271, 0.043 -- #FF450B
+                red, green, blue = 1, 0.271, 0.043 -- #FF450B
             else
-                region, g, b = 0.973, 0.710, 0 -- #F8B500
+                red, green, blue = 0.973, 0.710, 0 -- #F8B500
             end
         end
-        texture:SetVertexColor(region, g, b, 1)
+        texture:SetVertexColor(red, green, blue, 1)
         texture:Show()
     else
         texture:Hide()

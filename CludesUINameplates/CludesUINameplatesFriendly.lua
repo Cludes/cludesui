@@ -742,9 +742,9 @@ local function ClassRGB(unitToken, plainOnly)
         if plainOnly then
             return false
         end
-        local success, region, g, b = CludesUI.GetClassColorForRestrictedUnit(unitToken, tok)
+        local success, red, green, blue = CludesUI.GetClassColorForRestrictedUnit(unitToken, tok)
         if success then
-            return true, region, g, b
+            return true, red, green, blue
         end
         local c = C_ClassColor.GetClassColor(tok)
         if c then
@@ -768,19 +768,19 @@ local function PaintFriendlyColors(backing, unitToken, plate)
     if UnitIsPlayer(unitToken) then
         local useClass = not plate or plate.classColorFriendly ~= false
         local nameClass = plate and plate.friendlyNameClassColor
-        local success, region, g, b
+        local success, red, green, blue
         if useClass or nameClass then
-            success, region, g, b = ClassRGB(unitToken)
+            success, red, green, blue = ClassRGB(unitToken)
         end
         if success or not useClass then
             if useClass then
-                backing.health:SetStatusBarColor(region, g, b)
+                backing.health:SetStatusBarColor(red, green, blue)
             else
                 local bc = (plate and plate.friendlyBarColor) or mod.defaults.friendlyBarColor
                 backing.health:SetStatusBarColor(bc.r, bc.g, bc.b)
             end
             if nameClass and success then
-                backing.name:SetTextColor(region, g, b)
+                backing.name:SetTextColor(red, green, blue)
             else
                 backing.name:SetTextColor(1, 1, 1)
             end
@@ -803,9 +803,9 @@ local SUB_TEXT_R, SUB_TEXT_G, SUB_TEXT_B = 0.8, 0.8, 0.8
 local function GetSubTextColor(unitToken)
     local plate = FP()
     if plate and plate.friendlyBelowNameClassColor then
-        local success, region, g, b = ClassRGB(unitToken, true)
+        local success, red, green, blue = ClassRGB(unitToken, true)
         if success then
-            return region, g, b
+            return red, green, blue
         end
     end
     local c = plate and plate.friendlyBelowNameColor
@@ -997,8 +997,8 @@ local function ApplySubText(fontStr, unitToken)
     -- "<GuildName>" by default; the Subtitle Text cog can drop the brackets.
     local plate = FP()
     fontStr:SetFormattedText((not plate or plate.friendlyBelowNameGuildBrackets ~= false) and "<%s>" or "%s", guildName)
-    local region, g, b = GetSubTextColor(unitToken)
-    fontStr:SetTextColor(region, g, b)
+    local red, green, blue = GetSubTextColor(unitToken)
+    fontStr:SetTextColor(red, green, blue)
     return 1
 end
 
@@ -1089,7 +1089,7 @@ local function UpdateNameOnlyText(nameText)
         -- Second line via an explicit newline. The guild is only ever a
         -- SetFormattedText argument (display sinks accept secrets); the
         -- colour escape and brackets are literals built from our own values.
-        local region, g, b = GetSubTextColor(unitToken)
+        local red, green, blue = GetSubTextColor(unitToken)
         local plate = FP()
         local body = (not plate or plate.friendlyBelowNameGuildBrackets ~= false) and "<%s>" or "%s"
         -- Word wrap MUST be on for the explicit newline to break a line --
@@ -1102,9 +1102,9 @@ local function UpdateNameOnlyText(nameText)
             "%s\n"
                 .. string.format(
                     "|cff%02x%02x%02x",
-                    math.floor(region * 255 + 0.5),
-                    math.floor(g * 255 + 0.5),
-                    math.floor(b * 255 + 0.5)
+                    math.floor(red * 255 + 0.5),
+                    math.floor(green * 255 + 0.5),
+                    math.floor(blue * 255 + 0.5)
                 )
                 .. body
                 .. "|r",

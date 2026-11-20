@@ -1553,8 +1553,8 @@ local function ShowMovementSlot(index, cdInfo, spellEntry, dur)
             local rechargeDur = spellEntry.rechargeDuration or 0
             slotRec.bar:SetMinMaxValues(0, rechargeDur)
             slotRec.bar:SetValue(recov)
-            local region, g, b = ResolveAlertColor("textColor", "textColorUseClass")
-            slotRec.bar:SetStatusBarColor(region, g, b)
+            local red, green, blue = ResolveAlertColor("textColor", "textColorUseClass")
+            slotRec.bar:SetStatusBarColor(red, green, blue)
             slotRec.bar.text:SetShown(alertCfg.barShowDuration ~= false)
             if alertCfg.barShowDuration ~= false then
                 slotRec.bar.text:SetFormattedText(PREC_FMT[decimals], recov)
@@ -1680,8 +1680,8 @@ local function ShowMovementSlot(index, cdInfo, spellEntry, dur)
             slotRec.text:Show()
         end
     elseif showMode == "bar" then
-        local region, g, b = ResolveAlertColor("textColor", "textColorUseClass")
-        slotRec.bar:SetStatusBarColor(region, g, b)
+        local red, green, blue = ResolveAlertColor("textColor", "textColorUseClass")
+        slotRec.bar:SetStatusBarColor(red, green, blue)
         if type(cdLeft) == "boolean" then
             -- Only the sentinel leaves nothing to scale the fill with: show a
             -- full bar so the alert still reads as "unavailable" instead of an
@@ -1790,14 +1790,14 @@ local function BuffAlertApplyExtra(btnFrame, skinData, style)
     end
     local record = style.maEntry
     local labelText = (record and (record.customText or record.spellName)) or "Active!"
-    local region, g, b = ResolveAlertColor("textColor", "textColorUseClass")
+    local red, green, blue = ResolveAlertColor("textColor", "textColorUseClass")
     -- same font, outline and size as the other alerts
     local fp, outline = AlertFontPath(), AlertFontOutline()
     local size = math.max(8, math.min(72, alertCfg.textSize or 24))
     if not skinData.maText:SetFont(fp, size, outline) then
         skinData.maText:SetFont(FALLBACK_FONT, size, outline)
     end
-    skinData.maText:SetTextColor(region, g, b)
+    skinData.maText:SetTextColor(red, green, blue)
     skinData.maText:ClearAllPoints()
     if mode == "icon" then
         if skinData.icon then
@@ -2620,8 +2620,8 @@ local function ApplyTimeSpiralFrame()
     if not timeSpiralText:SetFont(fontFile, fontPx, outline) then
         timeSpiralText:SetFont(FALLBACK_FONT, fontPx, outline)
     end
-    local region, g, b = ResolveAlertColor("tsColor", "tsColorUseClass")
-    timeSpiralText:SetTextColor(region, g, b)
+    local red, green, blue = ResolveAlertColor("tsColor", "tsColorUseClass")
+    timeSpiralText:SetTextColor(red, green, blue)
 end
 CludesUI._applyTimeSpiral = ApplyTimeSpiralFrame
 
@@ -2739,8 +2739,8 @@ local function ApplyGatewayFrame()
     if not gatewayText:SetFont(fontFile, fontPx, outline) then
         gatewayText:SetFont(FALLBACK_FONT, fontPx, outline)
     end
-    local region, g, b = ResolveAlertColor("gwColor", "gwColorUseClass")
-    gatewayText:SetTextColor(region, g, b)
+    local red, green, blue = ResolveAlertColor("gwColor", "gwColorUseClass")
+    gatewayText:SetTextColor(red, green, blue)
     if not alertCfg.gwEnabled then
         StopGatewayPolling()
         gateFrame:Hide()

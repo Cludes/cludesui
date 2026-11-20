@@ -241,7 +241,7 @@ local function PlaceRow(owner)
     local key, step = c.borderTexture, c.borderSize or 0
     local px = CUI.BorderPx(c.borderSizePx, step, key)
     local thick = CUI.BorderCompanionThickness(key, step, px, es)
-    local region, g, b, a = c.borderR or 0, c.borderG or 0, c.borderB or 0, c.borderA or 1
+    local red, green, blue, a = c.borderR or 0, c.borderG or 0, c.borderB or 0, c.borderA or 1
     if owner.style.bars then
         if not owner.line then
             owner.line = NewTexture(owner)
@@ -249,7 +249,7 @@ local function PlaceRow(owner)
         local texture = owner.line
         local lead = Pix.SnapForES(thick * 2 / CUI.GetBorderCompanion(key, "sepSize"), es)
         texture:SetTexture(CUI.GetBorderCompanion(key, "sepH"))
-        texture:SetVertexColor(region, g, b, a)
+        texture:SetVertexColor(red, green, blue, a)
         texture:ClearAllPoints()
         if owner.slot == -1 then
             texture:SetTexCoord(0, 1, 0, 1)
@@ -314,7 +314,7 @@ local function PlaceRow(owner)
             texture:SetPoint("TOPLEFT", fillTex, "TOPLEFT", -lead, -topY)
             texture:SetPoint("BOTTOMLEFT", fillTex, "BOTTOMLEFT", -lead, bottom)
         end
-        texture:SetVertexColor(region, g, b, a)
+        texture:SetVertexColor(red, green, blue, a)
     elseif owner.iconLine then
         owner.iconLine:Hide()
     end

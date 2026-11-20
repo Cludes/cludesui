@@ -149,9 +149,9 @@ do
         if UnitIsPlayer(u) or (UnitInPartyIsAI and UnitInPartyIsAI(u)) then
             local _, ct = UnitClass(u)
             if issecretvalue(ct) then
-                local success, region, g, b = CUI.GetClassColorForRestrictedUnit(u, ct)
+                local success, red, green, blue = CUI.GetClassColorForRestrictedUnit(u, ct)
                 if success then
-                    return true, region, g, b
+                    return true, red, green, blue
                 end
                 local c = C_ClassColor.GetClassColor(ct)
                 if c then
@@ -204,8 +204,8 @@ do
         local health, backdrop, mode = widget._health, widget._bg, PT.mode
         local fillTex = health:GetStatusBarTexture()
         if mode == "dark" then
-            local region, g, b, a = CUI.GetDarkModeFill()
-            health:SetStatusBarColor(region, g, b, 1)
+            local red, green, blue, a = CUI.GetDarkModeFill()
+            health:SetStatusBarColor(red, green, blue, 1)
             if fillTex then
                 fillTex:SetAlpha(a)
             end
@@ -214,21 +214,21 @@ do
             if fillTex then
                 fillTex:SetAlpha(1)
             end
-            local success, region, g, b = false
+            local success, red, green, blue = false
             if (mode ~= "classic" and mode ~= "custom") or PT.bgClass then
-                success, region, g, b = PT_ClassRGB(u, widget)
+                success, red, green, blue = PT_ClassRGB(u, widget)
             end
             if mode == "classic" then
                 PT_PaintClassic(health, u)
             elseif mode == "custom" then
                 health:SetStatusBarColor(PT.fr, PT.fg, PT.fb, 1)
             elseif success then
-                health:SetStatusBarColor(region, g, b, 1)
+                health:SetStatusBarColor(red, green, blue, 1)
             else
                 health:SetStatusBarColor(0.5, 0.5, 0.5, 1)
             end
             if success and PT.bgClass then
-                backdrop:SetColorTexture(region, g, b, PT.bgA)
+                backdrop:SetColorTexture(red, green, blue, PT.bgA)
             else
                 backdrop:SetColorTexture(PT.br, PT.bgg, PT.bb, PT.bgA)
             end
@@ -1102,8 +1102,8 @@ do
             (mode ~= "dark" or mod.RF_TexBgOpaque(st, true)) and mod.RF_TexBgPath(st) or nil
         )
         if mode == "dark" then
-            local region, g, b, a = CUI.GetDarkModeFill()
-            health:SetStatusBarColor(region, g, b, 1)
+            local red, green, blue, a = CUI.GetDarkModeFill()
+            health:SetStatusBarColor(red, green, blue, 1)
             if texture then
                 texture:SetAlpha(a)
             end

@@ -193,7 +193,7 @@ do
     -- (Re)configure or retire an icon's threshold controller. Called from
     -- RefreshCDMIconAppearance with everything pre-resolved; called with only
     -- the icon to tear down (toggle off, frame pooled onto a non-buff spell).
-    function mod.StackGlow_Configure(iconTex, threshold, operator, style, region, g, b, prefs)
+    function mod.StackGlow_Configure(iconTex, threshold, operator, style, red, green, blue, prefs)
         local fd = iconTex and hookFrameData[iconTex]
         if not fd then
             return
@@ -261,9 +261,9 @@ do
         local changed = st.threshold ~= threshold
             or st.operator ~= operator
             or st.style ~= style
-            or st.r ~= region
-            or st.g ~= g
-            or st.b ~= b
+            or st.r ~= red
+            or st.g ~= green
+            or st.b ~= blue
             or st.lines ~= lines
             or st.thickness ~= thickness
             or st.speed ~= speed
@@ -272,7 +272,7 @@ do
             or st.bgG ~= bgG
             or st.bgB ~= bgB
         st.threshold, st.operator, st.style = threshold, operator, style
-        st.r, st.g, st.b = region, g, b
+        st.r, st.g, st.b = red, green, blue
         st.lines, st.thickness, st.speed = lines, thickness, speed
         st.background, st.bgR, st.bgG, st.bgB = background, bgR, bgG, bgB
         if changed then

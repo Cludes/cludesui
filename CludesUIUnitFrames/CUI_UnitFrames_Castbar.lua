@@ -817,7 +817,7 @@ local function ApplyUnitFrameCastColor(castBar)
     local hostUnit = castBar.__owner and castBar.__owner._cuiUnit
     -- Zero-alloc: values flow as scalars instead of building up to three throwaway
     -- color tables per call (two default literals + the blended kick tint).
-    local region, g, b
+    local red, green, blue
     -- Base fill colour (what ReloadFrames gives the StatusBar), before the kick blend.
     local br, bgTex, bb
     if prefs and prefs.castbarClassColored and hostUnit == "player" then
@@ -828,19 +828,19 @@ local function ApplyUnitFrameCastColor(castBar)
         if classToken and CludesUI.GetClassColor then
             local cc = CludesUI.GetClassColor(classToken)
             if cc then
-                region, g, b = cc.r, cc.g, cc.b
+                red, green, blue = cc.r, cc.g, cc.b
             end
         end
-        br, bgTex, bb = region, g, b
+        br, bgTex, bb = red, green, blue
     end
-    if not region then
+    if not red then
         local plainTint = (prefs and prefs.castbarFillColor) or GetCastbarColor()
         br, bgTex, bb = plainTint.r, plainTint.g, plainTint.b
         if IsKickCastbarUnit(hostUnit) then
             local readyTint = (prefs and prefs.castbarInterruptReadyColor) or UF_KICK_READY_TINT
-            region, g, b = ComputeCastBarTint(readyTint, plainTint)
+            red, green, blue = ComputeCastBarTint(readyTint, plainTint)
         else
-            region, g, b = br, bgTex, bb
+            red, green, blue = br, bgTex, bb
         end
     end
     local uc = (prefs and prefs.castbarUninterruptibleColor) or UF_UNINTERRUPT_GREY
@@ -853,9 +853,9 @@ local function ApplyUnitFrameCastColor(castBar)
         local uninterruptible = GetCastbarUninterruptible(castBar)
         -- Vertex alpha is the texture's alpha: keep Fill Opacity (and idle 0), not 1.
         castBar.castTintLayer:SetVertexColor(
-            ev(uninterruptible, uc.r, region),
-            ev(uninterruptible, uc.g, g),
-            ev(uninterruptible, uc.b, b),
+            ev(uninterruptible, uc.r, red),
+            ev(uninterruptible, uc.g, green),
+            ev(uninterruptible, uc.b, blue),
             castBar._castTintOn and (castBar._fillOp or 1) or 0
         )
         -- Same alpha as the ReloadFrames SetStatusBarColor sites.
@@ -874,7 +874,7 @@ local function ApplyUnitFrameCastColor(castBar)
         return
     end
     castBar._shieldOff = nil
-    castBar.castTintLayer:SetVertexColor(region, g, b)
+    castBar.castTintLayer:SetVertexColor(red, green, blue)
     if castBar._shieldedTint then
         -- Uninterruptible overlay colour (defaults to grey). Its alpha is toggled
         -- from the secret "not interruptible" flag, so the colour is always set and

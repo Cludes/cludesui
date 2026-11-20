@@ -136,14 +136,14 @@ local function ApplyPreviewData(frame, index, roles, classTokens)
             if fillTex then
                 fillTex:SetAlpha(1)
             end
-            local region, g, b = mod.ResolveDynamicColor(s, healthPct / 100)
-            frame._health:SetStatusBarColor(region, g, b, (s.healthBarOpacity or 100) / 100)
+            local red, green, blue = mod.ResolveDynamicColor(s, healthPct / 100)
+            frame._health:SetStatusBarColor(red, green, blue, (s.healthBarOpacity or 100) / 100)
         elseif mode == "classReactive" then
             if fillTex then
                 fillTex:SetAlpha(1)
             end
-            local region, g, b = mod.ResolveClassReactiveColor(s, classToken, healthPct / 100)
-            frame._health:SetStatusBarColor(region, g, b, (s.healthBarOpacity or 100) / 100)
+            local red, green, blue = mod.ResolveClassReactiveColor(s, classToken, healthPct / 100)
+            frame._health:SetStatusBarColor(red, green, blue, (s.healthBarOpacity or 100) / 100)
         elseif mode == "custom" then
             if fillTex then
                 fillTex:SetAlpha(1)

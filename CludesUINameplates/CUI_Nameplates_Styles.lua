@@ -347,7 +347,7 @@ function mod.NP_UpdateClassicLevel(backing)
     fontStr:SetText(mod.GetUnitLevelText(unitToken))
     -- The stock yellow, and the difficulty colour only where difficulty means
     -- something: a unit you cannot attack is never colour-ranked.
-    local region, g, b = 1, 0.82, 0
+    local red, green, blue = 1, 0.82, 0
     local canAttack = UnitCanAttack("player", unitToken)
     if issecretvalue and issecretvalue(canAttack) then
         canAttack = false
@@ -357,11 +357,11 @@ function mod.NP_UpdateClassicLevel(backing)
         if not (issecretvalue and issecretvalue(diff)) and GetDifficultyColor then
             local color = GetDifficultyColor(diff)
             if color then
-                region, g, b = color.r, color.g, color.b
+                red, green, blue = color.r, color.g, color.b
             end
         end
     end
-    fontStr:SetTextColor(region, g, b, 1)
+    fontStr:SetTextColor(red, green, blue, 1)
     fontStr:Show()
 end
 -- The vanilla cast border round a plate's cast bar, with the spell icon
@@ -911,15 +911,15 @@ function mod.NP_UpdateForeverLevel(backing)
         sk:Show()
     else
         sk:Hide()
-        local region, g, b
+        local red, green, blue
         if not secret then
-            region, g, b = CludesUI.GetLevelColor(unitToken, lvl)
+            red, green, blue = CludesUI.GetLevelColor(unitToken, lvl)
         end
-        if not region then
-            region, g, b = 1, 0.82, 0
+        if not red then
+            red, green, blue = 1, 0.82, 0
         end
         fontStr:SetText(lvl)
-        fontStr:SetTextColor(region, g, b, 1)
+        fontStr:SetTextColor(red, green, blue, 1)
         fontStr:Show()
     end
     box:Show()
@@ -1300,10 +1300,10 @@ end
 -- The Basic border's colour: its PP strips, plus the rounded ring that stands
 -- in for them while Corner Radius is on (the strips are masked out then). A
 -- hidden border still takes the colour, for its next show.
-function mod.NP_BasicBorderColor(backing, region, g, b, a)
-    CludesUI.PP.SetBorderColor(backing.health, region, g, b, a)
+function mod.NP_BasicBorderColor(backing, red, green, blue, a)
+    CludesUI.PP.SetBorderColor(backing.health, red, green, blue, a)
     if backing._npRounded then
-        CludesUI.RoundedBorderColor(backing.health, region, g, b, a)
+        CludesUI.RoundedBorderColor(backing.health, red, green, blue, a)
     end
 end
 
@@ -1343,8 +1343,8 @@ end
 -- repaints keep it: paint these backgrounds only through SetColorTexture
 -- (SetTexture / SetAtlas go around it). Blizzard Style draws its stock art there.
 do
-    local function PaintTinted(self, region, g, b, a)
-        self:SetVertexColor(region, g, b, a)
+    local function PaintTinted(self, red, green, blue, a)
+        self:SetVertexColor(red, green, blue, a)
     end
     -- A background's texture path in settings s (nil = flat); the options
     -- preview shares it.
@@ -1359,10 +1359,10 @@ do
         )
     end
     -- One paint of a background that is never swapped (the options preview).
-    function mod.NP_TexBgPaint(texture, filePath, region, g, b, a)
+    function mod.NP_TexBgPaint(texture, filePath, red, green, blue, a)
         if filePath then
             texture:SetTexture(filePath)
-            texture:SetVertexColor(region, g, b, a)
+            texture:SetVertexColor(red, green, blue, a)
             texture._npTexBgPath = filePath
             return
         end
@@ -1370,7 +1370,7 @@ do
             texture._npTexBgPath = nil
             texture:SetVertexColor(1, 1, 1, 1)
         end
-        texture:SetColorTexture(region, g, b, a)
+        texture:SetColorTexture(red, green, blue, a)
     end
     local function Paint(backdrop, filePath, c, a)
         if filePath then
@@ -1423,19 +1423,19 @@ function mod.ApplyAbsorbStyle(backing)
         alpha = mod.NP_ABSORB_STYLE_ALPHA[style] or 0.8
     end
     -- Tint applies to every style EXCEPT Blizzard, which keeps its own coloring.
-    local region, g, b = 1, 1, 1
+    local red, green, blue = 1, 1, 1
     if style ~= "blizzard" then
         local c = (p and p.absorbColor) or defaultSet.absorbColor
         -- Per-component default: a partial colour table would throw downstream.
         if c then
-            region, g, b = c.r or 1, c.g or 1, c.b or 1
+            red, green, blue = c.r or 1, c.g or 1, c.b or 1
         end
     end
     local mask = backing._absorbMask
     for _, barFrame in ipairs({ backing.absorb, backing.absorbForward }) do
         if barFrame then
             barFrame:SetStatusBarTexture(texture)
-            barFrame:SetStatusBarColor(region, g, b, alpha)
+            barFrame:SetStatusBarColor(red, green, blue, alpha)
             local fillTex = barFrame:GetStatusBarTexture()
             if fillTex then
                 fillTex:SetDrawLayer("ARTWORK", 1)

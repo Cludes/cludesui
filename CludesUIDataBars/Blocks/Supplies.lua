@@ -530,14 +530,14 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
 
     -- Hover recolours the drawn rows only (unless the counts are stale).
     local function Recolour()
-        local region, g, b
+        local red, green, blue
         if hovered then
-            region, g, b = mod.GetAccent()
+            red, green, blue = mod.GetAccent()
         else
-            region, g, b = K.BlockColorOf(blockCfg)
+            red, green, blue = K.BlockColorOf(blockCfg)
         end
         for i = 1, used or 0 do
-            rows[i].text:SetTextColor(region, g, b, rows[i].alpha)
+            rows[i].text:SetTextColor(red, green, blue, rows[i].alpha)
         end
     end
     button:SetScript("OnEnter", function()

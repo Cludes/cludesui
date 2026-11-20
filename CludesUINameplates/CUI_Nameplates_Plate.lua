@@ -733,9 +733,9 @@ function NameplateFrame:UpdateToT()
     if type(plateUnit) ~= "nil" then
         if issecretvalue(plateUnit) then
             -- Same order as the slot painter: the restricted-unit palette, then Blizzard's.
-            local success, region, g, b = CludesUI.GetClassColorForRestrictedUnit(tu, plateUnit)
+            local success, red, green, blue = CludesUI.GetClassColorForRestrictedUnit(tu, plateUnit)
             if success then
-                fontStr:SetTextColor(region, g, b, 1)
+                fontStr:SetTextColor(red, green, blue, 1)
                 return
             end
             local c = C_ClassColor.GetClassColor(plateUnit)

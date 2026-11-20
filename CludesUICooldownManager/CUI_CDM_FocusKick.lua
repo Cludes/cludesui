@@ -947,20 +947,20 @@ local function ShowFocusReminder(unitToken)
     end
 
     -- Color: accent mode reads the live CLUDES_GREEN; custom mode reads the stored RGB. Re-SetTextColor only if the resolved color changed.
-    local region, g, b
+    local red, green, blue
     if edge.focusReminderUseAccent then
         local eg = CludesUI.CLUDES_GREEN
-        region = (eg and eg.r) or 0.298
-        g = (eg and eg.g) or 0.788
-        b = (eg and eg.b) or 0.941
+        red = (eg and eg.r) or 0.298
+        green = (eg and eg.g) or 0.788
+        blue = (eg and eg.b) or 0.941
     else
-        region = edge.focusReminderR or 1
-        g = edge.focusReminderG or 1
-        b = edge.focusReminderB or 1
+        red = edge.focusReminderR or 1
+        green = edge.focusReminderG or 1
+        blue = edge.focusReminderB or 1
     end
-    if fontStr._lastR ~= region or fontStr._lastG ~= g or fontStr._lastB ~= b then
-        fontStr:SetTextColor(region, g, b)
-        fontStr._lastR, fontStr._lastG, fontStr._lastB = region, g, b
+    if fontStr._lastR ~= red or fontStr._lastG ~= green or fontStr._lastB ~= blue then
+        fontStr:SetTextColor(red, green, blue)
+        fontStr._lastR, fontStr._lastG, fontStr._lastB = red, green, blue
     end
 
     if not fontStr:IsShown() then

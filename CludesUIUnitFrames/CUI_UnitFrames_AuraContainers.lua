@@ -4674,8 +4674,8 @@ do
         if r0 == nil then
             return
         end
-        local region, g, b = CludesUI.Glows.ResolveColor("class")
-        if region ~= r0 or g ~= PurgeGlow.ccG or b ~= PurgeGlow.ccB then
+        local red, green, blue = CludesUI.Glows.ResolveColor("class")
+        if red ~= r0 or green ~= PurgeGlow.ccG or blue ~= PurgeGlow.ccB then
             mod.UF_ReloadAllAuraContainers()
         end
     end)

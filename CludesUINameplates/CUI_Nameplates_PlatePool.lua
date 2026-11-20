@@ -377,9 +377,9 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
                     end
                 end
                 local colour = hb._bdColor
-                local region, g, b, a = 0, 0, 0, 1
+                local red, green, blue, a = 0, 0, 0, 1
                 if colour then
-                    region, g, b, a = colour[1], colour[2], colour[3], colour[4] or 1
+                    red, green, blue, a = colour[1], colour[2], colour[3], colour[4] or 1
                 end
                 -- Threat Colors "Border" tint on the health border: _bdColor keeps only the
                 -- last CLEAN colour (PP leaves a secret off-tank fold out of it), so the
@@ -409,7 +409,7 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
                     regionFrame:SetFrameLevel(backing.castIconFrame:GetFrameLevel() + 2)
                 end
                 if not Pix.GetBorders(regionFrame) then
-                    Pix.CreateBorder(regionFrame, region, g, b, a, sz, "OVERLAY", 7, true) -- scaleGuard: NP frame
+                    Pix.CreateBorder(regionFrame, red, green, blue, a, sz, "OVERLAY", 7, true) -- scaleGuard: NP frame
                 end
                 -- Seam flags go on the containers BEFORE (re)snapping so SnapBorderTextures
                 -- hides the two touching edges AND runs the side strips to the seam (no edge
@@ -430,7 +430,7 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
                         1
                     )
                 else
-                    Pix.SetBorderColor(regionFrame, region, g, b, a)
+                    Pix.SetBorderColor(regionFrame, red, green, blue, a)
                 end
                 Pix.ShowBorder(regionFrame)
                 Pix.SetBorderSize(backing.health, sz)
@@ -462,7 +462,7 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
                         and UnitIsUnit(backing.unit, "target")
                         and mod.GetTargetGlowBorderColor()
                     then
-                        Pix.SetBorderColor(backing.castIconFrame, region, g, b, a)
+                        Pix.SetBorderColor(backing.castIconFrame, red, green, blue, a)
                     else
                         Pix.SetBorderColor(backing.castIconFrame, 0, 0, 0, 1)
                     end

@@ -135,8 +135,8 @@ local function Msg(textValue)
 end
 
 -- On-screen text in the QoL font; Raid Tools' ApplyFonts keeps it current.
-local function Text(hostFrame, size, region, g, b)
-    return RT.Text(widget, hostFrame, size, region, g, b)
+local function Text(hostFrame, size, red, green, blue)
+    return RT.Text(widget, hostFrame, size, red, green, blue)
 end
 
 -------------------------------------------------------------------------------

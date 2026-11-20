@@ -1464,7 +1464,7 @@ mod.RF_ClearBarTints = function(barFrame, ownerFrame)
     end
 end
 
-mod.RF_TintOverBarFill = function(texture, barFrame, region, g, b, a)
+mod.RF_TintOverBarFill = function(texture, barFrame, red, green, blue, a)
     if not texture then
         return
     end
@@ -1474,7 +1474,7 @@ mod.RF_TintOverBarFill = function(texture, barFrame, region, g, b, a)
     -- Stored pre-multiply: the refresh path calls back in with these, so folding
     -- the fill opacity in here would compound it on every pass.
     if ent then
-        ent.r, ent.g, ent.b, ent.a = region, g, b, a
+        ent.r, ent.g, ent.b, ent.a = red, green, blue, a
     end
     -- Inherit the bar's configured Fill Opacity, so a tinted frame is as
     -- translucent as its untinted neighbours instead of the one solid bar in the
@@ -1494,7 +1494,7 @@ mod.RF_TintOverBarFill = function(texture, barFrame, region, g, b, a)
         -- SetColorTexture bakes the color into the texture rather than into the
         -- vertex color, so a stale vertex color would multiply it.
         texture:SetTexCoord(0, 1, 0, 1)
-        texture:SetColorTexture(region, g, b, a)
+        texture:SetColorTexture(red, green, blue, a)
         texture:SetVertexColor(1, 1, 1, 1)
         return
     end
@@ -1502,7 +1502,7 @@ mod.RF_TintOverBarFill = function(texture, barFrame, region, g, b, a)
     if fillTex.GetTexCoord then
         texture:SetTexCoord(fillTex:GetTexCoord())
     end
-    texture:SetVertexColor(region, g, b, a)
+    texture:SetVertexColor(red, green, blue, a)
 end
 
 -- Repaint BEFORE re-anchoring, and re-anchor with no ClearAllPoints

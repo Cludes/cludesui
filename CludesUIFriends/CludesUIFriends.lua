@@ -219,29 +219,29 @@ local function SkinRaidTabButton(button)
         textValue:SetPoint("CENTER", button, "CENTER", 0, 0)
     end
     button:HookScript("OnEnter", function()
-        local region, g, b, a1, a2 = 1, 1, 1, 0.7, 0.6
+        local red, green, blue, a1, a2 = 1, 1, 1, 0.7, 0.6
         if GetFFD(button).accent then
-            region, g, b = ACC.r, ACC.g, ACC.b
+            red, green, blue = ACC.r, ACC.g, ACC.b
             a1, a2 = 1, 0.8
         end
         if textValue then
-            textValue:SetTextColor(region, g, b, a1)
+            textValue:SetTextColor(red, green, blue, a1)
         end
         if button.SetBackdropBorderColor then
-            button:SetBackdropBorderColor(region, g, b, a2)
+            button:SetBackdropBorderColor(red, green, blue, a2)
         end
     end)
     button:HookScript("OnLeave", function()
-        local region, g, b, a1, a2 = 1, 1, 1, 0.5, 0.4
+        local red, green, blue, a1, a2 = 1, 1, 1, 0.5, 0.4
         if GetFFD(button).accent then
-            region, g, b = ACC.r, ACC.g, ACC.b
+            red, green, blue = ACC.r, ACC.g, ACC.b
             a1, a2 = 0.7, 0.5
         end
         if textValue then
-            textValue:SetTextColor(region, g, b, a1)
+            textValue:SetTextColor(red, green, blue, a1)
         end
         if button.SetBackdropBorderColor then
-            button:SetBackdropBorderColor(region, g, b, a2)
+            button:SetBackdropBorderColor(red, green, blue, a2)
         end
     end)
 end
@@ -1389,29 +1389,29 @@ local function SkinBottomButton(button)
     end
 
     button:HookScript("OnEnter", function()
-        local region, g, b, a1, a2 = 1, 1, 1, 0.7, 0.6
+        local red, green, blue, a1, a2 = 1, 1, 1, 0.7, 0.6
         if GetFFD(button).accent then
-            region, g, b = ACC.r, ACC.g, ACC.b
+            red, green, blue = ACC.r, ACC.g, ACC.b
             a1, a2 = 1, 0.8
         end
         if textValue then
-            textValue:SetTextColor(region, g, b, a1)
+            textValue:SetTextColor(red, green, blue, a1)
         end
         if Pix.GetBorders(button) then
-            Pix.SetBorderColor(button, region, g, b, a2)
+            Pix.SetBorderColor(button, red, green, blue, a2)
         end
     end)
     button:HookScript("OnLeave", function()
-        local region, g, b, a1, a2 = 1, 1, 1, 0.5, 0.4
+        local red, green, blue, a1, a2 = 1, 1, 1, 0.5, 0.4
         if GetFFD(button).accent then
-            region, g, b = ACC.r, ACC.g, ACC.b
+            red, green, blue = ACC.r, ACC.g, ACC.b
             a1, a2 = 0.7, 0.5
         end
         if textValue then
-            textValue:SetTextColor(region, g, b, a1)
+            textValue:SetTextColor(red, green, blue, a1)
         end
         if Pix.GetBorders(button) then
-            Pix.SetBorderColor(button, region, g, b, a2)
+            Pix.SetBorderColor(button, red, green, blue, a2)
         end
     end)
 end
@@ -1576,12 +1576,12 @@ local function PaintChrome()
 
     -- Frame border: the thin border under the flat look; the window skin's
     -- atlas frame otherwise, hung on that same border container (ours).
-    local region, g, b, a = GetBorderColor(p)
+    local red, green, blue, a = GetBorderColor(p)
     local bsz = p.borderSize or 1
     if shellFrame or bsz <= 0 then
-        Pix.SetBorderColor(widget, region, g, b, 0)
+        Pix.SetBorderColor(widget, red, green, blue, 0)
     else
-        Pix.UpdateBorder(widget, bsz, region, g, b, a)
+        Pix.UpdateBorder(widget, bsz, red, green, blue, a)
     end
     if shellFrame and frameData.atlasFrame == nil then
         local owner = Pix.GetBorders(widget)
@@ -1682,8 +1682,8 @@ local function OnChromeStylesChanged()
         if look ~= "modern" then
             return
         end
-        local region, g, b, a = ws.GetModernBG()
-        if region == seen.r and g == seen.g and b == seen.b and a == seen.a then
+        local red, green, blue, a = ws.GetModernBG()
+        if red == seen.r and green == seen.g and blue == seen.b and a == seen.a then
             return
         end
     end
@@ -1903,9 +1903,9 @@ local function SkinFriendsFrame()
     GetFFD(widget).bg:SetAlpha(1)
 
     do
-        local region, g, b, a = GetBorderColor(p)
+        local red, green, blue, a = GetBorderColor(p)
         local borderAlpha = (p.showBorder ~= false) and a or 0
-        Pix.CreateBorder(widget, region, g, b, borderAlpha, p.borderSize or 1, "OVERLAY", 7)
+        Pix.CreateBorder(widget, red, green, blue, borderAlpha, p.borderSize or 1, "OVERLAY", 7)
     end
 
     -- Float these above the resized panel instead of clipping inside it.

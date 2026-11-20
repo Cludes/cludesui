@@ -128,8 +128,8 @@ do
         local a = buttonFrame and buttonFrame:GetAttribute("action")
         local q = a and IsEquippedAction(a) and EquippedQuality(a)
         if q then
-            local region, g, b = C_Item.GetItemQualityColor(q)
-            edge:SetVertexColor(region, g, b, 1)
+            local red, green, blue = C_Item.GetItemQualityColor(q)
+            edge:SetVertexColor(red, green, blue, 1)
         else
             edge:SetVertexColor(0, 1, 0, 0.5)
         end

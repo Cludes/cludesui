@@ -62,11 +62,11 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
         if not Settings().currencyId then
             label:SetTextColor(0.55, 0.55, 0.55, 1)
         elseif hovered then
-            local region, g, b = mod.GetAccent()
-            label:SetTextColor(region, g, b, 1)
+            local red, green, blue = mod.GetAccent()
+            label:SetTextColor(red, green, blue, 1)
         else
-            local region, g, b = K.BlockColorOf(blockCfg)
-            label:SetTextColor(region, g, b, 1)
+            local red, green, blue = K.BlockColorOf(blockCfg)
+            label:SetTextColor(red, green, blue, 1)
         end
     end
 
@@ -95,8 +95,8 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
         else
             iconTex:Hide()
         end
-        local region, g, b = K.IconColorOf(blockCfg)
-        iconTex:SetVertexColor(region, g, b, 1)
+        local red, green, blue = K.IconColorOf(blockCfg)
+        iconTex:SetVertexColor(red, green, blue, 1)
         mod.SetFont(label, fontSize, barCtx.cfg)
 
         if barCtx.IsVertical() then

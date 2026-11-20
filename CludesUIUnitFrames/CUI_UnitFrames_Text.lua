@@ -725,9 +725,9 @@ end
 -- hands it to SetFormattedText untouched).
 -- Returns ok, r, g, b -- ok is a PLAIN boolean, r/g/b may be SECRET, only safe as setter args.
 local function ResolveRestrictedClassColor(unitToken, classKey)
-    local success, region, g, b = CludesUI.GetClassColorForRestrictedUnit(unitToken, classKey)
+    local success, red, green, blue = CludesUI.GetClassColorForRestrictedUnit(unitToken, classKey)
     if success then
-        return true, region, g, b
+        return true, red, green, blue
     end
     if C_ClassColor and C_ClassColor.GetClassColor then
         local c = C_ClassColor.GetClassColor(classKey)
@@ -761,8 +761,8 @@ mod.ResolveBgClassColor = function(classUnit)
         end
         return false
     end
-    local region, g, b = mod.ResolveUnitNameColor(classUnit)
-    return region ~= nil, region, g, b
+    local red, green, blue = mod.ResolveUnitNameColor(classUnit)
+    return red ~= nil, red, green, blue
 end
 
 -- External nickname providers key us by this addon name. Suite = "CludesUI" (the
@@ -1071,8 +1071,8 @@ TagFns.tgtcol = function(unitToken)
     if not tunit or not UnitExists(tunit) then
         return ""
     end
-    local region, g, b = mod.ResolveUnitNameColor(tunit)
-    if not region then
+    local red, green, blue = mod.ResolveUnitNameColor(tunit)
+    if not red then
         -- Secret class token (identity-restricted target, e.g. a boss's own
         -- target): GenerateHexColor's result may itself be secret, but still
         -- renders correctly through SetFormattedText's arg lane -- don't reject it.
@@ -1094,18 +1094,18 @@ TagFns.tgtcol = function(unitToken)
             local c = (mod.Colors and mod.Colors.reaction and mod.Colors.reaction[reactionId])
                 or FACTION_BAR_COLORS[reactionId]
             if c then
-                region, g, b = c.r, c.g, c.b
+                red, green, blue = c.r, c.g, c.b
             end
         end
     end
-    if not region then
+    if not red then
         return ""
     end
     return string.format(
         "|cff%02x%02x%02x",
-        math.floor(region * 255 + 0.5),
-        math.floor(g * 255 + 0.5),
-        math.floor(b * 255 + 0.5)
+        math.floor(red * 255 + 0.5),
+        math.floor(green * 255 + 0.5),
+        math.floor(blue * 255 + 0.5)
     )
 end
 
@@ -1148,8 +1148,8 @@ do
         if issecretvalue(l) or l == "" then
             return l
         end
-        local region, g, b = CludesUI.GetLevelColor(u, (l == "??") and -1 or l)
-        return CludesUI.ColorText(l, region, g, b)
+        local red, green, blue = CludesUI.GetLevelColor(u, (l == "??") and -1 or l)
+        return CludesUI.ColorText(l, red, green, blue)
     end
     -- Same, with friendly units in their difficulty color too (Include Friendly).
     P.levelcolall = function(u)
@@ -1157,8 +1157,8 @@ do
         if issecretvalue(l) or l == "" then
             return l
         end
-        local region, g, b = CludesUI.GetLevelColor(u, (l == "??") and -1 or l, true)
-        return CludesUI.ColorText(l, region, g, b)
+        local red, green, blue = CludesUI.GetLevelColor(u, (l == "??") and -1 or l, true)
+        return CludesUI.ColorText(l, red, green, blue)
     end
     P.name = TagFns.name
     P.tgtcol = TagFns.tgtcol
@@ -1287,13 +1287,13 @@ do
                 if not (u and UnitExists(u .. "target")) then
                     return ""
                 end
-                local region, g, b = mod.ResolveUnitNameColor(u .. "target")
-                if region then
+                local red, green, blue = mod.ResolveUnitNameColor(u .. "target")
+                if red then
                     return scrollFrame(
                         "|cff%02x%02x%02x%s|r",
-                        math.floor(region * 255 + 0.5),
-                        math.floor(g * 255 + 0.5),
-                        math.floor(b * 255 + 0.5),
+                        math.floor(red * 255 + 0.5),
+                        math.floor(green * 255 + 0.5),
+                        math.floor(blue * 255 + 0.5),
                         sep
                     )
                 end

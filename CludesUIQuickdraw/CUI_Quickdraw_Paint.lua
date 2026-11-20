@@ -561,8 +561,8 @@ function PaletteView:Layout(paletteIndex)
         -- Tinted like the connector line (SelectColor), at full alpha in the
         -- same call -- a texture's vertex alpha and SetAlpha share one slot,
         -- so this single write owns both.
-        local region, g, b = SelectColor(p)
-        hub.logo:SetVertexColor(region, g, b, 1)
+        local red, green, blue = SelectColor(p)
+        hub.logo:SetVertexColor(red, green, blue, 1)
         -- The size the slam-open scales up to (AdvanceSlam).
         self._slamLogoSize = sz
     end
@@ -985,7 +985,7 @@ function PaletteView:SetSelection(index)
         if self._hubNameOnly then
             local slot, claim = self:CellSlot(index)
             local _, name = SlotDisplay(slot)
-            local region, g, b = SelectColor(self:P())
+            local red, green, blue = SelectColor(self:P())
             if claim then
                 local _, parentName = SlotDisplay(self:CellSlot(claim.parent))
                 if parentName and name then
@@ -997,7 +997,7 @@ function PaletteView:SetSelection(index)
                     or (wid.isPlaceholder and CludesUI.L("Add Action"))
                     or ("Slot " .. index)
             )
-            hub.text:SetTextColor(region, g, b)
+            hub.text:SetTextColor(red, green, blue)
 
             local aw = widgets[claim and claim.parent or index]
             if aw then

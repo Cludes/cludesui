@@ -468,7 +468,7 @@ local function ResolveBNetTokens(textValue)
     return textValue
 end
 
-local function OnBridgeLine(castFrame, message, region, g, b, chatTypeID, evt)
+local function OnBridgeLine(castFrame, message, red, green, blue, chatTypeID, evt)
     if not evt or not CAPTURE_EVENTS[evt] then
         return
     end
@@ -499,9 +499,9 @@ local function OnBridgeLine(castFrame, message, region, g, b, chatTypeID, evt)
     AppendLogEntry({
         event = evt,
         message = body,
-        r = (type(region) == "number" and region) or 1,
-        g = (type(g) == "number" and g) or 1,
-        b = (type(b) == "number" and b) or 1,
+        r = (type(red) == "number" and red) or 1,
+        g = (type(green) == "number" and green) or 1,
+        b = (type(blue) == "number" and blue) or 1,
         id = (type(chatTypeID) == "number" and chatTypeID) or 1,
         timestamp = GetTime(),
         serverTime = GetServerTime(),

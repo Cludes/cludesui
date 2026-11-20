@@ -182,7 +182,7 @@ end
 --  Alerts
 -------------------------------------------------------------------------------
 local alertFrame
-local function Warn(text, region, g, b, alarm)
+local function Warn(text, red, green, blue, alarm)
     if not alertFrame then
         alertFrame = CreateFrame("Frame", "CludesUIPvPAlert", UIParent)
         alertFrame:SetSize(400, 40)
@@ -207,7 +207,7 @@ local function Warn(text, region, g, b, alarm)
         alertFrame.ag = ag
     end
     alertFrame.text:SetText(text)
-    alertFrame.text:SetTextColor(region, g, b)
+    alertFrame.text:SetTextColor(red, green, blue)
     alertFrame.ag:Stop()
     alertFrame:SetAlpha(1)
     alertFrame:Show()

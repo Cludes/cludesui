@@ -2864,8 +2864,8 @@ do
         if r0 == nil then
             return
         end
-        local region, g, b = CludesUI.Glows.ResolveColor("class")
-        if region ~= r0 or g ~= NPB.ccG or b ~= NPB.ccB then
+        local red, green, blue = CludesUI.Glows.ResolveColor("class")
+        if red ~= r0 or green ~= NPB.ccG or blue ~= NPB.ccB then
             mod.NPC_ReloadAll()
         end
     end)

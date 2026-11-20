@@ -131,14 +131,14 @@ mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
 
     -- The text and the rest icon share one colour (the accent on hover).
     local function Paint()
-        local region, g, b
+        local red, green, blue
         if hovered then
-            region, g, b = mod.GetAccent()
+            red, green, blue = mod.GetAccent()
         else
-            region, g, b = K.BlockColorOf(blockCfg)
+            red, green, blue = K.BlockColorOf(blockCfg)
         end
-        label:SetTextColor(region, g, b, 1)
-        restArt:SetVertexColor(region, g, b, 1)
+        label:SetTextColor(red, green, blue, 1)
+        restArt:SetVertexColor(red, green, blue, 1)
     end
 
     function inst:Refresh()

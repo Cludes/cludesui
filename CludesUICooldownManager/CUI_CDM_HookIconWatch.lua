@@ -1310,18 +1310,18 @@ do
                     if not Readable(c) then
                         return nil
                     end
-                    local region, g, b = c.r, c.g, c.b
+                    local red, green, blue = c.r, c.g, c.b
                     if
-                        issecretvalue(region)
-                        or issecretvalue(g)
-                        or issecretvalue(b)
-                        or type(region) ~= "number"
-                        or type(g) ~= "number"
-                        or type(b) ~= "number"
+                        issecretvalue(red)
+                        or issecretvalue(green)
+                        or issecretvalue(blue)
+                        or type(red) ~= "number"
+                        or type(green) ~= "number"
+                        or type(blue) ~= "number"
                     then
                         return nil
                     end
-                    return region >= 0.9 and g <= 0.2 and b <= 0.2
+                    return red >= 0.9 and green <= 0.2 and blue <= 0.2
                 end
             end
         end

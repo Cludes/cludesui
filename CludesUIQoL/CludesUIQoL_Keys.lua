@@ -237,7 +237,7 @@ end
 
 -- family: a text that shows a player's name takes the font as a font family,
 -- which draws the scripts the font lacks
-local function MakeLabel(hostFrame, size, _, region, g, b, a, family)
+local function MakeLabel(hostFrame, size, _, red, green, blue, a, family)
     local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
     local flags = ResolveOutline()
     if family then
@@ -246,15 +246,15 @@ local function MakeLabel(hostFrame, size, _, region, g, b, a, family)
         CludesUI.PrimeFontShadow(fontStr, flags == "")
         fontStr:SetFont(ResolveFont(), size, flags)
     end
-    if region then
-        fontStr:SetTextColor(region, g or 1, b or 1, a or 1)
+    if red then
+        fontStr:SetTextColor(red, green or 1, blue or 1, a or 1)
     end
     return fontStr
 end
 
-local function MakeSolid(hostFrame, layer, region, g, b, a, sub)
+local function MakeSolid(hostFrame, layer, red, green, blue, a, sub)
     local t = hostFrame:CreateTexture(nil, layer, nil, sub or 0)
-    t:SetColorTexture(region, g, b, a)
+    t:SetColorTexture(red, green, blue, a)
     return t
 end
 

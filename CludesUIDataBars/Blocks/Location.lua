@@ -114,7 +114,7 @@ end
 
 -- One tooltip for both: they name the same place.
 local function ShowTooltip(owner)
-    local region, g, b = mod.GetAccent()
+    local red, green, blue = mod.GetAccent()
     mod.Tip_Begin(owner)
     mod.Tip_AddDouble(ZONE, PlaceName(true), 0.6, 0.6, 0.6, 1, 1, 1)
     local continent = Continent()
@@ -124,7 +124,7 @@ local function ShowTooltip(owner)
     local sr, sg, sb = K.ZoneReactionColor()
     mod.Tip_AddDouble(STATUS, Status(), 0.6, 0.6, 0.6, sr, sg, sb)
     mod.Tip_AddLine(" ")
-    mod.Tip_AddDouble(L["LEFT_CLICK"], L["TOGGLE_WORLD_MAP"], 1, 1, 1, region, g, b)
+    mod.Tip_AddDouble(L["LEFT_CLICK"], L["TOGGLE_WORLD_MAP"], 1, 1, 1, red, green, blue)
     mod.Tip_Show()
 end
 
@@ -158,17 +158,17 @@ local function TextBlock(blockCfg, slot, contentFrame, barCtx, spec)
     end
 
     local function Paint()
-        local region, g, b
+        local red, green, blue
         if hovered then
-            region, g, b = mod.GetAccent()
+            red, green, blue = mod.GetAccent()
         else
-            region, g, b = K.BlockColorOf(blockCfg)
+            red, green, blue = K.BlockColorOf(blockCfg)
         end
-        label:SetTextColor(region, g, b, 1)
+        label:SetTextColor(red, green, blue, 1)
         if not hovered then
-            region, g, b = K.IconColorOf(blockCfg)
+            red, green, blue = K.IconColorOf(blockCfg)
         end
-        iconTex:SetVertexColor(region, g, b, 1)
+        iconTex:SetVertexColor(red, green, blue, 1)
     end
 
     local function Enter()

@@ -370,14 +370,14 @@ end
 -- A texture as the tiled tooltip background in the given colour and opacity
 -- (the file is near-white; the vertex colour is the tone). Tiling is set up
 -- once per texture; every call re-tints.
-function mod.DMClassicTint(texture, region, g, b, a)
+function mod.DMClassicTint(texture, red, green, blue, a)
     if not texture._classicTiled then
         texture._classicTiled = true
         texture:SetHorizTile(true)
         texture:SetVertTile(true)
         texture:SetTexture(mod.DM_CLASSIC_BG, "REPEAT", "REPEAT")
     end
-    texture:SetVertexColor(region or 0, g or 0, b or 0, a or 1)
+    texture:SetVertexColor(red or 0, green or 0, blue or 0, a or 1)
 end
 -- Header background: the stock atlas (opacity still applies) under Blizzard
 -- Style, Forever's header band in its place under the WoW Forever variant
@@ -387,7 +387,7 @@ end
 -- colour is the trailing winR/winG/winB when given (a window body tinted
 -- from its own settings), the main meter's otherwise; the configured colour
 -- on the CUI look.
-function mod.DMPaintHeaderBg(texture, region, g, b, a, winR, winG, winB)
+function mod.DMPaintHeaderBg(texture, red, green, blue, a, winR, winG, winB)
     local style = mod.DMStyle()
     if style == "blizzard" then
         if mod._dmForever and mod.DMFvHeader(texture, a) then
@@ -405,7 +405,7 @@ function mod.DMPaintHeaderBg(texture, region, g, b, a, winR, winG, winB)
             a
         )
     else
-        texture:SetColorTexture(region, g, b, a)
+        texture:SetColorTexture(red, green, blue, a)
     end
 end
 -- Classic WoW UI window edge: the vanilla chat tab's own border, the art the
@@ -470,7 +470,7 @@ end
 -- nothing. The tab's own inside is pure black (no vertex tint could colour
 -- it), so the window keeps the tile as its body. All regions of the window
 -- frame, under every child; built once per bg texture, re-tinted per call.
-function mod.DMPaintClassicBg(texture, region, g, b, a, edged)
+function mod.DMPaintClassicBg(texture, red, green, blue, a, edged)
     if not edged then
         texture:SetTexture(nil)
         texture:SetColorTexture(0, 0, 0, 0)
@@ -491,7 +491,7 @@ function mod.DMPaintClassicBg(texture, region, g, b, a, edged)
         texture:SetTexture(nil)
         texture:SetColorTexture(0, 0, 0, 0)
     end
-    mod.DMClassicTint(tile, region, g, b, a)
+    mod.DMClassicTint(tile, red, green, blue, a)
 end
 -- How far the header and the row area sit inside the window under Classic
 -- WoW UI (past the rim and bevel) and WoW Forever (past the bronze line, or
@@ -539,7 +539,7 @@ end
 mod.DM_BLIZZ_BG_BODY = 245 / 255
 mod._dmBgLo = CreateColor(0, 0, 0, 1)
 mod._dmBgHi = CreateColor(0, 0, 0, 0.5)
-function mod.DMPaintWindowBg(texture, region, g, b, a, edged, texKey)
+function mod.DMPaintWindowBg(texture, red, green, blue, a, edged, texKey)
     local style = mod.DMStyle()
     if style == "cui" then
         local filePath = texKey
@@ -547,18 +547,18 @@ function mod.DMPaintWindowBg(texture, region, g, b, a, edged, texKey)
             and CUI.ResolveTexturePath(_G._CUDM_BarTextures, texKey, nil)
         if filePath then
             texture:SetTexture(filePath)
-            texture:SetVertexColor(region, g, b, a)
+            texture:SetVertexColor(red, green, blue, a)
             texture._dmTexturedBg = true
         else
             if texture._dmTexturedBg then
                 texture:SetVertexColor(1, 1, 1, 1)
                 texture._dmTexturedBg = nil
             end
-            texture:SetColorTexture(region, g, b, a)
+            texture:SetColorTexture(red, green, blue, a)
         end
         return
     elseif style == "classic" then
-        mod.DMPaintClassicBg(texture, region, g, b, a, edged)
+        mod.DMPaintClassicBg(texture, red, green, blue, a, edged)
         return
     end
     if mod._dmForever and mod.DMPaintForeverBg(texture, a, edged) then

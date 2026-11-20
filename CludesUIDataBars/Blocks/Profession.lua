@@ -187,14 +187,14 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
                 end
             end)
             frame:SetScript("OnEnter", function(self)
-                local region, g, b = mod.GetAccent()
-                row.text:SetTextColor(region, g, b, 1)
-                row.icon:SetVertexColor(region, g, b, 1)
+                local red, green, blue = mod.GetAccent()
+                row.text:SetTextColor(red, green, blue, 1)
+                row.icon:SetVertexColor(red, green, blue, 1)
                 ShowTooltip(self)
             end)
             frame:SetScript("OnLeave", function(self)
-                local region, g, b = K.BlockColorOf(blockCfg)
-                row.text:SetTextColor(region, g, b, 1)
+                local red, green, blue = K.BlockColorOf(blockCfg)
+                row.text:SetTextColor(red, green, blue, 1)
                 -- The icon goes back to the icon colour, not the text's.
                 local ir, ig, ib = K.IconColorOf(blockCfg)
                 row.icon:SetVertexColor(ir, ig, ib, 1)
@@ -205,10 +205,10 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
 
     local function FillSkillBar(row)
         local skinData = row.data
-        local region, g, b = mod.GetAccent()
+        local red, green, blue = mod.GetAccent()
         row.skill:SetMinMaxValues(1, skinData.maxRank)
         row.skill:SetValue(skinData.rank)
-        row.skill:SetStatusBarColor(region, g, b, 1)
+        row.skill:SetStatusBarColor(red, green, blue, 1)
         row.track:SetColorTexture(BAR_TRACK[1], BAR_TRACK[2], BAR_TRACK[3], BAR_TRACK[4])
     end
 
@@ -245,8 +245,8 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
         iconTex:SetVertexColor(ir, ig, ib, 1)
 
         mod.SetFont(text, fontSize, barCtx.cfg)
-        local region, g, b = K.BlockColorOf(blockCfg)
-        text:SetTextColor(region, g, b, 1)
+        local red, green, blue = K.BlockColorOf(blockCfg)
+        text:SetTextColor(red, green, blue, 1)
         text:SetText(valuesOnly and (skinData.rank .. "/" .. skinData.maxRank) or (skinData.name or ""))
 
         if barCtx.IsVertical() then

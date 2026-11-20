@@ -758,8 +758,8 @@ mod.RT = {
     AddFontOwner = function(markerOwner)
         fontOwners[#fontOwners + 1] = markerOwner
     end,
-    Text = function(markerOwner, hostFrame, size, region, g, b)
-        local fontStr = TrackFont(markerOwner, CludesUI.MakeFont(hostFrame, size, nil, region, g, b), size)
+    Text = function(markerOwner, hostFrame, size, red, green, blue)
+        local fontStr = TrackFont(markerOwner, CludesUI.MakeFont(hostFrame, size, nil, red, green, blue), size)
         local filePath = CludesUI.GetFontPath(FONT_KEY)
         if filePath then
             local _, _, flags = fontStr:GetFont()
@@ -769,7 +769,7 @@ mod.RT = {
     end,
     -- Text for a player's name: the same font as a font family, which draws the
     -- scripts the font lacks (no outline, no shadow, as Text has)
-    NameText = function(markerOwner, hostFrame, size, region, g, b)
+    NameText = function(markerOwner, hostFrame, size, red, green, blue)
         local fontStr = TrackFont(markerOwner, hostFrame:CreateFontString(nil, "OVERLAY"), size, true)
         CludesUI.SetFontFamily(
             fontStr,
@@ -778,8 +778,8 @@ mod.RT = {
             "",
             false
         )
-        if region then
-            fontStr:SetTextColor(region, g, b, 1)
+        if red then
+            fontStr:SetTextColor(red, green, blue, 1)
         end
         return fontStr
     end,

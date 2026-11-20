@@ -158,19 +158,19 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
         end
         local c = object.iconCoords
         local coords = (type(c) == "table" and #c == 4) and table.concat(c, ",") or "full"
-        local region, g, b = IconTint(object)
-        return table.concat({ tostring(texture), coords, region, g, b }, "|")
+        local red, green, blue = IconTint(object)
+        return table.concat({ tostring(texture), coords, red, green, blue }, "|")
     end
 
     local function PaintText(placeholder)
         if placeholder then
             label:SetTextColor(0.55, 0.55, 0.55, 1)
         elseif hovered then
-            local region, g, b = mod.GetAccent()
-            label:SetTextColor(region, g, b, 1)
+            local red, green, blue = mod.GetAccent()
+            label:SetTextColor(red, green, blue, 1)
         else
-            local region, g, b = K.BlockColorOf(blockCfg)
-            label:SetTextColor(region, g, b, 1)
+            local red, green, blue = K.BlockColorOf(blockCfg)
+            label:SetTextColor(red, green, blue, 1)
         end
     end
 
@@ -212,8 +212,8 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
                 iconTex:SetTexCoord(0, 1, 0, 1)
             end
             iconTex:SetSize(iconSize, iconSize)
-            local region, g, b = IconTint(object)
-            iconTex:SetVertexColor(region, g, b, 1)
+            local red, green, blue = IconTint(object)
+            iconTex:SetVertexColor(red, green, blue, 1)
             iconTex:Show()
         else
             iconTex:Hide()
@@ -340,11 +340,11 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
         tipRoute = nil
         if not s.source then
             -- The placeholder is the whole block, so say where a plugin is picked.
-            local region, g, b = mod.GetAccent()
+            local red, green, blue = mod.GetAccent()
             mod.Tip_Begin(button)
             mod.Tip_AddLine(L["SELECT_PLUGIN"], 1, 1, 1)
             mod.Tip_AddLine(" ")
-            mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_SETTINGS"], 1, 1, 1, region, g, b)
+            mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_SETTINGS"], 1, 1, 1, red, green, blue)
             mod.Tip_Show()
             return
         end

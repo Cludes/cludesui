@@ -1674,9 +1674,9 @@ function mod.UF_RefreshBlizzTargetArt(widget)
     local extras = widget._blizzExtras and G.rep and unitToken and UnitExists(unitToken)
     local c
     if extras then
-        local region, g, b = UnitSelectionColor(unitToken)
-        if region and not issecretvalue(region) and not issecretvalue(g) and not issecretvalue(b) then
-            artFrame._rep:SetVertexColor(region, g, b)
+        local red, green, blue = UnitSelectionColor(unitToken)
+        if red and not issecretvalue(red) and not issecretvalue(green) and not issecretvalue(blue) then
+            artFrame._rep:SetVertexColor(red, green, blue)
         else
             artFrame._rep:SetVertexColor(0.5, 0.5, 0.5)
         end

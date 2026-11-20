@@ -224,7 +224,7 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
 
         mod.SetFont(label, fontSize, barCtx.cfg)
         mod.SetFont(slots, fontSize, barCtx.cfg)
-        local region, g, b = TextColour()
+        local red, green, blue = TextColour()
         if barCtx.IsVertical() then
             -- One coin per line.
             local lines = mod.MoneyTokens(
@@ -240,14 +240,14 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
         else
             label:SetText(MoneyText(money, coinColours))
         end
-        label:SetTextColor(region, g, b, 1)
+        label:SetTextColor(red, green, blue, 1)
         if s.showBagSpace == true then
             slots:SetText("(" .. FreeSlots() .. ")")
             slots:Show()
         else
             slots:Hide()
         end
-        slots:SetTextColor(region, g, b, 1)
+        slots:SetTextColor(red, green, blue, 1)
         if iconSize > 0 then
             iconTex:SetSize(iconSize, iconSize)
             PaintIcon()
@@ -322,9 +322,9 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
             return
         end
         label:SetText(MoneyText(Ledger.Money() or 0, blockCfg.useCoinColor == true and not hovered))
-        local region, g, b = TextColour()
-        label:SetTextColor(region, g, b, 1)
-        slots:SetTextColor(region, g, b, 1)
+        local red, green, blue = TextColour()
+        label:SetTextColor(red, green, blue, 1)
+        slots:SetTextColor(red, green, blue, 1)
         if iconTex:IsShown() then
             PaintIcon()
         end
@@ -406,9 +406,9 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
                     for _, key in ipairs(byRealm[realm]) do
                         local entry = chars[key]
                         local color = entry.class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[entry.class]
-                        local region, g, b = 1, 1, 1
+                        local red, green, blue = 1, 1, 1
                         if color then
-                            region, g, b = color.r, color.g, color.b
+                            red, green, blue = color.r, color.g, color.b
                         end
                         -- Ctrl+Alt+click forgets a character; never this one,
                         -- which is saved again on every money change.
@@ -421,7 +421,7 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
                                 Forget(key)
                                 mod.Tip_Hide(button)
                             end
-                        end, region, g, b)
+                        end, red, green, blue)
                     end
                 end
                 if left > 0 then

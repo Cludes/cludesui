@@ -131,13 +131,13 @@ function mod.RF_CompactHighlight(widget, skinData, s, btnFrame)
     end
     solidStyle = solidStyle or { borderTexture = "solid" }
     if c then
-        local region, g, b = mod.RF_VisibleHighlight(s, c.r, c.g, c.b)
+        local red, green, blue = mod.RF_VisibleHighlight(s, c.r, c.g, c.b)
         local level = s.borderBehind and math.max(0, btnFrame:GetFrameLevel() - 1)
             or btnFrame:GetFrameLevel() + mod.LVL_RAISE
         if widget:GetFrameLevel() ~= level then
             widget:SetFrameLevel(level)
         end
-        mod.ApplyHighlightBorder(widget, solidStyle, size, region, g, b, a, px)
+        mod.ApplyHighlightBorder(widget, solidStyle, size, red, green, blue, a, px)
         local strips = CUI.PP.GetBorders(widget)
         if strips and strips:GetFrameLevel() ~= level + 1 then
             strips:SetFrameLevel(level + 1)
@@ -204,12 +204,12 @@ end
 local function UpdateStyle(st, s)
     local c = s.borderColor or defaultSet.profile.borderColor
     local grid = not st.isParty and mod.RF_GridOn(s)
-    local region, g, b, a
+    local red, green, blue, a
     if grid and not st.isPet then
         if s.healthColorMode == "dark" then
-            region, g, b, a = CUI.GetDarkModeBg()
+            red, green, blue, a = CUI.GetDarkModeBg()
         else
-            region, g, b, a = mod.GetBgColor(nil, s)
+            red, green, blue, a = mod.GetBgColor(nil, s)
         end
     end
     PutStyle(st, "tex", s.borderTexture)
@@ -224,9 +224,9 @@ local function UpdateStyle(st, s)
     PutStyle(st, "g", c.g)
     PutStyle(st, "b", c.b)
     PutStyle(st, "a", s.borderAlpha or 1)
-    PutStyle(st, "bgR", region)
-    PutStyle(st, "bgG", g)
-    PutStyle(st, "bgB", b)
+    PutStyle(st, "bgR", red)
+    PutStyle(st, "bgG", green)
+    PutStyle(st, "bgB", blue)
     PutStyle(st, "bgA", a)
     PutStyle(st, "one", CUI.PP.perfect / st.owner:GetEffectiveScale())
     PutStyle(st, "grid", grid)

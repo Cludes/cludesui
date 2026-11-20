@@ -272,7 +272,7 @@ do
 
         local size = (p and p.borderSize) or 1
         local texture = (p and p.borderTexture) or "solid"
-        local region, g, b, a =
+        local red, green, blue, a =
             (p and p.borderR) or 0, (p and p.borderG) or 0, (p and p.borderB) or 0, (p and p.borderA) or 1
         local ox, oy = p and p.borderTextureOffset, p and p.borderTextureOffsetY
         local sx, sy = p and p.borderTextureShiftX, p and p.borderTextureShiftY
@@ -287,7 +287,7 @@ do
             -- Shape art has its own thickness units; never send it through the
             -- rectangular border cache, which must repaint after switching back.
             if border._eabrSize ~= nil then
-                CludesUI.ApplyBorderStyle(border, 0, region, g, b, a, "solid")
+                CludesUI.ApplyBorderStyle(border, 0, red, green, blue, a, "solid")
                 border._eabrSize = nil
             end
             border:SetFrameLevel(level)
@@ -300,9 +300,9 @@ do
                 nil,
                 CludesUI.SHAPE_BORDERS[p.iconShape],
                 size > 0 and 7 or 0,
-                region,
-                g,
-                b,
+                red,
+                green,
+                blue,
                 a
             )
             return
@@ -317,9 +317,9 @@ do
             border._eabrSize == size
             and border._eabrTexture == texture
             and border._eabrPx == pxRaw
-            and border._eabrR == region
-            and border._eabrG == g
-            and border._eabrB == b
+            and border._eabrR == red
+            and border._eabrG == green
+            and border._eabrB == blue
             and border._eabrA == a
             and border._eabrOX == ox
             and border._eabrOY == oy
@@ -335,9 +335,9 @@ do
         CludesUI.ApplyBorderStyle(
             border,
             size,
-            region,
-            g,
-            b,
+            red,
+            green,
+            blue,
             a,
             texture,
             ox,
@@ -350,7 +350,7 @@ do
             CludesUI.BorderPx(pxRaw, size, texture)
         )
         border._eabrSize, border._eabrTexture, border._eabrPx = size, texture, pxRaw
-        border._eabrR, border._eabrG, border._eabrB, border._eabrA = region, g, b, a
+        border._eabrR, border._eabrG, border._eabrB, border._eabrA = red, green, blue, a
         border._eabrOX, border._eabrOY, border._eabrSX, border._eabrSY = ox, oy, sx, sy
         border._eabrBehind, border._eabrLevel = behind, level
     end

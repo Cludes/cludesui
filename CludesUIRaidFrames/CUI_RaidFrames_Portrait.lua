@@ -429,35 +429,35 @@ local function TintBorder(edge, unitToken, ctOverride)
     if not (bt and edge._tintClass) then
         return
     end
-    local region, g, b
+    local red, green, blue
     local s = mod._scaledPartyProxy
     if ctOverride then
         local c = CludesUI.GetClassColor(ctOverride)
         if c then
-            region, g, b = c.r, c.g, c.b
+            red, green, blue = c.r, c.g, c.b
         end
     elseif s and s.healthColorMode == "dark" then
-        region, g, b = PlayerClassColor()
+        red, green, blue = PlayerClassColor()
     elseif unitToken and UnitExists(unitToken) then
         local _, ct = UnitClass(unitToken)
         local isPl = UnitIsPlayer(unitToken)
         if not issecretvalue(ct) and not issecretvalue(isPl) and isPl and ct then
             local c = CludesUI.GetClassColor(ct)
             if c then
-                region, g, b = c.r, c.g, c.b
+                red, green, blue = c.r, c.g, c.b
             end
         else
             local re = UnitReaction(unitToken, "player")
             local c = (not issecretvalue(re)) and re and FACTION_BAR_COLORS and FACTION_BAR_COLORS[re]
             if c then
-                region, g, b = c.r, c.g, c.b
+                red, green, blue = c.r, c.g, c.b
             end
         end
     end
-    if not region then
-        region, g, b = PlayerClassColor()
+    if not red then
+        red, green, blue = PlayerClassColor()
     end
-    bt:SetVertexColor(region, g, b, edge._bA or 1)
+    bt:SetVertexColor(red, green, blue, edge._bA or 1)
 end
 
 -- Which art region shows. Leaving 3D drops the model (frees it). True when

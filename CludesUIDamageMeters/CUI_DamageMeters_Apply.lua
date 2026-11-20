@@ -139,13 +139,13 @@ end
 
 mod.ApplyBackground = function()
     local conf = DB()
-    local region, g, b, a = conf.bgR or 0, conf.bgG or 0, conf.bgB or 0, conf.bgAlpha or 0.75
+    local red, green, blue, a = conf.bgR or 0, conf.bgG or 0, conf.bgB or 0, conf.bgAlpha or 0.75
     for _, wid in ipairs(_windows) do
         if wid.frame and wid.frame._bg then
-            mod.DMPaintWindowBg(wid.frame._bg, region, g, b, a, true, conf.bgTexture)
+            mod.DMPaintWindowBg(wid.frame._bg, red, green, blue, a, true, conf.bgTexture)
         end
         if wid.sourceFrame and wid.sourceFrame._bg then
-            mod.DMPaintWindowBg(wid.sourceFrame._bg, region, g, b, a, nil, conf.bgTexture)
+            mod.DMPaintWindowBg(wid.sourceFrame._bg, red, green, blue, a, nil, conf.bgTexture)
         end
     end
     -- Under Classic WoW UI the header tint is shaded from the window colour.
@@ -164,7 +164,7 @@ mod.ApplyWindowBorder = function()
     -- Exact size (nil = the legacy step path); a stock style forces size 0, no px.
     local px = size > 0 and CUI.BorderPx(conf.windowBorderSizePx, size, texture) or nil
     local color = conf.windowBorderColor or {}
-    local region, g, b, a = color.r or 0, color.g or 0, color.b or 0, color.a or 1
+    local red, green, blue, a = color.r or 0, color.g or 0, color.b or 0, color.a or 1
     local includeHeader = conf.windowBorderIncludeHeader ~= false
     local offsetX = texture ~= "solid" and (tonumber(conf.windowBorderOffsetX) or 0) or 0
     local offsetY = texture ~= "solid" and (tonumber(conf.windowBorderOffsetY) or 0) or 0
@@ -181,7 +181,7 @@ mod.ApplyWindowBorder = function()
             end
             target:SetPoint("BOTTOMRIGHT", wid.frame, "BOTTOMRIGHT", offsetX, -offsetY)
             -- Offsets are represented by the target geometry itself, which also makes them work for the solid four-strip border implementation
-            CUI.ApplyBorderStyle(target, size, region, g, b, a, texture, nil, nil, nil, nil, nil, nil, nil, px)
+            CUI.ApplyBorderStyle(target, size, red, green, blue, a, texture, nil, nil, nil, nil, nil, nil, nil, px)
             if conf.hdrBottomSeparator or wid._headerSeparator then
                 mod.DMApplyHeaderSeparator(wid)
             end
@@ -275,20 +275,20 @@ end
 
 mod.ApplyIconColor = function()
     local conf = DB()
-    local region, g, b
+    local red, green, blue
     if conf.iconColorUseAccent then
-        region, g, b = GetAccentRGB()
+        red, green, blue = GetAccentRGB()
     else
         local c = conf.iconColor
-        region = c and c.r or 1
-        g = c and c.g or 1
-        b = c and c.b or 1
+        red = c and c.r or 1
+        green = c and c.g or 1
+        blue = c and c.b or 1
     end
     for _, wid in ipairs(_windows) do
         for _, iconTex in ipairs(wid.hdrIcons) do
             -- Stock-style art carries its own colours.
             if not iconTex._hdrArt then
-                iconTex:SetVertexColor(region, g, b, ICON_ALPHA)
+                iconTex:SetVertexColor(red, green, blue, ICON_ALPHA)
             end
         end
     end

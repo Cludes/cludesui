@@ -409,9 +409,9 @@ function NameplateFrame:UpdateHealthValues()
             else
                 local success, colour = pcall(UnitHealthPercent, unitToken, true, curve)
                 if success and colour and colour.GetRGBA then
-                    local region, g, b, a = colour:GetRGBA()
+                    local red, green, blue, a = colour:GetRGBA()
                     for index = 1, #lg do
-                        lg[index]:SetVertexColor(region, g, b, a)
+                        lg[index]:SetVertexColor(red, green, blue, a)
                     end
                 end
             end

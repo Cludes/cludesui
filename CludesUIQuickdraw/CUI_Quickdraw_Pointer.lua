@@ -158,7 +158,7 @@ function PaletteView:AdvanceNeedle(nowTime)
     -- 0.25s ease-out grow, the alpha riding the ease. Colored by the
     -- selection color -- lifted toward white for the streak, the same lift
     -- the armed border uses -- so the line and the entry it lands on agree.
-    local region, g, b = SelectColor(self:P())
+    local red, green, blue = SelectColor(self:P())
     local t = (nowTime - (self._needleT0 or nowTime)) / 0.25
     if t > 1 then
         t = 1
@@ -166,7 +166,7 @@ function PaletteView:AdvanceNeedle(nowTime)
     local ease = 1 - (1 - t) * (1 - t)
     line:SetStartPoint("CENTER", self.frame, sx, sy)
     line:SetEndPoint("CENTER", self.frame, sx + (ex - sx) * ease, sy + (ey - sy) * ease)
-    line:SetVertexColor(region, g, b, 0.75 * ease)
+    line:SetVertexColor(red, green, blue, 0.75 * ease)
     line:Show()
 
     local pulse = hub.pulse
@@ -210,7 +210,7 @@ function PaletteView:AdvanceNeedle(nowTime)
                     sx + (ex - sx) * clampHead,
                     sy + (ey - sy) * clampHead
                 )
-                pulse:SetVertexColor(region + (1 - region) * 0.55, g + (1 - g) * 0.55, b + (1 - b) * 0.55, 0.5 * fadeA)
+                pulse:SetVertexColor(red + (1 - red) * 0.55, green + (1 - green) * 0.55, blue + (1 - blue) * 0.55, 0.5 * fadeA)
                 pulse:Show()
             end
         else

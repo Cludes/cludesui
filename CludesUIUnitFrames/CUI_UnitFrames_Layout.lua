@@ -266,9 +266,9 @@ local function ApplyClassColor(fontStr, unitToken, useClassColor, customR, custo
         -- Class color for players (and AI party members), reaction color for NPCs,
         -- matching the health bar and the custom Enemy Colors override. Shared
         -- with the cui-tgtname tag via ns.ResolveUnitNameColor.
-        local region, g, b = mod.ResolveUnitNameColor(unitToken)
-        if region then
-            fontStr:SetTextColor(region, g, b)
+        local red, green, blue = mod.ResolveUnitNameColor(unitToken)
+        if red then
+            fontStr:SetTextColor(red, green, blue)
             return
         end
         -- ResolveUnitNameColor returns nil for a SECRET class token (identity-restricted
@@ -476,9 +476,9 @@ local function CreateBottomTextBar(widget, unitToken, prefs, anchor, xOffset, ov
             -- Secret-safe per-unit power color: player resolves via the clean
             -- string token; non-player units recover it from the clean integer
             -- power type instead of falling back to white.
-            local region, g, b = CludesUI.ResolveUnitPowerColor(unitToken)
-            if region then
-                fontStr:SetTextColor(region, g, b)
+            local red, green, blue = CludesUI.ResolveUnitPowerColor(unitToken)
+            if red then
+                fontStr:SetTextColor(red, green, blue)
             else
                 fontStr:SetTextColor(1, 1, 1)
             end

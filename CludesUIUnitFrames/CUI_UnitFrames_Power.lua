@@ -366,12 +366,12 @@ if CludesUI.SpellCostPrediction then
         -- own alpha stays at 1 while a gradient carries the opacity.
         Color = function()
             local s = GetSettingsForUnit("player")
-            local region, g, b = mod.UF_PowerCostColor(s)
+            local red, green, b = mod.UF_PowerCostColor(s)
             local op = (s and s.powerBarOpacity) or 100
             if op <= 1.0 then
                 op = op * 100
             end
-            return region, g, b, op / 100
+            return red, green, b, op / 100
         end,
         Mask = function(power)
             return power._blizzMasked and power._blizzMask or nil
@@ -686,9 +686,9 @@ local function CreatePowerBar(widget, unitToken, prefs)
         if s.powerPercentTextPowerColor then
             -- Secret-safe per-unit color: player keeps the exact token color,
             -- non-player recovers it from the clean integer power type.
-            local region, g, b = CludesUI.ResolveUnitPowerColor(unitToken)
-            if region then
-                ppFS:SetTextColor(region, g, b)
+            local red, green, blue = CludesUI.ResolveUnitPowerColor(unitToken)
+            if red then
+                ppFS:SetTextColor(red, green, blue)
             else
                 ppFS:SetTextColor(1, 1, 1)
             end
