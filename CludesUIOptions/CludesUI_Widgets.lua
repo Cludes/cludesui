@@ -1670,7 +1670,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if dropMenu:GetNumPoints() ~= 1 then
                 return
             end
-            local pt, rel, rpt, posX, cursorY = dropMenu:GetPoint(1)
+            local pt, relTo, rpt, posX, cursorY = dropMenu:GetPoint(1)
             -- Not the offsets this function set (read back as floats): the caller
             -- anchored the list again, so those are the new base.
             local sx, sy = dropMenu._seatedX, dropMenu._seatedY
@@ -1678,13 +1678,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 dropMenu._seatX, dropMenu._seatY = posX, cursorY
             end
             posX, cursorY = dropMenu._seatX, dropMenu._seatY
-            dropMenu:SetPoint(pt, rel, rpt, posX, cursorY)
+            dropMenu:SetPoint(pt, relTo, rpt, posX, cursorY)
             local l, t = dropMenu:GetLeft(), dropMenu:GetTop()
             local keyName = dropMenu:GetEffectiveScale() / CludesUI.PP.perfect
             if l and t and keyName > 0 and not (issecretvalue(l) or issecretvalue(t)) then
                 l, t = l * keyName, t * keyName
                 posX, cursorY = posX + (floor(l + 0.5) - l) / keyName, cursorY + (floor(t + 0.5) - t) / keyName
-                dropMenu:SetPoint(pt, rel, rpt, posX, cursorY)
+                dropMenu:SetPoint(pt, relTo, rpt, posX, cursorY)
             end
             dropMenu._seatedX, dropMenu._seatedY = posX, cursorY
         end
@@ -2751,11 +2751,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local hostFrame = cardFrame.frame:GetParent()
         for _, childFrame in ipairs({ hostFrame:GetChildren() }) do
             if childFrame ~= cardFrame.frame and childFrame:GetNumPoints() > 0 then
-                local p, rel, rp, _, cursorY = childFrame:GetPoint(1)
+                local point, relTo, relPoint, _, cursorY = childFrame:GetPoint(1)
                 if
-                    rel == hostFrame
-                    and p == "TOPLEFT"
-                    and rp == "TOPLEFT"
+                    relTo == hostFrame
+                    and point == "TOPLEFT"
+                    and relPoint == "TOPLEFT"
                     and cursorY
                     and not (issecretvalue and issecretvalue(cursorY))
                     and cursorY < cardFrame.y
@@ -2861,12 +2861,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         for _, childFrame in ipairs({ hostFrame:GetChildren() }) do
             local num = childFrame:GetNumPoints()
             if num and num > 0 and childFrame:IsShown() then
-                local p, rel, rp, _, cursorY = childFrame:GetPoint(1)
+                local point, relTo, relPoint, _, cursorY = childFrame:GetPoint(1)
                 local height = childFrame:GetHeight()
                 if
-                    rel == hostFrame
-                    and p == "TOPLEFT"
-                    and rp == "TOPLEFT"
+                    relTo == hostFrame
+                    and point == "TOPLEFT"
+                    and relPoint == "TOPLEFT"
                     and cursorY
                     and height
                     and not (issecretvalue and (issecretvalue(cursorY) or issecretvalue(height)))

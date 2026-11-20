@@ -1279,9 +1279,9 @@ collapseBtn:SetScript("OnClick", function()
         local newWidth = CUI_Bank:GetWidth()
         local shift = oldWidth - newWidth
         if math.abs(shift) > 0.5 then
-            local anchorPoint, rel, relPoint, posX, posY = CUI_Bank:GetPoint()
+            local anchorPoint, relTo, relPoint, posX, posY = CUI_Bank:GetPoint()
             CUI_Bank:ClearAllPoints()
-            CUI_Bank:SetPoint(anchorPoint, rel, relPoint, posX + shift, posY)
+            CUI_Bank:SetPoint(anchorPoint, relTo, relPoint, posX + shift, posY)
             BP().bankPosition = { point = anchorPoint, relativePoint = relPoint, x = posX + shift, y = posY }
         end
     end

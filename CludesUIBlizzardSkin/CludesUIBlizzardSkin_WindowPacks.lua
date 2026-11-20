@@ -470,8 +470,8 @@ do
         for idx = 1, #regionList do
             local region = regionList[idx]
             if region and region.IsObjectType and region:IsObjectType("Texture") and region:GetDrawLayer() == "BACKGROUND" then
-                local a = region:GetAlpha() or 1
-                if a > 0.75 then
+                local alpha = region:GetAlpha() or 1
+                if alpha > 0.75 then
                     region:SetAlpha(0.75)
                 end
             end
@@ -611,16 +611,16 @@ do
             local ed = GetFFD(editField)
             if not ed.shorter then
                 ed.shorter = true
-                local n = editField:GetNumPoints() or 0
+                local numPoints = editField:GetNumPoints() or 0
                 local pts, hasBottom = {}, false
-                for idx = 1, n do
-                    local p, rel, rp, posX, posY = editField:GetPoint(idx)
-                    if p and p:find("BOTTOM") then
-                        pts[idx] = { p, rel, rp, posX or 0, (posY or 0) + 5 }
+                for idx = 1, numPoints do
+                    local point, relTo, relPoint, posX, posY = editField:GetPoint(idx)
+                    if point and point:find("BOTTOM") then
+                        pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) + 5 }
                         hasBottom = true
-                    elseif p then
+                    elseif point then
                         -- TOP / LEFT / RIGHT / CENTER: shift down 15.
-                        pts[idx] = { p, rel, rp, posX or 0, (posY or 0) - 15 }
+                        pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) - 15 }
                     end
                 end
                 editField:ClearAllPoints()
@@ -677,9 +677,9 @@ do
                 "GetHighlightTexture",
                 "GetDisabledTexture",
             }) do
-                local t = btnFrame[g] and btnFrame[g](btnFrame)
-                if t and t.SetAlpha then
-                    t:SetAlpha(0)
+                local part = btnFrame[g] and btnFrame[g](btnFrame)
+                if part and part.SetAlpha then
+                    part:SetAlpha(0)
                 end
             end
             Skin.FadeRegions(btnFrame)
@@ -712,9 +712,9 @@ do
                     -- art); center bookmark stays full, top bar/corner flipbook stay off.
                     Skin.ExemptArt(subPanel)
                     for _, bk in ipairs({ "BookBGLeft", "BookBGRight", "BookBGHalved" }) do
-                        local t = subPanel[bk]
-                        if t and t.SetAlpha then
-                            t:SetAlpha(0.1)
+                        local part = subPanel[bk]
+                        if part and part.SetAlpha then
+                            part:SetAlpha(0.1)
                         end
                     end
                     if subPanel.TopBar and subPanel.TopBar.SetAlpha then
@@ -1053,9 +1053,9 @@ do
                 "GetDisabledTexture",
             }) do
                 local func = btnFrame[g]
-                local t = func and func(btnFrame)
-                if t and t.SetAlpha then
-                    t:SetAlpha(0)
+                local part = func and func(btnFrame)
+                if part and part.SetAlpha then
+                    part:SetAlpha(0)
                 end
             end
             Skin.FadeRegions(btnFrame)
@@ -1098,9 +1098,9 @@ do
                     "GetDisabledTexture",
                 }) do
                     local func = menuArrow[g]
-                    local t = func and func(menuArrow)
-                    if t and not keepSet[t] and t.SetAlpha then
-                        t:SetAlpha(0)
+                    local part = func and func(menuArrow)
+                    if part and not keepSet[part] and part.SetAlpha then
+                        part:SetAlpha(0)
                     end
                 end
                 if menuArrow.Art and menuArrow.Art.SetAlpha then
@@ -1144,9 +1144,9 @@ do
             "InsetBorderLeft",
             "InsetBorderRight",
         }) do
-            local t = navBar[keyName]
-            if t and t.SetAlpha then
-                t:SetAlpha(0)
+            local part = navBar[keyName]
+            if part and part.SetAlpha then
+                part:SetAlpha(0)
             end
         end
         local navData = GetFFD(navBar)
@@ -1158,9 +1158,9 @@ do
         local bc = bgColor or { 1, 1, 1, 0.05 }
         navData.bg:SetColorTexture(bc[1], bc[2], bc[3], bc[4])
         if navData.origP == nil then
-            local p, rel, rp, posX, posY = navBar:GetPoint(1)
-            if p then
-                navData.origP, navData.origRel, navData.origRP = p, rel, rp
+            local point, relTo, relPoint, posX, posY = navBar:GetPoint(1)
+            if point then
+                navData.origP, navData.origRel, navData.origRP = point, relTo, relPoint
                 navData.origX, navData.origY = posX or 0, posY or 0
             end
         end
@@ -1241,9 +1241,9 @@ do
                 "GetDisabledTexture",
             }) do
                 local func = btnFrame[g]
-                local t = func and func(btnFrame)
-                if t and t.SetAlpha then
-                    t:SetAlpha(0)
+                local part = func and func(btnFrame)
+                if part and part.SetAlpha then
+                    part:SetAlpha(0)
                 end
             end
             local fillTex = btnFrame:CreateTexture(nil, "BACKGROUND", nil, -2)
@@ -1340,9 +1340,9 @@ do
         end
         for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetDisabledTexture" }) do
             local func = btnFrame[getter]
-            local t = func and func(btnFrame)
-            if t and not keepSet[t] and t.SetAlpha then
-                t:SetAlpha(0.5)
+            local part = func and func(btnFrame)
+            if part and not keepSet[part] and part.SetAlpha then
+                part:SetAlpha(0.5)
             end
         end
         local highlight = btnFrame.GetHighlightTexture and btnFrame:GetHighlightTexture()
@@ -1383,18 +1383,18 @@ do
             return
         end
         local skinData = GetFFD(tabBtn)
-        local p, rel, rp, posX, posY = tabBtn:GetPoint(1)
-        if not p then
+        local point, relTo, relPoint, posX, posY = tabBtn:GetPoint(1)
+        if not point then
             return
         end
         if skinData.origX == nil then
             skinData.origX, skinData.origY = posX or 0, posY or 0
         end
-        local relIsTab = rel and FFD[rel] and FFD[rel].sidetab
+        local relIsTab = relTo and FFD[relTo] and FFD[relTo].sidetab
         local xAdd = relIsTab and 0 or SIDE_TAB_X
         local yMult = relIsTab and 1 or ((index or 1) - 1)
         tabBtn:ClearAllPoints()
-        tabBtn:SetPoint(p, rel, rp, skinData.origX + xAdd, skinData.origY - SIDE_TAB_GAP * yMult)
+        tabBtn:SetPoint(point, relTo, relPoint, skinData.origX + xAdd, skinData.origY - SIDE_TAB_GAP * yMult)
     end
 
     local function SkinSideTab(tabBtn, index)
@@ -1427,9 +1427,9 @@ do
             "GetHighlightTexture",
         }) do
             local func = tabBtn[g]
-            local t = func and func(tabBtn)
-            if t and t ~= skinData.hover and t.SetAlpha then
-                t:SetAlpha(0)
+            local part = func and func(tabBtn)
+            if part and part ~= skinData.hover and part.SetAlpha then
+                part:SetAlpha(0)
             end
         end
         -- Pin the glyph to its original anchor (no nudge: icons read off-center).
@@ -1448,10 +1448,10 @@ do
             then
                 local regionData = GetFFD(region)
                 if not regionData.pinned then
-                    local p, rel, rp, posX, posY = region:GetPoint(1)
-                    if p then
+                    local point, relTo, relPoint, posX, posY = region:GetPoint(1)
+                    if point then
                         regionData.pinned = true
-                        regionData.pin = { p, rel, rp, posX or 0, posY or 0 }
+                        regionData.pin = { point, relTo, relPoint, posX or 0, posY or 0 }
                         hooksecurefunc(region, "SetPoint", function()
                             if regionData.inPin then
                                 return
@@ -1687,10 +1687,10 @@ do
                                 end
                                 -- 3px left, chain roots only: an icon chained to a
                                 -- previous icon keeps its relative anchor since shifting the root moves the whole group.
-                                local p, rel, rp, posX, posY = importControl:GetPoint(1)
-                                if p and not seen[rel] then
+                                local point, relTo, relPoint, posX, posY = importControl:GetPoint(1)
+                                if point and not seen[relTo] then
                                     importControl:ClearAllPoints()
-                                    importControl:SetPoint(p, rel, rp, (posX or 0) - 3, posY or 0)
+                                    importControl:SetPoint(point, relTo, relPoint, (posX or 0) - 3, posY or 0)
                                 end
                                 seen[importControl] = true
                             end
@@ -1715,8 +1715,8 @@ do
         for idx = 1, #regionList do
             local region = regionList[idx]
             if region and region.IsObjectType and region:IsObjectType("Texture") and region:GetDrawLayer() == "BACKGROUND" then
-                local a = region:GetAlpha() or 1
-                if a > 0.5 then
+                local alpha = region:GetAlpha() or 1
+                if alpha > 0.5 then
                     region:SetAlpha(0.25)
                 end
             end
@@ -1748,13 +1748,13 @@ do
                 if skinData.inNudge then
                     return
                 end
-                local p, rel, rp, posX, posY = gv:GetPoint(1)
-                if not p then
+                local point, relTo, relPoint, posX, posY = gv:GetPoint(1)
+                if not point then
                     return
                 end
                 skinData.inNudge = true
                 gv:ClearAllPoints()
-                gv:SetPoint(p, rel, rp, (posX or 0) + 4, posY or 0)
+                gv:SetPoint(point, relTo, relPoint, (posX or 0) + 4, posY or 0)
                 skinData.inNudge = false
             end
             hooksecurefunc(gv, "SetPoint", nudge)
@@ -1765,9 +1765,9 @@ do
         end
         local swapped = false
         for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetDisabledTexture" }) do
-            local t = gv[getter] and gv[getter](gv)
-            if t and t.SetAtlas then
-                t:SetAtlas(VAULT_BUTTON_ATLAS)
+            local part = gv[getter] and gv[getter](gv)
+            if part and part.SetAtlas then
+                part:SetAtlas(VAULT_BUTTON_ATLAS)
                 swapped = true
             end
         end
@@ -1894,9 +1894,9 @@ do
             -- Seat 2px lower than Blizzard's spot (idempotent, original anchor captured once).
             local partData = GetFFD(win.searchBox)
             if partData.origP == nil then
-                local p, rel, rp, posX, posY = win.searchBox:GetPoint(1)
-                if p then
-                    partData.origP, partData.origRel, partData.origRP = p, rel, rp
+                local point, relTo, relPoint, posX, posY = win.searchBox:GetPoint(1)
+                if point then
+                    partData.origP, partData.origRel, partData.origRP = point, relTo, relPoint
                     partData.origX, partData.origY = posX or 0, posY or 0
                 end
             end
@@ -1991,9 +1991,9 @@ do
             -- Seat 4px left of Blizzard's spot (idempotent: original anchor captured once).
             local dropdown = GetFFD(diff)
             if dropdown.origP == nil then
-                local p, rel, rp, posX, posY = diff:GetPoint(1)
-                if p then
-                    dropdown.origP, dropdown.origRel, dropdown.origRP = p, rel, rp
+                local point, relTo, relPoint, posX, posY = diff:GetPoint(1)
+                if point then
+                    dropdown.origP, dropdown.origRel, dropdown.origRP = point, relTo, relPoint
                     dropdown.origX, dropdown.origY = posX or 0, posY or 0
                 end
             end
@@ -2106,9 +2106,9 @@ do
             local details = e.info
             if details then
                 for _, keyName in ipairs({ "leftShadow", "rightShadow", "titleBG" }) do
-                    local t = details[keyName]
-                    if t and t.SetAlpha then
-                        t:SetAlpha(0)
+                    local part = details[keyName]
+                    if part and part.SetAlpha then
+                        part:SetAlpha(0)
                     end
                 end
                 -- Model tab: scene backdrop + vignette re-texture per encounter, so re-fade each pass.
@@ -2116,17 +2116,17 @@ do
                     "EncounterJournalEncounterFrameInfoModelFrameDungeonBG",
                     "EncounterJournalEncounterFrameInfoModelFrameShadow",
                 }) do
-                    local t = _G[n]
-                    if t and t.SetAlpha then
-                        t:SetAlpha(0)
+                    local part = _G[n]
+                    if part and part.SetAlpha then
+                        part:SetAlpha(0)
                     end
                 end
                 local lc = details.LootContainer
                 if lc then
                     for _, keyName in ipairs({ "bossTexture", "bosslessTexture" }) do
-                        local t = lc[keyName]
-                        if t and t.SetAlpha then
-                            t:SetAlpha(0)
+                        local part = lc[keyName]
+                        if part and part.SetAlpha then
+                            part:SetAlpha(0)
                         end
                     end
                     FlattenLootRows(lc)
@@ -2318,9 +2318,9 @@ do
             end
         end
         for _, keyName in ipairs({ "Border", "FlyoutBorder", "FlyoutBorderShadow", "Background", "Flash" }) do
-            local t = button[keyName]
-            if t and t.SetAlpha then
-                t:SetAlpha(0)
+            local part = button[keyName]
+            if part and part.SetAlpha then
+                part:SetAlpha(0)
             end
         end
         local nt = button.GetNormalTexture and button:GetNormalTexture()
@@ -2348,9 +2348,9 @@ do
         local n = scrollBar.GetName and scrollBar:GetName()
         if n then
             for _, suf in ipairs({ "Left", "Right", "BGLeft", "BGMiddle", "BGRight" }) do
-                local t = _G[n .. suf]
-                if t and t.SetAlpha then
-                    t:SetAlpha(0)
+                local part = _G[n .. suf]
+                if part and part.SetAlpha then
+                    part:SetAlpha(0)
                 end
             end
         end
@@ -2376,10 +2376,10 @@ do
                 skinData.stretched = true
                 local delta = L - sL
                 if math.abs(delta) <= 20 then
-                    local p, rel, rp, posX, posY = scrollBar:GetPoint(1)
-                    if p and p:find("LEFT", 1, true) then
+                    local point, relTo, relPoint, posX, posY = scrollBar:GetPoint(1)
+                    if point and point:find("LEFT", 1, true) then
                         scrollBar:ClearAllPoints()
-                        scrollBar:SetPoint(p, rel, rp, (posX or 0) + delta, posY or 0)
+                        scrollBar:SetPoint(point, relTo, relPoint, (posX or 0) + delta, posY or 0)
                     end
                     scrollBar:SetWidth(R - L)
                 end
@@ -2398,11 +2398,11 @@ do
             -- 3px lower (one-shot).
             local regionData = GetFFD(scrollBar.rankText)
             if not regionData.lowered then
-                local p, rel, rp, posX, posY = scrollBar.rankText:GetPoint(1)
-                if p then
+                local point, relTo, relPoint, posX, posY = scrollBar.rankText:GetPoint(1)
+                if point then
                     regionData.lowered = true
                     scrollBar.rankText:ClearAllPoints()
-                    scrollBar.rankText:SetPoint(p, rel, rp, posX or 0, (posY or 0) - 3)
+                    scrollBar.rankText:SetPoint(point, relTo, relPoint, posX or 0, (posY or 0) - 3)
                 end
             end
         end
@@ -2446,13 +2446,13 @@ do
                 -- the one-shot flag, letting the next OOC repaint apply it.
                 local foundData = GetFFD(found)
                 if not foundData.extended and not InCombatLockdown() then
-                    local p, rel, rp, posX, posY = found:GetPoint(1)
+                    local point, relTo, relPoint, posX, posY = found:GetPoint(1)
                     local wid = found:GetWidth()
-                    if p and wid and wid > 0 then
+                    if point and wid and wid > 0 then
                         foundData.extended = true
-                        if p:find("LEFT", 1, true) and not profSet[rel] then
+                        if point:find("LEFT", 1, true) and not profSet[relTo] then
                             found:ClearAllPoints()
-                            found:SetPoint(p, rel, rp, (posX or 0) - 30, posY or 0)
+                            found:SetPoint(point, relTo, relPoint, (posX or 0) - 30, posY or 0)
                         end
                         found:SetWidth(wid + 30)
                         -- Rects are stale right after re-anchor; let text alignment below measure on the NEXT pass.
@@ -2469,10 +2469,10 @@ do
                         local shrink = isPrimary and 12 or 2
                         found.icon:SetSize(iw - shrink, ih - shrink)
                         if isPrimary then
-                            local p, rel, rp, posX, posY = found.icon:GetPoint(1)
-                            if p then
+                            local point, relTo, relPoint, posX, posY = found.icon:GetPoint(1)
+                            if point then
                                 found.icon:ClearAllPoints()
-                                found.icon:SetPoint(p, rel, rp, posX or 0, (posY or 0) - 10)
+                                found.icon:SetPoint(point, relTo, relPoint, posX or 0, (posY or 0) - 10)
                             end
                         end
                     end
@@ -2487,12 +2487,12 @@ do
                         or _G[n .. "Unlearn"]
                         or _G[n .. "UnlearnButton"]
                     if ub and not GetFFD(ub).raised and not InCombatLockdown() then
-                        local p, rel, rp, posX, posY = ub:GetPoint(1)
-                        if p then
+                        local point, relTo, relPoint, posX, posY = ub:GetPoint(1)
+                        if point then
                             GetFFD(ub).raised = true
-                            if rel ~= found.statusBar and rel ~= found.rank then
+                            if relTo ~= found.statusBar and relTo ~= found.rank then
                                 ub:ClearAllPoints()
-                                ub:SetPoint(p, rel, rp, posX or 0, (posY or 0) + 20)
+                                ub:SetPoint(point, relTo, relPoint, posX or 0, (posY or 0) + 20)
                             end
                         end
                     end
@@ -2576,13 +2576,13 @@ do
                                         local dx = math.floor((wantX and (sbL - l) or 0) + 0.5)
                                         local dy = math.floor((targetTop - t) + 0.5)
                                         if dx ~= 0 or dy ~= 0 then
-                                            local p, rel, rp, posX, posY = fontStr:GetPoint(1)
-                                            if p then
+                                            local point, relTo, relPoint, posX, posY = fontStr:GetPoint(1)
+                                            if point then
                                                 fontStr:ClearAllPoints()
                                                 fontStr:SetPoint(
-                                                    p,
-                                                    rel,
-                                                    rp,
+                                                    point,
+                                                    relTo,
+                                                    relPoint,
                                                     (posX or 0) + dx,
                                                     (posY or 0) + dy
                                                 )
@@ -2814,16 +2814,16 @@ do
             "ArchaeologyFrameportrait",
             "ArchaeologyFramePortrait",
         }) do
-            local t = _G[g]
-            if t then
-                if t.IsObjectType and t:IsObjectType("Texture") then
-                    t:SetAlpha(0)
-                elseif t.GetObjectType then
-                    if t.NineSlice then
-                        Skin.FadeNineSlice(t.NineSlice)
+            local part = _G[g]
+            if part then
+                if part.IsObjectType and part:IsObjectType("Texture") then
+                    part:SetAlpha(0)
+                elseif part.GetObjectType then
+                    if part.NineSlice then
+                        Skin.FadeNineSlice(part.NineSlice)
                     end
-                    Skin.FadeRegions(t)
-                    Skin.Register(t, true)
+                    Skin.FadeRegions(part)
+                    Skin.Register(part, true)
                 end
             end
         end
@@ -2933,9 +2933,9 @@ do
                 "ArchaeologyFrameRankBarBackground",
                 "ArchaeologyFrameRankBarBorder",
             }) do
-                local t = _G[g]
-                if t and t.SetAlpha then
-                    t:SetAlpha(0)
+                local part = _G[g]
+                if part and part.SetAlpha then
+                    part:SetAlpha(0)
                 end
             end
             local fillTex = arb.GetStatusBarTexture and arb:GetStatusBarTexture()
@@ -3019,9 +3019,9 @@ local function SkinGuildCheck(creatureBtn)
         "GetCheckedTexture",
         "GetDisabledCheckedTexture",
     }) do
-        local t = creatureBtn[g] and creatureBtn[g](creatureBtn)
-        if t and t.SetTexture then
-            t:SetTexture("")
+        local part = creatureBtn[g] and creatureBtn[g](creatureBtn)
+        if part and part.SetTexture then
+            part:SetTexture("")
         end
     end
     local boxF = CreateFrame("Frame", nil, creatureBtn)
@@ -3094,9 +3094,9 @@ local function SquareTabIcon(tabBtn)
     end
     for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetCheckedTexture", "GetHighlightTexture" }) do
         local func = tabBtn[getter]
-        local t = func and func(tabBtn)
-        if t and t.SetAlpha then
-            t:SetAlpha(0)
+        local part = func and func(tabBtn)
+        if part and part.SetAlpha then
+            part:SetAlpha(0)
         end
     end
 end
@@ -3182,24 +3182,24 @@ do
             "GetHighlightTexture",
             "GetDisabledTexture",
         }) do
-            local t = btnFrame[m] and btnFrame[m](btnFrame)
-            if t and t.SetAlpha then
-                t:SetAlpha(0)
+            local part = btnFrame[m] and btnFrame[m](btnFrame)
+            if part and part.SetAlpha then
+                part:SetAlpha(0)
             end
         end
         if not skinData.caret then
-            local t = btnFrame:CreateTexture(nil, "OVERLAY")
-            t:SetAtlas(atlas, false)
-            t:SetSize(16, 16)
-            t:SetPoint("CENTER", -2, 0)
-            t:SetDesaturated(true)
-            t:SetVertexColor(1, 1, 1, 0.75)
-            skinData.caret = t
+            local part = btnFrame:CreateTexture(nil, "OVERLAY")
+            part:SetAtlas(atlas, false)
+            part:SetSize(16, 16)
+            part:SetPoint("CENTER", -2, 0)
+            part:SetDesaturated(true)
+            part:SetVertexColor(1, 1, 1, 0.75)
+            skinData.caret = part
             btnFrame:HookScript("OnEnter", function()
-                t:SetVertexColor(1, 1, 1, 1)
+                part:SetVertexColor(1, 1, 1, 1)
             end)
             btnFrame:HookScript("OnLeave", function()
-                t:SetVertexColor(1, 1, 1, 0.75)
+                part:SetVertexColor(1, 1, 1, 0.75)
             end)
         end
     end
@@ -3287,15 +3287,15 @@ do
         end
         local pts, success, hasLeft = {}, true, false
         for idx = 1, pointCount do
-            local p, rel, rp, posX, posY = editField:GetPoint(idx)
-            if not p then
+            local point, relTo, relPoint, posX, posY = editField:GetPoint(idx)
+            if not point then
                 success = false
                 break
             end
-            if p:find("LEFT", 1, true) then
+            if point:find("LEFT", 1, true) then
                 hasLeft = true
             end
-            pts[idx] = { p, rel, rp, posX or 0, posY or 0 }
+            pts[idx] = { point, relTo, relPoint, posX or 0, posY or 0 }
         end
         if not success then
             return
@@ -3610,10 +3610,10 @@ do
             if not sdd.adjusted then
                 sdd.adjusted = true
                 win.StreamDropdown:SetScale(0.9)
-                local p, rel, rp, posX, posY = win.StreamDropdown:GetPoint(1)
-                if p then
+                local point, relTo, relPoint, posX, posY = win.StreamDropdown:GetPoint(1)
+                if point then
                     win.StreamDropdown:ClearAllPoints()
-                    win.StreamDropdown:SetPoint(p, rel, rp, (posX or 0) - 10, posY or 0)
+                    win.StreamDropdown:SetPoint(point, relTo, relPoint, (posX or 0) - 10, posY or 0)
                 end
             end
         end
@@ -3656,11 +3656,11 @@ do
                 -- Chain gap 10px tighter (one-shot): the native anchor to the
                 -- previous tab is kept, only its y offset closes.
                 if keyName ~= "ChatTab" and not titleData.gapAdj then
-                    local p, rel, rp, posX, posY = tabBtn:GetPoint(1)
-                    if p then
+                    local point, relTo, relPoint, posX, posY = tabBtn:GetPoint(1)
+                    if point then
                         titleData.gapAdj = true
                         tabBtn:ClearAllPoints()
-                        tabBtn:SetPoint(p, rel, rp, posX or 0, (posY or 0) + 10)
+                        tabBtn:SetPoint(point, relTo, relPoint, posX or 0, (posY or 0) + 10)
                     end
                 end
             end
@@ -3722,11 +3722,11 @@ do
                         end
                         local pts = {}
                         for idx = 1, numPts do
-                            local p, rel, rp, posX, posY = sbx2:GetPoint(idx)
-                            if not p then
+                            local point, relTo, relPoint, posX, posY = sbx2:GetPoint(idx)
+                            if not point then
                                 return false
                             end
-                            pts[idx] = { p, rel, rp, (posX or 0) - 10, (posY or 0) + 6 }
+                            pts[idx] = { point, relTo, relPoint, (posX or 0) - 10, (posY or 0) + 6 }
                         end
                         sd2.pin = pts
                         return true
@@ -3908,9 +3908,9 @@ do
         local entries = win.CommunitiesList or _G.CommunitiesFrameCommunitiesList
         if entries then
             for _, keyName in ipairs({ "TopFiligree", "BottomFiligree", "Bg" }) do
-                local t = entries[keyName]
-                if t and t.SetTexture then
-                    t:SetTexture("")
+                local part = entries[keyName]
+                if part and part.SetTexture then
+                    part:SetTexture("")
                 end
             end
             if entries.FilligreeOverlay then
@@ -4025,10 +4025,10 @@ do
                 if not gdd.scaled then
                     gdd.scaled = true
                     dd2:SetScale(0.85)
-                    local p, rel, rp, posX, posY = dd2:GetPoint(1)
-                    if p then
+                    local point, relTo, relPoint, posX, posY = dd2:GetPoint(1)
+                    if point then
                         dd2:ClearAllPoints()
-                        dd2:SetPoint(p, rel, rp, posX or 0, (posY or 0) - 8)
+                        dd2:SetPoint(point, relTo, relPoint, posX or 0, (posY or 0) - 8)
                     end
                 end
             end
@@ -4171,12 +4171,12 @@ do
                 local pointCount = editField:GetNumPoints() or 0
                 local pts, success = {}, pointCount > 0
                 for idx = 1, pointCount do
-                    local p, rel, rp, posX, posY = editField:GetPoint(idx)
-                    if not p then
+                    local point, relTo, relPoint, posX, posY = editField:GetPoint(idx)
+                    if not point then
                         success = false
                         break
                     end
-                    pts[idx] = { p, rel, rp, posX or 0, (posY or 0) + 7 }
+                    pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) + 7 }
                 end
                 if success then
                     applying = true
@@ -4224,9 +4224,9 @@ do
                 "InsetBorderBottomLeft2",
                 "InsetBorderTopLeft2",
             }) do
-                local t = gb[keyName]
-                if t and t.SetAlpha then
-                    t:SetAlpha(0)
+                local part = gb[keyName]
+                if part and part.SetAlpha then
+                    part:SetAlpha(0)
                 end
             end
             local function SkinBenefitRow(row)
@@ -4305,9 +4305,9 @@ do
                 local bd3 = GetFFD(rep)
                 bd3.flat = true
                 for _, keyName in ipairs({ "Middle", "Right", "Left", "BG" }) do
-                    local t = rep[keyName]
-                    if t and t.SetAlpha then
-                        t:SetAlpha(0)
+                    local part = rep[keyName]
+                    if part and part.SetAlpha then
+                        part:SetAlpha(0)
                     end
                 end
                 if rep.Shadow and rep.Shadow.SetAlpha then
@@ -4360,9 +4360,9 @@ do
                 "InsetBorderBottomLeft2",
                 "InsetBorderTopLeft2",
             }) do
-                local t = gdet[keyName]
-                if t and t.SetAlpha then
-                    t:SetAlpha(0)
+                local part = gdet[keyName]
+                if part and part.SetAlpha then
+                    part:SetAlpha(0)
                 end
             end
         end
@@ -4466,9 +4466,9 @@ do
                             "GetDisabledTexture",
                             "GetHighlightTexture",
                         }) do
-                            local t = button[g] and button[g](button)
-                            if t and t.SetAlpha then
-                                t:SetAlpha(0)
+                            local part = button[g] and button[g](button)
+                            if part and part.SetAlpha then
+                                part:SetAlpha(0)
                             end
                         end
                     end
@@ -4516,12 +4516,12 @@ do
                     local pointCount = fsr:GetNumPoints() or 0
                     local pts, success = {}, pointCount > 0
                     for idx = 1, pointCount do
-                        local p, rel, rp, posX, posY = fsr:GetPoint(idx)
-                        if not p then
+                        local point, relTo, relPoint, posX, posY = fsr:GetPoint(idx)
+                        if not point then
                             success = false
                             break
                         end
-                        pts[idx] = { p, rel, rp, posX or 0, (posY or 0) - 2 }
+                        pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) - 2 }
                     end
                     if success then
                         labelData.dropped = true
@@ -4723,17 +4723,17 @@ local function CalReseat(widget, dyUp)
     if skinData.reseated then
         return
     end
-    local n = widget:GetNumPoints() or 0
-    if n < 1 then
+    local numPoints = widget:GetNumPoints() or 0
+    if numPoints < 1 then
         return
     end
     local pts = {}
-    for idx = 1, n do
-        local p, rel, rp, posX, posY = widget:GetPoint(idx)
-        if not p then
+    for idx = 1, numPoints do
+        local point, relTo, relPoint, posX, posY = widget:GetPoint(idx)
+        if not point then
             return
         end
-        pts[idx] = { p, rel, rp, posX or 0, (posY or 0) + dyUp }
+        pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) + dyUp }
     end
     skinData.reseated = true
     widget:ClearAllPoints()
@@ -4930,12 +4930,12 @@ do
                     local pointCount = ccc:GetNumPoints() or 0
                     local pts, success = {}, pointCount > 0
                     for idx = 1, pointCount do
-                        local p, rel, rp, posX, posY = ccc:GetPoint(idx)
-                        if not p then
+                        local point, relTo, relPoint, posX, posY = ccc:GetPoint(idx)
+                        if not point then
                             success = false
                             break
                         end
-                        pts[idx] = { p, rel, rp, (posX or 0) + 3, posY or 0 }
+                        pts[idx] = { point, relTo, relPoint, (posX or 0) + 3, posY or 0 }
                     end
                     if success then
                         GetFFD(ccc).nudgedRight = true
@@ -4965,9 +4965,9 @@ do
                     "CalendarEventPickerFrameButtonBackground",
                     "CalendarEventPickerCloseButtonBorder",
                 }) do
-                    local t = _G[n]
-                    if t and t.SetAlpha then
-                        t:SetAlpha(0)
+                    local part = _G[n]
+                    if part and part.SetAlpha then
+                        part:SetAlpha(0)
                     end
                 end
                 if popFrame.Header then
@@ -5117,8 +5117,8 @@ do
                 -- Bar text 3px lower (one-shot), as on professions bars: house font rides high on these.
                 local regionData = GetFFD(fontStr)
                 if not regionData.lowered then
-                    local p, rel, rp, posX, posY = fontStr:GetPoint(1)
-                    if p then
+                    local point, relTo, relPoint, posX, posY = fontStr:GetPoint(1)
+                    if point then
                         local offsetY = -3
                         if barFrame and barFrame.GetParent then
                             local parent = barFrame:GetParent()
@@ -5134,7 +5134,7 @@ do
                         end
                         regionData.lowered = true
                         fontStr:ClearAllPoints()
-                        fontStr:SetPoint(p, rel, rp, posX or 0, (posY or 0) + offsetY)
+                        fontStr:SetPoint(point, relTo, relPoint, posX or 0, (posY or 0) + offsetY)
                     end
                 end
             end
@@ -5348,12 +5348,12 @@ do
                 if numPts and numPts > 0 then
                     local pts, success = {}, true
                     for idx = 1, numPts do
-                        local p, rel, rp, posX, posY = fsn:GetPoint(idx)
-                        if not p then
+                        local point, relTo, relPoint, posX, posY = fsn:GetPoint(idx)
+                        if not point then
                             success = false
                             break
                         end
-                        pts[idx] = { p, rel, rp, posX or 0, (posY or 0) + 3 }
+                        pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) + 3 }
                     end
                     if success then
                         regionData.raised = true
@@ -5518,9 +5518,9 @@ do
             "AchievementFrameWaterMark",
             "AchievementFrameStatsBG",
         }) do
-            local t = _G[label]
-            if t and t.SetAlpha then
-                t:SetAlpha(0)
+            local part = _G[label]
+            if part and part.SetAlpha then
+                part:SetAlpha(0)
             end
         end
         for _, label in ipairs({
@@ -5631,13 +5631,13 @@ do
         end)
         local achTabs = {}
         for idx = 1, 3 do
-            local t = _G["AchievementFrameTab" .. idx]
-            if t then
-                Skin.Tab(t)
-                achTabs[#achTabs + 1] = t
-                if not GetFFD(t).sweepHook then
-                    GetFFD(t).sweepHook = true
-                    t:HookScript("OnClick", sweepOnTab)
+            local part = _G["AchievementFrameTab" .. idx]
+            if part then
+                Skin.Tab(part)
+                achTabs[#achTabs + 1] = part
+                if not GetFFD(part).sweepHook then
+                    GetFFD(part).sweepHook = true
+                    part:HookScript("OnClick", sweepOnTab)
                 end
             end
         end
@@ -5692,12 +5692,12 @@ do
             if numPts and numPts > 0 then
                 local pts, success = {}, true
                 for idx = 1, numPts do
-                    local p, rel, rp, posX, posY = catBox:GetPoint(idx)
-                    if not p then
+                    local point, relTo, relPoint, posX, posY = catBox:GetPoint(idx)
+                    if not point then
                         success = false
                         break
                     end
-                    pts[idx] = { p, rel, rp, posX or 0, (posY or 0) - 10 }
+                    pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) - 10 }
                 end
                 if success then
                     GetFFD(catBox).shifted = true
@@ -5717,12 +5717,12 @@ do
             if numPts and numPts > 0 then
                 local pts, success = {}, true
                 for idx = 1, numPts do
-                    local p, rel, rp, posX, posY = achBox:GetPoint(idx)
-                    if not p then
+                    local point, relTo, relPoint, posX, posY = achBox:GetPoint(idx)
+                    if not point then
                         success = false
                         break
                     end
-                    pts[idx] = { p, rel, rp, posX or 0, (posY or 0) - 10 }
+                    pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) - 10 }
                 end
                 if success then
                     GetFFD(achBox).shifted = true
@@ -5741,9 +5741,9 @@ do
             "AchievementFrameSummaryAchievementsHeaderHeader",
             "AchievementFrameSummaryCategoriesHeaderTexture",
         }) do
-            local t = _G[tn]
-            if t and t.SetVertexColor then
-                t:SetVertexColor(1, 1, 1, 0.25)
+            local part = _G[tn]
+            if part and part.SetVertexColor then
+                part:SetVertexColor(1, 1, 1, 0.25)
             end
         end
         for idx = 1, 12 do
@@ -5781,9 +5781,9 @@ do
                 "AchievementFrameComparisonHeaderPortrait",
                 "AchievementFrameComparisonHeaderPortraitBg",
             }) do
-                local t = _G[tn]
-                if t and t.SetAlpha then
-                    t:SetAlpha(0)
+                local part = _G[tn]
+                if part and part.SetAlpha then
+                    part:SetAlpha(0)
                 end
             end
             local compHdr = _G.AchievementFrameComparisonHeader
@@ -5834,9 +5834,9 @@ do
                 end
                 -- Pooled: re-fade the native art + retint text every pass.
                 for _, keyName in ipairs({ "Background", "TitleBar", "Glow", "Highlight" }) do
-                    local t = cardFrame[keyName]
-                    if t and t.SetAlpha then
-                        t:SetAlpha(0)
+                    local part = cardFrame[keyName]
+                    if part and part.SetAlpha then
+                        part:SetAlpha(0)
                     end
                 end
                 local keepSet = {}
@@ -5999,12 +5999,12 @@ local function SkinLabeledPageButton(btnFrame, childFrame, extraX)
         local pointCount = btnFrame:GetNumPoints() or 0
         local pts, success = {}, pointCount > 0
         for idx = 1, pointCount do
-            local p, rel, rp, posX, posY = btnFrame:GetPoint(idx)
-            if not p then
+            local point, relTo, relPoint, posX, posY = btnFrame:GetPoint(idx)
+            if not point then
                 success = false
                 break
             end
-            pts[idx] = { p, rel, rp, (posX or 0) - 3 + (extraX or 0), posY or 0 }
+            pts[idx] = { point, relTo, relPoint, (posX or 0) - 3 + (extraX or 0), posY or 0 }
         end
         if success then
             btnFrame:ClearAllPoints()
@@ -6265,9 +6265,9 @@ do
             "OpenStationeryBackgroundRight",
             "OpenMailHorizontalBarLeft",
         }) do
-            local t = _G[n]
-            if t and t.SetAlpha then
-                t:SetAlpha(0)
+            local part = _G[n]
+            if part and part.SetAlpha then
+                part:SetAlpha(0)
             end
         end
         for _, n in ipairs({
@@ -6321,12 +6321,12 @@ do
             local pointCount = m1:GetNumPoints() or 0
             local pts, success = {}, pointCount > 0
             for idx = 1, pointCount do
-                local p, rel, rp, posX, posY = m1:GetPoint(idx)
-                if not p then
+                local point, relTo, relPoint, posX, posY = m1:GetPoint(idx)
+                if not point then
                     success = false
                     break
                 end
-                pts[idx] = { p, rel, rp, posX or 0, (posY or 0) + 20 }
+                pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) + 20 }
             end
             if success then
                 GetFFD(m1).raised = true
@@ -6556,9 +6556,9 @@ do
         local subFrame = win.ButtonFrame
         if subFrame then
             for _, keyName in ipairs({ "BlackBorder", "ButtonBorder", "ButtonBottomBorder" }) do
-                local t = subFrame[keyName]
-                if t and t.SetAlpha then
-                    t:SetAlpha(0)
+                local part = subFrame[keyName]
+                if part and part.SetAlpha then
+                    part:SetAlpha(0)
                 end
             end
             if subFrame.ActionButton then
@@ -6670,9 +6670,9 @@ do
         end
         -- Side filigree flourishes stay off in every state; multi-piece and partly anonymous, so sweep by geometry too.
         for _, keyName in ipairs({ "LeftFiligree", "RightFiligree" }) do
-            local t = btnFrame[keyName]
-            if t and t.SetAlpha then
-                t:SetAlpha(0)
+            local part = btnFrame[keyName]
+            if part and part.SetAlpha then
+                part:SetAlpha(0)
             end
         end
         -- Flourishes are the only regions overhanging the button's sides, so
@@ -6772,12 +6772,12 @@ do
                 if numPts and numPts > 0 then
                     local pts, success = {}, true
                     for idx = 1, numPts do
-                        local p, rel, rp, posX, posY = socketScrollBar:GetPoint(idx)
-                        if not p then
+                        local point, relTo, relPoint, posX, posY = socketScrollBar:GetPoint(idx)
+                        if not point then
                             success = false
                             break
                         end
-                        pts[idx] = { p, rel, rp, (posX or 0) + 15, posY or 0 }
+                        pts[idx] = { point, relTo, relPoint, (posX or 0) + 15, posY or 0 }
                     end
                     if success then
                         socketScrollBar:ClearAllPoints()
@@ -6799,9 +6799,9 @@ do
                             "GetDisabledTexture",
                             "GetHighlightTexture",
                         }) do
-                            local t = button[g] and button[g](button)
-                            if t and t.SetAlpha then
-                                t:SetAlpha(0)
+                            local part = button[g] and button[g](button)
+                            if part and part.SetAlpha then
+                                part:SetAlpha(0)
                             end
                         end
                     end
@@ -6953,9 +6953,9 @@ do
         local skinData = GetFFD(childFrame)
         -- Per-pass: pooled rows get re-initialized by Blizzard, so header band fades must re-assert on every list update.
         for _, keyName in ipairs(RC_STRIP_KEYS) do
-            local t = childFrame[keyName]
-            if t and t.SetAlpha then
-                t:SetAlpha(0)
+            local part = childFrame[keyName]
+            if part and part.SetAlpha then
+                part:SetAlpha(0)
             end
         end
         -- Header +/- toggle: strip Blizzard's paint, drive the spellbook max/min
@@ -6998,12 +6998,12 @@ do
                         "GetHighlightTexture",
                         "GetDisabledTexture",
                     }) do
-                        local t = tcb[g] and tcb[g](tcb)
-                        if t then
-                            if expanded == nil and t.GetAtlas then
-                                expanded = classify(t:GetAtlas())
+                        local part = tcb[g] and tcb[g](tcb)
+                        if part then
+                            if expanded == nil and part.GetAtlas then
+                                expanded = classify(part:GetAtlas())
                             end
-                            t:SetAlpha(0)
+                            part:SetAlpha(0)
                         end
                     end
                     local regionList = { tcb:GetRegions() }
@@ -7314,12 +7314,12 @@ do
                 local pointCount = ctrl:GetNumPoints() or 0
                 local pts, success = {}, pointCount > 0
                 for idx = 1, pointCount do
-                    local p, rel, rp, posX, posY = ctrl:GetPoint(idx)
-                    if not p then
+                    local point, relTo, relPoint, posX, posY = ctrl:GetPoint(idx)
+                    if not point then
                         success = false
                         break
                     end
-                    pts[idx] = { p, rel, rp, posX or 0, (posY or 0) - 8 }
+                    pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) - 8 }
                 end
                 if not success then
                     return
@@ -7357,12 +7357,12 @@ do
                     local pointCount = castFrame.TabSystem:GetNumPoints() or 0
                     local pts, success = {}, pointCount > 0
                     for idx = 1, pointCount do
-                        local p, rel, rp, posX, posY = castFrame.TabSystem:GetPoint(idx)
-                        if not p then
+                        local point, relTo, relPoint, posX, posY = castFrame.TabSystem:GetPoint(idx)
+                        if not point then
                             success = false
                             break
                         end
-                        pts[idx] = { p, rel, rp, posX or 0, (posY or 0) + 1 }
+                        pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) + 1 }
                     end
                     if success then
                         tsd.lifted = true
@@ -7460,9 +7460,9 @@ local function SkinProfMaxMin(btnFrame, atlas)
         "GetHighlightTexture",
         "GetDisabledTexture",
     }) do
-        local t = btnFrame[g] and btnFrame[g](btnFrame)
-        if t and t.SetAlpha then
-            t:SetAlpha(0)
+        local part = btnFrame[g] and btnFrame[g](btnFrame)
+        if part and part.SetAlpha then
+            part:SetAlpha(0)
         end
     end
     local glyphTex = btnFrame:CreateTexture(nil, "OVERLAY")
@@ -7491,9 +7491,9 @@ do
         end
         skinData.flat = true
         for _, keyName in ipairs({ "Border", "Background" }) do
-            local t = barFrame[keyName]
-            if t and t.SetAlpha then
-                t:SetAlpha(0)
+            local part = barFrame[keyName]
+            if part and part.SetAlpha then
+                part:SetAlpha(0)
             end
         end
         if not skinData.bg then
@@ -7534,9 +7534,9 @@ do
                 "GetHighlightTexture",
                 "GetDisabledTexture",
             }) do
-                local t = edb[g] and edb[g](edb)
-                if t and t.SetAlpha then
-                    t:SetAlpha(0)
+                local part = edb[g] and edb[g](edb)
+                if part and part.SetAlpha then
+                    part:SetAlpha(0)
                 end
             end
             local ar = edb:CreateTexture(nil, "OVERLAY")
@@ -7636,9 +7636,9 @@ do
         end
         Skin.FadeRegions(btnFrame, keepSet)
         for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture" }) do
-            local t = btnFrame[getter] and btnFrame[getter](btnFrame)
-            if t and t.SetAlpha then
-                t:SetAlpha(0)
+            local part = btnFrame[getter] and btnFrame[getter](btnFrame)
+            if part and part.SetAlpha then
+                part:SetAlpha(0)
             end
         end
         if glyphTex then
@@ -7816,12 +7816,12 @@ do
                             local pts = {}
                             local success = true
                             for idx = 1, filterDropdown:GetNumPoints() do
-                                local p, rel, rp, posX, posY = filterDropdown:GetPoint(idx)
-                                if not p then
+                                local point, relTo, relPoint, posX, posY = filterDropdown:GetPoint(idx)
+                                if not point then
                                     success = false
                                     break
                                 end
-                                pts[idx] = { p, rel, rp, posX or 0, (posY or 0) + 1 }
+                                pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) + 1 }
                             end
                             if success and #pts > 0 then
                                 filterDropdown:ClearAllPoints()
@@ -7974,12 +7974,12 @@ do
                     end
                     local pts, success = {}, true
                     for idx = 1, firstTab:GetNumPoints() do
-                        local p, rel, rp, posX, posY = firstTab:GetPoint(idx)
-                        if not p then
+                        local point, relTo, relPoint, posX, posY = firstTab:GetPoint(idx)
+                        if not point then
                             success = false
                             break
                         end
-                        pts[idx] = { p, rel, rp, (posX or 0) + dx, posY or 0 }
+                        pts[idx] = { point, relTo, relPoint, (posX or 0) + dx, posY or 0 }
                     end
                     if success and #pts > 0 then
                         GetFFD(subFrame).tabsAligned = true
@@ -8038,12 +8038,12 @@ do
                         local pointCount = sbtn:GetNumPoints() or 0
                         local pts, success = {}, pointCount > 0
                         for idx = 1, pointCount do
-                            local p, rel, rp, posX, posY = sbtn:GetPoint(idx)
-                            if not p then
+                            local point, relTo, relPoint, posX, posY = sbtn:GetPoint(idx)
+                            if not point then
                                 success = false
                                 break
                             end
-                            pts[idx] = { p, rel, rp, (posX or 0) + dx, posY or 0 }
+                            pts[idx] = { point, relTo, relPoint, (posX or 0) + dx, posY or 0 }
                         end
                         if success then
                             GetFFD(sbtn).leftAligned = true
@@ -8071,9 +8071,9 @@ do
                     local fav = subFrame.FavoritesSearchButton
                     Skin.Button(fav, { "Icon" })
                     for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture" }) do
-                        local t = fav[getter] and fav[getter](fav)
-                        if t and t.SetAlpha then
-                            t:SetAlpha(1)
+                        local part = fav[getter] and fav[getter](fav)
+                        if part and part.SetAlpha then
+                            part:SetAlpha(1)
                         end
                     end
                     -- 10px right of the search box (direct anchor, no rects needed).
@@ -8457,9 +8457,9 @@ do
                         "GetDisabledTexture",
                     }) do
                         local func = btnFrame[g]
-                        local t = func and func(btnFrame)
-                        if t and t.SetAlpha then
-                            t:SetAlpha(0)
+                        local part = func and func(btnFrame)
+                        if part and part.SetAlpha then
+                            part:SetAlpha(0)
                         end
                     end
                     Skin.FadeRegions(btnFrame)
@@ -8501,9 +8501,9 @@ do
                             "GetDisabledTexture",
                         }) do
                             local func = menuArrow[g]
-                            local t = func and func(menuArrow)
-                            if t and not keepSet[t] and t.SetAlpha then
-                                t:SetAlpha(0)
+                            local part = func and func(menuArrow)
+                            if part and not keepSet[part] and part.SetAlpha then
+                                part:SetAlpha(0)
                             end
                         end
                         if menuArrow.Art and menuArrow.Art.SetAlpha then
@@ -8524,15 +8524,15 @@ do
                 -- only point 1 shrinks the bar to one crumb and forces every parent
                 -- into overflow. Preserve EVERY original point, each -4 in y.
                 if navData.origPts == nil then
-                    local n = navBar:GetNumPoints() or 0
-                    local pts, success = {}, n > 0
-                    for idx = 1, n do
-                        local p, rel, rp, posX, posY = navBar:GetPoint(idx)
-                        if not p then
+                    local numPoints = navBar:GetNumPoints() or 0
+                    local pts, success = {}, numPoints > 0
+                    for idx = 1, numPoints do
+                        local point, relTo, relPoint, posX, posY = navBar:GetPoint(idx)
+                        if not point then
                             success = false
                             break
                         end
-                        pts[idx] = { p, rel, rp, posX or 0, (posY or 0) - 4 }
+                        pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) - 4 }
                     end
                     if success then
                         navData.origPts = pts
@@ -8552,9 +8552,9 @@ do
                     "InsetBorderLeft",
                     "InsetBorderRight",
                 }) do
-                    local t = navBar[keyName]
-                    if t and t.SetAlpha then
-                        t:SetAlpha(0)
+                    local part = navBar[keyName]
+                    if part and part.SetAlpha then
+                        part:SetAlpha(0)
                     end
                 end
                 local keepSet = navData.bg and { [navData.bg] = true } or nil
@@ -8624,9 +8624,9 @@ do
                             "GetDisabledTexture",
                         }) do
                             local func = ovf[g]
-                            local t = func and func(ovf)
-                            if t and not keepSet[t] and t.SetAlpha then
-                                t:SetAlpha(0)
+                            local part = func and func(ovf)
+                            if part and not keepSet[part] and part.SetAlpha then
+                                part:SetAlpha(0)
                             end
                         end
                     end
@@ -8675,9 +8675,9 @@ do
             local questScroll = _G.QuestScrollFrame
             if questScroll then
                 for _, keyName in ipairs({ "Edge", "Background", "Center" }) do
-                    local t = questScroll[keyName]
-                    if t and t.SetAlpha then
-                        t:SetAlpha(0)
+                    local part = questScroll[keyName]
+                    if part and part.SetAlpha then
+                        part:SetAlpha(0)
                     end
                 end
                 if questScroll.BorderFrame then
@@ -8858,14 +8858,14 @@ do
                                         "IconBorder2",
                                         "Border",
                                     }) do
-                                        local t = subPanel[ak]
+                                        local part = subPanel[ak]
                                         if
-                                            t
-                                            and t.SetAlpha
-                                            and t.IsObjectType
-                                            and t:IsObjectType("Texture")
+                                            part
+                                            and part.SetAlpha
+                                            and part.IsObjectType
+                                            and part:IsObjectType("Texture")
                                         then
-                                            t:SetAlpha(0)
+                                            part:SetAlpha(0)
                                         end
                                     end
                                     if subPanel.Icon then
@@ -8987,12 +8987,12 @@ do
                     local pointCount = qt:GetNumPoints() or 0
                     local pts, success = {}, pointCount > 0
                     for idx = 1, pointCount do
-                        local p, rel, rp, posX, posY = qt:GetPoint(idx)
-                        if not p then
+                        local point, relTo, relPoint, posX, posY = qt:GetPoint(idx)
+                        if not point then
                             success = false
                             break
                         end
-                        pts[idx] = { p, rel, rp, (posX or 0) + dx, posY or 0 }
+                        pts[idx] = { point, relTo, relPoint, (posX or 0) + dx, posY or 0 }
                     end
                     if success then
                         qt:ClearAllPoints()
@@ -9007,11 +9007,11 @@ do
                     if tabFrame then
                         local td2 = GetFFD(tabFrame)
                         if not td2.gapAdj then
-                            local p, rel, rp, posX, posY = tabFrame:GetPoint(1)
-                            if p then
+                            local point, relTo, relPoint, posX, posY = tabFrame:GetPoint(1)
+                            if point then
                                 td2.gapAdj = true
                                 tabFrame:ClearAllPoints()
-                                tabFrame:SetPoint(p, rel, rp, posX or 0, (posY or 0) + 8)
+                                tabFrame:SetPoint(point, relTo, relPoint, posX or 0, (posY or 0) + 8)
                             end
                         end
                     end
@@ -9375,16 +9375,16 @@ do
                         return
                     end
                     guard = true
-                    local p, rel, rp, posX, posY = self:GetPoint(1)
-                    if p then
+                    local point, relTo, relPoint, posX, posY = self:GetPoint(1)
+                    if point then
                         self:ClearAllPoints()
-                        self:SetPoint(p, rel, rp, posX or 0, (posY or 0) - 4)
+                        self:SetPoint(point, relTo, relPoint, posX or 0, (posY or 0) - 4)
                     end
                     guard = false
                 end)
-                local p, rel, rp, posX, posY = dropdown:GetPoint(1)
-                if p then
-                    dropdown:SetPoint(p, rel, rp, posX or 0, posY or 0)
+                local point, relTo, relPoint, posX, posY = dropdown:GetPoint(1)
+                if point then
+                    dropdown:SetPoint(point, relTo, relPoint, posX or 0, posY or 0)
                 end
             end
             local scrollBar = dropdown.SaveButton
@@ -9573,12 +9573,12 @@ do
                     local pointCount = th:GetNumPoints() or 0
                     local pts, success = {}, pointCount > 0
                     for idx = 1, pointCount do
-                        local p, rel, rp, posX, posY = th:GetPoint(idx)
-                        if not p then
+                        local point, relTo, relPoint, posX, posY = th:GetPoint(idx)
+                        if not point then
                             success = false
                             break
                         end
-                        pts[idx] = { p, rel, rp, posX or 0, (posY or 0) + 6 }
+                        pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) + 6 }
                     end
                     if success then
                         GetFFD(th).raised = true
@@ -10112,12 +10112,12 @@ do
             local pointCount = found:GetNumPoints() or 0
             local pts, success = {}, pointCount > 0
             for idx = 1, pointCount do
-                local p, rel, rp, posX, posY = found:GetPoint(idx)
-                if not p then
+                local point, relTo, relPoint, posX, posY = found:GetPoint(idx)
+                if not point then
                     success = false
                     break
                 end
-                pts[idx] = { p, rel, rp, posX or 0, (posY or 0) + 6 }
+                pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) + 6 }
             end
             if success then
                 applying = true
@@ -10164,9 +10164,9 @@ do
             "GetDisabledTexture",
             "GetHighlightTexture",
         }) do
-            local t = btnFrame[g] and btnFrame[g](btnFrame)
-            if t and t ~= glyphTex and t.SetAlpha then
-                t:SetAlpha(0)
+            local part = btnFrame[g] and btnFrame[g](btnFrame)
+            if part and part ~= glyphTex and part.SetAlpha then
+                part:SetAlpha(0)
             end
         end
         local regionList = { btnFrame:GetRegions() }
@@ -10511,8 +10511,8 @@ do
         local bb, junk = _G.MerchantBuyBackItem, _G.MerchantSellAllJunkButton
         if bb and junk then
             if not exState.bbPoint and bb:GetNumPoints() > 0 and bb:GetLeft() and junk:GetLeft() then
-                local p, rel, rp, posX, posY = bb:GetPoint(1)
-                exState.bbPoint = { p, rel, rp, posX or 0, posY or 0 }
+                local point, relTo, relPoint, posX, posY = bb:GetPoint(1)
+                exState.bbPoint = { point, relTo, relPoint, posX or 0, posY or 0 }
                 exState.bbDX = bb:GetLeft() - junk:GetLeft()
                 exState.bbDY = bb:GetTop() - junk:GetTop()
             end
@@ -10676,12 +10676,12 @@ do
                 local pointCount = it1:GetNumPoints() or 0
                 local pts, success = {}, pointCount > 0
                 for idx = 1, pointCount do
-                    local p, rel, rp, posX, posY = it1:GetPoint(idx)
-                    if not p then
+                    local point, relTo, relPoint, posX, posY = it1:GetPoint(idx)
+                    if not point then
                         success = false
                         break
                     end
-                    pts[idx] = { p, rel, rp, posX or 0, (posY or 0) - 3 }
+                    pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) - 3 }
                 end
                 if success then
                     GetFFD(it1).shifted = true
@@ -11013,13 +11013,13 @@ do
             end
             -- Full-tab background: the guild sidebar card atlas at 50%.
             if not sdt.tabTex then
-                local t = step:CreateTexture(nil, "BACKGROUND", nil, -2)
-                t:SetAtlas("Ui-Dialog-New-Background")
-                t:SetTexCoord(0, 1, 0, 1)
-                t:SetVertexColor(1, 1, 1, 1)
-                t:SetAlpha(0.5)
-                t:SetAllPoints(step)
-                sdt.tabTex = t
+                local part = step:CreateTexture(nil, "BACKGROUND", nil, -2)
+                part:SetAtlas("Ui-Dialog-New-Background")
+                part:SetTexCoord(0, 1, 0, 1)
+                part:SetVertexColor(1, 1, 1, 1)
+                part:SetAlpha(0.5)
+                part:SetAllPoints(step)
+                sdt.tabTex = part
             end
             -- Profession icon: squared with a 1px border hugging its edges.
             if glyphTex then
@@ -11615,9 +11615,9 @@ do
                             "IconBorder2",
                             "Border",
                         }) do
-                            local t = subPanel[ak]
-                            if t and t.SetAlpha and t.IsObjectType and t:IsObjectType("Texture") then
-                                t:SetAlpha(0)
+                            local part = subPanel[ak]
+                            if part and part.SetAlpha and part.IsObjectType and part:IsObjectType("Texture") then
+                                part:SetAlpha(0)
                             end
                         end
                         if subPanel.Icon then
@@ -11893,9 +11893,9 @@ do
             local n = editField.GetName and editField:GetName()
             if n then
                 for _, suf in ipairs({ "Left", "Middle", "Right" }) do
-                    local t = _G[n .. suf]
-                    if t and t.SetAlpha then
-                        t:SetAlpha(0)
+                    local part = _G[n .. suf]
+                    if part and part.SetAlpha then
+                        part:SetAlpha(0)
                     end
                 end
             end
@@ -11928,12 +11928,12 @@ do
                     local pointCount = headerContainer:GetNumPoints() or 0
                     local pts, success = {}, pointCount > 0
                     for idx = 1, pointCount do
-                        local p, rel, rp, posX, posY = headerContainer:GetPoint(idx)
-                        if not p then
+                        local point, relTo, relPoint, posX, posY = headerContainer:GetPoint(idx)
+                        if not point then
                             success = false
                             break
                         end
-                        pts[idx] = { p, rel, rp, posX or 0, (posY or 0) + dy0 }
+                        pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) + dy0 }
                     end
                     if success then
                         headerContainer:ClearAllPoints()
@@ -12132,12 +12132,12 @@ do
                     local pointCount = labelText:GetNumPoints() or 0
                     local pts, success = {}, pointCount > 0
                     for idx = 1, pointCount do
-                        local p, rel, rp, posX, posY = labelText:GetPoint(idx)
-                        if not p then
+                        local point, relTo, relPoint, posX, posY = labelText:GetPoint(idx)
+                        if not point then
                             success = false
                             break
                         end
-                        pts[idx] = { p, rel, rp, (posX or 0) + 6, posY or 0 }
+                        pts[idx] = { point, relTo, relPoint, (posX or 0) + 6, posY or 0 }
                     end
                     if success then
                         GetFFD(labelText).shifted = true
@@ -12216,12 +12216,12 @@ do
                 local pointCount = cats:GetNumPoints() or 0
                 local pts, success = {}, pointCount > 0
                 for idx = 1, pointCount do
-                    local p, rel, rp, posX, posY = cats:GetPoint(idx)
-                    if not p then
+                    local point, relTo, relPoint, posX, posY = cats:GetPoint(idx)
+                    if not point then
                         success = false
                         break
                     end
-                    pts[idx] = { p, rel, rp, posX or 0, (posY or 0) - (p:find("TOP", 1, true) and 10 or 0) }
+                    pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) - (point:find("TOP", 1, true) and 10 or 0) }
                 end
                 if success then
                     GetFFD(cats).topShift = true
@@ -12357,16 +12357,16 @@ do
             local pointCount = part:GetNumPoints() or 0
             local pts, success, touched = {}, pointCount > 0, false
             for idx = 1, pointCount do
-                local p, rel, rp, posX, posY = part:GetPoint(idx)
-                if not p then
+                local point, relTo, relPoint, posX, posY = part:GetPoint(idx)
+                if not point then
                     success = false
                     break
                 end
-                local isBottom = p:find("BOTTOM", 1, true) and true or false
+                local isBottom = point:find("BOTTOM", 1, true) and true or false
                 if isBottom then
                     touched = true
                 end
-                pts[idx] = { p, rel, rp, posX or 0, (posY or 0) + (isBottom and dy or 0) }
+                pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) + (isBottom and dy or 0) }
             end
             if success and touched then
                 GetFFD(part).botClamped = true
@@ -12404,12 +12404,12 @@ do
                 local pointCount = bb:GetNumPoints() or 0
                 local pts, success = {}, pointCount > 0
                 for idx = 1, pointCount do
-                    local p, rel, rp, posX, posY = bb:GetPoint(idx)
-                    if not p then
+                    local point, relTo, relPoint, posX, posY = bb:GetPoint(idx)
+                    if not point then
                         success = false
                         break
                     end
-                    pts[idx] = { p, rel, rp, posX or 0, (posY or 0) - 3 }
+                    pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) - 3 }
                 end
                 if success then
                     GetFFD(bb).dropped = true
@@ -12459,12 +12459,12 @@ do
                     local pointCount = bb:GetNumPoints() or 0
                     local pts, success = {}, pointCount > 0
                     for idx = 1, pointCount do
-                        local p, rel, rp, posX, posY = bb:GetPoint(idx)
-                        if not p then
+                        local point, relTo, relPoint, posX, posY = bb:GetPoint(idx)
+                        if not point then
                             success = false
                             break
                         end
-                        pts[idx] = { p, rel, rp, (posX or 0) + 20, posY or 0 }
+                        pts[idx] = { point, relTo, relPoint, (posX or 0) + 20, posY or 0 }
                     end
                     if success then
                         GetFFD(bb).shiftedX = true
@@ -12638,13 +12638,13 @@ do
                 local pointCount = sum:GetNumPoints() or 0
                 local pts, success = {}, pointCount > 0
                 for idx = 1, pointCount do
-                    local p, rel, rp, posX, posY = sum:GetPoint(idx)
-                    if not p then
+                    local point, relTo, relPoint, posX, posY = sum:GetPoint(idx)
+                    if not point then
                         success = false
                         break
                     end
-                    local dx = p:find("RIGHT", 1, true) and dxR or dxL
-                    pts[idx] = { p, rel, rp, (posX or 0) + dx, posY or 0 }
+                    local dx = point:find("RIGHT", 1, true) and dxR or dxL
+                    pts[idx] = { point, relTo, relPoint, (posX or 0) + dx, posY or 0 }
                 end
                 if success then
                     sum:ClearAllPoints()
@@ -12670,13 +12670,13 @@ do
                 local pointCount = l:GetNumPoints() or 0
                 local pts, success = {}, pointCount > 0
                 for idx = 1, pointCount do
-                    local p, rel, rp, posX, posY = l:GetPoint(idx)
-                    if not p then
+                    local point, relTo, relPoint, posX, posY = l:GetPoint(idx)
+                    if not point then
                         success = false
                         break
                     end
-                    local dx = p:find("RIGHT", 1, true) and dxR or dxL
-                    pts[idx] = { p, rel, rp, (posX or 0) + dx, (posY or 0) - 7 }
+                    local dx = point:find("RIGHT", 1, true) and dxR or dxL
+                    pts[idx] = { point, relTo, relPoint, (posX or 0) + dx, (posY or 0) - 7 }
                 end
                 if success then
                     l:ClearAllPoints()
@@ -12703,16 +12703,16 @@ do
                         local pointCount = listScroll:GetNumPoints() or 0
                         local pts, success = {}, pointCount > 0
                         for idx = 1, pointCount do
-                            local p, rel, rp, posX, posY = listScroll:GetPoint(idx)
-                            if not p then
+                            local point, relTo, relPoint, posX, posY = listScroll:GetPoint(idx)
+                            if not point then
                                 success = false
                                 break
                             end
                             pts[idx] = {
-                                p,
-                                rel,
-                                rp,
-                                (posX or 0) + (p:find("RIGHT", 1, true) and (lr3 - br3) or 0),
+                                point,
+                                relTo,
+                                relPoint,
+                                (posX or 0) + (point:find("RIGHT", 1, true) and (lr3 - br3) or 0),
                                 posY or 0,
                             }
                         end
@@ -12782,13 +12782,13 @@ do
                             local pointCount = summaryScroll:GetNumPoints() or 0
                             local pts, success = {}, pointCount > 0
                             for idx = 1, pointCount do
-                                local p, rel, rp, posX, posY = summaryScroll:GetPoint(idx)
-                                if not p then
+                                local point, relTo, relPoint, posX, posY = summaryScroll:GetPoint(idx)
+                                if not point then
                                     success = false
                                     break
                                 end
-                                local dx = p:find("RIGHT", 1, true) and (lr2 - br2) or (ll2 - bl2)
-                                pts[idx] = { p, rel, rp, (posX or 0) + dx, posY or 0 }
+                                local dx = point:find("RIGHT", 1, true) and (lr2 - br2) or (ll2 - bl2)
+                                pts[idx] = { point, relTo, relPoint, (posX or 0) + dx, posY or 0 }
                             end
                             if success then
                                 summaryScroll:ClearAllPoints()
@@ -12829,12 +12829,12 @@ do
                 local pointCount = root:GetNumPoints() or 0
                 local pts, success = {}, pointCount > 0
                 for idx = 1, pointCount do
-                    local p, rel, rp, posX, posY = root:GetPoint(idx)
-                    if not p then
+                    local point, relTo, relPoint, posX, posY = root:GetPoint(idx)
+                    if not point then
                         success = false
                         break
                     end
-                    pts[idx] = { p, rel, rp, posX or 0, (posY or 0) - 1 }
+                    pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) - 1 }
                 end
                 if success then
                     GetFFD(root).dropped = true
@@ -13129,9 +13129,9 @@ do
                 local n = editField.GetName and editField:GetName()
                 if n then
                     for _, suf in ipairs({ "Left", "Middle", "Right" }) do
-                        local t = _G[n .. suf]
-                        if t and t.SetAlpha then
-                            t:SetAlpha(0)
+                        local part = _G[n .. suf]
+                        if part and part.SetAlpha then
+                            part:SetAlpha(0)
                         end
                     end
                 end
@@ -13254,12 +13254,12 @@ do
                 local pointCount = mt1:GetNumPoints() or 0
                 local pts, success = {}, pointCount > 0
                 for idx = 1, pointCount do
-                    local p, rel, rp, posX, posY = mt1:GetPoint(idx)
-                    if not p then
+                    local point, relTo, relPoint, posX, posY = mt1:GetPoint(idx)
+                    if not point then
                         success = false
                         break
                     end
-                    pts[idx] = { p, rel, rp, (posX or 0) + dx, posY or 0 }
+                    pts[idx] = { point, relTo, relPoint, (posX or 0) + dx, posY or 0 }
                 end
                 if success then
                     GetFFD(mt1).leftAligned = true
@@ -13343,15 +13343,15 @@ do
             local pointCount = part:GetNumPoints() or 0
             local pts, success = {}, pointCount > 0
             for idx = 1, pointCount do
-                local p, rel, rp, posX, posY = part:GetPoint(idx)
-                if not p then
+                local point, relTo, relPoint, posX, posY = part:GetPoint(idx)
+                if not point then
                     success = false
                     break
                 end
-                if cluster and rel and cluster[rel] then
+                if cluster and relTo and cluster[relTo] then
                     return
                 end -- chained inside: rides its root
-                pts[idx] = { p, rel, rp, (posX or 0) + dx, (posY or 0) + dy }
+                pts[idx] = { point, relTo, relPoint, (posX or 0) + dx, (posY or 0) + dy }
             end
             if success then
                 GetFFD(part).nudged = true
@@ -13700,16 +13700,16 @@ do
                     local pointCount = abox:GetNumPoints() or 0
                     local pts, success, touched = {}, pointCount > 0, false
                     for idx = 1, pointCount do
-                        local p, rel, rp, posX, posY = abox:GetPoint(idx)
-                        if not p then
+                        local point, relTo, relPoint, posX, posY = abox:GetPoint(idx)
+                        if not point then
                             success = false
                             break
                         end
-                        local isBottom = p:find("BOTTOM", 1, true) and true or false
+                        local isBottom = point:find("BOTTOM", 1, true) and true or false
                         if isBottom then
                             touched = true
                         end
-                        pts[idx] = { p, rel, rp, posX or 0, (posY or 0) + (isBottom and dy or 0) }
+                        pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) + (isBottom and dy or 0) }
                     end
                     if success and touched then
                         GetFFD(abox).botClamped = true
@@ -13810,9 +13810,9 @@ do
             local n = editField.GetName and editField:GetName()
             if n then
                 for _, suf in ipairs({ "Left", "Middle", "Right" }) do
-                    local t = _G[n .. suf]
-                    if t and t.SetAlpha then
-                        t:SetAlpha(0)
+                    local part = _G[n .. suf]
+                    if part and part.SetAlpha then
+                        part:SetAlpha(0)
                     end
                 end
             end
@@ -13979,12 +13979,12 @@ do
             local pointCount = cl0:GetNumPoints() or 0
             local pts, success = {}, pointCount > 0
             for idx = 1, pointCount do
-                local p, rel, rp, posX, posY = cl0:GetPoint(idx)
-                if not p then
+                local point, relTo, relPoint, posX, posY = cl0:GetPoint(idx)
+                if not point then
                     success = false
                     break
                 end
-                pts[idx] = { p, rel, rp, (posX or 0) - (p:find("LEFT", 1, true) and 2 or 0), posY or 0 }
+                pts[idx] = { point, relTo, relPoint, (posX or 0) - (point:find("LEFT", 1, true) and 2 or 0), posY or 0 }
             end
             if success then
                 GetFFD(cl0).widened = true
@@ -14057,10 +14057,10 @@ do
                 if scrollBar.FavoritesSearchButton then
                     Skin.Button(scrollBar.FavoritesSearchButton, { "Icon" })
                     for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture" }) do
-                        local t = scrollBar.FavoritesSearchButton[getter]
+                        local part = scrollBar.FavoritesSearchButton[getter]
                             and scrollBar.FavoritesSearchButton[getter](scrollBar.FavoritesSearchButton)
-                        if t and t.SetAlpha then
-                            t:SetAlpha(1)
+                        if part and part.SetAlpha then
+                            part:SetAlpha(1)
                         end
                     end
                 end
@@ -14130,14 +14130,14 @@ do
                             Skin.AddBorder(row)
                         end
                         for _, keyName in ipairs({ "NormalTexture", "SelectedTexture", "SelectedHighlight" }) do
-                            local t = row[keyName]
-                            if t then
+                            local part = row[keyName]
+                            if part then
                                 if keyName == "NormalTexture" then
-                                    t:SetAlpha(0)
+                                    part:SetAlpha(0)
                                 else
-                                    t:SetColorTexture(1, 1, 1, 0.15)
-                                    t:ClearAllPoints()
-                                    t:SetAllPoints(row)
+                                    part:SetColorTexture(1, 1, 1, 0.15)
+                                    part:ClearAllPoints()
+                                    part:SetAllPoints(row)
                                 end
                             end
                         end
@@ -14235,12 +14235,12 @@ do
                 local pointCount = found:GetNumPoints() or 0
                 local pts, success = {}, pointCount > 0
                 for idx = 1, pointCount do
-                    local p, rel, rp, posX, posY = found:GetPoint(idx)
-                    if not p then
+                    local point, relTo, relPoint, posX, posY = found:GetPoint(idx)
+                    if not point then
                         success = false
                         break
                     end
-                    pts[idx] = { p, rel, rp, posX or 0, (posY or 0) - 10 }
+                    pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) - 10 }
                 end
                 if success then
                     GetFFD(found).shift10 = true
@@ -14255,8 +14255,8 @@ do
             if tgtRecip then
                 local anchoredToDD = false
                 for idx = 1, (tgtRecip:GetNumPoints() or 0) do
-                    local _, rel = tgtRecip:GetPoint(idx)
-                    if rel == ddRecip then
+                    local _, relTo = tgtRecip:GetPoint(idx)
+                    if relTo == ddRecip then
                         anchoredToDD = true
                         break
                     end
@@ -14482,9 +14482,9 @@ do
                 "EmptySlot",
                 "EmptyBackground",
             }) do
-                local t = ib[keyName]
-                if t and t.SetAlpha then
-                    t:SetAlpha(0)
+                local part = ib[keyName]
+                if part and part.SetAlpha then
+                    part:SetAlpha(0)
                 end
             end
             local ibd = GetFFD(ib)
@@ -14507,9 +14507,9 @@ do
                 Skin.Dropdown(details.Dropdown)
             end
             for _, keyName in ipairs({ "Bg", "Background", "Divider", "PillarLeft", "PillarRight" }) do
-                local t = details[keyName]
-                if t and t.SetAlpha then
-                    t:SetAlpha(0)
+                local part = details[keyName]
+                if part and part.SetAlpha then
+                    part:SetAlpha(0)
                 end
             end
         end
@@ -14557,9 +14557,9 @@ do
             "ItemUpgradeFramePlayerCurrenciesBorderMiddle",
             "ItemUpgradeFramePlayerCurrenciesBorderRight",
         }) do
-            local t = _G[n]
-            if t and t.SetAlpha then
-                t:SetAlpha(0)
+            local part = _G[n]
+            if part and part.SetAlpha then
+                part:SetAlpha(0)
             end
         end
         if pc then
@@ -14567,9 +14567,9 @@ do
                 Skin.FadeNineSlice(pc.NineSlice)
             end
             for _, keyName in ipairs({ "Background", "Bg", "BG" }) do
-                local t = pc[keyName]
-                if t and t.SetAlpha then
-                    t:SetAlpha(0)
+                local part = pc[keyName]
+                if part and part.SetAlpha then
+                    part:SetAlpha(0)
                 end
             end
         end
@@ -14950,9 +14950,9 @@ do
             end
             for _, owner in ipairs({ row, entry }) do
                 for _, keyName in ipairs({ "NameFrame", "Background", "Bg" }) do
-                    local t = owner[keyName]
-                    if t and t.SetAlpha then
-                        t:SetAlpha(0)
+                    local part = owner[keyName]
+                    if part and part.SetAlpha then
+                        part:SetAlpha(0)
                     end
                 end
                 -- Card STROKE textures ring the row card: BorderFrame carries
@@ -14962,15 +14962,15 @@ do
                 -- instead (a state driver can animate nothing). Re-cleared every pass
                 -- in case a pooled row re-applies its template atlas; the 5% highlight backdrop is the replacement hover cue.
                 for _, keyName in ipairs({ "BorderFrame", "PushedNameFrame", "HighlightNameFrame" }) do
-                    local t = owner[keyName]
-                    if t and t.SetAlpha then
-                        if t.SetAtlas then
-                            t:SetAtlas("")
+                    local part = owner[keyName]
+                    if part and part.SetAlpha then
+                        if part.SetAtlas then
+                            part:SetAtlas("")
                         end
-                        if t.SetTexture then
-                            t:SetTexture("")
+                        if part.SetTexture then
+                            part:SetTexture("")
                         end
-                        t:SetAlpha(0)
+                        part:SetAlpha(0)
                     end
                 end
                 -- The stack count KEEPS Blizzard's font: it is an outlined NUMBER
@@ -15025,14 +15025,14 @@ do
             local partData = GetFFD(tabBox)
             if not partData.shifted then
                 partData.shifted = true
-                local n = tabBox:GetNumPoints()
+                local numPoints = tabBox:GetNumPoints()
                 local pts = {}
-                for idx = 1, n do
+                for idx = 1, numPoints do
                     pts[idx] = { tabBox:GetPoint(idx) }
                 end
-                if n > 0 then
+                if numPoints > 0 then
                     tabBox:ClearAllPoints()
-                    for idx = 1, n do
+                    for idx = 1, numPoints do
                         local pt = pts[idx]
                         tabBox:SetPoint(pt[1], pt[2], pt[3], pt[4] or 0, (pt[5] or 0) - 5)
                     end
@@ -15232,9 +15232,9 @@ do
                 local heading = t.Label
                 if heading and heading.GetPoint and heading.ClearAllPoints then
                     if not skinData.hdrPt then
-                        local p, rel, rp, posX, posY = heading:GetPoint(1)
-                        if p then
-                            skinData.hdrPt = { p, rel, rp, posX or 0, posY or 0 }
+                        local point, relTo, relPoint, posX, posY = heading:GetPoint(1)
+                        if point then
+                            skinData.hdrPt = { point, relTo, relPoint, posX or 0, posY or 0 }
                         end
                     end
                     if skinData.hdrPt then
@@ -15325,9 +15325,9 @@ do
                         -- offsets each pass (net 7px left, 2px down); if the header
                         -- rides the icon we moved left, compensate so the net horizontal shift stays put.
                         if not skinData.hdrPt then
-                            local p, rel, rp, posX, posY = heading:GetPoint(1)
-                            if p then
-                                skinData.hdrPt = { p, rel, rp, posX or 0, posY or 0 }
+                            local point, relTo, relPoint, posX, posY = heading:GetPoint(1)
+                            if point then
+                                skinData.hdrPt = { point, relTo, relPoint, posX or 0, posY or 0 }
                             end
                         end
                         if skinData.hdrPt then
@@ -15888,15 +15888,15 @@ do
             return
         end
         for idx = 1, #keyList do
-            local t = widget[keyList[idx]]
-            if t and t.IsObjectType then
-                if t:IsObjectType("Texture") then
-                    t:SetAlpha(0)
-                elseif t.TopEdge or t.TopLeftCorner then
+            local part = widget[keyList[idx]]
+            if part and part.IsObjectType then
+                if part:IsObjectType("Texture") then
+                    part:SetAlpha(0)
+                elseif part.TopEdge or part.TopLeftCorner then
                     -- The frame IS a NineSlice (pure border art), so fading it
                     -- whole is right. ONLY this shape: WSkin.FadeNineSlice ends by
                     -- alpha-ing the frame handed to it, blanking the subtree of anything that merely CONTAINS one.
-                    Skin.FadeNineSlice(t)
+                    Skin.FadeNineSlice(part)
                 end
             end
         end
@@ -16208,9 +16208,9 @@ do
         end
         for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetHighlightTexture" }) do
             local func = rb[getter]
-            local t = func and func(rb)
-            if t and t.SetAlpha then
-                t:SetAlpha(0)
+            local part = func and func(rb)
+            if part and part.SetAlpha then
+                part:SetAlpha(0)
             end
         end
         Skin.FadeRegions(rb)
@@ -17094,12 +17094,12 @@ do
             return
         end
         for idx = 1, #keyList do
-            local t = widget[keyList[idx]]
-            if t and t.IsObjectType then
-                if t:IsObjectType("Texture") then
-                    t:SetAlpha(0)
-                elseif t.TopEdge or t.TopLeftCorner then
-                    Skin.FadeNineSlice(t)
+            local part = widget[keyList[idx]]
+            if part and part.IsObjectType then
+                if part:IsObjectType("Texture") then
+                    part:SetAlpha(0)
+                elseif part.TopEdge or part.TopLeftCorner then
+                    Skin.FadeNineSlice(part)
                 end
             end
         end
@@ -17230,15 +17230,15 @@ do
         -- level 510, right under the cursor. Cleared, not alpha'd -- these buttons
         -- get re-textured per texture kit.
         for _, keyName in ipairs({ "Border", "BorderArt", "Background", "Bg" }) do
-            local t = btnFrame[keyName]
-            if t and t.IsObjectType and t:IsObjectType("Texture") then
-                if t.SetAtlas then
-                    t:SetAtlas("")
+            local part = btnFrame[keyName]
+            if part and part.IsObjectType and part:IsObjectType("Texture") then
+                if part.SetAtlas then
+                    part:SetAtlas("")
                 end
-                if t.SetTexture then
-                    t:SetTexture("")
+                if part.SetTexture then
+                    part:SetTexture("")
                 end
-                t:SetAlpha(0)
+                part:SetAlpha(0)
             end
         end
 
@@ -17302,13 +17302,13 @@ do
         -- (UI-Panel-Button-Up), NOT a NineSlice. Cleared explicitly so a stray
         -- reapply cannot bring Blizzard's frame back under ours.
         for _, keyName in ipairs({ "Left", "Middle", "Right" }) do
-            local t = button[keyName]
-            if t and t.SetTexture then
-                if t.SetAtlas then
-                    t:SetAtlas("")
+            local part = button[keyName]
+            if part and part.SetTexture then
+                if part.SetAtlas then
+                    part:SetAtlas("")
                 end
-                t:SetTexture("")
-                t:SetAlpha(0)
+                part:SetTexture("")
+                part:SetAlpha(0)
             end
         end
         if button.NineSlice then
@@ -17350,9 +17350,9 @@ do
             return
         end
         for idx = 1, #HP.REWARD_ART do
-            local t = btnFrame[HP.REWARD_ART[idx]]
-            if t and t.SetAlpha and t.IsObjectType and t:IsObjectType("Texture") then
-                t:SetAlpha(0)
+            local part = btnFrame[HP.REWARD_ART[idx]]
+            if part and part.SetAlpha and part.IsObjectType and part:IsObjectType("Texture") then
+                part:SetAlpha(0)
             end
         end
         if btnFrame.Name and btnFrame.Name.SetTextColor then
@@ -17551,9 +17551,9 @@ do
             local brd = win.Border
             if brd then
                 for idx = 1, #HP.NINESLICE_PIECES do
-                    local t = brd[HP.NINESLICE_PIECES[idx]]
-                    if t and t.SetAlpha then
-                        t:SetAlpha(0)
+                    local part = brd[HP.NINESLICE_PIECES[idx]]
+                    if part and part.SetAlpha then
+                        part:SetAlpha(0)
                     end
                 end
                 Skin.AtlasBorder(win)
@@ -17965,9 +17965,9 @@ do
                         "GetDisabledTexture",
                         "GetHighlightTexture",
                     }) do
-                        local t = button[getter] and button[getter](button)
-                        if t and t.SetVertexColor then
-                            t:SetVertexColor(1, 1, 1)
+                        local part = button[getter] and button[getter](button)
+                        if part and part.SetVertexColor then
+                            part:SetVertexColor(1, 1, 1)
                         end
                     end
                     local dis = button.GetDisabledTexture and button:GetDisabledTexture()
@@ -18223,9 +18223,9 @@ do
             return
         end
         for _, keyName in ipairs(HP.TRADE_PORTRAIT_KEYS) do
-            local t = shade[keyName]
-            if t and t.SetAlpha and not (t.IsForbidden and t:IsForbidden()) then
-                t:SetAlpha(0)
+            local part = shade[keyName]
+            if part and part.SetAlpha and not (part.IsForbidden and part:IsForbidden()) then
+                part:SetAlpha(0)
             end
         end
     end
@@ -18314,12 +18314,12 @@ do
 
     function HP.TradeEdges()
         for idx = 1, #HP.TRADE_EDGE do
-            local t = _G[HP.TRADE_EDGE[idx]]
+            local part = _G[HP.TRADE_EDGE[idx]]
             -- Per-ITEM guard, not just per-phase. One forbidden texture must
             -- not stop the rest of the list -- phase isolation would still
             -- leave the other three pieces of divider art up.
-            if t and t.SetAlpha and not (t.IsForbidden and t:IsForbidden()) then
-                t:SetAlpha(0)
+            if part and part.SetAlpha and not (part.IsForbidden and part:IsForbidden()) then
+                part:SetAlpha(0)
             end
         end
         for idx = 1, #HP.TRADE_INSETS do
@@ -18803,9 +18803,9 @@ do
         local unitToken = "arena" .. win:GetID()
 
         for _, suffix in ipairs(FC.ART) do
-            local t = _G[label .. suffix]
-            if t then
-                t:SetAlpha(0)
+            local part = _G[label .. suffix]
+            if part then
+                part:SetAlpha(0)
             end
         end
         local hb, mb = _G[label .. "HealthBar"], _G[label .. "ManaBar"]

@@ -5754,10 +5754,10 @@ initFrame:SetScript("OnEvent", function(self, evt)
                 for menuBtn in GameMenuFrame.buttonPool:EnumerateActive() do
                     local topY = menuBtn:GetTop()
                     if topY and topY < anchorBottom + 2 then
-                        local p, rel, rp, posX, posY = menuBtn:GetPoint(1)
-                        if p then
+                        local point, relTo, relPoint, posX, posY = menuBtn:GetPoint(1)
+                        if point then
                             menuBtn:ClearAllPoints()
-                            menuBtn:SetPoint(p, rel, rp, posX, (posY or 0) - extraHeight)
+                            menuBtn:SetPoint(point, relTo, relPoint, posX, (posY or 0) - extraHeight)
                         end
                     end
                 end

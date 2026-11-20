@@ -59,8 +59,8 @@ function mod.CharSheetParkStatsPane()
         return
     end
     if panel:GetNumPoints() == 1 then
-        local _, rel, _, _, posY = panel:GetPoint(1)
-        if rel == castFrame and posY == -10000 then
+        local _, relTo, _, _, posY = panel:GetPoint(1)
+        if relTo == castFrame and posY == -10000 then
             return
         end
     end

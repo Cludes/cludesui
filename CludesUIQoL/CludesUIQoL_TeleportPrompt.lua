@@ -104,9 +104,9 @@ SavePosition = function()
     if not dialog then
         return
     end
-    local p, _, rp, posX, yo = dialog:GetPoint()
-    if p then
-        TeleCfg().pos = { p = p, rp = rp, x = posX, y = yo }
+    local point, _, relPoint, posX, yo = dialog:GetPoint()
+    if point then
+        TeleCfg().pos = { p = point, rp = relPoint, x = posX, y = yo }
     end
 end
 

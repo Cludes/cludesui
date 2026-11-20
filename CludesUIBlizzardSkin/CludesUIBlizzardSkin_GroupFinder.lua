@@ -337,11 +337,11 @@ local function LiftButton(button)
     end
     local pts = {}
     for idx = 1, num do
-        local p, rel, rp, posX, posY = button:GetPoint(idx)
-        if not p then
+        local point, relTo, relPoint, posX, posY = button:GetPoint(idx)
+        if not point then
             return
         end
-        pts[idx] = { p, rel, rp, posX or 0, (posY or 0) + 5 }
+        pts[idx] = { point, relTo, relPoint, posX or 0, (posY or 0) + 5 }
     end
     skinData.lifted = true
     button:ClearAllPoints()
@@ -719,9 +719,9 @@ local function SkinCategoryButton(button, options)
         if hgt and hgt > 10 and washTex and button:GetTop() and washTex:GetTop() then
             skinData.railWide = true
             button:SetHeight(hgt + 12)
-            local p, rel, rp, posX, posY = button:GetPoint(1)
-            if p and rel and FFD[rel] and FFD[rel].isRail then
-                skinData.railAnchors = { rel = rel, y = (posY or 0) + 10 }
+            local point, relTo, relPoint, posX, posY = button:GetPoint(1)
+            if point and relTo and FFD[relTo] and FFD[relTo].isRail then
+                skinData.railAnchors = { rel = relTo, y = (posY or 0) + 10 }
             else
                 skinData.railAnchors = { wash = washTex, y = button:GetTop() - washTex:GetTop() }
             end
@@ -751,12 +751,12 @@ local function SkinCategoryButton(button, options)
             local np = icon0:GetNumPoints() or 0
             local pts, success = {}, np > 0
             for idx = 1, np do
-                local p, rel, rp, posX, posY = icon0:GetPoint(idx)
-                if not p then
+                local point, relTo, relPoint, posX, posY = icon0:GetPoint(idx)
+                if not point then
                     success = false
                     break
                 end
-                pts[idx] = { p, rel, rp, (posX or 0) + 3, posY or 0 }
+                pts[idx] = { point, relTo, relPoint, (posX or 0) + 3, posY or 0 }
             end
             if success then
                 icon0:ClearAllPoints()

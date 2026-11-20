@@ -1349,18 +1349,18 @@ function CHAT._SeatStockX(region, lx, rx)
     local sec = _G.issecretvalue
     local pts, c, differs = CHAT._stockBgPts, 0, false
     for index = 1, region:GetNumPoints() do
-        local p, rel, rp, posX, posY = region:GetPoint(index)
-        if not p or (sec and (sec(posX) or sec(posY))) then
+        local point, relTo, relPoint, posX, posY = region:GetPoint(index)
+        if not point or (sec and (sec(posX) or sec(posY))) then
             for jdx = 1, c do
                 pts[jdx] = nil
             end
             return false
         end
-        local wanted = (p:find("LEFT") and lx) or (p:find("RIGHT") and rx) or nil
+        local wanted = (point:find("LEFT") and lx) or (point:find("RIGHT") and rx) or nil
         if wanted and posX ~= wanted then
             differs = true
         end
-        pts[c + 1], pts[c + 2], pts[c + 3], pts[c + 4] = p, rel, rp, posY
+        pts[c + 1], pts[c + 2], pts[c + 3], pts[c + 4] = point, relTo, relPoint, posY
         c = c + 4
     end
     if differs then

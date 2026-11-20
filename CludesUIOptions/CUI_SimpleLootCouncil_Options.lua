@@ -660,9 +660,9 @@ CludesUI.AtLogin(function()
             bannerDesc = FindText(main, 6, CludesUI.L(MODULE_DESC))
             bannerDescText = bannerDesc and bannerDesc:GetText()
             if bannerDesc and bannerDesc.GetPoint then
-                local anchorPoint, rel, relPoint, posX, cursorY = bannerDesc:GetPoint(1)
+                local anchorPoint, relTo, relPoint, posX, cursorY = bannerDesc:GetPoint(1)
                 if anchorPoint then
-                    bannerDescAnchor = { anchorPoint, rel, relPoint, posX or 0, cursorY or 0 }
+                    bannerDescAnchor = { anchorPoint, relTo, relPoint, posX or 0, cursorY or 0 }
                 end
             end
         end

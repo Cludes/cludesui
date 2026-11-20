@@ -946,10 +946,10 @@ RefreshGreatVaultFrame = function(widget)
             hfd.adjusted = true
 
             if hf.Text then
-                local anchorPoint, rel, relPoint, posX, posY = hf.Text:GetPoint(1)
+                local anchorPoint, relTo, relPoint, posX, posY = hf.Text:GetPoint(1)
                 if anchorPoint then
                     hf.Text:ClearAllPoints()
-                    hf.Text:SetPoint(anchorPoint, rel, relPoint, posX, (posY or 0) + 30)
+                    hf.Text:SetPoint(anchorPoint, relTo, relPoint, posX, (posY or 0) + 30)
                 end
                 hf.Text:SetFont(skinName.fontPath, STYLE.sizes.headerTitle, "")
             end
@@ -961,10 +961,10 @@ RefreshGreatVaultFrame = function(widget)
                 if wid and wid > 0 and hgt and hgt > 0 then
                     hd:SetSize(wid * 0.60, hgt * 0.60)
                 end
-                local anchorPoint, rel, relPoint, posX, posY = hd:GetPoint(1)
+                local anchorPoint, relTo, relPoint, posX, posY = hd:GetPoint(1)
                 if anchorPoint then
                     hd:ClearAllPoints()
-                    hd:SetPoint(anchorPoint, rel, relPoint, posX, (posY or 0) - 15)
+                    hd:SetPoint(anchorPoint, relTo, relPoint, posX, (posY or 0) - 15)
                 end
             end
         end

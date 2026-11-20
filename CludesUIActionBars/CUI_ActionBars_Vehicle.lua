@@ -105,9 +105,9 @@ function ABAR:CacheMicroMenuHome()
     if self:MicroMenuDockedIn(OverrideActionBar) or self:MicroMenuDockedIn(PetBattleFrame) then
         return
     end
-    local p, rel, relP, posX, posY = MicroMenu:GetPoint(1)
-    if p then
-        self._eabMicroHome = { p, rel, relP, posX or 0, posY or 0 }
+    local point, relTo, relP, posX, posY = MicroMenu:GetPoint(1)
+    if point then
+        self._eabMicroHome = { point, relTo, relP, posX or 0, posY or 0 }
     end
 end
 

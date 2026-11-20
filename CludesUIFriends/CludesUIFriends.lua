@@ -540,18 +540,18 @@ local function SkinRaidTab()
     local checkBtn = _G.RaidFrameAllAssistCheckButton
     if checkBtn and not GetFFD(checkBtn).shifted then
         GetFFD(checkBtn).shifted = true
-        local firstPoint, rel, p2, ox, oy = checkBtn:GetPoint(1)
+        local firstPoint, relTo, p2, ox, oy = checkBtn:GetPoint(1)
         if firstPoint then
-            checkBtn:SetPoint(firstPoint, rel, p2, (ox or 0) - 62, (oy or 0) + 59)
+            checkBtn:SetPoint(firstPoint, relTo, p2, (ox or 0) - 62, (oy or 0) + 59)
         end
     end
     if raidPanel then
         local roleCount = raidPanel.RoleCount
         if roleCount and not GetFFD(roleCount).shifted then
             GetFFD(roleCount).shifted = true
-            local firstPoint, rel, p2, ox, oy = roleCount:GetPoint(1)
+            local firstPoint, relTo, p2, ox, oy = roleCount:GetPoint(1)
             if firstPoint then
-                roleCount:SetPoint(firstPoint, rel, p2, (ox or 0) - 62, (oy or 0) + 59)
+                roleCount:SetPoint(firstPoint, relTo, p2, (ox or 0) - 62, (oy or 0) + 59)
             end
         end
     end
@@ -998,9 +998,9 @@ local function SkinFriendButton(btnFrame)
 
     -- Offset name text right for class icon
     if nameLabel then
-        local firstPoint, rel, p2, posX, posY = nameLabel:GetPoint(1)
+        local firstPoint, relTo, p2, posX, posY = nameLabel:GetPoint(1)
         if firstPoint then
-            nameLabel:SetPoint(firstPoint, rel, p2, (posX or 0) + 20, posY or 0)
+            nameLabel:SetPoint(firstPoint, relTo, p2, (posX or 0) + 20, posY or 0)
         end
     end
 end
@@ -1848,9 +1848,9 @@ local function SkinFriendsFrame()
                         raidTex:SetPoint("RIGHT", raidKnob, "RIGHT", 0, 0)
                     end
                     raidBar:SetWidth(5)
-                    local firstPoint, rel, p2, ox, oy = raidBar:GetPoint(1)
+                    local firstPoint, relTo, p2, ox, oy = raidBar:GetPoint(1)
                     if firstPoint then
-                        raidBar:SetPoint(firstPoint, rel, p2, (ox or 0) - 6, (oy or 0) + 4)
+                        raidBar:SetPoint(firstPoint, relTo, p2, (ox or 0) - 6, (oy or 0) + 4)
                     end
                     raidBar:SetAlpha(0.6)
                     raidBar:HookScript("OnEnter", function()
@@ -2721,9 +2721,9 @@ local function SkinFriendsFrame()
                 thumbTex:SetPoint("RIGHT", knob, "RIGHT", 0, 0)
             end
             barFrame:SetWidth(5)
-            local firstPoint, rel, p2, ox, oy = barFrame:GetPoint(1)
+            local firstPoint, relTo, p2, ox, oy = barFrame:GetPoint(1)
             if firstPoint then
-                barFrame:SetPoint(firstPoint, rel, p2, (ox or 0) - 6, (oy or 0) + 4)
+                barFrame:SetPoint(firstPoint, relTo, p2, (ox or 0) - 6, (oy or 0) + 4)
             end
             barFrame:SetAlpha(0.6)
             barFrame:HookScript("OnEnter", function()
@@ -3205,11 +3205,11 @@ local function SkinFriendsFrame()
                             return
                         end
                         GetFFD(self).adjusting = true
-                        local firstPoint, rel, p2, posX, posY = self:GetPoint(1)
+                        local firstPoint, relTo, p2, posX, posY = self:GetPoint(1)
                         if firstPoint then
                             self:ClearAllPoints()
                             local xOff = (i == 1) and 5 or 0
-                            self:SetPoint(firstPoint, rel, p2, (posX or 0) + xOff, (posY or 0) + 10)
+                            self:SetPoint(firstPoint, relTo, p2, (posX or 0) + xOff, (posY or 0) + 10)
                         end
                         GetFFD(self).adjusting = false
                     end)
@@ -3277,9 +3277,9 @@ local function SkinFriendsFrame()
             if editBox then
                 StripTextures(editBox)
                 editBox:SetScale(0.9)
-                local firstPoint, rel, p2, ox, oy = editBox:GetPoint(1)
+                local firstPoint, relTo, p2, ox, oy = editBox:GetPoint(1)
                 if firstPoint then
-                    editBox:SetPoint(firstPoint, rel, p2, (ox or 0) - 1, (oy or 0) + 3)
+                    editBox:SetPoint(firstPoint, relTo, p2, (ox or 0) - 1, (oy or 0) + 3)
                 end
                 local ebBg = editBox:CreateTexture(nil, "BACKGROUND", nil, -6)
                 ebBg:SetColorTexture(0, 0, 0, 0.4)
@@ -3367,9 +3367,9 @@ local function SkinFriendsFrame()
 
             local scrollBar = who.ScrollBox or who.scrollFrame
             if scrollBar then
-                local firstPoint, rel, p2, posX, posY = scrollBar:GetPoint(1)
+                local firstPoint, relTo, p2, posX, posY = scrollBar:GetPoint(1)
                 if firstPoint then
-                    scrollBar:SetPoint(firstPoint, rel, p2, (posX or 0) + 5, (posY or 0) - 35)
+                    scrollBar:SetPoint(firstPoint, relTo, p2, (posX or 0) + 5, (posY or 0) - 35)
                 end
             end
 

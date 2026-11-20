@@ -549,8 +549,8 @@ local function CaptureBlizzardDefaults()
     -- indent (WoW Forever's default anchors carry one). nil when the bar is
     -- not parked there (moved in Edit Mode, or a layout with no stack).
     local function StackSlot(barFrame)
-        local pt, rel, rpt, px, py = barFrame:GetPoint(1)
-        if pt ~= "TOPLEFT" or rel ~= UIParent or rpt ~= "TOPLEFT" or px ~= 0 or py ~= 0 then
+        local pt, relTo, rpt, px, py = barFrame:GetPoint(1)
+        if pt ~= "TOPLEFT" or relTo ~= UIParent or rpt ~= "TOPLEFT" or px ~= 0 or py ~= 0 then
             return nil
         end
         local EU, EM = _G.EditModeUtil, _G.EditModeManagerFrame

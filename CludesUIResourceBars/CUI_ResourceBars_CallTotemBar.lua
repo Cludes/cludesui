@@ -115,11 +115,11 @@ local function Fade(texture)
         return
     end
     if savedAlpha[texture] == nil then
-        local a = texture:GetAlpha()
-        if issecretvalue(a) then
-            a = 1
+        local alpha = texture:GetAlpha()
+        if issecretvalue(alpha) then
+            alpha = 1
         end
-        savedAlpha[texture] = a
+        savedAlpha[texture] = alpha
     end
     texture:SetAlpha(0)
 end

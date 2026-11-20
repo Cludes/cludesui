@@ -4253,9 +4253,9 @@ local function CollectAllChildren(wrapper)
     -- Save original anchor info on first encounter so we can restore later.
     for _, kid in ipairs(children) do
         if not kid._origAnchor then
-            local point, rel, relPoint, x, rowY = kid:GetPoint(1)
+            local point, relTo, relPoint, x, rowY = kid:GetPoint(1)
             if point then
-                kid._origAnchor = { point, rel, relPoint, x, rowY }
+                kid._origAnchor = { point, relTo, relPoint, x, rowY }
             end
         end
         -- For split containers, build a searchable label from all children inside

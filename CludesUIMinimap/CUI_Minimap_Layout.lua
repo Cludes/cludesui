@@ -921,8 +921,8 @@ function SKIN._RingInsets(button)
     if not ringTex or not ringTex:IsShown() then
         return 0, 0, 0, 0
     end
-    local pt, rel, rp, posX, posY = ringTex:GetPoint(1)
-    if pt ~= "TOPLEFT" or rp ~= "TOPLEFT" or rel ~= button then
+    local pt, relTo, relPoint, posX, posY = ringTex:GetPoint(1)
+    if pt ~= "TOPLEFT" or relPoint ~= "TOPLEFT" or relTo ~= button then
         return 0, 0, 0, 0
     end
     local wid, hgt = ringTex:GetWidth(), ringTex:GetHeight()

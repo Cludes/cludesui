@@ -111,9 +111,9 @@ function CludesUI.SetElementVisibility(widget, visible)
         widget:SetAlpha(CludesUI._GetFFD(widget).restoreAlpha or 1)
         widget:EnableMouse(CludesUI._GetFFD(widget).restoreMouse or false)
     else
-        local a = widget:GetAlpha()
-        if not issecretvalue(a) and a > 0 then
-            CludesUI._GetFFD(widget).restoreAlpha = a
+        local alpha = widget:GetAlpha()
+        if not issecretvalue(alpha) and alpha > 0 then
+            CludesUI._GetFFD(widget).restoreAlpha = alpha
         end
         CludesUI._GetFFD(widget).restoreMouse = widget:IsMouseEnabled()
         widget:SetAlpha(0)
@@ -190,17 +190,17 @@ function CludesUI.SetFrameScale(widget, scale, keepPosition)
     end
     local k = old / new
     for idx = 1, widget:GetNumPoints() do
-        local p, rel, rp, x, y = widget:GetPoint(idx)
+        local point, relTo, relPoint, x, y = widget:GetPoint(idx)
         if
             not (
-                issecretvalue(p)
-                or issecretvalue(rel)
-                or issecretvalue(rp)
+                issecretvalue(point)
+                or issecretvalue(relTo)
+                or issecretvalue(relPoint)
                 or issecretvalue(x)
                 or issecretvalue(y)
             )
         then
-            CludesUI.SetFramePoint(widget, p, rel, rp, x * k, y * k)
+            CludesUI.SetFramePoint(widget, point, relTo, relPoint, x * k, y * k)
         end
     end
 end
@@ -332,11 +332,11 @@ do
             if widget:GetNumPoints() ~= 1 then
                 return
             end
-            local p, r, rp, x, y = widget:GetPoint(1)
+            local point, r, relPoint, x, y = widget:GetPoint(1)
             if
-                issecretvalue(p)
+                issecretvalue(point)
                 or issecretvalue(r)
-                or issecretvalue(rp)
+                or issecretvalue(relPoint)
                 or issecretvalue(x)
                 or issecretvalue(y)
             then
@@ -352,7 +352,7 @@ do
                     return
                 end
             end
-            placerState.bp, placerState.br, placerState.brp, placerState.bx, placerState.by = p, r, rp, x, y
+            placerState.bp, placerState.br, placerState.brp, placerState.bx, placerState.by = point, r, relPoint, x, y
         end
         local fns = placerState.fns
         local later = false

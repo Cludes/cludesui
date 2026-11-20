@@ -287,12 +287,12 @@ local function LayoutFlyoutButtons()
 
     for index, button in ipairs(buttons) do
         if not flyoutSavedParents[button] then
-            local p1, rel, p2, ox, oy = button:GetPoint(1)
+            local p1, relTo, p2, ox, oy = button:GetPoint(1)
             flyoutSavedParents[button] = {
                 parent = button:GetParent(),
                 strata = button:GetFrameStrata(),
                 point = p1,
-                relTo = rel,
+                relTo = relTo,
                 relPoint = p2,
                 x = ox,
                 y = oy,

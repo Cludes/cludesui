@@ -98,8 +98,8 @@ local function Build()
     if rbText and rbText.GetFont then
         tFont, tSize, tFlags = rbText:GetFont()
         if rbText.GetPoint and rbText:GetNumPoints() > 0 then
-            local p, _, rp, posX, posY = rbText:GetPoint(1)
-            tPoint, tRelP, tX, tY = p, rp, posX, posY
+            local point, _, relPoint, posX, posY = rbText:GetPoint(1)
+            tPoint, tRelP, tX, tY = point, relPoint, posX, posY
         end
     end
     local showText = pp.textFormat and pp.textFormat ~= "none"

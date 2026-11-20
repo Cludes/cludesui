@@ -466,8 +466,8 @@ local function CaptureRegion(registry, p)
     local c = { points = {} }
     c.layer, c.sub = registry:GetDrawLayer()
     for i = 1, registry:GetNumPoints() do
-        local pt, rel, rp, posX, cursorY = registry:GetPoint(i)
-        c.points[i] = { pt, rel == p or rel, rp, posX, cursorY }
+        local pt, relTo, relPoint, posX, cursorY = registry:GetPoint(i)
+        c.points[i] = { pt, relTo == p or relTo, relPoint, posX, cursorY }
     end
     c.shown = registry:IsShown() and true or false
     if registry.GetBlendMode then
@@ -1171,17 +1171,17 @@ local function PlacedByMoved(frame, serial)
     end
     local last
     for i = 1, frame:GetNumPoints() do
-        local _, rel = frame:GetPoint(i)
-        if isv and isv(rel) then
+        local _, relTo = frame:GetPoint(i)
+        if isv and isv(relTo) then
             return false
         end
-        if rel ~= nil and rel ~= last then
-            last = rel
-            if MovedBy(rel, serial) then
+        if relTo ~= nil and relTo ~= last then
+            last = relTo
+            if MovedBy(relTo, serial) then
                 return true
             end
             depBudget = depBudget - 1
-            if depBudget <= 0 or PlacedByMoved(rel, serial) then
+            if depBudget <= 0 or PlacedByMoved(relTo, serial) then
                 return true
             end
         end
@@ -1193,12 +1193,12 @@ end
 local function PlacedBy(height)
     local isv = _G.issecretvalue
     for i = 1, height:GetNumPoints() do
-        local _, rel = height:GetPoint(i)
-        if isv and isv(rel) then
+        local _, relTo = height:GetPoint(i)
+        if isv and isv(relTo) then
             break
         end
-        if rel ~= nil then
-            return rel
+        if relTo ~= nil then
+            return relTo
         end
     end
     return _G.UIParent

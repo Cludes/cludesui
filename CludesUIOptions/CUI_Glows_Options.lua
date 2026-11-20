@@ -446,10 +446,10 @@ local function StatusDot(region, color)
         return
     end
     local Pix = CludesUI.PanelPP
-    local p, rel, rp, posX, cursorY = labelFS:GetPoint(1)
+    local point, relTo, relPoint, posX, cursorY = labelFS:GetPoint(1)
     local dot = CreateFrame("Frame", nil, region)
     Pix.Size(dot, 8, 8)
-    dot:SetPoint(p, rel, rp, posX, cursorY)
+    dot:SetPoint(point, relTo, relPoint, posX, cursorY)
     local texture = dot:CreateTexture(nil, "OVERLAY")
     texture:SetAllPoints()
     texture:SetColorTexture(color[1], color[2], color[3], 1)
@@ -540,9 +540,9 @@ local function InfoGlyph(region, kind)
     end
     local Pix = CludesUI.PanelPP
     local ACC = CludesUI.CLUDES_GREEN
-    local p, rel, rp, posX, cursorY = labelFS:GetPoint(1)
+    local point, relTo, relPoint, posX, cursorY = labelFS:GetPoint(1)
     local holderFrame = CreateFrame("Frame", nil, region)
-    holderFrame:SetPoint(p, rel, rp, posX, cursorY)
+    holderFrame:SetPoint(point, relTo, relPoint, posX, cursorY)
     local function Button(size, glow)
         local widget = CreateFrame("Frame", nil, holderFrame)
         Pix.Size(widget, size, size)

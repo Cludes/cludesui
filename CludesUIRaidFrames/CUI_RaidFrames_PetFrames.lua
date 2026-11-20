@@ -199,11 +199,11 @@ do
     -- Beside Owner pets ignore their party frame's alpha (its range, offline and Buff Manager fades
     -- are the owner's), so the party container's own dims (the options previews) apply here instead.
     PF.ContainerAlpha = function()
-        local a = mod._partyContainerFrame:GetAlpha()
-        if issecretvalue(a) then
+        local alpha = mod._partyContainerFrame:GetAlpha()
+        if issecretvalue(alpha) then
             return 1
         end
-        return a
+        return alpha
     end
 
     -- As the raid buttons: UnitInRange's first return straight into SetAlphaFromBoolean, which takes

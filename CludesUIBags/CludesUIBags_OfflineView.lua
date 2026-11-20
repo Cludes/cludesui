@@ -318,9 +318,9 @@ local function SyncTitle(val, title, count)
 
     count:ClearAllPoints()
     -- the button takes the title's spot (bags shift it for the sidebar arrow), the title goes after
-    local pt, rel, relPt, posX, posY = title:GetPoint(1)
-    if p and rel ~= p.btn then
-        p.base = { pt, rel, relPt, posX, posY }
+    local pt, relTo, relPt, posX, posY = title:GetPoint(1)
+    if p and relTo ~= p.btn then
+        p.base = { pt, relTo, relPt, posX, posY }
     end
     if not enabled then
         if p and p.base then

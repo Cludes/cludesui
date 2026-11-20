@@ -783,15 +783,15 @@ local function HookFrame(widget, frameName)
             end
             widget:StopMovingOrSizing()
             widget:SetUserPlaced(false)
-            local p, _, rp, posX, posY = widget:GetPoint(1)
-            if p then
+            local point, _, relPoint, posX, posY = widget:GetPoint(1)
+            if point then
                 if dragging == "save" then
-                    SavePos(frameName, p, rp, posX, posY)
+                    SavePos(frameName, point, relPoint, posX, posY)
                     tempPos[widget] = nil
                 else
                     tempPos[widget] = {
-                        point = p,
-                        relPoint = rp,
+                        point = point,
+                        relPoint = relPoint,
                         x = posX,
                         y = posY,
                     }

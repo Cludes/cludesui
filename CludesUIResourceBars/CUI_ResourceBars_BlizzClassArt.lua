@@ -354,8 +354,8 @@ local function OnBarLayout(barFrame)
         return
     end
     local dx, dy = ArtOffset(barFrame)
-    local _, rel, _, posX, posY = barFrame:GetPoint(1)
-    if rel == owner and posX == dx and posY == dy then
+    local _, relTo, _, posX, posY = barFrame:GetPoint(1)
+    if relTo == owner and posX == dx and posY == dy then
         return
     end
     if Blocked(barFrame) then

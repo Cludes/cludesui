@@ -1959,8 +1959,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         and childFrame:GetNumPoints() > 0
                         and not PoolIsIdle(childFrame)
                     then
-                        local _, rel = childFrame:GetPoint(1)
-                        if rel == region then
+                        local _, relTo = childFrame:GetPoint(1)
+                        if relTo == region then
                             childFrame:ClearAllPoints()
                             Pix.Point(childFrame, "RIGHT", region, "RIGHT", -20, 0)
                             return
@@ -1994,8 +1994,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         and childFrame:GetNumPoints() > 0
                         and not PoolIsIdle(childFrame)
                     then
-                        local _, rel = childFrame:GetPoint(1)
-                        if rel == region then
+                        local _, relTo = childFrame:GetPoint(1)
+                        if relTo == region then
                             childFrame:ClearAllPoints()
                             Pix.Point(childFrame, "RIGHT", region, "RIGHT", -20, 0)
                             return

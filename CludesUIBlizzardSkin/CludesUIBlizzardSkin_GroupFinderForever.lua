@@ -247,9 +247,9 @@ do
                 return
             end
             for idx = 1, scrollBar:GetNumPoints() do
-                local p, rel, rp, posX, posY = scrollBar:GetPoint(idx)
-                if p and p:find("BOTTOM", 1, true) and posY then
-                    partData.clampPt = { p, rel, rp, posX, posY + (target - current) }
+                local point, relTo, relPoint, posX, posY = scrollBar:GetPoint(idx)
+                if point and point:find("BOTTOM", 1, true) and posY then
+                    partData.clampPt = { point, relTo, relPoint, posX, posY + (target - current) }
                     break
                 end
             end

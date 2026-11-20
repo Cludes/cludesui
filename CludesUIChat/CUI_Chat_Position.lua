@@ -486,12 +486,12 @@ local function ChatAtTarget(cf1, n)
         return false
     end
     for index = 1, n do
-        local anchorPoint, rel, relPoint, posX, posY = cf1:GetPoint(index)
+        local anchorPoint, relTo, relPoint, posX, posY = cf1:GetPoint(index)
         if
             issecret
             and (
                 issecret(anchorPoint)
-                or issecret(rel)
+                or issecret(relTo)
                 or issecret(relPoint)
                 or issecret(posX)
                 or issecret(posY)
@@ -499,7 +499,7 @@ local function ChatAtTarget(cf1, n)
         then
             return false
         end
-        if rel ~= UIParent or type(posX) ~= "number" or type(posY) ~= "number" then
+        if relTo ~= UIParent or type(posX) ~= "number" or type(posY) ~= "number" then
             return false
         end
         local hit = false
@@ -1163,8 +1163,8 @@ local function KeepMainChatSizeCorner()
     if not cf1 or cf1:GetNumPoints() ~= 1 then
         return
     end
-    local anchorPoint, rel, relPoint, posX, posY = cf1:GetPoint(1)
-    if rel ~= UIParent then
+    local anchorPoint, relTo, relPoint, posX, posY = cf1:GetPoint(1)
+    if relTo ~= UIParent then
         return
     end
     local issecret = _G.issecretvalue

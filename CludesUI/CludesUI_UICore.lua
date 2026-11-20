@@ -446,28 +446,28 @@ local function ShowWidgetTooltip(labelText, textValue, options)
         local ttLeft = (_ttLeft or 0) * ttScale
         local ttRight = (_ttRight or 0) * ttScale
         if ttLeft < 0 then
-            local point, rel, relPt, px, py = tip:GetPoint(1)
+            local point, relTo, relPt, px, py = tip:GetPoint(1)
             if point then
-                tip:SetPoint(point, rel, relPt, (px or 0) - ttLeft / ttScale, py or 0)
+                tip:SetPoint(point, relTo, relPt, (px or 0) - ttLeft / ttScale, py or 0)
             end
         elseif ttRight > screenW then
-            local point, rel, relPt, px, py = tip:GetPoint(1)
+            local point, relTo, relPt, px, py = tip:GetPoint(1)
             if point then
-                tip:SetPoint(point, rel, relPt, (px or 0) - (ttRight - screenW) / ttScale, py or 0)
+                tip:SetPoint(point, relTo, relPt, (px or 0) - (ttRight - screenW) / ttScale, py or 0)
             end
         end
         local screenH = GetScreenHeight() * UIParent:GetEffectiveScale()
         local ttTop = (tip:GetTop() or 0) * ttScale
         local ttBottom = (tip:GetBottom() or 0) * ttScale
         if ttBottom < 0 then
-            local point, rel, relPt, px, py = tip:GetPoint(1)
+            local point, relTo, relPt, px, py = tip:GetPoint(1)
             if point then
-                tip:SetPoint(point, rel, relPt, px or 0, (py or 0) - ttBottom / ttScale)
+                tip:SetPoint(point, relTo, relPt, px or 0, (py or 0) - ttBottom / ttScale)
             end
         elseif ttTop > screenH then
-            local point, rel, relPt, px, py = tip:GetPoint(1)
+            local point, relTo, relPt, px, py = tip:GetPoint(1)
             if point then
-                tip:SetPoint(point, rel, relPt, px or 0, (py or 0) - (ttTop - screenH) / ttScale)
+                tip:SetPoint(point, relTo, relPt, px or 0, (py or 0) - (ttTop - screenH) / ttScale)
             end
         end
     end

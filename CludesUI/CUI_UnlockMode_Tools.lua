@@ -1679,10 +1679,10 @@ CUI_NS.unlockParts.Tools = function(LM)
                 shade:ClearAllPoints()
                 shade:SetSize(def.fallbackW or 200, def.fallbackH or 40)
                 -- Read the frame's current anchor or fall back to bottom center
-                local pt, rel, rpt, ox, oy = anchor:GetPoint(1)
+                local pt, relTo, rpt, ox, oy = anchor:GetPoint(1)
                 local yAdj = def.yOffset or 0
-                if pt and rel then
-                    shade:SetPoint(pt, rel, rpt or pt, ox or 0, (oy or 0) + yAdj)
+                if pt and relTo then
+                    shade:SetPoint(pt, relTo, rpt or pt, ox or 0, (oy or 0) + yAdj)
                 else
                     shade:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 200 + yAdj)
                 end

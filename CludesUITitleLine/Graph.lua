@@ -532,8 +532,8 @@ local function Create()
     widget:SetScript("OnDragStart", widget.StartMoving)
     widget:SetScript("OnDragStop", function(frame)
         frame:StopMovingOrSizing()
-        local p, _, rp, posX, posY = frame:GetPoint()
-        CludesUITitleLineDB.point = { p, rp, posX, posY }
+        local point, _, relPoint, posX, posY = frame:GetPoint()
+        CludesUITitleLineDB.point = { point, relPoint, posX, posY }
     end)
     local pt = CludesUITitleLineDB.point
     if pt then

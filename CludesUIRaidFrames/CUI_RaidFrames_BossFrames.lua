@@ -733,16 +733,16 @@ do
     -- it and every button under it. A secret point always rewrites.
     FB.Pin = function(c, anchorPoint, rel, relPoint, posX, posY)
         if c:GetNumPoints() == 1 then
-            local p, region, rp, px, py = c:GetPoint(1)
+            local point, region, rp, px, py = c:GetPoint(1)
             if
                 not (
-                    issecretvalue(p)
+                    issecretvalue(point)
                     or issecretvalue(region)
                     or issecretvalue(rp)
                     or issecretvalue(px)
                     or issecretvalue(py)
                 )
-                and p == anchorPoint
+                and point == anchorPoint
                 and region == rel
                 and rp == relPoint
                 and px == posX

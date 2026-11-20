@@ -1309,9 +1309,9 @@ local function CapturePoint(widget)
     if not widget or _savedPoint[widget] then
         return
     end
-    local p, rel, rp, posX, posY = widget:GetPoint(1)
-    if p then
-        _savedPoint[widget] = { p, rel, rp, posX, posY }
+    local point, relTo, relPoint, posX, posY = widget:GetPoint(1)
+    if point then
+        _savedPoint[widget] = { point, relTo, relPoint, posX, posY }
     end
 end
 

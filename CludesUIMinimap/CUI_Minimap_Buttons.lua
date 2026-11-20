@@ -201,9 +201,9 @@ local function ApplyBtnOffset(widget)
     if ox == 0 and oy == 0 then
         return
     end
-    local p1, rel, p2, posX, posY = widget:GetPoint(1)
+    local p1, relTo, p2, posX, posY = widget:GetPoint(1)
     if p1 then
-        widget:SetPoint(p1, rel, p2, (posX or 0) + ox, (posY or 0) + oy)
+        widget:SetPoint(p1, relTo, p2, (posX or 0) + ox, (posY or 0) + oy)
     end
 end
 
