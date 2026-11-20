@@ -1353,13 +1353,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
                     dropMenu:SetScript("OnShow", function(self)
                         self:SetScale(dropdownBtn:GetEffectiveScale() / UIParent:GetEffectiveScale())
-                        self:SetScript("OnUpdate", function(m)
+                        self:SetScript("OnUpdate", function(frame)
                             if isDragging then
                                 return
                             end -- never dismiss mid-drag
-                            if not dropdownBtn:IsMouseOver() and not m:IsMouseOver() then
+                            if not dropdownBtn:IsMouseOver() and not frame:IsMouseOver() then
                                 if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then
-                                    m:Hide()
+                                    frame:Hide()
                                 end
                             end
                         end)

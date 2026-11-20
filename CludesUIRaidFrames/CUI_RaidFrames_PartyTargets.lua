@@ -92,11 +92,11 @@ do
     end
 
     -- "party1" -> "party1target", built once per token.
-    local function PT_TargetOf(u)
-        local t = PT.tgtOf[u]
+    local function PT_TargetOf(unit)
+        local t = PT.tgtOf[unit]
         if not t then
-            t = u .. "target"
-            PT.tgtOf[u] = t
+            t = unit .. "target"
+            PT.tgtOf[unit] = t
         end
         return t
     end
@@ -145,11 +145,11 @@ do
     -- grey for a tapped mob, the reaction colour for other NPCs. Returns ok, r, g, b; r/g/b may be
     -- SECRET on the restricted path: only ever handed to a setter, never compared. A mob's tap and
     -- reaction (neither secret) are kept on frame, for the ticker's re-check.
-    local function PT_ClassRGB(u, widget)
-        if UnitIsPlayer(u) or (UnitInPartyIsAI and UnitInPartyIsAI(u)) then
-            local _, classTok = UnitClass(u)
+    local function PT_ClassRGB(unit, widget)
+        if UnitIsPlayer(unit) or (UnitInPartyIsAI and UnitInPartyIsAI(unit)) then
+            local _, classTok = UnitClass(unit)
             if issecretvalue(classTok) then
-                local success, red, green, blue = CUI.GetClassColorForRestrictedUnit(u, classTok)
+                local success, red, green, blue = CUI.GetClassColorForRestrictedUnit(unit, classTok)
                 if success then
                     return true, red, green, blue
                 end
@@ -165,8 +165,8 @@ do
             end
             return false
         end
-        local tap = UnitIsTapDenied(u)
-        local re = UnitReaction(u, "player")
+        local tap = UnitIsTapDenied(unit)
+        local re = UnitReaction(unit, "player")
         if issecretvalue(re) then
             re = nil
         end
@@ -184,8 +184,8 @@ do
     end
 
     -- The Classic gradient at the unit's current health (the engine evaluates the curve, secret-safe).
-    local function PT_PaintClassic(health, u)
-        local c = UnitHealthPercent(u, true, GetClassicHealthCurve())
+    local function PT_PaintClassic(health, unit)
+        local c = UnitHealthPercent(unit, true, GetClassicHealthCurve())
         if c and c.GetRGB then
             health:SetStatusBarColor(c:GetRGB())
         end
@@ -238,16 +238,16 @@ do
 
     -- Value paint (the ticker and your target's health events), smoothed per Smooth Bars; the Classic
     -- gradient follows the value.
-    local function PT_PaintValue(widget, u)
+    local function PT_PaintValue(widget, unit)
         local health = widget._health
         local smooth = PT.smooth
         if smooth then
-            health:SetValue(GetSafeHealthPercent(u), smooth)
+            health:SetValue(GetSafeHealthPercent(unit), smooth)
         else
-            health:SetValue(GetSafeHealthPercent(u))
+            health:SetValue(GetSafeHealthPercent(unit))
         end
         if PT.mode == "classic" then
-            PT_PaintClassic(health, u)
+            PT_PaintClassic(health, unit)
         end
     end
 

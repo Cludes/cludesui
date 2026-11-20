@@ -935,22 +935,22 @@ do
     end
     mod.NP_CustomFSKey = FS_KEY
     -- The unit's name as the name slot writes it (the slot's Name Format).
-    local function Name(u, slotName)
-        local name = CludesUI.WithSurname(UnitName(u))
+    local function Name(unit, slotName)
+        local name = CludesUI.WithSurname(UnitName(unit))
         if type(name) == "nil" then
             return ""
         end
-        return mod.NP_FormatName(name, slotName, u)
+        return mod.NP_FormatName(name, slotName, unit)
     end
     -- Tag modifiers shape the plain name. They do not also apply the slot's Name Format.
     -- [name:last] and [target:last] show nothing for your own unit while your name is
     -- your first name alone (OwnSurnameHidden: WoW Forever, Blizzard's My Surname off).
     local function Shaped(modeName)
-        return function(u)
-            if modeName == "last" and CludesUI.OwnSurnameHidden(u) then
+        return function(unit)
+            if modeName == "last" and CludesUI.OwnSurnameHidden(unit) then
                 return ""
             end
-            local name = CludesUI.WithSurname(UnitName(u))
+            local name = CludesUI.WithSurname(UnitName(unit))
             if type(name) == "nil" then
                 return ""
             end
@@ -959,11 +959,11 @@ do
     end
     local function TargetShaped(modeName)
         local piece = Shaped(modeName)
-        return function(u)
-            local tu = mod._npToTUnits[u]
+        return function(unit)
+            local tu = mod._npToTUnits[unit]
             if not tu then
-                tu = u .. "target"
-                mod._npToTUnits[u] = tu
+                tu = unit .. "target"
+                mod._npToTUnits[unit] = tu
             end
             if not UnitExists(tu) then
                 return ""
@@ -972,35 +972,35 @@ do
         end
     end
     local P = {
-        ["hp"] = function(u)
-            if UnitIsDeadOrGhost(u) then
+        ["hp"] = function(unit)
+            if UnitIsDeadOrGhost(unit) then
                 return CludesUI.L("DEAD")
             end
-            return scrollFrame("%d", UnitHealth(u) or 0)
+            return scrollFrame("%d", UnitHealth(unit) or 0)
         end,
-        ["hp:abr"] = function(u)
-            if UnitIsDeadOrGhost(u) then
+        ["hp:abr"] = function(unit)
+            if UnitIsDeadOrGhost(unit) then
                 return CludesUI.L("DEAD")
             end
-            return mod.AbbreviateValue(UnitHealth(u) or 0, "health")
+            return mod.AbbreviateValue(UnitHealth(unit) or 0, "health")
         end,
-        ["hp:max"] = function(u)
-            return scrollFrame("%d", UnitHealthMax(u) or 0)
+        ["hp:max"] = function(unit)
+            return scrollFrame("%d", UnitHealthMax(unit) or 0)
         end,
-        ["hp:max:abr"] = function(u)
-            return mod.AbbreviateValue(UnitHealthMax(u) or 0, "maxHealth")
+        ["hp:max:abr"] = function(unit)
+            return mod.AbbreviateValue(UnitHealthMax(unit) or 0, "maxHealth")
         end,
-        ["hp:pct"] = function(u)
-            if UnitIsDeadOrGhost(u) then
+        ["hp:pct"] = function(unit)
+            if UnitIsDeadOrGhost(unit) then
                 return "0"
             end
-            return scrollFrame("%d", UnitHealthPercent(u, true, CurveConstants.ScaleTo100) or 0)
+            return scrollFrame("%d", UnitHealthPercent(unit, true, CurveConstants.ScaleTo100) or 0)
         end,
-        ["absorb"] = function(u)
-            return C_StringUtil.TruncateWhenZero(UnitGetTotalAbsorbs(u) or 0)
+        ["absorb"] = function(unit)
+            return C_StringUtil.TruncateWhenZero(UnitGetTotalAbsorbs(unit) or 0)
         end,
-        ["absorb:abr"] = function(u)
-            local val = UnitGetTotalAbsorbs(u) or 0
+        ["absorb:abr"] = function(unit)
+            local val = UnitGetTotalAbsorbs(unit) or 0
             if IsZeroValue(val) then
                 return ""
             end
@@ -1010,11 +1010,11 @@ do
         ["name:first"] = Shaped("first"),
         ["name:last"] = Shaped("last"),
         ["name:abbr"] = Shaped("abbr"),
-        ["target"] = function(u, slotName)
-            local tu = mod._npToTUnits[u]
+        ["target"] = function(unit, slotName)
+            local tu = mod._npToTUnits[unit]
             if not tu then
-                tu = u .. "target"
-                mod._npToTUnits[u] = tu
+                tu = unit .. "target"
+                mod._npToTUnits[unit] = tu
             end
             if not UnitExists(tu) then
                 return ""
@@ -1024,8 +1024,8 @@ do
         ["target:first"] = TargetShaped("first"),
         ["target:last"] = TargetShaped("last"),
         ["target:abbr"] = TargetShaped("abbr"),
-        ["level"] = function(u)
-            return mod.GetUnitLevelText(u)
+        ["level"] = function(unit)
+            return mod.GetUnitLevelText(unit)
         end,
     }
     local CAT = TT.Bind(TT.UNIT, P)

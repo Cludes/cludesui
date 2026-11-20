@@ -1281,8 +1281,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                         end
                     end
                     animRunning = true
-                    popFrame:SetScript("OnUpdate", function(_, dt)
-                        TickAnimation(dt)
+                    popFrame:SetScript("OnUpdate", function(_, elapsed)
+                        TickAnimation(elapsed)
                         if not animRunning then
                             popFrame:SetScript("OnUpdate", nil)
                         end
@@ -1363,7 +1363,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             self:SetAlpha(0.3)
             self:SetFrameLevel(popFrame:GetFrameLevel())
             -- Start cursor tracking + mouse-up detection
-            popFrame:SetScript("OnUpdate", function(_, dt)
+            popFrame:SetScript("OnUpdate", function(_, elapsed)
                 -- Detect mouse release
                 if not IsMouseButtonDown("LeftButton") then
                     popFrame:SetScript("OnUpdate", nil)
@@ -1379,7 +1379,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 local gs = dragGhost:GetScale() or 1
                 dragGhost:ClearAllPoints()
                 dragGhost:SetPoint("CENTER", UIParent, "BOTTOMLEFT", curX / gs, curY / gs)
-                TickAnimation(dt)
+                TickAnimation(elapsed)
                 local tBd = SelectedCDMBar()
                 local tCount = 0
                 if tBd then

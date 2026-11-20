@@ -530,8 +530,8 @@ do
             if not RT.drv then
                 RT.drv = CreateFrame("Frame")
                 RT.drv:Hide()
-                RT.drv:SetScript("OnUpdate", function(_, dt)
-                    RT.acc = RT.acc + dt
+                RT.drv:SetScript("OnUpdate", function(_, elapsed)
+                    RT.acc = RT.acc + elapsed
                     if RT.acc < 0.2 then
                         return
                     end

@@ -62,11 +62,11 @@ local LIVE = {
     info = function(ident)
         return C_LFGList.GetApplicantInfo(ident)
     end,
-    member = function(ident, k)
-        return C_LFGList.GetApplicantMemberInfo(ident, k)
+    member = function(ident, key)
+        return C_LFGList.GetApplicantMemberInfo(ident, key)
     end,
-    best = function(ident, k)
-        return C_LFGList.GetApplicantBestDungeonScore(ident, k)
+    best = function(ident, key)
+        return C_LFGList.GetApplicantBestDungeonScore(ident, key)
     end,
     counts = function()
         return GetGroupMemberCountsForDisplay()
@@ -536,10 +536,10 @@ end
 -------------------------------------------------------------------------------
 --  an applicant
 -------------------------------------------------------------------------------
-local function MakeLine(b, k)
+local function MakeLine(b, key)
     local l = CreateFrame("Button", nil, b)
     l:RegisterForClicks("RightButtonUp")
-    l.memberIdx = k
+    l.memberIdx = key
     l.hl = l:CreateTexture(nil, "HIGHLIGHT")
     l.hl:SetPoint("TOPLEFT", l, "TOPLEFT", 0, 0)
     l.hl:SetColorTexture(1, 1, 1, 0.06)
@@ -643,7 +643,7 @@ local function MakeLine(b, k)
     l:SetScript("OnClick", LineMenu)
     l:SetScript("OnEnter", LineEnter)
     l:SetScript("OnLeave", LineLeave)
-    b.lines[k] = l
+    b.lines[key] = l
     return l
 end
 
@@ -871,9 +871,9 @@ local function After(l, texture, isShown, posX)
     l.markPrev = texture
 end
 
-local function FillLine(l, ident, k, grey, noTouch)
+local function FillLine(l, ident, key, grey, noTouch)
     local label, classFile, localClass, _, ilvl, _, tank, healer, damage, assigned, relation, score, pvpIlvl, _, _, specID, leaver =
-        source.member(ident, k)
+        source.member(ident, key)
     PlaceCells(l)
     PaintSpec(l, classFile, specID, grey)
     -- the applicant's name: a font family (ns.OwnListNameFont), never FontSize
@@ -882,7 +882,7 @@ local function FillLine(l, ident, k, grey, noTouch)
         FontSize(fontStr, mod.OwnListSize("scoreSize"))
     end
     -- leaver, friend, name
-    local posX = k > 1 and 18 or 6
+    local posX = key > 1 and 18 or 6
     l.markPrev = l
     After(l, l.leaver, not Secret(leaver) and leaver, posX)
     After(l, l.friend, not Secret(relation) and relation, posX)
@@ -905,7 +905,7 @@ local function FillLine(l, ident, k, grey, noTouch)
         l.name:SetText(label and Ambiguate(label, "short") or "")
     end
     -- a group's other members hang off the leader's row
-    l.bullet:SetShown(k > 1 and not grey)
+    l.bullet:SetShown(key > 1 and not grey)
     l.bullet:ClearAllPoints()
     l.bullet:SetPoint("LEFT", l, "LEFT", 9, nameY)
     l.region:SetShown(tag ~= nil)
@@ -990,10 +990,10 @@ local function FillLine(l, ident, k, grey, noTouch)
         else
             c.rating:SetText("-")
         end
-        c.best:SetText(KeyText(source.best(ident, k)))
+        c.best:SetText(KeyText(source.best(ident, key)))
     elseif baseCols == COLS_PVP then
         local act = ActiveActivity()
-        local pvp = act and C_LFGList.GetApplicantPvpRatingInfoForListing(ident, k, act)
+        local pvp = act and C_LFGList.GetApplicantPvpRatingInfoForListing(ident, key, act)
         local rating = Readable(pvp) and pvp.rating
         c.rating:SetText((rating and not Secret(rating)) and rating or "-")
     end
@@ -1700,8 +1700,8 @@ local PREVIEW = {
     info = function(ident)
         return applicantView.data[ident] and applicantView.data[ident].info
     end,
-    member = function(ident, k)
-        local m = applicantView.data[ident] and applicantView.data[ident].members[k]
+    member = function(ident, key)
+        local m = applicantView.data[ident] and applicantView.data[ident].members[key]
         if not m then
             return nil
         end
@@ -1724,8 +1724,8 @@ local PREVIEW = {
             m.spec,
             false
     end,
-    best = function(ident, k)
-        local m = applicantView.data[ident] and applicantView.data[ident].members[k]
+    best = function(ident, key)
+        local m = applicantView.data[ident] and applicantView.data[ident].members[key]
         return m and m.best
     end,
     counts = function()

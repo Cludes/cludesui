@@ -101,28 +101,28 @@ function mod.Feature(dbKey, defaultSet, defaultPos)
     --   u.shown()        whether the frame is in use (default: the "enabled" setting)
     -- Nothing is built while the feature is off (the unlock core calls getFrame
     -- and applyPos for every element at each login).
-    function F.Start(apply, u)
+    function F.Start(apply, unit)
         local boot = CreateFrame("Frame")
         boot:RegisterEvent("PLAYER_LOGIN")
         boot:SetScript("OnEvent", function(self)
             self:UnregisterAllEvents()
             apply()
-            if not u then
+            if not unit then
                 return
             end
-            local Shown = u.shown or Enabled
+            local Shown = unit.shown or Enabled
             local e = {
-                key = u.key,
-                label = u.label,
+                key = unit.key,
+                label = unit.label,
                 group = "Forever Tools",
-                order = u.order,
-                noAnchorTarget = u.noAnchorTarget,
-                noSizeMatchTarget = u.noSizeMatchTarget,
+                order = unit.order,
+                noAnchorTarget = unit.noAnchorTarget,
+                noSizeMatchTarget = unit.noSizeMatchTarget,
                 isHidden = function()
                     return not Shown()
                 end,
                 getFrame = function()
-                    return Shown() and u.frame(true) or nil
+                    return Shown() and unit.frame(true) or nil
                 end,
                 savePos = function(_, anchorPoint, relPoint, posX, posY)
                     if not anchorPoint then
@@ -130,32 +130,32 @@ function mod.Feature(dbKey, defaultSet, defaultPos)
                     end
                     Cfg().pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                     if not CludesUI._unlockActive then
-                        Place(u.frame(), u.snap)
+                        Place(unit.frame(), unit.snap)
                     end
                 end,
                 loadPos = SavedPos,
                 clearPos = function()
                     Cfg().pos = nil
-                    Place(u.frame(), u.snap)
+                    Place(unit.frame(), unit.snap)
                 end,
                 applyPos = function()
                     if Shown() then
-                        Place(u.frame(true), u.snap)
+                        Place(unit.frame(true), unit.snap)
                     end
                 end,
             }
-            if u.size then
+            if unit.size then
                 e.noResize = true
-                e.getSize = u.size
+                e.getSize = unit.size
             else
                 e.getSize = function()
-                    return Get("width"), u.height()
+                    return Get("width"), unit.height()
                 end
                 e.setWidth = function(_, wid)
-                    Cfg().width = math.max(u.minWidth, CludesUI.PP.Snap(wid))
-                    u.applyStyle()
+                    Cfg().width = math.max(unit.minWidth, CludesUI.PP.Snap(wid))
+                    unit.applyStyle()
                     if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
-                        CludesUI.RepositionBarToMover(u.key)
+                        CludesUI.RepositionBarToMover(unit.key)
                     end
                 end
             end

@@ -4339,13 +4339,13 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
 
         -- Auto-close on click outside (dropdown pattern: poll IsMouseButtonDown)
         dialog:SetScript("OnShow", function(p)
-            p:SetScript("OnUpdate", function(m)
+            p:SetScript("OnUpdate", function(frame)
                 if
-                    not m:IsMouseOver()
+                    not frame:IsMouseOver()
                     and not anchorBtn:IsMouseOver()
                     and IsMouseButtonDown("LeftButton")
                 then
-                    m:Hide()
+                    frame:Hide()
                 end
             end)
         end)
@@ -4703,13 +4703,13 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
         end
 
         dialog:SetScript("OnShow", function(p)
-            p:SetScript("OnUpdate", function(m)
+            p:SetScript("OnUpdate", function(frame)
                 if
-                    not m:IsMouseOver()
+                    not frame:IsMouseOver()
                     and not newGlobalBtn:IsMouseOver()
                     and IsMouseButtonDown("LeftButton")
                 then
-                    m:Hide()
+                    frame:Hide()
                 end
             end)
         end)
@@ -5578,13 +5578,13 @@ function mod.CC_BuildPage(page, hostFrame, yOffset)
 
         -- Auto-close on click outside (dropdown pattern: poll IsMouseButtonDown)
         dialog:SetScript("OnShow", function(p)
-            p:SetScript("OnUpdate", function(m)
+            p:SetScript("OnUpdate", function(frame)
                 if
-                    not m:IsMouseOver()
+                    not frame:IsMouseOver()
                     and not newSpecBtn:IsMouseOver()
                     and IsMouseButtonDown("LeftButton")
                 then
-                    m:Hide()
+                    frame:Hide()
                 end
             end)
         end)

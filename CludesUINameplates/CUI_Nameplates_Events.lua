@@ -100,27 +100,27 @@ local enemyWatcherFrames = {}
 local AcquirePendingWatcher, AcquireEnemyWatcher
 
 -- Watches a friendly/pending unit for becoming attackable (e.g. duel start)
-local function PendingWatcherOnEvent(self, evt, u)
-    if not UnitCanAttack("player", u) then
+local function PendingWatcherOnEvent(self, evt, unit)
+    if not UnitCanAttack("player", unit) then
         return
     end
     -- Unit became attackable -> promote to enemy plate
     self:UnregisterAllEvents()
-    pendingWatchers[u] = nil
-    pendingUnits[u] = nil
-    local currentPlate = C_NamePlate.GetNamePlateForUnit(u)
+    pendingWatchers[unit] = nil
+    pendingUnits[unit] = nil
+    local currentPlate = C_NamePlate.GetNamePlateForUnit(unit)
     -- Name-only friendly NPCs are suppressed via a nameplate-keyed name
     -- overlay, not the friendlyPlates[] pool the calls below clean up.
     -- Tear it down here or the old friendly name text is left rendering
     -- on top of the new enemy plate/bar.
     if mod.RemoveFriendlyNPCOverlayForUnit then
-        mod.RemoveFriendlyNPCOverlayForUnit(u, currentPlate)
+        mod.RemoveFriendlyNPCOverlayForUnit(unit, currentPlate)
     end
     -- Remove friendly plate WITHOUT restoring Blizzard UF (we'll suppress it as enemy)
     if mod.RemoveFriendlyPlateNoRestore then
-        mod.RemoveFriendlyPlateNoRestore(u)
+        mod.RemoveFriendlyPlateNoRestore(unit)
     elseif mod.RemoveFriendlyPlate then
-        mod.RemoveFriendlyPlate(u)
+        mod.RemoveFriendlyPlate(unit)
     end
     if currentPlate then
         local backing = frameCache:Acquire()
@@ -128,22 +128,22 @@ local function PendingWatcherOnEvent(self, evt, u)
             Mixin(backing, NameplateFrame)
             backing._mixedIn = true
         end
-        mod.plates[u] = backing
-        backing:SetUnit(u, currentPlate)
+        mod.plates[unit] = backing
+        backing:SetUnit(unit, currentPlate)
     end
     -- Watch for the reverse transition (enemy -> friendly, e.g. duel end)
-    enemyWatchers[u] = AcquireEnemyWatcher(u)
+    enemyWatchers[unit] = AcquireEnemyWatcher(unit)
 end
 
 -- Watches a promoted-enemy unit for becoming friendly again (e.g. duel end)
-local function EnemyWatcherOnEvent(self, evt, u)
-    if UnitCanAttack("player", u) then
+local function EnemyWatcherOnEvent(self, evt, unit)
+    if UnitCanAttack("player", unit) then
         return
     end
     -- Unit became friendly again -> tear down enemy plate, restore to pending
     self:UnregisterAllEvents()
-    enemyWatchers[u] = nil
-    local backing = mod.plates[u]
+    enemyWatchers[unit] = nil
+    local backing = mod.plates[unit]
     if backing then
         if mod._ClearMouseoverPlate then
             mod._ClearMouseoverPlate(backing)
@@ -157,20 +157,20 @@ local function EnemyWatcherOnEvent(self, evt, u)
         end
         backing:ClearUnit()
         frameCache:Release(backing)
-        mod.plates[u] = nil
+        mod.plates[unit] = nil
     end
     -- Re-add as pending friendly
-    local currentPlate = C_NamePlate.GetNamePlateForUnit(u)
+    local currentPlate = C_NamePlate.GetNamePlateForUnit(unit)
     if currentPlate then
         -- The unit keeps this nameplate (no NAME_PLATE_UNIT_ADDED follows a
         -- duel's end), so Blizzard's frame gets back here what the enemy plate
         -- parked on it; else the friendly name stays hidden until the plate is
         -- next added.
         mod.NP_ReclaimBlizzardFrame(currentPlate.UnitFrame)
-        pendingUnits[u] = currentPlate
-        pendingWatchers[u] = AcquirePendingWatcher(u)
+        pendingUnits[unit] = currentPlate
+        pendingWatchers[unit] = AcquirePendingWatcher(unit)
         if mod.TryAddFriendlyPlate then
-            mod.TryAddFriendlyPlate(u)
+            mod.TryAddFriendlyPlate(unit)
         end
     end
 end

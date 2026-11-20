@@ -456,26 +456,26 @@ end
 
 -- Gray-out classification for the power bar's PostUpdate: true for a generic
 -- melee NPC (no real power). One function, run through pcall with the unit.
-function mod.UF_PowerShouldGray(u)
-    if u == "player" or not UnitExists(u) then
+function mod.UF_PowerShouldGray(unit)
+    if unit == "player" or not UnitExists(unit) then
         return false
     end
-    if not UnitCanAttack("player", u) or UnitIsPlayer(u) then
+    if not UnitCanAttack("player", unit) or UnitIsPlayer(unit) then
         return false
     end
-    local cls = UnitClassification(u)
+    local cls = UnitClassification(unit)
     if cls == "worldboss" then
         return false
     end
     local isElite = (cls == "elite" or cls == "rareelite")
-    local lvl = UnitLevel(u)
+    local lvl = UnitLevel(unit)
     local pLvl = UnitLevel("player")
     local lvlOk = lvl and not (issecretvalue and issecretvalue(lvl))
     local pLvlOk = pLvl and not (issecretvalue and issecretvalue(pLvl))
     if isElite and lvlOk and (lvl == -1 or (pLvlOk and lvl >= pLvl + 1)) then
         return false
     end
-    local uCls = UnitClassBase and UnitClassBase(u)
+    local uCls = UnitClassBase and UnitClassBase(unit)
     if issecretvalue(uCls) then
         uCls = nil
     end
@@ -801,8 +801,8 @@ local function CreatePowerBar(widget, unitToken, prefs)
     -- Gray out the power bar for enemy NPCs with no real power (melee mobs); keep
     -- it for player, friendly units, enemy players, bosses, minibosses, casters.
     power._grayedOut = false
-    power.PostUpdate = function(self, u, current, min, max)
-        local s = GetSettingsForUnit(u)
+    power.PostUpdate = function(self, unit, current, min, max)
+        local s = GetSettingsForUnit(unit)
         if not s then
             return
         end
@@ -813,7 +813,7 @@ local function CreatePowerBar(widget, unitToken, prefs)
         end
 
         -- Classification check: generic melee NPCs get the gray bar.
-        local success, shouldGray = pcall(mod.UF_PowerShouldGray, u)
+        local success, shouldGray = pcall(mod.UF_PowerShouldGray, unit)
         if not success then
             return
         end
@@ -829,7 +829,7 @@ local function CreatePowerBar(widget, unitToken, prefs)
             if s.powerBgPowerColored and self.bg then
                 -- Restore this unit's power color (mirrors the fill); the next
                 -- PostUpdateColor keeps it tracking thereafter.
-                local pr, pg, pb = CludesUI.ResolveUnitPowerColor(u)
+                local pr, pg, pb = CludesUI.ResolveUnitPowerColor(unit)
                 if pr then
                     local frame = CludesUI.GetPowerBgDarkenFactor()
                     self.bg:SetColorTexture(pr * frame, pg * frame, pb * frame, 1)
@@ -863,10 +863,10 @@ local function CreatePowerBar(widget, unitToken, prefs)
         local _, class = UnitClass("player")
         if PLAYER_POWER_DEFAULT[class] or PLAYER_POWER_ALT[class] then
             power.displayAltPower = true
-            power.GetDisplayPower = function(self, u)
+            power.GetDisplayPower = function(self, unit)
                 local resolved = CludesUI.GetPlayerPowerOverride()
                 -- Publish for tags so the text matches the bar.
-                _G._CUI_ResolvedPowerType[u or "player"] = resolved
+                _G._CUI_ResolvedPowerType[unit or "player"] = resolved
                 return resolved
             end
         end

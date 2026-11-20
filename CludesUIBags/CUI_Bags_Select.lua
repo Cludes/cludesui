@@ -761,9 +761,9 @@ do
         local slotList, ids, values, sent = {}, {}, {}, {}
         local keptSet = GatherJunkSlots(slotList, ids)
         local index, done = 0, false
-        local function Landed(k)
-            local itemKey = slotList[k]
-            return C_Container.GetContainerItemID(math.floor(itemKey / 1000), itemKey % 1000) ~= ids[k]
+        local function Landed(key)
+            local itemKey = slotList[key]
+            return C_Container.GetContainerItemID(math.floor(itemKey / 1000), itemKey % 1000) ~= ids[key]
         end
         local function InFlight()
             for num = 1, #sent do

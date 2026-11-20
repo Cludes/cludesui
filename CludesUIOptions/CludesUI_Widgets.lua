@@ -1774,10 +1774,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if dropMenu._padOpen then
                 dropMenu._padOpen()
             end
-            self:SetScript("OnUpdate", function(m)
+            self:SetScript("OnUpdate", function(frame)
                 local flyoverFlyout = false
-                if m._flyouts then
-                    for _, fo in ipairs(m._flyouts) do
+                if frame._flyouts then
+                    for _, fo in ipairs(frame._flyouts) do
                         if fo:IsShown() and fo:IsMouseOver() then
                             flyoverFlyout = true
                             break
@@ -1785,13 +1785,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                 end
                 if
-                    not m:IsMouseOver()
+                    not frame:IsMouseOver()
                     and not dropdownBtn:IsMouseOver()
                     and not flyoverFlyout
-                    and not m._ddThumbDragging
+                    and not frame._ddThumbDragging
                     and IsMouseButtonDown("LeftButton")
                 then
-                    m:Hide()
+                    frame:Hide()
                     return
                 end
                 -- Close when the button's bottom edge leaves the visible scroll area (skipped for buttons outside the scroll child, e.g. content header dropdowns).
@@ -1819,7 +1819,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         local btnBot = dropdownBtn:GetBottom()
                         if sfTop and sfBot and btnBot then
                             if btnBot < sfBot or btnBot > sfTop then
-                                m:Hide()
+                                frame:Hide()
                             end
                         end
                     end

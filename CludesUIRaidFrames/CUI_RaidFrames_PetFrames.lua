@@ -122,24 +122,24 @@ do
         end
         local keyList = PF.TAB_KEY[context]
         v = setmetatable({}, {
-            __index = function(_, k)
+            __index = function(_, key)
                 local rawValue = PF.Raw()
                 if not rawValue then
                     return nil
                 end
-                local tk = keyList[k]
+                local tk = keyList[key]
                 if tk then
                     local val = rawValue[tk]
                     if val ~= nil then
                         return val
                     end
                 end
-                return rawValue[k]
+                return rawValue[key]
             end,
-            __newindex = function(_, k, val)
+            __newindex = function(_, key, val)
                 local rawValue = PF.Raw()
                 if rawValue then
-                    rawValue[keyList[k] or k] = val
+                    rawValue[keyList[key] or key] = val
                 end
             end,
         })

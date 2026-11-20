@@ -86,17 +86,17 @@ local function RegisterUFUnlockElements()
                     end
                     return mod.VisEffective(saved.profile[MOVER_VIS_OF[key] or key]) == "never"
                 end,
-                getFrame = function(k)
-                    if k == "boss" then
+                getFrame = function(key)
+                    if key == "boss" then
                         return frameList["boss1"]
                     end
-                    if k == "classPower" then
+                    if key == "classPower" then
                         return frameList._classPowerBar
                     end
-                    return frameList[k]
+                    return frameList[key]
                 end,
-                getSize = function(k)
-                    if k == "classPower" then
+                getSize = function(key)
+                    if key == "classPower" then
                         if frameList._classPowerBar then
                             local wid = frameList._classPowerBar:GetWidth()
                             local hgt = frameList._classPowerBar:GetHeight()
@@ -110,11 +110,11 @@ local function RegisterUFUnlockElements()
                         end
                         return 120, 14
                     end
-                    local wid, hgt = GetFrameDimensions((k == "boss") and "boss1" or k)
+                    local wid, hgt = GetFrameDimensions((key == "boss") and "boss1" or key)
                     -- Blizzard Style: sizes (and so size matches) are the
                     -- visible art, not the stock box's transparent padding.
                     if mod.UF_Blizz() then
-                        local l, region, t, b = mod.UF_BlizzVis((k == "boss") and frameList.boss1 or frameList[k])
+                        local l, region, t, b = mod.UF_BlizzVis((key == "boss") and frameList.boss1 or frameList[key])
                         if l then
                             return wid - l - region, hgt - t - b
                         end
@@ -123,18 +123,18 @@ local function RegisterUFUnlockElements()
                 end,
                 -- The size the unit's own settings give (the CludesUI look),
                 -- for code that must never take the style's stock size for it.
-                getSettingSize = function(k)
-                    if k == "classPower" then
+                getSettingSize = function(key)
+                    if key == "classPower" then
                         return nil
                     end
-                    return GetFrameDimensions((k == "boss") and "boss1" or k, true)
+                    return GetFrameDimensions((key == "boss") and "boss1" or key, true)
                 end,
                 -- Blizzard Style: the mover outlines the visible art.
-                getInsets = function(k)
+                getInsets = function(key)
                     if not mod.UF_Blizz() then
                         return nil
                     end
-                    return mod.UF_BlizzVis((k == "boss") and frameList.boss1 or frameList[k])
+                    return mod.UF_BlizzVis((key == "boss") and frameList.boss1 or frameList[key])
                 end,
                 -- Size matching: what a textured border draws outside the frame
                 -- (nil for a solid border, the stock looks, class resource, boss).
@@ -143,8 +143,8 @@ local function RegisterUFUnlockElements()
                 -- Boss frames have a castbar anchored under the frame (not a
                 -- separate movable element like the player/target cast bars), so
                 -- the overlay grows down to wrap it. Other units return 0.
-                getBottomExtra = function(k)
-                    if k ~= "boss" then
+                getBottomExtra = function(key)
+                    if key ~= "boss" then
                         return 0
                     end
                     local b = saved.profile.boss
@@ -160,8 +160,8 @@ local function RegisterUFUnlockElements()
                         return CludesUI.L("Size matching is unavailable with Blizzard Style Unit Frames.")
                     end
                 end,
-                setWidth = function(k, wid)
-                    if k == "classPower" then
+                setWidth = function(key, wid)
+                    if key == "classPower" then
                         return
                     end
                     if mod.UF_Blizz() then
@@ -175,7 +175,7 @@ local function RegisterUFUnlockElements()
                         Rebuild()
                         return
                     end
-                    local unitToken = (k == "boss") and "boss1" or k
+                    local unitToken = (key == "boss") and "boss1" or key
                     local s = GetSettingsForUnit(unitToken)
                     if not s then
                         return
@@ -226,8 +226,8 @@ local function RegisterUFUnlockElements()
                     end
                     Rebuild()
                 end,
-                setHeight = function(k, hgt)
-                    if k == "classPower" then
+                setHeight = function(key, hgt)
+                    if key == "classPower" then
                         return
                     end
                     if mod.UF_Blizz() then
@@ -241,7 +241,7 @@ local function RegisterUFUnlockElements()
                         Rebuild()
                         return
                     end
-                    local unitToken = (k == "boss") and "boss1" or k
+                    local unitToken = (key == "boss") and "boss1" or key
                     local s = GetSettingsForUnit(unitToken)
                     if not s then
                         return
@@ -259,8 +259,8 @@ local function RegisterUFUnlockElements()
                     end
                     Rebuild()
                 end,
-                loadPos = function(k)
-                    local place = saved.profile.positions[k]
+                loadPos = function(key)
+                    local place = saved.profile.positions[key]
                     if not place then
                         return nil
                     end
@@ -271,13 +271,13 @@ local function RegisterUFUnlockElements()
                         y = place.y,
                     }
                 end,
-                savePos = function(k, anchorPoint, relPoint, posX, posY)
-                    saved.profile.positions[k] =
+                savePos = function(key, anchorPoint, relPoint, posX, posY)
+                    saved.profile.positions[key] =
                         { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                     if CludesUI._unlockActive then
                         return
                     end
-                    if k == "boss" then
+                    if key == "boss" then
                         local spacing = mod.UF_BossSpacing()
                         local bossStackDir = saved.profile.boss and saved.profile.boss.bossStackDirection
                             or "down"
@@ -303,24 +303,24 @@ local function RegisterUFUnlockElements()
                                 end
                             end
                         end
-                    elseif k == "classPower" then
+                    elseif key == "classPower" then
                         if frameList._classPowerBar then
                             frameList._classPowerBar:ClearAllPoints()
                             frameList._classPowerBar:SetPoint(anchorPoint, UIParent, relPoint, posX, posY)
                         end
                     else
-                        local fr = frameList[k]
+                        local fr = frameList[key]
                         if fr then
                             fr:ClearAllPoints()
                             fr:SetPoint(anchorPoint, UIParent, relPoint, mod.UF_ScaledOffsets(fr, posX, posY))
                         end
                     end
                 end,
-                clearPos = function(k)
-                    saved.profile.positions[k] = nil
+                clearPos = function(key)
+                    saved.profile.positions[key] = nil
                 end,
-                applyPos = function(k)
-                    local place = saved.profile.positions[k]
+                applyPos = function(key)
+                    local place = saved.profile.positions[key]
                     if not place then
                         return
                     end
@@ -328,7 +328,7 @@ local function RegisterUFUnlockElements()
                     -- authority. Only bootstrap from the saved standalone position
                     -- while the frame has no bounds yet (first placement); otherwise
                     -- leave it alone so the anchor position is never clobbered.
-                    local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(k)
+                    local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(key)
                     local pt = place.point
                     local rpt = place.relPoint or pt
                     local px, py = place.x, place.y
@@ -351,7 +351,7 @@ local function RegisterUFUnlockElements()
                         end
                         return posX, posY
                     end
-                    if k == "boss" then
+                    if key == "boss" then
                         local spacing = mod.UF_BossSpacing()
                         local bossStackDir = saved.profile.boss and saved.profile.boss.bossStackDirection
                             or "down"
@@ -375,7 +375,7 @@ local function RegisterUFUnlockElements()
                                 end
                             end
                         end
-                    elseif k == "classPower" then
+                    elseif key == "classPower" then
                         local cpb = frameList._classPowerBar
                         if cpb and not (anchored and cpb:GetLeft()) then
                             px, py = SnapForFrame(cpb, px, py)
@@ -383,7 +383,7 @@ local function RegisterUFUnlockElements()
                             cpb:SetPoint(pt, UIParent, rpt, px, py)
                         end
                     else
-                        local fr = frameList[k]
+                        local fr = frameList[key]
                         if fr and not (anchored and fr:GetLeft()) then
                             px, py = SnapForFrame(fr, mod.UF_ScaledOffsets(fr, px, py))
                             fr:ClearAllPoints()
@@ -397,9 +397,9 @@ local function RegisterUFUnlockElements()
         -- Core unit frames. Only register a mover for units that actually use
         -- the CludesUI frame; a unit set to Blizzard-default or Hidden has no
         -- CUI frame to move.
-        local function AddUFElement(u, sequence)
-            if mod.GetUnitFrameSource(u) == "cui" then
-                elements[#elements + 1] = MakeUFElement(u, sequence)
+        local function AddUFElement(unit, sequence)
+            if mod.GetUnitFrameSource(unit) == "cui" then
+                elements[#elements + 1] = MakeUFElement(unit, sequence)
             end
         end
         AddUFElement("player", 1)

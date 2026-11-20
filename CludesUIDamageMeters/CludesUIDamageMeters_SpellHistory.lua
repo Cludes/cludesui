@@ -815,8 +815,8 @@ local function ScheduleFade(fadeSecs, maxIcons)
             _fadeDriver = CreateFrame("Frame")
             _fadeDriver:Hide()
             local acc = 0
-            _fadeDriver:SetScript("OnUpdate", function(_, dt)
-                acc = acc + dt
+            _fadeDriver:SetScript("OnUpdate", function(_, elapsed)
+                acc = acc + elapsed
                 if acc < 0.05 then
                     return
                 end

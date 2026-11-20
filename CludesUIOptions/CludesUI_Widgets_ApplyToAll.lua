@@ -765,9 +765,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 return
             end
             animTarget = target
-            animFrame:SetScript("OnUpdate", function(self, dt)
+            animFrame:SetScript("OnUpdate", function(self, elapsed)
                 local dir = animTarget > animState and 1 or -1
-                animState = animState + dir * (dt / ANIM_DUR)
+                animState = animState + dir * (elapsed / ANIM_DUR)
                 if (dir == 1 and animState >= animTarget) or (dir == -1 and animState <= animTarget) then
                     animState = animTarget
                     self:SetScript("OnUpdate", nil)

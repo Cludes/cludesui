@@ -1738,8 +1738,8 @@ function CludesUI.BuildMacroFactory(hostFrame, startY, Pix)
             local flashDriver = CreateFrame("Frame", nil, iconParent)
             flashDriver:Hide()
             local flashElapsed = 0
-            flashDriver:SetScript("OnUpdate", function(self, dt)
-                flashElapsed = flashElapsed + dt
+            flashDriver:SetScript("OnUpdate", function(self, elapsed)
+                flashElapsed = flashElapsed + elapsed
                 if flashElapsed < 0.08 then
                     flashTex:SetColorTexture(1, 1, 1, 0.7 * (flashElapsed / 0.08))
                 elseif flashElapsed < 0.38 then

@@ -5900,10 +5900,10 @@ do
         -- Planned writes: (table, key, value) triples plus array removals (in
         -- descending index order per array), built without writing and then
         -- committed as plain assignments, so a commit cannot stop halfway.
-        local function Put(plan, t, k, val)
+        local function Put(plan, t, key, val)
             local num = plan.n + 1
             plan.n = num
-            plan[num * 3 - 2], plan[num * 3 - 1], plan[num * 3] = t, k, val
+            plan[num * 3 - 2], plan[num * 3 - 1], plan[num * 3] = t, key, val
         end
         local function Commit(plan)
             for index = 1, plan.n do

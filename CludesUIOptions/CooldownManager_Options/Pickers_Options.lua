@@ -911,13 +911,13 @@ local function OpenPickerMenu(optionState, menu, rows, y, width, maxH, anchor)
     menu._anchorFrame = anchor
     menu._anchorGen = PoolGen(anchor)
     optionState._spellPickerMenu = menu
-    menu:SetScript("OnUpdate", function(m)
-        if not m:IsMouseOver() and not anchor:IsMouseOver() and IsMouseButtonDown("LeftButton") then
-            m:Hide()
+    menu:SetScript("OnUpdate", function(frame)
+        if not frame:IsMouseOver() and not anchor:IsMouseOver() and IsMouseButtonDown("LeftButton") then
+            frame:Hide()
         end
     end)
-    menu:SetScript("OnHide", function(m)
-        m:SetScript("OnUpdate", nil)
+    menu:SetScript("OnHide", function(frame)
+        frame:SetScript("OnUpdate", nil)
     end)
     menu:Show()
 end

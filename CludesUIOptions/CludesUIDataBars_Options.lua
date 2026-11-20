@@ -79,9 +79,9 @@ CludesUI.AtOptionsLogin(function()
     -- outside both: each open runs menu._closeOutside as its OnUpdate, and
     -- hiding clears it.
     local function CloseOnOutsideClick(menu)
-        menu._closeOutside = function(m)
-            if not m:IsMouseOver() and not m._anchor:IsMouseOver() and IsMouseButtonDown("LeftButton") then
-                m:Hide()
+        menu._closeOutside = function(frame)
+            if not frame:IsMouseOver() and not frame._anchor:IsMouseOver() and IsMouseButtonDown("LeftButton") then
+                frame:Hide()
             end
         end
         menu:HookScript("OnHide", function(m)
@@ -1391,18 +1391,18 @@ CludesUI.AtOptionsLogin(function()
                 -- the first frames (the menu opens on RightButtonDown) -- without
                 -- the guard (menu._openGuard, set per open) the menu dismissed
                 -- itself instantly.
-                dropMenu:SetScript("OnUpdate", function(m)
-                    if m._openGuard then
+                dropMenu:SetScript("OnUpdate", function(frame)
+                    if frame._openGuard then
                         if not IsMouseButtonDown("RightButton") then
-                            m._openGuard = nil
+                            frame._openGuard = nil
                         end
                         return
                     end
                     if
-                        not m:IsMouseOver()
+                        not frame:IsMouseOver()
                         and (IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton"))
                     then
-                        m:Hide()
+                        frame:Hide()
                     end
                 end)
                 _edbMenus.seg = dropMenu

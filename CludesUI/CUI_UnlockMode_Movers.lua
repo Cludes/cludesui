@@ -1014,9 +1014,9 @@ CUI_NS.unlockParts.Movers = function(LM)
                 return
             end
             hoverTarget = goal
-            animFrame:SetScript("OnUpdate", function(self, dt)
+            animFrame:SetScript("OnUpdate", function(self, elapsed)
                 local dir = hoverTarget > hoverState and 1 or -1
-                hoverState = hoverState + dir * (dt / ANIM_DUR)
+                hoverState = hoverState + dir * (elapsed / ANIM_DUR)
                 if (dir == 1 and hoverState >= hoverTarget) or (dir == -1 and hoverState <= hoverTarget) then
                     hoverState = hoverTarget
                     self:SetScript("OnUpdate", nil)

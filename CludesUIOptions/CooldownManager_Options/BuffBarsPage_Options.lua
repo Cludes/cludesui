@@ -1252,9 +1252,9 @@ local function InitBuffBarsPage(
 
         dropMenu:ClearAllPoints()
         dropMenu:SetPoint("TOP", anchor, "BOTTOM", 0, -2)
-        dropMenu:SetScript("OnUpdate", function(m)
-            if not m:IsMouseOver() and not anchor:IsMouseOver() and IsMouseButtonDown("LeftButton") then
-                m:Hide()
+        dropMenu:SetScript("OnUpdate", function(frame)
+            if not frame:IsMouseOver() and not anchor:IsMouseOver() and IsMouseButtonDown("LeftButton") then
+                frame:Hide()
             end
         end)
         dropMenu:HookScript("OnHide", function(m)
@@ -2109,12 +2109,12 @@ local function InitBuffBarsPage(
                     end
                     return false
                 end
-                soundMenu:SetScript("OnUpdate", function(m)
+                soundMenu:SetScript("OnUpdate", function(frame)
                     if
                         (IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton"))
                         and not OverAny()
                     then
-                        m:Hide()
+                        frame:Hide()
                     end
                 end)
                 soundMenu:HookScript("OnHide", function(m)
@@ -2795,8 +2795,8 @@ local function InitBuffBarsPage(
                 end
                 -- A press outside closes it, except mid-drag (a drag leaves the menu
                 -- with the button held) and in the row's sound menu or its lists.
-                dropMenu:SetScript("OnUpdate", function(m)
-                    if m._dragActive then
+                dropMenu:SetScript("OnUpdate", function(frame)
+                    if frame._dragActive then
                         return
                     end
                     local sound = dropdownBtn._tbbSndMenu
@@ -2804,11 +2804,11 @@ local function InitBuffBarsPage(
                         return
                     end
                     if
-                        not m:IsMouseOver()
+                        not frame:IsMouseOver()
                         and not dropdownBtn:IsMouseOver()
                         and IsMouseButtonDown("LeftButton")
                     then
-                        m:Hide()
+                        frame:Hide()
                     end
                 end)
                 dropMenu:HookScript("OnHide", function(m)
@@ -3127,10 +3127,10 @@ local function InitBuffBarsPage(
             CludesUI.MakeRoundedBorder(presetMenu, 1, 1, 1, CludesUI.DD_BRD_A, prMenuBg, nil, true)
             presetMenu:SetScript("OnShow", function(self)
                 self:SetScale(presetDropdown:GetEffectiveScale() / UIParent:GetEffectiveScale())
-                self:SetScript("OnUpdate", function(m)
+                self:SetScript("OnUpdate", function(frame)
                     local pressed = IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton")
-                    if pressed and not presetDropdown:IsMouseOver() and not m:IsMouseOver() then
-                        m:Hide()
+                    if pressed and not presetDropdown:IsMouseOver() and not frame:IsMouseOver() then
+                        frame:Hide()
                     end
                 end)
             end)

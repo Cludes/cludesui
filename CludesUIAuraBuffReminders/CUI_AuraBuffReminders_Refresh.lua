@@ -1239,13 +1239,13 @@ end
 -- Whether a unit carries any rank of a family: true / false, or nil when the
 -- answer cannot be read. rec (optional) collects the found aura's instance ID
 -- for the group aura probe.
-function REMIND.FvUnitHas(u, fam, rec)
+function REMIND.FvUnitHas(unit, fam, rec)
     local nameList = REMIND.FvNames(fam)
     if not nameList[1] then
         return nil
     end
     for num = 1, #nameList do
-        local success, aura = pcall(C_UnitAuras.GetAuraDataBySpellName, u, nameList[num], "HELPFUL")
+        local success, aura = pcall(C_UnitAuras.GetAuraDataBySpellName, unit, nameList[num], "HELPFUL")
         if not success or isSecret(aura) then
             return nil
         end

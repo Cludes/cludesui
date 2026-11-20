@@ -723,12 +723,12 @@ end
 -- the demon's GUID where readable (a group member's pet is player-controlled,
 -- so it is). The meter keeps a demon as a source of its own: the demon's
 -- count is the one its kicks move.
-local function DemonGUID(u, m)
+local function DemonGUID(unit, m)
     local k = m.kick and KD.INTERRUPTS[m.kick]
     if not (k and k.pet) then
         return false, nil
     end
-    local pet = PET_UNIT[u]
+    local pet = PET_UNIT[unit]
     if not (pet and UnitExists(pet)) then
         return true, nil
     end

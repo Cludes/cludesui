@@ -1037,27 +1037,27 @@ CludesUI.AtOptionsLogin(function()
                     },
                     { key = "uber", label = "Detailed Tooltips" },
                 },
-                function(k)
-                    if k == "uber" then
+                function(key)
+                    if key == "uber" then
                         return GetCVar("UberTooltips") == "1"
                     end
-                    local val = CludesUIDB and CludesUIDB[k]
+                    local val = CludesUIDB and CludesUIDB[key]
                     if val == nil then
-                        return EXTRA_DEFAULTS[k]
+                        return EXTRA_DEFAULTS[key]
                     end
                     return val and true or false
                 end,
-                function(k, val)
+                function(key, val)
                     if not CludesUIDB then
                         CludesUIDB = {}
                     end
-                    if k == "uber" then
+                    if key == "uber" then
                         -- Only enforced on login after the user has toggled it once.
                         CludesUIDB.uberTooltipsManual = true
                         CludesUIDB.uberTooltips = val
                         CludesUI.SetCVar("UberTooltips", val and "1" or "0", "CludesUIBlizzardSkin")
                     else
-                        CludesUIDB[k] = val
+                        CludesUIDB[key] = val
                         TooltipPreviewRepaint()
                     end
                 end
@@ -4980,18 +4980,18 @@ CludesUI.AtOptionsLogin(function()
     local function EDR_DB()
         return mod.edrDB and mod.edrDB.profile
     end
-    local function EDR_Cfg(k)
+    local function EDR_Cfg(key)
         local p = EDR_DB()
-        return p and p[k]
+        return p and p[key]
     end
-    local function EDR_Set(k, val)
+    local function EDR_Set(key, val)
         local p = EDR_DB()
         if p then
-            p[k] = val
+            p[key] = val
         end
     end
-    local function EDR_SetField(k, field, val)
-        local t = EDR_Cfg(k)
+    local function EDR_SetField(key, field, val)
+        local t = EDR_Cfg(key)
         if t then
             t[field] = val
         end
@@ -5212,11 +5212,11 @@ CludesUI.AtOptionsLogin(function()
                 240,
                 region:GetFrameLevel() + 2,
                 channelItems,
-                function(k)
-                    return CBVal(k) == true
+                function(key)
+                    return CBVal(key) == true
                 end,
-                function(k, val)
-                    CBSet(k, val)
+                function(key, val)
+                    CBSet(key, val)
                 end,
                 nil,
                 nil,
@@ -5427,11 +5427,11 @@ CludesUI.AtOptionsLogin(function()
                 240,
                 region:GetFrameLevel() + 2,
                 nameItems,
-                function(k)
+                function(key)
                     local t = CBVal("showName")
-                    return type(t) == "table" and t[k] == true
+                    return type(t) == "table" and t[key] == true
                 end,
-                function(k, val)
+                function(key, val)
                     local saved = BBDB()
                     if not saved then
                         return
@@ -5439,7 +5439,7 @@ CludesUI.AtOptionsLogin(function()
                     if type(saved.showName) ~= "table" then
                         saved.showName = {}
                     end
-                    saved.showName[k] = val or nil
+                    saved.showName[key] = val or nil
                     CBM.RefreshStyle()
                 end,
                 nil,

@@ -1682,13 +1682,13 @@ local PET_AURA_KEYS = {
 }
 local petView = { own = nil, src = nil, player = false }
 local PET_VIEW = setmetatable({}, {
-    __index = function(_, k)
-        local c = PET_AURA_KEYS[k]
+    __index = function(_, key)
+        local c = PET_AURA_KEYS[key]
         if c == 1 then
-            return petView.own[k]
+            return petView.own[key]
         end
         if c == 2 or (c == 3 and not petView.player) or (c == 4 and petView.player) then
-            return petView.src[k]
+            return petView.src[key]
         end
         return nil
     end,

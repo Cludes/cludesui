@@ -44,11 +44,11 @@ function mod.OwnListRowHeight()
 end
 -- text sizes
 local SIZE_DEFAULTS = { titleSize = 12, nameSize = 10, lineSize = 10, scoreSize = 10 }
-function mod.OwnListSize(k)
-    return tonumber(DB()[k]) or SIZE_DEFAULTS[k]
+function mod.OwnListSize(key)
+    return tonumber(DB()[key]) or SIZE_DEFAULTS[key]
 end
-function mod.SetOwnListSize(k, val)
-    DB()[k] = val
+function mod.SetOwnListSize(key, val)
+    DB()[key] = val
     styleGen = styleGen + 1
     if mod.OwnListRefresh then
         mod.OwnListRefresh()
@@ -68,10 +68,10 @@ local DISPLAY_DEFAULTS = {
     lineCancelled = false,
     lineDeclined = false,
 }
-function mod.OwnListGet(k)
-    local val = DB()[k]
+function mod.OwnListGet(key)
+    local val = DB()[key]
     if val == nil then
-        return DISPLAY_DEFAULTS[k]
+        return DISPLAY_DEFAULTS[key]
     end
     return val
 end
@@ -91,8 +91,8 @@ function mod.OwnListBorderColor()
     end
     return 1, 1, 1
 end
-function mod.SetOwnListValue(k, val)
-    DB()[k] = val
+function mod.SetOwnListValue(key, val)
+    DB()[key] = val
     styleGen = styleGen + 1
     if mod.OwnListRefresh then
         mod.OwnListRefresh()
@@ -110,8 +110,8 @@ CUI._ShellLooks.lfg = function()
     return skinData.windowBgColor, skinData.windowBgOpacity
 end
 -- no list rebuild, the color picker fires every frame while dragging
-function mod.SetWindowLook(k, val)
-    DB()[k] = val
+function mod.SetWindowLook(key, val)
+    DB()[key] = val
     if CUI._WSkinRefreshStyles then
         CUI._WSkinRefreshStyles()
     end
@@ -1042,8 +1042,8 @@ local LIVE = {
     activity = function(act)
         return C_LFGList.GetActivityInfoTable(act)
     end,
-    player = function(ident, k)
-        return C_LFGList.GetSearchResultPlayerInfo(ident, k)
+    player = function(ident, key)
+        return C_LFGList.GetSearchResultPlayerInfo(ident, key)
     end,
     counts = function(ident)
         return C_LFGList.GetSearchResultMemberCounts(ident)
@@ -1721,8 +1721,8 @@ local PREVIEW = {
             displayType = DT and DT.RoleCount,
         }
     end,
-    player = function(ident, k)
-        local s = PV[ident].specs[k]
+    player = function(ident, key)
+        local s = PV[ident].specs[key]
         if not s then
             return nil
         end
@@ -2334,8 +2334,8 @@ local function Build()
     ticker = CreateFrame("Frame", nil, widget)
     ticker:Hide()
     local tick = 0
-    ticker:SetScript("OnUpdate", function(_, dt)
-        tick = tick + dt
+    ticker:SetScript("OnUpdate", function(_, elapsed)
+        tick = tick + elapsed
         if tick < 1 then
             return
         end

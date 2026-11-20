@@ -1221,13 +1221,13 @@ CludesUI.AtOptionsLogin(function()
                     menuH = menuH + ITEM_H
                 end
                 dropMenu:SetHeight(menuH + 4)
-                dropMenu:SetScript("OnUpdate", function(m)
+                dropMenu:SetScript("OnUpdate", function(frame)
                     if
-                        not m:IsMouseOver()
+                        not frame:IsMouseOver()
                         and not dropdownBtn:IsMouseOver()
                         and IsMouseButtonDown("LeftButton")
                     then
-                        m:Hide()
+                        frame:Hide()
                     end
                 end)
                 dropMenu:HookScript("OnHide", function(m)

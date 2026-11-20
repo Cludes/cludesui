@@ -134,22 +134,22 @@ local function CharFilters()
 end
 
 local conf = setmetatable({}, {
-    __index = function(_, k)
-        if FILTER_KEYS[k] then
+    __index = function(_, key)
+        if FILTER_KEYS[key] then
             local frame = CharFilters()
-            return frame and frame[k]
+            return frame and frame[key]
         end
-        return Search()[k]
+        return Search()[key]
     end,
-    __newindex = function(_, k, val)
-        if FILTER_KEYS[k] then
+    __newindex = function(_, key, val)
+        if FILTER_KEYS[key] then
             local frame = CharFilters()
             if frame then
-                frame[k] = val
+                frame[key] = val
             end
             return
         end
-        Search()[k] = val
+        Search()[key] = val
     end,
 })
 

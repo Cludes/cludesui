@@ -156,12 +156,12 @@ local function BlockW(g, cols, last)
 end
 
 -- Icon columns of a block held to k rows
-local function BandCols(g, k)
+local function BandCols(g, key)
     local s = pSize[g]
-    if s <= k then
+    if s <= key then
         return 1
     end
-    return ceil(s / k)
+    return ceil(s / key)
 end
 
 local function Rows(g, cols)
@@ -191,19 +191,19 @@ end
 
 -- Width of the band i..j with every block held to k rows: its blocks' cells
 -- at PITCH each and its gaps at GAP_EXTRA each (its px width plus SPACING)
-local function BandWidth(i, jdx, k)
+local function BandWidth(i, jdx, key)
     local wid = (jdx - i) * GAP_EXTRA
     for m = i, jdx do
-        wid = wid + BlockW(m, BandCols(m, k), m == jdx) * PITCH
+        wid = wid + BlockW(m, BandCols(m, key), m == jdx) * PITCH
     end
     return wid
 end
 
 -- The most rows of a block in the band i..j held to k rows
-local function BandRows(i, jdx, k)
+local function BandRows(i, jdx, key)
     local region = 0
     for m = i, jdx do
-        local rowList = Rows(m, BandCols(m, k))
+        local rowList = Rows(m, BandCols(m, key))
         if rowList > region then
             region = rowList
         end
@@ -219,10 +219,10 @@ end
 -- wider shape with fewer rows that is no more awkward, when it fits, round
 -- after round while any block takes one. Widening never adds rows. Leaves
 -- each block's columns in fbCols; returns the band's height and awkwardness.
-local function FitBand(i, jdx, k)
+local function FitBand(i, jdx, key)
     local wid, offers = (jdx - i) * GAP_EXTRA, 0
     for m = i, jdx do
-        local c = BandCols(m, k)
+        local c = BandCols(m, key)
         fbCols[m] = c
         local last = m == jdx
         wid = wid + BlockW(m, c, last) * PITCH
@@ -301,16 +301,16 @@ end
 
 -- Adds the candidate plans that open with the band i..j held to k rows: one
 -- per kept plan for the groups after it
-local function Consider(i, jdx, k)
-    local hgt, awk = FitBand(i, jdx, k)
+local function Consider(i, jdx, key)
+    local hgt, awk = FitBand(i, jdx, key)
     local at = keptAt[jdx + 1]
     for posX = at, at + keptN[jdx + 1] - 1 do
         local region = kept[posX]
         local sum = hgt + rH[region]
         candN = candN + 1
         candH[candN], candQ[candN] = sum, floor(sum * 2 + 0.5)
-        candA[candN], candW[candN] = awk + rA[region], (k - 1) + rW[region]
-        candJ[candN], candK[candN], candRest[candN] = jdx, k, region
+        candA[candN], candW[candN] = awk + rA[region], (key - 1) + rW[region]
+        candJ[candN], candK[candN], candRest[candN] = jdx, key, region
         candOrd[candN] = candN
     end
 end

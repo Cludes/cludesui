@@ -145,13 +145,13 @@ local function BuildMenu()
     emptyText:SetPoint("TOPLEFT", inner, "TOPLEFT", 10, -8)
 
     -- Closing: a click outside the menu and its anchor, or the options panel hiding.
-    dropMenu:SetScript("OnUpdate", function(m)
+    dropMenu:SetScript("OnUpdate", function(frame)
         if
             IsMouseButtonDown("LeftButton")
-            and not m:IsMouseOver()
+            and not frame:IsMouseOver()
             and not (menuAnchor and menuAnchor:IsMouseOver())
         then
-            m:Hide()
+            frame:Hide()
         end
     end)
     dropMenu:SetScript("OnHide", function()

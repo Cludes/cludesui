@@ -401,7 +401,7 @@ end
 -- Blizzard's divider spacing, else 0; step = the distance between button
 -- starts along it; the first `extra` buttons carry one onePx more. Both sit
 -- on a frame one level under owner (under the buttons).
-function mod.AB_PaintForeverChrome(st, ownerFrame, ox, oy, wid, hgt, k, vertical, num, step, extra, onePx)
+function mod.AB_PaintForeverChrome(st, ownerFrame, ox, oy, wid, hgt, key, vertical, num, step, extra, onePx)
     local ART = mod.AB_FV_ART
     local lvl = ownerFrame:GetFrameLevel()
 
@@ -414,10 +414,10 @@ function mod.AB_PaintForeverChrome(st, ownerFrame, ox, oy, wid, hgt, k, vertical
         st.divs = {}
     end
     under:SetFrameLevel(lvl > 0 and lvl - 1 or 0)
-    under:SetScale(k)
+    under:SetScale(key)
     under:ClearAllPoints()
-    under:SetPoint("TOPLEFT", ownerFrame, "TOPLEFT", ox / k, oy / k)
-    under:SetSize(wid / k, hgt / k)
+    under:SetPoint("TOPLEFT", ownerFrame, "TOPLEFT", ox / key, oy / key)
+    under:SetSize(wid / key, hgt / key)
     under:Show()
 
     local border = st.border
@@ -434,7 +434,7 @@ function mod.AB_PaintForeverChrome(st, ownerFrame, ox, oy, wid, hgt, k, vertical
     -- Unlike the frame they keep their native size whatever the icon size
     -- (12 across, 5 of overlap, the edges at the atlas depth), so in the
     -- under frame's units every one of those divides by k.
-    local ik = 1 / k
+    local ik = 1 / key
     local set = vertical and ART.divV or ART.divH
     if num > 1 and not (mod.AB_AtlasOK(set[1]) and mod.AB_AtlasOK(set[2]) and mod.AB_AtlasOK(set[3])) then
         num = 0
@@ -457,7 +457,7 @@ function mod.AB_PaintForeverChrome(st, ownerFrame, ox, oy, wid, hgt, k, vertical
             c:SetAtlas(set[3])
             skinData.set = set
         end
-        local at = (index * step + (index < extra and index or extra) * onePx) / k
+        local at = (index * step + (index < extra and index or extra) * onePx) / key
         a:ClearAllPoints()
         b:ClearAllPoints()
         c:ClearAllPoints()

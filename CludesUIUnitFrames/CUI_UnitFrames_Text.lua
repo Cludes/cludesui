@@ -662,20 +662,20 @@ end
 -- SECRET level is returned RAW -- display-safe as a %s arg through
 -- SetFormattedText, never compared/formatted in Lua (same rule as the secret
 -- name in the target-name piece).
-TagFns.level = function(u)
-    if not u or not UnitExists(u) then
+TagFns.level = function(unit)
+    if not unit or not UnitExists(unit) then
         return ""
     end
-    local l = UnitEffectiveLevel(u)
-    if UnitIsWildBattlePet(u) or UnitIsBattlePetCompanion(u) then
-        l = UnitBattlePetLevel(u)
+    local l = UnitEffectiveLevel(unit)
+    if UnitIsWildBattlePet(unit) or UnitIsBattlePetCompanion(unit) then
+        l = UnitBattlePetLevel(unit)
     end
     if l and issecretvalue and issecretvalue(l) then
         return l
     end
     if not l or l <= 0 then
         -- Forever: a hidden player level the PvP feature knows.
-        return CludesUI.KnownHiddenLevel and CludesUI.KnownHiddenLevel(u) or "??"
+        return CludesUI.KnownHiddenLevel and CludesUI.KnownHiddenLevel(unit) or "??"
     end
     return l
 end
@@ -1143,21 +1143,21 @@ do
     P.level = TagFns.level
     -- Level in Blizzard's difficulty colors (Level Difficulty Color). A secret
     -- level passes through raw and uncolored, same rule as P.level.
-    P.levelcol = function(u)
-        local l = TagFns.level(u)
+    P.levelcol = function(unit)
+        local l = TagFns.level(unit)
         if issecretvalue(l) or l == "" then
             return l
         end
-        local red, green, blue = CludesUI.GetLevelColor(u, (l == "??") and -1 or l)
+        local red, green, blue = CludesUI.GetLevelColor(unit, (l == "??") and -1 or l)
         return CludesUI.ColorText(l, red, green, blue)
     end
     -- Same, with friendly units in their difficulty color too (Include Friendly).
-    P.levelcolall = function(u)
-        local l = TagFns.level(u)
+    P.levelcolall = function(unit)
+        local l = TagFns.level(unit)
         if issecretvalue(l) or l == "" then
             return l
         end
-        local red, green, blue = CludesUI.GetLevelColor(u, (l == "??") and -1 or l, true)
+        local red, green, blue = CludesUI.GetLevelColor(unit, (l == "??") and -1 or l, true)
         return CludesUI.ColorText(l, red, green, blue)
     end
     P.name = TagFns.name
@@ -1167,52 +1167,52 @@ do
     -- String-compiled tag methods get real equivalents (same logic, same
     -- _CUI_ globals; the compiled strings stay registered only while the tag
     -- engine still runs).
-    P.perpp = function(u)
-        local powerKind = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
-        return scrollFrame("%d", UnitPowerPercent(u, powerKind, true, CurveConstants.ScaleTo100))
+    P.perpp = function(unit)
+        local powerKind = _G._CUI_ResolvedPowerType[unit] or UnitPowerType(unit)
+        return scrollFrame("%d", UnitPowerPercent(unit, powerKind, true, CurveConstants.ScaleTo100))
     end
-    P.curpp = function(u)
-        local powerKind = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
-        return AbbreviateNumbers(UnitPower(u, powerKind))
+    P.curpp = function(unit)
+        local powerKind = _G._CUI_ResolvedPowerType[unit] or UnitPowerType(unit)
+        return AbbreviateNumbers(UnitPower(unit, powerKind))
     end
-    P.maxpp = function(u)
-        local powerKind = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
-        return AbbreviateNumbers(UnitPowerMax(u, powerKind))
+    P.maxpp = function(unit)
+        local powerKind = _G._CUI_ResolvedPowerType[unit] or UnitPowerType(unit)
+        return AbbreviateNumbers(UnitPowerMax(unit, powerKind))
     end
     -- Full numbers for the custom text tags ([hp], [hp:max], [pp], [pp:max]).
     -- %d formats a secret value like P.perpp does; [hp] names the status as
     -- curhpshort does.
-    P.curhp = function(u)
-        if not u or not UnitExists(u) then
+    P.curhp = function(unit)
+        if not unit or not UnitExists(unit) then
             return ""
         end
-        if not UnitIsConnected(u) then
+        if not UnitIsConnected(unit) then
             return CludesUI.L("OFFLINE")
         end
-        if UnitIsDeadOrGhost(u) then
+        if UnitIsDeadOrGhost(unit) then
             return CludesUI.L("DEAD")
         end
-        return scrollFrame("%d", UnitHealth(u) or 0)
+        return scrollFrame("%d", UnitHealth(unit) or 0)
     end
-    P.maxhp = function(u)
-        if not u or not UnitExists(u) then
+    P.maxhp = function(unit)
+        if not unit or not UnitExists(unit) then
             return ""
         end
-        return scrollFrame("%d", UnitHealthMax(u) or 0)
+        return scrollFrame("%d", UnitHealthMax(unit) or 0)
     end
-    P.curppfull = function(u)
-        local powerKind = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
-        return scrollFrame("%d", UnitPower(u, powerKind))
+    P.curppfull = function(unit)
+        local powerKind = _G._CUI_ResolvedPowerType[unit] or UnitPowerType(unit)
+        return scrollFrame("%d", UnitPower(unit, powerKind))
     end
-    P.maxppfull = function(u)
-        local powerKind = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
-        return scrollFrame("%d", UnitPowerMax(u, powerKind))
+    P.maxppfull = function(unit)
+        local powerKind = _G._CUI_ResolvedPowerType[unit] or UnitPowerType(unit)
+        return scrollFrame("%d", UnitPowerMax(unit, powerKind))
     end
-    P.absorb = function(u)
-        if not u or not UnitExists(u) then
+    P.absorb = function(unit)
+        if not unit or not UnitExists(unit) then
             return ""
         end
-        return scrollFrame("%s", C_StringUtil.TruncateWhenZero(UnitGetTotalAbsorbs(u) or 0))
+        return scrollFrame("%s", C_StringUtil.TruncateWhenZero(UnitGetTotalAbsorbs(unit) or 0))
     end
     -- An absorb amount abbreviated: Show Decimal on Health Text's table while it
     -- is on, else the Number Format.
@@ -1220,33 +1220,33 @@ do
         local conf = _G._CUI_AbbrevDecimalCfg
         return conf and AbbreviateNumbers(val, conf) or mod.AbbreviateValue(val, "absorb")
     end
-    P.absorbshort = function(u)
-        if not u or not UnitExists(u) then
+    P.absorbshort = function(unit)
+        if not unit or not UnitExists(unit) then
             return ""
         end
-        return AbbrevAbsorb(UnitGetTotalAbsorbs(u) or 0)
+        return AbbrevAbsorb(UnitGetTotalAbsorbs(unit) or 0)
     end
-    P.healabsorb = function(u)
-        if not u or not UnitExists(u) then
+    P.healabsorb = function(unit)
+        if not unit or not UnitExists(unit) then
             return ""
         end
-        return scrollFrame("%s", C_StringUtil.TruncateWhenZero(UnitGetTotalHealAbsorbs(u) or 0))
+        return scrollFrame("%s", C_StringUtil.TruncateWhenZero(UnitGetTotalHealAbsorbs(unit) or 0))
     end
-    P.healabsorbshort = function(u)
-        if not u or not UnitExists(u) then
+    P.healabsorbshort = function(unit)
+        if not unit or not UnitExists(unit) then
             return ""
         end
-        return AbbrevAbsorb(UnitGetTotalHealAbsorbs(u) or 0)
+        return AbbrevAbsorb(UnitGetTotalHealAbsorbs(unit) or 0)
     end
     -- [absorb:abr], [healabsorb:abr]: empty at zero like the full tags. The presets
     -- above keep "0" because ApplyAbsorbGate clips their whole zone instead.
     local IsZeroValue = CludesUI.IsZeroValue
     local function AbsorbShortTag(get)
-        return function(u)
-            if not u or not UnitExists(u) then
+        return function(unit)
+            if not unit or not UnitExists(unit) then
                 return ""
             end
-            local val = get(u) or 0
+            local val = get(unit) or 0
             if IsZeroValue(val) then
                 return ""
             end
@@ -1255,11 +1255,11 @@ do
     end
     P.absorbshorttag = AbsorbShortTag(UnitGetTotalAbsorbs)
     P.healabsorbshorttag = AbsorbShortTag(UnitGetTotalHealAbsorbs)
-    P.group = function(u)
+    P.group = function(unit)
         if not IsInRaid() then
             return ""
         end
-        local position = UnitInRaid(u)
+        local position = UnitInRaid(unit)
         if position then
             local _, _, subgroup = GetRaidRosterInfo(position)
             return subgroup or ""
@@ -1283,11 +1283,11 @@ do
             sep = " " .. sep .. " "
         end
         if prefs[prefixText .. "TargetSepClassColor"] then
-            return function(u)
-                if not (u and UnitExists(u .. "target")) then
+            return function(unit)
+                if not (unit and UnitExists(unit .. "target")) then
                     return ""
                 end
-                local red, green, blue = mod.ResolveUnitNameColor(u .. "target")
+                local red, green, blue = mod.ResolveUnitNameColor(unit .. "target")
                 if red then
                     return scrollFrame(
                         "|cff%02x%02x%02x%s|r",
@@ -1308,8 +1308,8 @@ do
             esc = CludesUI.COLOR_CODES.WHITE
         end
         local colored = esc .. sep .. "|r"
-        return function(u)
-            if not (u and UnitExists(u .. "target")) then
+        return function(unit)
+            if not (unit and UnitExists(unit .. "target")) then
                 return ""
             end
             return colored
@@ -1538,11 +1538,11 @@ do
                 local twins = twinsByMode[modeName]
                 if not twins then
                     twins = {
-                        [nameFn] = function(u)
-                            return short(nameFn(u), unitMode(modeName, u))
+                        [nameFn] = function(unit)
+                            return short(nameFn(unit), unitMode(modeName, unit))
                         end,
-                        [tgtFn] = function(u)
-                            return short(tgtFn(u), unitMode(modeName, u and (u .. "target")))
+                        [tgtFn] = function(unit)
+                            return short(tgtFn(unit), unitMode(modeName, unit and (unit .. "target")))
                         end,
                     }
                     twinsByMode[modeName] = twins

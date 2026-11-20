@@ -4222,8 +4222,8 @@ local function PlaySearchHighlight(pulse, targetFrame)
     pulse:SetAlpha(0)
     pulse:Show()
     local timePassed = 0
-    pulse:SetScript("OnUpdate", function(self, dt)
-        timePassed = timePassed + dt
+    pulse:SetScript("OnUpdate", function(self, elapsed)
+        timePassed = timePassed + elapsed
         if timePassed >= 0.3 then
             self:SetAlpha(0.5)
             self:SetScript("OnUpdate", nil)

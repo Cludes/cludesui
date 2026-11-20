@@ -2840,9 +2840,9 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                     CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.2, pbg)
                     -- Click-away close (not while the dropdown's own menu is open).
                     dialog:SetScript("OnShow", function(p2)
-                        p2:SetScript("OnUpdate", function(m)
-                            if not self:IsMouseOver() and not m:IsMouseOver() then
-                                local dropdown = m._srcDD
+                        p2:SetScript("OnUpdate", function(frame)
+                            if not self:IsMouseOver() and not frame:IsMouseOver() then
+                                local dropdown = frame._srcDD
                                 if
                                     dropdown
                                     and dropdown._ddMenu
@@ -2852,7 +2852,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                                     return
                                 end
                                 if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then
-                                    m:Hide()
+                                    frame:Hide()
                                 end
                             end
                         end)
@@ -3313,9 +3313,9 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
 
                 -- Auto-close when clicking outside (but not on child dropdown menus)
                 dialog:SetScript("OnShow", function(p)
-                    p:SetScript("OnUpdate", function(m)
-                        if not self:IsMouseOver() and not m:IsMouseOver() then
-                            local indDD2 = m._indDD
+                    p:SetScript("OnUpdate", function(frame)
+                        if not self:IsMouseOver() and not frame:IsMouseOver() then
+                            local indDD2 = frame._indDD
                             if
                                 indDD2
                                 and indDD2._ddMenu
@@ -3324,7 +3324,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             then
                                 return
                             end
-                            local fltDD2 = m._fltDD
+                            local fltDD2 = frame._fltDD
                             if
                                 fltDD2
                                 and fltDD2._ddMenu
@@ -3333,7 +3333,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                             then
                                 return
                             end
-                            local exDD2 = m._exDD
+                            local exDD2 = frame._exDD
                             if
                                 exDD2
                                 and exDD2._ddMenu
@@ -3352,7 +3352,7 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                                 return
                             end
                             if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then
-                                m:Hide()
+                                frame:Hide()
                             end
                         end
                     end)
@@ -3464,22 +3464,22 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         ddW,
                         dialog:GetFrameLevel() + 2,
                         FItems,
-                        function(k, neg)
+                        function(key, neg)
                             if neg then
-                                return dialog._v2NegFilters[k] and true or false
+                                return dialog._v2NegFilters[key] and true or false
                             end
-                            return dialog._v2Filters[k] and true or false
+                            return dialog._v2Filters[key] and true or false
                         end,
-                        function(k, v, neg)
+                        function(key, v, neg)
                             if neg then
-                                dialog._v2NegFilters[k] = v and true or nil
+                                dialog._v2NegFilters[key] = v and true or nil
                                 if v then
-                                    dialog._v2Filters[k] = nil
+                                    dialog._v2Filters[key] = nil
                                 end
                             else
-                                dialog._v2Filters[k] = v and true or nil
+                                dialog._v2Filters[key] = v and true or nil
                                 if v then
-                                    dialog._v2NegFilters[k] = nil
+                                    dialog._v2NegFilters[key] = nil
                                 end
                             end
                         end,
@@ -3575,13 +3575,13 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
                         ddW,
                         dialog:GetFrameLevel() + 2,
                         EItems,
-                        function(k)
-                            return dialog._v2Extras[k] and true or false
+                        function(key)
+                            return dialog._v2Extras[key] and true or false
                         end,
-                        function(k, v)
-                            dialog._v2Extras[k] = v and true or nil
+                        function(key, v)
+                            dialog._v2Extras[key] = v and true or nil
                             if not v then
-                                dialog._v2Exact[k] = nil
+                                dialog._v2Exact[key] = nil
                             end
                         end,
                         nil,
@@ -4603,8 +4603,8 @@ function mod.BM_BuildPage(page, hostFrame, yOffset)
             })
             sy = mod.RFO_AuraBorderSettings(leftFrame, sy, W, function(k)
                 return indicator["indBorder" .. k]
-            end, function(k, v)
-                indicator["indBorder" .. k] = v
+            end, function(key, v)
+                indicator["indBorder" .. key] = v
             end, ReloadAndUpdate, IconHidden)
 
             local durRow = SettingsRow({

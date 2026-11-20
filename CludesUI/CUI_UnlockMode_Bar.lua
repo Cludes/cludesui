@@ -804,13 +804,13 @@ CUI_NS.unlockParts.Bar = function(LM)
             return false
         end
 
-        bar:SetScript("OnUpdate", function(self, dt)
+        bar:SetScript("OnUpdate", function(self, elapsed)
             local typing = edit:HasFocus()
             local shift = IsShiftKeyDown() and not typing -- capitals in the filter are not a hide
             CutMouse(shift or (autoHide and alpha == 0))
             if shift then
                 -- Always written: opening Layout Mode sets the frame's alpha to 1 behind our back.
-                alpha = math.max(0, alpha - dt / SHIFT_FADE)
+                alpha = math.max(0, alpha - elapsed / SHIFT_FADE)
                 self:SetAlpha(alpha)
                 if not autoHide then
                     zone:Hide()
@@ -838,7 +838,7 @@ CUI_NS.unlockParts.Bar = function(LM)
                     and not drag
                     and not OverElement(posX, posY)
             end
-            alpha = math.max(0, math.min(1, alpha + (wanted and dt or -dt) / HOVER_FADE))
+            alpha = math.max(0, math.min(1, alpha + (wanted and elapsed or -elapsed) / HOVER_FADE))
             self:SetAlpha(alpha)
         end)
 

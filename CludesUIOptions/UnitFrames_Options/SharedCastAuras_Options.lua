@@ -1238,8 +1238,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         current = function()
                             return optionState.selectedUnit
                         end,
-                        db = function(u)
-                            local f = UNIT_DB_MAP[u]
+                        db = function(unit)
+                            local f = UNIT_DB_MAP[unit]
                             return f and f()
                         end,
                     }
@@ -1279,8 +1279,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 current = function()
                     return optionState.selectedUnit
                 end,
-                db = function(u)
-                    local f = UNIT_DB_MAP[u]
+                db = function(unit)
+                    local f = UNIT_DB_MAP[unit]
                     return f and f()
                 end,
                 reload = ReloadAndUpdate,

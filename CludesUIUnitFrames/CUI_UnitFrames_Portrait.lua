@@ -1927,12 +1927,12 @@ local function CreatePortrait(widget, side, frameHeight, unitId)
     -- SetPortraitTexture resets snapping and anchor points, so re-disable pixel
     -- snap and re-anchor after every portrait repaint (PortraitOverride). hasStateChanged
     -- is set only by the 2D lane's call (the class lane's NPC paint passes none).
-    flatTex.PostUpdate = function(self, u, changed)
+    flatTex.PostUpdate = function(self, unit, changed)
         UnsnapTex(self)
         self:ClearAllPoints()
         -- When detached, ApplyDetachedPortraitShape uses expanded offsets for mask
         -- fill; re-apply those instead of resetting to default.
-        local uKey2 = UnitToSettingsKey(widget._cuiBaseUnit or u)
+        local uKey2 = UnitToSettingsKey(widget._cuiBaseUnit or unit)
         local uS2 = uKey2 and saved.profile[uKey2]
         local isDetNow = ((uS2 and uS2.portraitStyle) or saved.profile.portraitStyle or "attached")
             == "detached"
@@ -1967,7 +1967,7 @@ local function CreatePortrait(widget, side, frameHeight, unitId)
             and uS2.portraitMirror
             and not mod.UF_Blizz()
             and not (changed and self.state == false)
-            and mod.UF_CanMirrorPortrait2D(EnsureModel3D(), u, MirrorReady)
+            and mod.UF_CanMirrorPortrait2D(EnsureModel3D(), unit, MirrorReady)
         )
                 and true
             or false

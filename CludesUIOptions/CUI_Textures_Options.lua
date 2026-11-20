@@ -504,27 +504,27 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
 
     local UNITS = { "player", "target", "focus" }
     local UNIT_LABEL = { player = "Player", target = "Target", focus = "Focus" }
-    local function unitTable(u)
+    local function unitTable(unit)
         local p = saved()
-        return p and p[u]
+        return p and p[unit]
     end
     local function UFReload()
         if mod.ReloadFrames then
             mod.ReloadFrames()
         end
     end
-    local function barTexCfg(u)
+    local function barTexCfg(unit)
         return {
             type = "dropdown",
-            text = UNIT_LABEL[u] .. " Bar Texture",
+            text = UNIT_LABEL[unit] .. " Bar Texture",
             values = hbtValues,
             order = hbtOrder,
             getValue = function()
-                local ut, p = unitTable(u), saved()
+                local ut, p = unitTable(unit), saved()
                 return (ut and ut.healthBarTexture) or (p and p.healthBarTexture) or "none"
             end,
             setValue = function(value)
-                local ut = unitTable(u)
+                local ut = unitTable(unit)
                 if not ut then
                     return
                 end
@@ -533,18 +533,18 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
             end,
         }
     end
-    local function absorbCfg(u)
+    local function absorbCfg(unit)
         return {
             type = "dropdown",
-            text = UNIT_LABEL[u] .. " Absorb Style",
+            text = UNIT_LABEL[unit] .. " Absorb Style",
             values = absorbStyleValues,
             order = absorbStyleOrder,
             getValue = function()
-                local ut = unitTable(u)
+                local ut = unitTable(unit)
                 return (ut and ut.showPlayerAbsorb) or "none"
             end,
             setValue = function(value)
-                local ut = unitTable(u)
+                local ut = unitTable(unit)
                 if not ut then
                     return
                 end
@@ -554,18 +554,18 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
             end,
         }
     end
-    local function healAbsorbCfg(u)
+    local function healAbsorbCfg(unit)
         return {
             type = "dropdown",
-            text = UNIT_LABEL[u] .. " Heal Absorb Style",
+            text = UNIT_LABEL[unit] .. " Heal Absorb Style",
             values = absorbStyleValues,
             order = healAbsorbStyleOrder,
             getValue = function()
-                local ut = unitTable(u)
+                local ut = unitTable(unit)
                 return (ut and ut.healAbsorbStyle) or "clean"
             end,
             setValue = function(value)
-                local ut = unitTable(u)
+                local ut = unitTable(unit)
                 if not ut then
                     return
                 end
@@ -620,11 +620,11 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
     cursorY = cursorY - height
     -- Textured Background cogs (u nil: the cast bars' row).
     local environ = mod._UFO_OptEnv
-    local function Row(u)
+    local function Row(unit)
         return function()
             return environ
-                and environ.TexBgRowCfg(u and function()
-                    return unitTable(u)
+                and environ.TexBgRowCfg(unit and function()
+                    return unitTable(unit)
                 end, UFReload)
         end
     end

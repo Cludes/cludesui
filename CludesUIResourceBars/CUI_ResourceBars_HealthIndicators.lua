@@ -52,10 +52,10 @@ mod.HEALTH_INDICATORS = {
 local KINDS = mod.HEALTH_INDICATORS
 
 -- The overlay's style while it is on, nil while it is off.
-local function StyleOf(conf, k)
-    local style = conf[k.style]
-    if k.show then
-        return conf[k.show] == true and (style or "striped") or nil
+local function StyleOf(conf, key)
+    local style = conf[key.style]
+    if key.show then
+        return conf[key.show] == true and (style or "striped") or nil
     end
     return (style and style ~= "none") and style or nil
 end

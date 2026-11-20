@@ -17,8 +17,8 @@ end
 local _, mod = ...
 local EQT = mod.EQT
 local IsSecret = CludesUI.IsSecret
-local function Cfg(k)
-    return EQT.Cfg(k)
+local function Cfg(key)
+    return EQT.Cfg(key)
 end
 
 -- The tracker's width, and the height it grows to before it scrolls: the

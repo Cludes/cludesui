@@ -3337,9 +3337,9 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                 -- Auto-close when clicking outside (but not on a child
                 -- dropdown's open menu)
                 dialog:SetScript("OnShow", function(p2)
-                    p2:SetScript("OnUpdate", function(m)
-                        if not self:IsMouseOver() and not m:IsMouseOver() then
-                            local tDD = m._indDD
+                    p2:SetScript("OnUpdate", function(frame)
+                        if not self:IsMouseOver() and not frame:IsMouseOver() then
+                            local tDD = frame._indDD
                             if
                                 tDD
                                 and tDD._ddMenu
@@ -3348,7 +3348,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                             then
                                 return
                             end
-                            local fDD = m._fltDD
+                            local fDD = frame._fltDD
                             if
                                 fDD
                                 and fDD._ddMenu
@@ -3358,7 +3358,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                                 return
                             end
                             if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then
-                                m:Hide()
+                                frame:Hide()
                             end
                         end
                     end)

@@ -565,11 +565,11 @@ end
 -- own cooldown length where the engine knows none): a gate is fed only past
 -- it, so nothing the count does while a member cannot kick (a grip of a
 -- caster) ever cuts a running cooldown's display.
-function Gate.StillDownAt(u, startAt, duration, T)
+function Gate.StillDownAt(unit, startAt, duration, T)
     if not startAt then
         return false
     end
-    local cd = KE.DownFor(u) or duration
+    local cd = KE.DownFor(unit) or duration
     return cd ~= nil and T - startAt < cd - KE.ELIM_SLACK
 end
 
@@ -577,11 +577,11 @@ end
 -- kick with their count read at it (a sample never is; a kick whose count
 -- could not be read keeps no gate, unless the fight moved since), and only
 -- once that kick's cooldown is over.
-function Gate.FeedIcon(b, u, current, T)
+function Gate.FeedIcon(b, unit, current, T)
     if b.cGen == nil or (b.cBase == nil and b.cGen == KE.FightGen()) then
         return
     end
-    if Gate.StillDownAt(u, b.cdStart, b.cdDur, T) then
+    if Gate.StillDownAt(unit, b.cdStart, b.cdDur, T) then
         return
     end
     b.cCur = current
@@ -1909,7 +1909,7 @@ end
 -- clip, and inside it the cell's count gate (whole until fed) with its clip
 -- holding a lane-style kit cell, anchored on the ghost for good. All of them
 -- are born under the ghost, so they carry the park's aspect.
-function Ghosts.BuildSub(g, k)
+function Ghosts.BuildSub(g, key)
     local gateRec, fillTex = Gate.New(g)
     gateRec:Hide()
     local clipFrame = Gate.NewClip(g)
@@ -1931,7 +1931,7 @@ function Ghosts.BuildSub(g, k)
         stepA = Gate.NewStep(g),
         stepB = Gate.NewStep(g),
     }
-    g.subs[k] = subRow
+    g.subs[key] = subRow
     Ghosts.Size(g, subRow, Pix.Scale(iconPx))
     Ghosts.Hang(subRow)
     Gate.HangWhole(clipB, fillB, gateBottom)
@@ -2001,11 +2001,11 @@ end
 
 -- A member's cooldown after a landed kick, while they can stand in a ghost:
 -- both counts handed over and their interrupt known. nil otherwise.
-function Ghosts.Dur(u, before, after)
-    if not (before[u] ~= nil and after[u] ~= nil) then
+function Ghosts.Dur(unit, before, after)
+    if not (before[unit] ~= nil and after[unit] ~= nil) then
         return nil
     end
-    local duration = KE.KickDuration(u)
+    local duration = KE.KickDuration(unit)
     if duration and duration > 0 then
         return duration
     end
@@ -2281,8 +2281,8 @@ end
 -- is fed their count as read now against its own baseline, once the cell's
 -- cooldown is over (a cell that opened closes for good when they interrupt
 -- again). By their GUID: a cell follows its member, not their token.
-function Ghosts.Counts(u, current, T)
-    local m = KE.Member(u)
+function Ghosts.Counts(unit, current, T)
+    local m = KE.Member(unit)
     local unitGuid = m and m.guid
     if not unitGuid then
         return
@@ -2293,7 +2293,7 @@ function Ghosts.Counts(u, current, T)
         local subRows = g.subs
         for k = 1, g.used do
             local subRow = subRows[k]
-            if subRow.guid == unitGuid and not Gate.StillDownAt(u, subRow.cell.cdStart, subRow.cell.cdDur, T) then
+            if subRow.guid == unitGuid and not Gate.StillDownAt(unit, subRow.cell.cdStart, subRow.cell.cdDur, T) then
                 subRow.cCur = current
                 Ghosts.FeedB(subRow)
             end
@@ -2885,16 +2885,16 @@ end
 -- ghost still holding their cell, else the count itself, whole), once the
 -- cooldown the lane shows (the kicker's own, from a sure kick) is over. With
 -- no count read: whole from plain values.
-function Rails.LaneFeed(laneRec, u, current, T)
+function Rails.LaneFeed(laneRec, unit, current, T)
     if current == nil then
         laneRec.cBase, laneRec.cCur = nil, nil
         Gate.ResetWhole(laneRec.gateB, laneRec.fillB, laneRec.clipB)
         return
     end
-    if Gate.StillDownAt(u, laneRec.cell.cdStart, laneRec.cell.cdDur, T) then
+    if Gate.StillDownAt(unit, laneRec.cell.cdStart, laneRec.cell.cdDur, T) then
         return
     end
-    local m = KE.Member(u)
+    local m = KE.Member(unit)
     local base = Ghosts.LaneBase(m and m.guid)
     if base == nil then
         base = current
@@ -3410,15 +3410,15 @@ end
 
 -- The engine's counts event for member u (and a ghost coming or going):
 -- their lane on every rail fed their count as read now (Rails.LaneFeed).
-function Rails.Counts(u, current, T)
-    local i = Rails.laneOf[u]
+function Rails.Counts(unit, current, T)
+    local i = Rails.laneOf[unit]
     if not i then
         return
     end
     for _, track in pairs(Rails.railOf) do
         local laneRec = track.lanes[i]
-        if laneRec and laneRec.kicker == u then
-            Rails.LaneFeed(laneRec, u, current, T)
+        if laneRec and laneRec.kicker == unit then
+            Rails.LaneFeed(laneRec, unit, current, T)
         end
     end
 end

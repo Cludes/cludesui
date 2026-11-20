@@ -3141,10 +3141,10 @@ local function ShowAddBarPopup(anchorBtn, kindName, fontFile)
 
         -- Auto-close on outside click, same pattern as DM's Add New popup.
         dialog:SetScript("OnShow", function(p2)
-            p2:SetScript("OnUpdate", function(m)
-                if not (m._anchorBtn and m._anchorBtn:IsMouseOver()) and not m:IsMouseOver() then
+            p2:SetScript("OnUpdate", function(frame)
+                if not (frame._anchorBtn and frame._anchorBtn:IsMouseOver()) and not frame:IsMouseOver() then
                     if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then
-                        m:Hide()
+                        frame:Hide()
                     end
                 end
             end)

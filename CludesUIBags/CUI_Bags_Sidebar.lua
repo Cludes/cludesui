@@ -2171,12 +2171,12 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                         fallback._edges = edges
                         fallback._elapsed = 0
                         fallback._active = false
-                        fallback:SetScript("OnUpdate", function(self, dt)
+                        fallback:SetScript("OnUpdate", function(self, elapsed)
                             if not self._active then
                                 self:Hide()
                                 return
                             end
-                            self._elapsed = self._elapsed + dt
+                            self._elapsed = self._elapsed + elapsed
                             if self._elapsed >= 0.7 then
                                 self._active = false
                                 for _, edge in ipairs(self._edges) do

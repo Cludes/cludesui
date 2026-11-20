@@ -627,7 +627,7 @@ local function _SetAlphaTarget(target)
 end
 
 local _fadeApplyAccum = 0
-_chatFadeFrame:SetScript("OnUpdate", function(self, dt)
+_chatFadeFrame:SetScript("OnUpdate", function(self, elapsed)
     if _chatAlphaCurrent == _chatAlphaTarget then
         self:Hide()
         _fadeApplyAccum = 0
@@ -639,7 +639,7 @@ _chatFadeFrame:SetScript("OnUpdate", function(self, dt)
     local fadingIn = _chatAlphaTarget > _chatAlphaCurrent
     local duration = fadingIn and FADE_IN_DURATION
         or (_idleFadeActive and IDLE_FADE_OUT_DURATION or FADE_OUT_DURATION)
-    local speed = dt / duration
+    local speed = elapsed / duration
     if fadingIn then
         SetChatAlphaCurrent(min(_chatAlphaTarget, _chatAlphaCurrent + speed))
     else
@@ -647,7 +647,7 @@ _chatFadeFrame:SetScript("OnUpdate", function(self, dt)
     end
     -- The alpha step accumulates every frame but is only pushed to widgets on a
     -- throttle. Still smooth; saves ~75% of SetAlpha calls at 120fps.
-    _fadeApplyAccum = _fadeApplyAccum + dt
+    _fadeApplyAccum = _fadeApplyAccum + elapsed
     if _fadeApplyAccum < 0.016 then
         return
     end

@@ -220,13 +220,13 @@ end
 -- OOC-only scan checks AuraKit.AurasRestricted() inline (no helper local).
 
 -- Shared helpers for group aura scanning (hoisted to avoid per-call closure allocation)
-local function _unitOk(u)
-    return UnitExists(u) and UnitIsConnected(u) and not UnitIsDeadOrGhost(u)
+local function _unitOk(unit)
+    return UnitExists(unit) and UnitIsConnected(unit) and not UnitIsDeadOrGhost(unit)
 end
-local function _unitHasBuff(u, spellIdList)
+local function _unitHasBuff(unit, spellIdList)
     local combatNow = InCombat()
     -- Fast path for player: use GetPlayerAuraBySpellID for whitelisted IDs
-    if UnitIsUnit(u, "player") then
+    if UnitIsUnit(unit, "player") then
         for jdx = 1, #spellIdList do
             local ident = spellIdList[jdx]
             if NON_SECRET_SPELL_IDS[ident] then
@@ -250,7 +250,7 @@ local function _unitHasBuff(u, spellIdList)
         for jdx = 1, #spellIdList do
             local ident = spellIdList[jdx]
             if NON_SECRET_SPELL_IDS[ident] then
-                local success, outcome = pcall(C_UnitAuras.GetUnitAuraBySpellID, u, ident)
+                local success, outcome = pcall(C_UnitAuras.GetUnitAuraBySpellID, unit, ident)
                 if success and outcome ~= nil and not isSecret(outcome) then
                     return true
                 end
@@ -260,11 +260,11 @@ local function _unitHasBuff(u, spellIdList)
     -- Iterate auras for non-whitelisted IDs: OOC and outside restricted content only (scan errors under restriction). Skipped for player (covered above).
     if
         not combatNow
-        and not UnitIsUnit(u, "player")
+        and not UnitIsUnit(unit, "player")
         and not (CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted())
     then
         for auraIndex = 1, AURA_SCAN_LIMIT do
-            local auraInfo = C_UnitAuras.GetAuraDataByIndex(u, auraIndex, "HELPFUL")
+            local auraInfo = C_UnitAuras.GetAuraDataByIndex(unit, auraIndex, "HELPFUL")
             if not auraInfo then
                 break
             end
@@ -319,7 +319,7 @@ function REMIND._OwnCastOn(unitToken, ident)
 end
 
 -- True if the buff's source is the player. Non-player units: OOC iteration only, false in combat (caller uses the snapshot).
-local function _unitHasBuffFromPlayer(u, spellIdList, strictSource)
+local function _unitHasBuffFromPlayer(unit, spellIdList, strictSource)
     local combatNow = InCombat()
     local restricted = CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted()
     local idLookup = _idLookupScratch
@@ -328,7 +328,7 @@ local function _unitHasBuffFromPlayer(u, spellIdList, strictSource)
         idLookup[spellIdList[jdx]] = true
     end
 
-    if UnitIsUnit(u, "player") then
+    if UnitIsUnit(unit, "player") then
         -- Player-self: GetPlayerAuraBySpellID for whitelisted IDs
         for ident in pairs(idLookup) do
             if NON_SECRET_SPELL_IDS[ident] or (strictSource and not restricted) then
@@ -386,7 +386,7 @@ local function _unitHasBuffFromPlayer(u, spellIdList, strictSource)
     local needScan = false
     for ident in pairs(idLookup) do
         if NON_SECRET_SPELL_IDS[ident] or (strictSource and not restricted) then
-            local success, auraInfo = pcall(C_UnitAuras.GetUnitAuraBySpellID, u, ident)
+            local success, auraInfo = pcall(C_UnitAuras.GetUnitAuraBySpellID, unit, ident)
             if strictSource and (not success or isSecret(auraInfo)) then
                 return nil
             end
@@ -419,7 +419,7 @@ local function _unitHasBuffFromPlayer(u, spellIdList, strictSource)
     end
     -- Fallback: full scan for non-whitelisted IDs only
     for auraIndex = 1, AURA_SCAN_LIMIT do
-        local auraInfo = C_UnitAuras.GetAuraDataByIndex(u, auraIndex, "HELPFUL")
+        local auraInfo = C_UnitAuras.GetAuraDataByIndex(unit, auraIndex, "HELPFUL")
         if not auraInfo then
             break
         end
@@ -508,19 +508,19 @@ end
 -- Range check mirrors raid frames: UnitInRange (~40yd helpful, combat-safe, unprotected) is primary, but can be a SECRET
 -- value in instances (raid frames feed it to SetAlphaFromBoolean instead of branching). When secret here, falls back to
 -- UnitIsVisible (~100yd, same phase/zone) -- proven branch-safe by the raid frames' ghost-aura sweep; coarser than true cast range but excludes cross-wing/zone/phase false positives.
-local function _unitInRange(u)
-    if UnitIsUnit(u, "player") then
+local function _unitInRange(unit)
+    if UnitIsUnit(unit, "player") then
         return true
     end
-    if not UnitExists(u) then
+    if not UnitExists(unit) then
         return false
     end
-    local withinRange, checked = UnitInRange(u)
+    local withinRange, checked = UnitInRange(unit)
     if not (isSecret(withinRange) or isSecret(checked)) and checked then
         return withinRange == true
     end
     -- Secret or uncheckable: visibility fallback
-    local vis = UnitIsVisible(u)
+    local vis = UnitIsVisible(unit)
     if isSecret(vis) then
         return true
     end
@@ -1144,11 +1144,11 @@ REMIND._groupSpecs = REMIND._groupSpecs or {}
 -- Resolves a unit's specID: own spec directly (always readable), others
 -- from the comm cache keyed the way the lib keys senders (Name for same
 -- realm, Name-Realm cross-realm).
-function REMIND.GroupSpecFor(u)
-    if UnitIsUnit(u, "player") then
+function REMIND.GroupSpecFor(unit)
+    if UnitIsUnit(unit, "player") then
         return GetSpecID()
     end
-    local num, region = UnitNameUnmodified(u)
+    local num, region = UnitNameUnmodified(unit)
     if num == nil or isSecret(num) then
         return nil
     end
@@ -1163,14 +1163,14 @@ end
 -- fall through); (2) assigned-ROLE refinement for combos the role alone
 -- decides (no comms needed); (3) the class table. Unreadable class = not
 -- counted (coverage skips the unit).
-function REMIND.UnitBenefits(u, benefit)
+function REMIND.UnitBenefits(unit, benefit)
     if not benefit then
         return true
     end
     -- WoW Forever has no spec data to look up (no comms cache, no specs).
     local specSet = not REMIND.FOREVER and REMIND.SPEC_BENEFITS[benefit]
     if specSet then
-        local specInfo = REMIND.GroupSpecFor(u)
+        local specInfo = REMIND.GroupSpecFor(unit)
         if specInfo then
             if specSet[specInfo] then
                 return true
@@ -1189,7 +1189,7 @@ function REMIND.UnitBenefits(u, benefit)
     if not classSet then
         return true
     end
-    local _, classFile = UnitClass(u)
+    local _, classFile = UnitClass(unit)
     if classFile == nil or isSecret(classFile) then
         return false
     end
@@ -1204,7 +1204,7 @@ function REMIND.UnitBenefits(u, benefit)
     -- unassigned ("NONE") or secret roles fall through to the class answer.
     -- Effective role: the player's spec wins over a stale assigned role. On
     -- WoW Forever every mana user wants Intellect, whatever the role.
-    local roleName = CludesUI.UnitEffectiveRole(u)
+    local roleName = CludesUI.UnitEffectiveRole(unit)
     if roleName ~= nil and not isSecret(roleName) then
         if benefit == "intellect" and not REMIND.FOREVER then
             if (classFile == "PALADIN" or classFile == "MONK") and (roleName == "DAMAGER" or roleName == "TANK") then

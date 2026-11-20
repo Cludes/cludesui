@@ -1198,9 +1198,9 @@ function mod.CDMDefaultHiddenSet()
     local evicted = Enum.CooldownViewerCategory
     local hidden = evicted.HiddenActive
     local NormalizeToBase, ResolveToLive, RankName = mod.NormalizeToBase, mod.ResolveToLive, mod.CDMRankName
-    local function Mark(k, dh)
-        if k ~= nil and keySet[k] ~= false then
-            keySet[k] = dh
+    local function Mark(key, dh)
+        if key ~= nil and keySet[key] ~= false then
+            keySet[key] = dh
         end
     end
     local function Add(val, dh)

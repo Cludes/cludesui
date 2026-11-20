@@ -1810,18 +1810,18 @@ CUI_NS.unlockParts.Session = function(LM)
         -- Reset cursor speed so the first hover isn't blocked by a stale value
         CludesUI._unlockCursorSpeed = 0
 
-        LM.unlockFrame:SetScript("OnUpdate", function(self, dt)
+        LM.unlockFrame:SetScript("OnUpdate", function(self, elapsed)
             -- Sample cursor position and compute speed for hover intent detection
             do
                 local scale = UIParent:GetEffectiveScale()
                 local nx, ny = GetCursorPosition()
                 nx = nx / scale
                 ny = ny / scale
-                if dt > 0 then
+                if elapsed > 0 then
                     local dx = nx - CludesUI._unlockCursorX
                     local dy = ny - CludesUI._unlockCursorY
                     -- Store squared speed to avoid sqrt; TryExpand compares against squared threshold
-                    CludesUI._unlockCursorSpeed = (dx * dx + dy * dy) / (dt * dt)
+                    CludesUI._unlockCursorSpeed = (dx * dx + dy * dy) / (elapsed * elapsed)
 
                     -- After arrow-key nudge collapsed a mover, re-expand it
                     -- once the cursor moves and is still hovering the mover.
@@ -1847,7 +1847,7 @@ CUI_NS.unlockParts.Session = function(LM)
             -- anchored) keeps its border/level highlight via OnLeave regardless; the
             -- nudge block above re-expands only while the cursor is over the mover.
 
-            timePassed = timePassed + dt
+            timePassed = timePassed + elapsed
 
             ---------------------------------------------------------------
             --  Background overlay fade: 0 -> full alpha over 0.75 seconds

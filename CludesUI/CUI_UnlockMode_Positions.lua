@@ -2449,23 +2449,23 @@ CUI_NS.unlockParts.Positions = function(LM)
         -- Apply in dependency order (roots first): pairs() is non-deterministic, so a
         -- chain A -> B -> C could process C before B, leaving C reading B's stale edges. Same pattern as ApplyMatchesInDependencyOrder.
         local depth = {}
-        local function GetDepth(k, visiting)
-            if depth[k] ~= nil then
-                return depth[k]
+        local function GetDepth(key, visiting)
+            if depth[key] ~= nil then
+                return depth[key]
             end
-            if visiting[k] then
-                depth[k] = 0
+            if visiting[key] then
+                depth[key] = 0
                 return 0
             end -- cycle guard
-            visiting[k] = true
-            local details = anchorDB[k]
+            visiting[key] = true
+            local details = anchorDB[key]
             if details and details.target and anchorDB[details.target] then
-                depth[k] = 1 + GetDepth(details.target, visiting)
+                depth[key] = 1 + GetDepth(details.target, visiting)
             else
-                depth[k] = 0 -- target is a root (not in adb) or missing
+                depth[key] = 0 -- target is a root (not in adb) or missing
             end
-            visiting[k] = nil
-            return depth[k]
+            visiting[key] = nil
+            return depth[key]
         end
 
         local sequence = {}
@@ -2510,23 +2510,23 @@ CUI_NS.unlockParts.Positions = function(LM)
         end
 
         local depth = {}
-        local function GetDepth(k, visiting)
-            if depth[k] ~= nil then
-                return depth[k]
+        local function GetDepth(key, visiting)
+            if depth[key] ~= nil then
+                return depth[key]
             end
-            if visiting[k] then
-                depth[k] = 0
+            if visiting[key] then
+                depth[key] = 0
                 return 0
             end
-            visiting[k] = true
-            local details = anchorDB[k]
+            visiting[key] = true
+            local details = anchorDB[key]
             if details and details.target and anchorDB[details.target] then
-                depth[k] = 1 + GetDepth(details.target, visiting)
+                depth[key] = 1 + GetDepth(details.target, visiting)
             else
-                depth[k] = 0
+                depth[key] = 0
             end
-            visiting[k] = nil
-            return depth[k]
+            visiting[key] = nil
+            return depth[key]
         end
 
         local sequence = {}

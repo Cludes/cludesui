@@ -1121,12 +1121,12 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             dropMenu:SetHeight(menuH + 4)
 
             -- Close on left-click outside (non-blocking). Never dismiss while a custom-bar row is being dragged -- a fast drag can momentarily leave the menu bounds.
-            dropMenu:SetScript("OnUpdate", function(m)
+            dropMenu:SetScript("OnUpdate", function(frame)
                 if drag.active then
                     return
                 end
-                if not m:IsMouseOver() and not dropdownBtn:IsMouseOver() and IsMouseButtonDown("LeftButton") then
-                    m:Hide()
+                if not frame:IsMouseOver() and not dropdownBtn:IsMouseOver() and IsMouseButtonDown("LeftButton") then
+                    frame:Hide()
                 end
             end)
             -- Hooked once per dress: an in-place redraw keeps the dress's hook.

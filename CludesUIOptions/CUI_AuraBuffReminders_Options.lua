@@ -3827,8 +3827,8 @@ CludesUI.AtOptionsLogin(function()
         frame:Show()
         frame:SetAlpha(1)
         local t = 0
-        frame:SetScript("OnUpdate", function(self, dt)
-            t = t + dt
+        frame:SetScript("OnUpdate", function(self, elapsed)
+            t = t + elapsed
             if t < 0.8 then
                 self:SetAlpha(0.5 + 0.5 * math.sin(t * 10))
             elseif t < 1.5 then

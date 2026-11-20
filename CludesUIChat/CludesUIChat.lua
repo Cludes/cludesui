@@ -959,8 +959,8 @@ function CHAT.ApplySidebarVisibility()
     if not _sidebarFadeFrame then
         SetSidebarFadeFrame(CreateFrame("Frame"))
         _sidebarFadeFrame:Hide()
-        _sidebarFadeFrame:SetScript("OnUpdate", function(self, dt)
-            local step = dt * 4 -- 0.25s fade
+        _sidebarFadeFrame:SetScript("OnUpdate", function(self, elapsed)
+            local step = elapsed * 4 -- 0.25s fade
             if _sidebarFadeTarget > _sidebarFadeAlpha then
                 SetSidebarFadeAlpha(min(_sidebarFadeTarget, _sidebarFadeAlpha + step))
             else

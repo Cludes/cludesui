@@ -69,23 +69,23 @@ local function QoLExtrasProfile()
     end
     return _qolExtrasDB and _qolExtrasDB.profile
 end
-function CludesUI.QoLExtrasGet(k)
+function CludesUI.QoLExtrasGet(key)
     local p = QoLExtrasProfile()
-    if p and p[k] ~= nil then
-        return p[k]
+    if p and p[key] ~= nil then
+        return p[key]
     end
-    return CludesUIDB and CludesUIDB[k]
+    return CludesUIDB and CludesUIDB[key]
 end
-function CludesUI.QoLExtrasSet(k, val)
+function CludesUI.QoLExtrasSet(key, val)
     local p = QoLExtrasProfile()
     if p then
-        p[k] = val
+        p[key] = val
         return
     end
     if not CludesUIDB then
         CludesUIDB = {}
     end
-    CludesUIDB[k] = val
+    CludesUIDB[key] = val
 end
 
 local qolFrame = CreateFrame("Frame")
@@ -4279,12 +4279,12 @@ do
     CludesUI.GetCrosshairDB = CrosshairDB
 
     -- Effective read: profile override -> global root -> nil (inline default).
-    local function CrosshairGet(k)
+    local function CrosshairGet(key)
         local p = CrosshairDB()
-        if p and p[k] ~= nil then
-            return p[k]
+        if p and p[key] ~= nil then
+            return p[key]
         end
-        return CludesUIDB and CludesUIDB[k]
+        return CludesUIDB and CludesUIDB[key]
     end
     CludesUI.GetCrosshairValue = CrosshairGet
 
@@ -5347,21 +5347,21 @@ do
         end
         local seen = {}
         local newlyDeadName, newlyDeadClass, newlyDeadCount
-        ForEachGroupUnit(function(u)
-            local unitGuid = UnitGUID(u)
+        ForEachGroupUnit(function(unit)
+            local unitGuid = UnitGUID(unit)
             if not unitGuid then
                 return
             end
             seen[unitGuid] = true
-            if not UnitIsConnected(u) then
+            if not UnitIsConnected(unit) then
                 return
             end
-            local dead = (UnitIsDeadOrGhost(u) and not UnitIsFeignDeath(u)) and true or false
+            local dead = (UnitIsDeadOrGhost(unit) and not UnitIsFeignDeath(unit)) and true or false
             -- prev == false means we previously saw this unit alive; a nil prev
             -- (first sighting/rejoin) primes state silently so an already-dead member at start is never announced.
             if deadState[unitGuid] == false and dead then
-                local _, classFile = UnitClass(u)
-                newlyDeadName = UnitName(u)
+                local _, classFile = UnitClass(unit)
+                newlyDeadName = UnitName(unit)
                 newlyDeadClass = classFile
                 newlyDeadCount = (newlyDeadCount or 0) + 1
             end
@@ -5855,11 +5855,11 @@ do
                 Tick()
             end)
         end
-        driver:SetScript("OnUpdate", function(_, dt)
+        driver:SetScript("OnUpdate", function(_, elapsed)
             if not IsEnabled() then
                 return
             end
-            acc = acc + dt
+            acc = acc + elapsed
             if acc < 0.2 then
                 return
             end

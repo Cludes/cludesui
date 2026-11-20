@@ -226,7 +226,7 @@ CUI_NS.unlockParts.Tools = function(LM)
             return g
         end
 
-        LM.gridFrame:SetScript("OnUpdate", function(self, dt)
+        LM.gridFrame:SetScript("OnUpdate", function(self, elapsed)
             if not self:IsShown() then
                 flashFill:Hide()
                 return
@@ -434,8 +434,8 @@ CUI_NS.unlockParts.Tools = function(LM)
         if not snapHighlightAnim then
             snapHighlightAnim = CreateFrame("Frame")
         end
-        snapHighlightAnim:SetScript("OnUpdate", function(self, dt)
-            snapHighlightElapsed = snapHighlightElapsed + dt
+        snapHighlightAnim:SetScript("OnUpdate", function(self, elapsed)
+            snapHighlightElapsed = snapHighlightElapsed + elapsed
             local target = handles[snapLitKey]
             if not target or not target._snapBrd then
                 ClearSnapHighlight()
@@ -1564,9 +1564,9 @@ CUI_NS.unlockParts.Tools = function(LM)
             local yOff = t * 5
             nameFs:SetPoint("CENTER", shade, "CENTER", 0, yOff)
         end
-        animFrame:SetScript("OnUpdate", function(self, dt)
+        animFrame:SetScript("OnUpdate", function(self, elapsed)
             local direction = hoverTarget > hoverT and 1 or -1
-            hoverT = hoverT + direction * (dt / 0.15)
+            hoverT = hoverT + direction * (elapsed / 0.15)
             if (direction == 1 and hoverT >= hoverTarget) or (direction == -1 and hoverT <= hoverTarget) then
                 hoverT = hoverTarget
                 if hoverT == 0 then

@@ -1765,22 +1765,22 @@ CUI_NS.unlockParts.Anchors = function(LM)
             return
         end
         local depth = {}
-        local function GetDepth(k, visiting)
-            if depth[k] ~= nil then
-                return depth[k]
+        local function GetDepth(key, visiting)
+            if depth[key] ~= nil then
+                return depth[key]
             end
-            if visiting[k] then
+            if visiting[key] then
                 return 0
             end
-            visiting[k] = true
-            local target = saved[k]
+            visiting[key] = true
+            local target = saved[key]
             if target and saved[target] then
-                depth[k] = 1 + GetDepth(target, visiting)
+                depth[key] = 1 + GetDepth(target, visiting)
             else
-                depth[k] = 0
+                depth[key] = 0
             end
-            visiting[k] = nil
-            return depth[k]
+            visiting[key] = nil
+            return depth[key]
         end
         local sequence = {}
         for childBarKey in pairs(saved) do
@@ -1967,8 +1967,8 @@ CUI_NS.unlockParts.Anchors = function(LM)
             _overlayFadeFrame = CreateFrame("Frame")
         end
         local timePassed = 0
-        _overlayFadeFrame:SetScript("OnUpdate", function(self, dt)
-            timePassed = timePassed + dt
+        _overlayFadeFrame:SetScript("OnUpdate", function(self, elapsed)
+            timePassed = timePassed + elapsed
             local t = math.min(timePassed / SELECT_ELEMENT_FADE, 1)
             local a = startA + (endA - startA) * t
             LM.unlockFrame._overlay:SetColorTexture(0.020, 0.025, 0.031, a)
@@ -2063,8 +2063,8 @@ CUI_NS.unlockParts.Anchors = function(LM)
         if not handle._redFlashFrame then
             handle._redFlashFrame = CreateFrame("Frame")
         end
-        handle._redFlashFrame:SetScript("OnUpdate", function(self, dt)
-            timePassed = timePassed + dt
+        handle._redFlashFrame:SetScript("OnUpdate", function(self, elapsed)
+            timePassed = timePassed + elapsed
             if timePassed < 0.8 then
                 local a = 0.5 + 0.5 * math.sin(timePassed * 10)
                 brd:SetColor(1, 0.2, 0.2, a)
@@ -2090,8 +2090,8 @@ CUI_NS.unlockParts.Anchors = function(LM)
         RejectH._anchor:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", curX / uiScale, curY / uiScale)
         CludesUI.ShowWidgetTooltip(RejectH._anchor, textValue, {})
         local timePassed = 0
-        RejectH._timer:SetScript("OnUpdate", function(self, dt)
-            timePassed = timePassed + dt
+        RejectH._timer:SetScript("OnUpdate", function(self, elapsed)
+            timePassed = timePassed + elapsed
             if timePassed >= 3 then
                 CludesUI.HideWidgetTooltip()
                 self:SetScript("OnUpdate", nil)

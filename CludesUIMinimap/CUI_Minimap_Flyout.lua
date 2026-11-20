@@ -468,14 +468,14 @@ local function EnsureFlyoutPanel()
         -- so clicks still land normally; the toggle is excluded so its own OnClick
         -- closes without a reopen race.
         flyoutPanel:HookScript("OnShow", function(self)
-            self:SetScript("OnUpdate", function(m)
+            self:SetScript("OnUpdate", function(frame)
                 if
                     IsMouseButtonDown("LeftButton")
-                    and not m:IsMouseOver()
+                    and not frame:IsMouseOver()
                     and not (flyoutToggle and flyoutToggle:IsMouseOver())
-                    and not SKIN._MouseOverFlyoutChild(m)
+                    and not SKIN._MouseOverFlyoutChild(frame)
                 then
-                    m:Hide()
+                    frame:Hide()
                 end
             end)
         end)

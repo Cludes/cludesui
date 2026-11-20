@@ -4127,10 +4127,10 @@ if IS_STANDALONE then
     -- hand-off slot before the shared table is published (see the top).
     local sharedMedia = select(2, ...)
     setmetatable(CludesUI._ModuleNS, {
-        __newindex = function(t, k, v)
+        __newindex = function(t, key, v)
             sharedMedia.__cuiCoreNS = nil
             setmetatable(t, nil)
-            rawset(t, k, v)
+            rawset(t, key, v)
         end,
     })
 end

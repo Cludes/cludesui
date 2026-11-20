@@ -1201,8 +1201,8 @@ do
         end
         t.broken = false
         mod[field] = setmetatable(t, {
-            __index = function(_, k)
-                error(label .. " has no entry " .. tostring(k), 2)
+            __index = function(_, key)
+                error(label .. " has no entry " .. tostring(key), 2)
             end,
         })
         return mod[field]

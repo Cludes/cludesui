@@ -1982,11 +1982,11 @@ end
 
 -- One pass over the plate's shown members of the slot (Chain.busy set: the passes it
 -- runs end in ns.NP_CoreChain again).
-local function ChainRun(backing, place, k)
+local function ChainRun(backing, place, key)
     local centred = (place == "top" or place == "bottom")
     local pivot = 1
     if centred then
-        for i = 1, k do
+        for i = 1, key do
             if Chain.row[i] then
                 pivot = i
                 break
@@ -1997,7 +1997,7 @@ local function ChainRun(backing, place, k)
     local sp = mod.GetAuraSpacing("ccs") or 4
     local direction = ChainDir(place)
     ChainPlaceOwn(backing, place, pivot)
-    for i = pivot + 1, k do
+    for i = pivot + 1, key do
         ChainPlaceAfter(backing, place, i, i - 1, Chain.trail[i - 1], s, direction, sp)
     end
     if centred then

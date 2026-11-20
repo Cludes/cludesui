@@ -364,8 +364,8 @@ local function ShowEDMMenu(itemList, anchorBtn)
     if not _edmMenu then
         _edmMenu = MakeMenuPanel(0)
         local acc = 0
-        _edmMenu:SetScript("OnUpdate", function(self, dt)
-            acc = acc + dt
+        _edmMenu:SetScript("OnUpdate", function(self, elapsed)
+            acc = acc + elapsed
             if acc < 0.1 then
                 return
             end
@@ -2196,8 +2196,8 @@ local function CreateDMWindow(winIdx)
         local fadeTarget = 0
         local fadeFrame2 = CreateFrame("Frame")
         fadeFrame2:Hide()
-        fadeFrame2:SetScript("OnUpdate", function(self, dt)
-            local step = fadeSpeed * dt
+        fadeFrame2:SetScript("OnUpdate", function(self, elapsed)
+            local step = fadeSpeed * elapsed
             fadeAlpha = fadeTarget > fadeAlpha and math.min(fadeTarget, fadeAlpha + step)
                 or math.max(fadeTarget, fadeAlpha - step)
             if math.abs(fadeAlpha - fadeTarget) < 0.001 then

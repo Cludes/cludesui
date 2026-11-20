@@ -100,13 +100,13 @@ local function BuildSortByControl(region, options)
     menuFrame:SetScript("OnShow", function(self)
         local sc = sortBtn:GetEffectiveScale() / UIParent:GetEffectiveScale()
         self:SetScale(sc)
-        self:SetScript("OnUpdate", function(m)
+        self:SetScript("OnUpdate", function(frame)
             if isDragging then
                 return
             end -- never dismiss mid-drag
-            if not sortBtn:IsMouseOver() and not m:IsMouseOver() then
+            if not sortBtn:IsMouseOver() and not frame:IsMouseOver() then
                 if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then
-                    m:Hide()
+                    frame:Hide()
                 end
             end
         end)

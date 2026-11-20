@@ -438,8 +438,8 @@ initFrame:SetScript("OnEvent", function(self)
             local healTicks = 0
             local healFrame = CreateFrame("Frame")
             local healAccum = 0
-            healFrame:SetScript("OnUpdate", function(wid, dt)
-                healAccum = healAccum + dt
+            healFrame:SetScript("OnUpdate", function(wid, elapsed)
+                healAccum = healAccum + elapsed
                 if healAccum < 0.1 then
                     return
                 end

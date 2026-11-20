@@ -681,10 +681,10 @@ do
                 self:SetScale(btnScale / uiScale)
                 -- The outline seated before this scale: refit it.
                 dialog._defMenuBrd:Fit()
-                self:SetScript("OnUpdate", function(m)
-                    if not defaultButton:IsMouseOver() and not m:IsMouseOver() then
+                self:SetScript("OnUpdate", function(frame)
+                    if not defaultButton:IsMouseOver() and not frame:IsMouseOver() then
                         if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then
-                            m:Hide()
+                            frame:Hide()
                         end
                     end
                 end)

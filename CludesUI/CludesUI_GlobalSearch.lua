@@ -700,9 +700,9 @@ local _absSection = nil
 local _absWrapper = nil
 local _absorberMeta
 _absorberMeta = {
-    __index = function(_, k)
+    __index = function(_, key)
         -- Numeric keys read as ABSENT so ipairs()/#/array probes terminate.
-        if type(k) == "number" then
+        if type(key) == "number" then
             return nil
         end
         return setmetatable({}, _absorberMeta)
@@ -904,11 +904,11 @@ end
 -- its known widgets register; dev mode announces the gap so the stub gets
 -- added per the maintenance contract.
 setmetatable(AbsorberW, {
-    __index = function(_, k)
+    __index = function(_, key)
         if CludesUI.IsDevModeActive() then
             print(
                 "|cffff6060CUI GlobalSearch:|r no absorber stub for W:"
-                    .. tostring(k)
+                    .. tostring(key)
                     .. " -- its rows are invisible to search until built live. Add a stub."
             )
         end

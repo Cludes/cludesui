@@ -281,12 +281,12 @@ end
 -- (CUI_UnlockMode getMatchPad): extra width, extra height in the bar's units
 -- (the frame's reach is fixed at a given scale k, so the bar's size does not
 -- enter; a vertical bar turns it with the art).
-function mod.ERB_ClassicMatchPad(wid, hgt, vertical, k)
+function mod.ERB_ClassicMatchPad(wid, hgt, vertical, key)
     local CF = CludesUI.ClassicFrame
     if not CF then
         return 0, 0
     end
-    return CF.Pad(k or 1, vertical)
+    return CF.Pad(key or 1, vertical)
 end
 -- Blizzard Style: the panel's opaque rim outside a health, power or class
 -- resource bar, for the same size matching. The rim sits 1 left, 1 right,
@@ -787,7 +787,7 @@ mod._erbPadKeys =
 -- bottom and left become left, top, right and bottom) at frame scale k (nil =
 -- the sheet's own pixels). Memoized on the rect, scale and orientation;
 -- every layout pass re-runs it.
-function mod.ERB_SeatClassicChrome(texture, rect, thick, vertical, k)
+function mod.ERB_SeatClassicChrome(texture, rect, thick, vertical, key)
     if not (texture and rect) then
         return
     end
@@ -804,7 +804,7 @@ function mod.ERB_SeatClassicChrome(texture, rect, thick, vertical, k)
         texture._classicPieces = p
         texture:Hide()
     end
-    CF.Seat(p, rect, k or 1, vertical)
+    CF.Seat(p, rect, key or 1, vertical)
 end
 -- The vanilla frame round a health, power or class resource bar: one
 -- texture on an art child of the host above the fill, the pips and their
@@ -817,7 +817,7 @@ end
 -- `k` is the frame scale (ERB_ClassicFrameK; nil = full size).
 do
     local POOL = CludesUI._Pool -- read as in ns.ERB_Separators' block
-    function mod.ERB_ApplyClassicBarChrome(owner, rect, fw, fh, vertical, k)
+    function mod.ERB_ApplyClassicBarChrome(owner, rect, fw, fh, vertical, key)
         if not owner then
             return
         end
@@ -850,7 +850,7 @@ do
         if issecretvalue and (issecretvalue(wid) or issecretvalue(hgt)) then
             return
         end
-        mod.ERB_SeatClassicChrome(af._tex, rect, vertical and wid or hgt, vertical, k)
+        mod.ERB_SeatClassicChrome(af._tex, rect, vertical and wid or hgt, vertical, key)
     end
 end -- POOL block
 -- The frame around a bar: one texture on the host under everything the bar
@@ -866,14 +866,14 @@ end -- POOL block
 -- alone: this panel keeps its stock reach (the atlas slices, so its rims
 -- stay 1px round the fill; a vertical bar's turned copy is a texcoord cut
 -- and stretches).
-function mod.ERB_ApplyBlizzBarChrome(owner, rect, fw, fh, vertical, k)
+function mod.ERB_ApplyBlizzBarChrome(owner, rect, fw, fh, vertical, key)
     if not owner then
         return
     end
     rect = rect or owner
     -- Classic WoW UI takes the vanilla frame instead: no panel, mask or bevel.
     if mod.ERB_BarsClassic() then
-        mod.ERB_ApplyClassicBarChrome(owner, rect, fw, fh, vertical, k)
+        mod.ERB_ApplyClassicBarChrome(owner, rect, fw, fh, vertical, key)
         return
     end
     local backdrop = owner._blizzBarBg

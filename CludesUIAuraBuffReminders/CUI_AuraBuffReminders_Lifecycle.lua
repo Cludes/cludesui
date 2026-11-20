@@ -513,17 +513,17 @@ function REMIND:OnEnable()
 
     local rangeFrame = CreateFrame("Frame")
     local _rangeTrackers = {}
-    local function _checkUnit(u)
-        if not UnitExists(u) then
-            if _lastRangeSet[u] ~= nil then
-                _lastRangeSet[u] = nil
+    local function _checkUnit(unit)
+        if not UnitExists(unit) then
+            if _lastRangeSet[unit] ~= nil then
+                _lastRangeSet[unit] = nil
                 return true
             end
             return false
         end
-        local status = _unitInRange(u)
-        if _lastRangeSet[u] ~= status then
-            _lastRangeSet[u] = status
+        local status = _unitInRange(unit)
+        if _lastRangeSet[unit] ~= status then
+            _lastRangeSet[unit] = status
             return true
         end
         return false

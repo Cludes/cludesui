@@ -1933,14 +1933,14 @@ do
         end
         return val
     end
-    function G.SpecFromFlat(result, t, k, mode, defs)
-        local color = FlatVal(t, defs, k.color)
+    function G.SpecFromFlat(result, t, key, mode, defs)
+        local color = FlatVal(t, defs, key.color)
         result.r, result.g, result.b = G.ResolveColor(mode, color and color.r, color and color.g, color and color.b)
-        result.lines = FlatVal(t, defs, k.lines)
-        result.thickness = FlatVal(t, defs, k.thickness)
-        result.speed = FlatVal(t, defs, k.speed)
-        if FlatVal(t, defs, k.bg) == true then
-            local bc = FlatVal(t, defs, k.bgColor)
+        result.lines = FlatVal(t, defs, key.lines)
+        result.thickness = FlatVal(t, defs, key.thickness)
+        result.speed = FlatVal(t, defs, key.speed)
+        if FlatVal(t, defs, key.bg) == true then
+            local bc = FlatVal(t, defs, key.bgColor)
             result.bg = true
             result.bgR, result.bgG, result.bgB = bc and bc.r or 0, bc and bc.g or 0, bc and bc.b or 0
         else

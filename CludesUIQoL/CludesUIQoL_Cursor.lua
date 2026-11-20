@@ -441,11 +441,11 @@ local function CreateRing(hostFrame, ringRadius, ringTex, red, green, blue, a)
         self:Hide()
     end
 
-    ring:SetScript("OnUpdate", function(self, dt)
+    ring:SetScript("OnUpdate", function(self, elapsed)
         if self.maxDur <= 0 then
             return
         end
-        self.dur = self.dur + dt
+        self.dur = self.dur + elapsed
         if self.dur >= self.maxDur then
             self:StopRing()
         end
@@ -1516,8 +1516,8 @@ function ECL:OnInitialize()
     -- a frozen `profile = sharedDB.profile.cursor` reference would go stale after
     -- a swap and the cursor would keep applying the old profile's settings.
     self.db = setmetatable({ _shared = sharedDB }, {
-        __index = function(t, k)
-            if k == "profile" then
+        __index = function(t, key)
+            if key == "profile" then
                 local p = t._shared.profile
                 if not p.cursor then
                     p.cursor = {}

@@ -6480,30 +6480,30 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
         dropMenu._anchorGen = PoolGen(anchor)
         optionState._spellPickerMenu = dropMenu
         dropMenu._openSub = nil -- track open subnav for close checks
-        dropMenu:SetScript("OnUpdate", function(m)
+        dropMenu:SetScript("OnUpdate", function(frame)
             -- A glow picked or cleared in Cooldown State Effect adds or drops the
             -- Glow Style row: rebuild the menu here, outside the click that asked
             -- for it, and reopen the Cooldown State Effect flyout where it was.
-            if m._rebuildPending then
-                m._rebuildPending = nil
-                m:Hide()
+            if frame._rebuildPending then
+                frame._rebuildPending = nil
+                frame:Hide()
                 ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, removeOnly)
-                local r = m._cseRow
-                if m:IsShown() and r and r._showSub then
+                local r = frame._cseRow
+                if frame:IsShown() and r and r._showSub then
                     r._showSub()
                 end
                 return
             end
-            local overMenu = m:IsMouseOver() or anchor:IsMouseOver()
+            local overMenu = frame:IsMouseOver() or anchor:IsMouseOver()
             -- A cog flyout (Duration/Charge-Stack) drives itself through this menu, so also
             -- treat "mouse over the flyout's open dropdown menu" as over-the-sub. Without this, picking a Position option whose list extends below the flyout reads as an outside click and closes the whole menu.
-            local subMenu = m._openSub
+            local subMenu = frame._openSub
             local overSub = subMenu
                 and subMenu:IsShown()
                 and (subMenu:IsMouseOver() or (subMenu._anyDropdownHovered and subMenu._anyDropdownHovered()))
             -- "Apply to Bar" strip: same lifecycle as a subnav flyout -- it never hides on
             -- hover-out (that made the 2px gap unreachable). It dies with its owner item: flyout closed, rebuilt, or the items reparented away (IsVisible sees through a hidden parent; IsShown would not).
-            local strip = m._applyStrip
+            local strip = frame._applyStrip
             local overStrip = strip and strip:IsShown() and strip:IsMouseOver()
             if strip and strip:IsShown() then
                 local ownerFrame = strip._ownerItem
@@ -6521,16 +6521,16 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 and not cpOpen
                 and IsMouseButtonDown("LeftButton")
             then
-                m:Hide()
+                frame:Hide()
             end
         end)
-        dropMenu:SetScript("OnHide", function(m)
-            m:SetScript("OnUpdate", nil)
-            if m._openSub and m._openSub:IsShown() then
-                m._openSub:Hide()
+        dropMenu:SetScript("OnHide", function(frame)
+            frame:SetScript("OnUpdate", nil)
+            if frame._openSub and frame._openSub:IsShown() then
+                frame._openSub:Hide()
             end
-            if m._applyStrip then
-                m._applyStrip:Hide()
+            if frame._applyStrip then
+                frame._applyStrip:Hide()
             end
         end)
         dropMenu:Show()
@@ -7111,15 +7111,15 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
     -- flyout closes it (without blocking the world underneath).
     dropMenu:ClearAllPoints()
     dropMenu:SetPoint("TOP", anchor, "BOTTOM", 0, -2)
-    dropMenu:SetScript("OnUpdate", function(m)
-        local overSub = m._potionsSub and m._potionsSub:IsShown() and m._potionsSub:IsMouseOver()
+    dropMenu:SetScript("OnUpdate", function(frame)
+        local overSub = frame._potionsSub and frame._potionsSub:IsShown() and frame._potionsSub:IsMouseOver()
         if
-            not m:IsMouseOver()
+            not frame:IsMouseOver()
             and not anchor:IsMouseOver()
             and not overSub
             and IsMouseButtonDown("LeftButton")
         then
-            m:Hide()
+            frame:Hide()
         end
     end)
     -- Per-icon cog settings for racials, potions and trinkets are edited here;

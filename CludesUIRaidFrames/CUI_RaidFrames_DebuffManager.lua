@@ -261,10 +261,10 @@ local function MatchCopy(match)
     return copy
 end
 
-local function MatchSet(match, map, k, val)
-    local current = map[k]
+local function MatchSet(match, map, key, val)
+    local current = map[key]
     if current ~= nil and current ~= val then match.empty = true end
-    map[k] = val
+    map[key] = val
 end
 
 -- Dispel types: a positive set intersects the include set (a debuff has one
