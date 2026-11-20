@@ -101,9 +101,9 @@ do
         if not progressBar then
             return
         end
-        local pd = GetFFD(progressBar)
-        if not pd.heightBumped then
-            pd.heightBumped = true
+        local progressData = GetFFD(progressBar)
+        if not progressData.heightBumped then
+            progressData.heightBumped = true
             progressBar:SetHeight(progressBar:GetHeight() + 2)
         end
         if progressBar.border and progressBar.border.SetAlpha then
@@ -113,7 +113,7 @@ do
         local regionList = { progressBar:GetRegions() }
         for idx = 1, #regionList do
             local region = regionList[idx]
-            if region and region ~= fillTex and region ~= pd.bg and region.IsObjectType then
+            if region and region ~= fillTex and region ~= progressData.bg and region.IsObjectType then
                 if region:IsObjectType("Texture") and region:GetDrawLayer() ~= "HIGHLIGHT" then
                     region:SetAlpha(0)
                 elseif region:IsObjectType("FontString") then
@@ -125,11 +125,11 @@ do
             progressBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
             Skin.ApplyBarFill(progressBar)
         end
-        if not pd.bg then
+        if not progressData.bg then
             local troughTex = progressBar:CreateTexture(nil, "BACKGROUND", nil, -1)
             troughTex:SetColorTexture(0.12, 0.12, 0.12, 0.85)
             troughTex:SetAllPoints(progressBar)
-            pd.bg = troughTex
+            progressData.bg = troughTex
         end
         Skin.AddBorder(progressBar)
     end
@@ -298,30 +298,30 @@ do
 
         local mj = _G.MountJournal
         if mj and mj.MountDisplay then
-            local md = mj.MountDisplay
-            if md.ShadowOverlay then
-                md.ShadowOverlay:SetAlpha(0)
+            local mountDisplay = mj.MountDisplay
+            if mountDisplay.ShadowOverlay then
+                mountDisplay.ShadowOverlay:SetAlpha(0)
             end
-            if md.ModelScene and md.ModelScene.ShadowOverlay then
-                md.ModelScene.ShadowOverlay:SetAlpha(0)
+            if mountDisplay.ModelScene and mountDisplay.ModelScene.ShadowOverlay then
+                mountDisplay.ModelScene.ShadowOverlay:SetAlpha(0)
             end
             for _, keyName in ipairs({ "Border", "BorderFrame", "NineSlice" }) do
-                if md[keyName] then
-                    Skin.FadeRegions(md[keyName])
-                    Skin.Register(md[keyName], true)
+                if mountDisplay[keyName] then
+                    Skin.FadeRegions(mountDisplay[keyName])
+                    Skin.Register(mountDisplay[keyName], true)
                 end
             end
             -- Scenic backdrop -> flat 3% white fill; SetAlpha(0) survives Blizzard's Yes/No toggle.
             for _, keyName in ipairs({ "YesMountsTex", "NoMountsTex" }) do
-                if md[keyName] and md[keyName].SetAlpha then
-                    md[keyName]:SetAlpha(0)
+                if mountDisplay[keyName] and mountDisplay[keyName].SetAlpha then
+                    mountDisplay[keyName]:SetAlpha(0)
                 end
             end
-            local mdd = GetFFD(md)
+            local mdd = GetFFD(mountDisplay)
             if not mdd.modelFill then
-                local fillTex = md:CreateTexture(nil, "BACKGROUND")
+                local fillTex = mountDisplay:CreateTexture(nil, "BACKGROUND")
                 fillTex:SetColorTexture(1, 1, 1, 0.03)
-                fillTex:SetAllPoints(md.YesMountsTex or md.ModelScene or md)
+                fillTex:SetAllPoints(mountDisplay.YesMountsTex or mountDisplay.ModelScene or mountDisplay)
                 mdd.modelFill = fillTex
             end
         end
@@ -368,9 +368,9 @@ do
             local labelText = btnFrame and (btnFrame.Text or (btnFrame.GetFontString and btnFrame:GetFontString()))
             if labelText then
                 Skin.White(labelText)
-                local bd = GetFFD(btnFrame)
-                if not bd.whiteHook then
-                    bd.whiteHook = true
+                local buttonData = GetFFD(btnFrame)
+                if not buttonData.whiteHook then
+                    buttonData.whiteHook = true
                     btnFrame:HookScript("OnEnable", function()
                         Skin.White(labelText)
                     end)
@@ -697,10 +697,10 @@ do
                 glyphTex:SetVertexColor(1, 1, 1, 0.75)
             end)
         end
-        local mm = win.MaximizeMinimizeButton or win.MaxMinButtonFrame
-        if mm then
-            MaxMinGlyph(mm.MinimizeButton, "UI-QuestTrackerButton-Secondary-Collapse")
-            MaxMinGlyph(mm.MaximizeButton, "UI-QuestTrackerButton-Secondary-Expand")
+        local maxMinBtn = win.MaximizeMinimizeButton or win.MaxMinButtonFrame
+        if maxMinBtn then
+            MaxMinGlyph(maxMinBtn.MinimizeButton, "UI-QuestTrackerButton-Secondary-Collapse")
+            MaxMinGlyph(maxMinBtn.MaximizeButton, "UI-QuestTrackerButton-Secondary-Expand")
         end
         for _, key in ipairs({ "SpellBookFrame", "TalentsFrame", "InspectFrame" }) do
             local subPanel = win[key]
@@ -753,12 +753,12 @@ do
                     end
                     -- Search box matches loadout dropdown height (one-shot, retries until laid out).
                     local dropdown = subPanel.LoadSystem and subPanel.LoadSystem.Dropdown
-                    local sbx = subPanel.SearchBox
-                    if dropdown and sbx and not GetFFD(sbx).hMatched then
+                    local searchField = subPanel.SearchBox
+                    if dropdown and searchField and not GetFFD(searchField).hMatched then
                         local dh = dropdown:GetHeight()
                         if dh and dh > 0 then
-                            GetFFD(sbx).hMatched = true
-                            sbx:SetHeight(dh)
+                            GetFFD(searchField).hMatched = true
+                            searchField:SetHeight(dh)
                         end
                     end
                 else
@@ -836,9 +836,9 @@ do
         if importD then
             SkinTalentDialog(importD)
             -- Import-string box.
-            local ic = importD.ImportControl
-            if ic and ic.InputContainer then
-                Skin.Panel(ic.InputContainer)
+            local importControl = importD.ImportControl
+            if importControl and importControl.InputContainer then
+                Skin.Panel(importControl.InputContainer)
             end
         end
         local createD = _G.ClassTalentLoadoutCreateDialog
@@ -1074,44 +1074,44 @@ do
             Skin.White(btnFrame.text)
         end
 
-        local ma = btnFrame.MenuArrowButton
-        if ma and not skinData.arrow then
+        local menuArrow = btnFrame.MenuArrowButton
+        if menuArrow and not skinData.arrow then
             -- Arrow lives ON the caret button, so it follows Blizzard's show/hide for crumbs with a subnav menu.
-            local arrowTex = ma:CreateTexture(nil, "OVERLAY")
+            local arrowTex = menuArrow:CreateTexture(nil, "OVERLAY")
             arrowTex:SetAtlas("Azerite-PointingArrow")
             arrowTex:SetSize(12, 8.5) -- native 62x44 aspect
             arrowTex:SetPoint("CENTER")
             skinData.arrow = arrowTex
         end
-        if ma then
+        if menuArrow then
             -- Blizzard re-applies caret/border/glow art on nav rebuild AND raises
             -- hover art on OnEnter, so fade ALL native art every pass and from
             -- enter/leave hooks too, keeping our arrow.
-            local md = GetFFD(ma)
+            local mountDisplay = GetFFD(menuArrow)
             local function FadeArrowArt()
                 local keepSet = { [skinData.arrow] = true }
-                Skin.FadeRegions(ma, keepSet)
+                Skin.FadeRegions(menuArrow, keepSet)
                 for _, g in ipairs({
                     "GetNormalTexture",
                     "GetPushedTexture",
                     "GetHighlightTexture",
                     "GetDisabledTexture",
                 }) do
-                    local func = ma[g]
-                    local t = func and func(ma)
+                    local func = menuArrow[g]
+                    local t = func and func(menuArrow)
                     if t and not keepSet[t] and t.SetAlpha then
                         t:SetAlpha(0)
                     end
                 end
-                if ma.Art and ma.Art.SetAlpha then
-                    ma.Art:SetAlpha(0)
+                if menuArrow.Art and menuArrow.Art.SetAlpha then
+                    menuArrow.Art:SetAlpha(0)
                 end
             end
             FadeArrowArt()
-            if not md.hoverHooked then
-                md.hoverHooked = true
-                ma:HookScript("OnEnter", FadeArrowArt)
-                ma:HookScript("OnLeave", FadeArrowArt)
+            if not mountDisplay.hoverHooked then
+                mountDisplay.hoverHooked = true
+                menuArrow:HookScript("OnEnter", FadeArrowArt)
+                menuArrow:HookScript("OnLeave", FadeArrowArt)
             end
         end
 
@@ -1119,11 +1119,11 @@ do
         if btnFrame.text then
             btnFrame.text:ClearAllPoints()
             btnFrame.text:SetPoint("LEFT", btnFrame, "LEFT", NAV_PAD, 0)
-            if ma and not skinData.maMoved then
+            if menuArrow and not skinData.maMoved then
                 skinData.maMoved = true
-                ma:ClearAllPoints()
+                menuArrow:ClearAllPoints()
                 -- 5px left of the nominal gap position (arrow hugs the text).
-                ma:SetPoint("LEFT", btnFrame.text, "RIGHT", NAV_ARROW_GAP - 5, 0)
+                menuArrow:SetPoint("LEFT", btnFrame.text, "RIGHT", NAV_ARROW_GAP - 5, 0)
             end
         end
     end
@@ -1210,16 +1210,16 @@ do
                     -- arrow)|pad| wide, butting its neighbour so the divider sits on
                     -- the boundary with even spacing both sides.
                     local tw = (button.text and button.text.GetStringWidth and button.text:GetStringWidth()) or 0
-                    local ma = button.MenuArrowButton
-                    local hasArrow = ma and ma:IsShown()
+                    local menuArrow = button.MenuArrowButton
+                    local hasArrow = menuArrow and menuArrow:IsShown()
                     button:SetWidth(NAV_PAD + tw + (hasArrow and (NAV_ARROW_GAP + NAV_ARROW_W) or 0) + NAV_PAD)
                     if idx > 1 and navBar.navList[idx - 1] then
                         button:ClearAllPoints()
                         button:SetPoint("LEFT", navBar.navList[idx - 1], "RIGHT", 0, 0)
                     end
-                    local bd = FFD[button]
-                    if bd and bd.divider then
-                        bd.divider:SetShown(idx < n)
+                    local buttonData = FFD[button]
+                    if buttonData and buttonData.divider then
+                        buttonData.divider:SetShown(idx < n)
                     end
                 end
             end
@@ -1406,18 +1406,18 @@ do
             skinData.sidetab = true
             -- Box sits two levels below the tab so its fill AND its border
             -- container (box level + 1) both draw beneath the tab's glyph.
-            local box = CreateFrame("Frame", nil, tabBtn)
-            box:SetPoint("TOPLEFT", SIDE_TAB_INSET, -SIDE_TAB_INSET)
-            box:SetPoint("BOTTOMRIGHT", -SIDE_TAB_INSET, SIDE_TAB_INSET)
-            box:SetFrameLevel(math.max(0, tabBtn:GetFrameLevel() - 2))
-            local fillTex = SolidTex(box, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
-            fillTex:SetAllPoints(box)
-            Skin.AddBorder(box, 0, 0, 0, 1)
-            skinData.box = box
+            local tabBox = CreateFrame("Frame", nil, tabBtn)
+            tabBox:SetPoint("TOPLEFT", SIDE_TAB_INSET, -SIDE_TAB_INSET)
+            tabBox:SetPoint("BOTTOMRIGHT", -SIDE_TAB_INSET, SIDE_TAB_INSET)
+            tabBox:SetFrameLevel(math.max(0, tabBtn:GetFrameLevel() - 2))
+            local fillTex = SolidTex(tabBox, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
+            fillTex:SetAllPoints(tabBox)
+            Skin.AddBorder(tabBox, 0, 0, 0, 1)
+            skinData.box = tabBox
             skinData.bg = fillTex
             local hoverTex = SolidTex(tabBtn, "HIGHLIGHT", 1, 1, 1, 0.1)
-            hoverTex:SetPoint("TOPLEFT", box, "TOPLEFT", 0, 0)
-            hoverTex:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", 0, 0)
+            hoverTex:SetPoint("TOPLEFT", tabBox, "TOPLEFT", 0, 0)
+            hoverTex:SetPoint("BOTTOMRIGHT", tabBox, "BOTTOMRIGHT", 0, 0)
             skinData.hover = hoverTex
         end
         for _, g in ipairs({
@@ -1588,25 +1588,25 @@ do
                     c.descriptionBGBottom:SetAlpha(0)
                 end
                 -- Description bullets -> round status orb (first cell of the lootroll reveal sheet), white.
-                local blt = c.Bullet
-                if blt and blt.SetTexture and not GetFFD(blt).orbed then
-                    GetFFD(blt).orbed = true
+                local bulletTex = c.Bullet
+                if bulletTex and bulletTex.SetTexture and not GetFFD(bulletTex).orbed then
+                    GetFFD(bulletTex).orbed = true
                     local details = C_Texture
                         and C_Texture.GetAtlasInfo
                         and C_Texture.GetAtlasInfo("lootroll-animreveal-a")
                     if details and details.file then
                         local aL, aR = details.leftTexCoord or 0, details.rightTexCoord or 1
                         local aT, aB = details.topTexCoord or 0, details.bottomTexCoord or 1
-                        blt:SetTexture(details.file)
-                        blt:SetTexCoord(aL, aL + (aR - aL) / 6, aT, aT + (aB - aT) / 2)
+                        bulletTex:SetTexture(details.file)
+                        bulletTex:SetTexCoord(aL, aL + (aR - aL) / 6, aT, aT + (aB - aT) / 2)
                     else
-                        blt:SetAtlas("lootroll-animreveal-a")
-                        blt:SetTexCoord(0, 1 / 6, 0, 0.5)
+                        bulletTex:SetAtlas("lootroll-animreveal-a")
+                        bulletTex:SetTexCoord(0, 1 / 6, 0, 0.5)
                     end
-                    blt:SetVertexColor(1, 1, 1, 1)
-                    local bw, bh = blt:GetSize()
+                    bulletTex:SetVertexColor(1, 1, 1, 1)
+                    local bw, bh = bulletTex:GetSize()
                     if bw and bh and bw > 0 and bh > 0 then
-                        blt:SetSize(bw + 2, bh + 2)
+                        bulletTex:SetSize(bw + 2, bh + 2)
                     end
                 end
                 local button = c.button
@@ -1644,12 +1644,12 @@ do
                     -- Glow lives on a child frame found by name (parentKey varies).
                     local children2 = { button:GetChildren() }
                     for jdx = 1, #children2 do
-                        local ch = children2[jdx]
-                        if ch and ch.GetName then
-                            local nm = ch:GetName()
-                            if nm and nm:find("Glow", 1, true) and ch.SetAlpha then
-                                Skin.FadeRegions(ch)
-                                ch:SetAlpha(0)
+                        local childFrame = children2[jdx]
+                        if childFrame and childFrame.GetName then
+                            local nm = childFrame:GetName()
+                            if nm and nm:find("Glow", 1, true) and childFrame.SetAlpha then
+                                Skin.FadeRegions(childFrame)
+                                childFrame:SetAlpha(0)
                             end
                         end
                     end
@@ -1666,18 +1666,18 @@ do
                         local bn = button.GetName and button:GetName()
                         local seen = {}
                         for jdx = 0, 4 do
-                            local ic
+                            local importControl
                             if jdx == 0 then
-                                ic = button.icon or button.Icon
+                                importControl = button.icon or button.Icon
                             else
-                                ic = button["Icon" .. jdx] or (bn and _G[bn .. "Icon" .. jdx])
+                                importControl = button["Icon" .. jdx] or (bn and _G[bn .. "Icon" .. jdx])
                             end
-                            if ic and ic.GetSize then
-                                local wid, hgt = ic:GetSize()
+                            if importControl and importControl.GetSize then
+                                local wid, hgt = importControl:GetSize()
                                 if wid and hgt and wid > 4 and hgt > 4 then
-                                    ic:SetSize(wid - 4, hgt - 4)
-                                    local inner = ic.Icon
-                                        or (ic.GetName and ic:GetName() and _G[ic:GetName() .. "Icon"])
+                                    importControl:SetSize(wid - 4, hgt - 4)
+                                    local inner = importControl.Icon
+                                        or (importControl.GetName and importControl:GetName() and _G[importControl:GetName() .. "Icon"])
                                     if inner and inner.GetSize then
                                         local iw, ih = inner:GetSize()
                                         if iw and ih and iw > 4 and ih > 4 then
@@ -1687,12 +1687,12 @@ do
                                 end
                                 -- 3px left, chain roots only: an icon chained to a
                                 -- previous icon keeps its relative anchor since shifting the root moves the whole group.
-                                local p, rel, rp, posX, posY = ic:GetPoint(1)
+                                local p, rel, rp, posX, posY = importControl:GetPoint(1)
                                 if p and not seen[rel] then
-                                    ic:ClearAllPoints()
-                                    ic:SetPoint(p, rel, rp, (posX or 0) - 3, posY or 0)
+                                    importControl:ClearAllPoints()
+                                    importControl:SetPoint(p, rel, rp, (posX or 0) - 3, posY or 0)
                                 end
-                                seen[ic] = true
+                                seen[importControl] = true
                             end
                         end
                     end
@@ -1791,21 +1791,21 @@ do
     -- outside the CREATURE texture (not its frame), no plate -- their field shape
     -- matches the boss-row pass, which would otherwise light-background them. No
     -- active/inactive styling.
-    local function RingCreatureFrame(cb, creature)
-        if not cb or cb:IsForbidden() then
+    local function RingCreatureFrame(creatureBtn, creature)
+        if not creatureBtn or creatureBtn:IsForbidden() then
             return
         end
-        local skinData = GetFFD(cb)
-        creature = creature or cb.creature or cb.Creature
+        local skinData = GetFFD(creatureBtn)
+        creature = creature or creatureBtn.creature or creatureBtn.Creature
         if not creature then
-            local n = cb.GetName and cb:GetName()
+            local n = creatureBtn.GetName and creatureBtn:GetName()
             creature = n and _G[n .. "Creature"] or nil
         end
         if not skinData.ring then
-            local ring = cb:CreateTexture(nil, "OVERLAY", nil, 7)
+            local ring = creatureBtn:CreateTexture(nil, "OVERLAY", nil, 7)
             ring:SetAtlas("UI-Journeys-Delve-Companion-Ring")
             -- 2px outset per side (4px larger than the portrait).
-            local anchor = creature or cb
+            local anchor = creature or creatureBtn
             ring:SetPoint("TOPLEFT", anchor, "TOPLEFT", -2, 2)
             ring:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT", 2, -2)
             skinData.ring = ring
@@ -1819,11 +1819,11 @@ do
 
     local function SkinCreatureButtons()
         for idx = 1, 9 do
-            local cb = _G["EncounterJournalEncounterFrameInfoCreatureButton" .. idx]
-            if not cb then
+            local creatureBtn = _G["EncounterJournalEncounterFrameInfoCreatureButton" .. idx]
+            if not creatureBtn then
                 break
             end
-            RingCreatureFrame(cb)
+            RingCreatureFrame(creatureBtn)
         end
         -- Main creature display: anonymous child of info carrying a CircleMask;
         -- its portrait is the info-named Creature texture.
@@ -1831,13 +1831,13 @@ do
         if details then
             local children = { details:GetChildren() }
             for idx = 1, #children do
-                local ch = children[idx]
-                if ch and ch.CircleMask and not GetFFD(ch).ring then
+                local childFrame = children[idx]
+                if childFrame and childFrame.CircleMask and not GetFFD(childFrame).ring then
                     local creature = _G.EncounterJournalEncounterFrameInfoCreature
-                    if creature and creature.GetParent and creature:GetParent() ~= ch then
+                    if creature and creature.GetParent and creature:GetParent() ~= childFrame then
                         creature = nil
                     end
-                    RingCreatureFrame(ch, creature)
+                    RingCreatureFrame(childFrame, creature)
                 end
             end
         end
@@ -1971,9 +1971,9 @@ do
             if sr.ScrollBar then
                 Skin.ScrollBar(sr.ScrollBar)
             end
-            local cb = _G.EncounterJournalSearchResultsCloseButton or sr.CloseButton
-            if cb then
-                Skin.CloseButton(cb)
+            local creatureBtn = _G.EncounterJournalSearchResultsCloseButton or sr.CloseButton
+            if creatureBtn then
+                Skin.CloseButton(creatureBtn)
             end
         end
         if win.instanceSelect then
@@ -2059,16 +2059,16 @@ do
                 end
                 -- Hero suggestion action button label 2px smaller (target captured once,
                 -- re-asserted since Blizzard re-applies its font object on refresh).
-                local bfs = s1.button and s1.button.GetFontString and s1.button:GetFontString()
-                if bfs then
-                    local filePath, sz, flags = bfs:GetFont()
+                local buttonText = s1.button and s1.button.GetFontString and s1.button:GetFontString()
+                if buttonText then
+                    local filePath, sz, flags = buttonText:GetFont()
                     if filePath and sz then
-                        local bd = GetFFD(bfs)
-                        if not bd.size then
-                            bd.size = sz - 2
+                        local buttonData = GetFFD(buttonText)
+                        if not buttonData.size then
+                            buttonData.size = sz - 2
                         end
-                        if math.abs(sz - bd.size) > 0.01 then
-                            bfs:SetFont(filePath, bd.size, flags)
+                        if math.abs(sz - buttonData.size) > 0.01 then
+                            buttonText:SetFont(filePath, buttonData.size, flags)
                         end
                     end
                 end
@@ -2080,8 +2080,8 @@ do
         -- keeping its vertical spot. Anchored to the WINDOW, not the inset activities
         -- pane (its left edge is not the window's). Retries until laid out.
         local function SeatMonthlyHelp()
-            local ma = win.MonthlyActivitiesFrame
-            local hb = ma and ma.HelpButton
+            local menuArrow = win.MonthlyActivitiesFrame
+            local hb = menuArrow and menuArrow.HelpButton
             if not hb or GetFFD(hb).moved then
                 return
             end
@@ -2138,8 +2138,8 @@ do
                         pcall(scrollBar.ForEachFrame, scrollBar, SkinLootRow)
                         if scrollBar.Update and not GetFFD(scrollBar).rowHook then
                             GetFFD(scrollBar).rowHook = true
-                            hooksecurefunc(scrollBar, "Update", function(box)
-                                pcall(box.ForEachFrame, box, SkinLootRow)
+                            hooksecurefunc(scrollBar, "Update", function(tabBox)
+                                pcall(tabBox.ForEachFrame, tabBox, SkinLootRow)
                             end)
                         end
                     end
@@ -2444,28 +2444,28 @@ do
                 -- leftward). Row frames are PROTECTED (host secure profession spell
                 -- buttons), so combat blocks geometry writes: skip WITHOUT setting
                 -- the one-shot flag, letting the next OOC repaint apply it.
-                local gd = GetFFD(found)
-                if not gd.extended and not InCombatLockdown() then
+                local foundData = GetFFD(found)
+                if not foundData.extended and not InCombatLockdown() then
                     local p, rel, rp, posX, posY = found:GetPoint(1)
                     local wid = found:GetWidth()
                     if p and wid and wid > 0 then
-                        gd.extended = true
+                        foundData.extended = true
                         if p:find("LEFT", 1, true) and not profSet[rel] then
                             found:ClearAllPoints()
                             found:SetPoint(p, rel, rp, (posX or 0) - 30, posY or 0)
                         end
                         found:SetWidth(wid + 30)
                         -- Rects are stale right after re-anchor; let text alignment below measure on the NEXT pass.
-                        gd.skipAlignOnce = true
+                        foundData.skipAlignOnce = true
                     end
                 end
                 -- Primary tiles: big left icon 12px smaller, seated 10px lower
                 -- (one-shot; border lines follow its rect). Secondary: icon 2px smaller.
                 local isPrimary = n:find("Primary", 1, true) ~= nil
-                if found.icon and not gd.iconAdj then
+                if found.icon and not foundData.iconAdj then
                     local iw, ih = found.icon:GetSize()
                     if iw and ih and iw > 12 and ih > 12 then
-                        gd.iconAdj = true
+                        foundData.iconAdj = true
                         local shrink = isPrimary and 12 or 2
                         found.icon:SetSize(iw - shrink, ih - shrink)
                         if isPrimary then
@@ -2503,8 +2503,8 @@ do
                 -- already-seated string is a no-op. Learned primary titles drop 20px;
                 -- unlearned header stays put (else a blank band opens above "Second
                 -- Profession"); skill line rises 20 only when off the bar.
-                if gd.skipAlignOnce then
-                    gd.skipAlignOnce = nil
+                if foundData.skipAlignOnce then
+                    foundData.skipAlignOnce = nil
                 elseif seatOK then
                     local sbL = found.statusBar and found.statusBar.GetLeft and found.statusBar:GetLeft()
                     -- Y target is a gap from the FRAME top, never absolute local-Y:
@@ -2597,7 +2597,7 @@ do
                 -- Tile backdrop: dialog sheet art at half strength, padded past the
                 -- frame so content never crowds the card edges. Top pad stays SMALL,
                 -- else a tall card overlaps the row above and cuts a seam through it.
-                if not gd.bg then
+                if not foundData.bg then
                     local bgTex = found:CreateTexture(nil, "BACKGROUND", nil, -6)
                     bgTex:SetAtlas("Ui-Dialog-New-Background")
                     -- Primary tiles are taller than content: pinched card with bottom
@@ -2608,17 +2608,17 @@ do
                     bgTex:SetPoint("TOPLEFT", found, "TOPLEFT", -16, topY)
                     bgTex:SetPoint("BOTTOMRIGHT", found, "BOTTOMRIGHT", 16, botY)
                     bgTex:SetAlpha(0.5)
-                    gd.bg = bgTex
-                    gd.bgBottomY = botY
+                    foundData.bg = bgTex
+                    foundData.bgBottomY = botY
                 end
                 -- Secondary rows lay rank bar BELOW the frame's rect; drop the card bottom under it once geometry is readable.
-                if gd.bg and not gd.bgFit then
-                    local fb = found.GetBottom and found:GetBottom()
+                if foundData.bg and not foundData.bgFit then
+                    local foundBottom = found.GetBottom and found:GetBottom()
                     local bb = found.statusBar and found.statusBar.GetBottom and found.statusBar:GetBottom()
-                    if fb then
-                        gd.bgFit = true
-                        if bb and bb < fb then
-                            gd.bg:SetPoint("BOTTOMRIGHT", found, "BOTTOMRIGHT", 16, (bb - fb) - 16)
+                    if foundBottom then
+                        foundData.bgFit = true
+                        if bb and bb < foundBottom then
+                            foundData.bg:SetPoint("BOTTOMRIGHT", found, "BOTTOMRIGHT", 16, (bb - foundBottom) - 16)
                         end
                     end
                 end
@@ -2863,17 +2863,17 @@ do
             Skin.White(helpText)
         end
         for _, base in ipairs({ "ArchaeologyFrameSummaryPage", "ArchaeologyFrameCompletedPage" }) do
-            for suffix, ch in pairs({ PrevPageButton = "<", NextPageButton = ">" }) do
+            for suffix, childFrame in pairs({ PrevPageButton = "<", NextPageButton = ">" }) do
                 local progressBar = _G[base .. suffix]
                 if progressBar then
-                    Skin.PageButton(progressBar, ch)
+                    Skin.PageButton(progressBar, childFrame)
                     -- These old buttons repaint arrow art on every state change:
                     -- sweep all non-house art per repaint and clamp the icon's alpha
                     -- against Blizzard's re-raises.
-                    local ic = _G[base .. suffix .. "Icon"]
+                    local importControl = _G[base .. suffix .. "Icon"]
                     local function SweepArrowArt()
-                        if ic and ic.SetAlpha then
-                            ic:SetAlpha(0)
+                        if importControl and importControl.SetAlpha then
+                            importControl:SetAlpha(0)
                         end
                         -- Spare OUR pieces by identity: the arrow path resolves to a fileID later, so name matching is unreliable.
                         local own = GetFFD(progressBar)
@@ -2894,9 +2894,9 @@ do
                         end
                     end
                     SweepArrowArt()
-                    local pd = GetFFD(progressBar)
-                    if not pd.arrowHooks then
-                        pd.arrowHooks = true
+                    local progressData = GetFFD(progressBar)
+                    if not progressData.arrowHooks then
+                        progressData.arrowHooks = true
                         local function Deferred()
                             if C_Timer then
                                 C_Timer.After(0, SweepArrowArt)
@@ -2908,15 +2908,15 @@ do
                         progressBar:HookScript("OnEnable", Deferred)
                         progressBar:HookScript("OnDisable", Deferred)
                         progressBar:HookScript("OnShow", Deferred)
-                        if ic and ic.SetAlpha then
-                            hooksecurefunc(ic, "SetAlpha", function(_, a)
-                                if pd.inIcAlpha then
+                        if importControl and importControl.SetAlpha then
+                            hooksecurefunc(importControl, "SetAlpha", function(_, a)
+                                if progressData.inIcAlpha then
                                     return
                                 end
                                 if a and not issecretvalue(a) and a > 0 then
-                                    pd.inIcAlpha = true
-                                    ic:SetAlpha(0)
-                                    pd.inIcAlpha = false
+                                    progressData.inIcAlpha = true
+                                    importControl:SetAlpha(0)
+                                    progressData.inIcAlpha = false
                                 end
                             end)
                         end
@@ -2996,16 +2996,16 @@ end
 -- Custom themed checkbox: Blizzard's atlas check art on these templates resists
 -- the generic checkbox skin, so every texture region is cleared and a 14px
 -- bordered box with an accent tick draws instead, whitening 10% on hover/check.
-local function SkinGuildCheck(cb)
-    if not cb or cb:IsForbidden() then
+local function SkinGuildCheck(creatureBtn)
+    if not creatureBtn or creatureBtn:IsForbidden() then
         return
     end
-    local skinData = GetFFD(cb)
+    local skinData = GetFFD(creatureBtn)
     if skinData.custom then
         return
     end
     skinData.custom = true
-    local regionList = { cb:GetRegions() }
+    local regionList = { creatureBtn:GetRegions() }
     for idx = 1, #regionList do
         local region = regionList[idx]
         if region and region.IsObjectType and region:IsObjectType("Texture") and region.SetTexture then
@@ -3019,14 +3019,14 @@ local function SkinGuildCheck(cb)
         "GetCheckedTexture",
         "GetDisabledCheckedTexture",
     }) do
-        local t = cb[g] and cb[g](cb)
+        local t = creatureBtn[g] and creatureBtn[g](creatureBtn)
         if t and t.SetTexture then
             t:SetTexture("")
         end
     end
-    local boxF = CreateFrame("Frame", nil, cb)
+    local boxF = CreateFrame("Frame", nil, creatureBtn)
     boxF:SetSize(14, 14)
-    boxF:SetPoint("LEFT", cb, "LEFT", 4, 0)
+    boxF:SetPoint("LEFT", creatureBtn, "LEFT", 4, 0)
     local fillTex = SolidTex(boxF, "BACKGROUND", 0.02, 0.02, 0.02, 1)
     fillTex:SetAllPoints(boxF)
     Skin.AddBorder(boxF, 0.25, 0.25, 0.25, 1)
@@ -3040,22 +3040,22 @@ local function SkinGuildCheck(cb)
     washTex:Hide()
     local hovering = false
     local function updState()
-        local checked = cb:GetChecked() and true or false
+        local checked = creatureBtn:GetChecked() and true or false
         tick:SetShown(checked)
         washTex:SetShown(hovering or checked)
     end
-    cb:HookScript("OnEnter", function()
+    creatureBtn:HookScript("OnEnter", function()
         hovering = true
         updState()
     end)
-    cb:HookScript("OnLeave", function()
+    creatureBtn:HookScript("OnLeave", function()
         hovering = false
         updState()
     end)
-    cb:HookScript("OnClick", updState)
-    hooksecurefunc(cb, "SetChecked", updState)
+    creatureBtn:HookScript("OnClick", updState)
+    hooksecurefunc(creatureBtn, "SetChecked", updState)
     updState()
-    local labelFS = cb.Text or (cb.GetFontString and cb:GetFontString())
+    local labelFS = creatureBtn.Text or (creatureBtn.GetFontString and creatureBtn:GetFontString())
     if labelFS then
         Skin.White(labelFS)
     end
@@ -3281,12 +3281,12 @@ do
         if skinData.padLeft then
             return
         end
-        local np = editField:GetNumPoints() or 0
-        if np == 0 then
+        local pointCount = editField:GetNumPoints() or 0
+        if pointCount == 0 then
             return
         end
         local pts, success, hasLeft = {}, true, false
-        for idx = 1, np do
+        for idx = 1, pointCount do
             local p, rel, rp, posX, posY = editField:GetPoint(idx)
             if not p then
                 success = false
@@ -3419,29 +3419,29 @@ do
             }
             hooksecurefunc(
                 "StaticPopupSpecial_Show",
-                Skin.WindowCallback("guild", function(dlg)
-                    if type(dlg) ~= "table" or not dlg.GetName then
+                Skin.WindowCallback("guild", function(guildDialog)
+                    if type(guildDialog) ~= "table" or not guildDialog.GetName then
                         return
                     end
-                    local success, nm2 = pcall(dlg.GetName, dlg)
+                    local success, nm2 = pcall(guildDialog.GetName, guildDialog)
                     if not success or not nm2 or not wanted[nm2] then
                         return
                     end
-                    SkinGuildPopup(dlg)
-                    local d2 = GetFFD(dlg)
-                    if dlg.BG and not d2.bgKilled then
+                    SkinGuildPopup(guildDialog)
+                    local d2 = GetFFD(guildDialog)
+                    if guildDialog.BG and not d2.bgKilled then
                         d2.bgKilled = true
-                        pcall(dlg.BG.SetAlpha, dlg.BG, 0)
+                        pcall(guildDialog.BG.SetAlpha, guildDialog.BG, 0)
                     end
                     for _, keyName in ipairs({ "InviteLinkBox", "NameEdit", "ShortNameEdit" }) do
-                        if dlg[keyName] then
-                            PopupEditBox(dlg[keyName])
+                        if guildDialog[keyName] then
+                            PopupEditBox(guildDialog[keyName])
                         end
                     end
-                    if dlg.JoinButton then
-                        Skin.Button(dlg.JoinButton)
-                        local jfs = dlg.JoinButton.Text
-                            or (dlg.JoinButton.GetFontString and dlg.JoinButton:GetFontString())
+                    if guildDialog.JoinButton then
+                        Skin.Button(guildDialog.JoinButton)
+                        local jfs = guildDialog.JoinButton.Text
+                            or (guildDialog.JoinButton.GetFontString and guildDialog.JoinButton:GetFontString())
                         if jfs then
                             Skin.White(jfs)
                         end
@@ -3466,9 +3466,9 @@ do
                 local button = csd[keyName]
                 if button and button.GetObjectType and button:GetObjectType() == "Button" then
                     Skin.Button(button)
-                    local bfs = button.GetFontString and button:GetFontString()
-                    if bfs then
-                        Skin.White(bfs)
+                    local buttonText = button.GetFontString and button:GetFontString()
+                    if buttonText then
+                        Skin.White(buttonText)
                     end
                 end
             end
@@ -3503,9 +3503,9 @@ do
                 local button = regionData[keyName]
                 if button and button.GetObjectType and button:GetObjectType() == "Button" then
                     Skin.Button(button)
-                    local bfs = button.GetFontString and button:GetFontString()
-                    if bfs then
-                        Skin.White(bfs)
+                    local buttonText = button.GetFontString and button:GetFontString()
+                    if buttonText then
+                        Skin.White(buttonText)
                     end
                 end
             end
@@ -3534,9 +3534,9 @@ do
                 local button = esd[keyName]
                 if button and button.GetObjectType and button:GetObjectType() == "Button" then
                     Skin.Button(button)
-                    local bfs = button.GetFontString and button:GetFontString()
-                    if bfs then
-                        Skin.White(bfs)
+                    local buttonText = button.GetFontString and button:GetFontString()
+                    if buttonText then
+                        Skin.White(buttonText)
                     end
                 end
             end
@@ -3633,18 +3633,18 @@ do
                 local glyphTex = tabBtn.Icon
                 local titleData = GetFFD(tabBtn)
                 if glyphTex and not titleData.box then
-                    local box = CreateFrame("Frame", nil, tabBtn)
-                    box:SetPoint("TOPLEFT", glyphTex, "TOPLEFT", -2, 2)
-                    box:SetPoint("BOTTOMRIGHT", glyphTex, "BOTTOMRIGHT", 2, -2)
-                    box:SetFrameLevel(math.max(0, tabBtn:GetFrameLevel() - 2))
-                    local fillTex = SolidTex(box, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
-                    fillTex:SetAllPoints(box)
-                    Skin.AddBorder(box, 0, 0, 0, 1)
-                    titleData.box = box
+                    local tabBox = CreateFrame("Frame", nil, tabBtn)
+                    tabBox:SetPoint("TOPLEFT", glyphTex, "TOPLEFT", -2, 2)
+                    tabBox:SetPoint("BOTTOMRIGHT", glyphTex, "BOTTOMRIGHT", 2, -2)
+                    tabBox:SetFrameLevel(math.max(0, tabBtn:GetFrameLevel() - 2))
+                    local fillTex = SolidTex(tabBox, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
+                    fillTex:SetAllPoints(tabBox)
+                    Skin.AddBorder(tabBox, 0, 0, 0, 1)
+                    titleData.box = tabBox
                     titleData.bg = fillTex
                     local hoverTex = SolidTex(tabBtn, "HIGHLIGHT", 1, 1, 1, 0.1)
-                    hoverTex:SetPoint("TOPLEFT", box, "TOPLEFT", 0, 0)
-                    hoverTex:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", 0, 0)
+                    hoverTex:SetPoint("TOPLEFT", tabBox, "TOPLEFT", 0, 0)
+                    hoverTex:SetPoint("BOTTOMRIGHT", tabBox, "BOTTOMRIGHT", 0, 0)
                     titleData.hover = hoverTex
                 end
                 -- Tighter icon zoom than the standard crop, re-applied per pass:
@@ -3699,19 +3699,19 @@ do
                     end
                 end
             end
-            local ol = finder and finder.OptionsList
-            if ol and ol.SearchBox and ol.Search then
-                local od = GetFFD(ol)
-                if not od.searchFit then
-                    od.searchFit = true
-                    ol.SearchBox:SetSize(118, 20)
-                    ol.Search:SetSize(120, 22)
+            local optionsList = finder and finder.OptionsList
+            if optionsList and optionsList.SearchBox and optionsList.Search then
+                local optionsData = GetFFD(optionsList)
+                if not optionsData.searchFit then
+                    optionsData.searchFit = true
+                    optionsList.SearchBox:SetSize(118, 20)
+                    optionsList.Search:SetSize(120, 22)
                 end
                 -- Blizzard's options layout re-anchors these controls after us, so
                 -- one-shot moves never show: both PIN their seats via synchronous
                 -- SetPoint post-hooks. Box = Blizzard's base shifted left/up
                 -- (captured point set); button = stacked under the box.
-                local sbx2 = ol.SearchBox
+                local sbx2 = optionsList.SearchBox
                 local sd2 = GetFFD(sbx2)
                 if not sd2.pinHooked then
                     sd2.pinHooked = true
@@ -3759,7 +3759,7 @@ do
                         end
                     end)
                 end
-                local sBtn = ol.Search
+                local sBtn = optionsList.Search
                 local bd2 = GetFFD(sBtn)
                 if not bd2.pinHooked then
                     bd2.pinHooked = true
@@ -3779,20 +3779,20 @@ do
                 end
                 -- Filter/sort dropdowns carry finder-specific keys that the
                 -- generic controls sweep does not match.
-                if ol.ClubFilterDropdown then
-                    Skin.Dropdown(ol.ClubFilterDropdown)
+                if optionsList.ClubFilterDropdown then
+                    Skin.Dropdown(optionsList.ClubFilterDropdown)
                 end
-                if ol.SortByDropdown then
-                    Skin.Dropdown(ol.SortByDropdown)
+                if optionsList.SortByDropdown then
+                    Skin.Dropdown(optionsList.SortByDropdown)
                 end
-                if ol.ClubSizeDropdown then
-                    Skin.Dropdown(ol.ClubSizeDropdown)
+                if optionsList.ClubSizeDropdown then
+                    Skin.Dropdown(optionsList.ClubSizeDropdown)
                 end
-                Skin.EditBox(ol.SearchBox)
-                Skin.Button(ol.Search)
-                local bfs = ol.Search.GetFontString and ol.Search:GetFontString()
-                if bfs then
-                    Skin.White(bfs)
+                Skin.EditBox(optionsList.SearchBox)
+                Skin.Button(optionsList.Search)
+                local buttonText = optionsList.Search.GetFontString and optionsList.Search:GetFontString()
+                if buttonText then
+                    Skin.White(buttonText)
                 end
             end
             -- These views' top controls run 20px deeper than the chat view's band:
@@ -4052,9 +4052,9 @@ do
                 local button = tkf[keyName]
                 if button then
                     Skin.Button(button)
-                    local bfs = button.GetFontString and button:GetFontString()
-                    if bfs then
-                        Skin.White(bfs)
+                    local buttonText = button.GetFontString and button:GetFontString()
+                    if buttonText then
+                        Skin.White(buttonText)
                     end
                 end
             end
@@ -4125,23 +4125,23 @@ do
         -- whisper -> ADDON_ACTION_FORBIDDEN) and the row tooltip throws on the
         -- secret member fields (C_CreatureInfo.GetRaceInfo(memberInfo.race)).
 
-        local mm = win.MaximizeMinimizeFrame
-        if mm then
-            CaretGlyph(mm.MaximizeButton, true)
-            CaretGlyph(mm.MinimizeButton, false)
+        local maxMinBtn = win.MaximizeMinimizeFrame
+        if maxMinBtn then
+            CaretGlyph(maxMinBtn.MaximizeButton, true)
+            CaretGlyph(maxMinBtn.MinimizeButton, false)
         end
         -- Zone bands belong to the full layout only (the minimized view has no
         -- sidebar column or top/bottom bars): hide the band host while minimized.
         -- The Maximize button shows only when minimized, so it is the state probe.
         if gzd.zoneHost then
             local function UpdateZoneBands()
-                local minimized = mm and mm.MaximizeButton and mm.MaximizeButton:IsShown()
+                local minimized = maxMinBtn and maxMinBtn.MaximizeButton and maxMinBtn.MaximizeButton:IsShown()
                 gzd.zoneHost:SetShown(not minimized)
             end
             UpdateZoneBands()
-            if mm and not gzd.mmHook then
+            if maxMinBtn and not gzd.mmHook then
                 gzd.mmHook = true
-                for _, button in ipairs({ mm.MaximizeButton, mm.MinimizeButton }) do
+                for _, button in ipairs({ maxMinBtn.MaximizeButton, maxMinBtn.MinimizeButton }) do
                     if button and button.HookScript then
                         button:HookScript("OnClick", function()
                             if C_Timer then
@@ -4160,17 +4160,17 @@ do
         -- (an immediate re-apply compounds across multi-point sets). Each pass
         -- reads the just-set stock, so it never stacks.
         local editField = win.ChatEditBox
-        if editField and mm and not GetFFD(editField).raiseHook then
+        if editField and maxMinBtn and not GetFFD(editField).raiseHook then
             GetFFD(editField).raiseHook = true
             local applying, pending = false, false
             local function ApplyOffset()
                 pending = false
-                if not (mm.MaximizeButton and mm.MaximizeButton:IsShown()) then
+                if not (maxMinBtn.MaximizeButton and maxMinBtn.MaximizeButton:IsShown()) then
                     return
                 end -- maximized: leave stock
-                local np = editField:GetNumPoints() or 0
-                local pts, success = {}, np > 0
-                for idx = 1, np do
+                local pointCount = editField:GetNumPoints() or 0
+                local pts, success = {}, pointCount > 0
+                for idx = 1, pointCount do
                     local p, rel, rp, posX, posY = editField:GetPoint(idx)
                     if not p then
                         success = false
@@ -4280,8 +4280,8 @@ do
                         pcall(sbx3.ForEachFrame, sbx3, SkinBenefitRow)
                         if sbx3.Update and not GetFFD(sbx3).rowHook then
                             GetFFD(sbx3).rowHook = true
-                            hooksecurefunc(sbx3, "Update", function(box)
-                                pcall(box.ForEachFrame, box, SkinBenefitRow)
+                            hooksecurefunc(sbx3, "Update", function(tabBox)
+                                pcall(tabBox.ForEachFrame, tabBox, SkinBenefitRow)
                             end)
                         end
                     end
@@ -4372,11 +4372,11 @@ do
             local lfs = logBtn.GetFontString and logBtn:GetFontString()
             if lfs then
                 Skin.White(lfs)
-                local ld = GetFFD(lfs)
-                if not ld.shrunk then
+                local labelData = GetFFD(lfs)
+                if not labelData.shrunk then
                     local pth, sz, fl = lfs:GetFont()
                     if pth and sz then
-                        ld.shrunk = true
+                        labelData.shrunk = true
                         lfs:SetFont(pth, sz - 2, fl)
                     end
                 end
@@ -4385,12 +4385,12 @@ do
         -- Guild log popup (old-style dialog: named Bg/corner pieces, corner X
         -- "<name>Close", bottom text button "<name>CloseButton", old scrollbar).
         local function SkinGuildLog()
-            local gl = _G.CommunitiesGuildLogFrame
-            if not gl or type(gl) ~= "table" or GetFFD(gl).logSkinned then
+            local guildLog = _G.CommunitiesGuildLogFrame
+            if not guildLog or type(guildLog) ~= "table" or GetFFD(guildLog).logSkinned then
                 return
             end
-            GetFFD(gl).logSkinned = true
-            local n = (gl.GetName and gl:GetName()) or "CommunitiesGuildLogFrame"
+            GetFFD(guildLog).logSkinned = true
+            local n = (guildLog.GetName and guildLog:GetName()) or "CommunitiesGuildLogFrame"
             -- TWO buttons can carry the CloseButton name (corner X + bottom text
             -- button; the global resolves to only one). Classify every button by
             -- label (text -> house button, blank -> house X) BEFORE the popup pass,
@@ -4404,12 +4404,12 @@ do
                     return
                 end
                 cd.closeTreated = true
-                local bfs = cand.GetFontString and cand:GetFontString()
-                local btxt = bfs and bfs.GetText and bfs:GetText()
+                local buttonText = cand.GetFontString and cand:GetFontString()
+                local btxt = buttonText and buttonText.GetText and buttonText:GetText()
                 if btxt and btxt ~= "" then
                     Skin.Button(cand)
-                    if bfs then
-                        Skin.White(bfs)
+                    if buttonText then
+                        Skin.White(buttonText)
                     end
                     -- Sentinel on CloseButton's guard key: blocks any later
                     -- WSkin.CloseButton on this frame. No hover hooks read it.
@@ -4420,25 +4420,25 @@ do
                     Skin.CloseButton(cand)
                 end
             end
-            TreatClose(gl.Close)
-            TreatClose(gl.CloseButton)
+            TreatClose(guildLog.Close)
+            TreatClose(guildLog.CloseButton)
             TreatClose(_G[n .. "Close"])
             TreatClose(_G[n .. "CloseButton"])
-            local children = { gl:GetChildren() }
+            local children = { guildLog:GetChildren() }
             for idx = 1, #children do
-                local ch = children[idx]
+                local childFrame = children[idx]
                 if
-                    ch
-                    and not Skin.IsForeignFrame(ch, gl)
-                    and ch.GetObjectType
-                    and ch:GetObjectType() == "Button"
+                    childFrame
+                    and not Skin.IsForeignFrame(childFrame, guildLog)
+                    and childFrame.GetObjectType
+                    and childFrame:GetObjectType() == "Button"
                 then
-                    TreatClose(ch)
+                    TreatClose(childFrame)
                 end
             end
-            SkinGuildPopup(gl)
+            SkinGuildPopup(guildLog)
             -- Inner container carries its own NineSlice chrome.
-            local cont = gl.Container
+            local cont = guildLog.Container
             if cont then
                 Skin.FadeRegions(cont)
                 if cont.NineSlice then
@@ -4446,12 +4446,12 @@ do
                 end
                 Skin.Register(cont, true)
             end
-            local tt = gl.Title or gl.TitleText or _G[n .. "Title"] or _G[n .. "TitleText"]
+            local tt = guildLog.Title or guildLog.TitleText or _G[n .. "Title"] or _G[n .. "TitleText"]
             if tt and tt.SetTextColor then
                 Skin.Font(tt)
                 Skin.White(tt)
             end
-            Skin.ScrollBarsIn(gl)
+            Skin.ScrollBarsIn(guildLog)
             -- Old-style scrollbar: arrows faded, thumb -> 4px house strip.
             local scrollBar = _G[n .. "ScrollFrameScrollBar"]
             if scrollBar and not GetFFD(scrollBar).slim then
@@ -4511,11 +4511,11 @@ do
             end
             for fsr in pairs(labels) do
                 Skin.White(fsr)
-                local ld = GetFFD(fsr)
-                if not ld.dropped then
-                    local np = fsr:GetNumPoints() or 0
-                    local pts, success = {}, np > 0
-                    for idx = 1, np do
+                local labelData = GetFFD(fsr)
+                if not labelData.dropped then
+                    local pointCount = fsr:GetNumPoints() or 0
+                    local pts, success = {}, pointCount > 0
+                    for idx = 1, pointCount do
                         local p, rel, rp, posX, posY = fsr:GetPoint(idx)
                         if not p then
                             success = false
@@ -4524,7 +4524,7 @@ do
                         pts[idx] = { p, rel, rp, posX or 0, (posY or 0) - 2 }
                     end
                     if success then
-                        ld.dropped = true
+                        labelData.dropped = true
                         fsr:ClearAllPoints()
                         for idx = 1, #pts do
                             local t = pts[idx]
@@ -4828,14 +4828,14 @@ do
                     Skin.White(ht)
                     CalReseat(ht, -5)
                 end
-                local cb = _G.CalendarViewHolidayCloseButton
-                if cb then
-                    Skin.CloseButton(cb)
+                local creatureBtn = _G.CalendarViewHolidayCloseButton
+                if creatureBtn then
+                    Skin.CloseButton(creatureBtn)
                     -- Nudge the house X glyph up 6px (one-shot).
-                    local xd = GetFFD(cb)
-                    if xd.x and not xd.xNudged then
-                        xd.xNudged = true
-                        xd.x:SetPoint("CENTER", -2, 6)
+                    local creatureData = GetFFD(creatureBtn)
+                    if creatureData.x and not creatureData.xNudged then
+                        creatureData.xNudged = true
+                        creatureData.x:SetPoint("CENTER", -2, 6)
                     end
                 end
             end
@@ -4883,10 +4883,10 @@ do
                 local cceCB = _G.CalendarCreateEventCloseButton
                 if cceCB then
                     Skin.CloseButton(cceCB)
-                    local xd = GetFFD(cceCB)
-                    if xd.x and not xd.xNudged then
-                        xd.xNudged = true
-                        xd.x:SetPoint("CENTER", -2, 6)
+                    local creatureData = GetFFD(cceCB)
+                    if creatureData.x and not creatureData.xNudged then
+                        creatureData.xNudged = true
+                        creatureData.x:SetPoint("CENTER", -2, 6)
                     end
                 end
                 -- Action buttons + lock checkbox.
@@ -4927,9 +4927,9 @@ do
                 -- chain off it, so nudging the container right 3px moves the whole column (one-shot).
                 local ccc = _G.CalendarClassButtonContainer
                 if ccc and not GetFFD(ccc).nudgedRight then
-                    local np = ccc:GetNumPoints() or 0
-                    local pts, success = {}, np > 0
-                    for idx = 1, np do
+                    local pointCount = ccc:GetNumPoints() or 0
+                    local pts, success = {}, pointCount > 0
+                    for idx = 1, pointCount do
                         local p, rel, rp, posX, posY = ccc:GetPoint(idx)
                         if not p then
                             success = false
@@ -5279,20 +5279,20 @@ do
                 LockAchText(row.Shield.Points, nil)
             end
             if row.DisplayObjectives then
-                hooksecurefunc(row, "DisplayObjectives", function(rw)
+                hooksecurefunc(row, "DisplayObjectives", function(objectiveRow)
                     -- Expand rebuilds the row art: re-kill it and re-color the title
                     -- (completed state can flip on expand); font/color locks hold the
                     -- rest. Immediate + next-frame catches a deferred re-show.
-                    local regionData = GetFFD(rw)
-                    KillAchRowArt(rw, regionData)
-                    AchTitleColor(rw)
+                    local regionData = GetFFD(objectiveRow)
+                    KillAchRowArt(objectiveRow, regionData)
+                    AchTitleColor(objectiveRow)
                     if C_Timer then
                         C_Timer.After(0, function()
-                            KillAchRowArt(rw, regionData)
-                            AchTitleColor(rw)
+                            KillAchRowArt(objectiveRow, regionData)
+                            AchTitleColor(objectiveRow)
                         end)
                     end
-                    local success, of = pcall(rw.GetObjectiveFrame, rw)
+                    local success, of = pcall(objectiveRow.GetObjectiveFrame, objectiveRow)
                     if success and of and of.progressBars then
                         for _, button in pairs(of.progressBars) do
                             AchAccentBar(button)
@@ -5495,8 +5495,8 @@ do
                 return
             end
             if Skin.GetStyle("achievements") == "modern" then
-                local _, _, _, ma = Skin.GetModernBG()
-                fillTex:SetColorTexture(0.0196, 0.0196, 0.0196, ma or 1)
+                local _, _, _, menuArrow = Skin.GetModernBG()
+                fillTex:SetColorTexture(0.0196, 0.0196, 0.0196, menuArrow or 1)
             else
                 fillTex:SetColorTexture(0.0275, 0.0235, 0.0157, 1)
             end
@@ -5565,15 +5565,15 @@ do
         SweepInsetChildren()
 
         -- Search box: tucked into the top bar's right side, filter dropdown left.
-        local sbx = win.SearchBox
-        if sbx then
-            Skin.EditBox(sbx)
-            local partData = GetFFD(sbx)
+        local searchField = win.SearchBox
+        if searchField then
+            Skin.EditBox(searchField)
+            local partData = GetFFD(searchField)
             if not partData.moved then
                 partData.moved = true
-                sbx:ClearAllPoints()
-                sbx:SetPoint("TOPRIGHT", win, "TOPRIGHT", -28, -3)
-                sbx:SetSize(150, 19)
+                searchField:ClearAllPoints()
+                searchField:SetPoint("TOPRIGHT", win, "TOPRIGHT", -28, -3)
+                searchField:SetSize(150, 19)
             end
         end
         local filt = win.FilterDropdown or _G.AchievementFrameFilterDropdown
@@ -5616,8 +5616,8 @@ do
                 pcall(rb.ForEachFrame, rb, SkinResultRow)
                 if rb.Update and not GetFFD(rb).rowHook then
                     GetFFD(rb).rowHook = true
-                    hooksecurefunc(rb, "Update", function(box)
-                        pcall(box.ForEachFrame, box, SkinResultRow)
+                    hooksecurefunc(rb, "Update", function(tabBox)
+                        pcall(tabBox.ForEachFrame, tabBox, SkinResultRow)
                     end)
                 end
             end
@@ -5676,8 +5676,8 @@ do
             pcall(scrollBar.ForEachFrame, scrollBar, func)
             if scrollBar.Update and not GetFFD(scrollBar).rowHook then
                 GetFFD(scrollBar).rowHook = true
-                hooksecurefunc(scrollBar, "Update", function(box)
-                    pcall(box.ForEachFrame, box, func)
+                hooksecurefunc(scrollBar, "Update", function(tabBox)
+                    pcall(tabBox.ForEachFrame, tabBox, func)
                 end)
             end
         end
@@ -5868,12 +5868,12 @@ do
                 if ac.ScrollBar then
                     Skin.ScrollBar(ac.ScrollBar)
                 end
-                local box = ac.ScrollBox
-                if box and box.ForEachFrame then
-                    pcall(box.ForEachFrame, box, SkinCompareRow)
-                    if box.Update and not GetFFD(box).rowHook then
-                        GetFFD(box).rowHook = true
-                        hooksecurefunc(box, "Update", function(b2)
+                local tabBox = ac.ScrollBox
+                if tabBox and tabBox.ForEachFrame then
+                    pcall(tabBox.ForEachFrame, tabBox, SkinCompareRow)
+                    if tabBox.Update and not GetFFD(tabBox).rowHook then
+                        GetFFD(tabBox).rowHook = true
+                        hooksecurefunc(tabBox, "Update", function(b2)
                             pcall(b2.ForEachFrame, b2, SkinCompareRow)
                         end)
                     end
@@ -5884,12 +5884,12 @@ do
                 if sc.ScrollBar then
                     Skin.ScrollBar(sc.ScrollBar)
                 end
-                local box = sc.ScrollBox
-                if box and box.ForEachFrame then
-                    pcall(box.ForEachFrame, box, SkinStatRow)
-                    if box.Update and not GetFFD(box).rowHook then
-                        GetFFD(box).rowHook = true
-                        hooksecurefunc(box, "Update", function(b2)
+                local tabBox = sc.ScrollBox
+                if tabBox and tabBox.ForEachFrame then
+                    pcall(tabBox.ForEachFrame, tabBox, SkinStatRow)
+                    if tabBox.Update and not GetFFD(tabBox).rowHook then
+                        GetFFD(tabBox).rowHook = true
+                        hooksecurefunc(tabBox, "Update", function(b2)
                             pcall(b2.ForEachFrame, b2, SkinStatRow)
                         end)
                     end
@@ -5984,21 +5984,21 @@ end
 -- block, box 4px smaller (13px arrow re-centers), 3px left plus any per-button
 -- nudge, native "Prev"/"Next" label hidden. That label is a font-string REGION,
 -- not the designated GetFontString, so every font string fades; size/shift is one-shot, label fade re-runs per pass.
-local function SkinLabeledPageButton(btnFrame, ch, extraX)
+local function SkinLabeledPageButton(btnFrame, childFrame, extraX)
     if not btnFrame then
         return
     end
-    Skin.PageButton(btnFrame, ch, 13)
-    local pd = GetFFD(btnFrame)
-    if not pd.adjusted then
-        pd.adjusted = true
+    Skin.PageButton(btnFrame, childFrame, 13)
+    local progressData = GetFFD(btnFrame)
+    if not progressData.adjusted then
+        progressData.adjusted = true
         local wid, hgt = btnFrame:GetSize()
         if wid and hgt and wid > 4 and hgt > 4 then
             btnFrame:SetSize(wid - 4, hgt - 4)
         end
-        local np = btnFrame:GetNumPoints() or 0
-        local pts, success = {}, np > 0
-        for idx = 1, np do
+        local pointCount = btnFrame:GetNumPoints() or 0
+        local pts, success = {}, pointCount > 0
+        for idx = 1, pointCount do
             local p, rel, rp, posX, posY = btnFrame:GetPoint(idx)
             if not p then
                 success = false
@@ -6022,9 +6022,9 @@ local function SkinLabeledPageButton(btnFrame, ch, extraX)
         local region = regionList[idx]
         if
             region
-            and region ~= pd.arrow
-            and region ~= pd.bg
-            and region ~= pd.hover
+            and region ~= progressData.arrow
+            and region ~= progressData.bg
+            and region ~= progressData.hover
             and region.IsObjectType
             and (region:IsObjectType("FontString") or region:IsObjectType("Texture"))
         then
@@ -6318,9 +6318,9 @@ do
         -- MailItem1 is the chain root (2-7 anchor below it): lifting it lifts the whole inbox list. One-shot.
         local m1 = _G.MailItem1
         if m1 and not GetFFD(m1).raised then
-            local np = m1:GetNumPoints() or 0
-            local pts, success = {}, np > 0
-            for idx = 1, np do
+            local pointCount = m1:GetNumPoints() or 0
+            local pts, success = {}, pointCount > 0
+            for idx = 1, pointCount do
                 local p, rel, rp, posX, posY = m1:GetPoint(idx)
                 if not p then
                     success = false
@@ -6765,14 +6765,14 @@ do
             end
             -- Old-style scrollbar -> slim house strip (arrow buttons dark),
             -- seated 15px right of Blizzard's spot.
-            local sbr = _G.ItemSocketingScrollFrameScrollBar or (sf2 and sf2.ScrollBar)
-            if sbr and not GetFFD(sbr).slim then
-                GetFFD(sbr).slim = true
-                local numPts = sbr:GetNumPoints()
+            local socketScrollBar = _G.ItemSocketingScrollFrameScrollBar or (sf2 and sf2.ScrollBar)
+            if socketScrollBar and not GetFFD(socketScrollBar).slim then
+                GetFFD(socketScrollBar).slim = true
+                local numPts = socketScrollBar:GetNumPoints()
                 if numPts and numPts > 0 then
                     local pts, success = {}, true
                     for idx = 1, numPts do
-                        local p, rel, rp, posX, posY = sbr:GetPoint(idx)
+                        local p, rel, rp, posX, posY = socketScrollBar:GetPoint(idx)
                         if not p then
                             success = false
                             break
@@ -6780,17 +6780,17 @@ do
                         pts[idx] = { p, rel, rp, (posX or 0) + 15, posY or 0 }
                     end
                     if success then
-                        sbr:ClearAllPoints()
+                        socketScrollBar:ClearAllPoints()
                         for idx = 1, #pts do
                             local t = pts[idx]
-                            sbr:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                            socketScrollBar:SetPoint(t[1], t[2], t[3], t[4], t[5])
                         end
                     end
                 end
-                local sbrName = sbr.GetName and sbr:GetName() or ""
+                local sbrName = socketScrollBar.GetName and socketScrollBar:GetName() or ""
                 for _, button in ipairs({
-                    sbr.ScrollUpButton or _G[sbrName .. "ScrollUpButton"],
-                    sbr.ScrollDownButton or _G[sbrName .. "ScrollDownButton"],
+                    socketScrollBar.ScrollUpButton or _G[sbrName .. "ScrollUpButton"],
+                    socketScrollBar.ScrollDownButton or _G[sbrName .. "ScrollDownButton"],
                 }) do
                     if button then
                         for _, g in ipairs({
@@ -6806,7 +6806,7 @@ do
                         end
                     end
                 end
-                local thumb = sbr.GetThumbTexture and sbr:GetThumbTexture()
+                local thumb = socketScrollBar.GetThumbTexture and socketScrollBar:GetThumbTexture()
                 if thumb then
                     thumb:SetTexture("Interface\\Buttons\\WHITE8X8")
                     thumb:SetVertexColor(1, 1, 1, 0.3)
@@ -6962,12 +6962,12 @@ do
         -- glyph off the state it painted; per pass so the strip survives pooled-row repaints.
         local tcb = childFrame.ToggleCollapseButton
         if tcb then
-            local bd = GetFFD(tcb)
-            if not bd.glyph then
+            local buttonData = GetFFD(tcb)
+            if not buttonData.glyph then
                 local glyphTex = tcb:CreateTexture(nil, "OVERLAY")
                 glyphTex:SetSize(16, 16)
                 glyphTex:SetPoint("CENTER", tcb, "CENTER", 0, 0)
-                bd.glyph = glyphTex
+                buttonData.glyph = glyphTex
                 -- Stock button is a tiny click target: pad the hit rect.
                 tcb:SetHitRectInsets(-6, -6, -6, -6)
                 local function classify(a)
@@ -7027,7 +7027,7 @@ do
                     glyphTex:SetDesaturated(true)
                     glyphTex:SetVertexColor(1, 1, 1, tcb:IsMouseOver() and 1 or 0.75)
                 end
-                bd.repaint = repaint
+                buttonData.repaint = repaint
                 if tcb.RefreshIcon then
                     hooksecurefunc(tcb, "RefreshIcon", repaint)
                 end
@@ -7040,7 +7040,7 @@ do
                 end)
                 repaint()
             else
-                bd.repaint()
+                buttonData.repaint()
             end
         end
         -- Rep-style header rows carry the boxed +/- directly in the Right texture
@@ -7131,18 +7131,18 @@ do
         end
     end
 
-    local function HookRCScrollBox(box, isCurrency)
-        if not box or not box.ForEachFrame then
+    local function HookRCScrollBox(tabBox, isCurrency)
+        if not tabBox or not tabBox.ForEachFrame then
             return
         end
         local skin = function(row)
             SkinRCRow(row, isCurrency)
         end
-        pcall(box.ForEachFrame, box, skin)
-        local skinData = GetFFD(box)
-        if box.Update and not skinData.rowHook then
+        pcall(tabBox.ForEachFrame, tabBox, skin)
+        local skinData = GetFFD(tabBox)
+        if tabBox.Update and not skinData.rowHook then
             skinData.rowHook = true
-            hooksecurefunc(box, "Update", function(button)
+            hooksecurefunc(tabBox, "Update", function(button)
                 pcall(button.ForEachFrame, button, skin)
             end)
         end
@@ -7169,23 +7169,23 @@ do
             end
             Skin.ScrollBarsIn(rep)
             HookRCScrollBox(rep.ScrollBox)
-            local det = rep.ReputationDetailFrame
-            if det then
-                SkinGuildPopup(det)
+            local repDetail = rep.ReputationDetailFrame
+            if repDetail then
+                SkinGuildPopup(repDetail)
                 for _, keyName in ipairs({
                     "AtWarCheckbox",
                     "MakeInactiveCheckbox",
                     "WatchFactionCheckbox",
                 }) do
-                    if det[keyName] then
-                        SkinGuildCheck(det[keyName])
+                    if repDetail[keyName] then
+                        SkinGuildCheck(repDetail[keyName])
                     end
                 end
-                if det.ViewRenownButton then
-                    Skin.Button(det.ViewRenownButton)
+                if repDetail.ViewRenownButton then
+                    Skin.Button(repDetail.ViewRenownButton)
                 end
-                if det.ScrollingDescriptionScrollBar then
-                    Skin.ScrollBar(det.ScrollingDescriptionScrollBar)
+                if repDetail.ScrollingDescriptionScrollBar then
+                    Skin.ScrollBar(repDetail.ScrollingDescriptionScrollBar)
                 end
             end
         end
@@ -7295,9 +7295,9 @@ do
             Skin.Font(titleText)
             Skin.White(titleText)
         end
-        local cb = win.CloseButton or (win.GetName and _G[(win:GetName() or "") .. "CloseButton"])
-        if cb then
-            Skin.CloseButton(cb)
+        local creatureBtn = win.CloseButton or (win.GetName and _G[(win:GetName() or "") .. "CloseButton"])
+        if creatureBtn then
+            Skin.CloseButton(creatureBtn)
         end
         -- Only top tab row, house finder button, and neighborhood dropdown are touched; everything else stays stock.
         local details = win.HouseInfoContent
@@ -7311,9 +7311,9 @@ do
                 if cd2.dropped8 then
                     return
                 end
-                local np = ctrl:GetNumPoints() or 0
-                local pts, success = {}, np > 0
-                for idx = 1, np do
+                local pointCount = ctrl:GetNumPoints() or 0
+                local pts, success = {}, pointCount > 0
+                for idx = 1, pointCount do
                     local p, rel, rp, posX, posY = ctrl:GetPoint(idx)
                     if not p then
                         success = false
@@ -7354,9 +7354,9 @@ do
                 -- 1px up: accent underline rides the tabs' bottom edge, clipped at the stock seat.
                 local tsd = GetFFD(castFrame.TabSystem)
                 if not tsd.lifted then
-                    local np = castFrame.TabSystem:GetNumPoints() or 0
-                    local pts, success = {}, np > 0
-                    for idx = 1, np do
+                    local pointCount = castFrame.TabSystem:GetNumPoints() or 0
+                    local pts, success = {}, pointCount > 0
+                    for idx = 1, pointCount do
                         local p, rel, rp, posX, posY = castFrame.TabSystem:GetPoint(idx)
                         if not p then
                             success = false
@@ -7386,36 +7386,36 @@ do
         end
         local cat = win.CatalogContent
         if cat then
-            local sbx = cat.SearchBox
-            local fdd = cat.Filters and cat.Filters.FilterDropdown
-            if sbx then
-                Skin.EditBox(sbx)
+            local searchField = cat.SearchBox
+            local filterDropdown = cat.Filters and cat.Filters.FilterDropdown
+            if searchField then
+                Skin.EditBox(searchField)
             end
-            if fdd then
-                Skin.Dropdown(fdd)
+            if filterDropdown then
+                Skin.Dropdown(filterDropdown)
                 -- Left-aligned label (this dropdown only, not engine wide).
-                local labelText = fdd.Text or (fdd.GetFontString and fdd:GetFontString())
-                local fdData = GetFFD(fdd)
+                local labelText = filterDropdown.Text or (filterDropdown.GetFontString and filterDropdown:GetFontString())
+                local fdData = GetFFD(filterDropdown)
                 if labelText and not fdData.labLeft then
                     fdData.labLeft = true
                     labelText:ClearAllPoints()
-                    labelText:SetPoint("LEFT", fdd, "LEFT", 8, 0)
-                    labelText:SetPoint("RIGHT", fdd, "RIGHT", -22, 0)
+                    labelText:SetPoint("LEFT", filterDropdown, "LEFT", 8, 0)
+                    labelText:SetPoint("RIGHT", filterDropdown, "RIGHT", -22, 0)
                     if labelText.SetJustifyH then
                         labelText:SetJustifyH("LEFT")
                     end
                 end
             end
             -- Search box matches filter dropdown height (one-shot; retries on catalog show until laid out).
-            if sbx and fdd then
+            if searchField and filterDropdown then
                 local function MatchSearchHeight()
-                    if GetFFD(sbx).hMatched then
+                    if GetFFD(searchField).hMatched then
                         return
                     end
-                    local dh = fdd:GetHeight()
+                    local dh = filterDropdown:GetHeight()
                     if dh and dh > 0 then
-                        GetFFD(sbx).hMatched = true
-                        sbx:SetHeight(dh)
+                        GetFFD(searchField).hMatched = true
+                        searchField:SetHeight(dh)
                     end
                 end
                 MatchSearchHeight()
@@ -7723,19 +7723,19 @@ do
                 end
             end
         end
-        local od = shade.OrderDetails
-        if od then
+        local optionsData = shade.OrderDetails
+        if optionsData then
             -- Preserve the quality-tier icon (pentagon next to recipe name): a
             -- direct OVERLAY region of OrderDetails the blanket fade would zero.
             -- The keep set must ALSO go into the restrip registry -- the show hook
             -- re-fades registered frames, and a bare `true` there would zero it again.
-            local keepSet = od.MinimumQualityIcon and { [od.MinimumQualityIcon] = true } or nil
-            Skin.FadeRegions(od, keepSet)
-            Skin.Register(od, keepSet)
-            if od.Background then
-                od.Background:SetAlpha(0)
+            local keepSet = optionsData.MinimumQualityIcon and { [optionsData.MinimumQualityIcon] = true } or nil
+            Skin.FadeRegions(optionsData, keepSet)
+            Skin.Register(optionsData, keepSet)
+            if optionsData.Background then
+                optionsData.Background:SetAlpha(0)
             end
-            SkinSchematic(od.SchematicForm)
+            SkinSchematic(optionsData.SchematicForm)
         end
         local dropdown = shade.DeclineOrderDialog
         if dropdown then
@@ -7768,10 +7768,10 @@ do
         if win.CloseButton then
             Skin.CloseButton(win.CloseButton)
         end
-        local mm = win.MaximizeMinimize
-        if mm then
-            SkinProfMaxMin(mm.MinimizeButton, "UI-QuestTrackerButton-Secondary-Collapse")
-            SkinProfMaxMin(mm.MaximizeButton, "UI-QuestTrackerButton-Secondary-Expand")
+        local maxMinBtn = win.MaximizeMinimize
+        if maxMinBtn then
+            SkinProfMaxMin(maxMinBtn.MinimizeButton, "UI-QuestTrackerButton-Secondary-Collapse")
+            SkinProfMaxMin(maxMinBtn.MaximizeButton, "UI-QuestTrackerButton-Secondary-Expand")
         end
         if win.TabSystem then
             Skin.TabSystem(win.TabSystem)
@@ -7804,19 +7804,19 @@ do
                     skinData.bg = bgTex
                 end
                 -- Sidebar filter dropdown: 2px taller, label left-aligned (this dropdown only, not engine-wide).
-                local fdd = rl.FilterDropdown
-                if fdd then
-                    local fieldData = GetFFD(fdd)
+                local filterDropdown = rl.FilterDropdown
+                if filterDropdown then
+                    local fieldData = GetFFD(filterDropdown)
                     if not fieldData.hTuned then
-                        local h0 = fdd:GetHeight()
+                        local h0 = filterDropdown:GetHeight()
                         if h0 and h0 > 0 then
                             fieldData.hTuned = true
-                            fdd:SetHeight(h0 + 2)
+                            filterDropdown:SetHeight(h0 + 2)
                             -- Nudged up 1px (one-shot, all points preserved).
                             local pts = {}
                             local success = true
-                            for idx = 1, fdd:GetNumPoints() do
-                                local p, rel, rp, posX, posY = fdd:GetPoint(idx)
+                            for idx = 1, filterDropdown:GetNumPoints() do
+                                local p, rel, rp, posX, posY = filterDropdown:GetPoint(idx)
                                 if not p then
                                     success = false
                                     break
@@ -7824,26 +7824,26 @@ do
                                 pts[idx] = { p, rel, rp, posX or 0, (posY or 0) + 1 }
                             end
                             if success and #pts > 0 then
-                                fdd:ClearAllPoints()
+                                filterDropdown:ClearAllPoints()
                                 for idx = 1, #pts do
                                     local t = pts[idx]
-                                    fdd:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                                    filterDropdown:SetPoint(t[1], t[2], t[3], t[4], t[5])
                                 end
                             end
                         end
                     end
-                    local labelText = fdd.Text or (fdd.GetFontString and fdd:GetFontString())
+                    local labelText = filterDropdown.Text or (filterDropdown.GetFontString and filterDropdown:GetFontString())
                     if labelText and not fieldData.labLeft then
                         fieldData.labLeft = true
                         labelText:ClearAllPoints()
-                        labelText:SetPoint("LEFT", fdd, "LEFT", 8, 0)
-                        labelText:SetPoint("RIGHT", fdd, "RIGHT", -22, 0)
+                        labelText:SetPoint("LEFT", filterDropdown, "LEFT", 8, 0)
+                        labelText:SetPoint("RIGHT", filterDropdown, "RIGHT", -22, 0)
                         if labelText.SetJustifyH then
                             labelText:SetJustifyH("LEFT")
                         end
                     end
                     -- Active-filter reset X (house glyph).
-                    SkinFilterResetX(fdd.ResetButton, fdd)
+                    SkinFilterResetX(filterDropdown.ResetButton, filterDropdown)
                 end
             end
             for _, keyName in ipairs(PROF_GEAR_SLOTS) do
@@ -7869,24 +7869,24 @@ do
             if sp.PanelFooter then
                 Skin.FadeRegions(sp.PanelFooter)
             end
-            local tv = sp.TreeView
-            if tv then
+            local treeView = sp.TreeView
+            if treeView then
                 -- Tree background art is content: keep it dimmed (talents look).
                 local keepSet = {}
-                if tv.Background then
-                    keepSet[tv.Background] = true
+                if treeView.Background then
+                    keepSet[treeView.Background] = true
                 end
-                Skin.FadeRegions(tv, keepSet)
-                if tv.Background then
-                    tv.Background:SetAlpha(0.75)
+                Skin.FadeRegions(treeView, keepSet)
+                if treeView.Background then
+                    treeView.Background:SetAlpha(0.75)
                 end
                 -- Tree art bleeds past the center divider: clamp its right edge to the detail pane's left edge.
                 local dv0 = sp.DetailedView
-                if tv.Background and dv0 and not GetFFD(tv).bgClamped then
-                    GetFFD(tv).bgClamped = true
-                    tv.Background:ClearAllPoints()
-                    tv.Background:SetPoint("TOPLEFT", tv, "TOPLEFT", 0, 0)
-                    tv.Background:SetPoint("BOTTOMRIGHT", dv0, "BOTTOMLEFT", 0, 0)
+                if treeView.Background and dv0 and not GetFFD(treeView).bgClamped then
+                    GetFFD(treeView).bgClamped = true
+                    treeView.Background:ClearAllPoints()
+                    treeView.Background:SetPoint("TOPLEFT", treeView, "TOPLEFT", 0, 0)
+                    treeView.Background:SetPoint("BOTTOMRIGHT", dv0, "BOTTOMLEFT", 0, 0)
                 end
             end
             local dv = sp.DetailedView
@@ -8035,9 +8035,9 @@ do
                             GetFFD(sbtn).leftAligned = true
                             return
                         end
-                        local np = sbtn:GetNumPoints() or 0
-                        local pts, success = {}, np > 0
-                        for idx = 1, np do
+                        local pointCount = sbtn:GetNumPoints() or 0
+                        local pts, success = {}, pointCount > 0
+                        for idx = 1, pointCount do
                             local p, rel, rp, posX, posY = sbtn:GetPoint(idx)
                             if not p then
                                 success = false
@@ -8091,20 +8091,20 @@ do
                     Skin.FadeRegions(ord)
                     Skin.Register(ord, true)
                     -- Top-right, pinned via SetPoint post-hook so Blizzard's browse layout cannot reseat it.
-                    local od = GetFFD(ord)
-                    if not od.pinned then
-                        od.pinned = true
+                    local optionsData = GetFFD(ord)
+                    if not optionsData.pinned then
+                        optionsData.pinned = true
                         local function Pin()
-                            if od.inPin then
+                            if optionsData.inPin then
                                 return
                             end
-                            od.inPin = true
+                            optionsData.inPin = true
                             ord:ClearAllPoints()
                             ord:SetPoint("TOPRIGHT", win, "TOPRIGHT", -20, -35)
-                            od.inPin = false
+                            optionsData.inPin = false
                         end
                         hooksecurefunc(ord, "SetPoint", function()
-                            if not od.inPin then
+                            if not optionsData.inPin then
                                 Pin()
                             end
                         end)
@@ -8163,12 +8163,12 @@ do
                         Skin.FadeNineSlice(brl.BackgroundNineSlice)
                     end
                 end
-                local ol = subFrame.OrderList
-                if ol then
-                    Skin.FadeRegions(ol)
-                    Skin.Register(ol, true)
-                    if ol.BackgroundNineSlice then
-                        Skin.FadeNineSlice(ol.BackgroundNineSlice)
+                local optionsList = subFrame.OrderList
+                if optionsList then
+                    Skin.FadeRegions(optionsList)
+                    Skin.Register(optionsList, true)
+                    if optionsList.BackgroundNineSlice then
+                        Skin.FadeNineSlice(optionsList.BackgroundNineSlice)
                     end
                     -- Sort header: AH-style near-black strip over HeaderContainer
                     -- (this list uses HeaderContainer, not the older ColumnDisplay);
@@ -8178,23 +8178,23 @@ do
                     -- re-showing the container, so an OnShow hook never catches fresh
                     -- columns. Re-run from the table rebuild (SetupTable) and list
                     -- refresh, the same signals AH sort headers ride.
-                    if ol.HeaderContainer then
+                    if optionsList.HeaderContainer then
                         local function ReskinHeaders()
-                            Skin.SortHeaderBar(ol)
+                            Skin.SortHeaderBar(optionsList)
                         end
                         ReskinHeaders()
-                        local hc = ol.HeaderContainer
-                        if not GetFFD(hc).showHooked then
-                            GetFFD(hc).showHooked = true
-                            hc:HookScript("OnShow", Skin.Debounce(ReskinHeaders))
+                        local headerContainer = optionsList.HeaderContainer
+                        if not GetFFD(headerContainer).showHooked then
+                            GetFFD(headerContainer).showHooked = true
+                            headerContainer:HookScript("OnShow", Skin.Debounce(ReskinHeaders))
                         end
                         -- Column-rebuild triggers: SetupTable (order-type switch /
                         -- view rebuild) and scroll refresh. Hook whichever exist;
                         -- guarded, idempotent, deferred a frame so new column rects exist.
                         for _, pair in ipairs({
                             { subFrame, "SetupTable" },
-                            { ol, "SetupTable" },
-                            { ol, "RefreshScrollFrame" },
+                            { optionsList, "SetupTable" },
+                            { optionsList, "RefreshScrollFrame" },
                         }) do
                             local owner, method = pair[1], pair[2]
                             if owner and type(owner[method]) == "function" then
@@ -8210,15 +8210,15 @@ do
                         -- order-type tabs are what the user clicks to repopulate
                         -- the column set. Re-skin a frame after each click.
                         for _, keyName in ipairs(ORDER_TAB_KEYS) do
-                            local tb = subFrame[keyName]
-                            if tb and not GetFFD(tb).hdrReskin then
-                                GetFFD(tb).hdrReskin = true
-                                tb:HookScript("OnClick", Skin.Debounce(ReskinHeaders))
+                            local tabFrame = subFrame[keyName]
+                            if tabFrame and not GetFFD(tabFrame).hdrReskin then
+                                GetFFD(tabFrame).hdrReskin = true
+                                tabFrame:HookScript("OnClick", Skin.Debounce(ReskinHeaders))
                             end
                         end
                     end
                     -- Legacy ColumnDisplay fallback (no-op when the list uses HeaderContainer instead).
-                    local ocd = ol.ColumnDisplay
+                    local ocd = optionsList.ColumnDisplay
                     if ocd then
                         SkinOrderColumns(ocd)
                         if not GetFFD(ocd).showHooked then
@@ -8272,18 +8272,18 @@ do
         local glyphTex = tabBtn.Icon
         local titleData = GetFFD(tabBtn)
         if glyphTex and not titleData.box then
-            local box = CreateFrame("Frame", nil, tabBtn)
-            box:SetPoint("TOPLEFT", glyphTex, "TOPLEFT", -5, 5)
-            box:SetPoint("BOTTOMRIGHT", glyphTex, "BOTTOMRIGHT", 5, -5)
-            box:SetFrameLevel(math.max(0, tabBtn:GetFrameLevel() - 2))
-            local fillTex = SolidTex(box, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
-            fillTex:SetAllPoints(box)
-            Skin.AddBorder(box, 0, 0, 0, 1)
-            titleData.box = box
+            local tabBox = CreateFrame("Frame", nil, tabBtn)
+            tabBox:SetPoint("TOPLEFT", glyphTex, "TOPLEFT", -5, 5)
+            tabBox:SetPoint("BOTTOMRIGHT", glyphTex, "BOTTOMRIGHT", 5, -5)
+            tabBox:SetFrameLevel(math.max(0, tabBtn:GetFrameLevel() - 2))
+            local fillTex = SolidTex(tabBox, "BACKGROUND", Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA)
+            fillTex:SetAllPoints(tabBox)
+            Skin.AddBorder(tabBox, 0, 0, 0, 1)
+            titleData.box = tabBox
             titleData.bg = fillTex
             local hoverTex = SolidTex(tabBtn, "HIGHLIGHT", 1, 1, 1, 0.1)
-            hoverTex:SetPoint("TOPLEFT", box, "TOPLEFT", 0, 0)
-            hoverTex:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", 0, 0)
+            hoverTex:SetPoint("TOPLEFT", tabBox, "TOPLEFT", 0, 0)
+            hoverTex:SetPoint("BOTTOMRIGHT", tabBox, "BOTTOMRIGHT", 0, 0)
             titleData.hover = hoverTex
         end
         -- Tighter icon zoom than the standard crop (re-applied per pass;
@@ -8419,10 +8419,10 @@ do
             if subFrame.CloseButton then
                 Skin.CloseButton(subFrame.CloseButton)
             end
-            local mm = subFrame.MaximizeMinimizeFrame
-            if mm then
-                SkinProfMaxMin(mm.MinimizeButton, "UI-QuestTrackerButton-Secondary-Collapse")
-                SkinProfMaxMin(mm.MaximizeButton, "UI-QuestTrackerButton-Secondary-Expand")
+            local maxMinBtn = subFrame.MaximizeMinimizeFrame
+            if maxMinBtn then
+                SkinProfMaxMin(maxMinBtn.MinimizeButton, "UI-QuestTrackerButton-Secondary-Collapse")
+                SkinProfMaxMin(maxMinBtn.MaximizeButton, "UI-QuestTrackerButton-Secondary-Expand")
             end
             local titleText = (subFrame.TitleContainer and subFrame.TitleContainer.TitleText) or subFrame.TitleText
             if titleText then
@@ -8479,42 +8479,42 @@ do
                 if btnFrame.text then
                     Skin.White(btnFrame.text)
                 end
-                local ma = btnFrame.MenuArrowButton
-                if ma then
-                    local md = GetFFD(ma)
-                    if not md.arrow then
-                        local arrowTex = ma:CreateTexture(nil, "OVERLAY")
+                local menuArrow = btnFrame.MenuArrowButton
+                if menuArrow then
+                    local mountDisplay = GetFFD(menuArrow)
+                    if not mountDisplay.arrow then
+                        local arrowTex = menuArrow:CreateTexture(nil, "OVERLAY")
                         arrowTex:SetAtlas("Azerite-PointingArrow")
                         arrowTex:SetSize(12, 8.5) -- native 62x44 aspect
                         arrowTex:SetPoint("CENTER")
-                        md.arrow = arrowTex
+                        mountDisplay.arrow = arrowTex
                     end
                     -- Fade ALL native caret art, keeping our arrow; re-run on hover
                     -- so Blizzard's caret cannot resurface from OnEnter.
                     local function FadeArrowArt()
-                        local keepSet = { [md.arrow] = true }
-                        Skin.FadeRegions(ma, keepSet)
+                        local keepSet = { [mountDisplay.arrow] = true }
+                        Skin.FadeRegions(menuArrow, keepSet)
                         for _, g in ipairs({
                             "GetNormalTexture",
                             "GetPushedTexture",
                             "GetHighlightTexture",
                             "GetDisabledTexture",
                         }) do
-                            local func = ma[g]
-                            local t = func and func(ma)
+                            local func = menuArrow[g]
+                            local t = func and func(menuArrow)
                             if t and not keepSet[t] and t.SetAlpha then
                                 t:SetAlpha(0)
                             end
                         end
-                        if ma.Art and ma.Art.SetAlpha then
-                            ma.Art:SetAlpha(0)
+                        if menuArrow.Art and menuArrow.Art.SetAlpha then
+                            menuArrow.Art:SetAlpha(0)
                         end
                     end
                     FadeArrowArt()
-                    if not md.hoverHooked then
-                        md.hoverHooked = true
-                        ma:HookScript("OnEnter", FadeArrowArt)
-                        ma:HookScript("OnLeave", FadeArrowArt)
+                    if not mountDisplay.hoverHooked then
+                        mountDisplay.hoverHooked = true
+                        menuArrow:HookScript("OnEnter", FadeArrowArt)
+                        menuArrow:HookScript("OnLeave", FadeArrowArt)
                     end
                 end
             end
@@ -8600,21 +8600,21 @@ do
                 -- Blizzard's art re-faded on hover.
                 local ovf = navBar.overflowButton
                 if ovf then
-                    local od = GetFFD(ovf)
-                    if not od.mapOvf then
-                        od.mapOvf = true
+                    local optionsData = GetFFD(ovf)
+                    if not optionsData.mapOvf then
+                        optionsData.mapOvf = true
                         local arrowTex = ovf:CreateTexture(nil, "OVERLAY")
                         arrowTex:SetAtlas("Azerite-PointingArrow")
                         arrowTex:SetSize(12, 8.5)
                         arrowTex:SetPoint("CENTER")
-                        od.arrow = arrowTex
-                        od.hover = SolidTex(ovf, "HIGHLIGHT", 1, 1, 1, 0.1)
-                        od.hover:SetAllPoints(ovf)
+                        optionsData.arrow = arrowTex
+                        optionsData.hover = SolidTex(ovf, "HIGHLIGHT", 1, 1, 1, 0.1)
+                        optionsData.hover:SetAllPoints(ovf)
                     end
                     local function FadeOvfArt()
-                        local keepSet = { [od.arrow] = true }
-                        if od.hover then
-                            keepSet[od.hover] = true
+                        local keepSet = { [optionsData.arrow] = true }
+                        if optionsData.hover then
+                            keepSet[optionsData.hover] = true
                         end
                         Skin.FadeRegions(ovf, keepSet)
                         for _, g in ipairs({
@@ -8631,8 +8631,8 @@ do
                         end
                     end
                     FadeOvfArt()
-                    if not od.hoverHooked then
-                        od.hoverHooked = true
+                    if not optionsData.hoverHooked then
+                        optionsData.hoverHooked = true
                         ovf:HookScript("OnEnter", FadeOvfArt)
                         ovf:HookScript("OnLeave", FadeOvfArt)
                     end
@@ -8663,30 +8663,30 @@ do
         ---------------------------------------------------------------------------
         --  Quest log panel
         ---------------------------------------------------------------------------
-        local qm = _G.QuestMapFrame
-        if qm then
-            if qm.VerticalSeparator then
-                qm.VerticalSeparator:SetAlpha(0)
+        local questMap = _G.QuestMapFrame
+        if questMap then
+            if questMap.VerticalSeparator then
+                questMap.VerticalSeparator:SetAlpha(0)
             end
-            if qm.Background then
-                qm.Background:SetAlpha(0)
+            if questMap.Background then
+                questMap.Background:SetAlpha(0)
             end
 
-            local qs = _G.QuestScrollFrame
-            if qs then
+            local questScroll = _G.QuestScrollFrame
+            if questScroll then
                 for _, keyName in ipairs({ "Edge", "Background", "Center" }) do
-                    local t = qs[keyName]
+                    local t = questScroll[keyName]
                     if t and t.SetAlpha then
                         t:SetAlpha(0)
                     end
                 end
-                if qs.BorderFrame then
-                    qs.BorderFrame:SetAlpha(0)
+                if questScroll.BorderFrame then
+                    questScroll.BorderFrame:SetAlpha(0)
                 end
-                if qs.Contents and qs.Contents.Separator then
-                    qs.Contents.Separator:SetAlpha(0)
+                if questScroll.Contents and questScroll.Contents.Separator then
+                    questScroll.Contents.Separator:SetAlpha(0)
                 end
-                local sh = qs.Contents and qs.Contents.StoryHeader
+                local sh = questScroll.Contents and questScroll.Contents.StoryHeader
                 if sh then
                     if sh.TopFiligree then
                         sh.TopFiligree:SetAlpha(0)
@@ -8695,11 +8695,11 @@ do
                         sh.Divider:SetAlpha(0)
                     end
                 end
-                if qs.SearchBox then
-                    Skin.EditBox(qs.SearchBox)
+                if questScroll.SearchBox then
+                    Skin.EditBox(questScroll.SearchBox)
                 end
-                if qs.ScrollBar then
-                    Skin.ScrollBar(qs.ScrollBar)
+                if questScroll.ScrollBar then
+                    Skin.ScrollBar(questScroll.ScrollBar)
                 end
                 -- Collapsible section headers: pooled, re-skinned on every quest
                 -- log update.
@@ -8709,7 +8709,7 @@ do
                         "campaignHeaderFramePool",
                         "campaignHeaderMinimalFramePool",
                     }) do
-                        local pool = qs[poolKey]
+                        local pool = questScroll[poolKey]
                         if pool and pool.EnumerateActive then
                             local kind = (poolKey == "campaignHeaderFramePool" and "campaign")
                                 or (poolKey == "headerFramePool" and "header")
@@ -8723,7 +8723,7 @@ do
                     end
                     -- ONE divider only: the topmost regular header marks the
                     -- campaign/regular boundary, all others hide theirs.
-                    local hp = qs.headerFramePool
+                    local hp = questScroll.headerFramePool
                     if hp and hp.EnumerateActive then
                         pcall(function()
                             local topBtn, topY
@@ -8747,39 +8747,39 @@ do
                     end
                 end
                 SkinQuestHeaders()
-                if type(_G.QuestLogQuests_Update) == "function" and not GetFFD(qs).qhHook then
-                    GetFFD(qs).qhHook = true
+                if type(_G.QuestLogQuests_Update) == "function" and not GetFFD(questScroll).qhHook then
+                    GetFFD(questScroll).qhHook = true
                     hooksecurefunc("QuestLogQuests_Update", SkinQuestHeaders)
                 end
             end
 
             -- Midnight nests the details frame under QuestsFrame; older layouts had
             -- it directly on QuestMapFrame, so both paths are checked.
-            local det = qm.DetailsFrame or (qm.QuestsFrame and qm.QuestsFrame.DetailsFrame)
-            if det then
-                if det.BorderFrame then
-                    det.BorderFrame:SetAlpha(0)
+            local repDetail = questMap.DetailsFrame or (questMap.QuestsFrame and questMap.QuestsFrame.DetailsFrame)
+            if repDetail then
+                if repDetail.BorderFrame then
+                    repDetail.BorderFrame:SetAlpha(0)
                 end
-                if det.SealMaterialBG then
-                    det.SealMaterialBG:SetAlpha(0)
+                if repDetail.SealMaterialBG then
+                    repDetail.SealMaterialBG:SetAlpha(0)
                 end
-                Skin.FadeRegions(det)
-                Skin.Register(det, true)
-                if det.BackFrame then
-                    Skin.FadeRegions(det.BackFrame)
-                    Skin.Register(det.BackFrame, true)
-                    if det.BackFrame.BackButton then
-                        Skin.Button(det.BackFrame.BackButton)
+                Skin.FadeRegions(repDetail)
+                Skin.Register(repDetail, true)
+                if repDetail.BackFrame then
+                    Skin.FadeRegions(repDetail.BackFrame)
+                    Skin.Register(repDetail.BackFrame, true)
+                    if repDetail.BackFrame.BackButton then
+                        Skin.Button(repDetail.BackFrame.BackButton)
                     end
                 end
                 for _, keyName in ipairs({ "AbandonButton", "ShareButton", "TrackButton" }) do
-                    local button = det[keyName]
+                    local button = repDetail[keyName]
                     if button then
                         Skin.FadeRegions(button)
                         Skin.Button(button)
                     end
                 end
-                local rfc = det.RewardsFrameContainer
+                local rfc = repDetail.RewardsFrameContainer
                 if rfc and rfc.RewardsFrame then
                     Skin.FadeRegions(rfc.RewardsFrame)
                     Skin.Register(rfc.RewardsFrame, true)
@@ -8814,11 +8814,11 @@ do
                             fontStr:SetTextColor(1, 0.82, 0)
                         end
                     end
-                    local rw = _G.QuestInfoRewardsFrame
-                    if rw then
-                        WhitenTextIn(rw) -- catch nested spell/effect + SimpleHTML reward blurbs
-                        if rw.Header and rw.Header.SetTextColor then
-                            rw.Header:SetTextColor(1, 0.82, 0)
+                    local objectiveRow = _G.QuestInfoRewardsFrame
+                    if objectiveRow then
+                        WhitenTextIn(objectiveRow) -- catch nested spell/effect + SimpleHTML reward blurbs
+                        if objectiveRow.Header and objectiveRow.Header.SetTextColor then
+                            objectiveRow.Header:SetTextColor(1, 0.82, 0)
                         end
                     end
                     -- Reward tiles in the MAP / quest log. Blizzard ships a SECOND
@@ -8831,7 +8831,7 @@ do
                     -- Same treatment as the NPC window: drop the QuestItemBorder
                     -- plate, white the name, square the icon, and give it back the
                     -- rarity as a SQUARE border rather than Blizzard's rounded one.
-                    for _, rf in ipairs({ _G.MapQuestInfoRewardsFrame, rw }) do
+                    for _, rf in ipairs({ _G.MapQuestInfoRewardsFrame, objectiveRow }) do
                         if rf and rf.RewardButtons then
                             for _, btnFrame in ipairs(rf.RewardButtons) do
                                 Skin.QuestRewardTile(btnFrame)
@@ -8907,8 +8907,8 @@ do
                         end
                     end
                 end
-                if not GetFFD(det).questTextHook and type(_G.QuestInfo_Display) == "function" then
-                    GetFFD(det).questTextHook = true
+                if not GetFFD(repDetail).questTextHook and type(_G.QuestInfo_Display) == "function" then
+                    GetFFD(repDetail).questTextHook = true
                     hooksecurefunc("QuestInfo_Display", function(_, parentFrame)
                         -- MAP only (parent chain reaches QuestMapFrame):
                         -- QuestInfo_Display also drives the NPC quest window, which
@@ -8918,7 +8918,7 @@ do
                         end
                         local p, isMap = parentFrame, false
                         for _i = 1, 8 do
-                            if p == qm then
+                            if p == questMap then
                                 isMap = true
                                 break
                             end
@@ -8937,7 +8937,7 @@ do
                         end
                     end)
                 end
-                if qm:IsShown() then
+                if questMap:IsShown() then
                     StyleQuestText()
                 end
             end
@@ -8946,7 +8946,7 @@ do
                 Skin.ScrollBar(dsf.ScrollBar)
             end
 
-            local co = qm.QuestsFrame and qm.QuestsFrame.CampaignOverview
+            local co = questMap.QuestsFrame and questMap.QuestsFrame.CampaignOverview
             if co then
                 if co.BorderFrame then
                     co.BorderFrame:SetAlpha(0)
@@ -8958,25 +8958,25 @@ do
                 end
             end
 
-            if qm.QuestSessionManagement then
-                Skin.FadeRegions(qm.QuestSessionManagement)
-                Skin.Register(qm.QuestSessionManagement, true)
+            if questMap.QuestSessionManagement then
+                Skin.FadeRegions(questMap.QuestSessionManagement)
+                Skin.Register(questMap.QuestSessionManagement, true)
             end
 
             -- 11.1 side tabs (quests / events / map legend)
             for _, keyName in ipairs({ "QuestsTab", "EventsTab", "MapLegendTab" }) do
-                SkinMapSideTab(qm[keyName])
+                SkinMapSideTab(questMap[keyName])
             end
             -- Chain seat: box edge flush with the window edge (measured once on the
             -- first laid-out show), gaps 8px tighter down the chain.
             local function SeatSideTabs()
-                local gd2 = GetFFD(qm)
+                local gd2 = GetFFD(questMap)
                 if gd2.sideSeated then
                     return
                 end
-                local qt = qm.QuestsTab
+                local qt = questMap.QuestsTab
                 local glyphTex = qt and qt.Icon
-                local qmR = qm.GetRight and qm:GetRight()
+                local qmR = questMap.GetRight and questMap:GetRight()
                 local iL = glyphTex and glyphTex.GetLeft and glyphTex:GetLeft()
                 if not qmR or not iL then
                     return
@@ -8984,9 +8984,9 @@ do
                 gd2.sideSeated = true
                 local dx = math.floor((qmR - (iL - 5)) + 0.5) + 2
                 if dx ~= 0 then
-                    local np = qt:GetNumPoints() or 0
-                    local pts, success = {}, np > 0
-                    for idx = 1, np do
+                    local pointCount = qt:GetNumPoints() or 0
+                    local pts, success = {}, pointCount > 0
+                    for idx = 1, pointCount do
                         local p, rel, rp, posX, posY = qt:GetPoint(idx)
                         if not p then
                             success = false
@@ -9003,24 +9003,24 @@ do
                     end
                 end
                 for _, k2 in ipairs({ "EventsTab", "MapLegendTab" }) do
-                    local tb = qm[k2]
-                    if tb then
-                        local td2 = GetFFD(tb)
+                    local tabFrame = questMap[k2]
+                    if tabFrame then
+                        local td2 = GetFFD(tabFrame)
                         if not td2.gapAdj then
-                            local p, rel, rp, posX, posY = tb:GetPoint(1)
+                            local p, rel, rp, posX, posY = tabFrame:GetPoint(1)
                             if p then
                                 td2.gapAdj = true
-                                tb:ClearAllPoints()
-                                tb:SetPoint(p, rel, rp, posX or 0, (posY or 0) + 8)
+                                tabFrame:ClearAllPoints()
+                                tabFrame:SetPoint(p, rel, rp, posX or 0, (posY or 0) + 8)
                             end
                         end
                     end
                 end
             end
             SeatSideTabs()
-            if not GetFFD(qm).sideSeatHook then
-                GetFFD(qm).sideSeatHook = true
-                qm:HookScript("OnShow", function()
+            if not GetFFD(questMap).sideSeatHook then
+                GetFFD(questMap).sideSeatHook = true
+                questMap:HookScript("OnShow", function()
                     if C_Timer then
                         C_Timer.After(0, SeatSideTabs)
                     else
@@ -9029,7 +9029,7 @@ do
                 end)
             end
 
-            local ev = qm.EventsFrame
+            local ev = questMap.EventsFrame
             if ev then
                 -- Direct region fade also kills this pane's stray yellow box texture.
                 Skin.FadeRegions(ev)
@@ -9084,7 +9084,7 @@ do
                 end
             end
 
-            local ml = qm.MapLegend
+            local ml = questMap.MapLegend
             if ml then
                 if ml.TitleText then
                     Skin.Font(ml.TitleText)
@@ -9169,7 +9169,7 @@ do
     local MICRO_GAP = 2
     local MICRO_BG_A = 0.45
 
-    local function TrimMicroTex(texture, box)
+    local function TrimMicroTex(texture, tabBox)
         if not texture or not texture.SetTexCoord then
             return
         end
@@ -9180,8 +9180,8 @@ do
             texture:SetTexCoord(MICRO_TRIM, 1 - MICRO_TRIM, MICRO_TRIM, 1 - MICRO_TRIM)
         end
         texture:ClearAllPoints()
-        texture:SetPoint("TOPLEFT", box, "TOPLEFT", MICRO_INSET, -MICRO_INSET)
-        texture:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -MICRO_INSET, MICRO_INSET)
+        texture:SetPoint("TOPLEFT", tabBox, "TOPLEFT", MICRO_INSET, -MICRO_INSET)
+        texture:SetPoint("BOTTOMRIGHT", tabBox, "BOTTOMRIGHT", -MICRO_INSET, MICRO_INSET)
     end
 
     local function SkinMicroButtonInner(btnFrame)
@@ -9193,15 +9193,15 @@ do
         end
         local skinData = GetFFD(btnFrame)
         if not skinData.box then
-            local box = CreateFrame("Frame", nil, btnFrame)
-            box:SetPoint("TOPLEFT", MICRO_GAP, -MICRO_GAP)
-            box:SetPoint("BOTTOMRIGHT", -MICRO_GAP, MICRO_GAP)
+            local tabBox = CreateFrame("Frame", nil, btnFrame)
+            tabBox:SetPoint("TOPLEFT", MICRO_GAP, -MICRO_GAP)
+            tabBox:SetPoint("BOTTOMRIGHT", -MICRO_GAP, MICRO_GAP)
             local bgTex = btnFrame:CreateTexture(nil, "BACKGROUND", nil, -8)
             bgTex:SetColorTexture(Theme.bgR, Theme.bgG, Theme.bgB, MICRO_BG_A)
-            bgTex:SetPoint("TOPLEFT", box, "TOPLEFT", 0, 0)
-            bgTex:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", 0, 0)
-            Skin.AddBorder(box)
-            skinData.box, skinData.bg = box, bgTex
+            bgTex:SetPoint("TOPLEFT", tabBox, "TOPLEFT", 0, 0)
+            bgTex:SetPoint("BOTTOMRIGHT", tabBox, "BOTTOMRIGHT", 0, 0)
+            Skin.AddBorder(tabBox)
+            skinData.box, skinData.bg = tabBox, bgTex
             local highlight = btnFrame.GetHighlightTexture and btnFrame:GetHighlightTexture()
             if highlight and highlight.SetColorTexture then
                 highlight:SetColorTexture(1, 1, 1, 0.1)
@@ -9209,8 +9209,8 @@ do
                     highlight:SetTexCoord(0, 1, 0, 1)
                 end
                 highlight:ClearAllPoints()
-                highlight:SetPoint("TOPLEFT", box, "TOPLEFT", 0, 0)
-                highlight:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", 0, 0)
+                highlight:SetPoint("TOPLEFT", tabBox, "TOPLEFT", 0, 0)
+                highlight:SetPoint("BOTTOMRIGHT", tabBox, "BOTTOMRIGHT", 0, 0)
             end
         end
         if btnFrame.GetNormalTexture then
@@ -9248,12 +9248,12 @@ do
         -- never shows. Fade that art so the flat buttons do not sit inside an ornate
         -- frame. Alpha only -- never :Hide() the Edit-Mode-owned container.
         if CludesUI.IS_FOREVER and _G.MicroMenu then
-            local mm = _G.MicroMenu
-            if mm.BackgroundArt and mm.BackgroundArt.SetAlpha then
-                mm.BackgroundArt:SetAlpha(0)
+            local maxMinBtn = _G.MicroMenu
+            if maxMinBtn.BackgroundArt and maxMinBtn.BackgroundArt.SetAlpha then
+                maxMinBtn.BackgroundArt:SetAlpha(0)
             end
-            if mm.BorderArt and mm.BorderArt.SetAlpha then
-                mm.BorderArt:SetAlpha(0)
+            if maxMinBtn.BorderArt and maxMinBtn.BorderArt.SetAlpha then
+                maxMinBtn.BorderArt:SetAlpha(0)
             end
         end
         if not _microHook and _G.UpdateMicroButtons then
@@ -9340,10 +9340,10 @@ do
             Skin.Register(ms, true)
         end
         -- Max/Min button: spellbook-style +/- glyph (collapse/expand chevrons).
-        local mm = win.MaximizeMinimizeFrame
-        if mm then
-            SkinProfMaxMin(mm.MinimizeButton, "UI-QuestTrackerButton-Secondary-Collapse")
-            SkinProfMaxMin(mm.MaximizeButton, "UI-QuestTrackerButton-Secondary-Expand")
+        local maxMinBtn = win.MaximizeMinimizeFrame
+        if maxMinBtn then
+            SkinProfMaxMin(maxMinBtn.MinimizeButton, "UI-QuestTrackerButton-Secondary-Collapse")
+            SkinProfMaxMin(maxMinBtn.MaximizeButton, "UI-QuestTrackerButton-Secondary-Expand")
         end
         -- Action buttons: flat treatment + white labels. Reset/Cancel are globals, Link/Toggle are parentKeys.
         local function SkinBtn(button)
@@ -9503,12 +9503,12 @@ do
             Skin.Button(win.ApplyButton)
             Skin.WhiteButtonLabel(win.ApplyButton)
         end
-        local od = win.OutfitDropdown
-        if od then
-            Skin.Dropdown(od)
-            if od.SaveButton then
-                Skin.Button(od.SaveButton)
-                Skin.WhiteButtonLabel(od.SaveButton)
+        local optionsData = win.OutfitDropdown
+        if optionsData then
+            Skin.Dropdown(optionsData)
+            if optionsData.SaveButton then
+                Skin.Button(optionsData.SaveButton)
+                Skin.WhiteButtonLabel(optionsData.SaveButton)
             end
         end
         -- Save Outfit button: flat treatment, but the label mirrors the native
@@ -9540,9 +9540,9 @@ do
                         labelText:SetTextColor(0.5, 0.5, 0.5)
                     end
                 end
-                local bd = GetFFD(button)
-                if not bd.stateHook then
-                    bd.stateHook = true
+                local buttonData = GetFFD(button)
+                if not buttonData.stateHook then
+                    buttonData.stateHook = true
                     button:HookScript("OnEnable", reflect)
                     button:HookScript("OnDisable", reflect)
                 end
@@ -9570,9 +9570,9 @@ do
                 end
                 local th = wc.TabHeaders
                 if not GetFFD(th).raised then
-                    local np = th:GetNumPoints() or 0
-                    local pts, success = {}, np > 0
-                    for idx = 1, np do
+                    local pointCount = th:GetNumPoints() or 0
+                    local pts, success = {}, pointCount > 0
+                    for idx = 1, pointCount do
                         local p, rel, rp, posX, posY = th:GetPoint(idx)
                         if not p then
                             success = false
@@ -9611,15 +9611,15 @@ do
                 -- Swap Blizzard's content border for the themed one. Frame rect runs
                 -- a few px past the visible list, but its Background region spans
                 -- the true content area, so the border seats on a host pinned to that.
-                local bd = tc.Border
-                if bd then
-                    if bd.IsObjectType and bd:IsObjectType("Texture") then
-                        bd:SetAlpha(0)
+                local buttonData = tc.Border
+                if buttonData then
+                    if buttonData.IsObjectType and buttonData:IsObjectType("Texture") then
+                        buttonData:SetAlpha(0)
                     else
-                        Skin.FadeRegions(bd)
-                        Skin.Register(bd, true)
-                        if bd.SetAlpha then
-                            bd:SetAlpha(0)
+                        Skin.FadeRegions(buttonData)
+                        Skin.Register(buttonData, true)
+                        if buttonData.SetAlpha then
+                            buttonData:SetAlpha(0)
                         end
                     end
                 end
@@ -10085,9 +10085,9 @@ do
         -- centred whatever height the row ends up. Done ONCE -- the tiles are
         -- re-skinned on every page flip and re-anchoring per pass is pointless.
         if btnFrame and btnFrame.SetPoint then
-            local bd = GetFFD(btnFrame)
-            if not bd.rowCentred then
-                bd.rowCentred = true
+            local buttonData = GetFFD(btnFrame)
+            if not buttonData.rowCentred then
+                buttonData.rowCentred = true
                 btnFrame:ClearAllPoints()
                 btnFrame:SetPoint("LEFT", entry, "LEFT", 0, 0)
             end
@@ -10109,9 +10109,9 @@ do
             if applying then
                 return
             end
-            local np = found:GetNumPoints() or 0
-            local pts, success = {}, np > 0
-            for idx = 1, np do
+            local pointCount = found:GetNumPoints() or 0
+            local pts, success = {}, pointCount > 0
+            for idx = 1, pointCount do
                 local p, rel, rp, posX, posY = found:GetPoint(idx)
                 if not p then
                     success = false
@@ -10208,7 +10208,7 @@ do
     local EX_PREFIX = "CUI_MerchantPage"
     local MAX_MONEY_DISPLAY_WIDTH_EX = 120
     -- buttons: the grid tiles' item buttons (a split open on one of them is the grid's).
-    local ex = { page = 1, tiles = {}, buttons = {}, cols = EX_NATIVE_COLS, perPage = 0 }
+    local exState = { page = 1, tiles = {}, buttons = {}, cols = EX_NATIVE_COLS, perPage = 0 }
 
     local function ExGrid()
         local saved = CludesUIDB
@@ -10238,23 +10238,23 @@ do
     end
     CludesUI._Merchant_ExpandActive = ExpandActive
     CludesUI._Merchant_ExpandPerPage = function()
-        return ex.perPage
+        return exState.perPage
     end
 
     local function EX_NumPages()
-        return math.max(1, math.ceil(GetMerchantNumItems() / math.max(1, ex.perPage)))
+        return math.max(1, math.ceil(GetMerchantNumItems() / math.max(1, exState.perPage)))
     end
 
     local function EX_Place(t, idx)
         local win = _G.MerchantFrame
-        local colour = (idx - 1) % ex.cols
-        local row = math.floor((idx - 1) / ex.cols)
+        local colour = (idx - 1) % exState.cols
+        local row = math.floor((idx - 1) / exState.cols)
         t:ClearAllPoints()
         t:SetPoint("TOPLEFT", win, "TOPLEFT", EX_LEFT + colour * EX_COL_STEP, EX_TOP - row * EX_ROW_STEP)
     end
 
     local function EX_GetTile(idx)
-        local t = ex.tiles[idx]
+        local t = exState.tiles[idx]
         if t then
             return t
         end
@@ -10264,8 +10264,8 @@ do
         SkinMerchantTile(t)
         LiftMerchantCurrency(_G[EX_PREFIX .. idx .. "MoneyFrame"])
         LiftMerchantCurrency(_G[EX_PREFIX .. idx .. "AltCurrencyFrame"])
-        ex.tiles[idx] = t
-        ex.buttons[t.ItemButton] = true
+        exState.tiles[idx] = t
+        exState.buttons[t.ItemButton] = true
         return t
     end
 
@@ -10369,8 +10369,8 @@ do
     local EX_Update
 
     local function EX_Flip(dir)
-        local want = math.min(math.max(ex.page + dir, 1), EX_NumPages())
-        if want == ex.page then
+        local want = math.min(math.max(exState.page + dir, 1), EX_NumPages())
+        if want == exState.page then
             return
         end
         -- A split open on one of the grid's tiles would act on whatever now holds its
@@ -10379,13 +10379,13 @@ do
         -- else (a bag slot) is not the grid's to close.
         local ssf = StackSplitFrame
         local ownerFrame = ssf and ssf:IsShown() and ssf.owner
-        if ownerFrame and ex.buttons[ownerFrame] then
+        if ownerFrame and exState.buttons[ownerFrame] then
             if not CludesUI.StackSplitFor(ownerFrame) then
                 return
             end
             CludesUI.TakeStackSplit()
         end
-        ex.page = want
+        exState.page = want
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         EX_Update()
     end
@@ -10406,24 +10406,24 @@ do
     end
 
     local function EX_UpdatePager(win, numPages)
-        if not ex.prev then
-            ex.prev = EX_MakePageButton(win, "Prev", "<", "BOTTOMLEFT", 25)
-            ex.next = EX_MakePageButton(win, "Next", ">", "BOTTOMRIGHT", -26)
-            ex.text = win:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-            ex.text:SetPoint("BOTTOM", win, "BOTTOM", 0, 86)
-            Skin.Font(ex.text)
-            Skin.White(ex.text)
+        if not exState.prev then
+            exState.prev = EX_MakePageButton(win, "Prev", "<", "BOTTOMLEFT", 25)
+            exState.next = EX_MakePageButton(win, "Next", ">", "BOTTOMRIGHT", -26)
+            exState.text = win:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            exState.text:SetPoint("BOTTOM", win, "BOTTOM", 0, 86)
+            Skin.Font(exState.text)
+            Skin.White(exState.text)
         end
         local show = numPages > 1
-        ex.prev:SetShown(show)
-        ex.next:SetShown(show)
-        ex.text:SetShown(show)
+        exState.prev:SetShown(show)
+        exState.next:SetShown(show)
+        exState.text:SetShown(show)
         if not show then
             return
         end
-        ex.prev:SetEnabled(ex.page > 1)
-        ex.next:SetEnabled(ex.page < numPages)
-        ex.text:SetFormattedText("%d / %d", ex.page, numPages)
+        exState.prev:SetEnabled(exState.page > 1)
+        exState.next:SetEnabled(exState.page < numPages)
+        exState.text:SetFormattedText("%d / %d", exState.page, numPages)
     end
 
     -- Move the native page under the hidden holder (park) or back to its parent.
@@ -10431,39 +10431,39 @@ do
         for idx = 1, EX_NATIVE_PER_PAGE do
             local n = _G["MerchantItem" .. idx]
             if n then
-                local parked = n:GetParent() == ex.holder
+                local parked = n:GetParent() == exState.holder
                 if park and not parked then
-                    ex.nativeParent = ex.nativeParent or n:GetParent()
-                    n:SetParent(ex.holder)
+                    exState.nativeParent = exState.nativeParent or n:GetParent()
+                    n:SetParent(exState.holder)
                 elseif not park and parked then
-                    n:SetParent(ex.nativeParent)
+                    n:SetParent(exState.nativeParent)
                 end
             end
         end
     end
 
     local function EX_Deactivate(win)
-        if not ex.active then
+        if not exState.active then
             return
         end
-        ex.active = false
-        for idx = 1, #ex.tiles do
-            ex.tiles[idx]:Hide()
+        exState.active = false
+        for idx = 1, #exState.tiles do
+            exState.tiles[idx]:Hide()
         end
-        if ex.prev then
-            ex.prev:Hide()
-            ex.next:Hide()
-            ex.text:Hide()
+        if exState.prev then
+            exState.prev:Hide()
+            exState.next:Hide()
+            exState.text:Hide()
         end
-        if ex.nativeW and win:GetWidth() ~= ex.nativeW then
-            win:SetWidth(ex.nativeW)
+        if exState.nativeW and win:GetWidth() ~= exState.nativeW then
+            win:SetWidth(exState.nativeW)
         end
-        if ex.nativeH and win:GetHeight() ~= ex.nativeH then
-            win:SetHeight(ex.nativeH)
+        if exState.nativeH and win:GetHeight() ~= exState.nativeH then
+            win:SetHeight(exState.nativeH)
         end
         local bb = _G.MerchantBuyBackItem
-        if bb and ex.bbPoint then
-            local pt = ex.bbPoint
+        if bb and exState.bbPoint then
+            local pt = exState.bbPoint
             bb:ClearAllPoints()
             bb:SetPoint(pt[1], pt[2], pt[3], pt[4], pt[5])
         end
@@ -10476,7 +10476,7 @@ do
             and (win.selectedTab or 1) == 1
             and GetMerchantNumItems() > MERCHANT_ITEMS_PER_PAGE
         then
-            for _, c in ipairs(ex.pager) do
+            for _, c in ipairs(exState.pager) do
                 c:Show()
             end
         end
@@ -10488,7 +10488,7 @@ do
 
     EX_Update = function()
         local win = _G.MerchantFrame
-        if not win or not ex.hooked then
+        if not win or not exState.hooked then
             return
         end
         if not ExpandActive() then
@@ -10499,30 +10499,30 @@ do
             return
         end
 
-        ex.active = true
+        exState.active = true
         local cols, rowList = ExGrid()
-        ex.perPage = cols * rowList
-        if not ex.nativeW then
-            ex.nativeW, ex.nativeH = win:GetWidth(), win:GetHeight()
+        exState.perPage = cols * rowList
+        if not exState.nativeW then
+            exState.nativeW, exState.nativeH = win:GetWidth(), win:GetHeight()
         end
         -- The most-recent-buyback slot hangs off MerchantItem10, which is parked and
         -- stays at row 5; keep its native offset from the Sell All Junk button, which
         -- rides the frame's bottom edge, so it follows the grid.
         local bb, junk = _G.MerchantBuyBackItem, _G.MerchantSellAllJunkButton
         if bb and junk then
-            if not ex.bbPoint and bb:GetNumPoints() > 0 and bb:GetLeft() and junk:GetLeft() then
+            if not exState.bbPoint and bb:GetNumPoints() > 0 and bb:GetLeft() and junk:GetLeft() then
                 local p, rel, rp, posX, posY = bb:GetPoint(1)
-                ex.bbPoint = { p, rel, rp, posX or 0, posY or 0 }
-                ex.bbDX = bb:GetLeft() - junk:GetLeft()
-                ex.bbDY = bb:GetTop() - junk:GetTop()
+                exState.bbPoint = { p, rel, rp, posX or 0, posY or 0 }
+                exState.bbDX = bb:GetLeft() - junk:GetLeft()
+                exState.bbDY = bb:GetTop() - junk:GetTop()
             end
-            if ex.bbDX then
+            if exState.bbDX then
                 bb:ClearAllPoints()
-                bb:SetPoint("TOPLEFT", junk, "TOPLEFT", ex.bbDX, ex.bbDY)
+                bb:SetPoint("TOPLEFT", junk, "TOPLEFT", exState.bbDX, exState.bbDY)
             end
         end
         local wid = cols * EX_COL_STEP + EX_FRAME_PAD
-        local hgt = ex.nativeH + (rowList - EX_NATIVE_ROWS) * EX_ROW_STEP
+        local hgt = exState.nativeH + (rowList - EX_NATIVE_ROWS) * EX_ROW_STEP
         if win:GetWidth() ~= wid then
             win:SetWidth(wid)
         end
@@ -10530,28 +10530,28 @@ do
             win:SetHeight(hgt)
         end
         EX_ParkNative(true)
-        for _, c in ipairs(ex.pager) do
+        for _, c in ipairs(exState.pager) do
             c:Hide()
         end
 
-        if ex.cols ~= cols then
-            ex.cols = cols
-            for idx = 1, #ex.tiles do
-                EX_Place(ex.tiles[idx], idx)
+        if exState.cols ~= cols then
+            exState.cols = cols
+            for idx = 1, #exState.tiles do
+                EX_Place(exState.tiles[idx], idx)
             end
         end
 
         local numItems = GetMerchantNumItems()
         local numPages = EX_NumPages()
-        if ex.page > numPages then
-            ex.page = numPages
+        if exState.page > numPages then
+            exState.page = numPages
         end
-        local base = (ex.page - 1) * ex.perPage
-        for idx = 1, ex.perPage do
+        local base = (exState.page - 1) * exState.perPage
+        for idx = 1, exState.perPage do
             EX_FillTile(EX_GetTile(idx), idx, base + idx, numItems)
         end
-        for idx = ex.perPage + 1, #ex.tiles do
-            ex.tiles[idx]:Hide()
+        for idx = exState.perPage + 1, #exState.tiles do
+            exState.tiles[idx]:Hide()
         end
         EX_UpdatePager(win, numPages)
 
@@ -10567,19 +10567,19 @@ do
     end
     -- GET_ITEM_INFO_RECEIVED comes in a burst while a vendor's items load: one refill
     -- per frame. Built here, at load, so no skin callback wraps it.
-    ex.updateSoon = Skin.Debounce(EX_Update)
+    exState.updateSoon = Skin.Debounce(EX_Update)
 
     local function EnsureExpand()
-        if ex.hooked then
+        if exState.hooked then
             return
         end
         local win = _G.MerchantFrame
         if not win then
             return
         end
-        ex.hooked = true
-        ex.holder = CreateFrame("Frame", nil, win)
-        ex.holder:Hide()
+        exState.hooked = true
+        exState.holder = CreateFrame("Frame", nil, win)
+        exState.holder:Hide()
         -- Blizzard re-Shows the native pager on every update; keep it down while
         -- the grid is up (hidden, not parked: Blizzard's wheel handler pages
         -- through a shown pager). Show hooks only, no method overwrites.
@@ -10588,15 +10588,15 @@ do
                 self:Hide()
             end
         end
-        ex.pager = { _G.MerchantPrevPageButton, _G.MerchantNextPageButton, _G.MerchantPageText }
-        for _, c in ipairs(ex.pager) do
+        exState.pager = { _G.MerchantPrevPageButton, _G.MerchantNextPageButton, _G.MerchantPageText }
+        for _, c in ipairs(exState.pager) do
             hooksecurefunc(c, "Show", HideIfActive)
         end
         hooksecurefunc("MerchantFrame_Update", EX_Update)
         -- Fires when an uncached item resolves; the native pass would only refill its own tiles.
-        hooksecurefunc("MerchantFrame_UpdateItemQualityBorders", ex.updateSoon)
+        hooksecurefunc("MerchantFrame_UpdateItemQualityBorders", exState.updateSoon)
         win:HookScript("OnShow", function()
-            ex.page = 1
+            exState.page = 1
         end)
         win:HookScript("OnMouseWheel", function(_, delta)
             if ExpandActive() then
@@ -10673,9 +10673,9 @@ do
             -- moves the grid (MerchantBuyBackItem anchors separately and stays put). One-shot, all points preserved.
             local it1 = _G.MerchantItem1
             if it1 and not GetFFD(it1).shifted then
-                local np = it1:GetNumPoints() or 0
-                local pts, success = {}, np > 0
-                for idx = 1, np do
+                local pointCount = it1:GetNumPoints() or 0
+                local pts, success = {}, pointCount > 0
+                for idx = 1, pointCount do
                     local p, rel, rp, posX, posY = it1:GetPoint(idx)
                     if not p then
                         success = false
@@ -10973,10 +10973,10 @@ do
         if win.FilterDropdown then
             LeftAlignFilterLabel(win.FilterDropdown)
         end
-        local tb = _G.ClassTrainerTrainButton
-        if tb then
-            Skin.Button(tb)
-            local tfs = tb.GetFontString and tb:GetFontString()
+        local tabFrame = _G.ClassTrainerTrainButton
+        if tabFrame then
+            Skin.Button(tabFrame)
+            local tfs = tabFrame.GetFontString and tabFrame:GetFontString()
             if tfs then
                 Skin.White(tfs)
             end
@@ -11122,9 +11122,9 @@ do
             end
             if scrollBar.Update and not GetFFD(scrollBar).rowHook then
                 GetFFD(scrollBar).rowHook = true
-                hooksecurefunc(scrollBar, "Update", function(box)
-                    if box.ForEachFrame then
-                        pcall(box.ForEachFrame, box, SkinDelvesOptionButton)
+                hooksecurefunc(scrollBar, "Update", function(tabBox)
+                    if tabBox.ForEachFrame then
+                        pcall(tabBox.ForEachFrame, tabBox, SkinDelvesOptionButton)
                     end
                 end)
             end
@@ -11161,11 +11161,11 @@ do
             -- Close button natively anchors to the corner of the now-alpha-0
             -- DialogBorder sub-frame, leaving the X flush with the window edge.
             -- Seat it like every other shell: centered on the 25px top bar with right spacing.
-            local cb = win.CloseButton
-            if cb and not GetFFD(cb).reseated then
-                GetFFD(cb).reseated = true
-                cb:ClearAllPoints()
-                cb:SetPoint("CENTER", win, "TOPRIGHT", -14, -12)
+            local creatureBtn = win.CloseButton
+            if creatureBtn and not GetFFD(creatureBtn).reseated then
+                GetFFD(creatureBtn).reseated = true
+                creatureBtn:ClearAllPoints()
+                creatureBtn:SetPoint("CENTER", win, "TOPRIGHT", -14, -12)
             end
             local titleText = (win.TitleContainer and win.TitleContainer.TitleText) or win.TitleText
             if titleText then
@@ -11515,7 +11515,7 @@ do
                     fontStr:SetTextColor(1, 0.82, 0)
                 end
             end
-            local rw = _G.QuestInfoRewardsFrame
+            local objectiveRow = _G.QuestInfoRewardsFrame
             for _, n in ipairs({
                 "QuestInfoDescriptionText",
                 "QuestInfoObjectivesText",
@@ -11528,21 +11528,21 @@ do
                     fontStr:SetTextColor(1, 1, 1)
                 end
             end
-            if rw then
-                WhitenTextIn(rw) -- nested spell/effect + SimpleHTML blurbs the fields below miss
+            if objectiveRow then
+                WhitenTextIn(objectiveRow) -- nested spell/effect + SimpleHTML blurbs the fields below miss
                 for _, keyName in ipairs({
                     "ItemChooseText",
                     "ItemReceiveText",
                     "PlayerTitleText",
                     "SpellLearnText",
                 }) do
-                    local fontStr = rw[keyName]
+                    local fontStr = objectiveRow[keyName]
                     if fontStr and fontStr.SetTextColor then
                         fontStr:SetTextColor(1, 1, 1)
                     end
                 end
-                if rw.XPFrame and rw.XPFrame.ReceiveText and rw.XPFrame.ReceiveText.SetTextColor then
-                    rw.XPFrame.ReceiveText:SetTextColor(1, 1, 1)
+                if objectiveRow.XPFrame and objectiveRow.XPFrame.ReceiveText and objectiveRow.XPFrame.ReceiveText.SetTextColor then
+                    objectiveRow.XPFrame.ReceiveText:SetTextColor(1, 1, 1)
                 end
                 -- Reward item tiles: drop the parchment name plate, white the name,
                 -- square the icon. SquareIcon carries its own masked-texture guard
@@ -11560,8 +11560,8 @@ do
                 -- whenever SetItemButtonQuality touches the button. Alpha 0 does
                 -- not affect the read -- the ring's SHOWN state and vertex color
                 -- are what carry the quality.
-                if rw.RewardButtons then
-                    for _, btnFrame in ipairs(rw.RewardButtons) do
+                if objectiveRow.RewardButtons then
+                    for _, btnFrame in ipairs(objectiveRow.RewardButtons) do
                         Skin.QuestRewardTile(btnFrame)
                     end
                 end
@@ -11605,7 +11605,7 @@ do
                     "SkillPointFrame",
                     "PlayerTitleFrame",
                 }) do
-                    local subPanel = rw[keyName]
+                    local subPanel = objectiveRow[keyName]
                     if subPanel then
                         for _, ak in ipairs({
                             "NameFrame",
@@ -11638,8 +11638,8 @@ do
                         end
                     end
                 end
-                if rw.Header and rw.Header.SetTextColor then
-                    rw.Header:SetTextColor(1, 0.82, 0)
+                if objectiveRow.Header and objectiveRow.Header.SetTextColor then
+                    objectiveRow.Header:SetTextColor(1, 0.82, 0)
                 end
             end
             local of = _G.QuestInfoObjectivesFrame
@@ -11910,8 +11910,8 @@ do
         -- Click-to-sort column headers, guild-roster treatment: 3-slice art
         -- cleared, flat plate, white label, standard hover. Headers pool/rebuild per list refresh, re-runs from RefreshScrollFrame hook.
         local function Headers(entries)
-            local hc = entries and entries.HeaderContainer
-            if not hc then
+            local headerContainer = entries and entries.HeaderContainer
+            if not headerContainer then
                 return
             end
             -- Top-anchored views (browse, all-auctions, bids, sell lists) seat their
@@ -11922,13 +11922,13 @@ do
             -- (sell tab: 50/50 right-half wash); default is the rail wash.
             local wash2 = GetFFD(entries).washRef or GetFFD(win).wash
             if GetFFD(entries).seatTop and wash2 and wash2.GetTop then
-                local wt0, ht0 = wash2:GetTop(), hc:GetTop()
+                local wt0, ht0 = wash2:GetTop(), headerContainer:GetTop()
                 if wt0 and ht0 and math.abs((wt0 - 2) - ht0) > 0.5 then
                     local dy0 = (wt0 - 2) - ht0
-                    local np = hc:GetNumPoints() or 0
-                    local pts, success = {}, np > 0
-                    for idx = 1, np do
-                        local p, rel, rp, posX, posY = hc:GetPoint(idx)
+                    local pointCount = headerContainer:GetNumPoints() or 0
+                    local pts, success = {}, pointCount > 0
+                    for idx = 1, pointCount do
+                        local p, rel, rp, posX, posY = headerContainer:GetPoint(idx)
                         if not p then
                             success = false
                             break
@@ -11936,10 +11936,10 @@ do
                         pts[idx] = { p, rel, rp, posX or 0, (posY or 0) + dy0 }
                     end
                     if success then
-                        hc:ClearAllPoints()
+                        headerContainer:ClearAllPoints()
                         for idx = 1, #pts do
                             local t = pts[idx]
-                            hc:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                            headerContainer:SetPoint(t[1], t[2], t[3], t[4], t[5])
                         end
                     end
                 end
@@ -11964,7 +11964,7 @@ do
             -- TOP instead: their "top bar" row sits there, while their
             -- HeaderContainer can be vestigial and parked far down the list
             -- (commodities view), dragging the strip down with it.
-            local anchorTo, ay = hc, 2
+            local anchorTo, ay = headerContainer, 2
             if not GetFFD(entries).seatTop then
                 anchorTo, ay = entries, 0
             end
@@ -11976,7 +11976,7 @@ do
                 partData.strip:SetPoint("TOPLEFT", anchorTo, "TOPLEFT", wl0 - al0, ay)
                 partData.strip:SetPoint("TOPRIGHT", anchorTo, "TOPLEFT", wr0 - al0, ay)
             end
-            local children = { hc:GetChildren() }
+            local children = { headerContainer:GetChildren() }
             for idx = 1, #children do
                 local colour = children[idx]
                 if colour and colour.GetObjectType and colour:GetObjectType() == "Button" then
@@ -12038,11 +12038,11 @@ do
             if not entries then
                 return
             end
-            local ld = GetFFD(entries)
-            ld.seatTop = seatTop and true or nil
+            local labelData = GetFFD(entries)
+            labelData.seatTop = seatTop and true or nil
             -- Spare our own strip: it is a region of this list, and an unspared
             -- fade here (every skin pass) blanks the sort bar.
-            Skin.FadeRegions(entries, ld.strip and { [ld.strip] = true } or nil)
+            Skin.FadeRegions(entries, labelData.strip and { [labelData.strip] = true } or nil)
             if entries.NineSlice then
                 Skin.FadeNineSlice(entries.NineSlice)
             end
@@ -12129,9 +12129,9 @@ do
                 -- placed. Label rides 6px right (one-shot, points preserved).
                 local labelText = bmc.Text or (bmc.GetFontString and bmc:GetFontString())
                 if labelText and not GetFFD(labelText).shifted then
-                    local np = labelText:GetNumPoints() or 0
-                    local pts, success = {}, np > 0
-                    for idx = 1, np do
+                    local pointCount = labelText:GetNumPoints() or 0
+                    local pts, success = {}, pointCount > 0
+                    for idx = 1, pointCount do
                         local p, rel, rp, posX, posY = labelText:GetPoint(idx)
                         if not p then
                             success = false
@@ -12190,15 +12190,15 @@ do
                     end
                 end
             end
-            local fb = scrollBar.FilterButton
-            if fb then
-                LeftAlignFilterLabel(fb)
+            local foundBottom = scrollBar.FilterButton
+            if foundBottom then
+                LeftAlignFilterLabel(foundBottom)
                 local sbtn = scrollBar.SearchButton
                 local hgt = sbtn and sbtn.GetHeight and sbtn:GetHeight()
-                if hgt and hgt > 0 and fb.SetHeight then
-                    fb:SetHeight(hgt)
+                if hgt and hgt > 0 and foundBottom.SetHeight then
+                    foundBottom:SetHeight(hgt)
                 end
-                SkinFilterResetX(fb.ClearFiltersButton, fb)
+                SkinFilterResetX(foundBottom.ClearFiltersButton, foundBottom)
             end
         end
 
@@ -12213,9 +12213,9 @@ do
             Skin.Register(cats, true)
             Skin.ScrollBarsIn(cats)
             if not GetFFD(cats).topShift then
-                local np = cats:GetNumPoints() or 0
-                local pts, success = {}, np > 0
-                for idx = 1, np do
+                local pointCount = cats:GetNumPoints() or 0
+                local pts, success = {}, pointCount > 0
+                for idx = 1, pointCount do
                     local p, rel, rp, posX, posY = cats:GetPoint(idx)
                     if not p then
                         success = false
@@ -12240,8 +12240,8 @@ do
             if not cats or GetFFD(cats).spacingSet then
                 return
             end
-            local box = cats.ScrollBox
-            local view = box and box.GetView and box:GetView()
+            local tabBox = cats.ScrollBox
+            local view = tabBox and tabBox.GetView and tabBox:GetView()
             if not (view and view.SetPadding) then
                 return
             end
@@ -12256,8 +12256,8 @@ do
                     region = (pad.GetRight and pad:GetRight()) or 0
                 end
                 view:SetPadding(t, button, l, region, -1)
-                if box.FullUpdate then
-                    box:FullUpdate(true)
+                if tabBox.FullUpdate then
+                    tabBox:FullUpdate(true)
                 end
             end)
         end
@@ -12345,18 +12345,18 @@ do
             if not part or GetFFD(part).botClamped then
                 return
             end
-            local fb, eb2 = win:GetBottom(), part:GetBottom()
-            if not (fb and eb2) then
+            local foundBottom, eb2 = win:GetBottom(), part:GetBottom()
+            if not (foundBottom and eb2) then
                 return
             end
-            local dy = (fb + 30 + (frameData.zonePx or 1)) - eb2
+            local dy = (foundBottom + 30 + (frameData.zonePx or 1)) - eb2
             if dy < 0.5 then
                 GetFFD(part).botClamped = true
                 return
             end
-            local np = part:GetNumPoints() or 0
-            local pts, success, touched = {}, np > 0, false
-            for idx = 1, np do
+            local pointCount = part:GetNumPoints() or 0
+            local pts, success, touched = {}, pointCount > 0, false
+            for idx = 1, pointCount do
                 local p, rel, rp, posX, posY = part:GetPoint(idx)
                 if not p then
                     success = false
@@ -12401,9 +12401,9 @@ do
             -- Back button 3px lower (one-shot, all points preserved).
             if cbf.BackButton and not GetFFD(cbf.BackButton).dropped then
                 local bb = cbf.BackButton
-                local np = bb:GetNumPoints() or 0
-                local pts, success = {}, np > 0
-                for idx = 1, np do
+                local pointCount = bb:GetNumPoints() or 0
+                local pts, success = {}, pointCount > 0
+                for idx = 1, pointCount do
                     local p, rel, rp, posX, posY = bb:GetPoint(idx)
                     if not p then
                         success = false
@@ -12424,12 +12424,12 @@ do
             -- right, NO sort captions), so no header/strip (a wash-wide strip would
             -- cut across the buy panel). Only item-buy (display above, headered list below) gets the strip.
             List(cbf.ItemList, false)
-            local bd = cbf.BuyDisplay
-            if bd then
-                Skin.FadeRegions(bd)
-                Skin.Register(bd, true)
-                ItemDisplay(bd)
-                local qib = bd.QuantityInput and bd.QuantityInput.InputBox
+            local buttonData = cbf.BuyDisplay
+            if buttonData then
+                Skin.FadeRegions(buttonData)
+                Skin.Register(buttonData, true)
+                ItemDisplay(buttonData)
+                local qib = buttonData.QuantityInput and buttonData.QuantityInput.InputBox
                 if qib then
                     Skin.EditBox(qib)
                     if not GetFFD(qib).slimmed then
@@ -12440,7 +12440,7 @@ do
                         end
                     end
                 end
-                StateBtn(bd.BuyButton)
+                StateBtn(buttonData.BuyButton)
             end
         end
 
@@ -12456,9 +12456,9 @@ do
                 -- Bid button rides 20px right on the bottom bar (one-shot).
                 local bb = ibf.BidFrame.BidButton
                 if bb and not GetFFD(bb).shiftedX then
-                    local np = bb:GetNumPoints() or 0
-                    local pts, success = {}, np > 0
-                    for idx = 1, np do
+                    local pointCount = bb:GetNumPoints() or 0
+                    local pts, success = {}, pointCount > 0
+                    for idx = 1, pointCount do
                         local p, rel, rp, posX, posY = bb:GetPoint(idx)
                         if not p then
                             success = false
@@ -12529,43 +12529,43 @@ do
         end
 
         -- My auctions tab.
-        local af = win.AuctionsFrame or _G.AuctionHouseFrameAuctionsFrame
-        if af then
-            Skin.FadeRegions(af)
-            Skin.Register(af, true)
-            ItemDisplay(af)
+        local auctionsFrame = win.AuctionsFrame or _G.AuctionHouseFrameAuctionsFrame
+        if auctionsFrame then
+            Skin.FadeRegions(auctionsFrame)
+            Skin.Register(auctionsFrame, true)
+            ItemDisplay(auctionsFrame)
             -- Selected-item spot: the guild-sidebar tile sheet behind it.
-            local idp = af.ItemDisplay
+            local idp = auctionsFrame.ItemDisplay
             if idp then
-                local idd = GetFFD(idp)
-                if not idd.card then
+                local importData = GetFFD(idp)
+                if not importData.card then
                     local cardFrame = idp:CreateTexture(nil, "BACKGROUND", nil, -5)
                     cardFrame:SetAtlas("Ui-Dialog-New-Background")
                     cardFrame:SetPoint("TOPLEFT", idp, "TOPLEFT", 0, 0)
                     cardFrame:SetPoint("BOTTOMRIGHT", idp, "BOTTOMRIGHT", 0, 0)
                     cardFrame:SetAlpha(0.5)
-                    idd.card = cardFrame
+                    importData.card = cardFrame
                 end
             end
-            if af.BuyoutFrame then
-                StateBtn(af.BuyoutFrame.BuyoutButton)
+            if auctionsFrame.BuyoutFrame then
+                StateBtn(auctionsFrame.BuyoutFrame.BuyoutButton)
             end
-            if af.BidFrame then
-                StateBtn(af.BidFrame.BidButton)
+            if auctionsFrame.BidFrame then
+                StateBtn(auctionsFrame.BidFrame.BidButton)
             end
-            StateBtn(af.CancelAuctionButton)
-            List(af.CommoditiesList, true)
-            List(af.ItemList, true)
-            List(af.SummaryList, false)
-            List(af.AllAuctionsList, true, true)
-            List(af.BidsList, true, true)
+            StateBtn(auctionsFrame.CancelAuctionButton)
+            List(auctionsFrame.CommoditiesList, true)
+            List(auctionsFrame.ItemList, true)
+            List(auctionsFrame.SummaryList, false)
+            List(auctionsFrame.AllAuctionsList, true, true)
+            List(auctionsFrame.BidsList, true, true)
             -- Auctions sidebar (SummaryList): its rows are a SEPARATE ScrollBox
             -- pool that the buy tab's category-rail setup hook never touches, so
             -- they get the same tile treatment here (flat card + border, white
             -- label, washes spanning the full tile).
-            local sum = af.SummaryList
-            local sumBox = sum and sum.ScrollBox
-            if sumBox and not GetFFD(sum).rowHook then
+            local sum = auctionsFrame.SummaryList
+            local summaryScroll = sum and sum.ScrollBox
+            if summaryScroll and not GetFFD(sum).rowHook then
                 GetFFD(sum).rowHook = true
                 local function SkinSummaryRow(row)
                     if not row or (row.IsForbidden and row:IsForbidden()) then
@@ -12573,7 +12573,7 @@ do
                     end
                     -- Rows run narrower than the column: match the box width,
                     -- re-asserted per Update pass once the view lays out.
-                    local bw = sumBox.GetWidth and sumBox:GetWidth()
+                    local bw = summaryScroll.GetWidth and summaryScroll:GetWidth()
                     if bw and bw > 1 and row.GetWidth and math.abs((row:GetWidth() or 0) - bw) > 1 then
                         row:SetWidth(bw)
                     end
@@ -12605,19 +12605,19 @@ do
                     end
                 end
                 hooksecurefunc(
-                    sumBox,
+                    summaryScroll,
                     "Update",
                     Skin.Debounce(function()
-                        if sumBox.ForEachFrame and sumBox:IsVisible() then
-                            sumBox:ForEachFrame(SkinSummaryRow)
+                        if summaryScroll.ForEachFrame and summaryScroll:IsVisible() then
+                            summaryScroll:ForEachFrame(SkinSummaryRow)
                         end
                     end)
                 )
                 -- Initial pass only once the box has a view: ForEachFrame on an
                 -- uninitialized ScrollBox errors inside Blizzard's code at addon
                 -- load. The Update hook covers everything after init.
-                if sumBox.ForEachFrame and sumBox.GetView and sumBox:GetView() then
-                    pcall(sumBox.ForEachFrame, sumBox, SkinSummaryRow)
+                if summaryScroll.ForEachFrame and summaryScroll.GetView and summaryScroll:GetView() then
+                    pcall(summaryScroll.ForEachFrame, summaryScroll, SkinSummaryRow)
                 end
             end
             -- Measured seats (rects exist only once the auctions view lays out, so
@@ -12635,9 +12635,9 @@ do
                 end
                 GetFFD(sum).seated = true
                 local dxL, dxR = cl2 - sl2, cr2 - sr2
-                local np = sum:GetNumPoints() or 0
-                local pts, success = {}, np > 0
-                for idx = 1, np do
+                local pointCount = sum:GetNumPoints() or 0
+                local pts, success = {}, pointCount > 0
+                for idx = 1, pointCount do
                     local p, rel, rp, posX, posY = sum:GetPoint(idx)
                     if not p then
                         success = false
@@ -12667,9 +12667,9 @@ do
                 GetFFD(l).seated = true
                 local dxL = (cr2 + 2 + (frameData.zonePx or 1)) - ll2
                 local dxR = fr2 - lr2
-                local np = l:GetNumPoints() or 0
-                local pts, success = {}, np > 0
-                for idx = 1, np do
+                local pointCount = l:GetNumPoints() or 0
+                local pts, success = {}, pointCount > 0
+                for idx = 1, pointCount do
                     local p, rel, rp, posX, posY = l:GetPoint(idx)
                     if not p then
                         success = false
@@ -12692,18 +12692,18 @@ do
             -- are sized to TABLE COLUMNS, not the row, so stretch every row-level
             -- texture to the row (cell content on child frames untouched). Rows pool, so this runs per Update.
             local function WidenRows(l)
-                local box2 = l and l.ScrollBox
-                if not box2 then
+                local listScroll = l and l.ScrollBox
+                if not listScroll then
                     return
                 end
-                if not GetFFD(box2).widened then
-                    local lr3, br3 = l:GetRight(), box2:GetRight()
+                if not GetFFD(listScroll).widened then
+                    local lr3, br3 = l:GetRight(), listScroll:GetRight()
                     if lr3 and br3 and lr3 > br3 then
-                        GetFFD(box2).widened = true
-                        local np = box2:GetNumPoints() or 0
-                        local pts, success = {}, np > 0
-                        for idx = 1, np do
-                            local p, rel, rp, posX, posY = box2:GetPoint(idx)
+                        GetFFD(listScroll).widened = true
+                        local pointCount = listScroll:GetNumPoints() or 0
+                        local pts, success = {}, pointCount > 0
+                        for idx = 1, pointCount do
+                            local p, rel, rp, posX, posY = listScroll:GetPoint(idx)
                             if not p then
                                 success = false
                                 break
@@ -12717,16 +12717,16 @@ do
                             }
                         end
                         if success then
-                            box2:ClearAllPoints()
+                            listScroll:ClearAllPoints()
                             for idx = 1, #pts do
                                 local t2 = pts[idx]
-                                box2:SetPoint(t2[1], t2[2], t2[3], t2[4], t2[5])
+                                listScroll:SetPoint(t2[1], t2[2], t2[3], t2[4], t2[5])
                             end
                         end
                     end
                 end
-                if not GetFFD(box2).rowStretch then
-                    GetFFD(box2).rowStretch = true
+                if not GetFFD(listScroll).rowStretch then
+                    GetFFD(listScroll).rowStretch = true
                     local function StretchRow(row)
                         if not row or (row.IsForbidden and row:IsForbidden()) then
                             return
@@ -12746,43 +12746,43 @@ do
                         end
                     end
                     hooksecurefunc(
-                        box2,
+                        listScroll,
                         "Update",
                         Skin.Debounce(function()
-                            if box2.ForEachFrame and box2:IsVisible() then
-                                box2:ForEachFrame(StretchRow)
+                            if listScroll.ForEachFrame and listScroll:IsVisible() then
+                                listScroll:ForEachFrame(StretchRow)
                             end
                         end)
                     )
                     -- Same uninitialized-ScrollBox guard as the summary rows.
-                    if box2.ForEachFrame and box2.GetView and box2:GetView() then
-                        pcall(box2.ForEachFrame, box2, StretchRow)
+                    if listScroll.ForEachFrame and listScroll.GetView and listScroll:GetView() then
+                        pcall(listScroll.ForEachFrame, listScroll, StretchRow)
                     end
                 end
             end
             local function SeatAuctionsTab()
                 SeatSummary()
-                SeatMainList(af.AllAuctionsList)
-                SeatMainList(af.BidsList)
-                WidenRows(af.AllAuctionsList)
-                WidenRows(af.BidsList)
+                SeatMainList(auctionsFrame.AllAuctionsList)
+                SeatMainList(auctionsFrame.BidsList)
+                WidenRows(auctionsFrame.AllAuctionsList)
+                WidenRows(auctionsFrame.BidsList)
                 -- These also run past the bottom divider (the seat drops them
                 -- further). Deferred a frame: clamping against same-frame stale
                 -- rects mis-measures right after the seats moved anchors. Summary
                 -- ScrollBox also stretches to the reseated list's edges here since widening the LIST doesn't move its own stock anchors.
                 local function clamp()
-                    ClampBottom(af.AllAuctionsList)
-                    ClampBottom(af.BidsList)
-                    ClampBottom(af.SummaryList)
-                    if sum and sumBox and not GetFFD(sumBox).stretched then
+                    ClampBottom(auctionsFrame.AllAuctionsList)
+                    ClampBottom(auctionsFrame.BidsList)
+                    ClampBottom(auctionsFrame.SummaryList)
+                    if sum and summaryScroll and not GetFFD(summaryScroll).stretched then
                         local ll2, lr2 = sum:GetLeft(), sum:GetRight()
-                        local bl2, br2 = sumBox:GetLeft(), sumBox:GetRight()
+                        local bl2, br2 = summaryScroll:GetLeft(), summaryScroll:GetRight()
                         if ll2 and lr2 and bl2 and br2 then
-                            GetFFD(sumBox).stretched = true
-                            local np = sumBox:GetNumPoints() or 0
-                            local pts, success = {}, np > 0
-                            for idx = 1, np do
-                                local p, rel, rp, posX, posY = sumBox:GetPoint(idx)
+                            GetFFD(summaryScroll).stretched = true
+                            local pointCount = summaryScroll:GetNumPoints() or 0
+                            local pts, success = {}, pointCount > 0
+                            for idx = 1, pointCount do
+                                local p, rel, rp, posX, posY = summaryScroll:GetPoint(idx)
                                 if not p then
                                     success = false
                                     break
@@ -12791,10 +12791,10 @@ do
                                 pts[idx] = { p, rel, rp, (posX or 0) + dx, posY or 0 }
                             end
                             if success then
-                                sumBox:ClearAllPoints()
+                                summaryScroll:ClearAllPoints()
                                 for idx = 1, #pts do
                                     local t2 = pts[idx]
-                                    sumBox:SetPoint(t2[1], t2[2], t2[3], t2[4], t2[5])
+                                    summaryScroll:SetPoint(t2[1], t2[2], t2[3], t2[4], t2[5])
                                 end
                             end
                         end
@@ -12807,9 +12807,9 @@ do
                 end
             end
             SeatAuctionsTab()
-            if not GetFFD(af).seatHook then
-                GetFFD(af).seatHook = true
-                af:HookScript("OnShow", Skin.Debounce(SeatAuctionsTab))
+            if not GetFFD(auctionsFrame).seatHook then
+                GetFFD(auctionsFrame).seatHook = true
+                auctionsFrame:HookScript("OnShow", Skin.Debounce(SeatAuctionsTab))
             end
             -- Sub-tabs: dark-active (spellbook look), 1px lower. Only the chain
             -- root moves; NormalizeTabRow re-chains the rest off it.
@@ -12826,9 +12826,9 @@ do
             end
             local root = afTabs[1]
             if root and not GetFFD(root).dropped then
-                local np = root:GetNumPoints() or 0
-                local pts, success = {}, np > 0
-                for idx = 1, np do
+                local pointCount = root:GetNumPoints() or 0
+                local pts, success = {}, pointCount > 0
+                for idx = 1, pointCount do
                     local p, rel, rp, posX, posY = root:GetPoint(idx)
                     if not p then
                         success = false
@@ -12888,15 +12888,15 @@ do
 
         -- Confirm-purchase dialog: its border is a CHILD frame (Bg/edge pieces),
         -- out of reach of the panel's own region fade, so suppress it wholesale.
-        local dlg = win.BuyDialog
-        if dlg then
-            Skin.Panel(dlg)
-            if dlg.Border then
-                Skin.FadeNineSlice(dlg.Border)
-                Skin.Register(dlg.Border, true)
+        local guildDialog = win.BuyDialog
+        if guildDialog then
+            Skin.Panel(guildDialog)
+            if guildDialog.Border then
+                Skin.FadeNineSlice(guildDialog.Border)
+                Skin.Register(guildDialog.Border, true)
             end
-            WhiteBtn(dlg.BuyNowButton)
-            WhiteBtn(dlg.CancelButton)
+            WhiteBtn(guildDialog.BuyNowButton)
+            WhiteBtn(guildDialog.CancelButton)
         end
 
         -- Multisell progress popup: house bar (flat fill on a dark trough).
@@ -12906,7 +12906,7 @@ do
             Skin.Register(ms, true)
             local progressBar = ms.ProgressBar
             if progressBar then
-                local pd = GetFFD(progressBar)
+                local progressData = GetFFD(progressBar)
                 local fillTex = progressBar.GetStatusBarTexture and progressBar:GetStatusBarTexture()
                 local regionList = { progressBar:GetRegions() }
                 for idx = 1, #regionList do
@@ -12914,7 +12914,7 @@ do
                     if
                         region
                         and region ~= fillTex
-                        and region ~= pd.bg
+                        and region ~= progressData.bg
                         and region.IsObjectType
                         and region:IsObjectType("Texture")
                         and region:GetDrawLayer() ~= "HIGHLIGHT"
@@ -12926,11 +12926,11 @@ do
                     progressBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
                     Skin.ApplyBarFill(progressBar)
                 end
-                if not pd.bg then
+                if not progressData.bg then
                     local troughTex = progressBar:CreateTexture(nil, "BACKGROUND", nil, -1)
                     troughTex:SetColorTexture(0.12, 0.12, 0.12, 0.85)
                     troughTex:SetAllPoints(progressBar)
-                    pd.bg = troughTex
+                    progressData.bg = troughTex
                 end
                 if progressBar.Text then
                     Skin.White(progressBar.Text)
@@ -13164,17 +13164,17 @@ do
             Skin.ScrollBarsIn(p)
         end
         if gBox then
-            local gd = GetFFD(p)
-            if not gd.iconDim then
-                gd.iconDim = function()
+            local foundData = GetFFD(p)
+            if not foundData.iconDim then
+                foundData.iconDim = function()
                     if gBox.ForEachFrame and gBox:IsVisible() then
                         gBox:ForEachFrame(DimSlot)
                     end
                 end
-                hooksecurefunc(gBox, "Update", Skin.Debounce(gd.iconDim))
+                hooksecurefunc(gBox, "Update", Skin.Debounce(foundData.iconDim))
             end
             if gBox.GetView and gBox:GetView() then
-                pcall(gd.iconDim)
+                pcall(foundData.iconDim)
             end
         end
         -- Built only while the frame has no show hook (HookShow keeps the first).
@@ -13251,9 +13251,9 @@ do
             local fl, tl = win:GetLeft(), mt1:GetLeft()
             if fl and tl then
                 local dx = (fl + 12) - tl
-                local np = mt1:GetNumPoints() or 0
-                local pts, success = {}, np > 0
-                for idx = 1, np do
+                local pointCount = mt1:GetNumPoints() or 0
+                local pts, success = {}, pointCount > 0
+                for idx = 1, pointCount do
                     local p, rel, rp, posX, posY = mt1:GetPoint(idx)
                     if not p then
                         success = false
@@ -13305,20 +13305,20 @@ do
         end
 
         -- Macro body text well: input-style near-black fill + themed border.
-        local tb = _G.MacroFrameTextBackground
-        if tb then
-            local titleData = GetFFD(tb)
-            Skin.FadeRegions(tb)
-            if tb.NineSlice then
-                Skin.FadeNineSlice(tb.NineSlice)
+        local tabFrame = _G.MacroFrameTextBackground
+        if tabFrame then
+            local titleData = GetFFD(tabFrame)
+            Skin.FadeRegions(tabFrame)
+            if tabFrame.NineSlice then
+                Skin.FadeNineSlice(tabFrame.NineSlice)
             end
-            Skin.Register(tb, true)
+            Skin.Register(tabFrame, true)
             if not titleData.bg then
-                local fillTex = tb:CreateTexture(nil, "BACKGROUND", nil, -6)
+                local fillTex = tabFrame:CreateTexture(nil, "BACKGROUND", nil, -6)
                 fillTex:SetColorTexture(0.02, 0.02, 0.02, 1)
-                fillTex:SetAllPoints(tb)
+                fillTex:SetAllPoints(tabFrame)
                 titleData.bg = fillTex
-                Skin.AddBorder(tb)
+                Skin.AddBorder(tabFrame)
             end
         end
         if _G.MacroFrameSelectedMacroName then
@@ -13340,9 +13340,9 @@ do
             if not part or GetFFD(part).nudged then
                 return
             end
-            local np = part:GetNumPoints() or 0
-            local pts, success = {}, np > 0
-            for idx = 1, np do
+            local pointCount = part:GetNumPoints() or 0
+            local pts, success = {}, pointCount > 0
+            for idx = 1, pointCount do
                 local p, rel, rp, posX, posY = part:GetPoint(idx)
                 if not p then
                     success = false
@@ -13376,7 +13376,7 @@ do
         for part in pairs(cluster) do
             ShiftOnce(part, 0, 7, cluster)
         end
-        ShiftOnce(tb, 0, 3)
+        ShiftOnce(tabFrame, 0, 3)
         -- Save +1 / Cancel +5 from stock. Pair-guarded: if Cancel chains off Save
         -- it rides along instead of double-shifting.
         local scPair = {}
@@ -13549,17 +13549,17 @@ do
 
         -- Category rail: chrome off; pooled rows lose only their backdrop art
         -- (select/hover washes stay Blizzard's).
-        local cl = win.CategoryList
-        if cl then
-            Skin.FadeRegions(cl)
-            if cl.NineSlice then
-                Skin.FadeNineSlice(cl.NineSlice)
+        local categoryList = win.CategoryList
+        if categoryList then
+            Skin.FadeRegions(categoryList)
+            if categoryList.NineSlice then
+                Skin.FadeNineSlice(categoryList.NineSlice)
             end
-            Skin.Register(cl, true)
-            Skin.ScrollBarsIn(cl)
-            local clBox = cl.ScrollBox
+            Skin.Register(categoryList, true)
+            Skin.ScrollBarsIn(categoryList)
+            local clBox = categoryList.ScrollBox
             if clBox then
-                local cld = GetFFD(cl)
+                local cld = GetFFD(categoryList)
                 if not cld.fadeRows then
                     -- Box captured in the closure: Debounce invokes with NO args, so taking it as a parameter would leave it nil.
                     cld.fadeRows = function()
@@ -13693,13 +13693,13 @@ do
         -- rect-gated, retried by the show re-run).
         local abox = win.ScrollBox
         if abox and not GetFFD(abox).botClamped then
-            local fb, bb2 = win:GetBottom(), abox:GetBottom()
-            if fb and bb2 then
-                local dy = (fb + 30) - bb2
+            local foundBottom, bb2 = win:GetBottom(), abox:GetBottom()
+            if foundBottom and bb2 then
+                local dy = (foundBottom + 30) - bb2
                 if dy > 0.5 then
-                    local np = abox:GetNumPoints() or 0
-                    local pts, success, touched = {}, np > 0, false
-                    for idx = 1, np do
+                    local pointCount = abox:GetNumPoints() or 0
+                    local pts, success, touched = {}, pointCount > 0, false
+                    for idx = 1, pointCount do
                         local p, rel, rp, posX, posY = abox:GetPoint(idx)
                         if not p then
                             success = false
@@ -13829,8 +13829,8 @@ do
         -- header row. Strip spans the LIST's width here (no shared per-list wash
         -- rect). White labels, hover stretched to the strip, strip spared from our fades via identity + the fill key.
         local function Headers(entries)
-            local hc = entries and entries.HeaderContainer
-            if not hc then
+            local headerContainer = entries and entries.HeaderContainer
+            if not headerContainer then
                 return
             end
             local partData = GetFFD(entries)
@@ -13843,13 +13843,13 @@ do
             end
             partData.strip:SetAlpha(1)
             local ll0, lr0 = entries:GetLeft(), entries:GetRight()
-            local hl0 = hc:GetLeft()
+            local hl0 = headerContainer:GetLeft()
             if ll0 and lr0 and hl0 then
                 partData.strip:ClearAllPoints()
-                partData.strip:SetPoint("TOPLEFT", hc, "TOPLEFT", ll0 - hl0, 2)
-                partData.strip:SetPoint("TOPRIGHT", hc, "TOPLEFT", lr0 - hl0, 2)
+                partData.strip:SetPoint("TOPLEFT", headerContainer, "TOPLEFT", ll0 - hl0, 2)
+                partData.strip:SetPoint("TOPRIGHT", headerContainer, "TOPLEFT", lr0 - hl0, 2)
             end
-            local children = { hc:GetChildren() }
+            local children = { headerContainer:GetChildren() }
             for idx = 1, #children do
                 local colour = children[idx]
                 if colour and colour.GetObjectType and colour:GetObjectType() == "Button" then
@@ -13891,16 +13891,16 @@ do
             if not entries then
                 return
             end
-            local ld = GetFFD(entries)
-            Skin.FadeRegions(entries, ld.strip and { [ld.strip] = true } or nil)
+            local labelData = GetFFD(entries)
+            Skin.FadeRegions(entries, labelData.strip and { [labelData.strip] = true } or nil)
             if entries.NineSlice then
                 Skin.FadeNineSlice(entries.NineSlice)
             end
             Skin.Register(entries, true)
             Skin.ScrollBarsIn(entries)
             Headers(entries)
-            if not ld.hdrShowHook then
-                ld.hdrShowHook = true
+            if not labelData.hdrShowHook then
+                labelData.hdrShowHook = true
                 entries:HookScript(
                     "OnShow",
                     Skin.Debounce(function()
@@ -13976,9 +13976,9 @@ do
         -- the right edge do not move. One-shot, points preserved.
         local cl0 = browse and browse.CategoryList
         if cl0 and not GetFFD(cl0).widened then
-            local np = cl0:GetNumPoints() or 0
-            local pts, success = {}, np > 0
-            for idx = 1, np do
+            local pointCount = cl0:GetNumPoints() or 0
+            local pts, success = {}, pointCount > 0
+            for idx = 1, pointCount do
                 local p, rel, rp, posX, posY = cl0:GetPoint(idx)
                 if not p then
                     success = false
@@ -14006,8 +14006,8 @@ do
                 topY, off = frameData.wash:GetTop(), 4 -- +4px wash visual-flush offset
             else
                 local mo0 = win.MyOrdersPage
-                local hc = mo0 and mo0:IsVisible() and mo0.OrderList and mo0.OrderList.HeaderContainer
-                local hct = hc and hc:GetTop()
+                local headerContainer = mo0 and mo0:IsVisible() and mo0.OrderList and mo0.OrderList.HeaderContainer
+                local hct = headerContainer and headerContainer:GetTop()
                 if hct then
                     topY, off = hct + 2, 0
                 end -- +2 = the header strip's own lift above hc
@@ -14064,34 +14064,34 @@ do
                         end
                     end
                 end
-                local fb = scrollBar.FilterDropdown or scrollBar.FilterButton
-                if fb then
-                    LeftAlignFilterLabel(fb)
+                local foundBottom = scrollBar.FilterDropdown or scrollBar.FilterButton
+                if foundBottom then
+                    LeftAlignFilterLabel(foundBottom)
                     local sbtn = scrollBar.SearchButton
                     local hgt = sbtn and sbtn.GetHeight and sbtn:GetHeight()
-                    if hgt and hgt > 0 and fb.SetHeight then
-                        fb:SetHeight(hgt)
+                    if hgt and hgt > 0 and foundBottom.SetHeight then
+                        foundBottom:SetHeight(hgt)
                     end
-                    SkinFilterResetX(fb.ResetButton or fb.ClearFiltersButton, fb)
+                    SkinFilterResetX(foundBottom.ResetButton or foundBottom.ClearFiltersButton, foundBottom)
                 end
             end
             -- Category rail: chrome off + pooled rows as sidebar tiles (AH rail
             -- treatment). NOT restrip-registered; the Update hook is upkeep.
-            local cl = browse.CategoryList
-            if cl then
-                Skin.FadeRegions(cl)
-                if cl.NineSlice then
-                    Skin.FadeNineSlice(cl.NineSlice)
+            local categoryList = browse.CategoryList
+            if categoryList then
+                Skin.FadeRegions(categoryList)
+                if categoryList.NineSlice then
+                    Skin.FadeNineSlice(categoryList.NineSlice)
                 end
-                Skin.Register(cl, true)
-                Skin.ScrollBarsIn(cl)
+                Skin.Register(categoryList, true)
+                Skin.ScrollBarsIn(categoryList)
                 -- Rail row spacing -1 via the scroll view's padding (AH rail
                 -- treatment); per-row anchor surgery is a no-op on ScrollBox rows.
-                if not GetFFD(cl).spacingSet then
-                    local box0 = cl.ScrollBox
+                if not GetFFD(categoryList).spacingSet then
+                    local box0 = categoryList.ScrollBox
                     local view0 = box0 and box0.GetView and box0:GetView()
                     if view0 and view0.SetPadding then
-                        GetFFD(cl).spacingSet = true
+                        GetFFD(categoryList).spacingSet = true
                         pcall(function()
                             local t, button, l, region = 0, 0, 0, 0
                             local pad = view0.GetPadding and view0:GetPadding()
@@ -14108,9 +14108,9 @@ do
                         end)
                     end
                 end
-                local clBox = cl.ScrollBox
-                if clBox and not GetFFD(cl).rowHook then
-                    GetFFD(cl).rowHook = true
+                local clBox = categoryList.ScrollBox
+                if clBox and not GetFFD(categoryList).rowHook then
+                    GetFFD(categoryList).rowHook = true
                     local function SkinRailRow(row)
                         if not row or (row.IsForbidden and row:IsForbidden()) then
                             return
@@ -14156,10 +14156,10 @@ do
                             clBox:ForEachFrame(SkinRailRow)
                         end
                     end
-                    GetFFD(cl).railRows = SkinRailRows
+                    GetFFD(categoryList).railRows = SkinRailRows
                     hooksecurefunc(clBox, "Update", Skin.Debounce(SkinRailRows))
                 end
-                local rr = GetFFD(cl).railRows
+                local rr = GetFFD(categoryList).railRows
                 if rr and clBox and clBox.GetView and clBox:GetView() then
                     pcall(rr)
                 end
@@ -14232,9 +14232,9 @@ do
                 if not found or GetFFD(found).shift10 then
                     return
                 end
-                local np = found:GetNumPoints() or 0
-                local pts, success = {}, np > 0
-                for idx = 1, np do
+                local pointCount = found:GetNumPoints() or 0
+                local pts, success = {}, pointCount > 0
+                for idx = 1, pointCount do
                     local p, rel, rp, posX, posY = found:GetPoint(idx)
                     if not p then
                         success = false
@@ -14608,8 +14608,8 @@ do
             if nestDepth > 0 and Skin.IsForeignFrame(owner) then
                 return
             end
-            local fb, fw = Num(win:GetBottom()), Num(win:GetWidth())
-            if not fb or not fw then
+            local foundBottom, fw = Num(win:GetBottom()), Num(win:GetWidth())
+            if not foundBottom or not fw then
                 return
             end
             if owner.GetRegions then
@@ -14623,8 +14623,8 @@ do
                         and region:IsObjectType("Texture")
                         and (region:GetAlpha() or 0) > 0
                     then
-                        local rt, rw = Num(region:GetTop()), Num(region:GetWidth())
-                        if rt and rw and rt < fb + 60 and rw > fw * 0.5 then
+                        local rt, objectiveRow = Num(region:GetTop()), Num(region:GetWidth())
+                        if rt and objectiveRow and rt < foundBottom + 60 and objectiveRow > fw * 0.5 then
                             region:SetAlpha(0)
                         end
                     end
@@ -14878,20 +14878,20 @@ do
                 -- icon) via PP.CreateBorder (integer physical thickness,
                 -- snap-immune), so NOTHING is written onto Blizzard frames -- all state sits in FFD and PP's own registry.
                 local PPb = CludesUI and (CludesUI.PanelPP or CludesUI.PP)
-                local idd = GetFFD(entry)
-                if not idd.qBorder and PPb and PPb.CreateBorder and entry.CreateTexture then
+                local importData = GetFFD(entry)
+                if not importData.qBorder and PPb and PPb.CreateBorder and entry.CreateTexture then
                     local owner = CreateFrame("Frame", nil, entry)
                     owner:SetPoint("TOPLEFT", glyphTex, "TOPLEFT", 0, 0)
                     owner:SetPoint("BOTTOMRIGHT", glyphTex, "BOTTOMRIGHT", 0, 0)
                     owner:SetFrameLevel(entry:GetFrameLevel() + 2)
                     PPb.CreateBorder(owner, 0, 0, 0, 1, 1, "OVERLAY", 7)
-                    idd.qBorder = owner
+                    importData.qBorder = owner
                 end
                 -- Quality color read from Blizzard's own ring: vertex-colored per
                 -- quality and HIDDEN for poor/common drops, so hidden/absent maps
                 -- to black as wanted. Re-read every pass (pooled rows change item
                 -- between opens); the ring is hidden again after reading.
-                if idd.qBorder and PPb and PPb.SetBorderColor then
+                if importData.qBorder and PPb and PPb.SetBorderColor then
                     local ring = entry.IconBorder
                     local qr, qg, qb = 0, 0, 0
                     local isQuality = false
@@ -14920,7 +14920,7 @@ do
                         local key = saved.lootIconBorderThickness
                         local size = key and (CludesUI.BORDER_STEP_OF_LABEL[key] or 1) or 1
                         CludesUI.ApplyBorderStyle(
-                            idd.qBorder,
+                            importData.qBorder,
                             size,
                             qr,
                             qg,
@@ -14936,15 +14936,15 @@ do
                             nil,
                             CludesUI.BorderPx(saved.lootIconBorderThicknessPx, size, texture)
                         )
-                        idd.qStyled = true
-                    elseif idd.qStyled then
-                        CludesUI.HideBorderStyle(idd.qBorder)
-                        idd.qBorder:Show()
-                        CludesUI.PP.UpdateBorder(idd.qBorder, 1, qr, qg, qb, 1)
-                        CludesUI.PP.ShowBorder(idd.qBorder)
-                        idd.qStyled = nil
+                        importData.qStyled = true
+                    elseif importData.qStyled then
+                        CludesUI.HideBorderStyle(importData.qBorder)
+                        importData.qBorder:Show()
+                        CludesUI.PP.UpdateBorder(importData.qBorder, 1, qr, qg, qb, 1)
+                        CludesUI.PP.ShowBorder(importData.qBorder)
+                        importData.qStyled = nil
                     else
-                        PPb.SetBorderColor(idd.qBorder, qr, qg, qb, 1)
+                        PPb.SetBorderColor(importData.qBorder, qr, qg, qb, 1)
                     end
                 end
             end
@@ -15018,33 +15018,33 @@ do
             end
         end
 
-        local box = win.ScrollBox
+        local tabBox = win.ScrollBox
         -- Item list 5px lower, ONCE per session: Skin_Loot re-runs on every open,
         -- and an unguarded relative shift walks the box down 5px per loot.
-        if box and box.GetNumPoints then
-            local partData = GetFFD(box)
+        if tabBox and tabBox.GetNumPoints then
+            local partData = GetFFD(tabBox)
             if not partData.shifted then
                 partData.shifted = true
-                local n = box:GetNumPoints()
+                local n = tabBox:GetNumPoints()
                 local pts = {}
                 for idx = 1, n do
-                    pts[idx] = { box:GetPoint(idx) }
+                    pts[idx] = { tabBox:GetPoint(idx) }
                 end
                 if n > 0 then
-                    box:ClearAllPoints()
+                    tabBox:ClearAllPoints()
                     for idx = 1, n do
                         local pt = pts[idx]
-                        box:SetPoint(pt[1], pt[2], pt[3], pt[4] or 0, (pt[5] or 0) - 5)
+                        tabBox:SetPoint(pt[1], pt[2], pt[3], pt[4] or 0, (pt[5] or 0) - 5)
                     end
                 end
             end
         end
-        if box and box.ForEachFrame then
-            pcall(box.ForEachFrame, box, SkinLootRow)
-            local bd = GetFFD(box)
-            if box.Update and not bd.rowHook then
-                bd.rowHook = true
-                hooksecurefunc(box, "Update", function(button)
+        if tabBox and tabBox.ForEachFrame then
+            pcall(tabBox.ForEachFrame, tabBox, SkinLootRow)
+            local buttonData = GetFFD(tabBox)
+            if tabBox.Update and not buttonData.rowHook then
+                buttonData.rowHook = true
+                hooksecurefunc(tabBox, "Update", function(button)
                     pcall(button.ForEachFrame, button, SkinLootRow)
                 end)
             end
@@ -15438,11 +15438,11 @@ do
             for win in pairs(known) do
                 SkinToast(win)
             end
-            local af = _G.AlertFrame
-            if not af then
+            local auctionsFrame = _G.AlertFrame
+            if not auctionsFrame then
                 return
             end
-            local subs = af.alertFrameSubSystems
+            local subs = auctionsFrame.alertFrameSubSystems
             if type(subs) == "table" then
                 for _, sys in ipairs(subs) do
                     local pool = sys and sys.alertFramePool
@@ -15456,8 +15456,8 @@ do
                     end
                 end
             end
-            if af.GetChildren then
-                local children = { af:GetChildren() }
+            if auctionsFrame.GetChildren then
+                local children = { auctionsFrame:GetChildren() }
                 for idx = 1, #children do
                     SkinToast(children[idx])
                 end
@@ -15484,17 +15484,17 @@ do
                 local isSecret = issecretvalue
                 local children = { up:GetChildren() }
                 for idx = 1, #children do
-                    local ch = children[idx]
-                    if ch and ch.GetFrameStrata and ch.IsForbidden and not ch:IsForbidden() then
-                        local strata, isShown = ch:GetFrameStrata(), ch:IsShown()
+                    local childFrame = children[idx]
+                    if childFrame and childFrame.GetFrameStrata and childFrame.IsForbidden and not childFrame:IsForbidden() then
+                        local strata, isShown = childFrame:GetFrameStrata(), childFrame:IsShown()
                         if
                             not (isSecret and (isSecret(strata) or isSecret(isShown)))
                             and isShown
                             and strata == "FULLSCREEN_DIALOG"
-                            and not Skin.IsForeignFrame(ch, up)
+                            and not Skin.IsForeignFrame(childFrame, up)
                         then
-                            if SkinToast(ch) then
-                                known[ch] = true
+                            if SkinToast(childFrame) then
+                                known[childFrame] = true
                             end
                         end
                     end
@@ -15608,17 +15608,17 @@ do
     -- UserScaledFrameTemplate, and TextSizeManager re-derives their size from the
     -- baseHeight KeyValue whenever text scale changes, so a one-shot resize silently reverts. Re-applied every pass.
     function SP.LayoutFilterBar(castFrame)
-        local fb = castFrame.FilterBar
-        if not fb then
+        local foundBottom = castFrame.FilterBar
+        if not foundBottom then
             return
         end
 
-        local scrollBar = fb.SearchBar
+        local scrollBar = foundBottom.SearchBar
         if scrollBar and scrollBar.SetHeight then
             scrollBar:SetHeight(SP.CONTROL_H)
         end
 
-        local dropdown = fb.SearchFilterDropdown
+        local dropdown = foundBottom.SearchFilterDropdown
         if dropdown then
             if dropdown.SetHeight then
                 dropdown:SetHeight(SP.CONTROL_H)
@@ -15682,13 +15682,13 @@ do
             castFrame.BottomDivider:SetAlpha(0)
         end
 
-        local fb = castFrame.FilterBar
-        if fb then
-            if fb.SearchBar then
-                Skin.EditBox(fb.SearchBar)
+        local foundBottom = castFrame.FilterBar
+        if foundBottom then
+            if foundBottom.SearchBar then
+                Skin.EditBox(foundBottom.SearchBar)
             end
-            if fb.SearchFilterDropdown then
-                Skin.Dropdown(fb.SearchFilterDropdown)
+            if foundBottom.SearchFilterDropdown then
+                Skin.Dropdown(foundBottom.SearchFilterDropdown)
             end
         end
 
@@ -15738,11 +15738,11 @@ do
             Skin.White(titleText)
         end
 
-        local cb = win.CloseButton
+        local creatureBtn = win.CloseButton
             or (win.TitleContainer and win.TitleContainer.CloseButton)
             or (win.GetName and _G[(win:GetName() or "") .. "CloseButton"])
-        if cb then
-            Skin.CloseButton(cb)
+        if creatureBtn then
+            Skin.CloseButton(creatureBtn)
         end
 
         -- Battle.net bar: flatten the plate art, skin status dropdown and the square menu button (icon KEPT, only thing identifying it).
@@ -16019,17 +16019,17 @@ do
             if win.rollID and type(_G.GetLootRollItemInfo) == "function" then
                 local _, _, _, quality = GetLootRollItemInfo(win.rollID)
                 if type(quality) == "number" then
-                    local cr, cg, cb
+                    local cr, cg, creatureBtn
                     if C_Item and C_Item.GetItemQualityColor then
-                        cr, cg, cb = C_Item.GetItemQualityColor(quality)
+                        cr, cg, creatureBtn = C_Item.GetItemQualityColor(quality)
                     elseif GetItemQualityColor then
-                        cr, cg, cb = GetItemQualityColor(quality)
+                        cr, cg, creatureBtn = GetItemQualityColor(quality)
                     end
                     -- Same uncommon-and-up rule the other surfaces get from
                     -- WSkin.RingQuality, applied to the same chroma test so a
                     -- common drop looks identical across all of them.
-                    if type(cr) == "number" and (math.max(cr, cg, cb) - math.min(cr, cg, cb)) > 0.1 then
-                        qr, qg, qb = cr, cg, cb
+                    if type(cr) == "number" and (math.max(cr, cg, creatureBtn) - math.min(cr, cg, creatureBtn)) > 0.1 then
+                        qr, qg, qb = cr, cg, creatureBtn
                     end
                 end
             end
@@ -16169,15 +16169,15 @@ do
     end
 
     function LP.SkinHistoryRows(win)
-        local box = win.ScrollBox
-        if not (box and box.ForEachFrame) then
+        local tabBox = win.ScrollBox
+        if not (tabBox and tabBox.ForEachFrame) then
             return
         end
-        pcall(box.ForEachFrame, box, LP.SkinHistoryRow)
-        local bd = GetFFD(box)
-        if box.Update and not bd.rowHook then
-            bd.rowHook = true
-            hooksecurefunc(box, "Update", function(button)
+        pcall(tabBox.ForEachFrame, tabBox, LP.SkinHistoryRow)
+        local buttonData = GetFFD(tabBox)
+        if tabBox.Update and not buttonData.rowHook then
+            buttonData.rowHook = true
+            hooksecurefunc(tabBox, "Update", function(button)
                 pcall(button.ForEachFrame, button, LP.SkinHistoryRow)
             end)
         end
@@ -16481,9 +16481,9 @@ do
         if roleChecks then
             for _, role in ipairs({ "Tank", "Healer", "DPS" }) do
                 local rb = _G["LFGInvitePopupRoleButton" .. role] or found[role .. "Button"]
-                local cb = rb and (rb.checkButton or rb.CheckButton)
-                if cb then
-                    Skin.Checkbox(cb, { borderInset = 4 })
+                local creatureBtn = rb and (rb.checkButton or rb.CheckButton)
+                if creatureBtn then
+                    Skin.Checkbox(creatureBtn, { borderInset = 4 })
                 end
             end
         end
@@ -17390,12 +17390,12 @@ do
             return
         end
         for idx = 1, #kids do
-            local ch = kids[idx]
-            if ch and ch.Icon then
-                Square(ch)
-            elseif ch then
+            local childFrame = kids[idx]
+            if childFrame and childFrame.Icon then
+                Square(childFrame)
+            elseif childFrame then
                 -- One level deeper: the ScrollTarget holding the pooled rows.
-                local okInner, inner = pcall(HP.Kids, ch)
+                local okInner, inner = pcall(HP.Kids, childFrame)
                 if okInner then
                     for jdx = 1, #inner do
                         Square(inner[jdx])
@@ -17812,10 +17812,10 @@ do
                 -- Last resort: an option is any child carrying a WidgetContainer.
                 local kids = { win:GetChildren() }
                 for idx = 1, #kids do
-                    local ch = kids[idx]
-                    local okW, wc = pcall(HP.RawGet, ch, "WidgetContainer")
+                    local childFrame = kids[idx]
+                    local okW, wc = pcall(HP.RawGet, childFrame, "WidgetContainer")
                     if okW and wc then
-                        HP.SkinChoiceOption(ch)
+                        HP.SkinChoiceOption(childFrame)
                     end
                 end
             end
@@ -18612,12 +18612,12 @@ do
         if region ~= 0 or g ~= 1 or button ~= 0 then
             return
         end
-        local success, cr, cg, cb = FC.ClassRGB(skinData.fcUnit)
+        local success, cr, cg, creatureBtn = FC.ClassRGB(skinData.fcUnit)
         if not success then
             return
         end
         skinData.fcPaint = true
-        barFrame:SetStatusBarColor(cr, cg, cb)
+        barFrame:SetStatusBarColor(cr, cg, creatureBtn)
         skinData.fcPaint = false
     end
 
@@ -18710,13 +18710,13 @@ do
     -- The spec icon, square and joined to the bar pair's right edge, following
     -- Blizzard's spec texture (now at alpha 0) whatever writes it: a carrier with
     -- no spec shows none.
-    function FC.PaintSpec(box, texture, file)
+    function FC.PaintSpec(tabBox, texture, file)
         if type(file) == "nil" then
-            box:Hide()
+            tabBox:Hide()
             return
         end
         texture:SetTexture(file)
-        box:Show()
+        tabBox:Show()
     end
 
     function FC.SpecIcon(ownerFrame, edge, specInfo, size)
@@ -18725,25 +18725,25 @@ do
             return
         end
         local Pix = CludesUI.PP
-        local box = CreateFrame("Frame", nil, ownerFrame)
-        box:SetSize(size, size)
-        box:SetPoint("TOPLEFT", edge, "TOPRIGHT")
-        box:SetFrameLevel(edge:GetFrameLevel())
-        local texture = box:CreateTexture(nil, "ARTWORK")
-        texture:SetAllPoints(box)
+        local tabBox = CreateFrame("Frame", nil, ownerFrame)
+        tabBox:SetSize(size, size)
+        tabBox:SetPoint("TOPLEFT", edge, "TOPRIGHT")
+        tabBox:SetFrameLevel(edge:GetFrameLevel())
+        local texture = tabBox:CreateTexture(nil, "ARTWORK")
+        texture:SetAllPoints(tabBox)
         texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         -- The bar pair's right edge is the icon's left one.
-        Pix.CreateBorder(box, 0, 0, 0, 1, 1, "OVERLAY", 7)
-        local c = Pix.GetBorders(box)
+        Pix.CreateBorder(tabBox, 0, 0, 0, 1, 1, "OVERLAY", 7)
+        local c = Pix.GetBorders(tabBox)
         if c then
             c._hideLeft = true
-            Pix.SetBorderSize(box, 1)
+            Pix.SetBorderSize(tabBox, 1)
         end
-        skinData.fcSpec = box
+        skinData.fcSpec = tabBox
         hooksecurefunc(specInfo, "SetTexture", function(_, file)
-            FC.PaintSpec(box, texture, file)
+            FC.PaintSpec(tabBox, texture, file)
         end)
-        FC.PaintSpec(box, texture, specInfo:GetTexture())
+        FC.PaintSpec(tabBox, texture, specInfo:GetTexture())
     end
 
     -- The trinket slot shows all the time, often empty: its icon is cropped
