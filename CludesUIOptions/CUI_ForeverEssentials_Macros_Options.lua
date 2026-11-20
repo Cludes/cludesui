@@ -90,12 +90,12 @@ local function Glyph(hostFrame, size, file, onClick, tipText)
     local widget = CreateFrame("Button", nil, hostFrame)
     widget:SetSize(size, size)
     widget:SetFrameLevel(hostFrame:GetFrameLevel() + 6)
-    local t = widget:CreateTexture(nil, "OVERLAY")
-    t:SetAllPoints()
+    local tex = widget:CreateTexture(nil, "OVERLAY")
+    tex:SetAllPoints()
     if file then
-        t:SetTexture(ICONS .. file)
+        tex:SetTexture(ICONS .. file)
     end
-    widget.tex = t
+    widget.tex = tex
     widget:SetAlpha(0.5)
     widget:SetScript("OnEnter", function(self)
         if self:IsEnabled() then

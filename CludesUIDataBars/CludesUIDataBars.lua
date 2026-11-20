@@ -3085,10 +3085,10 @@ function mod.SetBlockEditHighlight(barId, blockId)
         return
     end
     if not slotFrame._edbEditHL then
-        local t = slotFrame:CreateTexture(nil, "OVERLAY", nil, 6)
-        t:SetAllPoints(slotFrame)
-        t:SetColorTexture(1, 1, 1, 0.15)
-        slotFrame._edbEditHL = t
+        local tex = slotFrame:CreateTexture(nil, "OVERLAY", nil, 6)
+        tex:SetAllPoints(slotFrame)
+        tex:SetColorTexture(1, 1, 1, 0.15)
+        slotFrame._edbEditHL = tex
     end
     slotFrame._edbEditHL:Show()
     _editHL = { barId = barId, blockId = blockId }

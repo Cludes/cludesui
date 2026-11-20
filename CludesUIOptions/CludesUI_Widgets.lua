@@ -2790,9 +2790,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
     local function BuildSectionCard(hostFrame, widget, cursorY)
         local function Tex(subMenu, a)
-            local t = hostFrame:CreateTexture(nil, "BACKGROUND", nil, subMenu)
-            t:SetColorTexture(1, 1, 1, a)
-            return t
+            local tex = hostFrame:CreateTexture(nil, "BACKGROUND", nil, subMenu)
+            tex:SetColorTexture(1, 1, 1, a)
+            return tex
         end
         -- gen: the heading's pool generation. The pool hands a rebuilt page the
         -- same objects again, so a card is live only while its heading is still
@@ -3601,13 +3601,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
             local glowTex = CreateFrame("Frame")
             local function MkEdge()
-                local t = glowTex:CreateTexture(nil, "OVERLAY", nil, 7)
-                t:SetColorTexture(red, green, blue, 1)
-                if noSnap and t.SetSnapToPixelGrid then
-                    t:SetSnapToPixelGrid(false)
-                    t:SetTexelSnappingBias(0)
+                local tex = glowTex:CreateTexture(nil, "OVERLAY", nil, 7)
+                tex:SetColorTexture(red, green, blue, 1)
+                if noSnap and tex.SetSnapToPixelGrid then
+                    tex:SetSnapToPixelGrid(false)
+                    tex:SetTexelSnappingBias(0)
                 end
-                return t
+                return tex
             end
             local topY, bot, lft, rgt = MkEdge(), MkEdge(), MkEdge(), MkEdge()
             topY:SetHeight(px)
@@ -3959,11 +3959,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         hov:SetAllPoints()
         hov:SetColorTexture(1, 1, 1, 0)
         line._hov = hov
-        local ic = line:CreateTexture(nil, "ARTWORK")
-        ic:SetSize(16, 16)
-        ic:SetPoint("LEFT", line, "LEFT", 8, 0)
-        ic:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        line._icon = ic
+        local iconTex = line:CreateTexture(nil, "ARTWORK")
+        iconTex:SetSize(16, 16)
+        iconTex:SetPoint("LEFT", line, "LEFT", 8, 0)
+        iconTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        line._icon = iconTex
         local labelFS = line:CreateFontString(nil, "OVERLAY")
         labelFS:SetPoint("RIGHT", line, "RIGHT", -8, 0)
         labelFS:SetJustifyH("LEFT")

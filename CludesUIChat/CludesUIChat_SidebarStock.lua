@@ -530,9 +530,9 @@ function CHAT.SB_Dress(button, key)
         CHAT.FV_Plate(button, true)
     end
     if e.inset then
-        local t = button:CreateTexture(nil, "BACKGROUND")
-        t:SetColorTexture(0, 0, 0, e.inset)
-        button._sbInset = t
+        local tex = button:CreateTexture(nil, "BACKGROUND")
+        tex:SetColorTexture(0, 0, 0, e.inset)
+        button._sbInset = tex
     end
     local g
     if e.glyph then
@@ -635,14 +635,14 @@ function CHAT.SB_DressScroll(button, seat)
         fl:SetAllPoints(button)
         fl:SetAlpha(0)
         fl:Hide()
-        local ag = fl:CreateAnimationGroup()
-        ag:SetLooping("REPEAT")
+        local anim = fl:CreateAnimationGroup()
+        anim:SetLooping("REPEAT")
         local function Step(sequence, from, to, dur)
-            local a = ag:CreateAnimation("Alpha")
-            a:SetFromAlpha(from)
-            a:SetToAlpha(to)
-            a:SetDuration(dur)
-            a:SetOrder(sequence)
+            local fade = anim:CreateAnimation("Alpha")
+            fade:SetFromAlpha(from)
+            fade:SetToAlpha(to)
+            fade:SetDuration(dur)
+            fade:SetOrder(sequence)
         end
         if kit.flash == "blink" then
             -- Vanilla: hard on for half a second, off for half a second.
@@ -655,7 +655,7 @@ function CHAT.SB_DressScroll(button, seat)
             Step(3, 1, 0, 0.1)
             Step(4, 0, 0, 0.5)
         end
-        button._sbFlash, button._sbFlashAG = fl, ag
+        button._sbFlash, button._sbFlashAG = fl, anim
     end
     local fa = Pick(e.flashArt)
     if fa then

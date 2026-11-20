@@ -152,16 +152,16 @@ local TIP_BG_R, TIP_BG_G, TIP_BG_B = 0.062, 0.070, 0.082
 local TIP_ARROW = 16
 
 local function TipArrowTex(holderFrame, drawLayer, flyout, size, red, green, blue, a)
-    local t = holderFrame:CreateTexture(nil, drawLayer, nil, flyout)
-    t:SetSize(size, size)
-    t:SetPoint("CENTER")
-    t:SetColorTexture(red, green, blue, a)
-    t:SetRotation(math.rad(45))
-    if t.SetSnapToPixelGrid then
-        t:SetSnapToPixelGrid(false)
-        t:SetTexelSnappingBias(0)
+    local tex = holderFrame:CreateTexture(nil, drawLayer, nil, flyout)
+    tex:SetSize(size, size)
+    tex:SetPoint("CENTER")
+    tex:SetColorTexture(red, green, blue, a)
+    tex:SetRotation(math.rad(45))
+    if tex.SetSnapToPixelGrid then
+        tex:SetSnapToPixelGrid(false)
+        tex:SetTexelSnappingBias(0)
     end
-    return t
+    return tex
 end
 
 function CludesUI.BuildTipCallout(hostFrame, options)

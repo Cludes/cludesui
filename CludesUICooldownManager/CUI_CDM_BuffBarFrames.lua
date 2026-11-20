@@ -398,10 +398,10 @@ local function ApplyTBBTickMarks(scrollBar, conf, tickCache, isVert, tickParent)
     local Pix = CludesUI and CludesUI.PP
     local hostFrame = tickParent or scrollBar
     while #tickCache < #vals do
-        local t = hostFrame:CreateTexture(nil, "OVERLAY", nil, 7)
-        t:SetSnapToPixelGrid(false)
-        t:SetTexelSnappingBias(0)
-        tickCache[#tickCache + 1] = t
+        local tex = hostFrame:CreateTexture(nil, "OVERLAY", nil, 7)
+        tex:SetSnapToPixelGrid(false)
+        tex:SetTexelSnappingBias(0)
+        tickCache[#tickCache + 1] = tex
     end
 
     -- Legacy bars carry no tick-color fields: fall back to white so their ticks render unchanged.

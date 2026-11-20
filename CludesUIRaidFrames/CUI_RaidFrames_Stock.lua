@@ -907,16 +907,16 @@ local SHADE_END = CreateColor(0, 0, 0, 0.35)
 local function MakeBevel(barFrame, mask)
     local sh = {}
     for index = 1, 4 do
-        local t = barFrame:CreateTexture(nil, "OVERLAY", nil, -3)
-        t:SetTexture(WHITE)
+        local tex = barFrame:CreateTexture(nil, "OVERLAY", nil, -3)
+        tex:SetTexture(WHITE)
         local Pix = CludesUI.PP or CludesUI.PanelPP
         if Pix and Pix.DisablePixelSnap then
-            Pix.DisablePixelSnap(t)
+            Pix.DisablePixelSnap(tex)
         end
         if mask then
-            t:AddMaskTexture(mask)
+            tex:AddMaskTexture(mask)
         end
-        sh[index] = t
+        sh[index] = tex
     end
     -- VERTICAL runs bottom -> top, HORIZONTAL left -> right.
     sh[1]:SetGradient("VERTICAL", SHADE_CLEAR, SHADE_TOP)

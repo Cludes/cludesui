@@ -394,10 +394,10 @@ local function StartProceduralAnts(
 )
     if not holder._cuiScrollData then
         local function mk(p1, p1f, p2, p2f)
-            local t = holder:CreateTexture(nil, "OVERLAY", nil, 7)
-            t:SetPoint(p1, holder, p1f)
-            t:SetPoint(p2, holder, p2f)
-            return t
+            local tex = holder:CreateTexture(nil, "OVERLAY", nil, 7)
+            tex:SetPoint(p1, holder, p1f)
+            tex:SetPoint(p2, holder, p2f)
+            return tex
         end
         holder._cuiScrollData = {
             top = mk("TOPLEFT", "TOPLEFT", "TOPRIGHT", "TOPRIGHT"),
@@ -432,10 +432,10 @@ local function StartProceduralAnts(
     if bgR then
         if not glowData.bgTop then
             local function mkBg(p1, p1f, p2, p2f)
-                local t = holder:CreateTexture(nil, "OVERLAY", nil, 6)
-                t:SetPoint(p1, holder, p1f)
-                t:SetPoint(p2, holder, p2f)
-                return t
+                local tex = holder:CreateTexture(nil, "OVERLAY", nil, 6)
+                tex:SetPoint(p1, holder, p1f)
+                tex:SetPoint(p2, holder, p2f)
+                return tex
             end
             glowData.bgTop = mkBg("TOPLEFT", "TOPLEFT", "TOPRIGHT", "TOPRIGHT")
             glowData.bgBottom = mkBg("BOTTOMLEFT", "BOTTOMLEFT", "BOTTOMRIGHT", "BOTTOMRIGHT")
@@ -1353,11 +1353,11 @@ local ANIM_MASK_TEX = [[Interface\Buttons\WHITE8X8]]
 
 -- One hidden background strip of the animated ants, spanning p1 to p2.
 local function _MkAntsBg(holder, p1, p2)
-    local t = holder:CreateTexture(nil, "OVERLAY", nil, 6)
-    t:SetPoint(p1, holder, p1)
-    t:SetPoint(p2, holder, p2)
-    t:Hide()
-    return t
+    local tex = holder:CreateTexture(nil, "OVERLAY", nil, 6)
+    tex:SetPoint(p1, holder, p1)
+    tex:SetPoint(p2, holder, p2)
+    tex:Hide()
+    return tex
 end
 
 -- Region creation only (shared with PrewarmEngineHost): per edge the rect mask,
@@ -1375,11 +1375,11 @@ local function _EnsureAnimAnts(holder)
         local stripTex = holder:CreateTexture(nil, "OVERLAY", nil, 7)
         stripTex:AddMaskTexture(maskTex)
         stripTex:Hide()
-        local ag = stripTex:CreateAnimationGroup()
-        ag:SetLooping("REPEAT")
-        local tr = ag:CreateAnimation("Translation")
+        local anim = stripTex:CreateAnimationGroup()
+        anim:SetLooping("REPEAT")
+        local tr = anim:CreateAnimation("Translation")
         tr:SetSmoothing("NONE")
-        glowData.masks[i], glowData.strips[i], glowData.groups[i], glowData.trs[i] = maskTex, stripTex, ag, tr
+        glowData.masks[i], glowData.strips[i], glowData.groups[i], glowData.trs[i] = maskTex, stripTex, anim, tr
     end
     -- Background strips: top, right, bottom, left (same order as the edges).
     glowData.bgs[1] = _MkAntsBg(holder, "TOPLEFT", "TOPRIGHT")

@@ -98,16 +98,16 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         }
         for num = 1, #edges do
             local e = edges[num]
-            local t = widget:CreateTexture(nil, "OVERLAY", nil, 7)
-            t:SetColorTexture(0, 0, 0, 1)
-            t:SetPoint(e[1], widget, e[1], e[2], e[3])
-            t:SetPoint(e[4], widget, e[4], e[5], e[6])
+            local tex = widget:CreateTexture(nil, "OVERLAY", nil, 7)
+            tex:SetColorTexture(0, 0, 0, 1)
+            tex:SetPoint(e[1], widget, e[1], e[2], e[3])
+            tex:SetPoint(e[4], widget, e[4], e[5], e[6])
             if e[7] then
-                t:SetHeight(1)
+                tex:SetHeight(1)
             else
-                t:SetWidth(1)
+                tex:SetWidth(1)
             end
-            skinData.owned[t] = true
+            skinData.owned[tex] = true
         end
     end
 

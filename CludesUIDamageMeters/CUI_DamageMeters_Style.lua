@@ -438,13 +438,13 @@ function mod.DMClassicEdge(window, e)
     local p = {}
     for index = 1, 8 do
         local specInfo = mod.DM_CLASSIC_EDGE_UV[index]
-        local t = window:CreateTexture(nil, "BORDER")
-        t:SetTexture(mod.DM_CLASSIC_EDGE)
-        t:SetTexCoord(specInfo[2], specInfo[3], specInfo[4], specInfo[5])
+        local tex = window:CreateTexture(nil, "BORDER")
+        tex:SetTexture(mod.DM_CLASSIC_EDGE)
+        tex:SetTexCoord(specInfo[2], specInfo[3], specInfo[4], specInfo[5])
         if index <= 4 then
-            t:SetSize(e, e)
+            tex:SetSize(e, e)
         end
-        p[specInfo[1]] = t
+        p[specInfo[1]] = tex
     end
     -- Inside the window's rect: the rim sits two pixels in from the edge,
     -- the tile starts under the bevel, the header and rows sit past it.
@@ -570,13 +570,13 @@ function mod.DMPaintWindowBg(texture, red, green, blue, a, edged, texKey)
         local layer, sub = texture:GetDrawLayer()
         parts = {}
         for index = 1, 2 do
-            local t = hostFrame:CreateTexture(nil, layer or "BACKGROUND", nil, sub or 0)
-            t:SetTexture("Interface\\Buttons\\WHITE8X8")
-            if t.SetSnapToPixelGrid then
-                t:SetSnapToPixelGrid(false)
-                t:SetTexelSnappingBias(0)
+            local tex = hostFrame:CreateTexture(nil, layer or "BACKGROUND", nil, sub or 0)
+            tex:SetTexture("Interface\\Buttons\\WHITE8X8")
+            if tex.SetSnapToPixelGrid then
+                tex:SetSnapToPixelGrid(false)
+                tex:SetTexelSnappingBias(0)
             end
-            parts[index] = t
+            parts[index] = tex
         end
         parts[1]:SetPoint("TOPLEFT", texture, "TOPLEFT", 0, 0)
         parts[1]:SetPoint("TOPRIGHT", texture, "TOPRIGHT", 0, 0)
@@ -918,13 +918,13 @@ function mod.DMFvMenuArt(frame, backdrop)
     if not (mod.DMForever() and mod.DMFvAtlas(atlas)) then
         return false
     end
-    local t = frame:CreateTexture(nil, "BACKGROUND", nil, -1)
-    t:SetAtlas(atlas)
-    t:SetPoint("TOPLEFT", frame, "TOPLEFT", -10, 7)
-    t:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 10, -13)
-    t:SetAlpha(0.925)
+    local tex = frame:CreateTexture(nil, "BACKGROUND", nil, -1)
+    tex:SetAtlas(atlas)
+    tex:SetPoint("TOPLEFT", frame, "TOPLEFT", -10, 7)
+    tex:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 10, -13)
+    tex:SetAlpha(0.925)
     backdrop:SetColorTexture(0, 0, 0, 0)
-    frame._fvArt = t
+    frame._fvArt = tex
     return true
 end
 -- A home page card's background as Forever's list button ("normal" |

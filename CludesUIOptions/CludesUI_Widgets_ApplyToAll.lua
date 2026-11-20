@@ -43,11 +43,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             PoolAttach(targetFrame, glow, nil, StopGlow)
             local accR, accG, accB = CludesUI.GetAccentColor()
             local function MkEdge()
-                local t = glow:CreateTexture(nil, "OVERLAY", nil, 7)
-                t:SetColorTexture(accR, accG, accB, 1)
-                glow["_c_" .. (glow._edgeN or 0)] = t
+                local tex = glow:CreateTexture(nil, "OVERLAY", nil, 7)
+                tex:SetColorTexture(accR, accG, accB, 1)
+                glow["_c_" .. (glow._edgeN or 0)] = tex
                 glow._edgeN = (glow._edgeN or 0) + 1
-                return t
+                return tex
             end
             glow._top = MkEdge()
             glow._top:SetHeight(2)
@@ -181,9 +181,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         caption:SetPoint("LEFT", boxFrame, "RIGHT", 8, 0)
         row._lbl = caption
 
-        local hl = row:CreateTexture(nil, "ARTWORK")
-        hl:SetAllPoints()
-        row._hl = hl
+        local highlight = row:CreateTexture(nil, "ARTWORK")
+        highlight:SetAllPoints()
+        row._hl = highlight
         return row
     end
 

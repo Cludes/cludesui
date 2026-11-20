@@ -4329,12 +4329,12 @@ do
         crosshair:SetSize(1, 1)
 
         local function MakeArm(layer)
-            local t = crosshair:CreateTexture(nil, layer or "OVERLAY")
-            if t.SetSnapToPixelGrid then
-                t:SetSnapToPixelGrid(false)
-                t:SetTexelSnappingBias(0)
+            local tex = crosshair:CreateTexture(nil, layer or "OVERLAY")
+            if tex.SetSnapToPixelGrid then
+                tex:SetSnapToPixelGrid(false)
+                tex:SetTexelSnappingBias(0)
             end
-            return t
+            return tex
         end
         -- Borders sit on artwork so the overlay arms render on top of them.
         crosshair._hBorder = MakeArm("ARTWORK")

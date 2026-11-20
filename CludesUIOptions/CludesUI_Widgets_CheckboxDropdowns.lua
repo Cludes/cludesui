@@ -120,24 +120,24 @@ function CludesUI.AttachEmptyFilterWarn(region, checkDrop, warnText, hasContentF
     flash:SetColorTexture(0.9, 0.15, 0.15, 0.45)
     CludesUI.RoundBody(checkDrop, flash)
     flash:SetAlpha(0)
-    local ag = flash:CreateAnimationGroup()
-    local a1 = ag:CreateAnimation("Alpha")
+    local anim = flash:CreateAnimationGroup()
+    local a1 = anim:CreateAnimation("Alpha")
     a1:SetFromAlpha(0)
     a1:SetToAlpha(1)
     a1:SetDuration(0.10)
     a1:SetOrder(1)
-    local a2 = ag:CreateAnimation("Alpha")
+    local a2 = anim:CreateAnimation("Alpha")
     a2:SetFromAlpha(1)
     a2:SetToAlpha(0)
     a2:SetDuration(0.45)
     a2:SetOrder(2)
     -- Two pulses read as a deliberate alert; one reads as a rendering glitch.
-    ag:SetLooping("REPEAT")
+    anim:SetLooping("REPEAT")
     local loops = 0
-    ag:SetScript("OnPlay", function()
+    anim:SetScript("OnPlay", function()
         loops = 0
     end)
-    ag:SetScript("OnLoop", function(self)
+    anim:SetScript("OnLoop", function(self)
         loops = loops + 1
         if loops >= 2 then
             self:Stop()
@@ -148,8 +148,8 @@ function CludesUI.AttachEmptyFilterWarn(region, checkDrop, warnText, hasContentF
         local empty = not hasContentFn()
         bubble:SetShown(empty)
         warnBorder:SetShown(empty)
-        if not empty and ag:IsPlaying() then
-            ag:Stop()
+        if not empty and anim:IsPlaying() then
+            anim:Stop()
         end
     end
     Update()
@@ -157,7 +157,7 @@ function CludesUI.AttachEmptyFilterWarn(region, checkDrop, warnText, hasContentF
     return function()
         Update()
         if not hasContentFn() then
-            ag:Restart()
+            anim:Restart()
         end
     end
 end

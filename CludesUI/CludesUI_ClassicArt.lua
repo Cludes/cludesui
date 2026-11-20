@@ -86,13 +86,13 @@ local N = 9
 function CF.Create(hostFrame, layer, sub)
     local p = {}
     for idx = 1, N do
-        local t = hostFrame:CreateTexture(nil, layer or "OVERLAY", nil, sub or 2)
-        t:SetTexture(FILE)
-        if t.SetSnapToPixelGrid then
-            t:SetSnapToPixelGrid(false)
-            t:SetTexelSnappingBias(0)
+        local tex = hostFrame:CreateTexture(nil, layer or "OVERLAY", nil, sub or 2)
+        tex:SetTexture(FILE)
+        if tex.SetSnapToPixelGrid then
+            tex:SetSnapToPixelGrid(false)
+            tex:SetTexelSnappingBias(0)
         end
-        p[idx] = t
+        p[idx] = tex
     end
     return p
 end

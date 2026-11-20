@@ -63,9 +63,9 @@ local function ResolveTheme()
 end
 
 local function SolidTex(hostFrame, layer, red, green, blue, a, sublevel)
-    local t = hostFrame:CreateTexture(nil, layer, nil, sublevel)
-    t:SetColorTexture(red, green, blue, a)
-    return t
+    local tex = hostFrame:CreateTexture(nil, layer, nil, sublevel)
+    tex:SetColorTexture(red, green, blue, a)
+    return tex
 end
 
 -- BORDER/-7 strips demoted to the frame's own level, exactly as the window

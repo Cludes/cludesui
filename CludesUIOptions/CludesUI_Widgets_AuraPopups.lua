@@ -100,13 +100,13 @@ function CludesUI.ShowTrackedAurasPopup(options)
     do
         local onePhys = 1 / (panelFrame:GetEffectiveScale() or 1)
         local function Edge()
-            local t = panelFrame:CreateTexture(nil, "BORDER")
-            t:SetColorTexture(1, 1, 1, 0.15)
-            if t.SetSnapToPixelGrid then
-                t:SetSnapToPixelGrid(false)
-                t:SetTexelSnappingBias(0)
+            local tex = panelFrame:CreateTexture(nil, "BORDER")
+            tex:SetColorTexture(1, 1, 1, 0.15)
+            if tex.SetSnapToPixelGrid then
+                tex:SetSnapToPixelGrid(false)
+                tex:SetTexelSnappingBias(0)
             end
-            return t
+            return tex
         end
         local eT = Edge()
         eT:SetPoint("TOPLEFT", 0, 0)

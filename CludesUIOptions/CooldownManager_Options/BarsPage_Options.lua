@@ -224,12 +224,12 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         highlight:SetColorTexture(1, 1, 1, 0.06)
                         highlight:Hide()
                         r._hl = highlight
-                        local ic = r:CreateTexture(nil, "ARTWORK")
-                        ic:SetSize(20, 20)
-                        ic:SetPoint("LEFT", r, "LEFT", 8, 0)
-                        r._ic = ic
+                        local iconTex = r:CreateTexture(nil, "ARTWORK")
+                        iconTex:SetSize(20, 20)
+                        iconTex:SetPoint("LEFT", r, "LEFT", 8, 0)
+                        r._ic = iconTex
                         local tx = CludesUI.MakeFont(r, 13, nil, 1, 1, 1, 0.85)
-                        tx:SetPoint("LEFT", ic, "RIGHT", 8, 0)
+                        tx:SetPoint("LEFT", iconTex, "RIGHT", 8, 0)
                         r._tx = tx
                         r:SetScript("OnEnter", function(self)
                             self._hl:Show()

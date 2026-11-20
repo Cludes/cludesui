@@ -1727,15 +1727,15 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
             if _PP and _PP.CreateBorder then
                 _PP.CreateBorder(shade, 1, 1, 1, 1, 2, "OVERLAY", 7)
             end
-            local ag = shade:CreateAnimationGroup()
-            ag:SetLooping("BOUNCE")
-            local pulse = ag:CreateAnimation("Alpha")
+            local anim = shade:CreateAnimationGroup()
+            anim:SetLooping("BOUNCE")
+            local pulse = anim:CreateAnimation("Alpha")
             pulse:SetFromAlpha(1)
             pulse:SetToAlpha(0.15)
             pulse:SetDuration(0.7)
             pulse:SetSmoothing("IN_OUT")
             skinData.resGlow = shade
-            skinData.resGlowAG = ag
+            skinData.resGlowAG = anim
         end
         return skinData.resGlow, skinData.resGlowAG
     end

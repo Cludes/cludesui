@@ -428,11 +428,11 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     -- places and colours them. Extra Text is never width-limited (the
     -- live frames never cut it short either).
     local function TextSlot(sizeKey)
-        local fs = textOverlay:CreateFontString(nil, "OVERLAY")
-        SetPVFont(fs, PREVIEW_FONT, prefs[sizeKey] or prefs.textSize or 12)
-        fs:SetTextColor(1, 1, 1)
-        fs:SetWordWrap(false)
-        return fs
+        local label = textOverlay:CreateFontString(nil, "OVERLAY")
+        SetPVFont(label, PREVIEW_FONT, prefs[sizeKey] or prefs.textSize or 12)
+        label:SetTextColor(1, 1, 1)
+        label:SetWordWrap(false)
+        return label
     end
     local leftFS = TextSlot("leftTextSize")
     local rightFS = TextSlot("rightTextSize")
@@ -1035,12 +1035,12 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         cbTextOvr:SetFrameLevel(popFrame:GetFrameLevel() + 11)
         -- Name, time and target: one line each, cut short rather than wrapped.
         local function CastText(size, justify)
-            local fs = cbTextOvr:CreateFontString(nil, "OVERLAY")
-            SetPVFont(fs, PREVIEW_FONT, size)
-            fs:SetJustifyH(justify)
-            fs:SetWordWrap(false)
-            fs:SetMaxLines(1)
-            return fs
+            local label = cbTextOvr:CreateFontString(nil, "OVERLAY")
+            SetPVFont(label, PREVIEW_FONT, size)
+            label:SetJustifyH(justify)
+            label:SetWordWrap(false)
+            label:SetMaxLines(1)
+            return label
         end
         castNameText = CastText(11, "LEFT")
         castNameText:SetTextColor(1, 1, 1)
@@ -1146,11 +1146,11 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         btbTextOvr:SetAllPoints()
         btbTextOvr:SetFrameLevel(barRegion:GetFrameLevel() + 10)
         local function BarText(prefix)
-            local fs = btbTextOvr:CreateFontString(nil, "OVERLAY")
-            SetPVFont(fs, PREVIEW_FONT, prefs[prefix .. "Size"] or 11)
-            fs:SetTextColor(1, 1, 1)
-            fs:SetWordWrap(false)
-            return fs
+            local label = btbTextOvr:CreateFontString(nil, "OVERLAY")
+            SetPVFont(label, PREVIEW_FONT, prefs[prefix .. "Size"] or 11)
+            label:SetTextColor(1, 1, 1)
+            label:SetWordWrap(false)
+            return label
         end
         btbLeftFS = BarText("btbLeft")
         btbRightFS = BarText("btbRight")

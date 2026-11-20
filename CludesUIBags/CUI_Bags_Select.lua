@@ -203,16 +203,16 @@ ExitPinSelectMode = function()
     if shade then
         shade:EnableMouse(false)
         if not shade._fadeOut then
-            local fg = shade:CreateAnimationGroup()
-            local a = fg:CreateAnimation("Alpha")
-            a:SetFromAlpha(1)
-            a:SetToAlpha(0)
-            a:SetDuration(0.15)
-            fg:SetScript("OnFinished", function()
+            local fadeAnim = shade:CreateAnimationGroup()
+            local fade = fadeAnim:CreateAnimation("Alpha")
+            fade:SetFromAlpha(1)
+            fade:SetToAlpha(0)
+            fade:SetDuration(0.15)
+            fadeAnim:SetScript("OnFinished", function()
                 shade:Hide()
                 shade:SetAlpha(1)
             end)
-            shade._fadeOut = fg
+            shade._fadeOut = fadeAnim
         end
         shade._fadeOut:Play()
     end
@@ -259,16 +259,16 @@ local function ExitAssignSelectMode()
             shade:SetAlpha(1)
         else
             if not shade._fadeOut then
-                local fg = shade:CreateAnimationGroup()
-                local a = fg:CreateAnimation("Alpha")
-                a:SetFromAlpha(1)
-                a:SetToAlpha(0)
-                a:SetDuration(0.15)
-                fg:SetScript("OnFinished", function()
+                local fadeAnim = shade:CreateAnimationGroup()
+                local fade = fadeAnim:CreateAnimation("Alpha")
+                fade:SetFromAlpha(1)
+                fade:SetToAlpha(0)
+                fade:SetDuration(0.15)
+                fadeAnim:SetScript("OnFinished", function()
                     shade:Hide()
                     shade:SetAlpha(1)
                 end)
-                shade._fadeOut = fg
+                shade._fadeOut = fadeAnim
             end
             shade._fadeOut:Play()
         end
@@ -406,15 +406,15 @@ EnterAssignSelectMode = function(catKey, junkList)
     shade:SetAlpha(0)
     shade:Show()
     if not shade._fadeIn then
-        local fg = shade:CreateAnimationGroup()
-        local a = fg:CreateAnimation("Alpha")
-        a:SetFromAlpha(0)
-        a:SetToAlpha(1)
-        a:SetDuration(0.15)
-        fg:SetScript("OnFinished", function()
+        local fadeAnim = shade:CreateAnimationGroup()
+        local fade = fadeAnim:CreateAnimation("Alpha")
+        fade:SetFromAlpha(0)
+        fade:SetToAlpha(1)
+        fade:SetDuration(0.15)
+        fadeAnim:SetScript("OnFinished", function()
             shade:SetAlpha(1)
         end)
-        shade._fadeIn = fg
+        shade._fadeIn = fadeAnim
     end
     shade._fadeIn:Play()
 
@@ -915,15 +915,15 @@ EnterPinSelectMode = function()
     shade:SetAlpha(0)
     shade:Show()
     if not shade._fadeIn then
-        local fg = shade:CreateAnimationGroup()
-        local a = fg:CreateAnimation("Alpha")
-        a:SetFromAlpha(0)
-        a:SetToAlpha(1)
-        a:SetDuration(0.15)
-        fg:SetScript("OnFinished", function()
+        local fadeAnim = shade:CreateAnimationGroup()
+        local fade = fadeAnim:CreateAnimation("Alpha")
+        fade:SetFromAlpha(0)
+        fade:SetToAlpha(1)
+        fade:SetDuration(0.15)
+        fadeAnim:SetScript("OnFinished", function()
             shade:SetAlpha(1)
         end)
-        shade._fadeIn = fg
+        shade._fadeIn = fadeAnim
     end
     shade._fadeIn:Play()
 

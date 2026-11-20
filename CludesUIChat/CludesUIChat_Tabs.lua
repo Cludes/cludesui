@@ -311,10 +311,10 @@ local function BuildGhost()
     -- are guarded so repeat alerts never restart the animation.
     local flasher = glowTex:CreateAnimationGroup()
     flasher:SetLooping("BOUNCE")
-    local a = flasher:CreateAnimation("Alpha")
-    a:SetFromAlpha(0.25)
-    a:SetToAlpha(0.75)
-    a:SetDuration(0.5)
+    local fade = flasher:CreateAnimation("Alpha")
+    fade:SetFromAlpha(0.25)
+    fade:SetToAlpha(0.75)
+    fade:SetDuration(0.5)
     g._flasher = flasher
 
     function g:StartFlash()

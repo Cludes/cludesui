@@ -54,12 +54,12 @@ local function EnsureGlow(backing)
     local gc = mod.GetTargetGlowColor()
     local ga = mod.GetTargetGlowAlpha()
     local function MkTex()
-        local t = backing.glowFrame:CreateTexture(nil, "BACKGROUND")
-        t:SetTexture(GLOW_TEX)
-        t:SetVertexColor(gc.r, gc.g, gc.b, ga)
-        t:SetBlendMode("ADD")
-        backing.glowTextures[#backing.glowTextures + 1] = t
-        return t
+        local tex = backing.glowFrame:CreateTexture(nil, "BACKGROUND")
+        tex:SetTexture(GLOW_TEX)
+        tex:SetVertexColor(gc.r, gc.g, gc.b, ga)
+        tex:SetBlendMode("ADD")
+        backing.glowTextures[#backing.glowTextures + 1] = tex
+        return tex
     end
     backing.glowTL = MkTex()
     backing.glowTL:SetSize(GLOW_CORNER, GLOW_CORNER)
@@ -269,13 +269,13 @@ function mod.EnsureLowHpGlow(backing)
     local texs = {}
     backing.lowHpGlowTextures = texs
     local function MkTex()
-        local t = frame:CreateTexture(nil, "BACKGROUND")
+        local tex = frame:CreateTexture(nil, "BACKGROUND")
         -- Dedicated art (not the shared target-glow texture) so brightness can be tuned without touching the target glow.
-        t:SetTexture("Interface\\AddOns\\CludesUINameplates\\Media\\execute-glow.png")
-        t:SetVertexColor(0, 0, 0, 1) -- black = invisible under ADD blend until the first health eval
-        t:SetBlendMode("ADD")
-        texs[#texs + 1] = t
-        return t
+        tex:SetTexture("Interface\\AddOns\\CludesUINameplates\\Media\\execute-glow.png")
+        tex:SetVertexColor(0, 0, 0, 1) -- black = invisible under ADD blend until the first health eval
+        tex:SetBlendMode("ADD")
+        texs[#texs + 1] = tex
+        return tex
     end
     -- Same 9-slice layout as the target glow (EnsureGlow) so the two effects share one visual language.
     local tl = MkTex()
@@ -319,14 +319,14 @@ function mod.EnsureLowHpGlow(backing)
     ctr:SetPoint("BOTTOMRIGHT", rgt, "BOTTOMLEFT")
     ctr:SetTexCoord(GLOW_MARGIN, 1 - GLOW_MARGIN, GLOW_MARGIN, 1 - GLOW_MARGIN)
     -- Pulse: C-side alpha loop on the frame; only advances while shown.
-    local ag = frame:CreateAnimationGroup()
-    ag:SetLooping("BOUNCE")
-    local a = ag:CreateAnimation("Alpha")
-    a:SetFromAlpha(1)
-    a:SetToAlpha(0.35)
-    a:SetDuration(0.55)
-    a:SetSmoothing("IN_OUT")
-    backing.lowHpGlowPulse = ag
+    local anim = frame:CreateAnimationGroup()
+    anim:SetLooping("BOUNCE")
+    local fade = anim:CreateAnimation("Alpha")
+    fade:SetFromAlpha(1)
+    fade:SetToAlpha(0.35)
+    fade:SetDuration(0.55)
+    fade:SetSmoothing("IN_OUT")
+    backing.lowHpGlowPulse = anim
 end
 
 function mod.ApplyLowHpGlow(backing)
@@ -367,11 +367,11 @@ function mod.EnsureNearAggroGlow(backing)
     frame:Hide()
     backing.naGlowFrame = frame
     local function MkTex()
-        local t = frame:CreateTexture(nil, "BACKGROUND")
-        t:SetTexture("Interface\\AddOns\\CludesUINameplates\\Media\\execute-glow.png")
-        t:SetVertexColor(1, 0, 0, 1) -- static execute red, full alpha
-        t:SetBlendMode("ADD")
-        return t
+        local tex = frame:CreateTexture(nil, "BACKGROUND")
+        tex:SetTexture("Interface\\AddOns\\CludesUINameplates\\Media\\execute-glow.png")
+        tex:SetVertexColor(1, 0, 0, 1) -- static execute red, full alpha
+        tex:SetBlendMode("ADD")
+        return tex
     end
     local tl = MkTex()
     tl:SetSize(GLOW_CORNER, GLOW_CORNER)
@@ -423,15 +423,15 @@ local function EnsureTargetHighlight(backing)
     end
     -- Blizzard Style: under the stock selection ring and deselected overlay
     -- (OVERLAY 4/5), still above the fill; the CUI and classic looks keep it on top.
-    local t = backing.health:CreateTexture(nil, "OVERLAY", nil, mod.NP_Style() == "blizzard" and 0 or 5)
-    t:SetAllPoints(backing.health)
+    local tex = backing.health:CreateTexture(nil, "OVERLAY", nil, mod.NP_Style() == "blizzard" and 0 or 5)
+    tex:SetAllPoints(backing.health)
     local color = mod.GetTargetHighlightColor()
-    t:SetColorTexture(color.r, color.g, color.b, mod.GetTargetHighlightAlpha())
-    t:Hide()
-    backing.targetHighlight = t
+    tex:SetColorTexture(color.r, color.g, color.b, mod.GetTargetHighlightAlpha())
+    tex:Hide()
+    backing.targetHighlight = tex
     -- Blizzard Style: inside the stock bar shape like the fill.
     if backing._blizzBarMask then
-        t:AddMaskTexture(backing._blizzBarMask)
+        tex:AddMaskTexture(backing._blizzBarMask)
         backing._blizzMaskedTarget = true
     end
     mod.NP_ApplyRounding(backing, "health")

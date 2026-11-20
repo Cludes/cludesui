@@ -253,9 +253,9 @@ local function MakeLabel(hostFrame, size, _, red, green, blue, a, family)
 end
 
 local function MakeSolid(hostFrame, layer, red, green, blue, a, sub)
-    local t = hostFrame:CreateTexture(nil, layer, nil, sub or 0)
-    t:SetColorTexture(red, green, blue, a)
-    return t
+    local tex = hostFrame:CreateTexture(nil, layer, nil, sub or 0)
+    tex:SetColorTexture(red, green, blue, a)
+    return tex
 end
 
 local function BuildPopup()

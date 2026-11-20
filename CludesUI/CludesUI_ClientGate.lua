@@ -56,17 +56,17 @@ eventFrame:SetScript("OnEvent", function(self)
 
     -- 1px accent border (no dependencies -- the shared border kit is gated).
     local function Edge(point1, point2, wid, hgt)
-        local t = p:CreateTexture(nil, "BORDER")
-        t:SetColorTexture(0.30, 0.79, 0.94, 0.9)
-        t:SetPoint(point1)
-        t:SetPoint(point2)
+        local tex = p:CreateTexture(nil, "BORDER")
+        tex:SetColorTexture(0.30, 0.79, 0.94, 0.9)
+        tex:SetPoint(point1)
+        tex:SetPoint(point2)
         if wid then
-            t:SetWidth(wid)
+            tex:SetWidth(wid)
         end
         if hgt then
-            t:SetHeight(hgt)
+            tex:SetHeight(hgt)
         end
-        return t
+        return tex
     end
     Edge("TOPLEFT", "TOPRIGHT", nil, 1)
     Edge("BOTTOMLEFT", "BOTTOMRIGHT", nil, 1)

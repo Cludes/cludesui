@@ -960,10 +960,10 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             row:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 4, -(4 + (i - 1) * 26))
             row:SetPoint("RIGHT", dropMenu, "RIGHT", -4, 0)
             row:SetFrameLevel(dropMenu:GetFrameLevel() + 1)
-            local hl = row:CreateTexture(nil, "ARTWORK")
-            hl:SetAllPoints()
-            hl:SetColorTexture(1, 1, 1, 1)
-            hl:SetAlpha(0)
+            local highlight = row:CreateTexture(nil, "ARTWORK")
+            highlight:SetAllPoints()
+            highlight:SetColorTexture(1, 1, 1, 1)
+            highlight:SetAlpha(0)
             local boxFrame, tick = CheckBox(row)
             boxFrame:SetPoint("LEFT", row, "LEFT", 6, 0)
             marks[i] = tick
@@ -976,13 +976,13 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             end
             row:SetScript("OnEnter", function()
                 if live then
-                    hl:SetAlpha(0.05)
+                    highlight:SetAlpha(0.05)
                 end
                 CludesUI.ShowWidgetTooltip(row, CludesUI.L(live and def.tip or def.offTip))
             end)
             row:SetScript("OnLeave", function()
                 if live then
-                    hl:SetAlpha(0)
+                    highlight:SetAlpha(0)
                 end
                 CludesUI.HideWidgetTooltip()
             end)
@@ -1929,11 +1929,11 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                         caption:SetJustifyH("LEFT")
                         caption:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
                         entry._lbl = caption
-                        local hl = entry:CreateTexture(nil, "ARTWORK")
-                        hl:SetAllPoints()
-                        hl:SetColorTexture(1, 1, 1, 1)
-                        hl:SetAlpha(0)
-                        entry._hl = hl
+                        local highlight = entry:CreateTexture(nil, "ARTWORK")
+                        highlight:SetAllPoints()
+                        highlight:SetColorTexture(1, 1, 1, 1)
+                        highlight:SetAlpha(0)
+                        entry._hl = highlight
 
                         -- Delete, Rename and Keybind icons at the right edge.
                         local icons = {}
@@ -1968,12 +1968,12 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                         end
                         entry._light = function()
                             caption:SetTextColor(1, 1, 1, 1)
-                            hl:SetAlpha(CludesUI.DD_ITEM_HL_A)
+                            highlight:SetAlpha(CludesUI.DD_ITEM_HL_A)
                             IconAlpha(0.8)
                         end
                         entry._dim = function()
                             caption:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                            hl:SetAlpha(entry._isSel and CludesUI.DD_ITEM_SEL_A or 0)
+                            highlight:SetAlpha(entry._isSel and CludesUI.DD_ITEM_SEL_A or 0)
                             IconAlpha(0.4)
                         end
                         entry._overIcon = OverIcon

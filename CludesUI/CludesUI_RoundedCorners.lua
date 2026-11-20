@@ -473,18 +473,18 @@ local function GlowParts(state, edgeTex)
     glowTex = { frame = frame, corner = {}, edge = {} }
     -- Corner pieces: art, size, place and crop are set per shape by GlowOn.
     for idx = 1, 4 do
-        local t = frame:CreateTexture(nil, "BORDER")
-        ownTex[t] = true
-        glowTex.corner[idx] = t
+        local tex = frame:CreateTexture(nil, "BORDER")
+        ownTex[tex] = true
+        glowTex.corner[idx] = tex
     end
     -- The edge file's left cell (outer side at u = 0) on every side: rotated
     -- for top and bottom, and turned round for the right and bottom edges so
     -- their outer side faces out too.
     for idx = 1, 4 do
-        local t = frame:CreateTexture(nil, "BORDER")
-        t:SetTexture(GLOW_EDGE)
-        ownTex[t] = true
-        glowTex.edge[idx] = t
+        local tex = frame:CreateTexture(nil, "BORDER")
+        tex:SetTexture(GLOW_EDGE)
+        ownTex[tex] = true
+        glowTex.edge[idx] = tex
     end
     local e = glowTex.edge
     e[1]:SetTexCoord(0, 0, 0.125, 0, 0, 1, 0.125, 1) -- top
@@ -1330,11 +1330,11 @@ function CludesUI.RoundBody(hostFrame, body, cornerRadius)
     if cornerRadius < 1 then
         return
     end
-    local m = hostFrame:CreateMaskTexture()
-    m:SetAllPoints(body)
-    SetRounded(m, cornerRadius, ALL_CORNERS, "CLAMPTOBLACKADDITIVE")
-    AddMask(body, m)
-    return m
+    local mask = hostFrame:CreateMaskTexture()
+    mask:SetAllPoints(body)
+    SetRounded(mask, cornerRadius, ALL_CORNERS, "CLAMPTOBLACKADDITIVE")
+    AddMask(body, mask)
+    return mask
 end
 
 -- CludesUI.MakeRoundedCard(parent, brdA, bgA, accentH, r, g, b): the
@@ -1457,9 +1457,9 @@ end
 function CludesUI.CardSidebar(outer, backdrop)
     backdrop:SetColorTexture(1, 1, 1, 0.025)
     local function Line(a)
-        local t = outer:CreateTexture(nil, "ARTWORK")
-        t:SetColorTexture(1, 1, 1, a)
-        return t
+        local tex = outer:CreateTexture(nil, "ARTWORK")
+        tex:SetColorTexture(1, 1, 1, a)
+        return tex
     end
     local cap = outer:CreateTexture(nil, "ARTWORK")
     local color = CludesUI.CLUDES_GREEN

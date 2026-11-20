@@ -167,10 +167,10 @@ do
         end
         local edges = {}
         for jdx = 1, 4 do
-            local t = shade:CreateTexture(nil, "OVERLAY", nil, 2)
-            t:SetColorTexture(1, 1, 1, 1)
-            t:Hide()
-            edges[jdx] = t
+            local tex = shade:CreateTexture(nil, "OVERLAY", nil, 2)
+            tex:SetColorTexture(1, 1, 1, 1)
+            tex:Hide()
+            edges[jdx] = tex
         end
         shade._borderEdges = edges
         return edges
@@ -202,12 +202,12 @@ do
         if shade._shapeRing then
             return shade._shapeRing
         end
-        local t = shade:CreateTexture(nil, "OVERLAY", nil, 2)
-        t:SetSnapToPixelGrid(false)
-        t:SetTexelSnappingBias(0)
-        t:Hide()
-        shade._shapeRing = t
-        return t
+        local tex = shade:CreateTexture(nil, "OVERLAY", nil, 2)
+        tex:SetSnapToPixelGrid(false)
+        tex:SetTexelSnappingBias(0)
+        tex:Hide()
+        shade._shapeRing = tex
+        return tex
     end
 
     -- One overlay per icon in `store`, `level` above the icon (above the

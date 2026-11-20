@@ -1213,13 +1213,13 @@ CludesUI.AtOptionsLogin(function()
                     cpBtn:RegisterForClicks("LeftButtonDown")
                     local classColor = CludesUI.CLUDES_GREEN
                     local function MkCPHL()
-                        local t = cpBtn:CreateTexture(nil, "OVERLAY", nil, 7)
-                        t:SetColorTexture(classColor.r, classColor.g, classColor.b, 1)
-                        if t.SetSnapToPixelGrid then
-                            t:SetSnapToPixelGrid(false)
-                            t:SetTexelSnappingBias(0)
+                        local tex = cpBtn:CreateTexture(nil, "OVERLAY", nil, 7)
+                        tex:SetColorTexture(classColor.r, classColor.g, classColor.b, 1)
+                        if tex.SetSnapToPixelGrid then
+                            tex:SetSnapToPixelGrid(false)
+                            tex:SetTexelSnappingBias(0)
                         end
-                        return t
+                        return tex
                     end
                     local cpPx = SnapPreview(2)
                     local cpt = MkCPHL()
@@ -1283,13 +1283,13 @@ CludesUI.AtOptionsLogin(function()
                 arrowBtn:RegisterForClicks("LeftButtonDown")
                 local classColor = CludesUI.CLUDES_GREEN
                 local function MkAHL()
-                    local t = arrowBtn:CreateTexture(nil, "OVERLAY", nil, 7)
-                    t:SetColorTexture(classColor.r, classColor.g, classColor.b, 1)
-                    if t.SetSnapToPixelGrid then
-                        t:SetSnapToPixelGrid(false)
-                        t:SetTexelSnappingBias(0)
+                    local tex = arrowBtn:CreateTexture(nil, "OVERLAY", nil, 7)
+                    tex:SetColorTexture(classColor.r, classColor.g, classColor.b, 1)
+                    if tex.SetSnapToPixelGrid then
+                        tex:SetSnapToPixelGrid(false)
+                        tex:SetTexelSnappingBias(0)
                     end
-                    return t
+                    return tex
                 end
                 -- Highlight on left arrow
                 local aPx = SnapPreview(2)

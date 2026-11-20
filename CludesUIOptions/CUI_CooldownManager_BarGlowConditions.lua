@@ -685,11 +685,11 @@ function mod.BuildBarGlowHeader(hostFrame, cursorY, record, aIdx, ownSid)
     -- The arrow drawn three times, 1px apart, for a bolder stroke than the icon art.
     local arrows = {}
     for idx, off in ipairs({ { 0, 0 }, { 1, 0 }, { 0, -1 } }) do
-        local t = bar:CreateTexture(nil, "OVERLAY")
-        t:SetSize(16, 16)
-        t:SetTexture(collapsed and ARROW_RIGHT or ARROW_DOWN)
-        t:SetPoint("LEFT", bar, "LEFT", 10 + off[1], off[2])
-        arrows[idx] = t
+        local tex = bar:CreateTexture(nil, "OVERLAY")
+        tex:SetSize(16, 16)
+        tex:SetTexture(collapsed and ARROW_RIGHT or ARROW_DOWN)
+        tex:SetPoint("LEFT", bar, "LEFT", 10 + off[1], off[2])
+        arrows[idx] = tex
     end
     local arrow = arrows[1]
     local function PaintArrow(red, green, blue, a)

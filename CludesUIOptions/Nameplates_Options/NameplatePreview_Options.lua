@@ -502,15 +502,15 @@ local function BuildNameplatePreview(hostFrame, parentW)
         f:SetAllPoints()
         f._texs = {}
         local function Mk()
-            local t = f:CreateTexture(nil, "OVERLAY", nil, 7)
-            t:SetTexture(texture)
-            t:SetVertexColor(bc.r, bc.g, bc.b)
-            if t.SetSnapToPixelGrid then
-                t:SetSnapToPixelGrid(false)
-                t:SetTexelSnappingBias(0)
+            local tex = f:CreateTexture(nil, "OVERLAY", nil, 7)
+            tex:SetTexture(texture)
+            tex:SetVertexColor(bc.r, bc.g, bc.b)
+            if tex.SetSnapToPixelGrid then
+                tex:SetSnapToPixelGrid(false)
+                tex:SetTexelSnappingBias(0)
             end
-            f._texs[#f._texs + 1] = t
-            return t
+            f._texs[#f._texs + 1] = tex
+            return tex
         end
         -- Corners inset UV by half a texel (T) from edges (0/1) so the GPU fully samples the outermost solid pixel line.
         local T = 0.042
@@ -592,13 +592,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
 
     -- Solid 1px edge lines on all 4 sides of healthWrapper: the image border's outermost pixel can vanish at non-native scales (texture filtering), so these sit below it as a pixel-perfect fallback.
     local function MkSolidEdge()
-        local t = healthHolder:CreateTexture(nil, "OVERLAY", nil, 7)
-        t:SetColorTexture(0, 0, 0, 1) -- placeholder; color updated in Update()
-        if t.SetSnapToPixelGrid then
-            t:SetSnapToPixelGrid(false)
-            t:SetTexelSnappingBias(0)
+        local tex = healthHolder:CreateTexture(nil, "OVERLAY", nil, 7)
+        tex:SetColorTexture(0, 0, 0, 1) -- placeholder; color updated in Update()
+        if tex.SetSnapToPixelGrid then
+            tex:SetSnapToPixelGrid(false)
+            tex:SetTexelSnappingBias(0)
         end
-        return t
+        return tex
     end
     local solidT = MkSolidEdge()
     solidT:SetHeight(1)
@@ -633,13 +633,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
         local gc0 = mod.GetTargetGlowColor()
         local ga0 = mod.GetTargetGlowAlpha()
         local function Mk(coords)
-            local t = gf:CreateTexture(nil, "BACKGROUND")
-            t:SetTexture(GLOW_TEX)
-            t:SetVertexColor(gc0.r, gc0.g, gc0.b, ga0)
-            t:SetBlendMode("ADD")
-            t:SetTexCoord(unpack(coords))
-            glowPreview.texs[#glowPreview.texs + 1] = t
-            return t
+            local tex = gf:CreateTexture(nil, "BACKGROUND")
+            tex:SetTexture(GLOW_TEX)
+            tex:SetVertexColor(gc0.r, gc0.g, gc0.b, ga0)
+            tex:SetBlendMode("ADD")
+            tex:SetTexCoord(unpack(coords))
+            glowPreview.texs[#glowPreview.texs + 1] = tex
+            return tex
         end
         local tl = Mk({ 0, GM, 0, GM })
         Pix.Size(tl, GC, GC)

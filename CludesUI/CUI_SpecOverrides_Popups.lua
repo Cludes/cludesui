@@ -358,11 +358,11 @@ local function BuildNameIconPopup(groupDefs, onCreate)
         local widget = CreateFrame("Button", nil, dialog)
         widget:SetSize(SZ, SZ)
         widget:SetPoint("TOPLEFT", dialog, "TOPLEFT", 20 + col * (SZ + GAP), -122 - rowI * (SZ + GAP))
-        local t = widget:CreateTexture(nil, "ARTWORK")
-        t:SetAllPoints()
-        ApplyGroupIcon(t, groupDef)
+        local tex = widget:CreateTexture(nil, "ARTWORK")
+        tex:SetAllPoints()
+        ApplyGroupIcon(tex, groupDef)
         -- The icon takes the tile's round shape.
-        local brd = CludesUI.MakeRoundedBorder(widget, 1, 1, 1, 0.10, t)
+        local brd = CludesUI.MakeRoundedBorder(widget, 1, 1, 1, 0.10, tex)
         widget._def = groupDef
         widget._brd = brd
         widget:SetScript("OnClick", function(self)

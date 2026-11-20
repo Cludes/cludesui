@@ -67,11 +67,11 @@ local function InitBuffBarsPage(
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0, 0, 0, 0.9)
         local function Line(size, point, y, alpha)
-            local fs = boxFrame:CreateFontString(nil, "OVERLAY")
-            fs:SetFont(FONT_PATH, size, GetCDMOptOutline())
-            fs:SetPoint(point, boxFrame, point, 0, y)
-            fs:SetTextColor(1, 1, 1, alpha)
-            return fs
+            local label = boxFrame:CreateFontString(nil, "OVERLAY")
+            label:SetFont(FONT_PATH, size, GetCDMOptOutline())
+            label:SetPoint(point, boxFrame, point, 0, y)
+            label:SetTextColor(1, 1, 1, alpha)
+            return label
         end
         boxFrame._title = Line(13, "TOP", -7, 0.9)
         boxFrame._hint = Line(10, "BOTTOM", 7, 0.4)
@@ -700,11 +700,11 @@ local function InitBuffBarsPage(
 
     -- A popup line of text in the CDM options font.
     local function PopupText(parent, size, red, green, blue, a, text, layer)
-        local fs = parent:CreateFontString(nil, layer or "OVERLAY")
-        fs:SetFont(FONT_PATH, size, GetCDMOptOutline())
-        fs:SetTextColor(red, green, blue, a)
-        fs:SetText(text)
-        return fs
+        local label = parent:CreateFontString(nil, layer or "OVERLAY")
+        label:SetFont(FONT_PATH, size, GetCDMOptOutline())
+        label:SetTextColor(red, green, blue, a)
+        label:SetText(text)
+        return label
     end
     -- A labelled number box (digits only, a grey example while empty) under anchor.
     local function NumberField(dialog, label, example, maxLetters, anchor, relPoint, x, y)
@@ -976,11 +976,11 @@ local function InitBuffBarsPage(
             menuH = menuH + 9
         end
         local function Heading(text)
-            local fs = innerFrame:CreateFontString(nil, "OVERLAY")
-            fs:SetFont(FONT_PATH, 10, GetCDMOptOutline())
-            fs:SetTextColor(1, 1, 1, 0.5)
-            fs:SetPoint("TOPLEFT", innerFrame, "TOPLEFT", 10, -menuH - 5)
-            fs:SetText(CludesUI.L(text))
+            local label = innerFrame:CreateFontString(nil, "OVERLAY")
+            label:SetFont(FONT_PATH, 10, GetCDMOptOutline())
+            label:SetTextColor(1, 1, 1, 0.5)
+            label:SetPoint("TOPLEFT", innerFrame, "TOPLEFT", 10, -menuH - 5)
+            label:SetText(CludesUI.L(text))
             menuH = menuH + 20
         end
         -- A pick: the bar takes it, the bars rebuild, the page follows.
@@ -2325,9 +2325,9 @@ local function InitBuffBarsPage(
                     return entry
                 end
                 local function MenuFont(parent, size)
-                    local fs = parent:CreateFontString(nil, "OVERLAY")
-                    fs:SetFont(FONT_PATH, size, GetCDMOptOutline())
-                    return fs
+                    local label = parent:CreateFontString(nil, "OVERLAY")
+                    label:SetFont(FONT_PATH, size, GetCDMOptOutline())
+                    return label
                 end
                 -- The row's white highlight, shown at alpha.
                 local function RowHighlight(entry, alpha)

@@ -90,16 +90,16 @@ end
 function mod.CreateEdges(hostFrame, thickness)
     local edges = {}
     local function edge(point1, point2, width, height)
-        local t = hostFrame:CreateTexture(nil, "OVERLAY")
-        t:SetPoint(point1)
-        t:SetPoint(point2)
+        local tex = hostFrame:CreateTexture(nil, "OVERLAY")
+        tex:SetPoint(point1)
+        tex:SetPoint(point2)
         if width then
-            t:SetWidth(width)
+            tex:SetWidth(width)
         end
         if height then
-            t:SetHeight(height)
+            tex:SetHeight(height)
         end
-        edges[#edges + 1] = t
+        edges[#edges + 1] = tex
     end
     edge("TOPLEFT", "TOPRIGHT", nil, thickness)
     edge("BOTTOMLEFT", "BOTTOMRIGHT", nil, thickness)

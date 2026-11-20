@@ -229,11 +229,11 @@ end
 function mod.NP_ClassicBorderPieces(owner, sheet)
     local p = { sheet = sheet }
     for index = 1, 3 do
-        local t = owner:CreateTexture(nil, "OVERLAY", nil, 0)
-        t:SetTexture(sheet.file)
-        t:SetSnapToPixelGrid(false)
-        t:SetTexelSnappingBias(0)
-        p[index] = t
+        local tex = owner:CreateTexture(nil, "OVERLAY", nil, 0)
+        tex:SetTexture(sheet.file)
+        tex:SetSnapToPixelGrid(false)
+        tex:SetTexelSnappingBias(0)
+        p[index] = tex
     end
     p[1]:SetTexCoord(sheet.l, sheet.c1, sheet.t, sheet.b)
     p[2]:SetTexCoord(sheet.c1, sheet.c2, sheet.t, sheet.b)

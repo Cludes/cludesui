@@ -394,11 +394,11 @@ local function BuildFrame()
     function titleBoxes.New(owner, anchor, ox, oy, dx, glyph)
         local boxState = { anchor = anchor, ox = ox, oy = oy, dx = dx, glyph = glyph, alpha = 1, s = {} }
         for i = 1, 4 do
-            local t = owner:CreateTexture(nil, glyph and "BACKGROUND" or "HIGHLIGHT")
+            local tex = owner:CreateTexture(nil, glyph and "BACKGROUND" or "HIGHLIGHT")
             if not glyph then
-                t:SetBlendMode("ADD")
+                tex:SetBlendMode("ADD")
             end
-            boxState.s[i] = t
+            boxState.s[i] = tex
         end
         if glyph then
             local tc = titleBoxes.GLYPH[glyph]
@@ -815,13 +815,13 @@ local function BuildFrame()
                 if half == 1 then
                     top, bot = bot, top
                 end
-                local t = miniBox:CreateTexture(nil, "BACKGROUND", nil, -8)
-                t:SetTexture(shadowFile)
-                t:SetTexCoord(x0 / BG_WIDTH, x1 / BG_WIDTH, top, bot)
-                t:SetSize(x1 - x0, 112)
-                t:SetPoint("TOPLEFT", miniBox, "TOPLEFT", x0 - MX, (half == 0) and 74 or -38)
+                local tex = miniBox:CreateTexture(nil, "BACKGROUND", nil, -8)
+                tex:SetTexture(shadowFile)
+                tex:SetTexCoord(x0 / BG_WIDTH, x1 / BG_WIDTH, top, bot)
+                tex:SetSize(x1 - x0, 112)
+                tex:SetPoint("TOPLEFT", miniBox, "TOPLEFT", x0 - MX, (half == 0) and 74 or -38)
                 if piece == 0 then
-                    t:SetGradient("HORIZONTAL", fadeFrom, fadeTo)
+                    tex:SetGradient("HORIZONTAL", fadeFrom, fadeTo)
                 end
             end
         end
@@ -1362,10 +1362,10 @@ local function BuildSidebar()
                 dotTex:SetFrameLevel(button:GetFrameLevel() + 5)
                 dotTex:SetSize(9, 9)
                 dotTex:SetPoint("RIGHT", button, "RIGHT", -14, 0)
-                local t = dotTex:CreateTexture(nil, "OVERLAY")
-                t:SetAllPoints()
-                t:SetColorTexture(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
-                CludesUI.RegAccent({ type = "solid", obj = t, a = 1 })
+                local tex = dotTex:CreateTexture(nil, "OVERLAY")
+                tex:SetAllPoints()
+                tex:SetColorTexture(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
+                CludesUI.RegAccent({ type = "solid", obj = tex, a = 1 })
                 -- Round: run the solid color through the portrait circle mask.
                 local mask = dotTex:CreateMaskTexture()
                 mask:SetTexture(
@@ -1373,23 +1373,23 @@ local function BuildSidebar()
                     "CLAMPTOBLACKADDITIVE",
                     "CLAMPTOBLACKADDITIVE"
                 )
-                mask:SetAllPoints(t)
-                t:AddMaskTexture(mask)
-                local ag = dotTex:CreateAnimationGroup()
-                ag:SetLooping("REPEAT")
-                local a1 = ag:CreateAnimation("Alpha")
+                mask:SetAllPoints(tex)
+                tex:AddMaskTexture(mask)
+                local anim = dotTex:CreateAnimationGroup()
+                anim:SetLooping("REPEAT")
+                local a1 = anim:CreateAnimation("Alpha")
                 a1:SetFromAlpha(1)
                 a1:SetToAlpha(0.35)
                 a1:SetDuration(0.7)
                 a1:SetOrder(1)
                 a1:SetSmoothing("IN_OUT")
-                local a2 = ag:CreateAnimation("Alpha")
+                local a2 = anim:CreateAnimation("Alpha")
                 a2:SetFromAlpha(0.35)
                 a2:SetToAlpha(1)
                 a2:SetDuration(0.7)
                 a2:SetOrder(2)
                 a2:SetSmoothing("IN_OUT")
-                dotTex._ag = ag
+                dotTex._ag = anim
             end
             dotTex:SetShown(show)
             if show then
@@ -1649,9 +1649,9 @@ local function BuildSidebar()
     arrowButton._aEnabled, arrowButton._aDisabled, arrowButton._aHover = 0.7, 0.2, 1.0
     arrowButton._atBottom = false
     do
-        local t = arrowButton:CreateTexture(nil, "ARTWORK")
-        t:SetTexture(ICONS_PATH .. "cui-arrow-down3.png")
-        t:SetAllPoints()
+        local tex = arrowButton:CreateTexture(nil, "ARTWORK")
+        tex:SetTexture(ICONS_PATH .. "cui-arrow-down3.png")
+        tex:SetAllPoints()
     end
     arrowButton:SetAlpha(arrowButton._aEnabled)
     arrowButton:SetScript("OnEnter", function(self)
@@ -3604,10 +3604,10 @@ local function BuildFooter(rightW, rightX)
                 bdTex:SetColorTexture(0, 0, 0, 0.20)
                 local fadeIn = linkShade:CreateAnimationGroup()
                 fadeIn:SetToFinalAlpha(true)
-                local a = fadeIn:CreateAnimation("Alpha")
-                a:SetFromAlpha(0)
-                a:SetToAlpha(1)
-                a:SetDuration(0.2)
+                local fade = fadeIn:CreateAnimation("Alpha")
+                fade:SetFromAlpha(0)
+                fade:SetToAlpha(1)
+                fade:SetDuration(0.2)
                 linkShade._fadeIn = fadeIn
                 linkShade:RegisterForClicks("AnyUp")
                 linkShade:SetScript("OnClick", HideLinkPopup)
@@ -4163,9 +4163,9 @@ local function GetSearchHighlight()
         pulse = CreateFrame("Frame")
         local color = CLUDES_GREEN
         local function MkEdge()
-            local t = pulse:CreateTexture(nil, "OVERLAY", nil, 7)
-            t:SetColorTexture(color.r, color.g, color.b, 1)
-            return t
+            local tex = pulse:CreateTexture(nil, "OVERLAY", nil, 7)
+            tex:SetColorTexture(color.r, color.g, color.b, 1)
+            return tex
         end
         pulse._top = MkEdge()
         pulse._bot = MkEdge()

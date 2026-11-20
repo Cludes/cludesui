@@ -942,11 +942,11 @@ local function LayoutBevel(shade, wid, hgt)
     if not shine then
         shine = {}
         for idx = 1, 4 do
-            local t = shade:CreateTexture(nil, "OVERLAY", nil, -3)
-            t:SetTexture("Interface\\Buttons\\WHITE8X8")
-            t:SetSnapToPixelGrid(false)
-            t:SetTexelSnappingBias(0)
-            shine[idx] = t
+            local tex = shade:CreateTexture(nil, "OVERLAY", nil, -3)
+            tex:SetTexture("Interface\\Buttons\\WHITE8X8")
+            tex:SetSnapToPixelGrid(false)
+            tex:SetTexelSnappingBias(0)
+            shine[idx] = tex
         end
         shade.strips = shine
     end
@@ -1303,13 +1303,13 @@ local function SetClassicArt(texture, suffix, wid, hgt)
 end
 
 local function AddAlphaStep(set, from, to, duration, sequence, endDelay)
-    local a = set:CreateAnimation("Alpha")
-    a:SetFromAlpha(from)
-    a:SetToAlpha(to)
-    a:SetDuration(duration)
-    a:SetOrder(sequence)
+    local fade = set:CreateAnimation("Alpha")
+    fade:SetFromAlpha(from)
+    fade:SetToAlpha(to)
+    fade:SetDuration(duration)
+    fade:SetOrder(sequence)
     if endDelay then
-        a:SetEndDelay(endDelay)
+        fade:SetEndDelay(endDelay)
     end
 end
 

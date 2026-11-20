@@ -1530,11 +1530,11 @@ local friendlyFrameCache = CreateFramePool("Frame", UIParent, nil, nil, false, f
     backing.glowFrame:SetPoint("BOTTOMRIGHT", backing.health, "BOTTOMRIGHT", GLOW_EXTEND, -GLOW_EXTEND)
 
     local function CreateGlowTex()
-        local t = backing.glowFrame:CreateTexture(nil, "BACKGROUND")
-        t:SetTexture(GLOW_TEX)
-        t:SetVertexColor(0.4117, 0.6667, 1.0, 1.0)
-        t:SetBlendMode("ADD")
-        return t
+        local tex = backing.glowFrame:CreateTexture(nil, "BACKGROUND")
+        tex:SetTexture(GLOW_TEX)
+        tex:SetVertexColor(0.4117, 0.6667, 1.0, 1.0)
+        tex:SetBlendMode("ADD")
+        return tex
     end
 
     backing.glowTL = CreateGlowTex()

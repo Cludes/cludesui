@@ -179,18 +179,18 @@ local function DrawBlizzMock(stage, Pix, MakeBorder, _eg, _font, forever)
         ic:SetFrameLevel(stage:GetFrameLevel() + 1)
         Pix.Size(ic, ICON, ICON)
         Pix.Point(ic, "TOPLEFT", stage, "TOP", -rowW / 2 + (idx - 1) * (ICON + GAP), -76)
-        local t = ic:CreateTexture(nil, "ARTWORK")
+        local tex = ic:CreateTexture(nil, "ARTWORK")
         if slotOK then
             if forever then
-                t:SetAtlas(SLOT, false)
+                tex:SetAtlas(SLOT, false)
             else
-                CludesUI.StockAtlas(t, SLOT, false)
+                CludesUI.StockAtlas(tex, SLOT, false)
             end
-            Pix.Point(t, "TOPLEFT", ic, "TOPLEFT", -3, 3)
-            Pix.Point(t, "BOTTOMRIGHT", ic, "BOTTOMRIGHT", 3, -3)
+            Pix.Point(tex, "TOPLEFT", ic, "TOPLEFT", -3, 3)
+            Pix.Point(tex, "BOTTOMRIGHT", ic, "BOTTOMRIGHT", 3, -3)
         else
-            t:SetAllPoints()
-            t:SetColorTexture(0.2, 0.17, 0.1, 1)
+            tex:SetAllPoints()
+            tex:SetColorTexture(0.2, 0.17, 0.1, 1)
             MakeBorder(ic, GOLD_R, GOLD_G, GOLD_B, 0.6, Pix)
         end
     end
@@ -209,9 +209,9 @@ local function DrawBlizzMock(stage, Pix, MakeBorder, _eg, _font, forever)
                 else
                     Pix.Point(cap, "BOTTOMLEFT", stage, "TOP", rowW / 2 - OVERLAP, -104)
                 end
-                local t = cap:CreateTexture(nil, "ARTWORK")
-                t:SetAllPoints()
-                CludesUI.StockAtlas(t, name, false)
+                local tex = cap:CreateTexture(nil, "ARTWORK")
+                tex:SetAllPoints()
+                CludesUI.StockAtlas(tex, name, false)
             end
         end
     end
@@ -259,9 +259,9 @@ local function DrawForeverMock(stage, Pix, MakeBorder, ACC, font)
             else
                 Pix.Point(cap, "BOTTOMLEFT", stage, "TOP", rowW / 2 - OVERLAP, -102)
             end
-            local t = cap:CreateTexture(nil, "ARTWORK")
-            t:SetAllPoints()
-            t:SetAtlas(name, false)
+            local tex = cap:CreateTexture(nil, "ARTWORK")
+            tex:SetAllPoints()
+            tex:SetAtlas(name, false)
         end
     end
 end
@@ -337,11 +337,11 @@ local function DrawClassicMock(stage, Pix, _mb, _eg, font)
         else
             Pix.Point(cap, "BOTTOMLEFT", stage, "TOP", rowW / 2 - OVERLAP, -102)
         end
-        local t = cap:CreateTexture(nil, "ARTWORK")
-        t:SetAllPoints()
-        t:SetTexture(CLASSIC_CAP)
+        local tex = cap:CreateTexture(nil, "ARTWORK")
+        tex:SetAllPoints()
+        tex:SetTexture(CLASSIC_CAP)
         if side == 2 then
-            t:SetTexCoord(1, 0, 0, 1)
+            tex:SetTexCoord(1, 0, 0, 1)
         end
     end
 end

@@ -564,11 +564,11 @@ function CHAT.ApplyExtendedBackground()
         ext:SetPoint("BOTTOMLEFT", bg1, "TOPLEFT", 0, 0)
         ext:SetPoint("BOTTOMRIGHT", bg1, "TOPRIGHT", 0, 0)
         ext:SetHeight(GetTabAreaHeight())
-        local t = ext:CreateTexture(nil, "BACKGROUND")
-        t._cuiOwned = true
-        t:SetAllPoints()
+        local tex = ext:CreateTexture(nil, "BACKGROUND")
+        tex._cuiOwned = true
+        tex:SetAllPoints()
         mod._chatBgExt = ext
-        mod._chatBgExtTex = t
+        mod._chatBgExtTex = tex
     end
     if ext then
         ext:SetHeight(GetTabAreaHeight())
@@ -601,9 +601,9 @@ function CHAT.ApplyExtendedBackground()
             sext:SetPoint("BOTTOMRIGHT", scrollBar, "TOPRIGHT", 0, 0)
             sext:SetHeight(GetTabAreaHeight())
             sext:SetFrameLevel(scrollBar:GetFrameLevel())
-            local t = sext:CreateTexture(nil, "BACKGROUND")
-            t._cuiOwned = true
-            t:SetAllPoints()
+            local tex = sext:CreateTexture(nil, "BACKGROUND")
+            tex._cuiOwned = true
+            tex:SetAllPoints()
             local div = sext:CreateTexture(nil, "OVERLAY", nil, 7)
             div._cuiOwned = true
             div:SetWidth((Pix and Pix.mult) or 1)
@@ -612,7 +612,7 @@ function CHAT.ApplyExtendedBackground()
                 Pix.DisablePixelSnap(div)
             end
             d1.sidebarExt = sext
-            d1.sidebarExtTex = t
+            d1.sidebarExtTex = tex
             d1.sidebarExtDiv = div
         end
         if sext then

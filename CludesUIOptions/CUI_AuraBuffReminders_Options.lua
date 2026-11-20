@@ -3768,10 +3768,10 @@ CludesUI.AtOptionsLogin(function()
         line:SetHeight(h)
         line:SetPoint("TOPLEFT", child, "TOPLEFT", 1, -(i - 1) * h)
         line:SetPoint("TOPRIGHT", child, "TOPRIGHT", -1, -(i - 1) * h)
-        local hl = line:CreateTexture(nil, "ARTWORK")
-        hl:SetAllPoints()
-        hl:SetColorTexture(1, 1, 1, 0)
-        line._hl = hl
+        local highlight = line:CreateTexture(nil, "ARTWORK")
+        highlight:SetAllPoints()
+        highlight:SetColorTexture(1, 1, 1, 0)
+        line._hl = highlight
         return line
     end
     local function TRRowLabel(line, fontPath, text)

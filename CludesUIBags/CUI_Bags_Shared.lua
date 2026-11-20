@@ -65,11 +65,11 @@ local function CreateInsetBorder(button, isSlot, iconTex)
     local Pix = CUI and CUI.PP
     local px = (Pix and Pix.mult) or 1
     local WHITE = "Interface\\Buttons\\WHITE8X8"
-    local t = button:CreateTexture(nil, "OVERLAY", nil, 2)
-    t:SetTexture(WHITE)
-    t:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
-    t:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, 0)
-    t:SetHeight(px)
+    local tex = button:CreateTexture(nil, "OVERLAY", nil, 2)
+    tex:SetTexture(WHITE)
+    tex:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
+    tex:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, 0)
+    tex:SetHeight(px)
     local widget = button:CreateTexture(nil, "OVERLAY", nil, 2)
     widget:SetTexture(WHITE)
     widget:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0)
@@ -85,7 +85,7 @@ local function CreateInsetBorder(button, isSlot, iconTex)
     region:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, 0)
     region:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0)
     region:SetWidth(px)
-    button._brdT, button._brdB, button._brdL, button._brdR = t, widget, l, region
+    button._brdT, button._brdB, button._brdL, button._brdR = tex, widget, l, region
 end
 
 local function SetInsetBorderColor(button, cr, cg, callback, ca)
@@ -699,10 +699,10 @@ do
     local function MakeStep(hostFrame, size, iconTex, onClick)
         local widget = CreateFrame("Button", nil, hostFrame)
         widget:SetSize(size, size)
-        local t = widget:CreateTexture(nil, "OVERLAY")
-        t:SetSize(size - 4, size - 4)
-        t:SetPoint("CENTER", widget, "CENTER", 0, 0)
-        t:SetTexture(iconTex)
+        local tex = widget:CreateTexture(nil, "OVERLAY")
+        tex:SetSize(size - 4, size - 4)
+        tex:SetPoint("CENTER", widget, "CENTER", 0, 0)
+        tex:SetTexture(iconTex)
         widget:SetAlpha(0.5)
         widget:SetScript("OnEnter", function(self)
             self:SetAlpha(0.9)

@@ -82,13 +82,13 @@ local function Decorate(btnFrame)
     glow:SetVertexColor(1, 0.85, 0.25, 1)
     -- The pulse: played by the game while the aura is shown (12.1.5).
     if btnFrame.AddAuraShownAnimation then
-        local ag = glow:CreateAnimationGroup()
-        ag:SetLooping("BOUNCE")
-        local a = ag:CreateAnimation("Alpha")
-        a:SetFromAlpha(1)
-        a:SetToAlpha(0.35)
-        a:SetDuration(0.5)
-        pcall(btnFrame.AddAuraShownAnimation, btnFrame, ag)
+        local anim = glow:CreateAnimationGroup()
+        anim:SetLooping("BOUNCE")
+        local fade = anim:CreateAnimation("Alpha")
+        fade:SetFromAlpha(1)
+        fade:SetToAlpha(0.35)
+        fade:SetDuration(0.5)
+        pcall(btnFrame.AddAuraShownAnimation, btnFrame, anim)
     end
 end
 

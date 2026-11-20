@@ -375,14 +375,14 @@ function Classic.WindowBg(texture, red, green, blue, a)
         local p = {}
         for index = 1, #CLASSIC_EDGE_UV do
             local uv = CLASSIC_EDGE_UV[index]
-            local t = window:CreateTexture(nil, "BORDER")
-            t:SetTexture(CLASSIC_EDGE)
-            t:SetTexCoord(uv[2], uv[3], uv[4], uv[5])
+            local tex = window:CreateTexture(nil, "BORDER")
+            tex:SetTexture(CLASSIC_EDGE)
+            tex:SetTexCoord(uv[2], uv[3], uv[4], uv[5])
             if index <= 4 then
-                t:SetSize(5, 5)
-                t:SetPoint(uv[1], window, uv[1], 0, 0)
+                tex:SetSize(5, 5)
+                tex:SetPoint(uv[1], window, uv[1], 0, 0)
             end
-            p[uv[1]] = t
+            p[uv[1]] = tex
         end
         p.TOP:SetPoint("TOPLEFT", p.TOPLEFT, "TOPRIGHT", 0, 0)
         p.TOP:SetPoint("BOTTOMRIGHT", p.TOPRIGHT, "BOTTOMLEFT", 0, 0)

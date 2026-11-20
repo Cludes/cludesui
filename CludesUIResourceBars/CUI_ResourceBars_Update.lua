@@ -4144,27 +4144,27 @@ end
 -- handler, at the cost of at most one no-op fire.
 do
     local owner = CreateFrame("Frame")
-    local ag = owner:CreateAnimationGroup()
-    ag:SetLooping("REPEAT")
-    local tick = ag:CreateAnimation("Animation")
+    local anim = owner:CreateAnimationGroup()
+    anim:SetLooping("REPEAT")
+    local tick = anim:CreateAnimation("Animation")
     -- 20 Hz redraw: the eased SetValue has the engine rendering intermediate fill
     -- positions between redraws, so this rate governs only text/stage/safety
     -- granularity, not fill smoothness.
     tick:SetDuration(1 / 20)
-    ag:SetScript("OnLoop", function()
+    anim:SetScript("OnLoop", function()
         if
             castBarFrame
             and (castBarFrame._casting or castBarFrame._channeling or castBarFrame._empowering)
         then
             UpdateCastBar()
         else
-            ag:Stop()
+            anim:Stop()
         end
     end)
     -- Idempotent; safe to call from every cast event.
     mod.StartCastTick = function()
-        if not ag:IsPlaying() then
-            ag:Play()
+        if not anim:IsPlaying() then
+            anim:Play()
         end
     end
 end

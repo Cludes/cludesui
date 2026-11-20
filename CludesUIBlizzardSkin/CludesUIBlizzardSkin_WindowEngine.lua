@@ -83,9 +83,9 @@ end
 Skin.ResolveTheme = ResolveTheme
 
 local function SolidTex(hostFrame, layer, region, g, button, a, sublevel)
-    local t = hostFrame:CreateTexture(nil, layer, nil, sublevel)
-    t:SetColorTexture(region, g, button, a)
-    return t
+    local tex = hostFrame:CreateTexture(nil, layer, nil, sublevel)
+    tex:SetColorTexture(region, g, button, a)
+    return tex
 end
 Skin.SolidTex = SolidTex
 
@@ -1219,9 +1219,9 @@ function Skin.BorderRegion(hostFrame, regionFrame)
     end
     skinData.bordered = true
     local function line()
-        local t = hostFrame:CreateTexture(nil, "OVERLAY")
-        t:SetColorTexture(0, 0, 0, 1)
-        return t
+        local tex = hostFrame:CreateTexture(nil, "OVERLAY")
+        tex:SetColorTexture(0, 0, 0, 1)
+        return tex
     end
     local t, button, l, region = line(), line(), line(), line()
     t:SetPoint("TOPLEFT", regionFrame, "TOPLEFT", -1, 1)

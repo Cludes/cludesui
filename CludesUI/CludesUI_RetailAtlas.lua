@@ -242,34 +242,34 @@ function CludesUI.ForeverBorder(widget, layer, sub, add, source)
     local box = CreateFrame("Frame", nil, widget)
     local ring = { box = box, on = true, L = L, T = T, W = W, H = H }
     for idx = 1, 8 do
-        local t = widget:CreateTexture(nil, layer, nil, sub)
-        t:SetTexture(file)
+        local tex = widget:CreateTexture(nil, layer, nil, sub)
+        tex:SetTexture(file)
         if add then
-            t:SetBlendMode("ADD")
+            tex:SetBlendMode("ADD")
         end
         local at = RING_AT[idx]
-        t:SetPoint(at[1], box, at[1], at[2], at[3])
+        tex:SetPoint(at[1], box, at[1], at[2], at[3])
         if at[4] then
             local cut = cuts[idx]
-            t:SetTexCoord(L + W * cut[1], L + W * cut[2], T + H * cut[3], T + H * cut[4])
-            t:SetPoint(at[4], box, at[4], at[5], at[6])
+            tex:SetTexCoord(L + W * cut[1], L + W * cut[2], T + H * cut[3], T + H * cut[4])
+            tex:SetPoint(at[4], box, at[4], at[5], at[6])
             if idx <= 6 then
-                t:SetHeight(RD)
+                tex:SetHeight(RD)
             else
-                t:SetWidth(RD)
+                tex:SetWidth(RD)
             end
         end
-        t:Hide()
-        ring[idx] = t
+        tex:Hide()
+        ring[idx] = tex
     end
     CutCorners(ring, RC, RC)
     if not add then
         for idx = 1, 4 do
-            local m, p = widget:CreateMaskTexture(), RING_AT[idx][1]
-            m:SetTexture(RING_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-            m:SetSize(2 * RC, 2 * RC)
-            m:SetPoint(p, box, p)
-            ring[idx]:AddMaskTexture(m)
+            local mask, p = widget:CreateMaskTexture(), RING_AT[idx][1]
+            mask:SetTexture(RING_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+            mask:SetSize(2 * RC, 2 * RC)
+            mask:SetPoint(p, box, p)
+            ring[idx]:AddMaskTexture(mask)
         end
     end
     box._fvRing = ring
@@ -311,12 +311,12 @@ function CludesUI.ForeverBorderDivider(widget, layer, sub)
     if CludesUI.IS_FOREVER ~= true then
         return nil
     end
-    local t = widget:CreateTexture(nil, layer or "ARTWORK", nil, sub or 0)
-    t:SetTexture(RING_FILE)
+    local tex = widget:CreateTexture(nil, layer or "ARTWORK", nil, sub or 0)
+    tex:SetTexture(RING_FILE)
     local cut, W = RING_CUT[5], RING_HI - RING_LO
-    t:SetTexCoord(RING_LO + W * cut[1], RING_LO + W * cut[2], RING_LO + W * cut[3], RING_LO + W * cut[4])
-    t:SetHeight(RD)
-    return t
+    tex:SetTexCoord(RING_LO + W * cut[1], RING_LO + W * cut[2], RING_LO + W * cut[3], RING_LO + W * cut[4])
+    tex:SetHeight(RD)
+    return tex
 end
 
 -------------------------------------------------------------------------------
@@ -502,23 +502,23 @@ function CludesUI.ForeverHeavy(widget, layer, sub, add)
     local ring = { box = box, k = widget:GetScale(), p = {}, on = true, fit = true, top = HTOP }
     local p = ring.p
     for key, details in pairs(Inner) do
-        local t = widget:CreateTexture(nil, layer or "ARTWORK", nil, sub or 0)
+        local tex = widget:CreateTexture(nil, layer or "ARTWORK", nil, sub or 0)
         local along = (key == "te" or key == "be") and "h" or (key == "le" or key == "re") and "v" or nil
-        t:SetTexture(
+        tex:SetTexture(
             details.file or details.filename,
             along == "h" and "REPEAT" or "CLAMP",
             along == "v" and "REPEAT" or "CLAMP"
         )
         -- Unsharpened, as Blizzard draws this layout (scaled art, no shimmer).
-        t:SetTexelSnappingBias(0)
-        t:SetSnapToPixelGrid(false)
+        tex:SetTexelSnappingBias(0)
+        tex:SetSnapToPixelGrid(false)
         if add then
             local l = CludesUI.FOREVER_HEAVY.lift
-            t:SetBlendMode("ADD")
-            t:SetVertexColor(l[1], l[2], l[3], l[4])
+            tex:SetBlendMode("ADD")
+            tex:SetVertexColor(l[1], l[2], l[3], l[4])
         end
-        t:Hide()
-        p[key] = t
+        tex:Hide()
+        p[key] = tex
     end
     p.tl:SetPoint("TOPLEFT", box, "TOPLEFT", -HML, HMT)
     p.tr:SetPoint("TOPRIGHT", box, "TOPRIGHT", HMR, HMT)

@@ -78,16 +78,16 @@ local function Hairlines(frame, alpha)
         { "TOPLEFT", "BOTTOMLEFT", 1, nil },
         { "TOPRIGHT", "BOTTOMRIGHT", 1, nil },
     }) do
-        local t = frame:CreateTexture(nil, "BORDER")
-        t:SetColorTexture(1, 1, 1, alpha)
-        t:SetPoint(e[1])
-        t:SetPoint(e[2])
+        local tex = frame:CreateTexture(nil, "BORDER")
+        tex:SetColorTexture(1, 1, 1, alpha)
+        tex:SetPoint(e[1])
+        tex:SetPoint(e[2])
         if e[3] then
-            t:SetWidth(e[3])
+            tex:SetWidth(e[3])
         else
-            t:SetHeight(e[4])
+            tex:SetHeight(e[4])
         end
-        edges[#edges + 1] = t
+        edges[#edges + 1] = tex
     end
     return edges
 end
@@ -661,8 +661,8 @@ local function Create()
     end
     local function textures(hostFrame, layer, sub, file)
         return Pool(function()
-            local t = hostFrame:CreateTexture(nil, layer, nil, sub)
-            return file and Smooth(t, file) or t
+            local tex = hostFrame:CreateTexture(nil, layer, nil, sub)
+            return file and Smooth(tex, file) or tex
         end)
     end
     local function texts(hostFrame)

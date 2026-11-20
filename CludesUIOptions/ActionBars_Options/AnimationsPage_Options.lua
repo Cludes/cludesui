@@ -198,9 +198,9 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
         if not frame._borderOv then
             frame._borderOv = {}
             for idx = 1, 4 do
-                local t = frame:CreateTexture(nil, "OVERLAY", nil, 2)
-                t:SetColorTexture(1, 1, 1, 1)
-                frame._borderOv[idx] = t
+                local tex = frame:CreateTexture(nil, "OVERLAY", nil, 2)
+                tex:SetColorTexture(1, 1, 1, 1)
+                frame._borderOv[idx] = tex
             end
         end
         local shade = frame._overlay
@@ -384,9 +384,9 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
         if not frame._assistRing then
             local ring = {}
             for idx = 1, 4 do
-                local t = frame:CreateTexture(nil, "OVERLAY", nil, 2)
-                t:SetColorTexture(0.15, 0.5, 1, 1)
-                ring[idx] = t
+                local tex = frame:CreateTexture(nil, "OVERLAY", nil, 2)
+                tex:SetColorTexture(0.15, 0.5, 1, 1)
+                ring[idx] = tex
             end
             frame._assistRing = ring
         end

@@ -1289,10 +1289,10 @@ local function MakeColorPreviewBar(parentRow, colorType, colorKey, anchorFrame)
         local bc = (DB() and DB().borderColor) or defaultSet.borderColor
         local edges = {}
         local function mkE()
-            local t = hostFrame:CreateTexture(nil, "OVERLAY", nil, 7)
-            t:SetColorTexture(bc.r, bc.g, bc.b, 1)
-            edges[#edges + 1] = t
-            return t
+            local tex = hostFrame:CreateTexture(nil, "OVERLAY", nil, 7)
+            tex:SetColorTexture(bc.r, bc.g, bc.b, 1)
+            edges[#edges + 1] = tex
+            return tex
         end
         local t = mkE()
         t:SetPoint("TOPLEFT")

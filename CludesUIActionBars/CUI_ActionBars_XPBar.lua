@@ -179,10 +179,10 @@ function mod._XPFrameSlice(overlayFrame, atlasName, fitWidth)
     if not cfg then
         cfg = {}
         for _, k in ipairs({ "TL", "TM", "TR", "BL", "BM", "BR" }) do
-            local t = overlayFrame:CreateTexture(nil, "OVERLAY")
-            t:SetSnapToPixelGrid(false)
-            t:SetTexelSnappingBias(0)
-            cfg[k] = t
+            local tex = overlayFrame:CreateTexture(nil, "OVERLAY")
+            tex:SetSnapToPixelGrid(false)
+            tex:SetTexelSnappingBias(0)
+            cfg[k] = tex
         end
         overlayFrame._flat = cfg
     end

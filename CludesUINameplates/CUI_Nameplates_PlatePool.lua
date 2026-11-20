@@ -988,9 +988,9 @@ function mod._ApplyHitboxOverlay(backing)
             fillTex:SetAllPoints()
             fillTex:SetColorTexture(0.298, 0.788, 0.941, 0.18)
             local function Edge()
-                local t = shade:CreateTexture(nil, "BORDER")
-                t:SetColorTexture(0.298, 0.788, 0.941, 0.85)
-                return t
+                local tex = shade:CreateTexture(nil, "BORDER")
+                tex:SetColorTexture(0.298, 0.788, 0.941, 0.85)
+                return tex
             end
             local topY, bottom, leftX, right = Edge(), Edge(), Edge(), Edge()
             topY:SetPoint("TOPLEFT")

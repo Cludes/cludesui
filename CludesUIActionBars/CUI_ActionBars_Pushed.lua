@@ -45,10 +45,10 @@ do
         if not edges then
             edges = {}
             for jdx = 1, 4 do
-                local t = button:CreateTexture(nil, "OVERLAY", nil, 2)
-                t:SetColorTexture(1, 1, 1, 1)
-                t:Hide()
-                edges[jdx] = t
+                local tex = button:CreateTexture(nil, "OVERLAY", nil, 2)
+                tex:SetColorTexture(1, 1, 1, 1)
+                tex:Hide()
+                edges[jdx] = tex
             end
             EFD(button)[storeKey] = edges
             if driverTex then

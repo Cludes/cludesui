@@ -213,10 +213,10 @@ local function ApplyResourceBarTicks(
 
     -- Create tick textures as needed
     while #tickCache < #vals do
-        local t = tickParent:CreateTexture(nil, "OVERLAY", nil, 7)
-        t:SetSnapToPixelGrid(false)
-        t:SetTexelSnappingBias(0)
-        tickCache[#tickCache + 1] = t
+        local tex = tickParent:CreateTexture(nil, "OVERLAY", nil, 7)
+        tex:SetSnapToPixelGrid(false)
+        tex:SetTexelSnappingBias(0)
+        tickCache[#tickCache + 1] = tex
     end
 
     local pxW = Pix and (tickW * Pix.mult) or tickW

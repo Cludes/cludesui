@@ -5509,17 +5509,17 @@ CludesUI.AtOptionsLogin(function()
         -- One of the bar's texts on the overlay, anchored and justified to
         -- its side; text only while it is on.
         local function BarText(layer, barRef, side, x, y, size, on, textObj, red, green, blue, a)
-            local fs = layer:CreateFontString(nil, "OVERLAY")
-            SetPVFont(fs, FONT_PATH, size or 11)
-            fs:SetPoint(side, barRef, side, x, y)
-            fs:SetJustifyH(side)
+            local label = layer:CreateFontString(nil, "OVERLAY")
+            SetPVFont(label, FONT_PATH, size or 11)
+            label:SetPoint(side, barRef, side, x, y)
+            label:SetJustifyH(side)
             if on then
-                fs:SetText(textObj)
+                label:SetText(textObj)
             else
-                fs:Hide()
+                label:Hide()
             end
-            mod.ERB_CastTextColor(fs, red, green, blue, a)
-            return fs
+            mod.ERB_CastTextColor(label, red, green, blue, a)
+            return label
         end
 
         -- A click target a little larger than a text.

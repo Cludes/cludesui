@@ -726,12 +726,12 @@ local function MakeRow(i, hostFrame)
     region.score:SetJustifyH("RIGHT")
     region.icons, region.crowns, region.rings, region.roles = {}, {}, {}, {}
     for k = 1, 5 do
-        local t = region:CreateTexture(nil, "ARTWORK", nil, 2)
-        region.icons[k] = t
+        local tex = region:CreateTexture(nil, "ARTWORK", nil, 2)
+        region.icons[k] = tex
         -- ring behind round spec icons
         local ring = region:CreateTexture(nil, "ARTWORK", nil, 1)
-        ring:SetPoint("TOPLEFT", t, "TOPLEFT", -1, 1)
-        ring:SetPoint("BOTTOMRIGHT", t, "BOTTOMRIGHT", 1, -1)
+        ring:SetPoint("TOPLEFT", tex, "TOPLEFT", -1, 1)
+        ring:SetPoint("BOTTOMRIGHT", tex, "BOTTOMRIGHT", 1, -1)
         ring:Hide()
         region.rings[k] = ring
         local m1 = region:CreateMaskTexture()
@@ -748,17 +748,17 @@ local function MakeRow(i, hostFrame)
             "CLAMPTOBLACKADDITIVE",
             "CLAMPTOBLACKADDITIVE"
         )
-        m2:SetAllPoints(t)
+        m2:SetAllPoints(tex)
         region.masks = region.masks or {}
         region.masks[k] = m2
         -- role mark on top
         local role = region:CreateTexture(nil, "ARTWORK", nil, 3)
-        role:SetPoint("CENTER", t)
+        role:SetPoint("CENTER", tex)
         role:Hide()
         region.roles[k] = role
         -- holds the square border
         local bf = CreateFrame("Frame", nil, region)
-        bf:SetAllPoints(t)
+        bf:SetAllPoints(tex)
         bf:EnableMouse(false)
         bf:Hide()
         region.borders = region.borders or {}
@@ -766,7 +766,7 @@ local function MakeRow(i, hostFrame)
         -- leader crown
         local c = region:CreateTexture(nil, "OVERLAY")
         c:SetAtlas("groupfinder-icon-leader")
-        c:SetPoint("BOTTOM", t, "TOP", 0, 2)
+        c:SetPoint("BOTTOM", tex, "TOP", 0, 2)
         c:Hide()
         region.crowns[k] = c
     end
@@ -781,8 +781,8 @@ local function MakeRow(i, hostFrame)
             "CLAMPTOBLACKADDITIVE"
         )
         mask:SetAllPoints(backdrop)
-        local t = region:CreateTexture(nil, "ARTWORK", nil, 3)
-        t:SetPoint("CENTER", backdrop)
+        local tex = region:CreateTexture(nil, "ARTWORK", nil, 3)
+        tex:SetPoint("CENTER", backdrop)
         local c = region:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         c:SetJustifyH("CENTER")
         -- the member icons' borders: a ring behind round ones, a border frame on square ones
@@ -799,20 +799,20 @@ local function MakeRow(i, hostFrame)
         edge:SetAllPoints(backdrop)
         edge:EnableMouse(false)
         backdrop:Hide()
-        t:Hide()
+        tex:Hide()
         c:Hide()
         ring:Hide()
         edge:Hide()
-        region.rr[k] = { bg = backdrop, mask = mask, icon = t, count = c, ring = ring, edge = edge }
+        region.rr[k] = { bg = backdrop, mask = mask, icon = tex, count = c, ring = ring, edge = edge }
     end
     -- row art
     region.art = region:CreateTexture(nil, "BACKGROUND", nil, 7)
     if mod.ROW_ART then
         region.art:SetAlpha(mod.ROW_ART.alpha)
-        local m = region:CreateMaskTexture()
-        m:SetTexture(mod.ROW_ART.mask, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        m:SetAllPoints(region.art)
-        region.art:AddMaskTexture(m)
+        local mask = region:CreateMaskTexture()
+        mask:SetTexture(mod.ROW_ART.mask, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        mask:SetAllPoints(region.art)
+        region.art:AddMaskTexture(mask)
     end
     region.art:Hide()
     region:SetScript("OnClick", function(self, btnFrame)

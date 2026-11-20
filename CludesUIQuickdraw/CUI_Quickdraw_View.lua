@@ -371,10 +371,10 @@ local function CreateSlotWidget(view, index)
     -- over the open nest's own children is what that cost.
     wid.nestDots = {}
     for skinData = 1, 3 do
-        local t = wid:CreateTexture(nil, "OVERLAY", nil, 7)
-        t:SetTexture("Interface\\Buttons\\WHITE8X8")
-        t:Hide()
-        wid.nestDots[skinData] = t
+        local tex = wid:CreateTexture(nil, "OVERLAY", nil, 7)
+        tex:SetTexture("Interface\\Buttons\\WHITE8X8")
+        tex:Hide()
+        wid.nestDots[skinData] = tex
     end
 
     wid.label = wid:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")

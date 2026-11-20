@@ -547,12 +547,12 @@ function mod.ERB_ApplyBlizzGroupPanel(owner, vertical, sepLevel)
     if not pcs then
         pcs = {}
         for index = 1, 9 do
-            local t = owner:CreateTexture(nil, "BACKGROUND", nil, -2)
-            if t.SetSnapToPixelGrid then
-                t:SetSnapToPixelGrid(false)
-                t:SetTexelSnappingBias(0)
+            local tex = owner:CreateTexture(nil, "BACKGROUND", nil, -2)
+            if tex.SetSnapToPixelGrid then
+                tex:SetSnapToPixelGrid(false)
+                tex:SetTexelSnappingBias(0)
             end
-            pcs[index] = t
+            pcs[index] = tex
         end
         owner._blizzGrpPanel9 = pcs
     end

@@ -302,10 +302,10 @@ local function MakeRow(index)
     region.cells = { region.flask, region.food, region.rune, region.vantus }
     region.buffs = {}
     for jdx = 1, BUFF_SLOTS do
-        local t = region:CreateTexture(nil, "ARTWORK")
-        t:SetSize(ICON, ICON)
-        t:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        region.buffs[jdx] = t
+        local tex = region:CreateTexture(nil, "ARTWORK")
+        tex:SetSize(ICON, ICON)
+        tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        region.buffs[jdx] = tex
     end
     region.buffsOk = region:CreateTexture(nil, "ARTWORK")
     region.buffsOk:SetSize(ICON, ICON)
@@ -377,11 +377,11 @@ local function MakeHeader(b)
         local hit = CreateFrame("Frame", nil, hgt)
         hit:SetSize(CELL_W, HEAD_H)
         hgt.icons[#hgt.icons + 1] = hit
-        local t = hit:CreateTexture(nil, "ARTWORK")
-        t:SetSize(ICON + 2, ICON + 2)
-        t:SetPoint("CENTER")
-        t:SetTexture(texture)
-        t:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        local tex = hit:CreateTexture(nil, "ARTWORK")
+        tex:SetSize(ICON + 2, ICON + 2)
+        tex:SetPoint("CENTER")
+        tex:SetTexture(texture)
+        tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         hit:EnableMouse(true)
         hit:SetScript("OnEnter", function(self)
             CludesUI.ShowWidgetTooltip(self, tipText)

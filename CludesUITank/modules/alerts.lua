@@ -53,16 +53,16 @@ local function CreateFlashFrame()
     texture:SetAllPoints()
     texture:SetColorTexture(1, 0.1, 0.1, 0.35)
 
-    local ag = flashFrame:CreateAnimationGroup()
-    local fade = ag:CreateAnimation("Alpha")
+    local anim = flashFrame:CreateAnimationGroup()
+    local fade = anim:CreateAnimation("Alpha")
     fade:SetFromAlpha(1)
     fade:SetToAlpha(0)
     fade:SetDuration(0.6)
     fade:SetSmoothing("OUT")
-    ag:SetScript("OnFinished", function()
+    anim:SetScript("OnFinished", function()
         flashFrame:SetAlpha(0)
     end)
-    flashFrame.fadeGroup = ag
+    flashFrame.fadeGroup = anim
     flashFrame:Hide()
 end
 

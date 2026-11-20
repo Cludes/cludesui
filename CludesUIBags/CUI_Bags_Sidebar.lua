@@ -147,17 +147,17 @@ local function EnsureGroupHighlight()
     local Pix = CUI and CUI.PP
     local px = (Pix and Pix.mult) or 1
     local function MakeLine(point1, rel1, point2, rel2, wid, hgt)
-        local t = highlight:CreateTexture(nil, "OVERLAY", nil, 7)
-        t:SetColorTexture(eg.r, eg.g, eg.b, 0.6)
-        t:SetPoint(point1, highlight, rel1, 0, 0)
-        t:SetPoint(point2, highlight, rel2, 0, 0)
+        local tex = highlight:CreateTexture(nil, "OVERLAY", nil, 7)
+        tex:SetColorTexture(eg.r, eg.g, eg.b, 0.6)
+        tex:SetPoint(point1, highlight, rel1, 0, 0)
+        tex:SetPoint(point2, highlight, rel2, 0, 0)
         if wid then
-            t:SetWidth(wid)
+            tex:SetWidth(wid)
         end
         if hgt then
-            t:SetHeight(hgt)
+            tex:SetHeight(hgt)
         end
-        return t
+        return tex
     end
     MakeLine("TOPLEFT", "TOPLEFT", "TOPRIGHT", "TOPRIGHT", nil, px)
     MakeLine("BOTTOMLEFT", "BOTTOMLEFT", "BOTTOMRIGHT", "BOTTOMRIGHT", nil, px)
@@ -2151,18 +2151,18 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                         fallback:SetFrameLevel(hostFrame:GetFrameLevel() + 5)
                         local edges = {}
                         local function MakeEdge(p1, p2, isHoriz)
-                            local t = fallback:CreateTexture(nil, "OVERLAY")
-                            t:SetColorTexture(0.9, 0.15, 0.15, 0)
+                            local tex = fallback:CreateTexture(nil, "OVERLAY")
+                            tex:SetColorTexture(0.9, 0.15, 0.15, 0)
                             if isHoriz then
-                                t:SetPoint(p1)
-                                t:SetPoint(p2)
-                                t:SetHeight(1)
+                                tex:SetPoint(p1)
+                                tex:SetPoint(p2)
+                                tex:SetHeight(1)
                             else
-                                t:SetPoint(p1)
-                                t:SetPoint(p2)
-                                t:SetWidth(1)
+                                tex:SetPoint(p1)
+                                tex:SetPoint(p2)
+                                tex:SetWidth(1)
                             end
-                            edges[#edges + 1] = t
+                            edges[#edges + 1] = tex
                         end
                         MakeEdge("TOPLEFT", "TOPRIGHT", true)
                         MakeEdge("BOTTOMLEFT", "BOTTOMRIGHT", true)
