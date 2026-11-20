@@ -143,19 +143,19 @@ function mod.UFO_SwatchPair(region, opts)
         CludesUI:RefreshPage()
     end
     local function Add(get, set, tip, onClick, isAuto)
-        local sw, update = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, get, set, false, 20)
-        sw._eabOrigClick = sw:GetScript("OnClick")
-        sw:SetScript("OnClick", onClick)
-        sw:HookScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(sw, tip)
+        local swatch, update = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, get, set, false, 20)
+        swatch._eabOrigClick = swatch:GetScript("OnClick")
+        swatch:SetScript("OnClick", onClick)
+        swatch:HookScript("OnEnter", function()
+            CludesUI.ShowWidgetTooltip(swatch, tip)
         end)
-        sw:HookScript("OnLeave", function()
+        swatch:HookScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        env.PP.Point(sw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-        region._lastInline = sw
+        env.PP.Point(swatch, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+        region._lastInline = swatch
         local function Dim()
-            sw:SetAlpha(((Auto() and true or false) == isAuto) and 1 or 0.3)
+            swatch:SetAlpha(((Auto() and true or false) == isAuto) and 1 or 0.3)
         end
         env.RegisterWidgetRefresh(function()
             update()
@@ -2605,7 +2605,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
         -- Inline color swatch for BTB background on Enable Text Bar
         if not CludesUI._prebuilding then
             local btbRgn = sharedBtbToggleRow._leftRegion
-            local sw = CludesUI.BuildColorSwatch(btbRgn, btbRgn:GetFrameLevel() + 5, function()
+            local swatch = CludesUI.BuildColorSwatch(btbRgn, btbRgn:GetFrameLevel() + 5, function()
                 local color = SGet("btbBgColor")
                 color = color or { r = 0.2, g = 0.2, b = 0.2 }
                 local a = SGet("btbBgOpacity")
@@ -2616,29 +2616,29 @@ function mod.UFO_BuildTextBarSection(hostFrame, cursorY, context)
                 ReloadAndUpdate()
                 UpdatePreview()
             end, true, 20)
-            sw:SetPoint("RIGHT", btbRgn._lastInline or btbRgn._control, "LEFT", -12, 0)
-            btbRgn._lastInline = sw
+            swatch:SetPoint("RIGHT", btbRgn._lastInline or btbRgn._control, "LEFT", -12, 0)
+            btbRgn._lastInline = swatch
             -- Disabled state for swatch when text bar is off
             local function UpdateBtbSwatchState()
                 local btbOn = SVal("bottomTextBar", false)
                 if not btbOn then
-                    sw:SetAlpha(0.15)
-                    sw:Disable()
-                    sw._disabledTooltip = "Text Bar"
+                    swatch:SetAlpha(0.15)
+                    swatch:Disable()
+                    swatch._disabledTooltip = "Text Bar"
                 else
-                    sw:SetAlpha(1)
-                    sw:Enable()
-                    sw._disabledTooltip = nil
+                    swatch:SetAlpha(1)
+                    swatch:Enable()
+                    swatch._disabledTooltip = nil
                 end
             end
             UpdateBtbSwatchState()
             RegisterWidgetRefresh(UpdateBtbSwatchState)
-            sw:HookScript("OnEnter", function(self)
+            swatch:HookScript("OnEnter", function(self)
                 if self._disabledTooltip then
                     CludesUI.ShowWidgetTooltip(self, CludesUI.DisabledTooltip(self._disabledTooltip))
                 end
             end)
-            sw:HookScript("OnLeave", function()
+            swatch:HookScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
         end

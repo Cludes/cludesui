@@ -1062,7 +1062,7 @@ local function BuildMiniTextAndSize(
                     CludesUI:RefreshPage()
                 end)
                 CludesUI.HoverTip(classSw, "Class Colored")
-                local sw, swUp = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
+                local swatch, swUp = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
                     return MVal(settingKey .. "ColorR", 1), MVal(settingKey .. "ColorG", 1), MVal(settingKey .. "ColorB", 1)
                 end, function(red, green, blue)
                     unitSettings[settingKey .. "ColorR"] = red
@@ -1070,10 +1070,10 @@ local function BuildMiniTextAndSize(
                     unitSettings[settingKey .. "ColorB"] = blue
                     ReloadAndUpdate()
                 end, nil, 20)
-                Pix.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
-                region._lastInline = sw
-                local stockClick = sw:GetScript("OnClick")
-                sw:SetScript("OnClick", function(self, ...)
+                Pix.Point(swatch, "RIGHT", classSw, "LEFT", -8, 0)
+                region._lastInline = swatch
+                local stockClick = swatch:GetScript("OnClick")
+                swatch:SetScript("OnClick", function(self, ...)
                     if Off() then
                         return
                     end
@@ -1086,10 +1086,10 @@ local function BuildMiniTextAndSize(
                         stockClick(self, ...)
                     end
                 end)
-                CludesUI.HoverTip(sw, "Custom Colored")
+                CludesUI.HoverTip(swatch, "Custom Colored")
                 local function Dim()
                     local isNone, isClass = Off(), MVal(classKey, false)
-                    sw:SetAlpha((isClass or isNone) and 0.3 or 1)
+                    swatch:SetAlpha((isClass or isNone) and 0.3 or 1)
                     classSw:SetAlpha((isClass and not isNone) and 1 or 0.3)
                 end
                 RegisterWidgetRefresh(function()
@@ -1259,7 +1259,7 @@ local function BuildMiniTextAndSize(
                 local details = CludesUI.GetPowerColor(pToken or "MANA")
                 return details.r, details.g, details.b
             end
-            local fPwrSw, fPwrUpdate = CludesUI.BuildColorSwatch(
+            local powerSwatch, powerSwatchUpdate = CludesUI.BuildColorSwatch(
                 region,
                 region:GetFrameLevel() + 5,
                 fPwrGet,
@@ -1267,28 +1267,28 @@ local function BuildMiniTextAndSize(
                 false,
                 20
             )
-            fPwrSw._eabOrigClick = fPwrSw:GetScript("OnClick")
-            fPwrSw:SetScript("OnClick", function()
+            powerSwatch._eabOrigClick = powerSwatch:GetScript("OnClick")
+            powerSwatch:SetScript("OnClick", function()
                 unitSettings.powerPercentPowerColor = true
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
             end)
-            fPwrSw:HookScript("OnEnter", function()
+            powerSwatch:HookScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(
-                    fPwrSw,
+                    powerSwatch,
                     "Power Colored Fill. Power colors can be adjusted in Global Settings -> Colors."
                 )
             end)
-            fPwrSw:HookScript("OnLeave", function()
+            powerSwatch:HookScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            Pix.Point(fPwrSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-            region._lastInline = fPwrSw
+            Pix.Point(powerSwatch, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+            region._lastInline = powerSwatch
             RegisterWidgetRefresh(function()
-                fPwrUpdate()
-                fPwrSw:SetAlpha((MVal("powerPercentPowerColor", true) ~= false) and 1 or 0.3)
+                powerSwatchUpdate()
+                powerSwatch:SetAlpha((MVal("powerPercentPowerColor", true) ~= false) and 1 or 0.3)
             end)
-            fPwrSw:SetAlpha((MVal("powerPercentPowerColor", true) ~= false) and 1 or 0.3)
+            powerSwatch:SetAlpha((MVal("powerPercentPowerColor", true) ~= false) and 1 or 0.3)
 
             local fGet = function()
                 local color = MGet("customPowerFillColor")
@@ -1301,10 +1301,10 @@ local function BuildMiniTextAndSize(
                 unitSettings.customPowerFillColor = { r = red, g = green, b = blue }
                 ReloadAndUpdate()
             end
-            local fSw, fSwUp =
+            local fillSwatch, fillSwatchUpdate =
                 CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, fGet, fSet, false, 20)
-            fSw._eabOrigClick = fSw:GetScript("OnClick")
-            fSw:SetScript("OnClick", function(self)
+            fillSwatch._eabOrigClick = fillSwatch:GetScript("OnClick")
+            fillSwatch:SetScript("OnClick", function(self)
                 if MVal("powerPercentPowerColor", true) ~= false then
                     unitSettings.powerPercentPowerColor = false
                     ReloadAndUpdate()
@@ -1315,19 +1315,19 @@ local function BuildMiniTextAndSize(
                     self._eabOrigClick(self)
                 end
             end)
-            fSw:HookScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(fSw, "Custom Colored Fill")
+            fillSwatch:HookScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(fillSwatch, "Custom Colored Fill")
             end)
-            fSw:HookScript("OnLeave", function()
+            fillSwatch:HookScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            Pix.Point(fSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-            region._lastInline = fSw
+            Pix.Point(fillSwatch, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+            region._lastInline = fillSwatch
             RegisterWidgetRefresh(function()
-                fSwUp()
-                fSw:SetAlpha((MVal("powerPercentPowerColor", true) ~= false) and 0.3 or 1)
+                fillSwatchUpdate()
+                fillSwatch:SetAlpha((MVal("powerPercentPowerColor", true) ~= false) and 0.3 or 1)
             end)
-            fSw:SetAlpha((MVal("powerPercentPowerColor", true) ~= false) and 0.3 or 1)
+            fillSwatch:SetAlpha((MVal("powerPercentPowerColor", true) ~= false) and 0.3 or 1)
         end
 
         -- Row 3: Power Text (format) + Text Position -- ported from Main Frames.
@@ -1792,7 +1792,7 @@ function mod.UFO_BuildFoTToTOptions(W, hostFrame, posY, unitSettings, unitName)
 
     local portraitLine
     local function enableRow(Ww, profile, rowY)
-        local isCUI = mod.GetUnitFrameSource(unitName) == "cui"
+        local ownFrames = mod.GetUnitFrameSource(unitName) == "cui"
         -- The Frame Source cog's "Blizzard Default" only makes sense when the
         -- parent target/focus frame is itself on Blizzard's frame (its native
         -- child target-of-target is then alive; see ns.GetUnitFrameSource);
@@ -1812,7 +1812,7 @@ function mod.UFO_BuildFoTToTOptions(W, hostFrame, posY, unitSettings, unitName)
                 CludesUI:RefreshPage(true)
                 PromptReloadIfUnspawned({ unitName })
             end,
-        }, isCUI and CludesUI.BlizzStyle.Gate("unitframes", {
+        }, ownFrames and CludesUI.BlizzStyle.Gate("unitframes", {
             type = "toggle",
             text = "Show Portrait",
             getValue = function()
@@ -1824,7 +1824,7 @@ function mod.UFO_BuildFoTToTOptions(W, hostFrame, posY, unitSettings, unitName)
                 CludesUI:RefreshPage()
             end,
         }) or { type = "label", text = "" })
-        if isCUI and not CludesUI._prebuilding then
+        if ownFrames and not CludesUI._prebuilding then
             AttachPortraitSideCog(portraitLine._rightRegion, unitSettings, true, unitName)
         end
         AttachFrameSourceCog(portraitLine._leftRegion, unitName, {
@@ -1900,7 +1900,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
 
     local portraitLine
     local function enableRow(Ww, profile, rowY)
-        local isCUI = mod.GetUnitFrameSource("pet") == "cui"
+        local ownFrames = mod.GetUnitFrameSource("pet") == "cui"
         portraitLine, height = Ww:DualRow(profile, rowY, {
             type = "toggle",
             text = "Enable Pet Frame",
@@ -1913,7 +1913,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
                 CludesUI:RefreshPage(true)
                 PromptReloadIfUnspawned({ "pet" })
             end,
-        }, isCUI and CludesUI.BlizzStyle.Gate("unitframes", {
+        }, ownFrames and CludesUI.BlizzStyle.Gate("unitframes", {
             type = "toggle",
             text = "Show Portrait",
             getValue = function()
@@ -1925,7 +1925,7 @@ function mod.UFO_BuildPetOptions(W, hostFrame, posY)
                 CludesUI:RefreshPage()
             end,
         }) or { type = "label", text = "" })
-        if isCUI and not CludesUI._prebuilding then
+        if ownFrames and not CludesUI._prebuilding then
             AttachPortraitSideCog(portraitLine._rightRegion, saved.profile.pet)
         end
         AttachFrameSourceCog(portraitLine._leftRegion, "pet", {
@@ -2388,7 +2388,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
     -- A text colour swatch left of a cog (Duration / Stack Text Color): one
     -- boss colour key, white when unset; dimmed and dead while off() holds.
     local function BossTextSwatch(region, settingKey, tip, off)
-        local sw, upd = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
+        local swatch, upd = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
             local color = saved.profile.boss[settingKey]
             if color then
                 return color.r, color.g, color.b
@@ -2398,19 +2398,19 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             saved.profile.boss[settingKey] = { r = red, g = green, b = blue }
             ReloadAndUpdate()
         end, false, 20)
-        sw:HookScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(sw, tip)
+        swatch:HookScript("OnEnter", function()
+            CludesUI.ShowWidgetTooltip(swatch, tip)
         end)
-        sw:HookScript("OnLeave", function()
+        swatch:HookScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        Pix.Point(sw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-        region._lastInline = sw
+        Pix.Point(swatch, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+        region._lastInline = swatch
         local function Paint()
             upd()
             local o = off()
-            sw:SetAlpha(o and 0.3 or 1)
-            sw:EnableMouse(not o)
+            swatch:SetAlpha(o and 0.3 or 1)
+            swatch:EnableMouse(not o)
         end
         Paint()
         CludesUI.RegisterWidgetRefresh(Paint)
@@ -2494,7 +2494,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
     -- simpleRow/simpleBuffRow/bossAuraRow + bossAuraHeader are the Buffs and Debuffs section rows.
     local portraitLine, growthRow, simpleRow, simpleBuffRow, bossAuraRow, bossAuraHeader, bossCastHeader, castMainRow
     local function enableRow(Ww, profile, rowY)
-        local isCUI = mod.GetUnitFrameSource("boss") == "cui"
+        local ownFrames = mod.GetUnitFrameSource("boss") == "cui"
         local eh
         portraitLine, eh = Ww:DualRow(profile, rowY, {
             type = "toggle",
@@ -2519,7 +2519,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 CludesUI:RefreshPage(true)
                 PromptReloadIfUnspawned({ "boss" })
             end,
-        }, isCUI and CludesUI.BlizzStyle.Gate("unitframes", {
+        }, ownFrames and CludesUI.BlizzStyle.Gate("unitframes", {
             type = "toggle",
             text = "Show Portrait",
             getValue = function()
@@ -2531,7 +2531,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 CludesUI:RefreshPage()
             end,
         }) or { type = "label", text = "" })
-        if isCUI and not CludesUI._prebuilding then
+        if ownFrames and not CludesUI._prebuilding then
             AttachPortraitSideCog(portraitLine._rightRegion, saved.profile.boss, false, "boss")
         end
         AttachFrameSourceCog(portraitLine._leftRegion, "boss", {
@@ -2544,7 +2544,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             end,
         })
         local sum = eh
-        if isCUI then
+        if ownFrames then
             local castRow, ch = Ww:DualRow(
                 profile,
                 rowY - eh,
@@ -3911,7 +3911,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 end
                 if not CludesUI._prebuilding then
                     local region = borderRow._rightRegion
-                    local sw, upd = CludesUI.BuildColorSwatch(
+                    local swatch, upd = CludesUI.BuildColorSwatch(
                         region,
                         borderRow:GetFrameLevel() + 3,
                         function()
@@ -3930,7 +3930,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         true,
                         20
                     )
-                    Pix.Point(sw, "RIGHT", region._control, "LEFT", -8, 0)
+                    Pix.Point(swatch, "RIGHT", region._control, "LEFT", -8, 0)
                     CludesUI.RegisterWidgetRefresh(upd)
                 end
             end
@@ -4532,23 +4532,23 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
         if not CludesUI._prebuilding then
             local region = castMainRow._leftRegion
             local function AddCastColorSwatch(tooltip, colorKey, fallback, disabledFn)
-                local sw, updateSw = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
+                local swatch, updateSw = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
                     local color = B[colorKey] or fallback
                     return color.r, color.g, color.b, 1
                 end, function(red, green, blue)
                     B[colorKey] = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                 end, false, 20)
-                sw:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-                sw:SetScript("OnEnter", function(self)
+                swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                swatch:SetScript("OnEnter", function(self)
                     CludesUI.ShowWidgetTooltip(self, tooltip)
                 end)
-                sw:SetScript("OnLeave", function()
+                swatch:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                region._lastInline = sw
+                region._lastInline = swatch
                 castColorSwatches[#castColorSwatches + 1] = {
-                    sw = sw,
+                    sw = swatch,
                     enabledAlpha = disabledFn and function()
                         return disabledFn() and 0.3 or 1
                     end,
@@ -4556,8 +4556,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 if disabledFn then
                     local function Update()
                         local off = disabledFn()
-                        sw:SetAlpha(off and 0.3 or 1)
-                        sw:EnableMouse(not off)
+                        swatch:SetAlpha(off and 0.3 or 1)
+                        swatch:EnableMouse(not off)
                         if updateSw then
                             updateSw()
                         end
@@ -4742,7 +4742,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             -- Inline color swatch on Bar Background (right region).
             if not CludesUI._prebuilding then
                 local region = reverseRow._rightRegion
-                local sw = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
+                local swatch = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
                     local color = B.castBgColor
                     if color then
                         return color.r, color.g, color.b
@@ -4752,14 +4752,14 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     B.castBgColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                 end, false, 20)
-                sw:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-                sw:SetScript("OnEnter", function(self)
+                swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                swatch:SetScript("OnEnter", function(self)
                     CludesUI.ShowWidgetTooltip(self, "Cast Background")
                 end)
-                sw:SetScript("OnLeave", function()
+                swatch:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                region._lastInline = sw
+                region._lastInline = swatch
             end
 
             -- Row 4: Spell Name (dropdown + Size/X/Y cog + swatch) | Duration (same)
@@ -4843,15 +4843,15 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         },
                     },
                 })
-                local sw = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
+                local swatch = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
                     local color = B.castSpellNameColor or { r = 1, g = 1, b = 1 }
                     return color.r, color.g, color.b
                 end, function(red, green, blue)
                     B.castSpellNameColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                 end, false, 20)
-                sw:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-                region._lastInline = sw
+                swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                region._lastInline = swatch
             end
             -- Duration (right): Size/X/Y cog + color swatch
             if not CludesUI._prebuilding then
@@ -4888,15 +4888,15 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         },
                     },
                 })
-                local sw = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
+                local swatch = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
                     local color = B.castDurationColor or { r = 1, g = 1, b = 1 }
                     return color.r, color.g, color.b
                 end, function(red, green, blue)
                     B.castDurationColor = { r = red, g = green, b = blue }
                     ReloadAndUpdate()
                 end, false, 20)
-                sw:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-                region._lastInline = sw
+                swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                region._lastInline = swatch
             end
             -- Custom Border Style rows (the Cast Bar cog's opt-in): one table
             -- styles all five boss cast bars; no unlock element, no sync links.

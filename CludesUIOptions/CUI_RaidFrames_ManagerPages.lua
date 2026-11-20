@@ -353,14 +353,14 @@ local function DmProfile()
 end
 
 local function DmTable()
-    local p = DmProfile()
-    if not p then
+    local profile = DmProfile()
+    if not profile then
         return nil
     end
-    local dmConf = p.dmDebuff
+    local dmConf = profile.dmDebuff
     if not dmConf then
         dmConf = {}
-        p.dmDebuff = dmConf
+        profile.dmDebuff = dmConf
     end
     return dmConf
 end
@@ -880,21 +880,21 @@ end
 -- its own vertical cursor.
 local function BuildBaseDetailDM(widget, fontFile)
     local W = CludesUI.Widgets
-    local p = DmProfile()
+    local profile = DmProfile()
     -- Row accessors over p: a key read (or its default) and written.
     local function PFieldThen(filterKey)
         return function(value)
-            p[filterKey] = value
+            profile[filterKey] = value
             DmApply()
         end
     end
     local function PFieldOr(filterKey, default)
         return function()
-            return p[filterKey] or default
+            return profile[filterKey] or default
         end
     end
     local dmConf = DmTable()
-    if not (W and p and dmConf) then
+    if not (W and profile and dmConf) then
         return 0
     end
     widget._showRowDivider = true
@@ -1231,7 +1231,7 @@ local function BuildBaseDetailDM(widget, fontFile)
                     return dmConf.hasDuration == true
                 end
                 if keyName == DM_HIDE_EXH then
-                    return p.hideLustDebuff ~= false
+                    return profile.hideLustDebuff ~= false
                 end
                 if keyName == DM_MATCH_ALL then
                     return dmConf.match == "all"
@@ -1283,7 +1283,7 @@ local function BuildBaseDetailDM(widget, fontFile)
                     return
                 end
                 if keyName == DM_HIDE_EXH then
-                    p.hideLustDebuff = val and true or false
+                    profile.hideLustDebuff = val and true or false
                     DmApply()
                     CludesUI:RefreshPage()
                     return
@@ -1385,8 +1385,8 @@ local function BuildBaseDetailDM(widget, fontFile)
         order = POS_ORDER,
         getValue = PFieldOr("debuffPosition", "bottomright"),
         setValue = function(val)
-            p.debuffPosition = val
-            p.debuffGrowDirection = DmDefaultGrow(val)
+            profile.debuffPosition = val
+            profile.debuffGrowDirection = DmDefaultGrow(val)
             DmApply()
             CludesUI:RefreshPage()
         end,
@@ -1461,9 +1461,9 @@ local function BuildBaseDetailDM(widget, fontFile)
     sy = sy - hh
 
     sy = mod.RFO_AuraBorderSettings(widget, sy, W, function(keyName)
-        return p["debuffBorder" .. keyName]
+        return profile["debuffBorder" .. keyName]
     end, function(keyName, val)
-        p["debuffBorder" .. keyName] = val
+        profile["debuffBorder" .. keyName] = val
     end, DmApply, nil, true)
 
     -- Row: Show Duration Text (+ cog + swatch) | Show Stacks (+ cog + swatch)
@@ -1472,14 +1472,14 @@ local function BuildBaseDetailDM(widget, fontFile)
         type = "toggle",
         text = "Show Duration Text",
         getValue = function()
-            return p.debuffShowDurText and true or false
+            return profile.debuffShowDurText and true or false
         end,
         setValue = PFieldThen("debuffShowDurText"),
     }, {
         type = "toggle",
         text = "Show Stacks",
         getValue = function()
-            return p.debuffShowStacks ~= false
+            return profile.debuffShowStacks ~= false
         end,
         setValue = PFieldThen("debuffShowStacks"),
     })
@@ -1520,10 +1520,10 @@ local function BuildBaseDetailDM(widget, fontFile)
         })
 
         local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
-            local color = p.debuffDurTextColor or { r = 1, g = 1, b = 1 }
+            local color = profile.debuffDurTextColor or { r = 1, g = 1, b = 1 }
             return color.r or 1, color.g or 1, color.b or 1, 1
         end, function(red, green, blue)
-            p.debuffDurTextColor = { r = red, g = green, b = blue }
+            profile.debuffDurTextColor = { r = red, g = green, b = blue }
             DmApply()
         end, false, 20)
         swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1565,10 +1565,10 @@ local function BuildBaseDetailDM(widget, fontFile)
         })
 
         local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
-            local color = p.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
+            local color = profile.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
             return color.r or 1, color.g or 1, color.b or 1, 1
         end, function(red, green, blue)
-            p.debuffStacksTextColor = { r = red, g = green, b = blue }
+            profile.debuffStacksTextColor = { r = red, g = green, b = blue }
             DmApply()
         end, false, 20)
         swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -1585,10 +1585,10 @@ local function BuildBaseDetailDM(widget, fontFile)
         values = TIP_VALUES,
         order = TIP_ORDER,
         getValue = function()
-            return TipModeKey(p.debuffHideTooltips)
+            return TipModeKey(profile.debuffHideTooltips)
         end,
         setValue = function(keyName)
-            p.debuffHideTooltips = TipModeStore(keyName)
+            profile.debuffHideTooltips = TipModeStore(keyName)
             DmApply()
             CludesUI:RefreshPage() -- update the Use Modifier cog disabled state
         end,
@@ -1596,7 +1596,7 @@ local function BuildBaseDetailDM(widget, fontFile)
         type = "toggle",
         text = "Show Duration Swipe",
         getValue = function()
-            return p.debuffShowSwipe ~= false
+            return profile.debuffShowSwipe ~= false
         end,
         setValue = PFieldThen("debuffShowSwipe"),
     })
@@ -1609,7 +1609,7 @@ local function BuildBaseDetailDM(widget, fontFile)
     do
         local leftRegion = tipRow._leftRegion
         local function tipOff()
-            return TipModeKey(p.debuffHideTooltips) ~= "modifier"
+            return TipModeKey(profile.debuffHideTooltips) ~= "modifier"
         end
         local tipModBtn = CludesUI.BuildInlineCog(leftRegion, {
             gap = 9,
@@ -1625,7 +1625,7 @@ local function BuildBaseDetailDM(widget, fontFile)
                     order = { "none", "shift", "control", "alt" },
                     get = PFieldOr("debuffTooltipModifier", "none"),
                     set = function(val)
-                        p.debuffTooltipModifier = val
+                        profile.debuffTooltipModifier = val
                         DmApply()
                         CludesUI:RefreshPage() -- clear/raise the no-key warning bubble
                     end,
@@ -1634,7 +1634,7 @@ local function BuildBaseDetailDM(widget, fontFile)
         })
         if tipModBtn then
             tipModBtn:HookScript("OnEnter", function(self)
-                if (p.debuffTooltipModifier or "none") == "none" then
+                if (profile.debuffTooltipModifier or "none") == "none" then
                     CludesUI.ShowWidgetTooltip(
                         self,
                         "Select a modifier key here, or tooltips will always be shown"
@@ -1649,7 +1649,7 @@ local function BuildBaseDetailDM(widget, fontFile)
             -- selected with no key picked (the standard empty-selection warning);
             -- the hover tooltip above keeps the explanation.
             CludesUI.AttachEmptyFilterWarn(leftRegion, tipModBtn, L("Select a Modifier"), function()
-                return tipOff() or (p.debuffTooltipModifier or "none") ~= "none"
+                return tipOff() or (profile.debuffTooltipModifier or "none") ~= "none"
             end)
         end
     end
@@ -1689,7 +1689,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
         -- Grid tiles (Icon / Square): the Base Icons pane layout 1:1, with
         -- per-tile style values as VIEWS over the base debuff style keys
         -- (nil = inherit; getters show the effective value).
-        local p = DmProfile() or {}
+        local profile = DmProfile() or {}
         local dmConf = DmTable() or {}
         local function TEff(filterKey, baseKey, default)
             local val = tbl[filterKey]
@@ -1697,7 +1697,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                 return false
             end
             if val == nil then
-                val = p[baseKey]
+                val = profile[baseKey]
             end
             if val == nil then
                 val = default
@@ -1708,13 +1708,13 @@ local function BuildTileDetail(widget, fontFile, tbl)
             if tbl[filterKey] ~= nil then
                 return tbl[filterKey] and true or false
             end
-            return p[baseKey] ~= false
+            return profile[baseKey] ~= false
         end
         local function TBoolOff(filterKey, baseKey) -- base default OFF
             if tbl[filterKey] ~= nil then
                 return tbl[filterKey] and true or false
             end
-            return p[baseKey] and true or false
+            return profile[baseKey] and true or false
         end
 
         _, hh = W:SectionHeader(widget, "ASSIGNED DEBUFFS", sy)
@@ -1937,7 +1937,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
             })
 
             local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
-                local color = tbl.durTextColor or p.debuffDurTextColor or { r = 1, g = 1, b = 1 }
+                local color = tbl.durTextColor or profile.debuffDurTextColor or { r = 1, g = 1, b = 1 }
                 return color.r or 1, color.g or 1, color.b or 1, 1
             end, function(red, green, blue)
                 tbl.durTextColor = { r = red, g = green, b = blue }
@@ -1988,7 +1988,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
             })
 
             local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
-                local color = tbl.stacksTextColor or p.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
+                local color = tbl.stacksTextColor or profile.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
                 return color.r or 1, color.g or 1, color.b or 1, 1
             end, function(red, green, blue)
                 tbl.stacksTextColor = { r = red, g = green, b = blue }
@@ -2007,7 +2007,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
             getValue = function()
                 local val = tbl.hideTooltips
                 if val == nil then
-                    val = p.debuffHideTooltips
+                    val = profile.debuffHideTooltips
                 end
                 return TipModeKey(val)
             end,
@@ -2414,8 +2414,8 @@ function mod.DMP_RefreshPreview()
         return
     end
     -- Party style: the replica's party view (scaled base grid, kit keys).
-    local p = preview._bmPvS or DmProfile()
-    if not p then
+    local profile = preview._bmPvS or DmProfile()
+    if not profile then
         return
     end
     -- Tile icon sizes live in dmDebuff, outside the proxy's scaled keys: live
@@ -2424,7 +2424,7 @@ function mod.DMP_RefreshPreview()
     local Pix = CludesUI.PanelPP or CludesUI.PP
     local fontFile = preview._dmFontPath or (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
     local health = preview._health
-    local host = (mod.RF_AnchorHost and mod.RF_AnchorHost(health, p)) or health
+    local host = (mod.RF_AnchorHost and mod.RF_AnchorHost(health, profile)) or health
     local allVis = mod._dmAllVisible
     -- The EDITED view's tiles: inherited group tiles first (concrete spec
     -- views only, that spec's per-spec disables applied), then the bucket's
@@ -2583,7 +2583,7 @@ function mod.DMP_RefreshPreview()
         if rowConf.count <= 0 then
             return
         end
-        local sv = rowConf.sv or p
+        local sv = rowConf.sv or profile
         local anchor = string.upper(rowConf.pos or "center")
         local sz = rowConf.size or 18
         local gap = rowConf.spacing or 1
@@ -2752,33 +2752,33 @@ function mod.DMP_RefreshPreview()
     end
     if baseShown then
         local sel = (dmSel == "base" and not inheritSel) or (inheritSel and inheritSel.id == "base") or false
-        local basePos = p.debuffPosition or "bottomright"
+        local basePos = profile.debuffPosition or "bottomright"
         local baseCenterEdge
-        if (p.debuffGrowDirection or "LEFT") == "CENTER" then
+        if (profile.debuffGrowDirection or "LEFT") == "CENTER" then
             baseCenterEdge = (string.find(basePos, "top", 1, true) and "TOP")
                 or (string.find(basePos, "bottom", 1, true) and "BOTTOM")
                 or nil
         end
         RenderRun({
             selKey = "base",
-            count = math.min(p.debuffCap or 3, (sel or allVis) and 4 or 2),
-            size = p.debuffSize or 18,
-            spacing = p.debuffSpacing or 1,
-            pos = p.debuffPosition or "bottomright",
-            grow = p.debuffGrowDirection or "LEFT",
+            count = math.min(profile.debuffCap or 3, (sel or allVis) and 4 or 2),
+            size = profile.debuffSize or 18,
+            spacing = profile.debuffSpacing or 1,
+            pos = profile.debuffPosition or "bottomright",
+            grow = profile.debuffGrowDirection or "LEFT",
             -- CENTER-growth vertical seat: live seats the edge from POSITION
             -- (ResolveFlowAnchor), falling back to wrap only when the position
             -- names neither side. Other growth modes keep wrap as the cross-axis.
-            vAlign = baseCenterEdge or ((p.debuffWrapDirection == "DOWN") and "TOP" or "BOTTOM"),
+            vAlign = baseCenterEdge or ((profile.debuffWrapDirection == "DOWN") and "TOP" or "BOTTOM"),
             -- Base wrap: rows follow the stored debuffWrapDirection (the
             -- runtime's cross-axis source); vertical growth wraps columns
             -- by its LEFT/RIGHT reading.
-            perRow = p.debuffPerRow or 5,
+            perRow = profile.debuffPerRow or 5,
             wrapV = (baseCenterEdge and ((baseCenterEdge == "TOP") and "DOWN" or "UP"))
-                or ((p.debuffWrapDirection == "DOWN") and "DOWN" or "UP"),
-            wrapH = (p.debuffWrapDirection == "LEFT") and "LEFT" or "RIGHT",
-            offX = p.debuffOffsetX or 0,
-            offY = p.debuffOffsetY or 0,
+                or ((profile.debuffWrapDirection == "DOWN") and "DOWN" or "UP"),
+            wrapH = (profile.debuffWrapDirection == "LEFT") and "LEFT" or "RIGHT",
+            offX = profile.debuffOffsetX or 0,
+            offY = profile.debuffOffsetY or 0,
             alpha = (sel or allVis) and 1 or 0.5,
         })
     end
@@ -2795,7 +2795,7 @@ function mod.DMP_RefreshPreview()
                 RenderRun({
                     selKey = t.id,
                     -- Tile Display values: the tile's own keys over the base (nil = inherit).
-                    sv = (mod.DM_TileStyleView and mod.DM_TileStyleView(p, t)) or p,
+                    sv = (mod.DM_TileStyleView and mod.DM_TileStyleView(profile, t)) or profile,
                     count = math.min(t.cap or 3, (sel or allVis) and 4 or 2),
                     size = (t.size or 18) * tileScale,
                     spacing = t.spacing or 1,
@@ -3051,8 +3051,8 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         inhSelBase = true
     end
 
-    local p = DmProfile()
-    if not p then
+    local profile = DmProfile()
+    if not profile then
         CludesUI._EndRootRender("rf.dm")
         return 0
     end
@@ -3077,19 +3077,19 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     sbBg:SetColorTexture(0, 0, 0, 0.25)
     CludesUI.CardSidebar(sidebarOuter, sbBg)
 
-    local sidebarScroll = CreateFrame("ScrollFrame", nil, sidebarOuter)
-    sidebarScroll:SetAllPoints()
-    sidebarScroll:SetFrameLevel(sidebarOuter:GetFrameLevel() + 1)
-    local sidebarChild = CreateFrame("Frame", nil, sidebarScroll)
-    sidebarChild:SetWidth(sidebarW)
-    sidebarScroll:SetScrollChild(sidebarChild)
-    sidebarScroll:EnableMouseWheel(true)
-    sidebarScroll:SetScript("OnMouseWheel", function(self, delta)
+    local navScroll = CreateFrame("ScrollFrame", nil, sidebarOuter)
+    navScroll:SetAllPoints()
+    navScroll:SetFrameLevel(sidebarOuter:GetFrameLevel() + 1)
+    local navBody = CreateFrame("Frame", nil, navScroll)
+    navBody:SetWidth(sidebarW)
+    navScroll:SetScrollChild(navBody)
+    navScroll:EnableMouseWheel(true)
+    navScroll:SetScript("OnMouseWheel", function(self, delta)
         if CludesUI._ShiftWheelScale(delta) then
             return
         end
         local scroll = self:GetVerticalScroll()
-        local maxS = max(0, sidebarChild:GetHeight() - self:GetHeight())
+        local maxS = max(0, navBody:GetHeight() - self:GetHeight())
         self:SetVerticalScroll(max(0, math.min(maxS, scroll - delta * 30)))
     end)
 
@@ -3098,7 +3098,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     local function AddTile(opts)
         opts.width = sidebarW
         opts.fontPath = fontFile
-        tileY = tileY - CludesUI.BuildManagerTile(sidebarChild, tileY, opts)
+        tileY = tileY - CludesUI.BuildManagerTile(navBody, tileY, opts)
     end
     -- A tile's gray position suffix: the icon, square and bar containers sit
     -- at a position; the base grid at the debuff position.
@@ -3107,7 +3107,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             return "(" .. L(POS_VALUES[tbl.position or "top"] or "") .. ")"
         end
     end
-    local basePosText = "(" .. L(POS_VALUES[p.debuffPosition or "bottomright"] or "") .. ")"
+    local basePosText = "(" .. L(POS_VALUES[profile.debuffPosition or "bottomright"] or "") .. ")"
 
     -- Pinned Base Icons tile (All Specs view): undeletable, no toggle (an
     -- empty grid is expressed through the filters).
@@ -3275,18 +3275,18 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     local ADD_BTN_PAD = 10
     do
         local btnW = floor(sidebarW * 0.6)
-        local addBtn = CreateFrame("Button", nil, sidebarChild)
-        addBtn:SetSize(btnW, ADD_BTN_H)
-        addBtn:SetPoint("TOP", sidebarChild, "TOPLEFT", floor(sidebarW / 2), tileY - ADD_BTN_PAD)
-        addBtn:SetFrameLevel(sidebarChild:GetFrameLevel() + 1)
+        local newBtn = CreateFrame("Button", nil, navBody)
+        newBtn:SetSize(btnW, ADD_BTN_H)
+        newBtn:SetPoint("TOP", navBody, "TOPLEFT", floor(sidebarW / 2), tileY - ADD_BTN_PAD)
+        newBtn:SetFrameLevel(navBody:GetFrameLevel() + 1)
 
         local accentColor = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
-        local addBg = addBtn:CreateTexture(nil, "BACKGROUND")
+        local addBg = newBtn:CreateTexture(nil, "BACKGROUND")
         addBg:SetAllPoints()
         addBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.8)
-        CludesUI.RoundBody(addBtn, addBg)
+        CludesUI.RoundBody(newBtn, addBg)
 
-        local addLabel = addBtn:CreateFontString(nil, "OVERLAY")
+        local addLabel = newBtn:CreateFontString(nil, "OVERLAY")
         -- Drop shadow via the shadow FontObject, primed BEFORE SetFont
         -- (SetShadowOffset alone does not render).
         CludesUI.PrimeFontShadow(addLabel, true)
@@ -3295,10 +3295,10 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         addLabel:SetText(L("Add New"))
         addLabel:SetTextColor(1, 1, 1)
 
-        addBtn:SetScript("OnEnter", nil) -- CludesUI.OutlineButton below sets the hover
-        CludesUI.OutlineButton(addBtn, addBg, true)
+        newBtn:SetScript("OnEnter", nil) -- CludesUI.OutlineButton below sets the hover
+        CludesUI.OutlineButton(newBtn, addBg, true)
 
-        addBtn:SetScript("OnClick", function(self)
+        newBtn:SetScript("OnClick", function(self)
             -- Toggle popup (BM Add New popup parity: label + dropdown +
             -- accent Create button on the same chrome and metrics)
             local dialog = mod._dmAddPopup
@@ -3555,9 +3555,9 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     end
 
     -- Override list (BM parity; builder lives in the Buff Manager file).
-    tileY = mod.BM_BuildOverrideList(sidebarChild, tileY, sidebarW, fontFile, "dm")
+    tileY = mod.BM_BuildOverrideList(navBody, tileY, sidebarW, fontFile, "dm")
 
-    sidebarChild:SetHeight(max(10, math.abs(tileY)))
+    navBody:SetHeight(max(10, math.abs(tileY)))
 
     -------------------------------------------------------------------
     --  LEFT COLUMN (72%): fixed top (preview band + Editing Spec section
@@ -3578,7 +3578,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     -- (the Editing Spec section owns the right 35%).
     local ovRaid, ovParty = mod.BM_PreviewOverrideTips("dm")
     local pvFrame, sectionH, PV_SCALE =
-        mod.BM_BuildSimplePreview(leftPane, p, fontFile, Pix, pvSplitW / 2, -PAD, {
+        mod.BM_BuildSimplePreview(leftPane, profile, fontFile, Pix, pvSplitW / 2, -PAD, {
             party = mod.BM_PreviewIsParty(),
             styleToggle = true,
             kitAuras = "debuffs",
@@ -4191,10 +4191,10 @@ function mod.BMP_ShowFilterEditor(show, hide)
     local function NameOf(ident)
         return SpellName(ident) or tostring(ident)
     end
-    local function ByName(a, b)
-        local na, nb = NameOf(a), NameOf(b)
+    local function ByName(lhs, rhs)
+        local na, nb = NameOf(lhs), NameOf(rhs)
         if na == nb then
-            return a < b
+            return lhs < rhs
         end
         return na < nb
     end
@@ -4423,8 +4423,8 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
                 icon = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(ident),
             }
         end
-        local function ByLabel(a, b)
-            return a.label < b.label
+        local function ByLabel(lhs, rhs)
+            return lhs.label < rhs.label
         end
         local function ExtraItems()
             -- WoW Forever: a rank alternate stands for its family's primary
