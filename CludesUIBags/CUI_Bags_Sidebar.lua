@@ -2022,17 +2022,17 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                         bRight:SetWidth(edgePx)
                         iconEdge:Hide()
                         iconBtn._border = iconEdge
-                        iconBtn:SetScript("OnClick", function(s)
-                            dialog._selectedIcon = s._iconID
+                        iconBtn:SetScript("OnClick", function(cfg)
+                            dialog._selectedIcon = cfg._iconID
                             dialog._customMode = false
-                            dialog._prevTex:SetTexture(s._iconID)
+                            dialog._prevTex:SetTexture(cfg._iconID)
                             UpdateSelection()
                         end)
-                        iconBtn:SetScript("OnEnter", function(s)
-                            s._tex:SetAlpha(1)
+                        iconBtn:SetScript("OnEnter", function(cfg)
+                            cfg._tex:SetAlpha(1)
                         end)
-                        iconBtn:SetScript("OnLeave", function(s)
-                            s._tex:SetAlpha(0.85)
+                        iconBtn:SetScript("OnLeave", function(cfg)
+                            cfg._tex:SetAlpha(0.85)
                         end)
                         iconBtn._tex:SetAlpha(0.85)
                         iconBtns[position] = iconBtn

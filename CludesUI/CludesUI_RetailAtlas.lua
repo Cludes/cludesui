@@ -686,19 +686,19 @@ local ROWS = {
 }
 
 -- Whether a sheet ships with this client (memo in the sheet's slot 5).
-local function Present(s)
-    local val = s[5]
+local function Present(cfg)
+    local val = cfg[5]
     if val == nil then
-        val = GetFileIDFromPath(s[2]) == s[1]
-        s[5] = val
+        val = GetFileIDFromPath(cfg[2]) == cfg[1]
+        cfg[5] = val
     end
     return val
 end
 
-local function Info(s, l, r, t, b, wid, hgt)
-    local W, H = s[3], s[4]
+local function Info(cfg, l, r, t, b, wid, hgt)
+    local W, H = cfg[3], cfg[4]
     return {
-        file = s[1],
+        file = cfg[1],
         width = wid,
         height = hgt,
         leftTexCoord = l / W,

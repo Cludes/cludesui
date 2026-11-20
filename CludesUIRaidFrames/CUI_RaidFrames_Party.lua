@@ -1097,13 +1097,13 @@ end
 
 -- Party growth direction. Explicit true only: "centered" keeps the default
 -- direction.
-mod._PartyGrowth = function(s)
+mod._PartyGrowth = function(cfg)
     -- (Party Frames kit: horizontal frames carry their buffs above each
     -- frame -- ns.RF_KitBmView -- so the next frame beside it stays clear.)
-    if s.partyHorizontal then
-        return (s.partyFlipGrowth == true) and "LEFT" or "RIGHT"
+    if cfg.partyHorizontal then
+        return (cfg.partyFlipGrowth == true) and "LEFT" or "RIGHT"
     end
-    return (s.partyFlipGrowth == true) and "UP" or "DOWN"
+    return (cfg.partyFlipGrowth == true) and "UP" or "DOWN"
 end
 
 -- Size the party container (the unlock mover's rect: always 5 slots) from

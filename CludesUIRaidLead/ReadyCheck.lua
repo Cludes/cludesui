@@ -314,9 +314,9 @@ function mod.ReceiveReadyReport(name, report)
     if not dur then
         return
     end
-    local function List(s)
+    local function List(text)
         local t = {}
-        for val in s:gmatch("[^,]+") do
+        for val in text:gmatch("[^,]+") do
             t[#t + 1] = val
         end
         return t

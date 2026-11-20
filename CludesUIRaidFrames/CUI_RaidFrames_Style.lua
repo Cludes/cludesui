@@ -143,25 +143,25 @@ end
 -- Effective icon size for dispellable debuffs routed to their own anchor ("Dispellable Debuff
 -- Location"): 0 = match the main Debuff Size. Reads scaled proxies transparently (the key is in
 -- INDICATOR_SCALE_KEYS; 0 scales to 0, so the match sentinel survives).
-function mod.DispellableDebuffSize(s)
-    local val = s.dispellableDebuffSize
+function mod.DispellableDebuffSize(cfg)
+    local val = cfg.dispellableDebuffSize
     if val and val > 0 then
         return val
     end
-    return s.debuffSize or 18
+    return cfg.debuffSize or 18
 end
 
 -- Grid placement for debuff icons. opts (optional) overrides pos/grow/ox/oy/size for a
 -- sub-group (e.g. dispellable debuffs on their own anchor); spacing/wrap/perRow stay shared.
-function mod.DebuffGridPoint(s, idx0, sum, options)
-    local place = (options and options.pos) or s.debuffPosition or "bottomleft"
-    local grow = (options and options.grow) or s.debuffGrowDirection or "RIGHT"
-    local sz = PixelSnap((options and options.size) or s.debuffSize or 18)
-    local spc = PixelSnap(s.debuffSpacing or 1)
+function mod.DebuffGridPoint(cfg, idx0, sum, options)
+    local place = (options and options.pos) or cfg.debuffPosition or "bottomleft"
+    local grow = (options and options.grow) or cfg.debuffGrowDirection or "RIGHT"
+    local sz = PixelSnap((options and options.size) or cfg.debuffSize or 18)
+    local spc = PixelSnap(cfg.debuffSpacing or 1)
     local step = sz + spc
-    local ox = (options and options.ox) or s.debuffOffsetX or 0
-    local oy = (options and options.oy) or s.debuffOffsetY or 0
-    local perRow = s.debuffPerRow or 1
+    local ox = (options and options.ox) or cfg.debuffOffsetX or 0
+    local oy = (options and options.oy) or cfg.debuffOffsetY or 0
+    local perRow = cfg.debuffPerRow or 1
     if perRow < 1 then
         perRow = 1
     end
@@ -208,7 +208,7 @@ function mod.DebuffGridPoint(s, idx0, sum, options)
     -- rows on the opposite side from the live frame. Otherwise the explicit
     -- wrap direction wins, else derive away from the anchored edge.
     local svx, svy = 0, 0
-    local wrap = s.debuffWrapDirection
+    local wrap = cfg.debuffWrapDirection
     local centerSvy
     if grow == "CENTER" then
         if place:find("top", 1, true) then
@@ -364,11 +364,11 @@ end
 -- companion key against `size` and the drawn texture), nil = the legacy size. The drawn size
 -- (and px) is cached on the border frame so a group-wide target swap is a color write per
 -- button rather than a restyle; callers clear it when the base border returns.
-function mod.ApplyHighlightBorder(bf, s, size, red, green, blue, a, px)
+function mod.ApplyHighlightBorder(bf, cfg, size, red, green, blue, a, px)
     if not (Pix and bf) then
         return
     end
-    local texKey = s.borderTexture or "solid"
+    local texKey = cfg.borderTexture or "solid"
     if not size or size <= 0 then
         if bf._hlBorderSize then
             CludesUI.ApplyBorderStyle(bf, 0, red, green, blue, a, texKey)
@@ -393,10 +393,10 @@ function mod.ApplyHighlightBorder(bf, s, size, red, green, blue, a, px)
         blue,
         a,
         texKey,
-        s.borderTextureOffset,
-        s.borderTextureOffsetY,
-        s.borderTextureShiftX,
-        s.borderTextureShiftY,
+        cfg.borderTextureOffset,
+        cfg.borderTextureOffsetY,
+        cfg.borderTextureShiftX,
+        cfg.borderTextureShiftY,
         "unitframes",
         size,
         nil,
@@ -410,8 +410,8 @@ end
 -- color (nearly) equal to the border's own shows no change at all: every
 -- textured style but Pixels seeds a white border and the highlight defaults
 -- to white. Such a highlight draws gold instead (white on a gold border).
-function mod.RF_VisibleHighlight(s, red, green, blue)
-    local color = s.borderColor
+function mod.RF_VisibleHighlight(cfg, red, green, blue)
+    local color = cfg.borderColor
     local br, backdrop, bb = 0, 0, 0
     if color then
         br, backdrop, bb = color.r, color.g, color.b
@@ -502,19 +502,19 @@ function mod.RF_LayoutPowerBorderArt(owner)
 end
 
 -- Settings passes refresh the cached art; ordinary power paints reuse it.
-function mod.RF_ApplyPowerBorderArt(owner, s, force, preview, nameBar)
-    local mode = nameBar and "divider" or (s.powerBorderStyle or "cui")
+function mod.RF_ApplyPowerBorderArt(owner, cfg, force, preview, nameBar)
+    local mode = nameBar and "divider" or (cfg.powerBorderStyle or "cui")
     local key = (
-        (nameBar and s.topNameBarDivider == true) or (not nameBar and s.powerBorderMatchFrame == true)
+        (nameBar and cfg.topNameBarDivider == true) or (not nameBar and cfg.powerBorderMatchFrame == true)
     )
         and not mod.RF_Stock()
-        and s.borderTexture
+        and cfg.borderTexture
     if not CludesUI._pixelArtBorders[key] or (mode ~= "divider" and mode ~= "border") then
         mod.RF_ClearPowerBorderArt(owner)
         return false
     end
-    local size = s.borderSize or 1
-    local height = nameBar and (s.topNameBarHeight or 20) or (s.powerHeight or 4)
+    local size = cfg.borderSize or 1
+    local height = nameBar and (cfg.topNameBarHeight or 20) or (cfg.powerHeight or 4)
     if size <= 0 or (mode == "divider" and height < 4) then
         mod.RF_ClearPowerBorderArt(owner)
         owner:Hide()
@@ -537,14 +537,14 @@ function mod.RF_ApplyPowerBorderArt(owner, s, force, preview, nameBar)
         owner._powerArtSeam:Hide()
     end
     owner._powerArtKey, owner._powerArtMode = key, mode
-    owner._powerArtEdge = (nameBar and not s.topNameBarBottom) and "BOTTOM" or "TOP"
+    owner._powerArtEdge = (nameBar and not cfg.topNameBarBottom) and "BOTTOM" or "TOP"
     owner._powerArtSize = size
-    owner._powerArtPx = CludesUI.BorderPx(s.borderSizePx, size, key)
-    local color = s.borderColor
+    owner._powerArtPx = CludesUI.BorderPx(cfg.borderSizePx, size, key)
+    local color = cfg.borderColor
     owner._powerArtR, owner._powerArtG, owner._powerArtB = color and color.r or 0, color and color.g or 0, color and color.b or 0
-    owner._powerArtAlpha = s.borderAlpha or 1
-    owner._powerArtOffset, owner._powerArtOffsetY = s.borderTextureOffset, s.borderTextureOffsetY
-    owner._powerArtShiftX, owner._powerArtShiftY = s.borderTextureShiftX, s.borderTextureShiftY
+    owner._powerArtAlpha = cfg.borderAlpha or 1
+    owner._powerArtOffset, owner._powerArtOffsetY = cfg.borderTextureOffset, cfg.borderTextureOffsetY
+    owner._powerArtShiftX, owner._powerArtShiftY = cfg.borderTextureShiftX, cfg.borderTextureShiftY
     if mode == "divider" then
         local t = owner._powerArtTex
         if not t then
@@ -570,17 +570,17 @@ function mod.RF_ApplyPowerBorderArt(owner, s, force, preview, nameBar)
     return true, true
 end
 
-function mod.RF_ApplyTopNameDivider(tnb, s, preview)
+function mod.RF_ApplyTopNameDivider(tnb, cfg, preview)
     local owner = tnb._divider
-    local key = s.borderTexture
+    local key = cfg.borderTexture
     if
         not Pix
-        or not s.topNameBarEnabled
-        or s.topNameBarDivider ~= true
+        or not cfg.topNameBarEnabled
+        or cfg.topNameBarDivider ~= true
         or mod.RF_Stock()
         or not CludesUI._pixelArtBorders[key]
-        or (s.borderSize or 1) <= 0
-        or (s.topNameBarHeight or 20) < 4
+        or (cfg.borderSize or 1) <= 0
+        or (cfg.topNameBarHeight or 20) < 4
     then
         if owner then
             mod.RF_ClearPowerBorderArt(owner)
@@ -594,7 +594,7 @@ function mod.RF_ApplyTopNameDivider(tnb, s, preview)
         owner:SetAllPoints(tnb)
         tnb._divider = owner
     end
-    mod.RF_ApplyPowerBorderArt(owner, s, true, preview, true)
+    mod.RF_ApplyPowerBorderArt(owner, cfg, true, preview, true)
 end
 
 -- Unit tooltip and hover border for a raid/party button; the detached
@@ -1094,7 +1094,7 @@ local function StyleButton(btnFrame)
     -- small/negative Frame Spacing a neighbor's border would cover this frame's highlight.
     -- Highlight states bump it up, normal restores the base level. The PP container's level is
     -- fixed at creation, so it must be moved explicitly (borderFrame alone won't move it).
-    local function ApplyBorderLevel(raised, s)
+    local function ApplyBorderLevel(raised, cfg)
         if not (Pix and skinData.borderFrame) then
             return
         end
@@ -1104,8 +1104,8 @@ local function StyleButton(btnFrame)
         -- Resolved LIVE like UpdateBorder (the caller passes its own LiveS()), so a
         -- party that keeps its own Show Behind (and the Color Custom Borders copy that
         -- follows it) stays in step.
-        s = s or LiveS()
-        local lvl = (s.borderBehind and not skinData.stockEdge and not skinData.kit) and math.max(0, pl - 1)
+        cfg = cfg or LiveS()
+        local lvl = (cfg.borderBehind and not skinData.stockEdge and not skinData.kit) and math.max(0, pl - 1)
             or (pl + (raised and mod.LVL_RAISE or 8))
         -- Runs on hover/target transitions and restyles: skip the SetFrameLevel calls unless
         -- the level actually changes -- the common case is two getters.

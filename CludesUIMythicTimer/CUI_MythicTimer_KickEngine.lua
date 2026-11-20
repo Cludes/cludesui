@@ -695,11 +695,11 @@ local function RowKey(cls, iconTex, loc)
 end
 
 -- The session's own ID, where it is readable.
-local function SessionID(s)
-    if type(s) ~= "table" or Secret(s) then
+local function SessionID(cfg)
+    if type(cfg) ~= "table" or Secret(cfg) then
         return nil
     end
-    local ident = s.sessionID
+    local ident = cfg.sessionID
     if type(ident) == "number" and not Secret(ident) then
         return ident
     end

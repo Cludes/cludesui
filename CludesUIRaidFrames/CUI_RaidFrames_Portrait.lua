@@ -69,8 +69,8 @@ end
 
 -- The attached portrait's width in the party box (callers snap): a square
 -- the frame's full height. Detached and inside take no room.
-function mod.RF_PtReserve(s, hgt)
-    if (s.partyPortraitStyle or "none") ~= "attached" then
+function mod.RF_PtReserve(cfg, hgt)
+    if (cfg.partyPortraitStyle or "none") ~= "attached" then
         return 0
     end
     return hgt
@@ -78,8 +78,8 @@ end
 
 -- Effective side and whether it sits inside the bar: an attached portrait
 -- takes the left or right edge only, inside needs Detached.
-local function SideOf(s, style)
-    local side = s.partyPortraitSide or "left"
+local function SideOf(cfg, style)
+    local side = cfg.partyPortraitSide or "left"
     local inside = side == "insideleft" or side == "insideright" or side == "insidecenter"
     if style == "attached" then
         if side ~= "right" then
@@ -332,17 +332,17 @@ end
 -- (natively 7px, grown outward so `size` px of it show past the mask) and
 -- the art enlarged to fill the mask's opening. Anything else: plain square
 -- art filling the backdrop. `w`/`h` = the backdrop's size.
-local function Shape(edge, s, shaped, wid, hgt)
-    local shape = shaped and (s.partyPortraitShape or "portrait") or nil
+local function Shape(edge, cfg, shaped, wid, hgt)
+    local shape = shaped and (cfg.partyPortraitShape or "portrait") or nil
     if shape and not MASKS[shape] then
         shape = nil
     end
-    local bs = s.partyPortraitBorderSize or 7
-    local op = s.partyPortraitBorderOpacity or 100
-    local art = s.partyPortraitArtScale or 100
-    local colour = s.partyPortraitBorderColor
+    local bs = cfg.partyPortraitBorderSize or 7
+    local op = cfg.partyPortraitBorderOpacity or 100
+    local art = cfg.partyPortraitArtScale or 100
+    local colour = cfg.partyPortraitBorderColor
     local cr, cg, callback = colour and colour.r or 0, colour and colour.g or 0, colour and colour.b or 0
-    local cc = s.partyPortraitBorderClassColor ~= false
+    local cc = cfg.partyPortraitBorderClassColor ~= false
     if
         edge._sShape == shape
         and edge._sBs == bs
@@ -658,8 +658,8 @@ local PORTRAIT_CLICK = {
 -- mode, then paint `unit` when given. A settings pass paints only what its
 -- memos say changed (a mode swap clears them), so it never reloads a model
 -- that shows the right unit.
-function mod.RF_PtApply(ownerFrame, st, s, bw, bh, unitToken)
-    local style = s.partyPortraitStyle or "none"
+function mod.RF_PtApply(ownerFrame, st, cfg, bw, bh, unitToken)
+    local style = cfg.partyPortraitStyle or "none"
     local edge = st.pt
     if style == "none" and not edge then
         return
@@ -668,9 +668,9 @@ function mod.RF_PtApply(ownerFrame, st, s, bw, bh, unitToken)
     if not health then
         return
     end
-    local side, inside = SideOf(s, style)
-    local size = s.partyPortraitSize or 0
-    local px, py = s.partyPortraitX or 0, s.partyPortraitY or 0
+    local side, inside = SideOf(cfg, style)
+    local size = cfg.partyPortraitSize or 0
+    local px, py = cfg.partyPortraitX or 0, cfg.partyPortraitY or 0
     local es = ownerFrame:GetEffectiveScale()
     if
         not (
@@ -726,30 +726,30 @@ function mod.RF_PtApply(ownerFrame, st, s, bw, bh, unitToken)
     if edge:GetFrameLevel() ~= lvl then
         edge:SetFrameLevel(lvl)
     end
-    local mode = s.partyPortraitMode or "2d"
+    local mode = cfg.partyPortraitMode or "2d"
     -- The class art set is a paint input: a change clears the class memo
     -- (a button with no unit repaints on its next occupant).
-    local cs = s.partyPortraitClassStyle or "modern"
+    local cs = cfg.partyPortraitClassStyle or "modern"
     if edge._style ~= cs then
         edge._style = cs
         edge._ct = nil
     end
-    edge._pz3d, edge._zoom3d = Zoom3DOf(s.partyPortrait3dZoom)
+    edge._pz3d, edge._zoom3d = Zoom3DOf(cfg.partyPortrait3dZoom)
     -- Character Size: Inside positions only (the box that clips it).
-    local charK = inside and ((s.partyPortraitCharScale or 100) / 100) or 1
+    local charK = inside and ((cfg.partyPortraitCharScale or 100) / 100) or 1
     local charKChanged = (edge._charK or 1) ~= charK
     edge._charK = charK
     -- Background under square and shaped art; none under a bare model.
-    local shaped = style == "detached" and (s.partyPortraitShape or "portrait") ~= "none"
+    local shaped = style == "detached" and (cfg.partyPortraitShape or "portrait") ~= "none"
     edge._bg:SetShown(not inside and (style == "attached" or shaped))
     -- Detached: the Background Color (unset = the stock grey).
-    local bgc = style == "detached" and s.partyPortraitBgColor
+    local bgc = style == "detached" and cfg.partyPortraitBgColor
     if bgc then
         edge._bg:SetColorTexture(bgc.r, bgc.g, bgc.b, bgc.a or 1)
     else
         edge._bg:SetColorTexture(0.1, 0.1, 0.1, 1)
     end
-    local reshaped = Shape(edge, s, shaped, edge._w, edge._h)
+    local reshaped = Shape(edge, cfg, shaped, edge._w, edge._h)
     local wasOn = edge._on
     edge._on = true
     local swapped = SetMode(edge, mode)
@@ -929,15 +929,15 @@ end
 --  in the others (five copies of one face, or five models, would read
 --  wrong), class art per slot, the offline slot greyed.
 -------------------------------------------------------------------------------
-function mod.RF_PtPreview(frame, s, classToken, isPlayer, offline)
-    if (s.partyPortraitStyle or "none") == "none" and not frame.pt then
+function mod.RF_PtPreview(frame, cfg, classToken, isPlayer, offline)
+    if (cfg.partyPortraitStyle or "none") == "none" and not frame.pt then
         return
     end
     local saved = mod.db
-    local pw, ph = mod.RF_PartyDims(mod._pvOverlayProxy or (saved and saved.profile) or s)
+    local pw, ph = mod.RF_PartyDims(mod._pvOverlayProxy or (saved and saved.profile) or cfg)
     local bw, bh = mod.PixelSnap(pw), mod.PixelSnap(ph)
     frame:SetSize(bw, bh)
-    mod.RF_PtApply(frame, frame, s, bw, bh, nil)
+    mod.RF_PtApply(frame, frame, cfg, bw, bh, nil)
     local edge = frame.pt
     if not (edge and edge._on) then
         return

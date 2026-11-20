@@ -299,14 +299,14 @@ end
 -- the vehicle state, map to no texture, so it shows what the plain path would.
 -- Before 12.1.5 (and with Role Text on) a secret role stays hidden, as before.
 local secretRoleMaps = {} -- style -> toggle bits -> texture map
-local function SecretRoleMap(style, s)
+local function SecretRoleMap(style, cfg)
     local styleMap = mod.ROLE_ICON_STYLES[style]
     if not styleMap then
         return nil
     end
-    local bits = (s.showRoleForTank and 1 or 0)
-        + (s.showRoleForHealer and 2 or 0)
-        + (s.showRoleForDPS and 4 or 0)
+    local bits = (cfg.showRoleForTank and 1 or 0)
+        + (cfg.showRoleForHealer and 2 or 0)
+        + (cfg.showRoleForDPS and 4 or 0)
     local byStyle = secretRoleMaps[style]
     if not byStyle then
         byStyle = {}
@@ -315,9 +315,9 @@ local function SecretRoleMap(style, s)
     local map = byStyle[bits]
     if not map then
         map = {
-            TANK = s.showRoleForTank and styleMap.TANK or "",
-            HEALER = s.showRoleForHealer and styleMap.HEALER or "",
-            DAMAGER = s.showRoleForDPS and styleMap.DAMAGER or "",
+            TANK = cfg.showRoleForTank and styleMap.TANK or "",
+            HEALER = cfg.showRoleForHealer and styleMap.HEALER or "",
+            DAMAGER = cfg.showRoleForDPS and styleMap.DAMAGER or "",
             VEHICLE = "",
         }
         byStyle[bits] = map
@@ -325,9 +325,9 @@ local function SecretRoleMap(style, s)
     return map
 end
 
-local function PaintSecretRole(skinData, unitToken, style, s)
+local function PaintSecretRole(skinData, unitToken, style, cfg)
     local paint = UnitFrameUtil and UnitFrameUtil.UpdateUnitFrameRoleIcon
-    local map = paint and not s.roleText and SecretRoleMap(style, s)
+    local map = paint and not cfg.roleText and SecretRoleMap(style, cfg)
     local texture = skinData.roleIconSecret
     if not map then
         if texture then
@@ -350,7 +350,7 @@ local function PaintSecretRole(skinData, unitToken, style, s)
     pcall(paint, proxy)
 end
 
-local function UpdateRoleIconShown(skinData, s, unitToken)
+local function UpdateRoleIconShown(skinData, cfg, unitToken)
     local roleIcon = skinData.roleIcon
     if not roleIcon then
         return
@@ -359,15 +359,15 @@ local function UpdateRoleIconShown(skinData, s, unitToken)
         roleIcon._roleText:Hide()
     end
     local secretTex = skinData.roleIconSecret
-    local style = s.roleIconStyle or "modern"
-    if style == "none" and not s.roleText then
+    local style = cfg.roleIconStyle or "modern"
+    if style == "none" and not cfg.roleText then
         roleIcon:Hide()
         if secretTex then
             secretTex:Hide()
         end
         return
     end
-    if s.roleIconHideInCombat and inCombat then
+    if cfg.roleIconHideInCombat and inCombat then
         roleIcon:Hide()
         if secretTex then
             secretTex:Hide()
@@ -377,18 +377,18 @@ local function UpdateRoleIconShown(skinData, s, unitToken)
     local role, roleSecret = CludesUI.UnitEffectiveRole(unitToken)
     if roleSecret then
         roleIcon:Hide()
-        PaintSecretRole(skinData, unitToken, style, s)
+        PaintSecretRole(skinData, unitToken, style, cfg)
     elseif role then
         if secretTex then
             secretTex:Hide()
         end
-        local showForRole = (role == "TANK" and s.showRoleForTank)
-            or (role == "HEALER" and s.showRoleForHealer)
-            or (role == "DAMAGER" and s.showRoleForDPS)
-        if showForRole and (s.roleText or ApplyRoleIcon(roleIcon, role, style)) then
+        local showForRole = (role == "TANK" and cfg.showRoleForTank)
+            or (role == "HEALER" and cfg.showRoleForHealer)
+            or (role == "DAMAGER" and cfg.showRoleForDPS)
+        if showForRole and (cfg.roleText or ApplyRoleIcon(roleIcon, role, style)) then
             roleIcon:Show()
-            if s.roleText then
-                mod.ApplyRoleText(roleIcon, role, s)
+            if cfg.roleText then
+                mod.ApplyRoleText(roleIcon, role, cfg)
             end
         else
             roleIcon:Hide()
@@ -403,13 +403,13 @@ end
 
 -- Attach Role Icons: the name only makes room on frames whose icon shows (a secret
 -- role's Blizzard-painted icon counts as shown).
-mod._UpdateRoleIcon = function(skinData, s, unitToken)
+mod._UpdateRoleIcon = function(skinData, cfg, unitToken)
     if not skinData.roleIcon then
         return
     end
-    UpdateRoleIconShown(skinData, s, unitToken)
+    UpdateRoleIconShown(skinData, cfg, unitToken)
     local tnb = skinData.topNameBar
-    if not (s.roleIconOnNameBar and tnb and skinData.topNameBarText) then
+    if not (cfg.roleIconOnNameBar and tnb and skinData.topNameBarText) then
         return
     end
     local sec = skinData.roleIconSecret
@@ -417,7 +417,7 @@ mod._UpdateRoleIcon = function(skinData, s, unitToken)
     local has = skinData.roleIcon:IsShown() or issecretvalue(secShown) or secShown or false
     if tnb._cuiRoleIcon ~= has then
         tnb._cuiRoleIcon = has
-        mod.RF_PlaceTopNameText(skinData.topNameBarText, tnb, s)
+        mod.RF_PlaceTopNameText(skinData.topNameBarText, tnb, cfg)
     end
 end
 
@@ -426,16 +426,16 @@ end
 --  lightweight ns._UpdateLeaderIcons combat-transition updater (lockstep). Honors
 --  the "Show In Combat" cog (default on; off = hidden in combat).
 -------------------------------------------------------------------------------
-mod._UpdateLeaderIcon = function(skinData, s, unitToken)
+mod._UpdateLeaderIcon = function(skinData, cfg, unitToken)
     local leaderIcon = skinData.leaderIcon
     if not leaderIcon then
         return
     end
-    if not s.showLeaderIcon then
+    if not cfg.showLeaderIcon then
         leaderIcon:Hide()
         return
     end
-    if s.showLeaderIconInCombat == false and inCombat then
+    if cfg.showLeaderIconInCombat == false and inCombat then
         leaderIcon:Hide()
         return
     end
@@ -459,12 +459,12 @@ end
 --  awareness). Driven by UpdateButton and the lightweight ns._UpdateCombatIcons
 --  updater (UNIT_FLAGS / regen). Texture Show/Hide is combat-legal. On ns (cap).
 -------------------------------------------------------------------------------
-mod._UpdateCombatIcon = function(skinData, s, unitToken)
+mod._UpdateCombatIcon = function(skinData, cfg, unitToken)
     local iconTex = skinData.combatIcon
     if not iconTex then
         return
     end
-    if not s.showCombatIndicator then
+    if not cfg.showCombatIndicator then
         iconTex:Hide()
         return
     end
@@ -475,7 +475,7 @@ mod._UpdateCombatIcon = function(skinData, s, unitToken)
     end
 
     local CludesUI = mod.CludesUI
-    local style = s.combatIndicatorStyle or "standard"
+    local style = cfg.combatIndicatorStyle or "standard"
     local MEDIA = mod._COMBAT_MEDIA
     if style:find("^combat%d") then
         iconTex:SetTexture(MEDIA .. style .. ".tga")
@@ -505,12 +505,12 @@ mod._UpdateCombatIcon = function(skinData, s, unitToken)
             iconTex:SetTexture(MEDIA .. "combat-indicator-custom.png")
             iconTex:SetTexCoord(0, 1, 0, 1)
         end
-        local colorMode = s.combatIndicatorColor or "custom"
+        local colorMode = cfg.combatIndicatorColor or "custom"
         if colorMode == "classcolor" then
             local cc = (classToken and CludesUI.GetClassColor(classToken)) or { r = 1, g = 1, b = 1 }
             iconTex:SetVertexColor(cc.r, cc.g, cc.b, 1)
         else
-            local cc = s.combatIndicatorCustomColor or { r = 1, g = 1, b = 1 }
+            local cc = cfg.combatIndicatorCustomColor or { r = 1, g = 1, b = 1 }
             iconTex:SetVertexColor(cc.r, cc.g, cc.b, 1)
         end
     end
@@ -623,14 +623,14 @@ end
 -- Power bar layout + value: role-gated show/hide, health-height reflow, then the
 -- value/color push. Split out of UpdateButton so the roster-state refresh
 -- (ns._RefreshRosterState) can re-evaluate the role gate without a full paint.
-mod._PaintPower = function(btnFrame, skinData, s, unitToken)
+mod._PaintPower = function(btnFrame, skinData, cfg, unitToken)
     local power = skinData.power
     if power then
         local role = mod._ResolvePowerRole(unitToken)
-        local showForRole = (role == "HEALER" and s.powerShowForHealer)
-            or (role == "TANK" and s.powerShowForTank)
-            or (role == "DAMAGER" and s.powerShowForDPS)
-            or (role == "NONE" and s.powerShowForDPS)
+        local showForRole = (role == "HEALER" and cfg.powerShowForHealer)
+            or (role == "TANK" and cfg.powerShowForTank)
+            or (role == "DAMAGER" and cfg.powerShowForDPS)
+            or (role == "NONE" and cfg.powerShowForDPS)
         local pType = UnitPowerType(unitToken) or 0
         -- maxPower can be a secret number in group context; NEVER compare it in Lua. Treat the unit as powerless only on a CLEAN zero max.
         local pmx = UnitPowerMax(unitToken, pType)
@@ -639,10 +639,10 @@ mod._PaintPower = function(btnFrame, skinData, s, unitToken)
 
         -- The Top Name Bar always reserves height from the top (anchor set by LayoutTopNameBar);
         -- subtract it so this per-unit power show/hide never expands health back over the bar.
-        local tnbH = (s.topNameBarEnabled and PixelSnap(s.topNameBarHeight or 20)) or 0
+        local tnbH = (cfg.topNameBarEnabled and PixelSnap(cfg.topNameBarHeight or 20)) or 0
         -- Extra Frames duplicates carry a per-group size offset (Extra Height), so the BUTTON is
         -- authoritative -- the shared setting would shrink health and leave a gap every update.
-        local frameH = skinData._isExtra and btnFrame:GetHeight() or (s.frameHeight or 46)
+        local frameH = skinData._isExtra and btnFrame:GetHeight() or (cfg.frameHeight or 46)
 
         -- Party Frames kit: the mana bar is part of the stock frame and always
         -- shows (an empty track reads as no mana); the kit owns the bar rects.
@@ -685,9 +685,9 @@ mod._PaintPower = function(btnFrame, skinData, s, unitToken)
                     end
                 else
                     -- Restore health bar height with power bar space (and Top Name Bar)
-                    local powerH = PixelSnap(s.powerHeight or 4)
+                    local powerH = PixelSnap(cfg.powerHeight or 4)
                     if skinData.health then
-                        skinData.health:SetHeight(PixelSnap(frameH - mod.RF_HealthPowerInset(s, powerH) - tnbH))
+                        skinData.health:SetHeight(PixelSnap(frameH - mod.RF_HealthPowerInset(cfg, powerH) - tnbH))
                     end
                 end
             end
@@ -706,9 +706,9 @@ mod._PaintPower = function(btnFrame, skinData, s, unitToken)
                 skinData.UpdatePowerBorder()
             end
             -- Power Texts: shown ahead of the edge below, which colours them.
-            mod.RF_TextPowerShow(skinData, s)
+            mod.RF_TextPowerShow(skinData, cfg)
             local smoothPower = wasShown
-                and s.smoothPowerBars
+                and cfg.smoothPowerBars
                 and Enum
                 and Enum.StatusBarInterpolation
                 and Enum.StatusBarInterpolation.ExponentialEaseOut
@@ -777,29 +777,29 @@ mod._RosterPassPaint = function(btnFrame, unitToken)
 end
 
 -- Second half of the full paint (after power + absorb).
-mod._PaintButtonTail = function(btnFrame, skinData, s, unitToken)
+mod._PaintButtonTail = function(btnFrame, skinData, cfg, unitToken)
     local CludesUI = mod.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
 
     -- The texts (name, level, Health, Heal Absorb and Custom Text; Power Text is the
     -- power paint's). Health, Power and Heal Absorb Text blank while dead or offline (the
     -- status text shows DEAD/OFFLINE); Custom stays, its tags name the status.
-    mod.RF_TextFull(skinData, s, unitToken)
+    mod.RF_TextFull(skinData, cfg, unitToken)
 
     -- Top Name Bar text (unit name + class/custom color); size/anchor/visibility are LayoutTopNameBar's.
     -- It keeps the level in front of the name as the name does.
-    if skinData.topNameBarText and s.topNameBarEnabled then
-        local lvlAttach = mod.RF_TextNameAttach(s)
+    if skinData.topNameBarText and cfg.topNameBarEnabled then
+        local lvlAttach = mod.RF_TextNameAttach(cfg)
         if lvlAttach then
             mod._RFNameWithLevel(
                 skinData.topNameBarText,
-                ResolveDisplayName(unitToken, false, s),
+                ResolveDisplayName(unitToken, false, cfg),
                 unitToken,
                 lvlAttach
             )
         else
-            skinData.topNameBarText:SetText(ResolveDisplayName(unitToken, false, s))
+            skinData.topNameBarText:SetText(ResolveDisplayName(unitToken, false, cfg))
         end
-        local tr, tg, tb = GetTopNameBarColor(unitToken, s)
+        local tr, tg, tb = GetTopNameBarColor(unitToken, cfg)
         skinData.topNameBarText:SetTextColor(tr, tg, tb)
     end
 
@@ -807,20 +807,20 @@ mod._PaintButtonTail = function(btnFrame, skinData, s, unitToken)
     -- UNIT_HEALTH path: the stamp records what is on screen, so a full paint
     -- that shows DEAD on a freshly assigned corpse leaves a stamp the later
     -- resurrect tick can see as a transition.
-    mod._PaintStatusText(skinData, s, unitToken, UnitIsConnected(unitToken), UnitIsDeadOrGhost(unitToken))
+    mod._PaintStatusText(skinData, cfg, unitToken, UnitIsConnected(unitToken), UnitIsDeadOrGhost(unitToken))
 
     -- Role icon
-    mod._UpdateRoleIcon(skinData, s, unitToken)
+    mod._UpdateRoleIcon(skinData, cfg, unitToken)
 
     -- Leader/assistant icon (honors the "Show In Combat" cog)
-    mod._UpdateLeaderIcon(skinData, s, unitToken)
+    mod._UpdateLeaderIcon(skinData, cfg, unitToken)
 
     -- Combat icon (members currently in combat)
-    mod._UpdateCombatIcon(skinData, s, unitToken)
+    mod._UpdateCombatIcon(skinData, cfg, unitToken)
 
     -- Raid marker
     if skinData.raidMarker then
-        if s.showRaidMarker then
+        if cfg.showRaidMarker then
             local position = GetRaidTargetIndex(unitToken)
             if position then
                 if issecretvalue(position) then
@@ -860,7 +860,7 @@ mod._PaintButtonTail = function(btnFrame, skinData, s, unitToken)
     end
 
     -- Threat highlight (aggro): the inner border (size 0 = off) or the Color Custom Borders recolor
-    mod.RF_PaintThreat(skinData, s, unitToken)
+    mod.RF_PaintThreat(skinData, cfg, unitToken)
 end
 
 -- UNIT_LEVEL: only the name and level texts repaint (and the Top Name Bar while it
@@ -1391,16 +1391,16 @@ end
 -- incoming resurrection (the offer latch also requires dead), so the C probe is
 -- skipped for the alive majority -- the same shape as Blizzard's
 -- CompactUnitFrame, which never probes rez from its UNIT_HEALTH path.
-mod._PaintStatusText = function(skinData, s, unitToken, connected, deadOrGhost)
+mod._PaintStatusText = function(skinData, cfg, unitToken, connected, deadOrGhost)
     local statusText = skinData.statusText
     if not statusText then
         return
     end
-    local stc = s.statusTextColor or { r = 1, g = 1, b = 1 }
+    local stc = cfg.statusTextColor or { r = 1, g = 1, b = 1 }
     local st
-    if s.statusTextPosition == "none" then
+    if cfg.statusTextPosition == "none" then
         st = 0
-    elseif deadOrGhost and s.showIncomingRez and mod._RFRezShown(unitToken) then
+    elseif deadOrGhost and cfg.showIncomingRez and mod._RFRezShown(unitToken) then
         -- Being resurrected: hide the status text so the incoming-rez icon isn't covered.
         st = 0
     elseif not connected then
@@ -1409,7 +1409,7 @@ mod._PaintStatusText = function(skinData, s, unitToken, connected, deadOrGhost)
         st = 2
     else
         local afk
-        if s.statusShowAFK and UnitIsAFK then
+        if cfg.statusShowAFK and UnitIsAFK then
             afk = UnitIsAFK(unitToken)
             if issecretvalue(afk) then
                 afk = nil

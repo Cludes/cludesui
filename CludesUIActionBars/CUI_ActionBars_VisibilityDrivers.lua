@@ -59,20 +59,20 @@ end
 -- + the 0.1s poll) rebuilds the driver when they drift. EAB field, not a local.
 ABAR.VIS_EDGES = { softTarget = true }
 
-local function BuildVisibilityString(details, s, visOverride)
+local function BuildVisibilityString(details, cfg, visOverride)
     -- Hide Bar When Using Gamepad compiles to the constant a Never bar gets, so
     -- every writer that builds a bar's driver here agrees (combat-gated sites,
     -- regen healers, housing/soft-target/pet rebuilds). An explicit override
     -- (toggle keybind, drag, spellbook) still wins, as it does over Never.
-    if ABAR._padHide and not visOverride and s.gamepadHideBar == true then
+    if ABAR._padHide and not visOverride and cfg.gamepadHideBar == true then
         return "hide"
     end
     local key = details.key
-    local vis = visOverride or s.barVisibility or "always"
+    local vis = visOverride or cfg.barVisibility or "always"
     -- An applied Visibility override replaces the whole setting, the shared option
     -- lanes included. The runtime toggle keybind still wins over it, the same way it
     -- wins over the saved mode.
-    local visOv = (not visOverride) and CludesUI.VisOverrideValue(s) or nil
+    local visOv = (not visOverride) and CludesUI.VisOverrideValue(cfg) or nil
 
     if details.isStance and (GetNumShapeshiftForms() or 0) == 0 then
         return "hide" -- classes/specs with no forms have no stance bar to show
@@ -83,27 +83,27 @@ local function BuildVisibilityString(details, s, visOverride)
     -- Any tail below compiles both halves itself: Show lanes as disjuncts, Hide lanes as
     -- its own leading gates, so this block would only duplicate them.
     local visOptHide = ""
-    if s.visibilityMatch ~= "any" and not visOv then
-        if s.visHideMounted then
+    if cfg.visibilityMatch ~= "any" and not visOv then
+        if cfg.visHideMounted then
             visOptHide = visOptHide .. "[mounted] hide; "
         end
         -- Inverse of the above. [nomounted] cannot see druid travel/flight forms
         -- (they are shapeshifts), so a druid in a mount-like form reads unmounted
         -- here and the bar hides -- accepted asymmetry: the secure clause is what
         -- keeps this working in combat, and Lua cannot un-hide past the driver.
-        if s.visOnlyMounted then
+        if cfg.visOnlyMounted then
             visOptHide = visOptHide .. "[nomounted] hide; "
         end
-        if s.visHideNoTarget then
+        if cfg.visHideNoTarget then
             visOptHide = visOptHide .. "[noexists] hide; "
         end
-        if s.visHideWithTarget then
+        if cfg.visHideWithTarget then
             visOptHide = visOptHide .. "[exists] hide; "
         end
-        if s.visHideNoEnemy then
+        if cfg.visHideNoEnemy then
             visOptHide = visOptHide .. "[noharm] hide; "
         end
-        if s.visHideWithEnemy then
+        if cfg.visHideWithEnemy then
             visOptHide = visOptHide .. "[harm] hide; "
         end
     end
@@ -113,13 +113,13 @@ local function BuildVisibilityString(details, s, visOverride)
     -- modes, so they keep the legacy path.
     local vm
     if not visOverride and CludesUI.GetActiveVisibilityModes then
-        vm = CludesUI.GetActiveVisibilityModes(s, "barVisibility")
+        vm = CludesUI.GetActiveVisibilityModes(cfg, "barVisibility")
     end
 
     -- Any match: the shared builder compiles the whole tail; Lua-only lanes (instances,
     -- housing, skyriding mount) are resolved at build time, so their verdict is only as
     -- fresh as the last driver rebuild. Explicit overrides keep the legacy path.
-    if not visOverride and s.visibilityMatch == "any" and CludesUI.BuildAnyMatchTail then
+    if not visOverride and cfg.visibilityMatch == "any" and CludesUI.BuildAnyMatchTail then
         local anyPrefix, anyWrap
         if details.isPetBar then
             anyPrefix = "[petbattle] hide; "
@@ -131,7 +131,7 @@ local function BuildVisibilityString(details, s, visOverride)
         else
             anyPrefix = "[vehicleui][petbattle][overridebar] hide; "
         end
-        return anyPrefix .. CludesUI.BuildAnyMatchTail(s, "barVisibility", vm, anyWrap, ABAR.VIS_EDGES)
+        return anyPrefix .. CludesUI.BuildAnyMatchTail(cfg, "barVisibility", vm, anyWrap, ABAR.VIS_EDGES)
     end
 
     -- Pet bar has unique logic: it only shows when a pet is active and
@@ -163,9 +163,9 @@ local function BuildVisibilityString(details, s, visOverride)
                 conj = "advflyable,flying,"
             elseif vis == "show_not_dragonriding" then
                 negGate = "[advflyable,flying] hide; "
-            elseif s.combatShowEnabled then
+            elseif cfg.combatShowEnabled then
                 conj = "combat,"
-            elseif s.combatHideEnabled then
+            elseif cfg.combatHideEnabled then
                 negGate = "[combat] hide; "
             end
         end

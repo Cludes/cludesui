@@ -73,28 +73,28 @@ local reverse = {}
 -- catalog is resolved). Otherwise looks up the English key; guards short-circuit
 -- anything that must never be translated (non-strings, empty, secret combat
 -- values, pure numbers, letterless strings like hex/coords) before the lookup.
-local function L(s)
+local function L(text)
     local category = activeCatalog
     if not category then
-        return s
+        return text
     end
-    if type(s) ~= "string" or s == "" then
-        return s
+    if type(text) ~= "string" or text == "" then
+        return text
     end
-    if issecretvalue and issecretvalue(s) then
-        return s
+    if issecretvalue and issecretvalue(text) then
+        return text
     end
-    if tonumber(s) ~= nil then
-        return s
+    if tonumber(text) ~= nil then
+        return text
     end
-    if not s:find("%a") then
-        return s
+    if not text:find("%a") then
+        return text
     end
-    local val = category[s]
+    local val = category[text]
     if type(val) == "string" then
         return val
     end
-    return s -- untranslated key -> silent English fallback
+    return text -- untranslated key -> silent English fallback
 end
 CludesUI.L = L
 

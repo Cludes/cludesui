@@ -325,7 +325,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     -- Dynamic Health Color over every flat source as on the live bar (fed
     -- the preview's known fake percent, so the clean-number twin of the
     -- engine curve stands in for UnitHealthPercent), then the backing.
-    local function LitHealthColors(s)
+    local function LitHealthColors(cfg)
         local function PlayerClassRGB()
             local _, token = UnitClass("player")
             local classColor = RAID_CLASS_COLORS[token]
@@ -336,8 +336,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         end
         -- The boss preview stays hostile red: the live boss frame never class-colours.
         local red, green, blue
-        local ownFill = s.customFillColor
-        if s.healthClassColored and unitName ~= "boss" then
+        local ownFill = cfg.customFillColor
+        if cfg.healthClassColored and unitName ~= "boss" then
             red, green, blue = PlayerClassRGB()
         elseif ownFill then
             red, green, blue = ownFill.r, ownFill.g, ownFill.b
@@ -348,18 +348,18 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         else
             red, green, blue = 0.8, 0.2, 0.2
         end
-        local dynR, dynG, dynB = mod.UF_PreviewDynamicColor(s, optionState._previewHealthPct or 0.70)
+        local dynR, dynG, dynB = mod.UF_PreviewDynamicColor(cfg, optionState._previewHealthPct or 0.70)
         if dynR then
             red, green, blue = dynR, dynG, dynB
         end
         -- Backing: the player's class colour (the designer shows your class)
         -- while Class Colored Background is on, else the custom pick.
         local classBack
-        if s.bgClassColored then
+        if cfg.bgClassColored then
             local _, token = UnitClass("player")
             classBack = token and CludesUI.GetClassColor(token)
         end
-        local backPick = classBack or s.customBgColor
+        local backPick = classBack or cfg.customBgColor
         if backPick then
             return red, green, blue, backPick.r, backPick.g, backPick.b
         end
@@ -443,7 +443,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     -- health and power percents. prefixText is the slot's settings prefix
     -- ("leftText", "btbRight" ...), which carries its Name Format, Target
     -- separator, Target prefix and custom format.
-    local function PreviewTextForContent(contentFrame, s, prefixText)
+    local function PreviewTextForContent(contentFrame, cfg, prefixText)
         -- Numbers as the live tags print them: the Show Decimal on Text
         -- function when that is on (WoW Forever: nothing under 10,000
         -- abbreviates), else the Number Format for the value type (a boss
@@ -477,8 +477,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             else
                 shown = _previewCreatureNames[unitName] or unitName
             end
-            if prefixText and s then
-                shown = CludesUI.ShortName(shown, s[prefixText .. "NameFormat"])
+            if prefixText and cfg then
+                shown = CludesUI.ShortName(shown, cfg[prefixText .. "NameFormat"])
             end
             return shown
         end
@@ -499,7 +499,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             end
             local sep = literal
             if not sep then
-                local picked = prefixText and s[prefixText .. "TargetSep"]
+                local picked = prefixText and cfg[prefixText .. "TargetSep"]
                 if type(picked) ~= "string" or picked == "" then
                     picked = ">"
                 end
@@ -508,13 +508,13 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             if sep == "" then
                 return word
             end
-            if prefixText and s[prefixText .. "TargetSepClassColor"] then
+            if prefixText and cfg[prefixText .. "TargetSepClassColor"] then
                 if classColor then
                     sep = Tint(sep, classColor.r, classColor.g, classColor.b)
                 end
                 return sep .. word
             end
-            local own = prefixText and s[prefixText .. "TargetSepColor"]
+            local own = prefixText and cfg[prefixText .. "TargetSepColor"]
             if type(own) ~= "table" then
                 own = {}
             end
@@ -530,7 +530,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             local levelText = UnitLevel("player")
             levelText = (type(levelText) == "number" and levelText > 0) and tostring(levelText) or "80"
             -- Level Difficulty Color: tinted as an attackable unit of your level.
-            if s and s.levelDifficultyColor then
+            if cfg and cfg.levelDifficultyColor then
                 levelText = CludesUI.ColorText(levelText, CludesUI.GetLevelDifficultyColor(tonumber(levelText), true))
             end
             return levelText
@@ -560,13 +560,13 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             -- The live Target content (ns.ContentToZone): prefix nil = "T:",
             -- "" = none, the name class coloured only while the slot is.
             targetname = function()
-                local pre = prefixText and s[prefixText .. "TargetPrefix"]
+                local pre = prefixText and cfg[prefixText .. "TargetPrefix"]
                 if type(pre) ~= "string" then
                     pre = "T:"
                 end
                 return TargetText(
                     pre ~= "" and (pre .. " ") or "",
-                    not (prefixText and s[prefixText .. "ClassColor"])
+                    not (prefixText and cfg[prefixText .. "ClassColor"])
                 )
             end,
             level = LevelText,
@@ -637,7 +637,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         -- reads as the short heal absorb.
         SAMPLE.custom = function()
             local parsed =
-                CludesUI.TextTags.Parse(mod.UF_TextTags, prefixText and s and s[prefixText .. "CustomFormat"])
+                CludesUI.TextTags.Parse(mod.UF_TextTags, prefixText and cfg and cfg[prefixText .. "CustomFormat"])
             if not parsed then
                 return ""
             end
@@ -746,8 +746,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     -- Sets a slot's font from the unit's OWN size (as the live frames do:
     -- slot size, else Text Size, else 12) and places it; false (and hidden)
     -- for the "none" content.
-    local function PlaceSlot(fs, s, prefix, content, edge)
-        SetPVFont(fs, PREVIEW_FONT, s[prefix .. "Size"] or s.textSize or 12)
+    local function PlaceSlot(fs, cfg, prefix, content, edge)
+        SetPVFont(fs, PREVIEW_FONT, cfg[prefix .. "Size"] or cfg.textSize or 12)
         fs:ClearAllPoints()
         if prefix == "extraText" then
             fs:SetWidth(0)
@@ -758,64 +758,64 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         end
         local spot = SLOT_EDGE[edge]
         fs:SetJustifyH(spot[1])
-        Pix.Point(fs, spot[1], textOverlay, spot[1], spot[2] + (s[prefix .. "X"] or 0), s[prefix .. "Y"] or 0)
+        Pix.Point(fs, spot[1], textOverlay, spot[1], spot[2] + (cfg[prefix .. "X"] or 0), cfg[prefix .. "Y"] or 0)
         return true
     end
-    local function FillSlot(fs, s, prefix, content)
-        fs:SetText(PreviewTextForContent(content, s, prefix))
+    local function FillSlot(fs, cfg, prefix, content)
+        fs:SetText(PreviewTextForContent(content, cfg, prefix))
         fs:Show()
         PreviewClassColor(
             fs,
-            s[prefix .. "ClassColor"],
-            s[prefix .. "ColorR"],
-            s[prefix .. "ColorG"],
-            s[prefix .. "ColorB"]
+            cfg[prefix .. "ClassColor"],
+            cfg[prefix .. "ColorR"],
+            cfg[prefix .. "ColorG"],
+            cfg[prefix .. "ColorB"]
         )
     end
     -- Every slot draws on its own: a Center text hides neither Left nor Right.
-    local function ApplyPreviewTextPositions(s)
-        local leftKey = s.leftTextContent or "name"
-        local rightKey = s.rightTextContent or (unitName == "focus" and "perhp" or "both")
-        local centerKey = s.centerTextContent or "none"
-        local extraKey = s.extraTextContent or "none"
+    local function ApplyPreviewTextPositions(cfg)
+        local leftKey = cfg.leftTextContent or "name"
+        local rightKey = cfg.rightTextContent or (unitName == "focus" and "perhp" or "both")
+        local centerKey = cfg.centerTextContent or "none"
+        local extraKey = cfg.extraTextContent or "none"
         if
             PlaceSlot(
                 extraFS,
-                s,
+                cfg,
                 "extraText",
                 extraKey,
-                SLOT_EDGE[s.extraTextAlign] and s.extraTextAlign or "left"
+                SLOT_EDGE[cfg.extraTextAlign] and cfg.extraTextAlign or "left"
             )
         then
-            FillSlot(extraFS, s, "extraText", extraKey)
+            FillSlot(extraFS, cfg, "extraText", extraKey)
         end
-        if PlaceSlot(centerFS, s, "centerText", centerKey, "center") then
-            FillSlot(centerFS, s, "centerText", centerKey)
+        if PlaceSlot(centerFS, cfg, "centerText", centerKey, "center") then
+            FillSlot(centerFS, cfg, "centerText", centerKey)
         end
-        if PlaceSlot(leftFS, s, "leftText", leftKey, "left") then
+        if PlaceSlot(leftFS, cfg, "leftText", leftKey, "left") then
             if rightKey == "none" then
                 leftFS:SetWidth(0)
             else
                 local taken = (RIGHT_TEXT_ROOM[rightKey] or 0) + 10
                 if rightKey == "custom" then
-                    taken = mod.UF_EstimateTextWidth(rightKey, s.rightTextCustomFormat, true)
+                    taken = mod.UF_EstimateTextWidth(rightKey, cfg.rightTextCustomFormat, true)
                 end
-                Pix.Width(leftFS, math.max((s.frameWidth or 181) - taken - 10, 20))
+                Pix.Width(leftFS, math.max((cfg.frameWidth or 181) - taken - 10, 20))
             end
-            FillSlot(leftFS, s, "leftText", leftKey)
+            FillSlot(leftFS, cfg, "leftText", leftKey)
         end
-        if PlaceSlot(rightFS, s, "rightText", rightKey, "right") then
-            FillSlot(rightFS, s, "rightText", rightKey)
+        if PlaceSlot(rightFS, cfg, "rightText", rightKey, "right") then
+            FillSlot(rightFS, cfg, "rightText", rightKey)
         end
     end
     ApplyPreviewTextPositions(prefs)
 
     -- The power fill colour: the power type's colour (the class colour with
     -- Class Colored) while Power Color is on, else the custom fill, else blue.
-    local function PowerFillRGB(s)
-        s = s or prefs
-        local byPower = s.powerPercentPowerColor ~= false
-        if byPower and s.powerClassColored then
+    local function PowerFillRGB(cfg)
+        cfg = cfg or prefs
+        local byPower = cfg.powerPercentPowerColor ~= false
+        if byPower and cfg.powerClassColored then
             local _, token = UnitClass("player")
             local classColor = CludesUI.GetClassColor(token)
             return classColor.r, classColor.g, classColor.b
@@ -824,7 +824,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             local typeColor = CludesUI.GetPowerColor(kind or "MANA")
             return typeColor.r, typeColor.g, typeColor.b
         end
-        local own = s.customPowerFillColor
+        local own = cfg.customPowerFillColor
         if own then
             return own.r, own.g, own.b
         end
@@ -1182,11 +1182,11 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 hit:Hide()
             end
         end
-        ApplyBTBPreviewTexts = function(s)
+        ApplyBTBPreviewTexts = function(cfg)
             for _, slot in ipairs(BAR_SLOTS) do
                 local fs, prefix, point, inset = slot[1], slot[2], slot[3], slot[4]
-                local content = s[prefix .. "Content"] or "none"
-                SetPVFont(fs, PREVIEW_FONT, s[prefix .. "Size"] or 11)
+                local content = cfg[prefix .. "Content"] or "none"
+                SetPVFont(fs, PREVIEW_FONT, cfg[prefix .. "Size"] or 11)
                 fs:ClearAllPoints()
                 if content == "none" then
                     fs:Hide()
@@ -1197,19 +1197,19 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                         point,
                         btbTextOvr,
                         point,
-                        inset + (s[prefix .. "X"] or 0),
-                        s[prefix .. "Y"] or 0
+                        inset + (cfg[prefix .. "X"] or 0),
+                        cfg[prefix .. "Y"] or 0
                     )
-                    fs:SetText(PreviewTextForContent(content, s, prefix))
+                    fs:SetText(PreviewTextForContent(content, cfg, prefix))
                     fs:Show()
-                    local red, green, blue = s[prefix .. "ColorR"], s[prefix .. "ColorG"], s[prefix .. "ColorB"]
-                    PreviewClassColor(fs, s[prefix .. "ClassColor"], red, green, blue)
-                    PreviewPowerColor(fs, content, s[prefix .. "PowerColor"], s[prefix .. "CustomFormat"])
+                    local red, green, blue = cfg[prefix .. "ColorR"], cfg[prefix .. "ColorG"], cfg[prefix .. "ColorB"]
+                    PreviewClassColor(fs, cfg[prefix .. "ClassColor"], red, green, blue)
+                    PreviewPowerColor(fs, content, cfg[prefix .. "PowerColor"], cfg[prefix .. "CustomFormat"])
                 end
             end
 
             -- The class icon, in the picked art style at its Location.
-            local iconStyle = s.btbClassIcon or "none"
+            local iconStyle = cfg.btbClassIcon or "none"
             local _, classToken
             if iconStyle ~= "none" then
                 _, classToken = UnitClass("player")
@@ -1219,12 +1219,12 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 IconOverlayShown(false)
                 return
             end
-            local iconSize = s.btbClassIconSize or 14
+            local iconSize = cfg.btbClassIconSize or 14
             Pix.Size(btbClassIconTex, iconSize, iconSize)
             btbClassIconTex:ClearAllPoints()
-            local spot = ICON_SPOT[s.btbClassIconLocation] or ICON_SPOT.left
-            local iconX = spot[2] + (s.btbClassIconX or 0)
-            Pix.Point(btbClassIconTex, spot[1], btbTextOvr, spot[1], iconX, s.btbClassIconY or 0)
+            local spot = ICON_SPOT[cfg.btbClassIconLocation] or ICON_SPOT.left
+            local iconX = spot[2] + (cfg.btbClassIconX or 0)
+            Pix.Point(btbClassIconTex, spot[1], btbTextOvr, spot[1], iconX, cfg.btbClassIconY or 0)
             btbClassIconTex:Show()
             IconOverlayShown(true)
         end
@@ -1397,7 +1397,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     -- go through the bar texture lookup), tiled where the style tiles, at the
     -- given draw sublevel and colour, placed for its edge mode. Shared with
     -- pf:Update (reached through pf: Update is at the upvalue cap).
-    local function PaintAbsorb(barFrame, s, style, fallbackTex, sublevel, red, green, blue, a, edgeMode)
+    local function PaintAbsorb(barFrame, cfg, style, fallbackTex, sublevel, red, green, blue, a, edgeMode)
         barFrame:SetStatusBarTexture(mod.ResolveAbsorbStyleTex(style, fallbackTex))
         local fill = barFrame:GetStatusBarTexture()
         if fill then
@@ -1407,34 +1407,34 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             fill:SetVertTile(tiled)
         end
         barFrame:SetStatusBarColor(red, green, blue, a)
-        PositionPreviewAbsorb(barFrame, edgeMode or "overlay", s.healthReverseFill, s.healthVerticalFill)
+        PositionPreviewAbsorb(barFrame, edgeMode or "overlay", cfg.healthReverseFill, cfg.healthVerticalFill)
     end
     -- The shield absorb's look. Its opacity follows the live GetAbsorbOpacity
     -- (CUI_UnitFrames_Absorb.lua): the set opacity, else the style's own.
-    local function PaintShield(barFrame, s)
-        local style = s.showPlayerAbsorb
+    local function PaintShield(barFrame, cfg)
+        local style = cfg.showPlayerAbsorb
         local STYLE_ALPHA = {
             striped = 0.8,
             stripedReversed = 0.8,
-            clean = (s.absorbCleanAlpha or 30) / 100,
+            clean = (cfg.absorbCleanAlpha or 30) / 100,
             blizzard = 0.8,
         }
-        local a = s.absorbOpacity and (s.absorbOpacity / 100) or STYLE_ALPHA[style] or 0.8
-        local color = s.absorbColor or { r = 1, g = 1, b = 1 }
-        PaintAbsorb(barFrame, s, style, STRIPED_TEX, 1, color.r, color.g, color.b, a, s.absorbEdgeMode)
+        local a = cfg.absorbOpacity and (cfg.absorbOpacity / 100) or STYLE_ALPHA[style] or 0.8
+        local color = cfg.absorbColor or { r = 1, g = 1, b = 1 }
+        PaintAbsorb(barFrame, cfg, style, STRIPED_TEX, 1, color.r, color.g, color.b, a, cfg.absorbEdgeMode)
         return style
     end
     -- The heal absorb's look: red by default; the outlined stripe styles
     -- carry their own colour, so those draw untinted.
-    local function PaintHealAbsorb(barFrame, s, style)
-        local color = s.healAbsorbColor or { r = 0.8, g = 0.15, b = 0.15 }
+    local function PaintHealAbsorb(barFrame, cfg, style)
+        local color = cfg.healAbsorbColor or { r = 0.8, g = 0.15, b = 0.15 }
         if style == "largeOutlinedStripes" or style == "largeOutlinedStripesR" then
             color = { r = 1, g = 1, b = 1 }
         end
-        local a = (s.healAbsorbOpacity or 65) / 100
+        local a = (cfg.healAbsorbOpacity or 65) / 100
         PaintAbsorb(
             barFrame,
-            s,
+            cfg,
             style,
             WHITE_TEX,
             2,
@@ -1442,7 +1442,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             color.g or 0.15,
             color.b or 0.15,
             a,
-            s.healAbsorbEdgeMode
+            cfg.healAbsorbEdgeMode
         )
     end
     popFrame._paintShield = PaintShield
@@ -1699,7 +1699,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
     -- pf, nothing goes under it): portrait +1 < art +2 < bars +3 < absorb
     -- pieces +4; text, class power and icons sit higher already. The cast
     -- bar keeps its CUI placement below the frame and takes the stock chrome.
-    local function ApplyBlizzPreview(s, G, mirror, extras, ch, drop)
+    local function ApplyBlizzPreview(cfg, G, mirror, extras, ch, drop)
         local levelText = popFrame:GetFrameLevel()
         local pct = optionState._previewHealthPct or 0.70
         local ppct = optionState._previewPowerPct or 0.85
@@ -1708,8 +1708,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         -- as live (with the cut art where the art draws over the bars).
         local merged = not isMini
             and G.power ~= nil
-            and mod.UF_IsMainSettings(s)
-            and mod.UF_StockHidesPower(s)
+            and mod.UF_IsMainSettings(cfg)
+            and mod.UF_StockHidesPower(cfg)
         local HB = merged and mod.UF_MergedHealth(G) or G.health
         barRegion._blizzMerged = merged or nil
         barRegion._blizzMergeCut = (merged and G.merge) or nil
@@ -1768,7 +1768,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         -- Type strip (the preview's target is hostile: the stock strip over
         -- the art, or the classic name plaque under it) and the boss dragon.
         local repArt = extras and G.rep and (G.rep.art or G.rep.atlas)
-        if repArt and mod.UF_ArtOK(repArt) and mod.UF_BlizzHeaderOn(s) then
+        if repArt and mod.UF_ArtOK(repArt) and mod.UF_BlizzHeaderOn(cfg) then
             local rep = artFrame._rep
             if not rep then
                 rep = artFrame:CreateTexture(nil, "BACKGROUND", nil, 1)
@@ -1818,7 +1818,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             mod.UF_SetArt(lb, B.atlas)
             artFrame._levelBadge = lb
         end
-        local lvOn = Lv and s.blizzShowLevel ~= false
+        local lvOn = Lv and cfg.blizzShowLevel ~= false
         if lb then
             lb:SetShown((lvOn and B) and true or false)
         end
@@ -1840,13 +1840,13 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                     if fo then
                         lf:SetFontObject(fo)
                     end
-                    lf:SetFont(face, s.blizzLevelSize or size, flags)
+                    lf:SetFont(face, cfg.blizzLevelSize or size, flags)
                 end
             end
             lf:ClearAllPoints()
             lf:SetJustifyH(Lv.justify or "CENTER")
             -- With a badge the badge takes the offsets and the number centres on it.
-            local onto, dx, dy = barRegion, s.blizzLevelX or 0, s.blizzLevelY or 0
+            local onto, dx, dy = barRegion, cfg.blizzLevelX or 0, cfg.blizzLevelY or 0
             if B then
                 lb:SetSize(B.size, B.size)
                 lb:ClearAllPoints()
@@ -1888,7 +1888,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         local hpW = math.floor(HB.w * pct + 0.5)
         healthFill:ClearAllPoints()
         healthBgColor:ClearAllPoints()
-        local fromRight = s.healthReverseFill
+        local fromRight = cfg.healthReverseFill
         local fillEdge = fromRight and "RIGHT" or "LEFT"
         healthFill:SetPoint("TOP" .. fillEdge, healthBar, "TOP" .. fillEdge, 0, 0)
         healthFill:SetPoint("BOTTOM" .. fillEdge, healthBar, "BOTTOM" .. fillEdge, 0, 0)
@@ -1964,7 +1964,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             -- the Textured Background under it.
             local donor = mod.GetMiniDonorSettings and mod.GetMiniDonorSettings(unitName)
                 or saved.profile.player
-            local texKey = mod.ResolveHealthBarTextureKey(s, donor)
+            local texKey = mod.ResolveHealthBarTextureKey(cfg, donor)
             local _, kind = UnitPowerType("player")
             local tint = CludesUI.GetPowerColor(kind or "MANA")
             PV_FillColor(
@@ -1978,10 +1978,10 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 nil,
                 1
             )
-            local _, backTex = mod.UF_TexBgPaths(unitName, s, texKey)
+            local _, backTex = mod.UF_TexBgPaths(unitName, cfg, texKey)
             mod.UF_TexBgPaint(powerW._bg, backTex, 17 / 255, 17 / 255, 17 / 255, 1)
         end
-        local pPos = mod.UF_PowerPos(s)
+        local pPos = mod.UF_PowerPos(cfg)
         local inTrack = powerW and (isMini or pPos == "below" or pPos == "above")
         if inTrack then
             -- A mirrored small frame's bar runs unmasked, so it ends where the
@@ -1999,7 +1999,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             local backdrop = powerW._bg or popFrame._powerBg
             if fill then
                 fill:ClearAllPoints()
-                local fillEdge = (not isMini and s.powerReverseFill) and "RIGHT" or "LEFT"
+                local fillEdge = (not isMini and cfg.powerReverseFill) and "RIGHT" or "LEFT"
                 fill:SetPoint("TOP" .. fillEdge, powerW, "TOP" .. fillEdge, 0, 0)
                 fill:SetPoint("BOTTOM" .. fillEdge, powerW, "BOTTOM" .. fillEdge, 0, 0)
                 fill:SetWidth(math.floor(pwid * ppct + 0.5))
@@ -2028,7 +2028,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 end
             end
             mod.UF_BlizzBarShadow(powerW, pMaskOK and pm or nil, G.power.h)
-            if isMini or (s.powerHeight or 6) > 0 then
+            if isMini or (cfg.powerHeight or 6) > 0 then
                 powerW:Show()
             end
         elseif powerW and powerW._blizzMask then
@@ -2093,7 +2093,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             end
             if texture then
                 texture:Show()
-                if (s.portraitMode or "2d") ~= "class" then
+                if (cfg.portraitMode or "2d") ~= "class" then
                     -- The third argument turns the client's own round crop off
                     -- where the stock mask is not a circle (the player frame).
                     SetPortraitTexture(texture, "player", P.rawArt)
@@ -2122,7 +2122,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         if nameSpot and leftFS:IsShown() then
             leftFS:ClearAllPoints()
             leftFS:SetJustifyH(nameSpot.justify or "LEFT")
-            local dx, dy = s.leftTextX or 0, s.leftTextY or 0
+            local dx, dy = cfg.leftTextX or 0, cfg.leftTextY or 0
             -- UF_BlizzPoint mirrors x, so the user's X offset is flipped first
             -- to stay screen-relative.
             local x = nameSpot.x + (mirror and -dx or dx)
@@ -2141,8 +2141,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
         -- bottom aura stack (`drop`, from Update); in the stock background,
         -- fill art, frame and text box.
         if castBar and castBar:IsShown() and ch > 0 then
-            local inW = mod.UF_CastIconInWidth(unitName, s)
-            local onRight = s[unitName == "player" and "playerCastbarIconRight" or "castbarIconRight"] == true
+            local inW = mod.UF_CastIconInWidth(unitName, cfg)
+            local onRight = cfg[unitName == "player" and "playerCastbarIconRight" or "castbarIconRight"] == true
             local UFC = mod.UF_CAST_BLIZZ
             -- The classic kit's own cast chrome (nil on the stock kit): the
             -- vanilla frame round the user's own fill, and no stock
@@ -2155,7 +2155,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
             -- the bar and the icon spans bar and box, as live; an icon that
             -- is part of the bar moves the bar half that width to centre the pair.
             local tbAtlas = StockAtlas("textbox")
-            local nameSide = s.castSpellNameSide or "left"
+            local nameSide = cfg.castSpellNameSide or "left"
             local tbOn = tbAtlas and castNameText and nameSide ~= "none"
             local icoW = ch + (tbOn and 13 or 0)
             local shift = 0
@@ -2220,7 +2220,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                     rim:SetPoint("TOPLEFT", castIconHolder, "TOPLEFT", 0, 0)
                     rim:SetPoint("BOTTOMRIGHT", castBar, "BOTTOMRIGHT", 0, 0)
                 end
-                mod.UF_SeatClassicCastFrame(castBar._blizzFrame, rim, ch, s[mod.UF_CastClassicKey(unitName)])
+                mod.UF_SeatClassicCastFrame(castBar._blizzFrame, rim, ch, cfg[mod.UF_CastClassicKey(unitName)])
             elseif frAtlas then
                 local fr = castBar._blizzFrame
                 if not fr then
@@ -2244,7 +2244,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitName, side)
                 tb:SetPoint("TOPLEFT", castBar, "BOTTOMLEFT", 0, 3)
                 tb:SetPoint("BOTTOMRIGHT", castBar, "BOTTOMRIGHT", 0, -13)
                 tb:Show()
-                local ox, oy = s.castSpellNameX or 0, s.castSpellNameY or 0
+                local ox, oy = cfg.castSpellNameX or 0, cfg.castSpellNameY or 0
                 castNameText:ClearAllPoints()
                 if nameSide == "right" then
                     castNameText:SetJustifyH("RIGHT")

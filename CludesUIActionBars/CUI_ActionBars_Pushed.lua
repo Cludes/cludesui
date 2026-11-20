@@ -189,9 +189,9 @@ end
 -- Above Effects; ApplyBorderStyle resets the backdrop to the host's level, so
 -- it is set again after). Keeps the current tint. Unmemoized, like the bar
 -- border's own textured path. Callers keep it out of combat.
-mod._ixStyle = function(button, fd, s)
+mod._ixStyle = function(button, fd, cfg)
     local owner = fd.ixHost
-    local sz, px = ResolveBorderThickness(s)
+    local sz, px = ResolveBorderThickness(cfg)
     CludesUI.ApplyBorderStyle(
         owner,
         sz,
@@ -199,19 +199,19 @@ mod._ixStyle = function(button, fd, s)
         fd.ixG or 1,
         fd.ixB or 1,
         fd.ixA or 1,
-        s.borderTexture,
-        s.borderTextureOffset,
-        s.borderTextureOffsetY,
-        s.borderTextureShiftX,
-        s.borderTextureShiftY,
+        cfg.borderTexture,
+        cfg.borderTextureOffset,
+        cfg.borderTextureOffsetY,
+        cfg.borderTextureShiftX,
+        cfg.borderTextureShiftY,
         "actionbars",
-        s.borderThickness or "thin",
+        cfg.borderThickness or "thin",
         nil,
         px
     )
     local edge = CludesUI._bdBorderData[owner]
     if edge then
-        edge:SetFrameLevel(mod._eabBorderLevel(button, s.borderBehind, s.borderAboveEffects))
+        edge:SetFrameLevel(mod._eabBorderLevel(button, cfg.borderBehind, cfg.borderAboveEffects))
     end
     fd.ixStyled = true
 end

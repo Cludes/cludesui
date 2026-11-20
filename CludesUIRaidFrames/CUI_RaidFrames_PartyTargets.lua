@@ -431,18 +431,18 @@ do
     -- resolve theirs; along the stack it is kept as chosen, above stacked kit frames past the buff
     -- lines the kit keeps in the party spacing there (RF_PartyDims). auto: the side an unset Position
     -- takes, whatever is stored.
-    local function PT_Side(s, auto)
-        local place = (not auto and s.partyTargetPosition) or (s.partyHorizontal and "bottom" or "right")
+    local function PT_Side(cfg, auto)
+        local place = (not auto and cfg.partyTargetPosition) or (cfg.partyHorizontal and "bottom" or "right")
         local side = (place == "top" and "above")
             or (place == "bottom" and "below")
             or (place == "left" and "left")
             or "right"
         local vert = side == "above" or side == "below"
         local extra = 0
-        if (vert and not s.partyHorizontal) or (not vert and s.partyHorizontal) then
+        if (vert and not cfg.partyHorizontal) or (not vert and cfg.partyHorizontal) then
             if side == "above" and mod.RF_PartyKit() then
-                local _, _, cs = mod.RF_PartyDims(s)
-                extra = cs - (s.partyKitSpacing or mod.RF_KIT_SPACING)
+                local _, _, cs = mod.RF_PartyDims(cfg)
+                extra = cs - (cfg.partyKitSpacing or mod.RF_KIT_SPACING)
                 if extra < 0 then
                     extra = 0
                 end
@@ -451,8 +451,8 @@ do
         end
         if mod.RF_PartyKit() then
             local before = side == "left" or side == "above"
-            before, extra = mod.RF_KitAttach(s, before)
-            if s.partyHorizontal then
+            before, extra = mod.RF_KitAttach(cfg, before)
+            if cfg.partyHorizontal then
                 side = before and "above" or "below"
             else
                 side = before and "left" or "right"
@@ -463,11 +463,11 @@ do
 
     -- The gap to the frame: the party frames' spacing (under the kit its frame gap, without the buff
     -- lines RF_PartyDims adds above stacked frames).
-    local function PT_Gap(s)
+    local function PT_Gap(cfg)
         if mod.RF_PartyKit() then
-            return s.partyKitSpacing or mod.RF_KIT_SPACING
+            return cfg.partyKitSpacing or mod.RF_KIT_SPACING
         end
-        local _, _, sp = mod.RF_PartyDims(s)
+        local _, _, sp = mod.RF_PartyDims(cfg)
         return sp
     end
 
@@ -528,20 +528,20 @@ do
     end
 
     -- Only direction is needed here; calculating the gap would call RF_PartyDims again.
-    function mod.PT_AlongStack(s, enabled)
+    function mod.PT_AlongStack(cfg, enabled)
         if enabled == nil then
             enabled = mod._ptEnabled
         end
-        return enabled and mod.PT_PositionAlongStack(s.partyTargetPosition, s.partyHorizontal) or false
+        return enabled and mod.PT_PositionAlongStack(cfg.partyTargetPosition, cfg.partyHorizontal) or false
     end
 
     -- Target length on the stacking axis plus the party gap. Previews pass their enable state.
-    function mod.PT_AlongPitch(s, enabled)
-        if not mod.PT_AlongStack(s, enabled) then
+    function mod.PT_AlongPitch(cfg, enabled)
+        if not mod.PT_AlongStack(cfg, enabled) then
             return 0
         end
-        return PixelSnap(s.partyHorizontal and (s.partyTargetWidth or 70) or (s.partyTargetHeight or 33))
-            + PixelSnap(PT_Gap(s))
+        return PixelSnap(cfg.partyHorizontal and (cfg.partyTargetWidth or 70) or (cfg.partyTargetHeight or 33))
+            + PixelSnap(PT_Gap(cfg))
     end
 
     -- One target frame on its side of owner o: off from the owner's edge, then the offsets.
@@ -1017,15 +1017,15 @@ do
     -- (after the Beside Owner pets on their side: petSpec, the pets' preview spec), plus how far a
     -- frame reaches past its party frame's edges (pads). s: the preview's view; pw, ph: its party
     -- frame size. One reused table.
-    function mod.PT_PreviewSpec(s, pw, ph, petSpec)
-        if s.partyShowTargets ~= true then
+    function mod.PT_PreviewSpec(cfg, pw, ph, petSpec)
+        if cfg.partyShowTargets ~= true then
             return nil
         end
         local t = PT.pvSpec
-        local wid, hgt = PixelSnap(s.partyTargetWidth or 70), PixelSnap(s.partyTargetHeight or 33)
-        local posX, posY = PixelSnap(s.partyTargetOffsetX or 0), PixelSnap(s.partyTargetOffsetY or 0)
-        local gap = PixelSnap(PT_Gap(s))
-        local side, extra, across = PT_Side(s)
+        local wid, hgt = PixelSnap(cfg.partyTargetWidth or 70), PixelSnap(cfg.partyTargetHeight or 33)
+        local posX, posY = PixelSnap(cfg.partyTargetOffsetX or 0), PixelSnap(cfg.partyTargetOffsetY or 0)
+        local gap = PixelSnap(PT_Gap(cfg))
+        local side, extra, across = PT_Side(cfg)
         local off = gap + PixelSnap(extra)
         if across and petSpec and petSpec.owner and petSpec.side == side then
             off = petSpec.gap + ((side == "above" or side == "below") and petSpec.h or petSpec.w) + gap
@@ -1056,7 +1056,7 @@ do
 
     -- Preview target i at the spec's size: styled from the party settings, painted from the view s
     -- (made-up mobs: Class Color reads their reaction).
-    local function PT_PvFrame(i, hostFrame, s, specInfo)
+    local function PT_PvFrame(i, hostFrame, cfg, specInfo)
         local FB = mod._FB
         local frame = PT.pv[i]
         if not frame then
@@ -1095,7 +1095,7 @@ do
         health:SetMinMaxValues(0, 100)
         health:SetValue(mock.hp)
         name:SetText(mock.name)
-        local mode = s.partyTargetHealthColorMode or "class"
+        local mode = cfg.partyTargetHealthColorMode or "class"
         mod.RF_TexBgLayer(
             health,
             backdrop,
@@ -1117,16 +1117,16 @@ do
                 local p = mock.hp / 100
                 health:SetStatusBarColor(p < 0.5 and 1 or (1 - (p - 0.5) * 2), p > 0.5 and 1 or (p * 2), 0, 1)
             elseif mode == "custom" then
-                local color = s.partyTargetCustomFillColor or PT.DEF_FILL
+                local color = cfg.partyTargetCustomFillColor or PT.DEF_FILL
                 health:SetStatusBarColor(color.r, color.g, color.b, 1)
             else
                 health:SetStatusBarColor(rc.r, rc.g, rc.b, 1)
             end
-            local a = (s.partyTargetBgDarkness or 50) / 100
-            if s.partyTargetBgClassColored then
+            local a = (cfg.partyTargetBgDarkness or 50) / 100
+            if cfg.partyTargetBgClassColored then
                 backdrop:SetColorTexture(rc.r, rc.g, rc.b, a)
             else
-                local color = s.partyTargetCustomBgColor or mod._PF.DEFAULT_BG
+                local color = cfg.partyTargetCustomBgColor or mod._PF.DEFAULT_BG
                 backdrop:SetColorTexture(color.r, color.g, color.b, a)
             end
         end

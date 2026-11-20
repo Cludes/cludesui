@@ -69,10 +69,10 @@ local function Reanchor()
 end
 
 -- The form text's own setting; unset follows the power bar's.
-local function FormVal(s, key, base, def)
-    local val = s[key]
+local function FormVal(cfg, key, base, def)
+    local val = cfg[key]
     if val == nil then
-        val = s[base]
+        val = cfg[base]
     end
     if val == nil then
         val = def
@@ -259,15 +259,15 @@ end
 -- has a rim below it, so the bar drops past that.
 local FOREVER_RIM_DROP = 3
 
-local function Layout(widget, power, s)
+local function Layout(widget, power, cfg)
     local barFrame, Pix = S.bar, CludesUI.PP
-    local place = mod.UF_PowerPos(s)
+    local place = mod.UF_PowerPos(cfg)
     local detached = (place == "detached_top" or place == "detached_bottom")
     -- A stock look draws an attached power bar inside its frame art.
     local G = (not detached) and mod.UF_Blizz() and mod.UF_BlizzGeom(widget)
     local bs, c, hgt
     -- Form Bar X / Y Offset (Power Type cog).
-    local ox, oy = s.foreverFormBarX or 0, s.foreverFormBarY or 0
+    local ox, oy = cfg.foreverFormBarX or 0, cfg.foreverFormBarY or 0
     barFrame:ClearAllPoints()
     if G and G.power and G.vis and G.h then
         -- Just under the art, lined up with the power bar.
@@ -279,9 +279,9 @@ local function Layout(widget, power, s)
         -- Against the power bar, overlapping by the border so the two share
         -- one line: the frame's border on an attached bar, its own when detached.
         if detached then
-            bs, c = s.powerBorderSize or 0, s.powerBorderColor
+            bs, c = cfg.powerBorderSize or 0, cfg.powerBorderColor
         else
-            bs, c = s.borderSize or 1, s.borderColor
+            bs, c = cfg.borderSize or 1, cfg.borderColor
         end
         hgt = power:GetHeight()
         local overlap = bs * Pix.mult
@@ -298,7 +298,7 @@ local function Layout(widget, power, s)
     barFrame:SetStatusBarTexture((fillTex and fillTex:GetTexture()) or WHITE)
     -- Textured Background: as the power bar's (Color() paints it next).
     mod.UF_TexBgTint(barFrame.bg, power.bg and power.bg._cuiTexPath)
-    barFrame:SetReverseFill(s.powerReverseFill and true or false)
+    barFrame:SetReverseFill(cfg.powerReverseFill and true or false)
     if bs > 0 then
         Pix.UpdateBorder(barFrame.border, bs, c and c.r or 0, c and c.g or 0, c and c.b or 0, 1)
         barFrame.border:Show()
@@ -308,9 +308,9 @@ local function Layout(widget, power, s)
 end
 
 -- frame: the player frame; power: its power bar; s: the player settings.
-function mod.UF_ForeverFormBar(widget, power, s)
-    local shade = s and s.powerTypeOverride
-    S.on = (power and shade and shade.foreverDruid and s.foreverFormBar and mod.UF_PowerBarDraws(s)) and true
+function mod.UF_ForeverFormBar(widget, power, cfg)
+    local shade = cfg and cfg.powerTypeOverride
+    S.on = (power and shade and shade.foreverDruid and cfg.foreverFormBar and mod.UF_PowerBarDraws(cfg)) and true
         or false
     if not S.on then
         evf:UnregisterAllEvents()
@@ -336,9 +336,9 @@ function mod.UF_ForeverFormBar(widget, power, s)
     barFrame:SetFrameLevel(power:GetFrameLevel() + 1)
     barFrame.border:SetFrameLevel(barFrame:GetFrameLevel() + 5)
     barFrame.textFrame:SetFrameLevel(barFrame:GetFrameLevel() + 6)
-    S.settings, S.frame, S.power = s, widget, power
-    Layout(widget, power, s)
-    StyleText(s)
+    S.settings, S.frame, S.power = cfg, widget, power
+    Layout(widget, power, cfg)
+    StyleText(cfg)
     evf:RegisterUnitEvent("UNIT_DISPLAYPOWER", "player")
     Sync(true)
 end

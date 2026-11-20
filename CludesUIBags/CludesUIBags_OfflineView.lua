@@ -659,14 +659,14 @@ end
 local pending, failed = {}, {}
 
 -- name, quality, icon for a saved string (pets and keystones are full links)
-local function Info(s, ident)
+local function Info(text, ident)
     local name, _, q, _, _, _, _, _, _, iconTex
-    if s:sub(1, 5) == "item:" then
-        name, _, q, _, _, _, _, _, _, iconTex = GetItemInfo(s)
+    if text:sub(1, 5) == "item:" then
+        name, _, q, _, _, _, _, _, _, iconTex = GetItemInfo(text)
     else
-        name = s:match("%[(.-)%]")
+        name = text:match("%[(.-)%]")
         _, _, q, _, _, _, _, _, _, iconTex = GetItemInfo(ident)
-        local species, _, breed = s:match("|Hbattlepet:(%d+):(%d+):(%d+)")
+        local species, _, breed = text:match("|Hbattlepet:(%d+):(%d+):(%d+)")
         if species and C_PetJournal then
             local _, petIcon = C_PetJournal.GetPetInfoBySpeciesID(tonumber(species))
             iconTex, q = petIcon or iconTex, tonumber(breed) or q

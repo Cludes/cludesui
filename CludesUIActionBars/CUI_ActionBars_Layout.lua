@@ -52,8 +52,8 @@ end
 -- file-scope local. Caveat: in an unlock
 -- anchor chain a mid-chain bar can inherit its parent's grow visually while its
 -- own DB still holds the old value.
-function ABAR:ResolveGrowDirectionForLayout(key, s, depth)
-    return (s.growDirection or "up"):upper()
+function ABAR:ResolveGrowDirectionForLayout(key, cfg, depth)
+    return (cfg.growDirection or "up"):upper()
 end
 
 -- Resolve a bar's icon order into abstract order parts. iconOrder supersedes the legacy
@@ -63,10 +63,10 @@ end
 -- modes (both nil in the two legacy modes). do-end + ns so no file-scope local slots
 -- are consumed.
 do
-    local function ResolveIconOrder(s)
-        local sequence = s.iconOrder
+    local function ResolveIconOrder(cfg)
+        local sequence = cfg.iconOrder
         if sequence == nil then
-            sequence = s.reverseIconOrder and "reversed" or "default"
+            sequence = cfg.reverseIconOrder and "reversed" or "default"
         end
         if sequence == "reversed" then
             return true, nil, nil

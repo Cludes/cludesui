@@ -1157,12 +1157,12 @@ end
 -- Options preview: the first fake buff stands in for a purgeable one while
 -- Purgeable Buff Glow is set on target/focus and this character can purge or
 -- spellsteal (the live frame's own gate). The host is our own frame.
-function mod.UFOpt_PreviewPurgeGlow(bf, unitName, s, wid, height)
+function mod.UFOpt_PreviewPurgeGlow(bf, unitName, cfg, wid, height)
     local Glows = CludesUI.Glows
     if not mod.UF_PurgeGlowSpec then
         return
     end
-    local g = (unitName == "target" or unitName == "focus") and s and s.buffPurgeGlow
+    local g = (unitName == "target" or unitName == "focus") and cfg and cfg.buffPurgeGlow
     local enabled = type(g) == "number" and g > 0
     if enabled then
         local AK = CludesUI.AuraKit
@@ -1190,7 +1190,7 @@ function mod.UFOpt_PreviewPurgeGlow(bf, unitName, s, wid, height)
     end
     owner:Show()
     -- The live renderer's own spec, so the preview is the live look.
-    Glows.StartSpecGlow(owner, mod.UF_PurgeGlowSpec(s), wid, height, "engine", Glows.PANEL_EXTRA)
+    Glows.StartSpecGlow(owner, mod.UF_PurgeGlowSpec(cfg), wid, height, "engine", Glows.PANEL_EXTRA)
 end
 
 -- Target/focus/boss Debuff Filter: ONE single-select mode, an engine VIEW over
@@ -2134,17 +2134,17 @@ CludesUI.AtLogin(function()
         end
 
         -- Apply detached portrait shape to preview portraitFrame pFrame; s = per-unit settings.
-        local function ApplyPreviewPortraitShape(previewFrame, s)
+        local function ApplyPreviewPortraitShape(previewFrame, cfg)
             if not previewFrame then
                 return
             end
-            local isDetached = (s.portraitStyle or saved.profile.portraitStyle or "attached") == "detached"
-            local shape = s.detachedPortraitShape or "portrait"
+            local isDetached = (cfg.portraitStyle or saved.profile.portraitStyle or "attached") == "detached"
+            local shape = cfg.detachedPortraitShape or "portrait"
             local showBorder = true
-            local borderOpacity = (s.detachedPortraitBorderOpacity or 100) / 100
-            local borderColor = s.detachedPortraitBorderColor or { r = 0, g = 0, b = 0 }
-            local useClassColor = s.detachedPortraitClassColor or false
-            local rawBorderSize = s.detachedPortraitBorderSize or 7
+            local borderOpacity = (cfg.detachedPortraitBorderOpacity or 100) / 100
+            local borderColor = cfg.detachedPortraitBorderColor or { r = 0, g = 0, b = 0 }
+            local useClassColor = cfg.detachedPortraitClassColor or false
+            local rawBorderSize = cfg.detachedPortraitBorderSize or 7
             local bExp = 7 - rawBorderSize -- scale border UP; mask clips inner portion
             -- Use the resolved art mode so NPC fallbacks keep their own zoom.
             local classInset
@@ -2168,7 +2168,7 @@ CludesUI.AtLogin(function()
             end
 
             if previewFrame._previewBg then
-                local bgc = isDetached and s.detachedPortraitBgColor
+                local bgc = isDetached and cfg.detachedPortraitBgColor
                 if bgc then
                     previewFrame._previewBg:SetColorTexture(bgc.r, bgc.g, bgc.b, bgc.a or 1)
                 else
@@ -2206,7 +2206,7 @@ CludesUI.AtLogin(function()
                         mod.UF_SetClassPortraitPoints(
                             previewFrame._previewTex,
                             previewFrame,
-                            s.portraitClassZoom,
+                            cfg.portraitClassZoom,
                             classInset,
                             classInset
                         )
@@ -2250,7 +2250,7 @@ CludesUI.AtLogin(function()
                         mod.UF_SetClassPortraitPoints(
                             previewFrame._previewTex,
                             previewFrame,
-                            s.portraitClassZoom,
+                            cfg.portraitClassZoom,
                             classInset,
                             classInset
                         )
@@ -2340,7 +2340,7 @@ CludesUI.AtLogin(function()
             local visRatio = (128 - 2 * insetPx) / 128
             local cScale = 1 / visRatio
             -- Apply user art scale (100 = default, stored as percentage)
-            local artScale = (s.portraitArtScale or 100) / 100
+            local artScale = (cfg.portraitArtScale or 100) / 100
             cScale = cScale * artScale
             local expand = (cScale - 1) * 0.5
             local oL = -(expand * bw)
@@ -2352,7 +2352,7 @@ CludesUI.AtLogin(function()
                     mod.UF_SetClassPortraitPoints(
                         previewFrame._previewTex,
                         previewFrame,
-                        s.portraitClassZoom,
+                        cfg.portraitClassZoom,
                         classInset + oL,
                         classInset - oT
                     )
@@ -2368,7 +2368,7 @@ CludesUI.AtLogin(function()
                 previewFrame,
                 previewFrame._shapeBorderTex,
                 previewFrame._previewModel,
-                previewFrame._previewMode == "3d" and s.portrait3dBelowBorder == true,
+                previewFrame._previewMode == "3d" and cfg.portrait3dBelowBorder == true,
                 shape,
                 rawBorderSize
             )
@@ -2378,7 +2378,7 @@ CludesUI.AtLogin(function()
             -- so the detached preview stops clipping (every layout branch of
             -- Update sets its clip again first; the Portrait Dragon lifts it on
             -- its own after this).
-            mod.UF_PortraitExtras(previewFrame, s, shape)
+            mod.UF_PortraitExtras(previewFrame, cfg, shape)
             if ringInset or (previewFrame._outerRing and previewFrame._outerRing:IsShown()) then
                 previewFrame:SetClipsChildren(false)
             end
@@ -2681,8 +2681,8 @@ CludesUI.AtLogin(function()
             return G, mirror, (G.rep and kind == "target") or nil
         end
         -- Frame Scale (the style's stand-in for Bar Width / Health Bar Height).
-        local function BlizzPreviewScale(s)
-            local sc = s and s.blizzScale or 1
+        local function BlizzPreviewScale(cfg)
+            local sc = cfg and cfg.blizzScale or 1
             if sc < 0.5 then
                 sc = 0.5
             elseif sc > 2 then
@@ -4133,12 +4133,12 @@ CludesUI.AtLogin(function()
                     end,
                 }
             end
-            local function Inheriting(s)
-                local value = mini and s.healthBarTexture
+            local function Inheriting(cfg)
+                local value = mini and cfg.healthBarTexture
                 return mini and (value == nil or value == "inherit")
             end
-            local function Tex(s)
-                return s.healthBarTexture or saved.profile.healthBarTexture or "none"
+            local function Tex(cfg)
+                return cfg.healthBarTexture or saved.profile.healthBarTexture or "none"
             end
             return {
                 type = "toggle",

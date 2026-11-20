@@ -547,13 +547,13 @@ end
 -------------------------------------------------------------------------------
 --  Cooldown Countdown Font Override
 -------------------------------------------------------------------------------
-function EAB_VTABLE.CooldownFonts.GetSettings(s)
+function EAB_VTABLE.CooldownFonts.GetSettings(cfg)
     return (CludesUI.GetFontPath("actionBars")) or FONT_PATH,
-        s.cooldownFontSize or 12,
-        s.cooldownTextXOffset or 0,
-        s.cooldownTextYOffset or 0,
-        s.cooldownTextColor or { r = 1, g = 1, b = 1 },
-        s.cooldownFontFit or false
+        cfg.cooldownFontSize or 12,
+        cfg.cooldownTextXOffset or 0,
+        cfg.cooldownTextYOffset or 0,
+        cfg.cooldownTextColor or { r = 1, g = 1, b = 1 },
+        cfg.cooldownFontFit or false
 end
 
 -- Cap the configured countdown size against the button it must fit inside. The size is

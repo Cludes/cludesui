@@ -587,33 +587,33 @@ end
 -- Overlay cog): a Border Style other than Solid with a size, under the
 -- CludesUI style. Read from the saved keys, like the options gate, so a
 -- saved true stands down under a stock style or a Solid border.
-function mod.UF_CustomBorderOn(s)
+function mod.UF_CustomBorderOn(cfg)
     if mod.UF_Blizz() then
         return false
     end
-    local texture = s and s.borderTexture
+    local texture = cfg and cfg.borderTexture
     if texture == nil or texture == "" or texture == "solid" then
         return false
     end
-    return (s.borderSize or 1) > 0
+    return (cfg.borderSize or 1) > 0
 end
 -- Blizzard Style's coloured type strip over the target-family name ("Blizz
 -- Colored Target Header", on unless the unit's settings turn it off, which
 -- leaves the header uncoloured like the player frame's). Classic keeps its
 -- name plaque either way.
-function mod.UF_BlizzHeaderOn(s)
-    return not (mod.UF_Style() == "blizzard" and s and s.blizzColoredHeader == false)
+function mod.UF_BlizzHeaderOn(cfg)
+    return not (mod.UF_Style() == "blizzard" and cfg and cfg.blizzColoredHeader == false)
 end
 -- Hide Power Bar (blizzHidePower, a main frame's own setting under a stock
 -- style): no power bar, the health bar taking the power track too. Unset, a
 -- saved Bar Position of None reads as hidden, as it drew no bar there before.
-function mod.UF_StockHidesPower(s)
-    if not s then
+function mod.UF_StockHidesPower(cfg)
+    if not cfg then
         return false
     end
-    local val = s.blizzHidePower
+    local val = cfg.blizzHidePower
     if val == nil then
-        return s.powerPosition == "none"
+        return cfg.powerPosition == "none"
     end
     return val == true
 end
@@ -626,14 +626,14 @@ end
 -- main frame's bar sits in the stock track below the health bar whatever
 -- its Bar Position says, or is not drawn while Hide Power Bar is on; every
 -- other frame, and every frame under the CludesUI look, reads its own.
-function mod.UF_PowerPos(s)
-    if not s then
+function mod.UF_PowerPos(cfg)
+    if not cfg then
         return "below"
     end
-    if mod.UF_Blizz() and mod.UF_IsMainSettings(s) then
-        return mod.UF_StockHidesPower(s) and "none" or "below"
+    if mod.UF_Blizz() and mod.UF_IsMainSettings(cfg) then
+        return mod.UF_StockHidesPower(cfg) and "none" or "below"
     end
-    return s.powerPosition or "below"
+    return cfg.powerPosition or "below"
 end
 -- Hide Power Bar's health bar: the kit's health bar grown down to the power
 -- bar's bottom, its mask stretched with it so the mask's opening still covers

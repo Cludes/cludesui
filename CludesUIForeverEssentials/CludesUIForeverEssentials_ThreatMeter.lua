@@ -823,22 +823,22 @@ end
 -- header. A look that clips the rows gets their clip fitted below the header
 -- inside the inset. The live window reports the border's reach to size
 -- matching.
-local function ApplyChrome(dm, s)
-    if s._style == dm then
+local function ApplyChrome(dm, cfg)
+    if cfg._style == dm then
         return
     end
-    s._style = dm
-    local headerFrame, inset = s.header, dm.inset
+    cfg._style = dm
+    local headerFrame, inset = cfg.header, dm.inset
     headerFrame:ClearAllPoints()
-    headerFrame:SetPoint("TOPLEFT", s, "TOPLEFT", inset, -inset)
-    headerFrame:SetPoint("TOPRIGHT", s, "TOPRIGHT", -inset, -inset)
+    headerFrame:SetPoint("TOPLEFT", cfg, "TOPLEFT", inset, -inset)
+    headerFrame:SetPoint("TOPRIGHT", cfg, "TOPRIGHT", -inset, -inset)
     headerFrame:SetHeight(dm.showHeader and dm.headerHeight or 0.001)
     headerFrame:SetShown(dm.showHeader)
-    local area = s.rowArea
+    local area = cfg.rowArea
     if area then
         area:ClearAllPoints()
-        area:SetPoint("TOPLEFT", s, "TOPLEFT", inset, -inset - dm.headerHeight)
-        area:SetPoint("BOTTOMRIGHT", s, "BOTTOMRIGHT", -inset, inset)
+        area:SetPoint("TOPLEFT", cfg, "TOPLEFT", inset, -inset - dm.headerHeight)
+        area:SetPoint("BOTTOMRIGHT", cfg, "BOTTOMRIGHT", -inset, inset)
     end
     local backdrop = dm.hdrBgColor
     Look.HeaderBg(headerFrame.bg, backdrop.r, backdrop.g, backdrop.b, dm.hdrBgAlpha, dm.bgR, dm.bgG, dm.bgB)
@@ -848,44 +848,44 @@ local function ApplyChrome(dm, s)
         headerFrame.line:SetColorTexture(lineTex.r or 0, lineTex.g or 0, lineTex.b or 0, lineTex.a or 1)
         headerFrame.line:SetShown(dim > 0 and not Look.stock and not dm.headerSeparatorOn)
     end
-    Font(s.title, dm.hdrFontSize, dm)
+    Font(cfg.title, dm.hdrFontSize, dm)
     -- A look may colour the accented title its own way (WoW Forever's gold).
-    PaintText(s.title, dm.hdrTextUseAccent ~= false and (Look.titleColor or dm.accent) or dm.hdrTextColor)
-    local source = s.sourceBtn
+    PaintText(cfg.title, dm.hdrTextUseAccent ~= false and (Look.titleColor or dm.accent) or dm.hdrTextColor)
+    local source = cfg.sourceBtn
     Font(source.label, dm.hdrFontSize, dm)
     source.label:SetText(dm.tracked == "focus" and CludesUI.L("Focus") or CludesUI.L("Target"))
     source:SetShown(dm.focusEnabled)
-    local leftmost = mod.LayoutHeaderButtons(s, dm.iconSize, dm.hdrLift)
+    local leftmost = mod.LayoutHeaderButtons(cfg, dm.iconSize, dm.hdrLift)
     local ty = dm.hdrTextOffY + dm.hdrLift
-    s.title:ClearAllPoints()
-    s.title:SetPoint("LEFT", headerFrame, "LEFT", 6 + dm.hdrTextOffX, ty)
+    cfg.title:ClearAllPoints()
+    cfg.title:SetPoint("LEFT", headerFrame, "LEFT", 6 + dm.hdrTextOffX, ty)
     if leftmost then
-        s.title:SetPoint("RIGHT", leftmost, "LEFT", -6, dm.hdrTextOffY)
+        cfg.title:SetPoint("RIGHT", leftmost, "LEFT", -6, dm.hdrTextOffY)
     else
-        s.title:SetPoint("RIGHT", headerFrame, "RIGHT", -6, ty)
+        cfg.title:SetPoint("RIGHT", headerFrame, "RIGHT", -6, ty)
     end
-    s.bg:ClearAllPoints()
-    s.bg:SetPoint("TOPLEFT", s, "TOPLEFT", 0, -dm.headerHeight)
-    s.bg:SetPoint("BOTTOMRIGHT", s, "BOTTOMRIGHT", 0, 0)
-    s.bg:SetVertexColor(1, 1, 1, 1)
+    cfg.bg:ClearAllPoints()
+    cfg.bg:SetPoint("TOPLEFT", cfg, "TOPLEFT", 0, -dm.headerHeight)
+    cfg.bg:SetPoint("BOTTOMRIGHT", cfg, "BOTTOMRIGHT", 0, 0)
+    cfg.bg:SetVertexColor(1, 1, 1, 1)
     if dm.bgTexturePath then
-        s.bg:SetTexture(dm.bgTexturePath)
-        s.bg:SetVertexColor(dm.bgR, dm.bgG, dm.bgB, dm.bgAlpha)
+        cfg.bg:SetTexture(dm.bgTexturePath)
+        cfg.bg:SetVertexColor(dm.bgR, dm.bgG, dm.bgB, dm.bgAlpha)
     else
-        Look.WindowBg(s.bg, dm.bgR, dm.bgG, dm.bgB, dm.bgAlpha)
+        Look.WindowBg(cfg.bg, dm.bgR, dm.bgG, dm.bgB, dm.bgAlpha)
     end
-    local border = s.border
+    local border = cfg.border
     border:ClearAllPoints()
     if dm.windowBorderIncludeHeader == false then
         border:SetPoint("TOPLEFT", headerFrame, "BOTTOMLEFT", 0, 0)
     else
-        border:SetPoint("TOPLEFT", s, "TOPLEFT", 0, 0)
+        border:SetPoint("TOPLEFT", cfg, "TOPLEFT", 0, 0)
     end
-    border:SetPoint("BOTTOMRIGHT", s, "BOTTOMRIGHT", 0, 0)
+    border:SetPoint("BOTTOMRIGHT", cfg, "BOTTOMRIGHT", 0, 0)
     border:SetFrameLevel(headerFrame:GetFrameLevel() + 4)
     Border(border, dm, true)
-    if s.unlockKey then
-        CUI.MatchPadChanged(s.unlockKey)
+    if cfg.unlockKey then
+        CUI.MatchPadChanged(cfg.unlockKey)
     end
 end
 
@@ -1162,20 +1162,20 @@ local function PaintRow(rowFrame, e, dm, topY, gen)
     end
 end
 
-local function RenderRows(s, entries, first, total, dm, topY)
-    local rowList, gen = s.rows, mod.rosterGen
+local function RenderRows(cfg, entries, first, total, dm, topY)
+    local rowList, gen = cfg.rows, mod.rosterGen
     local step, inset = dm.barHeight + dm.barSpacing, dm.inset
     local iconsChanged
     for index = 1, total do
-        local rowFrame = rowList[index] or MakeRow(index, s, rowList)
+        local rowFrame = rowList[index] or MakeRow(index, cfg, rowList)
         local slotPos = dm.growUp and (total - index) or (index - 1)
         local posY = -inset - dm.headerHeight - slotPos * step
         if rowFrame._y ~= posY or rowFrame._style ~= dm then
             -- Both anchors share the top edge: a vertical-centre anchor to the
             -- window would overconstrain the height.
             rowFrame:ClearAllPoints()
-            rowFrame:SetPoint("TOPLEFT", s, "TOPLEFT", inset, posY)
-            rowFrame:SetPoint("TOPRIGHT", s, "TOPRIGHT", -inset, posY)
+            rowFrame:SetPoint("TOPLEFT", cfg, "TOPLEFT", inset, posY)
+            rowFrame:SetPoint("TOPRIGHT", cfg, "TOPRIGHT", -inset, posY)
             rowFrame:SetHeight(dm.barHeight)
             rowFrame._y = posY
         end
@@ -1185,15 +1185,15 @@ local function RenderRows(s, entries, first, total, dm, topY)
             iconsChanged = true
         end
     end
-    local isShown = s._count or #rowList
+    local isShown = cfg._count or #rowList
     for index = total + 1, isShown do
         rowList[index]:Hide()
     end
     for index = isShown + 1, total do
         rowList[index]:Show()
     end
-    s._count = total
-    SyncSeparators(s, dm, total, iconsChanged)
+    cfg._count = total
+    SyncSeparators(cfg, dm, total, iconsChanged)
 end
 
 -------------------------------------------------------------------------------
@@ -1214,28 +1214,28 @@ local DEMO = {
 local demoList, demoEntries, demoPull = {}, {}, {}
 local demoPets, demoPullBar
 
-local function DemoEntry(index, s)
+local function DemoEntry(index, cfg)
     local e = {
-        key = s,
-        raw = s.raw,
+        key = cfg,
+        raw = cfg.raw,
         order = index,
         pull = false,
-        isPet = s.isPet == true,
-        own = s.own == true,
-        tanking = s.tank == true,
+        isPet = cfg.isPet == true,
+        own = cfg.own == true,
+        tanking = cfg.tank == true,
     }
-    e.scaled = s.tank and 100 or s.raw * 100 / (DEMO_TANK * s.reach)
-    e.rawPct = s.raw * 100 / DEMO_TANK
-    if s.own then
+    e.scaled = cfg.tank and 100 or cfg.raw * 100 / (DEMO_TANK * cfg.reach)
+    e.rawPct = cfg.raw * 100 / DEMO_TANK
+    if cfg.own then
         local _, classFile = UnitClass("player")
         e.class, e.name = classFile, CUI.WithSurname(UnitName("player"))
-    elseif s.tank then
-        e.class, e.name = s.class, CludesUI.L("Tank")
-    elseif s.isPet then
-        e.class, e.name = s.class, CludesUI.L("Pet")
+    elseif cfg.tank then
+        e.class, e.name = cfg.class, CludesUI.L("Tank")
+    elseif cfg.isPet then
+        e.class, e.name = cfg.class, CludesUI.L("Pet")
     else
-        e.class = s.class
-        e.name = (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[s.class]) or s.class
+        e.class = cfg.class
+        e.name = (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[cfg.class]) or cfg.class
     end
     return e
 end

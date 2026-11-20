@@ -6770,9 +6770,9 @@ do
     end
 
     -- Caps s at maxChars UTF-8 characters.
-    local function CapChars(s, maxChars)
+    local function CapChars(text, maxChars)
         local n, cut = 0, nil
-        for pos in s:gmatch("()[%z\1-\127\194-\244][\128-\191]*") do
+        for pos in text:gmatch("()[%z\1-\127\194-\244][\128-\191]*") do
             n = n + 1
             if n > maxChars then
                 cut = pos
@@ -6780,18 +6780,18 @@ do
             end
         end
         if cut then
-            s = s:sub(1, cut - 1):gsub("%s+$", "")
+            text = text:sub(1, cut - 1):gsub("%s+$", "")
         end
-        return s
+        return text
     end
 
     -- Plain single-line text: drops every UI escape sequence (colors, textures,
     -- atlases, hyperlinks, line breaks) so a label cannot borrow suite styling.
-    local function PlainText(s, maxChars)
-        if type(s) ~= "string" then
+    local function PlainText(text, maxChars)
+        if type(text) ~= "string" then
             return nil
         end
-        s = s:gsub("|[Tt].-|[Tt]", "")
+        text = text:gsub("|[Tt].-|[Tt]", "")
             :gsub("|[Aa].-|[Aa]", "")
             :gsub("|[Kk].-|[Kk]", "")
             :gsub("|H.-|h(.-)|h", "%1")
@@ -6804,10 +6804,10 @@ do
             :gsub("%s+", " ")
             :gsub("^ ", "")
             :gsub(" $", "")
-        if s == "" then
+        if text == "" then
             return nil
         end
-        return CapChars(s, maxChars)
+        return CapChars(text, maxChars)
     end
 
     -- Section labels a plugin may not use: the suite's own group labels (English
@@ -6829,8 +6829,8 @@ do
         return false
     end
 
-    local function ValidId(s)
-        return type(s) == "string" and #s <= MAX_ID_LEN and s:find("^%a[%w_%-]*$") ~= nil
+    local function ValidId(text)
+        return type(text) == "string" and #text <= MAX_ID_LEN and text:find("^%a[%w_%-]*$") ~= nil
     end
 
     local function Guard(fn)

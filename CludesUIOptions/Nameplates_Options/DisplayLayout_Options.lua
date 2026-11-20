@@ -3647,29 +3647,29 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
         end
     end
 
-    local function TextCellCfg(s)
+    local function TextCellCfg(cfg)
         local function get()
-            return DBVal(s.key)
+            return DBVal(cfg.key)
         end
         -- Custom opens its popup; a saved template selects it (the new cell reports
         -- the write to Spec Overrides, as Add Text Slot does).
         local values = mod.NPO_CustomTextValues(textElementValues, get, function()
-            mod.NPO_EditCustomText(s.key, function()
-                optionState._npNotifySlot = s.key
-                TextSlotSetValue(s.key, "custom")
+            mod.NPO_EditCustomText(cfg.key, function()
+                optionState._npNotifySlot = cfg.key
+                TextSlotSetValue(cfg.key, "custom")
                 optionState._npNotifySlot = nil
             end)
         end)
         return {
             type = "dropdown",
-            text = s.label,
+            text = cfg.label,
             values = values,
             order = textElementOrder,
             getValue = get,
             setValue = function(val)
-                TextSlotSetValue(s.key, val)
+                TextSlotSetValue(cfg.key, val)
             end,
-            disabledValues = (s.key == "textSlotLeft" or s.key == "textSlotRight") and COMBO_VS_CENTER_NAME
+            disabledValues = (cfg.key == "textSlotLeft" or cfg.key == "textSlotRight") and COMBO_VS_CENTER_NAME
                 or nil,
         }
     end

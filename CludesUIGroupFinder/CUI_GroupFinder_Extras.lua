@@ -444,14 +444,14 @@ local function PlaceStrip(s)
     end
 end
 
-local function ScrollStrip(s, step)
-    s.offset = s.offset + step
+local function ScrollStrip(cfg, step)
+    cfg.offset = cfg.offset + step
     if GFNS.ExtraHideBossPick then
         GFNS.ExtraHideBossPick()
     end
-    PlaceStrip(s)
-    if s.paint then
-        s.paint()
+    PlaceStrip(cfg)
+    if cfg.paint then
+        cfg.paint()
     end -- recolor the squares now in view
 end
 

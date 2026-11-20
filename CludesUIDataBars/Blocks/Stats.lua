@@ -404,11 +404,11 @@ end
 -------------------------------------------------------------------------------
 -- home | world | both (the old useWorldLatency flag reads as world). Shared
 -- with the options row, which must agree on what is selected.
-function mod.LatencyMode(s)
-    if s.latencyMode then
-        return s.latencyMode
+function mod.LatencyMode(cfg)
+    if cfg.latencyMode then
+        return cfg.latencyMode
     end
-    return s.useWorldLatency and "world" or "home"
+    return cfg.useWorldLatency and "world" or "home"
 end
 
 local LINKS = { home = { "home" }, world = { "world" }, both = { "home", "world" } }

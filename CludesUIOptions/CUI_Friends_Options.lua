@@ -201,8 +201,8 @@ local function BuildPage(_, host, yOffset)
                             self._eabOrigClick(self)
                         end
                     end,
-                    refreshAlpha = SwatchAlpha(function(s)
-                        return not s.useClassColor
+                    refreshAlpha = SwatchAlpha(function(cfg)
+                        return not cfg.useClassColor
                     end),
                 },
                 {
@@ -220,8 +220,8 @@ local function BuildPage(_, host, yOffset)
                             CludesUI:RefreshPage()
                         end
                     end,
-                    refreshAlpha = SwatchAlpha(function(s)
-                        return s.useClassColor
+                    refreshAlpha = SwatchAlpha(function(cfg)
+                        return cfg.useClassColor
                     end),
                 },
             },

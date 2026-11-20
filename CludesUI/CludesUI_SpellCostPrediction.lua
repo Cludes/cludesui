@@ -62,8 +62,8 @@ local SCP = {}
 CludesUI.SpellCostPrediction = SCP
 
 -- Custom color, else Blizzard's mana prediction color, else a light blue.
-function SCP.Color(s)
-    local color = s and s.powerCostColor
+function SCP.Color(cfg)
+    local color = cfg and cfg.powerCostColor
     if color then
         return color.r, color.g, color.b
     end

@@ -78,11 +78,11 @@ local source = LIVE
 --  reading
 -------------------------------------------------------------------------------
 -- +12, red when it wasn't timed
-local function KeyText(s)
-    if not Readable(s) then
+local function KeyText(cfg)
+    if not Readable(cfg) then
         return "-"
     end
-    local lvl, done = s.bestRunLevel, s.finishedSuccess
+    local lvl, done = cfg.bestRunLevel, cfg.finishedSuccess
     if Secret(lvl) or Secret(done) or type(lvl) ~= "number" or lvl == 0 then
         return "-"
     end

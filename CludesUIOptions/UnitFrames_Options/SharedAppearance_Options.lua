@@ -336,35 +336,35 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
     end
     -- Keeps the boolean trio in sync with the effective selection; the legacy
     -- branch leaves the trio untouched for in_combat/out_of_combat/mouseover.
-    local function SyncUnitVisBooleans(s)
-        local visModes = s.visibilityModes
+    local function SyncUnitVisBooleans(cfg)
+        local visModes = cfg.visibilityModes
         if type(visModes) == "table" and next(visModes) then
-            s.showInRaid = GroupAxisPasses(visModes, true, false)
-            s.showInParty = GroupAxisPasses(visModes, false, true)
-            s.showSolo = GroupAxisPasses(visModes, false, false)
+            cfg.showInRaid = GroupAxisPasses(visModes, true, false)
+            cfg.showInParty = GroupAxisPasses(visModes, false, true)
+            cfg.showSolo = GroupAxisPasses(visModes, false, false)
             return
         end
-        local value = s.barVisibility or "always"
+        local value = cfg.barVisibility or "always"
         if value == "always" then
-            s.showInRaid = true
-            s.showInParty = true
-            s.showSolo = true
+            cfg.showInRaid = true
+            cfg.showInParty = true
+            cfg.showSolo = true
         elseif value == "never" then
-            s.showInRaid = false
-            s.showInParty = false
-            s.showSolo = false
+            cfg.showInRaid = false
+            cfg.showInParty = false
+            cfg.showSolo = false
         elseif value == "in_raid" then
-            s.showInRaid = true
-            s.showInParty = false
-            s.showSolo = false
+            cfg.showInRaid = true
+            cfg.showInParty = false
+            cfg.showSolo = false
         elseif value == "in_party" then
-            s.showInRaid = false
-            s.showInParty = true
-            s.showSolo = false
+            cfg.showInRaid = false
+            cfg.showInParty = true
+            cfg.showSolo = false
         elseif value == "solo" then
-            s.showInRaid = false
-            s.showInParty = false
-            s.showSolo = true
+            cfg.showInRaid = false
+            cfg.showInParty = false
+            cfg.showSolo = true
         end
     end
     local visRow
@@ -384,8 +384,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
             -- Spec Override carrying "never" used to leave the frame uncreated for
             -- the session with no way back but a /reload. "never" is hidden by the
             -- visibility pass instead (ns.UpdateFrameVisibility), which reverses.
-            applyScalarFn = function(s, mode)
-                s.barVisibility = mode
+            applyScalarFn = function(cfg, mode)
+                cfg.barVisibility = mode
             end,
             onChanged = function()
                 local s = UNIT_DB_MAP[optionState.selectedUnit]()

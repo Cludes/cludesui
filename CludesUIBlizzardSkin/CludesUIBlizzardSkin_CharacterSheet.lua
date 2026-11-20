@@ -200,24 +200,24 @@ do
     if formatStr then
         local head, tail = formatStr:match("^(.-)%%s(.*)$")
         if head then
-            local function esc(s)
-                return (s:gsub("([%(%)%.%[%]%^%$%*%+%-%?%%])", "%%%1"))
+            local function esc(text)
+                return (text:gsub("([%(%)%.%[%]%^%$%*%+%-%?%%])", "%%%1"))
             end
             _ENCHANT_PATTERN = "^" .. esc(head) .. "(.+)" .. esc(tail) .. "$"
         end
     end
 end
 
-local function _stripLineEscapes(s)
-    if not s then
+local function _stripLineEscapes(text)
+    if not text then
         return ""
     end
     -- Keep |A:...|a atlas escapes (renderer shows the icon, hides the text); strip only colors + leading +/&.
-    s = s:gsub("|cn.-:(.-)|r", "%1") -- new-style color escapes
-    s = s:gsub("|c%x%x%x%x%x%x%x%x", "") -- classic color open
-    s = s:gsub("|r", "") -- color close
-    s = s:gsub("^%s*[%+&]%s*", "") -- leading + or &
-    return s
+    text = text:gsub("|cn.-:(.-)|r", "%1") -- new-style color escapes
+    text = text:gsub("|c%x%x%x%x%x%x%x%x", "") -- classic color open
+    text = text:gsub("|r", "") -- color close
+    text = text:gsub("^%s*[%+&]%s*", "") -- leading + or &
+    return text
 end
 
 local function CUI_GetEnchantText(slotID, unitToken)

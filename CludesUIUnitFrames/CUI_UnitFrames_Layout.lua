@@ -89,23 +89,23 @@ function mod.UF_BossBorderSettings()
     return GetMiniDonorSettings()
 end
 
-function mod.UF_BossAuraBorderAboveEffects(s)
-    return s.auraBorderAboveEffects == true
+function mod.UF_BossAuraBorderAboveEffects(cfg)
+    return cfg.auraBorderAboveEffects == true
         and not mod.UF_Blizz()
-        and not s.auraBorderBehind
-        and not s.auraBorderBehindUnitFrame
-        and (s.auraBorderSize or 1) > 0
-        and s.auraBorderTexture ~= nil
-        and s.auraBorderTexture ~= "solid"
-        and s.auraBorderTexture ~= ""
+        and not cfg.auraBorderBehind
+        and not cfg.auraBorderBehindUnitFrame
+        and (cfg.auraBorderSize or 1) > 0
+        and cfg.auraBorderTexture ~= nil
+        and cfg.auraBorderTexture ~= "solid"
+        and cfg.auraBorderTexture ~= ""
 end
 
 -- Boss "Simple Debuff Display" mode: "none"|"left"|"right". Tolerates legacy booleans
 -- (true/nil="left", false="none") so existing/imported profiles read correctly with no
 -- migration pass. "left"/"right" both force the frame-height-matched single column;
 -- only the side differs.
-function mod.GetBossSimpleDebuffMode(s)
-    local val = s and s.simpleDebuffs
+function mod.GetBossSimpleDebuffMode(cfg)
+    local val = cfg and cfg.simpleDebuffs
     if val == "none" or val == "left" or val == "right" then
         return val
     end
@@ -118,25 +118,25 @@ end
 -- Boss Simple Debuff Display X/Y offsets: dedicated simpleDebuffOffsetX/Y if set, else
 -- the regular debuff offsets, so existing offsets carry over as simple-mode defaults
 -- (zero-migration view; import-safe). Once the cog is edited, dedicated keys take over.
-function mod.GetBossSimpleDebuffOffset(s)
-    if not s then
+function mod.GetBossSimpleDebuffOffset(cfg)
+    if not cfg then
         return 0, 0
     end
-    local posX = s.simpleDebuffOffsetX
+    local posX = cfg.simpleDebuffOffsetX
     if posX == nil then
-        posX = s.debuffOffsetX or 0
+        posX = cfg.debuffOffsetX or 0
     end
-    local posY = s.simpleDebuffOffsetY
+    local posY = cfg.simpleDebuffOffsetY
     if posY == nil then
-        posY = s.debuffOffsetY or 0
+        posY = cfg.debuffOffsetY or 0
     end
     return posX, posY
 end
 
 -- Boss "Simple Buff Display" mode: "none"|"left"|"right". Defaults OFF
 -- (nil/false/unknown -> "none"); a stray boolean true reads as "left" (symmetry with the debuff resolver).
-function mod.GetBossSimpleBuffMode(s)
-    local val = s and s.simpleBuffs
+function mod.GetBossSimpleBuffMode(cfg)
+    local val = cfg and cfg.simpleBuffs
     if val == "none" or val == "left" or val == "right" then
         return val
     end
@@ -148,17 +148,17 @@ end
 
 -- Boss Simple Buff Display X/Y offsets. Mirrors ns.GetBossSimpleDebuffOffset
 -- (simpleBuffOffsetX/Y if set, else regular buff offsets; zero-migration, import-safe).
-function mod.GetBossSimpleBuffOffset(s)
-    if not s then
+function mod.GetBossSimpleBuffOffset(cfg)
+    if not cfg then
         return 0, 0
     end
-    local posX = s.simpleBuffOffsetX
+    local posX = cfg.simpleBuffOffsetX
     if posX == nil then
-        posX = s.buffOffsetX or 0
+        posX = cfg.buffOffsetX or 0
     end
-    local posY = s.simpleBuffOffsetY
+    local posY = cfg.simpleBuffOffsetY
     if posY == nil then
-        posY = s.buffOffsetY or 0
+        posY = cfg.buffOffsetY or 0
     end
     return posX, posY
 end
@@ -168,17 +168,17 @@ end
 -- No legacy equivalent, so every variant defaults to 1 independently. Callers convert
 -- to coordinate space with PP.FromPixels for physical-pixel-perfect gaps at any scale.
 -- (0 and negatives are truthy in Lua, so `or 1` only fills nil.)
-function mod.GetBossBuffSpacing(s, simpleOn)
+function mod.GetBossBuffSpacing(cfg, simpleOn)
     if simpleOn then
-        return (s and s.simpleBuffSpacing) or 1
+        return (cfg and cfg.simpleBuffSpacing) or 1
     end
-    return (s and s.buffSpacing) or 1
+    return (cfg and cfg.buffSpacing) or 1
 end
-function mod.GetBossDebuffSpacing(s, simpleOn)
+function mod.GetBossDebuffSpacing(cfg, simpleOn)
     if simpleOn then
-        return (s and s.simpleDebuffSpacing) or 1
+        return (cfg and cfg.simpleDebuffSpacing) or 1
     end
-    return (s and s.debuffSpacing) or 1
+    return (cfg and cfg.debuffSpacing) or 1
 end
 
 -- Per-slot Width % of the slot's computed clamp width (100 = normal truncation,
@@ -298,55 +298,55 @@ end
 -- branch (the painter only renders strings; colour lives here). `s` optional:
 -- resolved strictly from the unit token, so an unmapped token recolours nothing.
 -- On ns for the 200-locals cap.
-function mod.UF_RecolorTexts(widget, unitToken, s)
+function mod.UF_RecolorTexts(widget, unitToken, cfg)
     if not widget or not unitToken then
         return
     end
-    if not s then
+    if not cfg then
         local k = unitSettingsKey[unitToken]
-        s = k and saved.profile[k]
+        cfg = k and saved.profile[k]
     end
-    if not s then
+    if not cfg then
         return
     end
-    if widget.LeftText and s.leftTextClassColor ~= nil then
+    if widget.LeftText and cfg.leftTextClassColor ~= nil then
         ApplyClassColor(
             widget.LeftText,
             unitToken,
-            s.leftTextClassColor,
-            s.leftTextColorR,
-            s.leftTextColorG,
-            s.leftTextColorB
+            cfg.leftTextClassColor,
+            cfg.leftTextColorR,
+            cfg.leftTextColorG,
+            cfg.leftTextColorB
         )
     end
-    if widget.RightText and s.rightTextClassColor ~= nil then
+    if widget.RightText and cfg.rightTextClassColor ~= nil then
         ApplyClassColor(
             widget.RightText,
             unitToken,
-            s.rightTextClassColor,
-            s.rightTextColorR,
-            s.rightTextColorG,
-            s.rightTextColorB
+            cfg.rightTextClassColor,
+            cfg.rightTextColorR,
+            cfg.rightTextColorG,
+            cfg.rightTextColorB
         )
     end
-    if widget.CenterText and s.centerTextClassColor ~= nil then
+    if widget.CenterText and cfg.centerTextClassColor ~= nil then
         ApplyClassColor(
             widget.CenterText,
             unitToken,
-            s.centerTextClassColor,
-            s.centerTextColorR,
-            s.centerTextColorG,
-            s.centerTextColorB
+            cfg.centerTextClassColor,
+            cfg.centerTextColorR,
+            cfg.centerTextColorG,
+            cfg.centerTextColorB
         )
     end
-    if widget.ExtraText and s.extraTextClassColor ~= nil then
+    if widget.ExtraText and cfg.extraTextClassColor ~= nil then
         ApplyClassColor(
             widget.ExtraText,
             unitToken,
-            s.extraTextClassColor,
-            s.extraTextColorR,
-            s.extraTextColorG,
-            s.extraTextColorB
+            cfg.extraTextClassColor,
+            cfg.extraTextColorR,
+            cfg.extraTextColorG,
+            cfg.extraTextColorB
         )
     end
     local btb = widget._btb
@@ -355,34 +355,34 @@ function mod.UF_RecolorTexts(widget, unitToken, s)
             ApplyClassColor(
                 btb.LeftText,
                 unitToken,
-                s.btbLeftClassColor,
-                s.btbLeftColorR,
-                s.btbLeftColorG,
-                s.btbLeftColorB
+                cfg.btbLeftClassColor,
+                cfg.btbLeftColorR,
+                cfg.btbLeftColorG,
+                cfg.btbLeftColorB
             )
         end
         if btb.RightText then
             ApplyClassColor(
                 btb.RightText,
                 unitToken,
-                s.btbRightClassColor,
-                s.btbRightColorR,
-                s.btbRightColorG,
-                s.btbRightColorB
+                cfg.btbRightClassColor,
+                cfg.btbRightColorR,
+                cfg.btbRightColorG,
+                cfg.btbRightColorB
             )
         end
         if btb.CenterText then
             ApplyClassColor(
                 btb.CenterText,
                 unitToken,
-                s.btbCenterClassColor,
-                s.btbCenterColorR,
-                s.btbCenterColorG,
-                s.btbCenterColorB
+                cfg.btbCenterClassColor,
+                cfg.btbCenterColorR,
+                cfg.btbCenterColorG,
+                cfg.btbCenterColorB
             )
         end
         if btb._applyBTBPowerColors then
-            btb._applyBTBPowerColors(s)
+            btb._applyBTBPowerColors(cfg)
         end
     end
 end
@@ -484,31 +484,31 @@ local function CreateBottomTextBar(widget, unitToken, prefs, anchor, xOffset, ov
             end
         end
     end
-    local function ApplyBTBPowerColors(s)
-        ApplyBTBPowerColor(leftFS, s.btbLeftContent or "none", s.btbLeftPowerColor, s.btbLeftCustomFormat)
-        ApplyBTBPowerColor(rightFS, s.btbRightContent or "none", s.btbRightPowerColor, s.btbRightCustomFormat)
+    local function ApplyBTBPowerColors(cfg)
+        ApplyBTBPowerColor(leftFS, cfg.btbLeftContent or "none", cfg.btbLeftPowerColor, cfg.btbLeftCustomFormat)
+        ApplyBTBPowerColor(rightFS, cfg.btbRightContent or "none", cfg.btbRightPowerColor, cfg.btbRightCustomFormat)
         ApplyBTBPowerColor(
             centerFS,
-            s.btbCenterContent or "none",
-            s.btbCenterPowerColor,
-            s.btbCenterCustomFormat
+            cfg.btbCenterContent or "none",
+            cfg.btbCenterPowerColor,
+            cfg.btbCenterCustomFormat
         )
     end
 
-    local function ApplyBTBTextPositions(s)
-        local lc = s.btbLeftContent or "none"
-        local rc = s.btbRightContent or "none"
-        local cc = s.btbCenterContent or "none"
-        local lsz = s.btbLeftSize or 11
-        local rsz = s.btbRightSize or 11
-        local csz = s.btbCenterSize or 11
+    local function ApplyBTBTextPositions(cfg)
+        local lc = cfg.btbLeftContent or "none"
+        local rc = cfg.btbRightContent or "none"
+        local cc = cfg.btbCenterContent or "none"
+        local lsz = cfg.btbLeftSize or 11
+        local rsz = cfg.btbRightSize or 11
+        local csz = cfg.btbCenterSize or 11
 
         SetFSFont(leftFS, lsz)
         leftFS:ClearAllPoints()
         if lc ~= "none" then
             leftFS:SetJustifyH("LEFT")
-            Pix.Point(leftFS, "LEFT", textOvr, "LEFT", 5 + (s.btbLeftX or 0), s.btbLeftY or 0)
-            Pix.Width(leftFS, totalWidth * 0.9 * SlotWidthMul(s, "btbLeft"))
+            Pix.Point(leftFS, "LEFT", textOvr, "LEFT", 5 + (cfg.btbLeftX or 0), cfg.btbLeftY or 0)
+            Pix.Width(leftFS, totalWidth * 0.9 * SlotWidthMul(cfg, "btbLeft"))
             leftFS:Show()
         else
             leftFS:Hide()
@@ -518,8 +518,8 @@ local function CreateBottomTextBar(widget, unitToken, prefs, anchor, xOffset, ov
         rightFS:ClearAllPoints()
         if rc ~= "none" then
             rightFS:SetJustifyH("RIGHT")
-            Pix.Point(rightFS, "RIGHT", textOvr, "RIGHT", -5 + (s.btbRightX or 0), s.btbRightY or 0)
-            Pix.Width(rightFS, totalWidth * 0.9 * SlotWidthMul(s, "btbRight"))
+            Pix.Point(rightFS, "RIGHT", textOvr, "RIGHT", -5 + (cfg.btbRightX or 0), cfg.btbRightY or 0)
+            Pix.Width(rightFS, totalWidth * 0.9 * SlotWidthMul(cfg, "btbRight"))
             rightFS:Show()
         else
             rightFS:Hide()
@@ -529,8 +529,8 @@ local function CreateBottomTextBar(widget, unitToken, prefs, anchor, xOffset, ov
         centerFS:ClearAllPoints()
         if cc ~= "none" then
             centerFS:SetJustifyH("CENTER")
-            Pix.Point(centerFS, "CENTER", textOvr, "CENTER", s.btbCenterX or 0, s.btbCenterY or 0)
-            Pix.Width(centerFS, totalWidth * 0.9 * SlotWidthMul(s, "btbCenter"))
+            Pix.Point(centerFS, "CENTER", textOvr, "CENTER", cfg.btbCenterX or 0, cfg.btbCenterY or 0)
+            Pix.Width(centerFS, totalWidth * 0.9 * SlotWidthMul(cfg, "btbCenter"))
             centerFS:Show()
         else
             centerFS:Hide()
@@ -539,30 +539,30 @@ local function CreateBottomTextBar(widget, unitToken, prefs, anchor, xOffset, ov
         ApplyClassColor(
             leftFS,
             unitToken,
-            s.btbLeftClassColor,
-            s.btbLeftColorR,
-            s.btbLeftColorG,
-            s.btbLeftColorB
+            cfg.btbLeftClassColor,
+            cfg.btbLeftColorR,
+            cfg.btbLeftColorG,
+            cfg.btbLeftColorB
         )
         ApplyClassColor(
             rightFS,
             unitToken,
-            s.btbRightClassColor,
-            s.btbRightColorR,
-            s.btbRightColorG,
-            s.btbRightColorB
+            cfg.btbRightClassColor,
+            cfg.btbRightColorR,
+            cfg.btbRightColorG,
+            cfg.btbRightColorB
         )
         ApplyClassColor(
             centerFS,
             unitToken,
-            s.btbCenterClassColor,
-            s.btbCenterColorR,
-            s.btbCenterColorG,
-            s.btbCenterColorB
+            cfg.btbCenterClassColor,
+            cfg.btbCenterColorR,
+            cfg.btbCenterColorG,
+            cfg.btbCenterColorB
         )
         -- Power color: after class color, and re-applied continuously from the
         -- power element's PostUpdateColor (btb._applyBTBPowerColors).
-        ApplyBTBPowerColors(s)
+        ApplyBTBPowerColors(cfg)
     end
 
     ApplyBTBTextTags(
@@ -585,8 +585,8 @@ local function CreateBottomTextBar(widget, unitToken, prefs, anchor, xOffset, ov
     classIconTex:Hide()
     btb.ClassIcon = classIconTex
 
-    local function ApplyBTBClassIcon(s)
-        local style = s.btbClassIcon or "none"
+    local function ApplyBTBClassIcon(cfg)
+        local style = cfg.btbClassIcon or "none"
         if style == "none" then
             classIconTex:Hide()
             return
@@ -600,12 +600,12 @@ local function CreateBottomTextBar(widget, unitToken, prefs, anchor, xOffset, ov
             classIconTex:Hide()
             return
         end
-        local sz = s.btbClassIconSize or 14
+        local sz = cfg.btbClassIconSize or 14
         Pix.Size(classIconTex, sz, sz)
         classIconTex:ClearAllPoints()
-        local loc = s.btbClassIconLocation or "left"
-        local ox = s.btbClassIconX or 0
-        local oy = s.btbClassIconY or 0
+        local loc = cfg.btbClassIconLocation or "left"
+        local ox = cfg.btbClassIconX or 0
+        local oy = cfg.btbClassIconY or 0
         if loc == "center" then
             Pix.Point(classIconTex, "CENTER", textOvr, "CENTER", ox, oy)
         elseif loc == "right" then

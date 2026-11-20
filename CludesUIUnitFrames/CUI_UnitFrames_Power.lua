@@ -53,24 +53,24 @@ end
 -- the first tests. stock = nil reads the session's style; preview = true (the
 -- options preview, which repaints itself on a scale change) skips the UI-scale
 -- registration.
-function mod.UpdatePowerSeam(power, s, stock, preview)
+function mod.UpdatePowerSeam(power, cfg, stock, preview)
     local seam = power._pbSeam
-    local b = s
+    local b = cfg
     local sizeOverride
     local filePath
-    if s and s.borderPowerSeam == true then
-        if s == saved.profile.boss then
+    if cfg and cfg.borderPowerSeam == true then
+        if cfg == saved.profile.boss then
             b = mod.UF_BossBorderSettings()
-            sizeOverride = s.borderSizeOverride
+            sizeOverride = cfg.borderSizeOverride
         end
         if stock == nil then
             stock = mod.UF_Blizz()
         end
-        local place = s.powerPosition or "below"
+        local place = cfg.powerPosition or "below"
         if
             not stock
             and (place == "above" or place == "below")
-            and (s.powerHeight or 6) > 0
+            and (cfg.powerHeight or 6) > 0
             and (sizeOverride or b.borderSize or 1) > 0
             and power:IsShown()
         then
@@ -120,7 +120,7 @@ function mod.UpdatePowerSeam(power, s, stock, preview)
         px = CludesUI.BorderPx(b.borderSizePx, size, key)
     end
     seam._key, seam._step, seam._px, seam._path = key, size, px, filePath
-    seam._above = (s.powerPosition == "above")
+    seam._above = (cfg.powerPosition == "above")
     local color = b.borderColor
     seam._tex:SetVertexColor(color and color.r or 0, color and color.g or 0, color and color.b or 0, b.borderAlpha or 1)
     seam:Show()
@@ -177,15 +177,15 @@ end
 -- Attached portrait divider: reuse the border style's vertical companion art.
 -- A sibling of the portrait avoids clipping the strip where it crosses into the
 -- bars. Built only on opt-in; layout and colour updates use existing passes.
-function mod.UpdatePortraitSeparator(widget, portrait, s, side, attached, stock, preview, borderSettings)
+function mod.UpdatePortraitSeparator(widget, portrait, cfg, side, attached, stock, preview, borderSettings)
     local seam = widget._portraitSeparator
     local power = widget.Power or widget._power
     local powerSeam = power and power._pbSeam
-    local sizeOverride = borderSettings and s.borderSizeOverride
-    local b = borderSettings or s
+    local sizeOverride = borderSettings and cfg.borderSizeOverride
+    local b = borderSettings or cfg
     local size = sizeOverride or b.borderSize or 1
     local filePath
-    if s.portraitSeparator and attached and portrait and portrait:IsShown() and not stock and size > 0 then
+    if cfg.portraitSeparator and attached and portrait and portrait:IsShown() and not stock and size > 0 then
         filePath = CludesUI.GetBorderCompanion(b.borderTexture or "solid", "sepV")
     end
     if not filePath then
@@ -682,8 +682,8 @@ local function CreatePowerBar(widget, unitToken, prefs)
     -- rather than the player. Power-color mode resolves the unit's own power type;
     -- enemies returning a secret token that can't map to a color fall back to white.
     -- No-power units are NOT special-cased and keep showing 0%.
-    local function ApplyPowerTextColor(s)
-        if s.powerPercentTextPowerColor then
+    local function ApplyPowerTextColor(cfg)
+        if cfg.powerPercentTextPowerColor then
             -- Secret-safe per-unit color: player keeps the exact token color,
             -- non-player recovers it from the clean integer power type.
             local red, green, blue = CludesUI.ResolveUnitPowerColor(unitToken)
@@ -692,8 +692,8 @@ local function CreatePowerBar(widget, unitToken, prefs)
             else
                 ppFS:SetTextColor(1, 1, 1)
             end
-        elseif s.powerTextColor then
-            local tc = s.powerTextColor
+        elseif cfg.powerTextColor then
+            local tc = cfg.powerTextColor
             ppFS:SetTextColor(tc.r, tc.g, tc.b, tc.a or 1)
         else
             ppFS:SetTextColor(1, 1, 1)
@@ -701,16 +701,16 @@ local function CreatePowerBar(widget, unitToken, prefs)
     end
     power._applyPowerTextColor = ApplyPowerTextColor
 
-    local function ApplyPowerPercentText(s)
-        local place = s.powerPercentText or "none"
+    local function ApplyPowerPercentText(cfg)
+        local place = cfg.powerPercentText or "none"
         -- Hide Power Bar (a stock style's main frames) takes the text down
         -- with the bar, its zone included, so nothing reads power for it.
-        if mod.UF_Blizz() and mod.UF_IsMainSettings(s) and mod.UF_StockHidesPower(s) then
+        if mod.UF_Blizz() and mod.UF_IsMainSettings(cfg) and mod.UF_StockHidesPower(cfg) then
             place = "none"
         end
-        local sz = s.powerPercentSize or 9
-        local ox = s.powerPercentX or 0
-        local oy = s.powerPercentY or 0
+        local sz = cfg.powerPercentSize or 9
+        local ox = cfg.powerPercentX or 0
+        local oy = cfg.powerPercentY or 0
 
         -- Power Bar Height 0 collapses the bar to a ZERO-HEIGHT frame, and WoW does not
         -- resolve a zero-height frame's rect (GetLeft() returns nil), so any overlay
@@ -719,8 +719,8 @@ local function CreatePowerBar(widget, unitToken, prefs)
         -- it real height in the row the power bar would occupy. _cuiHeight0 leaves
         -- frames that never hit height 0 untouched; a positive height restores SetAllPoints.
         -- A stock style draws an attached bar at its track's own height.
-        local pPos = mod.UF_PowerPos(s)
-        if (s.powerHeight or 6) <= 0 and not (mod.UF_Blizz() and (pPos == "below" or pPos == "above")) then
+        local pPos = mod.UF_PowerPos(cfg)
+        if (cfg.powerHeight or 6) <= 0 and not (mod.UF_Blizz() and (pPos == "below" or pPos == "above")) then
             local anchorTo = widget.Health or power
             ppTextOvr:ClearAllPoints()
             if pPos == "above" or pPos == "detached_top" then
@@ -760,13 +760,13 @@ local function CreatePowerBar(widget, unitToken, prefs)
             Pix.Point(ppFS, "CENTER", ppTextOvr, "CENTER", ox, oy)
         end
 
-        local showPct = s.powerShowPercent ~= false
+        local showPct = cfg.powerShowPercent ~= false
         local pctSuffix = showPct and "%%" or ""
-        local fmt = s.powerTextFormat or "perpp"
+        local fmt = cfg.powerTextFormat or "perpp"
         local TP = mod.TextPieces
         if fmt == "custom" then
             -- Tag template (powerTextCustomFormat); a missing format shows nothing.
-            mod.SetTextZone(widget, ppFS, "custom", "powerText", s)
+            mod.SetTextZone(widget, ppFS, "custom", "powerText", cfg)
         elseif fmt == "curpp" then
             mod.SetTextZoneRaw(widget, ppFS, "%s", { TP.curpp })
         elseif fmt == "curmaxpp" then
@@ -789,7 +789,7 @@ local function CreatePowerBar(widget, unitToken, prefs)
         mod.UF_PaintText(widget, widget._cuiUnit or unitToken)
 
         -- Priority: power-colored (per-unit) > custom color > white.
-        ApplyPowerTextColor(s)
+        ApplyPowerTextColor(cfg)
         ppFS:Show()
     end
 

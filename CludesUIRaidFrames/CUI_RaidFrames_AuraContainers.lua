@@ -98,18 +98,18 @@ end
 
 -- Effective icon size at the split anchor (0 = match Debuff Size; scaled proxies
 -- bake indicator scale into both keys, and 0 scales to 0, so the sentinel survives).
-local function DispLocSize(s)
-    local val = s.dispellableDebuffSize
+local function DispLocSize(cfg)
+    local val = cfg.dispellableDebuffSize
     if val and val > 0 then
         return mod.RFC_SnapSize(val)
     end
-    return mod.RFC_DebuffSize(s)
+    return mod.RFC_DebuffSize(cfg)
 end
 
 -- Groups the location container needs for the active preset (all on-demand, split
 -- is opt-in); cc rides along so dispellable CC keeps its glow at the split anchor.
-local function DispLocGroupWanted(s, keyName)
-    local preset = s.debuffFilter or "all"
+local function DispLocGroupWanted(cfg, keyName)
+    local preset = cfg.debuffFilter or "all"
     if preset == "none" then
         return false
     end
@@ -374,40 +374,40 @@ end
 -- original PP border path; explicit styles use AuraKit's unit-frame border inputs.
 -- into: a table to fill instead of a new one, for a caller that applies it at once
 -- (the previews' tickers); a style keeps its own.
-function mod.RFC_AuraBorder(s, prefixText, into)
-    local px = s[prefixText .. "Size"] or 1
+function mod.RFC_AuraBorder(cfg, prefixText, into)
+    local px = cfg[prefixText .. "Size"] or 1
     if px <= 0 then
         return nil
     end
-    local color = s[prefixText .. "Color"]
+    local color = cfg[prefixText .. "Color"]
     local red, green, blue = ColorParts(color, 0, 0, 0)
-    local texture = s[prefixText .. "Texture"]
+    local texture = cfg[prefixText .. "Texture"]
     local t = into or {}
     t[1], t[2], t[3], t[4] = red, green, blue, color and color.a or 1
     t.size, t.texture = px, texture
-    t.edgePx = CludesUI.BorderPx(s[prefixText .. "SizePx"], px, texture or "solid")
-    t.offsetX, t.offsetY = s[prefixText .. "TextureOffset"], s[prefixText .. "TextureOffsetY"]
-    t.shiftX, t.shiftY = s[prefixText .. "TextureShiftX"], s[prefixText .. "TextureShiftY"]
+    t.edgePx = CludesUI.BorderPx(cfg[prefixText .. "SizePx"], px, texture or "solid")
+    t.offsetX, t.offsetY = cfg[prefixText .. "TextureOffset"], cfg[prefixText .. "TextureOffsetY"]
+    t.shiftX, t.shiftY = cfg[prefixText .. "TextureShiftX"], cfg[prefixText .. "TextureShiftY"]
     return t
 end
 
-function mod.RFC_AuraBorderFP(s, prefixText)
+function mod.RFC_AuraBorderFP(cfg, prefixText)
     if
-        not s[prefixText .. "Texture"]
-        and not s[prefixText .. "SizePx"]
-        and not (s[prefixText .. "Color"] and s[prefixText .. "Color"].a)
+        not cfg[prefixText .. "Texture"]
+        and not cfg[prefixText .. "SizePx"]
+        and not (cfg[prefixText .. "Color"] and cfg[prefixText .. "Color"].a)
     then
         return false
     end
     return FP(
-        s[prefixText .. "Texture"],
-        s[prefixText .. "SizePx"],
-        s[prefixText .. "TextureOffset"],
-        s[prefixText .. "TextureOffsetY"],
-        s[prefixText .. "TextureShiftX"],
-        s[prefixText .. "TextureShiftY"],
-        s[prefixText .. "DispelTextured"],
-        s[prefixText .. "Color"] and s[prefixText .. "Color"].a
+        cfg[prefixText .. "Texture"],
+        cfg[prefixText .. "SizePx"],
+        cfg[prefixText .. "TextureOffset"],
+        cfg[prefixText .. "TextureOffsetY"],
+        cfg[prefixText .. "TextureShiftX"],
+        cfg[prefixText .. "TextureShiftY"],
+        cfg[prefixText .. "DispelTextured"],
+        cfg[prefixText .. "Color"] and cfg[prefixText .. "Color"].a
     )
 end
 
@@ -490,36 +490,36 @@ do
         wipe(cache)
     end
 end
-function mod.RFC_DebuffSize(s)
-    return mod.RFC_SnapSize(s.debuffSize or 18)
+function mod.RFC_DebuffSize(cfg)
+    return mod.RFC_SnapSize(cfg.debuffSize or 18)
 end
 
 -- sizeOverride: the dispellable-location styles reuse the whole debuff
 -- style with only the physical size swapped (see DispLocSize).
-local function BuildDebuffStyle(s, sizeOverride)
-    local border = mod.RFC_AuraBorder(s, "debuffBorder")
-    local px = sizeOverride and mod.RFC_SnapSize(sizeOverride) or mod.RFC_DebuffSize(s)
+local function BuildDebuffStyle(cfg, sizeOverride)
+    local border = mod.RFC_AuraBorder(cfg, "debuffBorder")
+    local px = sizeOverride and mod.RFC_SnapSize(sizeOverride) or mod.RFC_DebuffSize(cfg)
     -- Engine dispel-border extras: ring thickness in PHYSICAL pixels + the user
     -- palette as the engine tint map (AuraKit registers both; helper resolved at
     -- call time, declared below). -1 = follow icon's own Border thickness, 0 = recolor off.
-    local dpx = s.dispelIconBorderSize or 2
+    local dpx = cfg.dispelIconBorderSize or 2
     if dpx == -1 then
         dpx = border and (border.edgePx or border.size) or 0
     end
     local dcMap, dcFP
     if mod.RFC_DispelBorderColorMap then
-        dcMap, dcFP = mod.RFC_DispelBorderColorMap(s)
+        dcMap, dcFP = mod.RFC_DispelBorderColorMap(cfg)
     end
     return {
         width = px,
         height = px,
         iconCrop = true,
-        iconZoom = s.debuffIconZoom or 0.08,
+        iconZoom = cfg.debuffIconZoom or 0.08,
         border = border,
         -- Dispellable debuffs get the engine dispel-type border over the
         -- static one (dispelName is secret in 12.1; see AuraKit).
         dispelBorder = true,
-        dispelBorderTexture = s.debuffBorderDispelTextured == true
+        dispelBorderTexture = cfg.debuffBorderDispelTextured == true
                 and border
                 and border.texture ~= "solid"
                 and border.texture ~= ""
@@ -529,18 +529,18 @@ local function BuildDebuffStyle(s, sizeOverride)
         dispelColorMap = dcMap,
         dispelColorFP = dcFP,
         cooldownReverse = true,
-        hideSwipe = (s.debuffShowSwipe == false),
+        hideSwipe = (cfg.debuffShowSwipe == false),
         noDefaultFonts = true,
-        hideDurationText = not s.debuffShowDurText,
-        durSize = s.debuffDurTextSize,
-        durColor = s.debuffDurTextColor,
-        durOffX = s.debuffDurTextOffsetX,
-        durOffY = s.debuffDurTextOffsetY,
-        showStacks = s.debuffShowStacks ~= false,
-        stackSize = s.debuffStacksTextSize,
-        stackColor = s.debuffStacksTextColor,
-        stackOffX = s.debuffStacksOffsetX,
-        stackOffY = s.debuffStacksOffsetY,
+        hideDurationText = not cfg.debuffShowDurText,
+        durSize = cfg.debuffDurTextSize,
+        durColor = cfg.debuffDurTextColor,
+        durOffX = cfg.debuffDurTextOffsetX,
+        durOffY = cfg.debuffDurTextOffsetY,
+        showStacks = cfg.debuffShowStacks ~= false,
+        stackSize = cfg.debuffStacksTextSize,
+        stackColor = cfg.debuffStacksTextColor,
+        stackOffX = cfg.debuffStacksOffsetX,
+        stackOffY = cfg.debuffStacksOffsetY,
         -- 5-state tooltip mode: true/nil=hidden, false=shown, "combat"=hidden in
         -- combat, "cursor"=shown at cursor, "modifier"=shown only while the Use
         -- Modifier cog's key is held. Style-side, "modifier" renders as plain
@@ -549,13 +549,13 @@ local function BuildDebuffStyle(s, sizeOverride)
         -- the key is held (button-surface writes are refused while auras are
         -- secret, so nothing here can gate at runtime). Raw key already in DebuffStyleFP.
         noTooltips = not (
-                s.debuffHideTooltips == false
-                or s.debuffHideTooltips == "combat"
-                or s.debuffHideTooltips == "cursor"
-                or s.debuffHideTooltips == "modifier"
+                cfg.debuffHideTooltips == false
+                or cfg.debuffHideTooltips == "combat"
+                or cfg.debuffHideTooltips == "cursor"
+                or cfg.debuffHideTooltips == "modifier"
             ),
-        tooltipCombatHide = s.debuffHideTooltips == "combat",
-        tooltipAnchor = (s.debuffHideTooltips == "cursor") and "cursor" or nil,
+        tooltipCombatHide = cfg.debuffHideTooltips == "combat",
+        tooltipAnchor = (cfg.debuffHideTooltips == "cursor") and "cursor" or nil,
         -- Base DM Effects (per-filter blocks); tile styles override this
         -- after the build with their own (or nil).
         fxList = (mod.DM_FxList and mod.DM_FxList()) or nil,
@@ -632,30 +632,30 @@ end
 -- container here (same math below); the Debuff Manager's tooltip-modifier
 -- eaters pin to the same point with a settings-derived maximum footprint, so
 -- their rect never derives from the container's content-driven (secret) size.
-function mod.RFC_DebuffPin(s)
-    local place = s.debuffPosition or "bottomright"
+function mod.RFC_DebuffPin(cfg)
+    local place = cfg.debuffPosition or "bottomright"
     local corner = CORNERS[place] or "BOTTOMRIGHT"
-    local growDir = s.debuffGrowDirection or "LEFT"
-    local point = ResolveFlowAnchor(place, corner, growDir, s.debuffWrapDirection or "UP")
+    local growDir = cfg.debuffGrowDirection or "LEFT"
+    local point = ResolveFlowAnchor(place, corner, growDir, cfg.debuffWrapDirection or "UP")
     return point,
         corner,
-        s.debuffOffsetX or 0,
-        s.debuffOffsetY or 0,
-        mod.RFC_DebuffSize(s),
-        s.debuffSpacing or 1,
-        s.debuffPerRow or 5,
+        cfg.debuffOffsetX or 0,
+        cfg.debuffOffsetY or 0,
+        mod.RFC_DebuffSize(cfg),
+        cfg.debuffSpacing or 1,
+        cfg.debuffPerRow or 5,
         (growDir == "UP" or growDir == "DOWN")
 end
 
-local function AnchorDebuffContainer(boxHolder, healthBar, s)
-    healthBar = mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, s) or healthBar -- Uniform Icon Anchoring
+local function AnchorDebuffContainer(boxHolder, healthBar, cfg)
+    healthBar = mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, cfg) or healthBar -- Uniform Icon Anchoring
     -- Pin math mirrored by ns.RFC_DebuffPin above; keep the two in step.
-    local place = s.debuffPosition or "bottomright"
+    local place = cfg.debuffPosition or "bottomright"
     local corner = CORNERS[place] or "BOTTOMRIGHT"
-    local growDir = s.debuffGrowDirection or "LEFT"
-    local wrap = s.debuffWrapDirection or "UP"
-    local offX = s.debuffOffsetX or 0
-    local offY = s.debuffOffsetY or 0
+    local growDir = cfg.debuffGrowDirection or "LEFT"
+    local wrap = cfg.debuffWrapDirection or "UP"
+    local offX = cfg.debuffOffsetX or 0
+    local offY = cfg.debuffOffsetY or 0
 
     local point, anchorPoint, gH, gV = ResolveFlowAnchor(place, corner, growDir, wrap)
 
@@ -664,9 +664,9 @@ local function AnchorDebuffContainer(boxHolder, healthBar, s)
     AK.SetContainerAnchor(boxHolder, anchorPoint)
     AK.SetContainerGrowth(boxHolder, FlowDir(gH), FlowDir(gV))
 
-    local px = mod.RFC_DebuffSize(s)
-    local spacing = s.debuffSpacing or 1
-    local perRow = s.debuffPerRow or 5
+    local px = mod.RFC_DebuffSize(cfg)
+    local spacing = cfg.debuffSpacing or 1
+    local perRow = cfg.debuffPerRow or 5
     local vertical = (growDir == "UP" or growDir == "DOWN")
     local rowWidth = nil
     if vertical and perRow and perRow >= 2 then
@@ -690,14 +690,14 @@ end
 -- Dispellable-location anchoring: same flow math as the main debuff container,
 -- but position/growth/offsets/size come from the "Dispellable Debuff Location"
 -- settings (spacing/wrap/per-row stay shared with the debuff display).
-local function AnchorDispLocContainer(boxHolder, healthBar, s)
-    healthBar = mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, s) or healthBar -- Uniform Icon Anchoring
-    local place = s.dispellableDebuffLocation or "bottomright"
+local function AnchorDispLocContainer(boxHolder, healthBar, cfg)
+    healthBar = mod.RF_AnchorHost and mod.RF_AnchorHost(healthBar, cfg) or healthBar -- Uniform Icon Anchoring
+    local place = cfg.dispellableDebuffLocation or "bottomright"
     local corner = CORNERS[place] or "BOTTOMRIGHT"
-    local growDir = s.dispellableDebuffGrowDirection or "RIGHT"
-    local wrap = s.debuffWrapDirection or "UP"
-    local offX = s.dispellableDebuffOffsetX or 0
-    local offY = s.dispellableDebuffOffsetY or 0
+    local growDir = cfg.dispellableDebuffGrowDirection or "RIGHT"
+    local wrap = cfg.debuffWrapDirection or "UP"
+    local offX = cfg.dispellableDebuffOffsetX or 0
+    local offY = cfg.dispellableDebuffOffsetY or 0
 
     local point, anchorPoint, gH, gV = ResolveFlowAnchor(place, corner, growDir, wrap)
 
@@ -706,9 +706,9 @@ local function AnchorDispLocContainer(boxHolder, healthBar, s)
     AK.SetContainerAnchor(boxHolder, anchorPoint)
     AK.SetContainerGrowth(boxHolder, FlowDir(gH), FlowDir(gV))
 
-    local px = DispLocSize(s)
-    local spacing = s.debuffSpacing or 1
-    local perRow = s.debuffPerRow or 5
+    local px = DispLocSize(cfg)
+    local spacing = cfg.debuffSpacing or 1
+    local perRow = cfg.debuffPerRow or 5
     local vertical = (growDir == "UP" or growDir == "DOWN")
     local rowWidth = nil
     if vertical then
@@ -773,11 +773,11 @@ local DISPEL_SLOTS = {
 -- debuff-icon ring with these; C-side validation reconstructs the color objects),
 -- plus a fingerprint so palette edits re-register border options. Resolved via ns
 -- at call time (BuildDebuffStyle declared above).
-function mod.RFC_DispelBorderColorMap(s)
+function mod.RFC_DispelBorderColorMap(cfg)
     local map, fp = {}, {}
     for i = 1, #DISPEL_SLOTS do
         local defaults = DISPEL_SLOTS[i]
-        local color = s[defaults.colorKey]
+        local color = cfg[defaults.colorKey]
         local r = (color and color.r) or defaults.fallback[1]
         local g = (color and color.g) or defaults.fallback[2]
         local b = (color and color.b) or defaults.fallback[3]
@@ -807,8 +807,8 @@ local function TokenBlindDispel(token)
     return token == "Poison" and rfcTotemKnown
 end
 
-local function DispelSlotFilter(s, token)
-    if s.dispelShowAll == false and not TokenBlindDispel(token) then
+local function DispelSlotFilter(cfg, token)
+    if cfg.dispelShowAll == false and not TokenBlindDispel(token) then
         return { "HARMFUL", "RAID_PLAYER_DISPELLABLE" }
     end
     return { "HARMFUL" }
@@ -1026,11 +1026,11 @@ local function ApplyRFDispelSlot(btnFrame, dropdown, look)
     end
 end
 
-local function BuildDispelStyle(s, compact)
+local function BuildDispelStyle(cfg, compact)
     local typeColors = {}
     for i = 1, #DISPEL_SLOTS do
         local defaults = DISPEL_SLOTS[i]
-        local color = s[defaults.colorKey]
+        local color = cfg[defaults.colorKey]
         typeColors[defaults.token] = {
             r = color and color.r or defaults.fallback[1],
             g = color and color.g or defaults.fallback[2],
@@ -1043,47 +1043,47 @@ local function BuildDispelStyle(s, compact)
     -- under a stock style (the CludesUI border stands down there), a Solid
     -- Border Style or Border Size 0.
     local customBorder
-    if not compact and s.dispelCustomBorder == true and mod.RF_CustomBorderOn(s) then
-        local bs = mod.RF_EffBorderSize(s)
-        local texture = s.borderTexture
+    if not compact and cfg.dispelCustomBorder == true and mod.RF_CustomBorderOn(cfg) then
+        local bs = mod.RF_EffBorderSize(cfg)
+        local texture = cfg.borderTexture
         customBorder = {
             size = bs,
             tex = texture,
-            offX = s.borderTextureOffset,
-            offY = s.borderTextureOffsetY,
-            shX = s.borderTextureShiftX,
-            shY = s.borderTextureShiftY,
-            px = CludesUI.BorderPx(s.borderSizePx, bs, texture),
-            behind = s.borderBehind and true or false,
+            offX = cfg.borderTextureOffset,
+            offY = cfg.borderTextureOffsetY,
+            shX = cfg.borderTextureShiftX,
+            shY = cfg.borderTextureShiftY,
+            px = CludesUI.BorderPx(cfg.borderSizePx, bs, texture),
+            behind = cfg.borderBehind and true or false,
         }
     end
     return {
         width = 1,
         height = 1,
         noRegions = true,
-        mode = s.dispelOverlay or "fill",
-        opacity = s.dispelOverlayOpacity or 100,
-        borderSize = s.dispelBorderSize or 0,
-        showIcon = s.showDispelIcons == true,
-        iconSize = s.dispelIconSize or 16,
-        iconPos = s.dispelIconPosition or "right",
-        iconOffX = s.dispelIconOffsetX or 0,
-        iconOffY = s.dispelIconOffsetY or 0,
-        uniformAnchors = s.powerUniformAnchors == true,
+        mode = cfg.dispelOverlay or "fill",
+        opacity = cfg.dispelOverlayOpacity or 100,
+        borderSize = cfg.dispelBorderSize or 0,
+        showIcon = cfg.showDispelIcons == true,
+        iconSize = cfg.dispelIconSize or 16,
+        iconPos = cfg.dispelIconPosition or "right",
+        iconOffX = cfg.dispelIconOffsetX or 0,
+        iconOffY = cfg.dispelIconOffsetY or 0,
+        uniformAnchors = cfg.powerUniformAnchors == true,
         -- The fill wash's anchors follow the fill direction (RF_AnchorCurHealth).
-        fillVert = mod.RF_IsVerticalFill(s),
-        fillInvert = mod.RF_IsInvertedFill(s),
+        fillVert = mod.RF_IsVerticalFill(cfg),
+        fillInvert = mod.RF_IsInvertedFill(cfg),
         typeColors = typeColors,
         customBorder = customBorder,
         applyExtra = ApplyRFDispelSlot,
     }
 end
 
-local function DispelVisible(s, d)
-    return (s.dispelOverlay or "fill") ~= "none"
-        or (s.dispelBorderSize or 0) > 0
-        or s.showDispelIcons == true
-        or (s.dispelCustomBorder == true and not mod.RF_ButtonCompact(d, s) and mod.RF_CustomBorderOn(s))
+local function DispelVisible(cfg, d)
+    return (cfg.dispelOverlay or "fill") ~= "none"
+        or (cfg.dispelBorderSize or 0) > 0
+        or cfg.showDispelIcons == true
+        or (cfg.dispelCustomBorder == true and not mod.RF_ButtonCompact(d, cfg) and mod.RF_CustomBorderOn(cfg))
 end
 
 -- Fingerprints of exact settings each subsystem reads, per class ("rf:debuff:raid"/
@@ -1091,34 +1091,34 @@ end
 -- scale changes flip these too).
 local classFP = {}
 
-local function DebuffStyleFP(s, font)
+local function DebuffStyleFP(cfg, font)
     return FP(
         font,
-        s.debuffSize,
-        mod.RFC_DebuffSize(s),
-        s.debuffIconZoom,
-        s.debuffBorderSize,
-        CK(s.debuffBorderColor),
-        mod.RFC_AuraBorderFP(s, "debuffBorder"),
-        s.debuffShowSwipe,
-        s.debuffShowDurText,
-        s.debuffDurTextSize,
-        CK(s.debuffDurTextColor),
-        s.debuffDurTextOffsetX,
-        s.debuffDurTextOffsetY,
-        s.debuffShowStacks,
-        s.debuffStacksTextSize,
-        CK(s.debuffStacksTextColor),
-        s.debuffStacksOffsetX,
-        s.debuffStacksOffsetY,
-        s.debuffHideTooltips,
+        cfg.debuffSize,
+        mod.RFC_DebuffSize(cfg),
+        cfg.debuffIconZoom,
+        cfg.debuffBorderSize,
+        CK(cfg.debuffBorderColor),
+        mod.RFC_AuraBorderFP(cfg, "debuffBorder"),
+        cfg.debuffShowSwipe,
+        cfg.debuffShowDurText,
+        cfg.debuffDurTextSize,
+        CK(cfg.debuffDurTextColor),
+        cfg.debuffDurTextOffsetX,
+        cfg.debuffDurTextOffsetY,
+        cfg.debuffShowStacks,
+        cfg.debuffStacksTextSize,
+        CK(cfg.debuffStacksTextColor),
+        cfg.debuffStacksOffsetX,
+        cfg.debuffStacksOffsetY,
+        cfg.debuffHideTooltips,
         -- Dispel icon ring: thickness + the user palette the engine tints with.
-        s.dispelIconBorderSize,
-        CK(s.dispelColorMagic),
-        CK(s.dispelColorCurse),
-        CK(s.dispelColorDisease),
-        CK(s.dispelColorPoison),
-        CK(s.dispelColorBleed),
+        cfg.dispelIconBorderSize,
+        CK(cfg.dispelColorMagic),
+        CK(cfg.dispelColorCurse),
+        CK(cfg.dispelColorDisease),
+        CK(cfg.dispelColorPoison),
+        CK(cfg.dispelColorBleed),
         -- Base DM Effects ride the debuff style (BuildDebuffStyle injects
         -- them), so their config is part of this fingerprint.
         (mod.DM_FxFP and mod.DM_FxFP()) or ""
@@ -1128,24 +1128,24 @@ end
 -- style, so their restyle fingerprints must include this exact value.
 mod.RFC_DebuffStyleFP = DebuffStyleFP
 
-local function DebuffCfgFP(s)
+local function DebuffCfgFP(cfg)
     -- DispLocActive: the split toggles excludeDispelTypes on the MAIN groups'
     -- candidate filters, so flipping it must re-drive the main config too.
     return FP(
-        s.debuffPosition,
-        s.debuffGrowDirection,
-        s.debuffWrapDirection,
-        s.debuffOffsetX,
-        s.debuffOffsetY,
-        s.debuffSize,
-        mod.RFC_DebuffSize(s),
-        s.debuffSpacing,
-        s.debuffPerRow,
-        s.debuffFilter,
-        s.debuffCap,
-        s.hideLustDebuff,
-        DispLocActive(s),
-        s.powerUniformAnchors,
+        cfg.debuffPosition,
+        cfg.debuffGrowDirection,
+        cfg.debuffWrapDirection,
+        cfg.debuffOffsetX,
+        cfg.debuffOffsetY,
+        cfg.debuffSize,
+        mod.RFC_DebuffSize(cfg),
+        cfg.debuffSpacing,
+        cfg.debuffPerRow,
+        cfg.debuffFilter,
+        cfg.debuffCap,
+        cfg.hideLustDebuff,
+        DispLocActive(cfg),
+        cfg.powerUniformAnchors,
         (mod.DM_CfgFP and mod.DM_CfgFP()) or ""
     )
 end
@@ -1155,21 +1155,21 @@ local function DispLocStyleFP(s, font)
     return FP(DebuffStyleFP(s, font), DispLocSize(s), DispLocActive(s))
 end
 
-local function DispLocCfgFP(s)
+local function DispLocCfgFP(cfg)
     return FP(
-        DispLocActive(s),
-        s.dispellableDebuffLocation,
-        s.dispellableDebuffGrowDirection,
-        s.dispellableDebuffOffsetX,
-        s.dispellableDebuffOffsetY,
-        DispLocSize(s),
-        s.debuffSpacing,
-        s.debuffPerRow,
-        s.debuffWrapDirection,
-        s.debuffFilter,
-        s.debuffCap,
-        s.hideLustDebuff,
-        s.powerUniformAnchors
+        DispLocActive(cfg),
+        cfg.dispellableDebuffLocation,
+        cfg.dispellableDebuffGrowDirection,
+        cfg.dispellableDebuffOffsetX,
+        cfg.dispellableDebuffOffsetY,
+        DispLocSize(cfg),
+        cfg.debuffSpacing,
+        cfg.debuffPerRow,
+        cfg.debuffWrapDirection,
+        cfg.debuffFilter,
+        cfg.debuffCap,
+        cfg.hideLustDebuff,
+        cfg.powerUniformAnchors
     )
 end
 
@@ -1178,42 +1178,42 @@ local function CKA(c)
     return CK(c) .. "," .. tostring((c and c.a) or 1)
 end
 
-local function DispelStyleFP(s, keyName)
+local function DispelStyleFP(cfg, keyName)
     local party = keyName == "rf:debuff:party" or keyName == "rf:dispel:party"
-    local compact = keyName ~= "rf:debuff:extra" and keyName ~= "rf:dispel:extra" and mod.RF_CompactOn(s, party)
+    local compact = keyName ~= "rf:debuff:extra" and keyName ~= "rf:dispel:extra" and mod.RF_CompactOn(cfg, party)
     return FP(
-        s.dispelOverlay,
-        s.dispelOverlayOpacity,
-        s.dispelBorderSize,
-        s.showDispelIcons,
-        s.dispelIconSize,
-        s.dispelIconPosition,
-        s.dispelIconOffsetX,
-        s.dispelIconOffsetY,
-        CKA(s.dispelColorMagic),
-        CKA(s.dispelColorCurse),
-        CKA(s.dispelColorDisease),
-        CKA(s.dispelColorPoison),
-        CKA(s.dispelColorBleed),
-        s.powerUniformAnchors,
+        cfg.dispelOverlay,
+        cfg.dispelOverlayOpacity,
+        cfg.dispelBorderSize,
+        cfg.showDispelIcons,
+        cfg.dispelIconSize,
+        cfg.dispelIconPosition,
+        cfg.dispelIconOffsetX,
+        cfg.dispelIconOffsetY,
+        CKA(cfg.dispelColorMagic),
+        CKA(cfg.dispelColorCurse),
+        CKA(cfg.dispelColorDisease),
+        CKA(cfg.dispelColorPoison),
+        CKA(cfg.dispelColorBleed),
+        cfg.powerUniformAnchors,
         compact,
         -- The fill wash follows the fill direction (BuildDispelStyle); the axis
         -- only moves it under Inverted Fill.
-        mod.RF_IsInvertedFill(s),
-        mod.RF_IsInvertedFill(s) and mod.RF_IsVerticalFill(s),
+        mod.RF_IsInvertedFill(cfg),
+        mod.RF_IsInvertedFill(cfg) and mod.RF_IsVerticalFill(cfg),
         -- Color Custom Borders copies the frame border (strata: a strata change
         -- re-stacks child levels), so those inputs count, only while it is on.
-        s.dispelCustomBorder == true
+        cfg.dispelCustomBorder == true
                 and FP(
-                    s.borderSize,
-                    s.borderTexture,
-                    s.borderSizePx,
-                    s.borderTextureOffset,
-                    s.borderTextureOffsetY,
-                    s.borderTextureShiftX,
-                    s.borderTextureShiftY,
-                    s.borderBehind,
-                    s.frameStrata
+                    cfg.borderSize,
+                    cfg.borderTexture,
+                    cfg.borderSizePx,
+                    cfg.borderTextureOffset,
+                    cfg.borderTextureOffsetY,
+                    cfg.borderTextureShiftX,
+                    cfg.borderTextureShiftY,
+                    cfg.borderBehind,
+                    cfg.frameStrata
                 )
             or false
     )
@@ -1298,30 +1298,30 @@ end
 -- as the main debuff config, but every group carries includeDispelTypes plus the
 -- split's own element size. Groups are on-demand; an undeclared-but-needed group
 -- queues its declaration on the combat-legal live lane and re-applies.
-local function ApplyDispLocConfig(boxHolder, d, s)
-    local isActive = DispLocActive(s)
+local function ApplyDispLocConfig(boxHolder, d, cfg)
+    local isActive = DispLocActive(cfg)
     local cap = 0
-    if isActive and (s.debuffFilter or "all") ~= "none" then
-        cap = s.debuffCap or 3
+    if isActive and (cfg.debuffFilter or "all") ~= "none" then
+        cap = cfg.debuffCap or 3
     end
 
     local ex = {}
     for ident in pairs(ALWAYS_HIDE_DEBUFFS) do
         ex[ident] = true
     end
-    if s.hideLustDebuff ~= false then
+    if cfg.hideLustDebuff ~= false then
         for ident in pairs(SATED_DEBUFFS) do
             ex[ident] = true
         end
     end
     local cand = { excludeSpellIDs = ex, includeDispelTypes = DISPLOC_TYPES }
 
-    local px = DispLocSize(s)
+    local px = DispLocSize(cfg)
     local layout = {
         elementWidth = px,
         elementHeight = px,
-        elementSpacing = s.debuffSpacing or 1,
-        lineSpacing = s.debuffSpacing or 1,
+        elementSpacing = cfg.debuffSpacing or 1,
+        lineSpacing = cfg.debuffSpacing or 1,
     }
 
     local declared = d.rfcDispLocGroups or {}
@@ -1329,7 +1329,7 @@ local function ApplyDispLocConfig(boxHolder, d, s)
         local missing = false
         for i = 1, #DEBUFF_GROUPS do
             local g = DEBUFF_GROUPS[i]
-            if DispLocGroupWanted(s, g.key) and not declared[g.key] then
+            if DispLocGroupWanted(cfg, g.key) and not declared[g.key] then
                 missing = true
             end
         end
@@ -1370,7 +1370,7 @@ local function ApplyDispLocConfig(boxHolder, d, s)
     for i = 1, #DEBUFF_GROUPS do
         local g = DEBUFF_GROUPS[i]
         if declared[g.key] then
-            CludesUI.AuraKit.SetGroupCap(boxHolder, g.key, DispLocGroupWanted(s, g.key) and cap or 0)
+            CludesUI.AuraKit.SetGroupCap(boxHolder, g.key, DispLocGroupWanted(cfg, g.key) and cap or 0)
             boxHolder:SetAuraGroupCandidateFilters(g.key, cand)
             boxHolder:SetAuraGroupLayout(g.key, layout)
         end
@@ -2918,10 +2918,10 @@ end
 
 -- Geometry fingerprint over every input AnchorBmSlots reads: slot-button SetSize/
 -- SetPoint are engine-wrapped calls, so the anchor pass only reruns on actual changes.
-local function BmGeoFP(metaRec, iconScale, s)
+local function BmGeoFP(metaRec, iconScale, cfg)
     -- powerUniformAnchors joins the geometry key: flipping it re-drives the
     -- slot anchor pass (AnchorBmSlots swaps its anchor host on it).
-    local t = { tostring(iconScale), tostring(s and s.powerUniformAnchors or false) }
+    local t = { tostring(iconScale), tostring(cfg and cfg.powerUniformAnchors or false) }
     for i = 1, #metaRec do
         local m = metaRec[i]
         local indicator = m.ind

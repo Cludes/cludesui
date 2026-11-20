@@ -84,11 +84,11 @@ do
     local DEF0 = { r = 0xE3 / 255, g = 0x30 / 255, b = 0x30 / 255 }
     local dynCurve
     local r0, g0, b0, r50, g50, b50, r100, g100, b100
-    function mod.GetCustomDynamicCurve(s)
-        s = s or saved.profile
-        local c0 = s.dynamicColor0 or DEF0
-        local c50 = s.dynamicColor50 or DEF50
-        local c100 = s.dynamicColor100 or DEF100
+    function mod.GetCustomDynamicCurve(cfg)
+        cfg = cfg or saved.profile
+        local c0 = cfg.dynamicColor0 or DEF0
+        local c50 = cfg.dynamicColor50 or DEF50
+        local c100 = cfg.dynamicColor100 or DEF100
         if
             not (
                 dynCurve
@@ -117,11 +117,11 @@ do
 
     -- Clean-number interpolation matching the curve, for previews where the
     -- percent is a known fake (0-1): linear 0/50 below half, 50/100 above.
-    function mod.ResolveDynamicColor(s, pct01)
-        s = s or saved.profile
-        local c0 = s.dynamicColor0 or DEF0
-        local c50 = s.dynamicColor50 or DEF50
-        local c100 = s.dynamicColor100 or DEF100
+    function mod.ResolveDynamicColor(cfg, pct01)
+        cfg = cfg or saved.profile
+        local c0 = cfg.dynamicColor0 or DEF0
+        local c50 = cfg.dynamicColor50 or DEF50
+        local c100 = cfg.dynamicColor100 or DEF100
         if pct01 >= 0.5 then
             local t = (pct01 - 0.5) * 2
             return c50.r + (c100.r - c50.r) * t, c50.g + (c100.g - c50.g) * t, c50.b + (c100.b - c50.b) * t
@@ -143,11 +143,11 @@ do
     local GRAY = { r = 0.5, g = 0.5, b = 0.5 }
     local curves = {} -- classToken -> { curve, r, g, b (class color used) }
     local r0, g0, b0, r50, g50, b50
-    function mod.GetClassReactiveCurve(s, classToken)
+    function mod.GetClassReactiveCurve(cfg, classToken)
         local CludesUI = mod.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
-        s = s or saved.profile
-        local c0 = s.dynamicColor0 or DEF0
-        local c50 = s.dynamicColor50 or DEF50
+        cfg = cfg or saved.profile
+        local c0 = cfg.dynamicColor0 or DEF0
+        local c50 = cfg.dynamicColor50 or DEF50
         if
             not (r0 == c0.r and g0 == c0.g and b0 == c0.b and r50 == c50.r and g50 == c50.g and b50 == c50.b)
         then
@@ -184,12 +184,12 @@ do
     -- Clean-number twin for previews (fake 0-1 percents), mirroring the curve
     -- above: reactive 0-stop -> mid-stop below 40% health, front-loaded class
     -- weight above (75% class by 75% health, easing in the rest to 100%).
-    function mod.ResolveClassReactiveColor(s, classToken, pct01)
+    function mod.ResolveClassReactiveColor(cfg, classToken, pct01)
         local CludesUI = mod.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
-        s = s or saved.profile
+        cfg = cfg or saved.profile
         local cc = (classToken and CludesUI.GetClassColor(classToken)) or GRAY
-        local c0 = s.dynamicColor0 or DEF0
-        local c50 = s.dynamicColor50 or DEF50
+        local c0 = cfg.dynamicColor0 or DEF0
+        local c50 = cfg.dynamicColor50 or DEF50
         if pct01 >= 0.4 then
             local wid
             if pct01 >= 0.75 then
@@ -220,23 +220,23 @@ do
         self._rfTexBgLayer:SetVertexColor(red, green, blue, a)
     end
     -- The background texture path in settings s (nil = flat); the previews share it.
-    function mod.RF_TexBgPath(s)
-        if not (s and s.textureBg) then
+    function mod.RF_TexBgPath(cfg)
+        if not (cfg and cfg.textureBg) then
             return nil
         end
-        local key = s.healthBarTexture or "atrocity"
+        local key = cfg.healthBarTexture or "atrocity"
         if key == "none" then
             return nil
         end
         return mod.CludesUI.ResolveTexturePath(mod.healthBarTextures, key, nil)
     end
     -- Whether a health fill painted from s is opaque (dark: the Dark Mode Fill).
-    function mod.RF_TexBgOpaque(s, dark)
+    function mod.RF_TexBgOpaque(cfg, dark)
         if dark then
             local _, _, _, a = mod.CludesUI.GetDarkModeFill()
             return a >= 1
         end
-        return (s.healthBarOpacity or 100) >= 100
+        return (cfg.healthBarOpacity or 100) >= 100
     end
     -- A background that never moves: swapped to the texture at path, tinted by its
     -- paints (vertical: turned with a vertical bar); nil puts the flat colour back at
@@ -328,13 +328,13 @@ do
     end
     -- The raid, party and Extra Frames buttons (ReanchorAbsorbToFill: built, and
     -- every settings reload before both backgrounds repaint). s: the button's view.
-    function mod.RF_TexBgApply(btnFrame, skinData, health, s)
-        local filePath = mod.RF_TexBgPath(s)
+    function mod.RF_TexBgApply(btnFrame, skinData, health, cfg)
+        local filePath = mod.RF_TexBgPath(cfg)
         if not (filePath or skinData._rfTexBg) then
             return
         end
         skinData._rfTexBg = filePath and true or nil
-        local hp = filePath and not skinData.kit and mod.RF_TexBgOpaque(s, s.healthColorMode == "dark") and filePath
+        local hp = filePath and not skinData.kit and mod.RF_TexBgOpaque(cfg, cfg.healthColorMode == "dark") and filePath
             or nil
         if skinData.bg then
             mod.RF_TexBgLayer(health, skinData.bg, hp)
@@ -361,7 +361,7 @@ end
 -- death/resurrect transitions) stay in lockstep -- else a resurrect arriving only via UNIT_HEALTH
 -- strands the tint. Colors overridable via the Status Colors swatch in Extras; inline fallbacks
 -- allocate only when the DB key is missing.
-function mod._ApplyHealthBg(skinData, health, s, unitToken, connected, deadOrGhost)
+function mod._ApplyHealthBg(skinData, health, cfg, unitToken, connected, deadOrGhost)
     local CludesUI = mod.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
     local backdrop = skinData.bg
     if connected == nil then
@@ -391,8 +391,8 @@ function mod._ApplyHealthBg(skinData, health, s, unitToken, connected, deadOrGho
     -- stamp in _UpdateButtonHealth (the tint here overwrote its work).
     if not connected or deadOrGhost then
         local c = not connected
-                and (s.statusColorOffline or { r = 0x66 / 255, g = 0x66 / 255, b = 0x66 / 255 })
-            or (s.statusColorDead or { r = 0x24 / 255, g = 0x17 / 255, b = 0x17 / 255 })
+                and (cfg.statusColorOffline or { r = 0x66 / 255, g = 0x66 / 255, b = 0x66 / 255 })
+            or (cfg.statusColorDead or { r = 0x24 / 255, g = 0x17 / 255, b = 0x17 / 255 })
         local st = (not connected) and 3 or 2
         -- Under Inverted Fill a corpse paints a full missing-health bar (UpdateButton):
         -- its own state, so that fill is hidden and the status colour shows undimmed.
@@ -460,13 +460,13 @@ function mod._ApplyHealthBg(skinData, health, s, unitToken, connected, deadOrGho
         end
     end
     local br, bgr, bb, ba
-    if s.healthColorMode == "dark" then
+    if cfg.healthColorMode == "dark" then
         br, bgr, bb, ba = CludesUI.GetDarkModeBg()
     else
         -- Class-colored when bgClassColored, else custom (GetBgColor handles the secret-value
         -- guard + alpha = bgDarkness). MUST match the layout-pass and preview paths or this
         -- refresh clobbers the class-colored bg.
-        br, bgr, bb, ba = mod.GetBgColor(unitToken, s)
+        br, bgr, bb, ba = mod.GetBgColor(unitToken, cfg)
     end
     if skinData._bgR ~= br or skinData._bgG ~= bgr or skinData._bgB ~= bb or skinData._bgA ~= ba then
         skinData._bgR, skinData._bgG, skinData._bgB, skinData._bgA = br, bgr, bb, ba
@@ -474,10 +474,10 @@ function mod._ApplyHealthBg(skinData, health, s, unitToken, connected, deadOrGho
     end
 end
 
-local function GetHealthColor(unitToken, s)
+local function GetHealthColor(unitToken, cfg)
     local CludesUI = mod.CludesUI -- upvalue read, not a global read (see the taint note at the top of CludesUIRaidFrames.lua)
-    s = s or saved.profile
-    local mode = s.healthColorMode or "class"
+    cfg = cfg or saved.profile
+    local mode = cfg.healthColorMode or "class"
 
     if mode == "dark" then
         local dfr, dfg, dfb = CludesUI.GetDarkModeFill()
@@ -491,7 +491,7 @@ local function GetHealthColor(unitToken, s)
         return 0, 1, 0
     elseif mode == "customDynamic" then
         -- User-customizable gradient via the same secret-safe curve path as Classic
-        local color = UnitHealthPercent(unitToken, true, mod.GetCustomDynamicCurve(s))
+        local color = UnitHealthPercent(unitToken, true, mod.GetCustomDynamicCurve(cfg))
         if color and color.GetRGB then
             return color:GetRGB()
         end
@@ -502,14 +502,14 @@ local function GetHealthColor(unitToken, s)
         -- curve, so secret health never touches Lua.
         local _, classToken = UnitClass(unitToken)
         if classToken and not issecretvalue(classToken) then
-            local color = UnitHealthPercent(unitToken, true, mod.GetClassReactiveCurve(s, classToken))
+            local color = UnitHealthPercent(unitToken, true, mod.GetClassReactiveCurve(cfg, classToken))
             if color and color.GetRGB then
                 return color:GetRGB()
             end
         end
         return 0.5, 0.5, 0.5
     elseif mode == "custom" then
-        local color = s.customFillColor
+        local color = cfg.customFillColor
         return color.r, color.g, color.b
     else -- "class"
         local _, classToken = UnitClass(unitToken)
@@ -529,7 +529,7 @@ end
 -- strings entirely (#, string.byte and string.sub all throw on secrets), so a
 -- secret name shows verbatim and uncapped. nameMaxLength 0 = off.
 -- Takes the caller's settings table `s` so a party override applies correctly.
-function mod.CapName(display, s)
+function mod.CapName(display, cfg)
     if type(display) ~= "string" then
         return display
     end
@@ -539,8 +539,8 @@ function mod.CapName(display, s)
     if display == "" then
         return display
     end
-    s = s or (saved and saved.profile)
-    local maxLen = s and s.nameMaxLength or 15
+    cfg = cfg or (saved and saved.profile)
+    local maxLen = cfg and cfg.nameMaxLength or 15
     if not maxLen or maxLen <= 0 then
         return display
     end
@@ -553,8 +553,8 @@ end
 -- unit: whose name it is; the setting asks CludesUI.UnitNameFormat (WoW
 -- Forever: First / Last Name leave a non-player's name whole, a mob a member
 -- targets included). A tag's modifier shapes any name.
-function mod.RF_FormatName(display, s, fmt, unitToken)
-    local mode = fmt or (s and s.nameFormat)
+function mod.RF_FormatName(display, cfg, fmt, unitToken)
+    local mode = fmt or (cfg and cfg.nameFormat)
     if not mode or mode == "full" then
         return display
     end
@@ -684,10 +684,10 @@ end
 
 -- Background color: class color when bgClassColored, else the custom bg color.
 -- Returns r, g, b, a (alpha = bgDarkness). Mirrors the health-fill class option.
-function mod.GetBgColor(unitToken, s)
-    s = s or saved.profile
-    local a = (s.bgDarkness or 50) / 100
-    if s.bgClassColored and unitToken and UnitExists(unitToken) then
+function mod.GetBgColor(unitToken, cfg)
+    cfg = cfg or saved.profile
+    local a = (cfg.bgDarkness or 50) / 100
+    if cfg.bgClassColored and unitToken and UnitExists(unitToken) then
         local _, classToken = UnitClass(unitToken)
         -- classToken can be secret (out-of-range/uninspectable units) and indexing GetClassColor's
         -- tables with one throws "table index is secret"; fall back to custom bg when secret/nil.
@@ -699,15 +699,15 @@ function mod.GetBgColor(unitToken, s)
         end
     end
     -- Partial/imported profiles can lack the key (field report 2026-08-16).
-    local color = s.customBgColor or defaultSet.customBgColor
+    local color = cfg.customBgColor or defaultSet.customBgColor
     return color.r, color.g, color.b, a
 end
 
 -- Class/custom color resolution for the Top Name Bar text (no accent mode).
-local function GetTopNameBarColor(unitToken, s)
-    s = s or saved.profile
-    if (s.topNameBarTextColorMode or "class") == "custom" then
-        local color = s.topNameBarTextColor or { r = 1, g = 1, b = 1 }
+local function GetTopNameBarColor(unitToken, cfg)
+    cfg = cfg or saved.profile
+    if (cfg.topNameBarTextColorMode or "class") == "custom" then
+        local color = cfg.topNameBarTextColor or { r = 1, g = 1, b = 1 }
         return color.r, color.g, color.b
     end
     local _, classToken = UnitClass(unitToken)
@@ -722,16 +722,16 @@ end
 
 -- Top Name Bar text placement. With Attach Role Icons the name is bounded clear of a shown
 -- icon's side (tnb._cuiRoleIcon, "..." past it); a centred name keeps equal room both sides.
-function mod.RF_PlaceTopNameText(tnbText, tnb, s)
-    local align = s.topNameBarTextAlign or "center"
-    local ox = s.topNameBarTextOffsetX or 0
-    local oy = s.topNameBarTextOffsetY or 0
+function mod.RF_PlaceTopNameText(tnbText, tnb, cfg)
+    local align = cfg.topNameBarTextAlign or "center"
+    local ox = cfg.topNameBarTextOffsetX or 0
+    local oy = cfg.topNameBarTextOffsetY or 0
     tnbText:ClearAllPoints()
     local padL, padR
-    if s.roleIconOnNameBar and tnb._cuiRoleIcon ~= false then
-        local place = s.roleNameBarPosition or "left"
-        local room = (s.roleIconSize or 14) + 4
-        local rx = s.roleNameBarOffsetX or 0
+    if cfg.roleIconOnNameBar and tnb._cuiRoleIcon ~= false then
+        local place = cfg.roleNameBarPosition or "left"
+        local room = (cfg.roleIconSize or 14) + 4
+        local rx = cfg.roleNameBarOffsetX or 0
         if place:find("left") then
             padL = room + rx
         elseif place:find("right") then
@@ -767,10 +767,10 @@ end
 -- flush at the top (same height), and the power bar and the uniform anchor region (health +
 -- power) end on the bar. Those two, and the bar's own edge, are re-anchored only while the option
 -- is or just was on, so the top layout never touches them.
-local function LayoutTopNameBar(s, baseH, powerH, healthBar, tnb, tnbBg, tnbText, powerBar, preview)
-    local enabled = s.topNameBarEnabled
-    local topBarH = enabled and PixelSnap(s.topNameBarHeight or 20) or 0
-    local bottomY = (enabled and s.topNameBarBottom == true) and topBarH or 0
+local function LayoutTopNameBar(cfg, baseH, powerH, healthBar, tnb, tnbBg, tnbText, powerBar, preview)
+    local enabled = cfg.topNameBarEnabled
+    local topBarH = enabled and PixelSnap(cfg.topNameBarHeight or 20) or 0
+    local bottomY = (enabled and cfg.topNameBarBottom == true) and topBarH or 0
     local hostFrame
     if healthBar then
         -- A party portrait's bars' area (CUI_RaidFrames_Portrait.lua), else the frame.
@@ -779,7 +779,7 @@ local function LayoutTopNameBar(s, baseH, powerH, healthBar, tnb, tnbBg, tnbText
         healthBar:ClearAllPoints()
         healthBar:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", 0, topY)
         healthBar:SetPoint("TOPRIGHT", hostFrame, "TOPRIGHT", 0, topY)
-        healthBar:SetHeight(PixelSnap(baseH - mod.RF_HealthPowerInset(s, powerH) - topBarH))
+        healthBar:SetHeight(PixelSnap(baseH - mod.RF_HealthPowerInset(cfg, powerH) - topBarH))
         if bottomY > 0 or (healthBar._cuiTnbBottomY or 0) > 0 then
             local uref = healthBar._cuiUniformRef
             -- Aura containers protect these once anchored: a combat pass leaves
@@ -809,7 +809,7 @@ local function LayoutTopNameBar(s, baseH, powerH, healthBar, tnb, tnbBg, tnbText
     end
     if not enabled then
         if tnb._divider then
-            mod.RF_ApplyTopNameDivider(tnb, s, preview)
+            mod.RF_ApplyTopNameDivider(tnb, cfg, preview)
         end
         tnb:Hide()
         return topBarH
@@ -827,17 +827,17 @@ local function LayoutTopNameBar(s, baseH, powerH, healthBar, tnb, tnbBg, tnbText
     end
     tnb:SetHeight(topBarH)
     if tnbBg then
-        local bgc = s.topNameBarBgColor or {}
+        local bgc = cfg.topNameBarBgColor or {}
         tnbBg:SetColorTexture(
             bgc.r or 17 / 255,
             bgc.g or 17 / 255,
             bgc.b or 17 / 255,
-            (s.topNameBarBgOpacity or 80) / 100
+            (cfg.topNameBarBgOpacity or 80) / 100
         )
     end
     if tnbText then
-        ApplyFont(tnbText, s.topNameBarTextSize or 11)
-        mod.RF_PlaceTopNameText(tnbText, tnb, s)
+        ApplyFont(tnbText, cfg.topNameBarTextSize or 11)
+        mod.RF_PlaceTopNameText(tnbText, tnb, cfg)
         -- Force re-layout on a JustifyH change (WoW doesn't relayout otherwise)
         local current = tnbText:GetText()
         if current then
@@ -846,8 +846,8 @@ local function LayoutTopNameBar(s, baseH, powerH, healthBar, tnb, tnbBg, tnbText
         end
     end
     tnb:Show()
-    if s.topNameBarDivider == true or tnb._divider then
-        mod.RF_ApplyTopNameDivider(tnb, s, preview)
+    if cfg.topNameBarDivider == true or tnb._divider then
+        mod.RF_ApplyTopNameDivider(tnb, cfg, preview)
     end
     return topBarH
 end
@@ -1328,11 +1328,11 @@ local DISPEL_COLOR_KEYS = {
 
 -- Resolve a dispel type's color: user value (via the proxy `s`) falling back to the DISPEL_COLORS
 -- default. Returns nil for an unknown/nil type so callers keep their own fallback behavior.
-local function GetDispelColor(dtype, s)
-    s = s or saved.profile
+local function GetDispelColor(dtype, cfg)
+    cfg = cfg or saved.profile
     local key = DISPEL_COLOR_KEYS[dtype]
     if key then
-        local c = s[key]
+        local c = cfg[key]
         if c then
             return c
         end

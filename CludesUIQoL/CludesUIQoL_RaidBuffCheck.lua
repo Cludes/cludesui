@@ -700,19 +700,19 @@ local function ComputeState(unitToken, restricted)
 end
 
 -- Missing, unknown (nil) and running out count; eating does not.
-local function NotFullyBuffed(s, nowTime, runeRequired, vantusRequired)
-    if runeRequired and (not s.rune or SoonLeft(s.rune, nowTime)) then
+local function NotFullyBuffed(cfg, nowTime, runeRequired, vantusRequired)
+    if runeRequired and (not cfg.rune or SoonLeft(cfg.rune, nowTime)) then
         return true
     end
-    if vantusRequired and (not s.vantus or SoonLeft(s.vantus, nowTime)) then
+    if vantusRequired and (not cfg.vantus or SoonLeft(cfg.vantus, nowTime)) then
         return true
     end
-    return not s.flask
-        or not s.food
-        or s.missing > 0
-        or SoonLeft(s.flask, nowTime)
-        or SoonLeft(s.food, nowTime)
-        or SoonLeft(s.buffsExp, nowTime)
+    return not cfg.flask
+        or not cfg.food
+        or cfg.missing > 0
+        or SoonLeft(cfg.flask, nowTime)
+        or SoonLeft(cfg.food, nowTime)
+        or SoonLeft(cfg.buffsExp, nowTime)
 end
 
 local function PaintRow(region, unitToken, nowTime)

@@ -2497,14 +2497,14 @@ local function ApplyBlockDecor(slotFrame, blockCfg, barConf)
         if slotFrame.EnableMouseMotion then
             slotFrame:EnableMouseMotion(true)
         end
-        slotFrame:SetScript("OnEnter", function(s)
-            if s._edbHover then
-                s._edbHover:Show()
+        slotFrame:SetScript("OnEnter", function(cfg)
+            if cfg._edbHover then
+                cfg._edbHover:Show()
             end
         end)
-        slotFrame:SetScript("OnLeave", function(s)
-            if s._edbHover then
-                s._edbHover:Hide()
+        slotFrame:SetScript("OnLeave", function(cfg)
+            if cfg._edbHover then
+                cfg._edbHover:Hide()
             end
         end)
     else

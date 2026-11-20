@@ -68,10 +68,10 @@ if CludesUI.FvBW then
     end
 end
 
-local function NextBarId(s)
-    s.nextBarId = (s.nextBarId or 1)
-    local ident = s.nextBarId
-    s.nextBarId = ident + 1
+local function NextBarId(cfg)
+    cfg.nextBarId = (cfg.nextBarId or 1)
+    local ident = cfg.nextBarId
+    cfg.nextBarId = ident + 1
     return ident
 end
 
@@ -92,9 +92,9 @@ end
 --  stays reserved-but-unused.
 -------------------------------------------------------------------------------
 
-local function FilterStore(s)
-    s.pabFilters = s.pabFilters or { nextId = 1, list = {} }
-    return s.pabFilters
+local function FilterStore(cfg)
+    cfg.pabFilters = cfg.pabFilters or { nextId = 1, list = {} }
+    return cfg.pabFilters
 end
 
 -- The filter list every picker and editor shows: the stored list itself, or,
@@ -950,8 +950,8 @@ end
 -- Shared by both deletes: strip the id from every editing-spec bucket and
 -- sweep its per-spec disable keys (ids are global and never reused, so a
 -- deleted bar's key could only leak).
-local function DeleteFromSpecBuckets(s, ident, listField)
-    local state = s.pabSpecBars
+local function DeleteFromSpecBuckets(cfg, ident, listField)
+    local state = cfg.pabSpecBars
     if not state then
         return
     end
@@ -1087,14 +1087,14 @@ function mod.PAB_InheritedGroupsFor(bucket)
     return result
 end
 
-local function SpecBarBucket(s, filterKey, create)
-    local state = s.pabSpecBars
+local function SpecBarBucket(cfg, filterKey, create)
+    local state = cfg.pabSpecBars
     if not state then
         if not create then
             return nil
         end
         state = {}
-        s.pabSpecBars = state
+        cfg.pabSpecBars = state
     end
     local b = state[filterKey]
     if not b then

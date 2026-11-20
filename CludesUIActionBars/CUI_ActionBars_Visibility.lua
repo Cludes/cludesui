@@ -69,25 +69,25 @@ function EAB_VTABLE.ExtraBars.GetManagedNonSecureVisibilityState()
     }
 end
 
-function EAB_VTABLE.ExtraBars.ShouldShowManagedNonSecureBar(s)
-    if not s then
+function EAB_VTABLE.ExtraBars.ShouldShowManagedNonSecureBar(cfg)
+    if not cfg then
         return false
     end
-    local vis = ABAR.VisibilityCompat.Normalize(s)
+    local vis = ABAR.VisibilityCompat.Normalize(cfg)
     if C_PetBattles and C_PetBattles.IsInBattle and C_PetBattles.IsInBattle() then
         return false
     end
-    if s.enabled == false or ABAR.VisibilityCompat.IsNever(s) then
+    if cfg.enabled == false or ABAR.VisibilityCompat.IsNever(cfg) then
         return false
     end
-    if CludesUI.CheckVisibilityOptions(s) then
+    if CludesUI.CheckVisibilityOptions(cfg) then
         return false
     end
     local status = EAB_VTABLE.ExtraBars.GetManagedNonSecureVisibilityState()
     -- Multi-select path (nil = legacy single mode below; the dragonriding
     -- scalar also routes here, same predicate CheckVisibilityMode uses)
     if CludesUI and CludesUI.EvalVisibilityExtended then
-        local ext = CludesUI.EvalVisibilityExtended(s, "barVisibility", status, CludesUI.VIS_CAPS_DEFAULT)
+        local ext = CludesUI.EvalVisibilityExtended(cfg, "barVisibility", status, CludesUI.VIS_CAPS_DEFAULT)
         if ext ~= nil then
             return ext
         end
@@ -224,8 +224,8 @@ function EAB_VTABLE.ExtraBars.ApplyManagedNonSecureAlpha(details, widget, s)
     mod.AB_FadeTwin(widget, _fadeAlpha[widget])
 end
 
-function EAB_VTABLE.ExtraBars.ApplyManagedMouse(widget, blizzOwnedVisibility, s, shouldShow)
-    if not widget or not s then
+function EAB_VTABLE.ExtraBars.ApplyManagedMouse(widget, blizzOwnedVisibility, cfg, shouldShow)
+    if not widget or not cfg then
         return
     end
 
@@ -234,10 +234,10 @@ function EAB_VTABLE.ExtraBars.ApplyManagedMouse(widget, blizzOwnedVisibility, s,
     -- overriding it disables clicking/hovering after every visibility refresh.
     if blizzOwnedVisibility then
         return
-    elseif s.mouseoverEnabled and s.clickThrough then
+    elseif cfg.mouseoverEnabled and cfg.clickThrough then
         SafeEnableMouseMotionOnly(widget, shouldShow)
     else
-        SafeEnableMouse(widget, shouldShow and not s.clickThrough)
+        SafeEnableMouse(widget, shouldShow and not cfg.clickThrough)
     end
 end
 
@@ -959,15 +959,15 @@ function ABAR:UpdateHousingVisibility()
         -- Check non-macro visibility options here. Secure frames still use the
         -- state driver for target/enemy conditions, but mounted-like druid
         -- forms are also handled here to cover cases [mounted] does not match.
-        local function ShouldHideNonMacro(s)
-            if not s then
+        local function ShouldHideNonMacro(cfg)
+            if not cfg then
                 return false
             end
             -- An applied Visibility override replaces the whole setting, the shared option
             -- lanes included, and BuildVisibilityString already compiles it into a
             -- constant. Checked before the two raw lane reads below, which would otherwise
             -- keep hiding the bar on a lane the override took over.
-            if CludesUI.VisOverrideValue(s) then
+            if CludesUI.VisOverrideValue(cfg) then
                 return false
             end
             -- Under Any the driver string already carries both halves (Show lanes as
@@ -975,10 +975,10 @@ function ABAR:UpdateHousingVisibility()
             -- time with their own combat escape hatch), and the rebuild below refreshes
             -- it on exactly these events. A literal "hide" here would add nothing and
             -- would veto the whole disjunction on a lane that is not even firing.
-            if s.visibilityMatch == "any" then
+            if cfg.visibilityMatch == "any" then
                 return false
             end
-            if s.visHideNoTarget then
+            if cfg.visHideNoTarget then
                 -- [noexists] in the state driver covers the basic has-target
                 -- check even in combat. Out of combat also hide when a soft
                 -- target is the only "target": macro conditionals count
@@ -991,7 +991,7 @@ function ABAR:UpdateHousingVisibility()
                     return true
                 end
             end
-            if s.visHideMounted then
+            if cfg.visHideMounted then
                 -- Regular mounts are handled entirely by the secure "[mounted] hide"
                 -- clause, which self-updates even in combat. Druid travel/flight forms
                 -- don't match [mounted] and fall back to this non-secure clobber, and a
@@ -1010,7 +1010,7 @@ function ABAR:UpdateHousingVisibility()
             -- mount handling on this path. The skyriding-mount lanes can flip into
             -- combat like the form case, so the evaluator flags them "mountaxis".
             if CludesUI and CludesUI.CheckVisibilityOptionsNonMacro then
-                local nonMacro = CludesUI.CheckVisibilityOptionsNonMacro(s, true)
+                local nonMacro = CludesUI.CheckVisibilityOptionsNonMacro(cfg, true)
                 if nonMacro == "mountaxis" then
                     return "combathide"
                 end

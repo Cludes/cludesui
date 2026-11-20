@@ -212,17 +212,17 @@ local function Cell(index, hostFrame)
 end
 
 -- Content only (the style pass owns size, border, fonts and anchors).
-local function Paint(c, s)
+local function Paint(c, cfg)
     local AK = CludesUI.AuraKit
     local style = AK.styles[STYLE] or {}
     local skinData = c.d
-    c.inv = s.inv
-    skinData.icon:SetTexture(s.icon)
-    skinData.stack:SetText(s.charges > 0 and tostring(s.charges) or "")
-    skinData.cooldown:SetCooldown(s.endTime - s.total, s.total)
+    c.inv = cfg.inv
+    skinData.icon:SetTexture(cfg.icon)
+    skinData.stack:SetText(cfg.charges > 0 and tostring(cfg.charges) or "")
+    skinData.cooldown:SetCooldown(cfg.endTime - cfg.total, cfg.total)
     local b = c.binding
     if b then
-        c.dur:SetTimeFromEnd(s.endTime, s.total)
+        c.dur:SetTimeFromEnd(cfg.endTime, cfg.total)
         local fmt = AK.GetDurationFormatter(style.durationShowSeconds, style.durationPrecisionThreshold)
         if fmt then
             b:SetFormatter(fmt)

@@ -1713,8 +1713,8 @@ local function ChainOrder(place)
             entries[#entries + 1] = ident
         end
     end
-    local function take(s, textAfterQuest)
-        for auraKey in string.gmatch(s, "[^,]+") do
+    local function take(text, textAfterQuest)
+        for auraKey in string.gmatch(text, "[^,]+") do
             add(Chain.MEMBER[auraKey])
             if textAfterQuest and auraKey == "quest" then
                 add("qtext")

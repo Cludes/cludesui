@@ -131,14 +131,14 @@ do
             return nil
         end
         local entries
-        local function add(s, frame)
+        local function add(cfg, frame)
             -- "mouse" is the LIVE Anchor to Cursor setting (BuildCursorAnchorRow),
             -- not a retired legacy frame anchor -- migrating it froze the bar at
             -- its momentary position and nil'd the setting on every login, so
             -- cursor anchoring never survived a reload.
-            if s and s.anchorTo and s.anchorTo ~= "none" and s.anchorTo ~= "mouse" then
+            if cfg and cfg.anchorTo and cfg.anchorTo ~= "none" and cfg.anchorTo ~= "mouse" then
                 entries = entries or {}
-                entries[#entries + 1] = { cfg = s, frame = frame }
+                entries[#entries + 1] = { cfg = cfg, frame = frame }
             end
         end
         add(profile.health, health)

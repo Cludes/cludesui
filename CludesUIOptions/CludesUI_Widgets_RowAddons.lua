@@ -125,10 +125,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             .. (type(title) == "string" and title or "")
     end
 
-    function CogDot.Id(s)
+    function CogDot.Id(text)
         local height, mod = 0, CogDot.MOD
-        for idx = 1, #s do
-            height = (height * 31 + s:byte(idx)) % mod
+        for idx = 1, #text do
+            height = (height * 31 + text:byte(idx)) % mod
         end
         local c = CogDot.CHARS
         local a = height % 64

@@ -1657,7 +1657,7 @@ CludesUI.AtLogin(function()
 
         -- Builds the Full Preview sidebar on the first open; every open re-dresses
         -- it through panel._redress (fonts, accent, check states, hover looks, anchor).
-        local function BuildTestPanel(Pix, fontFile, accentColor, s)
+        local function BuildTestPanel(Pix, fontFile, accentColor, cfg)
             local PANEL_W = 260
             local ROW_H = 32
             local PAD = 16
@@ -1845,15 +1845,15 @@ CludesUI.AtLogin(function()
                 local specRole = specIdx and GetSpecializationRole and GetSpecializationRole(specIdx)
                 mod._testState = {
                     animateBars = false,
-                    absorbs = s.absorbStyle ~= "none",
-                    healAbsorbs = (s.healAbsorbStyle or "clean") ~= "none",
-                    healPrediction = s.healPrediction == true,
-                    threat = (s.threatBorderSize or 0) > 0
-                        or (s.threatCustomBorder == true and mod.RF_CustomBorderOn(s)),
+                    absorbs = cfg.absorbStyle ~= "none",
+                    healAbsorbs = (cfg.healAbsorbStyle or "clean") ~= "none",
+                    healPrediction = cfg.healPrediction == true,
+                    threat = (cfg.threatBorderSize or 0) > 0
+                        or (cfg.threatCustomBorder == true and mod.RF_CustomBorderOn(cfg)),
                     reducedMaxHealth = false,
                     dispels = false,
-                    debuffs = s.debuffFilter ~= "none",
-                    defensives = s.showDefensives or s.showExternals or false,
+                    debuffs = cfg.debuffFilter ~= "none",
+                    defensives = cfg.showDefensives or cfg.showExternals or false,
                     buffs = true,
                     indicators = false,
                 }

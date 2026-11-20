@@ -81,14 +81,14 @@ do
     -- Direction (falling back to the legacy Horizontal toggle) and wraps along
     -- Wrap Direction. Wrap values not perpendicular to the primary run (stale
     -- after a direction change, or a parallel group growth) fall back to the default.
-    XF.GrowInfo = function(set, s)
+    XF.GrowInfo = function(set, cfg)
         local grow, wrap
         if set and set.position == "free" then
             grow = set.growDirection or (set.freeHorizontal and "RIGHT" or "DOWN")
             wrap = set.wrapDirection
         else
-            grow = (s and s.unitGrowth) or "DOWN"
-            wrap = (s and s.groupGrowth) or "RIGHT"
+            grow = (cfg and cfg.unitGrowth) or "DOWN"
+            wrap = (cfg and cfg.groupGrowth) or "RIGHT"
             -- Attached runs wrap along the frames' group axis, and the grid flow's
             -- column advance runs right like a plain RIGHT run (FB.Anchor reads it
             -- the same way). Read raw it would miss every branch below: the left
@@ -191,12 +191,12 @@ do
     -- The pitch between the duplicates. Attached beside Compact raid frames they take
     -- the groups' one pixel, so their rows stay level with the groups' (FB.Pitch: the
     -- boss group does the same).
-    XF.Pitch = function(set, s)
+    XF.Pitch = function(set, cfg)
         if set and set.position ~= "free" and mod.RF_CompactOn(saved.profile, false) then
             return mod.RF_OnePixel(false)
         end
         -- Same grid as FB.FreePin: the extra container's own scale.
-        return CludesUI.PP.SnapForES(s.cellSpacing or 2, XF.container:GetEffectiveScale())
+        return CludesUI.PP.SnapForES(cfg.cellSpacing or 2, XF.container:GetEffectiveScale())
     end
 
     -- Geometry only: container size, button stacking, per-button size (Extra

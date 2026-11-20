@@ -86,16 +86,16 @@ do -- Count text visibility
     -- count while that is above 0 (Stacks), else its charges while it has
     -- more than one (Charges). A third return hands the zero rule the
     -- action's charge info once it was read here.
-    local function HiddenKind(s, actionSlot)
+    local function HiddenKind(cfg, actionSlot)
         local CA = C_ActionBar
         -- Never secret (none of the three carries a secrecy flag).
         if CA.IsItemAction(actionSlot) or CA.IsConsumableAction(actionSlot) or CA.IsStackableAction(actionSlot) then
-            if s.hideItemCount then
+            if cfg.hideItemCount then
                 return "hide"
             end
             return nil
         end
-        local hideCharges, hideStacks = s.hideChargeCount, s.hideStackCount
+        local hideCharges, hideStacks = cfg.hideChargeCount, cfg.hideStackCount
         if hideCharges and hideStacks then
             return "hide"
         end
@@ -359,11 +359,11 @@ end
 -- buttons take neither the shape expansion nor the Cropped squash, whatever
 -- the CludesUI-style setting holds. Icon Size itself applies in every
 -- style (stock buttons scale their native art to it).
-function mod.AB_LayoutShape(s)
+function mod.AB_LayoutShape(cfg)
     if mod.AB_Style() ~= "cui" then
         return "none"
     end
-    return (s and s.buttonShape) or "none"
+    return (cfg and cfg.buttonShape) or "none"
 end
 local RegisterStateDriver = RegisterStateDriver
 local RegisterAttributeDriver = RegisterAttributeDriver
@@ -650,15 +650,15 @@ end
 -- saved mode, so a Never bar with an Always override is NOT hidden, and
 -- an Always bar with a Never override is. Raw alwaysHidden/barVisibility reads stay
 -- correct only where the SHARED value is meant (sync copies, the setter itself).
-function ABAR.VisibilityCompat.IsNever(s)
-    if not s then
+function ABAR.VisibilityCompat.IsNever(cfg)
+    if not cfg then
         return false
     end
-    local shade = CludesUI.VisOverrideValue(s)
+    local shade = CludesUI.VisOverrideValue(cfg)
     if shade then
         return shade == "never"
     end
-    return (s.alwaysHidden or s.barVisibility == "never") and true or false
+    return (cfg.alwaysHidden or cfg.barVisibility == "never") and true or false
 end
 
 function ABAR.VisibilityCompat.Copy(dst, source, dstNoGroupModes)
@@ -1175,15 +1175,15 @@ function mod.EABQueueGrid(show)
 end
 local _quickKeybindState = { open = false, closePending = false, art = {}, FinishClose = nil }
 
-local function ShouldQuickKeybindSurfaceBar(s)
-    if not _quickKeybindState.open or not s or s.enabled == false then
+local function ShouldQuickKeybindSurfaceBar(cfg)
+    if not _quickKeybindState.open or not cfg or cfg.enabled == false then
         return false
     end
 
     -- Surfaces bars hidden by transient runtime rules, but explicit "Never" wins.
     -- Hide Bar When Using Gamepad is not a Never: its verdict (EAB._padHide) is
     -- off while this mode is open, so a controller player can bind those bars.
-    return not ABAR.VisibilityCompat.IsNever(s)
+    return not ABAR.VisibilityCompat.IsNever(cfg)
 end
 
 local function FadeTo(widget, toAlpha, duration)
@@ -1234,21 +1234,21 @@ end
 -- result: the exact size from borderThicknessPx (CludesUI.BorderPx) while it
 -- still pairs with this step and the bar's texture, else nil = the legacy path.
 -- A custom shape's ring is on/off only: no exact size there.
-local function ResolveBorderThickness(s)
-    local thickness = s.borderThickness or "thin"
+local function ResolveBorderThickness(cfg)
+    local thickness = cfg.borderThickness or "thin"
     local record = mod.BORDER_THICKNESS[thickness]
     if not record then
         record = mod.BORDER_THICKNESS["thin"]
     end
-    local shapeKey = s.buttonShape or "none"
+    local shapeKey = cfg.buttonShape or "none"
     if shapeKey ~= "none" and shapeKey ~= "cropped" then
-        if thickness == "thin" and s.shapeBorderSize and s.shapeBorderSize ~= record.shape then
-            return s.shapeBorderSize, nil
+        if thickness == "thin" and cfg.shapeBorderSize and cfg.shapeBorderSize ~= record.shape then
+            return cfg.shapeBorderSize, nil
         end
         return record.shape, nil
     else
         local sz = record.regular
-        return sz, CludesUI.BorderPx(s.borderThicknessPx, sz, s.borderTexture)
+        return sz, CludesUI.BorderPx(cfg.borderThicknessPx, sz, cfg.borderTexture)
     end
 end
 mod.ResolveBorderThickness = ResolveBorderThickness

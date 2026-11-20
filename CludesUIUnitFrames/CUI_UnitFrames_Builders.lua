@@ -358,34 +358,34 @@ local function ApplyFrameTextTags(widget, unitToken, prefs, lc, rc, cc, ec)
 end
 
 -- Position and show/hide based on content + offsets
-local function ApplyFrameTextPositions(widget, unitToken, s, rcDefault, barWDefault)
+local function ApplyFrameTextPositions(widget, unitToken, cfg, rcDefault, barWDefault)
     local textOverlay = widget._textOverlay
     local leftText, rightText, centerText, extraText =
         widget.LeftText, widget.RightText, widget.CenterText, widget.ExtraText
-    local lc = s.leftTextContent or "name"
-    local rc = s.rightTextContent or rcDefault
-    local cc = s.centerTextContent or "none"
-    local lsz = s.leftTextSize or s.textSize or 12
-    local rsz = s.rightTextSize or s.textSize or 12
-    local csz = s.centerTextSize or s.textSize or 12
-    local lxo = s.leftTextX or 0
-    local lyo = s.leftTextY or 0
-    local rxo = s.rightTextX or 0
-    local ryo = s.rightTextY or 0
-    local cxo = s.centerTextX or 0
-    local cyo = s.centerTextY or 0
-    local barW = s.frameWidth or barWDefault
+    local lc = cfg.leftTextContent or "name"
+    local rc = cfg.rightTextContent or rcDefault
+    local cc = cfg.centerTextContent or "none"
+    local lsz = cfg.leftTextSize or cfg.textSize or 12
+    local rsz = cfg.rightTextSize or cfg.textSize or 12
+    local csz = cfg.centerTextSize or cfg.textSize or 12
+    local lxo = cfg.leftTextX or 0
+    local lyo = cfg.leftTextY or 0
+    local rxo = cfg.rightTextX or 0
+    local ryo = cfg.rightTextY or 0
+    local cxo = cfg.centerTextX or 0
+    local cyo = cfg.centerTextY or 0
+    local barW = cfg.frameWidth or barWDefault
 
     -- Extra Text: anchored per extraTextAlign (left/right/center); ellipsis-
     -- truncated past 95% of health bar width (SetWordWrap(false) + capped width below).
     if extraText then
-        local ec = s.extraTextContent or "none"
-        SetFSFont(extraText, s.extraTextSize or s.textSize or 12)
+        local ec = cfg.extraTextContent or "none"
+        SetFSFont(extraText, cfg.extraTextSize or cfg.textSize or 12)
         extraText:ClearAllPoints()
         if ec ~= "none" then
-            local exo = s.extraTextX or 0
-            local eyo = s.extraTextY or 0
-            local ealign = s.extraTextAlign or "left"
+            local exo = cfg.extraTextX or 0
+            local eyo = cfg.extraTextY or 0
+            local ealign = cfg.extraTextAlign or "left"
             if ealign == "right" then
                 extraText:SetJustifyH("RIGHT")
                 Pix.Point(extraText, "RIGHT", textOverlay, "RIGHT", -5 + exo, eyo)
@@ -396,15 +396,15 @@ local function ApplyFrameTextPositions(widget, unitToken, s, rcDefault, barWDefa
                 extraText:SetJustifyH("LEFT")
                 Pix.Point(extraText, "LEFT", textOverlay, "LEFT", 5 + exo, eyo)
             end
-            Pix.Width(extraText, barW * 0.95 * SlotWidthMul(s, "extraText"))
+            Pix.Width(extraText, barW * 0.95 * SlotWidthMul(cfg, "extraText"))
             extraText:Show()
             ApplyClassColor(
                 extraText,
                 unitToken,
-                s.extraTextClassColor,
-                s.extraTextColorR,
-                s.extraTextColorG,
-                s.extraTextColorB
+                cfg.extraTextClassColor,
+                cfg.extraTextColorR,
+                cfg.extraTextColorG,
+                cfg.extraTextColorB
             )
         else
             extraText:Hide()
@@ -417,15 +417,15 @@ local function ApplyFrameTextPositions(widget, unitToken, s, rcDefault, barWDefa
     if cc ~= "none" then
         centerText:SetJustifyH("CENTER")
         Pix.Point(centerText, "CENTER", textOverlay, "CENTER", cxo, cyo)
-        Pix.Width(centerText, barW * 0.9 * SlotWidthMul(s, "centerText"))
+        Pix.Width(centerText, barW * 0.9 * SlotWidthMul(cfg, "centerText"))
         centerText:Show()
         ApplyClassColor(
             centerText,
             unitToken,
-            s.centerTextClassColor,
-            s.centerTextColorR,
-            s.centerTextColorG,
-            s.centerTextColorB
+            cfg.centerTextClassColor,
+            cfg.centerTextColorR,
+            cfg.centerTextColorG,
+            cfg.centerTextColorB
         )
     else
         centerText:Hide()
@@ -438,19 +438,19 @@ local function ApplyFrameTextPositions(widget, unitToken, s, rcDefault, barWDefa
         Pix.Point(leftText, "LEFT", textOverlay, "LEFT", 5 + lxo, lyo)
         -- Constrain width when opposing right text exists
         if rc ~= "none" then
-            local rightUsed = EstimateUFTextWidth(rc, s.rightTextCustomFormat, true)
-            Pix.Width(leftText, math.max(barW - rightUsed - 10, 20) * SlotWidthMul(s, "leftText"))
+            local rightUsed = EstimateUFTextWidth(rc, cfg.rightTextCustomFormat, true)
+            Pix.Width(leftText, math.max(barW - rightUsed - 10, 20) * SlotWidthMul(cfg, "leftText"))
         else
-            Pix.Width(leftText, barW * 0.9 * SlotWidthMul(s, "leftText"))
+            Pix.Width(leftText, barW * 0.9 * SlotWidthMul(cfg, "leftText"))
         end
         leftText:Show()
         ApplyClassColor(
             leftText,
             unitToken,
-            s.leftTextClassColor,
-            s.leftTextColorR,
-            s.leftTextColorG,
-            s.leftTextColorB
+            cfg.leftTextClassColor,
+            cfg.leftTextColorR,
+            cfg.leftTextColorG,
+            cfg.leftTextColorB
         )
     else
         leftText:Hide()
@@ -463,19 +463,19 @@ local function ApplyFrameTextPositions(widget, unitToken, s, rcDefault, barWDefa
         Pix.Point(rightText, "RIGHT", textOverlay, "RIGHT", -5 + rxo, ryo)
         -- Constrain width when opposing left text exists
         if lc ~= "none" then
-            local leftUsed = EstimateUFTextWidth(lc, s.leftTextCustomFormat)
-            Pix.Width(rightText, math.max(barW - leftUsed - 10, 20) * SlotWidthMul(s, "rightText"))
+            local leftUsed = EstimateUFTextWidth(lc, cfg.leftTextCustomFormat)
+            Pix.Width(rightText, math.max(barW - leftUsed - 10, 20) * SlotWidthMul(cfg, "rightText"))
         else
-            Pix.Width(rightText, barW * 0.9 * SlotWidthMul(s, "rightText"))
+            Pix.Width(rightText, barW * 0.9 * SlotWidthMul(cfg, "rightText"))
         end
         rightText:Show()
         ApplyClassColor(
             rightText,
             unitToken,
-            s.rightTextClassColor,
-            s.rightTextColorR,
-            s.rightTextColorG,
-            s.rightTextColorB
+            cfg.rightTextClassColor,
+            cfg.rightTextColorR,
+            cfg.rightTextColorG,
+            cfg.rightTextColorB
         )
     else
         rightText:Hide()

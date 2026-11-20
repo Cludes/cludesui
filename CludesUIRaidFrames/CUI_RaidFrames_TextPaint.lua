@@ -91,7 +91,7 @@ end
 -- A text's position and mode as the plan uses them; nil = not shown. s: the
 -- settings (anything indexable), lvlPos: its level position or the client default.
 -- Shared with the Text Display tiles, so a tile shows exactly what the frames draw.
-local function Shown(t, s, lvlPos)
+local function Shown(t, cfg, lvlPos)
     local kind = t.kind
     if kind == "level" then
         if IS_POS[lvlPos] then
@@ -99,7 +99,7 @@ local function Shown(t, s, lvlPos)
         end
         return
     end
-    local place = s[t.pos] or "center"
+    local place = cfg[t.pos] or "center"
     if place == "none" then
         return
     end
@@ -108,27 +108,27 @@ local function Shown(t, s, lvlPos)
     end
     if kind == "custom" then
         -- No template, nothing to draw.
-        local frame = s[t.fmt]
+        local frame = cfg[t.fmt]
         if type(frame) == "string" and frame ~= "" then
             return place
         end
         return
     end
-    local mode = s[t.mode]
+    local mode = cfg[t.mode]
     if MODES[kind][mode] then
         return place, mode
     end
 end
 mod.RF_TextShown = Shown
 
-local function Build(s)
+local function Build(cfg)
     local p = { gen = gen, all = {}, bySlot = {} }
-    local lvlPos = s.levelTextPosition or mod.RF_LEVEL_DEFAULT
+    local lvlPos = cfg.levelTextPosition or mod.RF_LEVEL_DEFAULT
     p.nameAttach = mod.RF_LEVEL_ATTACH[lvlPos]
     p.wantLevel = (lvlPos ~= "none") or nil
     for index = 1, NTEXTS do
         local t = TEXTS[index]
-        local place, mode = Shown(t, s, lvlPos)
+        local place, mode = Shown(t, cfg, lvlPos)
         if place then
             local key = KEYS[index]
             local kind = t.kind
@@ -142,7 +142,7 @@ local function Build(s)
                 attach = (kind == "name") and p.nameAttach or nil,
             }
             if kind == "custom" then
-                local cc = mod.RF_CustomCompile(s[key.CustomFormat])
+                local cc = mod.RF_CustomCompile(cfg[key.CustomFormat])
                 e.reads = cc and cc.reads or nil
                 if e.reads then
                     local region = p.reads or {}
@@ -185,9 +185,9 @@ for index = 1, NTEXTS do
 end
 mod.RF_TEXT_SIG_KEYS = SIG_KEYS
 local sigParts = {}
-local function Sig(s)
+local function Sig(cfg)
     for index = 1, #SIG_KEYS do
-        sigParts[index] = tostring(s[SIG_KEYS[index]])
+        sigParts[index] = tostring(cfg[SIG_KEYS[index]])
     end
     return tconcat(sigParts, "\31")
 end
@@ -238,8 +238,8 @@ end
 
 -- A text's colour for its colour mode; pr, pg, pb: the unit's power colour when the
 -- caller has it. Unknown or unreadable falls back to the content's colour.
-local function TextColor(e, unitToken, s, pr, pg, pb)
-    local mode, P = s[e.k.ColorMode], e.prop
+local function TextColor(e, unitToken, cfg, pr, pg, pb)
+    local mode, P = cfg[e.k.ColorMode], e.prop
     if mode == "accent" then
         local red, green, blue = mod.CludesUI.ResolveActiveAccent()
         if red then
@@ -259,7 +259,7 @@ local function TextColor(e, unitToken, s, pr, pg, pb)
         end
         return GetPowerColor(unitToken)
     else -- "custom"
-        local color = s[e.k.Color]
+        local color = cfg[e.k.Color]
         if color then
             return color.r, color.g, color.b
         end
@@ -280,13 +280,13 @@ end
 -- reload passes level it); a text set the other way goes on a second carrier at the
 -- other level (live buttons build it with the first; previews here, on first need).
 -- Boss and pet frames have no aura band.
-local function CarrierOf(skinData, s, e)
+local function CarrierOf(skinData, cfg, e)
     local main = skinData.textCarrier
     if skinData._txFB then
         return main
     end
-    local base = s.nameTextAboveIcons and true or false
-    local val = s[e.k.Above]
+    local base = cfg.nameTextAboveIcons and true or false
+    local val = cfg[e.k.Above]
     if val == nil then
         val = base
     end
@@ -312,17 +312,17 @@ end
 -- sit on the bar host. Power Text shows only while the power bar does (d._pwtOn).
 -- Boss and pet frames (d._txFB) bring their own host (d._txHost) and width (d._txW),
 -- never wrap and have no Top Name Bar. Preview frames keep their bar as d._health.
-local function Place(skinData, s, e, fontStr)
+local function Place(skinData, cfg, e, fontStr)
     local key, P, g, fb = e.k, e.prop, skinData.kitG, skinData._txFB
     local health = skinData.health or skinData._health
-    local posX, posY = s[key.X] or 0, s[key.Y] or 0
-    local fw = skinData._txW or s.frameWidth or 72
-    local carrier = CarrierOf(skinData, s, e)
+    local posX, posY = cfg[key.X] or 0, cfg[key.Y] or 0
+    local fw = skinData._txW or cfg.frameWidth or 72
+    local carrier = CarrierOf(skinData, cfg, e)
     if fontStr._cr ~= carrier then
         fontStr:SetParent(carrier)
         fontStr._cr = carrier
     end
-    ApplyFont(fontStr, s[key.Size] or 10)
+    ApplyFont(fontStr, cfg[key.Size] or 10)
     fontStr:SetWordWrap(P.wrap and not fb)
     fontStr._r = nil
     if e.kind == "name" and g then
@@ -335,17 +335,17 @@ local function Place(skinData, s, e, fontStr)
         fontStr:SetText("")
         fontStr:SetText(txt or "")
     elseif e.kind == "name" then
-        if s.topNameBarEnabled and not fb then
+        if cfg.topNameBarEnabled and not fb then
             fontStr:Hide()
             return
         end
-        mod.AnchorRFText(fontStr, skinData._txHost or mod.RF_AnchorHost(health, s), e.pos, posX, posY, fw * P.width)
+        mod.AnchorRFText(fontStr, skinData._txHost or mod.RF_AnchorHost(health, cfg), e.pos, posX, posY, fw * P.width)
     else
         local wid = P.width and (g and g.health.w or fw * P.width)
         if not wid then
             fontStr:SetWidth(0)
         end
-        mod.AnchorRFText(fontStr, skinData._txHost or mod.RF_BarHost(health, s), e.pos, posX, posY, wid)
+        mod.AnchorRFText(fontStr, skinData._txHost or mod.RF_BarHost(health, cfg), e.pos, posX, posY, wid)
     end
     fontStr:SetShown(e.kind ~= "pp" or skinData._pwtOn == true)
 end
@@ -396,14 +396,14 @@ function mod.RF_TextNameWidth(skinData, wid)
 end
 
 -- Fonts only, for the live resize drags that rescale sizes without a layout pass.
-function mod.RF_TextFonts(skinData, s)
+function mod.RF_TextFonts(skinData, cfg)
     local p = skinData._txL
     if not p then
         return
     end
     local all, pool = p.all, skinData._tx
     for jdx = 1, #all do
-        ApplyFont(pool[all[jdx].i], s[all[jdx].k.Size] or 10)
+        ApplyFont(pool[all[jdx].i], cfg[all[jdx].k.Size] or 10)
     end
 end
 
@@ -448,7 +448,7 @@ end
 -- d._txArgs[i]: the values text i was last painted with on this button. A repaint for
 -- value classes a / b reads only the tags reading them (a health tick never resolves
 -- the name again); a full paint (a nil) reads every tag.
-local function PaintCustom(fontStr, e, unitToken, s, skinData, a, b)
+local function PaintCustom(fontStr, e, unitToken, cfg, skinData, a, b)
     local all = skinData._txArgs
     if not all then
         all = {}
@@ -459,7 +459,7 @@ local function PaintCustom(fontStr, e, unitToken, s, skinData, a, b)
         args = {}
         all[e.i] = args
     end
-    mod.RF_CustomTextInto(fontStr, s[e.k.CustomFormat], unitToken, s, nil, args, a, b)
+    mod.RF_CustomTextInto(fontStr, cfg[e.k.CustomFormat], unitToken, cfg, nil, args, a, b)
 end
 
 -- The full paint's share: every text but Power Text (the power paint owns it).
@@ -681,7 +681,7 @@ end
 --  power: the power bar shows, class and pToken: the sample member's class
 --  and power type for the colours). The same layout and rules as live.
 -------------------------------------------------------------------------------
-local function PvPaint(fontStr, e, s, pv, fb)
+local function PvPaint(fontStr, e, cfg, pv, fb)
     local kind = e.kind
     if kind == "name" then
         if e.attach and not fb then
@@ -692,7 +692,7 @@ local function PvPaint(fontStr, e, s, pv, fb)
     elseif kind == "level" then
         fontStr:SetFormattedText("%d", mod._RFPreviewLevel())
     elseif kind == "custom" then
-        mod.RF_CustomTextInto(fontStr, s[e.k.CustomFormat], nil, s, pv)
+        mod.RF_CustomTextInto(fontStr, cfg[e.k.CustomFormat], nil, cfg, pv)
     elseif pv.dead or pv.offline then
         fontStr:SetText("")
         return
@@ -705,8 +705,8 @@ local function PvPaint(fontStr, e, s, pv, fb)
     end
     local P = e.prop
     local red, green, blue = mod.RF_PreviewTextColor(
-        s[e.k.ColorMode],
-        s[e.k.Color],
+        cfg[e.k.ColorMode],
+        cfg[e.k.Color],
         pv.class,
         P.r or 1,
         P.g or 1,
@@ -755,12 +755,12 @@ end
 -- restyle fingerprint: the plan's signature (positions, modes, templates), then each
 -- text's offsets and size. ns.RF_TEXT_STYLE_N values; returns the last index written.
 mod.RF_TEXT_STYLE_N = 1 + 3 * NTEXTS
-function mod.RF_TextStyleInputs(t, num, s)
+function mod.RF_TextStyleInputs(t, num, cfg)
     num = num + 1
-    t[num] = Plan(s).sig
+    t[num] = Plan(cfg).sig
     for index = 1, NTEXTS do
         local key = KEYS[index]
-        t[num + 1], t[num + 2], t[num + 3] = s[key.X], s[key.Y], s[key.Size]
+        t[num + 1], t[num + 2], t[num + 3] = cfg[key.X], cfg[key.Y], cfg[key.Size]
         num = num + 3
     end
     return num

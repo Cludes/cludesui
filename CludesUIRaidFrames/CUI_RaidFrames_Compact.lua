@@ -36,27 +36,27 @@ end
 --  Gates and spacing
 -------------------------------------------------------------------------------
 -- The border either mode needs: a Pixels style above size 0, on the CludesUI look.
-function mod.RF_CompactEligible(s)
-    return s and CUI._pixelArtBorders[s.borderTexture] and not mod.RF_Stock() and (s.borderSize or 1) > 0
+function mod.RF_CompactEligible(cfg)
+    return cfg and CUI._pixelArtBorders[cfg.borderTexture] and not mod.RF_Stock() and (cfg.borderSize or 1) > 0
 end
 
 -- Compact Mode in effect for settings s (party: the Party tab's choice). The party
 -- side also stands down under the Party Frames kit and while target frames sit along
 -- the stack; a saved choice that cannot apply stays saved.
-function mod.RF_CompactOn(s, party)
-    if not s or not (party and s.partyCompactMode == true or not party and s.raidCompactMode == true) then
+function mod.RF_CompactOn(cfg, party)
+    if not cfg or not (party and cfg.partyCompactMode == true or not party and cfg.raidCompactMode == true) then
         return false
     end
-    local style = s
-    if party and s == saved.profile then
+    local style = cfg
+    if party and cfg == saved.profile then
         style = mod._partyProxy
-    elseif party and s == mod._pvOverlayProxy then
+    elseif party and cfg == mod._pvOverlayProxy then
         style = mod._scaledPartyProxy
     end
     if not mod.RF_CompactEligible(style) then
         return false
     end
-    return not party or (not mod.RF_PartyKit() and not mod.PT_AlongStack(s, s.partyShowTargets == true))
+    return not party or (not mod.RF_PartyKit() and not mod.PT_AlongStack(cfg, cfg.partyShowTargets == true))
 end
 
 -- The options pages' check for the tab they show (party: the Party tab).
@@ -64,8 +64,8 @@ function mod.RF_CompactOnTab(party)
     return mod.RF_CompactOn(party and mod._partyProxy or saved.profile, party)
 end
 
-function mod.RF_GridOn(s)
-    return s.raidGridMode == true and mod.RF_CompactOn(s, false)
+function mod.RF_GridOn(cfg)
+    return cfg.raidGridMode == true and mod.RF_CompactOn(cfg, false)
 end
 
 -- One physical pixel at the container's scale.
@@ -75,15 +75,15 @@ function mod.RF_OnePixel(party)
 end
 
 -- The spacing the layout uses: one pixel under the mode, else the saved slider value.
-function mod.RF_CellSpacing(s, party)
-    if mod.RF_CompactOn(s, party) then
+function mod.RF_CellSpacing(cfg, party)
+    if mod.RF_CompactOn(cfg, party) then
         return mod.RF_OnePixel(party)
     end
-    return PixelSnap(party and (s.partyCellSpacing or s.cellSpacing or 2) or (s.cellSpacing or 2))
+    return PixelSnap(party and (cfg.partyCellSpacing or cfg.cellSpacing or 2) or (cfg.cellSpacing or 2))
 end
 
-function mod.RF_GroupSpacing(s)
-    return mod.RF_GridOn(s) and mod.RF_OnePixel(false) or PixelSnap(s.groupSpacing or 8)
+function mod.RF_GroupSpacing(cfg)
+    return mod.RF_GridOn(cfg) and mod.RF_OnePixel(false) or PixelSnap(cfg.groupSpacing or 8)
 end
 
 -------------------------------------------------------------------------------
@@ -114,25 +114,25 @@ function mod.RF_PetCompactHighlight(btnFrame, s)
     mod.RF_CompactHighlight(btnFrame._borderFrame, skinData, s, btnFrame)
 end
 
-function mod.RF_CompactHighlight(widget, skinData, s, btnFrame)
+function mod.RF_CompactHighlight(widget, skinData, cfg, btnFrame)
     local c, a, size, px
-    if skinData._hovered and s.hoverBorderEnabled ~= false then
+    if skinData._hovered and cfg.hoverBorderEnabled ~= false then
         c, a, size =
-            s.hoverBorderColor or defaultSet.profile.hoverBorderColor,
-            s.hoverBorderAlpha or 1,
-            s.hoverBorderSize or 1
-        px = CUI.BorderPx(s.hoverBorderSizePx, size, "solid")
-    elseif skinData._isTarget and s.targetBorderEnabled ~= false then
+            cfg.hoverBorderColor or defaultSet.profile.hoverBorderColor,
+            cfg.hoverBorderAlpha or 1,
+            cfg.hoverBorderSize or 1
+        px = CUI.BorderPx(cfg.hoverBorderSizePx, size, "solid")
+    elseif skinData._isTarget and cfg.targetBorderEnabled ~= false then
         c, a, size =
-            s.targetBorderColor or defaultSet.profile.targetBorderColor,
-            s.targetBorderAlpha or 1,
-            s.targetBorderSize or 1
-        px = CUI.BorderPx(s.targetBorderSizePx, size, "solid")
+            cfg.targetBorderColor or defaultSet.profile.targetBorderColor,
+            cfg.targetBorderAlpha or 1,
+            cfg.targetBorderSize or 1
+        px = CUI.BorderPx(cfg.targetBorderSizePx, size, "solid")
     end
     solidStyle = solidStyle or { borderTexture = "solid" }
     if c then
-        local red, green, blue = mod.RF_VisibleHighlight(s, c.r, c.g, c.b)
-        local level = s.borderBehind and math.max(0, btnFrame:GetFrameLevel() - 1)
+        local red, green, blue = mod.RF_VisibleHighlight(cfg, c.r, c.g, c.b)
+        local level = cfg.borderBehind and math.max(0, btnFrame:GetFrameLevel() - 1)
             or btnFrame:GetFrameLevel() + mod.LVL_RAISE
         if widget:GetFrameLevel() ~= level then
             widget:SetFrameLevel(level)
@@ -201,29 +201,29 @@ local function PutStyle(st, key, value)
     end
 end
 
-local function UpdateStyle(st, s)
-    local color = s.borderColor or defaultSet.profile.borderColor
-    local grid = not st.isParty and mod.RF_GridOn(s)
+local function UpdateStyle(st, cfg)
+    local color = cfg.borderColor or defaultSet.profile.borderColor
+    local grid = not st.isParty and mod.RF_GridOn(cfg)
     local red, green, blue, a
     if grid and not st.isPet then
-        if s.healthColorMode == "dark" then
+        if cfg.healthColorMode == "dark" then
             red, green, blue, a = CUI.GetDarkModeBg()
         else
-            red, green, blue, a = mod.GetBgColor(nil, s)
+            red, green, blue, a = mod.GetBgColor(nil, cfg)
         end
     end
-    PutStyle(st, "tex", s.borderTexture)
-    PutStyle(st, "size", s.borderSize or 1)
-    PutStyle(st, "px", CUI.BorderPx(s.borderSizePx, s.borderSize or 1, s.borderTexture))
-    PutStyle(st, "offX", s.borderTextureOffset)
-    PutStyle(st, "offY", s.borderTextureOffsetY)
-    PutStyle(st, "shiftX", s.borderTextureShiftX)
-    PutStyle(st, "shiftY", s.borderTextureShiftY)
-    PutStyle(st, "behind", s.borderBehind)
+    PutStyle(st, "tex", cfg.borderTexture)
+    PutStyle(st, "size", cfg.borderSize or 1)
+    PutStyle(st, "px", CUI.BorderPx(cfg.borderSizePx, cfg.borderSize or 1, cfg.borderTexture))
+    PutStyle(st, "offX", cfg.borderTextureOffset)
+    PutStyle(st, "offY", cfg.borderTextureOffsetY)
+    PutStyle(st, "shiftX", cfg.borderTextureShiftX)
+    PutStyle(st, "shiftY", cfg.borderTextureShiftY)
+    PutStyle(st, "behind", cfg.borderBehind)
     PutStyle(st, "r", color.r)
     PutStyle(st, "g", color.g)
     PutStyle(st, "b", color.b)
-    PutStyle(st, "a", s.borderAlpha or 1)
+    PutStyle(st, "a", cfg.borderAlpha or 1)
     PutStyle(st, "bgR", red)
     PutStyle(st, "bgG", green)
     PutStyle(st, "bgB", blue)
@@ -231,8 +231,8 @@ local function UpdateStyle(st, s)
     PutStyle(st, "one", CUI.PP.perfect / st.owner:GetEffectiveScale())
     PutStyle(st, "grid", grid)
     -- Textured Background on the empty backgrounds, as on the frames.
-    PutStyle(st, "bgTex", grid and not st.isPet and mod.RF_TexBgPath(s) or false)
-    PutStyle(st, "bgVert", grid and mod.RF_IsVerticalFill(s) or false)
+    PutStyle(st, "bgTex", grid and not st.isPet and mod.RF_TexBgPath(cfg) or false)
+    PutStyle(st, "bgVert", grid and mod.RF_IsVerticalFill(cfg) or false)
 end
 
 -- Records frame f as the index-th cell of group gi (rect in the owner's scale, top-left).
@@ -621,7 +621,7 @@ local function HeaderGrowth(header)
         or "DOWN"
 end
 
-local function CollectLive(st, s)
+local function CollectLive(st, cfg)
     local total = 0
     if st.isPet then
         local popFrame = mod._PF
@@ -638,9 +638,9 @@ local function CollectLive(st, s)
             total = gi
         end
     elseif st.isParty then
-        CollectGroup(st, mod._partyAllButtons, 1, #mod._partyAllButtons, 1, mod._PartyGrowth(s))
+        CollectGroup(st, mod._partyAllButtons, 1, #mod._partyAllButtons, 1, mod._PartyGrowth(cfg))
         total = 1
-    elseif s.mergeGroups then
+    elseif cfg.mergeGroups then
         st.flat = st.flat or {}
         local limit = 0
         for index = 1, 40 do

@@ -90,10 +90,10 @@ local function LevelTime()
     return current and (current.base + (anchor and GetTime() - anchor or 0)) or 0
 end
 
-local function StartLevel(s, fromStart, level)
+local function StartLevel(cfg, fromStart, level)
     current = { level = level or UnitLevel("player"), base = 0, partial = not fromStart }
     anchor = not paused and GetTime() or nil
-    s.current = current
+    cfg.current = current
 end
 
 local function TrackSplits(newLevel)

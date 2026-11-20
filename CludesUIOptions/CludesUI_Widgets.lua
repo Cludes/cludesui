@@ -1692,16 +1692,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
     -- Wire OnEnter/OnLeave/OnClick/OnShow/OnHide for a dropdown button + menu. s = { bg_r..a, bg_hr..ha, brd_r..a, brd_hr..ha, txt_r..a, txt_hr..ha } (24 values)
     -- ddBtn._valueDimA, when set, holds the value text at that alpha in both states (a greyed-out current value stays greyed under the cursor).
-    local function WireDropdownScripts(dropdownBtn, dropCaption, backdrop, brd, dropMenu, refresh, s, keepClickHandler)
+    local function WireDropdownScripts(dropdownBtn, dropCaption, backdrop, brd, dropMenu, refresh, cfg, keepClickHandler)
         local function ApplyNormal()
-            dropCaption:SetTextColor(s[17], s[18], s[19], dropdownBtn._valueDimA or s[20])
-            brd:SetColor(s[9], s[10], s[11], s[12])
-            backdrop:SetColorTexture(s[1], s[2], s[3], s[4])
+            dropCaption:SetTextColor(cfg[17], cfg[18], cfg[19], dropdownBtn._valueDimA or cfg[20])
+            brd:SetColor(cfg[9], cfg[10], cfg[11], cfg[12])
+            backdrop:SetColorTexture(cfg[1], cfg[2], cfg[3], cfg[4])
         end
         local function ApplyHover()
-            dropCaption:SetTextColor(s[21], s[22], s[23], dropdownBtn._valueDimA or s[24])
-            brd:SetColor(s[13], s[14], s[15], s[16])
-            backdrop:SetColorTexture(s[5], s[6], s[7], s[8])
+            dropCaption:SetTextColor(cfg[21], cfg[22], cfg[23], dropdownBtn._valueDimA or cfg[24])
+            brd:SetColor(cfg[13], cfg[14], cfg[15], cfg[16])
+            backdrop:SetColorTexture(cfg[5], cfg[6], cfg[7], cfg[8])
         end
         dropdownBtn:SetScript("OnEnter", function()
             ApplyHover()
@@ -1749,12 +1749,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 self:SetScale(1)
             else
                 -- On UIParent: match the panel's effective scale by walking GetScale() up to UIParent (always current); the button's GetEffectiveScale ratio can be stale right after the popup is (re)built.
-                local s, f = 1, dropdownBtn
+                local cfg, f = 1, dropdownBtn
                 while f and f ~= UIParent do
-                    s = s * (f:GetScale() or 1)
+                    cfg = cfg * (f:GetScale() or 1)
                     f = f:GetParent()
                 end
-                self:SetScale(s)
+                self:SetScale(cfg)
             end
             -- Seat the list, then its outline: the outline's layer fit on its own
             -- show, before this scale and seat.
@@ -3053,17 +3053,17 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- the hover scripts and keeps this OnClick and OnHide. s = the button's colour
     -- array (RD_DD_COLOURS / WD_DD_COLOURS). Returns drop(): forgets the built menu
     -- (hidden), so the next click builds it again; true when there was one.
-    local function WireLazyDropdown(dropdownBtn, dropCaption, backdrop, brd, s, build)
+    local function WireLazyDropdown(dropdownBtn, dropCaption, backdrop, brd, cfg, build)
         local dropMenu
         local function ApplyNormal()
-            dropCaption:SetTextColor(s[17], s[18], s[19], dropdownBtn._valueDimA or s[20])
-            brd:SetColor(s[9], s[10], s[11], s[12])
-            backdrop:SetColorTexture(s[1], s[2], s[3], s[4])
+            dropCaption:SetTextColor(cfg[17], cfg[18], cfg[19], dropdownBtn._valueDimA or cfg[20])
+            brd:SetColor(cfg[9], cfg[10], cfg[11], cfg[12])
+            backdrop:SetColorTexture(cfg[1], cfg[2], cfg[3], cfg[4])
         end
         local function ApplyHover()
-            dropCaption:SetTextColor(s[21], s[22], s[23], dropdownBtn._valueDimA or s[24])
-            brd:SetColor(s[13], s[14], s[15], s[16])
-            backdrop:SetColorTexture(s[5], s[6], s[7], s[8])
+            dropCaption:SetTextColor(cfg[21], cfg[22], cfg[23], dropdownBtn._valueDimA or cfg[24])
+            brd:SetColor(cfg[13], cfg[14], cfg[15], cfg[16])
+            backdrop:SetColorTexture(cfg[5], cfg[6], cfg[7], cfg[8])
         end
         dropdownBtn:SetScript("OnEnter", function()
             ApplyHover()
@@ -3087,7 +3087,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 local refresh
                 dropMenu, refresh = build()
                 -- keepClickHandler=true: this OnClick survives, so after drop() the next click builds the menu again.
-                WireDropdownScripts(dropdownBtn, dropCaption, backdrop, brd, dropMenu, refresh, s, true)
+                WireDropdownScripts(dropdownBtn, dropCaption, backdrop, brd, dropMenu, refresh, cfg, true)
             end
             if dropMenu:IsShown() then
                 dropMenu:Hide()

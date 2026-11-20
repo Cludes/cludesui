@@ -1192,19 +1192,19 @@ local function GetSpellIcon(spellId)
     return icon
 end
 
-function mod.BM_ApplyPreviewIndicators(f, index, s)
+function mod.BM_ApplyPreviewIndicators(f, index, cfg)
     local iconPool = f._bmIconPool
     local barPool = f._bmBarPool
     if not iconPool then
         return
     end
     -- A manager page replica built in party style keeps reading the party view.
-    s = f._bmPvS or s
+    cfg = f._bmPvS or cfg
     -- Party preview passes the party proxy as `s`; use the party scale.
-    local iscale = ((s == mod._scaledPartyProxy) and mod._partyBmScale or mod._bmScale) or 1
+    local iscale = ((cfg == mod._scaledPartyProxy) and mod._partyBmScale or mod._bmScale) or 1
     -- The frames this preview stands for, which each indicator's Show In is
     -- tested against as the live frames test it (ns.BM2_SpecIndicators).
-    local pvKind = (f._bmPvS or (s ~= nil and s == mod._scaledPartyProxy)) and "party" or "raid"
+    local pvKind = (f._bmPvS or (cfg ~= nil and cfg == mod._scaledPartyProxy)) and "party" or "raid"
 
     -- Hide all first (reset cooldowns so they re-apply fresh)
     for _, tile in ipairs(iconPool) do
@@ -1252,7 +1252,7 @@ function mod.BM_ApplyPreviewIndicators(f, index, s)
     if not saved or not saved.profile then
         return
     end
-    local healthBar = mod.RF_AnchorHost and mod.RF_AnchorHost(f._health, s) or f._health
+    local healthBar = mod.RF_AnchorHost and mod.RF_AnchorHost(f._health, cfg) or f._health
     if not healthBar then
         return
     end
@@ -1468,8 +1468,8 @@ function mod.BM_ApplyPreviewIndicators(f, index, s)
                                 local color = indicator.color or { r = 0, g = 1, b = 0 }
                                 mod.RF_TexBgTint(
                                     f._bmBGOverlay,
-                                    mod.RF_TexBgPath(s),
-                                    mod.RF_IsVerticalFill(s)
+                                    mod.RF_TexBgPath(cfg),
+                                    mod.RF_IsVerticalFill(cfg)
                                 )
                                 f._bmBGOverlay:SetColorTexture(color.r, color.g, color.b, (indicator.opacity or 100) / 100)
                                 f._bmBGOverlay:Show()
@@ -1661,7 +1661,7 @@ function mod.BM_ApplyPreviewIndicators(f, index, s)
                                     tile:SetAlpha(pvAlpha)
                                     if indicatorType == "icon" then
                                         tile._tex:SetTexture(GetSpellIcon(spellRef))
-                                        local _z = s.bmIconZoom or 0.08
+                                        local _z = cfg.bmIconZoom or 0.08
                                         tile._tex:SetTexCoord(_z, 1 - _z, _z, 1 - _z)
                                         tile._tex:SetVertexColor(1, 1, 1, pvHideIcon and 0 or 1)
                                     else
@@ -1873,7 +1873,7 @@ end
 --  kitAuras ("buffs" | "debuffs": the kit hint under that row),
 --  overrideTips ({ raid = tip, party = tip }: override marks per segment).
 --  Returns pvFrame, sectionH, scale.
-function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, options)
+function mod.BM_BuildSimplePreview(hostFrame, cfg, fontFile, Pix, centerX, topY, options)
     -- Options page pool (CludesUI_FramePool.lua): on a manager page's kept
     -- root the replica is handed out again, in creation order, by the next render.
     local CreateFrame = POOL.CreateFrame
@@ -1882,11 +1882,11 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
     -- portrait, party section overrides, party indicator scale), as the live
     -- party frames read it. The kit's art is not rebuilt here.
     if options.party and mod._scaledPartyProxy then
-        s = mod._scaledPartyProxy
+        cfg = mod._scaledPartyProxy
     end
     local PV_SCALE = 1.5
-    local rawW = s.frameWidth or 72
-    local rawH = s.frameHeight or 46
+    local rawW = cfg.frameWidth or 72
+    local rawH = cfg.frameHeight or 46
     local previewPad = 20
     -- Cap on-screen height at 100px via uniform downscale (keeps rawW:rawH aspect).
     if rawH * PV_SCALE > 100 then
@@ -2009,32 +2009,32 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
     -- The side the kit's buff run takes (callers keep their controls off it).
     previewFrame._bmKitSide = (options.kitAuras == "buffs") and kitMode or nil
 
-    local bgc = s.customBgColor or { r = 17 / 255, g = 17 / 255, b = 17 / 255 }
+    local bgc = cfg.customBgColor or { r = 17 / 255, g = 17 / 255, b = 17 / 255 }
     local backdrop = previewFrame:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
 
-    local rawPowerH = (s.powerShowForHealer or s.powerShowForTank or s.powerShowForDPS)
-            and (s.powerHeight or 4)
+    local rawPowerH = (cfg.powerShowForHealer or cfg.powerShowForTank or cfg.powerShowForDPS)
+            and (cfg.powerHeight or 4)
         or 0
-    local matchPowerBorder = s.powerBorderMatchFrame == true
+    local matchPowerBorder = cfg.powerBorderMatchFrame == true
         and rawPowerH > 0
-        and (s.powerBorderStyle == "divider" or s.powerBorderStyle == "border")
+        and (cfg.powerBorderStyle == "divider" or cfg.powerBorderStyle == "border")
         and not mod.RF_Stock()
-        and CludesUI._pixelArtBorders[s.borderTexture]
-    local rawTopBarH = s.topNameBarEnabled and (s.topNameBarHeight or 20) or 0
-    local matchTopNameDivider = s.topNameBarDivider == true
+        and CludesUI._pixelArtBorders[cfg.borderTexture]
+    local rawTopBarH = cfg.topNameBarEnabled and (cfg.topNameBarHeight or 20) or 0
+    local matchTopNameDivider = cfg.topNameBarDivider == true
         and rawTopBarH >= 4
-        and (s.borderSize or 1) > 0
+        and (cfg.borderSize or 1) > 0
         and not mod.RF_Stock()
-        and CludesUI._pixelArtBorders[s.borderTexture]
+        and CludesUI._pixelArtBorders[cfg.borderTexture]
     -- Show on Bottom: the bar takes the bottom edge, health starts at the top and
     -- the power bar sits on the bar (as the live LayoutTopNameBar lays it out).
-    local rawBottomY = (s.topNameBarEnabled and s.topNameBarBottom == true) and rawTopBarH or 0
+    local rawBottomY = (cfg.topNameBarEnabled and cfg.topNameBarBottom == true) and rawTopBarH or 0
     local healthTopY = (rawBottomY > 0) and 0 or -rawTopBarH
     local healthH = rawH - rawPowerH - rawTopBarH
 
     -- Health bar (matches the custom preview build exactly)
-    local texKey = s.healthBarTexture or "atrocity"
+    local texKey = cfg.healthBarTexture or "atrocity"
     local texPath = CludesUI.ResolveTexturePath(
         mod.healthBarTextures or {},
         texKey,
@@ -2070,10 +2070,10 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
         pvClass = pc
     end
     local classColor = CludesUI.GetClassColor(pvClass)
-    local mode = s.healthColorMode or "class"
+    local mode = cfg.healthColorMode or "class"
     local fill = healthBar:GetStatusBarTexture()
     -- Textured Background, as on the live frames.
-    mod.RF_TexBgLayer(healthBar, backdrop, mod.RF_TexBgOpaque(s, mode == "dark") and mod.RF_TexBgPath(s) or nil)
+    mod.RF_TexBgLayer(healthBar, backdrop, mod.RF_TexBgOpaque(cfg, mode == "dark") and mod.RF_TexBgPath(cfg) or nil)
     if mode == "dark" then
         local dfr, dfg, dfb, dfa = CludesUI.GetDarkModeFill()
         healthBar:SetStatusBarColor(dfr, dfg, dfb, 1)
@@ -2088,29 +2088,29 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
         local pct = 0.85
         local r = pct < 0.5 and 1 or (1 - (pct - 0.5) * 2)
         local g = pct > 0.5 and 1 or (pct * 2)
-        healthBar:SetStatusBarColor(r, g, 0, (s.healthBarOpacity or 100) / 100)
+        healthBar:SetStatusBarColor(r, g, 0, (cfg.healthBarOpacity or 100) / 100)
         if fill then
             fill:SetAlpha(1)
         end
         backdrop:SetAllPoints()
-        backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
+        backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (cfg.bgDarkness or 50) / 100)
     elseif mode == "custom" then
-        local cfc = s.customFillColor or { r = 37 / 255, g = 193 / 255, b = 29 / 255 }
-        healthBar:SetStatusBarColor(cfc.r, cfc.g, cfc.b, (s.healthBarOpacity or 100) / 100)
+        local cfc = cfg.customFillColor or { r = 37 / 255, g = 193 / 255, b = 29 / 255 }
+        healthBar:SetStatusBarColor(cfc.r, cfc.g, cfc.b, (cfg.healthBarOpacity or 100) / 100)
         if fill then
             fill:SetAlpha(1)
         end
         backdrop:SetAllPoints()
-        backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
+        backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (cfg.bgDarkness or 50) / 100)
     else
         if classColor then
-            healthBar:SetStatusBarColor(classColor.r, classColor.g, classColor.b, (s.healthBarOpacity or 100) / 100)
+            healthBar:SetStatusBarColor(classColor.r, classColor.g, classColor.b, (cfg.healthBarOpacity or 100) / 100)
         end
         if fill then
             fill:SetAlpha(1)
         end
         backdrop:SetAllPoints()
-        backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
+        backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (cfg.bgDarkness or 50) / 100)
     end
 
     if rawPowerH > 0 then
@@ -2131,26 +2131,26 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
         end
         local pwBg = powerBar:CreateTexture(nil, "BACKGROUND")
         pwBg:SetAllPoints()
-        local pbc = (s.powerBgPowerColored and pInfo) or s.powerBgColor or { r = 0, g = 0, b = 0 }
-        local pbF = (s.powerBgPowerColored and pInfo) and CludesUI.GetPowerBgDarkenFactor() or 1
-        mod.RF_TexBgTint(pwBg, mod.RF_TexBgPath(s))
-        pwBg:SetColorTexture(pbc.r * pbF, pbc.g * pbF, pbc.b * pbF, (s.powerBgDarkness or 70) / 100)
+        local pbc = (cfg.powerBgPowerColored and pInfo) or cfg.powerBgColor or { r = 0, g = 0, b = 0 }
+        local pbF = (cfg.powerBgPowerColored and pInfo) and CludesUI.GetPowerBgDarkenFactor() or 1
+        mod.RF_TexBgTint(pwBg, mod.RF_TexBgPath(cfg))
+        pwBg:SetColorTexture(pbc.r * pbF, pbc.g * pbF, pbc.b * pbF, (cfg.powerBgDarkness or 70) / 100)
         -- Classic WoW UI: the stock edge and divider stand in (as live).
         if Pix and mod.RF_Classic and mod.RF_Classic() then
             mod.RF_StockBuild(previewFrame, previewFrame, powerBar)
             mod.RF_StockDivider(previewFrame)
-        elseif Pix and s.powerBorderStyle and s.powerBorderStyle ~= "none" then
-            local pbSize = matchPowerBorder and (s.borderSize or 1) or (s.powerBorderSize or 1)
+        elseif Pix and cfg.powerBorderStyle and cfg.powerBorderStyle ~= "none" then
+            local pbSize = matchPowerBorder and (cfg.borderSize or 1) or (cfg.powerBorderSize or 1)
             if pbSize > 0 then
                 local pwBdr = CreateFrame("Frame", nil, previewFrame)
                 pwBdr:SetAllPoints(powerBar)
                 pwBdr:SetFrameLevel(powerBar:GetFrameLevel() + 1)
                 Pix.CreateBorder(pwBdr, 0, 0, 0, 1, 1)
-                if not (matchPowerBorder and mod.RF_ApplyPowerBorderArt(pwBdr, s, true, true)) then
-                    local pBc = s.powerBorderColor or { r = 0, g = 0, b = 0 }
-                    Pix.UpdateBorder(pwBdr, pbSize, pBc.r, pBc.g, pBc.b, s.powerBorderAlpha or 1)
+                if not (matchPowerBorder and mod.RF_ApplyPowerBorderArt(pwBdr, cfg, true, true)) then
+                    local pBc = cfg.powerBorderColor or { r = 0, g = 0, b = 0 }
+                    Pix.UpdateBorder(pwBdr, pbSize, pBc.r, pBc.g, pBc.b, cfg.powerBorderAlpha or 1)
                     local ppC = Pix.GetBorders(pwBdr)
-                    if ppC and s.powerBorderStyle == "divider" then
+                    if ppC and cfg.powerBorderStyle == "divider" then
                         if ppC._bottom then
                             ppC._bottom:SetAlpha(0)
                         end
@@ -2171,13 +2171,13 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
         if mod.RF_Stock and mod.RF_Stock() then
             mod.RF_StockBuild(previewFrame, previewFrame)
         end
-        local bsz = mod.RF_EffBorderSize and mod.RF_EffBorderSize(s) or (s.borderSize or 1)
+        local bsz = mod.RF_EffBorderSize and mod.RF_EffBorderSize(cfg) or (cfg.borderSize or 1)
         if bsz > 0 then
             local bdr = CreateFrame("Frame", nil, previewFrame)
             bdr:SetAllPoints(previewFrame)
             bdr:SetFrameLevel(previewFrame:GetFrameLevel() + 8)
             Pix.CreateBorder(bdr, 0, 0, 0, 1, 1)
-            local bc = s.borderColor or { r = 0, g = 0, b = 0 }
+            local bc = cfg.borderColor or { r = 0, g = 0, b = 0 }
             if matchPowerBorder or matchTopNameDivider then
                 CludesUI.ApplyBorderStyle(
                     bdr,
@@ -2185,19 +2185,19 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
                     bc.r,
                     bc.g,
                     bc.b,
-                    s.borderAlpha or 1,
-                    s.borderTexture,
-                    s.borderTextureOffset,
-                    s.borderTextureOffsetY,
-                    s.borderTextureShiftX,
-                    s.borderTextureShiftY,
+                    cfg.borderAlpha or 1,
+                    cfg.borderTexture,
+                    cfg.borderTextureOffset,
+                    cfg.borderTextureOffsetY,
+                    cfg.borderTextureShiftX,
+                    cfg.borderTextureShiftY,
                     "unitframes",
                     bsz,
                     nil,
-                    CludesUI.BorderPx(s.borderSizePx, bsz, s.borderTexture)
+                    CludesUI.BorderPx(cfg.borderSizePx, bsz, cfg.borderTexture)
                 )
             else
-                Pix.UpdateBorder(bdr, bsz, bc.r, bc.g, bc.b, s.borderAlpha or 1)
+                Pix.UpdateBorder(bdr, bsz, bc.r, bc.g, bc.b, cfg.borderAlpha or 1)
             end
         end
     end
@@ -2207,19 +2207,19 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
     local textCarrier = CreateFrame("Frame", nil, previewFrame)
     textCarrier:SetAllPoints(previewFrame)
     textCarrier:SetFrameLevel(
-        previewFrame:GetFrameLevel() + (s.nameTextAboveIcons and (mod.LVL_AURA + 6) or (mod.LVL_TEXT or 12))
+        previewFrame:GetFrameLevel() + (cfg.nameTextAboveIcons and (mod.LVL_AURA + 6) or (mod.LVL_TEXT or 12))
     )
     local outline = (CludesUI.GetFontOutlineFlag("raidFrames")) or ""
     local playerName = UnitName("player") or "Player"
     if Ambiguate then
         playerName = Ambiguate(playerName, "short")
     end
-    playerName = mod.RF_FormatName(playerName, s)
+    playerName = mod.RF_FormatName(playerName, cfg)
     -- Level Position "Attach to Name" (either format): the Top Name Bar shows the level too.
-    local lvlAttach = mod.RF_TextNameAttach(s)
+    local lvlAttach = mod.RF_TextNameAttach(cfg)
 
     -- Top Name Bar band (preview replica)
-    if s.topNameBarEnabled then
+    if cfg.topNameBarEnabled then
         local tnb = CreateFrame("Frame", nil, previewFrame)
         tnb:SetFrameLevel(previewFrame:GetFrameLevel() + 4)
         if rawBottomY > 0 then
@@ -2232,11 +2232,11 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
         tnb:SetHeight(rawTopBarH)
         local tnbBg = tnb:CreateTexture(nil, "BACKGROUND")
         tnbBg:SetAllPoints()
-        local tbgc = s.topNameBarBgColor or { r = 17 / 255, g = 17 / 255, b = 17 / 255 }
-        tnbBg:SetColorTexture(tbgc.r, tbgc.g, tbgc.b, (s.topNameBarBgOpacity or 80) / 100)
+        local tbgc = cfg.topNameBarBgColor or { r = 17 / 255, g = 17 / 255, b = 17 / 255 }
+        tnbBg:SetColorTexture(tbgc.r, tbgc.g, tbgc.b, (cfg.topNameBarBgOpacity or 80) / 100)
         local tnbText = tnb:CreateFontString(nil, "OVERLAY")
         -- The player's name: a font family, with no shadow as a plain SetFont.
-        CludesUI.SetFontFamily(tnbText, fontFile, s.topNameBarTextSize or 11, outline, false)
+        CludesUI.SetFontFamily(tnbText, fontFile, cfg.topNameBarTextSize or 11, outline, false)
         tnbText:SetWordWrap(false)
         if lvlAttach then
             tnbText:SetFormattedText(lvlAttach[1], mod._RFPreviewLevel(), playerName)
@@ -2245,30 +2245,30 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
         end
         -- This preview draws no role icon, so the name keeps its full width.
         tnb._cuiRoleIcon = false
-        mod.RF_PlaceTopNameText(tnbText, tnb, s)
-        if (s.topNameBarTextColorMode or "class") == "custom" then
-            local color = s.topNameBarTextColor or { r = 1, g = 1, b = 1 }
+        mod.RF_PlaceTopNameText(tnbText, tnb, cfg)
+        if (cfg.topNameBarTextColorMode or "class") == "custom" then
+            local color = cfg.topNameBarTextColor or { r = 1, g = 1, b = 1 }
             tnbText:SetTextColor(color.r, color.g, color.b)
         elseif classColor then
             tnbText:SetTextColor(classColor.r, classColor.g, classColor.b)
         else
             tnbText:SetTextColor(1, 1, 1)
         end
-        if s.topNameBarDivider == true then
-            mod.RF_ApplyTopNameDivider(tnb, s, true)
+        if cfg.topNameBarDivider == true then
+            mod.RF_ApplyTopNameDivider(tnb, cfg, true)
         end
     end
 
     -- The texts as live, from this replica's sample values (85% health, 72% mana,
     -- shown with the power sample only). A fresh state per build: the carrier's pooled
     -- FontStrings come back through the pool.
-    mod.RF_TextPreview({ textCarrier = textCarrier, _health = healthBar, _txW = rawW }, s, {
+    mod.RF_TextPreview({ textCarrier = textCarrier, _health = healthBar, _txW = rawW }, cfg, {
         hpPct = 85,
         hpPer = 12000,
         ppPct = 72,
         ppPer = 2500,
         ha = 85 * 3000,
-        name = mod.CapName(playerName, s),
+        name = mod.CapName(playerName, cfg),
         power = rawPowerH > 0 or nil,
         class = pvClass,
         pToken = "MANA",
@@ -2276,7 +2276,7 @@ function mod.BM_BuildSimplePreview(hostFrame, s, fontFile, Pix, centerX, topY, o
 
     previewFrame._health = healthBar
     -- Settings source for every later indicator pass on this replica (nil = the caller's).
-    previewFrame._bmPvS = options.party and s or nil
+    previewFrame._bmPvS = options.party and cfg or nil
 
     return previewFrame, sectionH, PV_SCALE
 end

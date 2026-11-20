@@ -1192,17 +1192,17 @@ local CANCEL_CVAR_DEFAULT = "0.001"
 --- toggle ON, or the classic Unit Frames player-buffs display (CUI_UnitFrames_
 --- AuraContainers.lua's cancelButtons is unconditional whenever unit=="player" and
 --- isBuff, gated only on the element being shown at all).
-local function AnyRightClickCancelActive(s)
+local function AnyRightClickCancelActive(cfg)
     -- Use Blizzard Buffs: the NATIVE BuffFrame owns the display and its
     -- right-click cancel breaks on the same CVar -- always repair.
-    if s.useBlizzardBuffs == true then
+    if cfg.useBlizzardBuffs == true then
         return true
     end
-    local dbc = DefaultBuffsCfg(s)
+    local dbc = DefaultBuffsCfg(cfg)
     if dbc.enabled ~= false and dbc.rightClickCancel ~= false then
         return true
     end
-    local customBuffBars = s.customBuffBars
+    local customBuffBars = cfg.customBuffBars
     if customBuffBars then
         for index = 1, #customBuffBars do
             local barFrame = customBuffBars[index]
@@ -1214,8 +1214,8 @@ local function AnyRightClickCancelActive(s)
     -- Editing-spec bucket buff bars count too (enable-toggle test only,
     -- matching the legacy loop: the CVar repair may run while the spec is
     -- mid-change, so err on the permissive side).
-    if s.pabSpecBars then
-        for _, bar in pairs(s.pabSpecBars) do
+    if cfg.pabSpecBars then
+        for _, bar in pairs(cfg.pabSpecBars) do
             local bl = bar.buffBars
             if bl then
                 for index = 1, #bl do

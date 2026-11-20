@@ -315,8 +315,8 @@ local function ForEachTooltipLine(lineList, func)
 end
 
 -- Strip WoW inline colour codes from a string.
-local function Plain(s)
-    return s and (s:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")) or ""
+local function Plain(text)
+    return text and (text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")) or ""
 end
 
 -- Returns { slot, link, ilvl } for every equipped item on `unit` (default "player").

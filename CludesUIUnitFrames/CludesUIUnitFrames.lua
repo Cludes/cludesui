@@ -1729,46 +1729,46 @@ do
     end
 
     -- Unset per-frame choices keep the profile's existing Dark Mode setting.
-    function mod.UF_DarkThemeOn(s)
-        if s and s.darkTheme ~= nil then
-            return s.darkTheme
+    function mod.UF_DarkThemeOn(cfg)
+        if cfg and cfg.darkTheme ~= nil then
+            return cfg.darkTheme
         end
         return (saved and saved.profile and saved.profile.darkTheme) or false
     end
 
     -- The health fill is opaque: Dark Mode Fill in Dark Mode, else Fill Opacity.
-    function mod.UF_HealthOpaque(s)
-        if mod.UF_DarkThemeOn(s) then
+    function mod.UF_HealthOpaque(cfg)
+        if mod.UF_DarkThemeOn(cfg) then
             local _, _, _, fa = CludesUI.GetDarkModeFill()
             return fa >= 1
         end
-        return ((s and s.healthBarOpacity) or 90) >= 100
+        return ((cfg and cfg.healthBarOpacity) or 90) >= 100
     end
 
     -- The health and power backgrounds' texture paths (nil = flat), shared with the
     -- options preview: health while its fill is opaque, power while its fill is 100.
-    function mod.UF_TexBgPaths(unitName, s, texKey)
-        local filePath = s
+    function mod.UF_TexBgPaths(unitName, cfg, texKey)
+        local filePath = cfg
             and mod.UF_TexBgOn(unitName)
             and CludesUI.ResolveTexturePath(healthBarTextures, texKey or "none", nil)
         if not filePath then
             return nil, nil
         end
-        return mod.UF_HealthOpaque(s) and filePath or nil,
-            ((s.powerBarOpacity or 100) >= 100) and filePath or nil
+        return mod.UF_HealthOpaque(cfg) and filePath or nil,
+            ((cfg.powerBarOpacity or 100) >= 100) and filePath or nil
     end
 
     -- The cast bar background's path (nil = flat): never over Blizzard's cast art.
-    function mod.UF_TexBgCastPath(s, texKey, blizz)
+    function mod.UF_TexBgCastPath(cfg, texKey, blizz)
         local p = saved.profile
-        if blizz or not (s and p.castTextureBg) then
+        if blizz or not (cfg and p.castTextureBg) then
             return nil
         end
         local own = p.castBarTexture
         if own and own ~= "inherit" then
             texKey = own
         end
-        if texKey == "blizzard" or (s.castFillOpacity or 100) < 100 then
+        if texKey == "blizzard" or (cfg.castFillOpacity or 100) < 100 then
             return nil
         end
         return CludesUI.ResolveTexturePath(healthBarTextures, texKey or "none", nil)
@@ -1840,7 +1840,7 @@ do
         return layer
     end
 
-    local function SetHealthLayer(healthBar, s, filePath)
+    local function SetHealthLayer(healthBar, cfg, filePath)
         local backdrop = healthBar.bg
         if not backdrop then
             return
@@ -1850,7 +1850,7 @@ do
             local fillTex = healthBar:GetStatusBarTexture()
             local tiled = fillTex and (fillTex:GetHorizTile() or fillTex:GetVertTile())
             local layer =
-                mod.UF_TexBgLayer(healthBar, filePath, s.healthVerticalFill and not mod.UF_Blizz() and not tiled)
+                mod.UF_TexBgLayer(healthBar, filePath, cfg.healthVerticalFill and not mod.UF_Blizz() and not tiled)
             backdrop._cuiBgTex = layer
             backdrop.SetColorTexture, backdrop.SetAlpha = PaintHealth, AlphaHealth
             layer:SetAlpha(backdrop:GetAlpha())
@@ -2198,10 +2198,10 @@ do
     -- one), not by the paint rate.
     local dynCurve
     local d0r, d0g, d0b, d50r, d50g, d50b, d100r, d100g, d100b
-    local function GetDynamicCurve(s)
-        local c0 = s.dynamicColor0 or DEF0
-        local midColor = s.dynamicColor50 or DEF50
-        local c100 = s.dynamicColor100 or DEF100
+    local function GetDynamicCurve(cfg)
+        local c0 = cfg.dynamicColor0 or DEF0
+        local midColor = cfg.dynamicColor50 or DEF50
+        local c100 = cfg.dynamicColor100 or DEF100
         if
             not (
                 dynCurve
@@ -2235,9 +2235,9 @@ do
     local GRAY = { r = 0.5, g = 0.5, b = 0.5 }
     local reactiveCurves = {} -- classToken -> { curve, r, g, b } (class color used)
     local r0r, r0g, r0b, r50r, r50g, r50b
-    local function GetClassReactiveCurve(s, classToken)
-        local c0 = s.dynamicColor0 or DEF0
-        local midColor = s.dynamicColor50 or DEF50
+    local function GetClassReactiveCurve(cfg, classToken)
+        local c0 = cfg.dynamicColor0 or DEF0
+        local midColor = cfg.dynamicColor50 or DEF50
         if
             not (
                 r0r == c0.r
@@ -2292,8 +2292,8 @@ do
     -- it declines and the flat class/reaction fill already on the bar stands.
     -- (The Raid Frames twin greys out instead; keeping the real color is
     -- strictly better here, and only differs on focus/ToT-style units.)
-    function mod.UF_DynamicHealthColor(unitToken, s)
-        local mode = s and s.healthColorMode
+    function mod.UF_DynamicHealthColor(unitToken, cfg)
+        local mode = cfg and cfg.healthColorMode
         if not mode or mode == "none" or not unitToken then
             return false
         end
@@ -2304,13 +2304,13 @@ do
         if mode == "classic" then
             colorCurve = GetClassicCurve()
         elseif mode == "customDynamic" then
-            colorCurve = GetDynamicCurve(s)
+            colorCurve = GetDynamicCurve(cfg)
         elseif mode == "classReactive" then
             local _, classToken = UnitClass(unitToken)
             if not classToken or issecretvalue(classToken) then
                 return false
             end
-            colorCurve = GetClassReactiveCurve(s, classToken)
+            colorCurve = GetClassReactiveCurve(cfg, classToken)
         else
             return false
         end
@@ -2325,10 +2325,10 @@ do
     -- Clean-number twins for the options previews, where the health percent is a
     -- known fake (0-1) rather than a secret. These MUST match the curves above
     -- or the designer teaches a color the live bar never shows.
-    function mod.UF_ResolveDynamicColor(s, fraction)
-        local c0 = s.dynamicColor0 or DEF0
-        local midColor = s.dynamicColor50 or DEF50
-        local c100 = s.dynamicColor100 or DEF100
+    function mod.UF_ResolveDynamicColor(cfg, fraction)
+        local c0 = cfg.dynamicColor0 or DEF0
+        local midColor = cfg.dynamicColor50 or DEF50
+        local c100 = cfg.dynamicColor100 or DEF100
         if fraction >= 0.5 then
             local t = (fraction - 0.5) * 2
             return midColor.r + (c100.r - midColor.r) * t, midColor.g + (c100.g - midColor.g) * t, midColor.b + (c100.b - midColor.b) * t
@@ -2345,10 +2345,10 @@ do
         return 1, fraction * 2, 0
     end
 
-    function mod.UF_ResolveClassReactiveColor(s, classToken, fraction)
+    function mod.UF_ResolveClassReactiveColor(cfg, classToken, fraction)
         local classColor = (classToken and CludesUI.GetClassColor(classToken)) or GRAY
-        local c0 = s.dynamicColor0 or DEF0
-        local midColor = s.dynamicColor50 or DEF50
+        local c0 = cfg.dynamicColor0 or DEF0
+        local midColor = cfg.dynamicColor50 or DEF50
         if fraction >= 0.4 then
             local wid
             if fraction >= 0.75 then
@@ -2364,18 +2364,18 @@ do
 
     -- One entry point for every preview surface: resolves whichever dynamic mode
     -- `s` is on at a FAKE percent, or nil when the unit is on a flat fill.
-    function mod.UF_PreviewDynamicColor(s, fraction)
-        local mode = s and s.healthColorMode
+    function mod.UF_PreviewDynamicColor(cfg, fraction)
+        local mode = cfg and cfg.healthColorMode
         if not mode or mode == "none" then
             return nil
         end
         if mode == "classic" then
             return mod.UF_ResolveClassicColor(fraction)
         elseif mode == "customDynamic" then
-            return mod.UF_ResolveDynamicColor(s, fraction)
+            return mod.UF_ResolveDynamicColor(cfg, fraction)
         elseif mode == "classReactive" then
             local _, classTok = UnitClass("player")
-            return mod.UF_ResolveClassReactiveColor(s, classTok, fraction)
+            return mod.UF_ResolveClassReactiveColor(cfg, classTok, fraction)
         end
         return nil
     end
@@ -2747,11 +2747,11 @@ end
 --- REPLACES the whole shared setting, "never" included, so every reader that acts on
 --- "never" alone resolves it here instead of off the stored scalar. On ns for the
 --- 200-locals cap.
-function mod.VisEffective(s)
-    if not s then
+function mod.VisEffective(cfg)
+    if not cfg then
         return nil
     end
-    return (CludesUI.VisOverrideValue(s)) or s.barVisibility
+    return (CludesUI.VisOverrideValue(cfg)) or cfg.barVisibility
 end
 
 --- True when the unit has no CludesUI frame at all -- the enabledFrames flag, which

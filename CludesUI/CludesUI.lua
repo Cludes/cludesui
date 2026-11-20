@@ -2695,11 +2695,11 @@ do
 
     -- At most two letters: three or more read as the first and "+" ("CHM"
     -- shows "C+").
-    local function TwoLetters(s)
-        if #s > 2 then
-            return s:sub(1, 1) .. "+"
+    local function TwoLetters(text)
+        if #text > 2 then
+            return text:sub(1, 1) .. "+"
         end
-        return s
+        return text
     end
 
     -- Paints an item's letters as two rows the caller placed: the secondaries

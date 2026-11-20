@@ -54,9 +54,9 @@ end
 local holderFrame, boxHolder
 local built, pending
 
-local function Key(s)
-    local t = { tostring(s.size) }
-    for _, ident in ipairs(s.spells) do
+local function Key(cfg)
+    local t = { tostring(cfg.size) }
+    for _, ident in ipairs(cfg.spells) do
         t[#t + 1] = ident
     end
     return table.concat(t, ",")

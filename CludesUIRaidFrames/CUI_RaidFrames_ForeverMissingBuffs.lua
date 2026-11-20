@@ -159,18 +159,18 @@ local EX_KEY = {
 }
 local NO_BLESSINGS = {}
 local OLD_SINGLE = {} -- the older single-key form, one cached list per key
-local function Choice(s, role, class)
+local function Choice(cfg, role, class)
     local key = BLESS_KEY[role]
     if class then
-        local ex = s[EX_KEY[role]]
+        local ex = cfg[EX_KEY[role]]
         local own = type(ex) == "table" and ex[class]
         if type(own) == "table" then
             return own
         end
     end
-    local val = s[key]
+    local val = cfg[key]
     if val == nil then
-        val = (s.missingBuffsBlessing == false) and "none" or BLESS_DEFAULT[role]
+        val = (cfg.missingBuffsBlessing == false) and "none" or BLESS_DEFAULT[role]
     end
     if type(val) == "table" then
         return val
@@ -200,12 +200,12 @@ end
 
 -- Blessings are on in a settings table while any role takes one, or any
 -- class exception does.
-local function BlessingsOn(s)
-    if TakesOne(Choice(s, "TANK")) or TakesOne(Choice(s, "HEALER")) or TakesOne(Choice(s, "DAMAGER")) then
+local function BlessingsOn(cfg)
+    if TakesOne(Choice(cfg, "TANK")) or TakesOne(Choice(cfg, "HEALER")) or TakesOne(Choice(cfg, "DAMAGER")) then
         return true
     end
     for _, key in pairs(EX_KEY) do
-        local ex = s[key]
+        local ex = cfg[key]
         if type(ex) == "table" then
             for _, entries in pairs(ex) do
                 if type(entries) == "table" and TakesOne(entries) then
@@ -304,11 +304,11 @@ end
 
 -- A buff's own switch in one settings table (nil = on); the blessings follow
 -- the role settings as one.
-local function FamOn(s, fam)
+local function FamOn(cfg, fam)
     if fam.blessing then
-        return BlessingsOn(s)
+        return BlessingsOn(cfg)
     end
-    return s[fam.setting] ~= false
+    return cfg[fam.setting] ~= false
 end
 
 -- Worth reading: the player can cast it and it is switched on somewhere. A
@@ -330,8 +330,8 @@ end
 
 -- Thorns Only on Tank: the group's tanks, or the player while solo or in a
 -- group without one.
-local function ThornsHere(s, unitToken)
-    if not s.missingBuffsThornsTank then
+local function ThornsHere(cfg, unitToken)
+    if not cfg.missingBuffsThornsTank then
         return true
     end
     if groupTank then
@@ -603,11 +603,11 @@ end
 -- the overlay is exactly as wide as its icons, so a right-side position grows
 -- leftward and a centred one stays centred. Same 9-point spots and edge inset
 -- as the raid marker.
-local function Layout(o, s, health, entries, num)
+local function Layout(o, cfg, health, entries, num)
     local snap = mod.PixelSnap or function(val)
         return val
     end
-    local size = snap(s.missingBuffsSize or 22)
+    local size = snap(cfg.missingBuffsSize or 22)
     -- One physical pixel: the icon edge and the gap between icons.
     local edge = snap(1)
     if edge <= 0 then
@@ -636,9 +636,9 @@ local function Layout(o, s, health, entries, num)
         return
     end
     o:SetSize(num * size + (num - 1) * edge, size)
-    local owner = mod.RF_AnchorHost(health, s)
-    local place = s.missingBuffsPosition or "top"
-    local ox, oy = s.missingBuffsOffsetX or 0, s.missingBuffsOffsetY or 0
+    local owner = mod.RF_AnchorHost(health, cfg)
+    local place = cfg.missingBuffsPosition or "top"
+    local ox, oy = cfg.missingBuffsOffsetX or 0, cfg.missingBuffsOffsetY or 0
     o:ClearAllPoints()
     if place == "topleft" then
         o:SetPoint("TOPLEFT", owner, "TOPLEFT", 2 + ox, -2 + oy)
@@ -659,7 +659,7 @@ local function Layout(o, s, health, entries, num)
     else
         o:SetPoint("CENTER", owner, "CENTER", ox, oy)
     end
-    ApplyGlows(o, s, num, size)
+    ApplyGlows(o, cfg, num, size)
     o:Show()
 end
 
@@ -1097,16 +1097,16 @@ local function PreviewBlessing(s)
     end
 end
 local previewList = {}
-function mod.RF_FvMissingPreview(frame, index, s, indVis)
-    local spread = indVis and s.showMissingBuffs ~= false and frame._health and PREVIEW[index]
+function mod.RF_FvMissingPreview(frame, index, cfg, indVis)
+    local spread = indVis and cfg.showMissingBuffs ~= false and frame._health and PREVIEW[index]
     local num = 0
     if spread then
         for k = 1, #spread do
             local index = spread[k]
             if index == "B" then
-                index = PreviewBlessing(s)
+                index = PreviewBlessing(cfg)
             end
-            if index and (FAMILIES[index].blessing or FamOn(s, FAMILIES[index])) then
+            if index and (FAMILIES[index].blessing or FamOn(cfg, FAMILIES[index])) then
                 num = num + 1
                 previewList[num] = index
             end
@@ -1123,7 +1123,7 @@ function mod.RF_FvMissingPreview(frame, index, s, indVis)
         o = Overlay(frame, frame:GetFrameLevel() + mod.LVL_MARKER)
         frame._fvMissing = o
     end
-    Layout(o, s, frame._health, previewList, num)
+    Layout(o, cfg, frame._health, previewList, num)
 end
 
 -- First look once the world is up (the reload paths may not run at login).

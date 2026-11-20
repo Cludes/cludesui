@@ -92,21 +92,21 @@ end
 -- (a real mode swap, SwapPortraitMode) also falls back to "2d" while the
 -- portrait is hidden (no model built), has a masked Detached shape (a model
 -- cannot be masked) or sits on a mini frame (its fade never reaches a model).
-function mod.UF_ClassFallback(s)
-    if not (s and s.portraitNonPlayerOn) or mod.UF_Blizz() then
+function mod.UF_ClassFallback(cfg)
+    if not (cfg and cfg.portraitNonPlayerOn) or mod.UF_Blizz() then
         return "2d"
     end
-    local val = s.portraitNonPlayer or "2d"
+    local val = cfg.portraitNonPlayer or "2d"
     if val == "3d" then
-        local style = s.portraitStyle
+        local style = cfg.portraitStyle
         local p = saved.profile
         if
-            s.showPortrait == false
+            cfg.showPortrait == false
             or style == "none"
-            or (style == "detached" and (s.detachedPortraitShape or "portrait") ~= "none")
-            or s == p.targettarget
-            or s == p.focustarget
-            or s == p.pet
+            or (style == "detached" and (cfg.detachedPortraitShape or "portrait") ~= "none")
+            or cfg == p.targettarget
+            or cfg == p.focustarget
+            or cfg == p.pet
         then
             return "2d"
         end
@@ -874,40 +874,40 @@ end
 -- "wingless" is read as a view: its dragon comes from that style's keys and
 -- the indicator itself reads as off, with nothing rewritten until an options
 -- setter calls ns.UF_PinLegacyDragon.
-function mod.UF_DragonLegacy(s)
-    return s ~= nil and s.eliteIndicatorStyle == "wingless"
+function mod.UF_DragonLegacy(cfg)
+    return cfg ~= nil and cfg.eliteIndicatorStyle == "wingless"
 end
 
 -- The effective dragon settings of unitKey's settings table s: on, scale, x,
 -- y, flip, classColor, strata, level, instances. The table is kept per unit
 -- and rewritten by every call, so callers read it at once.
 mod._ufDragonEff = {}
-function mod.UF_DragonSettings(unitKey, s)
+function mod.UF_DragonSettings(unitKey, cfg)
     local e = mod._ufDragonEff[unitKey]
     if not e then
         e = {}
         mod._ufDragonEff[unitKey] = e
     end
-    if not s then
+    if not cfg then
         e.on = false
-    elseif mod.UF_DragonLegacy(s) then
-        e.on = s.eliteIndicatorEnabled == true
-        e.scale = s.eliteIndicatorWinglessScale or 100
-        e.x, e.y = s.eliteIndicatorX or 0, s.eliteIndicatorY or 0
-        e.flip = s.eliteIndicatorWinglessFlip == true
-        e.classColor = s.eliteIndicatorWinglessClassColor == true
-        e.strata = s.eliteIndicatorWinglessStrata or "inherit"
-        e.level = s.eliteIndicatorWinglessLevel or 1
-        e.instances = s.eliteIndicatorShowInInstances == true
+    elseif mod.UF_DragonLegacy(cfg) then
+        e.on = cfg.eliteIndicatorEnabled == true
+        e.scale = cfg.eliteIndicatorWinglessScale or 100
+        e.x, e.y = cfg.eliteIndicatorX or 0, cfg.eliteIndicatorY or 0
+        e.flip = cfg.eliteIndicatorWinglessFlip == true
+        e.classColor = cfg.eliteIndicatorWinglessClassColor == true
+        e.strata = cfg.eliteIndicatorWinglessStrata or "inherit"
+        e.level = cfg.eliteIndicatorWinglessLevel or 1
+        e.instances = cfg.eliteIndicatorShowInInstances == true
     else
-        e.on = s.detachedPortraitWinglessDragon == true
-        e.scale = s.detachedPortraitWinglessDragonScale or 100
-        e.x, e.y = s.detachedPortraitWinglessDragonX or 0, s.detachedPortraitWinglessDragonY or 0
-        e.flip = s.detachedPortraitWinglessDragonFlip == true
-        e.classColor = s.detachedPortraitWinglessDragonClassColor == true
-        e.strata = s.detachedPortraitWinglessDragonStrata or "inherit"
-        e.level = s.detachedPortraitWinglessDragonLevel or 2
-        e.instances = s.detachedPortraitWinglessDragonInstances == true
+        e.on = cfg.detachedPortraitWinglessDragon == true
+        e.scale = cfg.detachedPortraitWinglessDragonScale or 100
+        e.x, e.y = cfg.detachedPortraitWinglessDragonX or 0, cfg.detachedPortraitWinglessDragonY or 0
+        e.flip = cfg.detachedPortraitWinglessDragonFlip == true
+        e.classColor = cfg.detachedPortraitWinglessDragonClassColor == true
+        e.strata = cfg.detachedPortraitWinglessDragonStrata or "inherit"
+        e.level = cfg.detachedPortraitWinglessDragonLevel or 2
+        e.instances = cfg.detachedPortraitWinglessDragonInstances == true
     end
     return e
 end
@@ -916,22 +916,22 @@ end
 -- and retires the old style (Elite/Rare Indicator off, Badge style), so the
 -- frame looks the same. Every options setter of the dragon row and of the
 -- Elite/Rare Indicator calls it first; nothing calls it at load.
-function mod.UF_PinLegacyDragon(s)
-    if not mod.UF_DragonLegacy(s) then
+function mod.UF_PinLegacyDragon(cfg)
+    if not mod.UF_DragonLegacy(cfg) then
         return
     end
-    local e = mod.UF_DragonSettings("target", s)
-    s.detachedPortraitWinglessDragon = e.on
-    s.detachedPortraitWinglessDragonScale = e.scale
-    s.detachedPortraitWinglessDragonX = e.x
-    s.detachedPortraitWinglessDragonY = e.y
-    s.detachedPortraitWinglessDragonFlip = e.flip
-    s.detachedPortraitWinglessDragonClassColor = e.classColor
-    s.detachedPortraitWinglessDragonStrata = e.strata
-    s.detachedPortraitWinglessDragonLevel = e.level
-    s.detachedPortraitWinglessDragonInstances = e.instances
-    s.eliteIndicatorEnabled = false
-    s.eliteIndicatorStyle = "badge"
+    local e = mod.UF_DragonSettings("target", cfg)
+    cfg.detachedPortraitWinglessDragon = e.on
+    cfg.detachedPortraitWinglessDragonScale = e.scale
+    cfg.detachedPortraitWinglessDragonX = e.x
+    cfg.detachedPortraitWinglessDragonY = e.y
+    cfg.detachedPortraitWinglessDragonFlip = e.flip
+    cfg.detachedPortraitWinglessDragonClassColor = e.classColor
+    cfg.detachedPortraitWinglessDragonStrata = e.strata
+    cfg.detachedPortraitWinglessDragonLevel = e.level
+    cfg.detachedPortraitWinglessDragonInstances = e.instances
+    cfg.eliteIndicatorEnabled = false
+    cfg.eliteIndicatorStyle = "badge"
 end
 
 -- Lays the dragon out on host (a portrait backdrop, or the options preview
@@ -1157,13 +1157,13 @@ end
 -- Border Style, ring size, host width and height, pixel grid) and its tint on
 -- the colour (border r, g, b, alpha), so the per-target class-colour re-run
 -- only compares. The Portrait Dragon is its own pass (ns.UF_PortraitDragon).
-function mod.UF_PortraitExtras(owner, s, shapeKey)
-    local round = s and mod.UF_ROUND_SHAPES[shapeKey]
-    local ringKey = (round and s.detachedPortraitOuterRing) or "none"
+function mod.UF_PortraitExtras(owner, cfg, shapeKey)
+    local round = cfg and mod.UF_ROUND_SHAPES[shapeKey]
+    local ringKey = (round and cfg.detachedPortraitOuterRing) or "none"
     local ringTex = owner._outerRing
     if ringKey ~= "none" then
-        local texKey = s.borderTexture or "solid"
-        local scale = s.detachedPortraitOuterRingScale or 118
+        local texKey = cfg.borderTexture or "solid"
+        local scale = cfg.detachedPortraitOuterRingScale or 118
         local wid, hgt = owner:GetWidth(), owner:GetHeight()
         if wid < 1 then
             wid = 46
@@ -1198,12 +1198,12 @@ function mod.UF_PortraitExtras(owner, s, shapeKey)
             end
         end
         if ringTex._path then
-            local bc = s.borderColor
+            local bc = cfg.borderColor
             local red, green, blue = 0, 0, 0
             if bc then
                 red, green, blue = bc.r, bc.g, bc.b
             end
-            local a = s.borderAlpha or 1
+            local a = cfg.borderAlpha or 1
             if ringTex._r ~= red or ringTex._g ~= green or ringTex._b ~= blue or ringTex._a ~= a then
                 ringTex._r, ringTex._g, ringTex._b, ringTex._a = red, green, blue, a
                 ringTex:SetVertexColor(red, green, blue, a)
@@ -1217,7 +1217,7 @@ function mod.UF_PortraitExtras(owner, s, shapeKey)
     end
 
     local shadowTex = owner._innerShadow
-    if round and s.detachedPortraitInnerShadow then
+    if round and cfg.detachedPortraitInnerShadow then
         if not shadowTex then
             -- Over the masked portrait art (ARTWORK), under the shape ring.
             shadowTex = owner:CreateTexture(nil, "ARTWORK", nil, 7)
@@ -1712,12 +1712,12 @@ end
 -- always carries one, otherwise Portrait Mode and Show Portrait decide. An
 -- indicator set to Portrait centres on it only while it shows, never on a
 -- hidden backdrop (the options preview places them the same way).
-function mod.UF_PortraitShown(s)
+function mod.UF_PortraitShown(cfg)
     if mod.UF_Blizz() then
         return true
     end
-    local pStyle = (s and s.portraitStyle) or saved.profile.portraitStyle or "attached"
-    return pStyle ~= "none" and not (s and s.showPortrait == false)
+    local pStyle = (cfg and cfg.portraitStyle) or saved.profile.portraitStyle or "attached"
+    return pStyle ~= "none" and not (cfg and cfg.showPortrait == false)
 end
 local function CreatePortrait(widget, side, frameHeight, unitId)
     local portraitHeight = frameHeight or 46

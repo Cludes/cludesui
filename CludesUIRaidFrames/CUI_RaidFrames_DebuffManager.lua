@@ -1024,23 +1024,23 @@ end
 -- plus every rendered grid tile whose effective tooltip mode (own override, else the
 -- base mode) is "modifier". Cheap when the feature is off -- a few reads and
 -- existing eaters just park hidden.
-function mod.DM_TipModEnsure(btnFrame, skinData, s)
+function mod.DM_TipModEnsure(btnFrame, skinData, cfg)
     mod.DM_TipModSync(skinData)
     -- Off (no key, or no display in the mode): the sync above parked any
     -- eaters on the flip, so there is nothing per button to do -- zero cost.
     if not tipModArmed then return end
-    local baseMode = s and s.debuffHideTooltips
+    local baseMode = cfg and cfg.debuffHideTooltips
     local health = skinData.rfcHealth
-    local pinHost = health and ((mod.RF_AnchorHost and mod.RF_AnchorHost(health, s)) or health)
+    local pinHost = health and ((mod.RF_AnchorHost and mod.RF_AnchorHost(health, cfg)) or health)
     local tipGeo = skinData.dmTipGeo
     if skinData.rfcDebuffs then
         local isActive = baseMode == "modifier"
         local anchorPoint, corner, offX, offY, wid, hgt
         if isActive and pinHost and mod.RFC_DebuffPin then
             local size, spacing, per, vertical
-            anchorPoint, corner, offX, offY, size, spacing, per, vertical = mod.RFC_DebuffPin(s)
+            anchorPoint, corner, offX, offY, size, spacing, per, vertical = mod.RFC_DebuffPin(cfg)
             local g = tipGeo and tipGeo.base
-            wid, hgt = TipFootprint((g and g.n) or (s.debuffCap or 3), (g and g.cell) or size,
+            wid, hgt = TipFootprint((g and g.n) or (cfg.debuffCap or 3), (g and g.cell) or size,
                 spacing, per, vertical)
         end
         EnsureEater(skinData, "base", btnFrame, skinData.rfcDebuffs, isActive and anchorPoint ~= nil,
@@ -1061,10 +1061,10 @@ function mod.DM_TipModEnsure(btnFrame, skinData, s)
                     local isActive = tileDef.enabled ~= false and eff == "modifier" and c:IsShown()
                     local anchorPoint, corner, offX, offY, wid, hgt
                     if isActive and pinHost then
-                        anchorPoint, corner, offX, offY = TilePin(tileDef, s, skinData)
-                        local grow = mod.DM_KitTileY(tileDef, s, skinData) and "RIGHT" or (tileDef.growDirection or "CENTER")
+                        anchorPoint, corner, offX, offY = TilePin(tileDef, cfg, skinData)
+                        local grow = mod.DM_KitTileY(tileDef, cfg, skinData) and "RIGHT" or (tileDef.growDirection or "CENTER")
                         local g = tipGeo and tipGeo.tiles and tipGeo.tiles[tileDef.id]
-                        wid, hgt = TipFootprint((g and g.n) or (tileDef.cap or s.debuffCap or 3),
+                        wid, hgt = TipFootprint((g and g.n) or (tileDef.cap or cfg.debuffCap or 3),
                             (g and g.cell) or EffectiveIconSize(skinData, tileDef.size or 18), tileDef.spacing or 1,
                             tonumber(tileDef.iconsPerRow) or 0, (grow == "UP" or grow == "DOWN"))
                     end
@@ -2879,18 +2879,18 @@ end
 -------------------------------------------------------------------------------
 -- The apply pass (owns the whole debuff-container config while active)
 -------------------------------------------------------------------------------
-function mod.DM_ApplyDebuffConfig(boxHolder, skinData, s, styleKey)
+function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
     AK = AK or CludesUI.AuraKit
     -- Default-ON: no dmDebuff table yet = the defaults (Show All + cc on).
     local dmCfg = DM() or {}
     local declared = skinData.rfcDebuffGroups
     if not (AK and declared) then return end
 
-    local cap = s.debuffCap or 3
-    local size = mod.RFC_DebuffSize(s)
+    local cap = cfg.debuffCap or 3
+    local size = mod.RFC_DebuffSize(cfg)
     local layout = {
         elementWidth = size, elementHeight = size,
-        elementSpacing = s.debuffSpacing or 1, lineSpacing = s.debuffSpacing or 1,
+        elementSpacing = cfg.debuffSpacing or 1, lineSpacing = cfg.debuffSpacing or 1,
     }
     -- Tooltip-modifier eaters: every footprint sum, stash and ensure below
     -- is gated on the feature being wanted, so the plain apply pays nothing.
@@ -2898,7 +2898,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, s, styleKey)
     -- The same footprint counts seat the Party Frames kit's grid tiles.
     local geoOn = tipOn or (skinData.kit and true) or false
 
-    local records, ccCand, claimMap, _, effectCats, matchOn = BuildRecords(s, dmCfg)
+    local records, ccCand, claimMap, _, effectCats, matchOn = BuildRecords(cfg, dmCfg)
 
     -- Dead-corpse swap state rebuilds fresh every apply; a config that lost its
     -- npdead record sheds the swap here (the stale variant parks below).
@@ -2982,18 +2982,18 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, s, styleKey)
             boxHolder:SetAuraGroupCandidateFilters(groupKey, region.cand)
             if region.fxSize then
                 -- Sized record: keep the stable per-category style fresh (size edits restyle existing buttons) + same size in the flow math.
-                EnsureBaseSizeStyle(skinData, s, region.key, region.fxSize)
+                EnsureBaseSizeStyle(skinData, cfg, region.key, region.fxSize)
                 boxHolder:SetAuraGroupLayout(groupKey, {
                     elementWidth = recordSize, elementHeight = recordSize,
-                    elementSpacing = s.debuffSpacing or 1,
-                    lineSpacing = s.debuffSpacing or 1,
+                    elementSpacing = cfg.debuffSpacing or 1,
+                    lineSpacing = cfg.debuffSpacing or 1,
                 })
             elseif region.ccLead then
                 -- The CC row's record form keeps the row's lead (flow order 0 sorts
                 -- before every registered group).
                 leadLayout = leadLayout or {
                     elementWidth = size, elementHeight = size,
-                    elementSpacing = s.debuffSpacing or 1, lineSpacing = s.debuffSpacing or 1,
+                    elementSpacing = cfg.debuffSpacing or 1, lineSpacing = cfg.debuffSpacing or 1,
                     layoutIndex = 0,
                 }
                 boxHolder:SetAuraGroupLayout(groupKey, leadLayout)
@@ -3013,7 +3013,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, s, styleKey)
         wipe(tipGeo.tiles)
         -- Party Frames kit: the first grid tile seats under the base row.
         if skinData.kit and mod.RFC_DebuffPin then
-            local _, _, _, by, _, bSpc, bPer, bVert = mod.RFC_DebuffPin(s)
+            local _, _, _, by, _, bSpc, bPer, bVert = mod.RFC_DebuffPin(cfg)
             local _, bh = TipFootprint(tipN, tipCell, bSpc, bPer, bVert)
             tipGeo.kitY = by - ((bh > 0) and (bh + bSpc) or 0)
         else
@@ -3110,7 +3110,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, s, styleKey)
                 if tileHost then
                     -- Back from a park: switched on again before it is configured (re-pointed below).
                     UnparkTileContainer(tileHost)
-                    local tStyleKey = EnsureTileStyle(skinData, s, tileDef)
+                    local tStyleKey = EnsureTileStyle(skinData, cfg, tileDef)
                     -- Back from the stale sweep: its overlays left the bar's registry and
                     -- missed any fill swap or fill direction change meanwhile.
                     if tileHost._dmSwept then
@@ -3242,7 +3242,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, s, styleKey)
                                 tileHost:SetAuraGroupCandidateFilters(groupKey, region.cand)
                                 if region.fxSize then
                                     -- Sized record: per-category tile style variant fresh + matching flow math.
-                                    EnsureTileStyle(skinData, s, tileDef, region.fxSize, region.key)
+                                    EnsureTileStyle(skinData, cfg, tileDef, region.fxSize, region.key)
                                     tileHost:SetAuraGroupLayout(groupKey, {
                                         elementWidth = recordSize, elementHeight = recordSize,
                                         elementSpacing = tileDef.spacing or 1,
@@ -3334,7 +3334,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, s, styleKey)
                             end
                             skinData.dmDeadSwap = { show = deadRec.gkey, cap = tCap, park = park, tileId = tileDef.id }
                         end
-                        AnchorTileContainer(tileHost, skinData.rfcHealth, s, tileDef, skinData)
+                        AnchorTileContainer(tileHost, skinData.rfcHealth, cfg, tileDef, skinData)
                     end
 
                     -- Shown on every unit (no assist gate, see the base records).
@@ -3395,7 +3395,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, s, styleKey)
     -- Tooltip-modifier eaters: footprint inputs above are fresh, and tile
     -- containers built on the deferred lanes re-enter through this apply.
     -- Off: nothing runs here (the containers reload's ensure parks on a flip).
-    if tipOn and mod.DM_TipModEnsure and skinData.dmHost then mod.DM_TipModEnsure(skinData.dmHost, skinData, s) end
+    if tipOn and mod.DM_TipModEnsure and skinData.dmHost then mod.DM_TipModEnsure(skinData.dmHost, skinData, cfg) end
 end
 
 -- Death-edge hook (from the UNIT_HEALTH repaint path, unit assignment, and the

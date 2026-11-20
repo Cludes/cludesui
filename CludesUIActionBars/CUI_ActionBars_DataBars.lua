@@ -68,15 +68,15 @@ end
 
 -- Color mode per bar: nil/reactive = state-driven defaults, "accent" = live
 -- accent color, "custom" = stored custom color.
-function mod.ResolveDataBarColor(s, red, green, blue)
-    local mode = s and s.colorMode
+function mod.ResolveDataBarColor(cfg, red, green, blue)
+    local mode = cfg and cfg.colorMode
     if mode == "accent" then
         local ACC = CludesUI.CLUDES_GREEN
         if ACC then
             return ACC.r or red, ACC.g or green, ACC.b or blue
         end
     elseif mode == "custom" then
-        local color = s.customColor
+        local color = cfg.customColor
         if color then
             return color.r or 1, color.g or 1, color.b or 1
         end
@@ -111,10 +111,10 @@ CludesUI.RegAccent({
 -- above the fill, the holder's own level with Show Behind. The text host stays
 -- above it. A child of the holder, so the mouseover fade carries it; the
 -- holder's alpha is never read or written. On ns.
-mod.ApplyDataBarBorder = function(holderFrame, s)
+mod.ApplyDataBarBorder = function(holderFrame, cfg)
     local owner = holderFrame._cbHost
     local line = holderFrame._border and holderFrame._border._frame
-    if not s.customBorder then
+    if not cfg.customBorder then
         if holderFrame._cbOn then
             holderFrame._cbOn = nil
             CludesUI.HideBorderStyle(owner)
@@ -140,9 +140,9 @@ mod.ApplyDataBarBorder = function(holderFrame, s)
             line:Hide()
         end
     end
-    local texture = s.borderTexture or "solid"
-    local color = s.borderColor
-    local sz, px = ResolveBorderThickness(s)
+    local texture = cfg.borderTexture or "solid"
+    local color = cfg.borderColor
+    local sz, px = ResolveBorderThickness(cfg)
     CludesUI.ApplyBorderStyle(
         owner,
         sz,
@@ -151,12 +151,12 @@ mod.ApplyDataBarBorder = function(holderFrame, s)
         color and color.b or 0,
         color and color.a or 1,
         texture,
-        s.borderTextureOffset,
-        s.borderTextureOffsetY,
-        s.borderTextureShiftX,
-        s.borderTextureShiftY,
+        cfg.borderTextureOffset,
+        cfg.borderTextureOffsetY,
+        cfg.borderTextureShiftX,
+        cfg.borderTextureShiftY,
         "actionbars",
-        s.borderThickness or "thin",
+        cfg.borderThickness or "thin",
         nil,
         px
     )
@@ -164,7 +164,7 @@ mod.ApplyDataBarBorder = function(holderFrame, s)
     if texture ~= "" and texture ~= "solid" then
         local edge = CludesUI._bdBorderData[owner]
         if edge then
-            if s.borderBehind then
+            if cfg.borderBehind then
                 topY = lvl
             end
             edge:SetFrameLevel(topY)
@@ -189,20 +189,20 @@ end
 -- follows every SetText; rotated, an upright box on the holder. _textPost:
 -- a rotated placement is measured from the string, so the bar's update
 -- re-places it after every SetText.
-function mod.DataBarPlaceText(widget, s)
+function mod.DataBarPlaceText(widget, cfg)
     local textValue = widget._text
     local rot = 0
-    if s.rotateText and s.orientation == "VERTICAL" then
-        rot = s.textReadDown and -math.pi / 2 or math.pi / 2
+    if cfg.rotateText and cfg.orientation == "VERTICAL" then
+        rot = cfg.textReadDown and -math.pi / 2 or math.pi / 2
     end
     -- SetRotation only while rotated, and once more on the way back.
     if rot ~= 0 or widget._textRotated then
         textValue:SetRotation(rot)
         widget._textRotated = (rot ~= 0) or nil
     end
-    local anchor = s.textAnchor
-    local ox, oy = s.textOffsetX or 0, s.textOffsetY or 0
-    local bgOn = s.showTextBg
+    local anchor = cfg.textAnchor
+    local ox, oy = cfg.textOffsetX or 0, cfg.textOffsetY or 0
+    local bgOn = cfg.showTextBg
     local backdrop = widget._textBg
     if bgOn and not backdrop then
         backdrop = widget._textHost:CreateTexture(nil, "ARTWORK")
@@ -238,16 +238,16 @@ function mod.DataBarPlaceText(widget, s)
             sh = textValue:GetLineHeight()
         end
         if not sh or sh <= 0 then
-            sh = s.textSize or 9
+            sh = cfg.textSize or 9
         end
         local vx, vy = 0, 0
         if anchor == "top" or anchor == "bottom" then
-            vy = max(0, (s.height or 18) / 2 - 1 - 4 - sw / 2)
+            vy = max(0, (cfg.height or 18) / 2 - 1 - 4 - sw / 2)
             if anchor == "bottom" then
                 vy = -vy
             end
         elseif anchor == "left" or anchor == "right" then
-            vx = max(0, (s.width or 400) / 2 - 1 - sh / 2)
+            vx = max(0, (cfg.width or 400) / 2 - 1 - sh / 2)
             if anchor == "left" then
                 vx = -vx
             end
@@ -268,7 +268,7 @@ function mod.DataBarPlaceText(widget, s)
     end
     if backdrop then
         if bgOn then
-            local color = s.textBgColor
+            local color = cfg.textBgColor
             backdrop:SetColorTexture(
                 color and color.r or 0.06,
                 color and color.g or 0.06,
@@ -286,10 +286,10 @@ end
 -- XP bar's style, text, dividers and Custom Border. Frame-bound only, so the
 -- options preview's own frame takes it too; ApplyDataBarLayout adds the live
 -- bar's size matching and value update. On ns.
-function mod.StyleDataBarFrame(widget, s)
-    local wid = s.width or 400
-    local hgt = s.height or 18
-    local orient = s.orientation or "HORIZONTAL"
+function mod.StyleDataBarFrame(widget, cfg)
+    local wid = cfg.width or 400
+    local hgt = cfg.height or 18
+    local orient = cfg.orientation or "HORIZONTAL"
 
     -- Centered growth on resize is handled by the centralized unlock mode
     -- position system (NotifyElementResized re-applies CENTER anchor).
@@ -300,7 +300,7 @@ function mod.StyleDataBarFrame(widget, s)
         widget:SetSize(wid, hgt)
     end
 
-    local texPath = mod.ResolveDataBarTexture(s.barTexture)
+    local texPath = mod.ResolveDataBarTexture(cfg.barTexture)
     widget._bar:SetStatusBarTexture(texPath)
     widget._bar:GetStatusBarTexture():SetDrawLayer("ARTWORK", 4)
     if widget._restedBar then
@@ -317,7 +317,7 @@ function mod.StyleDataBarFrame(widget, s)
 
     -- XP bar art style and profession fill (both opt-in; CUI_ActionBars_XPBar.lua).
     if widget._isXP then
-        mod.ApplyXPBarStyle(widget, s)
+        mod.ApplyXPBarStyle(widget, cfg)
     end
 
     -- Per-bar Text Size (default 9) and the readout's placement (anchor,
@@ -328,23 +328,23 @@ function mod.StyleDataBarFrame(widget, s)
         -- saved fonts and a login spec-profile switch.
         widget._text:SetFont(
             CludesUI.GetFontPath("actionBars"),
-            s.textSize or 9,
+            cfg.textSize or 9,
             CludesUI.GetFontOutlineFlag("actionBars")
         )
-        mod.DataBarPlaceText(widget, s)
+        mod.DataBarPlaceText(widget, cfg)
         if widget._isXP then
-            mod.XPBarTextSlots(widget, s)
+            mod.XPBarTextSlots(widget, cfg)
         end
     end
 
     -- Dividers (CUI_ActionBars_XPBar.lua): one boolean read while off; a
     -- built host is called to hide.
-    if widget._divHost or s.showDividers then
-        mod.AB_DataBarDividers(widget, wid, hgt, orient, s)
+    if widget._divHost or cfg.showDividers then
+        mod.AB_DataBarDividers(widget, wid, hgt, orient, cfg)
     end
 
     -- Custom Border (one boolean read while off).
-    mod.ApplyDataBarBorder(widget, s)
+    mod.ApplyDataBarBorder(widget, cfg)
 end
 
 local function ApplyDataBarLayout(barId)

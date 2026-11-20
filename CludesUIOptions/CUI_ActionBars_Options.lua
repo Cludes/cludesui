@@ -380,36 +380,36 @@ CludesUI.AtOptionsLogin(function()
     end)
 
     -- Legacy boolean flags and the visibility-mode dropdown must stay in sync: the runtime reads both shapes.
-    local function GetVisibilityKey(s)
+    local function GetVisibilityKey(cfg)
         if not VisibilityCompat then
-            return s.barVisibility or "always"
+            return cfg.barVisibility or "always"
         end
-        return VisibilityCompat.Normalize(s)
+        return VisibilityCompat.Normalize(cfg)
     end
 
-    local function ApplyVisibilityKey(s, value)
+    local function ApplyVisibilityKey(cfg, value)
         if VisibilityCompat then
-            VisibilityCompat.ApplyMode(s, value)
+            VisibilityCompat.ApplyMode(cfg, value)
             return
         end
 
-        s.barVisibility = value
-        s.alwaysHidden = (value == "never")
+        cfg.barVisibility = value
+        cfg.alwaysHidden = (value == "never")
 
-        local wasMouseover = s.mouseoverEnabled
-        s.mouseoverEnabled = (value == "mouseover")
+        local wasMouseover = cfg.mouseoverEnabled
+        cfg.mouseoverEnabled = (value == "mouseover")
         if value == "mouseover" then
             if not wasMouseover then
-                s._savedBarAlpha = s.mouseoverAlpha or 1
+                cfg._savedBarAlpha = cfg.mouseoverAlpha or 1
             end
-            s.mouseoverAlpha = 0
-        elseif wasMouseover and s._savedBarAlpha then
-            s.mouseoverAlpha = s._savedBarAlpha
-            s._savedBarAlpha = nil
+            cfg.mouseoverAlpha = 0
+        elseif wasMouseover and cfg._savedBarAlpha then
+            cfg.mouseoverAlpha = cfg._savedBarAlpha
+            cfg._savedBarAlpha = nil
         end
 
-        s.combatHideEnabled = (value == "out_of_combat")
-        s.combatShowEnabled = (value == "in_combat")
+        cfg.combatHideEnabled = (value == "out_of_combat")
+        cfg.combatShowEnabled = (value == "in_combat")
     end
 
     local function CopyVisibilitySettings(dst, source, dstKey)

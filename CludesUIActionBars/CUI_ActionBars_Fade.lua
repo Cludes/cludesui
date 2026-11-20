@@ -80,8 +80,8 @@ end
 -- WoW Forever has no skyriding: its options leave the condition out, so a
 -- profile from retail that carries it is not on for it there.
 local FLYING_COUNTS = not CludesUI.IS_FOREVER
-function EAB_VTABLE.Hover.AdvancedFadeEnabled(s)
-    local c = s and s.advancedFadeConditions
+function EAB_VTABLE.Hover.AdvancedFadeEnabled(cfg)
+    local c = cfg and cfg.advancedFadeConditions
     return type(c) == "table"
             and (c.combat or c.party or c.raid or c.instance or c.mounted or (FLYING_COUNTS and c.flying) or c.target or c.enemy_target or c.mouseover)
             and true
@@ -99,11 +99,11 @@ end
 -- Any picked condition that holds reveals the bar. The group, instance, mount
 -- and skyriding probes are the visibility lanes' own, so a condition reads
 -- exactly as the same lane does on the Visibility row.
-function EAB_VTABLE.Hover.CustomFadeConditionMet(barId, s)
-    if not EAB_VTABLE.Hover.AdvancedFadeEnabled(s) then
+function EAB_VTABLE.Hover.CustomFadeConditionMet(barId, cfg)
+    if not EAB_VTABLE.Hover.AdvancedFadeEnabled(cfg) then
         return false
     end
-    local c = s.advancedFadeConditions
+    local c = cfg.advancedFadeConditions
     if type(c) ~= "table" then
         return false
     end
@@ -364,21 +364,21 @@ end
 -- _savedBarAlpha is load-bearing: ApplyMode parks mouseoverAlpha at 0 and stashes the real
 -- value there while a mouseover selection is stored, so the shown branch would paint 0.
 -- On the vtable, not a chunk local.
-function EAB_VTABLE.Hover.RestingAlpha(barId, s)
-    s = s or EAB_VTABLE.Hover.GetSettings(barId)
-    if not s then
+function EAB_VTABLE.Hover.RestingAlpha(barId, cfg)
+    cfg = cfg or EAB_VTABLE.Hover.GetSettings(barId)
+    if not cfg then
         return 1, false
     end
     local wantsHover
-    if s.mouseoverEnabled and CludesUI.VisWantsMouseover then
-        wantsHover = CludesUI.VisWantsMouseover(s, "barVisibility", nil, CludesUI.VIS_CAPS_DEFAULT)
+    if cfg.mouseoverEnabled and CludesUI.VisWantsMouseover then
+        wantsHover = CludesUI.VisWantsMouseover(cfg, "barVisibility", nil, CludesUI.VIS_CAPS_DEFAULT)
     else
-        wantsHover = s.mouseoverEnabled
+        wantsHover = cfg.mouseoverEnabled
     end
     if wantsHover then
         return 0, true
     end
-    return s._savedBarAlpha or s.mouseoverAlpha or 1, false
+    return cfg._savedBarAlpha or cfg.mouseoverAlpha or 1, false
 end
 
 -- Fade ONE bar in, no broadcast. The fadeDir memo makes repeat calls while

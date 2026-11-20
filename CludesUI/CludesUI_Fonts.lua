@@ -977,9 +977,9 @@ function CludesUI.SnapshotFontObject(object)
     return snap
 end
 
-function CludesUI._RestoreFontMember(memberKey, s)
-    if s and s.face and s.size and s.size > 0 then
-        pcall(memberKey.SetFont, memberKey, s.face, s.size, s.flags or "")
+function CludesUI._RestoreFontMember(memberKey, cfg)
+    if cfg and cfg.face and cfg.size and cfg.size > 0 then
+        pcall(memberKey.SetFont, memberKey, cfg.face, cfg.size, cfg.flags or "")
     end
 end
 

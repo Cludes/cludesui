@@ -1153,11 +1153,11 @@ do
     local sentAt = {}
 
     -- Cuts s to at most n bytes without splitting a UTF-8 character.
-    local function CutBytes(s, num)
-        if #s <= num then
-            return s
+    local function CutBytes(text, num)
+        if #text <= num then
+            return text
         end
-        return (s:sub(1, num):gsub("[\192-\255][\128-\191]*$", ""))
+        return (text:sub(1, num):gsub("[\192-\255][\128-\191]*$", ""))
     end
 
     -- Custom text as saved: "|" and control characters dropped (the chat API

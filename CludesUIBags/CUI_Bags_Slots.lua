@@ -584,10 +584,10 @@ do
     local OPS = { ["="] = "=", ["=="] = "=", [">"] = ">", [">="] = ">=", ["<"] = "<", ["<="] = "<=" }
     local MAX_DEPTH = 12
 
-    local function Tokenize(s)
-        local toks, i, n = {}, 1, #s
+    local function Tokenize(text)
+        local toks, i, n = {}, 1, #text
         while i <= n do
-            local c = s:sub(i, i)
+            local c = text:sub(i, i)
             if c:find("^%s") then
                 i = i + 1
             elseif c == "(" then
@@ -601,29 +601,29 @@ do
                 i = i + 1
             elseif c == "&" then
                 toks[#toks + 1] = { k = "and" }
-                i = i + #s:match("^&&?", i)
+                i = i + #text:match("^&&?", i)
             elseif c == "|" then
                 toks[#toks + 1] = { k = "or" }
-                i = i + #s:match("^||?", i)
+                i = i + #text:match("^||?", i)
             elseif c:find("^[<>=]") then
-                local op = s:match("^[<>=]=?", i)
+                local op = text:match("^[<>=]=?", i)
                 if not OPS[op] then
                     return nil
                 end
                 toks[#toks + 1] = { k = "op", v = OPS[op] }
                 i = i + #op
             elseif c:find("^%d") then
-                local a, b, e = s:match("^(%d+)%s*%-%s*(%d+)()", i)
+                local a, b, e = text:match("^(%d+)%s*%-%s*(%d+)()", i)
                 if a then
                     toks[#toks + 1] = { k = "range", lo = tonumber(a), hi = tonumber(b) }
                     i = e
                 else
-                    local skinData = s:match("^%d+", i)
+                    local skinData = text:match("^%d+", i)
                     toks[#toks + 1] = { k = "num", v = tonumber(skinData) }
                     i = i + #skinData
                 end
             elseif c:find("^%a") then
-                local wid = s:match("^%a+", i)
+                local wid = text:match("^%a+", i)
                 i = i + #wid
                 if wid == "and" or wid == "or" or wid == "not" then
                     toks[#toks + 1] = { k = wid }

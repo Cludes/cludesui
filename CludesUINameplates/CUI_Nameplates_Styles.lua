@@ -1348,13 +1348,13 @@ do
     end
     -- A background's texture path in settings s (nil = flat); the options
     -- preview shares it.
-    function mod.NP_TexBgPath(s, cast)
-        if not (s and s[cast and "castTextureBg" or "healthTextureBg"]) then
+    function mod.NP_TexBgPath(cfg, cast)
+        if not (cfg and cfg[cast and "castTextureBg" or "healthTextureBg"]) then
             return nil
         end
         return CludesUI.ResolveTexturePath(
             mod.healthBarTextures,
-            s[cast and "castBarTexture" or "healthBarTexture"] or "none",
+            cfg[cast and "castBarTexture" or "healthBarTexture"] or "none",
             nil
         )
     end

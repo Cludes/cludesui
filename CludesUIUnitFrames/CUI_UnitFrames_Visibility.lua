@@ -24,9 +24,9 @@ end
 -- mouseover hover) routes through this so a combat transition or hover can't clobber
 -- the fade. Combat state comes from the caller (the visibility loop's event-tracked
 -- _ufInCombat, which leads InCombatLockdown() on regen events). On ns: the pass calls it.
-function mod.ResolveFrameAlpha(s, inCombat)
-    if s and s.oocFadeEnabled and not inCombat then
-        return s.oocAlpha or 0.5
+function mod.ResolveFrameAlpha(cfg, inCombat)
+    if cfg and cfg.oocFadeEnabled and not inCombat then
+        return cfg.oocAlpha or 0.5
     end
     return 1
 end
@@ -37,11 +37,11 @@ end
 -- on a different verdict than the pass would. On ns: the pass calls it. hiddenByOpts
 -- leads because it did in the pass too (it re-forced 0 at the end of the chain); returning
 -- hoverGated false with it stops a hover from revealing what an option lane has hidden.
-function mod.ResolveVisResting(s, widget, ext, hiddenByOpts, inCombat)
+function mod.ResolveVisResting(cfg, widget, ext, hiddenByOpts, inCombat)
     if hiddenByOpts then
         return 0, false
     end
-    local shownAlpha = mod.ResolveFrameAlpha(s, inCombat)
+    local shownAlpha = mod.ResolveFrameAlpha(cfg, inCombat)
     if ext == "mouseover" then
         return 0, true
     end
@@ -52,7 +52,7 @@ function mod.ResolveVisResting(s, widget, ext, hiddenByOpts, inCombat)
         end
         return ext and shownAlpha or 0, false
     end
-    local vis = s.barVisibility or "always"
+    local vis = cfg.barVisibility or "always"
     -- Never rides the alpha too, not just the Show/Hide bucket: that bucket is
     -- lockdown-gated, so a Never picked in combat would otherwise leave the frame at
     -- full alpha until PLAYER_REGEN_ENABLED. An override reaches the ext block above.
@@ -65,7 +65,7 @@ function mod.ResolveVisResting(s, widget, ext, hiddenByOpts, inCombat)
     if vis == "out_of_combat" then
         return (not inCombat) and shownAlpha or 0, false
     end
-    if s.showWhenHealthMissing then
+    if cfg.showWhenHealthMissing then
         if vis == "in_raid" then
             return IsInRaid() and shownAlpha or 0, false
         end
@@ -80,7 +80,7 @@ function mod.ResolveVisResting(s, widget, ext, hiddenByOpts, inCombat)
         -- Legacy single mouseover: a configured "Hide if" override that is NOT currently
         -- triggering counts as a positive show, so the frame does not require hover
         -- (fixes "dismount in combat keeps frame hidden" / "hide if no target inverted").
-        local hasAnyHideOpt = CludesUI.VisHasAnyOption(s)
+        local hasAnyHideOpt = CludesUI.VisHasAnyOption(cfg)
         if hasAnyHideOpt then
             return shownAlpha, false
         end
@@ -104,21 +104,21 @@ end
 --- mouse leave of every frame). An applied Visibility override answers it too: it holds
 --- the hover state itself, and without this the frame would rest at alpha 0 with no
 --- handler willing to reveal it again.
-function mod.VisMouseoverWired(s)
-    if not s then
+function mod.VisMouseoverWired(cfg)
+    if not cfg then
         return false
     end
-    if (s.barVisibility or "always") == "mouseover" then
+    if (cfg.barVisibility or "always") == "mouseover" then
         return true
     end
-    return (CludesUI.VisOverrideValue(s)) == "mouseover"
+    return (CludesUI.VisOverrideValue(cfg)) == "mouseover"
 end
 
 -- Health visibility is a display-only reveal. The curve result is always secret
 -- (UnitHealthPercent returns secrets): hand it directly to alpha setters, never
 -- use it as a Lua condition. Those frames' GetAlpha then reads secret too.
-function mod.HealthVisibilityEnabled(s, widget)
-    if not s or not s.showWhenHealthMissing or not widget then
+function mod.HealthVisibilityEnabled(cfg, widget)
+    if not cfg or not cfg.showWhenHealthMissing or not widget then
         return false
     end
     local unitToken = widget._cuiUnit
@@ -128,8 +128,8 @@ function mod.HealthVisibilityEnabled(s, widget)
     if mod.VisUnitDisabled(saved.profile, unitToken) then
         return false
     end
-    local override = CludesUI.VisOverrideValue(s)
-    return (override or s.barVisibility or "always") ~= "never"
+    local override = CludesUI.VisOverrideValue(cfg)
+    return (override or cfg.barVisibility or "always") ~= "never"
 end
 
 -- Every writer of the reveal (the visibility pass, both hover handlers) goes

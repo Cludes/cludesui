@@ -2619,23 +2619,23 @@ local function IsForeignString(importText)
     return importText:sub(1, #FOREIGN_PREFIX) == FOREIGN_PREFIX
 end
 
-local function TranslateForeignName(s)
+local function TranslateForeignName(text)
     if
         not (
-            s:find("EUI", 1, true)
-            or s:find("eui", 1, true)
-            or s:find(OLD_LOW, 1, true)
-            or s:find(OLD_CAP, 1, true)
-            or s:find(OLD_UP, 1, true)
+            text:find("EUI", 1, true)
+            or text:find("eui", 1, true)
+            or text:find(OLD_LOW, 1, true)
+            or text:find(OLD_CAP, 1, true)
+            or text:find(OLD_UP, 1, true)
         )
     then
-        return s
+        return text
     end
-    s = s:gsub(OLD_UP, "CLUDES"):gsub(OLD_CAP, "Cludes"):gsub(OLD_LOW, "cludes")
+    text = text:gsub(OLD_UP, "CLUDES"):gsub(OLD_CAP, "Cludes"):gsub(OLD_LOW, "cludes")
     -- "EUI" not after a capital, "eui" not after a letter (so words such as
     -- the French "seuil" in a user's own text stay as they are).
-    s = s:gsub("%f[%u]EUI", "CUI"):gsub("%f[%a]eui", "cui")
-    return s
+    text = text:gsub("%f[%u]EUI", "CUI"):gsub("%f[%a]eui", "cui")
+    return text
 end
 
 local function TranslateForeignPayload(v)
@@ -4239,10 +4239,10 @@ local function ReconcileImportedMedia(body)
         return
     end
 
-    local function Signature(s)
+    local function Signature(text)
         local hgt = 5381
-        for i = 1, #s do
-            hgt = (hgt * 33 + s:byte(i)) % 4294967296
+        for i = 1, #text do
+            hgt = (hgt * 33 + text:byte(i)) % 4294967296
         end
         return hgt
     end

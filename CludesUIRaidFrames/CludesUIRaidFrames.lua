@@ -273,8 +273,8 @@ local function ApplyRoleIcon(texture, role, style)
 end
 
 -- Text shares the icon's carrier and anchor, and is created only when enabled.
-function mod.ApplyRoleText(iconTex, role, s)
-    if not s.roleText then
+function mod.ApplyRoleText(iconTex, role, cfg)
+    if not cfg.roleText then
         return
     end
     local textValue = iconTex._roleText
@@ -285,9 +285,9 @@ function mod.ApplyRoleText(iconTex, role, s)
     local colorKey = role == "TANK" and "roleTextTankColor"
         or role == "HEALER" and "roleTextHealerColor"
         or "roleTextDPSColor"
-    local color = s[colorKey] or mod._internals.defaults.profile[colorKey]
+    local color = cfg[colorKey] or mod._internals.defaults.profile[colorKey]
     textValue:SetTextColor(color.r, color.g, color.b)
-    CludesUI.ApplyModuleFont(textValue, nil, s.roleIconSize or 14, "raidFrames")
+    CludesUI.ApplyModuleFont(textValue, nil, cfg.roleIconSize or 14, "raidFrames")
     local place = iconTex:GetPoint() or "CENTER"
     textValue:ClearAllPoints()
     textValue:SetPoint(place, iconTex, place, 0, 0)
@@ -906,15 +906,15 @@ local inCombat = false
 --  combat" -> always; else outOfCombat. `s` = a scaled raid/party/extra proxy
 --  or db.profile. On ns so OnEnter can reach it.
 -------------------------------------------------------------------------------
-mod._ResolveTooltipMode = function(s)
-    if not s then
+mod._ResolveTooltipMode = function(cfg)
+    if not cfg then
         return "outOfCombat"
     end
-    local m = s.tooltipMode
+    local m = cfg.tooltipMode
     if m ~= nil then
         return m
     end
-    if s.showTooltip == false then
+    if cfg.showTooltip == false then
         return "never"
     end
     if CludesUIDB and CludesUIDB.showUnitTooltipsInCombat then
@@ -1301,21 +1301,21 @@ mod.RF_KIT_NEUTRAL = {
 }
 -- The CludesUI border's effective size (0 under a stock style, whose edge
 -- replaces it).
-function mod.RF_EffBorderSize(s)
+function mod.RF_EffBorderSize(cfg)
     if mod.RF_Stock() then
         return 0
     end
-    return (s and s.borderSize) or 1
+    return (cfg and cfg.borderSize) or 1
 end
 -- A custom border the Color Custom Borders options can recolor (Threat Borders
 -- and Dispel Border cogs): a Border Style other than Solid with a size, under
 -- the CludesUI style. Read from the saved keys, like the options gate.
-function mod.RF_CustomBorderOn(s)
-    local texture = s and s.borderTexture
+function mod.RF_CustomBorderOn(cfg)
+    local texture = cfg and cfg.borderTexture
     if texture == nil or texture == "" or texture == "solid" then
         return false
     end
-    return mod.RF_EffBorderSize(s) > 0
+    return mod.RF_EffBorderSize(cfg) > 0
 end
 
 -- Threat highlight (aggro: status 2-3; Threat Borders size 0 = off): the red
@@ -1324,14 +1324,14 @@ end
 -- own border instead (ApplyBorderColor, below hover/target): no inner border is
 -- drawn and the slider size does not gate it. The border repaints only when the
 -- aggro state flips; d is the FFD table, never the Blizzard button.
-function mod.RF_PaintThreat(skinData, s, unitToken)
+function mod.RF_PaintThreat(skinData, cfg, unitToken)
     local tf = skinData.threatFrame
     if not tf then
         return
     end
-    local bs = s.threatBorderSize or 0
-    local compact = mod.RF_ButtonCompact(skinData, s)
-    local rc = not compact and s.threatCustomBorder == true and mod.RF_CustomBorderOn(s)
+    local bs = cfg.threatBorderSize or 0
+    local compact = mod.RF_ButtonCompact(skinData, cfg)
+    local rc = not compact and cfg.threatCustomBorder == true and mod.RF_CustomBorderOn(cfg)
     local status
     if bs > 0 or rc then
         status = UnitThreatSituation(unitToken)
@@ -1612,8 +1612,8 @@ end
 -------------------------------------------------------------------------------
 --  Power bar visibility (derived from role flags)
 -------------------------------------------------------------------------------
-local function IsPowerBarEnabled(s)
-    return s.powerShowForHealer or s.powerShowForTank or s.powerShowForDPS
+local function IsPowerBarEnabled(cfg)
+    return cfg.powerShowForHealer or cfg.powerShowForTank or cfg.powerShowForDPS
 end
 
 -- Uniform Icon Anchoring (powerUniformAnchors): decoration anchor host for a
@@ -1622,13 +1622,13 @@ end
 -- icons/text. Visuals (fills, absorbs, dispel) keep the real bar.
 -- Party Frames kit: the host is the visible party frame (_cuiKitRef, our
 -- frame at the art's rect), whatever Uniform Icon Anchoring says.
-function mod.RF_AnchorHost(health, s)
+function mod.RF_AnchorHost(health, cfg)
     local kit = health and health._cuiKitRef
     if kit then
         return kit
     end
     local ref = health and health._cuiUniformRef
-    if ref and s and s.powerUniformAnchors then
+    if ref and cfg and cfg.powerUniformAnchors then
         return ref
     end
     return health
@@ -1645,8 +1645,8 @@ end
 -- "Extend Health Bar Behind Power": the health-height inset layout sites subtract for
 -- the power bar. On returns 0 -- health spans the full frame and the power bar (higher
 -- frame level, own bg) draws over its bottom strip; off returns powerH untouched.
-function mod.RF_HealthPowerInset(s, powerH)
-    if s and s.extendHealthBehindPower then
+function mod.RF_HealthPowerInset(cfg, powerH)
+    if cfg and cfg.extendHealthBehindPower then
         return 0
     end
     return powerH

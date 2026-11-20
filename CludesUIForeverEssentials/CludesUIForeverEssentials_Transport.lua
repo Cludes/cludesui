@@ -883,11 +883,11 @@ local function NewPin()
     pin:SetScript("OnEnter", function(self)
         ShowTip(self)
         self.since = 0
-        self:SetScript("OnUpdate", function(s, e)
-            s.since = s.since + e
-            if s.since >= 1 then
-                s.since = 0
-                ShowTip(s)
+        self:SetScript("OnUpdate", function(cfg, e)
+            cfg.since = cfg.since + e
+            if cfg.since >= 1 then
+                cfg.since = 0
+                ShowTip(cfg)
             end
         end)
     end)

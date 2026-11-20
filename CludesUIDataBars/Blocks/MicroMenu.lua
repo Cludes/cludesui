@@ -885,7 +885,7 @@ local function MMBuildSocialTip()
     mod.Tip_AddDouble(L["RIGHT_CLICK"], L["WHISPER"], 1, 1, 1, ar, ag, ab)
 end
 
-local function MMBuildGuildTip(s)
+local function MMBuildGuildTip(cfg)
     local ar, ag, ab = mod.GetAccent()
     mod.Tip_AddLine(" ")
     if not IsInGuild() then
@@ -905,8 +905,8 @@ local function MMBuildGuildTip(s)
     end
 
     local noteFmt
-    if s.showGuildNotes == true then
-        local color = s.guildNoteColor
+    if cfg.showGuildNotes == true then
+        local color = cfg.guildNoteColor
         local nr, ng, nb = 0.925, 0.839, 0.447
         if color then
             nr, ng, nb = color.r or nr, color.g or ng, color.b or nb

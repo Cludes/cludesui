@@ -149,13 +149,13 @@ end
 -- Lazily creates and returns the default bars' per-polarity cfg sub-tables: same
 -- shape as a custom bar object's shared+category fields, so
 -- BuildStyle/ComputeGrid/ClassEnabled cannot tell the two apart.
-local function DefaultBuffsCfg(s)
-    s.defaultBuffs = s.defaultBuffs or {}
-    return s.defaultBuffs
+local function DefaultBuffsCfg(cfg)
+    cfg.defaultBuffs = cfg.defaultBuffs or {}
+    return cfg.defaultBuffs
 end
-local function DefaultDebuffsCfg(s)
-    s.defaultDebuffs = s.defaultDebuffs or {}
-    return s.defaultDebuffs
+local function DefaultDebuffsCfg(cfg)
+    cfg.defaultDebuffs = cfg.defaultDebuffs or {}
+    return cfg.defaultDebuffs
 end
 mod.PAB_DefaultBuffsCfg = DefaultBuffsCfg
 mod.PAB_DefaultDebuffsCfg = DefaultDebuffsCfg
@@ -210,7 +210,7 @@ end
 -- deliberately NOT GetPoint()'s raw relativeTo, since PAB always anchors to UIParent
 -- (ApplyBarPosition) while Blizzard's anchor can chain to an arbitrary frame (observed:
 -- Buffs relativeTo="DebuffFrame"); absolute screen coordinates sidestep that chain.
-local function SeedBarFromEditMode(widget, conf, posKey, s, isBuff)
+local function SeedBarFromEditMode(widget, conf, posKey, cfg, isBuff)
     if not (widget and widget.AuraContainer) then
         return
     end
@@ -219,7 +219,7 @@ local function SeedBarFromEditMode(widget, conf, posKey, s, isBuff)
     local uiLeft, uiTop = UIParent:GetLeft(), UIParent:GetTop()
     local leftX, topY = widget:GetLeft(), widget:GetTop()
     if uiLeft and uiTop and leftX and topY then
-        s[posKey] = { point = "TOPLEFT", relPoint = "TOPLEFT", x = leftX - uiLeft, y = topY - uiTop }
+        cfg[posKey] = { point = "TOPLEFT", relPoint = "TOPLEFT", x = leftX - uiLeft, y = topY - uiTop }
     end
 
     if ac.iconPadding then
@@ -504,14 +504,14 @@ local function EnsureBarEnable(s)
 end
 mod.PAB_EnsureBarEnable = EnsureBarEnable
 
-local function SeedDefaultBuffsDebuffsFromLegacySources(s)
-    if s.pabEditModeSeeded then
+local function SeedDefaultBuffsDebuffsFromLegacySources(cfg)
+    if cfg.pabEditModeSeeded then
         return
     end
-    s.pabEditModeSeeded = true -- set first: never retry even if a read below errors/fails partway
-    local buffCfg, debuffCfg = DefaultBuffsCfg(s), DefaultDebuffsCfg(s)
-    SeedBarFromEditMode(BuffFrame, buffCfg, "buffsPos", s, true)
-    SeedBarFromEditMode(DebuffFrame, debuffCfg, "debuffsPos", s, false)
+    cfg.pabEditModeSeeded = true -- set first: never retry even if a read below errors/fails partway
+    local buffCfg, debuffCfg = DefaultBuffsCfg(cfg), DefaultDebuffsCfg(cfg)
+    SeedBarFromEditMode(BuffFrame, buffCfg, "buffsPos", cfg, true)
+    SeedBarFromEditMode(DebuffFrame, debuffCfg, "debuffsPos", cfg, false)
     MigratePlayerAuraStyle(buffCfg, debuffCfg)
 end
 

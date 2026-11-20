@@ -332,7 +332,7 @@ do
     -- Bar colour: the owner's own colour setting (default #17AC31). The raid color modes mislead here:
     -- gradient modes read as damage states, and many NPCs carry real class tokens (a friendly add can
     -- come out yellow).
-    FB.PaintBarColor = function(b, ownerFrame, s)
+    FB.PaintBarColor = function(b, ownerFrame, cfg)
         local healthBar = b._health
         local fbc = (ownerFrame.ColorSettings or ownerFrame.Settings)()
         fbc = fbc and fbc.healthColor
@@ -344,7 +344,7 @@ do
             fbc and fbc.r or 23 / 255,
             fbc and fbc.g or 172 / 255,
             fbc and fbc.b or 49 / 255,
-            (s.healthBarOpacity or 100) / 100
+            (cfg.healthBarOpacity or 100) / 100
         )
     end
 
@@ -366,11 +366,11 @@ do
     -- which repaints Health and Heal Absorb Text and every Custom text: these trackers carry health
     -- and name events only, so Custom's power, absorb, group and target tags refresh here, not on
     -- their own events. No level and no Power Text here (no power bar).
-    FB.PaintHealth = function(b, unitToken, s, full)
+    FB.PaintHealth = function(b, unitToken, cfg, full)
         local healthBar = b._health
         local pct = GetSafeHealthPercent(unitToken)
         healthBar:SetMinMaxValues(0, 100)
-        local smooth = s.smoothBars
+        local smooth = cfg.smoothBars
             and Enum
             and Enum.StatusBarInterpolation
             and Enum.StatusBarInterpolation.ExponentialEaseOut
@@ -392,7 +392,7 @@ do
             return
         end
         if full then
-            mod.RF_TextFull(st, s, unitToken)
+            mod.RF_TextFull(st, cfg, unitToken)
             return
         end
         local p = st._txP
@@ -628,7 +628,7 @@ do
     -- The pitch between the group's buttons. Attached beside Compact frames it takes their one
     -- pixel, so its rows stay level with theirs: the party frames' where FB.Anchor slots it in
     -- beside them (outside a raid, with Show in Dungeons on), else the raid groups'.
-    FB.Pitch = function(fallbackSet, s)
+    FB.Pitch = function(fallbackSet, cfg)
         if fallbackSet and fallbackSet.position ~= "free" then
             local party = (not IsInRaid() or mod._PartyInRaid()) and fallbackSet.showInDungeons == true
             if mod.RF_CompactOn(saved.profile, party) then
@@ -637,7 +637,7 @@ do
         end
         -- Same grid as FB.FreePin: the boss container's own scale.
         local c = FB.container
-        return CludesUI.PP.SnapForES(s.cellSpacing or -1, (c or UIParent):GetEffectiveScale())
+        return CludesUI.PP.SnapForES(cfg.cellSpacing or -1, (c or UIParent):GetEffectiveScale())
     end
 
     -- Re-apply all setting-derived properties (size, slots, texture, fonts, text anchors). OOC only;
@@ -709,22 +709,22 @@ do
     end
 
     -- Texture, fonts, text anchors and border of one button at w x h. Shared with the pet frames.
-    FB.StyleVisuals = function(b, s, wid, hgt, texPath, bgc)
-        mod.RF_TexBgTint(b._bg, mod.RF_TexBgPath(s), mod.RF_IsVerticalFill(s))
-        b._bg:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
+    FB.StyleVisuals = function(b, cfg, wid, hgt, texPath, bgc)
+        mod.RF_TexBgTint(b._bg, mod.RF_TexBgPath(cfg), mod.RF_IsVerticalFill(cfg))
+        b._bg:SetColorTexture(bgc.r, bgc.g, bgc.b, (cfg.bgDarkness or 50) / 100)
         b._health:SetStatusBarTexture(texPath)
         local ft = b._health:GetStatusBarTexture()
         if ft then
             ft:SetHorizTile(false)
         end
         -- Fill axis follows the raid Health Bar setting. The bg is a full-button texture (not fill-tracking), so nothing else re-anchors.
-        mod.RF_ApplyHealthOrientation(b._health, s)
+        mod.RF_ApplyHealthOrientation(b._health, cfg)
         -- These carry aura containers (RFC_SetupButton below) and so can carry
         -- Health Bar Color overlays, but they have no absorb cluster and never
         -- build ReanchorAbsorbToFill, where every other frame picks the swap up.
-        b._health._cuiFillOpacity = (s.healthBarOpacity or 100) / 100
+        b._health._cuiFillOpacity = (cfg.healthBarOpacity or 100) / 100
         mod.RF_RefreshBarTints(b._health)
-        FB.SizeVisuals(b, wid, hgt, s)
+        FB.SizeVisuals(b, wid, hgt, cfg)
         FB.StyleBorder(b)
     end
 

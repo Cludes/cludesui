@@ -378,19 +378,19 @@ end
 
 -- When you reach the line at your current pace, in a few words: a span from
 -- the low to the high side of the line's range where both fall in time.
-function mod.EtaText(s, pace, endsAt)
-    if s.gap <= 0 then
+function mod.EtaText(cfg, pace, endsAt)
+    if cfg.gap <= 0 then
         return "reached"
     end
-    local early = s.etaEarly or s.eta
+    local early = cfg.etaEarly or cfg.eta
     if early and endsAt and early > endsAt then
         return "after the season"
     end
-    if early and s.etaLate and not (endsAt and s.etaLate > endsAt) then
-        if mod.DateText(early) == mod.DateText(s.etaLate) then
+    if early and cfg.etaLate and not (endsAt and cfg.etaLate > endsAt) then
+        if mod.DateText(early) == mod.DateText(cfg.etaLate) then
             return "ETA " .. mod.DateText(early)
         end
-        return "ETA " .. mod.SpanText(early, s.etaLate)
+        return "ETA " .. mod.SpanText(early, cfg.etaLate)
     end
     if early then
         return "ETA from " .. mod.DateText(early)

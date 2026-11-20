@@ -803,9 +803,9 @@ end
 -------------------------------------------------------------------------------
 --  Text -> model
 -------------------------------------------------------------------------------
-local function ParseConds(s, value)
+local function ParseConds(text, value)
     local rest = {}
-    for raw in s:gmatch("[^,]+") do
+    for raw in text:gmatch("[^,]+") do
         local tok = strtrim(raw)
         local noKey = tok:sub(1, 2) == "no" and tok:sub(3)
         local pKey = tok:match("^(%a+):")

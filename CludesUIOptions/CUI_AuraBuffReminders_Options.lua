@@ -3514,22 +3514,22 @@ CludesUI.AtOptionsLogin(function()
 
     -- Where each preview icon's click leads: its category's section and row,
     -- each raid buff / aura grid cell, and each consumable's own row.
-    local function MapPreviewClicks(s, cells)
+    local function MapPreviewClicks(cfg, cells)
         local map = _eabrClickMappings
         wipe(map)
         local function To(key, section, target)
             map[key] = { section = section, target = target or section }
         end
-        To("display", s.display, s.border)
-        To("showText", s.display, s.name)
-        To("raidbuff", s.raid)
-        To("aura", s.aura)
-        To("consumable", s.consum.header, s.consum.flask)
-        To("item:soulstone", s.warlock, s.warlockRow)
+        To("display", cfg.display, cfg.border)
+        To("showText", cfg.display, cfg.name)
+        To("raidbuff", cfg.raid)
+        To("aura", cfg.aura)
+        To("consumable", cfg.consum.header, cfg.consum.flask)
+        To("item:soulstone", cfg.warlock, cfg.warlockRow)
         for key, cell in pairs(cells) do
             To("item:" .. key, cell)
         end
-        local c = s.consum
+        local c = cfg.consum
         for key, line in pairs({
             flask = c.flask,
             food = c.food,

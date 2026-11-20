@@ -76,8 +76,8 @@ function DC.SpellID(val)
     end
 end
 
-local function ParseColor(s, skinData)
-    local red, green, blue = s:match("^([%d%.]+),([%d%.]+),([%d%.]+)$")
+local function ParseColor(text, skinData)
+    local red, green, blue = text:match("^([%d%.]+),([%d%.]+),([%d%.]+)$")
     red, green, blue = tonumber(red), tonumber(green), tonumber(blue)
     if not (red and green and blue) then
         return { r = skinData.r, g = skinData.g, b = skinData.b }
@@ -94,12 +94,12 @@ end
 
 -- A saved list as fresh tables: singles = { { spell, color, missing } },
 -- combos = { { spells = { ids }, color } }.
-function DC.Parse(s)
+function DC.Parse(text)
     local singles, comboList = {}, {}
-    if type(s) ~= "string" then
+    if type(text) ~= "string" then
         return singles, comboList
     end
-    local singlePart, comboPart = s:match("^([^/]*)/?(.*)$")
+    local singlePart, comboPart = text:match("^([^/]*)/?(.*)$")
     for record in singlePart:gmatch("[^;]+") do
         if #singles == DC.MAX_SINGLES then
             break

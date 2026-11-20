@@ -59,10 +59,10 @@ end
 Offline.ItemString = ItemString
 
 -- item id from a string or link (pet cages count as the cage item)
-local function ItemID(s)
-    local kind, ident = s:match("^(%a+):(%d+)")
+local function ItemID(text)
+    local kind, ident = text:match("^(%a+):(%d+)")
     if not kind then
-        kind, ident = s:match("|H(%a+):(%d+)")
+        kind, ident = text:match("|H(%a+):(%d+)")
     end
     if kind == "battlepet" then
         return 82800

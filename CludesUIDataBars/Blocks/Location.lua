@@ -35,8 +35,8 @@ mod.LOC_MAX_WIDTH_DEFAULT = DEFAULT_WIDTH
 local ICON_EXTRA = 4
 
 -- The width mode, in one place for the block and the options page.
-function mod.LocationWidthMode(s)
-    return s.widthMode or "auto"
+function mod.LocationWidthMode(cfg)
+    return cfg.widthMode or "auto"
 end
 
 local COORD_FORMAT = { [0] = "%.0f, %.0f", [1] = "%.1f, %.1f", [2] = "%.2f, %.2f" }

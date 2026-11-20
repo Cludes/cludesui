@@ -2163,16 +2163,16 @@ function AK.SetGroupCap(boxHolder, styleId, cap)
     RedressGroupButtons(record, GROUP_BATCH - math.min(cap, GROUP_BATCH) + 1, GROUP_BATCH - old)
 end
 
-function AK.AddSlotToContainer(boxHolder, s)
-    local f = boxHolder:AddAuraSlot(s.key, AK.Filter(unpack(s.filter)), {
-        candidateFilters = s.candidateFilters,
-        sortMethod = s.sortMethod,
-        sortDirection = s.sortDirection,
-        initializeFrame = AK.MakeInitializer(s.style, s.extraInit),
+function AK.AddSlotToContainer(boxHolder, cfg)
+    local f = boxHolder:AddAuraSlot(cfg.key, AK.Filter(unpack(cfg.filter)), {
+        candidateFilters = cfg.candidateFilters,
+        sortMethod = cfg.sortMethod,
+        sortDirection = cfg.sortDirection,
+        initializeFrame = AK.MakeInitializer(cfg.style, cfg.extraInit),
     })
     local cooldown = containerData[boxHolder]
     if cooldown then
-        cooldown.slotFrames[s.key] = f
+        cooldown.slotFrames[cfg.key] = f
     end
     return f
 end

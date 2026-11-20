@@ -2256,19 +2256,19 @@ local function SurveyQueue(cell, queue)
     cell.cast:SetAttribute("count", #queue)
 end
 
-local function PaintCell(cell, s, key)
-    local queue = s.queue
-    local isShown = s.spell or (key and CastSpell(key, cell.members))
+local function PaintCell(cell, cfg, key)
+    local queue = cfg.queue
+    local isShown = cfg.spell or (key and CastSpell(key, cell.members))
     cell.icon:SetTexture(isShown and C_Spell.GetSpellTexture(isShown) or QUESTION)
     SurveyQueue(cell, queue)
     cell.cast:SetAttribute("step", 1)
     SetNames(cell.header, queue[1] and queue[1].names or NOBODY)
-    cell.target, cell.queued = s.target, #queue
-    local color = s.classMissing > 0 and RED
-        or s.classDue > 0 and YELLOW
-        or s.missingNear + s.expiringNear > 0 and BLUE
+    cell.target, cell.queued = cfg.target, #queue
+    local color = cfg.classMissing > 0 and RED
+        or cfg.classDue > 0 and YELLOW
+        or cfg.missingNear + cfg.expiringNear > 0 and BLUE
         or nil
-    LookClass(cell, color, s.reachable, s.missing, s.shortest)
+    LookClass(cell, color, cfg.reachable, cfg.missing, cfg.shortest)
 end
 
 local function PrepareCell(cell)

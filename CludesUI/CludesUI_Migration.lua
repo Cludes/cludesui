@@ -5999,11 +5999,11 @@ do
         -- exist are written, so a table with no buff content gets only the mark.
         -- Kept: debuff bars and their per-spec disables, both filter libraries,
         -- the bar id counter, the one-shot flags, layout and style.
-        local function PlanPAB(s, plan)
+        local function PlanPAB(cfg, plan)
             local buffIds, debuffIds = {}, {}
-            CollectIds(s.customBuffBars, buffIds)
-            CollectIds(s.customDebuffBars, debuffIds)
-            local settingsTbl = s.pabSpecBars
+            CollectIds(cfg.customBuffBars, buffIds)
+            CollectIds(cfg.customDebuffBars, debuffIds)
+            local settingsTbl = cfg.pabSpecBars
             if type(settingsTbl) == "table" then
                 for _, barKey in pairs(settingsTbl) do
                     if type(barKey) == "table" then
@@ -6032,7 +6032,7 @@ do
                 end
             end
             -- nil content = a new profile's Buffs bar: All Buffs on, bar shown.
-            local d = s.defaultBuffs
+            local d = cfg.defaultBuffs
             if type(d) == "table" then
                 for index = 1, #BUFF_CONTENT do
                     local f = BUFF_CONTENT[index]
@@ -6041,20 +6041,20 @@ do
                     end
                 end
             end
-            local callback = s.customBuffBars
+            local callback = cfg.customBuffBars
             if type(callback) == "table" and next(callback) ~= nil then
-                Put(plan, s, "customBuffBars", {})
+                Put(plan, cfg, "customBuffBars", {})
             end
             -- The retired External Defensives sources and the seed flag: the module
             -- re-seeds a new profile's disabled bar at its next build.
-            if s.defaultExternalDefensives ~= nil then
-                Put(plan, s, "defaultExternalDefensives", nil)
+            if cfg.defaultExternalDefensives ~= nil then
+                Put(plan, cfg, "defaultExternalDefensives", nil)
             end
-            if s.extDefPos ~= nil then
-                Put(plan, s, "extDefPos", nil)
+            if cfg.extDefPos ~= nil then
+                Put(plan, cfg, "extDefPos", nil)
             end
-            if s.pabExtDefSeeded ~= nil then
-                Put(plan, s, "pabExtDefSeeded", nil)
+            if cfg.pabExtDefSeeded ~= nil then
+                Put(plan, cfg, "pabExtDefSeeded", nil)
             end
         end
 
@@ -6381,13 +6381,13 @@ do
         -- root, c = condition root): false = the baseline, a spec group id,
         -- "cond:<id>" = a condition's layer, nil = none of them (another
         -- profile's layer, or one a harvest has since replaced).
-        local function SlotOf(l, s, c)
-            if type(s) == "table" then
-                if l == s.baselineLayout then
+        local function SlotOf(l, cfg, c)
+            if type(cfg) == "table" then
+                if l == cfg.baselineLayout then
                     return false
                 end
-                if type(s.layouts) == "table" then
-                    for k, val in pairs(s.layouts) do
+                if type(cfg.layouts) == "table" then
+                    for k, val in pairs(cfg.layouts) do
                         if val == l then
                             return k
                         end

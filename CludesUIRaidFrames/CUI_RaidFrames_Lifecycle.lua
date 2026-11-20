@@ -579,11 +579,11 @@ function ERF:OnEnable()
     local function UpdatePowerEventRegistration()
         local rs = saved.profile
         local ps = mod._partyProxy
-        local function wantsPower(s, role)
-            return (role == "HEALER" and s.powerShowForHealer)
-                or (role == "TANK" and s.powerShowForTank)
-                or (role == "DAMAGER" and s.powerShowForDPS)
-                or (role == "NONE" and s.powerShowForDPS)
+        local function wantsPower(cfg, role)
+            return (role == "HEALER" and cfg.powerShowForHealer)
+                or (role == "TANK" and cfg.powerShowForTank)
+                or (role == "DAMAGER" and cfg.powerShowForDPS)
+                or (role == "NONE" and cfg.powerShowForDPS)
         end
         -- Healer Mana Display rides these registrations: healers keep their
         -- power events while its mode matches the current group type,

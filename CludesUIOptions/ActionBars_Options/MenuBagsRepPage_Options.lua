@@ -377,8 +377,8 @@ local function DataBarKit(hostFrame)
     -- a style pick seeds; the size link carries the size and the colour. Both
     -- turn the target's Custom Border on, so a target never holds values it
     -- does not draw.
-    local function DataBarTextured(s)
-        local t = s.borderTexture or "solid"
+    local function DataBarTextured(cfg)
+        local t = cfg.borderTexture or "solid"
         return t ~= "" and t ~= "solid"
     end
     local function CopyDataBarColor(dst, source)
@@ -407,26 +407,26 @@ local function DataBarKit(hostFrame)
         dst.borderThicknessPx = val
         CopyDataBarColor(dst, source)
     end
-    local function SameDataBarStyle(t, s)
+    local function SameDataBarStyle(t, cfg)
         return t.customBorder == true
-            and (t.borderTexture or "solid") == (s.borderTexture or "solid")
-            and t.borderTextureOffset == s.borderTextureOffset
-            and t.borderTextureOffsetY == s.borderTextureOffsetY
-            and t.borderTextureShiftX == s.borderTextureShiftX
-            and t.borderTextureShiftY == s.borderTextureShiftY
-            and (t.borderBehind or false) == (s.borderBehind or false)
+            and (t.borderTexture or "solid") == (cfg.borderTexture or "solid")
+            and t.borderTextureOffset == cfg.borderTextureOffset
+            and t.borderTextureOffsetY == cfg.borderTextureOffsetY
+            and t.borderTextureShiftX == cfg.borderTextureShiftX
+            and t.borderTextureShiftY == cfg.borderTextureShiftY
+            and (t.borderBehind or false) == (cfg.borderBehind or false)
     end
-    local function SameDataBarSize(t, s)
+    local function SameDataBarSize(t, cfg)
         if t.customBorder ~= true then
             return false
         end
-        if (t.borderThickness or "thin") ~= (s.borderThickness or "thin") then
+        if (t.borderThickness or "thin") ~= (cfg.borderThickness or "thin") then
             return false
         end
-        if (t.borderThicknessPx or false) ~= (s.borderThicknessPx or false) then
+        if (t.borderThicknessPx or false) ~= (cfg.borderThicknessPx or false) then
             return false
         end -- nil and false render alike
-        local a, b = t.borderColor, s.borderColor
+        local a, b = t.borderColor, cfg.borderColor
         return (a and a.r or 0) == (b and b.r or 0)
             and (a and a.g or 0) == (b and b.g or 0)
             and (a and a.b or 0) == (b and b.b or 0)

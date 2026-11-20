@@ -67,8 +67,8 @@ local function Settings()
     return CludesUIDB.autoLogging
 end
 
-local function On(s, key)
-    local value = s[key]
+local function On(cfg, key)
+    local value = cfg[key]
     if value == nil then
         return DEFAULTS[key]
     end

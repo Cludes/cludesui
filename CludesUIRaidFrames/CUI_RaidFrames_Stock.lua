@@ -291,11 +291,11 @@ end
 -- hover colour on the stood-down border frame `bf`. Its exact size counts only
 -- while it was set against Solid (the texture drawn here).
 local SOLID_S = { borderTexture = "solid" }
-function mod.RF_StockHighlight(stockStyle, bf, s, hover, target)
+function mod.RF_StockHighlight(stockStyle, bf, cfg, hover, target)
     mod.RF_StockTarget(stockStyle, target)
     if hover then
-        local color = s.hoverBorderColor
-        local hs = s.hoverBorderSize or 1
+        local color = cfg.hoverBorderColor
+        local hs = cfg.hoverBorderSize or 1
         mod.ApplyHighlightBorder(
             bf,
             SOLID_S,
@@ -303,8 +303,8 @@ function mod.RF_StockHighlight(stockStyle, bf, s, hover, target)
             color and color.r or 1,
             color and color.g or 1,
             color and color.b or 1,
-            s.hoverBorderAlpha or 1,
-            CludesUI.BorderPx(s.hoverBorderSizePx, hs, "solid")
+            cfg.hoverBorderAlpha or 1,
+            CludesUI.BorderPx(cfg.hoverBorderSizePx, hs, "solid")
         )
     else
         mod.ApplyHighlightBorder(bf, SOLID_S, nil, 0, 0, 0, 0)
@@ -781,27 +781,27 @@ end
 -- RF_KIT_SPACING); off the kit this is the Party page's Frame Width/Height/
 -- Spacing, the box widened by an attached portrait. The 4th return is that
 -- portrait's width: the bars' own width is the box width minus it.
-function mod.RF_PartyDims(s)
+function mod.RF_PartyDims(cfg)
     if mod.RF_PartyKit() then
-        local g = mod.RF_KitGeom(s.partyKitScale)
+        local g = mod.RF_KitGeom(cfg.partyKitScale)
         if g then
-            local cs = s.partyKitSpacing or mod.RF_KIT_SPACING
+            local cs = cfg.partyKitSpacing or mod.RF_KIT_SPACING
             -- Buffs above stacked frames: the gap also holds the buff runs'
             -- lines, so they clear the frame above (scaled like the Buff
             -- Manager scales them).
-            if not s.partyHorizontal and mod.RF_KitBuffMode(s) == "ABOVE" then
-                local bm = (s.partyAutoResizeTrackedBuffs ~= false) and g.k or 1
-                local by = s.partyKitBuffY or 0
-                cs = cs + (mod.RF_KitAboveUnits(s) + ((by > 0) and by or 0)) * bm
+            if not cfg.partyHorizontal and mod.RF_KitBuffMode(cfg) == "ABOVE" then
+                local bm = (cfg.partyAutoResizeTrackedBuffs ~= false) and g.k or 1
+                local by = cfg.partyKitBuffY or 0
+                cs = cs + (mod.RF_KitAboveUnits(cfg) + ((by > 0) and by or 0)) * bm
             end
             return g.boxW, g.boxH, cs, 0
         end
     end
-    local wid = s.partyFrameWidth or s.frameWidth or 125
-    local hgt = s.partyFrameHeight or s.frameHeight or 60
-    local res = mod.RF_PtReserve and mod.RF_PtReserve(s, hgt) or 0
-    local spacing = s.partyCellSpacing or s.cellSpacing or 2
-    if mod.RF_CompactOn(s, true) then
+    local wid = cfg.partyFrameWidth or cfg.frameWidth or 125
+    local hgt = cfg.partyFrameHeight or cfg.frameHeight or 60
+    local res = mod.RF_PtReserve and mod.RF_PtReserve(cfg, hgt) or 0
+    local spacing = cfg.partyCellSpacing or cfg.cellSpacing or 2
+    if mod.RF_CompactOn(cfg, true) then
         spacing = mod.RF_OnePixel(true)
     end
     return wid + res, hgt, spacing, res
@@ -813,17 +813,17 @@ end
 -- their buff run beside them, so the boss group takes the other side;
 -- horizontal frames carry the buff run above and the debuff row below, so
 -- the group clears whichever it sits against.
-function mod.RF_KitAttach(s, before)
-    local g = mod.RF_KitGeom(s.partyKitScale)
+function mod.RF_KitAttach(cfg, before)
+    local g = mod.RF_KitGeom(cfg.partyKitScale)
     if not g then
         return before, 0
     end
-    if s.partyHorizontal then
+    if cfg.partyHorizontal then
         local over
         if before then
-            local bm = (s.partyAutoResizeTrackedBuffs ~= false) and g.k or 1
-            local by = s.partyKitBuffY or 0
-            over = (mod.RF_KitAboveUnits(s) + ((by > 0) and by or 0)) * bm - g.host.y
+            local bm = (cfg.partyAutoResizeTrackedBuffs ~= false) and g.k or 1
+            local by = cfg.partyKitBuffY or 0
+            over = (mod.RF_KitAboveUnits(cfg) + ((by > 0) and by or 0)) * bm - g.host.y
         else
             -- Below: the Debuff Manager's lowest seat (base row, then its
             -- grid tiles), else one line of the debuff row.
@@ -831,14 +831,14 @@ function mod.RF_KitAttach(s, before)
             if not low then
                 local sc = mod._partyIndicatorScale or 1
                 low = g.auraRow.y
-                    + (s.partyKitDebuffY or 0) * sc
-                    - (s.partyKitDebuffSize or KIT_DEBUFF_SIZE) * sc
+                    + (cfg.partyKitDebuffY or 0) * sc
+                    - (cfg.partyKitDebuffSize or KIT_DEBUFF_SIZE) * sc
             end
             over = g.host.y - low - g.boxH
         end
         return before, (over > 0) and over or 0
     end
-    local modeName = mod.RF_KitBuffMode(s)
+    local modeName = mod.RF_KitBuffMode(cfg)
     if modeName == "RIGHT" and not before then
         return true, 0
     end
@@ -870,12 +870,12 @@ function mod.RF_KitSpot(spot, regionFrame, rel, ox, oy)
 end
 
 -- The leader icon at its stock spot (it has no anchor closure of its own).
-function mod.RF_KitLeader(stockStyle, s)
+function mod.RF_KitLeader(stockStyle, cfg)
     local li, g = stockStyle.leaderIcon or stockStyle._leaderIcon, stockStyle.kitG
     if not (li and g and stockStyle.kitOwner) then
         return
     end
-    mod.RF_KitSpot(g.lead, li, stockStyle.kitOwner, s and s.leaderIconOffsetX, s and s.leaderIconOffsetY)
+    mod.RF_KitSpot(g.lead, li, stockStyle.kitOwner, cfg and cfg.leaderIconOffsetX, cfg and cfg.leaderIconOffsetY)
 end
 
 local function Place(regionFrame, ownerFrame, region)
@@ -998,19 +998,19 @@ end
 -- Preview frames have no anchor closures: the kit pass places their
 -- texts (with the settings they were painted with), role and ready check
 -- itself (every refresh re-anchors them first).
-local function PreviewSpots(frame, s, g)
+local function PreviewSpots(frame, cfg, g)
     if frame._txL then
         mod.RF_TextLayout(frame, frame._txS)
     end
     if frame._roleIcon then
-        mod.RF_KitSpot(g.role, frame._roleIcon, frame, s.roleIconOffsetX, s.roleIconOffsetY)
+        mod.RF_KitSpot(g.role, frame._roleIcon, frame, cfg.roleIconOffsetX, cfg.roleIconOffsetY)
         if frame._roleIcon._roleText then
             frame._roleIcon._roleText:ClearAllPoints()
             frame._roleIcon._roleText:SetPoint(g.role.p, frame._roleIcon, g.role.p, 0, 0)
         end
     end
     if frame._readyCheck and frame.kitPortrait then
-        mod.RF_KitSpot(g.rc, frame._readyCheck, frame.kitPortrait, s.readyCheckOffsetX, s.readyCheckOffsetY)
+        mod.RF_KitSpot(g.rc, frame._readyCheck, frame.kitPortrait, cfg.readyCheckOffsetX, cfg.readyCheckOffsetY)
     end
 end
 
@@ -1157,14 +1157,14 @@ end
 -- would touch a frame made protected in combat is deferred to combat end
 -- (main file flush -> ReloadPartyFrames); the portrait is a plain paint on
 -- our own texture and always runs.
-function mod.RF_ApplyPartyKit(ownerFrame, stockStyle, s, unitToken, force)
+function mod.RF_ApplyPartyKit(ownerFrame, stockStyle, cfg, unitToken, force)
     if not stockStyle.kit then
         return
     end
     if unitToken then
         mod.RF_KitPortrait(stockStyle, unitToken)
     end
-    local g = mod.RF_KitGeom(s and s.partyKitScale)
+    local g = mod.RF_KitGeom(cfg and cfg.partyKitScale)
     if not g then
         return
     end
@@ -1192,10 +1192,10 @@ function mod.RF_ApplyPartyKit(ownerFrame, stockStyle, s, unitToken, force)
             if stockStyle.AnchorReadyCheck then
                 stockStyle.AnchorReadyCheck()
             end
-            mod.RF_KitLeader(stockStyle, s)
+            mod.RF_KitLeader(stockStyle, cfg)
             -- A preview frame is its own state (RF_KitBuild(f, f, ...)).
-            if ownerFrame == stockStyle and s then
-                PreviewSpots(ownerFrame, s, g)
+            if ownerFrame == stockStyle and cfg then
+                PreviewSpots(ownerFrame, cfg, g)
             end
         end
     end
@@ -1268,14 +1268,14 @@ end
 -- Hover and target: the art-tracing glow (stock has neither), hover in the
 -- user's hover colour, target in the stock selection colour; target draws
 -- over hover. The stood-down border frame stays clear.
-function mod.RF_KitHighlight(stockStyle, bf, s, hover, target)
+function mod.RF_KitHighlight(stockStyle, bf, cfg, hover, target)
     local hov, sel = stockStyle._kitHov, stockStyle._kitSel
     if not hov then
         return
     end
     if hover then
-        local color = s.hoverBorderColor
-        hov:SetVertexColor(color and color.r or 1, color and color.g or 1, color and color.b or 1, s.hoverBorderAlpha or 1)
+        local color = cfg.hoverBorderColor
+        hov:SetVertexColor(color and color.r or 1, color and color.g or 1, color and color.b or 1, cfg.hoverBorderAlpha or 1)
     end
     hov:SetShown(hover and true or false)
     sel:SetShown(target and true or false)

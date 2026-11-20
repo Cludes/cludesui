@@ -48,8 +48,8 @@ end
 --  Management list page ("Spec Overrides" tab under Profiles & Presets).
 --  Purely a list: per group, each captured setting with Go To / Remove.
 -------------------------------------------------------------------------------
-local function TitleCase(s)
-    local out = s:gsub("(%a[%w']*)", function(w)
+local function TitleCase(text)
+    local out = text:gsub("(%a[%w']*)", function(w)
         return w:sub(1, 1):upper() .. w:sub(2):lower()
     end)
     return out

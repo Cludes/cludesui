@@ -667,15 +667,15 @@ mod.Engine.SetPainter("healpred", mod.UF_PaintHealPred)
 -- Style pass + channel sync for one frame (unitKey = its settings key).
 -- Idempotent; runs at spawn and on every settings reload, after the health
 -- texture is applied. Off tears down to hidden bars and no channel.
-function mod.UF_HealPredApply(widget, unitKey, s)
+function mod.UF_HealPredApply(widget, unitKey, cfg)
     local healthEnd = widget.HealthPrediction
     local absorbBar = healthEnd and healthEnd.damageAbsorb
     if not (absorbBar and absorbBar._missClip) then
         return
     end
     local enabled = mod.UF_HEAL_PRED_UNITS[unitKey]
-            and s
-            and s.healPrediction == true
+            and cfg
+            and cfg.healPrediction == true
             and CreateUnitHealPredictionCalculator
             and UnitGetDetailedHealPrediction
             and true
@@ -723,7 +723,7 @@ function mod.UF_HealPredApply(widget, unitKey, s)
     -- donor, Blizzard Style) matches; "flat" is a plain fill; anything else is a
     -- health-bar texture key. A swap makes new fill objects, so the others'
     -- anchor, fill rotation and the masks are re-seated after it.
-    local texKey = s.healPredTexture or "health"
+    local texKey = cfg.healPredTexture or "health"
     local filePath
     if texKey == "health" then
         local hFill = health:GetStatusBarTexture()
@@ -753,7 +753,7 @@ function mod.UF_HealPredApply(widget, unitKey, s)
     -- end). The health bar sits inside the frame's bar clip, so running past
     -- its end takes a holder outside it, parented to the unit frame; the masks
     -- come off there. Layout places the holder.
-    local over = tonumber(s.healPredOverheal) or 0
+    local over = tonumber(cfg.healPredOverheal) or 0
     local relayout = (not absorbBar._predOn) or absorbBar._predOver ~= over
     if retex or absorbBar._predOver ~= over then
         absorbBar._predOver = over
@@ -775,9 +775,9 @@ function mod.UF_HealPredApply(widget, unitKey, s)
         end
         mod.UF_HealPredMasks(absorbBar)
     end
-    local alpha = (s.healPredOpacity or 60) / 100
-    local mc = s.healPredColor or mod.UF_HEAL_PRED_MY
-    local oc = s.healPredOtherColor or mod.UF_HEAL_PRED_OTHER
+    local alpha = (cfg.healPredOpacity or 60) / 100
+    local mc = cfg.healPredColor or mod.UF_HEAL_PRED_MY
+    local oc = cfg.healPredOtherColor or mod.UF_HEAL_PRED_OTHER
     my:SetStatusBarColor(mc.r, mc.g, mc.b, alpha)
     other:SetStatusBarColor(oc.r, oc.g, oc.b, alpha)
     -- While on, the re-anchor pass and the size hook keep the layout current.
@@ -804,8 +804,8 @@ end
 mod.UF_MAXHP_UNITS = { player = true, target = true, focus = true }
 
 -- Texture, tint, opacity and the black backing; shared with the options preview.
-function mod.UF_ApplyMaxHealthStyle(barFrame, style, s, mask)
-    local fillTex = CludesUI.ApplyMaxHealthStyle(barFrame, style, s, mod.ResolveAbsorbStyleTex)
+function mod.UF_ApplyMaxHealthStyle(barFrame, style, cfg, mask)
+    local fillTex = CludesUI.ApplyMaxHealthStyle(barFrame, style, cfg, mod.ResolveAbsorbStyleTex)
     if fillTex then
         if mask then
             pcall(fillTex.RemoveMaskTexture, fillTex, mask)
@@ -814,7 +814,7 @@ function mod.UF_ApplyMaxHealthStyle(barFrame, style, s, mask)
         -- A retexture can replace the fill object: re-seat the backing on it.
         local backdrop = barFrame._bg
         if backdrop then
-            backdrop:SetColorTexture(0, 0, 0, ((s and s.maxHealthBgOpacity) or 100) / 100)
+            backdrop:SetColorTexture(0, 0, 0, ((cfg and cfg.maxHealthBgOpacity) or 100) / 100)
             backdrop:ClearAllPoints()
             backdrop:SetAllPoints(fillTex)
         end
@@ -1047,11 +1047,11 @@ end
 
 -- Absorb / Heal Absorb strip-bar position resolvers + layout (mirrors Raid
 -- Frames). On ns so the options-panel preview can reuse the layout.
-mod.UF_GetAbsorbBarPos = function(s)
-    return (s and s.absorbBarPosition) or "none"
+mod.UF_GetAbsorbBarPos = function(cfg)
+    return (cfg and cfg.absorbBarPosition) or "none"
 end
-mod.UF_GetHealAbsorbBarPos = function(s)
-    return (s and s.healAbsorbBarPosition) or "none"
+mod.UF_GetHealAbsorbBarPos = function(cfg)
+    return (cfg and cfg.healAbsorbBarPosition) or "none"
 end
 
 -- Anchor/orient a strip bar (Absorb Bar or Heal Absorb Bar). "above*" sit on top

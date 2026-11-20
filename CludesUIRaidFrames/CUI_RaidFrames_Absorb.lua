@@ -741,15 +741,15 @@ end
 -------------------------------------------------------------------------------
 -- Absorb / Heal Absorb Bar position resolvers + strip layout. The legacy
 -- absorbBarEnabled boolean maps to "aboveRight"/"none"; absorbBarPosition wins once set.
-mod.GetAbsorbBarPosition = function(s)
-    local p = s and s.absorbBarPosition
+mod.GetAbsorbBarPosition = function(cfg)
+    local p = cfg and cfg.absorbBarPosition
     if p then
         return p
     end
-    return (s and s.absorbBarEnabled) and "aboveRight" or "none"
+    return (cfg and cfg.absorbBarEnabled) and "aboveRight" or "none"
 end
-mod.GetHealAbsorbBarPosition = function(s)
-    return (s and s.healAbsorbBarPosition) or "none"
+mod.GetHealAbsorbBarPosition = function(cfg)
+    return (cfg and cfg.healAbsorbBarPosition) or "none"
 end
 
 -- Anchor/orient a strip bar (Absorb or Heal Absorb) for a position. "above*" sit on top of the
