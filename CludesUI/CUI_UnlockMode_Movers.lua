@@ -786,17 +786,17 @@ CUI_NS.unlockParts.Movers = function(LM)
                 if self2._dragging then
                     return
                 end
-                local b = LM.GetBarFrame(barKey)
-                if not b then
+                local widget = LM.GetBarFrame(barKey)
+                if not widget then
                     return
                 end
                 -- A bar riding an engine aura container reports a secret rect
                 -- outside unlock mode (the follow provider is inert inside it, so
                 -- the bar rests plain there): nothing to attach to yet.
-                if RectSecret(b) then
+                if RectSecret(widget) then
                     return
                 end
-                local s = b:GetEffectiveScale()
+                local s = widget:GetEffectiveScale()
                 local uiZoom = UIParent:GetEffectiveScale()
                 local elemScale = s / uiZoom
                 -- Update size from bar (+ any below-frame extra, e.g. boss castbar).
@@ -814,8 +814,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                             l * elemScale, (r or 0) * elemScale, (t or 0) * elemScale, (bt or 0) * elemScale
                     end
                 end
-                local wid = (b:GetWidth() or 50) * elemScale - il - ir
-                local hgt = (b:GetHeight() or 50) * elemScale + extra - entry - ib
+                local wid = (widget:GetWidth() or 50) * elemScale - il - ir
+                local hgt = (widget:GetHeight() or 50) * elemScale + extra - entry - ib
                 if wid > 10 then
                     realW = wid
                 end
@@ -827,13 +827,13 @@ CUI_NS.unlockParts.Movers = function(LM)
                 -- stored center DOWN by half the extra so the box stays top-pinned
                 -- to the frame and grows downward over the extra region; insets
                 -- shift it by half their difference.
-                local bcx, bcy = b:GetCenter()
+                local bcx, bcy = widget:GetCenter()
                 if bcx and bcy then
                     moverCX = bcx * elemScale + (il - ir) * 0.5
                     moverCY = bcy * elemScale - UIParent:GetHeight() - extra * 0.5 + (ib - entry) * 0.5
                 end
                 -- Anchor mover to bar TOPLEFT for pixel-perfect overlay
-                CludesUI._unlockAttachMover(self2, b, barKey, il, entry)
+                CludesUI._unlockAttachMover(self2, widget, barKey, il, entry)
                 LM.PointPicker.Refresh(self2)
             end)
         end
@@ -1708,12 +1708,12 @@ CUI_NS.unlockParts.Movers = function(LM)
             -- with the cog and updates immediately (no waiting for a commit).
             -- Parity-aware (CenterToPixels): odd-pixel dims center on a half pixel,
             -- which plain ToPixels reads back one high on this live path.
-            local b = LM.GetBarFrame(barKey)
-            if b then
-                local boxLeft, bR = b:GetLeft(), b:GetRight()
-                local bT, bB = b:GetTop(), b:GetBottom()
+            local widget = LM.GetBarFrame(barKey)
+            if widget then
+                local boxLeft, bR = widget:GetLeft(), widget:GetRight()
+                local bT, bB = widget:GetTop(), widget:GetBottom()
                 if boxLeft and bR and bT and bB then
-                    local scaleRatio = b:GetEffectiveScale() / UIParent:GetEffectiveScale()
+                    local scaleRatio = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
                     local sw = UIParent:GetWidth()
                     local sh = UIParent:GetHeight()
                     local liveCX = ((boxLeft + bR) * 0.5 * scaleRatio) - sw * 0.5
@@ -1722,8 +1722,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                     fontStr:SetText(
                         format(
                             "%.0f, %.0f",
-                            c2p and c2p(liveCX, b:GetWidth(), b:GetEffectiveScale()) or toPx(liveCX),
-                            c2p and c2p(liveCY, b:GetHeight(), b:GetEffectiveScale()) or toPx(liveCY)
+                            c2p and c2p(liveCX, widget:GetWidth(), widget:GetEffectiveScale()) or toPx(liveCX),
+                            c2p and c2p(liveCY, widget:GetHeight(), widget:GetEffectiveScale()) or toPx(liveCY)
                         )
                     )
                     fontStr:Show()
@@ -1778,7 +1778,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 return
             end
             local barKey = self._barKey
-            local b = LM.GetBarFrame(barKey)
+            local widget = LM.GetBarFrame(barKey)
             local element = registeredElements[barKey]
 
             -- Re-read the element's moverBg tint: movers persist for the session
@@ -1815,7 +1815,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             end
 
             -- For registered elements without a live frame, use getSize + loadPosition
-            if not b and element then
+            if not widget and element then
                 local wid, hgt = 100, 30
                 local centerYOff = 0
                 if element.getSize then
@@ -1853,7 +1853,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 return
             end
 
-            if not b then
+            if not widget then
                 self:Hide()
                 return
             end
@@ -1864,11 +1864,11 @@ CUI_NS.unlockParts.Movers = function(LM)
             -- re-apply its anchor now -- the follow provider is inert in unlock
             -- mode, so that places it absolutely -- and sync from the plain rect.
             -- If the rect has not resolved yet, sync again next frame.
-            if RectSecret(b) then
+            if RectSecret(widget) then
                 if CludesUI.ReapplyOwnAnchor then
                     CludesUI.ReapplyOwnAnchor(barKey)
                 end
-                if RectSecret(b) then
+                if RectSecret(widget) then
                     self:Hide()
                     local num = self._secretResync or 0
                     if num < 2 then
@@ -1881,7 +1881,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 end
             end
             self._secretResync = nil
-            local s = b:GetEffectiveScale()
+            local s = widget:GetEffectiveScale()
             local uiZoom = UIParent:GetEffectiveScale()
             local wid, hgt
             local elemScale = s / uiZoom
@@ -1899,8 +1899,8 @@ CUI_NS.unlockParts.Movers = function(LM)
             -- Read size directly from the bar frame. Since the mover is anchored
             -- to the bar, we need the size in the mover's coordinate space.
             -- elemScale converts from bar space to UIParent (mover parent) space.
-            wid = (b:GetWidth() or 50) * elemScale - il - ir
-            hgt = (b:GetHeight() or 50) * elemScale - entry - ib
+            wid = (widget:GetWidth() or 50) * elemScale - il - ir
+            hgt = (widget:GetHeight() or 50) * elemScale - entry - ib
             -- For action bars, compute visual size from button grid (accounts for
             -- shape overrides, padding, and per-button scale)
             -- Only use this as a fallback when the frame has no size yet (first load).
@@ -1934,8 +1934,8 @@ CUI_NS.unlockParts.Movers = function(LM)
 
             -- Position: convert bar's screen position to UIParent-relative
             -- Center the mover on the bar's visual center for pixel-perfect alignment.
-            local boxLeft = b:GetLeft()
-            local bT = b:GetTop()
+            local boxLeft = widget:GetLeft()
+            local bT = widget:GetTop()
             if boxLeft and bT then
                 local Pix = CludesUI and CludesUI.PP
                 if isTinyAnchor and element then
@@ -1943,7 +1943,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     -- Compute TOPLEFT from GetCenter() to avoid layout-flush timing
                     -- issues where GetLeft()/GetTop() still reflect the old 1x1 size.
                     local cx, cy
-                    local bCX, bCY = b:GetCenter()
+                    local bCX, bCY = widget:GetCenter()
                     if bCX and bCY then
                         cx = bCX * s / uiZoom + (il - ir) * 0.5 - wid * 0.5
                         cy = bCY * s / uiZoom + (ib - entry) * 0.5 - UIParent:GetHeight() + hgt * 0.5 + centerYOff
@@ -1973,7 +1973,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 else
                     -- Anchor mover directly to the bar frame so both share the
                     -- exact same screen position with zero coordinate math.
-                    CludesUI._unlockAttachMover(self, b, barKey, il, entry)
+                    CludesUI._unlockAttachMover(self, widget, barKey, il, entry)
                     -- Compute moverCX/moverCY for snap/drag logic
                     local cx = boxLeft * elemScale + il
                     local cy = bT * elemScale - UIParent:GetHeight() - entry
@@ -2008,12 +2008,12 @@ CUI_NS.unlockParts.Movers = function(LM)
                     realH = gh
                 end
             else
-                local b = LM.GetBarFrame(barKey)
-                if b then
-                    local s = b:GetEffectiveScale()
+                local widget = LM.GetBarFrame(barKey)
+                if widget then
+                    local s = widget:GetEffectiveScale()
                     local uiZoom = UIParent:GetEffectiveScale()
-                    realW = (b:GetWidth() or realW) * s / uiZoom
-                    realH = (b:GetHeight() or realH) * s / uiZoom
+                    realW = (widget:GetWidth() or realW) * s / uiZoom
+                    realH = (widget:GetHeight() or realH) * s / uiZoom
                 end
             end
             -- moverCX/moverCY are already updated by RecenterBarAnchor (called before
@@ -4258,16 +4258,16 @@ CUI_NS.unlockParts.Movers = function(LM)
                                 return PPi.ToPixels(place.y)
                             end
                         end
-                        local b = LM.GetBarFrame(barId)
-                        if not b then
+                        local widget = LM.GetBarFrame(barId)
+                        if not widget then
                             return nil
                         end
-                        local boxLeft, bR = b:GetLeft(), b:GetRight()
-                        local bT, bB = b:GetTop(), b:GetBottom()
+                        local boxLeft, bR = widget:GetLeft(), widget:GetRight()
+                        local bT, bB = widget:GetTop(), widget:GetBottom()
                         if not (boxLeft and bR and bT and bB) then
                             return nil
                         end
-                        local scaleRatio = b:GetEffectiveScale() / UIParent:GetEffectiveScale()
+                        local scaleRatio = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
                         -- Parity-aware live conversion: odd-pixel dims rest their
                         -- center on a half pixel; plain ToPixels reads that back
                         -- one high, so deltas computed from it move the frame to
@@ -4276,13 +4276,13 @@ CUI_NS.unlockParts.Movers = function(LM)
                         if ax == "X" then
                             local liveCX = ((boxLeft + bR) * 0.5 * scaleRatio) - sw * 0.5
                             if c2p then
-                                return c2p(liveCX, b:GetWidth(), b:GetEffectiveScale())
+                                return c2p(liveCX, widget:GetWidth(), widget:GetEffectiveScale())
                             end
                             return PPi.ToPixels(liveCX)
                         end
                         local liveCY = ((bT + bB) * 0.5 * scaleRatio) - sh * 0.5
                         if c2p then
-                            return c2p(liveCY, b:GetHeight(), b:GetEffectiveScale())
+                            return c2p(liveCY, widget:GetHeight(), widget:GetEffectiveScale())
                         end
                         return PPi.ToPixels(liveCY)
                     end
@@ -4610,8 +4610,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                 end
                 local barKey = handle._barKey
                 local PPc = CludesUI and CludesUI.PP
-                local b = LM.GetBarFrame(barKey)
-                if not b or not PPc or not PPc.ToPixels or not PPc.FromPixels then
+                local widget = LM.GetBarFrame(barKey)
+                if not widget or not PPc or not PPc.ToPixels or not PPc.FromPixels then
                     return
                 end
                 -- Drive the move through the SAME stored-first delta path the cog X box
@@ -4641,7 +4641,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                     then
                         -- Parity-aware like the cog X box and readout (odd dims store a half-pixel center).
                         local c2pC = PPc.CenterToPixels
-                        curPx = (c2pC and c2pC(place.x, b:GetWidth(), b:GetEffectiveScale()))
+                        curPx = (c2pC and c2pC(place.x, widget:GetWidth(), widget:GetEffectiveScale()))
                             or PPc.ToPixels(place.x)
                     end
                 end
@@ -4652,14 +4652,14 @@ CUI_NS.unlockParts.Movers = function(LM)
                     -- pixel, and plain ToPixels' tie-up round overshoots it by one --
                     -- the centering delta then lands the frame a full pixel left of an
                     -- identical element centered from its stored value ("dragged first, then centered" 1px mismatch).
-                    local boxLeft, bR = b:GetLeft(), b:GetRight()
+                    local boxLeft, bR = widget:GetLeft(), widget:GetRight()
                     if not (boxLeft and bR) then
                         return
                     end
-                    local scaleRatio = b:GetEffectiveScale() / UIParent:GetEffectiveScale()
+                    local scaleRatio = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
                     local liveCX = ((boxLeft + bR) * 0.5 * scaleRatio) - UIParent:GetWidth() * 0.5
                     if PPc.CenterToPixels then
-                        curPx = PPc.CenterToPixels(liveCX, b:GetWidth(), b:GetEffectiveScale())
+                        curPx = PPc.CenterToPixels(liveCX, widget:GetWidth(), widget:GetEffectiveScale())
                     else
                         curPx = PPc.ToPixels(liveCX)
                     end

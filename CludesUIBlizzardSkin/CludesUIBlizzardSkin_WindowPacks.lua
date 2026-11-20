@@ -625,8 +625,8 @@ do
                 end
                 editField:ClearAllPoints()
                 for idx = 1, #pts do
-                    local t = pts[idx]
-                    editField:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                    local tbl = pts[idx]
+                    editField:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                 end
                 if not hasBottom then
                     local hgt = editField:GetHeight()
@@ -2041,11 +2041,11 @@ do
             -- The three suggestion panels keep their big artwork: exempt their
             -- subtrees from the art fade and restore the bg it zeroed.
             for idx = 1, 3 do
-                local s = scrollFrame["Suggestion" .. idx]
-                if s then
-                    Skin.ExemptArt(s)
-                    if s.bg then
-                        s.bg:SetAlpha(0.4)
+                local cfg = scrollFrame["Suggestion" .. idx]
+                if cfg then
+                    Skin.ExemptArt(cfg)
+                    if cfg.bg then
+                        cfg.bg:SetAlpha(0.4)
                     end
                 end
             end
@@ -3318,8 +3318,8 @@ do
         end
         editField:ClearAllPoints()
         for idx = 1, #pts do
-            local t = pts[idx]
-            editField:SetPoint(t[1], t[2], t[3], t[4], t[5])
+            local tbl = pts[idx]
+            editField:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
         end
         if editField.GetTextInsets and editField.SetTextInsets then
             local l, region, t2, button = editField:GetTextInsets()
@@ -3738,8 +3738,8 @@ do
                         sd2.inPin = true
                         sbx2:ClearAllPoints()
                         for idx = 1, #sd2.pin do
-                            local t = sd2.pin[idx]
-                            sbx2:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                            local tbl = sd2.pin[idx]
+                            sbx2:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                         end
                         sd2.inPin = false
                     end
@@ -4182,8 +4182,8 @@ do
                     applying = true
                     editField:ClearAllPoints()
                     for idx = 1, #pts do
-                        local t = pts[idx]
-                        editField:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                        local tbl = pts[idx]
+                        editField:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                     end
                     applying = false
                 end
@@ -4527,8 +4527,8 @@ do
                         labelData.dropped = true
                         fsr:ClearAllPoints()
                         for idx = 1, #pts do
-                            local t = pts[idx]
-                            fsr:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                            local tbl = pts[idx]
+                            fsr:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                         end
                     end
                 end
@@ -4738,8 +4738,8 @@ local function CalReseat(widget, dyUp)
     skinData.reseated = true
     widget:ClearAllPoints()
     for idx = 1, #pts do
-        local t = pts[idx]
-        widget:SetPoint(t[1], t[2], t[3], t[4], t[5])
+        local tbl = pts[idx]
+        widget:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
     end
 end
 
@@ -4941,8 +4941,8 @@ do
                         GetFFD(ccc).nudgedRight = true
                         ccc:ClearAllPoints()
                         for idx = 1, #pts do
-                            local t = pts[idx]
-                            ccc:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                            local tbl = pts[idx]
+                            ccc:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                         end
                     end
                 end
@@ -5359,8 +5359,8 @@ do
                         regionData.raised = true
                         fsn:ClearAllPoints()
                         for idx = 1, #pts do
-                            local t = pts[idx]
-                            fsn:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                            local tbl = pts[idx]
+                            fsn:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                         end
                     end
                 end
@@ -5703,8 +5703,8 @@ do
                     GetFFD(catBox).shifted = true
                     catBox:ClearAllPoints()
                     for idx = 1, #pts do
-                        local t = pts[idx]
-                        catBox:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                        local tbl = pts[idx]
+                        catBox:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                     end
                 end
             end
@@ -5728,8 +5728,8 @@ do
                     GetFFD(achBox).shifted = true
                     achBox:ClearAllPoints()
                     for idx = 1, #pts do
-                        local t = pts[idx]
-                        achBox:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                        local tbl = pts[idx]
+                        achBox:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                     end
                 end
             end
@@ -6009,8 +6009,8 @@ local function SkinLabeledPageButton(btnFrame, childFrame, extraX)
         if success then
             btnFrame:ClearAllPoints()
             for idx = 1, #pts do
-                local t = pts[idx]
-                btnFrame:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                local tbl = pts[idx]
+                btnFrame:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
             end
         end
     end
@@ -6332,8 +6332,8 @@ do
                 GetFFD(m1).raised = true
                 m1:ClearAllPoints()
                 for idx = 1, #pts do
-                    local t = pts[idx]
-                    m1:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                    local tbl = pts[idx]
+                    m1:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                 end
             end
         end
@@ -6782,8 +6782,8 @@ do
                     if success then
                         socketScrollBar:ClearAllPoints()
                         for idx = 1, #pts do
-                            local t = pts[idx]
-                            socketScrollBar:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                            local tbl = pts[idx]
+                            socketScrollBar:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                         end
                     end
                 end
@@ -7327,8 +7327,8 @@ do
                 cd2.dropped8 = true
                 ctrl:ClearAllPoints()
                 for idx = 1, #pts do
-                    local t = pts[idx]
-                    ctrl:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                    local tbl = pts[idx]
+                    ctrl:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                 end
             end
             if details.HouseFinderButton then
@@ -7368,8 +7368,8 @@ do
                         tsd.lifted = true
                         castFrame.TabSystem:ClearAllPoints()
                         for idx = 1, #pts do
-                            local t = pts[idx]
-                            castFrame.TabSystem:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                            local tbl = pts[idx]
+                            castFrame.TabSystem:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                         end
                     end
                 end
@@ -7826,8 +7826,8 @@ do
                             if success and #pts > 0 then
                                 filterDropdown:ClearAllPoints()
                                 for idx = 1, #pts do
-                                    local t = pts[idx]
-                                    filterDropdown:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                                    local tbl = pts[idx]
+                                    filterDropdown:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                                 end
                             end
                         end
@@ -7985,8 +7985,8 @@ do
                         GetFFD(subFrame).tabsAligned = true
                         firstTab:ClearAllPoints()
                         for idx = 1, #pts do
-                            local t = pts[idx]
-                            firstTab:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                            local tbl = pts[idx]
+                            firstTab:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                         end
                     end
                 end
@@ -8049,8 +8049,8 @@ do
                             GetFFD(sbtn).leftAligned = true
                             sbtn:ClearAllPoints()
                             for idx = 1, #pts do
-                                local t = pts[idx]
-                                sbtn:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                                local tbl = pts[idx]
+                                sbtn:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                             end
                         end
                     end
@@ -8541,8 +8541,8 @@ do
                 if navData.origPts then
                     navBar:ClearAllPoints()
                     for idx = 1, #navData.origPts do
-                        local t = navData.origPts[idx]
-                        navBar:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                        local tbl = navData.origPts[idx]
+                        navBar:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                     end
                 end
                 for _, keyName in ipairs({
@@ -8997,8 +8997,8 @@ do
                     if success then
                         qt:ClearAllPoints()
                         for idx = 1, #pts do
-                            local t = pts[idx]
-                            qt:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                            local tbl = pts[idx]
+                            qt:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                         end
                     end
                 end
@@ -9584,8 +9584,8 @@ do
                         GetFFD(th).raised = true
                         th:ClearAllPoints()
                         for idx = 1, #pts do
-                            local t = pts[idx]
-                            th:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                            local tbl = pts[idx]
+                            th:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                         end
                     end
                 end
@@ -10123,8 +10123,8 @@ do
                 applying = true
                 found:ClearAllPoints()
                 for idx = 1, #pts do
-                    local t = pts[idx]
-                    found:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                    local tbl = pts[idx]
+                    found:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                 end
                 applying = false
             end
@@ -10254,19 +10254,19 @@ do
     end
 
     local function EX_GetTile(idx)
-        local t = exState.tiles[idx]
-        if t then
-            return t
+        local tbl = exState.tiles[idx]
+        if tbl then
+            return tbl
         end
         local win = _G.MerchantFrame
-        t = CreateFrame("Frame", EX_PREFIX .. idx, win, "MerchantItemTemplate")
-        EX_Place(t, idx)
-        SkinMerchantTile(t)
+        tbl = CreateFrame("Frame", EX_PREFIX .. idx, win, "MerchantItemTemplate")
+        EX_Place(tbl, idx)
+        SkinMerchantTile(tbl)
         LiftMerchantCurrency(_G[EX_PREFIX .. idx .. "MoneyFrame"])
         LiftMerchantCurrency(_G[EX_PREFIX .. idx .. "AltCurrencyFrame"])
-        exState.tiles[idx] = t
-        exState.buttons[t.ItemButton] = true
-        return t
+        exState.tiles[idx] = tbl
+        exState.buttons[tbl.ItemButton] = true
+        return tbl
     end
 
     local function EX_FillTile(tile, slot, index, numItems)
@@ -10687,8 +10687,8 @@ do
                     GetFFD(it1).shifted = true
                     it1:ClearAllPoints()
                     for idx = 1, #pts do
-                        local t = pts[idx]
-                        it1:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                        local tbl = pts[idx]
+                        it1:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                     end
                 end
             end
@@ -11452,12 +11452,12 @@ do
             "QuestDetailScrollChildFrame",
             "QuestRewardScrollChildFrame",
         }) do
-            local s = _G[sn]
-            if s then
-                Skin.FadeRegions(s)
-                Skin.Register(s, true)
-                if s.ScrollBar then
-                    Skin.ScrollBar(s.ScrollBar)
+            local cfg = _G[sn]
+            if cfg then
+                Skin.FadeRegions(cfg)
+                Skin.Register(cfg, true)
+                if cfg.ScrollBar then
+                    Skin.ScrollBar(cfg.ScrollBar)
                 end
             end
         end
@@ -11938,8 +11938,8 @@ do
                     if success then
                         headerContainer:ClearAllPoints()
                         for idx = 1, #pts do
-                            local t = pts[idx]
-                            headerContainer:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                            local tbl = pts[idx]
+                            headerContainer:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                         end
                     end
                 end
@@ -12143,8 +12143,8 @@ do
                         GetFFD(labelText).shifted = true
                         labelText:ClearAllPoints()
                         for idx = 1, #pts do
-                            local t = pts[idx]
-                            labelText:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                            local tbl = pts[idx]
+                            labelText:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                         end
                     end
                 end
@@ -12227,8 +12227,8 @@ do
                     GetFFD(cats).topShift = true
                     cats:ClearAllPoints()
                     for idx = 1, #pts do
-                        local t = pts[idx]
-                        cats:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                        local tbl = pts[idx]
+                        cats:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                     end
                 end
             end
@@ -12415,8 +12415,8 @@ do
                     GetFFD(bb).dropped = true
                     bb:ClearAllPoints()
                     for idx = 1, #pts do
-                        local t = pts[idx]
-                        bb:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                        local tbl = pts[idx]
+                        bb:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                     end
                 end
             end
@@ -12470,8 +12470,8 @@ do
                         GetFFD(bb).shiftedX = true
                         bb:ClearAllPoints()
                         for idx = 1, #pts do
-                            local t = pts[idx]
-                            bb:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                            local tbl = pts[idx]
+                            bb:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                         end
                     end
                 end
@@ -13357,8 +13357,8 @@ do
                 GetFFD(part).nudged = true
                 part:ClearAllPoints()
                 for idx = 1, #pts do
-                    local t = pts[idx]
-                    part:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                    local tbl = pts[idx]
+                    part:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                 end
             end
         end
@@ -13715,8 +13715,8 @@ do
                         GetFFD(abox).botClamped = true
                         abox:ClearAllPoints()
                         for idx = 1, #pts do
-                            local t = pts[idx]
-                            abox:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                            local tbl = pts[idx]
+                            abox:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                         end
                     end
                 else
@@ -13990,8 +13990,8 @@ do
                 GetFFD(cl0).widened = true
                 cl0:ClearAllPoints()
                 for idx = 1, #pts do
-                    local t = pts[idx]
-                    cl0:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                    local tbl = pts[idx]
+                    cl0:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                 end
             end
         end
@@ -14246,8 +14246,8 @@ do
                     GetFFD(found).shift10 = true
                     found:ClearAllPoints()
                     for idx = 1, #pts do
-                        local t = pts[idx]
-                        found:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                        local tbl = pts[idx]
+                        found:SetPoint(tbl[1], tbl[2], tbl[3], tbl[4], tbl[5])
                     end
                 end
             end

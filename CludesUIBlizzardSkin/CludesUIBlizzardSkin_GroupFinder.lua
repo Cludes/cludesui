@@ -346,8 +346,8 @@ local function LiftButton(button)
     skinData.lifted = true
     button:ClearAllPoints()
     for idx = 1, #pts do
-        local t = pts[idx]
-        button:SetPoint(t[1], t[2], t[3], t[4], t[5])
+        local anchor = pts[idx]
+        button:SetPoint(anchor[1], anchor[2], anchor[3], anchor[4], anchor[5])
     end
 end
 
@@ -761,8 +761,8 @@ local function SkinCategoryButton(button, options)
             if success then
                 icon0:ClearAllPoints()
                 for idx = 1, #pts do
-                    local t = pts[idx]
-                    icon0:SetPoint(t[1], t[2], t[3], t[4], t[5])
+                    local anchor = pts[idx]
+                    icon0:SetPoint(anchor[1], anchor[2], anchor[3], anchor[4], anchor[5])
                 end
             end
             local ring0 = button.ring or button.Ring
@@ -861,9 +861,9 @@ local function ResolveRailSelection(getBtn, captured, holderFrame)
         return captured
     end
     for idx = 1, 4 do
-        local b = getBtn(idx)
-        if b and b.GetChecked then
-            local c = b:GetChecked()
+        local widget = getBtn(idx)
+        if widget and widget.GetChecked then
+            local c = widget:GetChecked()
             -- Secret checked state is unreadable; fall through to the next
             -- signal in the cascade instead of boolean-testing it.
             if not issecretvalue(c) and c then
@@ -1088,12 +1088,12 @@ local function Skin_LFGList()
         if LFGListCategorySelection_AddButton and not GetFFD(CS).addBtnHook then
             GetFFD(CS).addBtnHook = true
             hooksecurefunc("LFGListCategorySelection_AddButton", function(checkSkin, btnIndex, categoryID, filters)
-                local b = checkSkin and checkSkin.CategoryButtons and checkSkin.CategoryButtons[btnIndex]
-                if not b or b:IsForbidden() then
+                local widget = checkSkin and checkSkin.CategoryButtons and checkSkin.CategoryButtons[btnIndex]
+                if not widget or widget:IsForbidden() then
                     return
                 end
-                SkinLFGCategoryButton(b)
-                local skinData = FFD[b]
+                SkinLFGCategoryButton(widget)
+                local skinData = FFD[widget]
                 if skinData and skinData.selWash then
                     local sel = (checkSkin.selectedCategory == categoryID) and (checkSkin.selectedFilters == filters)
                     skinData.selWash:SetShown(sel and true or false)

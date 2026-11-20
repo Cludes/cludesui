@@ -77,8 +77,8 @@ end
 
 -- Whether the current place should be logged.
 local function WantLog()
-    local s = Settings()
-    if not s.enabled then
+    local cfg = Settings()
+    if not cfg.enabled then
         return false
     end
     local _, kind, rawDifficulty, _, maxPlayers, _, _, rawMap = GetInstanceInfo()
@@ -87,18 +87,18 @@ local function WantLog()
     -- on its own Dungeons trigger (off until ticked); nothing else applies.
     if CludesUI.IS_FOREVER then
         if kind == "raid" then
-            return On(s, "logNormal")
+            return On(cfg, "logNormal")
         end
-        return kind == "party" and s.logDungeon == true
+        return kind == "party" and cfg.logDungeon == true
     end
 
     -- Battlegrounds: Blitz first (it is also rated); unrated ones never log.
     if kind == "pvp" and C_PvP then
         if C_PvP.IsRatedSoloRBG and C_PvP.IsRatedSoloRBG() then
-            return On(s, "logBlitz")
+            return On(cfg, "logBlitz")
         end
         if C_PvP.IsRatedBattleground and C_PvP.IsRatedBattleground() then
-            return On(s, "logRBG")
+            return On(cfg, "logRBG")
         end
         return false
     end
@@ -108,30 +108,30 @@ local function WantLog()
         return false
     end
     if LFR[difficulty] then
-        return On(s, "logLFR")
+        return On(cfg, "logLFR")
     end
     if kind == "raid" and (map >= NEW_RAID_FROM or NEW_RAIDS_WITH_OLD_IDS[map]) then
         local trigger = RAID_TRIGGER[difficulty]
         if trigger then
-            return On(s, trigger)
+            return On(cfg, trigger)
         end
         return true -- Timewalking and other difficulties
     end
-    if On(s, "log5pp") then
+    if On(cfg, "log5pp") then
         local mythic = difficulty == KEYSTONE or difficulty == MYTHIC_DUNGEON
         if mythic and (map >= NEW_DUNGEON_FROM or OLD_DUNGEONS_IN_SEASON[map]) then
             return true
         end
     end
     if
-        On(s, "logScenario")
+        On(cfg, "logScenario")
         and kind == "scenario"
         and (tonumber(maxPlayers) or 0) > 1
         and map >= NEW_DUNGEON_FROM
     then
         return true
     end
-    if On(s, "logArena") and (kind == "arena" or kind == "ratedarena") then
+    if On(cfg, "logArena") and (kind == "arena" or kind == "ratedarena") then
         return true
     end
     return false

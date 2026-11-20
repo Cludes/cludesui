@@ -679,8 +679,8 @@ local function MO_OverAny()
         return true
     end
     for i = 1, #_moButtons do
-        local b = _moButtons[i]
-        if b:IsShown() and b:IsMouseOver() then
+        local widget = _moButtons[i]
+        if widget:IsShown() and widget:IsMouseOver() then
             return true
         end
     end
@@ -1734,8 +1734,8 @@ local _omniumFolioHooked = false
 local function IsFolioReplacedByAddOn()
     for _, name in ipairs(FOLIO_REPLACEMENT_BUTTONS) do
         -- IsShown presence check: if anything squats one of these global names with a non-frame value, treat it as no replacement instead of erroring.
-        local b = _G[name]
-        if b and b.IsShown and b:IsShown() then
+        local widget = _G[name]
+        if widget and widget.IsShown and widget:IsShown() then
             return true
         end
     end
@@ -1820,8 +1820,8 @@ function SKIN._HoverStillOver(mapFrame)
     if hoverFrame:IsMouseOver(4, -4, -4, 4) then
         return true
     end
-    local b = _G.ExpansionLandingPageMinimapButton
-    if b and b:IsShown() and b:IsMouseOver(4, -4, -4, 4) then
+    local widget = _G.ExpansionLandingPageMinimapButton
+    if widget and widget:IsShown() and widget:IsMouseOver(4, -4, -4, 4) then
         return true
     end
     return false
@@ -1851,9 +1851,9 @@ function SKIN._HVHideNow()
     local m2 = SKIN.db and SKIN.db.profile.minimap
     if m2 then
         if GetOmniumFolioMode(m2) == "hover" then
-            local b = _G.ExpansionLandingPageMinimapButton
-            if b then
-                b:Hide()
+            local widget = _G.ExpansionLandingPageMinimapButton
+            if widget then
+                widget:Hide()
             end
         end
         if GetCoordsModePos(m2) == "hover" then
@@ -1946,11 +1946,11 @@ function SKIN._HVRevealMapHover()
         raiseZoom()
     end
     if GetOmniumFolioMode(mapCfg) == "hover" and not IsFolioReplacedByAddOn() then
-        local b = _G.ExpansionLandingPageMinimapButton
-        if b then
-            PositionOmniumFolio(b)
-            if not b:IsShown() and b.RefreshButton then
-                b:RefreshButton(true)
+        local widget = _G.ExpansionLandingPageMinimapButton
+        if widget then
+            PositionOmniumFolio(widget)
+            if not widget:IsShown() and widget.RefreshButton then
+                widget:RefreshButton(true)
             end
         end
     end

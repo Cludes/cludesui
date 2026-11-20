@@ -1045,8 +1045,8 @@ local function UpdateCustomBuffBars()
                             PlayPresetBuffGainSound(sd, barInfo.key, spellRef, nowTime)
                         else
                             -- Loss edge: displayed window ran out -> fire once, drop timer.
-                            local t = _customAuraTimers[tkey]
-                            if t and (nowTime - t.start) >= t.duration then
+                            local tbl = _customAuraTimers[tkey]
+                            if tbl and (nowTime - tbl.start) >= tbl.duration then
                                 PlayPresetBuffLossSound(sd, spellRef, nowTime)
                                 _customAuraTimers[tkey] = nil
                                 needBuffReanchor = true

@@ -193,48 +193,48 @@ local function FillList()
         end
     end
     for i, skinData in ipairs(entries) do
-        local b = listButtons[i]
-        if not b then
-            b = CreateFrame("Button", nil, list.child)
-            b:SetSize(LIST_W - 30, 20)
-            b.text = Text(b, 12)
-            b.text:SetPoint("LEFT", 4, 0)
-            b.text:SetWidth(LIST_W - 70)
-            b.text:SetWordWrap(false)
-            b.lv = Text(b, 11)
-            b.lv:SetPoint("RIGHT", -2, 0)
-            b.sel = b:CreateTexture(nil, "BACKGROUND")
-            b.sel:SetAllPoints()
+        local widget = listButtons[i]
+        if not widget then
+            widget = CreateFrame("Button", nil, list.child)
+            widget:SetSize(LIST_W - 30, 20)
+            widget.text = Text(widget, 12)
+            widget.text:SetPoint("LEFT", 4, 0)
+            widget.text:SetWidth(LIST_W - 70)
+            widget.text:SetWordWrap(false)
+            widget.lv = Text(widget, 11)
+            widget.lv:SetPoint("RIGHT", -2, 0)
+            widget.sel = widget:CreateTexture(nil, "BACKGROUND")
+            widget.sel:SetAllPoints()
             local ar, ag, ab = CludesUI.Kit.Accent()
-            b.sel:SetColorTexture(ar, ag, ab, 0.18)
-            local highlight = b:CreateTexture(nil, "HIGHLIGHT")
+            widget.sel:SetColorTexture(ar, ag, ab, 0.18)
+            local highlight = widget:CreateTexture(nil, "HIGHLIGHT")
             highlight:SetAllPoints()
             highlight:SetColorTexture(1, 1, 1, 0.06)
-            b:SetScript("OnClick", function(self)
+            widget:SetScript("OnClick", function(self)
                 Show(self.dungeon)
             end)
-            listButtons[i] = b
+            listButtons[i] = widget
         end
-        b.dungeon = not skinData.heading and skinData or nil
-        b:EnableMouse(not skinData.heading)
+        widget.dungeon = not skinData.heading and skinData or nil
+        widget:EnableMouse(not skinData.heading)
         if skinData.heading then
-            b.text:SetText(CludesUI.Kit.AccentHex() .. skinData.heading .. "|r")
-            b.lv:SetText("")
+            widget.text:SetText(CludesUI.Kit.AccentHex() .. skinData.heading .. "|r")
+            widget.lv:SetText("")
         elseif skinData.faction then
-            b.text:SetText(skinData.name .. (skinData.tab == "pvp" and " |cff9aa6b2(PvP)|r" or ""))
-            b.lv:SetText("")
+            widget.text:SetText(skinData.name .. (skinData.tab == "pvp" and " |cff9aa6b2(PvP)|r" or ""))
+            widget.lv:SetText("")
         else
-            b.text:SetText(
+            widget.text:SetText(
                 (skinData.raid and "|cffffb040" or "")
                     .. skinData.name
                     .. (skinData.raid and "|r" or "")
                     .. (skinData.closed and " |cff9aa6b2(closed)|r" or "")
             )
-            b.lv:SetText(LevelText(skinData))
+            widget.lv:SetText(LevelText(skinData))
         end
-        b:SetPoint("TOPLEFT", 0, -y)
-        b.sel:SetShown(skinData == current)
-        b:Show()
+        widget:SetPoint("TOPLEFT", 0, -y)
+        widget.sel:SetShown(skinData == current)
+        widget:Show()
         y = y + 20
     end
     list.child:SetHeight(y)

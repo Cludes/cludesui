@@ -514,8 +514,8 @@ function ABAR:ReapplyHotkeyColors()
         return
     end
     for barId, buttons in pairs(barButtons) do
-        local s = barList[barId]
-        local color = s and not s.hideKeybind and s.keybindFontColor
+        local cfg = barList[barId]
+        local color = cfg and not cfg.hideKeybind and cfg.keybindFontColor
         if color and (color.r ~= 1 or color.g ~= 1 or color.b ~= 1) then
             for index = 1, #buttons do
                 local hotkeyText = buttons[index] and buttons[index].HotKey

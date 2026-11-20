@@ -102,12 +102,12 @@ end
 -- corners inside the chamfers).
 local function SeatBox(box, owner, tp, ty, by, inX)
     local frame, posX = BORDER.fill, inX or 0
-    local s = box.seat
-    if not s then
-        s = {}
-        box.seat = s
+    local cfg = box.seat
+    if not cfg then
+        cfg = {}
+        box.seat = cfg
     end
-    s[1], s[2], s[3], s[4], s[5] = tp, posX, ty, -posX, by
+    cfg[1], cfg[2], cfg[3], cfg[4], cfg[5] = tp, posX, ty, -posX, by
     CUI.ForeverBorderSeat(box.rim, owner, tp, posX, ty, -posX, by)
     if box.lift then
         CUI.ForeverBorderSeat(box.lift, owner, tp, posX, ty, -posX, by)

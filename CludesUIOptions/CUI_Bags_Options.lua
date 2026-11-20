@@ -1889,15 +1889,15 @@ CludesUI.AtOptionsLogin(function()
                             return BagsNS.BagAutoWindowOn(setting, key)
                         end,
                         function(key, val)
-                            local t = saved.profile[setting]
-                            if not t then
-                                t = {}
-                                saved.profile[setting] = t
+                            local tbl = saved.profile[setting]
+                            if not tbl then
+                                tbl = {}
+                                saved.profile[setting] = tbl
                             end
                             if val then
-                                t[key] = nil
+                                tbl[key] = nil
                             else
-                                t[key] = false
+                                tbl[key] = false
                             end
                         end
                     )

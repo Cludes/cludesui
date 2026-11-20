@@ -165,18 +165,18 @@ end
 -- it and whether it differs from the stored value (stored here).
 mod._ixBarEligible = function(barId)
     local p = ABAR.db.profile
-    local s = p.bars[barId]
+    local cfg = p.bars[barId]
     local success = false
-    if s and p.squareIcons and mod.AB_Style() == "cui" then
-        local shape = s.buttonShape or "none"
-        local texture = s.borderTexture or "solid"
+    if cfg and p.squareIcons and mod.AB_Style() == "cui" then
+        local shape = cfg.buttonShape or "none"
+        local texture = cfg.borderTexture or "solid"
         if
             (shape == "none" or shape == "cropped")
             and texture ~= ""
             and texture ~= "solid"
             and CludesUI.ResolveBorderTexture(texture)
         then
-            success = ResolveBorderThickness(s) > 0
+            success = ResolveBorderThickness(cfg) > 0
         end
     end
     local changed = mod._ixElig[barId] ~= success
@@ -412,8 +412,8 @@ function ABAR:ApplyPushedTextures()
     -- copy exists (ixEver), every path that does not arm the role disarms it.
     local ixOn = abStyle == "cui" and (mod._ixRolesOn(profile))
     if ixOn then
-        local t = mod._ixPushC
-        t[1], t[2], t[3], t[4] = cr, cg, callback, customC.a or 1
+        local tbl = mod._ixPushC
+        tbl[1], tbl[2], tbl[3], tbl[4] = cr, cg, callback, customC.a or 1
     end
     local ixEver = mod._ixEver
 
@@ -655,8 +655,8 @@ function ABAR:ApplyHighlightTextures()
     local _, ixOn, ixCast = mod._ixRolesOn(profile)
     ixOn = ixOn and not abStock
     do
-        local t = mod._ixHlC
-        t[1], t[2], t[3], t[4] = cr, cg, callback, customC.a or 1
+        local tbl = mod._ixHlC
+        tbl[1], tbl[2], tbl[3], tbl[4] = cr, cg, callback, customC.a or 1
     end
     local ixEver = mod._ixEver
 

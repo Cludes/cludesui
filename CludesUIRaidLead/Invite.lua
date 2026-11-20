@@ -21,13 +21,13 @@ end
 local function Settings()
     local p = mod.RaidLeadDB()
     p.invites = p.invites or {}
-    local s = p.invites
-    s.list = s.list or ""
-    s.promote = s.promote or ""
-    if s.autoPromote == nil then
-        s.autoPromote = false
+    local cfg = p.invites
+    cfg.list = cfg.list or ""
+    cfg.promote = cfg.promote or ""
+    if cfg.autoPromote == nil then
+        cfg.autoPromote = false
     end
-    return s
+    return cfg
 end
 mod.InviteSettings = Settings
 

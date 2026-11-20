@@ -822,9 +822,9 @@ function CludesUI.ShowTalentConditionsPopup(options)
     if CludesUI.IS_FOREVER then
         local trees, span = ReadForeverTrees()
         for idx, panelFrame in ipairs(panels) do
-            local t = trees and trees[idx]
-            panelFrame.label:SetText(t and t.name or "")
-            LayoutPanel(panelFrame, t and t.nodes, span)
+            local tbl = trees and trees[idx]
+            panelFrame.label:SetText(tbl and tbl.name or "")
+            LayoutPanel(panelFrame, tbl and tbl.nodes, span)
         end
     else
         local halves, specName = ReadTree()

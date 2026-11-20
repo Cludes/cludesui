@@ -864,11 +864,11 @@ local function StartCollecting(skipBaseline)
         -- The first checkpoint is the baseline itself, so a reset before the
         -- first pull (a meter clearing itself at key start) banks nothing.
         for _, m in ipairs(METRICS) do
-            local s = {}
+            local cfg = {}
             for unitGuid, v in pairs(baseTotals[m.key]) do
-                s[unitGuid] = v
+                cfg[unitGuid] = v
             end
-            segRec.snap[m.key] = s
+            segRec.snap[m.key] = cfg
         end
         segRec.snapDur = baseDuration
     end
@@ -1022,13 +1022,13 @@ local function Checkpoint(segment, runState)
         wipe(scratchTotals)
         local read, rowList = HarvestTotals(m.dmType, scratchTotals, nil, nil, m.countRows, m.pets and runState)
         if read then
-            local s = segment.snap[m.key]
-            if not s then
-                s = {}
-                segment.snap[m.key] = s
+            local cfg = segment.snap[m.key]
+            if not cfg then
+                cfg = {}
+                segment.snap[m.key] = cfg
             end
             for unitGuid, v in pairs(scratchTotals) do
-                s[unitGuid] = v
+                cfg[unitGuid] = v
             end
             if m.key == "damage" and (rowList == 0 or next(scratchTotals) ~= nil) then
                 readable = true

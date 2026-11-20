@@ -614,9 +614,9 @@ local function TravelAddAltRows(ar, ag, ab, onRemoved)
             if not (IsControlKeyDown() and IsAltKeyDown()) then
                 return
             end
-            local s = TravelHearthStore()
-            if s then
-                s[key] = nil
+            local cfg = TravelHearthStore()
+            if cfg then
+                cfg[key] = nil
             end
             if onRemoved then
                 onRemoved()

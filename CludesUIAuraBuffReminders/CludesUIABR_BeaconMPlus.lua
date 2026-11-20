@@ -72,9 +72,9 @@ local function FindIn(entries, unitToken)
         return
     end
     for index = 1, #entries do
-        local b = entries[index]
-        if b and b:IsVisible() and b:GetAttribute("unit") == unitToken then
-            return b
+        local widget = entries[index]
+        if widget and widget:IsVisible() and widget:GetAttribute("unit") == unitToken then
+            return widget
         end
     end
 end

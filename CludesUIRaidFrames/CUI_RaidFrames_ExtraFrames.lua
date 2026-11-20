@@ -208,20 +208,20 @@ do
         if not XF.built then
             return
         end
-        local s = mod._scaledProfile or saved.profile
+        local cfg = mod._scaledProfile or saved.profile
         local set = XF.Settings()
         local wid = PixelSnap(
-            math.max(10, (mod._activeSizeW or s.frameWidth or 72) + ((set and set.extraWidth) or 0))
+            math.max(10, (mod._activeSizeW or cfg.frameWidth or 72) + ((set and set.extraWidth) or 0))
         )
         local hgt = PixelSnap(
-            math.max(10, (mod._activeSizeH or s.frameHeight or 46) + ((set and set.extraHeight) or 0))
+            math.max(10, (mod._activeSizeH or cfg.frameHeight or 46) + ((set and set.extraHeight) or 0))
         )
         -- Indicator/aura/BM auto-resize: ratio of the custom size to what the
         -- real frames currently render at (clamped like the tier scales). The
         -- extra proxy and ns._xfBmScale pick this up everywhere a duplicate
         -- renders, composing with the raid tier scales.
-        local aw = PixelSnap(mod._activeSizeW or s.frameWidth or 72)
-        local ah = PixelSnap(mod._activeSizeH or s.frameHeight or 46)
+        local aw = PixelSnap(mod._activeSizeW or cfg.frameWidth or 72)
+        local ah = PixelSnap(mod._activeSizeH or cfg.frameHeight or 46)
         local ratio = 1
         -- Auto Resize Indicators cog toggle (nil = ON, additive key): off keeps
         -- indicators/auras/BM at the real frames' base scale regardless of the
@@ -234,11 +234,11 @@ do
             mod._RefreshProxyModes()
         end
         mod._xfBmScale = (mod._bmScale or 1) * ratio
-        local sp = XF.Pitch(set, s)
+        local sp = XF.Pitch(set, cfg)
         XF.pitch = sp
         -- Free Move lays out on its own axes; attached modes stack group-sized
         -- runs of 5 (unitGrowth within a run, group growth across).
-        local grow, wrap, horizontal = XF.GrowInfo(set, s)
+        local grow, wrap, horizontal = XF.GrowInfo(set, cfg)
         -- Grid size = the live selection; when the mover is shown outside a raid
         -- there is no selection yet, so estimate from the configuration.
         local total = XF.activeCount or 0
@@ -277,8 +277,8 @@ do
         end
 
         local stepW, stepH = wid + sp, hgt + sp
-        local powerH = IsPowerBarEnabled(s) and PixelSnap(s.powerHeight or 4) or 0
-        local topBarH = (s.topNameBarEnabled and PixelSnap(s.topNameBarHeight or 20)) or 0
+        local powerH = IsPowerBarEnabled(cfg) and PixelSnap(cfg.powerHeight or 4) or 0
+        local topBarH = (cfg.topNameBarEnabled and PixelSnap(cfg.topNameBarHeight or 20)) or 0
         for i, btn in ipairs(XF.buttons) do
             btn:SetSize(wid, hgt)
             btn:ClearAllPoints()
@@ -309,7 +309,7 @@ do
                 skinData.health:SetHeight(
                     (
                         (skinData.power and skinData.power:IsShown())
-                            and PixelSnap(hgt - mod.RF_HealthPowerInset(s, powerH))
+                            and PixelSnap(hgt - mod.RF_HealthPowerInset(cfg, powerH))
                         or hgt
                     ) - topBarH
                 )
@@ -444,36 +444,36 @@ do
         end
 
         for i = #XF.buttons + 1, wanted do
-            local b = CreateFrame("Button", "ERFExtraFrame" .. i, XF.container, "SecureUnitButtonTemplate")
-            b:Hide()
-            GetFFD(b)._isExtra = true
-            mod._StyleButtonSecure(b)
-            StyleButton(b)
-            allButtons[#allButtons + 1] = b
+            local widget = CreateFrame("Button", "ERFExtraFrame" .. i, XF.container, "SecureUnitButtonTemplate")
+            widget:Hide()
+            GetFFD(widget)._isExtra = true
+            mod._StyleButtonSecure(widget)
+            StyleButton(widget)
+            allButtons[#allButtons + 1] = widget
 
             -- Per-slot tracker: (re)registered for the assigned unit in XF_Apply,
             -- mirroring the central hub's per-unit reactions for this duplicate.
             -- Bounded to the built slots; zero registrations while a slot is empty.
             local t = mod.TakeShell()
             t:SetScript("OnEvent", function(_, evt, unitToken, updateInfo)
-                if not b:IsVisible() then
+                if not widget:IsVisible() then
                     return
                 end
                 if evt == "UNIT_HEALTH" or evt == "UNIT_MAXHEALTH" then
-                    mod._UpdateButtonHealth(b, unitToken)
+                    mod._UpdateButtonHealth(widget, unitToken)
                     if evt == "UNIT_MAXHEALTH" then
-                        mod._ResettleButtonHealth(b)
+                        mod._ResettleButtonHealth(widget)
                         -- Max moves the absorb bars' range; value-only health
                         -- changes touch nothing UpdateAbsorb paints (overlays are
                         -- clip-anchored; the missing-health clamp edge rides the
                         -- armed belt / next absorb event instead).
-                        local skinData = GetFFD(b)
+                        local skinData = GetFFD(widget)
                         if skinData._absActive then
-                            mod._MarkAbsorbDirty(b, unitToken)
+                            mod._MarkAbsorbDirty(widget, unitToken)
                         end
                     end
                 elseif evt == "UNIT_POWER_UPDATE" then
-                    local skinData = GetFFD(b)
+                    local skinData = GetFFD(widget)
                     if skinData.power and skinData.power:IsShown() then
                         -- Value only; type/color/bounds ride the UNIT_DISPLAYPOWER
                         -- edge (see the header dispatcher's branch).
@@ -495,7 +495,7 @@ do
                         mod.RF_TextRepaintCustom(skinData, unitToken, "pp")
                     end
                 elseif evt == "UNIT_DISPLAYPOWER" then
-                    local skinData = GetFFD(b)
+                    local skinData = GetFFD(widget)
                     if skinData.power and skinData.power:IsShown() then
                         mod._RFPowerTypeEdge(skinData, unitToken)
                         local ppct = UnitPowerPercent(unitToken, skinData._pwType, true, CurveConstants.ScaleTo100)
@@ -518,22 +518,22 @@ do
                     -- values are secret. Paint coalesces to once per render frame.
                     -- Prediction is view-gated: with the feature off for this
                     -- button's view the event changes no pixel and must not arm.
-                    local dropdown = GetFFD(b)
+                    local dropdown = GetFFD(widget)
                     if evt == "UNIT_HEAL_PREDICTION" then
                         local savedVars = dropdown._isParty and mod._scaledPartyProxy
                             or (dropdown._isExtra and mod._scaledExtraProxy)
                             or mod._scaledProfile
                         if savedVars.healPrediction then
-                            mod._AbArm(b, unitToken, dropdown)
-                            mod._MarkAbsorbDirty(b, unitToken)
+                            mod._AbArm(widget, unitToken, dropdown)
+                            mod._MarkAbsorbDirty(widget, unitToken)
                         end
                     else
                         if evt ~= "UNIT_MAX_HEALTH_MODIFIERS_CHANGED" then
-                            mod._AbArm(b, unitToken, dropdown)
+                            mod._AbArm(widget, unitToken, dropdown)
                         end
-                        mod._MarkAbsorbDirty(b, unitToken)
+                        mod._MarkAbsorbDirty(widget, unitToken)
                         if evt == "UNIT_HEAL_ABSORB_AMOUNT_CHANGED" then
-                            mod.UpdateHealAbsorbTextFor(b, unitToken)
+                            mod.UpdateHealAbsorbTextFor(widget, unitToken)
                         end
                         -- Custom texts showing the amount this event moved (two field reads while
                         -- none does); the max-health-modifier edge moves health only.
@@ -547,44 +547,44 @@ do
                         end
                         if evt == "UNIT_MAX_HEALTH_MODIFIERS_CHANGED" then
                             dropdown._rmhPct = nil -- reduced-max cache: this is its only value edge
-                            mod._UpdateButtonHealth(b, unitToken)
-                            mod._ResettleButtonHealth(b)
+                            mod._UpdateButtonHealth(widget, unitToken)
+                            mod._ResettleButtonHealth(widget)
                         end
                     end -- prediction view-gate else
                 elseif evt == "UNIT_THREAT_LIST_UPDATE" or evt == "UNIT_THREAT_SITUATION_UPDATE" then
-                    local skinData = GetFFD(b)
+                    local skinData = GetFFD(widget)
                     mod.RF_PaintThreat(
                         skinData,
                         skinData._isExtra and mod._scaledExtraProxy or mod._scaledProfile,
                         unitToken
                     )
                 elseif evt == "UNIT_IN_RANGE_UPDATE" then
-                    mod._UpdateButtonRange(unitToken, b)
+                    mod._UpdateButtonRange(unitToken, widget)
                 elseif evt == "UNIT_FLAGS" then
-                    mod._UpdateCombatIconFor(unitToken, b)
+                    mod._UpdateCombatIconFor(unitToken, widget)
                 elseif evt == "READY_CHECK_CONFIRM" then
                     -- Plain registration; filter to this slot's unit here
-                    if unitToken and unitToken == b:GetAttribute("unit") then
-                        UpdateReadyCheck(b, unitToken)
+                    if unitToken and unitToken == widget:GetAttribute("unit") then
+                        UpdateReadyCheck(widget, unitToken)
                     end
                 elseif evt == "PLAYER_FLAGS_CHANGED" then
-                    if unitToken and unitToken == b:GetAttribute("unit") then
-                        UpdateButton(b)
+                    if unitToken and unitToken == widget:GetAttribute("unit") then
+                        UpdateButton(widget)
                     end
                 elseif evt == "UNIT_LEVEL" then
-                    mod._RFRepaintLevel(b)
+                    mod._RFRepaintLevel(widget)
                 elseif evt == "UNIT_TARGET" then
-                    mod.RF_TextRepaintCustom(GetFFD(b), unitToken, "tgt")
+                    mod.RF_TextRepaintCustom(GetFFD(widget), unitToken, "tgt")
                 else -- UNIT_NAME_UPDATE / UNIT_CONNECTION
-                    UpdateButton(b)
+                    UpdateButton(widget)
                     if evt == "UNIT_CONNECTION" then
-                        mod._UpdateButtonRange(unitToken, b)
+                        mod._UpdateButtonRange(unitToken, widget)
                     end
                 end
             end)
             XF.trackers[i] = t
 
-            XF.buttons[i] = b
+            XF.buttons[i] = widget
         end
     end
 
@@ -639,17 +639,17 @@ do
         XF.container:Show()
         wipe(mod._xfUnitToButton)
         for i = 1, #XF.buttons do
-            local b = XF.buttons[i]
+            local widget = XF.buttons[i]
             local unitToken = units[i]
             local t = XF.trackers[i]
             t:UnregisterAllEvents()
             if unitToken then
                 -- Class token cache for the power border (mirrors RebuildUnitMap)
-                local skinData = GetFFD(b)
+                local skinData = GetFFD(widget)
                 local _, classToken = UnitClass(unitToken)
                 skinData.classToken = classToken
-                b:SetAttribute("unit", unitToken)
-                mod._xfUnitToButton[unitToken] = b
+                widget:SetAttribute("unit", unitToken)
+                mod._xfUnitToButton[unitToken] = widget
                 -- Fail-open backstop for a mid-raid reconnect: the roster can still be
                 -- streaming, so UnitName(unit) may be nil at this first paint and the
                 -- slot commits a blank name (field report: blank until /reload even
@@ -659,11 +659,11 @@ do
                 if not UnitName(unitToken) then
                     local tries = 0
                     local function RetryName()
-                        if b:GetAttribute("unit") ~= unitToken then
+                        if widget:GetAttribute("unit") ~= unitToken then
                             return
                         end
                         if UnitName(unitToken) then
-                            UpdateButton(b)
+                            UpdateButton(widget)
                             return
                         end
                         tries = tries + 1
@@ -690,9 +690,9 @@ do
                 end
                 t:RegisterEvent("READY_CHECK_CONFIRM")
                 t:RegisterEvent("PLAYER_FLAGS_CHANGED")
-                b:Show()
+                widget:Show()
             else
-                b:Hide()
+                widget:Hide()
             end
         end
         -- Re-evaluate the boss group's chain now that this container is shown

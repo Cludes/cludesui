@@ -118,9 +118,9 @@ mod.NPO_TEXT_SLOTS = {
 }
 local POS_ORDER, POS_VALUES = {}, {}
 for idx = 1, #mod.NPO_TEXT_SLOTS do
-    local s = mod.NPO_TEXT_SLOTS[idx]
-    POS_ORDER[idx] = s.key
-    POS_VALUES[s.key] = s.menu
+    local cfg = mod.NPO_TEXT_SLOTS[idx]
+    POS_ORDER[idx] = cfg.key
+    POS_VALUES[cfg.key] = cfg.menu
 end
 
 -- Custom text popup for a text position: the template is stored in
@@ -3694,9 +3694,9 @@ local function BuildDisplayLayout(hostFrame, cursorY, context)
 
     local cells = {}
     for idx = 1, #mod.NPO_TEXT_SLOTS do
-        local s = mod.NPO_TEXT_SLOTS[idx]
-        if IsAssigned(s.key) then
-            cells[#cells + 1] = s
+        local cfg = mod.NPO_TEXT_SLOTS[idx]
+        if IsAssigned(cfg.key) then
+            cells[#cells + 1] = cfg
         end
     end
     cells[#cells + 1] = addCfg

@@ -1158,23 +1158,23 @@ end
 
 -- Bucket bar array for an EDITED view ("allspecs"/nil = the legacy arrays).
 function mod.PAB_BucketBars(isBuff, filterKey, create)
-    local s = create and PABEnsure() or PAB()
-    if not s then
+    local cfg = create and PABEnsure() or PAB()
+    if not cfg then
         return nil
     end
     if not filterKey or filterKey == "allspecs" then
         if isBuff then
             if create then
-                s.customBuffBars = s.customBuffBars or {}
+                cfg.customBuffBars = cfg.customBuffBars or {}
             end
-            return s.customBuffBars
+            return cfg.customBuffBars
         end
         if create then
-            s.customDebuffBars = s.customDebuffBars or {}
+            cfg.customDebuffBars = cfg.customDebuffBars or {}
         end
-        return s.customDebuffBars
+        return cfg.customDebuffBars
     end
-    local b = SpecBarBucket(s, filterKey, create)
+    local b = SpecBarBucket(cfg, filterKey, create)
     if not b then
         return nil
     end

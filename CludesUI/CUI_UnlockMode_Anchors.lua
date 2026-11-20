@@ -64,9 +64,9 @@ CUI_NS.unlockParts.Anchors = function(LM)
             return "CENTER"
         else
             local eab = CludesUI.Lite.GetAddon("CludesUIActionBars", true)
-            local s = eab and eab.db and eab.db.profile and eab.db.profile.bars and eab.db.profile.bars[barId]
-            if s then
-                return (s.growDirection or "up"):upper()
+            local cfg = eab and eab.db and eab.db.profile and eab.db.profile.bars and eab.db.profile.bars[barId]
+            if cfg then
+                return (cfg.growDirection or "up"):upper()
             end
             return "CENTER"
         end
@@ -118,14 +118,14 @@ CUI_NS.unlockParts.Anchors = function(LM)
             return nil
         else
             local eab = CludesUI.Lite.GetAddon("CludesUIActionBars", true)
-            local s = eab and eab.db and eab.db.profile and eab.db.profile.bars and eab.db.profile.bars[barId]
-            if s then
-                local g = (s.growDirection or "up"):upper()
+            local cfg = eab and eab.db and eab.db.profile and eab.db.profile.bars and eab.db.profile.bars[barId]
+            if cfg then
+                local g = (cfg.growDirection or "up"):upper()
                 if g == "CENTER" then
                     return nil
                 end
                 -- UP is default for horizontal bars (no indicator) but meaningful for vertical (show indicator)
-                if g == "UP" and (s.orientation or "horizontal") ~= "vertical" then
+                if g == "UP" and (cfg.orientation or "horizontal") ~= "vertical" then
                     return nil
                 end
                 return g
@@ -174,23 +174,23 @@ CUI_NS.unlockParts.Anchors = function(LM)
         if element and element.isAnchored and element.isAnchored() then
             return
         end
-        local b = LM.GetBarFrame(barId)
-        if not b then
+        local widget = LM.GetBarFrame(barId)
+        if not widget then
             return
         end
 
-        local s = b:GetEffectiveScale()
+        local s = widget:GetEffectiveScale()
         local uiScale = UIParent:GetEffectiveScale()
         local elemScale = s / uiScale
 
-        local bL = b:GetLeft()
-        local bT = b:GetTop()
+        local bL = widget:GetLeft()
+        local bT = widget:GetTop()
         if not bL or not bT then
             return
         end
 
-        local wid = (b:GetWidth() or 0) * elemScale
-        local hgt = (b:GetHeight() or 0) * elemScale
+        local wid = (widget:GetWidth() or 0) * elemScale
+        local hgt = (widget:GetHeight() or 0) * elemScale
         if wid < 1 or hgt < 1 then
             return
         end
@@ -249,8 +249,8 @@ CUI_NS.unlockParts.Anchors = function(LM)
         end
 
         pcall(function()
-            CludesUI.ClearFramePoints(b)
-            CludesUI.SetFramePoint(b, anchor, UIParent, "CENTER", setX, setY)
+            CludesUI.ClearFramePoints(widget)
+            CludesUI.SetFramePoint(widget, anchor, UIParent, "CENTER", setX, setY)
         end)
 
         -- Keep mover's stored center in sync so drag/snap logic stays consistent
@@ -381,18 +381,18 @@ CUI_NS.unlockParts.Anchors = function(LM)
         if px then
             px = math.floor(px + 0.5)
         end
-        local t = CludesUIDB[field]
+        local tbl = CludesUIDB[field]
         if not px or px == 0 then
-            if t then
-                t[barKey] = nil
+            if tbl then
+                tbl[barKey] = nil
             end
             return
         end
-        if not t then
-            t = {}
-            CludesUIDB[field] = t
+        if not tbl then
+            tbl = {}
+            CludesUIDB[field] = tbl
         end
-        t[barKey] = px
+        tbl[barKey] = px
     end
 
     function MatchH.GetWidthMatchInfo(barId)
@@ -1200,11 +1200,11 @@ CUI_NS.unlockParts.Anchors = function(LM)
         local function MigrateOne(childBarKey, details)
             local savedEdge
             if childBarKey:sub(1, 4) == "CDM_" then
-                local t = CludesUI._cdmBarPositions
-                savedEdge = t and t[childBarKey:sub(5)]
+                local tbl = CludesUI._cdmBarPositions
+                savedEdge = tbl and tbl[childBarKey:sub(5)]
             elseif CludesUI._abBarKeys and CludesUI._abBarKeys[childBarKey] then
-                local t = CludesUI._abBarPositions
-                savedEdge = t and t[childBarKey]
+                local tbl = CludesUI._abBarPositions
+                savedEdge = tbl and tbl[childBarKey]
             end
             if not savedEdge then
                 return
@@ -1819,9 +1819,9 @@ CUI_NS.unlockParts.Anchors = function(LM)
     -- CludesUI.PP, shared with CludesUI.lua's PP.SetUIScale trigger, so one
     -- listener cancels/replaces the other's pending timer instead of both running a full pass.
     do
-        local f = CreateFrame("Frame")
-        f:RegisterEvent("UI_SCALE_CHANGED")
-        f:SetScript("OnEvent", function()
+        local frame = CreateFrame("Frame")
+        frame:RegisterEvent("UI_SCALE_CHANGED")
+        frame:SetScript("OnEvent", function()
             local PPu = CludesUI and CludesUI.PP
             if not PPu then
                 return

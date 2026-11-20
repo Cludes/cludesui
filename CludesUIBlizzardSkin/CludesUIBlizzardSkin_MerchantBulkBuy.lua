@@ -331,16 +331,16 @@ end
 local function MaxTip()
     local skinData, lim = dialog, limits
     local topY = floor(skinData._max / skinData._step)
-    local t = CludesUI.Lf("You can buy: %s", Accent(skinData._max))
+    local text = CludesUI.Lf("You can buy: %s", Accent(skinData._max))
         .. "\n"
         .. CludesUI.Lf("You can fit: %s", LimitAmount(lim.fit, topY))
     if lim.afford ~= math.huge then
-        t = t .. "\n" .. CludesUI.Lf("You can afford: %s", LimitAmount(lim.afford, topY))
+        text = text .. "\n" .. CludesUI.Lf("You can afford: %s", LimitAmount(lim.afford, topY))
     end
     if lim.stock >= 0 then
-        t = t .. "\n" .. CludesUI.Lf("Vendor has: %s", LimitAmount(lim.stock, topY))
+        text = text .. "\n" .. CludesUI.Lf("Vendor has: %s", LimitAmount(lim.stock, topY))
     end
-    return t
+    return text
 end
 
 -- +1 Stack's tooltip: where a click takes the amount, the stack size, and the
@@ -348,13 +348,13 @@ end
 local function StackTip()
     local skinData = dialog
     local num = floor(min(NextStack(), skinData._max) / skinData._step) * skinData._step
-    local t = CludesUI.Lf("+1 Stack goes to: %s", Accent(max(num, 0)))
+    local text = CludesUI.Lf("+1 Stack goes to: %s", Accent(max(num, 0)))
         .. "\n"
         .. CludesUI.Lf("Stack size: %d", skinData._stackSize)
     if limits.partial > 0 then
-        t = t .. "\n" .. CludesUI.Lf("Room in partial stacks: %d", limits.partial)
+        text = text .. "\n" .. CludesUI.Lf("Room in partial stacks: %d", limits.partial)
     end
-    return t
+    return text
 end
 
 local function AddStack(button)

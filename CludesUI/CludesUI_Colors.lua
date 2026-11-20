@@ -167,10 +167,10 @@ function CludesUI.ColorSectionPullFrom(section)
     end
     local pdb = CludesUI.GetProfilesDB()
     local profiles = pdb.profiles
-    local t = saved.colorsSectionPullFrom
-    local own = t and t[section]
+    local tbl = saved.colorsSectionPullFrom
+    local own = tbl and tbl[section]
     if own and not (profiles and profiles[own]) then
-        t[section] = nil
+        tbl[section] = nil
         own = nil
     end
     local shared = saved.colorsPullFrom
@@ -215,12 +215,12 @@ function CludesUI.PointColorSectionsAt(name)
     if not CludesUIDB then
         return
     end
-    local t = CludesUIDB.colorsSectionPullFrom
+    local tbl = CludesUIDB.colorsSectionPullFrom
     local sharedUsed = false
     for _, s in ipairs(CludesUI.COLOR_SECTIONS) do
         if CludesUI.ColorSectionApplyAll(s) then
-            if t and t[s] ~= nil then
-                t[s] = name
+            if tbl and tbl[s] ~= nil then
+                tbl[s] = name
             else
                 sharedUsed = true
             end
@@ -242,11 +242,11 @@ function CludesUI.ColorSourcesProfileRemoved(name)
         CludesUIDB.colorsPullFrom = nil
         hit = true
     end
-    local t = CludesUIDB.colorsSectionPullFrom
-    if t then
-        for s, num in pairs(t) do
+    local tbl = CludesUIDB.colorsSectionPullFrom
+    if tbl then
+        for s, num in pairs(tbl) do
             if num == name then
-                t[s] = nil
+                tbl[s] = nil
                 hit = true
             end
         end
@@ -260,11 +260,11 @@ function CludesUI.ColorSourcesProfileRenamed(oldName, newName)
     if CludesUIDB.colorsPullFrom == oldName then
         CludesUIDB.colorsPullFrom = newName
     end
-    local t = CludesUIDB.colorsSectionPullFrom
-    if t then
-        for s, num in pairs(t) do
+    local tbl = CludesUIDB.colorsSectionPullFrom
+    if tbl then
+        for s, num in pairs(tbl) do
             if num == oldName then
-                t[s] = newName
+                tbl[s] = newName
             end
         end
     end
@@ -667,12 +667,12 @@ function CludesUI._EnsureRestrictedRosterWatcher()
     if CludesUI._restrictedRosterWatcher then
         return
     end
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("GROUP_ROSTER_UPDATE")
-    f:SetScript("OnEvent", function()
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("GROUP_ROSTER_UPDATE")
+    frame:SetScript("OnEvent", function()
         CludesUI._restrictedCandidatesDirty = true
     end)
-    CludesUI._restrictedRosterWatcher = f
+    CludesUI._restrictedRosterWatcher = frame
 end
 
 function CludesUI.GetClassColorForRestrictedUnit(unitToken, secretClassToken)

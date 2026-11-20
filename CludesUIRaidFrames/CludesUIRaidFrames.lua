@@ -1667,9 +1667,9 @@ end
 --  Tiers: 10, 15, 20(base), 25, 30, 40
 -------------------------------------------------------------------------------
 mod._GetRaidSizeFrameDimensions = function(groupSize)
-    local s = saved.profile
-    local baseW = s.frameWidth or 125
-    local baseH = s.frameHeight or 60
+    local cfg = saved.profile
+    local baseW = cfg.frameWidth or 125
+    local baseH = cfg.frameHeight or 60
     -- Single cascade authority (ns._RFResolveTierOverride, defined in the
     -- growth-origin block): exact tier, then one step toward 20, then base.
     local _, shade = mod._RFResolveTierOverride(groupSize)
@@ -1685,20 +1685,20 @@ end
 -- The capped set is ONE reused table: read it at once, never hold it.
 mod._mythicGroups = {}
 mod._VisibleGroups = function()
-    local s = saved.profile
-    local vg = s.visibleGroups
-    if not s.mythicRaidHideGroups then
+    local cfg = saved.profile
+    local vg = cfg.visibleGroups
+    if not cfg.mythicRaidHideGroups then
         return vg
     end
     local _, _, difficultyID = GetInstanceInfo()
     if difficultyID ~= 16 then
         return vg
     end
-    local t = mod._mythicGroups
+    local tbl = mod._mythicGroups
     for g = 1, 8 do
-        t[g] = g <= 4 and not (vg and vg[g] == false)
+        tbl[g] = g <= 4 and not (vg and vg[g] == false)
     end
-    return t
+    return tbl
 end
 
 -- Effective raid head count for size breakpoints. With "Exclude Hidden Groups
@@ -1710,8 +1710,8 @@ mod._GetEffectiveRaidSize = function()
     if num == 0 then
         return num
     end
-    local s = saved.profile
-    if s.excludeHiddenGroupsFromSize == false then
+    local cfg = saved.profile
+    if cfg.excludeHiddenGroupsFromSize == false then
         return num
     end
     -- Subgroups only exist in a raid; party/solo has nothing to exclude.

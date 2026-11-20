@@ -465,12 +465,12 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         caption:SetText(getLabel())
         -- RD_DD_COLOURS: background, hover background, border, hover border,
         -- text, hover text (four values each).
-        local s = CludesUI.RD_DD_COLOURS
+        local cfg = CludesUI.RD_DD_COLOURS
         local function Paint(hot)
             local o = hot and 4 or 0
-            caption:SetTextColor(s[17 + o], s[18 + o], s[19 + o], s[20 + o])
-            brd:SetColor(s[9 + o], s[10 + o], s[11 + o], s[12 + o])
-            bg:SetColorTexture(s[1 + o], s[2 + o], s[3 + o], s[4 + o])
+            caption:SetTextColor(cfg[17 + o], cfg[18 + o], cfg[19 + o], cfg[20 + o])
+            brd:SetColor(cfg[9 + o], cfg[10 + o], cfg[11 + o], cfg[12 + o])
+            bg:SetColorTexture(cfg[1 + o], cfg[2 + o], cfg[3 + o], cfg[4 + o])
         end
         button:SetScript("OnEnter", function()
             Paint(true)
@@ -1938,17 +1938,17 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                         -- Delete, Rename and Keybind icons at the right edge.
                         local icons = {}
                         local function Icon(file, anchor, rel, x)
-                            local b = CreateFrame("Button", nil, entry)
-                            b:SetSize(X_SZ, X_SZ)
-                            b:SetPoint("RIGHT", anchor, rel, x, 0)
-                            b:SetFrameLevel(entry:GetFrameLevel() + 2)
-                            local texture = b:CreateTexture(nil, "OVERLAY")
+                            local widget = CreateFrame("Button", nil, entry)
+                            widget:SetSize(X_SZ, X_SZ)
+                            widget:SetPoint("RIGHT", anchor, rel, x, 0)
+                            widget:SetFrameLevel(entry:GetFrameLevel() + 2)
+                            local texture = widget:CreateTexture(nil, "OVERLAY")
                             texture:SetAllPoints()
                             Unsnapped(texture)
                             texture:SetTexture(MEDIA .. "icons\\" .. file)
-                            b:SetAlpha(0.4)
-                            icons[#icons + 1] = b
-                            return b
+                            widget:SetAlpha(0.4)
+                            icons[#icons + 1] = widget
+                            return widget
                         end
                         local xBtn = Icon("cui-close.png", entry, "RIGHT", -8)
                         local editBtn = Icon("cui-edit.png", xBtn, "LEFT", -4)
@@ -2540,16 +2540,16 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     -- Continue an API session with its decoded payload: UI-scale prompt (at most once), then the normal selection page. Registered per
     -- build (latest wins) and re-resolved from the namespace by every async continuation, so decode + scale popup land on THIS build's live frames.
     CludesUI._ProfilesApiProceed = function(bundle)
-        local s = CludesUI._apiImportSession
-        if not s or s.state == "done" then
+        local cfg = CludesUI._apiImportSession
+        if not cfg or cfg.state == "done" then
             return
         end
-        if s.scaleAsked then
-            ShowImportPage(s.str, bundle, s.name, nil, nil, s.applyScale)
+        if cfg.scaleAsked then
+            ShowImportPage(cfg.str, bundle, cfg.name, nil, nil, cfg.applyScale)
         else
             MaybeConfirmUIScale(bundle, function(applyScale)
-                s.scaleAsked = true
-                s.applyScale = applyScale
+                cfg.scaleAsked = true
+                cfg.applyScale = applyScale
                 local go = CludesUI._ProfilesApiProceed
                 if go then
                     go(bundle)
@@ -2561,20 +2561,20 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     -- Enter (or re-enter) a pending API import session: decode the string once, then proceed. Called by ImportProfileInteractive after it
     -- navigates here, and self-invoked at each build end so a session survives page rebuilds.
     CludesUI._ProfilesConsumeApiImport = function()
-        local s = CludesUI._apiImportSession
-        if not s or s.state == "done" then
+        local cfg = CludesUI._apiImportSession
+        if not cfg or cfg.state == "done" then
             return
         end
         CludesUI._EnsureApiImportCloseHook()
-        s.state = "active"
-        if s.payload then
-            CludesUI._ProfilesApiProceed(s.payload)
-        elseif not s.decoding then
-            s.decoding = true
-            CludesUI.DecodeImportStringAsync(s.str, function(bundle, err)
-                s.decoding = nil
+        cfg.state = "active"
+        if cfg.payload then
+            CludesUI._ProfilesApiProceed(cfg.payload)
+        elseif not cfg.decoding then
+            cfg.decoding = true
+            CludesUI.DecodeImportStringAsync(cfg.str, function(bundle, err)
+                cfg.decoding = nil
                 -- The session may have been declined or replaced while the decode was in flight; drop a stale result.
-                if CludesUI._apiImportSession ~= s or s.state == "done" then
+                if CludesUI._apiImportSession ~= cfg or cfg.state == "done" then
                     return
                 end
                 if not bundle then
@@ -2585,7 +2585,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                     CludesUI._FinishApiImportSession(false)
                     return
                 end
-                s.payload = bundle
+                cfg.payload = bundle
                 local go = CludesUI._ProfilesApiProceed
                 if go then
                     go(bundle)

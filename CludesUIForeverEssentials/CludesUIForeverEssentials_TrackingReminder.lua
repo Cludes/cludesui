@@ -123,21 +123,21 @@ local function Build()
 end
 
 local function Button(index)
-    local b = buttons[index]
-    if b then
-        return b
+    local widget = buttons[index]
+    if widget then
+        return widget
     end
-    b = CreateFrame("Button", nil, holderFrame, "SecureActionButtonTemplate")
-    b:RegisterForClicks("AnyUp", "AnyDown")
-    b:SetAttribute("type", "spell")
-    b.icon = b:CreateTexture(nil, "ARTWORK")
-    b.icon:SetAllPoints()
-    b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    local border = b:CreateTexture(nil, "BACKGROUND")
+    widget = CreateFrame("Button", nil, holderFrame, "SecureActionButtonTemplate")
+    widget:RegisterForClicks("AnyUp", "AnyDown")
+    widget:SetAttribute("type", "spell")
+    widget.icon = widget:CreateTexture(nil, "ARTWORK")
+    widget.icon:SetAllPoints()
+    widget.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    local border = widget:CreateTexture(nil, "BACKGROUND")
     border:SetPoint("TOPLEFT", -1, 1)
     border:SetPoint("BOTTOMRIGHT", 1, -1)
     border:SetColorTexture(0, 0, 0, 1)
-    b:SetScript("OnEnter", function(self)
+    widget:SetScript("OnEnter", function(self)
         if not self.spellID then
             return
         end
@@ -146,11 +146,11 @@ local function Button(index)
         GameTooltip:AddLine(CludesUI.L("Click to turn this tracking on."), 0.6, 0.8, 1)
         GameTooltip:Show()
     end)
-    b:SetScript("OnLeave", function()
+    widget:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-    buttons[index] = b
-    return b
+    buttons[index] = widget
+    return widget
 end
 
 -- Lays the row out again. Out of combat only: the buttons are secure.
@@ -166,14 +166,14 @@ local function Refresh()
     local size = Get("iconSize")
     local entries = Enabled() and Missing() or {}
     for index, ident in ipairs(entries) do
-        local b = Button(index)
-        b.spellID = ident
-        b:SetAttribute("spell", ident)
-        b.icon:SetTexture(C_Spell.GetSpellTexture(ident))
-        b:SetSize(size, size)
-        b:ClearAllPoints()
-        b:SetPoint("LEFT", holderFrame, "LEFT", (index - 1) * (size + GAP), 0)
-        b:Show()
+        local widget = Button(index)
+        widget.spellID = ident
+        widget:SetAttribute("spell", ident)
+        widget.icon:SetTexture(C_Spell.GetSpellTexture(ident))
+        widget:SetSize(size, size)
+        widget:ClearAllPoints()
+        widget:SetPoint("LEFT", holderFrame, "LEFT", (index - 1) * (size + GAP), 0)
+        widget:Show()
     end
     for index = #entries + 1, #buttons do
         buttons[index]:Hide()

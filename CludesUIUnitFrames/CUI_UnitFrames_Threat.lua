@@ -53,13 +53,13 @@ local function PT_EnsureBorder(popFrame)
     if popFrame._threatShadowBorder then
         return popFrame._threatShadowBorder
     end
-    local b = CreateFrame("Frame", nil, popFrame)
-    Pix.Point(b, "TOPLEFT", popFrame, "TOPLEFT", 0, 0)
-    Pix.Point(b, "BOTTOMRIGHT", popFrame, "BOTTOMRIGHT", 0, 0)
-    b:SetFrameLevel(math.max(0, popFrame:GetFrameLevel() - 1))
-    b:Hide()
-    popFrame._threatShadowBorder = b
-    return b
+    local widget = CreateFrame("Frame", nil, popFrame)
+    Pix.Point(widget, "TOPLEFT", popFrame, "TOPLEFT", 0, 0)
+    Pix.Point(widget, "BOTTOMRIGHT", popFrame, "BOTTOMRIGHT", 0, 0)
+    widget:SetFrameLevel(math.max(0, popFrame:GetFrameLevel() - 1))
+    widget:Hide()
+    popFrame._threatShadowBorder = widget
+    return widget
 end
 
 local function PT_Hide()
@@ -77,14 +77,14 @@ local function PT_Show(state, color)
     if not popFrame then
         return
     end
-    local b = PT_EnsureBorder(popFrame)
+    local widget = PT_EnsureBorder(popFrame)
     if _ptShownState ~= state then
         _ptShownState = state
-        CludesUI.ApplyBorderStyle(b, 2, color.r, color.g, color.b, 1, "shadow", nil, nil, nil, nil, "unitframes", 2)
+        CludesUI.ApplyBorderStyle(widget, 2, color.r, color.g, color.b, 1, "shadow", nil, nil, nil, nil, "unitframes", 2)
     else
-        CludesUI.SetBorderStyleColor(b, color.r, color.g, color.b, 1)
+        CludesUI.SetBorderStyleColor(widget, color.r, color.g, color.b, 1)
     end
-    b:Show()
+    widget:Show()
 end
 
 -- Re-evaluate the player's threat and paint/clear the additive shadow border.

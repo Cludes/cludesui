@@ -81,9 +81,9 @@ local function EMChatFindSystem(layout, sysChat)
         return nil
     end
     for index = 1, #systems do
-        local s = systems[index]
-        if type(s) == "table" and s.system == sysChat then
-            return s
+        local cfg = systems[index]
+        if type(cfg) == "table" and cfg.system == sysChat then
+            return cfg
         end
     end
 end
@@ -462,8 +462,8 @@ end
 -- rides a second corner. Reused across passes.
 local chatTarget = { {}, {} }
 local function SetChatTarget(index, anchorPoint, relPoint, posX, posY)
-    local t = chatTarget[index]
-    t.point, t.relPoint, t.x, t.y = anchorPoint, relPoint, posX, posY
+    local tbl = chatTarget[index]
+    tbl.point, tbl.relPoint, tbl.x, tbl.y = anchorPoint, relPoint, posX, posY
 end
 
 -- The corner opposite each corner anchor, and the signs of the saved size
@@ -504,12 +504,12 @@ local function ChatAtTarget(cf1, n)
         end
         local hit = false
         for jdx = 1, n do
-            local t = chatTarget[jdx]
+            local tbl = chatTarget[jdx]
             if
-                t.point == anchorPoint
-                and t.relPoint == relPoint
-                and abs(t.x - posX) < 0.1
-                and abs(t.y - posY) < 0.1
+                tbl.point == anchorPoint
+                and tbl.relPoint == relPoint
+                and abs(tbl.x - posX) < 0.1
+                and abs(tbl.y - posY) < 0.1
             then
                 hit = true
             end
@@ -593,8 +593,8 @@ local function ApplyChatPosition()
         mod._chatReanchor = nil
         ClearFramePoints(cf1)
         for index = 1, n do
-            local t = chatTarget[index]
-            SetFramePoint(cf1, t.point, UIParent, t.relPoint, t.x, t.y)
+            local tbl = chatTarget[index]
+            SetFramePoint(cf1, tbl.point, UIParent, tbl.relPoint, tbl.x, tbl.y)
         end
     end
     local canonTo = ChatScreenChoice(conf) or (sizeLane and "BOTTOMLEFT")

@@ -52,9 +52,9 @@ local function MakeFonts()
     fonts = {}
     local filePath, _, flags = GameFontHighlight:GetFont()
     for name, size in pairs({ title = 15, value = 20, body = 12, small = 11, tiny = 10 }) do
-        local f = CreateFont("TitleLineFont_" .. name)
-        f:SetFont(filePath, size, flags or "")
-        fonts[name] = f
+        local frame = CreateFont("TitleLineFont_" .. name)
+        frame:SetFont(filePath, size, flags or "")
+        fonts[name] = frame
     end
 end
 
@@ -371,60 +371,60 @@ local function MakeSegmented(hostFrame, options)
         end
     end
     for idx, o in ipairs(options) do
-        local b = CreateFrame("Button", nil, box)
-        b:SetSize(bw, 22)
-        b:SetPoint("LEFT", 1 + (idx - 1) * bw, 0)
-        b.bg = b:CreateTexture(nil, "BACKGROUND")
-        b.bg:SetAllPoints()
-        b.text = FS(b, "small", C.muted)
-        b.text:SetPoint("CENTER")
-        b.text:SetText(o[2])
-        b.value = o[1]
-        b:SetScript("OnClick", function()
+        local widget = CreateFrame("Button", nil, box)
+        widget:SetSize(bw, 22)
+        widget:SetPoint("LEFT", 1 + (idx - 1) * bw, 0)
+        widget.bg = widget:CreateTexture(nil, "BACKGROUND")
+        widget.bg:SetAllPoints()
+        widget.text = FS(widget, "small", C.muted)
+        widget.text:SetPoint("CENTER")
+        widget.text:SetText(o[2])
+        widget.value = o[1]
+        widget:SetScript("OnClick", function()
             CludesUITitleLineDB.view = o[1]
             if o[1] == "guild" and IsInGuild() then
                 C_GuildInfo.GuildRoster()
             end
             Graph:Render()
         end)
-        b:SetScript("OnEnter", function()
+        widget:SetScript("OnEnter", function()
             box:Refresh()
         end)
-        b:SetScript("OnLeave", function()
+        widget:SetScript("OnLeave", function()
             box:Refresh()
         end)
-        box.buttons[idx] = b
+        box.buttons[idx] = widget
     end
     return box
 end
 
 local function MakeClose(hostFrame)
-    local b = CreateFrame("Button", nil, hostFrame)
-    b:SetSize(24, 24)
-    b.lines = {}
+    local widget = CreateFrame("Button", nil, hostFrame)
+    widget:SetSize(24, 24)
+    widget.lines = {}
     for idx, d in ipairs({ { -5, -5, 5, 5 }, { -5, 5, 5, -5 } }) do
-        local l = Smooth(b:CreateLine(nil, "OVERLAY"), "Line")
+        local l = Smooth(widget:CreateLine(nil, "OVERLAY"), "Line")
         l:SetThickness(3)
-        l:SetStartPoint("CENTER", b, d[1], d[2])
-        l:SetEndPoint("CENTER", b, d[3], d[4])
-        b.lines[idx] = l
+        l:SetStartPoint("CENTER", widget, d[1], d[2])
+        l:SetEndPoint("CENTER", widget, d[3], d[4])
+        widget.lines[idx] = l
     end
     local function tint(cfg)
-        for _, l in ipairs(b.lines) do
+        for _, l in ipairs(widget.lines) do
             l:SetVertexColor(cfg[1], cfg[2], cfg[3], 1)
         end
     end
     tint(C.muted)
-    b:SetScript("OnEnter", function()
+    widget:SetScript("OnEnter", function()
         tint(C.ink)
     end)
-    b:SetScript("OnLeave", function()
+    widget:SetScript("OnLeave", function()
         tint(C.muted)
     end)
-    b:SetScript("OnClick", function()
+    widget:SetScript("OnClick", function()
         hostFrame:Hide()
     end)
-    return b
+    return widget
 end
 
 local function MakeTile(idx, key)
@@ -1042,11 +1042,11 @@ local function DrawStrip(context)
     local c = mod.YOU_COLOR
     for _, p in ipairs(context.history.points) do
         if p.gain and p.t >= view.x0 then
-            local b = pools.bars:Get()
-            Color(b, c, 0.9)
-            b:SetSize(3, math.max(2, p.gain / maxGain * (STRIP_H - 2)))
-            b:ClearAllPoints()
-            b:SetPoint("BOTTOMLEFT", strip, "BOTTOMLEFT", X(p.t) - 1.5, 1)
+            local widget = pools.bars:Get()
+            Color(widget, c, 0.9)
+            widget:SetSize(3, math.max(2, p.gain / maxGain * (STRIP_H - 2)))
+            widget:ClearAllPoints()
+            widget:SetPoint("BOTTOMLEFT", strip, "BOTTOMLEFT", X(p.t) - 1.5, 1)
         end
     end
 end

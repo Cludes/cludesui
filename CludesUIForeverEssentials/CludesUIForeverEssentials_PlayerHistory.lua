@@ -210,12 +210,12 @@ local function Close(guid, now)
     local st, rec = open[guid], players[guid]
     local seconds = now - st.at
     if rec and (st.extend or seconds >= MIN_SESSION) then
-        local s = st.extend and rec.sessions[1]
-        if not s then
-            s = Push(rec.sessions, MAX_SESSIONS)
+        local cfg = st.extend and rec.sessions[1]
+        if not cfg then
+            cfg = Push(rec.sessions, MAX_SESSIONS)
             rec.groups = rec.groups + 1
         end
-        s.at, s.seconds, s.kind, s.place, s.instance =
+        cfg.at, cfg.seconds, cfg.kind, cfg.place, cfg.instance =
             st.at, seconds, st.raid and "raid" or "party", st.place, st.instance
         rec.dungeons, rec.raids = rec.dungeons + st.dungeons, rec.raids + st.raids
         rec.lastSeen = now
@@ -411,12 +411,12 @@ if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         Load()
         local note, rec = notes[guid], players[guid]
         if note then
-            local t = TAG[note.tag]
-            if t then
-                if t.good then
-                    tooltip:AddLine(t.label, 0.4, 0.9, 0.5)
+            local tbl = TAG[note.tag]
+            if tbl then
+                if tbl.good then
+                    tooltip:AddLine(tbl.label, 0.4, 0.9, 0.5)
                 else
-                    tooltip:AddLine(t.label, 1, 0.3, 0.3)
+                    tooltip:AddLine(tbl.label, 1, 0.3, 0.3)
                 end
             else
                 tooltip:AddLine("Note", CludesUI.Kit.Accent())

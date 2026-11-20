@@ -430,13 +430,13 @@ local function TintBorder(edge, unitToken, ctOverride)
         return
     end
     local red, green, blue
-    local s = mod._scaledPartyProxy
+    local cfg = mod._scaledPartyProxy
     if ctOverride then
         local color = CludesUI.GetClassColor(ctOverride)
         if color then
             red, green, blue = color.r, color.g, color.b
         end
-    elseif s and s.healthColorMode == "dark" then
+    elseif cfg and cfg.healthColorMode == "dark" then
         red, green, blue = PlayerClassColor()
     elseif unitToken and UnitExists(unitToken) then
         local _, classTok = UnitClass(unitToken)
@@ -623,12 +623,12 @@ local PORTRAIT_CLICK = {
     wanted = function(ownerFrame)
         local skinData = mod.GetFFD(ownerFrame)
         local edge = skinData.pt
-        local s = mod._scaledPartyProxy
+        local cfg = mod._scaledPartyProxy
         return edge
                 and edge._on
                 and not skinData.kitPortrait
-                and s.partyPortraitClickable
-                and (s.partyPortraitStyle or "none") == "detached"
+                and cfg.partyPortraitClickable
+                and (cfg.partyPortraitStyle or "none") == "detached"
             or false
     end,
     backdrop = function(ownerFrame)
@@ -793,12 +793,12 @@ end
 -- "3d" or nil (class art and a portrait that is off need none). The kit
 -- never runs a model.
 function mod.RF_PtEventMode(kit)
-    local s = mod._scaledPartyProxy
-    local m = s.partyPortraitMode or "2d"
+    local cfg = mod._scaledPartyProxy
+    local m = cfg.partyPortraitMode or "2d"
     if kit then
         return (m ~= "class") and "2d" or nil
     end
-    if (s.partyPortraitStyle or "none") == "none" or m == "class" then
+    if (cfg.partyPortraitStyle or "none") == "none" or m == "class" then
         return nil
     end
     return (m == "3d") and "3d" or "2d"
@@ -813,10 +813,10 @@ function mod.RF_PtRepaintAll(evt)
     end
     local GetFFD = mod.GetFFD
     for index = 1, #entries do
-        local b = entries[index]
-        local skinData = GetFFD(b)
+        local widget = entries[index]
+        local skinData = GetFFD(widget)
         if skinData.kitPortrait or (skinData.pt and skinData.pt._on) then
-            local u = b:GetAttribute("unit")
+            local u = widget:GetAttribute("unit")
             if u and UnitExists(u) then
                 mod.RF_PtPaint(skinData, u, evt)
             end
@@ -837,10 +837,10 @@ function mod.RF_PtRefreshAll()
     local pw, ph = mod.RF_PartyDims(saved.profile)
     local bw, bh = mod.PixelSnap(pw), mod.PixelSnap(ph)
     for index = 1, #entries do
-        local b = entries[index]
-        local skinData = GetFFD(b)
+        local widget = entries[index]
+        local skinData = GetFFD(widget)
         if skinData.styled then
-            local u = b:GetAttribute("unit")
+            local u = widget:GetAttribute("unit")
             if u and not UnitExists(u) then
                 u = nil
             end
@@ -850,10 +850,10 @@ function mod.RF_PtRefreshAll()
                 end
                 -- A click button from before the kit stands down.
                 if skinData.pt then
-                    CludesUI.SyncPortraitClick(b, PORTRAIT_CLICK)
+                    CludesUI.SyncPortraitClick(widget, PORTRAIT_CLICK)
                 end
             else
-                mod.RF_PtApply(b, skinData, s, bw, bh, u)
+                mod.RF_PtApply(widget, skinData, s, bw, bh, u)
             end
         end
     end

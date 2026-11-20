@@ -1343,10 +1343,10 @@ do
             return a, b
         end
     end
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("ADDON_LOADED")
-    f:RegisterEvent("PLAYER_LOGIN")
-    f:SetScript("OnEvent", function(self, evt, label)
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("ADDON_LOADED")
+    frame:RegisterEvent("PLAYER_LOGIN")
+    frame:SetScript("OnEvent", function(self, evt, label)
         if evt == "PLAYER_LOGIN" then
             self:UnregisterEvent("PLAYER_LOGIN")
             -- Before the options files' own PLAYER_LOGIN registrations (a
@@ -1395,8 +1395,8 @@ end
 -- Taint-safe print: AddMessage, never global print() (its C-side handler taints the chat
 -- frame). Drops silently in protected instances (raid combat, active M+) to avoid tainting FCF_OpenTemporaryWindow's whisper chain.
 function CludesUI.Print(...)
-    local f = DEFAULT_CHAT_FRAME
-    if not f then
+    local frame = DEFAULT_CHAT_FRAME
+    if not frame then
         return
     end
     local _, instanceType = IsInInstance()
@@ -1414,7 +1414,7 @@ function CludesUI.Print(...)
     if (instanceType == "pvp" or instanceType == "arena") and InCombatLockdown() then
         return
     end
-    f:AddMessage(strjoin(" ", tostringall(...)))
+    frame:AddMessage(strjoin(" ", tostringall(...)))
 end
 
 -- Budgeted step runner -- the 12.1 script-watchdog defense for any pass whose
@@ -3493,23 +3493,23 @@ function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
         end
     end
     local function PadArrow(anchorPoint, glyph, delta)
-        local b = Pool.CreateFrame("Button", nil, padSequence)
-        b:SetSize(rail:GetWidth() + 10, 14)
-        b:SetPoint(anchorPoint, rail, anchorPoint, 0, 0)
-        b:SetFrameLevel(rail:GetFrameLevel() + 1)
-        SolidTex(b, "BACKGROUND", 0, 0, 0, 0.6):SetAllPoints()
-        local texture = b:CreateTexture(nil, "ARTWORK")
+        local widget = Pool.CreateFrame("Button", nil, padSequence)
+        widget:SetSize(rail:GetWidth() + 10, 14)
+        widget:SetPoint(anchorPoint, rail, anchorPoint, 0, 0)
+        widget:SetFrameLevel(rail:GetFrameLevel() + 1)
+        SolidTex(widget, "BACKGROUND", 0, 0, 0, 0.6):SetAllPoints()
+        local texture = widget:CreateTexture(nil, "ARTWORK")
         texture:SetTexture(ICONS_PATH .. glyph)
         texture:SetSize(14, 14)
         texture:SetPoint("CENTER")
         texture:SetAlpha(0.6)
-        b:SetScript("OnEnter", function()
+        widget:SetScript("OnEnter", function()
             texture:SetAlpha(1)
         end)
-        b:SetScript("OnLeave", function()
+        widget:SetScript("OnLeave", function()
             texture:SetAlpha(0.6)
         end)
-        b:SetScript("OnClick", function()
+        widget:SetScript("OnClick", function()
             PadScrollBy(delta)
         end)
     end
@@ -4282,9 +4282,9 @@ _G._CUI_AddonVersions[CUI_HOST_ADDON] = CludesUI.VERSION
 -- when the Patch Notes row is clicked and stays cleared until the NEXT
 -- version change. First-ever login (no prior stamp) never raises it.
 do
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("PLAYER_LOGIN")
-    f:SetScript("OnEvent", function(self)
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("PLAYER_LOGIN")
+    frame:SetScript("OnEvent", function(self)
         self:UnregisterEvent("PLAYER_LOGIN")
         if not CludesUIDB then
             CludesUIDB = {}
@@ -4302,9 +4302,9 @@ end
 
 -- Version mismatch check (shared across all Cludes addons)
 do
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("PLAYER_LOGIN")
-    f:SetScript("OnEvent", function(self)
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("PLAYER_LOGIN")
+    frame:SetScript("OnEvent", function(self)
         self:UnregisterEvent("PLAYER_LOGIN")
         if _G._CUI_VersionChecked then
             return
@@ -5014,33 +5014,33 @@ function CludesUI.BuildStatusBadge(hostFrame, textValue, label, options)
     local accentColor = CLUDES_GREEN
     local dotted = not (options and options.dot == false)
     local onClick = options and options.onClick
-    local f = POOL.CreateFrame(onClick and "Button" or "Frame", label, hostFrame)
-    f:SetHeight(26)
-    f:EnableMouse(onClick and true or false)
-    f:Hide()
+    local frame = POOL.CreateFrame(onClick and "Button" or "Frame", label, hostFrame)
+    frame:SetHeight(26)
+    frame:EnableMouse(onClick and true or false)
+    frame:Hide()
 
     -- Dark base + faint accent wash for an on-brand tint
-    local backdrop = f:CreateTexture(nil, "BACKGROUND")
+    local backdrop = frame:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0.02, 0.02, 0.03, 0.62)
-    local wash = f:CreateTexture(nil, "BORDER")
+    local wash = frame:CreateTexture(nil, "BORDER")
     wash:SetAllPoints()
     wash:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.06)
 
-    Pix.CreateBorder(f, accentColor.r, accentColor.g, accentColor.b, 0.9, 1, "OVERLAY", 7)
+    Pix.CreateBorder(frame, accentColor.r, accentColor.g, accentColor.b, 0.9, 1, "OVERLAY", 7)
 
-    local labelText = f:CreateFontString(nil, "OVERLAY")
+    local labelText = frame:CreateFontString(nil, "OVERLAY")
     labelText:SetFont(CludesUI.EXPRESSWAY, 11, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE")
     labelText:SetText(textValue)
     labelText:SetTextColor(accentColor.r, accentColor.g, accentColor.b, 1)
 
     if dotted then
         -- Pulsing accent "LED" dot (recording-indicator vibe)
-        local dotTex = f:CreateTexture(nil, "ARTWORK")
+        local dotTex = frame:CreateTexture(nil, "ARTWORK")
         dotTex:SetTexture("Interface\\Buttons\\WHITE8x8")
         dotTex:SetVertexColor(accentColor.r, accentColor.g, accentColor.b, 1)
         dotTex:SetSize(7, 7)
-        dotTex:SetPoint("LEFT", f, "LEFT", 9, 0)
+        dotTex:SetPoint("LEFT", frame, "LEFT", 9, 0)
         DisablePixelSnap(dotTex)
         local ag = dotTex:CreateAnimationGroup()
         ag:SetLooping("BOUNCE")
@@ -5049,23 +5049,23 @@ function CludesUI.BuildStatusBadge(hostFrame, textValue, label, options)
         pulse:SetToAlpha(0.1)
         pulse:SetDuration(0.7)
         pulse:SetSmoothing("IN_OUT")
-        f:SetScript("OnShow", function()
+        frame:SetScript("OnShow", function()
             ag:Play()
         end)
-        f:SetScript("OnHide", function()
+        frame:SetScript("OnHide", function()
             ag:Stop()
         end)
         labelText:SetPoint("LEFT", dotTex, "RIGHT", 8, 0)
         -- Size to content: dotPad(9) + dot(7) + gap(8) + text + rightPad(12)
-        f:SetWidth(9 + 7 + 8 + labelText:GetStringWidth() + 12)
+        frame:SetWidth(9 + 7 + 8 + labelText:GetStringWidth() + 12)
     else
-        labelText:SetPoint("CENTER", f, "CENTER", 0, 0)
-        f:SetWidth(12 + labelText:GetStringWidth() + 12)
+        labelText:SetPoint("CENTER", frame, "CENTER", 0, 0)
+        frame:SetWidth(12 + labelText:GetStringWidth() + 12)
     end
 
     if onClick then
         local tipText = options.tooltip
-        f:SetScript("OnEnter", function(self)
+        frame:SetScript("OnEnter", function(self)
             wash:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.16)
             local tipText = tipText
             if type(tipText) == "function" then
@@ -5075,17 +5075,17 @@ function CludesUI.BuildStatusBadge(hostFrame, textValue, label, options)
                 CludesUI.ShowWidgetTooltip(self, tipText)
             end
         end)
-        f:SetScript("OnLeave", function()
+        frame:SetScript("OnLeave", function()
             wash:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.06)
             CludesUI.HideWidgetTooltip()
         end)
-        f:SetScript("OnClick", function(self)
+        frame:SetScript("OnClick", function(self)
             wash:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.06)
             CludesUI.HideWidgetTooltip()
             onClick(self)
         end)
     end
-    return f
+    return frame
 end
 
 -------------------------------------------------------------------------------
@@ -5295,14 +5295,14 @@ initFrame:SetScript("OnEvent", function(self, evt)
 
         local function AnyOpen()
             for i = 1, #escapeFrames do
-                local f = escapeFrames[i]
-                if f:IsShown() and not IsModal(f) then
+                local frame = escapeFrames[i]
+                if frame:IsShown() and not IsModal(frame) then
                     return true
                 end
             end
             for i = 1, #padShown do
-                local f = padShown[i]
-                if f:IsShown() and not IsModal(f) then
+                local frame = padShown[i]
+                if frame:IsShown() and not IsModal(frame) then
                     return true
                 end
             end
@@ -5311,14 +5311,14 @@ initFrame:SetScript("OnEvent", function(self, evt)
 
         local function ModalOpen()
             for i = 1, #escModal do
-                local f = escModal[i]
-                if f:IsShown() and IsModal(f) then
+                local frame = escModal[i]
+                if frame:IsShown() and IsModal(frame) then
                     return true
                 end
             end
             for i = 1, #padShown do
-                local f = padShown[i]
-                if f:IsShown() and IsModal(f) then
+                local frame = padShown[i]
+                if frame:IsShown() and IsModal(frame) then
                     return true
                 end
             end
@@ -5348,9 +5348,9 @@ initFrame:SetScript("OnEvent", function(self, evt)
         -- Controller close-all pass over the snapshot in closeList.
         local function CloseListed(n)
             for i = 1, n do
-                local f = closeList[i]
-                if f:IsShown() then
-                    CloseOne(f)
+                local frame = closeList[i]
+                if frame:IsShown() then
+                    CloseOne(frame)
                 end
             end
         end
@@ -5368,17 +5368,17 @@ initFrame:SetScript("OnEvent", function(self, evt)
             if not self:IsShown() and PadNative() and CanAutoSetGamePadCursorControl(false) then
                 local n = 0
                 for i = #padShown, 1, -1 do
-                    local f = padShown[i]
-                    if f:IsShown() and not IsModal(f) then
+                    local frame = padShown[i]
+                    if frame:IsShown() and not IsModal(frame) then
                         n = n + 1
-                        closeList[n] = f
+                        closeList[n] = frame
                     end
                 end
                 for i = #escapeFrames, 1, -1 do
-                    local f = escapeFrames[i]
-                    if f:IsShown() and not IsModal(f) then
+                    local frame = escapeFrames[i]
+                    if frame:IsShown() and not IsModal(frame) then
                         n = n + 1
-                        closeList[n] = f
+                        closeList[n] = frame
                     end
                 end
                 -- A failing onEscape must not leave the proxy stuck in `closing`.
@@ -5395,9 +5395,9 @@ initFrame:SetScript("OnEvent", function(self, evt)
             -- One window per press: a controller-counted window first (only
             -- ever present while a controller is in use), then the registry.
             for i = #padShown, 1, -1 do
-                local f = padShown[i]
-                if f:IsShown() and not IsModal(f) then
-                    CloseOne(f)
+                local frame = padShown[i]
+                if frame:IsShown() and not IsModal(frame) then
+                    CloseOne(frame)
                     if AnyOpen() then
                         self:Show()
                     end
@@ -5405,9 +5405,9 @@ initFrame:SetScript("OnEvent", function(self, evt)
                 end
             end
             for i = #escapeFrames, 1, -1 do
-                local f = escapeFrames[i]
-                if f:IsShown() and not IsModal(f) then
-                    CloseOne(f)
+                local frame = escapeFrames[i]
+                if frame:IsShown() and not IsModal(frame) then
+                    CloseOne(frame)
                     if AnyOpen() then
                         self:Show()
                     end

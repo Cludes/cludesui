@@ -927,20 +927,20 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
         type = "dropdown",
         text = options.label or "Visibility",
         getValue = function()
-            local s = options.getStore()
-            if not s then
+            local cfg = options.getStore()
+            if not cfg then
                 return "always"
             end
             -- Both are read on purpose, and unconditionally: the gold walk traces what a
             -- getter READS, so a row whose override lives in either key has to touch both
             -- or it never marks itself as overridden. The override wins as the value,
             -- being the effective one this is meant to report.
-            local shade, base = s.visibilityOverride, s[legacyKey]
+            local shade, base = cfg.visibilityOverride, cfg[legacyKey]
             return shade or base or "always"
         end,
         setValue = function(val)
-            local s = options.getStore()
-            if not s then
+            local cfg = options.getStore()
+            if not cfg then
                 return
             end
             -- Round-trip with getValue above: while a marker is live the value this slot
@@ -948,7 +948,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
             -- it into the shared scalar instead would replace a setting the override was
             -- only standing in front of. A value no override can hold falls through and
             -- edits the shared side, exactly as every other slot does under an override.
-            local ovIn = CludesUI.VisOverrideValue(s) and CludesUI.VisOverrideNormalize(val)
+            local ovIn = CludesUI.VisOverrideValue(cfg) and CludesUI.VisOverrideNormalize(val)
             if ovIn then
                 local stores = OvStores()
                 for idx = 1, #stores do
@@ -967,14 +967,14 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
             then
                 local one = {}
                 one[val] = true
-                CludesUI.SetVisibilitySelection(s, legacyKey, one, options.applyScalarFn)
+                CludesUI.SetVisibilitySelection(cfg, legacyKey, one, options.applyScalarFn)
             else
                 if options.applyScalarFn then
-                    options.applyScalarFn(s, val)
+                    options.applyScalarFn(cfg, val)
                 else
-                    s[legacyKey] = val
+                    cfg[legacyKey] = val
                 end
-                s.visibilityModes = nil
+                cfg.visibilityModes = nil
                 -- Same reset as the row's orphan branch: Any cannot express an orphan.
                 SetMatchAny(false)
             end

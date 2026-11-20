@@ -1061,24 +1061,24 @@ local function Block(target, enabled)
     if not target then
         return
     end
-    local b = blockers[target]
-    if not b then
+    local widget = blockers[target]
+    if not widget then
         if not enabled then
             return
         end
-        b = CreateFrame("Button", nil, target:GetParent() or UIParent)
-        b:SetAllPoints(target)
-        b:EnableMouse(true)
-        b:RegisterForClicks("AnyUp")
-        blockers[target] = b
+        widget = CreateFrame("Button", nil, target:GetParent() or UIParent)
+        widget:SetAllPoints(target)
+        widget:EnableMouse(true)
+        widget:RegisterForClicks("AnyUp")
+        blockers[target] = widget
     end
     if enabled then
-        b:SetFrameStrata(target:GetFrameStrata())
-        b:SetFrameLevel(target:GetFrameLevel() + 20)
-        b:Show()
+        widget:SetFrameStrata(target:GetFrameStrata())
+        widget:SetFrameLevel(target:GetFrameLevel() + 20)
+        widget:Show()
         target:SetAlpha(lastK and lastK.DIM_ALPHA or 0.35)
     else
-        b:Hide()
+        widget:Hide()
         target:SetAlpha(1)
     end
 end

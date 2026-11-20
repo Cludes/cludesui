@@ -852,9 +852,9 @@ local function ApplySortToHeaders()
     if not containerFrame or InCombatLockdown() then
         return
     end
-    local s = saved.profile
-    local sortByRole = s.sortMode == "ROLE"
-    local roleOrder = s.roleOrder or { "TANK", "HEALER", "DAMAGER" }
+    local cfg = saved.profile
+    local sortByRole = cfg.sortMode == "ROLE"
+    local roleOrder = cfg.roleOrder or { "TANK", "HEALER", "DAMAGER" }
     -- A raid set the group state hides takes no nameList (FrameSort, Role +
     -- Class, Self Position): a nameList is also a filter, and the visibility
     -- driver can show the set mid-fight, when no list can be rebuilt, so a stale
@@ -863,24 +863,24 @@ local function ApplySortToHeaders()
     -- Sort By = FrameSort: its list owns the order (Self Position included);
     -- with FrameSort absent, or no list yet, the Group sort runs (Prioritize
     -- Class and Self Position included).
-    local fsRank = live and (s.sortMode == "FRAMESORT") and mod._FrameSortRanks(not mod._fsFromProvider)
+    local fsRank = live and (cfg.sortMode == "FRAMESORT") and mod._FrameSortRanks(not mod._fsFromProvider)
         or nil
     -- Prioritize Class (FrameSort's list wins). Group sort + class runs on the
     -- headers' own CLASS grouping (Class Order, then name), so membership
     -- stays live in combat. A header groups by one key only, so Role + Class
     -- takes nameLists on every header instead: like Self Position's list, a
     -- member who joins mid-fight appears at the regen rebuild.
-    local classOn = s.prioritizeClass == true and not fsRank and IsInRaid()
+    local classOn = cfg.prioritizeClass == true and not fsRank and IsInRaid()
     local classNative = classOn and not sortByRole
     local classLists = live and classOn and sortByRole
-    local selfOn = live and (s.showSelfFirst or s.showSelfLast) and IsInRaid()
-    local selfLast = s.showSelfLast
+    local selfOn = live and (cfg.showSelfFirst or cfg.showSelfLast) and IsInRaid()
+    local selfLast = cfg.showSelfLast
 
     local baseGroupBy, baseSortMethod, baseGroupingOrder
     if classNative then
         baseGroupBy = "CLASS"
         baseSortMethod = "NAME"
-        baseGroupingOrder = table.concat(s.classOrder or mod._GetDefaultClassOrder(), ",")
+        baseGroupingOrder = table.concat(cfg.classOrder or mod._GetDefaultClassOrder(), ",")
     else
         baseGroupBy = sortByRole and "ASSIGNEDROLE" or nil
         baseSortMethod = sortByRole and "NAME" or "INDEX"
@@ -917,7 +917,7 @@ local function ApplySortToHeaders()
         end
     end
 
-    if s.mergeGroups and mod._flatHeader then
+    if cfg.mergeGroups and mod._flatHeader then
         -- Self Position in merged mode: a whole-raid nameList owns the order
         -- (player pinned, rest by the active sort), so groupFilter must be
         -- CLEARED -- the list itself only names visible groups' members --
@@ -937,8 +937,8 @@ local function ApplySortToHeaders()
                 mod._VisibleGroups(),
                 sortByRole,
                 roleOrder,
-                s.classOrder,
-                s.showSelfFirst,
+                cfg.classOrder,
+                cfg.showSelfFirst,
                 selfLast
             )
         end
@@ -963,7 +963,7 @@ local function ApplySortToHeaders()
             groupLists = mod._BuildFrameSortRaidLists(fsRank, false)
         elseif classLists then
             groupLists =
-                mod._BuildRaidClassLists(false, nil, true, roleOrder, s.classOrder, s.showSelfFirst, selfLast)
+                mod._BuildRaidClassLists(false, nil, true, roleOrder, cfg.classOrder, cfg.showSelfFirst, selfLast)
         end
         -- Self Position: the player's group takes a player-pinned nameList
         -- (Class Order under Group + Class) whenever no per-group list covers
@@ -980,8 +980,8 @@ local function ApplySortToHeaders()
                     nil,
                     sortByRole,
                     roleOrder,
-                    s.classOrder,
-                    s.showSelfFirst,
+                    cfg.classOrder,
+                    cfg.showSelfFirst,
                     selfLast,
                     playerGroup
                 )

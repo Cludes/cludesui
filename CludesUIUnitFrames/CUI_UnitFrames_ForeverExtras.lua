@@ -88,12 +88,12 @@ function mod.UF_ApplyPetHappiness()
         return
     end
     local popFrame = frameList.pet
-    local s = saved.profile.pet
+    local cfg = saved.profile.pet
     local hgt = popFrame and popFrame._petHappy
     -- Only hunter pets carry happiness: every other class never builds it.
     local enabled = popFrame
-        and s
-        and s.happinessEnabled ~= false
+        and cfg
+        and cfg.happinessEnabled ~= false
         and not mod.VisUnitDisabled(saved.profile, "pet")
         and select(2, UnitClass("player")) == "HUNTER"
     if not enabled then
@@ -115,9 +115,9 @@ function mod.UF_ApplyPetHappiness()
         hgt:Hide()
         popFrame._petHappy = hgt
     end
-    local sz = s.happinessSize or 20
-    local align = s.happinessAlign or "right"
-    local posX, posY = s.happinessX or 0, s.happinessY or 0
+    local sz = cfg.happinessSize or 20
+    local align = cfg.happinessAlign or "right"
+    local posX, posY = cfg.happinessX or 0, cfg.happinessY or 0
     hgt:SetSize(sz, sz)
     hgt:ClearAllPoints()
     if align == "left" then
@@ -274,8 +274,8 @@ end
 -- Combo Points: "target" (the stock spot; anything unknown reads as it),
 -- "player" or "never".
 function mod.UF_ComboLocation()
-    local s = saved and saved.profile and saved.profile.player
-    local val = s and s.foreverComboLocation
+    local cfg = saved and saved.profile and saved.profile.player
+    local val = cfg and cfg.foreverComboLocation
     if val == "player" or val == "never" then
         return val
     end

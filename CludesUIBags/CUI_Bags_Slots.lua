@@ -340,12 +340,12 @@ function CUI_Bags:WarmSlotPool(msBudget)
     else
         for i = 1, sum do
             if not itemSlots[i] then
-                local b = mod.GetOrCreateSlot(i)
-                if not b then
+                local widget = mod.GetOrCreateSlot(i)
+                if not widget then
                     CUI_Bags._poolShort = true
                     return false
                 end
-                b:GetParent():Hide()
+                widget:GetParent():Hide()
                 if t0 and debugprofilestop() - t0 > msBudget then
                     CUI_Bags._poolShort = true
                     return false
@@ -355,12 +355,12 @@ function CUI_Bags:WarmSlotPool(msBudget)
     end
     for i = 1, (C_Container.GetContainerNumSlots(5) or 0) do
         if not reagentSlots[i] then
-            local b = GetOrCreateReagentSlot(i)
-            if not b then
+            local widget = GetOrCreateReagentSlot(i)
+            if not widget then
                 CUI_Bags._poolShort = true
                 return false
             end
-            b:GetParent():Hide()
+            widget:GetParent():Hide()
             if t0 and debugprofilestop() - t0 > msBudget then
                 CUI_Bags._poolShort = true
                 return false
@@ -648,11 +648,11 @@ do
         local ParseOr
 
         local function ParsePrimary(depth)
-            local t = toks[p]
-            if not t then
+            local tbl = toks[p]
+            if not tbl then
                 return nil
             end
-            if t.k == "lp" then
+            if tbl.k == "lp" then
                 if depth >= MAX_DEPTH then
                     return nil
                 end
@@ -664,11 +664,11 @@ do
                 p = p + 1
                 return e
             end
-            if t.k ~= "kw" then
+            if tbl.k ~= "kw" then
                 return nil
             end
             p = p + 1
-            local node = { t = "term", kw = t.v }
+            local node = { t = "term", kw = tbl.v }
             local nx = toks[p]
             if nx and nx.k == "op" then
                 local num = toks[p + 1]
@@ -688,8 +688,8 @@ do
         end
 
         local function ParseNot(depth)
-            local t = toks[p]
-            if t and t.k == "not" then
+            local tbl = toks[p]
+            if tbl and tbl.k == "not" then
                 if depth >= MAX_DEPTH then
                     return nil
                 end

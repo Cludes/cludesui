@@ -164,16 +164,16 @@ local function TileActionBars(hostFrame, cursorY, W, tile)
             step = 1,
             getValue = function()
                 local b = barList()
-                local s = b and b[barId]
-                return (s and s.textSize) or 9
+                local cfg = b and b[barId]
+                return (cfg and cfg.textSize) or 9
             end,
             setValue = function(val)
                 local b = barList()
-                local s = b and b[barId]
-                if not s then
+                local cfg = b and b[barId]
+                if not cfg then
                     return
                 end
-                s.textSize = val
+                cfg.textSize = val
                 if mod.ApplyDataBarLayout then
                     mod.ApplyDataBarLayout(barId)
                 end
@@ -570,16 +570,16 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
             step = 1,
             getValue = function()
                 local p = saved()
-                local t = p and p[tableKey]
-                return (t and t[key]) or def
+                local tbl = p and p[tableKey]
+                return (tbl and tbl[key]) or def
             end,
             setValue = function(val)
                 local p = saved()
-                local t = p and p[tableKey]
-                if not t then
+                local tbl = p and p[tableKey]
+                if not tbl then
                     return
                 end
-                t[key] = val
+                tbl[key] = val
                 RBApply()
             end,
         }
@@ -889,8 +889,8 @@ local function TileQoL(hostFrame, cursorY, W, tile)
             max = 16,
             step = 1,
             getValue = function()
-                local t = CludesUIDB and CludesUIDB.keystonePopup
-                return (t and t.textSize) or 11
+                local tbl = CludesUIDB and CludesUIDB.keystonePopup
+                return (tbl and tbl.textSize) or 11
             end,
             setValue = function(val)
                 if not CludesUIDB then
@@ -1266,15 +1266,15 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
             max = maxV,
             step = 1,
             getValue = function()
-                local t = getT()
-                return (t and t[key]) or def
+                local tbl = getT()
+                return (tbl and tbl[key]) or def
             end,
             setValue = function(val)
-                local t = getT()
-                if not t then
+                local tbl = getT()
+                if not tbl then
                     return
                 end
-                t[key] = val
+                tbl[key] = val
                 local func = mod[applyName]
                 if func then
                     func()
@@ -1650,9 +1650,9 @@ local function TileMinimap(hostFrame, cursorY, W, tile)
                     return
                 end
                 p[key] = val
-                local f = _G[frameName]
-                if f and f.SetScale then
-                    f:SetScale(val)
+                local frame = _G[frameName]
+                if frame and frame.SetScale then
+                    frame:SetScale(val)
                 end
             end,
         }
@@ -2336,21 +2336,21 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
             oitItems,
             function(keyName)
                 local fontsDB = CludesUI.GetFontsDB()
-                local t = (fontsDB and fontsDB.outlineIconText) or (CludesUIDB and CludesUIDB.outlineIconText)
-                return not (t and t[keyName] == false)
+                local tbl = (fontsDB and fontsDB.outlineIconText) or (CludesUIDB and CludesUIDB.outlineIconText)
+                return not (tbl and tbl[keyName] == false)
             end,
             function(keyName, val)
                 -- Per-profile (rides profile export); seed from the legacy account-global table on first write so other modules' choices carry over.
                 local fontsDB = CludesUI.GetFontsDB()
                 if type(fontsDB.outlineIconText) ~= "table" then
-                    local t = {}
+                    local tbl = {}
                     local seed = CludesUIDB and CludesUIDB.outlineIconText
                     if type(seed) == "table" then
                         for kk, vv in pairs(seed) do
-                            t[kk] = vv
+                            tbl[kk] = vv
                         end
                     end
-                    fontsDB.outlineIconText = t
+                    fontsDB.outlineIconText = tbl
                 end
                 fontsDB.outlineIconText[keyName] = val and true or false
                 -- Reload prompt from setFn, NOT an onChanged callback: a non-nil onChanged re-anchors the open CB dropdown menu absolutely (for page rebuilds), visibly shifting it.

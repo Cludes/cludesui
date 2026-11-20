@@ -175,16 +175,16 @@ function mod._XPFrameSlice(overlayFrame, atlasName, fitWidth)
         return
     end
     tx:Hide()
-    local s = overlayFrame._flat
-    if not s then
-        s = {}
+    local cfg = overlayFrame._flat
+    if not cfg then
+        cfg = {}
         for _, k in ipairs({ "TL", "TM", "TR", "BL", "BM", "BR" }) do
             local t = overlayFrame:CreateTexture(nil, "OVERLAY")
             t:SetSnapToPixelGrid(false)
             t:SetTexelSnappingBias(0)
-            s[k] = t
+            cfg[k] = t
         end
-        overlayFrame._flat = s
+        overlayFrame._flat = cfg
     end
     local lineColor, restColor, textColor, bc =
         details.leftTexCoord, details.rightTexCoord, details.topTexCoord, details.bottomTexCoord
@@ -203,35 +203,35 @@ function mod._XPFrameSlice(overlayFrame, atlasName, fitWidth)
         capW = oh
     end
     local file = details.file or details.filename
-    for _, t in pairs(s) do
+    for _, t in pairs(cfg) do
         t:SetTexture(file)
         t:ClearAllPoints()
     end
     -- Each column samples the TOP half of the art; the bottom row samples the
     -- same rail flipped, so the two edges always match.
-    s.TL:SetTexCoord(lineColor, lMid, textColor, midValue)
-    s.TL:SetPoint("TOPLEFT", overlayFrame, "TOPLEFT")
-    s.TL:SetPoint("BOTTOMLEFT", overlayFrame, "LEFT")
-    s.TL:SetWidth(capW)
-    s.BL:SetTexCoord(lineColor, lMid, midValue, textColor)
-    s.BL:SetPoint("TOPLEFT", overlayFrame, "LEFT")
-    s.BL:SetPoint("BOTTOMLEFT", overlayFrame, "BOTTOMLEFT")
-    s.BL:SetWidth(capW)
-    s.TR:SetTexCoord(rMid, restColor, textColor, midValue)
-    s.TR:SetPoint("TOPRIGHT", overlayFrame, "TOPRIGHT")
-    s.TR:SetPoint("BOTTOMRIGHT", overlayFrame, "RIGHT")
-    s.TR:SetWidth(capW)
-    s.BR:SetTexCoord(rMid, restColor, midValue, textColor)
-    s.BR:SetPoint("TOPRIGHT", overlayFrame, "RIGHT")
-    s.BR:SetPoint("BOTTOMRIGHT", overlayFrame, "BOTTOMRIGHT")
-    s.BR:SetWidth(capW)
-    s.TM:SetTexCoord(midU - band, midU + band, textColor, midValue)
-    s.TM:SetPoint("TOPLEFT", s.TL, "TOPRIGHT")
-    s.TM:SetPoint("BOTTOMRIGHT", s.TR, "BOTTOMLEFT")
-    s.BM:SetTexCoord(midU - band, midU + band, midValue, textColor)
-    s.BM:SetPoint("TOPLEFT", s.BL, "TOPRIGHT")
-    s.BM:SetPoint("BOTTOMRIGHT", s.BR, "BOTTOMLEFT")
-    for _, t in pairs(s) do
+    cfg.TL:SetTexCoord(lineColor, lMid, textColor, midValue)
+    cfg.TL:SetPoint("TOPLEFT", overlayFrame, "TOPLEFT")
+    cfg.TL:SetPoint("BOTTOMLEFT", overlayFrame, "LEFT")
+    cfg.TL:SetWidth(capW)
+    cfg.BL:SetTexCoord(lineColor, lMid, midValue, textColor)
+    cfg.BL:SetPoint("TOPLEFT", overlayFrame, "LEFT")
+    cfg.BL:SetPoint("BOTTOMLEFT", overlayFrame, "BOTTOMLEFT")
+    cfg.BL:SetWidth(capW)
+    cfg.TR:SetTexCoord(rMid, restColor, textColor, midValue)
+    cfg.TR:SetPoint("TOPRIGHT", overlayFrame, "TOPRIGHT")
+    cfg.TR:SetPoint("BOTTOMRIGHT", overlayFrame, "RIGHT")
+    cfg.TR:SetWidth(capW)
+    cfg.BR:SetTexCoord(rMid, restColor, midValue, textColor)
+    cfg.BR:SetPoint("TOPRIGHT", overlayFrame, "RIGHT")
+    cfg.BR:SetPoint("BOTTOMRIGHT", overlayFrame, "BOTTOMRIGHT")
+    cfg.BR:SetWidth(capW)
+    cfg.TM:SetTexCoord(midU - band, midU + band, textColor, midValue)
+    cfg.TM:SetPoint("TOPLEFT", cfg.TL, "TOPRIGHT")
+    cfg.TM:SetPoint("BOTTOMRIGHT", cfg.TR, "BOTTOMLEFT")
+    cfg.BM:SetTexCoord(midU - band, midU + band, midValue, textColor)
+    cfg.BM:SetPoint("TOPLEFT", cfg.BL, "TOPRIGHT")
+    cfg.BM:SetPoint("BOTTOMRIGHT", cfg.BR, "BOTTOMLEFT")
+    for _, t in pairs(cfg) do
         t:Show()
     end
 end
@@ -271,14 +271,14 @@ local FLIP_MAX_TILES = 24 -- a very long, thin bar widens its tiles past this
 
 -- One tile, masked by the reveal, with its one-pass and looping groups.
 local function NewFlipTile(barFrame, mask)
-    local t = {}
-    t.idle = barFrame:CreateTexture(nil, "OVERLAY", nil, 0)
-    t.flip = barFrame:CreateTexture(nil, "OVERLAY", nil, 1)
-    t.idle:AddMaskTexture(mask)
-    t.flip:AddMaskTexture(mask)
+    local tbl = {}
+    tbl.idle = barFrame:CreateTexture(nil, "OVERLAY", nil, 0)
+    tbl.flip = barFrame:CreateTexture(nil, "OVERLAY", nil, 1)
+    tbl.idle:AddMaskTexture(mask)
+    tbl.flip:AddMaskTexture(mask)
     local function Book(set)
         local fb = set:CreateAnimation("FlipBook")
-        fb:SetTarget(t.flip)
+        fb:SetTarget(tbl.flip)
         fb:SetDuration(2)
         fb:SetFlipBookColumns(2)
         fb:SetFlipBookFrameWidth(0)
@@ -291,23 +291,23 @@ local function NewFlipTile(barFrame, mask)
     local firstRun = barFrame:CreateAnimationGroup()
     firstRun._fb = Book(firstRun)
     local fadeIn = firstRun:CreateAnimation("Alpha")
-    fadeIn:SetTarget(t.flip)
+    fadeIn:SetTarget(tbl.flip)
     fadeIn:SetFromAlpha(0)
     fadeIn:SetToAlpha(1)
     firstRun._fadeIn = fadeIn
     local fadeOut = firstRun:CreateAnimation("Alpha")
-    fadeOut:SetTarget(t.flip)
+    fadeOut:SetTarget(tbl.flip)
     fadeOut:SetOrder(2)
     fadeOut:SetFromAlpha(1)
     fadeOut:SetToAlpha(0)
     fadeOut:SetStartDelay(0.2)
     fadeOut:SetDuration(0.5)
-    t.once = firstRun
+    tbl.once = firstRun
     local loop = barFrame:CreateAnimationGroup()
     loop._fb = Book(loop)
     loop:SetLooping("REPEAT")
-    t.loop = loop
-    return t
+    tbl.loop = loop
+    return tbl
 end
 
 local function HideFlipTile(tbl)
@@ -386,25 +386,25 @@ function mod.ApplyXPFlipFill(widget, cfg)
     end
     local fadeIn = mod._XPFlipSlowIn[atlasName] and 0.5 or 0.25
     for index = 1, num do
-        local t = tiles[index]
+        local tbl = tiles[index]
         if resync then
-            t.once:Stop()
-            t.loop:Stop()
+            tbl.once:Stop()
+            tbl.loop:Stop()
         end
-        if t.atlas ~= atlasName then
-            t.once._fb:SetFlipBookRows(rowList)
-            t.once._fb:SetFlipBookFrames(rowList * 2)
-            t.loop._fb:SetFlipBookRows(rowList)
-            t.loop._fb:SetFlipBookFrames(rowList * 2)
-            t.once._fadeIn:SetDuration(fadeIn)
-            t.flip:SetAtlas(atlasName)
-            mod._XPFlipStatic(t.idle, details, rowList)
-            t.atlas = atlasName
+        if tbl.atlas ~= atlasName then
+            tbl.once._fb:SetFlipBookRows(rowList)
+            tbl.once._fb:SetFlipBookFrames(rowList * 2)
+            tbl.loop._fb:SetFlipBookRows(rowList)
+            tbl.loop._fb:SetFlipBookFrames(rowList * 2)
+            tbl.once._fadeIn:SetDuration(fadeIn)
+            tbl.flip:SetAtlas(atlasName)
+            mod._XPFlipStatic(tbl.idle, details, rowList)
+            tbl.atlas = atlasName
         end
         local posX = (index - 1) * tw
-        PlaceFlipLayer(t.flip, barFrame, posX, tw)
-        PlaceFlipLayer(t.idle, barFrame, posX, tw)
-        t.idle:Show()
+        PlaceFlipLayer(tbl.flip, barFrame, posX, tw)
+        PlaceFlipLayer(tbl.idle, barFrame, posX, tw)
+        tbl.idle:Show()
     end
     widget._fvFlipOn, widget._fvTileN, widget._fvFlipAtlas = true, num, atlasName
     texture:SetAlpha(0)
@@ -413,23 +413,23 @@ function mod.ApplyXPFlipFill(widget, cfg)
     local smart = not loopOn and cfg.fvFillSmart ~= false
     widget._fvFlipSmart = smart or nil
     for index = 1, num do
-        local t = tiles[index]
+        local tbl = tiles[index]
         if loopOn then
-            t.once:Stop()
-            t.flip:SetAlpha(1)
-            t.flip:Show()
-            if not t.loop:IsPlaying() then
-                t.loop:Play()
+            tbl.once:Stop()
+            tbl.flip:SetAlpha(1)
+            tbl.flip:Show()
+            if not tbl.loop:IsPlaying() then
+                tbl.loop:Play()
             end
         else
             -- Smart: a running pass carries on; static: the idle frame alone.
-            t.loop:Stop()
-            t.flip:SetAlpha(0)
+            tbl.loop:Stop()
+            tbl.flip:SetAlpha(0)
             if smart then
-                t.flip:Show()
+                tbl.flip:Show()
             else
-                t.once:Stop()
-                t.flip:Hide()
+                tbl.once:Stop()
+                tbl.flip:Hide()
             end
         end
     end
@@ -905,8 +905,8 @@ function CludesUI._GetXPBarStyle()
     if p.useBlizzardDataBars then
         return "default"
     end
-    local s = p.bars and p.bars.XPBar
-    return (s and s.xpArt) or "cui"
+    local cfg = p.bars and p.bars.XPBar
+    return (cfg and cfg.xpArt) or "cui"
 end
 
 -- A Blizz Default <-> CludesUI swap flips that switch live through
@@ -919,9 +919,9 @@ function CludesUI._SetXPBarStyle(look)
         return false
     end
     local wantBlizz = look == "default"
-    local s = p.bars and p.bars.XPBar
-    if s and not wantBlizz then
-        s.xpArt = (look == "prof" or look == "forever") and look or nil
+    local cfg = p.bars and p.bars.XPBar
+    if cfg and not wantBlizz then
+        cfg.xpArt = (look == "prof" or look == "forever") and look or nil
     end
     local reload = false
     if (p.useBlizzardDataBars and true or false) ~= wantBlizz then
@@ -1341,46 +1341,46 @@ local function XPLegacyText(widget, record, current, mx, rested, level)
             .. ")"
     end
     local raw = record.raw
-    local t = record.lvl and format("%s %d - ", LEVEL, level) or ""
+    local text = record.lvl and format("%s %d - ", LEVEL, level) or ""
     if raw then
-        t = t .. format("%s / %s", mod.AbbreviateLargeNumbers(current), mod.AbbreviateLargeNumbers(mx))
+        text = text .. format("%s / %s", mod.AbbreviateLargeNumbers(current), mod.AbbreviateLargeNumbers(mx))
         if record.pcts then
-            t = t .. format(" (%.1f%%)", current / mx * 100)
+            text = text .. format(" (%.1f%%)", current / mx * 100)
         end
     else
-        t = t .. format("%.1f%%", current / mx * 100)
+        text = text .. format("%.1f%%", current / mx * 100)
     end
     if record.rested and rested > 0 then
-        t = t
+        text = text
             .. format(
                 CludesUI.L(" (Rested: %s)"),
                 raw and mod.AbbreviateLargeNumbers(rested) or format("%.1f%%", rested / mx * 100)
             )
     end
-    return t
+    return text
 end
 
 -- One item's string; rest: the rested XP after it (Show Rested, while there
 -- is some). Rested and remaining XP always carry their label.
 local function XPItemText(widget, ident, current, mx, rested, level, nowTime, rest)
     if ident == "pct" then
-        local t = FmtPct(current / mx * 100)
+        local text = FmtPct(current / mx * 100)
         if rest then
-            t = t .. format(CludesUI.L(" (Rested: %s)"), FmtPct(rested / mx * 100))
+            text = text .. format(CludesUI.L(" (Rested: %s)"), FmtPct(rested / mx * 100))
         end
-        return t
+        return text
     elseif ident == "cur" then
-        local t = FmtNum(current)
+        local text = FmtNum(current)
         if rest then
-            t = t .. format(CludesUI.L(" (Rested: %s)"), FmtNum(rested))
+            text = text .. format(CludesUI.L(" (Rested: %s)"), FmtNum(rested))
         end
-        return t
+        return text
     elseif ident == "curMax" then
-        local t = FmtNum(current) .. " / " .. FmtNum(mx)
+        local text = FmtNum(current) .. " / " .. FmtNum(mx)
         if rest then
-            t = t .. format(CludesUI.L(" (Rested: %s)"), FmtNum(rested))
+            text = text .. format(CludesUI.L(" (Rested: %s)"), FmtNum(rested))
         end
-        return t
+        return text
     elseif ident == "curMaxRem" then
         return format(
             "%s / %s (%s)",

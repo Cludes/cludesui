@@ -3361,8 +3361,8 @@ CludesUI.AtOptionsLogin(function()
         local function Hover(self, bgAlpha, borderAlpha)
             btnBg:SetColorTexture(U.DD_BG_R, U.DD_BG_G, U.DD_BG_B, bgAlpha)
             if self._border and self._border.SetColor then
-                local t = self._borderTint or THR_BORDER_WHITE
-                self._border:SetColor(t[1], t[2], t[3], borderAlpha)
+                local tbl = self._borderTint or THR_BORDER_WHITE
+                self._border:SetColor(tbl[1], tbl[2], tbl[3], borderAlpha)
             end
         end
         settingsBtn:SetScript("OnEnter", function(self)
@@ -3555,9 +3555,9 @@ CludesUI.AtOptionsLogin(function()
             local paneBoxes = {} -- [edit box] = true, filled by MakeInput
             local ed = {
                 refresh = function()
-                    local f = GetCurrentKeyBoardFocus()
-                    if f and paneBoxes[f] then
-                        f:ClearFocus()
+                    local frame = GetCurrentKeyBoardFocus()
+                    if frame and paneBoxes[frame] then
+                        frame:ClearFocus()
                     end
                     RefreshSpecEntries()
                     RefreshDetail()
@@ -5645,30 +5645,30 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Draws the bar texture on the background too.",
             disabled = function()
                 local profile = DB()
-                local t = profile and profile[keyName.tbl]
-                if not t then
+                local tbl = profile and profile[keyName.tbl]
+                if not tbl then
                     return true
                 end
                 -- Split textures: the health and power bars may carry their own.
                 if kind == "bars" and profile.splitTex == true then
                     return false
                 end
-                local tx = t[keyName.tex] or "none"
+                local tx = tbl[keyName.tex] or "none"
                 return tx == "none" or (keyName.blizz == true and tx == "blizzard")
             end,
             disabledTooltip = keyName.need,
             get = function()
                 local profile = DB()
-                local t = profile and profile[keyName.tbl]
-                return (t and t[keyName.key]) or false
+                local tbl = profile and profile[keyName.tbl]
+                return (tbl and tbl[keyName.key]) or false
             end,
             set = function(value)
                 local profile = DB()
-                local t = profile and profile[keyName.tbl]
-                if not t then
+                local tbl = profile and profile[keyName.tbl]
+                if not tbl then
                     return
                 end
-                t[keyName.key] = value and true or false
+                tbl[keyName.key] = value and true or false
                 apply()
             end,
         }
@@ -5997,20 +5997,20 @@ CludesUI.AtOptionsLogin(function()
             local GAP = 10
             local totalW, totalH, isShown = 0, 0, 0
             for gi, group in ipairs(thresholdPane.groups) do
-                local t = profile[TOTEM_GROUPS[gi].key]
+                local tbl = profile[TOTEM_GROUPS[gi].key]
                 if gi == 2 and not CallTotemShown(profile) then
-                    t = nil
+                    tbl = nil
                 end
                 group.t = nil
-                if t then
+                if tbl then
                     local num = #group.icons
-                    local len = num * (t.iconSize or 30) + (num - 1) * (t.spacing or 2)
-                    local across = t.iconSize or 30
-                    local vertical = t.orientation == "VERTICAL"
+                    local len = num * (tbl.iconSize or 30) + (num - 1) * (tbl.spacing or 2)
+                    local across = tbl.iconSize or 30
+                    local vertical = tbl.orientation == "VERTICAL"
                     totalW = math.max(totalW, vertical and across or len)
                     totalH = totalH + (vertical and len or across) + (isShown > 0 and GAP or 0)
                     isShown = isShown + 1
-                    group.t = t
+                    group.t = tbl
                 end
             end
 
@@ -6040,9 +6040,9 @@ CludesUI.AtOptionsLogin(function()
 
             local snapW, topY = 0, 0
             for gi, group in ipairs(thresholdPane.groups) do
-                local t = group.t
-                group.frame:SetShown(t ~= nil)
-                if not t then
+                local tbl = group.t
+                group.frame:SetShown(tbl ~= nil)
+                if not tbl then
                     group.on = false
                     for _, hit in ipairs(group.iconHits) do
                         hit:Hide()
@@ -6051,10 +6051,10 @@ CludesUI.AtOptionsLogin(function()
                         hit:Hide()
                     end
                 else
-                    local size = Snap(t.iconSize or 30)
+                    local size = Snap(tbl.iconSize or 30)
                     -- A set gap keeps at least one physical pixel when the stack is fitted down.
-                    local spacing = (t.spacing or 2) > 0 and math.max(pixel, Snap(t.spacing or 2)) or 0
-                    local vertical = t.orientation == "VERTICAL"
+                    local spacing = (tbl.spacing or 2) > 0 and math.max(pixel, Snap(tbl.spacing or 2)) or 0
+                    local vertical = tbl.orientation == "VERTICAL"
                     local num = #group.icons
                     local len = num * size + (num - 1) * spacing
                     local gw, gh = len, size
@@ -6066,13 +6066,13 @@ CludesUI.AtOptionsLogin(function()
                     group.frame:SetPoint("TOP", boxHolder, "TOP", 0, -topY)
                     topY = topY + gh + GAP
                     snapW = math.max(snapW, gw)
-                    local bs = t.borderSize or 0
-                    local texKey = t.borderTexture or "solid"
-                    local showTimer = t.showTimer ~= false
+                    local bs = tbl.borderSize or 0
+                    local texKey = tbl.borderTexture or "solid"
+                    local showTimer = tbl.showTimer ~= false
                     -- The active totem bar shows only for the player's own class, as live.
                     local on = true
                     if gi == 1 then
-                        local ec = t.enabledClasses
+                        local ec = tbl.enabledClasses
                         local _, castFrame = UnitClass("player")
                         on = (ec and castFrame and ec[castFrame]) and true or false
                     end
@@ -6089,29 +6089,29 @@ CludesUI.AtOptionsLogin(function()
                         -- "Show Behind": +3 in front of the icon, level-1 behind it, as live.
                         local bdr = iconTex._border
                         bdr:SetFrameLevel(
-                            t.borderBehind and math.max(0, iconTex:GetFrameLevel() - 1) or (iconTex:GetFrameLevel() + 3)
+                            tbl.borderBehind and math.max(0, iconTex:GetFrameLevel() - 1) or (iconTex:GetFrameLevel() + 3)
                         )
                         CludesUI.ApplyBorderStyle(
                             bdr,
                             bs,
-                            t.borderR or 0,
-                            t.borderG or 0,
-                            t.borderB or 0,
-                            t.borderA or 1,
+                            tbl.borderR or 0,
+                            tbl.borderG or 0,
+                            tbl.borderB or 0,
+                            tbl.borderA or 1,
                             texKey,
-                            t.borderTextureOffset,
-                            t.borderTextureOffsetY,
-                            t.borderTextureShiftX,
-                            t.borderTextureShiftY,
+                            tbl.borderTextureOffset,
+                            tbl.borderTextureOffsetY,
+                            tbl.borderTextureShiftX,
+                            tbl.borderTextureShiftY,
                             "resourcebars",
                             bs,
                             nil,
-                            CludesUI.BorderPx(t.borderSizePx, bs, texKey)
+                            CludesUI.BorderPx(tbl.borderSizePx, bs, texKey)
                         )
                         local fontStr = iconTex._timer
                         if fontStr then
                             if showTimer then
-                                SetPVFont(fontStr, FONT_PATH, t.timerSize or 11, "resourceBars")
+                                SetPVFont(fontStr, FONT_PATH, tbl.timerSize or 11, "resourceBars")
                                 fontStr:Show()
                             else
                                 fontStr:Hide()

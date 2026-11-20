@@ -922,11 +922,11 @@ local function CollectConsumables(missing, classFile, specID, instanceNow, inKey
                     inkyWatch = true
                     -- Cache parsed zone set on the string itself
                     if not collector._inkyZoneSet or collector._inkyZoneSrc ~= zones then
-                        local s = {}
+                        local cfg = {}
                         for zid in zones:gmatch("[^,%s]+") do
-                            s[zid] = true
+                            cfg[zid] = true
                         end
-                        collector._inkyZoneSet = s
+                        collector._inkyZoneSet = cfg
                         collector._inkyZoneSrc = zones
                     end
                     InkyMapWatch(true)

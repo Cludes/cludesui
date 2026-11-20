@@ -1722,12 +1722,12 @@ local PREVIEW = {
         }
     end,
     player = function(ident, key)
-        local s = PV[ident].specs[key]
-        if not s then
+        local cfg = PV[ident].specs[key]
+        if not cfg then
             return nil
         end
-        local _, specInfo, _, _, role, cls = GetSpecializationInfoByID(s[1])
-        return { classFilename = cls, specName = specInfo, assignedRole = role, isLeader = s[2] or false }
+        local _, specInfo, _, _, role, cls = GetSpecializationInfoByID(cfg[1])
+        return { classFilename = cls, specName = specInfo, assignedRole = role, isLeader = cfg[2] or false }
     end,
     counts = function(ident)
         return PvCounts(PV[ident])

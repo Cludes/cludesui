@@ -117,8 +117,8 @@ local function ComputeBarLayout(key)
         return {}, 1, 1
     end
 
-    local s = ABAR.db.profile.bars[key]
-    local numIcons = s.overrideNumIcons or s.numIcons or details.count
+    local cfg = ABAR.db.profile.bars[key]
+    local numIcons = cfg.overrideNumIcons or cfg.numIcons or details.count
     if numIcons < 1 then
         numIcons = details.count
     end
@@ -132,7 +132,7 @@ local function ComputeBarLayout(key)
         numIcons = 1
     end
 
-    local numRows = s.overrideNumRows or s.numRows or 1
+    local numRows = cfg.overrideNumRows or cfg.numRows or 1
     if numRows < 1 then
         numRows = 1
     end
@@ -140,16 +140,16 @@ local function ComputeBarLayout(key)
     numRows = ceil(numIcons / stride)
     -- Raw coords -- do NOT pre-snap with SnapForScale: PP.Scale truncates and
     -- loses a pixel where PP.mult > 1. Pixel-lock happens below, post-shape.
-    local padding = s.buttonPadding or 2
-    local isVertical = (s.orientation == "vertical")
-    local growDir = ABAR:ResolveGrowDirectionForLayout(key, s)
-    local shape = mod.AB_LayoutShape(s)
+    local padding = cfg.buttonPadding or 2
+    local isVertical = (cfg.orientation == "vertical")
+    local growDir = ABAR:ResolveGrowDirectionForLayout(key, cfg)
+    local shape = mod.AB_LayoutShape(cfg)
 
     local base = barBaseSize[key]
     local baseW = base and base.w or 45
     local baseH = base and base.h or 45
-    local btnW = (s.buttonWidth and s.buttonWidth > 0) and s.buttonWidth or baseW
-    local btnH = (s.buttonHeight and s.buttonHeight > 0) and s.buttonHeight or baseH
+    local btnW = (cfg.buttonWidth and cfg.buttonWidth > 0) and cfg.buttonWidth or baseW
+    local btnH = (cfg.buttonHeight and cfg.buttonHeight > 0) and cfg.buttonHeight or baseH
     if shape ~= "none" and shape ~= "cropped" then
         btnW = btnW + SHAPE_BTN_EXPAND
         btnH = btnH + SHAPE_BTN_EXPAND
@@ -171,10 +171,10 @@ local function ComputeBarLayout(key)
     padding = paddingPxC * onePxC
     local stepW = btnW + padding
     local stepH = btnH + padding
-    local extraWC = s._matchExtraPixels or 0
-    local extraHC = s._matchExtraPixelsH or 0
+    local extraWC = cfg._matchExtraPixels or 0
+    local extraHC = cfg._matchExtraPixelsH or 0
 
-    local showEmpty = s.alwaysShowButtons
+    local showEmpty = cfg.alwaysShowButtons
     if showEmpty == nil then
         showEmpty = true
     end
@@ -184,7 +184,7 @@ local function ComputeBarLayout(key)
 
     -- Icon order flips are constant for the whole grid.
     local rowsUpward = not isVertical and (growDir == "UP" or growDir == "CENTER")
-    local colFlip, rowFlip, cornerFill = mod.GetOrderFlips(s, isVertical, rowsUpward)
+    local colFlip, rowFlip, cornerFill = mod.GetOrderFlips(cfg, isVertical, rowsUpward)
 
     local result = {}
     for index = 1, details.count do
@@ -232,7 +232,7 @@ local function ComputeBarLayout(key)
             local show = true
             if
                 not showEmpty
-                and not (_gridState.shown or ShouldQuickKeybindSurfaceBar(s))
+                and not (_gridState.shown or ShouldQuickKeybindSurfaceBar(cfg))
                 and mod.AB_EmptySlot(button, details)
             then
                 show = false
@@ -330,7 +330,7 @@ local function LayoutBar(key)
         return
     end
 
-    local s = ABAR.db.profile.bars[key]
+    local cfg = ABAR.db.profile.bars[key]
     -- LAYOUT STAMP: skips a re-layout whose inputs are unchanged (the combat-exit
     -- ApplyAll re-ran this full layout for nothing). EVERY input the body reads
     -- folds into one string: raw settings, profile flags, barPositions, base sizes,
@@ -347,11 +347,11 @@ local function LayoutBar(key)
         local place = p.barPositions and p.barPositions[key]
         local base0 = barBaseSize[key]
         local PPm = CludesUI and CludesUI.PP
-        local growDirS = ABAR:ResolveGrowDirectionForLayout(key, s)
-        local isVertS = (s.orientation == "vertical")
+        local growDirS = ABAR:ResolveGrowDirectionForLayout(key, cfg)
+        local isVertS = (cfg.orientation == "vertical")
         local rowsUpS = not isVertS and (growDirS == "UP" or growDirS == "CENTER")
-        local cfS, rfS, cnS = mod.GetOrderFlips(s, isVertS, rowsUpS)
-        local nIcoS = s.overrideNumIcons or s.numIcons or details.count
+        local cfS, rfS, cnS = mod.GetOrderFlips(cfg, isVertS, rowsUpS)
+        local nIcoS = cfg.overrideNumIcons or cfg.numIcons or details.count
         if details.isStance then
             nIcoS = GetNumShapeshiftForms() or details.count
         end
@@ -364,7 +364,7 @@ local function LayoutBar(key)
                 fbS = ((cx * region > uw * 2 / 3) and 2 or 0) + ((cy * region > uh * 2 / 3) and 1 or 0)
             end
         end
-        local showES = s.alwaysShowButtons
+        local showES = cfg.alwaysShowButtons
         if showES == nil then
             showES = true
         end
@@ -387,17 +387,17 @@ local function LayoutBar(key)
             -- same 45x45 the real button reports).
             tostring(nIcoS),
             tostring(#buttons),
-            tostring(s.overrideNumRows or s.numRows or 1),
-            tostring(s.buttonPadding or 2),
-            tostring(s.orientation),
+            tostring(cfg.overrideNumRows or cfg.numRows or 1),
+            tostring(cfg.buttonPadding or 2),
+            tostring(cfg.orientation),
             growDirS or "-",
-            tostring(s.buttonShape),
-            tostring(s.buttonWidth),
-            tostring(s.buttonHeight),
-            tostring(s._matchExtraPixels),
-            tostring(s._matchExtraPixelsH),
+            tostring(cfg.buttonShape),
+            tostring(cfg.buttonWidth),
+            tostring(cfg.buttonHeight),
+            tostring(cfg._matchExtraPixels),
+            tostring(cfg._matchExtraPixelsH),
             tostring(showES),
-            tostring(s.mouseoverEnabled),
+            tostring(cfg.mouseoverEnabled),
             mod.AB_Forever() and "forever" or mod.AB_Style(),
             mod.AB_ChromeStamp(key),
             tostring(p.procGlowEnabled),
@@ -412,7 +412,7 @@ local function LayoutBar(key)
             tostring(rfS),
             tostring(cnS),
             tostring(_gridState.shown),
-            ShouldQuickKeybindSurfaceBar(s) and "1" or "0",
+            ShouldQuickKeybindSurfaceBar(cfg) and "1" or "0",
             (CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(key)) and "1" or "0",
             tostring(fbS),
             fillS,
@@ -432,7 +432,7 @@ local function LayoutBar(key)
             mod._eabPetLayoutSig = nil
         end
     end
-    local numIcons = s.overrideNumIcons or s.numIcons or details.count
+    local numIcons = cfg.overrideNumIcons or cfg.numIcons or details.count
     if numIcons < 1 then
         numIcons = details.count
     end
@@ -446,7 +446,7 @@ local function LayoutBar(key)
         numIcons = 1
     end
 
-    local numRows = s.overrideNumRows or s.numRows or 1
+    local numRows = cfg.overrideNumRows or cfg.numRows or 1
     if numRows < 1 then
         numRows = 1
     end
@@ -459,16 +459,16 @@ local function LayoutBar(key)
     numRows = ceil(numIcons / stride)
     -- Raw coords -- do NOT pre-snap with SnapForScale: PP.Scale truncates and
     -- loses a pixel where PP.mult > 1. Pixel-lock happens below, post-shape.
-    local padding = s.buttonPadding or 2
-    local isVertical = (s.orientation == "vertical")
-    local growDir = ABAR:ResolveGrowDirectionForLayout(key, s)
-    local shape = mod.AB_LayoutShape(s)
+    local padding = cfg.buttonPadding or 2
+    local isVertical = (cfg.orientation == "vertical")
+    local growDir = ABAR:ResolveGrowDirectionForLayout(key, cfg)
+    local shape = mod.AB_LayoutShape(cfg)
 
     local base = barBaseSize[key]
     local baseW = base and base.w or 45
     local baseH = base and base.h or 45
-    local btnW = (s.buttonWidth and s.buttonWidth > 0) and s.buttonWidth or baseW
-    local btnH = (s.buttonHeight and s.buttonHeight > 0) and s.buttonHeight or baseH
+    local btnW = (cfg.buttonWidth and cfg.buttonWidth > 0) and cfg.buttonWidth or baseW
+    local btnH = (cfg.buttonHeight and cfg.buttonHeight > 0) and cfg.buttonHeight or baseH
 
     if shape ~= "none" and shape ~= "cropped" then
         btnW = btnW + SHAPE_BTN_EXPAND
@@ -493,11 +493,11 @@ local function LayoutBar(key)
     local stepW = btnW + padding
     local stepH = btnH + padding
 
-    local extraW = s._matchExtraPixels or 0
-    local extraH = s._matchExtraPixelsH or 0
+    local extraW = cfg._matchExtraPixels or 0
+    local extraH = cfg._matchExtraPixelsH or 0
 
     -- Show empty slots (stance bar always forces this off)
-    local showEmpty = s.alwaysShowButtons
+    local showEmpty = cfg.alwaysShowButtons
     if showEmpty == nil then
         showEmpty = true
     end
@@ -509,7 +509,7 @@ local function LayoutBar(key)
     -- horizontal bars stack rows upward (2nd row above 1st); icon order flips
     -- permute indexes within that fixed grid.
     local rowsUpward = not isVertical and (growDir == "UP" or growDir == "CENTER")
-    local colFlip, rowFlip, cornerFill = mod.GetOrderFlips(s, isVertical, rowsUpward)
+    local colFlip, rowFlip, cornerFill = mod.GetOrderFlips(cfg, isVertical, rowsUpward)
 
     -- Fit Ring to Cropped Buttons sizes the assist ring from the button's own
     -- rectangle: a shown ring on this bar is refitted (or restored) after the
@@ -675,13 +675,13 @@ local function LayoutBar(key)
 
             if
                 not showEmpty
-                and not (_gridState.shown or ShouldQuickKeybindSurfaceBar(s))
+                and not (_gridState.shown or ShouldQuickKeybindSurfaceBar(cfg))
                 and mod.AB_EmptySlot(button, details)
             then
                 button:SetAlpha(0)
                 mod._eabMarkParked(button, details)
             else
-                if not s.mouseoverEnabled then
+                if not cfg.mouseoverEnabled then
                     button:SetAlpha(1)
                     lfd.parkA0 = nil
                 end
@@ -768,8 +768,8 @@ local function LayoutBar(key)
             and not CludesUI._abAnchorSuppressed
             and not _isApplyingAll
         then
-            local s = ABAR.db.profile.bars[key]
-            local grow = s and s.growDirection
+            local cfg = ABAR.db.profile.bars[key]
+            local grow = cfg and cfg.growDirection
             if grow then
                 grow = grow:upper()
                 if grow ~= "CENTER" then
@@ -968,7 +968,7 @@ local function LayoutBar(key)
     -- only on a one-line bar at spacing 2 or less, as Blizzard draws them)
     -- and the bar's end caps. A bar that never showed either builds nothing.
     if (mod._abChrome and mod._abChrome[key]) or mod.AB_ForeverBg(key) or mod.AB_CapsLook(key) then
-        local oneLine = (isVertical and totalCols or totalRows) == 1 and (s.buttonPadding or 2) <= 2
+        local oneLine = (isVertical and totalCols or totalRows) == 1 and (cfg.buttonPadding or 2) <= 2
         mod.AB_ApplyBarChrome(
             key,
             widget,

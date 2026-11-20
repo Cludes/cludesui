@@ -248,7 +248,7 @@ local function SetupTBBThresholdOverlay(barFrame, conf)
     if entries then
         -- Sorted ascending by the options editor, so index order is draw order.
         for i = 1, #entries do
-            local t = entries[i]
+            local color = entries[i]
             local overlayFrame = EnsureTBBThresholdOverlay(barFrame, i)
             if not overlayFrame then
                 break
@@ -260,11 +260,11 @@ local function SetupTBBThresholdOverlay(barFrame, conf)
                 orient,
                 reverse,
                 i,
-                t.r or 0.8,
-                t.g or 0.1,
-                t.b or 0.1,
-                t.a or 1,
-                t.value or 5,
+                color.r or 0.8,
+                color.g or 0.1,
+                color.b or 0.1,
+                color.a or 1,
+                color.value or 5,
                 barFrame._blizzFillAtlas
             )
             num = i

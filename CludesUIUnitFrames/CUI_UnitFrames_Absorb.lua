@@ -206,9 +206,9 @@ local function UpdateAbsorbBarReverseFill(widget, reversed, settingsOverride)
     --   overlay = backfill into the filled health from the HP edge (default)
     --   right   = full bar, fill from the frame's right edge
     --   left    = full bar, fill from the frame's left edge
-    local s = settingsOverride or GetSettingsForUnit(widget._cuiUnit)
-    local absorbStyle = (s and s.absorbEdgeMode) or "overlay"
-    local healMode = (s and s.healAbsorbEdgeMode) or "overlay"
+    local cfg = settingsOverride or GetSettingsForUnit(widget._cuiUnit)
+    local absorbStyle = (cfg and cfg.absorbEdgeMode) or "overlay"
+    local healMode = (cfg and cfg.healAbsorbEdgeMode) or "overlay"
     -- Overshield "From Left" (overlay placement only): the excess grows from
     -- the bar's ORIGIN edge (left; right when reverse-filled; bottom/top on
     -- the vertical axis) instead of hanging off the fill edge. Mechanism:
@@ -217,9 +217,9 @@ local function UpdateAbsorbBarReverseFill(widget, reversed, settingsOverride)
     -- edge, so the clip shows exactly the absorb exceeding missing health,
     -- emerging from the frame's origin edge. nil overshieldMode falls back
     -- to the legacy showOvershield boolean (saved toggles keep meaning).
-    local osm = s and s.overshieldMode
+    local osm = cfg and cfg.overshieldMode
     if osm == nil then
-        osm = (s and s.showOvershield == false) and "never" or "always"
+        osm = (cfg and cfg.showOvershield == false) and "never" or "always"
     end
     local osFromLeft = osm == "fromleft"
     -- Overlay Reverse (Full): Overlay Reverse, plus the forward bar filling
@@ -234,7 +234,7 @@ local function UpdateAbsorbBarReverseFill(widget, reversed, settingsOverride)
     -- edge (the "HP edge" shields/heal absorb hang off) becomes its TOP edge, reverse
     -- fill flips it to BOTTOM. Edge modes keep their key names: "right" = far edge of
     -- the fill axis (top when vertical), "left" = near edge (bottom when vertical).
-    local isVert = (s and s.healthVerticalFill) and true or false
+    local isVert = (cfg and cfg.healthVerticalFill) and true or false
     absorbBar._isVert = isVert
     local healAbsorb = absorbBar._healAbsorb
     local healCut = absorbBar._healClip
@@ -1423,24 +1423,24 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
         -- only the shield segments, and the whole update is skipped only when BOTH
         -- are off, so unit events can't re-Show() bars ReloadFrames hid. (Heal
         -- Absorb Style defaults to "clean", so it shows even with shield "none".)
-        local s = GetSettingsForUnit(updUnit)
+        local cfg = GetSettingsForUnit(updUnit)
         -- Boss frames have no absorb settings of their own: render with the TARGET
         -- frame's styling (donor convention), behind "Show on Boss Frames" in the
         -- absorb cog (nil = enabled).
         local bossAbsorbOff
         if updUnit and IS_BOSS_UNIT[updUnit] then
             bossAbsorbOff = saved.profile.boss and saved.profile.boss.showAbsorbs == false
-            s = saved.profile.target or s
+            cfg = saved.profile.target or cfg
         end
         local healAbsorb = absorbBar._healAbsorb
         local overBar = absorbBar._topBar
         local healOverBar = absorbBar._healTopBar
-        local barPos = mod.UF_GetAbsorbBarPos(s)
+        local barPos = mod.UF_GetAbsorbBarPos(cfg)
         local barOn = overBar and barPos ~= "none"
-        local healBarPos = mod.UF_GetHealAbsorbBarPos(s)
+        local healBarPos = mod.UF_GetHealAbsorbBarPos(cfg)
         local healBarOn = healOverBar and healBarPos ~= "none"
-        local shieldOff = s and (not s.showPlayerAbsorb or s.showPlayerAbsorb == "none")
-        local healOff = (((s and s.healAbsorbStyle) or "clean") == "none")
+        local shieldOff = cfg and (not cfg.showPlayerAbsorb or cfg.showPlayerAbsorb == "none")
+        local healOff = (((cfg and cfg.healAbsorbStyle) or "clean") == "none")
         if bossAbsorbOff or (shieldOff and healOff and not barOn and not healBarOn) then
             absorbBar:Hide()
             if fillW then
@@ -1543,8 +1543,8 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
         -- Strip bars (mirrors Raid Frames): independent of the overlay styles.
         if overBar then
             if barOn then
-                local bc = (s and s.absorbBarColor) or COLOR_WHITE
-                local bh = (s and s.absorbBarHeight) or 4
+                local bc = (cfg and cfg.absorbBarColor) or COLOR_WHITE
+                local bh = (cfg and cfg.absorbBarHeight) or 4
                 -- Re-layout only on position/height change (no SetPoint churn).
                 if overBar._lpPos ~= barPos or overBar._lpH ~= bh then
                     overBar._lpPos = barPos
@@ -1561,9 +1561,9 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
         end
         if healOverBar then
             if healBarOn then
-                local hbc = (s and s.healAbsorbBarColor) or DEF_HEAL_ABSORB_BAR_COLOR
-                local hbh = (s and s.healAbsorbBarHeight) or 4
-                local abh = (s and s.absorbBarHeight) or 4
+                local hbc = (cfg and cfg.healAbsorbBarColor) or DEF_HEAL_ABSORB_BAR_COLOR
+                local hbh = (cfg and cfg.healAbsorbBarHeight) or 4
+                local abh = (cfg and cfg.absorbBarHeight) or 4
                 -- Re-layout only when its or the Absorb Bar's position/height changes.
                 if
                     healOverBar._lpPos ~= healBarPos
@@ -1598,19 +1598,19 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
         -- applies the saved placement on the first update. Fill AXIS belongs in the
         -- key too: the settings-apply path already re-anchors on a Vertical Fill
         -- toggle, but this keeps it self-healing if the axis changes another way.
-        local absorbStyle = (s and s.absorbEdgeMode) or "overlay"
+        local absorbStyle = (cfg and cfg.absorbEdgeMode) or "overlay"
         -- Overshield mode (three-way; nil falls back to the legacy
         -- showOvershield boolean). Joins the edge key: "fromleft"
         -- re-anchors the backfill in UpdateAbsorbBarReverseFill.
-        local osMode = s and s.overshieldMode
+        local osMode = cfg and cfg.overshieldMode
         if osMode == nil then
-            osMode = (s and s.showOvershield == false) and "never" or "always"
+            osMode = (cfg and cfg.showOvershield == false) and "never" or "always"
         end
         -- Component compares instead of a concatenated key: same change
         -- detection, zero string allocation on the per-event path. Fields
         -- start nil, so the first update always anchors.
-        local healEdgeMode = (s and s.healAbsorbEdgeMode) or "overlay"
-        local vertFill = (s and s.healthVerticalFill) and true or false
+        local healEdgeMode = (cfg and cfg.healAbsorbEdgeMode) or "overlay"
+        local vertFill = (cfg and cfg.healthVerticalFill) and true or false
         if
             absorbBar._ekAbs ~= absorbStyle
             or absorbBar._ekHeal ~= healEdgeMode
@@ -1634,10 +1634,10 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
             -- every health event: SetStatusBarTexture per update flashes the
             -- bar visible even at zero absorb. Opacity/color edits re-apply via
             -- ReloadFrames' direct call.
-            local absStyle = s and s.showPlayerAbsorb
+            local absStyle = cfg and cfg.showPlayerAbsorb
             if absStyle and absStyle ~= "none" and absorbBar._lastAbsStyle ~= absStyle then
                 absorbBar._lastAbsStyle = absStyle
-                ApplyAbsorbStyle(absorbBar, absStyle, s)
+                ApplyAbsorbStyle(absorbBar, absStyle, cfg)
             end
 
             -- Show Overshield (three-way, resolved above as osMode):
@@ -1679,15 +1679,15 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
         -- number in 12.0+, so never compare it in Lua. Feed it directly to
         -- StatusBar:SetValue and let the bar render zero width when the value is 0.
         if healAbsorb then
-            local haStyle = (s and s.healAbsorbStyle) or "clean"
+            local haStyle = (cfg and cfg.healAbsorbStyle) or "clean"
             if haStyle == "none" then
                 healAbsorb:Hide()
             else
                 -- Re-style only when one of the style's inputs changes
                 -- (component compares: no key string per paint).
-                local hc = (s and s.healAbsorbColor) or DEF_HEAL_ABSORB_COLOR
+                local hc = (cfg and cfg.healAbsorbColor) or DEF_HEAL_ABSORB_COLOR
                 local hcR, hcG, hcB = hc.r or 0.8, hc.g or 0.15, hc.b or 0.15
-                local haOp = (s and s.healAbsorbOpacity) or 65
+                local haOp = (cfg and cfg.healAbsorbOpacity) or 65
                 local healthBg = healAbsorb._bg
                 if
                     healAbsorb._hsStyle ~= haStyle
@@ -1698,7 +1698,7 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
                 then
                     healAbsorb._hsStyle, healAbsorb._hsOp = haStyle, haOp
                     healAbsorb._hsR, healAbsorb._hsG, healAbsorb._hsB = hcR, hcG, hcB
-                    ApplyHealAbsorbStyle(healAbsorb, haStyle, s)
+                    ApplyHealAbsorbStyle(healAbsorb, haStyle, cfg)
                     -- After the retexture, re-seat the backing's fill anchor.
                     if healthBg then
                         healthBg._fillAnchored = nil
@@ -1718,7 +1718,7 @@ local function CreateAbsorbBar(widget, unitToken, prefs)
                 -- changes, and it anchors to the fill texture once (that region
                 -- follows the fill through every SetValue).
                 if healthBg then
-                    local bgA = ((s and s.healAbsorbBgOpacity) or 15) / 100
+                    local bgA = ((cfg and cfg.healAbsorbBgOpacity) or 15) / 100
                     if healthBg._bgA ~= bgA then
                         healthBg._bgA = bgA
                         healthBg:SetColorTexture(0, 0, 0, bgA)

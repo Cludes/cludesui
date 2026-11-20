@@ -87,17 +87,17 @@ end
 -------------------------------------------------------------------------------
 -- Small icon button (row move / remove glyphs).
 local function Glyph(hostFrame, size, file, onClick, tipText)
-    local b = CreateFrame("Button", nil, hostFrame)
-    b:SetSize(size, size)
-    b:SetFrameLevel(hostFrame:GetFrameLevel() + 6)
-    local t = b:CreateTexture(nil, "OVERLAY")
+    local widget = CreateFrame("Button", nil, hostFrame)
+    widget:SetSize(size, size)
+    widget:SetFrameLevel(hostFrame:GetFrameLevel() + 6)
+    local t = widget:CreateTexture(nil, "OVERLAY")
     t:SetAllPoints()
     if file then
         t:SetTexture(ICONS .. file)
     end
-    b.tex = t
-    b:SetAlpha(0.5)
-    b:SetScript("OnEnter", function(self)
+    widget.tex = t
+    widget:SetAlpha(0.5)
+    widget:SetScript("OnEnter", function(self)
         if self:IsEnabled() then
             self:SetAlpha(0.9)
         end
@@ -105,20 +105,20 @@ local function Glyph(hostFrame, size, file, onClick, tipText)
             CludesUI.ShowWidgetTooltip(self, tipText)
         end
     end)
-    b:SetScript("OnLeave", function(self)
+    widget:SetScript("OnLeave", function(self)
         self:SetAlpha(self:IsEnabled() and 0.5 or 0.15)
         if tipText then
             CludesUI.HideWidgetTooltip()
         end
     end)
-    b:SetScript("OnEnable", function(self)
+    widget:SetScript("OnEnable", function(self)
         self:SetAlpha(0.5)
     end)
-    b:SetScript("OnDisable", function(self)
+    widget:SetScript("OnDisable", function(self)
         self:SetAlpha(0.15)
     end)
-    b:SetScript("OnClick", onClick)
-    return b
+    widget:SetScript("OnClick", onClick)
+    return widget
 end
 
 -- A scroll inside the page: Shift + wheel scales the panel, and the wheel goes
@@ -216,17 +216,17 @@ end
 local function TextBlock(hostFrame, cursorY)
     local pad = CludesUI.CONTENT_PAD
     local wid = hostFrame:GetWidth() - pad * 2
-    local f = CreateFrame("Frame", nil, hostFrame)
-    f:SetSize(wid, TEXT_H)
-    f:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", pad, cursorY)
-    local details = MakeFont(f, 11, nil, 1, 1, 1, CludesUI.TEXT_DIM_A)
+    local frame = CreateFrame("Frame", nil, hostFrame)
+    frame:SetSize(wid, TEXT_H)
+    frame:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", pad, cursorY)
+    local details = MakeFont(frame, 11, nil, 1, 1, 1, CludesUI.TEXT_DIM_A)
     details:SetPoint("TOPLEFT", 0, -8)
-    local total = MakeFont(f, 11, nil, 1, 1, 1, CludesUI.TEXT_DIM_A)
+    local total = MakeFont(frame, 11, nil, 1, 1, 1, CludesUI.TEXT_DIM_A)
     total:SetPoint("TOPRIGHT", 0, -8)
     details:SetPoint("RIGHT", total, "LEFT", -12, 0)
     details:SetJustifyH("LEFT")
     details:SetWordWrap(false)
-    local boxFrame = TextBox(f, wid, TEXT_H - 30)
+    local boxFrame = TextBox(frame, wid, TEXT_H - 30)
     boxFrame:SetPoint("TOPLEFT", 0, -26)
     return boxFrame, total, details
 end
@@ -434,16 +434,16 @@ local function OpenPicker(onPick)
         subMenu:SetText(CludesUI.L("The question mark shows the spell's icon (with #showtooltip)."))
         p.buttons = {}
         for idx = 1, COLS * ROWS do
-            local b = NewCell(dialog)
-            b:SetSize(SIZE - 4, SIZE - 4)
-            b:SetFrameLevel(dialog:GetFrameLevel() + 2) -- above the scroll frame below
-            b:SetPoint("TOPLEFT", 20 + ((idx - 1) % COLS) * SIZE, -70 - floor((idx - 1) / COLS) * SIZE)
+            local widget = NewCell(dialog)
+            widget:SetSize(SIZE - 4, SIZE - 4)
+            widget:SetFrameLevel(dialog:GetFrameLevel() + 2) -- above the scroll frame below
+            widget:SetPoint("TOPLEFT", 20 + ((idx - 1) % COLS) * SIZE, -70 - floor((idx - 1) / COLS) * SIZE)
             -- Left clicks only, and no drag: a drag would swallow the click.
-            b:RegisterForClicks("LeftButtonUp")
-            b:RegisterForDrag()
-            b.plus:Hide()
-            b:SetScript("OnClick", PickerClick)
-            p.buttons[idx] = b
+            widget:RegisterForClicks("LeftButtonUp")
+            widget:RegisterForDrag()
+            widget.plus:Hide()
+            widget:SetScript("OnClick", PickerClick)
+            p.buttons[idx] = widget
         end
         -- The shared scroll bar on an empty scroll frame under the grid: its
         -- child is as tall as every icon row, and the scroll value picks the
@@ -1167,9 +1167,9 @@ local function FlushField()
     if not isShown then
         return
     end
-    local f = GetCurrentKeyBoardFocus()
-    if f and boxes[f] then
-        f:ClearFocus()
+    local frame = GetCurrentKeyBoardFocus()
+    if frame and boxes[frame] then
+        frame:ClearFocus()
     end
 end
 

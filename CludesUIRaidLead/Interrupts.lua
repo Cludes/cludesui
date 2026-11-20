@@ -27,20 +27,20 @@ local W, H = 180, 34
 function mod.KickSettings()
     local p = mod.RaidLeadDB()
     p.kicks = p.kicks or {}
-    local s = p.kicks
-    if s.enabled == nil then
-        s.enabled = true
+    local cfg = p.kicks
+    if cfg.enabled == nil then
+        cfg.enabled = true
     end
-    if s.unit == nil then
-        s.unit = "focus"
+    if cfg.unit == nil then
+        cfg.unit = "focus"
     end
-    if s.sound == nil then
-        s.sound = true
+    if cfg.sound == nil then
+        cfg.sound = true
     end
-    if s.order == nil then
-        s.order = ""
+    if cfg.order == nil then
+        cfg.order = ""
     end
-    return s
+    return cfg
 end
 
 local function Lower(s)
@@ -181,8 +181,8 @@ mod.StopKicks = Stop
 
 --- Starts the rotation from a note (nil: the typed order).
 function mod.StartKicks(noteText)
-    local s = mod.KickSettings()
-    if not s.enabled then
+    local cfg = mod.KickSettings()
+    if not cfg.enabled then
         return
     end
     local nameList, mine = mod.MyKickRotation(noteText)
@@ -198,7 +198,7 @@ function mod.StartKicks(noteText)
         "UNIT_SPELLCAST_CHANNEL_STOP",
         "UNIT_SPELLCAST_INTERRUPTED",
     }) do
-        eventFrame:RegisterUnitEvent(event, s.unit)
+        eventFrame:RegisterUnitEvent(event, cfg.unit)
     end
     Paint()
 end

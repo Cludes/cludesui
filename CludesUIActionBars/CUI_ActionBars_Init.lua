@@ -259,9 +259,9 @@ function ABAR:OnInitialize()
             if barList then
                 for _, details in ipairs(BAR_CONFIG) do
                     local btns = barButtons[details.key]
-                    local s = barList[details.key]
-                    if btns and s then
-                        local featureOn = s.showRankIcon and true or false
+                    local cfg = barList[details.key]
+                    if btns and cfg then
+                        local featureOn = cfg.showRankIcon and true or false
                         for _, button in ipairs(btns) do
                             if full or _qSlots[button:GetAttribute("action") or 0] then
                                 ScanButton(button, featureOn)

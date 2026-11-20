@@ -79,9 +79,9 @@ local TEXTS = {
 }
 mod.RF_CUSTOM_TEXT_MAX = 4
 for num = 1, mod.RF_CUSTOM_TEXT_MAX do
-    local t = Text("custom" .. num, "custom", "Custom Text " .. num, "customText" .. num)
-    t.fmt = "customText" .. num .. "Format"
-    TEXTS[#TEXTS + 1] = t
+    local tbl = Text("custom" .. num, "custom", "Custom Text " .. num, "customText" .. num)
+    tbl.fmt = "customText" .. num .. "Format"
+    TEXTS[#TEXTS + 1] = tbl
 end
 mod.RF_TEXTS = TEXTS
 

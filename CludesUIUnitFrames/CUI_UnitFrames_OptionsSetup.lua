@@ -684,10 +684,10 @@ local function SetupOptionsPanel()
     -- parked so the engine's text painter stops overwriting it; SetText with a
     -- literal string is secret-safe. Restored on clear.
     local function BossPreviewNameFS(frame)
-        local s = saved.profile.boss
-        local lc = (s and s.leftTextContent) or "name"
-        local rc = (s and s.rightTextContent) or "perhp"
-        local cc = (s and s.centerTextContent) or "none"
+        local cfg = saved.profile.boss
+        local lc = (cfg and cfg.leftTextContent) or "name"
+        local rc = (cfg and cfg.rightTextContent) or "perhp"
+        local cc = (cfg and cfg.centerTextContent) or "none"
         if lc == "name" then
             return frame.LeftText
         end
@@ -773,12 +773,12 @@ local function SetupOptionsPanel()
         if not hgt then
             return
         end
-        local s = frame._previewColorSaved
-        if s then
-            hgt.colorClass = s.colorClass
-            hgt.colorReaction = s.colorReaction
-            hgt.colorTapped = s.colorTapped
-            hgt.colorDisconnected = s.colorDisconnected
+        local cfg = frame._previewColorSaved
+        if cfg then
+            hgt.colorClass = cfg.colorClass
+            hgt.colorReaction = cfg.colorReaction
+            hgt.colorTapped = cfg.colorTapped
+            hgt.colorDisconnected = cfg.colorDisconnected
             frame._previewColorSaved = nil
         end
         hgt.PostUpdateColor = nil

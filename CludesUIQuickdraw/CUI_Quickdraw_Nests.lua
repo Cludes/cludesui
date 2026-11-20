@@ -336,7 +336,7 @@ local function PerimeterNearest(px, py, HX, HY, R, positive, axisOnly)
         acrossX and (py + HY) or far,
         acrossY and (px + HX) or far,
     }
-    local t = {
+    local tbl = {
         px + cx,
         sx + arc + (cy - py),
         sx + sy + 2 * arc + (cx - px),
@@ -381,7 +381,7 @@ local function PerimeterNearest(px, py, HX, HY, R, positive, axisOnly)
     end
     for si = 1, 4 do
         if tie[si] then
-            return t[si]
+            return tbl[si]
         end
     end
 end

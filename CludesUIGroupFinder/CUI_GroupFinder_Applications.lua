@@ -110,11 +110,11 @@ local function TexturePath()
 end
 
 local function Blank()
-    local t = {}
+    local tbl = {}
     for _, k in ipairs(KEYS) do
-        t[k] = 0
+        tbl[k] = 0
     end
-    return t
+    return tbl
 end
 
 local function Fill(tbl)
@@ -487,12 +487,12 @@ local function Count(status, oldStatus, resultID)
         return
     end
     local a = Store()
-    local t = Fill(a.account)
-    t[key] = t[key] + 1
-    t = Fill(a.session)
-    t[key] = t[key] + 1
-    t = Counts("character")
-    t[key] = t[key] + 1
+    local tbl = Fill(a.account)
+    tbl[key] = tbl[key] + 1
+    tbl = Fill(a.session)
+    tbl[key] = tbl[key] + 1
+    tbl = Counts("character")
+    tbl[key] = tbl[key] + 1
     Refresh()
 end
 

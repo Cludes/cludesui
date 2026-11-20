@@ -128,47 +128,47 @@ local function SpellDrag(b)
 end
 
 local function NewSpellButton(i)
-    local b = CreateFrame("Button", nil, bookFrame, "SecureActionButtonTemplate")
-    b:SetSize(37, 37)
+    local widget = CreateFrame("Button", nil, bookFrame, "SecureActionButtonTemplate")
+    widget:SetSize(37, 37)
     -- Down the left column, then down the right one.
     local colour, row = math.floor((i - 1) / ROWS), (i - 1) % ROWS
-    b:SetPoint("TOPLEFT", bookFrame, "TOPLEFT", 34 + colour * 157, -85 - row * 51)
-    b:RegisterForClicks("AnyUp", "AnyDown") -- the action fires on whichever the client's key-down setting picks
-    b:RegisterForDrag("LeftButton")
+    widget:SetPoint("TOPLEFT", bookFrame, "TOPLEFT", 34 + colour * 157, -85 - row * 51)
+    widget:RegisterForClicks("AnyUp", "AnyDown") -- the action fires on whichever the client's key-down setting picks
+    widget:RegisterForDrag("LeftButton")
 
-    local empty = b:CreateTexture(nil, "BACKGROUND")
+    local empty = widget:CreateTexture(nil, "BACKGROUND")
     empty:SetTexture(ART .. "UI-Spellbook-SpellBackground")
     empty:SetSize(64, 64)
     empty:SetPoint("TOPLEFT", -3, 3)
 
-    b.icon = b:CreateTexture(nil, "BORDER")
-    b.icon:SetAllPoints()
-    b.cooldown = CreateFrame("Cooldown", nil, b, "CooldownFrameTemplate")
-    b.cooldown:SetAllPoints()
+    widget.icon = widget:CreateTexture(nil, "BORDER")
+    widget.icon:SetAllPoints()
+    widget.cooldown = CreateFrame("Cooldown", nil, widget, "CooldownFrameTemplate")
+    widget.cooldown:SetAllPoints()
 
-    b.name = b:CreateFontString(nil, "BORDER", "GameFontNormal")
-    b.name:SetJustifyH("LEFT")
-    b.name:SetWidth(103)
-    b.name:SetMaxLines(3)
-    b.name:SetPoint("LEFT", b, "RIGHT", 5, 3)
+    widget.name = widget:CreateFontString(nil, "BORDER", "GameFontNormal")
+    widget.name:SetJustifyH("LEFT")
+    widget.name:SetWidth(103)
+    widget.name:SetMaxLines(3)
+    widget.name:SetPoint("LEFT", widget, "RIGHT", 5, 3)
 
-    b.sub = b:CreateFontString(nil, "BORDER", SubSpellFont and "SubSpellFont" or "GameFontHighlightSmall")
-    b.sub:SetJustifyH("LEFT")
-    b.sub:SetPoint("TOPLEFT", b.name, "BOTTOMLEFT", 0, -2)
+    widget.sub = widget:CreateFontString(nil, "BORDER", SubSpellFont and "SubSpellFont" or "GameFontHighlightSmall")
+    widget.sub:SetJustifyH("LEFT")
+    widget.sub:SetPoint("TOPLEFT", widget.name, "BOTTOMLEFT", 0, -2)
 
-    b:SetNormalTexture("Interface\\Buttons\\UI-Quickslot2")
-    local normal = b:GetNormalTexture()
+    widget:SetNormalTexture("Interface\\Buttons\\UI-Quickslot2")
+    local normal = widget:GetNormalTexture()
     normal:ClearAllPoints()
     normal:SetSize(64, 64)
     normal:SetPoint("CENTER")
-    b.border = normal
-    b:SetPushedTexture("Interface\\Buttons\\UI-Quickslot-Depress")
-    b:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    widget.border = normal
+    widget:SetPushedTexture("Interface\\Buttons\\UI-Quickslot-Depress")
+    widget:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
 
-    b:SetScript("OnEnter", SpellEnter)
-    b:SetScript("OnLeave", SpellLeave)
-    b:SetScript("OnDragStart", SpellDrag)
-    return b
+    widget:SetScript("OnEnter", SpellEnter)
+    widget:SetScript("OnLeave", SpellLeave)
+    widget:SetScript("OnDragStart", SpellDrag)
+    return widget
 end
 
 -- What the button shows. What it casts is set by the AIM snippet.
@@ -284,18 +284,18 @@ end
 
 -- A click turns step pages; AIM keeps the page inside the line.
 local function NewArrow(direction, x, step)
-    local b = CreateFrame("Button", nil, bookFrame, "SecureFrameTemplate")
-    b:SetSize(32, 32)
-    b:SetPoint("CENTER", bookFrame, "BOTTOMLEFT", x, 105)
+    local widget = CreateFrame("Button", nil, bookFrame, "SecureFrameTemplate")
+    widget:SetSize(32, 32)
+    widget:SetPoint("CENTER", bookFrame, "BOTTOMLEFT", x, 105)
     local texture = "Interface\\Buttons\\UI-SpellbookIcon-" .. direction .. "Page-"
-    b.art = texture
-    b:SetNormalTexture(texture .. "Up")
-    b:SetPushedTexture(texture .. "Down")
-    b:SetDisabledTexture(texture .. "Disabled")
-    b:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-    b:SetScript("PostClick", TurnSound)
-    bookFrame:WrapScript(b, "OnClick", ("PAGES[LINE] = (PAGES[LINE] or 1) + (%d)\n"):format(step) .. AIM)
-    return b
+    widget.art = texture
+    widget:SetNormalTexture(texture .. "Up")
+    widget:SetPushedTexture(texture .. "Down")
+    widget:SetDisabledTexture(texture .. "Disabled")
+    widget:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+    widget:SetScript("PostClick", TurnSound)
+    bookFrame:WrapScript(widget, "OnClick", ("PAGES[LINE] = (PAGES[LINE] or 1) + (%d)\n"):format(step) .. AIM)
+    return widget
 end
 
 -- An arrow with nowhere to go shows its disabled art and cannot be clicked. The arrows are

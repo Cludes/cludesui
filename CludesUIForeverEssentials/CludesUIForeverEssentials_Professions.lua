@@ -558,22 +558,22 @@ local function Draw()
     local profs = Professions()
     local posX = 0
     for idx, p in ipairs(profs) do
-        local b = tabButtons[idx]
-        if not b then
-            b = CludesUI.Kit.Button(window.tabBar, "", 90, 22, nil, { key = "essentials" })
-            b:SetHeight(22)
-            tabButtons[idx] = b
+        local widget = tabButtons[idx]
+        if not widget then
+            widget = CludesUI.Kit.Button(window.tabBar, "", 90, 22, nil, { key = "essentials" })
+            widget:SetHeight(22)
+            tabButtons[idx] = widget
         end
-        b:SetText(p.name)
-        b:SetWidth(math.max(80, b:GetTextWidth() + 24))
-        b:ClearAllPoints()
-        b:SetPoint("LEFT", window.tabBar, "LEFT", posX, 0)
-        b:SetScript("OnClick", function()
+        widget:SetText(p.name)
+        widget:SetWidth(math.max(80, widget:GetTextWidth() + 24))
+        widget:ClearAllPoints()
+        widget:SetPoint("LEFT", window.tabBar, "LEFT", posX, 0)
+        widget:SetScript("OnClick", function()
             currentLine = p.line
             Draw()
         end)
-        b:Show()
-        posX = posX + b:GetWidth() + 4
+        widget:Show()
+        posX = posX + widget:GetWidth() + 4
     end
     for idx = #profs + 1, #tabButtons do
         tabButtons[idx]:Hide()

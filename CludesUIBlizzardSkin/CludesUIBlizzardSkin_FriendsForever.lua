@@ -271,8 +271,8 @@ end
 
 local cardView = setmetatable({}, {
     __index = function(_, keyName)
-        local t = CludesUIDB and CludesUIDB.friendsListCard
-        local val = t and t[keyName]
+        local tbl = CludesUIDB and CludesUIDB.friendsListCard
+        local val = tbl and tbl[keyName]
         if val == nil then
             if keyName == "customTiles" then
                 return CustomTilesDefault()
@@ -319,15 +319,15 @@ function mod.FriendsCardSet(keyName, val)
     if not CludesUIDB then
         CludesUIDB = {}
     end
-    local t = CludesUIDB.friendsListCard
-    if not t then
-        t = {}
-        CludesUIDB.friendsListCard = t
+    local tbl = CludesUIDB.friendsListCard
+    if not tbl then
+        tbl = {}
+        CludesUIDB.friendsListCard = tbl
     end
     if keyName == "customTiles" and val == CustomTilesDefault() then
         val = nil
     end
-    t[keyName] = val
+    tbl[keyName] = val
     if keyName == "autoAcceptFriendInvites" or keyName == "autoAcceptGuildInvites" then
         CludesUI.FriendsKit.SyncAutoAccept(CardSettings)
     else

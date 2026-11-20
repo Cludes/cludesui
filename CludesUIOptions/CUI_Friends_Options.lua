@@ -55,24 +55,24 @@ end
 -- unless set false"), and after() once it is written.
 local function Bind(key, after, default, onByDefault)
     return function()
-        local s = Settings()
-        if not s then
+        local cfg = Settings()
+        if not cfg then
             return default
         end
         if onByDefault then
-            return s[key] ~= false
+            return cfg[key] ~= false
         end
-        local value = s[key]
+        local value = cfg[key]
         if value == nil then
             return default
         end
         return value
     end, function(value)
-        local s = Settings()
-        if not s then
+        local cfg = Settings()
+        if not cfg then
             return
         end
-        s[key] = value
+        cfg[key] = value
         if after then
             after()
         end
@@ -132,11 +132,11 @@ local function BuildPage(_, host, yOffset)
     end, 0)
     local function SwatchAlpha(lit)
         return function()
-            local s = Settings()
-            if not s or not s.enabled then
+            local cfg = Settings()
+            if not cfg or not cfg.enabled then
                 return 0.15
             end
-            return lit(s) and 1 or 0.3
+            return lit(cfg) and 1 or 0.3
         end
     end
     _, h = W:DualRow(
@@ -161,8 +161,8 @@ local function BuildPage(_, host, yOffset)
                 if Chrome() then
                     return true
                 end
-                local s = Settings()
-                return not s or (s.borderSize or 0) == 0
+                local cfg = Settings()
+                return not cfg or (cfg.borderSize or 0) == 0
             end,
             disabledTooltip = function()
                 return Chrome() and CHROME_TIP or "Set Border Size above 0"
@@ -173,28 +173,28 @@ local function BuildPage(_, host, yOffset)
                     tooltip = "Custom Color",
                     hasAlpha = false,
                     getValue = function()
-                        local s = Settings()
-                        if not s then
+                        local cfg = Settings()
+                        if not cfg then
                             return 0.05, 0.05, 0.05
                         end
-                        return s.borderR, s.borderG, s.borderB
+                        return cfg.borderR, cfg.borderG, cfg.borderB
                     end,
                     setValue = function(red, green, blue)
-                        local s = Settings()
-                        if s then
-                            s.borderR, s.borderG, s.borderB = red, green, blue
+                        local cfg = Settings()
+                        if cfg then
+                            cfg.borderR, cfg.borderG, cfg.borderB = red, green, blue
                             Reapply()
                         end
                     end,
                     -- While the accent is in use, a click switches back to the
                     -- custom colour instead of opening the picker.
                     onClick = function(self)
-                        local s = Settings()
-                        if not s then
+                        local cfg = Settings()
+                        if not cfg then
                             return
                         end
-                        if s.useClassColor then
-                            s.useClassColor = false
+                        if cfg.useClassColor then
+                            cfg.useClassColor = false
                             Reapply()
                             CludesUI:RefreshPage()
                         elseif self._eabOrigClick then
@@ -213,9 +213,9 @@ local function BuildPage(_, host, yOffset)
                     end,
                     setValue = function() end,
                     onClick = function()
-                        local s = Settings()
-                        if s then
-                            s.useClassColor = true
+                        local cfg = Settings()
+                        if cfg then
+                            cfg.useClassColor = true
                             Reapply()
                             CludesUI:RefreshPage()
                         end
@@ -266,8 +266,8 @@ local function BuildPage(_, host, yOffset)
                 { type = "toggle", label = "Accept Invites from Guildmates", get = guildGet, set = guildSet },
             },
             disabled = function()
-                local s = Settings()
-                return not (s and s.autoAcceptFriendInvites)
+                local cfg = Settings()
+                return not (cfg and cfg.autoAcceptFriendInvites)
             end,
             disabledTooltip = "Auto-Accept Friend Invites",
         })

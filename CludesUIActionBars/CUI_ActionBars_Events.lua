@@ -232,13 +232,13 @@ end
 -- it), self-disarms when no assist button remains, and its host frame is
 -- born in assist-armed context, so only OBA users are billed for it.
 function mod._ArmAssistTicker()
-    local t = mod._assistTicker
-    if not t then
+    local tbl = mod._assistTicker
+    if not tbl then
         local Tick = CludesUI and CludesUI.Tick
         if not (Tick and Tick.NewAnimTicker) then
             return
         end
-        t = Tick.NewAnimTicker(CreateFrame("Frame"), function()
+        tbl = Tick.NewAnimTicker(CreateFrame("Frame"), function()
             -- ONE sample per tick, shared by the swipe and the icon: reading
             -- the suggestion here and the slot's cooldown separately let the
             -- two land on different abilities (see ns.PaintAssistCooldown).
@@ -274,9 +274,9 @@ function mod._ArmAssistTicker()
             end
             return true
         end, 0.2)
-        mod._assistTicker = t
+        mod._assistTicker = tbl
     end
-    t.Start()
+    tbl.Start()
 end
 
 -- Re-assert ONLY the assist button's cooldown swipe: it mirrors the SUGGESTED
@@ -597,11 +597,11 @@ mod.IsNeverBar = function(details)
         return false
     end
     local barList = ABAR.db and ABAR.db.profile and ABAR.db.profile.bars
-    local s = barList and barList[details.key]
+    local cfg = barList and barList[details.key]
     -- Hide Bar When Using Gamepad joins the set while a controller is connected
     -- (EAB._padHide only turns on out of combat, see EAB._PadSync).
-    local never = s
-            and (ABAR.VisibilityCompat.IsNever(s) or s.enabled == false or (ABAR._padHide and s.gamepadHideBar == true))
+    local never = cfg
+            and (ABAR.VisibilityCompat.IsNever(cfg) or cfg.enabled == false or (ABAR._padHide and cfg.gamepadHideBar == true))
         or false
     -- Toggle override wins both ways: hiding an Always bar hard-disables its UI
     -- work; showing a Never bar wakes it. Action bindings stay live.

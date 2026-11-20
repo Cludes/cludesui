@@ -298,8 +298,8 @@ end
 -- Blizzard art keeps its own colors (the guild banner its tabard tint); custom
 -- art takes the block color.
 local function IconColor(block, iconTex)
-    local s = block.settings
-    if s and s.iconStyle == "wow" then
+    local cfg = block.settings
+    if cfg and cfg.iconStyle == "wow" then
         local tint = iconTex and iconTex._edbTint
         if tint then
             return tint.r, tint.g, tint.b

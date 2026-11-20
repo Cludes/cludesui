@@ -148,9 +148,9 @@ CludesUI.Lite.OnSavedVariablesLoaded(function()
     end
     -- The record is written at login, so a fresh account keeps its mark even
     -- when this session changes nothing.
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("PLAYER_LOGIN")
-    f:SetScript("OnEvent", function(self)
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("PLAYER_LOGIN")
+    frame:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
         Record()
         if IS_STANDALONE then
@@ -204,12 +204,12 @@ local function Note(name, before, ownerFrame)
     if not root then
         return
     end
-    local t = Sub(root, "cvar")
+    local tbl = Sub(root, "cvar")
     local key = name:lower()
-    local e = t[key]
+    local e = tbl[key]
     if not e then
         e = {}
-        t[key] = e
+        tbl[key] = e
         if Record().fresh then
             e.b = before
         end
@@ -318,11 +318,11 @@ function CludesUI.SetCVarBitfield(name, index, value, ownerFrame)
     local success = C_CVar.SetCVarBitfield(name, index, value)
     local root = success and _fresh ~= nil and before ~= nil and CVarRoot(name)
     if root then
-        local t = Sub(Sub(root, "bits"), name:lower())
-        local e = t[index]
+        local tbl = Sub(Sub(root, "bits"), name:lower())
+        local e = tbl[index]
         if not e then
             e = {}
-            t[index] = e
+            tbl[index] = e
             if Record().fresh then
                 e.b = before
             end
@@ -487,9 +487,9 @@ local function RevertOffModules(root, acct)
             root.held = nil
         end
     end
-    local t = root.cvar
-    if t then
-        for key, entry in pairs(t) do
+    local tbl = root.cvar
+    if tbl then
+        for key, entry in pairs(tbl) do
             if ModuleOff(entry.o, acct) then
                 local current = GetCVar(key)
                 if entry.b ~= nil and entry.b ~= entry.a and current == entry.a then
@@ -497,11 +497,11 @@ local function RevertOffModules(root, acct)
                     _putBack[key] = true
                 end
                 if entry.b ~= nil or current ~= entry.a then
-                    t[key] = nil
+                    tbl[key] = nil
                 end
             end
         end
-        if next(t) == nil then
+        if next(tbl) == nil then
             root.cvar = nil
         end
     end
@@ -638,11 +638,11 @@ local function EditModeEntry(layout, sysInfo, key, before, fallback)
     if not root then
         return nil
     end
-    local t = Sub(Sub(Sub(root, "em"), layout.layoutName), sysInfo.system * 1000 + (sysInfo.systemIndex or 0))
-    local e = t[key]
+    local tbl = Sub(Sub(Sub(root, "em"), layout.layoutName), sysInfo.system * 1000 + (sysInfo.systemIndex or 0))
+    local e = tbl[key]
     if not e then
         e = {}
-        t[key] = e
+        tbl[key] = e
         local known = root.emKnown
         if r.fresh and (known == nil or known[layout.layoutName]) then
             e.b = before
@@ -840,11 +840,11 @@ function CludesUI.SetChatWindowSize(index, size)
     if not c then
         return
     end
-    local t = Sub(c, "chatFont")
-    local e = t[index]
+    local tbl = Sub(c, "chatFont")
+    local e = tbl[index]
     if not e then
         e = {}
-        t[index] = e
+        tbl[index] = e
         if Record().fresh then
             e.b = before
         end
@@ -886,10 +886,10 @@ function CludesUI.NoteBinding(key, before)
     if not root then
         return
     end
-    local t = Sub(root, "bind")
+    local tbl = Sub(root, "bind")
     local action = type(before) == "string" and before ~= "" and not before:find("^CUI_") and before or false
-    if t[key] == nil or action then
-        t[key] = action
+    if tbl[key] == nil or action then
+        tbl[key] = action
     end
 end
 

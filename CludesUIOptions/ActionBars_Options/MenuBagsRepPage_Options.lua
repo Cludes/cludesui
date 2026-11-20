@@ -81,12 +81,12 @@ local function DataBarKit(hostFrame)
     -- trackNeverFlip: data-bar sections hide dependent rows while visibility is Never, so a
     -- Never <-> not-Never flip forces a full page rebuild (fresh closure each rebuild).
     local function BarIsNever(barId)
-        local s = ABAR.db.profile.bars[barId]
-        if not s then
+        local cfg = ABAR.db.profile.bars[barId]
+        if not cfg then
             return false
         end
-        GetVisibilityKey(s) -- normalize legacy booleans into barVisibility
-        return s.barVisibility == "never" or s.alwaysHidden == true
+        GetVisibilityKey(cfg) -- normalize legacy booleans into barVisibility
+        return cfg.barVisibility == "never" or cfg.alwaysHidden == true
     end
     -- Returns the row config rather than building it, so two bars can share one
     -- row (rightVis) instead of each taking a half-empty one.
@@ -500,24 +500,24 @@ local function DataBarKit(hostFrame)
             return ABAR.db.profile.bars[barId]
         end
         local function V()
-            local s = S()
-            if implicit and s.customBorder ~= true then
+            local cfg = S()
+            if implicit and cfg.customBorder ~= true then
                 return NO_BORDER
             end
-            return s
+            return cfg
         end
         local turnedOn = false
         local function Wr()
-            local s = S()
-            if implicit and s.customBorder ~= true then
-                s.borderTexture, s.borderThickness, s.borderThicknessPx = nil, nil, nil
-                s.borderColor, s.borderBehind = nil, nil
-                s.borderTextureOffset, s.borderTextureOffsetY = nil, nil
-                s.borderTextureShiftX, s.borderTextureShiftY = nil, nil
-                s.customBorder = true
+            local cfg = S()
+            if implicit and cfg.customBorder ~= true then
+                cfg.borderTexture, cfg.borderThickness, cfg.borderThicknessPx = nil, nil, nil
+                cfg.borderColor, cfg.borderBehind = nil, nil
+                cfg.borderTextureOffset, cfg.borderTextureOffsetY = nil, nil
+                cfg.borderTextureShiftX, cfg.borderTextureShiftY = nil, nil
+                cfg.customBorder = true
                 turnedOn = true
             end
-            return s
+            return cfg
         end
         -- After a write: lay the bar out and refresh the page, or rebuild it
         -- when that write turned the border on (its sync links appear).
@@ -555,24 +555,24 @@ local function DataBarKit(hostFrame)
                 -- The offset row exists only for a textured style, so only a
                 -- Solid <-> textured flip rebuilds the page.
                 setValue = CludesUI.DependentSetValue(Textured, function(val)
-                    local s = Wr()
+                    local cfg = Wr()
                     local defTh = CludesUI.GetBorderDefaultSize("actionbars", val)
                     -- An unregistered SharedMedia border answers the NUMBER 1; this key stores labels.
                     if type(defTh) == "number" then
                         defTh = CludesUI.BORDER_LABEL_OF_STEP[defTh] or "thin"
                     end
                     local col, behind = CludesUI.GetBorderStyleSelectDefaults(val)
-                    s.borderTexture = val
-                    s.borderTextureOffset, s.borderTextureOffsetY = nil, nil
-                    s.borderTextureShiftX, s.borderTextureShiftY = nil, nil
+                    cfg.borderTexture = val
+                    cfg.borderTextureOffset, cfg.borderTextureOffsetY = nil, nil
+                    cfg.borderTextureShiftX, cfg.borderTextureShiftY = nil, nil
                     -- A style pick resets the size: a set exact size goes with it (false travels, nil would not).
-                    if s.borderThicknessPx then
-                        s.borderThicknessPx = false
+                    if cfg.borderThicknessPx then
+                        cfg.borderThicknessPx = false
                     end
-                    s.borderColor = { r = col.r, g = col.g, b = col.b, a = 1 }
-                    s.borderBehind = behind
+                    cfg.borderColor = { r = col.r, g = col.g, b = col.b, a = 1 }
+                    cfg.borderBehind = behind
                     if defTh then
-                        s.borderThickness = defTh
+                        cfg.borderThickness = defTh
                     end
                     Done()
                 end),
@@ -653,9 +653,9 @@ local function DataBarKit(hostFrame)
             -- styles only, hidden (not dimmed) for Solid and under Blizzard bars.
             local lRgn = brdRow._leftRegion
             local function ShownDefaults()
-                local s = V()
-                local step, px = mod.ResolveBorderThickness(s)
-                return ShownBorderDefaults(s.borderTexture or "solid", s.borderThickness or "thin", step, px)
+                local cfg = V()
+                local step, px = mod.ResolveBorderThickness(cfg)
+                return ShownBorderDefaults(cfg.borderTexture or "solid", cfg.borderThickness or "thin", step, px)
             end
             -- Landing on the shift the slider shows by default stores nil
             -- (follow the style again); any other value is an override.

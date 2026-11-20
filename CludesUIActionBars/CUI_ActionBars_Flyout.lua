@@ -178,23 +178,23 @@ local function OnBlizzardFlyoutShow(flyout)
     if not prof then
         return
     end
-    local s = prof.bars and prof.bars[barId]
-    if not s then
+    local cfg = prof.bars and prof.bars[barId]
+    if not cfg then
         return
     end
 
-    local shape = s.buttonShape or "none"
-    local zoom = (s.iconZoom or prof.iconZoom or 5.5) / 100
-    local brdSz, brdPx = ResolveBorderThickness(s)
+    local shape = cfg.buttonShape or "none"
+    local zoom = (cfg.iconZoom or prof.iconZoom or 5.5) / 100
+    local brdSz, brdPx = ResolveBorderThickness(cfg)
     local brdOn = brdSz > 0
     -- The flyout border is always solid strips: the bar's exact size flows only
     -- when the bar itself is solid (a textured bar's exact size is its edge art).
-    if brdPx and (s.borderTexture or "solid") == "solid" then
+    if brdPx and (cfg.borderTexture or "solid") == "solid" then
         brdSz = brdPx
     end
-    local brdColor = s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
+    local brdColor = cfg.borderColor or { r = 0, g = 0, b = 0, a = 1 }
     local cr, cg, callback, ca = brdColor.r, brdColor.g, brdColor.b, brdColor.a or 1
-    if s.borderClassColor then
+    if cfg.borderClassColor then
         local _, classTok = UnitClass("player")
         if classTok then
             local cc = RAID_CLASS_COLORS[classTok]
@@ -203,9 +203,9 @@ local function OnBlizzardFlyoutShow(flyout)
             end
         end
     end
-    local shapeBrdColor = s.shapeBorderColor or brdColor
+    local shapeBrdColor = cfg.shapeBorderColor or brdColor
     local sbR, sbG, sbB, sbA = shapeBrdColor.r, shapeBrdColor.g, shapeBrdColor.b, shapeBrdColor.a or 1
-    if s.borderClassColor then
+    if cfg.borderClassColor then
         local _, classTok = UnitClass("player")
         if classTok then
             local cc = RAID_CLASS_COLORS[classTok]

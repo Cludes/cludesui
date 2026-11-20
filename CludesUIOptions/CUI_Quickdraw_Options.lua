@@ -2800,18 +2800,18 @@ CludesUI.AtOptionsLogin(function()
     -- above its row, unsnapped art, resting at the dim alpha. The caller
     -- anchors it.
     local function RowInlineButton(owner, iconFile)
-        local b = CreateFrame("Button", nil, owner)
-        b:SetSize(MM_X, MM_X)
-        b:SetFrameLevel(owner:GetFrameLevel() + 2)
-        local art = b:CreateTexture(nil, "OVERLAY")
+        local widget = CreateFrame("Button", nil, owner)
+        widget:SetSize(MM_X, MM_X)
+        widget:SetFrameLevel(owner:GetFrameLevel() + 2)
+        local art = widget:CreateTexture(nil, "OVERLAY")
         art:SetAllPoints()
         if art.SetSnapToPixelGrid then
             art:SetSnapToPixelGrid(false)
             art:SetTexelSnappingBias(0)
         end
         art:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\" .. iconFile)
-        b:SetAlpha(0.4)
-        return b
+        widget:SetAlpha(0.4)
+        return widget
     end
 
     -- One pooled row of the selector menu: the menu's icon on the left (the

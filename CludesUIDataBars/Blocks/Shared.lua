@@ -319,8 +319,8 @@ end
 -- Cheap to call from Refresh: the texture is only set when it changes.
 function K.SetBlockIcon(iconTex, blockCfg, key)
     local art = ICON_ART[key or blockCfg.type]
-    local s = blockCfg.settings
-    local texture = art.wow and s and s.iconStyle == "wow" and art.wow
+    local cfg = blockCfg.settings
+    local texture = art.wow and cfg and cfg.iconStyle == "wow" and art.wow
     local wanted = texture or art.custom
     if iconTex._cuiIconArt == wanted then
         return

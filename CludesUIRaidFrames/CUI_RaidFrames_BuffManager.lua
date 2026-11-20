@@ -1407,10 +1407,10 @@ function mod.BM_ApplyPreviewIndicators(frame, index, cfg)
             end
             for idx = 1, #result do
                 local v = result[idx]
-                local t = v.anchorTo and byId[v.anchorTo]
-                if t and (t.type or "icon") == (v.type or "icon") then
+                local tbl = v.anchorTo and byId[v.anchorTo]
+                if tbl and (tbl.type or "icon") == (v.type or "icon") then
                     local seen = { [v] = true }
-                    local rootFrame = t
+                    local rootFrame = tbl
                     while rootFrame and rootFrame.anchorTo and not seen[rootFrame] do
                         seen[rootFrame] = true
                         rootFrame = byId[rootFrame.anchorTo]

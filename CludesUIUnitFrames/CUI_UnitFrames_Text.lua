@@ -259,9 +259,9 @@ do
             end
             saved.profile.darkTheme = on
             for _, tagKey in ipairs(UNITS) do
-                local s = saved.profile[tagKey]
-                if s then
-                    s.darkTheme = on
+                local cfg = saved.profile[tagKey]
+                if cfg then
+                    cfg.darkTheme = on
                 end
             end
             if mod.ReloadFrames then

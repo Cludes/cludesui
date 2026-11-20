@@ -1206,11 +1206,11 @@ CludesUI.AtOptionsLogin(function()
                         if not mapDB then
                             return
                         end
-                        local t = {}
+                        local tbl = {}
                         for idx, keyName in ipairs(orderedKeys) do
-                            t[idx] = keyName
+                            tbl[idx] = keyName
                         end
-                        mapDB.extraBtnOrder = t
+                        mapDB.extraBtnOrder = tbl
                         RefreshMinimap()
                     end,
                 }

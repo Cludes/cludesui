@@ -167,17 +167,17 @@ local function RefreshPreview()
     end
     BuildPreviewRoles()
 
-    local s = mod._pvOverlayProxy or saved.profile
-    local groupGrowth = s.groupGrowth or "RIGHT"
-    local unitGrowth = s.unitGrowth or "DOWN"
+    local cfg = mod._pvOverlayProxy or saved.profile
+    local groupGrowth = cfg.groupGrowth or "RIGHT"
+    local unitGrowth = cfg.unitGrowth or "DOWN"
     -- The same self-heal the live layout runs, so the preview cannot render a
     -- grid where merged mode lays out a row (Blizzard's flat header has one
     -- column axis and cannot wrap into one).
-    unitGrowth, groupGrowth = mod._RFEffectiveGrowth(unitGrowth, groupGrowth, s.mergeGroups)
-    local bw = PixelSnap(s.frameWidth or 72)
-    local bh = PixelSnap(s.frameHeight or 46)
-    local cs = mod.RF_CellSpacing(s)
-    local gs = mod.RF_GroupSpacing(s)
+    unitGrowth, groupGrowth = mod._RFEffectiveGrowth(unitGrowth, groupGrowth, cfg.mergeGroups)
+    local bw = PixelSnap(cfg.frameWidth or 72)
+    local bh = PixelSnap(cfg.frameHeight or 46)
+    local cs = mod.RF_CellSpacing(cfg)
+    local gs = mod.RF_GroupSpacing(cfg)
 
     -- Group bounding box
     local groupW, groupH
@@ -240,7 +240,7 @@ local function RefreshPreview()
 
     -- Pets (Show Pets on the Raid tab) go before the first or after the last group. The overlay
     -- grows to hold them; at the real position the groups stay put and the pets hang off them.
-    local petSpec = mod.PF_PreviewSpec(false, s, bw, bh, cs, groupW, groupH)
+    local petSpec = mod.PF_PreviewSpec(false, cfg, bw, bh, cs, groupW, groupH)
     local petX, petY, padL, padT, padR, padB = 0, 0, 0, 0, 0, 0
     if petSpec then
         local slot = petSpec.before and 0 or (MOVER_GROUPS - 1)
@@ -261,7 +261,7 @@ local function RefreshPreview()
 
     -- The 20-player preview keeps subgroup identities while moving each
     -- group's five frames to its visual slot.
-    local groupOrder = s.customGroupOrder and not s.mergeGroups and mod._RFValidatedGroupOrder(s.groupOrder)
+    local groupOrder = cfg.customGroupOrder and not cfg.mergeGroups and mod._RFValidatedGroupOrder(cfg.groupOrder)
     local previewSlotByGroup
     if groupOrder then
         previewSlotByGroup = {}
@@ -291,7 +291,7 @@ local function RefreshPreview()
             ApplyPreviewData(frame, frameIdx)
 
             if frame._health and previewHealthValues[frameIdx] then
-                local barPct = mod.RF_IsInvertedFill(s) and (100 - previewHealthValues[frameIdx])
+                local barPct = mod.RF_IsInvertedFill(cfg) and (100 - previewHealthValues[frameIdx])
                     or previewHealthValues[frameIdx]
                 frame._health:SetValue(barPct)
                 frame._healthPct = previewHealthValues[frameIdx]
@@ -311,19 +311,19 @@ local function RefreshPreview()
             labelFS = anchor:CreateFontString(nil, "OVERLAY")
             previewGroupLabels[g + 1] = labelFS
         end
-        ApplyFont(labelFS, s.groupNumberSize or 10)
+        ApplyFont(labelFS, cfg.groupNumberSize or 10)
         do
             -- Shared size/color with the real frames (group-number settings).
             -- Not gated by showGroupNumbers: the preview always shows numbers.
-            local gc = s.groupNumberColor or {}
+            local gc = cfg.groupNumberColor or {}
             labelFS:SetTextColor(gc.r or 1, gc.g or 1, gc.b or 1, gc.a or 0.75)
         end
         labelFS:SetText(tostring(g + 1))
         labelFS:ClearAllPoints()
         -- Anchor based on unit growth: label goes "before" the first unit.
         -- The X/Y offset (shared group-number setting) shifts it from there.
-        local gnox = s.groupNumberOffsetX or 0
-        local gnoy = s.groupNumberOffsetY or 0
+        local gnox = cfg.groupNumberOffsetX or 0
+        local gnoy = cfg.groupNumberOffsetY or 0
         if unitGrowth == "DOWN" then
             labelFS:SetPoint("BOTTOM", firstFrame, "TOP", gnox, 4 + gnoy)
         elseif unitGrowth == "UP" then
@@ -357,7 +357,7 @@ local function RefreshPreview()
     if petSpec then
         mod.PF_ShowPreview(
             petSpec,
-            s,
+            cfg,
             reparentTo,
             anchor,
             petX + anchorPad + padL,
@@ -432,7 +432,7 @@ local function RefreshPreview()
         end
         overlayContainer:Show()
     end
-    mod.RF_PreviewCompact(previewFrames, s, false, unitGrowth)
+    mod.RF_PreviewCompact(previewFrames, cfg, false, unitGrowth)
 end
 
 -- Mouse-blocking overlays + alpha-based real-frame hide for the options preview.

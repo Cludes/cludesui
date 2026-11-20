@@ -175,16 +175,16 @@ local function TileActionBars(hostFrame, cursorY, W, tile)
             order = sequence,
             getValue = function()
                 local barList = ABAR and ABAR.db and ABAR.db.profile and ABAR.db.profile.bars
-                local s = barList and barList[barId]
-                return (s and s.barTexture) or "none"
+                local cfg = barList and barList[barId]
+                return (cfg and cfg.barTexture) or "none"
             end,
             setValue = function(value)
                 local barList = ABAR and ABAR.db and ABAR.db.profile and ABAR.db.profile.bars
-                local s = barList and barList[barId]
-                if not s then
+                local cfg = barList and barList[barId]
+                if not cfg then
                     return
                 end
-                s.barTexture = value
+                cfg.barTexture = value
                 if mod.ApplyDataBarLayout then
                     mod.ApplyDataBarLayout(barId)
                 end
@@ -1353,15 +1353,15 @@ local function TileMythicTimer(hostFrame, cursorY, W, tile)
             values = values,
             order = sequence,
             getValue = function()
-                local t = getT()
-                return (t and t.texture) or "none"
+                local tbl = getT()
+                return (tbl and tbl.texture) or "none"
             end,
             setValue = function(value)
-                local t = getT()
-                if not t then
+                local tbl = getT()
+                if not tbl then
                     return
                 end
-                t.texture = value
+                tbl.texture = value
                 local func = mod[applyName]
                 if func then
                     func()

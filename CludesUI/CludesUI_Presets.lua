@@ -223,9 +223,9 @@ do
             local classKey = SPEC_DATA[i]
             flagValue.name[classKey.class] = classKey.name
             for jdx = 1, #classKey.specs do
-                local s = classKey.specs[jdx]
-                flagValue.class[s.id] = classKey.class
-                flagValue.specName[s.id] = s.name
+                local cfg = classKey.specs[jdx]
+                flagValue.class[cfg.id] = classKey.class
+                flagValue.specName[cfg.id] = cfg.name
             end
             local fid = CludesUI.FOREVER_CLASS_SPEC[classKey.class]
             if fid then
@@ -292,12 +292,12 @@ do
         if not CludesUI.IS_FOREVER or not rawID or rawID == 0 then
             return rawID
         end
-        local t = FV()
-        local ownerFrame = t.class[rawID]
+        local tbl = FV()
+        local ownerFrame = tbl.class[rawID]
         if ownerFrame and CludesUI.FOREVER_CLASS_SPEC[ownerFrame] ~= rawID then
             return rawID
         end
-        local idList = t.specs[PlayerClass() or ""]
+        local idList = tbl.specs[PlayerClass() or ""]
         if not idList then
             return rawID
         end

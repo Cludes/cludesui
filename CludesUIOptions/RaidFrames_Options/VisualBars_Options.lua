@@ -143,9 +143,9 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                     return
                 end
                 -- Real preview contract: ticks must render effective-overlay values only, never the panel view's swapped values.
-                local s = mod.PvSettings()
-                local smooth = s.smoothBars
-                local invert = mod.RF_IsInvertedFill(s)
+                local cfg = mod.PvSettings()
+                local smooth = cfg.smoothBars
+                local invert = mod.RF_IsInvertedFill(cfg)
 
                 for idx, st in ipairs(mod._healthAnimState) do
                     local f = st.frame
@@ -174,18 +174,18 @@ local function BuildVisualBars(hostFrame, cursorY, W, onSection, EYE)
                             end
 
                             -- Fill color only moves in gradient modes.
-                            if s.healthColorMode == "classic" then
+                            if cfg.healthColorMode == "classic" then
                                 local pct = st.current / 100
                                 local r = pct < 0.5 and 1 or (1 - (pct - 0.5) * 2)
                                 local g = pct > 0.5 and 1 or (pct * 2)
-                                f._health:SetStatusBarColor(r, g, 0, (s.healthBarOpacity or 100) / 100)
-                            elseif s.healthColorMode == "customDynamic" then
-                                local red, green, blue = mod.ResolveDynamicColor(s, st.current / 100)
-                                f._health:SetStatusBarColor(red, green, blue, (s.healthBarOpacity or 100) / 100)
-                            elseif s.healthColorMode == "classReactive" then
+                                f._health:SetStatusBarColor(r, g, 0, (cfg.healthBarOpacity or 100) / 100)
+                            elseif cfg.healthColorMode == "customDynamic" then
+                                local red, green, blue = mod.ResolveDynamicColor(cfg, st.current / 100)
+                                f._health:SetStatusBarColor(red, green, blue, (cfg.healthBarOpacity or 100) / 100)
+                            elseif cfg.healthColorMode == "classReactive" then
                                 local red, green, blue =
-                                    mod.ResolveClassReactiveColor(s, f._classToken, st.current / 100)
-                                f._health:SetStatusBarColor(red, green, blue, (s.healthBarOpacity or 100) / 100)
+                                    mod.ResolveClassReactiveColor(cfg, f._classToken, st.current / 100)
+                                f._health:SetStatusBarColor(red, green, blue, (cfg.healthBarOpacity or 100) / 100)
                             end
                         end -- snapTimer ready
                     end

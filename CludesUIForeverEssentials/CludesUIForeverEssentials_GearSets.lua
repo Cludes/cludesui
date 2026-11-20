@@ -90,34 +90,34 @@ local function Paint()
 end
 
 local function Button(index)
-    local b = buttons[index]
-    if b then
-        return b
+    local widget = buttons[index]
+    if widget then
+        return widget
     end
-    b = CreateFrame("Button", nil, holderFrame)
-    b.icon = b:CreateTexture(nil, "ARTWORK")
-    b.icon:SetAllPoints()
-    b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    local border = b:CreateTexture(nil, "BACKGROUND")
+    widget = CreateFrame("Button", nil, holderFrame)
+    widget.icon = widget:CreateTexture(nil, "ARTWORK")
+    widget.icon:SetAllPoints()
+    widget.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    local border = widget:CreateTexture(nil, "BACKGROUND")
     border:SetPoint("TOPLEFT", -1, 1)
     border:SetPoint("BOTTOMRIGHT", 1, -1)
     border:SetColorTexture(0, 0, 0, 1)
-    b.lit = b:CreateTexture(nil, "OVERLAY")
-    b.lit:SetPoint("TOPLEFT", -2, 2)
-    b.lit:SetPoint("BOTTOMRIGHT", 2, -2)
+    widget.lit = widget:CreateTexture(nil, "OVERLAY")
+    widget.lit:SetPoint("TOPLEFT", -2, 2)
+    widget.lit:SetPoint("BOTTOMRIGHT", 2, -2)
     local ar, ag, ab = CludesUI.Kit.Accent()
-    b.lit:SetColorTexture(ar, ag, ab, 0.35)
-    b.name = b:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(b.name, 10, "essentials")
-    b.name:SetPoint("TOP", b, "BOTTOM", 0, -2)
-    b:SetScript("OnClick", function(self)
+    widget.lit:SetColorTexture(ar, ag, ab, 0.35)
+    widget.name = widget:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(widget.name, 10, "essentials")
+    widget.name:SetPoint("TOP", widget, "BOTTOM", 0, -2)
+    widget:SetScript("OnClick", function(self)
         if InCombatLockdown() then
             Say("you will change into " .. (self.setName or "it") .. " when the fight ends.")
         end
         previous = nil -- a choice of your own ends any automatic swap
         Wear(self.setID)
     end)
-    b:SetScript("OnEnter", function(self)
+    widget:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         if
             not (GameTooltip.SetEquipmentSet and pcall(GameTooltip.SetEquipmentSet, GameTooltip, self.setID))
@@ -126,11 +126,11 @@ local function Button(index)
         end
         GameTooltip:Show()
     end)
-    b:SetScript("OnLeave", function()
+    widget:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-    buttons[index] = b
-    return b
+    buttons[index] = widget
+    return widget
 end
 
 local function Layout()
@@ -140,14 +140,14 @@ local function Layout()
     local size = Get("iconSize")
     local entries = Enabled() and module.GearSetList() or {}
     for index, s in ipairs(entries) do
-        local b = Button(index)
-        b.setID, b.setName = s.id, s.name
-        b.icon:SetTexture(s.icon)
-        b.name:SetText(s.name)
-        b:SetSize(size, size)
-        b:ClearAllPoints()
-        b:SetPoint("LEFT", holderFrame, "LEFT", (index - 1) * (size + GAP), 0)
-        b:Show()
+        local widget = Button(index)
+        widget.setID, widget.setName = s.id, s.name
+        widget.icon:SetTexture(s.icon)
+        widget.name:SetText(s.name)
+        widget:SetSize(size, size)
+        widget:ClearAllPoints()
+        widget:SetPoint("LEFT", holderFrame, "LEFT", (index - 1) * (size + GAP), 0)
+        widget:Show()
     end
     for index = #entries + 1, #buttons do
         buttons[index]:Hide()

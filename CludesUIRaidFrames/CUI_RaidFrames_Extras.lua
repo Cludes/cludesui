@@ -475,7 +475,7 @@ do
         end
         EnsureFrame()
         local size, tc, backdrop, bs, bc = mod._PGStyle()
-        local s = saved.profile
+        local cfg = saved.profile
         local full = pg.format == "full"
         local fontStr = widget.text
         ApplyFont(fontStr, size)
@@ -504,9 +504,9 @@ do
         isShown = nil
         widget:SetSize(PixelSnap(wid), PixelSnap(hgt))
         widget.bg:SetColorTexture(backdrop.r, backdrop.g, backdrop.b, backdrop.a or 1)
-        local texture = s.borderTexture or "solid"
+        local texture = cfg.borderTexture or "solid"
         -- The frame border's exact pixels apply only at its own size.
-        local px = (pg.borderSize == nil) and CludesUI.BorderPx(s.borderSizePx, bs, texture) or nil
+        local px = (pg.borderSize == nil) and CludesUI.BorderPx(cfg.borderSizePx, bs, texture) or nil
         CludesUI.ApplyBorderStyle(
             widget.borderFrame,
             bs,
@@ -515,10 +515,10 @@ do
             bc.b,
             bc.a or 1,
             texture,
-            s.borderTextureOffset,
-            s.borderTextureOffsetY,
-            s.borderTextureShiftX,
-            s.borderTextureShiftY,
+            cfg.borderTextureOffset,
+            cfg.borderTextureOffsetY,
+            cfg.borderTextureShiftX,
+            cfg.borderTextureShiftY,
             "unitframes",
             bs,
             nil,

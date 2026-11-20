@@ -40,8 +40,8 @@ local function MasterOn()
 end
 
 local function AddonOn(name)
-    local t = CludesUIDB and CludesUIDB.thirdPartySkinAddons
-    return not (t and t[name] == false)
+    local tbl = CludesUIDB and CludesUIDB.thirdPartySkinAddons
+    return not (tbl and tbl[name] == false)
 end
 
 -------------------------------------------------------------------------------

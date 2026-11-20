@@ -36,17 +36,17 @@ local ENCHANT_SLOTS = {
 function mod.ReadyCheckSettings()
     local p = mod.RaidLeadDB()
     p.readyCheck = p.readyCheck or {}
-    local s = p.readyCheck
-    if s.enabled == nil then
-        s.enabled = true
+    local cfg = p.readyCheck
+    if cfg.enabled == nil then
+        cfg.enabled = true
     end
-    if s.minDurability == nil then
-        s.minDurability = 30
+    if cfg.minDurability == nil then
+        cfg.minDurability = 30
     end
-    if s.consumables == nil then
-        s.consumables = true
+    if cfg.consumables == nil then
+        cfg.consumables = true
     end
-    return s
+    return cfg
 end
 
 local function LowestDurability()
@@ -249,7 +249,7 @@ function mod.RefreshReadyWindow()
     if not window then
         return
     end
-    local s = mod.ReadyCheckSettings()
+    local cfg = mod.ReadyCheckSettings()
     local lines = {}
     local silent = {}
     for _, name in ipairs(Members()) do
@@ -258,7 +258,7 @@ function mod.RefreshReadyWindow()
             silent[#silent + 1] = name
         else
             local problems = {}
-            if r.dur < s.minDurability then
+            if r.dur < cfg.minDurability then
                 problems[#problems + 1] = "|cffff6040" .. r.dur .. "% durability|r"
             end
             if #r.enchants > 0 then
@@ -267,7 +267,7 @@ function mod.RefreshReadyWindow()
             if #r.cds > 0 then
                 problems[#problems + 1] = "|cffffd060on cooldown: " .. table.concat(r.cds, ", ") .. "|r"
             end
-            if s.consumables then
+            if cfg.consumables then
                 if r.cons == "?" then
                     problems[#problems + 1] = "|cff9aa6b2buffs hidden by the game|r"
                 elseif r.cons and r.cons ~= "" then

@@ -250,8 +250,8 @@ local function For(key)
 end
 
 local function Default(key, stat)
-    local s = Spec(key)
-    return s and s.weights[stat] or 0
+    local cfg = Spec(key)
+    return cfg and cfg.weights[stat] or 0
 end
 
 local function Set(key, stat, val)

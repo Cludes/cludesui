@@ -683,7 +683,7 @@ local function StyleButton(btnFrame)
     mod._cuiUnitButtons = mod._cuiUnitButtons or setmetatable({}, { __mode = "k" })
     mod._cuiUnitButtons[btnFrame] = true
 
-    local s = saved.profile
+    local cfg = saved.profile
     -- The Anchor* closures below are stored on `d` and RE-CALLED after d._isParty / d._isExtra are
     -- set (StyleButton runs before that). They MUST resolve the settings source LIVE via LiveS()
     -- rather than capture this raid `s`, or party/extra frames would anchor every indicator, text
@@ -693,13 +693,13 @@ local function StyleButton(btnFrame)
             or (skinData._isExtra and mod._scaledExtraProxy)
             or mod._scaledProfile
     end
-    local wid = PixelSnap(s.frameWidth or 72)
-    local hgt = PixelSnap(s.frameHeight or 46)
+    local wid = PixelSnap(cfg.frameWidth or 72)
+    local hgt = PixelSnap(cfg.frameHeight or 46)
     -- The power bar is ALWAYS created (hidden) so a later swap into a power-enabled profile has a
     -- bar to show; UpdateButton drives per-role show/hide + matching health height. Health starts
     -- FULL height, else the bottom powerH strip shows dark bg as an "empty power bar" until the
     -- first UpdateButton (visible ~0.5s at login).
-    local powerH = PixelSnap(s.powerHeight or 4)
+    local powerH = PixelSnap(cfg.powerHeight or 4)
     local healthH = hgt
 
     -- No SetSize here: sizing is window-phase work (combat-blocked), owned by
@@ -708,8 +708,8 @@ local function StyleButton(btnFrame)
     -- Background (visible behind the health bar where HP is missing)
     local backdrop = btnFrame:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    local bgc = s.customBgColor or defaultSet.customBgColor
-    backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
+    local bgc = cfg.customBgColor or defaultSet.customBgColor
+    backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (cfg.bgDarkness or 50) / 100)
     if Pix then
         Pix.DisablePixelSnap(backdrop)
     end
@@ -730,7 +730,7 @@ local function StyleButton(btnFrame)
     -- Fill axis + inversion. StyleButton runs before d._isParty is set, so these use
     -- the raid values; ReanchorAbsorbToFill re-resolves both against the button's real
     -- settings source each update.
-    mod.RF_ApplyHealthOrientation(health, s)
+    mod.RF_ApplyHealthOrientation(health, cfg)
     health:SetMinMaxValues(0, 100)
     health:SetValue(100)
     -- Pre-paint tint: a StatusBar texture renders WHITE (default vertex
@@ -772,10 +772,10 @@ local function StyleButton(btnFrame)
         local pwBg = power:CreateTexture(nil, "BACKGROUND")
         pwBg:SetAllPoints()
         pwBg:SetColorTexture(
-            (s.powerBgColor or {}).r or 0,
-            (s.powerBgColor or {}).g or 0,
-            (s.powerBgColor or {}).b or 0,
-            (s.powerBgDarkness or 70) / 100
+            (cfg.powerBgColor or {}).r or 0,
+            (cfg.powerBgColor or {}).g or 0,
+            (cfg.powerBgColor or {}).b or 0,
+            (cfg.powerBgDarkness or 70) / 100
         )
         if Pix then
             Pix.DisablePixelSnap(pwBg)
@@ -803,14 +803,14 @@ local function StyleButton(btnFrame)
         tnb:SetFrameLevel(btnFrame:GetFrameLevel() + 4)
         tnb:SetPoint("TOPLEFT", btnFrame, "TOPLEFT", 0, 0)
         tnb:SetPoint("TOPRIGHT", btnFrame, "TOPRIGHT", 0, 0)
-        tnb:SetHeight(PixelSnap(s.topNameBarHeight or 20))
+        tnb:SetHeight(PixelSnap(cfg.topNameBarHeight or 20))
         local tnbBg = tnb:CreateTexture(nil, "BACKGROUND")
         tnbBg:SetAllPoints()
         if Pix then
             Pix.DisablePixelSnap(tnbBg)
         end
         local tnbText = tnb:CreateFontString(nil, "OVERLAY")
-        ApplyFont(tnbText, s.topNameBarTextSize or 11)
+        ApplyFont(tnbText, cfg.topNameBarTextSize or 11)
         tnbText:SetWordWrap(false)
         skinData.topNameBar = tnb
         skinData.topNameBarBg = tnbBg
@@ -863,20 +863,20 @@ local function StyleButton(btnFrame)
     -- Party Frames kit: in the text band, so the Classic art (drawn over the
     -- bars) never covers it; it still anchors to the kit health bar.
     local statusFS = (skinData.kit and textCarrier or health):CreateFontString(nil, "OVERLAY")
-    local stc = s.statusTextColor or { r = 1, g = 1, b = 1 }
-    ApplyFont(statusFS, s.statusTextSize or 14)
+    local stc = cfg.statusTextColor or { r = 1, g = 1, b = 1 }
+    ApplyFont(statusFS, cfg.statusTextSize or 14)
     statusFS:SetJustifyH("CENTER")
     statusFS:SetTextColor(stc.r, stc.g, stc.b)
     statusFS:Hide()
     skinData.statusText = statusFS
 
     local function AnchorStatusText()
-        local s = LiveS() -- party/extra-aware (see LiveS note above)
-        local health = mod.RF_BarHost(health, s) -- Uniform Icon Anchoring host swap / kit bar
+        local cfg = LiveS() -- party/extra-aware (see LiveS note above)
+        local health = mod.RF_BarHost(health, cfg) -- Uniform Icon Anchoring host swap / kit bar
         statusFS:ClearAllPoints()
-        local place = s.statusTextPosition or "center"
-        local ox = s.statusTextOffsetX or 0
-        local oy = s.statusTextOffsetY or 0
+        local place = cfg.statusTextPosition or "center"
+        local ox = cfg.statusTextOffsetX or 0
+        local oy = cfg.statusTextOffsetY or 0
         if place == "topleft" then
             statusFS:SetPoint("TOPLEFT", health, "TOPLEFT", 2 + ox, -2 + oy)
         elseif place == "top" then
@@ -906,40 +906,40 @@ local function StyleButton(btnFrame)
     roleCarrier:SetAllPoints(health)
     roleCarrier:SetFrameLevel(btnFrame:GetFrameLevel() + (mod.LVL_AURA - 1))
     local roleIcon = roleCarrier:CreateTexture(nil, "OVERLAY")
-    local riSz = PixelSnap(s.roleIconSize or 14)
+    local riSz = PixelSnap(cfg.roleIconSize or 14)
     roleIcon:SetSize(riSz, riSz)
     roleIcon:Hide()
     skinData.roleIcon = roleIcon
 
     local function AnchorRoleIcon()
-        local s = LiveS() -- party/extra-aware (see LiveS note above)
+        local cfg = LiveS() -- party/extra-aware (see LiveS note above)
         -- Show Behind Border: just under the base border; default: the text band.
         roleCarrier:SetFrameLevel(
-            btnFrame:GetFrameLevel() + (s.roleIconBehindBorder and mod.LVL_ROLE_BEHIND or (mod.LVL_AURA - 1))
+            btnFrame:GetFrameLevel() + (cfg.roleIconBehindBorder and mod.LVL_ROLE_BEHIND or (mod.LVL_AURA - 1))
         )
-        local health = mod.RF_AnchorHost(health, s) -- Uniform Icon Anchoring host swap
+        local health = mod.RF_AnchorHost(health, cfg) -- Uniform Icon Anchoring host swap
         roleIcon:ClearAllPoints()
         -- Party Frames kit: the stock spot plus the user's offsets.
         if skinData.kitG then
-            mod.RF_KitSpot(skinData.kitG.role, roleIcon, btnFrame, s.roleIconOffsetX, s.roleIconOffsetY)
+            mod.RF_KitSpot(skinData.kitG.role, roleIcon, btnFrame, cfg.roleIconOffsetX, cfg.roleIconOffsetY)
             return
         end
         -- Attach Role Icons: the name bar's rect is the same with or without a power bar
-        if s.roleIconOnNameBar and s.topNameBarEnabled and skinData.topNameBar then
-            local place = (s.roleNameBarPosition or "left"):upper()
+        if cfg.roleIconOnNameBar and cfg.topNameBarEnabled and skinData.topNameBar then
+            local place = (cfg.roleNameBarPosition or "left"):upper()
             roleIcon:SetPoint(
                 place,
                 skinData.topNameBar,
                 place,
-                s.roleNameBarOffsetX or 0,
-                s.roleNameBarOffsetY or 0
+                cfg.roleNameBarOffsetX or 0,
+                cfg.roleNameBarOffsetY or 0
             )
             return
         end
         -- The position key uppercases directly to a valid anchor point, so all
         -- 9 positions resolve like the Marker Position dropdown.
-        local place = (s.roleIconPosition or "bottomleft"):upper()
-        roleIcon:SetPoint(place, health, place, s.roleIconOffsetX or 0, s.roleIconOffsetY or 0)
+        local place = (cfg.roleIconPosition or "bottomleft"):upper()
+        roleIcon:SetPoint(place, health, place, cfg.roleIconOffsetX or 0, cfg.roleIconOffsetY or 0)
     end
     AnchorRoleIcon()
     skinData.AnchorRoleIcon = AnchorRoleIcon
@@ -957,15 +957,15 @@ local function StyleButton(btnFrame)
     mod.ApplyLeaderStrata(skinData.leaderHost)
 
     local leaderIcon = skinData.leaderHost:CreateTexture(nil, "OVERLAY")
-    local liSz = PixelSnap(s.leaderIconSize or 14)
+    local liSz = PixelSnap(cfg.leaderIconSize or 14)
     leaderIcon:SetSize(liSz, liSz)
-    local liPos = (s.leaderIconPosition or "top"):upper()
+    local liPos = (cfg.leaderIconPosition or "top"):upper()
     leaderIcon:SetPoint(
         liPos,
-        mod.RF_AnchorHost(health, s),
+        mod.RF_AnchorHost(health, cfg),
         liPos,
-        s.leaderIconOffsetX or 0,
-        s.leaderIconOffsetY or 0
+        cfg.leaderIconOffsetX or 0,
+        cfg.leaderIconOffsetY or 0
     )
     leaderIcon:Hide()
     skinData.leaderIcon = leaderIcon
@@ -976,19 +976,19 @@ local function StyleButton(btnFrame)
 
     -- Raid marker (on marker carrier, above the border)
     local raidMarker = markerCarrier:CreateTexture(nil, "OVERLAY", nil, 2)
-    local rmSz = PixelSnap(s.raidMarkerSize or 16)
+    local rmSz = PixelSnap(cfg.raidMarkerSize or 16)
     raidMarker:SetSize(rmSz, rmSz)
     raidMarker:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
     raidMarker:Hide()
     skinData.raidMarker = raidMarker
 
     local function AnchorRaidMarker()
-        local s = LiveS() -- party/extra-aware (see LiveS note above)
-        local health = mod.RF_AnchorHost(health, s) -- Uniform Icon Anchoring host swap
+        local cfg = LiveS() -- party/extra-aware (see LiveS note above)
+        local health = mod.RF_AnchorHost(health, cfg) -- Uniform Icon Anchoring host swap
         raidMarker:ClearAllPoints()
-        local place = s.raidMarkerPosition or "center"
-        local ox = s.raidMarkerOffsetX or 0
-        local oy = s.raidMarkerOffsetY or 0
+        local place = cfg.raidMarkerPosition or "center"
+        local ox = cfg.raidMarkerOffsetX or 0
+        local oy = cfg.raidMarkerOffsetY or 0
         if place == "topleft" then
             raidMarker:SetPoint("TOPLEFT", health, "TOPLEFT", 2 + ox, -2 + oy)
         elseif place == "top" then
@@ -1014,17 +1014,17 @@ local function StyleButton(btnFrame)
 
     -- Ready check icon (shared with incoming-summon / incoming-rez; above name text)
     local readyCheck = markerCarrier:CreateTexture(nil, "OVERLAY")
-    readyCheck:SetSize(PixelSnap(s.readyCheckSize or 20), PixelSnap(s.readyCheckSize or 20))
+    readyCheck:SetSize(PixelSnap(cfg.readyCheckSize or 20), PixelSnap(cfg.readyCheckSize or 20))
     readyCheck:Hide()
     skinData.readyCheck = readyCheck
 
     local function AnchorReadyCheck()
-        local s = LiveS() -- party/extra-aware (see LiveS note above)
-        local health = mod.RF_AnchorHost(health, s) -- Uniform Icon Anchoring host swap
+        local cfg = LiveS() -- party/extra-aware (see LiveS note above)
+        local health = mod.RF_AnchorHost(health, cfg) -- Uniform Icon Anchoring host swap
         readyCheck:ClearAllPoints()
-        local place = s.readyCheckPosition or "center"
-        local ox = s.readyCheckOffsetX or 0
-        local oy = s.readyCheckOffsetY or 0
+        local place = cfg.readyCheckPosition or "center"
+        local ox = cfg.readyCheckOffsetX or 0
+        local oy = cfg.readyCheckOffsetY or 0
         -- Party Frames kit: centred on the portrait, as stock.
         if skinData.kitG and skinData.kitPortrait then
             mod.RF_KitSpot(skinData.kitG.rc, readyCheck, skinData.kitPortrait, ox, oy)
@@ -1055,22 +1055,22 @@ local function StyleButton(btnFrame)
 
     -- Combat icon (marker carrier, above the border): members currently affecting combat; 9-position anchor mirrors the role icon.
     local combatIcon = markerCarrier:CreateTexture(nil, "OVERLAY", nil, 1)
-    local ciSz = PixelSnap(s.combatIndicatorSize or 16)
+    local ciSz = PixelSnap(cfg.combatIndicatorSize or 16)
     combatIcon:SetSize(ciSz, ciSz)
     combatIcon:Hide()
     skinData.combatIcon = combatIcon
 
     local function AnchorCombatIcon()
-        local s = LiveS() -- party/extra-aware (see LiveS note above)
-        local health = mod.RF_AnchorHost(health, s) -- Uniform Icon Anchoring host swap
+        local cfg = LiveS() -- party/extra-aware (see LiveS note above)
+        local health = mod.RF_AnchorHost(health, cfg) -- Uniform Icon Anchoring host swap
         combatIcon:ClearAllPoints()
-        local place = (s.combatIndicatorPosition or "right"):upper()
+        local place = (cfg.combatIndicatorPosition or "right"):upper()
         combatIcon:SetPoint(
             place,
             health,
             place,
-            s.combatIndicatorOffsetX or 0,
-            s.combatIndicatorOffsetY or 0
+            cfg.combatIndicatorOffsetX or 0,
+            cfg.combatIndicatorOffsetY or 0
         )
     end
     AnchorCombatIcon()
@@ -1079,14 +1079,14 @@ local function StyleButton(btnFrame)
     -- The texts: font, anchor and visibility of every shown text (Top Name Bar
     -- hides the name, the Party Frames kit puts it on the stock spot).
     local function AnchorTexts()
-        local s = LiveS() -- party/extra-aware (see LiveS note above)
+        local cfg = LiveS() -- party/extra-aware (see LiveS note above)
         -- Text band level, re-applied on every reload. Default sits under the aura band
         -- (ns.LVL_TEXT); "Show Above Icons" (the name's cog) lifts it above the band's children
         -- (+6 clears each aura unit's +1..+5), still below the marker carrier.
         textCarrier:SetFrameLevel(
-            btnFrame:GetFrameLevel() + (s.nameTextAboveIcons and (mod.LVL_AURA + 6) or mod.LVL_TEXT)
+            btnFrame:GetFrameLevel() + (cfg.nameTextAboveIcons and (mod.LVL_AURA + 6) or mod.LVL_TEXT)
         )
-        mod.RF_TextLayout(skinData, s)
+        mod.RF_TextLayout(skinData, cfg)
     end
     AnchorTexts()
     skinData.AnchorTexts = AnchorTexts
@@ -1136,71 +1136,71 @@ local function StyleButton(btnFrame)
             return
         end
         -- Re-called long after StyleButton: resolve LIVE (see LiveS note) so party overrides and profile swaps are honored.
-        local s = LiveS()
-        if mod.RF_ButtonCompact(skinData, s) then
-            mod.RF_CompactHighlight(skinData.borderFrame, skinData, s, btnFrame)
+        local cfg = LiveS()
+        if mod.RF_ButtonCompact(skinData, cfg) then
+            mod.RF_CompactHighlight(skinData.borderFrame, skinData, cfg, btnFrame)
             return
         end
         -- Party Frames kit: hover and target glow along the frame art.
         if skinData.kit then
-            ApplyBorderLevel(false, s)
+            ApplyBorderLevel(false, cfg)
             mod.RF_KitHighlight(
                 skinData,
                 skinData.borderFrame,
-                s,
-                skinData._hovered and s.hoverBorderEnabled ~= false,
-                skinData._isTarget and s.targetBorderEnabled ~= false
+                cfg,
+                skinData._hovered and cfg.hoverBorderEnabled ~= false,
+                skinData._isTarget and cfg.targetBorderEnabled ~= false
             )
             return
         end
         -- Stock styles: the stock selection ring for the target, the hover
         -- border on the stood-down border frame.
         if skinData.stockEdge then
-            local hover = skinData._hovered and s.hoverBorderEnabled ~= false
-            ApplyBorderLevel(hover, s)
-            mod.RF_StockHighlight(skinData, skinData.borderFrame, s, hover, skinData._isTarget and s.targetBorderEnabled ~= false)
+            local hover = skinData._hovered and cfg.hoverBorderEnabled ~= false
+            ApplyBorderLevel(hover, cfg)
+            mod.RF_StockHighlight(skinData, skinData.borderFrame, cfg, hover, skinData._isTarget and cfg.targetBorderEnabled ~= false)
             return
         end
         local red, green, blue, a
         local raised, hlSize, hlPx = false, nil, nil
-        if skinData._hovered and s.hoverBorderEnabled ~= false then
-            local color = s.hoverBorderColor or { r = 1, g = 1, b = 1 }
-            red, green, blue, a = color.r, color.g, color.b, s.hoverBorderAlpha or 1
-            raised, hlSize = true, s.hoverBorderSize or 1
-            hlPx = CludesUI.BorderPx(s.hoverBorderSizePx, hlSize, s.borderTexture or "solid")
-        elseif skinData._isTarget and s.targetBorderEnabled ~= false then
-            local color = s.targetBorderColor or { r = 1, g = 1, b = 1 }
-            red, green, blue, a = color.r, color.g, color.b, s.targetBorderAlpha or 1
-            raised, hlSize = true, s.targetBorderSize or 1
-            hlPx = CludesUI.BorderPx(s.targetBorderSizePx, hlSize, s.borderTexture or "solid")
-        elseif skinData._aggroBdr and s.threatCustomBorder == true and mod.RF_CustomBorderOn(s) then
+        if skinData._hovered and cfg.hoverBorderEnabled ~= false then
+            local color = cfg.hoverBorderColor or { r = 1, g = 1, b = 1 }
+            red, green, blue, a = color.r, color.g, color.b, cfg.hoverBorderAlpha or 1
+            raised, hlSize = true, cfg.hoverBorderSize or 1
+            hlPx = CludesUI.BorderPx(cfg.hoverBorderSizePx, hlSize, cfg.borderTexture or "solid")
+        elseif skinData._isTarget and cfg.targetBorderEnabled ~= false then
+            local color = cfg.targetBorderColor or { r = 1, g = 1, b = 1 }
+            red, green, blue, a = color.r, color.g, color.b, cfg.targetBorderAlpha or 1
+            raised, hlSize = true, cfg.targetBorderSize or 1
+            hlPx = CludesUI.BorderPx(cfg.targetBorderSizePx, hlSize, cfg.borderTexture or "solid")
+        elseif skinData._aggroBdr and cfg.threatCustomBorder == true and mod.RF_CustomBorderOn(cfg) then
             -- The threat color, raised like hover/target so it also covers the dispel
             -- Color Custom Borders copies (base + 9). Settings re-checked live: a
             -- restyle can run before the next threat paint clears the flag.
             red, green, blue, a = 1, 0, 0, 1
             raised = true
         else
-            local color = s.borderColor or { r = 0, g = 0, b = 0 }
-            red, green, blue, a = color.r, color.g, color.b, s.borderAlpha or 1
+            local color = cfg.borderColor or { r = 0, g = 0, b = 0 }
+            red, green, blue, a = color.r, color.g, color.b, cfg.borderAlpha or 1
         end
-        ApplyBorderLevel(raised, s)
-        if (s.borderSize or 1) <= 0 then
-            mod.ApplyHighlightBorder(skinData.borderFrame, s, hlSize, red, green, blue, a, hlPx)
+        ApplyBorderLevel(raised, cfg)
+        if (cfg.borderSize or 1) <= 0 then
+            mod.ApplyHighlightBorder(skinData.borderFrame, cfg, hlSize, red, green, blue, a, hlPx)
             return
         end
         if hlSize then
-            red, green, blue = mod.RF_VisibleHighlight(s, red, green, blue)
+            red, green, blue = mod.RF_VisibleHighlight(cfg, red, green, blue)
         end
         skinData.borderFrame._hlBorderSize = nil
         CludesUI.SetBorderStyleColor(skinData.borderFrame, red, green, blue, a)
         if
-            s.powerBorderMatchColor == true
+            cfg.powerBorderMatchColor == true
             and skinData.powerBorderFrame
             and skinData.powerBorderFrame._powerArtMode == "divider"
         then
             mod.RF_ColorPowerDivider(skinData.powerBorderFrame, red, green, blue, a)
         end
-        if s.topNameBarDividerMatchColor == true and skinData.topNameBar and skinData.topNameBar._divider then
+        if cfg.topNameBarDividerMatchColor == true and skinData.topNameBar and skinData.topNameBar._divider then
             mod.RF_ColorPowerDivider(skinData.topNameBar._divider, red, green, blue, a)
         end
     end
@@ -1213,12 +1213,12 @@ local function StyleButton(btnFrame)
             return
         end
         -- Re-called from Reload paths long after StyleButton: resolve LIVE (see LiveS note).
-        local s = LiveS()
-        local bs = s.borderSize or 1
-        local bc = s.borderColor or { r = 0, g = 0, b = 0 }
-        local texKey = s.borderTexture or "solid"
+        local cfg = LiveS()
+        local bs = cfg.borderSize or 1
+        local bc = cfg.borderColor or { r = 0, g = 0, b = 0 }
+        local texKey = cfg.borderTexture or "solid"
         local pl = btnFrame:GetFrameLevel()
-        local compact = mod.RF_ButtonCompact(skinData, s)
+        local compact = mod.RF_ButtonCompact(skinData, cfg)
         if compact or skinData._compactBorder then
             skinData._compactBorder = compact
         end
@@ -1247,35 +1247,35 @@ local function StyleButton(btnFrame)
             CludesUI.RoundCorners(btnFrame, 0)
             return
         end
-        skinData.borderFrame:SetFrameLevel(s.borderBehind and math.max(0, pl - 1) or (pl + 8))
+        skinData.borderFrame:SetFrameLevel(cfg.borderBehind and math.max(0, pl - 1) or (pl + 8))
         CludesUI.ApplyBorderStyle(
             skinData.borderFrame,
             bs,
             bc.r,
             bc.g,
             bc.b,
-            s.borderAlpha or 1,
+            cfg.borderAlpha or 1,
             texKey,
-            s.borderTextureOffset,
-            s.borderTextureOffsetY,
-            s.borderTextureShiftX,
-            s.borderTextureShiftY,
+            cfg.borderTextureOffset,
+            cfg.borderTextureOffsetY,
+            cfg.borderTextureShiftX,
+            cfg.borderTextureShiftY,
             "unitframes",
             bs,
             nil,
-            CludesUI.BorderPx(s.borderSizePx, bs, texKey)
+            CludesUI.BorderPx(cfg.borderSizePx, bs, texKey)
         )
         ApplyBorderColor()
         -- Rounded corners (CludesUI_RoundedCorners.lua; nothing at radius 0).
         -- The power border rides in the body so its edge strips round too.
-        local radius = s.cornerRadius or 0
+        local radius = cfg.cornerRadius or 0
         if radius > 0 then
             CludesUI.RoundCorners(btnFrame, radius, {
                 roots = { skinData.health, skinData.power, skinData.topNameBar, skinData.powerBorderFrame },
                 textures = { skinData.bg },
                 border = skinData.borderFrame,
                 style = texKey,
-                corners = s.cornerMask,
+                corners = cfg.cornerMask,
             })
         else
             CludesUI.RoundCorners(btnFrame, 0)
@@ -1315,13 +1315,13 @@ local function StyleButton(btnFrame)
             return
         end
         -- Re-called long after StyleButton: resolve LIVE (see LiveS note) -- a captured `s` misses party overrides and profile swaps.
-        local s = LiveS()
-        if s.powerBorderMatchFrame == true or skinData.powerBorderFrame._powerArtKey then
-            local handled, refreshed = mod.RF_ApplyPowerBorderArt(skinData.powerBorderFrame, s, force)
+        local cfg = LiveS()
+        if cfg.powerBorderMatchFrame == true or skinData.powerBorderFrame._powerArtKey then
+            local handled, refreshed = mod.RF_ApplyPowerBorderArt(skinData.powerBorderFrame, cfg, force)
             if handled then
                 if
                     refreshed
-                    and s.powerBorderMatchColor == true
+                    and cfg.powerBorderMatchColor == true
                     and skinData.powerBorderFrame._powerArtMode == "divider"
                 then
                     ApplyBorderColor()
@@ -1329,7 +1329,7 @@ local function StyleButton(btnFrame)
                 return
             end
         end
-        local style = s.powerBorderStyle or "cui"
+        local style = cfg.powerBorderStyle or "cui"
         if style == "cui" then
             -- CUI style: 1px divider, white at 20% opacity
             Pix.UpdateBorder(skinData.powerBorderFrame, 1, 1, 1, 1, 0.2)
@@ -1351,13 +1351,13 @@ local function StyleButton(btnFrame)
             end
             return
         end
-        local bs = s.powerBorderSize or 1
+        local bs = cfg.powerBorderSize or 1
         if bs <= 0 then
             skinData.powerBorderFrame:Hide()
             return
         end
-        local bc = s.powerBorderColor
-        local ba = s.powerBorderAlpha or 1
+        local bc = cfg.powerBorderColor
+        local ba = cfg.powerBorderAlpha or 1
         Pix.UpdateBorder(skinData.powerBorderFrame, bs, bc.r, bc.g, bc.b, ba)
         skinData.powerBorderFrame:Show()
         local ppC = Pix.GetBorders(skinData.powerBorderFrame)
@@ -1510,14 +1510,14 @@ mod._StyleButtonSecure = function(btnFrame)
         return
     end
     skinData.securestyled = true
-    local s = saved.profile
+    local cfg = saved.profile
     -- Party buttons take the party box (their creator stamps _isParty
     -- first); everything else the raid size.
     if skinData._isParty then
-        local pw, ph = mod.RF_PartyDims(s)
+        local pw, ph = mod.RF_PartyDims(cfg)
         btnFrame:SetSize(PixelSnap(pw), PixelSnap(ph))
     else
-        btnFrame:SetSize(PixelSnap(s.frameWidth or 72), PixelSnap(s.frameHeight or 46))
+        btnFrame:SetSize(PixelSnap(cfg.frameWidth or 72), PixelSnap(cfg.frameHeight or 46))
     end
 
     -- Secure click: left=target, right=menu

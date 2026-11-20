@@ -93,27 +93,27 @@ function Kit.Panel(widget, alpha)
 end
 
 function Kit.Glyph(hostFrame, textValue, onClick, tipText, key)
-    local b = CreateFrame("Button", nil, hostFrame)
-    b:SetSize(18, 18)
-    b.t = b:CreateFontString(nil, "OVERLAY")
-    Kit.Font(b.t, 14, key)
-    b.t:SetPoint("CENTER")
-    b.t:SetText(textValue)
-    b.t:SetTextColor(IDLE[1], IDLE[2], IDLE[3])
-    b:SetScript("OnClick", onClick)
-    b:SetScript("OnEnter", function(self)
+    local widget = CreateFrame("Button", nil, hostFrame)
+    widget:SetSize(18, 18)
+    widget.t = widget:CreateFontString(nil, "OVERLAY")
+    Kit.Font(widget.t, 14, key)
+    widget.t:SetPoint("CENTER")
+    widget.t:SetText(textValue)
+    widget.t:SetTextColor(IDLE[1], IDLE[2], IDLE[3])
+    widget:SetScript("OnClick", onClick)
+    widget:SetScript("OnEnter", function(self)
         self.t:SetTextColor(Kit.Accent())
         if tipText then
             CludesUI.ShowWidgetTooltip(self, tipText)
         end
     end)
-    b:SetScript("OnLeave", function(self)
+    widget:SetScript("OnLeave", function(self)
         self.t:SetTextColor(IDLE[1], IDLE[2], IDLE[3])
         if tipText then
             CludesUI.HideWidgetTooltip()
         end
     end)
-    return b
+    return widget
 end
 
 --- A movable window. opts: key (font), strata, special (false: Escape does
@@ -164,62 +164,62 @@ end
 --- SetText, GetText, GetTextWidth, SetActive(bool) (the picked tab).
 function Kit.Button(hostFrame, textValue, wid, hgt, onClick, options)
     options = options or {}
-    local b = CreateFrame("Button", nil, hostFrame)
-    b:SetSize(wid or 90, hgt or 22)
-    local backdrop = b:CreateTexture(nil, "BACKGROUND")
+    local widget = CreateFrame("Button", nil, hostFrame)
+    widget:SetSize(wid or 90, hgt or 22)
+    local backdrop = widget:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(CONTROL_BG[1], CONTROL_BG[2], CONTROL_BG[3], CONTROL_BG[4])
-    b._bg = backdrop
-    b.label = b:CreateFontString(nil, "OVERLAY")
-    Kit.Font(b.label, options.size or 12, options.key)
-    b.label:SetPoint("CENTER")
-    b.label:SetText(textValue or "")
+    widget._bg = backdrop
+    widget.label = widget:CreateFontString(nil, "OVERLAY")
+    Kit.Font(widget.label, options.size or 12, options.key)
+    widget.label:SetPoint("CENTER")
+    widget.label:SetText(textValue or "")
     local function Paint(hovered)
         local r, g, bl = Kit.Accent()
-        local lit = hovered or b._active
-        Border(b, r, g, bl, lit and 1 or 0.45)
-        if b._active then
-            b.label:SetTextColor(r, g, bl)
+        local lit = hovered or widget._active
+        Border(widget, r, g, bl, lit and 1 or 0.45)
+        if widget._active then
+            widget.label:SetTextColor(r, g, bl)
             backdrop:SetColorTexture(r, g, bl, 0.15)
         else
-            b.label:SetTextColor(hovered and 1 or IDLE[1], hovered and 1 or IDLE[2], hovered and 1 or IDLE[3])
+            widget.label:SetTextColor(hovered and 1 or IDLE[1], hovered and 1 or IDLE[2], hovered and 1 or IDLE[3])
             backdrop:SetColorTexture(CONTROL_BG[1], CONTROL_BG[2], CONTROL_BG[3], CONTROL_BG[4])
         end
     end
-    b._paint = Paint
+    widget._paint = Paint
     Paint(false)
-    b:HookScript("OnEnter", function(self)
+    widget:HookScript("OnEnter", function(self)
         Paint(true)
         if options.tip then
             CludesUI.ShowWidgetTooltip(self, options.tip)
         end
     end)
-    b:HookScript("OnLeave", function()
+    widget:HookScript("OnLeave", function()
         Paint(false)
         if options.tip then
             CludesUI.HideWidgetTooltip()
         end
     end)
     if onClick then
-        b:SetScript("OnClick", onClick)
+        widget:SetScript("OnClick", onClick)
     end
-    function b:SetText(t)
+    function widget:SetText(t)
         self.label:SetText(t)
     end
-    function b:GetText()
+    function widget:GetText()
         return self.label:GetText()
     end
-    function b:GetTextWidth()
+    function widget:GetTextWidth()
         return self.label:GetStringWidth()
     end
-    function b:SetActive(enabled)
+    function widget:SetActive(enabled)
         self._active = enabled and true or nil
         Paint(self:IsMouseOver())
     end
-    b:HookScript("OnShow", function(self)
+    widget:HookScript("OnShow", function(self)
         Paint(self:IsMouseOver())
     end)
-    return b
+    return widget
 end
 
 --- A square checkbox with its label. Methods: SetChecked, GetChecked,

@@ -521,8 +521,8 @@ end
 local function PointSensor(colorKit, num, spell)
     local AK = CludesUI.AuraKit
     local filter, ids = AK.Filter(unpack(settings.filterTokens)), { includeSpellIDs = { [spell] = true } }
-    local s = colorKit.sensors[num]
-    if not s then
+    local cfg = colorKit.sensors[num]
+    if not cfg then
         local c = AK.CreateContainerShell(
             colorKit.hider,
             { point = { "TOPLEFT", colorKit.hider, "TOPLEFT", -(REACH + 1), REACH } }
@@ -543,15 +543,15 @@ local function PointSensor(colorKit, num, spell)
         maskTex:SetPoint("TOPLEFT", c, "TOPRIGHT", 0, 0)
         maskTex:SetPoint("BOTTOMLEFT", c, "BOTTOMRIGHT", 0, 1 - SPAN)
         maskTex:SetWidth(SPAN)
-        s = { container = c, mask = maskTex, n = num }
-        colorKit.sensors[num] = s
-    elseif s.spell ~= spell or s.filter ~= filter then
-        s.container:SetAuraGroupFilterString(SENSOR_KEY, filter)
-        s.container:SetAuraGroupCandidateFilters(SENSOR_KEY, ids)
+        cfg = { container = c, mask = maskTex, n = num }
+        colorKit.sensors[num] = cfg
+    elseif cfg.spell ~= spell or cfg.filter ~= filter then
+        cfg.container:SetAuraGroupFilterString(SENSOR_KEY, filter)
+        cfg.container:SetAuraGroupCandidateFilters(SENSOR_KEY, ids)
     end
-    s.spell, s.filter = spell, filter
-    AK.SetGroupCap(s.container, SENSOR_KEY, 1)
-    return s
+    cfg.spell, cfg.filter = spell, filter
+    AK.SetGroupCap(cfg.container, SENSOR_KEY, 1)
+    return cfg
 end
 
 -- Sensors the bundle did not use are switched off (no UNIT_AURA work).
@@ -565,10 +565,10 @@ end
 -- for its sensors alone).
 local function BindKit(colorKit, unitToken)
     for num = 1, colorKit.used do
-        local s = colorKit.sensors[num]
-        if s.unit ~= unitToken then
-            s.unit = unitToken
-            s.container:SetUnit(unitToken)
+        local cfg = colorKit.sensors[num]
+        if cfg.unit ~= unitToken then
+            cfg.unit = unitToken
+            cfg.container:SetUnit(unitToken)
         end
     end
     colorKit.hider:Show()

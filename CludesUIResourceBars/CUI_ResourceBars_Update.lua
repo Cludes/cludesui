@@ -1027,47 +1027,47 @@ end
 
 -- The one accessor for those answers. Returns buff, spend.
 function mod.SecTracks()
-    local t = mod.STK
-    if t.gen ~= mod.CfgGen then
-        t.gen = mod.CfgGen
+    local tbl = mod.STK
+    if tbl.gen ~= mod.CfgGen then
+        tbl.gen = mod.CfgGen
         local secondaryCfg = _G._CURB_ResolveSecondaryCfg()
         local e = secondaryCfg and secondaryCfg.enabled ~= false and ResolveThresholdSpecEntry(secondaryCfg) or nil
-        t.entry = e
-        t.buff = (e and e.buffColorEnabled and e.buffColors and #e.buffColors > 0) and true or false
-        t.spend = mod.SecondaryTracksSpender(e)
-        t.w = nil
+        tbl.entry = e
+        tbl.buff = (e and e.buffColorEnabled and e.buffColors and #e.buffColors > 0) and true or false
+        tbl.spend = mod.SecondaryTracksSpender(e)
+        tbl.w = nil
         -- Nothing latches a spell that left the list, so its verdict would go
         -- stale if it came back later: drop it.
-        local oncd, ids = t.oncd, t.ids
+        local oncd, ids = tbl.oncd, tbl.ids
         for ident in pairs(oncd) do
             if not ids[ident] then
                 oncd[ident] = nil
             end
         end
     end
-    return t.buff, t.spend
+    return tbl.buff, tbl.spend
 end
 
 -- The Power Bar's counterpart of ns.SecTracks. Returns spend. A Power Bar that
 -- cannot show (IsPowerBarHidden: off, hidden in this form or by Hide Power Bar if
 -- Resource, no primary power) tracks nothing, so no spender events stay armed.
 function mod.PowTracks()
-    local t = mod.PTK
-    if t.gen ~= mod.CfgGen then
-        t.gen = mod.CfgGen
+    local tbl = mod.PTK
+    if tbl.gen ~= mod.CfgGen then
+        tbl.gen = mod.CfgGen
         local primaryCfg = _G._CURB_ResolvePowerCfg()
         local e = primaryCfg and not IsPowerBarHidden() and ResolveThresholdSpecEntry(primaryCfg) or nil
-        t.entry = e
-        t.spend = mod.SecondaryTracksSpender(e, t.ids)
-        t.w = nil
-        local oncd, ids = t.oncd, t.ids
+        tbl.entry = e
+        tbl.spend = mod.SecondaryTracksSpender(e, tbl.ids)
+        tbl.w = nil
+        local oncd, ids = tbl.oncd, tbl.ids
         for ident in pairs(oncd) do
             if not ids[ident] then
                 oncd[ident] = nil
             end
         end
     end
-    return t.spend
+    return tbl.spend
 end
 
 -- Spender coloring: the FIRST castable spell in the entry's list wins. Each spell
@@ -1126,11 +1126,11 @@ end
 -- then kept current by the spender pass (next to ns.PollTick). Call after
 -- ns.SecTracks().
 function mod.SpenderWinner()
-    local t = mod.STK
-    local wid = t.w
+    local tbl = mod.STK
+    local wid = tbl.w
     if wid == nil then
-        wid = t.spend and mod.SpenderScan(t.entry) or 0
-        t.w = wid
+        wid = tbl.spend and mod.SpenderScan(tbl.entry) or 0
+        tbl.w = wid
     end
     return wid
 end
@@ -1152,11 +1152,11 @@ end
 
 -- The Power Bar's counterpart of ns.SpenderWinner. Call after ns.PowTracks().
 function mod.PowSpenderWinner()
-    local t = mod.PTK
-    local wid = t.w
+    local tbl = mod.PTK
+    local wid = tbl.w
     if wid == nil then
-        wid = t.spend and mod.SpenderScan(t.entry, t.oncd) or 0
-        t.w = wid
+        wid = tbl.spend and mod.SpenderScan(tbl.entry, tbl.oncd) or 0
+        tbl.w = wid
     end
     return wid
 end
@@ -1208,8 +1208,8 @@ local function UpdateIronfurBar()
     local revFill = (vert and oriSb.GetReverseFill and oriSb:GetReverseFill()) or false
 
     for i = 1, total do
-        local t = ironfurTicks[i]
-        local frac = (t.duration > 0) and ((t.endTime - nowTime) / t.duration) or 0
+        local tbl = ironfurTicks[i]
+        local frac = (tbl.duration > 0) and ((tbl.endTime - nowTime) / tbl.duration) or 0
         if frac < 0 then
             frac = 0
         elseif frac > 1 then

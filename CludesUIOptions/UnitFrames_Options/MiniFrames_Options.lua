@@ -2595,21 +2595,21 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
         -- Raw key checks deadlock: defaults hold simpleDebuffs="left" alongside
         -- debuffAnchor="bottomleft", locking BOTH the Simple dropdown (raw anchor not none) and the Location dropdown (simple active) at once.
         local function BossDebuffLocationActive()
-            local s = saved.profile.boss
-            if mod.GetBossSimpleDebuffMode(s) ~= "none" then
+            local cfg = saved.profile.boss
+            if mod.GetBossSimpleDebuffMode(cfg) ~= "none" then
                 return false
             end
-            return (s.debuffAnchor or "bottomleft") ~= "none"
+            return (cfg.debuffAnchor or "bottomleft") ~= "none"
         end
         local function BossBuffLocationActive()
-            local s = saved.profile.boss
-            if mod.GetBossSimpleBuffMode(s) ~= "none" then
+            local cfg = saved.profile.boss
+            if mod.GetBossSimpleBuffMode(cfg) ~= "none" then
                 return false
             end
-            if s.showBuffs == false then
+            if cfg.showBuffs == false then
                 return false
             end
-            return (s.buffAnchor or "topleft") ~= "none"
+            return (cfg.buffAnchor or "topleft") ~= "none"
         end
         -- Composite show-state of the two aura sizing rows (Buff/Debuff Size +
         -- Text Size). A row hides while its column's effective Location is None
@@ -3147,25 +3147,25 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             disabledTooltip = "Simple Buff Display",
             requireState = "disabled",
             getValue = function()
-                local s = saved.profile.boss
+                local cfg = saved.profile.boss
                 -- Forced to None while Simple Buff Display is active (it takes
                 -- over placement); the setter also stores None (showBuffs=false).
-                if mod.GetBossSimpleBuffMode(s) ~= "none" then
+                if mod.GetBossSimpleBuffMode(cfg) ~= "none" then
                     return "none"
                 end
-                if s.showBuffs == false then
+                if cfg.showBuffs == false then
                     return "none"
                 end
-                return s.buffAnchor or "topleft"
+                return cfg.buffAnchor or "topleft"
             end,
             setValue = function(value)
                 local lastState = BossAuraRowsState()
-                local s = saved.profile.boss
+                local cfg = saved.profile.boss
                 if value == "none" then
-                    s.showBuffs = false
+                    cfg.showBuffs = false
                 else
-                    s.showBuffs = true
-                    SwapAuraSlot(s, "buffAnchor", value)
+                    cfg.showBuffs = true
+                    SwapAuraSlot(cfg, "buffAnchor", value)
                 end
                 ReloadAndUpdate()
                 if mod.RefreshBossPreviewDebuffs then

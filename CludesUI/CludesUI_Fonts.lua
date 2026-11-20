@@ -673,16 +673,16 @@ CludesUI._fontFamPending = {}
 -- families that fell back, member by member, so their texts update in place.
 function CludesUI._FontRetryArm(filePath)
     CludesUI._fontPathPending[filePath] = true
-    local f = CludesUI._fontRetryFrame
-    if f then
+    local frame = CludesUI._fontRetryFrame
+    if frame then
         return
     end
-    f = CreateFrame("Frame")
-    CludesUI._fontRetryFrame = f
-    f:RegisterEvent("PLAYER_LOGIN")
-    f:RegisterEvent("PLAYER_ENTERING_WORLD")
-    f:RegisterEvent("LOADING_SCREEN_DISABLED")
-    f:SetScript("OnEvent", function(self, evt)
+    frame = CreateFrame("Frame")
+    CludesUI._fontRetryFrame = frame
+    frame:RegisterEvent("PLAYER_LOGIN")
+    frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    frame:RegisterEvent("LOADING_SCREEN_DISABLED")
+    frame:SetScript("OnEvent", function(self, evt)
         local pending, c = CludesUI._fontPathPending, CludesUI._fontPathOK
         local final = evt == "LOADING_SCREEN_DISABLED"
         for p in pairs(pending) do
@@ -821,10 +821,10 @@ function CludesUI.GetFontFamily(filePath, size, outlineFlags, shadow)
     if type(size) == "number" then
         size = math.floor(size * 4 + 0.5) / 4
     end
-    local t = CludesUI._fontFamilies[filePath]
-    t = t and t[size]
-    t = t and t[outlineFlags]
-    local fam = t and t[shadow]
+    local tbl = CludesUI._fontFamilies[filePath]
+    tbl = tbl and tbl[size]
+    tbl = tbl and tbl[outlineFlags]
+    local fam = tbl and tbl[shadow]
     if fam then
         return fam
     end
@@ -1188,9 +1188,9 @@ function CludesUI.GetIconTextOutlineFlag(moduleKey)
 
     -- Per-profile (rides profile export); the account-global table is the read-time fallback.
     local fontsDB = CludesUI.GetFontsDB()
-    local t = (fontsDB and fontsDB.outlineIconText) or (CludesUIDB and CludesUIDB.outlineIconText)
+    local tbl = (fontsDB and fontsDB.outlineIconText) or (CludesUIDB and CludesUIDB.outlineIconText)
     local outlineFlag
-    if t and t[moduleKey] == false then
+    if tbl and tbl[moduleKey] == false then
         -- Follows the outline mode, which is already slug-gated at the source.
         outlineFlag = (CludesUI.GetFontOutlineFlag(moduleKey)) or ""
     else

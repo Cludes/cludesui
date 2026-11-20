@@ -176,52 +176,52 @@ local function RegisterUFUnlockElements()
                         return
                     end
                     local unitToken = (key == "boss") and "boss1" or key
-                    local s = GetSettingsForUnit(unitToken)
-                    if not s then
+                    local cfg = GetSettingsForUnit(unitToken)
+                    if not cfg then
                         return
                     end
-                    local oldW = s.frameWidth
+                    local oldW = cfg.frameWidth
                     -- The pet, ToT and FoT frames always attach their portrait.
                     local miniUnit = unitToken == "pet"
                         or unitToken == "targettarget"
                         or unitToken == "focustarget"
-                    local wPStyle = s.portraitStyle or saved.profile.portraitStyle or "attached"
+                    local wPStyle = cfg.portraitStyle or saved.profile.portraitStyle or "attached"
                     if miniUnit and wPStyle == "detached" then
                         wPStyle = "attached"
                     end
-                    local showPortrait = wPStyle ~= "none" and s.showPortrait ~= false
+                    local showPortrait = wPStyle ~= "none" and cfg.showPortrait ~= false
                     local isAttached = wPStyle == "attached"
                     if showPortrait and isAttached then
                         -- The portrait's width, as GetFrameDimensions adds it:
                         -- the one subtraction that gives a reported size back.
                         local adjPH
-                        local powerPos = s.powerPosition or "below"
+                        local powerPos = cfg.powerPosition or "below"
                         local powerIsAtt = (powerPos == "below" or powerPos == "above")
                         if miniUnit then
                             -- A mini portrait squares off the bar stack, which
                             -- only a WoW Forever pet's attached power bar grows
                             -- (StyleSimpleFrame); Size does not touch it.
                             local petPowerH = (unitToken == "pet" and mod.UF_PetHasPower and powerIsAtt)
-                                    and (s.powerHeight or 6)
+                                    and (cfg.powerHeight or 6)
                                 or 0
-                            adjPH = s.healthHeight + petPowerH
+                            adjPH = cfg.healthHeight + petPowerH
                         else
-                            local pSizeAdj = s.portraitSize or 0
-                            local ptH = s.healthHeight + (powerIsAtt and (s.powerHeight or 6) or 0)
+                            local pSizeAdj = cfg.portraitSize or 0
+                            local ptH = cfg.healthHeight + (powerIsAtt and (cfg.powerHeight or 6) or 0)
                             adjPH = ptH + pSizeAdj
                             if adjPH < 8 then
                                 adjPH = 8
                             end
                         end
-                        s.frameWidth = math.max(Pix.Snap(wid - adjPH), s.healthVerticalFill and 20 or 50)
+                        cfg.frameWidth = math.max(Pix.Snap(wid - adjPH), cfg.healthVerticalFill and 20 or 50)
                     else
                         -- Vertical Fill bars are tall and slim (the options' Bar Width goes to 20).
-                        s.frameWidth = math.max(Pix.Snap(wid), s.healthVerticalFill and 20 or 50)
+                        cfg.frameWidth = math.max(Pix.Snap(wid), cfg.healthVerticalFill and 20 or 50)
                     end
                     -- A size match re-applied at the width the frame already has
                     -- (the settle pass re-runs every match after any anchored
                     -- element resizes) leaves nothing to rebuild.
-                    if CludesUI._propagatingMatch and s.frameWidth == oldW then
+                    if CludesUI._propagatingMatch and cfg.frameWidth == oldW then
                         return
                     end
                     Rebuild()
@@ -242,19 +242,19 @@ local function RegisterUFUnlockElements()
                         return
                     end
                     local unitToken = (key == "boss") and "boss1" or key
-                    local s = GetSettingsForUnit(unitToken)
-                    if not s then
+                    local cfg = GetSettingsForUnit(unitToken)
+                    if not cfg then
                         return
                     end
-                    local powerPos = s.powerPosition or "below"
+                    local powerPos = cfg.powerPosition or "below"
                     local powerIsAtt = (powerPos == "below" or powerPos == "above")
-                    local powerH = powerIsAtt and (s.powerHeight or 6) or 0
-                    local btbPos = s.btbPosition or "bottom"
+                    local powerH = powerIsAtt and (cfg.powerHeight or 6) or 0
+                    local btbPos = cfg.btbPosition or "bottom"
                     local btbIsAtt = (btbPos == "top" or btbPos == "bottom")
-                    local btbH = (s.bottomTextBar and btbIsAtt) and (s.bottomTextBarHeight or 16) or 0
-                    local oldH = s.healthHeight
-                    s.healthHeight = math.max(Pix.Snap(hgt - powerH - btbH), 8)
-                    if CludesUI._propagatingMatch and s.healthHeight == oldH then
+                    local btbH = (cfg.bottomTextBar and btbIsAtt) and (cfg.bottomTextBarHeight or 16) or 0
+                    local oldH = cfg.healthHeight
+                    cfg.healthHeight = math.max(Pix.Snap(hgt - powerH - btbH), 8)
+                    if CludesUI._propagatingMatch and cfg.healthHeight == oldH then
                         return
                     end
                     Rebuild()
@@ -468,29 +468,29 @@ local function RegisterUFUnlockElements()
                     -- (player defaults off; target/focus default on). The mover is
                     -- gated on each unlock-mode open, so toggling the setting takes
                     -- effect without a /reload.
-                    local s = GetCBSettings()
-                    if not s then
+                    local cfg = GetCBSettings()
+                    if not cfg then
                         return true
                     end
-                    if mod.VisEffective(s) == "never" then
+                    if mod.VisEffective(cfg) == "never" then
                         return true
                     end
                     if unitKey == "player" then
-                        return not s.showPlayerCastbar
+                        return not cfg.showPlayerCastbar
                     end
                     -- Pet: off by default, and no bar exists until built at login.
                     if unitKey == "pet" then
-                        return s.showCastbar ~= true
+                        return cfg.showCastbar ~= true
                     end
-                    return s.showCastbar == false
+                    return cfg.showCastbar == false
                 end,
                 getSize = function()
                     -- Return stored DB values so cog menu shows what the
                     -- user typed, not the pixel-snapped frame size.
-                    local s = GetCBSettings()
-                    if s then
-                        local wid = s[GetWidthKey()] or 181
-                        local hgt = s[GetHeightKey()] or 14
+                    local cfg = GetCBSettings()
+                    if cfg then
+                        local wid = cfg[GetWidthKey()] or 181
+                        local hgt = cfg[GetHeightKey()] or 14
                         return wid, hgt
                     end
                     return 100, 14
@@ -507,36 +507,36 @@ local function RegisterUFUnlockElements()
                     if not CF then
                         return nil
                     end
-                    local s = GetCBSettings()
-                    return CF.Pad(CF.ScaleK(s and s[mod.UF_CastClassicKey(unitKey)]), false)
+                    local cfg = GetCBSettings()
+                    return CF.Pad(CF.ScaleK(cfg and cfg[mod.UF_CastClassicKey(unitKey)]), false)
                 end,
                 setWidth = function(_, wid)
-                    local s = GetCBSettings()
-                    if not s then
+                    local cfg = GetCBSettings()
+                    if not cfg then
                         return
                     end
                     local newW = math.max(Pix.Snap(wid), 30)
-                    s[GetWidthKey()] = newW
+                    cfg[GetWidthKey()] = newW
                     local frame = GetCBFrame()
                     -- Stored height, not the live one: a holder on the Blizzard
                     -- Style aura block reads back a secret rect.
                     if frame then
-                        Pix.Size(frame, newW, s[GetHeightKey()] or 14)
+                        Pix.Size(frame, newW, cfg[GetHeightKey()] or 14)
                     end
                 end,
                 setHeight = function(_, hgt)
                     if not CludesUI._unlockActive and not CludesUI._unlockLayerApplying then
                         return
                     end
-                    local s = GetCBSettings()
-                    if not s then
+                    local cfg = GetCBSettings()
+                    if not cfg then
                         return
                     end
                     local newH = math.max(Pix.Snap(hgt), 5)
-                    s[GetHeightKey()] = newH
+                    cfg[GetHeightKey()] = newH
                     local frame = GetCBFrame()
                     if frame then
-                        Pix.Size(frame, s[GetWidthKey()] or 181, newH)
+                        Pix.Size(frame, cfg[GetWidthKey()] or 181, newH)
                     end
                     local uf = frameList[unitKey]
                     local cbar = uf and uf.Castbar

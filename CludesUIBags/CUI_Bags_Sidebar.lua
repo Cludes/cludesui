@@ -963,9 +963,9 @@ function mod.ShowCategoryTip()
     end
     local goal
     for i = 1, #_sidebarBtns do
-        local b = _sidebarBtns[i]
-        if b:IsShown() and (b._catIdx or 0) >= 1 and not b._noMove then
-            goal = b
+        local widget = _sidebarBtns[i]
+        if widget:IsShown() and (widget._catIdx or 0) >= 1 and not widget._noMove then
+            goal = widget
             break
         end
     end
@@ -1082,9 +1082,9 @@ local function PadCategoryEntries(root, button, category, catIndex, isGroupHeade
         end
     end
     local function Row(jdx)
-        local b = _sidebarBtns[jdx]
-        if b and b:IsShown() then
-            return b
+        local widget = _sidebarBtns[jdx]
+        if widget and widget:IsShown() then
+            return widget
         end
     end
     local upTarget, downTarget, moveGroup

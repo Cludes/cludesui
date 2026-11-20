@@ -65,8 +65,8 @@ mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
     -- Unset toggles follow the game's clock settings, so this clock and the
     -- minimap's agree.
     local function Modes()
-        local s = Settings()
-        local useLocal, use24 = s.localTime, s.twentyFour
+        local cfg = Settings()
+        local useLocal, use24 = cfg.localTime, cfg.twentyFour
         if useLocal == nil then
             useLocal = GetCVar("timeMgrUseLocalTime") == "1"
         end

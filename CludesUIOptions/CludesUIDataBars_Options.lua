@@ -2318,22 +2318,22 @@ CludesUI.AtOptionsLogin(function()
         for i = 1, #blocks do
             local b = blocks[i]
             local blockId = b.id
-            local s = b.settings
+            local cfg = b.settings
             -- Row accessors over s: a key read (or its default) and written.
             local function SFieldThen(barKey)
                 return function(value)
-                    s[barKey] = value
+                    cfg[barKey] = value
                     Apply()
                 end
             end
             local function SFieldOr(barKey, default)
                 return function()
-                    return s[barKey] or default
+                    return cfg[barKey] or default
                 end
             end
-            if not s then
-                s = {}
-                b.settings = s
+            if not cfg then
+                cfg = {}
+                b.settings = cfg
             end
             local isSpacer = b.type == "spacer"
             local typeLabel = TYPE_LABEL[b.type]
@@ -2473,10 +2473,10 @@ CludesUI.AtOptionsLogin(function()
                         text = "Enable Text",
                         tooltip = "Shows the online friend and guild counters.",
                         getValue = function()
-                            return s.hideSocialText ~= true
+                            return cfg.hideSocialText ~= true
                         end,
                         setValue = function(val)
-                            s.hideSocialText = not val
+                            cfg.hideSocialText = not val
                             Apply()
                         end,
                     }
@@ -2893,10 +2893,10 @@ CludesUI.AtOptionsLogin(function()
                     text = labelText,
                     tooltip = tipText,
                     getValue = function()
-                        return s[barKey] ~= false
+                        return cfg[barKey] ~= false
                     end,
                     setValue = function(val)
-                        s[barKey] = val and true or false
+                        cfg[barKey] = val and true or false
                         Apply()
                     end,
                 }
@@ -2945,7 +2945,7 @@ CludesUI.AtOptionsLogin(function()
                                 if color then
                                     return color.r or 1, color.g or 1, color.b or 1
                                 end
-                                return mod.BlockIconDefault(b.type, s)
+                                return mod.BlockIconDefault(b.type, cfg)
                             end,
                             setValue = function(r, g, bl)
                                 b.iconColor = { r = r, g = g, b = bl }
@@ -2963,7 +2963,7 @@ CludesUI.AtOptionsLogin(function()
                                     b.useIconAccentColor = nil
                                     b.useIconDefaultColor = nil
                                     if b.iconColor == nil then
-                                        local dr, dg2, db2 = mod.BlockIconDefault(b.type, s)
+                                        local dr, dg2, db2 = mod.BlockIconDefault(b.type, cfg)
                                         b.iconColor = { r = dr, g = dg2, b = db2 }
                                     end
                                     ApplyBlockColor()
@@ -3023,7 +3023,7 @@ CludesUI.AtOptionsLogin(function()
                             tooltip = "Default",
                             hasAlpha = false,
                             getValue = function()
-                                return mod.BlockIconDefault(b.type, s)
+                                return mod.BlockIconDefault(b.type, cfg)
                             end,
                             setValue = function() end,
                             onClick = function()
@@ -3048,7 +3048,7 @@ CludesUI.AtOptionsLogin(function()
                     -- lowest durability); same mode semantics, clearer name.
                     iconColorCfg.swatches[4].tooltip = "Dynamic"
                 end
-                if b.type == "spec" and s.iconStyle ~= "wow" then
+                if b.type == "spec" and cfg.iconStyle ~= "wow" then
                     -- Spec defaults to CLASS color: no Default swatch; the Class swatch
                     -- reads as selected in the nothing-stored state, and a legacy
                     -- stored Default-mode flag (from when the swatch existed) lights it
@@ -3061,7 +3061,7 @@ CludesUI.AtOptionsLogin(function()
                         return (IconFlagsOff() and b.iconColor == nil) and 1 or 0.3
                     end
                 end
-                if (b.type == "profession" or b.type == "profession2") and s.iconStyle ~= "wow" then
+                if (b.type == "profession" or b.type == "profession2") and cfg.iconStyle ~= "wow" then
                     -- Professions default to ACCENT (matches the skill-bar
                     -- fill), so they carry no Default swatch -- and Accent
                     -- reads as selected in the nothing-stored state too.
@@ -3084,10 +3084,10 @@ CludesUI.AtOptionsLogin(function()
                         text = "Show M+ Portals",
                         tooltip = "Show the Mythic+ teleport section in the tooltip. Ready rows are click-to-teleport.",
                         getValue = function()
-                            return s.clickableTeleports ~= false
+                            return cfg.clickableTeleports ~= false
                         end,
                         setValue = function(val)
-                            s.clickableTeleports = val and true or false
+                            cfg.clickableTeleports = val and true or false
                             Apply()
                         end,
                     }
@@ -3100,10 +3100,10 @@ CludesUI.AtOptionsLogin(function()
                         text = "Show Icon",
                         tooltip = "Shows the audio icon next to the volume bar.",
                         getValue = function()
-                            return s.showIcon ~= false
+                            return cfg.showIcon ~= false
                         end,
                         setValue = function(val)
-                            s.showIcon = val and true or false
+                            cfg.showIcon = val and true or false
                             Apply()
                         end,
                     }
@@ -3116,10 +3116,10 @@ CludesUI.AtOptionsLogin(function()
                         text = "Show Icon",
                         tooltip = "Shows the profession icons next to the text.",
                         getValue = function()
-                            return s.showIcon ~= false
+                            return cfg.showIcon ~= false
                         end,
                         setValue = function(val)
-                            s.showIcon = val and true or false
+                            cfg.showIcon = val and true or false
                             Apply()
                         end,
                     }
@@ -3132,10 +3132,10 @@ CludesUI.AtOptionsLogin(function()
                         text = "Show Icon",
                         tooltip = "Shows the spec icon next to the text.",
                         getValue = function()
-                            return s.showIcon ~= false
+                            return cfg.showIcon ~= false
                         end,
                         setValue = function(val)
-                            s.showIcon = val and true or false
+                            cfg.showIcon = val and true or false
                             Apply()
                         end,
                     }
@@ -3158,10 +3158,10 @@ CludesUI.AtOptionsLogin(function()
                         text = "Show Icon",
                         tooltip = "Shows the icon next to the durability readout.",
                         getValue = function()
-                            return s.showIcon == true
+                            return cfg.showIcon == true
                         end,
                         setValue = function(val)
-                            s.showIcon = val and true or false
+                            cfg.showIcon = val and true or false
                             Apply()
                         end,
                     }
@@ -3181,7 +3181,7 @@ CludesUI.AtOptionsLogin(function()
                         },
                         order = { "none", "short", "long", "icon" },
                         getValue = function()
-                            local profile = s.prefix
+                            local profile = cfg.prefix
                             if profile == nil then
                                 profile = "short"
                             end
@@ -3196,10 +3196,10 @@ CludesUI.AtOptionsLogin(function()
                         text = "Show Silver and Copper",
                         tooltip = "Shows silver and copper, not just gold.",
                         getValue = function()
-                            return s.showSmall == true
+                            return cfg.showSmall == true
                         end,
                         setValue = function(val)
-                            s.showSmall = val and true or false
+                            cfg.showSmall = val and true or false
                             Apply()
                         end,
                     }
@@ -3220,10 +3220,10 @@ CludesUI.AtOptionsLogin(function()
                     text = labelText,
                     tooltip = tipText,
                     getValue = function()
-                        return s[barKey] == true
+                        return cfg[barKey] == true
                     end,
                     setValue = function(val)
-                        s[barKey] = val and true or false
+                        cfg[barKey] = val and true or false
                         Apply()
                     end,
                 }
@@ -3260,13 +3260,13 @@ CludesUI.AtOptionsLogin(function()
                         text = "Local Time",
                         tooltip = "Local computer time instead of server time.",
                         getValue = function()
-                            if s.localTime == nil then
+                            if cfg.localTime == nil then
                                 return GetCVar("timeMgrUseLocalTime") == "1"
                             end
-                            return s.localTime == true
+                            return cfg.localTime == true
                         end,
                         setValue = function(val)
-                            s.localTime = val and true or false
+                            cfg.localTime = val and true or false
                             Apply()
                         end,
                     },
@@ -3275,13 +3275,13 @@ CludesUI.AtOptionsLogin(function()
                         text = "24 Hour Clock",
                         tooltip = "Use 24-hour time.",
                         getValue = function()
-                            if s.twentyFour == nil then
+                            if cfg.twentyFour == nil then
                                 return GetCVar("timeMgrUseMilitaryTime") == "1"
                             end
-                            return s.twentyFour == true
+                            return cfg.twentyFour == true
                         end,
                         setValue = function(val)
-                            s.twentyFour = val and true or false
+                            cfg.twentyFour = val and true or false
                             Apply()
                         end,
                     },
@@ -3309,7 +3309,7 @@ CludesUI.AtOptionsLogin(function()
                         values = { home = "Home", world = "World", both = "Both" },
                         order = { "home", "world", "both" },
                         getValue = function()
-                            return mod.LatencyMode(s)
+                            return mod.LatencyMode(cfg)
                         end,
                         setValue = SFieldThen("latencyMode"),
                     },
@@ -3321,10 +3321,10 @@ CludesUI.AtOptionsLogin(function()
                         text = "Show Icon",
                         tooltip = "Shows a house or globe icon marking which latency each value is.",
                         getValue = function()
-                            return s.showIcon == true
+                            return cfg.showIcon == true
                         end,
                         setValue = function(val)
-                            s.showIcon = val and true or false
+                            cfg.showIcon = val and true or false
                             Apply()
                             CludesUI:RefreshPage()
                         end,
@@ -3357,10 +3357,10 @@ CludesUI.AtOptionsLogin(function()
                         disabled = WidthInert,
                         disabledTooltip = INERT_TIP,
                         getValue = function()
-                            return mod.LocationWidthMode(s)
+                            return mod.LocationWidthMode(cfg)
                         end,
                         setValue = function(val)
-                            s.widthMode = val
+                            cfg.widthMode = val
                             -- Every switch to Manual re-arms the pulse, whether
                             -- the block is new or was already configured: the
                             -- slider is the control that just took over, so it
@@ -3392,7 +3392,7 @@ CludesUI.AtOptionsLogin(function()
                             if WidthInert() then
                                 return true
                             end
-                            return mod.LocationWidthMode(s) ~= "manual"
+                            return mod.LocationWidthMode(cfg) ~= "manual"
                         end,
                         -- Two reasons to be disabled, two different sentences:
                         -- a fixed "Manual width is required." would be plainly
@@ -3404,14 +3404,14 @@ CludesUI.AtOptionsLogin(function()
                             return "Manual width is required."
                         end,
                         getValue = function()
-                            local val = s.maxWidth
+                            local val = cfg.maxWidth
                             if val == nil then
                                 val = mod.LOC_MAX_WIDTH_DEFAULT
                             end
                             return val
                         end,
                         setValue = function(val)
-                            s.maxWidth = val
+                            cfg.maxWidth = val
                             -- Touched: the pulse has done its job.
                             _edbWidthPulse[b] = nil
                             Apply()
@@ -3432,7 +3432,7 @@ CludesUI.AtOptionsLogin(function()
                         values = { [0] = "None", [1] = "One", [2] = "Two" },
                         order = { 0, 1, 2 },
                         getValue = function()
-                            local profile = s.precision
+                            local profile = cfg.precision
                             if profile == nil then
                                 profile = 0
                             end
@@ -3521,7 +3521,7 @@ CludesUI.AtOptionsLogin(function()
                         values = { off = "Off", values = "Values", percentage = "Percentage" },
                         order = { "off", "values", "percentage" },
                         getValue = function()
-                            return mod.GetXPRepTextDisplay(s)
+                            return mod.GetXPRepTextDisplay(cfg)
                         end,
                         setValue = SFieldThen("textDisplay"),
                     },
@@ -3533,7 +3533,7 @@ CludesUI.AtOptionsLogin(function()
                         getValue = SFieldOr("textFormat", "context"),
                         setValue = SFieldThen("textFormat"),
                         disabled = function()
-                            return mod.GetXPRepTextDisplay(s) == "off"
+                            return mod.GetXPRepTextDisplay(cfg) == "off"
                         end,
                     },
                     {
@@ -3543,7 +3543,7 @@ CludesUI.AtOptionsLogin(function()
                         values = { auto = "Automatic", xp = "Experience", rep = "Reputation" },
                         order = { "auto", "xp", "rep" },
                         getValue = function()
-                            local m = s.mode
+                            local m = cfg.mode
                             if m == nil then
                                 m = "auto"
                             end
@@ -3559,7 +3559,7 @@ CludesUI.AtOptionsLogin(function()
                 }
             elseif b.type == "travel" then
                 local function ChoiceOf(button)
-                    return mod.TravelClickChoice(s, button)
+                    return mod.TravelClickChoice(cfg, button)
                 end
                 -- Houses arrive asynchronously: the page refresh lists them (the refill below).
                 mod.TravelRequestHouseList(function()
@@ -3664,10 +3664,10 @@ CludesUI.AtOptionsLogin(function()
                             return ChoiceOf(button)
                         end,
                         setValue = function(val)
-                            s[CLICK_KEYS[button]] = val
+                            cfg[CLICK_KEYS[button]] = val
                             -- Mirrored for old readers/exports of the legacy boolean.
                             if button == 1 then
-                                s.randomizeHs = (val == "random")
+                                cfg.randomizeHs = (val == "random")
                             end
                             Apply()
                             CludesUI:RefreshPage()
@@ -3680,10 +3680,10 @@ CludesUI.AtOptionsLogin(function()
                         values = TEXT_VALUES,
                         order = TEXT_ORDER,
                         getValue = function()
-                            return mod.TravelClickTextMode(s, button)
+                            return mod.TravelClickTextMode(cfg, button)
                         end,
                         setValue = function(val)
-                            s[TEXT_KEYS[button]] = val
+                            cfg[TEXT_KEYS[button]] = val
                             Apply()
                         end,
                         disabled = function()
@@ -3764,7 +3764,7 @@ CludesUI.AtOptionsLogin(function()
                         step = 1,
                         tooltip = "Gap between the main menu button and the icon row.",
                         getValue = function()
-                            local val = s.mainMenuSpacing
+                            local val = cfg.mainMenuSpacing
                             if val == nil then
                                 val = 4
                             end
@@ -3781,7 +3781,7 @@ CludesUI.AtOptionsLogin(function()
                         step = 1,
                         tooltip = "Gap between the micro menu icons.",
                         getValue = function()
-                            local val = s.iconSpacing
+                            local val = cfg.iconSpacing
                             if val == nil then
                                 val = 2
                             end
@@ -3820,7 +3820,7 @@ CludesUI.AtOptionsLogin(function()
                         values = cValues,
                         order = cOrder,
                         getValue = function()
-                            local ident = s.currencyId
+                            local ident = cfg.currencyId
                             if ident == nil then
                                 ident = 0
                             end
@@ -3828,9 +3828,9 @@ CludesUI.AtOptionsLogin(function()
                         end,
                         setValue = function(val)
                             if val == 0 then
-                                s.currencyId = nil
+                                cfg.currencyId = nil
                             else
-                                s.currencyId = val
+                                cfg.currencyId = val
                             end
                             Apply()
                         end,
@@ -3870,7 +3870,7 @@ CludesUI.AtOptionsLogin(function()
                         },
                         order = { "slash", "line", "dash", "space" },
                         getValue = function()
-                            local val = s.separator
+                            local val = cfg.separator
                             if val == nil then
                                 val = "slash"
                             end
@@ -3899,13 +3899,13 @@ CludesUI.AtOptionsLogin(function()
                         values = { asc = "Lowest First", desc = "Highest First" },
                         order = { "asc", "desc" },
                         getValue = function()
-                            if s.reverse == true then
+                            if cfg.reverse == true then
                                 return "desc"
                             end
                             return "asc"
                         end,
                         setValue = function(val)
-                            s.reverse = (val == "desc")
+                            cfg.reverse = (val == "desc")
                             Apply()
                         end,
                     },
@@ -3942,8 +3942,8 @@ CludesUI.AtOptionsLogin(function()
                         tooltip = "Colors the number when free slots drop below this many; the swatch picks the color. Zero turns it off.",
                         getValue = SFieldOr("lowThreshold", 0),
                         setValue = function(val)
-                            local wasOn = (s.lowThreshold or 0) > 0
-                            s.lowThreshold = val
+                            local wasOn = (cfg.lowThreshold or 0) > 0
+                            cfg.lowThreshold = val
                             Apply()
                             -- Swatch enable state flips only when crossing zero.
                             if wasOn ~= (val > 0) then
@@ -3978,7 +3978,7 @@ CludesUI.AtOptionsLogin(function()
                         values = { equipped = "Equipped", total = "Total", both = "Both" },
                         order = { "equipped", "total", "both" },
                         getValue = function()
-                            local val = s.value
+                            local val = cfg.value
                             if val == nil then
                                 val = "equipped"
                             end
@@ -3993,7 +3993,7 @@ CludesUI.AtOptionsLogin(function()
                         values = { [0] = "None", [1] = "One", [2] = "Two" },
                         order = { 0, 1, 2 },
                         getValue = function()
-                            local profile = s.precision
+                            local profile = cfg.precision
                             if profile == nil then
                                 profile = 0
                             end
@@ -4015,9 +4015,9 @@ CludesUI.AtOptionsLogin(function()
                 -- read as the current pick: an empty-looking dropdown invites a
                 -- change the player never meant to make, and the block itself is
                 -- only collapsed, not unconfigured.
-                if s.source and not lValues[s.source] then
-                    lValues[s.source] = s.source .. " |cff808080(" .. L("not loaded") .. ")|r"
-                    lOrder[#lOrder + 1] = s.source
+                if cfg.source and not lValues[cfg.source] then
+                    lValues[cfg.source] = cfg.source .. " |cff808080(" .. L("not loaded") .. ")|r"
+                    lOrder[#lOrder + 1] = cfg.source
                 end
                 typeRowList = {
                     {
@@ -4029,9 +4029,9 @@ CludesUI.AtOptionsLogin(function()
                         getValue = SFieldOr("source", ""),
                         setValue = function(val)
                             if val == "" then
-                                s.source = nil
+                                cfg.source = nil
                             else
-                                s.source = val
+                                cfg.source = val
                             end
                             Apply()
                         end,
@@ -4062,9 +4062,9 @@ CludesUI.AtOptionsLogin(function()
                         getValue = SFieldOr("maxWidth", 0),
                         setValue = function(val)
                             if val == 0 then
-                                s.maxWidth = nil
+                                cfg.maxWidth = nil
                             else
-                                s.maxWidth = val
+                                cfg.maxWidth = val
                             end
                             Apply()
                         end,
@@ -4090,17 +4090,17 @@ CludesUI.AtOptionsLogin(function()
                     -- Item Level shows its icon only as the "Icon" prefix.
                     disabled = function()
                         if b.type == "ilvl" then
-                            return s.prefix ~= "icon"
+                            return cfg.prefix ~= "icon"
                         end
                         if b.type == "gold" then
-                            return s.showIcons == false
+                            return cfg.showIcons == false
                         end
-                        return s.showIcon == false
+                        return cfg.showIcon == false
                     end,
                     disabledTooltip = b.type == "ilvl" and "Prefix: Icon" or "Show Icon",
                     getValue = SFieldOr("iconStyle", "custom"),
                     setValue = function(val)
-                        s.iconStyle = val
+                        cfg.iconStyle = val
                         Apply()
                         -- Rebuild: the icon color swatches depend on the style.
                         CludesUI:RefreshPage(true)
@@ -4132,11 +4132,11 @@ CludesUI.AtOptionsLogin(function()
                         regionFrame:GetFrameLevel() + 2,
                         mod.ClassResourceChoices,
                         function(barKey)
-                            return mod.ClassResourceShown(s, barKey)
+                            return mod.ClassResourceShown(cfg, barKey)
                         end,
                         function(barKey, value)
-                            s.hiddenItems = s.hiddenItems or {}
-                            s.hiddenItems[barKey] = not value
+                            cfg.hiddenItems = cfg.hiddenItems or {}
+                            cfg.hiddenItems[barKey] = not value
                             Apply()
                         end,
                         nil,
@@ -4182,7 +4182,7 @@ CludesUI.AtOptionsLogin(function()
                         slotSide = "left",
                         -- Pulse until the player actually picks one.
                         holdWhile = function()
-                            return s.currencyId == nil
+                            return cfg.currencyId == nil
                         end,
                     }
                 end
@@ -4200,7 +4200,7 @@ CludesUI.AtOptionsLogin(function()
                         target = row,
                         slotSide = "left",
                         holdWhile = function()
-                            return s.source == nil
+                            return cfg.source == nil
                         end,
                     }
                 end
@@ -4226,7 +4226,7 @@ CludesUI.AtOptionsLogin(function()
                 local region = msIconRow._rightRegion
                 local anchor = region._control
                 local function IconOn()
-                    return s.showIcon == true
+                    return cfg.showIcon == true
                 end
                 local function FlagsOff()
                     return not b.useIconClassColor and not b.useIconAccentColor and not b.useIconDefaultColor
@@ -4350,14 +4350,14 @@ CludesUI.AtOptionsLogin(function()
                     bagsLowRow:GetFrameLevel() + 3,
                     function()
                         local d = mod.BAGS_LOW_COLOR
-                        local color = s.lowColor
+                        local color = cfg.lowColor
                         if color then
                             return color.r or d[1], color.g or d[2], color.b or d[3]
                         end
                         return d[1], d[2], d[3]
                     end,
                     function(r, g, bl)
-                        s.lowColor = { r = r, g = g, b = bl }
+                        cfg.lowColor = { r = r, g = g, b = bl }
                         Apply()
                     end,
                     false,
@@ -4365,7 +4365,7 @@ CludesUI.AtOptionsLogin(function()
                 )
                 Pix.Point(colorSwatch, "RIGHT", region._control, "LEFT", -8, 0)
                 GatedSwatch(colorSwatch, updateSwatch, "Low Space Warning", 5, function()
-                    return (s.lowThreshold or 0) > 0
+                    return (cfg.lowThreshold or 0) > 0
                 end)
                 region._lastInline = colorSwatch
             end
@@ -4392,13 +4392,13 @@ CludesUI.AtOptionsLogin(function()
                         rightRegion:GetFrameLevel() + 2,
                         GOLD_TIP_ELEMENTS,
                         function(keyName)
-                            return s[keyName] ~= false
+                            return cfg[keyName] ~= false
                         end,
                         function(keyName, val)
                             if val then
-                                s[keyName] = true
+                                cfg[keyName] = true
                             else
-                                s[keyName] = false
+                                cfg[keyName] = false
                             end
                         end
                     )
@@ -4446,13 +4446,13 @@ CludesUI.AtOptionsLogin(function()
                         leftRegion:GetFrameLevel() + 2,
                         CrestElements,
                         function(keyName)
-                            return s[keyName] ~= false
+                            return cfg[keyName] ~= false
                         end,
                         function(keyName, val)
                             if val then
-                                s[keyName] = true
+                                cfg[keyName] = true
                             else
-                                s[keyName] = false
+                                cfg[keyName] = false
                             end
                             Apply()
                         end
@@ -4521,7 +4521,7 @@ CludesUI.AtOptionsLogin(function()
                     for _, el in ipairs(MM_ELEMENTS) do
                         labels[el.key] = el.label
                     end
-                    for _, barKey in ipairs(mod.GetMicroMenuOrder(s, {})) do
+                    for _, barKey in ipairs(mod.GetMicroMenuOrder(cfg, {})) do
                         if labels[barKey] then
                             itemList[#itemList + 1] = { key = barKey, label = labels[barKey] }
                         end
@@ -4532,19 +4532,19 @@ CludesUI.AtOptionsLogin(function()
                         leftRegion:GetFrameLevel() + 2,
                         itemList,
                         function(keyName)
-                            return mod.MicroMenuButtonOn(s, keyName)
+                            return mod.MicroMenuButtonOn(cfg, keyName)
                         end,
                         function(keyName, val)
                             if val then
-                                s[keyName] = true
+                                cfg[keyName] = true
                             else
-                                s[keyName] = false
+                                cfg[keyName] = false
                             end
                             Apply()
                         end,
                         {
                             setOrder = function(keyList)
-                                mod.SetMicroMenuOrder(s, keyList)
+                                mod.SetMicroMenuOrder(cfg, keyList)
                                 Apply()
                             end,
                         }
@@ -4563,10 +4563,10 @@ CludesUI.AtOptionsLogin(function()
                     text = "Show Guild Notes",
                     tooltip = "Shows each online member's public note after their name in the Guild tooltip.",
                     getValue = function()
-                        return s.showGuildNotes == true
+                        return cfg.showGuildNotes == true
                     end,
                     setValue = function(val)
-                        s.showGuildNotes = val and true or false
+                        cfg.showGuildNotes = val and true or false
                         Apply()
                         CludesUI:RefreshPage()
                     end,
@@ -4578,14 +4578,14 @@ CludesUI.AtOptionsLogin(function()
                         region,
                         notesRow:GetFrameLevel() + 3,
                         function()
-                            local color = s.guildNoteColor
+                            local color = cfg.guildNoteColor
                             if not color then
                                 return 0.925, 0.839, 0.447
                             end
                             return color.r or 0.925, color.g or 0.839, color.b or 0.447
                         end,
                         function(r, g, b2)
-                            s.guildNoteColor = { r = r, g = g, b = b2 }
+                            cfg.guildNoteColor = { r = r, g = g, b = b2 }
                             Apply()
                         end,
                         false,
@@ -4594,7 +4594,7 @@ CludesUI.AtOptionsLogin(function()
                     Pix.Point(colorSwatch, "RIGHT", region._control, "LEFT", -8, 0)
                     region._lastInline = colorSwatch
                     GatedSwatch(colorSwatch, updateSwatch, "Show Guild Notes", 10, function()
-                        return s.showGuildNotes == true
+                        return cfg.showGuildNotes == true
                     end)
                 end
             end

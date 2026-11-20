@@ -1938,16 +1938,16 @@ local ufFP = {}
 
 local function FP(...)
     local n = select("#", ...)
-    local t = {}
+    local tbl = {}
     for index = 1, n do
         local val = select(index, ...)
         if type(val) == "number" then
-            t[index] = string.format("%.2f", val)
+            tbl[index] = string.format("%.2f", val)
         else
-            t[index] = tostring(val)
+            tbl[index] = tostring(val)
         end
     end
-    return table.concat(t, "|")
+    return table.concat(tbl, "|")
 end
 
 -- Fingerprint of a BUILT style table (BuildStyle is a pure function of the settings, so

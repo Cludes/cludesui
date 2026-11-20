@@ -18,14 +18,14 @@ local MAX_MINUTES = 60
 function mod.BreakSettings()
     local p = mod.RaidLeadDB()
     p.breakTimer = p.breakTimer or {}
-    local s = p.breakTimer
-    if s.enabled == nil then
-        s.enabled = true
+    local cfg = p.breakTimer
+    if cfg.enabled == nil then
+        cfg.enabled = true
     end
-    if s.sound == nil then
-        s.sound = true
+    if cfg.sound == nil then
+        cfg.sound = true
     end
-    return s
+    return cfg
 end
 
 local function Say(textValue)

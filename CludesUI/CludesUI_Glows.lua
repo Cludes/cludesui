@@ -1991,7 +1991,7 @@ do
         local position, converted = G.ResolveStyle(specInfo.style, owner, specInfo.excludes)
         wid = wid or 36
         hgt = hgt or wid
-        local s = holder._cuiSpecSig
+        local color = holder._cuiSpecSig
         local rec = BOUND[holder]
         -- The static borders: no glow, no parameters. Blizzard Border: nil
         -- color = Blizzard's art. Blizzard Pandemic Border: always untinted.
@@ -2007,13 +2007,13 @@ do
             -- there, so the alpha is re-asserted even when nothing changed.
             holder:SetAlpha(1)
             if
-                s
-                and s.idx == position
-                and s.w == wid
-                and s.h == hgt
-                and s.r == red
-                and s.g == green
-                and s.b == blue
+                color
+                and color.idx == position
+                and color.w == wid
+                and color.h == hgt
+                and color.r == red
+                and color.g == green
+                and color.b == blue
             then
                 return position, false
             end
@@ -2027,8 +2027,8 @@ do
                 if other then
                     other:Hide()
                 end
-                if s then
-                    s.idx = nil
+                if color then
+                    color.idx = nil
                 end
             end
             if position == STEALABLE_BORDER then
@@ -2040,11 +2040,11 @@ do
             if rec and not SyncBoundHost(holder, rec, 0) then
                 return position, false
             end
-            if not s then
-                s = {}
-                holder._cuiSpecSig = s
+            if not color then
+                color = {}
+                holder._cuiSpecSig = color
             end
-            s.idx, s.host, s.w, s.h, s.r, s.g, s.b = position, owner, wid, hgt, red, green, blue
+            color.idx, color.host, color.w, color.h, color.r, color.g, color.b = position, owner, wid, hgt, red, green, blue
             return position, false
         end
         -- A shown static border needs no separate hide: every start below
@@ -2074,25 +2074,25 @@ do
         local shapeMask = extra and extra.shapeMask or nil
 
         if
-            s
+            color
             and holder._cuiGlowActive
-            and s.idx == position
-            and s.host == owner
-            and s.w == wid
-            and s.h == hgt
-            and s.r == red
-            and s.g == green
-            and s.b == blue
-            and s.N == N
-            and s.th == th
-            and s.period == period
-            and s.bg == bgOn
-            and s.bgR == bgR
-            and s.bgG == bgG
-            and s.bgB == bgB
-            and s.mask == maskTex
-            and s.maskPath == maskPath
-            and s.shapeMask == shapeMask
+            and color.idx == position
+            and color.host == owner
+            and color.w == wid
+            and color.h == hgt
+            and color.r == red
+            and color.g == green
+            and color.b == blue
+            and color.N == N
+            and color.th == th
+            and color.period == period
+            and color.bg == bgOn
+            and color.bgR == bgR
+            and color.bgG == bgG
+            and color.bgB == bgB
+            and color.mask == maskTex
+            and color.maskPath == maskPath
+            and color.shapeMask == shapeMask
         then
             return position, converted
         end
@@ -2127,15 +2127,15 @@ do
         end
 
         -- Stored after the start: StartGlow's StopAllGlows invalidates it.
-        s = holder._cuiSpecSig
-        if not s then
-            s = {}
-            holder._cuiSpecSig = s
+        color = holder._cuiSpecSig
+        if not color then
+            color = {}
+            holder._cuiSpecSig = color
         end
-        s.idx, s.host, s.w, s.h, s.r, s.g, s.b = position, owner, wid, hgt, red, green, blue
-        s.N, s.th, s.period = N, th, period
-        s.bg, s.bgR, s.bgG, s.bgB, s.mask = bgOn, bgR, bgG, bgB, maskTex
-        s.maskPath, s.shapeMask = maskPath, shapeMask
+        color.idx, color.host, color.w, color.h, color.r, color.g, color.b = position, owner, wid, hgt, red, green, blue
+        color.N, color.th, color.period = N, th, period
+        color.bg, color.bgR, color.bgG, color.bgB, color.mask = bgOn, bgR, bgG, bgB, maskTex
+        color.maskPath, color.shapeMask = maskPath, shapeMask
         return position, converted
     end
 
@@ -2192,9 +2192,9 @@ do
             end
             rec = { button = btnFrame, d = glowData }
             BOUND[holder] = rec
-            local s = holder._cuiSpecSig
-            if s then
-                s.idx = nil
+            local cfg = holder._cuiSpecSig
+            if cfg then
+                cfg.idx = nil
             end
         end
         if kickIcon then

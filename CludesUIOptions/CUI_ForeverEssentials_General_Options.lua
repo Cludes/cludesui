@@ -59,28 +59,28 @@ local function NameFormatSources()
                 local p, isShown, all = uf.db.profile, nil, nil
                 for idx = 1, #slots do
                     local e = slots[idx]
-                    local s = p[e.unit]
-                    if s and uf.GetUnitFrameSource(e.unit) == "cui" then
-                        local m = ModeOf(s[e.format])
+                    local cfg = p[e.unit]
+                    if cfg and uf.GetUnitFrameSource(e.unit) == "cui" then
+                        local m = ModeOf(cfg[e.format])
                         -- A power text without Custom never names, so it does
                         -- not count toward the fallback either.
-                        if not e.power or s[e.content] == "custom" then
+                        if not e.power or cfg[e.content] == "custom" then
                             all = Merge(all, m)
                         end
                         -- A power text shows while its position is set and, under a
                         -- stock style, Hide Power Bar leaves it (ApplyPowerPercentText).
                         local powerShown = not e.power
                             or (
-                                (s[e.power] or "none") ~= "none"
+                                (cfg[e.power] or "none") ~= "none"
                                 and not (
                                     uf.UF_Blizz()
-                                    and uf.UF_IsMainSettings(s)
-                                    and uf.UF_StockHidesPower(s)
+                                    and uf.UF_IsMainSettings(cfg)
+                                    and uf.UF_StockHidesPower(cfg)
                                 )
                             )
                         if
-                            uf.UF_ContentShowsName(s[e.content], s[e.custom])
-                            and (not e.btb or s.bottomTextBar)
+                            uf.UF_ContentShowsName(cfg[e.content], cfg[e.custom])
+                            and (not e.btb or cfg.bottomTextBar)
                             and powerShown
                         then
                             isShown = Merge(isShown, m)
@@ -92,9 +92,9 @@ local function NameFormatSources()
             set = function(val)
                 local p, mode = uf.db.profile, Stored(val)
                 for idx = 1, #slots do
-                    local s = p[slots[idx].unit]
-                    if s then
-                        s[slots[idx].format] = mode
+                    local cfg = p[slots[idx].unit]
+                    if cfg then
+                        cfg[slots[idx].format] = mode
                     end
                 end
                 uf.ReloadFrames()

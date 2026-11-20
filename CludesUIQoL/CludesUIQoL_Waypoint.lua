@@ -35,8 +35,8 @@ end
 
 -- The hand-placed pin setting, read each time (the options cog writes it).
 local function HandPins()
-    local s = CludesUIDB.waypointCmd
-    return s ~= nil and s.manualArrival == true
+    local cfg = CludesUIDB.waypointCmd
+    return cfg ~= nil and cfg.manualArrival == true
 end
 
 local function MapName(mapID)

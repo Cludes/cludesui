@@ -234,22 +234,22 @@ function TryAlt()
         StopHover()
         return
     end
-    local s = slots[hovered]
-    local details = s and C_Container.GetContainerItemInfo(s.bag, s.slot)
-    local spell = details and details.itemID and SpellFor(s.bag, s.slot, details)
+    local cfg = slots[hovered]
+    local details = cfg and C_Container.GetContainerItemInfo(cfg.bag, cfg.slot)
+    local spell = details and details.itemID and SpellFor(cfg.bag, cfg.slot, details)
     if spell then
-        ShowCast(hovered, spell, s.bag, s.slot)
+        ShowCast(hovered, spell, cfg.bag, cfg.slot)
     end
 end
 
 local function OnSlotEnter(button)
-    local s = enabled and slots[button]
-    if not s or InCombatLockdown() then
+    local cfg = enabled and slots[button]
+    if not cfg or InCombatLockdown() then
         return
     end
     if isActive then
-        if s.spell then
-            ShowCast(button, s.spell, s.bag, s.slot)
+        if cfg.spell then
+            ShowCast(button, cfg.spell, cfg.bag, cfg.slot)
         end
     else
         hovered = button
@@ -371,13 +371,13 @@ function SetActive(on)
 end
 
 local function BuildIcon()
-    local b = CreateFrame("Button", nil, CUI_Bags._bagsBtn:GetParent())
-    b:SetSize(22, 22)
-    b.icon = b:CreateTexture(nil, "OVERLAY")
-    b.icon:SetAtlas(ICON_ATLAS)
-    b.icon:SetSize(18, 18)
-    b.icon:SetPoint("CENTER")
-    b.icon:SetAlpha(0.9)
+    local widget = CreateFrame("Button", nil, CUI_Bags._bagsBtn:GetParent())
+    widget:SetSize(22, 22)
+    widget.icon = widget:CreateTexture(nil, "OVERLAY")
+    widget.icon:SetAtlas(ICON_ATLAS)
+    widget.icon:SetSize(18, 18)
+    widget.icon:SetPoint("CENTER")
+    widget.icon:SetAlpha(0.9)
     -- The spells by the client's own names (only WoW Forever's Mages
     -- comprehend scrolls).
     local nameList = {}
@@ -390,19 +390,19 @@ local function BuildIcon()
         "Highlights the items your spells can work on (%s). Click a matching item while this mode is on, or Alt-click it. Out of combat only.",
         table.concat(nameList, ", ")
     )
-    b:SetScript("OnEnter", function(self)
+    widget:SetScript("OnEnter", function(self)
         self.icon:SetAlpha(1)
         CUI.ShowWidgetTooltip(self, isActive and CludesUI.L("Leave Quick Actions.") or tipText)
     end)
-    b:SetScript("OnLeave", function(self)
+    widget:SetScript("OnLeave", function(self)
         self.icon:SetAlpha(0.9)
         CUI.HideWidgetTooltip()
     end)
-    b:SetScript("OnClick", function()
+    widget:SetScript("OnClick", function()
         CUI.HideWidgetTooltip()
         SetActive(not isActive)
     end)
-    CUI_Bags._quickBtn = b
+    CUI_Bags._quickBtn = widget
 end
 
 local function SyncEnabled(on)
@@ -440,12 +440,12 @@ function mod.SyncQuickActionsIcon(previous, gap)
     if on and not CUI_Bags._quickBtn then
         BuildIcon()
     end
-    local b = CUI_Bags._quickBtn
-    if not b then
+    local widget = CUI_Bags._quickBtn
+    if not widget then
         return nil
     end
-    b:ClearAllPoints()
-    b:SetPoint("RIGHT", previous, "LEFT", -gap, 0)
-    b:SetShown(on)
-    return on and b or nil
+    widget:ClearAllPoints()
+    widget:SetPoint("RIGHT", previous, "LEFT", -gap, 0)
+    widget:SetShown(on)
+    return on and widget or nil
 end

@@ -43,9 +43,9 @@ CludesUI.AtOptionsLogin(function()
 
     local function IconsChanged()
         mod.RefreshAllIconSettings()
-        local f = Frame()
-        if mod.isTestMode and f then
-            f:UpdateDebuffs()
+        local frame = Frame()
+        if mod.isTestMode and frame then
+            frame:UpdateDebuffs()
         end
     end
 
@@ -202,18 +202,18 @@ CludesUI.AtOptionsLogin(function()
             hostFrame,
             cursorY,
             Slider("Width", "frameWidth", K.DEFAULT_WIDTH, K.MIN_WIDTH, K.MAX_WIDTH, 5, function(val)
-                local f = Frame()
-                if f and not InCombatLockdown() then
-                    f:SetWidth(val)
-                    f:FitNameToWidth()
+                local frame = Frame()
+                if frame and not InCombatLockdown() then
+                    frame:SetWidth(val)
+                    frame:FitNameToWidth()
                 end
             end),
             Slider("Height", "frameHeight", K.DEFAULT_HEIGHT, K.MIN_HEIGHT, K.MAX_HEIGHT, 5, function(val)
-                local f = Frame()
-                if f and not InCombatLockdown() then
-                    f:SetHeight(val)
+                local frame = Frame()
+                if frame and not InCombatLockdown() then
+                    frame:SetHeight(val)
                 end
-                mod.RefreshAuraContainerLayout(f)
+                mod.RefreshAuraContainerLayout(frame)
                 mod.RestyleAuraButtons()
             end)
         )
@@ -262,11 +262,11 @@ CludesUI.AtOptionsLogin(function()
                 K.DEBUFF_MAX_COUNT,
                 1,
                 function(val)
-                    local f = Frame()
-                    if f then
-                        f:UpdateAndRefreshDebuffLayout(val)
+                    local frame = Frame()
+                    if frame then
+                        frame:UpdateAndRefreshDebuffLayout(val)
                         if mod.isTestMode then
-                            f:ShowMockDebuffs()
+                            frame:ShowMockDebuffs()
                         end
                     end
                 end
@@ -325,11 +325,11 @@ CludesUI.AtOptionsLogin(function()
                 K.BIG_DEFENSIVES_MAX_COUNT,
                 1,
                 function(val)
-                    local f = Frame()
-                    if f then
-                        f:UpdateAndRefreshDefensiveLayout(val)
+                    local frame = Frame()
+                    if frame then
+                        frame:UpdateAndRefreshDefensiveLayout(val)
                         if mod.isTestMode then
-                            f:UpdateBigDefensives()
+                            frame:UpdateBigDefensives()
                         end
                     end
                 end,
@@ -514,11 +514,11 @@ CludesUI.AtOptionsLogin(function()
                 K.PRIVATE_AURAS_MAX_COUNT,
                 1,
                 function(val)
-                    local f = Frame()
-                    if f then
-                        f:UpdateAndRefreshAuraLayout(val)
+                    local frame = Frame()
+                    if frame then
+                        frame:UpdateAndRefreshAuraLayout(val)
                         if mod.isTestMode then
-                            f:ShowMockPrivateAuras()
+                            frame:ShowMockPrivateAuras()
                         end
                     end
                 end,
@@ -533,9 +533,9 @@ CludesUI.AtOptionsLogin(function()
                 2,
                 function()
                     mod.RefreshPrivateAuraSize()
-                    local f = Frame()
-                    if mod.isTestMode and f then
-                        f:ShowMockPrivateAuras()
+                    local frame = Frame()
+                    if mod.isTestMode and frame then
+                        frame:ShowMockPrivateAuras()
                     end
                 end
             )
@@ -602,8 +602,8 @@ CludesUI.AtOptionsLogin(function()
     --  Alerts page
     ---------------------------------------------------------------------------
     local function ResyncSounds()
-        local f = Frame()
-        mod.Alert:RegisterAuraSounds(f and f:GetAttribute("unit"))
+        local frame = Frame()
+        mod.Alert:RegisterAuraSounds(frame and frame:GetAttribute("unit"))
     end
 
     -- One alert: a switch on the left, its stack threshold on the right.
@@ -828,9 +828,9 @@ CludesUI.AtOptionsLogin(function()
                     return
                 end
                 DB().clickThrough = val and true or false
-                local f = Frame()
-                if f then
-                    f:EnableMouse(not val)
+                local frame = Frame()
+                if frame then
+                    frame:EnableMouse(not val)
                 end
             end,
         }, {

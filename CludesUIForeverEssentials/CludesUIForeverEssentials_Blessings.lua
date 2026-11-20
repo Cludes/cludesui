@@ -639,7 +639,7 @@ do
     end
 
     function Survey(members)
-        local s = {
+        local cfg = {
             missing = 0,
             reachable = false,
             missingNear = 0,
@@ -649,7 +649,7 @@ do
             queue = {},
         }
         local rank, leftX
-        local queue = s.queue
+        local queue = cfg.queue
         local players = Store().players
         local spells = {}
         for _, member in ipairs(members) do
@@ -665,33 +665,33 @@ do
             if spell and UnitIsConnected(member.unit) and not UnitIsDeadOrGhost(member.unit) then
                 local has, remaining = BuffState(member.unit, key)
                 if has == false then
-                    s.missing = s.missing + 1
-                    s.shortest = 0
-                elseif remaining and (not s.shortest or remaining < s.shortest) then
-                    s.shortest = remaining
+                    cfg.missing = cfg.missing + 1
+                    cfg.shortest = 0
+                elseif remaining and (not cfg.shortest or remaining < cfg.shortest) then
+                    cfg.shortest = remaining
                 end
                 local range = UnitIsVisible(member.unit) and InRange(member, spell)
                 if has ~= nil and range ~= false then
-                    s.reachable = true
+                    cfg.reachable = true
                     local region = not has and 0 or (remaining and remaining < EXPIRING and 1 or 2)
                     if range == true and region < 2 and member.targetable then
                         if region == 0 then
-                            s.missingNear = s.missingNear + 1
+                            cfg.missingNear = cfg.missingNear + 1
                         else
-                            s.expiringNear = s.expiringNear + 1
+                            cfg.expiringNear = cfg.expiringNear + 1
                         end
                         if not players[member.guid] then
-                            s.classDue = s.classDue + 1
+                            cfg.classDue = cfg.classDue + 1
                             if region == 0 then
-                                s.classMissing = s.classMissing + 1
+                                cfg.classMissing = cfg.classMissing + 1
                             end
                         end
                     end
                     local l = remaining or math.huge
                     if member.targetable then
                         queue[#queue + 1] = { names = member.names, spell = spell, rank = region, left = l }
-                        if not s.target or region < rank or (region == rank and l < leftX) then
-                            s.target, s.spell, rank, leftX = member, spell, region, l
+                        if not cfg.target or region < rank or (region == rank and l < leftX) then
+                            cfg.target, cfg.spell, rank, leftX = member, spell, region, l
                         end
                     end
                 end
@@ -712,10 +712,10 @@ do
             queue[index] = nil
         end
         if due == 0 and keep == 0 then
-            s.target = nil
+            cfg.target = nil
         end
-        s.rank, s.left = rank, leftX
-        return s
+        cfg.rank, cfg.left = rank, leftX
+        return cfg
     end
 
     function Due(member, key, spell)

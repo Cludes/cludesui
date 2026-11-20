@@ -392,34 +392,34 @@ local function StartAddon()
     end
     local function PadPlaceButton()
         local footerBar = CUI_Bags.Footer
-        local b = CreateFrame("Button", nil, footerBar)
-        b:SetHeight(22)
-        b:SetPoint("BOTTOMLEFT", footerBar, "BOTTOMLEFT", 8, 5)
-        b:SetFrameLevel(footerBar:GetFrameLevel() + 20)
-        local backdrop = b:CreateTexture(nil, "BACKGROUND")
+        local widget = CreateFrame("Button", nil, footerBar)
+        widget:SetHeight(22)
+        widget:SetPoint("BOTTOMLEFT", footerBar, "BOTTOMLEFT", 8, 5)
+        widget:SetFrameLevel(footerBar:GetFrameLevel() + 20)
+        local backdrop = widget:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0.15, 0.15, 0.15, 1)
         local Pix = CUI and CUI.PP
         if Pix and Pix.CreateBorder then
-            Pix.CreateBorder(b, 0.25, 0.25, 0.25, 1)
+            Pix.CreateBorder(widget, 0.25, 0.25, 0.25, 1)
         end
-        local fontStr = b:CreateFontString(nil, "OVERLAY")
+        local fontStr = widget:CreateFontString(nil, "OVERLAY")
         SetBagFont(fontStr, 11)
         fontStr:SetPoint("CENTER", 0, 0)
         fontStr:SetTextColor(1, 1, 1, 0.9)
         fontStr:SetText(CludesUI.L("Place in Bags"))
-        b:SetWidth(fontStr:GetStringWidth() + 20)
-        b:SetScript("OnEnter", function()
+        widget:SetWidth(fontStr:GetStringWidth() + 20)
+        widget:SetScript("OnEnter", function()
             backdrop:SetColorTexture(0.2, 0.2, 0.2, 1)
         end)
-        b:SetScript("OnLeave", function()
+        widget:SetScript("OnLeave", function()
             backdrop:SetColorTexture(0.15, 0.15, 0.15, 1)
         end)
-        b:SetScript("OnClick", function()
+        widget:SetScript("OnClick", function()
             PlaceExternalCursorItem()
         end)
-        b:Hide()
-        CUI_Bags._padPlaceBtn = b
+        widget:Hide()
+        CUI_Bags._padPlaceBtn = widget
         local watcher = CreateFrame("Frame")
         watcher:SetScript("OnEvent", PadPlaceSync)
         CUI_Bags._padCursorWatch = watcher
@@ -1045,17 +1045,17 @@ local function StartAddon()
     -- Snapshot Blizzard's tracked currencies so we can diff on change.
     local _lastBlizzSet = {}
     local function ReadBlizzSet()
-        local s = {}
+        local cfg = {}
         if C_CurrencyInfo and C_CurrencyInfo.GetBackpackCurrencyInfo then
             for i = 1, 20 do
                 local details = C_CurrencyInfo.GetBackpackCurrencyInfo(i)
                 if not details then
                     break
                 end
-                s[details.currencyTypesID] = true
+                cfg[details.currencyTypesID] = true
             end
         end
-        return s
+        return cfg
     end
     _lastBlizzSet = ReadBlizzSet()
 

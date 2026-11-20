@@ -751,20 +751,20 @@ function B.LineText(l)
     end
 
     if K.arg == "spells" then
-        local s = cmd
+        local text = cmd
         local b = Bracket(CondParts(v1))
         if b ~= "" then
-            s = s .. " " .. b
+            text = text .. " " .. b
         end
         local reset = strtrim(l.reset or "")
         if K.reset and reset ~= "" then
-            s = s .. " reset=" .. reset
+            text = text .. " reset=" .. reset
         end
         local a = strtrim(v1.arg or "")
         if a ~= "" then
-            s = s .. " " .. a
+            text = text .. " " .. a
         end
-        return s
+        return text
     end
 
     local segs = {}
@@ -791,8 +791,8 @@ end
 function B.Build(m)
     local result = {}
     if m.tooltip then
-        local t = strtrim(m.tooltipSpell or "")
-        result[1] = t ~= "" and ("#showtooltip " .. t) or "#showtooltip"
+        local text = strtrim(m.tooltipSpell or "")
+        result[1] = text ~= "" and ("#showtooltip " .. text) or "#showtooltip"
     end
     for _, l in ipairs(m.lines or {}) do
         result[#result + 1] = B.LineText(l)
@@ -854,9 +854,9 @@ local function Canon(text)
 end
 
 function B.ParseLine(textValue)
-    local t = strtrim(textValue)
+    local text = strtrim(textValue)
     local l
-    local cmd, rest = t:match("^(/%S+)%s*(.*)$")
+    local cmd, rest = text:match("^(/%S+)%s*(.*)$")
     if cmd then
         cmd = cmd:lower()
         local K = BY_CMD[cmd]
@@ -899,7 +899,7 @@ function B.ParseLine(textValue)
         end
     end
     local lt = l and B.LineText(l)
-    if not l or (lt ~= textValue and Canon(lt) ~= Canon(t)) then
+    if not l or (lt ~= textValue and Canon(lt) ~= Canon(text)) then
         l = B.NewLine("raw", textValue)
     end
     return l
@@ -954,13 +954,13 @@ local function Scan()
                 local details = C_SpellBook.GetSpellBookItemInfo(slot, bank)
                 local name = details and details.name
                 if name and name ~= "" and not details.isPassive and details.itemType == spellType then
-                    local s = seen[name]
-                    if not s then
-                        s = { name = name, lname = name:lower(), icon = details.iconID }
-                        seen[name] = s
-                        entries[#entries + 1] = s
+                    local cfg = seen[name]
+                    if not cfg then
+                        cfg = { name = name, lname = name:lower(), icon = details.iconID }
+                        seen[name] = cfg
+                        entries[#entries + 1] = cfg
                     else
-                        s.icon = details.iconID or s.icon
+                        cfg.icon = details.iconID or cfg.icon
                     end
                 end
             end

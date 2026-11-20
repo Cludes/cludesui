@@ -565,8 +565,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
         texture:SetAlpha(0.45)
         if look and look.tint then
-            local t = look.tint
-            texture:SetVertexColor(t[1], t[2], t[3], 0.45)
+            local tbl = look.tint
+            texture:SetVertexColor(tbl[1], tbl[2], tbl[3], 0.45)
         elseif vertexColor then
             local vr, vg, vb = vertexColor()
             if vr then
@@ -1400,16 +1400,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     DDSmoothScrollTo(StepBase() + self._dir * SCROLL_STEP)
                 end
                 local function MakePadStep(dir, edge, cursorY)
-                    local b = CreateFrame("Button", nil, dropMenu)
-                    b:SetHeight(PAD_STEP_H)
-                    b:SetPoint(edge .. "LEFT", dropMenu, edge .. "LEFT", 1, cursorY)
-                    b:SetPoint(edge .. "RIGHT", dropMenu, edge .. "RIGHT", -1, cursorY)
-                    b:SetFrameLevel(dropMenu:GetFrameLevel() + 3)
-                    b._dir = dir
-                    local highlight = SolidTex(b, "ARTWORK", 1, 1, 1, 1)
+                    local widget = CreateFrame("Button", nil, dropMenu)
+                    widget:SetHeight(PAD_STEP_H)
+                    widget:SetPoint(edge .. "LEFT", dropMenu, edge .. "LEFT", 1, cursorY)
+                    widget:SetPoint(edge .. "RIGHT", dropMenu, edge .. "RIGHT", -1, cursorY)
+                    widget:SetFrameLevel(dropMenu:GetFrameLevel() + 3)
+                    widget._dir = dir
+                    local highlight = SolidTex(widget, "ARTWORK", 1, 1, 1, 1)
                     highlight:SetAllPoints()
                     highlight:SetAlpha(0)
-                    local arrowTex = b:CreateTexture(nil, "OVERLAY")
+                    local arrowTex = widget:CreateTexture(nil, "OVERLAY")
                     arrowTex:SetSize(18, 18)
                     arrowTex:SetPoint("CENTER")
                     arrowTex:SetTexture(MEDIA_PATH .. "icons/cui-arrow.png")
@@ -1417,18 +1417,18 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         arrowTex:SetRotation(math.pi)
                     end
                     arrowTex:SetAlpha(0.6)
-                    b:SetScript("OnEnter", function()
+                    widget:SetScript("OnEnter", function()
                         highlight:SetAlpha(DD_ITEM_HL_A)
                         arrowTex:SetAlpha(1)
                     end)
-                    b:SetScript("OnLeave", function()
+                    widget:SetScript("OnLeave", function()
                         highlight:SetAlpha(0)
                         arrowTex:SetAlpha(0.6)
                     end)
-                    b:SetScript("OnClick", PadStepClick)
+                    widget:SetScript("OnClick", PadStepClick)
                     -- The controller cursor scrolls the list by itself; the strips serve the pointer.
-                    CludesUI.PadHint(b, "nodeignore")
-                    return b
+                    CludesUI.PadHint(widget, "nodeignore")
+                    return widget
                 end
                 padStepSync = function(show)
                     if not padUp then

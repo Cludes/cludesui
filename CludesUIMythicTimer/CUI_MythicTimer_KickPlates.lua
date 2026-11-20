@@ -1738,21 +1738,21 @@ end
 
 local function ShowIcon(key, kicker, unitToken, owner, isCUI, classFile, texture, start, duration, preview)
     Ready()
-    local b = icons[key] or Acquire(key, kicker)
+    local widget = icons[key] or Acquire(key, kicker)
     isDetached[key] = nil
-    b.preview = preview
-    if b.styleGen ~= styleStamp then
-        StyleIcon(b)
+    widget.preview = preview
+    if widget.styleGen ~= styleStamp then
+        StyleIcon(widget)
     end
-    PutOnPlate(b, unitToken, owner, isCUI)
-    PaintKicker(b, classFile, texture)
-    PaintCooldown(b, start, duration)
-    b:Show()
+    PutOnPlate(widget, unitToken, owner, isCUI)
+    PaintKicker(widget, classFile, texture)
+    PaintCooldown(widget, start, duration)
+    widget:Show()
     if not driverFrame:IsShown() then
         driverAcc = 0
         driverFrame:Show()
     end
-    return b
+    return widget
 end
 
 --------------------------------------------------------------------------------
@@ -4131,32 +4131,32 @@ function mod.KT_PaintSampleIcon(owner)
     backing:SetSize(pw, ph)
     backing:Show()
     for i = 1, 2 do
-        local b = sampleList[i]
-        if not b then
-            b = BuildIcon()
-            sampleList[i] = b
+        local widget = sampleList[i]
+        if not widget then
+            widget = BuildIcon()
+            sampleList[i] = widget
         end
-        b.wrap:SetParent(backing)
-        SetIconLevels(b, backing:GetFrameStrata(), backing:GetFrameLevel() + 2)
-        b.rel, b.relBottom = backing, backing
-        b.ox, b.oy = offX, offY
-        b.slot = i
+        widget.wrap:SetParent(backing)
+        SetIconLevels(widget, backing:GetFrameStrata(), backing:GetFrameLevel() + 2)
+        widget.rel, widget.relBottom = backing, backing
+        widget.ox, widget.oy = offX, offY
+        widget.slot = i
         -- The second cell hangs from the first's end, as in a row.
-        b.hang, b.hangConst, b.prevEl = false, 0, (i == 2) and sampleList[1] or false
-        b.iconFrame, b.casting, b.row = nil, false, nil
-        b.preview, b.unit, b.key = nil, nil, nil
-        if b.styleGen ~= styleStamp then
-            StyleIcon(b)
+        widget.hang, widget.hangConst, widget.prevEl = false, 0, (i == 2) and sampleList[1] or false
+        widget.iconFrame, widget.casting, widget.row = nil, false, nil
+        widget.preview, widget.unit, widget.key = nil, nil, nil
+        if widget.styleGen ~= styleStamp then
+            StyleIcon(widget)
         end
-        AnchorIcon(b)
+        AnchorIcon(widget)
         local classFile = SAMPLE_CLASSES[i]
-        PaintKicker(b, classFile, PreviewTexture(classFile))
+        PaintKicker(widget, classFile, PreviewTexture(classFile))
         if i == 2 then
-            PaintCooldown(b, GetTime() - (PREVIEW_CD - SAMPLE_CD_LEFT), PREVIEW_CD)
+            PaintCooldown(widget, GetTime() - (PREVIEW_CD - SAMPLE_CD_LEFT), PREVIEW_CD)
         else
-            PaintCooldown(b, nil, nil)
+            PaintCooldown(widget, nil, nil)
         end
-        b:Show()
+        widget:Show()
     end
     -- The scene: the plate and the two cells (the snapped size, BuildStyle,
     -- not the setting) in plate-centred units, where AnchorIcon puts them.

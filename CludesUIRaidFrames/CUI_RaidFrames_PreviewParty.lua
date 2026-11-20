@@ -291,7 +291,7 @@ end
 local savedHealth, savedPower = {}, {}
 
 local function ApplyPartyPreviewData(frame, index)
-    local s = saved.profile
+    local cfg = saved.profile
     -- Use party proxy so ApplyPreviewData reads party-specific settings
     mod._previewSettingsOverride = mod._scaledPartyProxy
 
@@ -299,10 +299,10 @@ local function ApplyPartyPreviewData(frame, index)
     -- values while a view swap is active); s stays live db.profile so the
     -- mutation+restore semantics are unchanged.
     local eff = mod._pvOverlayProxy or saved.profile
-    local origW, origH = s.frameWidth, s.frameHeight
+    local origW, origH = cfg.frameWidth, cfg.frameHeight
     -- The bars' width (a party portrait widens the frame after the restore).
     local ew, eh, _, eres = mod.RF_PartyDims(eff)
-    s.frameWidth, s.frameHeight = ew - (eres or 0), eh
+    cfg.frameWidth, cfg.frameHeight = ew - (eres or 0), eh
 
     -- Temporarily swap preview value tables so ApplyPreviewData reads party data
     local origAbsorb = mod.previewAbsorbValues
@@ -332,8 +332,8 @@ local function ApplyPartyPreviewData(frame, index)
 
     -- Restore everything
     mod._previewSettingsOverride = nil
-    s.frameWidth = origW
-    s.frameHeight = origH
+    cfg.frameWidth = origW
+    cfg.frameHeight = origH
     for i = 1, 5 do
         previewHealthValues[i] = savedHealth[i]
         previewPowerValues[i] = savedPower[i]
@@ -404,11 +404,11 @@ local function RefreshPartyPreview()
     if mod._UpdatePartyIndicatorScale then
         mod._UpdatePartyIndicatorScale()
     end
-    local s = mod._pvOverlayProxy or saved.profile
-    local pw, ph, pcs = mod.RF_PartyDims(s)
+    local cfg = mod._pvOverlayProxy or saved.profile
+    local pw, ph, pcs = mod.RF_PartyDims(cfg)
     local wid, hgt, spacing = PixelSnap(pw), PixelSnap(ph), PixelSnap(pcs)
     -- Party target frames along the stack open the frames' pitch, as on the real frames.
-    local pitch = spacing + mod.PT_AlongPitch(s, s.partyShowTargets == true)
+    local pitch = spacing + mod.PT_AlongPitch(cfg, cfg.partyShowTargets == true)
     local mode = saved.profile.previewMode or "overlay"
 
     BuildPartyPreviewRoles()
@@ -417,14 +417,14 @@ local function RefreshPartyPreview()
     -- player's preview frame and reflowing the remaining members to fill the gap.
     -- The player's slot is whatever BuildPartyPreviewRoles resolved it to after
     -- Sort By + Self First/Last (NOT assumed to be slot 1).
-    local hideSelf = s.partyHideSelf
+    local hideSelf = cfg.partyHideSelf
     local playerSlot = mod._partyPvRoles._playerSlot or 1
     local shownCount = hideSelf and 4 or 5
 
     local isOverlay = (mode == "overlay")
     local anchorPad = isOverlay and 10 or 0
     local topExtra = isOverlay and 25 or 0 -- top space for the centered "Preview" title
-    local unitGrowth = mod._PartyGrowth(s)
+    local unitGrowth = mod._PartyGrowth(cfg)
     local isVert = (unitGrowth == "DOWN" or unitGrowth == "UP")
     local totalW, totalH
     if isVert then
@@ -438,10 +438,10 @@ local function RefreshPartyPreview()
     -- Pets (Show Pets on the Party tab) beside the party frames, or beside each frame (Beside
     -- Owner), and the party target frames beside each frame (after Beside Owner pets on their
     -- side; pets beside the party frames clear them); the overlay grows to hold them.
-    local ptSpec = mod.PT_PreviewSpec(s, wid, hgt)
-    local petSpec = isOverlay and mod.PF_PreviewSpec(true, s, wid, hgt, spacing, totalW, totalH, ptSpec)
+    local ptSpec = mod.PT_PreviewSpec(cfg, wid, hgt)
+    local petSpec = isOverlay and mod.PF_PreviewSpec(true, cfg, wid, hgt, spacing, totalW, totalH, ptSpec)
     if ptSpec and petSpec and petSpec.owner then
-        ptSpec = mod.PT_PreviewSpec(s, wid, hgt, petSpec)
+        ptSpec = mod.PT_PreviewSpec(cfg, wid, hgt, petSpec)
     end
     local padL, padT, padR, padB = 0, 0, 0, 0
     if petSpec and petSpec.owner then
@@ -457,7 +457,7 @@ local function RefreshPartyPreview()
         padR, padB = math.max(padR, ptSpec.padR), math.max(padB, ptSpec.padB)
     end
     -- Your own frame's target shows only with Include Own Target.
-    local ptSkip = (not s.partyTargetIncludeSelf) and playerSlot or nil
+    local ptSkip = (not cfg.partyTargetIncludeSelf) and playerSlot or nil
 
     -- Determine parent frame: overlay container for overlay, UIParent for real
     local parentFrame
@@ -567,7 +567,7 @@ local function RefreshPartyPreview()
         else
             mod.PF_HidePreview()
         end
-        mod.PT_ShowPreview(ptSpec, s, mod._partyOC, ptSkip)
+        mod.PT_ShowPreview(ptSpec, cfg, mod._partyOC, ptSkip)
     end
 
     -- Real mode: anchor frames to the actual party container, mirroring the
@@ -577,7 +577,7 @@ local function RefreshPartyPreview()
     -- it. A plain TOPLEFT anchor misaligned the flipped preview by a full
     -- stack height/width versus the edit-mode location.
     if mode == "real" and mod._partyContainerFrame then
-        local place = s.partyUnlockPos
+        local place = cfg.partyUnlockPos
         -- Editing an override with a custom unlock mode: anchor the preview at the
         -- LAYER's recorded party-container position (a lightweight proxy frame stands
         -- in for the real container, which sits at the REAL spec's position).
@@ -602,7 +602,7 @@ local function RefreshPartyPreview()
             place = place or se
         end
         local cw, ch = anchorTo:GetSize()
-        local realPets = mod.PF_PreviewSpec(true, s, wid, hgt, spacing, cw, ch, ptSpec)
+        local realPets = mod.PF_PreviewSpec(true, cfg, wid, hgt, spacing, cw, ch, ptSpec)
         if realPets and realPets.owner then
             mod.PF_ShowOwnerPreview(realPets, mod._scaledPartyProxy, UIParent, lastF)
         elseif realPets then
@@ -611,9 +611,9 @@ local function RefreshPartyPreview()
             mod.PF_HidePreview()
         end
         if ptSpec and realPets and realPets.owner then
-            ptSpec = mod.PT_PreviewSpec(s, wid, hgt, realPets)
+            ptSpec = mod.PT_PreviewSpec(cfg, wid, hgt, realPets)
         end
-        mod.PT_ShowPreview(ptSpec, s, UIParent, ptSkip)
+        mod.PT_ShowPreview(ptSpec, cfg, UIParent, ptSkip)
         if place then
             local stepX, stepY = 0, 0
             local basePoint = "TOPLEFT"
@@ -633,7 +633,7 @@ local function RefreshPartyPreview()
             -- container. The preview always shows a full party, so shown is 5, or 4
             -- with Hide Self (the real layout subtracts the hidden self the same way).
             local centerShift = 0
-            if s.partyFlipGrowth == "centered" then
+            if cfg.partyFlipGrowth == "centered" then
                 centerShift = (5 - shownCount) / 2
             end
             local cShiftX = PixelSnap(stepX * centerShift)

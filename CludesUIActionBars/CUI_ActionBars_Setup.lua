@@ -85,8 +85,8 @@ local function SyncEditModeIconCounts()
     local desired = {}
     for _, details in ipairs(BAR_CONFIG) do
         if not details.isStance and not details.isPetBar then
-            local s = ABAR.db and ABAR.db.profile and ABAR.db.profile.bars[details.key]
-            local cuiCount = s and (s.overrideNumIcons or s.numIcons) or details.count
+            local cfg = ABAR.db and ABAR.db.profile and ABAR.db.profile.bars[details.key]
+            local cuiCount = cfg and (cfg.overrideNumIcons or cfg.numIcons) or details.count
             if not cuiCount or cuiCount < 1 then
                 cuiCount = details.count
             end
@@ -222,7 +222,7 @@ function ABAR:FinishSetup()
             for _, details in ipairs(BAR_CONFIG) do
                 local barKey = details.key
                 local buttons = barButtons[barKey]
-                local s = ABAR.db.profile.bars[barKey]
+                local cfg = ABAR.db.profile.bars[barKey]
                 local slotOffset = BAR_SLOT_OFFSETS[barKey] or 0
                 if buttons then
                     local btnLayout, frameW, frameH = ComputeBarLayout(barKey)
@@ -239,7 +239,7 @@ function ABAR:FinishSetup()
                         relPoint = relPoint,
                         x = px,
                         y = py,
-                        hidden = (s and (ABAR.VisibilityCompat.IsNever(s) or s.enabled == false)) and true
+                        hidden = (cfg and (ABAR.VisibilityCompat.IsNever(cfg) or cfg.enabled == false)) and true
                             or false,
                     })
 
@@ -401,10 +401,10 @@ function ABAR:FinishSetup()
         end
         for barKey in pairs(_gridSurfacedBars) do
             local details = BAR_LOOKUP[barKey]
-            local s = ABAR.db.profile.bars[barKey]
+            local cfg = ABAR.db.profile.bars[barKey]
             local widget = barFrames[barKey]
-            if details and s and widget then
-                if s.mouseoverEnabled then
+            if details and cfg and widget then
+                if cfg.mouseoverEnabled then
                     -- The drag has fully ended (cursor cleared, checked above). If
                     -- the cursor is still over this bar, the spell was dropped here
                     -- (or you're just hovering it), so keep it shown and let the
@@ -415,9 +415,9 @@ function ABAR:FinishSetup()
                             status.isHovered = true
                             status.fadeDir = "in"
                         end
-                        StopFade(widget, s._savedBarAlpha or 1)
+                        StopFade(widget, cfg._savedBarAlpha or 1)
                         if barKey == "MainBar" then
-                            SyncPagingAlpha(s._savedBarAlpha or 1)
+                            SyncPagingAlpha(cfg._savedBarAlpha or 1)
                         end
                     else
                         if status then
@@ -492,21 +492,21 @@ function ABAR:FinishSetup()
             -- (combat-only, target-only, etc.) so the user can place spells.
             for _, details in ipairs(BAR_CONFIG) do
                 if not details.isStance and not details.isPetBar then
-                    local s = ABAR.db.profile.bars[details.key]
+                    local cfg = ABAR.db.profile.bars[details.key]
                     local widget = barFrames[details.key]
                     if
-                        s
+                        cfg
                         and widget
-                        and not ABAR.VisibilityCompat.IsNever(s)
-                        and not (ABAR._padHide and s.gamepadHideBar == true)
+                        and not ABAR.VisibilityCompat.IsNever(cfg)
+                        and not (ABAR._padHide and cfg.gamepadHideBar == true)
                     then
-                        local vis = s.barVisibility or "always"
+                        local vis = cfg.barVisibility or "always"
                         -- Any visibility option at all counts: a bar the player cannot
                         -- see is a bar they cannot drop a spell onto, so surfacing one
                         -- that did not strictly need it is the harmless direction.
                         local conditioned = vis ~= "always" and vis ~= "never"
                         if not conditioned and CludesUI.VisHasAnyOption then
-                            conditioned = CludesUI.VisHasAnyOption(s)
+                            conditioned = CludesUI.VisHasAnyOption(cfg)
                         end
                         if conditioned then
                             _gridSurfacedBars[details.key] = true
@@ -521,7 +521,7 @@ function ABAR:FinishSetup()
                             widget:Show()
                         end
                         -- Mouseover bars: force alpha to 1 during drag
-                        if s.mouseoverEnabled then
+                        if cfg.mouseoverEnabled then
                             _gridSurfacedBars[details.key] = true
                             StopFade(widget, 1)
                         end
@@ -634,8 +634,8 @@ function ABAR:FinishSetup()
             if not details then
                 return false
             end
-            local s = ABAR.db and ABAR.db.profile.bars[details.barKey]
-            return s and s.disableTooltips
+            local cfg = ABAR.db and ABAR.db.profile.bars[details.barKey]
+            return cfg and cfg.disableTooltips
         end
         hooksecurefunc(GameTooltip, "SetAction", function(self)
             if ShouldHideTooltip(self) then
@@ -708,8 +708,8 @@ function ABAR:FinishSetup()
                         -- A growth bar with no captured pin keeps its LIVE
                         -- edge on a re-apply (the settle pass skips it for the
                         -- same reason), which would fix a clamped spot in place.
-                        local s = barList[barKey]
-                        local gd = (s and s.growDirection or "up"):upper()
+                        local cfg = barList[barKey]
+                        local gd = (cfg and cfg.growDirection or "up"):upper()
                         if anchorInfo.mode == "POINT" or barKey == "StanceBar" or gd == "CENTER" or anchorInfo.refFor == gd then
                             reapply(barKey)
                         end
@@ -872,8 +872,8 @@ function ABAR:FinishSetup()
                 -- Force mouseover bars visible during real cursor drags
                 _gridState._mouseoverForced = true
                 for _, details in ipairs(BAR_CONFIG) do
-                    local s = ABAR.db.profile.bars[details.key]
-                    if s and s.mouseoverEnabled then
+                    local cfg = ABAR.db.profile.bars[details.key]
+                    if cfg and cfg.mouseoverEnabled then
                         local widget = barFrames[details.key]
                         if widget then
                             StopFade(widget, 1)
@@ -893,12 +893,12 @@ function ABAR:FinishSetup()
                 if not InCombatLockdown() and not _gridState._dragNeverForced then
                     local isForced
                     for _, details in ipairs(BAR_CONFIG) do
-                        local s = ABAR.db.profile.bars[details.key]
+                        local cfg = ABAR.db.profile.bars[details.key]
                         if
-                            s
-                            and s.dragShow
-                            and s.enabled ~= false
-                            and ABAR.VisibilityCompat.IsNever(s)
+                            cfg
+                            and cfg.dragShow
+                            and cfg.enabled ~= false
+                            and ABAR.VisibilityCompat.IsNever(cfg)
                             and not (ABAR._visOverride and ABAR._visOverride[details.key])
                         then
                             ABAR._visOverride = ABAR._visOverride or {}
@@ -1277,8 +1277,8 @@ function ABAR:FinishSetup()
         if _gridState._mouseoverForced then
             _gridState._mouseoverForced = false
             for _, details in ipairs(BAR_CONFIG) do
-                local s = ABAR.db.profile.bars[details.key]
-                if s and s.mouseoverEnabled then
+                local cfg = ABAR.db.profile.bars[details.key]
+                if cfg and cfg.mouseoverEnabled then
                     local status = hoverStates[details.key]
                     if status and not status.isHovered then
                         EAB_VTABLE.Hover.FadeOut(details.key, status)

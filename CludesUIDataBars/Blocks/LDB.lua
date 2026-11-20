@@ -119,19 +119,19 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
 
     -- The text to show and whether it is the "pick a plugin" placeholder.
     local function Compose(object)
-        local s = Settings()
-        if not s.source then
+        local cfg = Settings()
+        if not cfg.source then
             -- Bar text is set directly, not through the tooltip helpers that
             -- translate, so it is translated here.
             return CludesUI.L(L["SELECT_PLUGIN"]), true
         end
-        local body = s.showText ~= false and PluginText(object) or nil
+        local body = cfg.showText ~= false and PluginText(object) or nil
         local name = object.label
         local text = body
-        if s.showLabel and type(name) == "string" and name ~= "" then
+        if cfg.showLabel and type(name) == "string" and name ~= "" then
             text = body and (name .. ": " .. body) or name
         end
-        if s.stripColors ~= false then
+        if cfg.stripColors ~= false then
             text = StripColours(text)
         end
         return text or "", false
@@ -175,7 +175,7 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     function inst:Refresh()
-        local s = Settings()
+        local cfg = Settings()
         local fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
         local barH = barCtx.GetThickness()
         self:Listen()
@@ -184,7 +184,7 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
         -- Picked, but its addon is not loaded: collapse (the bar then drops
         -- the block and its gaps). Show/Hide only on a real change, and not in
         -- combat, where it can be protected.
-        local collapsed = s.source ~= nil and object == nil
+        local collapsed = cfg.source ~= nil and object == nil
         if contentFrame:IsShown() == collapsed then
             if InCombatLockdown() then
                 owesShow = true
@@ -202,7 +202,7 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
         local text, placeholder = Compose(object)
         local texture = object and object.icon
         local iconSize = 0
-        if s.showIcon ~= false and texture then
+        if cfg.showIcon ~= false and texture then
             iconSize = fontSize + 2
             iconTex:SetTexture(texture)
             local c = object.iconCoords
@@ -256,7 +256,7 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
             end
             label:ClearAllPoints()
             label:SetPoint("LEFT", button, "LEFT", lead, 0)
-            local width = s.maxWidth
+            local width = cfg.maxWidth
             if width then
                 label:SetWidth(max(20, width - lead - 2))
                 label:SetWordWrap(false)
@@ -335,10 +335,10 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     local function ShowTip()
-        local s = Settings()
+        local cfg = Settings()
         -- Cleared first, so a return below never leaves the last hover's route.
         tipRoute = nil
-        if not s.source then
+        if not cfg.source then
             -- The placeholder is the whole block, so say where a plugin is picked.
             local red, green, blue = mod.GetAccent()
             mod.Tip_Begin(button)
@@ -377,7 +377,7 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
             return
         end
         mod.Tip_Begin(button)
-        mod.Tip_AddLine(mod.LDBLabel(s.source, object), 1, 1, 1)
+        mod.Tip_AddLine(mod.LDBLabel(cfg.source, object), 1, 1, 1)
         local body = PluginText(object)
         if body then
             mod.Tip_AddLine(" ")

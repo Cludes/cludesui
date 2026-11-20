@@ -287,9 +287,9 @@ end
 
 -- Sorted list of group ids currently used by at least one bar.
 function mod.TBBGroupIDsInUse()
-    local t = mod.GetTrackedBuffBars()
+    local tbl = mod.GetTrackedBuffBars()
     local seen, entries = {}, {}
-    for _, c in ipairs(t.bars or {}) do
+    for _, c in ipairs(tbl.bars or {}) do
         local groupKey = mod.TBBBarGroupID(c)
         if groupKey ~= 0 and not seen[groupKey] then
             seen[groupKey] = true
@@ -302,9 +302,9 @@ end
 
 -- Smallest positive group id not currently in use (fills holes left by dissolved groups so group names stay compact).
 function mod.TBBNextGroupID()
-    local t = mod.GetTrackedBuffBars()
+    local tbl = mod.GetTrackedBuffBars()
     local used = {}
-    for _, c in ipairs(t.bars or {}) do
+    for _, c in ipairs(tbl.bars or {}) do
         used[mod.TBBBarGroupID(c)] = true
     end
     local groupKey = 1
@@ -383,7 +383,7 @@ function mod.TBBGroupGrow(groupKey)
 end
 
 function mod.TBBSetGroupGrow(groupKey, val)
-    local t = mod.GetTrackedBuffBars()
+    local tbl = mod.GetTrackedBuffBars()
     local groupId = mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(groupKey)
     if groupId then
         local e = mod.TBBGlobalGroup(groupId)
@@ -393,9 +393,9 @@ function mod.TBBSetGroupGrow(groupKey, val)
         end
         return
     end
-    TBBGroupStore(t, groupKey, true).grow = val
+    TBBGroupStore(tbl, groupKey, true).grow = val
     if groupKey == 1 then
-        t.groupGrowDirection = val
+        tbl.groupGrowDirection = val
     end
     SetReflowDirty(true)
 end
@@ -405,7 +405,7 @@ function mod.TBBGroupSpacing(groupKey)
 end
 
 function mod.TBBSetGroupSpacing(groupKey, val)
-    local t = mod.GetTrackedBuffBars()
+    local tbl = mod.GetTrackedBuffBars()
     local groupId = mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(groupKey)
     if groupId then
         local e = mod.TBBGlobalGroup(groupId)
@@ -415,18 +415,18 @@ function mod.TBBSetGroupSpacing(groupKey, val)
         end
         return
     end
-    TBBGroupStore(t, groupKey, true).spacing = val
+    TBBGroupStore(tbl, groupKey, true).spacing = val
     if groupKey == 1 then
-        t.groupSpacing = val
+        tbl.groupSpacing = val
     end
     SetReflowDirty(true)
 end
 
 -- Clear a group's stored settings when its id is (re)claimed for a brand-new group, so a dissolved group's leftovers do not leak into it.
 function mod.TBBResetGroupSettings(groupKey)
-    local t = mod.GetTrackedBuffBars()
-    if t.groups then
-        t.groups[_gidKeys[groupKey]] = nil
+    local tbl = mod.GetTrackedBuffBars()
+    if tbl.groups then
+        tbl.groups[_gidKeys[groupKey]] = nil
     end
     SetReflowDirty(true)
 end
@@ -516,11 +516,11 @@ do
 
     -- Local gid linked to a global group on the ACTIVE spec (nil if none).
     function mod.TBBLocalGidForGlobal(groupId)
-        local t = mod.GetTrackedBuffBars()
-        if not t.groups then
+        local tbl = mod.GetTrackedBuffBars()
+        if not tbl.groups then
             return nil
         end
-        for k, group in pairs(t.groups) do
+        for k, group in pairs(tbl.groups) do
             if group.globalKey == groupId then
                 return tonumber(k)
             end
@@ -539,13 +539,13 @@ do
         if groupKey then
             return groupKey
         end
-        local t = mod.GetTrackedBuffBars()
+        local tbl = mod.GetTrackedBuffBars()
         local used = {}
-        for _, c in ipairs(t.bars or {}) do
+        for _, c in ipairs(tbl.bars or {}) do
             used[mod.TBBBarGroupID(c)] = true
         end
-        if t.groups then
-            for k, group in pairs(t.groups) do
+        if tbl.groups then
+            for k, group in pairs(tbl.groups) do
                 if group.globalKey then
                     local kn = tonumber(k)
                     if kn then
@@ -559,7 +559,7 @@ do
             groupKey = groupKey + 1
         end
         mod.TBBResetGroupSettings(groupKey)
-        TBBGroupStore(t, groupKey, true).globalKey = groupId
+        TBBGroupStore(tbl, groupKey, true).globalKey = groupId
         return groupKey
     end
 
@@ -746,8 +746,8 @@ do
     -- position. Detach: materialize shared values back into the per-spec store so nothing
     -- moves; the registry entry persists for other specs (full removal is TBBDeleteGlobalGroup).
     function mod.TBBSetGroupGlobal(groupKey, on)
-        local t = mod.GetTrackedBuffBars()
-        local g = TBBGroupStore(t, groupKey, true)
+        local tbl = mod.GetTrackedBuffBars()
+        local g = TBBGroupStore(tbl, groupKey, true)
         if on then
             if g.globalKey and mod.TBBGlobalGroup(g.globalKey) then
                 return
@@ -762,8 +762,8 @@ do
             local L = CludesUI and CludesUI.L
             local record = {
                 name = mod.TBBGroupName(groupKey) or ((L and L("Group") or "Group") .. " " .. groupKey),
-                grow = GroupGrowOf(t, groupKey),
-                spacing = GroupSpacingOf(t, groupKey),
+                grow = GroupGrowOf(tbl, groupKey),
+                spacing = GroupSpacingOf(tbl, groupKey),
             }
             local ai = mod.TBBGroupAnchorIndex(groupKey)
             local place = ai and mod.GetTBBPositions()[tostring(ai)]
@@ -781,13 +781,13 @@ do
                 g.grow = record.grow
                 g.spacing = record.spacing
                 if groupKey == 1 then
-                    t.groupGrowDirection = record.grow
-                    t.groupSpacing = record.spacing
+                    tbl.groupGrowDirection = record.grow
+                    tbl.groupSpacing = record.spacing
                 end
                 SetReflowDirty(true)
                 if record.pos then
                     local posDB = mod.GetTBBPositions()
-                    for jdx, c in ipairs(t.bars or {}) do
+                    for jdx, c in ipairs(tbl.bars or {}) do
                         if mod.TBBBarGroupID(c) == groupKey then
                             posDB[tostring(jdx)] = {
                                 point = record.pos.point,
@@ -824,8 +824,8 @@ do
             if not position then
                 return nil
             end
-            local t = mod.GetTrackedBuffBars()
-            local c = t.bars and t.bars[position]
+            local tbl = mod.GetTrackedBuffBars()
+            local c = tbl.bars and tbl.bars[position]
             groupKey = c and mod.TBBBarGroupID(c) or 0
             if groupKey == 0 or position ~= mod.TBBGroupAnchorIndex(groupKey) then
                 return nil
@@ -851,10 +851,10 @@ do
         if not groupKey then
             return nil
         end
-        local t = mod.GetTrackedBuffBars()
+        local tbl = mod.GetTrackedBuffBars()
         local uiS = UIParent:GetEffectiveScale()
         local bestMatch
-        for i, c in ipairs(t.bars or {}) do
+        for i, c in ipairs(tbl.bars or {}) do
             if c.enabled ~= false and mod.TBBBarGroupID(c) == groupKey then
                 local frame = tbbFrames[i]
                 if frame and frame:IsShown() and frame:GetLeft() then
@@ -1005,16 +1005,16 @@ function mod.TBBGroupAutoAdd(groupKey)
 end
 
 function mod.TBBSetGroupAutoAdd(groupKey, val)
-    local t = mod.GetTrackedBuffBars()
+    local tbl = mod.GetTrackedBuffBars()
     if val then
-        if t.groups then
-            for _, group in pairs(t.groups) do
+        if tbl.groups then
+            for _, group in pairs(tbl.groups) do
                 group.autoAdd = nil
             end
         end
-        TBBGroupStore(t, groupKey, true).autoAdd = true
+        TBBGroupStore(tbl, groupKey, true).autoAdd = true
     else
-        local g = TBBGroupStore(t, groupKey, false)
+        local g = TBBGroupStore(tbl, groupKey, false)
         if g then
             g.autoAdd = nil
         end
@@ -1023,12 +1023,12 @@ end
 
 -- The group flagged for auto-add (or nil). Smallest id wins if a stale table somehow carries more than one flag.
 function mod.TBBAutoAddGroupID()
-    local t = mod.GetTrackedBuffBars()
-    if not t.groups then
+    local tbl = mod.GetTrackedBuffBars()
+    if not tbl.groups then
         return nil
     end
     local bestMatch
-    for k, group in pairs(t.groups) do
+    for k, group in pairs(tbl.groups) do
         if group.autoAdd == true then
             local groupKey = tonumber(k)
             if groupKey and (not bestMatch or groupKey < bestMatch) then
@@ -1042,8 +1042,8 @@ end
 -- Index of a group's anchor = its first enabled member (or nil if none). gid nil = group 1 (legacy callers).
 function mod.TBBGroupAnchorIndex(groupKey)
     groupKey = groupKey or 1
-    local t = mod.GetTrackedBuffBars()
-    for i, c in ipairs(t.bars or {}) do
+    local tbl = mod.GetTrackedBuffBars()
+    for i, c in ipairs(tbl.bars or {}) do
         if c.enabled ~= false and mod.TBBBarGroupID(c) == groupKey then
             return i
         end
@@ -1053,9 +1053,9 @@ end
 
 -- Member count: with gid, counts that group's bars (regardless of enabled); without, counts bars in ANY group (drives options disabled gates).
 function mod.TBBGroupedCount(groupKey)
-    local t = mod.GetTrackedBuffBars()
+    local tbl = mod.GetTrackedBuffBars()
     local num = 0
-    for _, c in ipairs(t.bars or {}) do
+    for _, c in ipairs(tbl.bars or {}) do
         local g = mod.TBBBarGroupID(c)
         if (groupKey and g == groupKey) or (not groupKey and g ~= 0) then
             num = num + 1
@@ -1224,12 +1224,12 @@ function mod.TBBGroupStyleSource(groupKey)
     if not groupKey or groupKey == 0 then
         return nil
     end
-    local t = mod.GetTrackedBuffBars()
+    local tbl = mod.GetTrackedBuffBars()
     local ai = mod.TBBGroupAnchorIndex(groupKey)
     if ai then
-        return t.bars[ai]
+        return tbl.bars[ai]
     end
-    for _, c in ipairs(t.bars or {}) do
+    for _, c in ipairs(tbl.bars or {}) do
         if mod.TBBBarGroupID(c) == groupKey then
             return c
         end
@@ -1257,12 +1257,12 @@ function mod.GetTBBStylePresets()
     -- Same icon-footprint fold as GetTrackedBuffBars: legacy presets stored the FILL size rather than the icon-inclusive total.
     if not profile._tbbPresetIconTotal then
         for _, presetRec in ipairs(profile.tbbStylePresets) do
-            local s = presetRec.style
-            if s and (s.iconDisplay or "none") ~= "none" then
-                if s.verticalOrientation then
-                    s.height = (s.height or 24) + (s.width or 270)
+            local cfg = presetRec.style
+            if cfg and (cfg.iconDisplay or "none") ~= "none" then
+                if cfg.verticalOrientation then
+                    cfg.height = (cfg.height or 24) + (cfg.width or 270)
                 else
-                    s.width = (s.width or 270) + (s.height or 24)
+                    cfg.width = (cfg.width or 270) + (cfg.height or 24)
                 end
             end
         end
@@ -1563,8 +1563,8 @@ function mod.PropagateTBBGroupSize(srcIdx, size, value)
     if _tbbGroupSizing then
         return
     end
-    local t = mod.GetTrackedBuffBars()
-    local barList = t.bars
+    local tbl = mod.GetTrackedBuffBars()
+    local barList = tbl.bars
     if not barList then
         return
     end

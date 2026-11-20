@@ -290,15 +290,15 @@ function npAddon:OnEnable()
     -- only while it shows).
     if mod.NP_Forever() then
         if not (p.foreverLevelSlotSeeded and p.foreverRareSeeded) then
-            local s = p._foreverStyleSlots
-            if type(s) ~= "table" then
-                s = {}
-                p._foreverStyleSlots = s
+            local cfg = p._foreverStyleSlots
+            if type(cfg) ~= "table" then
+                cfg = {}
+                p._foreverStyleSlots = cfg
             end
-            local cui = s.cui
+            local cui = cfg.cui
             if type(cui) ~= "table" then
                 cui = {}
-                s.cui = cui
+                cfg.cui = cui
             end
             if not p.foreverLevelSlotSeeded then
                 cui.textSlotLeft = p.textSlotLeft

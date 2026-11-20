@@ -1308,19 +1308,19 @@ end
 -- The group unit tokens, built once: party = the player and party1-4, raid =
 -- raid1-40.
 function REMIND.FvTokens()
-    local t = REMIND._fvTokens
-    if t then
-        return t
+    local tbl = REMIND._fvTokens
+    if tbl then
+        return tbl
     end
-    t = { party = { "player" }, raid = {} }
+    tbl = { party = { "player" }, raid = {} }
     for index = 1, 4 do
-        t.party[index + 1] = "party" .. index
+        tbl.party[index + 1] = "party" .. index
     end
     for index = 1, 40 do
-        t.raid[index] = "raid" .. index
+        tbl.raid[index] = "raid" .. index
     end
-    REMIND._fvTokens = t
-    return t
+    REMIND._fvTokens = tbl
+    return tbl
 end
 
 -- In-range beneficiaries carrying a family vs all of them (the "12/15" badge),

@@ -134,8 +134,8 @@ end
 -- stranding the last painted tint. On ns, not a local.
 mod._eabRangeSweepBar = function(barId)
     local buttons = barButtons[barId]
-    local s = ABAR.db.profile.bars[barId]
-    if not buttons or not s or not s.outOfRangeColoring then
+    local cfg = ABAR.db.profile.bars[barId]
+    if not buttons or not cfg or not cfg.outOfRangeColoring then
         return
     end
     if mod._eabBarDormant[barId] then
@@ -146,11 +146,11 @@ mod._eabRangeSweepBar = function(barId)
         if slot and HasAction(slot) then
             local isOut = (IsActionInRange(slot) == false)
             _range.outOfRange[slot] = isOut or nil
-            ApplyRangeTint(button, isOut, s)
+            ApplyRangeTint(button, isOut, cfg)
         elseif slot then
             -- Slot lost its action (talent swap, drag): clear stale tint.
             _range.outOfRange[slot] = nil
-            ApplyRangeTint(button, false, s)
+            ApplyRangeTint(button, false, cfg)
         end
     end
 end
@@ -161,8 +161,8 @@ local function EnableRangeCheckForBar(barId)
     if not buttons then
         return
     end
-    local s = ABAR.db.profile.bars[barId]
-    if not s or not s.outOfRangeColoring then
+    local cfg = ABAR.db.profile.bars[barId]
+    if not cfg or not cfg.outOfRangeColoring then
         return
     end
     -- Dormant bars acquire nothing; the show edge re-runs this.
@@ -216,8 +216,8 @@ mod._eabRangePageEdge = function(barId)
     if not _range.anyEnabled then
         return
     end
-    local s = ABAR.db.profile.bars[barId]
-    if not (s and s.outOfRangeColoring) then
+    local cfg = ABAR.db.profile.bars[barId]
+    if not (cfg and cfg.outOfRangeColoring) then
         return
     end
     _range.pageBars[barId] = true
@@ -307,9 +307,9 @@ function ABAR:ApplyRangeColoring()
                         local button = hosts[index]
                         if GetButtonActionSlot(button) == slot then
                             local bInfo = buttonToBar[button]
-                            local s = bInfo and barList[bInfo.barKey]
-                            if s and s.outOfRangeColoring and not mod._eabBarDormant[bInfo.barKey] then
-                                ApplyRangeTint(button, isOut, s)
+                            local cfg = bInfo and barList[bInfo.barKey]
+                            if cfg and cfg.outOfRangeColoring and not mod._eabBarDormant[bInfo.barKey] then
+                                ApplyRangeTint(button, isOut, cfg)
                             end
                         end
                     end
@@ -326,11 +326,11 @@ function ABAR:ApplyRangeColoring()
                     end
                     for _, details in ipairs(BAR_CONFIG) do
                         local btns = barButtons[details.key]
-                        local s = barList[details.key]
-                        if btns and s and s.outOfRangeColoring and not mod._eabBarDormant[details.key] then
+                        local cfg = barList[details.key]
+                        if btns and cfg and cfg.outOfRangeColoring and not mod._eabBarDormant[details.key] then
                             for _, button in ipairs(btns) do
                                 if GetButtonActionSlot(button) == slot then
-                                    ApplyRangeTint(button, isOut, s)
+                                    ApplyRangeTint(button, isOut, cfg)
                                 end
                             end
                         end
@@ -389,8 +389,8 @@ function ABAR:ApplyRangeColoring()
                     C_Timer_After(0, function()
                         _range.slotPending = false
                         for _, details in ipairs(BAR_CONFIG) do
-                            local s = ABAR.db.profile.bars[details.key]
-                            if s and s.outOfRangeColoring then
+                            local cfg = ABAR.db.profile.bars[details.key]
+                            if cfg and cfg.outOfRangeColoring then
                                 EnableRangeCheckForBar(details.key)
                             end
                         end
@@ -412,11 +412,11 @@ function ABAR:ApplyRangeColoring()
                 end
                 for _, details in ipairs(BAR_CONFIG) do
                     local btns = barButtons[details.key]
-                    local s = ABAR.db.profile.bars[details.key]
-                    if btns and s and s.outOfRangeColoring and not mod._eabBarDormant[details.key] then
+                    local cfg = ABAR.db.profile.bars[details.key]
+                    if btns and cfg and cfg.outOfRangeColoring and not mod._eabBarDormant[details.key] then
                         for _, button in ipairs(btns) do
                             if EFD(button).rangeTinted then
-                                ApplyRangeTint(button, true, s)
+                                ApplyRangeTint(button, true, cfg)
                             end
                         end
                     end
@@ -431,8 +431,8 @@ function ABAR:ApplyRangeColoring()
                 C_Timer_After(0, function()
                     local barList = ABAR.db.profile.bars
                     for _, details in ipairs(BAR_CONFIG) do
-                        local s = barList[details.key]
-                        if s and s.outOfRangeColoring and not mod._eabBarDormant[details.key] then
+                        local cfg = barList[details.key]
+                        if cfg and cfg.outOfRangeColoring and not mod._eabBarDormant[details.key] then
                             local btns = barButtons[details.key]
                             if btns then
                                 for _, button in ipairs(btns) do
@@ -441,12 +441,12 @@ function ABAR:ApplyRangeColoring()
                                         local inRange = IsActionInRange(sl)
                                         local isOut = (inRange == false)
                                         _range.outOfRange[sl] = isOut or nil
-                                        ApplyRangeTint(button, isOut, s)
+                                        ApplyRangeTint(button, isOut, cfg)
                                     else
                                         if sl then
                                             _range.outOfRange[sl] = nil
                                         end
-                                        ApplyRangeTint(button, false, s)
+                                        ApplyRangeTint(button, false, cfg)
                                     end
                                 end
                             end
@@ -490,9 +490,9 @@ function ABAR:ApplyRangeColoring()
                         local slot = GetButtonActionSlot(self)
                         if slot and _range.outOfRange[slot] then
                             local bInfo = buttonToBar[self]
-                            local s = bInfo and ABAR.db.profile.bars[bInfo.barKey]
-                            if s and s.outOfRangeColoring then
-                                ApplyRangeTint(self, true, s)
+                            local cfg = bInfo and ABAR.db.profile.bars[bInfo.barKey]
+                            if cfg and cfg.outOfRangeColoring then
+                                ApplyRangeTint(self, true, cfg)
                             end
                         end
                     end)

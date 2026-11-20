@@ -96,26 +96,26 @@ local function Collect()
 end
 
 local function Button(index)
-    local b = buttons[index]
-    if b then
-        return b
+    local widget = buttons[index]
+    if widget then
+        return widget
     end
-    b = CreateFrame("Button", nil, holderFrame, "SecureActionButtonTemplate")
-    b:RegisterForClicks("AnyUp", "AnyDown")
-    b:SetAttribute("type", "item")
-    b.icon = b:CreateTexture(nil, "ARTWORK")
-    b.icon:SetAllPoints()
-    b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    local border = b:CreateTexture(nil, "BACKGROUND")
+    widget = CreateFrame("Button", nil, holderFrame, "SecureActionButtonTemplate")
+    widget:RegisterForClicks("AnyUp", "AnyDown")
+    widget:SetAttribute("type", "item")
+    widget.icon = widget:CreateTexture(nil, "ARTWORK")
+    widget.icon:SetAllPoints()
+    widget.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    local border = widget:CreateTexture(nil, "BACKGROUND")
     border:SetPoint("TOPLEFT", -1, 1)
     border:SetPoint("BOTTOMRIGHT", 1, -1)
     border:SetColorTexture(0, 0, 0, 1)
-    b.cd = CreateFrame("Cooldown", nil, b, "CooldownFrameTemplate")
-    b.cd:SetAllPoints()
-    b.count = b:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(b.count, 11, "essentials")
-    b.count:SetPoint("BOTTOMRIGHT", -2, 2)
-    b:SetScript("OnEnter", function(self)
+    widget.cd = CreateFrame("Cooldown", nil, widget, "CooldownFrameTemplate")
+    widget.cd:SetAllPoints()
+    widget.count = widget:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(widget.count, 11, "essentials")
+    widget.count:SetPoint("BOTTOMRIGHT", -2, 2)
+    widget:SetScript("OnEnter", function(self)
         if not self.itemID then
             return
         end
@@ -123,11 +123,11 @@ local function Button(index)
         GameTooltip:SetItemByID(self.itemID)
         GameTooltip:Show()
     end)
-    b:SetScript("OnLeave", function()
+    widget:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-    buttons[index] = b
-    return b
+    buttons[index] = widget
+    return widget
 end
 
 -- Counts and cooldowns: plain frames, fine in combat.
@@ -163,14 +163,14 @@ local function Layout()
     local num = math.min(#entries, max)
     for index = 1, num do
         local ident = entries[index].id
-        local b = Button(index)
-        b.itemID = ident
-        b:SetAttribute("item", "item:" .. ident)
-        b.icon:SetTexture(C_Item.GetItemIconByID(ident))
-        b:SetSize(size, size)
-        b:ClearAllPoints()
-        b:SetPoint("LEFT", holderFrame, "LEFT", (index - 1) * (size + GAP), 0)
-        b:Show()
+        local widget = Button(index)
+        widget.itemID = ident
+        widget:SetAttribute("item", "item:" .. ident)
+        widget.icon:SetTexture(C_Item.GetItemIconByID(ident))
+        widget:SetSize(size, size)
+        widget:ClearAllPoints()
+        widget:SetPoint("LEFT", holderFrame, "LEFT", (index - 1) * (size + GAP), 0)
+        widget:Show()
     end
     for index = num + 1, #buttons do
         buttons[index]:Hide()

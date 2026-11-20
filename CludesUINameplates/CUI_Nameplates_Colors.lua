@@ -55,12 +55,12 @@ function mod.ComputeOffTankFold(unitToken, br, backdrop, bb, otr, otg, otb)
     end
     if mod._otherTanksDirty or not mod._otherTankTokens then
         mod._otherTanksDirty = false
-        local t = mod._otherTankTokens
-        if t then
-            wipe(t)
+        local tbl = mod._otherTankTokens
+        if tbl then
+            wipe(tbl)
         else
-            t = {}
-            mod._otherTankTokens = t
+            tbl = {}
+            mod._otherTankTokens = tbl
         end
         local num = 0
         local prefixText, total
@@ -77,7 +77,7 @@ function mod.ComputeOffTankFold(unitToken, br, backdrop, bb, otr, otg, otb)
                 local tok = prefixText .. index
                 if not UnitIsUnit(tok, "player") and UnitGroupRolesAssigned(tok) == "TANK" then
                     num = num + 1
-                    t[num] = tok
+                    tbl[num] = tok
                 end
             end
         end

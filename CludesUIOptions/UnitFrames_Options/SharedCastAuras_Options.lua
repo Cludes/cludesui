@@ -669,10 +669,10 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                         label = "Border Wraps Icon",
                         tooltip = "Draw the custom cast bar border around the icon and the bar together. An icon with an offset keeps its own border.",
                         disabled = function()
-                            local s = UNIT_DB_MAP[optionState.selectedUnit]()
+                            local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
                             return CludesUI.BlizzStyle.Get("unitframes")
-                                or s.castBorderCustom ~= true
-                                or not mod.UF_CastIconInWidth(optionState.selectedUnit, s)
+                                or cfg.castBorderCustom ~= true
+                                or not mod.UF_CastIconInWidth(optionState.selectedUnit, cfg)
                         end,
                         disabledTooltip = "This option requires Custom Border Style, Show Icon and Make Icon Part of the Bar, with the CludesUI style.",
                         get = function()
@@ -749,10 +749,10 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                             if CludesUI.BlizzStyle.Get("unitframes") or not GetShowIcon() then
                                 return true
                             end
-                            local s = UNIT_DB_MAP[optionState.selectedUnit]()
-                            return (s.portraitStyle or saved.profile.portraitStyle or "attached") == "none"
-                                or s.showPortrait == false
-                                or (s.portraitMode or saved.profile.portraitMode or "2d") == "none"
+                            local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
+                            return (cfg.portraitStyle or saved.profile.portraitStyle or "attached") == "none"
+                                or cfg.showPortrait == false
+                                or (cfg.portraitMode or saved.profile.portraitMode or "2d") == "none"
                         end,
                         disabledTooltip = function()
                             if CludesUI.BlizzStyle.Get("unitframes") then
@@ -914,14 +914,14 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
             order = castTextPosOrder,
             getValue = SValSupportedRow("castSpellNameSide", "left"),
             setValue = function(value)
-                local s = UNIT_DB_MAP[optionState.selectedUnit]()
-                s.castSpellNameSide = value
+                local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
+                cfg.castSpellNameSide = value
                 if
                     value ~= "none"
-                    and (s.showCastTarget ~= false)
-                    and (s.castSpellTargetSide or "right") == value
+                    and (cfg.showCastTarget ~= false)
+                    and (cfg.castSpellTargetSide or "right") == value
                 then
-                    s.showCastTarget = false
+                    cfg.showCastTarget = false
                 end
                 ReloadAndUpdate()
                 UpdatePreview()
@@ -939,12 +939,12 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 return SValSupported("castDurationSide", "right")
             end,
             setValue = function(value)
-                local s = UNIT_DB_MAP[optionState.selectedUnit]()
+                local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
                 if value == "none" then
-                    s.showCastDuration = false
+                    cfg.showCastDuration = false
                 else
-                    s.showCastDuration = true
-                    s.castDurationSide = value
+                    cfg.showCastDuration = true
+                    cfg.castDurationSide = value
                 end
                 ReloadAndUpdate()
                 UpdatePreview()
@@ -1124,8 +1124,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 if optionState.selectedUnit ~= "target" and optionState.selectedUnit ~= "focus" then
                     return false
                 end
-                local s = UNIT_DB_MAP[optionState.selectedUnit]()
-                return (s and s.castCombineNameTarget == true) and true or false
+                local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
+                return (cfg and cfg.castCombineNameTarget == true) and true or false
             end,
             disabledTooltip = "This option requires Combine Spell Name and Target to be disabled.",
             getValue = function()
@@ -1135,14 +1135,14 @@ function mod.UFO_BuildCastBarSection(hostFrame, cursorY, context)
                 return SValSupported("castSpellTargetSide", "right")
             end,
             setValue = function(value)
-                local s = UNIT_DB_MAP[optionState.selectedUnit]()
+                local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
                 if value == "none" then
-                    s.showCastTarget = false
+                    cfg.showCastTarget = false
                 else
-                    s.showCastTarget = true
-                    s.castSpellTargetSide = value
-                    if (s.castSpellNameSide or "left") == value then
-                        s.castSpellNameSide = "none"
+                    cfg.showCastTarget = true
+                    cfg.castSpellTargetSide = value
+                    if (cfg.castSpellNameSide or "left") == value then
+                        cfg.castSpellNameSide = "none"
                     end
                 end
                 ReloadAndUpdate()
@@ -1458,8 +1458,8 @@ function mod.UFO_MaxImportantRow(getS, apply, maxMax, maxDefault)
         end,
         disabledTooltip = "Debuff Filter: Important or Own",
         get = function()
-            local s = getS()
-            return s.maxImportantDebuffs or s.maxDebuffs or maxDefault
+            local cfg = getS()
+            return cfg.maxImportantDebuffs or cfg.maxDebuffs or maxDefault
         end,
         set = function(value)
             getS().maxImportantDebuffs = value
@@ -1573,16 +1573,16 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
 
     -- When Buff/Debuff Display is "none", everything in that column is disabled.
     local function BuffDisabled()
-        local s = UNIT_DB_MAP[optionState.selectedUnit]()
-        if not s then
+        local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
+        if not cfg then
             return false
         end
         -- Anchor Buffs with Debuffs renders buffs inside the debuff stack, so
         -- buff appearance settings stay live while Buff Display reads None (visibility belongs to the merge toggle).
-        if s.debuffAnchorBuffs and SValSupported("debuffAnchor", "bottomleft") ~= "none" then
+        if cfg.debuffAnchorBuffs and SValSupported("debuffAnchor", "bottomleft") ~= "none" then
             return false
         end
-        return s.showBuffs == false
+        return cfg.showBuffs == false
     end
     local function DebuffDisabled()
         return SValSupported("debuffAnchor", "bottomleft") == "none"
@@ -1632,13 +1632,13 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
             end
         end,
         getValue = function()
-            local s = UNIT_DB_MAP[optionState.selectedUnit]()
+            local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
             -- Active merge presents as its own display choice; an inert merge
             -- (Debuff Display None) falls through to the truthful None readout.
-            if s.debuffAnchorBuffs and SValSupported("debuffAnchor", "bottomleft") ~= "none" then
+            if cfg.debuffAnchorBuffs and SValSupported("debuffAnchor", "bottomleft") ~= "none" then
                 return "anchor_debuffs"
             end
-            if s.showBuffs == false then
+            if cfg.showBuffs == false then
                 return "none"
             end
             return SValSupported("buffAnchor", "topleft")
@@ -1649,21 +1649,21 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         setValue = CludesUI.DependentSetValue(function()
             return not BuffDisabled()
         end, function(value)
-            local s = UNIT_DB_MAP[optionState.selectedUnit]()
+            local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
             if value == "anchor_debuffs" then
                 -- Same stored shape the old cog toggle wrote: the
                 -- merge owns visibility, Buff Display stores None.
-                s.debuffAnchorBuffs = true
-                s.showBuffs = false
+                cfg.debuffAnchorBuffs = true
+                cfg.showBuffs = false
             elseif value == "none" then
-                s.showBuffs = false
-                s.debuffAnchorBuffs = nil
+                cfg.showBuffs = false
+                cfg.debuffAnchorBuffs = nil
             else
-                s.showBuffs = true
-                SwapAuraSlot(s, "buffAnchor", value)
+                cfg.showBuffs = true
+                SwapAuraSlot(cfg, "buffAnchor", value)
                 -- Choosing a standalone Buff Display exits the
                 -- merged mode (which forces this dropdown to None).
-                s.debuffAnchorBuffs = nil
+                cfg.debuffAnchorBuffs = nil
             end
             ReloadAndUpdate()
             UpdatePreview()
@@ -2193,26 +2193,26 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                     end,
                     setValue = function(value)
                         local color, behind, behindUnitFrame = CludesUI.GetBorderStyleSelectDefaults(value)
-                        local s = SDB()
-                        s.auraBorderTexture = value
-                        s.auraBorderTextureOffset = nil
-                        s.auraBorderTextureOffsetY = nil
-                        s.auraBorderTextureShiftX = nil
-                        s.auraBorderTextureShiftY = nil
-                        s.auraBorderBehind = behind
-                        s.auraBorderBehindUnitFrame = behindUnitFrame
-                        s.auraBorderR = color.r
-                        s.auraBorderG = color.g
-                        s.auraBorderB = color.b
-                        s.auraBorderA = 1
+                        local cfg = SDB()
+                        cfg.auraBorderTexture = value
+                        cfg.auraBorderTextureOffset = nil
+                        cfg.auraBorderTextureOffsetY = nil
+                        cfg.auraBorderTextureShiftX = nil
+                        cfg.auraBorderTextureShiftY = nil
+                        cfg.auraBorderBehind = behind
+                        cfg.auraBorderBehindUnitFrame = behindUnitFrame
+                        cfg.auraBorderR = color.r
+                        cfg.auraBorderG = color.g
+                        cfg.auraBorderB = color.b
+                        cfg.auraBorderA = 1
                         local defSz = CludesUI.GetBorderDefaultSize("unitframes", value)
                         if defSz then
-                            s.auraBorderSize = defSz
+                            cfg.auraBorderSize = defSz
                         end
                         -- A style pick returns the icons to their legacy step; clear a
                         -- set exact size (false travels through mirror sync, nil would not).
-                        if s.auraBorderSizePx then
-                            s.auraBorderSizePx = false
+                        if cfg.auraBorderSizePx then
+                            cfg.auraBorderSizePx = false
                         end
                         ReloadAndUpdate()
                         UpdatePreview()
@@ -2403,11 +2403,11 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                             SVal("auraBorderA", 1)
                     end,
                     function(red, green, blue, a)
-                        local s = SDB()
-                        s.auraBorderR = red
-                        s.auraBorderG = green
-                        s.auraBorderB = blue
-                        s.auraBorderA = a
+                        local cfg = SDB()
+                        cfg.auraBorderR = red
+                        cfg.auraBorderG = green
+                        cfg.auraBorderB = blue
+                        cfg.auraBorderA = a
                         ReloadAndUpdate()
                         UpdatePreview()
                     end,

@@ -468,12 +468,12 @@ local function GlowParts(state, edgeTex)
     end
     -- On a frame of the options page pool the glow frame is pooled with it:
     -- the state that holds it is dropped once that frame is dressed again.
-    local f = POOL.CreateFrame("Frame", nil, edgeTex)
-    f:EnableMouse(false)
-    glowTex = { frame = f, corner = {}, edge = {} }
+    local frame = POOL.CreateFrame("Frame", nil, edgeTex)
+    frame:EnableMouse(false)
+    glowTex = { frame = frame, corner = {}, edge = {} }
     -- Corner pieces: art, size, place and crop are set per shape by GlowOn.
     for idx = 1, 4 do
-        local t = f:CreateTexture(nil, "BORDER")
+        local t = frame:CreateTexture(nil, "BORDER")
         ownTex[t] = true
         glowTex.corner[idx] = t
     end
@@ -481,7 +481,7 @@ local function GlowParts(state, edgeTex)
     -- for top and bottom, and turned round for the right and bottom edges so
     -- their outer side faces out too.
     for idx = 1, 4 do
-        local t = f:CreateTexture(nil, "BORDER")
+        local t = frame:CreateTexture(nil, "BORDER")
         t:SetTexture(GLOW_EDGE)
         ownTex[t] = true
         glowTex.edge[idx] = t
@@ -526,7 +526,7 @@ local function GlowOn(state, edgeTex, backdrop, cornerRadius)
         return
     end
     local glowTex = GlowParts(state, edgeTex)
-    local f = glowTex.frame
+    local frame = glowTex.frame
     -- A new border or backdrop: the old one gets its alpha back.
     if glowTex.bd ~= backdrop then
         if glowTex.bd then
@@ -535,8 +535,8 @@ local function GlowOn(state, edgeTex, backdrop, cornerRadius)
         glowTex.bd = backdrop
         glowTex.S = nil
     end
-    if f:GetParent() ~= edgeTex then
-        f:SetParent(edgeTex)
+    if frame:GetParent() ~= edgeTex then
+        frame:SetParent(edgeTex)
         glowTex.S = nil
     end
     -- S: from the glow's outer corner to the arc center, at most half the
@@ -550,9 +550,9 @@ local function GlowOn(state, edgeTex, backdrop, cornerRadius)
     local lvl = backdrop:GetFrameLevel()
     if glowTex.S ~= S or glowTex.E ~= E or glowTex.half ~= halfSize or glowTex.lvl ~= lvl or glowTex.corners ~= cornerList then
         glowTex.S, glowTex.E, glowTex.half, glowTex.lvl, glowTex.corners = S, E, halfSize, lvl, cornerList
-        f:ClearAllPoints()
-        f:SetAllPoints(backdrop)
-        f:SetFrameLevel(lvl)
+        frame:ClearAllPoints()
+        frame:SetAllPoints(backdrop)
+        frame:SetFrameLevel(lvl)
         local filePath, size, inset, crop, run, band = GlowPiece(S, E, halfSize)
         local sPath, sSize, sInset, sCrop, sRun
         if cornerList ~= ALL_CORNERS then
@@ -580,27 +580,27 @@ local function GlowOn(state, edgeTex, backdrop, cornerRadius)
             t:SetTexCoord(tc[1] * cr, tc[2] * cr, tc[3] * cr, tc[4] * cr)
             t:SetSize(sz, sz)
             t:ClearAllPoints()
-            t:SetPoint(c.p, f, c.p, c.dx * ins, c.dy * ins)
+            t:SetPoint(c.p, frame, c.p, c.dx * ins, c.dy * ins)
         end
         -- The sides: band wide, centered on the outline (E / 2 in from the
         -- glow's edge), from one corner's run to the other's.
         local e, o = glowTex.edge, (E - band) / 2
         local topY, bottom, leftX, right = e[1], e[2], e[3], e[4]
         topY:ClearAllPoints()
-        topY:SetPoint("TOPLEFT", f, "TOPLEFT", runs[1], -o)
-        topY:SetPoint("TOPRIGHT", f, "TOPRIGHT", -runs[2], -o)
+        topY:SetPoint("TOPLEFT", frame, "TOPLEFT", runs[1], -o)
+        topY:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -runs[2], -o)
         topY:SetHeight(band)
         bottom:ClearAllPoints()
-        bottom:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", runs[3], o)
-        bottom:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -runs[4], o)
+        bottom:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", runs[3], o)
+        bottom:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -runs[4], o)
         bottom:SetHeight(band)
         leftX:ClearAllPoints()
-        leftX:SetPoint("TOPLEFT", f, "TOPLEFT", o, -runs[1])
-        leftX:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", o, runs[3])
+        leftX:SetPoint("TOPLEFT", frame, "TOPLEFT", o, -runs[1])
+        leftX:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", o, runs[3])
         leftX:SetWidth(band)
         right:ClearAllPoints()
-        right:SetPoint("TOPRIGHT", f, "TOPRIGHT", -o, -runs[2])
-        right:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -o, runs[4])
+        right:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -o, -runs[2])
+        right:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -o, runs[4])
         right:SetWidth(band)
     end
     local red, green, blue, a = backdrop:GetBackdropBorderColor()
@@ -609,7 +609,7 @@ local function GlowOn(state, edgeTex, backdrop, cornerRadius)
         glowTex.edge[idx]:SetVertexColor(red, green, blue, a)
     end
     backdrop:SetAlpha(0)
-    f:Show()
+    frame:Show()
     glowTex.on = true
 end
 
@@ -1160,9 +1160,9 @@ ClipFrame = function(frame)
 end
 local function ClipScrolls(...)
     for idx = 1, select("#", ...) do
-        local f = select(idx, ...)
-        if f:GetObjectType() == "ScrollFrame" then
-            local contentFrame = f:GetScrollChild()
+        local frame = select(idx, ...)
+        if frame:GetObjectType() == "ScrollFrame" then
+            local contentFrame = frame:GetScrollChild()
             if contentFrame then
                 ClipFrame(contentFrame)
             end

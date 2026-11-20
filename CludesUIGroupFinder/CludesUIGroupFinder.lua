@@ -77,8 +77,8 @@ end
 
 -- Account-wide so profile swaps and imports never flip it.
 function mod.Enabled()
-    local t = CludesUIDB and CludesUIDB.groupFinder
-    return type(t) == "table" and t.enabled == true or false
+    local tbl = CludesUIDB and CludesUIDB.groupFinder
+    return type(tbl) == "table" and tbl.enabled == true or false
 end
 
 function mod.SetEnabled(val)
@@ -189,11 +189,11 @@ function mod.AppsCfg()
 end
 
 function mod.AppCountsStore()
-    local t = Account("groupFinderApps")
-    if type(t.dungeon) ~= "table" then
-        t.dungeon = {}
+    local tbl = Account("groupFinderApps")
+    if type(tbl.dungeon) ~= "table" then
+        tbl.dungeon = {}
     end
-    return t.dungeon
+    return tbl.dungeon
 end
 
 function mod.ResetSettings()
@@ -218,10 +218,10 @@ function GF:OnInitialize()
         -- a character's first login with filters of its own: it starts from a
         -- copy of the profile's, which stay for the characters that log in later
         local filters = {}
-        local s = Profile() and Profile().search
-        if s then
+        local cfg = Profile() and Profile().search
+        if cfg then
             for k in pairs(FILTER_KEYS) do
-                local val = s[k]
+                local val = cfg[k]
                 if type(val) == "table" then
                     val = CopyTable(val)
                 end

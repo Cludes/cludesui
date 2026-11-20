@@ -789,17 +789,17 @@ CUI_NS.unlockParts.Bar = function(LM)
                 return seenHit
             end
             seenX, seenY, seenCut, seenHit = posX, posY, cut, false
-            local f = GetMouseFoci()[1]
-            while f do
-                if f.IsForbidden and f:IsForbidden() then
+            local frame = GetMouseFoci()[1]
+            while frame do
+                if frame.IsForbidden and frame:IsForbidden() then
                     return false
                 end
-                local up = f:GetParent()
+                local up = frame:GetParent()
                 if up == LM.unlockFrame then
-                    seenHit = f ~= bar and not f._umCatcher
+                    seenHit = frame ~= bar and not frame._umCatcher
                     return seenHit
                 end
-                f = up
+                frame = up
             end
             return false
         end

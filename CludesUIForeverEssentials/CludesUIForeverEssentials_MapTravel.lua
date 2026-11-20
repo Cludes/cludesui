@@ -311,28 +311,28 @@ local function TransportGroups(zone)
     groups = {}
     local entries = payload.transports[zone] or {}
     for index = 1, #entries do
-        local t = entries[index]
+        local tbl = entries[index]
         local g
         for jdx = 1, #groups do
             local hgt = groups[jdx]
-            if math.abs(hgt.x - t[1]) < GROUP_DIST and math.abs(hgt.y - t[2]) < GROUP_DIST then
+            if math.abs(hgt.x - tbl[1]) < GROUP_DIST and math.abs(hgt.y - tbl[2]) < GROUP_DIST then
                 g = hgt
                 break
             end
         end
         -- Each destination on its own line, led by its transport's icon.
-        local line = ("|A:%s:16:16|a %s"):format(KIND_ATLAS[t[3]], TransportTip(t))
+        local line = ("|A:%s:16:16|a %s"):format(KIND_ATLAS[tbl[3]], TransportTip(tbl))
         if g then
             g.tip = g.tip .. "\n" .. line
-            g.link = g.link .. ", " .. TransportTip(t)
+            g.link = g.link .. ", " .. TransportTip(tbl)
             g.count = g.count + 1
         else
             groups[#groups + 1] = {
-                x = t[1],
-                y = t[2],
-                atlas = KIND_ATLAS[t[3]],
+                x = tbl[1],
+                y = tbl[2],
+                atlas = KIND_ATLAS[tbl[3]],
                 tip = line,
-                link = TransportTip(t),
+                link = TransportTip(tbl),
                 count = 1,
             }
         end

@@ -582,22 +582,22 @@ do
             return
         end
         mod._ptLayoutDirty = nil
-        local s = saved.profile
+        local cfg = saved.profile
         -- The party frames' pitch holds the frames along the stack: a change there re-lays the party
         -- frames first, and their pass ends back here.
-        if mod._partyHeader and mod.PT_AlongPitch(s) ~= (mod._ptPitchApplied or 0) then
+        if mod._partyHeader and mod.PT_AlongPitch(cfg) ~= (mod._ptPitchApplied or 0) then
             mod._LayoutPartyFrames()
             return
         end
-        local wid = PixelSnap(s.partyTargetWidth or 70)
-        local hgt = PixelSnap(s.partyTargetHeight or 33)
-        local posX = PixelSnap(s.partyTargetOffsetX or 0)
-        local posY = PixelSnap(s.partyTargetOffsetY or 0)
-        local pw, ph = mod.RF_PartyDims(s)
+        local wid = PixelSnap(cfg.partyTargetWidth or 70)
+        local hgt = PixelSnap(cfg.partyTargetHeight or 33)
+        local posX = PixelSnap(cfg.partyTargetOffsetX or 0)
+        local posY = PixelSnap(cfg.partyTargetOffsetY or 0)
+        local pw, ph = mod.RF_PartyDims(cfg)
         pw, ph = PixelSnap(pw), PixelSnap(ph)
-        local horiz = s.partyHorizontal and true or false
-        local gap = PixelSnap(PT_Gap(s))
-        local side, extra, across = PT_Side(s)
+        local horiz = cfg.partyHorizontal and true or false
+        local gap = PixelSnap(PT_Gap(cfg))
+        local side, extra, across = PT_Side(cfg)
         local off = gap + PixelSnap(extra)
         -- Beside Owner pets on this side of the stack: after them (their gap already clears the kit).
         local popFrame = mod._PF
@@ -692,9 +692,9 @@ do
         if not mod._ptEnabled then
             return
         end
-        local s = PT_Source()
-        local texPath = ResolveHealthTexture(s)
-        local changed, at = mod._PF.StyleChanged("pt", s, texPath, PT_FpExtra, PT.FP_N)
+        local cfg = PT_Source()
+        local texPath = ResolveHealthTexture(cfg)
+        local changed, at = mod._PF.StyleChanged("pt", cfg, texPath, PT_FpExtra, PT.FP_N)
         if not changed then
             return
         end
@@ -707,10 +707,10 @@ do
         PT.br, PT.bgg, PT.bb = bc.r, bc.g, bc.b
         PT.bgA = (p.partyTargetBgDarkness or 50) / 100
         local interp = Enum.StatusBarInterpolation
-        PT.smooth = (s.smoothBars and interp and interp.ExponentialEaseOut) or nil
+        PT.smooth = (cfg.smoothBars and interp and interp.ExponentialEaseOut) or nil
         -- 0: nothing styled yet (new frames); up to STYLE_N: a shared input changed.
         if at <= mod._PF.STYLE_N then
-            local nameSize = s.nameSize or 10
+            local nameSize = cfg.nameSize or 10
             local styleBorder = mod._FB.StyleBorder
             for _, widget in ipairs(mod._partyTargetFrames) do
                 local health, backdrop = widget._health, widget._bg
@@ -1021,7 +1021,7 @@ do
         if cfg.partyShowTargets ~= true then
             return nil
         end
-        local t = PT.pvSpec
+        local tbl = PT.pvSpec
         local wid, hgt = PixelSnap(cfg.partyTargetWidth or 70), PixelSnap(cfg.partyTargetHeight or 33)
         local posX, posY = PixelSnap(cfg.partyTargetOffsetX or 0), PixelSnap(cfg.partyTargetOffsetY or 0)
         local gap = PixelSnap(PT_Gap(cfg))
@@ -1030,7 +1030,7 @@ do
         if across and petSpec and petSpec.owner and petSpec.side == side then
             off = petSpec.gap + ((side == "above" or side == "below") and petSpec.h or petSpec.w) + gap
         end
-        t.w, t.h, t.x, t.y, t.gap, t.off, t.side, t.across, t.pw, t.ph =
+        tbl.w, tbl.h, tbl.x, tbl.y, tbl.gap, tbl.off, tbl.side, tbl.across, tbl.pw, tbl.ph =
             wid, hgt, posX, posY, gap, off, side, across, pw, ph
         -- The frame's box from its party frame's centre.
         local l, b
@@ -1043,9 +1043,9 @@ do
         else
             l, b = posX - wid / 2, posY + off + ph / 2
         end
-        t.padL, t.padR = max(0, -pw / 2 - l), max(0, l + wid - pw / 2)
-        t.padB, t.padT = max(0, -ph / 2 - b), max(0, b + hgt - ph / 2)
-        return t
+        tbl.padL, tbl.padR = max(0, -pw / 2 - l), max(0, l + wid - pw / 2)
+        tbl.padB, tbl.padT = max(0, -ph / 2 - b), max(0, b + hgt - ph / 2)
+        return tbl
     end
 
     -- The room a preview spec takes beside the preview's party frames (the pets beside them), as

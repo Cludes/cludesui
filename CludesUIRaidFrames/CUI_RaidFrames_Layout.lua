@@ -59,12 +59,12 @@ mod._BuildHeaderSet = function(merge)
         return
     end
 
-    local s = saved.profile
+    local cfg = saved.profile
 
     -- Button dimensions passed to headers via attributes (pixel-snapped):
     -- active tier dims when a tier is live (late build inside a raid), else base.
-    local bw = PixelSnap(mod._activeSizeW or s.frameWidth or 72)
-    local bh = PixelSnap(mod._activeSizeH or s.frameHeight or 46)
+    local bw = PixelSnap(mod._activeSizeW or cfg.frameWidth or 72)
+    local bh = PixelSnap(mod._activeSizeH or cfg.frameHeight or 46)
 
     -- initialConfigFunction: runs in restricted env when header creates a button
     local initConfig = ([[
@@ -77,8 +77,8 @@ mod._BuildHeaderSet = function(merge)
     -- it -- this bootstrap runs from the raw profile, ahead of _LayoutGroupsImpl's
     -- own per-tier resolution and self-heal.
     local initUnitGrowth, initGroupGrowth =
-        mod._RFEffectiveGrowth(s.unitGrowth or "DOWN", s.groupGrowth or "RIGHT", merge)
-    local csInit = mod.RF_CellSpacing(s)
+        mod._RFEffectiveGrowth(cfg.unitGrowth or "DOWN", cfg.groupGrowth or "RIGHT", merge)
+    local csInit = mod.RF_CellSpacing(cfg)
     local initPoint, initXOff, initYOff = mod._RFHeaderPoint(initUnitGrowth, csInit)
 
     -- A header makes children only while visible (IsVisible walks the parent
@@ -110,7 +110,7 @@ mod._BuildHeaderSet = function(merge)
             heading:SetAttribute("showRaid", true)
             heading:SetAttribute("showParty", true)
             heading:SetAttribute("showPlayer", true)
-            heading:SetAttribute("showSolo", s.showWhenSolo or false)
+            heading:SetAttribute("showSolo", cfg.showWhenSolo or false)
             heading:SetAttribute("maxColumns", 1)
             heading:SetAttribute("unitsPerColumn", 5)
 
@@ -149,10 +149,10 @@ mod._BuildHeaderSet = function(merge)
         mod._flatHeader:SetAttribute("showRaid", true)
         mod._flatHeader:SetAttribute("showParty", true)
         mod._flatHeader:SetAttribute("showPlayer", true)
-        mod._flatHeader:SetAttribute("showSolo", s.showWhenSolo or false)
+        mod._flatHeader:SetAttribute("showSolo", cfg.showWhenSolo or false)
         mod._flatHeader:SetAttribute("unitsPerColumn", 5)
         mod._flatHeader:SetAttribute("maxColumns", 8)
-        mod._flatHeader:SetAttribute("columnSpacing", mod.RF_GroupSpacing(s))
+        mod._flatHeader:SetAttribute("columnSpacing", mod.RF_GroupSpacing(cfg))
         mod._flatHeader:SetAttribute("columnAnchorPoint", mod._RFColAnchor(initUnitGrowth, initGroupGrowth))
         mod._flatHeader:SetAttribute("sortMethod", "INDEX")
 
@@ -185,7 +185,7 @@ local function CreateHeaders()
         return
     end
 
-    local s = saved.profile
+    local cfg = saved.profile
 
     -- Container frame for positioning (not secure, just holds headers)
     SetContainerFrame(CreateFrame("Frame", "CludesUIRaidFrameContainer", UIParent))
@@ -215,7 +215,7 @@ local function CreateHeaders()
 
     -- Build ONLY the active mode's header set; the inactive one materializes
     -- on the first Merge Groups flip (see ns._BuildHeaderSet above).
-    mod._BuildHeaderSet((s.mergeGroups and true) or false)
+    mod._BuildHeaderSet((cfg.mergeGroups and true) or false)
 end
 
 -------------------------------------------------------------------------------
@@ -245,8 +245,8 @@ function mod._UpdateGroupNumbers()
     if InCombatLockdown() then
         return
     end
-    local s = saved.profile
-    if (not s.showGroupNumbers) or s.mergeGroups or (not IsInRaid()) then
+    local cfg = saved.profile
+    if (not cfg.showGroupNumbers) or cfg.mergeGroups or (not IsInRaid()) then
         for g = 1, 8 do
             if labels[g] then
                 labels[g]:Hide()
@@ -255,16 +255,16 @@ function mod._UpdateGroupNumbers()
         return
     end
     -- Effective unit growth (mirror the LayoutGroups tier override)
-    local unitGrowth = s.unitGrowth or "DOWN"
+    local unitGrowth = cfg.unitGrowth or "DOWN"
     local activeOv = mod._activeTierOverride
     if activeOv and activeOv.unitGrowth then
         unitGrowth = activeOv.unitGrowth
     end
     local vg = mod._VisibleGroups() or { true, true, true, true, true, true, false, false }
-    local size = s.groupNumberSize or 10
-    local gc = s.groupNumberColor or {}
-    local ox = s.groupNumberOffsetX or 0
-    local oy = s.groupNumberOffsetY or 0
+    local size = cfg.groupNumberSize or 10
+    local gc = cfg.groupNumberColor or {}
+    local ox = cfg.groupNumberOffsetX or 0
+    local oy = cfg.groupNumberOffsetY or 0
     for set = 1, 8 do
         local labelFS = labels[set]
         local heading = separatedHdrs[set]
@@ -304,14 +304,14 @@ end
 
 -- Subgroups holding at least one raid member: [subgroup] = true.
 local function OccupiedGroups()
-    local t = {}
+    local tbl = {}
     for ri = 1, GetNumGroupMembers() or 0 do
         local _, _, sub = GetRaidRosterInfo(ri)
         if sub then
-            t[sub] = true
+            tbl[sub] = true
         end
     end
-    return t
+    return tbl
 end
 
 -- Real layout work. Call only through LayoutGroups() below, which wraps this in a
@@ -326,13 +326,13 @@ mod._LayoutGroupsImpl = function()
         return
     end
 
-    local s = saved.profile
-    local merged = s.mergeGroups
+    local cfg = saved.profile
+    local merged = cfg.mergeGroups
     -- Belt: any path that flips the mode without passing through ReloadFrames
     -- still gets its header set built before this tries to show it.
     mod._BuildHeaderSet((merged and true) or false)
-    local groupGrowth = s.groupGrowth or "RIGHT"
-    local unitGrowth = s.unitGrowth or "DOWN"
+    local groupGrowth = cfg.groupGrowth or "RIGHT"
+    local unitGrowth = cfg.unitGrowth or "DOWN"
     -- Per-tier growth overrides
     local activeOv = mod._activeTierOverride
     if activeOv then
@@ -344,10 +344,10 @@ mod._LayoutGroupsImpl = function()
     unitGrowth, groupGrowth = mod._RFEffectiveGrowth(unitGrowth, groupGrowth, merged)
     -- Raid only: solo (Show When Solo) keeps the corner in both modes.
     local centered = IsInRaid() and mod._RFGroupCentered(activeOv, groupGrowth)
-    local bw = PixelSnap(mod._activeSizeW or s.frameWidth or 72)
-    local bh = PixelSnap(mod._activeSizeH or s.frameHeight or 46)
-    local cs = mod.RF_CellSpacing(s)
-    local gs = mod.RF_GroupSpacing(s)
+    local bw = PixelSnap(mod._activeSizeW or cfg.frameWidth or 72)
+    local bh = PixelSnap(mod._activeSizeH or cfg.frameHeight or 46)
+    local cs = mod.RF_CellSpacing(cfg)
+    local gs = mod.RF_GroupSpacing(cfg)
 
     -- Header attributes for unit growth direction
     local hdrPoint, hdrXOff, hdrYOff = mod._RFHeaderPoint(unitGrowth, cs)
@@ -413,10 +413,10 @@ mod._LayoutGroupsImpl = function()
             -- Sort By = FrameSort own it the same way.
             mod._flatGfStr = gfStr
             local selfOwnsHeader = (
-                s.showSelfFirst
-                or s.showSelfLast
-                or (s.prioritizeClass == true and s.sortMode == "ROLE")
-                or s.sortMode == "FRAMESORT"
+                cfg.showSelfFirst
+                or cfg.showSelfLast
+                or (cfg.prioritizeClass == true and cfg.sortMode == "ROLE")
+                or cfg.sortMode == "FRAMESORT"
             ) and IsInRaid()
             if not selfOwnsHeader and mod._flatHeader:GetAttribute("groupFilter") ~= gfStr then
                 mod._flatHeader:SetAttribute("groupFilter", gfStr)
@@ -492,12 +492,12 @@ mod._LayoutGroupsImpl = function()
         -- ignores the roster, so one hidden here would stay empty if the
         -- visibility driver shows the set mid-fight (the shown pass collapses).
         local occupied
-        if s.hideEmptyGroups ~= false and IsInRaid() and mod._RFVisWanted() then
+        if cfg.hideEmptyGroups ~= false and IsInRaid() and mod._RFVisWanted() then
             occupied = OccupiedGroups()
         end
 
         local visSlot = 0 -- running counter for visible groups (collapses gaps)
-        local groupOrder = s.customGroupOrder and mod._RFValidatedGroupOrder(s.groupOrder)
+        local groupOrder = cfg.customGroupOrder and mod._RFValidatedGroupOrder(cfg.groupOrder)
 
         -- Center Groups: shift the whole run by half the box space it leaves
         -- free. The run ends at the last shown slot holding members, so empty

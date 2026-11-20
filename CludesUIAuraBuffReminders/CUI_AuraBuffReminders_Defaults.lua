@@ -41,11 +41,11 @@ local StopAllGlows = CludesUI.Glows.StopAllGlows
 -- Unit Frames module being enabled.
 do
     local function AllBorderSizes(ox, oy, sx, sy)
-        local t = {}
+        local tbl = {}
         for size = 0, 4 do
-            t[size] = { offsetX = ox, offsetY = oy, shiftX = sx, shiftY = sy }
+            tbl[size] = { offsetX = ox, offsetY = oy, shiftX = sx, shiftY = sy }
         end
-        return t
+        return tbl
     end
     CludesUI.RegisterBorderDefaults("aurabuffreminders", {
         glow = { defaultSize = 1, sizes = AllBorderSizes(0, 0, 0, 0) },

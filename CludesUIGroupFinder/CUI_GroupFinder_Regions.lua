@@ -267,20 +267,20 @@ end
 
 -- the filter's list for this region, nil where there's none
 function mod.RegionList()
-    local s = Set()
-    return s and s.list
+    local cfg = Set()
+    return cfg and cfg.list
 end
 
 -- a realm's key, the region's default when it's not listed
 local cache = {}
 function mod.RegionOfRealm(realm)
-    local s = Set()
-    if not s or type(realm) ~= "string" then
+    local cfg = Set()
+    if not cfg or type(realm) ~= "string" then
         return nil
     end
     local k = cache[realm]
     if not k then
-        k = realmOf[Key(realm)] or s.default
+        k = realmOf[Key(realm)] or cfg.default
         cache[realm] = k
     end
     return k
@@ -294,6 +294,6 @@ end
 
 -- eu realms list languages instead of regions
 function mod.RegionIsLanguage()
-    local s = Set()
-    return s and s.language or false
+    local cfg = Set()
+    return cfg and cfg.language or false
 end

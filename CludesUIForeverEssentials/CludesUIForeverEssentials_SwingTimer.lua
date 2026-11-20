@@ -83,28 +83,28 @@ local function OnUpdate(barFrame)
 end
 
 local function Bar(t)
-    local b = barList[t]
-    if b then
-        return b
+    local widget = barList[t]
+    if widget then
+        return widget
     end
-    b = CreateFrame("StatusBar", nil, holderFrame)
-    b:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    widget = CreateFrame("StatusBar", nil, holderFrame)
+    widget:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     if t == SWING.MainHand then
         CludesUI.Kit.SyncAccent(COLOR[t])
     end
-    b:GetStatusBarTexture():SetVertexColor(unpack(COLOR[t]))
-    CludesUI.Kit.Panel(b, 0.85)
-    b:SetMinMaxValues(0, 1)
-    b:SetValue(0)
-    b.label = b:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(b.label, 10, "essentials")
-    b.label:SetPoint("LEFT", 3, 0)
-    b.label:SetText(LABEL[t])
-    b.text = b:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(b.text, 10, "essentials")
-    b.text:SetPoint("RIGHT", -3, 0)
-    barList[t] = b
-    return b
+    widget:GetStatusBarTexture():SetVertexColor(unpack(COLOR[t]))
+    CludesUI.Kit.Panel(widget, 0.85)
+    widget:SetMinMaxValues(0, 1)
+    widget:SetValue(0)
+    widget.label = widget:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(widget.label, 10, "essentials")
+    widget.label:SetPoint("LEFT", 3, 0)
+    widget.label:SetText(LABEL[t])
+    widget.text = widget:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(widget.text, 10, "essentials")
+    widget.text:SetPoint("RIGHT", -3, 0)
+    barList[t] = widget
+    return widget
 end
 
 local function Build()
@@ -129,17 +129,17 @@ function module.SwingLayout()
     local preview = CludesUI._unlockActive
     local posY, isShown = 0, 0
     for _, t in ipairs(ORDER) do
-        local b = barList[t]
-        local on = Enabled() and HasWeapon(t) and (b.started or not Get("hideIdle") or preview)
+        local widget = barList[t]
+        local on = Enabled() and HasWeapon(t) and (widget.started or not Get("hideIdle") or preview)
         if on then
-            b:SetSize(wid, hgt)
-            b:ClearAllPoints()
-            b:SetPoint("TOP", holderFrame, "TOP", 0, posY)
+            widget:SetSize(wid, hgt)
+            widget:ClearAllPoints()
+            widget:SetPoint("TOP", holderFrame, "TOP", 0, posY)
             posY = posY - hgt - GAP
             isShown = isShown + 1
-            b:Show()
+            widget:Show()
         else
-            b:Hide()
+            widget:Hide()
         end
     end
     holderFrame:SetSize(wid, math.max(1, isShown) * (hgt + GAP) - GAP)
@@ -148,20 +148,20 @@ end
 local eventFrame = CreateFrame("Frame")
 eventFrame:SetScript("OnEvent", function(_, evt, duration, swingType)
     if evt == "PLAYER_SWING" then
-        local b = barList[swingType]
+        local widget = barList[swingType]
         if
-            not b
+            not widget
             or type(duration) ~= "number"
             or (issecretvalue and issecretvalue(duration))
             or duration <= 0
         then
             return
         end
-        local wasIdle = not b.started
-        b.started, b.duration = GetTime(), duration
-        b:SetMinMaxValues(0, duration)
-        b:SetValue(0)
-        b:SetScript("OnUpdate", OnUpdate)
+        local wasIdle = not widget.started
+        widget.started, widget.duration = GetTime(), duration
+        widget:SetMinMaxValues(0, duration)
+        widget:SetValue(0)
+        widget:SetScript("OnUpdate", OnUpdate)
         if wasIdle then
             module.SwingLayout()
         end

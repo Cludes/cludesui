@@ -42,17 +42,17 @@ local function Kit(panelFrame)
             end),
             -- Clickable rows (guildmates' names open their keys).
             hit = ui.Pool(function()
-                local b = CreateFrame("Button", nil, panelFrame)
-                b.glow = b:CreateTexture(nil, "BACKGROUND")
-                b.glow:SetAllPoints()
-                ui.Color(b.glow, C.ink, 0)
-                b:SetScript("OnEnter", function(self)
+                local widget = CreateFrame("Button", nil, panelFrame)
+                widget.glow = widget:CreateTexture(nil, "BACKGROUND")
+                widget.glow:SetAllPoints()
+                ui.Color(widget.glow, C.ink, 0)
+                widget:SetScript("OnEnter", function(self)
                     ui.Color(self.glow, C.ink, 0.05)
                 end)
-                b:SetScript("OnLeave", function(self)
+                widget:SetScript("OnLeave", function(self)
                     ui.Color(self.glow, C.ink, 0)
                 end)
-                return b
+                return widget
             end),
         }
     end
@@ -229,12 +229,12 @@ local function DrawGuild(panelFrame)
     for idx = st.offset + 1, math.min(#st.entries, st.offset + st.capacity) do
         local e = st.entries[idx]
         if e.line then
-            local s = e.line
-            local color = s.tier.color
+            local cfg = e.line
+            local color = cfg.tier.color
             Rect(kit.mark, panelFrame, NAME, posY - 8, 12, 2, color)
-            Put(panelFrame, "small", C.ink2, NAME + 18, posY - 1, s.tier.label .. " line")
+            Put(panelFrame, "small", C.ink2, NAME + 18, posY - 1, cfg.tier.label .. " line")
             Rect(kit.fill, panelFrame, NAME + 130, posY - 8, right - NAME - 200, 1, color, 0.5)
-            Put(panelFrame, "small", C.ink2, right, posY - 1, mod.Fmt(s.lineNow), true)
+            Put(panelFrame, "small", C.ink2, right, posY - 1, mod.Fmt(cfg.lineNow), true)
         else
             local m = e.member
             if m.isSelf then

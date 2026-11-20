@@ -1271,8 +1271,8 @@ local function InitBuffBarsPage(
         _tbbSelectedGroup = nil
         CludesUI:RefreshPage(true)
         C_Timer.After(0, function()
-            local t = mod.GetTrackedBuffBars()
-            local rowConf = t.bars and t.bars[index]
+            local tbl = mod.GetTrackedBuffBars()
+            local rowConf = tbl.bars and tbl.bars[index]
             if rowConf and _tbbDDBtn and _tbbDDBtn:IsShown() then
                 ShowTBBSpellPicker(_tbbDDBtn, rowConf, function()
                     CludesUI:RefreshPage(true)
@@ -1963,8 +1963,8 @@ local function InitBuffBarsPage(
             -- preview speaker) from BuildSoundDropdownValues. Same keys and sound
             -- catalogue as the icon menu; playback lives in CUI_CDM_BuffBarAssign.lua.
             local function OpenBarSoundMenu(index, anchorRow)
-                local t = mod.GetTrackedBuffBars()
-                local rowConf = t.bars and t.bars[index]
+                local tbl = mod.GetTrackedBuffBars()
+                local rowConf = tbl.bars and tbl.bars[index]
                 if not rowConf then
                     return
                 end
@@ -4446,16 +4446,16 @@ local function InitBuffBarsPage(
                 region:GetFrameLevel() + 2,
                 SMOOTH_ITEMS,
                 function(keyName)
-                    local s = Smooth()
-                    if not s or s[keyName] == nil then
+                    local cfg = Smooth()
+                    if not cfg or cfg[keyName] == nil then
                         return SMOOTH_DEFAULT[keyName]
                     end
-                    return s[keyName] == true
+                    return cfg[keyName] == true
                 end,
                 function(keyName, value)
-                    local s = Smooth()
-                    if s then
-                        s[keyName] = value and true or false
+                    local cfg = Smooth()
+                    if cfg then
+                        cfg[keyName] = value and true or false
                     end
                 end
             )

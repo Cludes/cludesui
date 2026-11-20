@@ -108,23 +108,23 @@ mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
 
     -- The readout for the current settings and amounts.
     local function Compose()
-        local s = Settings()
+        local cfg = Settings()
         local coloured = Coloured()
         local iconSize = FontSize() + 2
         local first, last, step = 1, #K.CRESTS, 1
-        if s.reverse == true then
+        if cfg.reverse == true then
             first, last, step = #K.CRESTS, 1, -1
         end
         wipe(parts)
         for i = first, last, step do
             local crest = K.CRESTS[i]
-            if s[crest.key] ~= false then
+            if cfg[crest.key] ~= false then
                 local skinData = Info(crest.id)
                 if not skinData then
                     parts[#parts + 1] = "-"
-                elseif not (s.hideEmpty == true and (skinData.quantity or 0) <= 0) then
-                    local part = BarAmount(skinData, s.showSeasonProgress == true)
-                    if s.showIcons ~= false and skinData.iconFileID then
+                elseif not (cfg.hideEmpty == true and (skinData.quantity or 0) <= 0) then
+                    local part = BarAmount(skinData, cfg.showSeasonProgress == true)
+                    if cfg.showIcons ~= false and skinData.iconFileID then
                         part = format("|T%s:%d:%d:0:0:64:64:5:59:5:59|t", skinData.iconFileID, iconSize, iconSize)
                             .. part
                     end
@@ -142,7 +142,7 @@ mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
         if barCtx.IsVertical() then
             return concat(parts, "\n")
         end
-        local sep = SEPARATORS[s.separator or "slash"] or SEPARATORS.slash
+        local sep = SEPARATORS[cfg.separator or "slash"] or SEPARATORS.slash
         if coloured then
             sep = "|cff808080" .. sep .. "|r"
         end

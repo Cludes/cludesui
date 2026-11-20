@@ -486,10 +486,10 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     local function Draw(list)
-        local s = blockCfg.settings or {}
-        pass.s = s
+        local cfg = blockCfg.settings or {}
+        pass.s = cfg
         pass.fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
-        pass.iconSize = s.showIcon ~= false and pass.fontSize + 2 or 0
+        pass.iconSize = cfg.showIcon ~= false and pass.fontSize + 2 or 0
         pass.vertical = barCtx.IsVertical()
         pass.width = pass.vertical and K.VSlotW(inst) or 0
         pass.x, pass.y = 0, 4

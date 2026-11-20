@@ -157,21 +157,21 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
     local PREVIEW_ICON_SIZE = 30
 
     local function CreatePreviewIcon(parentRegion)
-        local f = CreateFrame("Frame", nil, parentRegion)
-        f:EnableMouse(false)
-        Pix.Size(f, PREVIEW_ICON_SIZE, PREVIEW_ICON_SIZE)
+        local frame = CreateFrame("Frame", nil, parentRegion)
+        frame:EnableMouse(false)
+        Pix.Size(frame, PREVIEW_ICON_SIZE, PREVIEW_ICON_SIZE)
         -- Center vertically, positioned roughly between label and dropdown
-        Pix.Point(f, "RIGHT", parentRegion, "RIGHT", -200, 0)
+        Pix.Point(frame, "RIGHT", parentRegion, "RIGHT", -200, 0)
 
-        local icon = f:CreateTexture(nil, "ARTWORK")
+        local icon = frame:CreateTexture(nil, "ARTWORK")
         icon:SetAllPoints()
         icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         icon:SetColorTexture(0.15, 0.15, 0.15, 1)
-        f._icon = icon
+        frame._icon = icon
 
-        Pix.CreateBorder(f, 0, 0, 0, 1, 1, "OVERLAY", 7)
+        Pix.CreateBorder(frame, 0, 0, 0, 1, 1, "OVERLAY", 7)
 
-        return f
+        return frame
     end
 
     -- Unified interaction preview (pushed / highlight)

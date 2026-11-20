@@ -126,8 +126,8 @@ local function RegisterUnlockElements()
             if not anchorPoint then
                 return
             end
-            local s = getSettings()
-            s.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
+            local cfg = getSettings()
+            cfg.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
             if not CludesUI._unlockActive then
                 local frame = frame_fn()
                 if frame then
@@ -151,22 +151,22 @@ local function RegisterUnlockElements()
             return { point = pt, relPoint = place.relPoint or pt, x = place.x, y = posY }
         end
         local function clearPos()
-            local s = getSettings()
-            s.unlockPos = nil
+            local cfg = getSettings()
+            cfg.unlockPos = nil
             if defaultOffX then
-                s.offsetX = defaultOffX
+                cfg.offsetX = defaultOffX
             end
             if defaultOffY then
-                s.offsetY = defaultOffY
+                cfg.offsetY = defaultOffY
             end
         end
         local function applyPos()
             mod.ERB_GroupDirty()
-            local s = getSettings()
-            if s.anchorTo and s.anchorTo ~= "none" then
+            local cfg = getSettings()
+            if cfg.anchorTo and cfg.anchorTo ~= "none" then
                 return
             end
-            local place = s.unlockPos
+            local place = cfg.unlockPos
             if not place then
                 return
             end
@@ -247,8 +247,8 @@ local function RegisterUnlockElements()
                 return health
             end,
             isHidden = function()
-                local s = S()
-                return not s.enabled or IsSpecDisabled(s)
+                local cfg = S()
+                return not cfg.enabled or IsSpecDisabled(cfg)
             end,
             -- Reported through the ON-SCREEN axes, not the stored ones: a vertical
             -- bar renders through OrientedSize, so stored width is what the player
@@ -298,8 +298,8 @@ local function RegisterUnlockElements()
                 end
             end,
             isAnchored = function()
-                local s = S()
-                return s.anchorTo and s.anchorTo ~= "none"
+                local cfg = S()
+                return cfg.anchorTo and cfg.anchorTo ~= "none"
             end,
             keepMoverWhenAnchored = true,
             onLiveMove = LiveMove,
@@ -339,8 +339,8 @@ local function RegisterUnlockElements()
                 return primaryBar
             end,
             isHidden = function()
-                local s = S()
-                return s.enabled == false or IsSpecDisabled(s)
+                local cfg = S()
+                return cfg.enabled == false or IsSpecDisabled(cfg)
             end,
             -- On-screen axes, as with the health bar above.
             getSize = function()
@@ -392,8 +392,8 @@ local function RegisterUnlockElements()
                 end
             end,
             isAnchored = function()
-                local s = S()
-                return s.anchorTo and s.anchorTo ~= "none"
+                local cfg = S()
+                return cfg.anchorTo and cfg.anchorTo ~= "none"
             end,
             keepMoverWhenAnchored = true,
             onLiveMove = LiveMove,
@@ -450,11 +450,11 @@ local function RegisterUnlockElements()
             -- fallback to general) treats anything not HORIZONTAL as vertical in
             -- its renderer -- mirrored here so the mover and W/H match what is drawn.
             getSize = function()
-                local s = SS()
+                local cfg = SS()
                 return OrientedSize(
-                    s.pipWidth,
-                    s.pipHeight,
-                    (s.pipOrientation or "HORIZONTAL") ~= "HORIZONTAL" and "VERTICAL_UP" or "HORIZONTAL"
+                    cfg.pipWidth,
+                    cfg.pipHeight,
+                    (cfg.pipOrientation or "HORIZONTAL") ~= "HORIZONTAL" and "VERTICAL_UP" or "HORIZONTAL"
                 )
             end,
             -- Stock styles: the frame outside the row (see the health bar).
@@ -469,38 +469,38 @@ local function RegisterUnlockElements()
                 if style == "cui" then
                     return nil
                 end
-                local s = SS()
-                local vertical = (s.pipOrientation or "HORIZONTAL") ~= "HORIZONTAL"
+                local cfg = SS()
+                local vertical = (cfg.pipOrientation or "HORIZONTAL") ~= "HORIZONTAL"
                 if style == "blizzard" then
                     return mod.ERB_BlizzMatchPad(vertical)
                 end
                 local wid, hgt =
-                    OrientedSize(s.pipWidth, s.pipHeight, vertical and "VERTICAL_UP" or "HORIZONTAL")
-                return mod.ERB_ClassicMatchPad(wid, hgt, vertical, mod.ERB_BarFrameK(s))
+                    OrientedSize(cfg.pipWidth, cfg.pipHeight, vertical and "VERTICAL_UP" or "HORIZONTAL")
+                return mod.ERB_ClassicMatchPad(wid, hgt, vertical, mod.ERB_BarFrameK(cfg))
             end,
             setWidth = function(_, wid)
-                local s = SS()
-                if (s.pipOrientation or "HORIZONTAL") ~= "HORIZONTAL" then
-                    SetDim(s, "pipHeight", Pix.Snap(wid))
+                local cfg = SS()
+                if (cfg.pipOrientation or "HORIZONTAL") ~= "HORIZONTAL" then
+                    SetDim(cfg, "pipHeight", Pix.Snap(wid))
                 else
-                    SetDim(s, "pipWidth", Pix.Snap(wid))
+                    SetDim(cfg, "pipWidth", Pix.Snap(wid))
                 end
             end,
             setHeight = function(_, hgt)
-                local s = SS()
-                if (s.pipOrientation or "HORIZONTAL") ~= "HORIZONTAL" then
-                    SetDim(s, "pipWidth", Pix.Snap(hgt))
+                local cfg = SS()
+                if (cfg.pipOrientation or "HORIZONTAL") ~= "HORIZONTAL" then
+                    SetDim(cfg, "pipWidth", Pix.Snap(hgt))
                 else
-                    SetDim(s, "pipHeight", Pix.Snap(hgt))
+                    SetDim(cfg, "pipHeight", Pix.Snap(hgt))
                 end
             end,
             isHidden = function()
-                local s = S()
-                return s.enabled == false or IsSpecDisabled(s)
+                local cfg = S()
+                return cfg.enabled == false or IsSpecDisabled(cfg)
             end,
             isAnchored = function()
-                local s = S()
-                return s.anchorTo and s.anchorTo ~= "none"
+                local cfg = S()
+                return cfg.anchorTo and cfg.anchorTo ~= "none"
             end,
             keepMoverWhenAnchored = true,
             onLiveMove = LiveMove,

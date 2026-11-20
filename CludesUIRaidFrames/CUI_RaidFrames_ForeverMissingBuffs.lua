@@ -668,8 +668,8 @@ local function PaintButton(button, skinData)
     if not skinData.health then
         return
     end
-    local s = SettingsFor(skinData)
-    local on = enabled and s and s.showMissingBuffs ~= false
+    local cfg = SettingsFor(skinData)
+    local on = enabled and cfg and cfg.showMissingBuffs ~= false
     local o = skinData.fvMissing
     if not on then
         if o then
@@ -690,8 +690,8 @@ local function PaintButton(button, skinData)
                 not fam.blessing
                 and st[key] == false
                 and provider[key]
-                and FamOn(s, fam)
-                and (not fam.tankOnly or ThornsHere(s, unitToken))
+                and FamOn(cfg, fam)
+                and (not fam.tankOnly or ThornsHere(cfg, unitToken))
                 and (not fam.notTank or SalvationHere(unitToken))
             then
                 num = num + 1
@@ -699,8 +699,8 @@ local function PaintButton(button, skinData)
             end
         end
         -- One blessing at most, last: the member's role picks it.
-        if blessCaster and BlessingsOn(s) then
-            local bi = MissingBlessing(s, st, unitToken)
+        if blessCaster and BlessingsOn(cfg) then
+            local bi = MissingBlessing(cfg, st, unitToken)
             if bi then
                 num = num + 1
                 paintList[num] = bi
@@ -714,7 +714,7 @@ local function PaintButton(button, skinData)
         o = Overlay(button, button:GetFrameLevel() + mod.LVL_MARKER)
         skinData.fvMissing = o
     end
-    Layout(o, s, skinData.health, paintList, num)
+    Layout(o, cfg, skinData.health, paintList, num)
 end
 
 local function PaintUnit(unitToken)
@@ -998,8 +998,8 @@ local function ScanWanted()
         local fam = FAMILIES[index]
         local on = false
         for t = 1, 3 do
-            local s = SETTINGS[t]
-            if s and s.showMissingBuffs ~= false and FamOn(s, fam) then
+            local cfg = SETTINGS[t]
+            if cfg and cfg.showMissingBuffs ~= false and FamOn(cfg, fam) then
                 on = true
                 break
             end

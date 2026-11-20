@@ -91,11 +91,11 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
 
     -- Everything the drawing depends on, as one string: equal = nothing to redraw.
     local function Fingerprint()
-        local s = Settings()
+        local cfg = Settings()
         local parts = {
-            tostring(s.textDisplay),
-            tostring(s.iconStyle),
-            tostring(s.showIcon),
+            tostring(cfg.textDisplay),
+            tostring(cfg.iconStyle),
+            tostring(cfg.showIcon),
             barCtx.IsVertical() and "V" or "H",
             barCtx.GetThickness(),
         }
@@ -219,16 +219,16 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
             frame:Hide()
             return
         end
-        local s = Settings()
+        local cfg = Settings()
         local barH = barCtx.GetThickness()
         local fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
         local iconSize = fontSize + 8
-        local valuesOnly = s.textDisplay == "values"
+        local valuesOnly = cfg.textDisplay == "values"
         local withBar = not valuesOnly and skinData.rank ~= skinData.maxRank
-        local withIcon = s.showIcon ~= false
+        local withIcon = cfg.showIcon ~= false
 
         -- Ours, unless the setting asks for the game's (or we have none).
-        local ours = s.iconStyle ~= "wow" and OUR_ICONS[skinData.id]
+        local ours = cfg.iconStyle ~= "wow" and OUR_ICONS[skinData.id]
         iconTex:SetTexture(ours and (ART .. ours .. ".png") or skinData.icon)
         if ours then
             iconTex:SetTexCoord(0, 1, 0, 1)

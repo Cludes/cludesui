@@ -1687,9 +1687,9 @@ function CludesUI.ApplyProfileData(profileRec)
                     local UF_UNITS = { "player", "target", "focus", "boss", "pet", "totPet" }
                     local DEF_BG = 17 / 255
                     for _, uKey in ipairs(UF_UNITS) do
-                        local s = activeProfile[uKey]
-                        if s and s.customBgColor == nil then
-                            s.customBgColor = { r = DEF_BG, g = DEF_BG, b = DEF_BG }
+                        local cfg = activeProfile[uKey]
+                        if cfg and cfg.customBgColor == nil then
+                            cfg.customBgColor = { r = DEF_BG, g = DEF_BG, b = DEF_BG }
                         end
                     end
                 end
@@ -2537,11 +2537,11 @@ function CludesUI.RenderedLook()
         if style == nil then
             local f = eitherBlizz
             local p = CludesUI.GetActiveProfileData()
-            local t = p and type(p.addons) == "table" and p.addons[f.data or f.folder] or nil
-            if f.sub and type(t) == "table" then
-                t = t[f.sub]
+            local tbl = p and type(p.addons) == "table" and p.addons[f.data or f.folder] or nil
+            if f.sub and type(tbl) == "table" then
+                tbl = tbl[f.sub]
             end
-            if type(t) == "table" and t[(f.key:gsub("Blizzard", "Forever", 1))] then
+            if type(tbl) == "table" and tbl[(f.key:gsub("Blizzard", "Forever", 1))] then
                 return "forever"
             end
             return "blizzard"
@@ -2577,15 +2577,15 @@ function CludesUI.ForeverLookMajority(addonMap)
         local f = STYLE_FLAGS[i]
         if registryTbl[f.folder] and not f.retailOnly then
             sum = sum + 1
-            local t = addonMap[f.data or f.folder]
-            if f.sub and type(t) == "table" then
-                t = t[f.sub]
+            local tbl = addonMap[f.data or f.folder]
+            if f.sub and type(tbl) == "table" then
+                tbl = tbl[f.sub]
             end
             if
-                type(t) == "table"
-                and t[f.key]
-                and not t[f.classic]
-                and t[f.forever or (f.key:gsub("Blizzard", "Forever", 1))]
+                type(tbl) == "table"
+                and tbl[f.key]
+                and not tbl[f.classic]
+                and tbl[f.forever or (f.key:gsub("Blizzard", "Forever", 1))]
             then
                 forever = forever + 1
             end
@@ -4425,8 +4425,8 @@ function CludesUI.ImportProfile(importText, profName)
     -- profile data this call is about to change. The interactive flow's own
     -- commit sets `committing` around this call, so it never cancels itself.
     do
-        local s = CludesUI._apiImportSession
-        if s and s.state ~= "done" and not s.committing then
+        local cfg = CludesUI._apiImportSession
+        if cfg and cfg.state ~= "done" and not cfg.committing then
             CludesUI._FinishApiImportSession(false)
             if CludesUI._ProfilesResetToMain then
                 pcall(CludesUI._ProfilesResetToMain)
@@ -5707,15 +5707,15 @@ function CludesUI.AttachImportPasteAbsorber(inputBox, onRetry)
 
     local function Finalize()
         inputBox:SetScript("OnUpdate", nil)
-        local s = strtrim(table.concat(buf, "", 1, bufferCount))
+        local text = strtrim(table.concat(buf, "", 1, bufferCount))
         wipe(buf)
         bufferCount, lastN = 0, 0
         local boxText = inputBox:GetText() or ""
-        if #s > #boxText then
+        if #text > #boxText then
             -- The box rejected part of the paste; the buffer holds all of it.
-            capturedState = s
+            capturedState = text
             settingLabel = true
-            inputBox:SetText(CludesUI.Lf("[ Import string captured (%1$s characters) ]", tostring(#s)))
+            inputBox:SetText(CludesUI.Lf("[ Import string captured (%1$s characters) ]", tostring(#text)))
             inputBox:SetCursorPosition(0)
             settingLabel = false
         elseif #boxText >= CAP then
@@ -6234,14 +6234,14 @@ end
 --- Fire the session callback exactly once and clear the session. pcall'd so a
 --- partner error can never break the import flow that invoked it.
 function CludesUI._FinishApiImportSession(accepted)
-    local s = CludesUI._apiImportSession
-    if not s or s.state == "done" then
+    local cfg = CludesUI._apiImportSession
+    if not cfg or cfg.state == "done" then
         return
     end
-    s.state = "done"
+    cfg.state = "done"
     CludesUI._apiImportSession = nil
-    if s.callback then
-        pcall(s.callback, accepted and true or false)
+    if cfg.callback then
+        pcall(cfg.callback, accepted and true or false)
     end
 end
 
@@ -6261,8 +6261,8 @@ do
         end -- panel not built yet; consumer retries
         hooked = true
         mf:HookScript("OnHide", function()
-            local s = CludesUI._apiImportSession
-            if not s or s.state == "done" then
+            local cfg = CludesUI._apiImportSession
+            if not cfg or cfg.state == "done" then
                 return
             end
             -- Combat auto-close is not a decision: keep the session so it

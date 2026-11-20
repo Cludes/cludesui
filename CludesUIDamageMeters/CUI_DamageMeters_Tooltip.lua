@@ -949,18 +949,18 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
             for tipIndex = 1, 3 do
                 local textBlock = _ttFrame._tgtBars[tipIndex]
                 if tipIndex <= #targets then
-                    local t = targets[tipIndex]
+                    local tbl = targets[tipIndex]
                     textBlock.row:ClearAllPoints()
                     textBlock.row:SetPoint("TOPLEFT", _ttFrame, "TOPLEFT", 0, tStartY - ((tipIndex - 1) * tipStride))
                     textBlock.row:SetPoint("TOPRIGHT", _ttFrame, "TOPRIGHT", 0, tStartY - ((tipIndex - 1) * tipStride))
                     ApplyBarTexture(textBlock.fill, texFile, textureKey)
                     textBlock.fill:SetMinMaxValues(0, tMaxAmt)
-                    textBlock.fill:SetValue(t.total)
+                    textBlock.fill:SetValue(tbl.total)
                     textBlock.fill:SetStatusBarColor(0xDD / 255, 0x31 / 255, 0x31 / 255)
                     textBlock.label:SetTextColor(1, 1, 1)
                     textBlock.amount:SetTextColor(1, 1, 1)
-                    textBlock.label:SetText(t.name)
-                    textBlock.amount:SetText(FormatBarValue(t.total, t.amountPerSecond, DB().numberFormat or 2))
+                    textBlock.label:SetText(tbl.name)
+                    textBlock.amount:SetText(FormatBarValue(tbl.total, tbl.amountPerSecond, DB().numberFormat or 2))
                     textBlock.row:Show()
                     ttTargetCount = ttTargetCount + 1
                 else

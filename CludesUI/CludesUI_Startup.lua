@@ -449,11 +449,11 @@ do
     -- Re-apply on ADDON_LOADED (our addon or Blizzard_CombatText), PLAYER_LOGIN,
     -- and PLAYER_ENTERING_WORLD to cover all timing windows where the engine
     -- may cache or reset the combat text font.
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("ADDON_LOADED")
-    f:RegisterEvent("PLAYER_LOGIN")
-    f:RegisterEvent("PLAYER_ENTERING_WORLD")
-    f:SetScript("OnEvent", function(self, evt, addonName)
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("ADDON_LOADED")
+    frame:RegisterEvent("PLAYER_LOGIN")
+    frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    frame:SetScript("OnEvent", function(self, evt, addonName)
         if evt == "ADDON_LOADED" then
             if addonName ~= ADDON_NAME and addonName ~= "Blizzard_CombatText" then
                 return
@@ -512,9 +512,9 @@ do
         "BetterBags",
         "Sorted",
     }
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("ADDON_LOADED")
-    f:SetScript("OnEvent", function(self, evt, addonName)
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("ADDON_LOADED")
+    frame:SetScript("OnEvent", function(self, evt, addonName)
         if addonName ~= ADDON_NAME then
             return
         end

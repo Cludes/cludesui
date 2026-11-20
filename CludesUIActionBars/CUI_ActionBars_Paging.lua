@@ -576,12 +576,12 @@ LayoutPagingFrame = function()
         return
     end
 
-    local s = ABAR
+    local cfg = ABAR
         and ABAR.db
         and ABAR.db.profile
         and ABAR.db.profile.bars
         and ABAR.db.profile.bars["MainBar"]
-    if not s then
+    if not cfg then
         SetPagedDriver(frame, false)
         frame:Hide()
         return
@@ -597,7 +597,7 @@ LayoutPagingFrame = function()
     end
     -- Five levels over the bar, and one over its end caps while they can show
     -- (retail's page arrows sit over its caps).
-    local caps = s.orientation ~= "vertical" and mod.AB_CAPS[mod.AB_CapsLook("MainBar") or "-"]
+    local caps = cfg.orientation ~= "vertical" and mod.AB_CAPS[mod.AB_CapsLook("MainBar") or "-"]
     local lvl = (mainFrame:GetFrameLevel() or 1) + 1 + (caps and caps.lvl or 4)
     if frame:GetFrameLevel() ~= lvl then
         frame:SetFrameLevel(lvl)
@@ -605,9 +605,9 @@ LayoutPagingFrame = function()
 
     -- Paging Arrows: always shown. Off: shown only while paged (Show While
     -- Paged, on unless turned off), through the paged driver above.
-    local always = s.showPagingArrows
-    local whilePaged = not always and s.pagingArrowsWhilePaged ~= false
-    if ABAR.VisibilityCompat.IsNever(s) or s.enabled == false or not (always or whilePaged) then
+    local always = cfg.showPagingArrows
+    local whilePaged = not always and cfg.pagingArrowsWhilePaged ~= false
+    if ABAR.VisibilityCompat.IsNever(cfg) or cfg.enabled == false or not (always or whilePaged) then
         SetPagedDriver(frame, false)
         frame:Hide()
         return
@@ -623,9 +623,9 @@ LayoutPagingFrame = function()
         end
     end
 
-    local isVertical = (s.orientation == "vertical")
+    local isVertical = (cfg.orientation == "vertical")
     local base = barBaseSize and barBaseSize["MainBar"]
-    local btnH = (s.buttonHeight and s.buttonHeight > 0) and s.buttonHeight or (base and base.h or 45)
+    local btnH = (cfg.buttonHeight and cfg.buttonHeight > 0) and cfg.buttonHeight or (base and base.h or 45)
     local arrowSize, textSize, gap, barGap = mod.AB_PagingArrowMetrics(btnH)
 
     frame._upBtn:SetSize(arrowSize, arrowSize)
@@ -636,7 +636,7 @@ LayoutPagingFrame = function()
     frame._downBtn:ClearAllPoints()
     frame._pageText:ClearAllPoints()
 
-    local onRight = s.pagingArrowsRight
+    local onRight = cfg.pagingArrowsRight
 
     if isVertical then
         local totalW = arrowSize + gap + textSize * 2 + gap + arrowSize

@@ -388,8 +388,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                 cfg.barVisibility = mode
             end,
             onChanged = function()
-                local s = UNIT_DB_MAP[optionState.selectedUnit]()
-                SyncUnitVisBooleans(s)
+                local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
+                SyncUnitVisBooleans(cfg)
                 if mod.UpdateFrameVisibility then
                     mod.UpdateFrameVisibility()
                 end
@@ -398,8 +398,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, cursorY, context)
                 -- (source was Blizzard/Hidden at login) needs a /reload. The EFFECTIVE
                 -- value decides: an override replaces the shared scalar, so an override
                 -- of Always on a unit whose shared value is "never" un-hides it too.
-                local visOv = CludesUI.VisOverrideValue(s)
-                if (visOv or s.barVisibility or "always") ~= "never" then
+                local visOv = CludesUI.VisOverrideValue(cfg)
+                if (visOv or cfg.barVisibility or "always") ~= "never" then
                     PromptReloadIfUnspawned({ optionState.selectedUnit })
                 end
             end,

@@ -1916,8 +1916,8 @@ CludesUI.AtOptionsLogin(function()
     local TFB = ProfilePart("tfb") -- Target/Focus Bars, both bars' shared keys
     -- One of the Target/Focus Bars ("target" or "focus").
     local function TFBBar(which)
-        local t = TFB()
-        return t and t[which]
+        local tbl = TFB()
+        return tbl and tbl[which]
     end
     -- Each refresh restyles the live bars, then repaints the header sample.
     local function Restyler(exportName, preview)
@@ -2731,17 +2731,17 @@ CludesUI.AtOptionsLogin(function()
             order = { "none", "tick", "tickbar" },
             -- Two stored switches read as one three-way choice.
             getValue = function()
-                local t = TFB()
-                if t and t.kickTickEnabled == false then
+                local tbl = TFB()
+                if tbl and tbl.kickTickEnabled == false then
                     return "none"
                 end
-                return (t and t.midCastEnabled == true) and "tickbar" or "tick"
+                return (tbl and tbl.midCastEnabled == true) and "tickbar" or "tick"
             end,
             setValue = function(value)
-                local t = TFB()
-                if t then
-                    t.kickTickEnabled = value ~= "none"
-                    t.midCastEnabled = value ~= "none" and value ~= "tick"
+                local tbl = TFB()
+                if tbl then
+                    tbl.kickTickEnabled = value ~= "none"
+                    tbl.midCastEnabled = value ~= "none" and value ~= "tick"
                     TFBRefresh()
                 end
             end,

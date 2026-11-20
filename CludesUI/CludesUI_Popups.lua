@@ -2305,21 +2305,21 @@ function CludesUI.CreateQuantityDialog(options)
 
     infoDialog._buttons = {}
     for _, spec in ipairs(options.buttons) do
-        local b = skin.button(infoDialog, spec.width, spec.height, spec.label)
+        local widget = skin.button(infoDialog, spec.width, spec.height, spec.label)
         local p = spec.point
-        b:SetPoint(p, infoDialog, p, (p == "BOTTOMLEFT" and 10) or (p == "BOTTOMRIGHT" and -10) or 0, 10)
-        b:SetScript("OnClick", spec.onClick)
+        widget:SetPoint(p, infoDialog, p, (p == "BOTTOMLEFT" and 10) or (p == "BOTTOMRIGHT" and -10) or 0, 10)
+        widget:SetScript("OnClick", spec.onClick)
         if spec.tooltip then
-            b:HookScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(b, spec.tooltip, spec.tooltipOpts)
+            widget:HookScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(widget, spec.tooltip, spec.tooltipOpts)
             end)
-            b:HookScript("OnLeave", function()
+            widget:HookScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
         end
-        infoDialog._buttons[spec.key] = b
+        infoDialog._buttons[spec.key] = widget
         if spec.primary then
-            infoDialog._primary = b
+            infoDialog._primary = widget
         end
     end
 

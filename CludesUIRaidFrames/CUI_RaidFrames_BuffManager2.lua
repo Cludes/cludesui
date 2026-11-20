@@ -134,9 +134,9 @@ end
 
 local function LegacyCopy(v)
     if type(v) ~= "table" then return v end
-    local t = {}
-    for k, posX in pairs(v) do t[k] = LegacyCopy(posX) end
-    return t
+    local tbl = {}
+    for k, posX in pairs(v) do tbl[k] = LegacyCopy(posX) end
+    return tbl
 end
 
 -- Spell arrays compare as SETS: only membership is user-editable, not order.

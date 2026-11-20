@@ -66,8 +66,8 @@ mod._ShowSizePreview = function(tier)
     if InCombatLockdown() then
         return
     end
-    local s = saved.profile
-    local overrides = s.raidSizeOverrides
+    local cfg = saved.profile
+    local overrides = cfg.raidSizeOverrides
     if not overrides or not overrides[tier] then
         return
     end
@@ -101,14 +101,14 @@ mod._ShowSizePreview = function(tier)
     mod._SetPreviewMouseBlock(true)
 
     local shade = overrides[tier]
-    local bw = PixelSnap(shade.width or s.frameWidth or 125)
-    local bh = PixelSnap(shade.height or s.frameHeight or 60)
-    local cs = mod.RF_CellSpacing(s)
-    local gs = mod.RF_GroupSpacing(s)
+    local bw = PixelSnap(shade.width or cfg.frameWidth or 125)
+    local bh = PixelSnap(shade.height or cfg.frameHeight or 60)
+    local cs = mod.RF_CellSpacing(cfg)
+    local gs = mod.RF_GroupSpacing(cfg)
     local unitGrowth, groupGrowth = mod._RFEffectiveGrowth(
-        shade.unitGrowth or s.unitGrowth or "DOWN",
-        shade.groupGrowth or s.groupGrowth or "RIGHT",
-        s.mergeGroups
+        shade.unitGrowth or cfg.unitGrowth or "DOWN",
+        shade.groupGrowth or cfg.groupGrowth or "RIGHT",
+        cfg.mergeGroups
     )
     local frameCount = tier
     local perGroup = 5
@@ -192,7 +192,7 @@ mod._ShowSizePreview = function(tier)
 
     -- Font for the unit-number label
     local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
-    local nameSize = s.nameSize or 10
+    local nameSize = cfg.nameSize or 10
 
     -- Group slot origins along the growth flow, normalized over MOVER_GROUPS
     -- (matching the real LayoutGroups container). At least MOVER_GROUPS slots
@@ -208,7 +208,7 @@ mod._ShowSizePreview = function(tier)
         shiftX, shiftY = mod._RFCenterShift(gSlots, numGroups)
     end
 
-    local groupOrder = s.customGroupOrder and not s.mergeGroups and mod._RFValidatedGroupOrder(s.groupOrder)
+    local groupOrder = cfg.customGroupOrder and not cfg.mergeGroups and mod._RFValidatedGroupOrder(cfg.groupOrder)
     local sizePreviewSlotByGroup
     if groupOrder then
         sizePreviewSlotByGroup = {}

@@ -224,12 +224,12 @@ function mod.ApplyPipShape(backing, pipTex, shape, borderOn, borderColor, bSize)
         if not pipTex._border then
             pipTex._border = backing:CreateTexture(nil, "OVERLAY", nil, 4)
         end
-        local b = pipTex._border
-        b:SetTexture(borderPath)
-        b:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a or 1)
-        b:ClearAllPoints()
-        b:SetAllPoints(pipTex)
-        b:Show()
+        local widget = pipTex._border
+        widget:SetTexture(borderPath)
+        widget:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a or 1)
+        widget:ClearAllPoints()
+        widget:SetAllPoints(pipTex)
+        widget:Show()
         if pipTex._borderBox then
             pipTex._borderBox:Hide()
         end
@@ -951,20 +951,20 @@ mod._WCNP_Attach = function(
     if dirty then
         p._npPK = powerName
         o.r, o.g, o.b, o.a = pipColor[1], pipColor[2], pipColor[3], 1
-        local s = o.sep
-        s.r, s.g, s.b, s.a = bgColor.r, bgColor.g, bgColor.b, bgColor.a
-        s.w = gapW * k
-        s.cellW = cellW * k
-        s.gap = gapW * k
-        s.pad = 0
-        s.stretch = nil
-        local e = s.empty
+        local color = o.sep
+        color.r, color.g, color.b, color.a = bgColor.r, bgColor.g, bgColor.b, bgColor.a
+        color.w = gapW * k
+        color.cellW = cellW * k
+        color.gap = gapW * k
+        color.pad = 0
+        color.stretch = nil
+        local e = color.empty
         if not e then
             e = {}
-            s.empty = e
+            color.empty = e
         end
         e.r, e.g, e.b, e.a = emptyColor.r, emptyColor.g, emptyColor.b, emptyColor.a
-        s.emptyInset = 0
+        color.emptyInset = 0
         ewc.Sync("np", p, powerName, o)
     end
     ewc.Recolor("np", powerName, pipColor[1], pipColor[2], pipColor[3], 1)

@@ -1325,14 +1325,14 @@ qolFrame:SetScript("OnEvent", function(self)
             return C_CurrencyInfo.GetCoinTextureString(repairCost)
         end
         local g = floor(repairCost / 10000)
-        local s = floor((repairCost % 10000) / 100)
+        local text = floor((repairCost % 10000) / 100)
         local c = repairCost % 100
         local out = ""
         if g > 0 then
             out = g .. CludesUI.L("g")
         end
-        if s > 0 then
-            out = out .. (out ~= "" and " " or "") .. s .. CludesUI.L("s")
+        if text > 0 then
+            out = out .. (out ~= "" and " " or "") .. text .. CludesUI.L("s")
         end
         if c > 0 then
             out = out .. (out ~= "" and " " or "") .. c .. CludesUI.L("c")
@@ -4714,20 +4714,20 @@ if not CludesUI.IS_FOREVER then
             mod.CombatQueue.Defer("MapSidebars", CludesUI._applyMapSidebars)
             return
         end
-        local b = WorldMapFrame.BlackoutFrame
-        if not (b and b.Blackout) then
+        local widget = WorldMapFrame.BlackoutFrame
+        if not (widget and widget.Blackout) then
             return
         end
         if isEnabled then
             if not applied then
-                mouseWas = b:IsMouseEnabled()
+                mouseWas = widget:IsMouseEnabled()
             end
-            b.Blackout:SetAlpha((CludesUIDB.mapSidebarsOpacity or 0) / 100)
+            widget.Blackout:SetAlpha((CludesUIDB.mapSidebarsOpacity or 0) / 100)
             -- The wheel already passes through: the frame never takes it.
-            b:EnableMouse(false)
+            widget:EnableMouse(false)
         else
-            b.Blackout:SetAlpha(1)
-            b:EnableMouse(mouseWas)
+            widget.Blackout:SetAlpha(1)
+            widget:EnableMouse(mouseWas)
         end
         applied = isEnabled
     end
@@ -6139,8 +6139,8 @@ do
     end
 
     local function ItemEnabled(settingKey)
-        local t = CludesUIDB and CludesUIDB.hideTransformItems
-        local val = t and t[settingKey]
+        local tbl = CludesUIDB and CludesUIDB.hideTransformItems
+        local val = tbl and tbl[settingKey]
         if val ~= nil then
             return val
         end

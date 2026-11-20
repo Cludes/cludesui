@@ -127,31 +127,31 @@ local function Scan()
         if found then
             local leftX = found.timeLeft / 1000
             local endTime = nowTime + leftX
-            local t = track[ws]
-            if not t then
-                t = {}
-                track[ws] = t
+            local tbl = track[ws]
+            if not tbl then
+                tbl = {}
+                track[ws] = tbl
             end
             -- A new imbue, or the same one cast again (its end moved out): the
             -- swipe restarts from what is left now.
-            if t.id ~= found.enchantID or endTime > (t.endTime or 0) + 1 then
-                t.total = leftX
+            if tbl.id ~= found.enchantID or endTime > (tbl.endTime or 0) + 1 then
+                tbl.total = leftX
             end
-            t.id, t.endTime = found.enchantID, endTime
+            tbl.id, tbl.endTime = found.enchantID, endTime
             num = num + 1
-            local s = isShown[num]
-            if not s then
-                s = {}
-                isShown[num] = s
+            local cfg = isShown[num]
+            if not cfg then
+                cfg = {}
+                isShown[num] = cfg
             end
-            s.inv = INV[ws]
+            cfg.inv = INV[ws]
             local iconTex = found.enchantIconID
             if not (enchantIcon and Readable(iconTex) and iconTex ~= 0) then
-                iconTex = GetInventoryItemTexture("player", s.inv) or 134400
+                iconTex = GetInventoryItemTexture("player", cfg.inv) or 134400
             end
-            s.icon = iconTex
-            s.charges = Readable(found.charges) and found.charges or 0
-            s.endTime, s.total = endTime, t.total
+            cfg.icon = iconTex
+            cfg.charges = Readable(found.charges) and found.charges or 0
+            cfg.endTime, cfg.total = endTime, tbl.total
         else
             track[ws] = nil
         end
@@ -220,23 +220,23 @@ local function Paint(c, cfg)
     skinData.icon:SetTexture(cfg.icon)
     skinData.stack:SetText(cfg.charges > 0 and tostring(cfg.charges) or "")
     skinData.cooldown:SetCooldown(cfg.endTime - cfg.total, cfg.total)
-    local b = c.binding
-    if b then
+    local widget = c.binding
+    if widget then
         c.dur:SetTimeFromEnd(cfg.endTime, cfg.total)
         local fmt = AK.GetDurationFormatter(style.durationShowSeconds, style.durationPrecisionThreshold)
         if fmt then
-            b:SetFormatter(fmt)
+            widget:SetFormatter(fmt)
         end
         if style.durationUpdateInterval then
-            b:SetUpdateInterval(style.durationUpdateInterval)
+            widget:SetUpdateInterval(style.durationUpdateInterval)
         end
         local tc = style.durationColorCurve and AK.DurationTextColor(style.durationColorCurve)
         if tc then
-            b:SetTextColorCurve(tc.curve, tc.property)
+            widget:SetTextColorCurve(tc.curve, tc.property)
         else
-            b:ClearTextColorCurve()
+            widget:ClearTextColorCurve()
         end
-        b:SetEnabled(true)
+        widget:SetEnabled(true)
     end
 end
 

@@ -357,11 +357,11 @@ end
 function mod.WarmListRows(sum, t0, msBudget)
     for i = 1, sum do
         if not _rows[i] then
-            local b = GetOrCreateRow(i)
-            if not b then
+            local widget = GetOrCreateRow(i)
+            if not widget then
                 return false
             end
-            b:GetParent():Hide()
+            widget:GetParent():Hide()
             if t0 and debugprofilestop() - t0 > msBudget then
                 CUI_Bags._poolShort = true
                 return false
@@ -438,9 +438,9 @@ local function ToggleCollapsed(self)
     if IsShiftKeyDown() and not self._sub then
         local collapse = not IsCollapsed(self._key) or nil
         for i = 1, _sectionsUsed do
-            local s = _sections[i]
-            if not s._sub then
-                SetCollapsed(set, s._key, collapse)
+            local cfg = _sections[i]
+            if not cfg._sub then
+                SetCollapsed(set, cfg._key, collapse)
             end
         end
     else
@@ -635,9 +635,9 @@ local function OnHeaderDragUpdate(self)
     local cols, btns = GetColumns(), self:GetParent()._btns
     local target = 1
     for _, cid in ipairs(cols) do
-        local b = btns[cid]
-        if cid ~= self._colId and b then
-            local l, region = b:GetLeft(), b:GetRight()
+        local widget = btns[cid]
+        if cid ~= self._colId and widget then
+            local l, region = widget:GetLeft(), widget:GetRight()
             if l and curX > (l + region) / 2 then
                 target = target + 1
             end
@@ -738,12 +738,12 @@ local function SizerOnUpdate(self)
     end
     self._lastW = wid
     local profile = BP()
-    local t = profile.bagListColWidths
-    if not t then
-        t = {}
-        profile.bagListColWidths = t
+    local tbl = profile.bagListColWidths
+    if not tbl then
+        tbl = {}
+        profile.bagListColWidths = tbl
     end
-    t[heading._colId] = wid
+    tbl[heading._colId] = wid
     for owner in pairs(_hdrBars) do
         ReflowHost(owner)
     end
@@ -777,31 +777,31 @@ local function GetOrCreateHeaderBtn(barFrame, ident)
     if barFrame._btns[ident] then
         return barFrame._btns[ident]
     end
-    local b = CreateFrame("Button", nil, barFrame)
-    b:SetHeight(COLHDR_H)
-    b._colId = ident
-    b._label = b:CreateFontString(nil, "OVERLAY")
-    SetListFont(b._label, 10)
-    b._label:SetAllPoints()
-    b._label:SetJustifyH(COLUMNS[ident].justify or "LEFT")
-    b._label:SetText(COLUMNS[ident].label ~= "" and L(COLUMNS[ident].label) or "")
-    b._label:SetTextColor(0.6, 0.6, 0.6)
-    b._arrow = b:CreateTexture(nil, "OVERLAY")
-    b._arrow:SetSize(8, 8)
-    b._arrow:SetTexture(ARROW_TEX)
+    local widget = CreateFrame("Button", nil, barFrame)
+    widget:SetHeight(COLHDR_H)
+    widget._colId = ident
+    widget._label = widget:CreateFontString(nil, "OVERLAY")
+    SetListFont(widget._label, 10)
+    widget._label:SetAllPoints()
+    widget._label:SetJustifyH(COLUMNS[ident].justify or "LEFT")
+    widget._label:SetText(COLUMNS[ident].label ~= "" and L(COLUMNS[ident].label) or "")
+    widget._label:SetTextColor(0.6, 0.6, 0.6)
+    widget._arrow = widget:CreateTexture(nil, "OVERLAY")
+    widget._arrow:SetSize(8, 8)
+    widget._arrow:SetTexture(ARROW_TEX)
     if ident == "icon" then
         -- The icon column has no label: a bag glyph over the row icons,
         -- tinted like the labels.
-        b._glyph = b:CreateTexture(nil, "OVERLAY")
-        b._glyph:SetSize(12, 12)
-        b._glyph:SetPoint("CENTER")
-        b._glyph:SetTexture(BAG_GLYPH_TEX)
-        b._glyph:SetVertexColor(0.6, 0.6, 0.6)
+        widget._glyph = widget:CreateTexture(nil, "OVERLAY")
+        widget._glyph:SetSize(12, 12)
+        widget._glyph:SetPoint("CENTER")
+        widget._glyph:SetTexture(BAG_GLYPH_TEX)
+        widget._glyph:SetVertexColor(0.6, 0.6, 0.6)
     end
-    b:SetScript("OnMouseDown", OnHeaderMouseDown)
-    b:SetScript("OnMouseUp", OnHeaderMouseUp)
+    widget:SetScript("OnMouseDown", OnHeaderMouseDown)
+    widget:SetScript("OnMouseUp", OnHeaderMouseUp)
     if COLUMNS[ident].width and ident ~= "icon" then
-        local g = CreateFrame("Button", nil, b)
+        local g = CreateFrame("Button", nil, widget)
         g:SetSize(COL_GAP, COLHDR_H)
         local line = g:CreateTexture(nil, "HIGHLIGHT")
         line:SetWidth(CUI.PP.mult)
@@ -811,9 +811,9 @@ local function GetOrCreateHeaderBtn(barFrame, ident)
         g:SetScript("OnMouseDown", SizerOnMouseDown)
         g:SetScript("OnMouseUp", SizerStop)
         g:SetScript("OnHide", SizerStop)
-        b._sizer = g
+        widget._sizer = g
     end
-    b:SetScript("OnEnter", function(self)
+    widget:SetScript("OnEnter", function(self)
         self._label:SetTextColor(1, 1, 1)
         if self._glyph then
             self._glyph:SetVertexColor(1, 1, 1)
@@ -825,15 +825,15 @@ local function GetOrCreateHeaderBtn(barFrame, ident)
                 or L("Drag to reorder. Right-click to add or remove columns.")
         )
     end)
-    b:SetScript("OnLeave", function(self)
+    widget:SetScript("OnLeave", function(self)
         self._label:SetTextColor(0.6, 0.6, 0.6)
         if self._glyph then
             self._glyph:SetVertexColor(0.6, 0.6, 0.6)
         end
         CUI.HideWidgetTooltip()
     end)
-    barFrame._btns[ident] = b
-    return b
+    barFrame._btns[ident] = widget
+    return widget
 end
 
 -- the column bar for a window, nil before its first list refresh
@@ -875,37 +875,37 @@ function mod.UpdateListHeaderBar(owner, cols, leftX, topY, startX, noSort)
     end
     local sortKey = not noSort and BP().bagListSortKey
     for i, ident in ipairs(cols) do
-        local b = GetOrCreateHeaderBtn(barFrame, ident)
-        SetListFont(b._label, 10)
-        b:ClearAllPoints()
-        b:SetPoint("TOPLEFT", barFrame, "TOPLEFT", startX + _colX[ident], 0)
-        b:SetWidth(math.max(_colW[ident], 12))
-        if b._sizer then
+        local widget = GetOrCreateHeaderBtn(barFrame, ident)
+        SetListFont(widget._label, 10)
+        widget:ClearAllPoints()
+        widget:SetPoint("TOPLEFT", barFrame, "TOPLEFT", startX + _colX[ident], 0)
+        widget:SetWidth(math.max(_colW[ident], 12))
+        if widget._sizer then
             -- Grip sits in the gap on the side facing the flexible column
-            local g = b._sizer
+            local g = widget._sizer
             g:ClearAllPoints()
             if flexIdx and i > flexIdx then
                 g._sign = -1
-                g:SetPoint("RIGHT", b, "LEFT", 0, 0)
+                g:SetPoint("RIGHT", widget, "LEFT", 0, 0)
             else
                 g._sign = 1
-                g:SetPoint("LEFT", b, "RIGHT", 0, 0)
+                g:SetPoint("LEFT", widget, "RIGHT", 0, 0)
             end
         end
-        b._arrow:ClearAllPoints()
+        widget._arrow:ClearAllPoints()
         if ident == sortKey and COLUMNS[ident].field then
             -- Arrow sits beside the label, on the side away from the text
             if COLUMNS[ident].justify == "RIGHT" then
-                b._arrow:SetPoint("RIGHT", b, "RIGHT", -(b._label:GetStringWidth() + 3), 0)
+                widget._arrow:SetPoint("RIGHT", widget, "RIGHT", -(widget._label:GetStringWidth() + 3), 0)
             else
-                b._arrow:SetPoint("LEFT", b._label, "LEFT", b._label:GetStringWidth() + 3, 0)
+                widget._arrow:SetPoint("LEFT", widget._label, "LEFT", widget._label:GetStringWidth() + 3, 0)
             end
-            b._arrow:SetRotation(BP().bagListSortAsc and -math.pi / 2 or math.pi / 2)
-            b._arrow:Show()
+            widget._arrow:SetRotation(BP().bagListSortAsc and -math.pi / 2 or math.pi / 2)
+            widget._arrow:Show()
         else
-            b._arrow:Hide()
+            widget._arrow:Hide()
         end
-        b:Show()
+        widget:Show()
     end
     return COLHDR_H
 end
@@ -1313,8 +1313,8 @@ function mod.RenderListView(itemList, options)
         end
         local hgt, collapsed = PlaceSection(secKey, labelText, count, posX, posY, rowW, false)
         if secKey == "recent" and BP().bagShowRecentClear == true then
-            local s = _sections[_sectionsUsed]
-            s._line:SetPoint("RIGHT", mod.ShowRecentClearButton(s), "LEFT", -6, 0)
+            local cfg = _sections[_sectionsUsed]
+            cfg._line:SetPoint("RIGHT", mod.ShowRecentClearButton(cfg), "LEFT", -6, 0)
         end
         posY = posY - hgt
         table.sort(b.subList, SubCompare)

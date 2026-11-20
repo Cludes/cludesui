@@ -1072,8 +1072,8 @@ CUI_NS.unlockParts.Positions = function(LM)
     -- apply it. A getter registered here folds it into the computed position instead
     -- of correcting afterwards, which would defeat the idempotent guard below and reposition the anchor every pass forever.
     local function ExtraAnchorOffset(childBarKey)
-        local t = CludesUI._anchorExtraOffset
-        local func = t and t[childBarKey]
+        local tbl = CludesUI._anchorExtraOffset
+        local func = tbl and tbl[childBarKey]
         if not func then
             return 0, 0
         end

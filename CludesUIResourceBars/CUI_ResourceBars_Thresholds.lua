@@ -538,15 +538,15 @@ local function GetBarBandCurve(cacheKey, bands, mode, maxVal, baseR, baseG, base
         curve:AddPoint(0.0, CreateColor(br, backdrop, bb, 1))
         local pr, pg, pb, pa = br, backdrop, bb, 1
         for i = 1, #stops do
-            local s = stops[i]
-            local frame = math.max(0, math.min(1, s.frac or 0))
+            local color = stops[i]
+            local frame = math.max(0, math.min(1, color.frac or 0))
             -- hold the previous region's color to just before the boundary, then
             -- switch to this band exactly at the boundary.
             if frame > 0.0 then
                 curve:AddPoint(math.max(0.0, frame - EPSILON), CreateColor(pr, pg, pb, pa))
             end
-            curve:AddPoint(frame, CreateColor(s.r or 1, s.g or 1, s.b or 1, s.a or 1))
-            pr, pg, pb, pa = s.r or 1, s.g or 1, s.b or 1, s.a or 1
+            curve:AddPoint(frame, CreateColor(color.r or 1, color.g or 1, color.b or 1, color.a or 1))
+            pr, pg, pb, pa = color.r or 1, color.g or 1, color.b or 1, color.a or 1
         end
         -- Top band holds to the end.
         curve:AddPoint(1.0, CreateColor(pr, pg, pb, pa))
@@ -555,9 +555,9 @@ local function GetBarBandCurve(cacheKey, bands, mode, maxVal, baseR, baseG, base
         local first = stops[1]
         curve:AddPoint(0.0, CreateColor(first.r or 1, first.g or 1, first.b or 1, first.a or 1))
         for i = 1, #stops do
-            local s = stops[i]
-            local frame = math.max(0, math.min(1, s.frac or 0))
-            curve:AddPoint(frame, CreateColor(s.r or 1, s.g or 1, s.b or 1, s.a or 1))
+            local color = stops[i]
+            local frame = math.max(0, math.min(1, color.frac or 0))
+            curve:AddPoint(frame, CreateColor(color.r or 1, color.g or 1, color.b or 1, color.a or 1))
             local nxt = stops[i + 1]
             if nxt and frame < 1.0 then
                 curve:AddPoint(

@@ -325,24 +325,24 @@ local function Layout(cfg)
     local length = total > 0 and (total * BTN + (total - 1) * gap) or BTN
 
     for index = 1, total do
-        local b = sequence[index]
+        local widget = sequence[index]
         local off = (index - 1) * (BTN + gap)
         local posX = vertical and 0 or off
         local posY = -(vertical and off or 0) - BTN
-        b:ClearAllPoints()
-        if b == RECALL then
-            b:SetPoint("LEFT", holderFrame, "TOPLEFT", posX, posY + BTN / 2)
+        widget:ClearAllPoints()
+        if widget == RECALL then
+            widget:SetPoint("LEFT", holderFrame, "TOPLEFT", posX, posY + BTN / 2)
         else
-            b:SetPoint("BOTTOMLEFT", holderFrame, "TOPLEFT", posX, posY)
+            widget:SetPoint("BOTTOMLEFT", holderFrame, "TOPLEFT", posX, posY)
         end
     end
     -- The element slots follow Call of the Elements when it shows.
     local first = (SUMMON and sequence[1] == SUMMON) and 1 or 0
     for index = 1, #ACT do
-        local b = ACT[index]
+        local widget = ACT[index]
         local off = (first + (index - 1) % 4) * (BTN + gap)
-        b:ClearAllPoints()
-        b:SetPoint(
+        widget:ClearAllPoints()
+        widget:SetPoint(
             "CENTER",
             holderFrame,
             "TOPLEFT",
@@ -376,12 +376,12 @@ local function RestoreLayout()
         SLOT[index]:SetPoint("LEFT", SLOT[index - 1], "RIGHT", 8, 0)
     end
     for index = 1, #ACT do
-        local b = ACT[index]
-        b:ClearAllPoints()
+        local widget = ACT[index]
+        widget:ClearAllPoints()
         if (index - 1) % 4 == 0 then
-            b:SetPoint("LEFT", _G["MultiCastActionPage" .. (math.floor((index - 1) / 4) + 1)], "LEFT", 0, 0)
+            widget:SetPoint("LEFT", _G["MultiCastActionPage" .. (math.floor((index - 1) / 4) + 1)], "LEFT", 0, 0)
         else
-            b:SetPoint("LEFT", ACT[index - 1], "RIGHT", 8, 0)
+            widget:SetPoint("LEFT", ACT[index - 1], "RIGHT", 8, 0)
         end
     end
     if RECALL then

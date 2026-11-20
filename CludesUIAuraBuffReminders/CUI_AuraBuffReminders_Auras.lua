@@ -947,14 +947,14 @@ local BLADED_SET, BLUNT_SET, RANGED_SET
 do
     local W = (Enum and Enum.ItemWeaponSubclass) or {}
     local function setFrom(...)
-        local t = {}
+        local tbl = {}
         for auraIndex = 1, select("#", ...) do
             local val = select(auraIndex, ...)
             if val ~= nil then
-                t[val] = true
+                tbl[val] = true
             end
         end
-        return t
+        return tbl
     end
     BLADED_SET = setFrom(W.Axe1H, W.Axe2H, W.Sword1H, W.Sword2H, W.Dagger, W.Polearm, W.Warglaive)
     BLUNT_SET = setFrom(W.Mace1H, W.Mace2H, W.Staff, W.Fist)

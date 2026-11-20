@@ -2245,8 +2245,8 @@ CludesUI.AtOptionsLogin(function()
             else
                 -- Shared root is alive but the Presets tab may have left its subpage showing; the Profiles tab lands on main. An active API
                 -- import session wins -- re-enter instead of hiding its page.
-                local s = CludesUI._apiImportSession
-                if s and s.state ~= "done" then
+                local cfg = CludesUI._apiImportSession
+                if cfg and cfg.state ~= "done" then
                     if CludesUI._ProfilesConsumeApiImport then
                         CludesUI._ProfilesConsumeApiImport()
                     end

@@ -91,13 +91,13 @@ local function UpdateFlipbook(button)
         end
         local resolved
         if barKey and p.bars and p.bars[barKey] then
-            local s = p.bars[barKey]
+            local cfg = p.bars[barKey]
             local baseLevel = barBaseSize[barKey]
             local buttonW = baseLevel and baseLevel.w or 45
             local buttonH = baseLevel and baseLevel.h or 45
-            local wid = (s.buttonWidth and s.buttonWidth > 0) and s.buttonWidth or buttonW
-            local hgt = (s.buttonHeight and s.buttonHeight > 0) and s.buttonHeight or buttonH
-            local shape = mod.AB_LayoutShape(s)
+            local wid = (cfg.buttonWidth and cfg.buttonWidth > 0) and cfg.buttonWidth or buttonW
+            local hgt = (cfg.buttonHeight and cfg.buttonHeight > 0) and cfg.buttonHeight or buttonH
+            local shape = mod.AB_LayoutShape(cfg)
             if shape ~= "none" and shape ~= "cropped" then
                 wid = wid + SHAPE_BTN_EXPAND
                 hgt = hgt + SHAPE_BTN_EXPAND

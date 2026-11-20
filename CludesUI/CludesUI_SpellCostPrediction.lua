@@ -67,9 +67,9 @@ function SCP.Color(cfg)
     if color then
         return color.r, color.g, color.b
     end
-    local b = POWERBAR_PREDICTION_COLOR_MANA
-    if b and b.GetRGB then
-        return b:GetRGB()
+    local widget = POWERBAR_PREDICTION_COLOR_MANA
+    if widget and widget.GetRGB then
+        return widget:GetRGB()
     end
     return 0.40, 0.70, 1
 end

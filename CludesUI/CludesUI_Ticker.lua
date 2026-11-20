@@ -166,13 +166,13 @@ function Tick.NewAnimTicker(frame, fn, interval)
     ag:SetLooping("REPEAT")
     local anim = ag:CreateAnimation("Animation")
     anim:SetDuration(interval or 0.05)
-    local t = {}
+    local tbl = {}
     ag:SetScript("OnLoop", function()
         if not fn() then
             ag:Stop()
         end
     end)
-    function t.Start(newInterval)
+    function tbl.Start(newInterval)
         if not ag:IsPlaying() then
             if newInterval then
                 anim:SetDuration(newInterval)
@@ -180,13 +180,13 @@ function Tick.NewAnimTicker(frame, fn, interval)
             ag:Play()
         end
     end
-    function t.Stop()
+    function tbl.Stop()
         ag:Stop()
     end
-    function t.IsPlaying()
+    function tbl.IsPlaying()
         return ag:IsPlaying()
     end
-    return t
+    return tbl
 end
 
 -- Combat deferral queue: "run once after combat ends" without one event frame per

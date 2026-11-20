@@ -1025,10 +1025,10 @@ local function ApplyShapeToButton(buttonFrame, shapeKey, brdOn, brdR, brdG, brdB
                     and ABAR.db.profile.bars[barId].borderTexture
                 or "solid"
             if texKey ~= "solid" then
-                local s = ABAR.db.profile.bars[barId]
-                local color = s and s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
-                local sz, px = ResolveBorderThickness(s)
-                local thKey = s.borderThickness or "thin"
+                local cfg = ABAR.db.profile.bars[barId]
+                local color = cfg and cfg.borderColor or { r = 0, g = 0, b = 0, a = 1 }
+                local sz, px = ResolveBorderThickness(cfg)
+                local thKey = cfg.borderThickness or "thin"
                 CludesUI.ApplyBorderStyle(
                     buttonFrame,
                     sz,
@@ -1037,10 +1037,10 @@ local function ApplyShapeToButton(buttonFrame, shapeKey, brdOn, brdR, brdG, brdB
                     color.b,
                     color.a or 1,
                     texKey,
-                    s.borderTextureOffset,
-                    s.borderTextureOffsetY,
-                    s.borderTextureShiftX,
-                    s.borderTextureShiftY,
+                    cfg.borderTextureOffset,
+                    cfg.borderTextureOffsetY,
+                    cfg.borderTextureShiftX,
+                    cfg.borderTextureShiftY,
                     "actionbars",
                     thKey,
                     nil,
@@ -1049,7 +1049,7 @@ local function ApplyShapeToButton(buttonFrame, shapeKey, brdOn, brdR, brdG, brdB
                 if CludesUI._bdBorderData then
                     local backdropFrame = CludesUI._bdBorderData[buttonFrame]
                     if backdropFrame then
-                        backdropFrame:SetFrameLevel(mod._eabBorderLevel(buttonFrame, s.borderBehind, s.borderAboveEffects))
+                        backdropFrame:SetFrameLevel(mod._eabBorderLevel(buttonFrame, cfg.borderBehind, cfg.borderAboveEffects))
                     end
                 end
             else

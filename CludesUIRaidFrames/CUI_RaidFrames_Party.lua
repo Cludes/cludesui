@@ -815,18 +815,18 @@ mod._UpdatePartyIndicatorScale = function()
     if not (saved and saved.profile) then
         return
     end
-    local s = saved.profile
+    local cfg = saved.profile
     local scale
     if mod.RF_PartyKit() then
         -- Party Frames kit: its Frame Scale is the frame size (at 100% the
         -- user's own icon and text sizes apply, whatever the raid size), and
         -- icons follow it over its whole range.
-        scale = s.partyKitScale or mod.RF_KIT_SCALE or 1.2
+        scale = cfg.partyKitScale or mod.RF_KIT_SCALE or 1.2
     else
-        local baseW = s.frameWidth or 72
-        local baseH = s.frameHeight or 46
+        local baseW = cfg.frameWidth or 72
+        local baseH = cfg.frameHeight or 46
         -- The bars' size (an attached portrait does not enlarge the icons).
-        local pw, ph, _, pres = mod.RF_PartyDims(s)
+        local pw, ph, _, pres = mod.RF_PartyDims(cfg)
         pw = pw - (pres or 0)
         scale = math.max(math.min(math.min(pw / baseW, ph / baseH), 1.3), 0.7)
     end
@@ -834,8 +834,8 @@ mod._UpdatePartyIndicatorScale = function()
     -- Buff Manager scale; Indicators & Auras gates indicator/aura/text sizes.
     -- Tracked Buffs defaults on (nil treated as on) to preserve the prior
     -- hardcoded always-on behavior.
-    mod._partyBmScale = (s.partyAutoResizeTrackedBuffs ~= false) and scale or 1
-    mod._partyIndicatorScale = s.partyAutoResizeIndicators and scale or 1
+    mod._partyBmScale = (cfg.partyAutoResizeTrackedBuffs ~= false) and scale or 1
+    mod._partyIndicatorScale = cfg.partyAutoResizeIndicators and scale or 1
     if mod._RefreshProxyModes then
         mod._RefreshProxyModes()
     end
@@ -847,8 +847,8 @@ mod._CreatePartyHeader = function()
     if mod._partyHeader then
         return
     end
-    local s = saved.profile
-    local pw, ph, pcs = mod.RF_PartyDims(s)
+    local cfg = saved.profile
+    local pw, ph, pcs = mod.RF_PartyDims(cfg)
     local bw, bh, cs = PixelSnap(pw), PixelSnap(ph), PixelSnap(pcs)
 
     local initConfig = ([[
@@ -876,7 +876,7 @@ mod._CreatePartyHeader = function()
     heading:SetAttribute("showRaid", true)
     heading:SetAttribute("showParty", true)
     heading:SetAttribute("showPlayer", true)
-    heading:SetAttribute("showSolo", s.partyShowWhenSolo or false)
+    heading:SetAttribute("showSolo", cfg.partyShowWhenSolo or false)
     heading:SetAttribute("maxColumns", 1)
     heading:SetAttribute("unitsPerColumn", 5)
 
@@ -963,16 +963,16 @@ mod._PositionPartySlots = function(bw, bh, cs, unitGrowth)
     if not mod._partyHeader then
         return false
     end
-    local s = saved.profile
-    local pSelfFirst = s.partyShowSelfFirst
+    local cfg = saved.profile
+    local pSelfFirst = cfg.partyShowSelfFirst
     if pSelfFirst == nil then
-        pSelfFirst = s.showSelfFirst
+        pSelfFirst = cfg.showSelfFirst
     end
-    local pSelfLast = s.partySelfLast
+    local pSelfLast = cfg.partySelfLast
     if pSelfLast == nil then
-        pSelfLast = s.showSelfLast
+        pSelfLast = cfg.showSelfLast
     end
-    local hideSelf = s.partyHideSelf
+    local hideSelf = cfg.partyHideSelf
     -- Party-in-raid mode (arena, Small Raid) binds the header to raid units,
     -- which include the player, and showPlayer=false cannot exclude the player
     -- in a raid group. The static self button would then duplicate the player,
@@ -1022,11 +1022,11 @@ mod._PositionPartySlots = function(bw, bh, cs, unitGrowth)
     -- slots along the growth axis. Solo is the shown=1 case of the same math,
     -- and the Center When Solo cog forces it while solo regardless of the growth mode.
     local centerShift = 0
-    local centered = (s.partyFlipGrowth == "centered")
+    local centered = (cfg.partyFlipGrowth == "centered")
     if not live then
         -- Hidden set: the stack starts at the first slot (see useSelf above).
     elseif not IsInGroup() then
-        if centered or s.partyCenterWhenSolo then
+        if centered or cfg.partyCenterWhenSolo then
             centerShift = 2
         end
     elseif centered then

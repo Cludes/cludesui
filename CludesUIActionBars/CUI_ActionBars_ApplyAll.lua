@@ -48,14 +48,14 @@ local function ApplyAll()
 
     for _, details in ipairs(BAR_CONFIG) do
         local key = details.key
-        local s = ABAR.db.profile.bars[key]
+        local cfg = ABAR.db.profile.bars[key]
         local widget = barFrames[key]
 
         -- Bar enabled/disabled toggle (protected frames can't be shown/hidden in combat)
-        if widget and s and not inCombat then
-            if s.enabled == false then
+        if widget and cfg and not inCombat then
+            if cfg.enabled == false then
                 widget:Hide()
-            elseif not ABAR.VisibilityCompat.IsNever(s) then
+            elseif not ABAR.VisibilityCompat.IsNever(cfg) then
                 -- Skip Show if a state-visibility driver is managing this frame
                 -- (the driver handles show/hide; calling Show() causes a one-frame blink)
                 if not widget._eabLastVisStr then

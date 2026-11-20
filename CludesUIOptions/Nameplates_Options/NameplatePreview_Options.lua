@@ -128,19 +128,19 @@ local function ChainPreview(midX)
                     isShown[#isShown + 1] = { id = ident, row = r, base = base }
                 else
                     local ic = midX.icons[ident]
-                    local f = ic.frame
+                    local frame = ic.frame
                     -- Rare/Quest + Faction with no mark: the badge stands in for the pair.
-                    if ident == "class" and not f:IsShown() and midX.classFaction then
-                        f = midX.factionFrame
+                    if ident == "class" and not frame:IsShown() and midX.classFaction then
+                        frame = midX.factionFrame
                     end
-                    if f:IsShown() then
+                    if frame:IsShown() then
                         local base = 0
                         if side then
                             base = yOff + barH / 2 - ic.sz / 2
                         elseif corner then
                             base = ((ident == "raidmarker") and 0 or 2) + yOff
                         end
-                        isShown[#isShown + 1] = { id = ident, frame = f, sz = ic.sz, base = base }
+                        isShown[#isShown + 1] = { id = ident, frame = frame, sz = ic.sz, base = base }
                     end
                 end
             end
@@ -219,15 +219,15 @@ local function ChainPreview(midX)
                     -- The row's other icons, from the pinned one.
                     local sp = r.gap + r.sz
                     for num = 1, r.count do
-                        local f = r.list[num]
-                        if f ~= pin then
-                            f:ClearAllPoints()
+                        local frame = r.list[num]
+                        if frame ~= pin then
+                            frame:ClearAllPoints()
                             if d == "up" then
-                                f:SetPoint("BOTTOMLEFT", pin, "BOTTOMLEFT", 0, (num - 1) * (sp - r.sz + r.h))
+                                frame:SetPoint("BOTTOMLEFT", pin, "BOTTOMLEFT", 0, (num - 1) * (sp - r.sz + r.h))
                             elseif d == "left" then
-                                f:SetPoint("BOTTOMRIGHT", pin, "BOTTOMRIGHT", -(r.count - num) * sp, 0)
+                                frame:SetPoint("BOTTOMRIGHT", pin, "BOTTOMRIGHT", -(r.count - num) * sp, 0)
                             else
-                                f:SetPoint("BOTTOMLEFT", pin, "BOTTOMLEFT", (num - 1) * sp, 0)
+                                frame:SetPoint("BOTTOMLEFT", pin, "BOTTOMLEFT", (num - 1) * sp, 0)
                             end
                         end
                     end
@@ -345,24 +345,24 @@ local function BuildNameplatePreview(hostFrame, parentW)
         t:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
         t:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
         t:SetHeight(px)
-        local b = mkB()
-        b:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
-        b:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
-        b:SetHeight(px)
+        local widget = mkB()
+        widget:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
+        widget:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+        widget:SetHeight(px)
         -- Vertical edges inset between horizontal edges to avoid corner overlap
         local l = mkB()
         l:SetPoint("TOPLEFT", t, "BOTTOMLEFT", 0, 0)
-        l:SetPoint("BOTTOMLEFT", b, "TOPLEFT", 0, 0)
+        l:SetPoint("BOTTOMLEFT", widget, "TOPLEFT", 0, 0)
         l:SetWidth(px)
         local r = mkB()
         r:SetPoint("TOPRIGHT", t, "BOTTOMRIGHT", 0, 0)
-        r:SetPoint("BOTTOMRIGHT", b, "TOPRIGHT", 0, 0)
+        r:SetPoint("BOTTOMRIGHT", widget, "TOPRIGHT", 0, 0)
         r:SetWidth(px)
-        frame._cuiIconEdges = { t, b, l, r }
+        frame._cuiIconEdges = { t, widget, l, r }
         _borderRefreshers[#_borderRefreshers + 1] = function()
             local npx = Snap(1)
             t:SetHeight(npx)
-            b:SetHeight(npx)
+            widget:SetHeight(npx)
             l:SetWidth(npx)
             r:SetWidth(npx)
         end
@@ -824,16 +824,16 @@ local function BuildNameplatePreview(hostFrame, parentW)
     -- live element's tier (health + 2). Its placement rides pf._qt (Update fills
     -- pos, x, y, w, h and shown for the extent passes).
     do
-        local f = CreateFrame("Frame", nil, popFrame)
-        f:SetFrameLevel(healthBar:GetFrameLevel() + 2)
-        local fontStr = f:CreateFontString(nil, "OVERLAY")
+        local frame = CreateFrame("Frame", nil, popFrame)
+        frame:SetFrameLevel(healthBar:GetFrameLevel() + 2)
+        local fontStr = frame:CreateFontString(nil, "OVERLAY")
         SetPVFont(fontStr, FONT_PATH, 12, GetNPOptOutline())
-        fontStr:SetPoint("CENTER", f, "CENTER", 0, 0)
+        fontStr:SetPoint("CENTER", frame, "CENTER", 0, 0)
         fontStr:SetJustifyH("CENTER")
         fontStr:SetTextColor(1, 1, 1, 1)
         fontStr:SetText("2/6")
-        f:Hide()
-        popFrame._qt = { frame = f, fs = fontStr, shown = false, pos = "none", x = 0, y = 0, w = 0, h = 0 }
+        frame:Hide()
+        popFrame._qt = { frame = frame, fs = fontStr, shown = false, pos = "none", x = 0, y = 0, w = 0, h = 0 }
     end
 
     -- Cast bar (icon + bar fill health bar width)
@@ -1252,20 +1252,20 @@ local function BuildNameplatePreview(hostFrame, parentW)
     -- clamped pips, with the arrow just left of the number pointing the way the
     -- offset continues.
     function CP.ShowBadge(edgeInboard, dirInboard, centerX, realOff)
-        local b = CP.offBadge
-        b:SetText(string.format("%+d", math.floor(realOff + 0.5)))
-        local textH = b:GetStringHeight()
+        local widget = CP.offBadge
+        widget:SetText(string.format("%+d", math.floor(realOff + 0.5)))
+        local textH = widget:GetStringHeight()
         local cy = Snap(edgeInboard + dirInboard * (textH / 2 + 3))
-        b:ClearAllPoints()
-        b:SetPoint("CENTER", popFrame, "TOPLEFT", Snap(centerX), cy)
-        b:Show()
+        widget:ClearAllPoints()
+        widget:SetPoint("CENTER", popFrame, "TOPLEFT", Snap(centerX), cy)
+        widget:Show()
         local a = CP.offArrow
         a:SetTexture((dirInboard == -1) and CP.ARROW_UP or CP.ARROW_DOWN)
         -- The chevron fills 22 x 12 of its 30 px image.
         local asz = math.max(8, math.floor(textH * 1.1 + 0.5))
         a:SetSize(asz, asz)
         a:ClearAllPoints()
-        a:SetPoint("RIGHT", b, "LEFT", -1, 0)
+        a:SetPoint("RIGHT", widget, "LEFT", -1, 0)
         a:Show()
     end
 
@@ -1891,10 +1891,10 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 local slotVal = (keyName == 1 and debuffSlotVal) or (keyName == 2 and buffSlotVal) or ccSlotVal
                 local lvl = hl + ((slotVal ~= "none" and DBVal(slotVal .. "SlotRaiseStrata")) and 13 or 9)
                 for i = 1, #entries do
-                    local f = entries[i]
-                    if f:GetFrameLevel() ~= lvl then
-                        f:SetFrameLevel(lvl)
-                        f.durationText:GetParent():SetFrameLevel(lvl + 2)
+                    local frame = entries[i]
+                    if frame:GetFrameLevel() ~= lvl then
+                        frame:SetFrameLevel(lvl)
+                        frame.durationText:GetParent():SetFrameLevel(lvl + 2)
                     end
                 end
             end
@@ -2189,13 +2189,13 @@ local function BuildNameplatePreview(hostFrame, parentW)
         -- name width, chain, arrow and height passes below read pf._qt.
         do
             local qt = popFrame._qt
-            local f = qt.frame
+            local frame = qt.frame
             local place = mod.NP_GetQuestTextSlot(DB())
             qt.pos = place
-            f:ClearAllPoints()
+            frame:ClearAllPoints()
             if place == "none" or not optionState.showQuestTextPreview then
                 qt.shown = false
-                f:Hide()
+                frame:Hide()
                 if qt.icon then
                     qt.icon:Hide()
                 end
@@ -2215,33 +2215,33 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         mod.NP_QuestTypeIconLayout(counterW, counterH, textSize, scale)
                     local icon = qt.icon
                     if not icon then
-                        icon = f:CreateTexture(nil, "ARTWORK")
+                        icon = frame:CreateTexture(nil, "ARTWORK")
                         icon:SetTexture("Interface\\Icons\\INV_Misc_Bag_08")
                         qt.icon = icon
                     end
                     fontStr:ClearAllPoints()
-                    fontStr:SetPoint("CENTER", f, "CENTER", textX, 0)
+                    fontStr:SetPoint("CENTER", frame, "CENTER", textX, 0)
                     icon:ClearAllPoints()
                     icon:SetSize(iconSize, iconSize)
-                    icon:SetPoint("LEFT", f, "CENTER", iconX, 0)
+                    icon:SetPoint("LEFT", frame, "CENTER", iconX, 0)
                     icon:Show()
                     qt.iconLayoutOn = true
                 else
                     if qt.iconLayoutOn then
                         fontStr:ClearAllPoints()
-                        fontStr:SetPoint("CENTER", f, "CENTER", 0, 0)
+                        fontStr:SetPoint("CENTER", frame, "CENTER", 0, 0)
                         qt.iconLayoutOn = nil
                     end
                     if qt.icon and qt.icon:IsShown() then
                         qt.icon:Hide()
                     end
                 end
-                f:SetSize(wid, height)
+                frame:SetSize(wid, height)
                 if place == "top" then
-                    f:SetPoint("BOTTOM", healthBar, "TOP", posX, debuffY + cpPush + cursorY)
+                    frame:SetPoint("BOTTOM", healthBar, "TOP", posX, debuffY + cpPush + cursorY)
                 elseif place == "left" then
                     local sideOff = DBVal("sideAuraXOffset") or defaultSet.sideAuraXOffset
-                    f:SetPoint(
+                    frame:SetPoint(
                         "RIGHT",
                         healthBar,
                         "LEFT",
@@ -2250,7 +2250,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                     )
                 elseif place == "right" then
                     local sideOff = DBVal("sideAuraXOffset") or defaultSet.sideAuraXOffset
-                    f:SetPoint(
+                    frame:SetPoint(
                         "LEFT",
                         healthBar,
                         "RIGHT",
@@ -2258,7 +2258,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         cursorY
                     )
                 elseif place == "topleft" then
-                    f:SetPoint(
+                    frame:SetPoint(
                         "BOTTOMLEFT",
                         healthBar,
                         "TOPLEFT",
@@ -2266,7 +2266,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         2 + cpPush + mod.NP_TopCornerLift("topleft", DB()) + cursorY
                     )
                 elseif place == "topright" then
-                    f:SetPoint(
+                    frame:SetPoint(
                         "BOTTOMRIGHT",
                         healthBar,
                         "TOPRIGHT",
@@ -2274,10 +2274,10 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         2 + cpPush + mod.NP_TopCornerLift("topright", DB()) + cursorY
                     )
                 elseif place == "bottom" then
-                    f:SetPoint("TOP", castBar, "BOTTOM", posX, -2 + cursorY)
+                    frame:SetPoint("TOP", castBar, "BOTTOM", posX, -2 + cursorY)
                 end
                 qt.x, qt.y, qt.w, qt.h, qt.shown = posX, cursorY, wid, height, true
-                f:Show()
+                frame:Show()
             end
         end
 

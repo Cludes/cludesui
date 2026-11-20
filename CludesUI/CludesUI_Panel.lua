@@ -4355,11 +4355,11 @@ function CludesUI:NavigateToElementSettings(moduleName, pageTitle, sectionName, 
         for _, regionObj in ipairs(regions) do
             local captionText = regionObj._label
             if captionText and captionText.GetText then
-                local t = captionText:GetText()
+                local text = captionText:GetText()
                 if
-                    t
-                    and t ~= ""
-                    and (t:find(textValue, 1, true) or (locText ~= textValue and t:find(locText, 1, true)))
+                    text
+                    and text ~= ""
+                    and (text:find(textValue, 1, true) or (locText ~= textValue and text:find(locText, 1, true)))
                 then
                     return regionObj
                 end

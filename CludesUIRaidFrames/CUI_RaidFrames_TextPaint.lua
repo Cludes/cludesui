@@ -32,15 +32,15 @@ local IS_POS = mod.RF_TEXT_POS_INDEX
 -- Every text's setting keys under the names the painters read, built once.
 local KEYS = {}
 for index = 1, NTEXTS do
-    local t = TEXTS[index]
+    local tbl = TEXTS[index]
     KEYS[index] = {
-        X = t.x,
-        Y = t.y,
-        Size = t.size,
-        ColorMode = t.cm,
-        Color = t.col,
-        CustomFormat = t.fmt,
-        Above = t.above,
+        X = tbl.x,
+        Y = tbl.y,
+        Size = tbl.size,
+        ColorMode = tbl.cm,
+        Color = tbl.col,
+        CustomFormat = tbl.fmt,
+        Above = tbl.above,
     }
 end
 
@@ -127,11 +127,11 @@ local function Build(cfg)
     p.nameAttach = mod.RF_LEVEL_ATTACH[lvlPos]
     p.wantLevel = (lvlPos ~= "none") or nil
     for index = 1, NTEXTS do
-        local t = TEXTS[index]
-        local place, mode = Shown(t, cfg, lvlPos)
+        local tbl = TEXTS[index]
+        local place, mode = Shown(tbl, cfg, lvlPos)
         if place then
             local key = KEYS[index]
-            local kind = t.kind
+            local kind = tbl.kind
             local e = {
                 i = index,
                 k = key,
@@ -172,15 +172,15 @@ end
 -- sizes themselves).
 local SIG_KEYS = { "levelTextPosition" }
 for index = 1, NTEXTS do
-    local t = TEXTS[index]
-    if t.kind ~= "level" then
-        SIG_KEYS[#SIG_KEYS + 1] = t.pos
+    local tbl = TEXTS[index]
+    if tbl.kind ~= "level" then
+        SIG_KEYS[#SIG_KEYS + 1] = tbl.pos
     end
-    if t.mode then
-        SIG_KEYS[#SIG_KEYS + 1] = t.mode
+    if tbl.mode then
+        SIG_KEYS[#SIG_KEYS + 1] = tbl.mode
     end
-    if t.fmt then
-        SIG_KEYS[#SIG_KEYS + 1] = t.fmt
+    if tbl.fmt then
+        SIG_KEYS[#SIG_KEYS + 1] = tbl.fmt
     end
 end
 mod.RF_TEXT_SIG_KEYS = SIG_KEYS

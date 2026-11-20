@@ -89,8 +89,8 @@ local function Profile()
 end
 
 local function Get(key)
-    local t = Profile().selfCombatText
-    local value = t and t[key]
+    local tbl = Profile().selfCombatText
+    local value = tbl and tbl[key]
     if value == nil then
         return DEFAULTS[key]
     end
@@ -193,9 +193,9 @@ local function AddToLayoutMode()
                 end
             end,
             clearPos = function()
-                local t = Profile().selfCombatText
-                if t then
-                    t.pos = nil
+                local tbl = Profile().selfCombatText
+                if tbl then
+                    tbl.pos = nil
                 end
                 Place()
             end,

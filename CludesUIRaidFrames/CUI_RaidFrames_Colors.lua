@@ -298,13 +298,13 @@ do
         end
         for btnFrame, health in pairs(watched) do
             local skinData = GetFFD(btnFrame)
-            local s = skinData._isParty and mod._scaledPartyProxy
+            local cfg = skinData._isParty and mod._scaledPartyProxy
                 or (skinData._isExtra and mod._scaledExtraProxy)
                 or mod._scaledProfile
-            local filePath = mod.RF_TexBgPath(s)
+            local filePath = mod.RF_TexBgPath(cfg)
             filePath = filePath
                     and not skinData.kit
-                    and mod.RF_TexBgOpaque(s, s.healthColorMode == "dark")
+                    and mod.RF_TexBgOpaque(cfg, cfg.healthColorMode == "dark")
                     and filePath
                 or nil
             if (filePath ~= nil) ~= (skinData.bg.SetColorTexture == PaintLayer) then
@@ -312,7 +312,7 @@ do
                 skinData._bgSt, skinData._bgA = nil, nil
                 local u = btnFrame:GetAttribute("unit")
                 if u and UnitExists(u) then
-                    mod._ApplyHealthBg(skinData, health, s, u)
+                    mod._ApplyHealthBg(skinData, health, cfg, u)
                 end
             end
         end
@@ -1369,20 +1369,20 @@ mod._RFPowerTypeEdge = function(skinData, unitToken, force)
     skinData._pwType = pType
     skinData.power:SetMinMaxValues(0, 100)
     skinData.power:SetStatusBarColor(pr, pg, pb, 1)
-    local s = skinData._isParty and mod._scaledPartyProxy
+    local cfg = skinData._isParty and mod._scaledPartyProxy
         or (skinData._isExtra and mod._scaledExtraProxy)
         or mod._scaledProfile
-    if s.powerBgPowerColored and skinData.powerBg then
+    if cfg.powerBgPowerColored and skinData.powerBg then
         local frame = mod.CludesUI.GetPowerBgDarkenFactor()
         if force or skinData._pwBgTintType ~= pType or skinData._pwBgTintF ~= frame then
-            skinData.powerBg:SetColorTexture(pr * frame, pg * frame, pb * frame, (s.powerBgDarkness or 70) / 100)
+            skinData.powerBg:SetColorTexture(pr * frame, pg * frame, pb * frame, (cfg.powerBgDarkness or 70) / 100)
             skinData._pwBgTintType = pType
             skinData._pwBgTintF = frame
         end
     end
     -- Power Text's colour is identity-class state too (its Power mode is this type's colour).
     if skinData._pwtOn then
-        mod.RF_TextPowerColor(skinData, unitToken, s, pr, pg, pb)
+        mod.RF_TextPowerColor(skinData, unitToken, cfg, pr, pg, pb)
     end
 end
 

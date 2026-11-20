@@ -145,10 +145,10 @@ do -- Count text visibility
         -- stale across profiles and overrides); unset on every kind = no API call.
         if actionSlot and pdb then
             local barList, key = pdb.bars, frameData.barKey
-            local s = barList and key and barList[key]
-            if s and (s.hideChargeCount or s.hideStackCount or s.hideItemCount) then
+            local cfg = barList and key and barList[key]
+            if cfg and (cfg.hideChargeCount or cfg.hideStackCount or cfg.hideItemCount) then
                 local how, gate
-                how, gate, chargeInfo = HiddenKind(s, actionSlot)
+                how, gate, chargeInfo = HiddenKind(cfg, actionSlot)
                 if how == "hide" then
                     if frameData._zeroCountAlpha ~= 0 then
                         frameData._zeroCountAlpha = 0
@@ -336,8 +336,8 @@ function mod.AB_ForeverBg(key)
         return false
     end
     local p = ABAR.db.profile
-    local s = p.bars and p.bars[key]
-    local val = s and s.foreverBarBg
+    local cfg = p.bars and p.bars[key]
+    local val = cfg and cfg.foreverBarBg
     if val == nil then
         val = key == "MainBar" and p.foreverHideBarBg ~= true
     end

@@ -90,13 +90,13 @@ ReloadFramesBody = function()
             prof.powerBarOpacity = math.floor(prof.powerBarOpacity * 100 + 0.5)
         end
         for _, uKey in ipairs(UNITS) do
-            local s = prof[uKey]
-            if s then
-                if s.healthBarOpacity and s.healthBarOpacity <= 1.0 then
-                    s.healthBarOpacity = math.floor(s.healthBarOpacity * 100 + 0.5)
+            local cfg = prof[uKey]
+            if cfg then
+                if cfg.healthBarOpacity and cfg.healthBarOpacity <= 1.0 then
+                    cfg.healthBarOpacity = math.floor(cfg.healthBarOpacity * 100 + 0.5)
                 end
-                if s.powerBarOpacity and s.powerBarOpacity <= 1.0 then
-                    s.powerBarOpacity = math.floor(s.powerBarOpacity * 100 + 0.5)
+                if cfg.powerBarOpacity and cfg.powerBarOpacity <= 1.0 then
+                    cfg.powerBarOpacity = math.floor(cfg.powerBarOpacity * 100 + 0.5)
                 end
             end
         end
@@ -310,14 +310,14 @@ ReloadFramesBody = function()
         local isEnabled = enabled[unitKey] ~= false
         -- Check group visibility for player/target/focus
         if isEnabled and (unitKey == "player" or unitKey == "target" or unitKey == "focus") then
-            local s = profile[unitKey]
-            if s then
+            local cfg = profile[unitKey]
+            if cfg then
                 local inRaid = IsInRaid()
                 local inParty = not inRaid and IsInGroup()
                 local solo = not inRaid and not inParty
-                local vis = (inRaid and (s.showInRaid ~= false))
-                    or (inParty and (s.showInParty ~= false))
-                    or (solo and (s.showSolo ~= false))
+                local vis = (inRaid and (cfg.showInRaid ~= false))
+                    or (inParty and (cfg.showInParty ~= false))
+                    or (solo and (cfg.showSolo ~= false))
                 if not vis then
                     isEnabled = false
                 end
@@ -2392,20 +2392,20 @@ ReloadFramesBody = function()
                 end
 
                 if widget.NameText then
-                    local s = isMiniFrame and donorSettings or GetSettingsForUnit(unitToken)
-                    local rts = s.leftTextSize or s.textSize or 12
+                    local cfg = isMiniFrame and donorSettings or GetSettingsForUnit(unitToken)
+                    local rts = cfg.leftTextSize or cfg.textSize or 12
                     SetMiniFont(widget.NameText, rts)
                     widget.NameText:SetWordWrap(false)
                 end
                 if widget.HealthValue then
-                    local s = isMiniFrame and donorSettings or GetSettingsForUnit(unitToken)
-                    local rts = s.rightTextSize or s.textSize or 12
+                    local cfg = isMiniFrame and donorSettings or GetSettingsForUnit(unitToken)
+                    local rts = cfg.rightTextSize or cfg.textSize or 12
                     SetMiniFont(widget.HealthValue, rts)
                     widget.HealthValue:SetWordWrap(false)
                 end
                 if widget.CenterText then
-                    local s = isMiniFrame and donorSettings or GetSettingsForUnit(unitToken)
-                    local cts = s.centerTextSize or s.textSize or 12
+                    local cfg = isMiniFrame and donorSettings or GetSettingsForUnit(unitToken)
+                    local cts = cfg.centerTextSize or cfg.textSize or 12
                     SetMiniFont(widget.CenterText, cts)
                     widget.CenterText:SetWordWrap(false)
                 end
@@ -2423,13 +2423,13 @@ ReloadFramesBody = function()
                 end
 
                 if widget.Castbar then
-                    local s = isMiniFrame and donorSettings or prefs
+                    local cfg = isMiniFrame and donorSettings or prefs
                     if widget.Castbar.Text then
-                        local snSz = s.castSpellNameSize or 11
+                        local snSz = cfg.castSpellNameSize or 11
                         SetMiniFont(widget.Castbar.Text, snSz)
                     end
                     if widget.Castbar.Time then
-                        local dtSz = s.castDurationSize or 10
+                        local dtSz = cfg.castDurationSize or 10
                         SetMiniFont(widget.Castbar.Time, dtSz)
                     end
                     -- Boss frames get their full cast text refresh in the boss branch above

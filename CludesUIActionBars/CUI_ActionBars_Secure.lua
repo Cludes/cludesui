@@ -616,21 +616,21 @@ local function GetOrCreateButton(slot, hostFrame, details, index, skipProtected)
         if button.cooldown and not EFD(button).cdDoneHooked then
             EFD(button).cdDoneHooked = true
             button.cooldown:HookScript("OnCooldownDone", function(cd)
-                local b = cd:GetParent()
+                local widget = cd:GetParent()
                 if ABAR._RefreshCooldownVisuals then
-                    ABAR._RefreshCooldownVisuals(b)
+                    ABAR._RefreshCooldownVisuals(widget)
                 end
                 -- Recharge-numbers un-hide edge: a real main cooldown's END fires
                 -- no bar event, so an occluded charge countdown had no owning edge
                 -- to reappear on (it stranded hidden until the next unrelated
                 -- pass). The display-complete edge is the exact moment occlusion
                 -- lapses; nil-check cost for every non-charge button.
-                if b and b.chargeCooldown and mod.UpdateChargeNumbersVisibility then
-                    local action = b.GetAttribute and b:GetAttribute("action")
+                if widget and widget.chargeCooldown and mod.UpdateChargeNumbersVisibility then
+                    local action = widget.GetAttribute and widget:GetAttribute("action")
                     if action and HasAction(action) then
                         mod.UpdateChargeNumbersVisibility(
-                            b,
-                            b.chargeCooldown,
+                            widget,
+                            widget.chargeCooldown,
                             C_ActionBar.GetActionCooldown(action),
                             C_ActionBar.GetActionCharges(action)
                         )

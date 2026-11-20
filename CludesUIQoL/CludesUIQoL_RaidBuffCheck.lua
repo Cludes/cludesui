@@ -639,10 +639,10 @@ local function CollectUnits()
 end
 
 local function ComputeState(unitToken, restricted)
-    local s = states[unitToken]
-    if not s then
-        s = { icons = {} }
-        states[unitToken] = s
+    local cfg = states[unitToken]
+    if not cfg then
+        cfg = { icons = {} }
+        states[unitToken] = cfg
     end
     local online = UnitIsConnected(unitToken)
     local dead = UnitIsDeadOrGhost(unitToken)
@@ -656,24 +656,24 @@ local function ComputeState(unitToken, restricted)
     if IsSecret(visible) then
         visible = true
     end
-    s.online = online
-    s.missing = 0
-    s.buffsExp = nil
-    local icons = s.icons
+    cfg.online = online
+    cfg.missing = 0
+    cfg.buffsExp = nil
+    local icons = cfg.icons
     if not online or dead or not visible then
-        s.flask, s.food, s.rune, s.vantus = nil, nil, nil, nil
+        cfg.flask, cfg.food, cfg.rune, cfg.vantus = nil, nil, nil, nil
         for jdx = #icons, 1, -1 do
             icons[jdx] = nil
         end
         return
     end
-    s.flask = ListState(unitToken, FLASK_BUFF_IDS, true, false)
-    s.food = FoodState(unitToken, restricted)
-    s.rune = ListState(unitToken, RUNE_IDS, runeReadable, restricted)
-    if not s.rune and ListState(unitToken, OLD_RUNE_IDS, true, false) then
-        s.rune = false
+    cfg.flask = ListState(unitToken, FLASK_BUFF_IDS, true, false)
+    cfg.food = FoodState(unitToken, restricted)
+    cfg.rune = ListState(unitToken, RUNE_IDS, runeReadable, restricted)
+    if not cfg.rune and ListState(unitToken, OLD_RUNE_IDS, true, false) then
+        cfg.rune = false
     end
-    s.vantus = ListState(unitToken, VANTUS_IDS, vantusReadable, restricted)
+    cfg.vantus = ListState(unitToken, VANTUS_IDS, vantusReadable, restricted)
     local num = 0
     for _, buff in ipairs(RAID_BUFFS) do
         if providers[buff.class] then
@@ -688,15 +688,15 @@ local function ComputeState(unitToken, restricted)
             if not has then
                 num = num + 1
                 icons[num] = buff.castSpell
-            elseif type(has) == "number" and (not s.buffsExp or has < s.buffsExp) then
-                s.buffsExp = has
+            elseif type(has) == "number" and (not cfg.buffsExp or has < cfg.buffsExp) then
+                cfg.buffsExp = has
             end
         end
     end
     for jdx = #icons, num + 1, -1 do
         icons[jdx] = nil
     end
-    s.missing = num
+    cfg.missing = num
 end
 
 -- Missing, unknown (nil) and running out count; eating does not.
@@ -716,20 +716,20 @@ local function NotFullyBuffed(cfg, nowTime, runeRequired, vantusRequired)
 end
 
 local function PaintRow(region, unitToken, nowTime)
-    local s = states[unitToken]
+    local cfg = states[unitToken]
     region.name:SetText(UnitName(unitToken))
     local cls = UnitClassToken(unitToken)
     local cc = cls and CludesUI.GetClassColor(cls)
-    if cc and s.online then
+    if cc and cfg.online then
         region.name:SetTextColor(cc.r, cc.g, cc.b)
     else
         region.name:SetTextColor(0.5, 0.5, 0.5)
     end
-    SetCell(region.flask, s.flask, nowTime)
-    SetCell(region.food, s.food, nowTime)
-    SetCell(region.rune, s.rune, nowTime)
-    SetCell(region.vantus, s.vantus, nowTime)
-    local icons = s.icons
+    SetCell(region.flask, cfg.flask, nowTime)
+    SetCell(region.food, cfg.food, nowTime)
+    SetCell(region.rune, cfg.rune, nowTime)
+    SetCell(region.vantus, cfg.vantus, nowTime)
+    local icons = cfg.icons
     for jdx = 1, BUFF_SLOTS do
         local ident = icons[jdx]
         if ident then
@@ -740,9 +740,9 @@ local function PaintRow(region, unitToken, nowTime)
         end
     end
     -- flask is nil only for a row that was not read at all (offline, dead, out of range).
-    local leftX = s.missing == 0 and SoonLeft(s.buffsExp, nowTime)
-    region.buffsOk:SetShown(s.flask ~= nil and s.missing == 0 and not leftX)
-    if s.flask == nil then
+    local leftX = cfg.missing == 0 and SoonLeft(cfg.buffsExp, nowTime)
+    region.buffsOk:SetShown(cfg.flask ~= nil and cfg.missing == 0 and not leftX)
+    if cfg.flask == nil then
         region.buffsQ:SetText("?")
         region.buffsQ:SetTextColor(0.6, 0.6, 0.6)
         region.buffsQ:Show()
@@ -855,30 +855,30 @@ function Render()
     wakeAt = nil
     for index = 1, #units do
         local u = units[index]
-        local s = states[u]
-        if s then
-            Tally(totals, 1, s.flask, nowTime)
-            Tally(totals, 2, s.food, nowTime)
-            Tally(totals, 3, s.rune, nowTime)
-            Tally(totals, 4, s.vantus, nowTime)
+        local cfg = states[u]
+        if cfg then
+            Tally(totals, 1, cfg.flask, nowTime)
+            Tally(totals, 2, cfg.food, nowTime)
+            Tally(totals, 3, cfg.rune, nowTime)
+            Tally(totals, 4, cfg.vantus, nowTime)
             -- Raid buffs: unread row = unknown, a missing buff = missing, else the soonest expiry.
-            if s.flask == nil then
+            if cfg.flask == nil then
                 totals[3][5] = totals[3][5] + 1
-            elseif s.missing > 0 then
+            elseif cfg.missing > 0 then
                 totals[1][5] = totals[1][5] + 1
-            elseif SoonLeft(s.buffsExp, nowTime) then
+            elseif SoonLeft(cfg.buffsExp, nowTime) then
                 totals[2][5] = totals[2][5] + 1
             end
-            Wake(s.flask, nowTime)
-            Wake(s.food, nowTime)
+            Wake(cfg.flask, nowTime)
+            Wake(cfg.food, nowTime)
             if runeRequired then
-                Wake(s.rune, nowTime)
+                Wake(cfg.rune, nowTime)
             end
             if vantusRequired then
-                Wake(s.vantus, nowTime)
+                Wake(cfg.vantus, nowTime)
             end
-            Wake(s.buffsExp, nowTime)
-            if not filter or NotFullyBuffed(s, nowTime, runeRequired, vantusRequired) then
+            Wake(cfg.buffsExp, nowTime)
+            if not filter or NotFullyBuffed(cfg, nowTime, runeRequired, vantusRequired) then
                 shownUnits[#shownUnits + 1] = u
             end
         end

@@ -648,48 +648,48 @@ local function MakeLine(b, key)
 end
 
 local function MakeBlock(index, hostFrame, storage)
-    local b = CreateFrame("Frame", nil, hostFrame or body)
-    b.bg = b:CreateTexture(nil, "BACKGROUND")
-    b.bg:SetAllPoints()
-    b.bg:SetColorTexture(1, 1, 1, 0.03)
+    local widget = CreateFrame("Frame", nil, hostFrame or body)
+    widget.bg = widget:CreateTexture(nil, "BACKGROUND")
+    widget.bg:SetAllPoints()
+    widget.bg:SetColorTexture(1, 1, 1, 0.03)
     -- status underline
-    b.under = b:CreateTexture(nil, "ARTWORK", nil, 7)
-    b.under:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 0, 0)
-    b.under:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", 0, 0)
-    b.under:SetHeight(2)
-    b.under:Hide()
-    b.lines = {}
-    b.note = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    b.note:SetJustifyH("LEFT")
-    b.note:SetWordWrap(true)
+    widget.under = widget:CreateTexture(nil, "ARTWORK", nil, 7)
+    widget.under:SetPoint("BOTTOMLEFT", widget, "BOTTOMLEFT", 0, 0)
+    widget.under:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", 0, 0)
+    widget.under:SetHeight(2)
+    widget.under:Hide()
+    widget.lines = {}
+    widget.note = widget:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    widget.note:SetJustifyH("LEFT")
+    widget.note:SetWordWrap(true)
     -- the note's part of the row: same highlight, tooltip and menu
-    b.noteHit = CreateFrame("Button", nil, b)
-    b.noteHit:SetAllPoints(b.note)
-    b.noteHit:RegisterForClicks("RightButtonUp")
-    b.noteHit:SetScript("OnClick", function()
-        LineMenu(b.lines[1])
+    widget.noteHit = CreateFrame("Button", nil, widget)
+    widget.noteHit:SetAllPoints(widget.note)
+    widget.noteHit:RegisterForClicks("RightButtonUp")
+    widget.noteHit:SetScript("OnClick", function()
+        LineMenu(widget.lines[1])
     end)
-    b.noteHit:SetScript("OnEnter", function()
-        for _, l in ipairs(b.lines) do
+    widget.noteHit:SetScript("OnEnter", function()
+        for _, l in ipairs(widget.lines) do
             l:LockHighlight()
         end
-        LineEnter(b.lines[1])
+        LineEnter(widget.lines[1])
     end)
-    b.noteHit:SetScript("OnLeave", function()
-        for _, l in ipairs(b.lines) do
+    widget.noteHit:SetScript("OnLeave", function()
+        for _, l in ipairs(widget.lines) do
             l:UnlockHighlight()
         end
         GameTooltip_Hide()
     end)
-    b.decline = SquareButton(b, "groupfinder-icon-redx", Decline)
-    b.invite = SquareButton(b, "groupfinder-icon-greencheckmark", Invite)
-    b.invite:SetPoint("RIGHT", b.decline, "LEFT", -GAP, 0)
-    b.decline.tip = DECLINE or "Decline"
-    b.status = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    b.status:SetJustifyH("RIGHT")
+    widget.decline = SquareButton(widget, "groupfinder-icon-redx", Decline)
+    widget.invite = SquareButton(widget, "groupfinder-icon-greencheckmark", Invite)
+    widget.invite:SetPoint("RIGHT", widget.decline, "LEFT", -GAP, 0)
+    widget.decline.tip = DECLINE or "Decline"
+    widget.status = widget:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    widget.status:SetJustifyH("RIGHT")
     local into = storage or blocks
-    into[index] = b
-    return b
+    into[index] = widget
+    return widget
 end
 
 -- text, color, the results list's underline setting
@@ -1109,13 +1109,13 @@ local function Position()
     scrollPx = math.max(0, math.min(scrollPx, maxPx))
     local posY = -scrollPx
     for index = 1, #entries do
-        local b = blocks[index]
-        b:ClearAllPoints()
-        b:SetPoint("TOPLEFT", body, "TOPLEFT", 0, -posY)
-        b:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, -posY)
-        b:SetHeight(b.h)
-        b:SetShown(b.applicantID ~= nil and posY + b.h > 0 and posY < height)
-        posY = posY + b.h + GAP
+        local widget = blocks[index]
+        widget:ClearAllPoints()
+        widget:SetPoint("TOPLEFT", body, "TOPLEFT", 0, -posY)
+        widget:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, -posY)
+        widget:SetHeight(widget.h)
+        widget:SetShown(widget.applicantID ~= nil and posY + widget.h > 0 and posY < height)
+        posY = posY + widget.h + GAP
     end
     if maxPx > 0 then
         local th = math.max(16, height * height / sum)
@@ -1776,13 +1776,13 @@ local function PvPosition()
     applicantView.scroll = math.max(0, math.min(applicantView.scroll, applicantView.maxScroll))
     local posY = -applicantView.scroll
     for index = 1, #applicantView.ids do
-        local b = applicantView.blocks[index]
-        b:ClearAllPoints()
-        b:SetPoint("TOPLEFT", applicantView.body, "TOPLEFT", 0, -posY)
-        b:SetPoint("TOPRIGHT", applicantView.body, "TOPRIGHT", 0, -posY)
-        b:SetHeight(b.h)
-        b:SetShown(posY + b.h > 0 and posY < hgt)
-        posY = posY + b.h + GAP
+        local widget = applicantView.blocks[index]
+        widget:ClearAllPoints()
+        widget:SetPoint("TOPLEFT", applicantView.body, "TOPLEFT", 0, -posY)
+        widget:SetPoint("TOPRIGHT", applicantView.body, "TOPRIGHT", 0, -posY)
+        widget:SetHeight(widget.h)
+        widget:SetShown(posY + widget.h > 0 and posY < hgt)
+        posY = posY + widget.h + GAP
     end
     local th = applicantView.thumb
     if applicantView.maxScroll > 0 then

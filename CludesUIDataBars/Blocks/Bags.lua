@@ -92,11 +92,11 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
 
     -- The text colour alone: hover, low space or the block's own colour.
     local function PaintText()
-        local s = Settings()
+        local cfg = Settings()
         if hovered then
             label:SetTextColor(mod.GetAccent())
-        elseif (s.lowThreshold or 0) > 0 and (shownFree or 0) < s.lowThreshold then
-            local color = s.lowColor
+        elseif (cfg.lowThreshold or 0) > 0 and (shownFree or 0) < cfg.lowThreshold then
+            local color = cfg.lowColor
             label:SetTextColor(color and color.r or LOW[1], color and color.g or LOW[2], color and color.b or LOW[3])
         else
             label:SetTextColor(K.BlockColorOf(blockCfg))
@@ -109,18 +109,18 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
             free, total = Count()
         end
         shownFree, shownTotal = free, total
-        local s = Settings()
+        local cfg = Settings()
         local barH = barCtx.GetThickness()
         local fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
         -- +4: the size of the gold block's bag icon.
-        local iconSize = s.showIcon ~= false and fontSize + 4 or 0
+        local iconSize = cfg.showIcon ~= false and fontSize + 4 or 0
 
         K.SetBlockIcon(iconTex, blockCfg)
         iconTex:SetVertexColor(K.IconColorOf(blockCfg))
         iconTex:SetShown(iconSize > 0)
         mod.SetFont(label, fontSize, barCtx.cfg)
         PaintText()
-        local text = (SHOW[s.value] or SHOW.free)(free, total)
+        local text = (SHOW[cfg.value] or SHOW.free)(free, total)
 
         if barCtx.IsVertical() then
             -- Icon above the number, both centred in the bar's width.

@@ -27,11 +27,11 @@ if CludesUI.FvBW then
     local fv = CludesUI.FvBW
     PAB = function()
         local saved = mod.db
-        local s = saved and saved.profile and saved.profile.playerAuraBars
-        if s and s.fvBuffWipe == nil then
+        local cfg = saved and saved.profile and saved.profile.playerAuraBars
+        if cfg and cfg.fvBuffWipe == nil then
             fv.ProcessUF(saved.profile, nil, "live")
         end
-        return s
+        return cfg
     end
 end
 
@@ -742,33 +742,33 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
         if not (excludeDispelTypes or np or anyOwned or prOwned or bo or withSub) then
             return nil
         end
-        local t = {}
+        local tbl = {}
         if excludeDispelTypes then
-            t.excludeDispelTypes = excludeDispelTypes
+            tbl.excludeDispelTypes = excludeDispelTypes
         end
         -- Non-Player and From Any Player are the same field; the options
         -- setters keep them exclusive, nonplayer wins if stale data disagrees.
         if npOwned then
             if np then
-                t.isFromPlayerOrPlayerPet = true
+                tbl.isFromPlayerOrPlayerPet = true
             end
         elseif anyOwned then
-            t.isFromPlayerOrPlayerPet = false
+            tbl.isFromPlayerOrPlayerPet = false
         end
         if prOwned then
-            t.isPriorityAura = false
+            tbl.isPriorityAura = false
         end
         if bo then
             for k, val in pairs(bo) do
-                t[k] = val
+                tbl[k] = val
             end
         end
         if withSub then
             for k, val in pairs(withSub) do
-                t[k] = val
+                tbl[k] = val
             end
         end
-        return t
+        return tbl
     end
 
     -- excludeCand for a SHOWN candidate link: ExtraCand plus the npFlip ownership.

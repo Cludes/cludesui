@@ -49,19 +49,19 @@ end
 
 -- A spell icon that shows the spell's tooltip on hover.
 function mod.BarGlowSpellIcon(hostFrame, size, spellId)
-    local f = CreateFrame("Frame", nil, hostFrame)
-    f:SetSize(size, size)
-    f:SetFrameLevel(hostFrame:GetFrameLevel() + 3)
-    f.tex = f:CreateTexture(nil, "ARTWORK")
-    f.tex:SetAllPoints()
-    f.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    local frame = CreateFrame("Frame", nil, hostFrame)
+    frame:SetSize(size, size)
+    frame:SetFrameLevel(hostFrame:GetFrameLevel() + 3)
+    frame.tex = frame:CreateTexture(nil, "ARTWORK")
+    frame.tex:SetAllPoints()
+    frame.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     local spellRef = tonumber(spellId)
     local details = spellRef and spellRef > 0 and C_Spell.GetSpellInfo(spellRef)
     if details and details.iconID then
-        f.tex:SetTexture(details.iconID)
+        frame.tex:SetTexture(details.iconID)
     end
-    f:EnableMouse(true)
-    f:SetScript("OnEnter", function(self)
+    frame:EnableMouse(true)
+    frame:SetScript("OnEnter", function(self)
         if not (spellRef and spellRef > 0) then
             return
         end
@@ -69,10 +69,10 @@ function mod.BarGlowSpellIcon(hostFrame, size, spellId)
         GameTooltip:SetSpellByID(spellRef)
         GameTooltip:Show()
     end)
-    f:SetScript("OnLeave", function()
+    frame:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-    return f
+    return frame
 end
 
 -------------------------------------------------------------------------------
@@ -607,11 +607,11 @@ function mod.BarGlowDuplicateButton(regionFrame, removeBtn, buffList, index, onD
         return nil
     end
     local Pix = CludesUI.PanelPP or CludesUI.PP
-    local b = CreateFrame("Button", nil, regionFrame)
-    Pix.Size(b, 110, removeBtn:GetHeight())
-    b:SetFrameLevel(removeBtn:GetFrameLevel())
-    b:SetPoint("RIGHT", removeBtn, "LEFT", -8, 0)
-    CludesUI.MakeStyledButton(b, CludesUI.L("Duplicate"), 13, CludesUI.RB_COLOURS, function()
+    local widget = CreateFrame("Button", nil, regionFrame)
+    Pix.Size(widget, 110, removeBtn:GetHeight())
+    widget:SetFrameLevel(removeBtn:GetFrameLevel())
+    widget:SetPoint("RIGHT", removeBtn, "LEFT", -8, 0)
+    CludesUI.MakeStyledButton(widget, CludesUI.L("Duplicate"), 13, CludesUI.RB_COLOURS, function()
         local source = buffList[index]
         if type(source) ~= "table" then
             return
@@ -623,7 +623,7 @@ function mod.BarGlowDuplicateButton(regionFrame, removeBtn, buffList, index, onD
             onDone()
         end
     end)
-    return b
+    return widget
 end
 
 -- Bar Glows button preview: the CDM bar's live icon width as it appears on
@@ -636,11 +636,11 @@ function mod.BarGlowPreviewIconSize(icons, previewParent)
     end
     local ps = previewParent and previewParent.GetEffectiveScale and previewParent:GetEffectiveScale()
     for idx = 1, #icons do
-        local f = icons[idx]
-        if f and f.GetWidth then
-            local wid = f:GetWidth()
+        local frame = icons[idx]
+        if frame and frame.GetWidth then
+            local wid = frame:GetWidth()
             if wid and not (issecretvalue and issecretvalue(wid)) and wid > 1 then
-                local es = f:GetEffectiveScale()
+                local es = frame:GetEffectiveScale()
                 if es and ps and ps > 0 then
                     wid = wid * es / ps
                 end

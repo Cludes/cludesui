@@ -405,20 +405,20 @@ function Calc:ScanItemLink(itemLink)
     if not outcome.track then
         local isCrafted, sawHero, sawMyth = ascendant and ascendant.crafted or false, false, false
         ForEachTooltipLine(lineList, function(raw)
-            local t = Plain(raw)
+            local text = Plain(raw)
             if
-                t:find(CREATED_BY_PATTERN)
-                or t:find("Crafted")
-                or t:find("Optional Reagents")
-                or t:find("Recrafting")
-                or t:find("Made by")
+                text:find(CREATED_BY_PATTERN)
+                or text:find("Crafted")
+                or text:find("Optional Reagents")
+                or text:find("Recrafting")
+                or text:find("Made by")
             then
                 isCrafted = true
             end
-            if t:find("Hero") then
+            if text:find("Hero") then
                 sawHero = true
             end
-            if t:find("Myth") then
+            if text:find("Myth") then
                 sawMyth = true
             end
         end)

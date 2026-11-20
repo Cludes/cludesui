@@ -74,12 +74,12 @@ local function EnableBody()
         -- WoW Forever's own seed the same way: the other looks' class
         -- resource goes to its Forever-only slot first.
         if mod.UF_Forever() and not p.foreverClassPowerSeeded and p.player then
-            local s = p._foreverStyleSlots
-            if type(s) ~= "table" then
-                s = {}
-                p._foreverStyleSlots = s
+            local cfg = p._foreverStyleSlots
+            if type(cfg) ~= "table" then
+                cfg = {}
+                p._foreverStyleSlots = cfg
             end
-            s.cui = {
+            cfg.cui = {
                 ["player.classPowerStyle"] = p.player.classPowerStyle,
                 ["player.showClassPowerBar"] = p.player.showClassPowerBar,
             }

@@ -233,20 +233,20 @@ local function UnitFrame_OnEnter(self)
         return
     end
     local unitKey = unitToken:match("^boss%d$") and "boss" or unitToken
-    local s = saved and saved.profile and saved.profile[unitKey]
-    if s and s.showWhenHealthMissing then
+    local cfg = saved and saved.profile and saved.profile[unitKey]
+    if cfg and cfg.showWhenHealthMissing then
         self._healthVisHovered = true
     end
-    if mod.VisMouseoverWired(s) then
+    if mod.VisMouseoverWired(cfg) then
         -- Reveal only what is actually hover-gated right now. Under Any the frame may
         -- already be shown on another passing disjunct, in which case there is nothing to
         -- reveal and OnLeave must not undo anything either -- both handlers read the same
         -- resting verdict so they cannot disagree.
-        local _, hoverGated = mod.ResolveVisRestingLive(s, self)
+        local _, hoverGated = mod.ResolveVisRestingLive(cfg, self)
         if hoverGated then
-            local a = mod.ResolveFrameAlpha(s, InCombatLockdown())
-            if s.showWhenHealthMissing then
-                a = mod.HealthVisibilityAlpha(s, self, a)
+            local a = mod.ResolveFrameAlpha(cfg, InCombatLockdown())
+            if cfg.showWhenHealthMissing then
+                a = mod.HealthVisibilityAlpha(cfg, self, a)
             end
             (self._visWrap or self):SetAlpha(a)
             -- 3D models don't inherit parent alpha: reveal the portrait too
@@ -264,7 +264,7 @@ local function UnitFrame_OnEnter(self)
         end
     end
     if unitToken and GameTooltip and GameTooltip_SetDefaultAnchor then
-        local showTooltip = not s or s.showUnitTooltip ~= false
+        local showTooltip = not cfg or cfg.showUnitTooltip ~= false
         if showTooltip then
             GameTooltip_SetDefaultAnchor(GameTooltip, self)
             if GameTooltip:SetUnit(unitToken) then
@@ -297,14 +297,14 @@ local function UnitFrame_OnLeave(self)
         return
     end
     local unitKey = unitToken:match("^boss%d$") and "boss" or unitToken
-    local s = saved and saved.profile and saved.profile[unitKey]
-    if mod.VisMouseoverWired(s) then
+    local cfg = saved and saved.profile and saved.profile[unitKey]
+    if mod.VisMouseoverWired(cfg) then
         -- Return to the resting alpha the visibility pass would paint, never a hardcoded
         -- 0: under Any a passing disjunct keeps the frame visible with no hover involved,
         -- and hiding it here would leave it wrong until the next visibility event fires.
-        local leaveAlpha, _, hiddenByOpts = mod.ResolveVisRestingLive(s, self)
-        if s.showWhenHealthMissing and not hiddenByOpts then
-            leaveAlpha = mod.HealthVisibilityAlpha(s, self, leaveAlpha)
+        local leaveAlpha, _, hiddenByOpts = mod.ResolveVisRestingLive(cfg, self)
+        if cfg.showWhenHealthMissing and not hiddenByOpts then
+            leaveAlpha = mod.HealthVisibilityAlpha(cfg, self, leaveAlpha)
         else
             self._healthVisLive = nil
         end

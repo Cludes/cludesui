@@ -729,9 +729,9 @@ function mod.UF_SeedStock(profile, styleKey, isForever)
         profile.healthBarTexture = "plating"
         local units = mod.UF_TEXTURE_UNITS
         for index = 1, #units do
-            local s = profile[units[index]]
-            if type(s) == "table" then
-                s.healthBarTexture = nil
+            local cfg = profile[units[index]]
+            if type(cfg) == "table" then
+                cfg.healthBarTexture = nil
             end
         end
     end
@@ -1246,9 +1246,9 @@ function mod.UF_ApplyBlizzBarArt(widget)
                 end
                 for index = 1, #barList do
                     local scrollBar = barList[index]
-                    local t = scrollBar and scrollBar.GetStatusBarTexture and scrollBar:GetStatusBarTexture()
-                    if t then
-                        pcall(t.RemoveMaskTexture, t, maskTex)
+                    local tbl = scrollBar and scrollBar.GetStatusBarTexture and scrollBar:GetStatusBarTexture()
+                    if tbl then
+                        pcall(tbl.RemoveMaskTexture, tbl, maskTex)
                     end
                 end
             end
@@ -1822,8 +1822,8 @@ function mod.UF_BlizzTextPass(widget)
     -- The Left Text offsets still apply on top of the stock spot, in screen
     -- terms (+X right, +Y up) on the mirrored art too, so they are added
     -- after the mirror rather than through it.
-    local s = GetSettingsForUnit(widget._cuiBaseUnit or widget._cuiUnit)
-    local lxo, lyo = (s and s.leftTextX) or 0, (s and s.leftTextY) or 0
+    local cfg = GetSettingsForUnit(widget._cuiBaseUnit or widget._cuiUnit)
+    local lxo, lyo = (cfg and cfg.leftTextX) or 0, (cfg and cfg.leftTextY) or 0
     lt:ClearAllPoints()
     lt:SetJustifyH(G.name.justify or "LEFT")
     local anchorPoint, posX = G.name.point, G.name.x
@@ -1897,7 +1897,7 @@ function mod.UF_BlizzLevelPass(widget)
     owner:SetFrameStrata((clip and clip:GetFrameStrata()) or widget:GetFrameStrata())
     owner:SetFrameLevel(((clip and clip:GetFrameLevel()) or widget:GetFrameLevel()) + 12)
     local fontStr, skull = widget._blizzLevel, widget._blizzLevelSkull
-    local s = GetSettingsForUnit(widget._cuiBaseUnit or widget._cuiUnit)
+    local cfg = GetSettingsForUnit(widget._cuiBaseUnit or widget._cuiUnit)
     -- Same face, outline and shadow as the unit name (and its size, unless
     -- the level has its own): the name's font object first (it carries the
     -- shadow), then its face. A name on a font family gives its roman member's
@@ -1912,11 +1912,11 @@ function mod.UF_BlizzLevelPass(widget)
             if fo then
                 fontStr:SetFontObject(fo)
             end
-            fontStr:SetFont(face, (s and s.blizzLevelSize) or size, flags)
+            fontStr:SetFont(face, (cfg and cfg.blizzLevelSize) or size, flags)
         end
     end
     -- The stock spot, plus the level's own offsets.
-    local ox, oy = (s and s.blizzLevelX) or 0, (s and s.blizzLevelY) or 0
+    local ox, oy = (cfg and cfg.blizzLevelX) or 0, (cfg and cfg.blizzLevelY) or 0
     -- WoW Forever: the level sits in a round badge at the frame's bottom
     -- corner, which the level's own offsets move as a whole; the number and
     -- the skull centre on it (a fixed size, so a missing atlas keeps the spot).
@@ -1971,7 +1971,7 @@ function mod.UF_BlizzLevelPass(widget)
     -- Where the level shares the name's end of the strip, the name gives up
     -- that width while the level shows (the text pass set the full width).
     if lt and G.name and L.nameTrim then
-        local enabled = s and s.blizzShowLevel ~= false
+        local enabled = cfg and cfg.blizzShowLevel ~= false
         lt:SetWidth(G.name.w - (enabled and L.nameTrim or 0))
     end
     mod.UF_BlizzLevelRefresh(widget)
@@ -1993,8 +1993,8 @@ function mod.UF_BlizzLevelRefresh(widget, evt)
             mod.UF_ForeverPvPRefresh(widget, unitToken)
         end
     end
-    local s = unitToken and GetSettingsForUnit(widget._cuiBaseUnit or unitToken)
-    if not s or s.blizzShowLevel == false or not UnitExists(unitToken) then
+    local cfg = unitToken and GetSettingsForUnit(widget._cuiBaseUnit or unitToken)
+    if not cfg or cfg.blizzShowLevel == false or not UnitExists(unitToken) then
         fontStr:Hide()
         skull:Hide()
         if badge then
@@ -2033,7 +2033,7 @@ function mod.UF_BlizzLevelRefresh(widget, evt)
             levelText = UnitBattlePetLevel(unitToken)
         else
             levelText = UnitEffectiveLevel(unitToken)
-            local can = s.blizzLevelDifficultyColor ~= false and UnitCanAttack("player", unitToken)
+            local can = cfg.blizzLevelDifficultyColor ~= false and UnitCanAttack("player", unitToken)
             if not issecretvalue(can) and can then
                 local diff = C_PlayerInfo.GetContentDifficultyCreatureForPlayer(unitToken)
                 local color = not issecretvalue(diff) and GetDifficultyColor and GetDifficultyColor(diff)

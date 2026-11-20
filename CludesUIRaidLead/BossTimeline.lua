@@ -64,29 +64,29 @@ local TANK = { ["tankbuster"] = true, ["tank debuff"] = true, ["frontal"] = true
 local function Settings()
     local p = mod.RaidLeadDB()
     p.timeline = p.timeline or {}
-    local s = p.timeline
-    if s.bars == nil then
-        s.bars = true
+    local cfg = p.timeline
+    if cfg.bars == nil then
+        cfg.bars = true
     end
-    if s.alerts == nil then
-        s.alerts = true
+    if cfg.alerts == nil then
+        cfg.alerts = true
     end
-    if s.mine == nil then
-        s.mine = false
+    if cfg.mine == nil then
+        cfg.mine = false
     end
-    if s.count == nil then
-        s.count = 6
+    if cfg.count == nil then
+        cfg.count = 6
     end
-    if s.ahead == nil then
-        s.ahead = 30
+    if cfg.ahead == nil then
+        cfg.ahead = 30
     end
-    if s.tts == nil then
-        s.tts = true
+    if cfg.tts == nil then
+        cfg.tts = true
     end
-    if s.phaseChat == nil then
-        s.phaseChat = false
+    if cfg.phaseChat == nil then
+        cfg.phaseChat = false
     end
-    return s
+    return cfg
 end
 mod.TimelineSettings = Settings
 
@@ -236,32 +236,32 @@ local function BuildBars()
 end
 
 local function Bar(idx)
-    local b = barList[idx]
-    if b then
-        return b
+    local widget = barList[idx]
+    if widget then
+        return widget
     end
-    b = CreateFrame("StatusBar", nil, holderFrame)
-    b:SetSize(230, 18)
-    b:SetPoint("TOPRIGHT", holderFrame, "TOPRIGHT", 0, -(idx - 1) * 21)
-    b:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    b.bg = b:CreateTexture(nil, "BACKGROUND")
-    b.bg:SetAllPoints()
-    b.bg:SetColorTexture(0, 0, 0, 0.6)
-    b.icon = b:CreateTexture(nil, "ARTWORK")
-    b.icon:SetSize(18, 18)
-    b.icon:SetPoint("RIGHT", b, "LEFT", -2, 0)
-    b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    b.name = b:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(b.name, 11, nil)
-    b.name:SetPoint("LEFT", 4, 0)
-    b.name:SetPoint("RIGHT", -40, 0)
-    b.name:SetJustifyH("LEFT")
-    b.name:SetWordWrap(false)
-    b.time = b:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(b.time, 11, nil)
-    b.time:SetPoint("RIGHT", -4, 0)
-    barList[idx] = b
-    return b
+    widget = CreateFrame("StatusBar", nil, holderFrame)
+    widget:SetSize(230, 18)
+    widget:SetPoint("TOPRIGHT", holderFrame, "TOPRIGHT", 0, -(idx - 1) * 21)
+    widget:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    widget.bg = widget:CreateTexture(nil, "BACKGROUND")
+    widget.bg:SetAllPoints()
+    widget.bg:SetColorTexture(0, 0, 0, 0.6)
+    widget.icon = widget:CreateTexture(nil, "ARTWORK")
+    widget.icon:SetSize(18, 18)
+    widget.icon:SetPoint("RIGHT", widget, "LEFT", -2, 0)
+    widget.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    widget.name = widget:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(widget.name, 11, nil)
+    widget.name:SetPoint("LEFT", 4, 0)
+    widget.name:SetPoint("RIGHT", -40, 0)
+    widget.name:SetJustifyH("LEFT")
+    widget.name:SetWordWrap(false)
+    widget.time = widget:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(widget.time, 11, nil)
+    widget.time:SetPoint("RIGHT", -4, 0)
+    barList[idx] = widget
+    return widget
 end
 
 local function HideBars()
@@ -274,29 +274,29 @@ local function Tick()
     if not fight then
         return HideBars()
     end
-    local s = Settings()
+    local cfg = Settings()
     local nowTime = GetTime()
     local num = 0
     for _, cast in ipairs(fight.casts) do
         local leftX = cast.due - nowTime
-        if leftX > -1 and leftX <= s.ahead and (not s.mine or ForRole(cast.ability, fight.role)) then
+        if leftX > -1 and leftX <= cfg.ahead and (not cfg.mine or ForRole(cast.ability, fight.role)) then
             num = num + 1
-            if num > s.count then
+            if num > cfg.count then
                 break
             end
-            local b = Bar(num)
+            local widget = Bar(num)
             local c = Colour(cast.ability.category)
-            b:SetStatusBarColor(c[1], c[2], c[3], cast.guess and 0.5 or 0.9)
-            b:SetMinMaxValues(0, s.ahead)
-            b:SetValue(math.max(0, s.ahead - leftX))
+            widget:SetStatusBarColor(c[1], c[2], c[3], cast.guess and 0.5 or 0.9)
+            widget:SetMinMaxValues(0, cfg.ahead)
+            widget:SetValue(math.max(0, cfg.ahead - leftX))
             local icon = C_Spell.GetSpellTexture(cast.ability.spellID)
-            b.icon:SetTexture((not Secret(icon) and icon) or 134400)
-            b.name:SetText(
+            widget.icon:SetTexture((not Secret(icon) and icon) or 134400)
+            widget.name:SetText(
                 cast.ability.name
                     .. (cast.guess and (" |cffaaaaaa(P" .. cast.ability.phase .. ", est.)|r") or "")
             )
-            b.time:SetText(leftX > 0 and ("%.0f"):format(leftX) or "NOW")
-            b:Show()
+            widget.time:SetText(leftX > 0 and ("%.0f"):format(leftX) or "NOW")
+            widget:Show()
         end
     end
     for idx = num + 1, #barList do
@@ -354,8 +354,8 @@ end
 local function StartAlerts(f, phase, start)
     run = run + 1
     local mine = run
-    local s = Settings()
-    if not (s.alerts and mod.ShowReminder) then
+    local cfg = Settings()
+    if not (cfg.alerts and mod.ShowReminder) then
         return 0
     end
     local diff = ALERT_DIFF[f.difficulty]
@@ -378,7 +378,7 @@ local function StartAlerts(f, phase, start)
                         if run ~= mine or fight ~= f or not Condition(alert) then
                             return
                         end
-                        local speak = s.tts
+                        local speak = cfg.tts
                                 and (alert.TTS ~= false)
                                 and (type(alert.TTS) == "string" and alert.TTS or true)
                             or false
@@ -608,8 +608,8 @@ events:SetScript("OnEvent", function(_, evt, encID, _, difficulty)
     if Secret(encID) or Secret(difficulty) then
         return
     end
-    local s = Settings()
-    if s.bars or s.alerts then
+    local cfg = Settings()
+    if cfg.bars or cfg.alerts then
         mod.StartTimeline(encID, difficulty)
     end
 end)

@@ -251,9 +251,9 @@ if not CludesUI.NotifyElementResized then
             local eab = CludesUI.Lite
                 and CludesUI.Lite.GetAddon
                 and CludesUI.Lite.GetAddon("CludesUIActionBars", true)
-            local s = eab and eab.db and eab.db.profile and eab.db.profile.bars and eab.db.profile.bars[key]
-            if s then
-                local g = (s.growDirection or "up"):upper()
+            local cfg = eab and eab.db and eab.db.profile and eab.db.profile.bars and eab.db.profile.bars[key]
+            if cfg then
+                local g = (cfg.growDirection or "up"):upper()
                 if g ~= "UP" then
                     growDir = g
                 end
@@ -333,9 +333,9 @@ end
 -- CollectAndReanchor once async icon population settles). Without CDM nobody
 -- triggers EnsureUnlockCore or the final layout pass, so fire it from here.
 do
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("PLAYER_ENTERING_WORLD")
-    f:SetScript("OnEvent", function(self)
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    frame:SetScript("OnEvent", function(self)
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
         C_Timer.After(1.5, function()
             -- CDM already ran EnsureUnlockCore and fires the pass itself.
@@ -370,9 +370,9 @@ end
 -- Deliberately NOT EnsureLoaded: that would pull the whole LoadOnDemand options
 -- addon into every login.
 do
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("PLAYER_LOGIN")
-    f:SetScript("OnEvent", function(self)
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("PLAYER_LOGIN")
+    frame:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
         CludesUI:EnsureUnlockCore()
         if CludesUI._applySavedPositions then
@@ -417,15 +417,15 @@ do
 
     local elements = {}
     for key, def in pairs(EDGES) do
-        local f = CreateFrame("Frame", nil, UIParent)
+        local frame = CreateFrame("Frame", nil, UIParent)
         if def[6] == "W" then
-            f:SetWidth(1)
+            frame:SetWidth(1)
         else
-            f:SetHeight(1)
+            frame:SetHeight(1)
         end
-        f:SetPoint(def[1], UIParent, def[2], 0, 0)
-        f:SetPoint(def[3], UIParent, def[4], 0, 0)
-        strips[key] = f
+        frame:SetPoint(def[1], UIParent, def[2], 0, 0)
+        frame:SetPoint(def[3], UIParent, def[4], 0, 0)
+        strips[key] = frame
         elements[#elements + 1] = {
             key = key,
             label = def[5],

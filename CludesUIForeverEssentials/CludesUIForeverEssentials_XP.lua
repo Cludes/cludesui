@@ -97,44 +97,44 @@ local function StartLevel(cfg, fromStart, level)
 end
 
 local function TrackSplits(newLevel)
-    local s = Splits()
-    if not s then
+    local cfg = Splits()
+    if not cfg then
         return
     end
     if not current then
-        local saved = s.current
+        local saved = cfg.current
         if saved and saved.level == UnitLevel("player") then
             current, anchor = saved, not paused and GetTime() or nil
         else
-            StartLevel(s, UnitXP("player") == 0)
+            StartLevel(cfg, UnitXP("player") == 0)
         end
     end
     local level = newLevel or UnitLevel("player")
     if level > current.level then
-        s.levels[current.level] = { total = not current.partial and LevelTime() or nil }
-        StartLevel(s, true, level)
+        cfg.levels[current.level] = { total = not current.partial and LevelTime() or nil }
+        StartLevel(cfg, true, level)
     elseif not anchor and not paused then
         anchor = GetTime()
     end
 end
 
 local function Btn(hostFrame, textValue, tipText, func)
-    local b = CreateFrame("Button", nil, hostFrame)
-    b:SetSize(16, 16)
-    b.t = b:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(b.t, 12, "essentials")
-    b.t:SetPoint("CENTER")
-    b.t:SetText(textValue)
-    b:SetScript("OnClick", func)
-    b:SetScript("OnEnter", function(self)
+    local widget = CreateFrame("Button", nil, hostFrame)
+    widget:SetSize(16, 16)
+    widget.t = widget:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(widget.t, 12, "essentials")
+    widget.t:SetPoint("CENTER")
+    widget.t:SetText(textValue)
+    widget:SetScript("OnClick", func)
+    widget:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetText(tipText)
         GameTooltip:Show()
     end)
-    b:SetScript("OnLeave", function()
+    widget:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-    return b
+    return widget
 end
 
 local Update
@@ -255,9 +255,9 @@ Update = function()
         )
     end
     if X.Get("splits") then
-        local s = Splits()
+        local cfg = Splits()
         local keyList = {}
-        for level, rec in pairs(s and s.levels or {}) do
+        for level, rec in pairs(cfg and cfg.levels or {}) do
             if type(level) == "number" and rec.total and (not current or level < current.level) then
                 keyList[#keyList + 1] = level
             end
@@ -268,7 +268,7 @@ Update = function()
         for index = 1, math.min(#keyList, X.Get("history")) do
             lines[#lines + 1] = ("|cff9aa6b2Level %d  %s|r"):format(
                 keyList[index],
-                Clock(s.levels[keyList[index]].total)
+                Clock(cfg.levels[keyList[index]].total)
             )
         end
     end

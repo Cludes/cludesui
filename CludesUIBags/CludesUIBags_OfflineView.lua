@@ -353,33 +353,33 @@ end)
 --  the panel: a bar (bank/warband, saved time, gold) over a scrolling grid
 -------------------------------------------------------------------------------
 local function TabButton(val, textValue, key)
-    local b = CreateFrame("Button", nil, val.bar)
-    b:SetHeight(BAR_H)
-    b.text = b:CreateFontString(nil, "OVERLAY")
-    SetFont(b.text, 12)
-    b.text:SetPoint("CENTER")
-    b.text:SetText(textValue)
-    b:SetWidth(b.text:GetStringWidth() + 16)
-    b.line = b:CreateTexture(nil, "OVERLAY")
-    b.line:SetPoint("BOTTOMLEFT", 6, 0)
-    b.line:SetPoint("BOTTOMRIGHT", -6, 0)
-    b.line:SetHeight(2)
-    b.key = key
-    b:SetScript("OnClick", function()
+    local widget = CreateFrame("Button", nil, val.bar)
+    widget:SetHeight(BAR_H)
+    widget.text = widget:CreateFontString(nil, "OVERLAY")
+    SetFont(widget.text, 12)
+    widget.text:SetPoint("CENTER")
+    widget.text:SetText(textValue)
+    widget:SetWidth(widget.text:GetStringWidth() + 16)
+    widget.line = widget:CreateTexture(nil, "OVERLAY")
+    widget.line:SetPoint("BOTTOMLEFT", 6, 0)
+    widget.line:SetPoint("BOTTOMRIGHT", -6, 0)
+    widget.line:SetHeight(2)
+    widget.key = key
+    widget:SetScript("OnClick", function()
         val.viewTab = key
         Repaint(val)
     end)
-    b:SetScript("OnEnter", function(self)
+    widget:SetScript("OnEnter", function(self)
         if val.viewTab ~= self.key then
             self.text:SetTextColor(1, 1, 1)
         end
     end)
-    b:SetScript("OnLeave", function(self)
+    widget:SetScript("OnLeave", function(self)
         if val.viewTab ~= self.key then
             self.text:SetTextColor(0.6, 0.6, 0.6)
         end
     end)
-    return b
+    return widget
 end
 
 local function PaintTabs(val)
@@ -520,39 +520,39 @@ local function SlotOnLeave(self)
     GameTooltip:Hide()
 end
 local function SlotOnClick(self)
-    local s = self.str
-    if not s then
+    local text = self.str
+    if not text then
         return
     end
     -- items saved as strings get their full link back from the item cache
-    local itemLink = s:find("|H", 1, true) and s or select(2, GetItemInfo(s))
+    local itemLink = text:find("|H", 1, true) and text or select(2, GetItemInfo(text))
     if itemLink then
         HandleModifiedItemClick(itemLink)
     end
 end
 
 local function Slot(val, i)
-    local b = val.slots[i]
-    if b then
-        return b
+    local widget = val.slots[i]
+    if widget then
+        return widget
     end
-    b = CreateFrame("Button", nil, val.child)
-    mod.SizeSlot(b)
-    b.icon = b:CreateTexture(nil, "ARTWORK")
-    b.icon:SetAllPoints()
-    b.Count = b:CreateFontString(nil, "OVERLAY")
-    b.Count:SetPoint("BOTTOMRIGHT", -2, 2)
-    b.Level = b:CreateFontString(nil, "OVERLAY")
-    b.Level:SetPoint("TOPLEFT", 1, -1)
-    local highlight = b:CreateTexture(nil, "HIGHLIGHT")
+    widget = CreateFrame("Button", nil, val.child)
+    mod.SizeSlot(widget)
+    widget.icon = widget:CreateTexture(nil, "ARTWORK")
+    widget.icon:SetAllPoints()
+    widget.Count = widget:CreateFontString(nil, "OVERLAY")
+    widget.Count:SetPoint("BOTTOMRIGHT", -2, 2)
+    widget.Level = widget:CreateFontString(nil, "OVERLAY")
+    widget.Level:SetPoint("TOPLEFT", 1, -1)
+    local highlight = widget:CreateTexture(nil, "HIGHLIGHT")
     highlight:SetAllPoints()
     highlight:SetColorTexture(1, 1, 1, 0.08)
-    mod.CreateInsetBorder(b, true)
-    b:SetScript("OnEnter", SlotOnEnter)
-    b:SetScript("OnLeave", SlotOnLeave)
-    b:SetScript("OnClick", SlotOnClick)
-    val.slots[i] = b
-    return b
+    mod.CreateInsetBorder(widget, true)
+    widget:SetScript("OnEnter", SlotOnEnter)
+    widget:SetScript("OnLeave", SlotOnLeave)
+    widget:SetScript("OnClick", SlotOnClick)
+    val.slots[i] = widget
+    return widget
 end
 
 local function Head(val, i)
@@ -1023,14 +1023,14 @@ Paint = function(val, force)
             end
             for i, item in ipairs(group.items) do
                 isShown = isShown + 1
-                local b = Slot(val, isShown)
-                b:ClearAllPoints()
-                b:SetPoint(
+                local widget = Slot(val, isShown)
+                widget:ClearAllPoints()
+                widget:SetPoint(
                     "TOPLEFT",
                     PAD + 5 + ((i - 1) % cols) * (SLOT_SIZE + SPACING),
                     posY - math.floor((i - 1) / cols) * (SLOT_SIZE + SPACING)
                 )
-                PaintSlot(b, item)
+                PaintSlot(widget, item)
             end
             posY = posY - math.ceil(#group.items / cols) * (SLOT_SIZE + SPACING) - 6
         end
@@ -1254,34 +1254,34 @@ if CUI_Bank then
         if rowList[i] then
             return rowList[i]
         end
-        local b = CreateFrame("Button", nil, bankView.side)
-        b:SetHeight(ROW_H)
+        local widget = CreateFrame("Button", nil, bankView.side)
+        widget:SetHeight(ROW_H)
         local px = CUI.PP.mult
-        b.ind = b:CreateTexture(nil, "OVERLAY")
-        b.ind:SetWidth(px * 2)
-        b.ind:SetPoint("TOPLEFT")
-        b.ind:SetPoint("BOTTOMLEFT")
-        b.bg = b:CreateTexture(nil, "BACKGROUND", nil, 2)
-        b.bg:SetAllPoints()
-        b.icon = b:CreateTexture(nil, "ARTWORK")
-        b.icon:SetSize(ICON, ICON)
-        b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        b.label = b:CreateFontString(nil, "OVERLAY")
-        SetFont(b.label, 11)
-        b.label:SetJustifyH("LEFT")
-        b.label:SetWordWrap(false)
-        b.label:SetPoint("LEFT", b.icon, "RIGHT", 6, 0)
-        b.label:SetPoint("RIGHT", b, "RIGHT", -30, 0)
-        b.count = b:CreateFontString(nil, "OVERLAY")
-        SetFont(b.count, 10)
-        b.count:SetJustifyH("RIGHT")
-        b.count:SetTextColor(0.5, 0.5, 0.5)
-        b.count:SetPoint("RIGHT", -6, 0)
-        b:SetScript("OnClick", function(self)
+        widget.ind = widget:CreateTexture(nil, "OVERLAY")
+        widget.ind:SetWidth(px * 2)
+        widget.ind:SetPoint("TOPLEFT")
+        widget.ind:SetPoint("BOTTOMLEFT")
+        widget.bg = widget:CreateTexture(nil, "BACKGROUND", nil, 2)
+        widget.bg:SetAllPoints()
+        widget.icon = widget:CreateTexture(nil, "ARTWORK")
+        widget.icon:SetSize(ICON, ICON)
+        widget.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        widget.label = widget:CreateFontString(nil, "OVERLAY")
+        SetFont(widget.label, 11)
+        widget.label:SetJustifyH("LEFT")
+        widget.label:SetWordWrap(false)
+        widget.label:SetPoint("LEFT", widget.icon, "RIGHT", 6, 0)
+        widget.label:SetPoint("RIGHT", widget, "RIGHT", -30, 0)
+        widget.count = widget:CreateFontString(nil, "OVERLAY")
+        SetFont(widget.count, 10)
+        widget.count:SetJustifyH("RIGHT")
+        widget.count:SetTextColor(0.5, 0.5, 0.5)
+        widget.count:SetPoint("RIGHT", -6, 0)
+        widget:SetScript("OnClick", function(self)
             bankView.viewTab = self.key
             Repaint(bankView)
         end)
-        b:SetScript("OnEnter", function(self)
+        widget:SetScript("OnEnter", function(self)
             if not self.on then
                 self.bg:SetColorTexture(1, 1, 1, 0.06)
             end
@@ -1289,14 +1289,14 @@ if CUI_Bank then
                 CUI.ShowWidgetTooltip(self, self.name .. " (" .. self.n .. ")")
             end
         end)
-        b:SetScript("OnLeave", function(self)
+        widget:SetScript("OnLeave", function(self)
             if not self.on then
                 self.bg:SetColorTexture(1, 1, 1, 0)
             end
             CUI.HideWidgetTooltip()
         end)
-        rowList[i] = b
-        return b
+        rowList[i] = widget
+        return widget
     end
 
     local function Used(tbl)

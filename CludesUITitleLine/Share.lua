@@ -155,9 +155,9 @@ end
 -- what was seen when you last grouped, else nothing.
 function Share.Keys(key)
     local slug = mod.Data.season.slug
-    local s = CludesUITitleLineDB.shared[key]
-    if s and s.season == slug then
-        return s, "shared"
+    local cfg = CludesUITitleLineDB.shared[key]
+    if cfg and cfg.season == slug then
+        return cfg, "shared"
     end
     local seen = CludesUITitleLineDB.seen[key]
     if seen and seen.season == slug and seen.runs and #seen.runs > 0 then

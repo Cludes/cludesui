@@ -2011,34 +2011,34 @@ local function ZoneMenu(ownerFrame, zones, progress, choose)
 end
 
 local function Tools(hostFrame, key, onZone, onSearch, getSearch, extra)
-    local t = tools[key]
-    if not t then
-        t = {}
-        t.zone = CludesUI.Kit.Button(hostFrame, "", 90, 22, nil, { key = "essentials" })
-        t.zone:SetSize(200, 22)
-        t.zone:SetPoint("LEFT", hostFrame, "LEFT", 0, 0)
-        t.zone:SetScript("OnClick", function(self)
+    local tbl = tools[key]
+    if not tbl then
+        tbl = {}
+        tbl.zone = CludesUI.Kit.Button(hostFrame, "", 90, 22, nil, { key = "essentials" })
+        tbl.zone:SetSize(200, 22)
+        tbl.zone:SetPoint("LEFT", hostFrame, "LEFT", 0, 0)
+        tbl.zone:SetScript("OnClick", function(self)
             onZone(self)
         end)
-        t.search = CludesUI.Kit.Input(hostFrame, 160, 22, "Search", "essentials")
-        t.search:SetPoint("LEFT", t.zone, "RIGHT", 10, 0)
-        t.search:HookScript("OnTextChanged", function(self, user)
+        tbl.search = CludesUI.Kit.Input(hostFrame, 160, 22, "Search", "essentials")
+        tbl.search:SetPoint("LEFT", tbl.zone, "RIGHT", 10, 0)
+        tbl.search:HookScript("OnTextChanged", function(self, user)
             if user then
                 onSearch(self:GetText())
             end
         end)
-        t.check = CludesUI.Kit.Check(hostFrame, "", function(self)
+        tbl.check = CludesUI.Kit.Check(hostFrame, "", function(self)
             extra.set(self:GetChecked())
         end, "essentials")
-        t.check:SetPoint("LEFT", t.search, "RIGHT", 12, 0)
-        tools[key] = t
+        tbl.check:SetPoint("LEFT", tbl.search, "RIGHT", 12, 0)
+        tools[key] = tbl
     end
-    t.zone:Show()
-    t.search:Show()
-    t.check:Show()
-    t.check:SetLabel(extra.label)
-    t.check:SetChecked(extra.get())
-    return t
+    tbl.zone:Show()
+    tbl.search:Show()
+    tbl.check:Show()
+    tbl.check:SetLabel(extra.label)
+    tbl.check:SetChecked(extra.get())
+    return tbl
 end
 
 local function QuestRow(R2, ident, indent)
@@ -2130,7 +2130,7 @@ end
 local function DrawQuests(R2, hostFrame)
     CludesUI.Kit.SyncAccent(ACCENT)
     Q.Refresh()
-    local t = Tools(hostFrame, "quests", function(self)
+    local tbl = Tools(hostFrame, "quests", function(self)
         ZoneMenu(self, Q.Zones(), Q.ZoneProgress, function(zone)
             questZone = zone
             module.DiscoveryRedraw()
@@ -2153,7 +2153,7 @@ local function DrawQuests(R2, hostFrame)
     local num, sum = Q.Progress()
     local search = questSearch:lower()
     if #search >= 2 then
-        t.zone:SetText("Search results")
+        tbl.zone:SetText("Search results")
         local found, count = Q.Search(search, 200)
         R2:Line(("%d quests match"):format(count), { colour = MUTED })
         for _, entry in ipairs(found) do
@@ -2166,7 +2166,7 @@ local function DrawQuests(R2, hostFrame)
         return
     end
     if questZone == false then
-        t.zone:SetText("All zones")
+        tbl.zone:SetText("All zones")
         R2:Line(
             ("Quest List  %s"):format(Muted(("%d of %d done"):format(num, sum))),
             { size = 16, colour = ACCENT }
@@ -2188,11 +2188,11 @@ local function DrawQuests(R2, hostFrame)
     end
     local zone = questZone or Q.CurrentZone()
     if not zone then
-        t.zone:SetText("Pick a zone")
+        tbl.zone:SetText("Pick a zone")
         R2:Line("This place has no quests in the list. Pick a zone above.", { colour = MUTED })
         return
     end
-    t.zone:SetText(zone.name)
+    tbl.zone:SetText(zone.name)
     DrawQuestZone(R2, zone)
 end
 
@@ -2223,7 +2223,7 @@ end
 
 local function DrawRares(R2, hostFrame)
     CludesUI.Kit.SyncAccent(ACCENT)
-    local t = Tools(hostFrame, "rares", function(self)
+    local tbl = Tools(hostFrame, "rares", function(self)
         ZoneMenu(self, R.Zones(), R.ZoneProgress, function(zone)
             rareZone = zone
             module.DiscoveryRedraw()
@@ -2246,7 +2246,7 @@ local function DrawRares(R2, hostFrame)
     local search = rareSearch:lower()
     local hide = Get("rareHideKilled")
     if #search >= 2 then
-        t.zone:SetText("Search results")
+        tbl.zone:SetText("Search results")
         local found, count = R.Search(search, 200)
         R2:Line(("%d rares match"):format(count), { colour = MUTED })
         for _, entry in ipairs(found) do
@@ -2260,7 +2260,7 @@ local function DrawRares(R2, hostFrame)
     end
     local num, sum = R.Progress()
     if rareZone == false then
-        t.zone:SetText("All zones")
+        tbl.zone:SetText("All zones")
         R2:Line(
             ("Rares  %s"):format(Muted(("%d of %d killed"):format(num, sum))),
             { size = 16, colour = ACCENT }
@@ -2281,11 +2281,11 @@ local function DrawRares(R2, hostFrame)
     end
     local zone = rareZone or R.CurrentZone()
     if not zone then
-        t.zone:SetText("Pick a zone")
+        tbl.zone:SetText("Pick a zone")
         R2:Line("This place has no rares in the list. Pick a zone above.", { colour = MUTED })
         return
     end
-    t.zone:SetText(zone.name)
+    tbl.zone:SetText(zone.name)
     local zn, zt = R.ZoneProgress(zone)
     R2:Line(
         ("%s  %s"):format(zone.name, Muted(("%d of %d killed"):format(zn, zt))),

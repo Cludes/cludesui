@@ -101,16 +101,16 @@ mod._RFAnchorPing = function(skinData)
     if not popFrame then
         return
     end
-    local s = skinData._isParty and mod._scaledPartyProxy
+    local cfg = skinData._isParty and mod._scaledPartyProxy
         or (skinData._isExtra and mod._scaledExtraProxy)
         or mod._scaledProfile
-    local size = PixelSnap(s.pingMarkerSize or 30)
+    local size = PixelSnap(cfg.pingMarkerSize or 30)
     popFrame:SetSize(size, size)
     popFrame._factor = size / 30
-    local owner = mod.RF_AnchorHost(skinData.health, s)
-    local place = s.pingMarkerPosition or "center"
-    local ox = s.pingMarkerOffsetX or 0
-    local oy = s.pingMarkerOffsetY or 0
+    local owner = mod.RF_AnchorHost(skinData.health, cfg)
+    local place = cfg.pingMarkerPosition or "center"
+    local ox = cfg.pingMarkerOffsetX or 0
+    local oy = cfg.pingMarkerOffsetY or 0
     popFrame:ClearAllPoints()
     if place == "topleft" then
         popFrame:SetPoint("TOPLEFT", owner, "TOPLEFT", 2 + ox, -2 + oy)
@@ -197,10 +197,10 @@ mod._RFPingLight = function(btnFrame, kit)
         return
     end
     local skinData = GetFFD(btnFrame)
-    local s = skinData._isParty and mod._scaledPartyProxy
+    local cfg = skinData._isParty and mod._scaledPartyProxy
         or (skinData._isExtra and mod._scaledExtraProxy)
         or mod._scaledProfile
-    if s.showPingMarker == false then
+    if cfg.showPingMarker == false then
         return
     end
     local popFrame = mod._RFPingOverlay(btnFrame, skinData)
@@ -543,7 +543,7 @@ local function UpdateButton(btnFrame)
         return
     end
 
-    local s = skinData._isParty and mod._scaledPartyProxy
+    local cfg = skinData._isParty and mod._scaledPartyProxy
         or (skinData._isExtra and mod._scaledExtraProxy)
         or mod._scaledProfile
     -- Restore alpha respecting BM frame alpha + range alpha. nil rangeAlpha = managed by the
@@ -558,7 +558,7 @@ local function UpdateButton(btnFrame)
     end
 
     -- Health: percent-based, secret-value safe; smooth interpolation optional.
-    local smooth = s.smoothBars
+    local smooth = cfg.smoothBars
         and Enum
         and Enum.StatusBarInterpolation
         and Enum.StatusBarInterpolation.ExponentialEaseOut
@@ -590,9 +590,9 @@ local function UpdateButton(btnFrame)
         end
 
         if connected and not deadOrGhost then
-            local red, green, blue = GetHealthColor(unitToken, s)
+            local red, green, blue = GetHealthColor(unitToken, cfg)
             local fillTex = health:GetStatusBarTexture()
-            if s.healthColorMode == "dark" then
+            if cfg.healthColorMode == "dark" then
                 health:SetStatusBarColor(red, green, blue, 1)
                 -- 4th return of GetDarkModeFill() is the Dark Mode Fill Opacity.
                 if fillTex then
@@ -602,22 +602,22 @@ local function UpdateButton(btnFrame)
                 if fillTex then
                     fillTex:SetAlpha(1)
                 end
-                health:SetStatusBarColor(red, green, blue, (s.healthBarOpacity or 100) / 100)
+                health:SetStatusBarColor(red, green, blue, (cfg.healthBarOpacity or 100) / 100)
             end
         end
     end
 
     -- Background (+ dead/offline status tint). Centralized in ns._ApplyHealthBg so the lightweight UNIT_HEALTH path stays in lockstep.
-    mod._ApplyHealthBg(skinData, health, s, unitToken, connected, deadOrGhost)
+    mod._ApplyHealthBg(skinData, health, cfg, unitToken, connected, deadOrGhost)
 
     -- Power (filtered by role + hide if unit has no power)
-    mod._PaintPower(btnFrame, skinData, s, unitToken)
+    mod._PaintPower(btnFrame, skinData, cfg, unitToken)
 
     -- Absorb (full paint: re-read the reduced-max percent too)
     skinData._rmhPct = nil
     UpdateAbsorb(btnFrame, unitToken)
 
-    mod._PaintButtonTail(btnFrame, skinData, s, unitToken)
+    mod._PaintButtonTail(btnFrame, skinData, cfg, unitToken)
 end
 
 -- Power bar layout + value: role-gated show/hide, health-height reflow, then the
@@ -876,11 +876,11 @@ mod._RFRepaintLevel = function(btnFrame)
         return
     end
     mod.RF_TextNames(skinData, unitToken)
-    local s = skinData._txS
-    if p.nameAttach and skinData.topNameBarText and s.topNameBarEnabled then
+    local cfg = skinData._txS
+    if p.nameAttach and skinData.topNameBarText and cfg.topNameBarEnabled then
         mod._RFNameWithLevel(
             skinData.topNameBarText,
-            ResolveDisplayName(unitToken, false, s),
+            ResolveDisplayName(unitToken, false, cfg),
             unitToken,
             p.nameAttach
         )
@@ -1003,15 +1003,15 @@ local function UpdateReadyCheck(btnFrame, unitToken)
     -- Party/extra-aware settings source, same as every other indicator updater.
     -- AnchorReadyCheck already resolves LIVE this way, so a raw db.profile read
     -- here re-sized the shared texture back to the RAID value on every paint.
-    local s = skinData._isParty and mod._scaledPartyProxy
+    local cfg = skinData._isParty and mod._scaledPartyProxy
         or (skinData._isExtra and mod._scaledExtraProxy)
         or mod._scaledProfile
 
-    local sz = PixelSnap(s.readyCheckSize or 20)
+    local sz = PixelSnap(cfg.readyCheckSize or 20)
     texture:SetSize(sz, sz)
 
     -- Ready check (priority)
-    if s.showReadyCheck and readyCheckActive then
+    if cfg.showReadyCheck and readyCheckActive then
         local status = GetReadyCheckStatus(unitToken)
         if status == "ready" then
             texture:SetAtlas("UI-LFG-ReadyMark-Raid")
@@ -1029,7 +1029,7 @@ local function UpdateReadyCheck(btnFrame, unitToken)
     end
 
     -- Incoming summon
-    if s.showSummonPending and unitToken and C_IncomingSummon.HasIncomingSummon(unitToken) then
+    if cfg.showSummonPending and unitToken and C_IncomingSummon.HasIncomingSummon(unitToken) then
         local sStatus = C_IncomingSummon.IncomingSummonStatus(unitToken)
         if sStatus == SUMMON_STATUS_PENDING then
             texture:SetAtlas("RaidFrame-Icon-SummonPending")
@@ -1048,7 +1048,7 @@ local function UpdateReadyCheck(btnFrame, unitToken)
 
     -- Incoming resurrection (cast in flight, or the latched unaccepted-offer window
     -- -- see ns._RFRezShown). Lowest priority; shows a body is already being picked up.
-    if s.showIncomingRez and unitToken and mod._RFRezShown(unitToken) then
+    if cfg.showIncomingRez and unitToken and mod._RFRezShown(unitToken) then
         texture:SetAtlas("RaidFrame-Icon-Rez")
         texture:Show()
         return
@@ -1195,10 +1195,10 @@ end)
 mod._UpdateRaidMarkers = function()
     local function updateMarker(unitToken, button)
         local skinData = GetFFD(button)
-        local s = skinData._isParty and mod._scaledPartyProxy
+        local cfg = skinData._isParty and mod._scaledPartyProxy
             or (skinData._isExtra and mod._scaledExtraProxy)
             or mod._scaledProfile
-        if not s.showRaidMarker then
+        if not cfg.showRaidMarker then
             if skinData.raidMarker then
                 skinData.raidMarker:Hide()
             end
@@ -1443,7 +1443,7 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
     if not skinData.styled then
         return
     end
-    local s = skinData._isParty and mod._scaledPartyProxy
+    local cfg = skinData._isParty and mod._scaledPartyProxy
         or (skinData._isExtra and mod._scaledExtraProxy)
         or mod._scaledProfile
 
@@ -1460,7 +1460,7 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
             skinData._hb100 = true
             health:SetMinMaxValues(0, 100)
         end
-        local smooth = s.smoothBars
+        local smooth = cfg.smoothBars
             and Enum
             and Enum.StatusBarInterpolation
             and Enum.StatusBarInterpolation.ExponentialEaseOut
@@ -1480,7 +1480,7 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
         -- modes stamp the applied color and re-run only on a real change
         -- (every static-mode component is a plain value by construction).
         if connected and not deadOrGhost then
-            local mode = s.healthColorMode
+            local mode = cfg.healthColorMode
             local red, green, blue
             if mode == nil or mode == "class" then
                 -- Class color is identity, not health: resolve the class token
@@ -1505,16 +1505,16 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
                     red, green, blue = 0.5, 0.5, 0.5
                 end
             else
-                red, green, blue = GetHealthColor(unitToken, s)
+                red, green, blue = GetHealthColor(unitToken, cfg)
             end
             if mode == "classic" or mode == "customDynamic" or mode == "classReactive" then
                 local fillTex = health:GetStatusBarTexture()
                 if fillTex then
                     fillTex:SetAlpha(1)
                 end
-                health:SetStatusBarColor(red, green, blue, (s.healthBarOpacity or 100) / 100)
+                health:SetStatusBarColor(red, green, blue, (cfg.healthBarOpacity or 100) / 100)
             else
-                local a = (mode == "dark") and 1 or (s.healthBarOpacity or 100) / 100
+                local a = (mode == "dark") and 1 or (cfg.healthBarOpacity or 100) / 100
                 if skinData._hcR ~= red or skinData._hcG ~= green or skinData._hcB ~= blue or skinData._hcA ~= a or skinData._hcM ~= mode then
                     skinData._hcR, skinData._hcG, skinData._hcB, skinData._hcA, skinData._hcM = red, green, blue, a, mode
                     local fillTex = health:GetStatusBarTexture()
@@ -1544,11 +1544,11 @@ mod._UpdateButtonHealth = function(btnFrame, unitToken)
     end
 
     -- Status text (dead/ghost state changes with health)
-    mod._PaintStatusText(skinData, s, unitToken, connected, deadOrGhost)
+    mod._PaintStatusText(skinData, cfg, unitToken, connected, deadOrGhost)
 
     -- Background + dead/offline tint. This path owns death/resurrect transitions
     -- arriving via UNIT_HEALTH, so it runs per tick (state-stamped inside).
-    mod._ApplyHealthBg(skinData, health, s, unitToken, connected, deadOrGhost)
+    mod._ApplyHealthBg(skinData, health, cfg, unitToken, connected, deadOrGhost)
 
     -- Debuff Manager dead-corpse swap rides the same ownership: one field read
     -- for every button without a qualifying config.

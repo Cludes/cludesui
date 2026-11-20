@@ -161,15 +161,15 @@ function ERF:OnEnable()
 
     -- Size + position party container from profile
     do
-        local s = saved.profile
-        local pw, ph, pcs = mod.RF_PartyDims(s)
+        local cfg = saved.profile
+        local pw, ph, pcs = mod.RF_PartyDims(cfg)
         mod._SizePartyContainer(
             PixelSnap(pw),
             PixelSnap(ph),
-            PixelSnap(pcs) + mod.PT_AlongPitch(s),
-            mod._PartyGrowth(s)
+            PixelSnap(pcs) + mod.PT_AlongPitch(cfg),
+            mod._PartyGrowth(cfg)
         )
-        local place = s.partyUnlockPos
+        local place = cfg.partyUnlockPos
         -- Skip the saved-pos SetPoint when element-anchored with resolved
         -- geometry: the unlock anchor system owns the position.
         local anchored = CludesUI.IsUnlockAnchored
@@ -273,15 +273,15 @@ function ERF:OnEnable()
             mod._partyGeomDirtyInCombat = true
             return
         end
-        local s = mod.db.profile
-        local pw, ph, pcs = mod.RF_PartyDims(s)
+        local cfg = mod.db.profile
+        local pw, ph, pcs = mod.RF_PartyDims(cfg)
         mod._SizePartyContainer(
             PixelSnap(pw),
             PixelSnap(ph),
-            PixelSnap(pcs) + mod.PT_AlongPitch(s),
-            mod._PartyGrowth(s)
+            PixelSnap(pcs) + mod.PT_AlongPitch(cfg),
+            mod._PartyGrowth(cfg)
         )
-        local place = s.partyUnlockPos
+        local place = cfg.partyUnlockPos
         -- Skip the saved-pos SetPoint when element-anchored with resolved
         -- geometry: the unlock anchor system owns the position.
         local anchored = CludesUI.IsUnlockAnchored
@@ -514,8 +514,8 @@ function ERF:OnEnable()
         local XF = mod._XF
         if XF then
             for i = 1, #XF.trackers do
-                local b = XF.buttons[i]
-                local unitToken = b and b:IsShown() and b:GetAttribute("unit")
+                local widget = XF.buttons[i]
+                local unitToken = widget and widget:IsShown() and widget:GetAttribute("unit")
                 if wanted and unitToken then
                     XF.trackers[i]:RegisterUnitEvent(evt, unitToken)
                 elseif not wanted then
@@ -739,8 +739,8 @@ function ERF:OnEnable()
             -- per name resolve; a fresh RGA install with no settings table
             -- yet simply reads as module-off.
             local function SyncRGAFlag()
-                local s = RG_ALTS_SETTINGS and RG_ALTS_SETTINGS.settings
-                mod._rgaNick = (s and s[mod.EXT_NICK.rgaModule]) and true or nil
+                local cfg = RG_ALTS_SETTINGS and RG_ALTS_SETTINGS.settings
+                mod._rgaNick = (cfg and cfg[mod.EXT_NICK.rgaModule]) and true or nil
                 if mod.RefreshAllNames then
                     mod.RefreshAllNames()
                 end
@@ -760,8 +760,8 @@ function ERF:OnEnable()
                     SyncRGAFlag()
                 end
             end)
-            local s = RG_ALTS_SETTINGS and RG_ALTS_SETTINGS.settings
-            mod._rgaNick = (s and s[mod.EXT_NICK.rgaModule]) and true or nil
+            local cfg = RG_ALTS_SETTINGS and RG_ALTS_SETTINGS.settings
+            mod._rgaNick = (cfg and cfg[mod.EXT_NICK.rgaModule]) and true or nil
             mod._rgaliasNickHooked = true
             return true
         end

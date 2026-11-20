@@ -272,40 +272,40 @@ end
 -- one per target, and zero cost until the first target registers.
 MouseoverScan = function(rawX, rawY)
     for idx = 1, #mouseoverTargets do
-        local t = mouseoverTargets[idx]
-        local widget = t.frame
+        local tbl = mouseoverTargets[idx]
+        local widget = tbl.frame
         if widget then
             local active
-            if t._genSeen == _moGen then
-                active = t._genActive
+            if tbl._genSeen == _moGen then
+                active = tbl._genActive
             else
-                active = t.isActive() and true or false
-                t._genSeen = _moGen
-                t._genActive = active
+                active = tbl.isActive() and true or false
+                tbl._genSeen = _moGen
+                tbl._genActive = active
             end
             if active then
-                t._wasActive = true
+                tbl._wasActive = true
                 local over = IsCursorOver(widget, rawX, rawY)
                 -- Compared against true/false rather than truthiness, so the unknown
                 -- state (nil, at registration and after a deactivation) applies once
                 -- instead of being read as "already hidden".
                 if over then
-                    if t.visible ~= true then
-                        t.visible = true
-                        local ga = t.getAlpha
+                    if tbl.visible ~= true then
+                        tbl.visible = true
+                        local ga = tbl.getAlpha
                         widget:SetAlpha(ga and ga() or 1)
                         widget:EnableMouse(true)
                         widget:Show()
                     end
-                elseif t.visible ~= false then
-                    t.visible = false
+                elseif tbl.visible ~= false then
+                    tbl.visible = false
                     widget:Hide()
                 end
-            elseif t._wasActive then
+            elseif tbl._wasActive then
                 -- isActive just turned off -- clear tracking state and let
                 -- UpdateVisibility handle the alpha for the new mode.
-                t._wasActive = false
-                t.visible = nil
+                tbl._wasActive = false
+                tbl.visible = nil
             end
         end
     end

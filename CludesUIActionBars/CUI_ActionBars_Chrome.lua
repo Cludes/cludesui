@@ -136,8 +136,8 @@ function mod.AB_CapsVal(key, k)
     if not p then
         return nil
     end
-    local s = p.bars and p.bars[key]
-    local val = s and s[k]
+    local cfg = p.bars and p.bars[key]
+    local val = cfg and cfg[k]
     if val == nil then
         if key == "MainBar" then
             val = p[(k == "endCapArt") and "cuiEndCaps" or k]
@@ -171,11 +171,11 @@ end
 -- named bar's same side. Checklist choices always win.
 function mod.AB_CapsSides(key)
     local p = ABAR.db and ABAR.db.profile
-    local s = p and p.bars and p.bars[key]
-    if not s then
+    local cfg = p and p.bars and p.bars[key]
+    if not cfg then
         return false, false
     end
-    local l, region = s.endCapLeft, s.endCapRight
+    local l, region = cfg.endCapLeft, cfg.endCapRight
     if l == nil or region == nil then
         local sl, sr = p.endCapSpanLeft, p.endCapSpanRight
         local dl, dr = false, false

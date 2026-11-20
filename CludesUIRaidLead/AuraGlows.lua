@@ -27,15 +27,15 @@ local STYLE = "cui:rlead:auraglows"
 function mod.AuraGlowSettings()
     local p = mod.RaidLeadDB()
     p.auraGlows = p.auraGlows or {}
-    local s = p.auraGlows
-    if s.enabled == nil then
-        s.enabled = true
+    local cfg = p.auraGlows
+    if cfg.enabled == nil then
+        cfg.enabled = true
     end
-    if s.size == nil then
-        s.size = 44
+    if cfg.size == nil then
+        cfg.size = 44
     end
-    s.spells = s.spells or {} -- { spellID, ... }
-    return s
+    cfg.spells = cfg.spells or {} -- { spellID, ... }
+    return cfg
 end
 
 --- "123, 456 789" to a list of spell IDs.
@@ -93,9 +93,9 @@ local function Decorate(btnFrame)
 end
 
 local function Rebuild()
-    local s = mod.AuraGlowSettings()
-    local entries = s.enabled and s.spells or {}
-    local key = Key(s) .. (s.enabled and "" or "off")
+    local cfg = mod.AuraGlowSettings()
+    local entries = cfg.enabled and cfg.spells or {}
+    local key = Key(cfg) .. (cfg.enabled and "" or "off")
     if key == built then
         return
     end
@@ -111,11 +111,11 @@ local function Rebuild()
         boxHolder = nil
     end
     built = key
-    holderFrame:SetSize(math.max(1, #entries) * (s.size + GAP) - GAP, s.size)
+    holderFrame:SetSize(math.max(1, #entries) * (cfg.size + GAP) - GAP, cfg.size)
     if #entries == 0 then
         return
     end
-    AK.styles[STYLE] = { width = s.size, height = s.size }
+    AK.styles[STYLE] = { width = cfg.size, height = cfg.size }
     local success, err = pcall(function()
         local cont = AK.CreateContainerShell(holderFrame, { point = { "LEFT", holderFrame, "LEFT" } })
         if cont.SetFlowLayoutAxis and AnchorUtil and AnchorUtil.FlowLayoutAxis then
@@ -135,8 +135,8 @@ local function Rebuild()
                         Decorate(btnFrame)
                     end,
                     layout = {
-                        elementWidth = s.size,
-                        elementHeight = s.size,
+                        elementWidth = cfg.size,
+                        elementHeight = cfg.size,
                         elementSpacing = GAP,
                         lineSpacing = GAP,
                         layoutIndex = idx,

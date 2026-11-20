@@ -693,18 +693,18 @@ do
     local SK, PARTS = {}, {}
     local PLAIN = { ln = "%s | %s", nl = "%s | %s", diff = false }
     for i = 1, #textSlots do
-        local s = textSlots[i]
-        SK[s] = {
-            mode = s .. "ColorMode",
-            class = s .. "ClassColor",
-            color = s .. "Color",
-            nameOn = s .. "NameColorOn",
-            name = s .. "NameColor",
-            lvlOn = s .. "LevelColorOn",
-            lvl = s .. "LevelColor",
-            diff = s .. "LevelDiffOn",
+        local text = textSlots[i]
+        SK[text] = {
+            mode = text .. "ColorMode",
+            class = text .. "ClassColor",
+            color = text .. "Color",
+            nameOn = text .. "NameColorOn",
+            name = text .. "NameColor",
+            lvlOn = text .. "LevelColorOn",
+            lvl = text .. "LevelColor",
+            diff = text .. "LevelDiffOn",
         }
-        PARTS[s] = { ln = PLAIN.ln, nl = PLAIN.nl, diff = false }
+        PARTS[text] = { ln = PLAIN.ln, nl = PLAIN.nl, diff = false }
     end
     function mod.IsNameElement(part)
         return NAME_FAMILY[part] == true
@@ -929,9 +929,9 @@ do
     local TT, scrollFrame, IsZeroValue = CludesUI.TextTags, string.format, CludesUI.IsZeroValue
     local FS_KEY, FORMAT_KEY = {}, {}
     for i = 1, #textSlots do
-        local s = textSlots[i]
-        FS_KEY[s] = "custom" .. s:sub(9) -- textSlotTop -> customTop
-        FORMAT_KEY[s] = s .. "CustomFormat"
+        local text = textSlots[i]
+        FS_KEY[text] = "custom" .. text:sub(9) -- textSlotTop -> customTop
+        FORMAT_KEY[text] = text .. "CustomFormat"
     end
     mod.NP_CustomFSKey = FS_KEY
     -- The unit's name as the name slot writes it (the slot's Name Format).

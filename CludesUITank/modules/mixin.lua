@@ -167,34 +167,34 @@ function CoTankAuras_Mixin:ShowMockDebuffs()
     local max = math.min(self:MaxShownDebuffs(), #mocks)
     local nowTime = GetTime()
     for i = 1, #self.debuffs do
-        local f = self.debuffs[i]
+        local frame = self.debuffs[i]
         if i <= max then
-            f.auraInstanceID = nil
-            f.icon:SetTexture(mocks[i])
+            frame.auraInstanceID = nil
+            frame.icon:SetTexture(mocks[i])
             -- Stable mock stacks (varies per slot for visual variety)
             local stacks = (i == 2 or i == 4) and 3 or (i == 3) and 5 or 1
-            if stacks > 1 and not f.stackHidden then
-                f.count:SetText(stacks)
-                f.count:SetAlpha(1)
+            if stacks > 1 and not frame.stackHidden then
+                frame.count:SetText(stacks)
+                frame.count:SetAlpha(1)
             else
-                f.count:SetText("")
-                f.count:SetAlpha(0)
+                frame.count:SetText("")
+                frame.count:SetAlpha(0)
             end
             -- Mock cooldown sweep (each icon at a different point in its timer)
             local duration = 8 + (i * 2)
             local elapsed = (i * 1.7) % duration
-            f.cd:SetCooldown(nowTime - elapsed, duration)
-            f.expirationTime = nowTime + (duration - elapsed)
-            SetPreviewHighlight(f, stacks)
-            SetPreviewTypeBorder(f, i)
+            frame.cd:SetCooldown(nowTime - elapsed, duration)
+            frame.expirationTime = nowTime + (duration - elapsed)
+            SetPreviewHighlight(frame, stacks)
+            SetPreviewTypeBorder(frame, i)
             if highlightAt > 0 and stacks >= highlightAt then
                 anyAtThreshold = true
             end
-            f:SetAlpha(1)
+            frame:SetAlpha(1)
         else
-            SetPreviewHighlight(f, 0)
-            f:SetAlpha(0)
-            f.expirationTime = 0
+            SetPreviewHighlight(frame, 0)
+            frame:SetAlpha(0)
+            frame.expirationTime = 0
         end
     end
     mod.Alert:PreviewBanner(anyAtThreshold and mod.DB().stackBanner and true or false)
@@ -586,45 +586,45 @@ end)
 
 -- ── Icon frame factory ────────────────────────────────────────────────────
 local function CreateIconFrame(iconList, iconSize, anchorPoint, hostFrame, relativePoint, ofsx, ofsy)
-    local f = CreateFrame("Button", nil, hostFrame, "BackdropTemplate")
-    f:SetFrameStrata("MEDIUM")
-    f:SetMouseClickEnabled(true)
-    f:SetSize(iconSize, iconSize)
-    f:SetBackdrop({ edgeFile = K.BACKDROP_TEXTURE, edgeSize = 1 })
-    f:SetBackdropBorderColor(0, 0, 0, 0.7)
-    f.border = f
+    local frame = CreateFrame("Button", nil, hostFrame, "BackdropTemplate")
+    frame:SetFrameStrata("MEDIUM")
+    frame:SetMouseClickEnabled(true)
+    frame:SetSize(iconSize, iconSize)
+    frame:SetBackdrop({ edgeFile = K.BACKDROP_TEXTURE, edgeSize = 1 })
+    frame:SetBackdropBorderColor(0, 0, 0, 0.7)
+    frame.border = frame
 
     -- Icon with 30% TexCoord zoom (removes default blizzard icon padding)
-    f.icon = f:CreateTexture(nil, "ARTWORK")
-    f.icon:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -1)
-    f.icon:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, 1)
-    f.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    frame.icon = frame:CreateTexture(nil, "ARTWORK")
+    frame.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", 1, -1)
+    frame.icon:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -1, 1)
+    frame.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
-    f.cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
-    f.cd:SetAllPoints(f.icon)
-    f.cd:SetReverse(true)
+    frame.cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
+    frame.cd:SetAllPoints(frame.icon)
+    frame.cd:SetReverse(true)
 
     -- Stack count (position/size driven by ns.ApplyIconSettings)
-    f.count = f:CreateFontString(nil, "OVERLAY")
-    f.count:SetFont(mod.FontPath(), 9, mod.FontFlags())
-    f.count:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 2, 1)
-    f.count:SetTextColor(1, 1, 1)
+    frame.count = frame:CreateFontString(nil, "OVERLAY")
+    frame.count:SetFont(mod.FontPath(), 9, mod.FontFlags())
+    frame.count:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 2, 1)
+    frame.count:SetTextColor(1, 1, 1)
 
     -- Above-icon timer text (shown when cdAbove=true)
-    f.timerText = f:CreateFontString(nil, "OVERLAY")
-    f.timerText:SetFont(mod.FontPath(), 9, mod.FontFlags())
-    f.timerText:SetPoint("BOTTOM", f, "TOP", 0, 2)
-    f.timerText:SetTextColor(1, 0.85, 0.4)
-    f.timerText:Hide()
+    frame.timerText = frame:CreateFontString(nil, "OVERLAY")
+    frame.timerText:SetFont(mod.FontPath(), 9, mod.FontFlags())
+    frame.timerText:SetPoint("BOTTOM", frame, "TOP", 0, 2)
+    frame.timerText:SetTextColor(1, 0.85, 0.4)
+    frame.timerText:Hide()
 
-    f:EnableMouse(true)
-    f:SetScript("OnLeave", function()
+    frame:EnableMouse(true)
+    frame:SetScript("OnLeave", function()
         GameTooltip:Hide()
         if GameTooltip.ClearLines then
             GameTooltip:ClearLines()
         end
     end)
-    f:SetScript("OnEnter", function(button)
+    frame:SetScript("OnEnter", function(button)
         -- TooltipInfo aura lookups by instance ID error while auras are
         -- secret. These frames are the test-mode preview only (live icons are
         -- AuraButtons, which carry their own engine tooltip), so bail out
@@ -642,13 +642,13 @@ local function CreateIconFrame(iconList, iconSize, anchorPoint, hostFrame, relat
 
     local position = #iconList + 1
     if position == 1 then
-        f:SetPoint(anchorPoint, hostFrame, relativePoint, ofsx, ofsy)
+        frame:SetPoint(anchorPoint, hostFrame, relativePoint, ofsx, ofsy)
     else
-        f:SetPoint("RIGHT", iconList[position - 1], "LEFT", -K.DEBUFF_SPACING, 0)
+        frame:SetPoint("RIGHT", iconList[position - 1], "LEFT", -K.DEBUFF_SPACING, 0)
     end
-    f:SetAlpha(0)
-    iconList[position] = f
-    mod.ApplyIconSettings(f)
+    frame:SetAlpha(0)
+    iconList[position] = frame
+    mod.ApplyIconSettings(frame)
 end
 
 function CoTankAuras_Mixin:CreateDebuffContainer()

@@ -406,17 +406,17 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         exAnchor = CreateFrame("Frame", nil, popFrame)
                         exAnchor:SetSize(1, 1)
                         exAnchor:SetScript("OnHide", function()
-                            local f = exShow._popupFrame
-                            if f and f:IsShown() then
-                                f:Hide()
+                            local frame = exShow._popupFrame
+                            if frame and frame:IsShown() then
+                                frame:Hide()
                             end
                         end)
                     end
                     exShow(exAnchor)
-                    local f = exShow._popupFrame
+                    local frame = exShow._popupFrame
                     exAnchor:ClearAllPoints()
-                    exAnchor:SetPoint("BOTTOM", exAnchor:GetParent(), "TOPRIGHT", 4 + f:GetWidth() / 2, 5)
-                    dropdownBtn._sidePopup = f
+                    exAnchor:SetPoint("BOTTOM", exAnchor:GetParent(), "TOPRIGHT", 4 + frame:GetWidth() / 2, 5)
+                    dropdownBtn._sidePopup = frame
                 end
                 local r = ListRow(labelText, Picked, function(entries)
                     SSet(mod.RF_FvBlessingKey[role], entries)

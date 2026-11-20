@@ -412,10 +412,10 @@ local function CreateAbsorbBar(btnFrame, health)
         -- Indexed, not ipairs: a nil entry must not end the walk early.
         local axisBars = { backfillBar, forwardBar, healAbsorbBar, healPredBar, reducedBar }
         for index = 1, 5 do
-            local b = axisBars[index]
-            if b then
-                b:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
-                mod.RF_ApplyFillRotation(b) -- derived: rotate stretch styles only
+            local widget = axisBars[index]
+            if widget then
+                widget:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
+                mod.RF_ApplyFillRotation(widget) -- derived: rotate stretch styles only
             end
         end
 
@@ -866,21 +866,21 @@ local function UpdateAbsorb(btnFrame, unitToken, nowTime)
     end
     local RFShow, RFHide, PushRange = mod._RFShow, mod._RFHide, mod._RFPushRange
 
-    local s = skinData._isParty and mod._scaledPartyProxy
+    local cfg = skinData._isParty and mod._scaledPartyProxy
         or (skinData._isExtra and mod._scaledExtraProxy)
         or mod._scaledProfile
     -- The settings this function reads on every paint, re-derived only when the settings
     -- generation or this button's proxy moves (unset keys walk the whole proxy chain).
-    if ab._pGen ~= mod._absorbGen or ab._pS ~= s then
-        ab._pGen, ab._pS = mod._absorbGen, s
-        ab._pBarPos = mod.GetAbsorbBarPosition(s)
-        ab._pHealBarPos = mod.GetHealAbsorbBarPosition(s)
-        local st = s.absorbStyle
+    if ab._pGen ~= mod._absorbGen or ab._pS ~= cfg then
+        ab._pGen, ab._pS = mod._absorbGen, cfg
+        ab._pBarPos = mod.GetAbsorbBarPosition(cfg)
+        ab._pHealBarPos = mod.GetHealAbsorbBarPosition(cfg)
+        local st = cfg.absorbStyle
         ab._pStyleOn = (st and st ~= "none") and true or false
         ab._pModern = st == "blizzardModern"
-        ab._pHealOn = (s.healAbsorbStyle or "clean") ~= "none"
-        ab._pPredOn = s.healPrediction and true or false
-        ab._pMaxHealthOn = (s.maxHealthStyle or "maxHealthStripes") ~= "none"
+        ab._pHealOn = (cfg.healAbsorbStyle or "clean") ~= "none"
+        ab._pPredOn = cfg.healPrediction and true or false
+        ab._pMaxHealthOn = (cfg.maxHealthStyle or "maxHealthStripes") ~= "none"
     end
     local topBar = ab._topBar
     local barPos = ab._pBarPos
@@ -904,15 +904,15 @@ local function UpdateAbsorb(btnFrame, unitToken, nowTime)
     -- health. Vertical fill hides it too: these 16px glows cannot follow a vertical edge.
     if ab._glowGen ~= mod._absorbGen then
         ab._glowGen = mod._absorbGen
-        local gl = s.absorbGlowLine
+        local gl = cfg.absorbGlowLine
         ab._glowOn = gl == true or (gl == nil and modern)
-        local em = s.absorbEdgeMode or "overlay"
+        local em = cfg.absorbEdgeMode or "overlay"
         if modern then
             ab._glowEdge = 1
         elseif em == "overlay" then
-            local osm = s.overshieldMode
+            local osm = cfg.overshieldMode
             if osm == nil then
-                osm = (s.showOvershield == false) and "never" or "always"
+                osm = (cfg.showOvershield == false) and "never" or "always"
             end
             ab._glowEdge = (osm == "fromleft") and 2 or 1
         elseif em == "right" then
@@ -1067,9 +1067,9 @@ local function UpdateAbsorb(btnFrame, unitToken, nowTime)
             -- this gate survives combat secrecy (gen + frame sizes are never secret).
             if topBar._sGen ~= mod._absorbGen then
                 topBar._sGen = mod._absorbGen
-                local bc = s.absorbBarColor or { r = 1, g = 1, b = 1 }
-                local bh = s.absorbBarHeight or 4
-                local gd = s.absorbBarGrowDir or "up"
+                local bc = cfg.absorbBarColor or { r = 1, g = 1, b = 1 }
+                local bh = cfg.absorbBarHeight or 4
+                local gd = cfg.absorbBarGrowDir or "up"
                 -- Re-layout only when position/height/direction changes (no per-update SetPoint churn).
                 if topBar._lpPos ~= barPos or topBar._lpH ~= bh or topBar._lpGD ~= gd then
                     topBar._lpPos = barPos
@@ -1094,10 +1094,10 @@ local function UpdateAbsorb(btnFrame, unitToken, nowTime)
             -- Same gen gate as the Absorb Bar above: settings-only pushes.
             if healTopBar._sGen ~= mod._absorbGen then
                 healTopBar._sGen = mod._absorbGen
-                local hbc = s.healAbsorbBarColor or { r = 200 / 255, g = 29 / 255, b = 29 / 255 }
-                local hbh = s.healAbsorbBarHeight or 4
-                local abh = s.absorbBarHeight or 4
-                local hgd = s.healAbsorbBarGrowDir or "up"
+                local hbc = cfg.healAbsorbBarColor or { r = 200 / 255, g = 29 / 255, b = 29 / 255 }
+                local hbh = cfg.healAbsorbBarHeight or 4
+                local abh = cfg.absorbBarHeight or 4
+                local hgd = cfg.healAbsorbBarGrowDir or "up"
                 -- Re-layout only when its or the Absorb Bar's position/height changes.
                 if
                     healTopBar._lpPos ~= healBarPos
@@ -1129,15 +1129,15 @@ local function UpdateAbsorb(btnFrame, unitToken, nowTime)
         -- Settings-derived style/level/color pushes gen-gated; per-paint work below is value/size only.
         if ha._sGen ~= mod._absorbGen then
             ha._sGen = mod._absorbGen
-            local haStyle = s.healAbsorbStyle or "clean"
+            local haStyle = cfg.healAbsorbStyle or "clean"
             ha._styleNone = (haStyle == "none")
             if not ha._styleNone then
-                local hc = s.healAbsorbColor or { r = 0.8, g = 0.15, b = 0.15 }
+                local hc = cfg.healAbsorbColor or { r = 0.8, g = 0.15, b = 0.15 }
                 local hcR, hcG, hcB = hc.r or 0.8, hc.g or 0.15, hc.b or 0.15
-                local haKey = (haStyle or "") .. (s.healAbsorbOpacity or 75) .. hcR .. hcG .. hcB
+                local haKey = (haStyle or "") .. (cfg.healAbsorbOpacity or 75) .. hcR .. hcG .. hcB
                 if ha._lastHaKey ~= haKey then
                     ha._lastHaKey = haKey
-                    mod.ApplyHealAbsorbStyle(ha, haStyle, s)
+                    mod.ApplyHealAbsorbStyle(ha, haStyle, cfg)
                     -- After the retexture, re-arm the backing's one-time fill anchor.
                     if ha._bg then
                         ha._bg._fillAnchored = nil
@@ -1146,7 +1146,7 @@ local function UpdateAbsorb(btnFrame, unitToken, nowTime)
                 -- "Show Over Dispels" (default off): lift the heal-absorb overlay above the dispel
                 -- gradient (button + LVL_DISPEL_OVERLAY + 1), still below border/text/auras and
                 -- masked to the bar. Per-bar tracked: level touched only when the toggle flips.
-                local overDispel = s.healAbsorbOverDispel == true
+                local overDispel = cfg.healAbsorbOverDispel == true
                 if ha._lastOverDispel ~= overDispel then
                     ha._lastOverDispel = overDispel
                     if overDispel then
@@ -1159,7 +1159,7 @@ local function UpdateAbsorb(btnFrame, unitToken, nowTime)
                 -- -- the statusbar texture region persists across SetValue, so anchor once.
                 local hbg = ha._bg
                 if hbg then
-                    hbg:SetColorTexture(0, 0, 0, (s.healAbsorbBgOpacity or 25) / 100)
+                    hbg:SetColorTexture(0, 0, 0, (cfg.healAbsorbBgOpacity or 25) / 100)
                     if not hbg._fillAnchored then
                         hbg._fillAnchored = true
                         hbg:SetAllPoints(ha:GetStatusBarTexture())
@@ -1226,13 +1226,13 @@ local function UpdateAbsorb(btnFrame, unitToken, nowTime)
         if ab._sGen ~= mod._absorbGen then
             ab._sGen = mod._absorbGen
             -- Re-apply style when style, color, or opacity changes
-            local absStyle = s.absorbStyle
-            local ac = s.absorbColor or { r = 1, g = 1, b = 1 }
+            local absStyle = cfg.absorbStyle
+            local ac = cfg.absorbColor or { r = 1, g = 1, b = 1 }
             local acR, acG, acB = ac.r or 1, ac.g or 1, ac.b or 1
-            local absKey = (absStyle or "") .. (s.absorbOpacity or 90) .. acR .. acG .. acB
+            local absKey = (absStyle or "") .. (cfg.absorbOpacity or 90) .. acR .. acG .. acB
             if absStyle and absStyle ~= "none" and ab._lastAbsKey ~= absKey then
                 ab._lastAbsKey = absKey
-                ApplyAbsorbStyle(ab, absStyle, s)
+                ApplyAbsorbStyle(ab, absStyle, cfg)
                 -- After the retexture, re-arm the modern base's one-time fill anchor and the glow
                 -- anchors that can ride ab's fill (the gate, the overshield spark). The seam spark's
                 -- target (the gate bar's texture) is creation-static and never re-arms.
@@ -1255,16 +1255,16 @@ local function UpdateAbsorb(btnFrame, unitToken, nowTime)
             -- nil overshieldMode falls back to the old showOvershield boolean, so saved toggles keep
             -- their meaning. Right/left edge modes draw the WHOLE absorb through ab (fw hidden
             -- below) and are untouched -- overshield is meaningless there.
-            local osm = s.overshieldMode
+            local osm = cfg.overshieldMode
             if osm == nil then
-                osm = (s.showOvershield == false) and "never" or "always"
+                osm = (cfg.showOvershield == false) and "never" or "always"
             end
             ab._overshieldOn = osm ~= "never"
-            ab._overlayLike = absStyle == "blizzardModern" or (s.absorbEdgeMode or "overlay") == "overlay"
+            ab._overlayLike = absStyle == "blizzardModern" or (cfg.absorbEdgeMode or "overlay") == "overlay"
             -- Forward bar on: Overlay, and Overlay Reverse (Full) for its excess (Default Blizz
             -- Frames keeps that placement as plain Overlay Reverse, see ReanchorAbsorbToFill).
-            ab._edgeOverlay = (s.absorbEdgeMode or "overlay") == "overlay"
-                or (s.absorbEdgeMode == "overlayReverseFull" and absStyle ~= "blizzardModern")
+            ab._edgeOverlay = (cfg.absorbEdgeMode or "overlay") == "overlay"
+                or (cfg.absorbEdgeMode == "overlayReverseFull" and absStyle ~= "blizzardModern")
         end
         local absStyle = ab._absStyle
         local abValue = absorbAmt
@@ -1391,10 +1391,10 @@ local function UpdateAbsorb(btnFrame, unitToken, nowTime)
         -- Toggle + color gen-gated; size size-gated; value pushes live.
         if hpd._sGen ~= mod._absorbGen then
             hpd._sGen = mod._absorbGen
-            hpd._on = s.healPrediction and true or false
+            hpd._on = cfg.healPrediction and true or false
             if hpd._on then
-                local pc = s.healPredColor or { r = 102 / 255, g = 243 / 255, b = 102 / 255 }
-                hpd:SetStatusBarColor(pc.r, pc.g, pc.b, (s.healPredOpacity or 75) / 100)
+                local pc = cfg.healPredColor or { r = 102 / 255, g = 243 / 255, b = 102 / 255 }
+                hpd:SetStatusBarColor(pc.r, pc.g, pc.b, (cfg.healPredOpacity or 75) / 100)
             end
         end
         if not hpd._on then
@@ -1419,15 +1419,15 @@ local function UpdateAbsorb(btnFrame, unitToken, nowTime)
         -- Style key + backing color gen-gated; the fill-rect anchor is permanent.
         if rmh._sGen ~= mod._absorbGen then
             rmh._sGen = mod._absorbGen
-            local rmhStyle = s.maxHealthStyle or "maxHealthStripes"
+            local rmhStyle = cfg.maxHealthStyle or "maxHealthStripes"
             rmh._styleNone = (rmhStyle == "none")
             if not rmh._styleNone then
-                local mc = s.maxHealthColor or { r = 0.7, g = 0.1, b = 0.1 }
+                local mc = cfg.maxHealthColor or { r = 0.7, g = 0.1, b = 0.1 }
                 local mcR, mcG, mcB = mc.r or 0.7, mc.g or 0.1, mc.b or 0.1
-                local rmhKey = rmhStyle .. (s.maxHealthOpacity or 100) .. mcR .. mcG .. mcB
+                local rmhKey = rmhStyle .. (cfg.maxHealthOpacity or 100) .. mcR .. mcG .. mcB
                 if rmh._lastRmhKey ~= rmhKey then
                     rmh._lastRmhKey = rmhKey
-                    mod.ApplyMaxHealthStyle(rmh, rmhStyle, s)
+                    mod.ApplyMaxHealthStyle(rmh, rmhStyle, cfg)
                     -- Retexture replaced the fill object: re-arm the backing anchor (re-anchored just below).
                     if ab._reducedMaxBg then
                         ab._reducedMaxBg._fillAnchored = nil
@@ -1435,7 +1435,7 @@ local function UpdateAbsorb(btnFrame, unitToken, nowTime)
                 end
                 local rmhBg = ab._reducedMaxBg
                 if rmhBg then
-                    rmhBg:SetColorTexture(0, 0, 0, (s.maxHealthBgOpacity or 100) / 100)
+                    rmhBg:SetColorTexture(0, 0, 0, (cfg.maxHealthBgOpacity or 100) / 100)
                     if not rmhBg._fillAnchored then
                         rmhBg._fillAnchored = true
                         rmhBg:SetAllPoints(rmh:GetStatusBarTexture())

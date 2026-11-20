@@ -706,13 +706,13 @@ end
 --  Lists
 -------------------------------------------------------------------------------
 function module.PvPToggleKoS(name, on)
-    local s = Store()
+    local cfg = Store()
     if on == nil then
-        on = not s.kos[name]
+        on = not cfg.kos[name]
     end
-    s.kos[name] = on and time() or nil
+    cfg.kos[name] = on and time() or nil
     if on then
-        s.ignore[name] = nil
+        cfg.ignore[name] = nil
         Data(name, true)
     end
     Say(("%s %s Kill on Sight."):format(Label(name), on and "added to" or "removed from"))
@@ -722,13 +722,13 @@ function module.PvPToggleKoS(name, on)
 end
 
 function module.PvPToggleIgnore(name, on)
-    local s = Store()
+    local cfg = Store()
     if on == nil then
-        on = not s.ignore[name]
+        on = not cfg.ignore[name]
     end
-    s.ignore[name] = on and time() or nil
+    cfg.ignore[name] = on and time() or nil
     if on then
-        s.kos[name] = nil
+        cfg.kos[name] = nil
         nearby[name] = nil
     end
     if Refresh then
@@ -778,10 +778,10 @@ end
 -- Purge: forgotten enemies older than 90 days, unless Kill on Sight or with wins or losses.
 local function Purge()
     local cutoff = time() - PURGE_DAYS * 86400
-    local s = Store()
-    for name, p in pairs(s.players) do
-        if (p.last or 0) < cutoff and not s.kos[name] and (p.wins or 0) == 0 and (p.losses or 0) == 0 then
-            s.players[name] = nil
+    local cfg = Store()
+    for name, p in pairs(cfg.players) do
+        if (p.last or 0) < cutoff and not cfg.kos[name] and (p.wins or 0) == 0 and (p.losses or 0) == 0 then
+            cfg.players[name] = nil
         end
     end
 end
@@ -811,14 +811,14 @@ end
 local function RowMenu(owner, name)
     CludesUI.Kit.ContextMenu(owner, function(_, root)
         root:CreateTitle(name:gsub("%-", " "))
-        local s = Store()
-        root:CreateButton(s.kos[name] and "Remove Kill on Sight" or "Kill on Sight", function()
+        local cfg = Store()
+        root:CreateButton(cfg.kos[name] and "Remove Kill on Sight" or "Kill on Sight", function()
             module.PvPToggleKoS(name)
         end)
-        root:CreateButton(s.ignore[name] and "Stop Ignoring" or "Ignore", function()
+        root:CreateButton(cfg.ignore[name] and "Stop Ignoring" or "Ignore", function()
             module.PvPToggleIgnore(name)
         end)
-        if s.kos[name] then
+        if cfg.kos[name] then
             local reasons = root:CreateButton("Kill on Sight Reasons")
             for _, region in ipairs({
                 "Ganked me",
@@ -828,10 +828,10 @@ local function RowMenu(owner, name)
                 "Ninja looted",
             }) do
                 reasons:CreateCheckbox(region, function()
-                    return s.reasons[name] and s.reasons[name][region]
+                    return cfg.reasons[name] and cfg.reasons[name][region]
                 end, function()
-                    s.reasons[name] = s.reasons[name] or {}
-                    s.reasons[name][region] = not s.reasons[name][region] or nil
+                    cfg.reasons[name] = cfg.reasons[name] or {}
+                    cfg.reasons[name][region] = not cfg.reasons[name][region] or nil
                 end)
             end
         end
@@ -1005,7 +1005,7 @@ Refresh = function()
     local ar, ag, ab = Accent()
     local list = Entries()
     local n = math.min(#list, Get("rows"))
-    local s = Store()
+    local cfg = Store()
     for i = 1, n do
         local e = list[i]
         local region = Row(i)
@@ -1020,7 +1020,7 @@ Refresh = function()
         )
         local when = tab == 1 and (GetTime() - e.at) or (time() - e.at)
         region.right:SetText("|cff9aa6b2" .. Ago(when) .. "|r")
-        if s.kos[e.name] then
+        if cfg.kos[e.name] then
             region.bg:SetColorTexture(1, 0.35, 0.35, 0.22)
         elseif tab == 1 and e.act == 1 then
             region.bg:SetColorTexture(ar, ag, ab, 0.22)
@@ -1057,22 +1057,22 @@ local function Build()
     CludesUI.Kit.Font(win.title, 13, "essentials")
     win.title:SetPoint("TOPLEFT", 8, -6)
     local function Btn(text, x, fn, tip)
-        local b = CreateFrame("Button", nil, win)
-        b:SetSize(18, 18)
-        b:SetPoint("TOPRIGHT", x, -3)
-        b.t = b:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(b.t, 13, "essentials")
-        b.t:SetPoint("CENTER")
-        b.t:SetText(text)
-        b:SetScript("OnClick", fn)
-        b.t:SetTextColor(0.8, 0.8, 0.8)
-        b:SetScript("OnEnter", function(self)
+        local widget = CreateFrame("Button", nil, win)
+        widget:SetSize(18, 18)
+        widget:SetPoint("TOPRIGHT", x, -3)
+        widget.t = widget:CreateFontString(nil, "OVERLAY")
+        CludesUI.Kit.Font(widget.t, 13, "essentials")
+        widget.t:SetPoint("CENTER")
+        widget.t:SetText(text)
+        widget:SetScript("OnClick", fn)
+        widget.t:SetTextColor(0.8, 0.8, 0.8)
+        widget:SetScript("OnEnter", function(self)
             self.t:SetTextColor(Accent())
             GameTooltip:SetOwner(self, "ANCHOR_TOP")
             GameTooltip:SetText(tip)
             GameTooltip:Show()
         end)
-        b:SetScript("OnLeave", function(self)
+        widget:SetScript("OnLeave", function(self)
             self.t:SetTextColor(0.8, 0.8, 0.8)
             GameTooltip:Hide()
         end)

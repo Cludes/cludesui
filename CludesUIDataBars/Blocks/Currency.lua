@@ -71,12 +71,12 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     function inst:Refresh()
-        local s = Settings()
+        local cfg = Settings()
         local skinData = Details()
         local barH = barCtx.GetThickness()
         local fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
         local text
-        if not s.currencyId then
+        if not cfg.currencyId then
             -- Bar text is set directly, not through the tooltip helpers that
             -- translate, so it is translated here.
             text = CludesUI.L(L["SELECT_CURRENCY"])
@@ -87,7 +87,7 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
         end
 
         local iconSize = 0
-        if s.showIcon ~= false and skinData and skinData.iconFileID then
+        if cfg.showIcon ~= false and skinData and skinData.iconFileID then
             iconSize = fontSize + 2
             iconTex:SetTexture(skinData.iconFileID)
             iconTex:SetTexCoord(TRIM, 1 - TRIM, TRIM, 1 - TRIM)
@@ -144,9 +144,9 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
 
     -- Composed by hand: the owned tooltip has no SetCurrencyByID.
     local function ShowTooltip()
-        local s = Settings()
+        local cfg = Settings()
         local ar, ag, ab = mod.GetAccent()
-        if not s.currencyId then
+        if not cfg.currencyId then
             -- The placeholder is the whole block, so the tooltip says where a currency is picked.
             mod.Tip_Begin(button)
             mod.Tip_AddLine(L["SELECT_CURRENCY"], 1, 1, 1)
@@ -157,7 +157,7 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
         end
         local skinData = C_CurrencyInfo
             and C_CurrencyInfo.GetCurrencyInfo
-            and C_CurrencyInfo.GetCurrencyInfo(s.currencyId)
+            and C_CurrencyInfo.GetCurrencyInfo(cfg.currencyId)
         if not skinData then
             return
         end
@@ -165,7 +165,7 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
         local q = skinData.quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[skinData.quality]
         mod.Tip_AddLine(skinData.name or "?", q and q.r or 1, q and q.g or 1, q and q.b or 1)
         -- Some descriptions run to paragraphs; the setting drops just the text.
-        if s.showDescription ~= false and skinData.description and skinData.description ~= "" then
+        if cfg.showDescription ~= false and skinData.description and skinData.description ~= "" then
             mod.Tip_AddLine(" ")
             mod.Tip_AddWrappedLine(skinData.description, 280, 0.8, 0.8, 0.8)
         end

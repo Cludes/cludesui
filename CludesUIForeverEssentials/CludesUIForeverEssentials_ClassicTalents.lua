@@ -147,27 +147,27 @@ local function TalentClick(b, btnFrame)
 end
 
 local function NewTalent(hostFrame)
-    local b = CreateFrame("Button", nil, hostFrame)
-    b:SetSize(SIZE, SIZE)
-    b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    b.icon = b:CreateTexture(nil, "ARTWORK")
-    b.icon:SetAllPoints()
-    b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- trim the icon's own frame
-    b.slot = b:CreateTexture(nil, "BACKGROUND")
-    b.slot:SetTexture("Interface\\Buttons\\UI-EmptySlot-White")
-    b.slot:SetSize(64, 64)
-    b.slot:SetPoint("CENTER")
-    b.rankBorder = b:CreateTexture(nil, "OVERLAY")
-    b.rankBorder:SetTexture(ART .. "TalentFrame-RankBorder")
-    b.rankBorder:SetSize(32, 32)
-    b.rankBorder:SetPoint("CENTER", b, "BOTTOMRIGHT")
-    b.rank = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    b.rank:SetPoint("CENTER", b.rankBorder)
-    b:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
-    b:SetScript("OnEnter", TalentEnter)
-    b:SetScript("OnLeave", TalentLeave)
-    b:SetScript("OnClick", TalentClick)
-    return b
+    local widget = CreateFrame("Button", nil, hostFrame)
+    widget:SetSize(SIZE, SIZE)
+    widget:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    widget.icon = widget:CreateTexture(nil, "ARTWORK")
+    widget.icon:SetAllPoints()
+    widget.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- trim the icon's own frame
+    widget.slot = widget:CreateTexture(nil, "BACKGROUND")
+    widget.slot:SetTexture("Interface\\Buttons\\UI-EmptySlot-White")
+    widget.slot:SetSize(64, 64)
+    widget.slot:SetPoint("CENTER")
+    widget.rankBorder = widget:CreateTexture(nil, "OVERLAY")
+    widget.rankBorder:SetTexture(ART .. "TalentFrame-RankBorder")
+    widget.rankBorder:SetSize(32, 32)
+    widget.rankBorder:SetPoint("CENTER", widget, "BOTTOMRIGHT")
+    widget.rank = widget:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    widget.rank:SetPoint("CENTER", widget.rankBorder)
+    widget:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    widget:SetScript("OnEnter", TalentEnter)
+    widget:SetScript("OnLeave", TalentLeave)
+    widget:SetScript("OnClick", TalentClick)
+    return widget
 end
 
 -- Gold when full, green while it holds points or can take the first one, else
@@ -261,10 +261,10 @@ local function PaintBackground()
 end
 
 Paint = function()
-    local t = trees[tree]
+    local tbl = trees[tree]
     local currency = treeID and C_Traits.GetTreeCurrencyInfo(configID, treeID, false)[1]
     unspent = currency and currency.quantity or 0
-    local cells, rowList = Grid(t and t.nodes or {})
+    local cells, rowList = Grid(tbl and tbl.nodes or {})
     local used = 0
     for nodeID, cell in pairs(cells) do
         used = used + 1
@@ -313,15 +313,15 @@ Paint = function()
             tab.text:SetPoint("CENTER", 0, on and 4 or 2)
         end
     end
-    local set = t and C_Traits.GetGroupCurrencyInfo(configID, { t.groupID })[1]
+    local set = tbl and C_Traits.GetGroupCurrencyInfo(configID, { tbl.groupID })[1]
     local spent = set and set.currencyInfos[1] and set.currencyInfos[1].spent or 0
     -- The numbers are white beside their gold labels.
     local white = HIGHLIGHT_FONT_COLOR
     window.spent:SetText(
-        t
+        tbl
                 and CludesUI.Lf(
                     "Points spent in %1$s Talents: %2$s",
-                    t.name,
+                    tbl.name,
                     white:WrapTextInColorCode(spent)
                 )
             or ""

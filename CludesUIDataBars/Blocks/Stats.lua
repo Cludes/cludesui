@@ -117,7 +117,7 @@ local function SingleValueBlock(blockCfg, slot, contentFrame, barCtx, spec)
     end
 
     function inst:Refresh()
-        local s = blockCfg.settings or {}
+        local cfg = blockCfg.settings or {}
         local fontSize = TextSize()
         local barH = barCtx.GetThickness()
         if value < 0 then
@@ -126,7 +126,7 @@ local function SingleValueBlock(blockCfg, slot, contentFrame, barCtx, spec)
         local iconSize = 0
         if iconTex then
             K.SetBlockIcon(iconTex, blockCfg)
-            if s.showIcon ~= false then
+            if cfg.showIcon ~= false then
                 iconSize = fontSize + (spec.iconExtra or 0)
             end
         end
@@ -469,8 +469,8 @@ mod.BlockFactories.ms = function(blockCfg, slot, contentFrame, barCtx)
 
     local function State()
         local _, _, home, world = GetNetStats()
-        local s = Settings()
-        return mod.LatencyMode(s) .. (s.showIcon and "I" or "") .. floor(home) .. "/" .. floor(world)
+        local cfg = Settings()
+        return mod.LatencyMode(cfg) .. (cfg.showIcon and "I" or "") .. floor(home) .. "/" .. floor(world)
     end
 
     function inst:Refresh()

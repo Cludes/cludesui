@@ -32,44 +32,44 @@ function CludesUI.BuildUnlockPlaceholder(options)
     local brandGreen = CludesUI.CLUDES_GREEN
     local ar, ag, ab = brandGreen.r, brandGreen.g, brandGreen.b
 
-    local f = CreateFrame("Button", nil, hostFrame)
-    f:SetAllPoints(hostFrame)
+    local frame = CreateFrame("Button", nil, hostFrame)
+    frame:SetAllPoints(hostFrame)
     if options.level then
-        f:SetFrameLevel(options.level)
+        frame:SetFrameLevel(options.level)
     else
-        f:SetFrameLevel(hostFrame:GetFrameLevel() + 10)
+        frame:SetFrameLevel(hostFrame:GetFrameLevel() + 10)
     end
-    f:EnableMouse(true)
-    f:RegisterForClicks("LeftButtonUp")
+    frame:EnableMouse(true)
+    frame:RegisterForClicks("LeftButtonUp")
 
     -- Dark background matching unlock mode movers
-    local backdrop = f:CreateTexture(nil, "BACKGROUND")
+    local backdrop = frame:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0.088, 0.098, 0.111, 0.95)
-    f._bg = backdrop
+    frame._bg = backdrop
 
     -- Accent border at 60% alpha
-    f._brd = CludesUI.MakeBorder(f, ar, ag, ab, 0.6)
+    frame._brd = CludesUI.MakeBorder(frame, ar, ag, ab, 0.6)
 
     -- White centered label matching unlock mode mover style
     local fontFile = (CludesUI.GetFontPath("extras"))
         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
-    local labelText = f:CreateFontString(nil, "OVERLAY")
+    local labelText = frame:CreateFontString(nil, "OVERLAY")
     labelText:SetFont(fontFile, 10, "OUTLINE, SLUG")
     labelText:SetText(CludesUI.L(options.text or "Move in Layout Mode"))
     labelText:SetTextColor(1, 1, 1, 0.9)
     labelText:SetPoint("CENTER")
-    f._label = labelText
+    frame._label = labelText
 
     -- Hover: accent text + brighten border
-    local brd = f._brd
-    f:SetScript("OnEnter", function()
+    local brd = frame._brd
+    frame:SetScript("OnEnter", function()
         labelText:SetTextColor(ar, ag, ab, 1)
         if brd then
             brd:SetColor(ar, ag, ab, 0.85)
         end
     end)
-    f:SetScript("OnLeave", function()
+    frame:SetScript("OnLeave", function()
         labelText:SetTextColor(1, 1, 1, 0.9)
         if brd then
             brd:SetColor(ar, ag, ab, 0.6)
@@ -77,13 +77,13 @@ function CludesUI.BuildUnlockPlaceholder(options)
     end)
 
     -- Click: open unlock mode (or custom handler)
-    f:SetScript("OnClick", options.onClick or function()
+    frame:SetScript("OnClick", options.onClick or function()
         if CludesUI.ToggleUnlockMode then
             CludesUI:ToggleUnlockMode()
         end
     end)
 
-    return f
+    return frame
 end
 
 -- Debuff "Max Duration" dropdown spec for a DualRow slot: Unlimited (nil, the

@@ -50,7 +50,7 @@ local RangeUpdate
 -- deferred login pass, which then calls this again in full.
 mod._emptyList = mod._emptyList or {}
 local function ReloadFrames(skipButtons)
-    local s = mod._scaledProfile
+    local cfg = mod._scaledProfile
     -- Keep UNIT_FLAGS registration in lockstep with the combat-icon toggle so a
     -- disabled option listens for nothing (runs no event code).
     if mod.UpdateCombatEventRegistration then
@@ -78,8 +78,8 @@ local function ReloadFrames(skipButtons)
         mod._activeSizeW, mod._activeSizeH = nil, nil
         mod._activeTierOverride = nil
     end
-    local bw = PixelSnap(mod._activeSizeW or s.frameWidth or 72)
-    local bh = PixelSnap(mod._activeSizeH or s.frameHeight or 46)
+    local bw = PixelSnap(mod._activeSizeW or cfg.frameWidth or 72)
+    local bh = PixelSnap(mod._activeSizeH or cfg.frameHeight or 46)
 
     -- Auto-resize indicators: scale factor based on active tier vs base 20-man
     -- Read base dimensions from raw db.profile (not proxy, which returns active tier)
@@ -105,7 +105,7 @@ local function ReloadFrames(skipButtons)
     -- the new buttons take this reload's styling like everything else.
     mod._BuildHeaderSet((saved.profile.mergeGroups and true) or false)
 
-    local powerH = IsPowerBarEnabled(s) and PixelSnap(s.powerHeight or 4) or 0
+    local powerH = IsPowerBarEnabled(cfg) and PixelSnap(cfg.powerHeight or 4) or 0
     local healthH = PixelSnap(bh - powerH)
     local texPath = ResolveHealthTexture()
 
@@ -124,7 +124,7 @@ local function ReloadFrames(skipButtons)
 
         -- Health bar height/anchor + Top Name Bar. The helper reserves the top
         -- bar's height from the top of the health area and styles the bar.
-        LayoutTopNameBar(s, bh, powerH, skinData.health, skinData.topNameBar, skinData.topNameBarBg, skinData.topNameBarText, skinData.power)
+        LayoutTopNameBar(cfg, bh, powerH, skinData.health, skinData.topNameBar, skinData.topNameBarBg, skinData.topNameBarText, skinData.power)
         if skinData.health then
             skinData.health:SetStatusBarTexture(texPath)
             skinData.health:GetStatusBarTexture():SetHorizTile(false)
@@ -142,7 +142,7 @@ local function ReloadFrames(skipButtons)
             skinData._bgSt, skinData._bgA = nil, nil
             local u = button:GetAttribute("unit")
             if u and UnitExists(u) then
-                mod._ApplyHealthBg(skinData, skinData.health, s, u)
+                mod._ApplyHealthBg(skinData, skinData.health, cfg, u)
             end
         end
 
@@ -161,10 +161,10 @@ local function ReloadFrames(skipButtons)
         end
         if skinData.powerBg then
             skinData.powerBg:SetColorTexture(
-                (s.powerBgColor or {}).r or 0,
-                (s.powerBgColor or {}).g or 0,
-                (s.powerBgColor or {}).b or 0,
-                (s.powerBgDarkness or 70) / 100
+                (cfg.powerBgColor or {}).r or 0,
+                (cfg.powerBgColor or {}).g or 0,
+                (cfg.powerBgColor or {}).b or 0,
+                (cfg.powerBgDarkness or 70) / 100
             )
             skinData._pwBgTintType = nil
         end
@@ -182,8 +182,8 @@ local function ReloadFrames(skipButtons)
 
         -- Status text (DEAD/OFFLINE/AFK)
         if skinData.statusText then
-            local stc = s.statusTextColor or { r = 1, g = 1, b = 1 }
-            ApplyFont(skinData.statusText, s.statusTextSize or 14)
+            local stc = cfg.statusTextColor or { r = 1, g = 1, b = 1 }
+            ApplyFont(skinData.statusText, cfg.statusTextSize or 14)
             skinData.statusText:SetTextColor(stc.r, stc.g, stc.b)
             if skinData.AnchorStatusText then
                 skinData.AnchorStatusText()
@@ -192,7 +192,7 @@ local function ReloadFrames(skipButtons)
 
         -- Role icon size + position
         if skinData.roleIcon then
-            local riSz = PixelSnap(s.roleIconSize or 14)
+            local riSz = PixelSnap(cfg.roleIconSize or 14)
             skinData.roleIcon:SetSize(riSz, riSz)
             if skinData.AnchorRoleIcon then
                 skinData.AnchorRoleIcon()
@@ -201,16 +201,16 @@ local function ReloadFrames(skipButtons)
 
         -- Leader icon size + position
         if skinData.leaderIcon then
-            local liSz = PixelSnap(s.leaderIconSize or 14)
+            local liSz = PixelSnap(cfg.leaderIconSize or 14)
             skinData.leaderIcon:SetSize(liSz, liSz)
             skinData.leaderIcon:ClearAllPoints()
-            local liPos = (s.leaderIconPosition or "top"):upper()
+            local liPos = (cfg.leaderIconPosition or "top"):upper()
             skinData.leaderIcon:SetPoint(
                 liPos,
-                mod.RF_AnchorHost(skinData.health, s),
+                mod.RF_AnchorHost(skinData.health, cfg),
                 liPos,
-                s.leaderIconOffsetX or 0,
-                s.leaderIconOffsetY or 0
+                cfg.leaderIconOffsetX or 0,
+                cfg.leaderIconOffsetY or 0
             )
             -- Re-assert the host's strata/level above the border
             if skinData.leaderHost then
@@ -220,7 +220,7 @@ local function ReloadFrames(skipButtons)
 
         -- Raid marker size + position
         if skinData.raidMarker then
-            local rmSz = PixelSnap(s.raidMarkerSize or 16)
+            local rmSz = PixelSnap(cfg.raidMarkerSize or 16)
             skinData.raidMarker:SetSize(rmSz, rmSz)
             if skinData.AnchorRaidMarker then
                 skinData.AnchorRaidMarker()
@@ -229,7 +229,7 @@ local function ReloadFrames(skipButtons)
 
         -- Ready check / summon size + position
         if skinData.readyCheck then
-            local rcSz = PixelSnap(s.readyCheckSize or 20)
+            local rcSz = PixelSnap(cfg.readyCheckSize or 20)
             skinData.readyCheck:SetSize(rcSz, rcSz)
             if skinData.AnchorReadyCheck then
                 skinData.AnchorReadyCheck()
@@ -238,7 +238,7 @@ local function ReloadFrames(skipButtons)
 
         -- Combat icon size + position
         if skinData.combatIcon then
-            local cciSz = PixelSnap(s.combatIndicatorSize or 16)
+            local cciSz = PixelSnap(cfg.combatIndicatorSize or 16)
             skinData.combatIcon:SetSize(cciSz, cciSz)
             if skinData.AnchorCombatIcon then
                 skinData.AnchorCombatIcon()
@@ -364,11 +364,11 @@ mod._ResizeButtons = function(wid, hgt)
     end
     local bw = PixelSnap(wid)
     local bh = PixelSnap(hgt)
-    local s = saved.profile
-    local powerH = IsPowerBarEnabled(s) and PixelSnap(s.powerHeight or 4) or 0
-    local healthH = PixelSnap(bh - mod.RF_HealthPowerInset(s, powerH))
-    local topBarH = (s.topNameBarEnabled and PixelSnap(s.topNameBarHeight or 20)) or 0
-    local xfset = s.extraFrames
+    local cfg = saved.profile
+    local powerH = IsPowerBarEnabled(cfg) and PixelSnap(cfg.powerHeight or 4) or 0
+    local healthH = PixelSnap(bh - mod.RF_HealthPowerInset(cfg, powerH))
+    local topBarH = (cfg.topNameBarEnabled and PixelSnap(cfg.topNameBarHeight or 20)) or 0
+    local xfset = cfg.extraFrames
     for _, button in ipairs(allButtons) do
         local skinData = GetFFD(button)
         if skinData.styled then
@@ -378,7 +378,7 @@ mod._ResizeButtons = function(wid, hgt)
             if skinData._isExtra and xfset then
                 xbw = PixelSnap(math.max(10, wid + (xfset.extraWidth or 0)))
                 xbh = PixelSnap(math.max(10, hgt + (xfset.extraHeight or 0)))
-                xhealthH = PixelSnap(xbh - mod.RF_HealthPowerInset(s, powerH))
+                xhealthH = PixelSnap(xbh - mod.RF_HealthPowerInset(cfg, powerH))
             end
             button:SetSize(xbw, xbh)
             -- Full height when the power bar is hidden for this role (mirrors
@@ -416,18 +416,18 @@ mod._ResizePartyButtons = function(wid, hgt)
     end
     local bw = PixelSnap(wid)
     local bh = PixelSnap(hgt)
-    local s = saved.profile
-    local powerH = IsPowerBarEnabled(s) and PixelSnap(s.powerHeight or 4) or 0
-    local healthH = PixelSnap(bh - mod.RF_HealthPowerInset(s, powerH))
-    local topBarH = (s.topNameBarEnabled and PixelSnap(s.topNameBarHeight or 20)) or 0
+    local cfg = saved.profile
+    local powerH = IsPowerBarEnabled(cfg) and PixelSnap(cfg.powerHeight or 4) or 0
+    local healthH = PixelSnap(bh - mod.RF_HealthPowerInset(cfg, powerH))
+    local topBarH = (cfg.topNameBarEnabled and PixelSnap(cfg.topNameBarHeight or 20)) or 0
     -- Auto Resize scale depends on frame size; recompute on this lightweight
     -- width/height slider path (which skips the full reload).
     if mod._UpdatePartyIndicatorScale then
         mod._UpdatePartyIndicatorScale()
     end
-    local autoResize = s.partyAutoResizeIndicators
+    local autoResize = cfg.partyAutoResizeIndicators
     -- The bars' width: an attached portrait takes its share of the box.
-    local _, _, _, pres = mod.RF_PartyDims(s)
+    local _, _, _, pres = mod.RF_PartyDims(cfg)
     local barW = bw - ((pres and pres > 0) and PixelSnap(pres) or 0)
     for _, button in ipairs(mod._partyAllButtons) do
         local skinData = GetFFD(button)
@@ -491,8 +491,8 @@ mod._ResizePartyButtons = function(wid, hgt)
     -- aligned with the stack and the centered child anchors growing from the
     -- correct origin. Pure anchor tracking -- no secure re-process, no blink.
     if mod._PositionPartySlots then
-        local _, _, pcs = mod.RF_PartyDims(s)
-        mod._PositionPartySlots(bw, bh, PixelSnap(pcs) + mod.PT_AlongPitch(s), mod._PartyGrowth(s))
+        local _, _, pcs = mod.RF_PartyDims(cfg)
+        mod._PositionPartySlots(bw, bh, PixelSnap(pcs) + mod.PT_AlongPitch(cfg), mod._PartyGrowth(cfg))
     end
 end
 
@@ -610,15 +610,15 @@ end
 -- width/height so corner math never recomputes it (extra return values -- existing
 -- two-value callers are unaffected). Returns nil when no position has been saved yet.
 mod._RFBaseTopLeft = function()
-    local s = saved.profile
-    local place = s.unlockPos
+    local cfg = saved.profile
+    local place = cfg.unlockPos
     if not place then
         return nil
     end
-    local cs = mod.RF_CellSpacing(s)
-    local gs = mod.RF_GroupSpacing(s)
-    local ug, gg = mod._RFEffectiveGrowth(s.unitGrowth or "DOWN", s.groupGrowth or "RIGHT", s.mergeGroups)
-    local wid, hgt = mod._RFFootprint(s.frameWidth or 72, s.frameHeight or 46, ug, gg, cs, gs)
+    local cs = mod.RF_CellSpacing(cfg)
+    local gs = mod.RF_GroupSpacing(cfg)
+    local ug, gg = mod._RFEffectiveGrowth(cfg.unitGrowth or "DOWN", cfg.groupGrowth or "RIGHT", cfg.mergeGroups)
+    local wid, hgt = mod._RFFootprint(cfg.frameWidth or 72, cfg.frameHeight or 46, ug, gg, cs, gs)
     local l, t = mod._RFPosTopLeft(place, wid, hgt)
     return l, t, wid, hgt
 end
@@ -822,23 +822,23 @@ end
 -- snapping). With the base tier active, or no overrides defined, every term cancels and
 -- the center passes through unchanged -- zero behavior change for base saves.
 mod._RFRebaseSavedCenter = function(cx, cy)
-    local s = saved.profile
+    local cfg = saved.profile
     local _, shade = mod._RFResolveTierOverride(mod._GetEffectiveRaidSize())
     if not shade then
         return cx, cy
     end
-    local cs = mod.RF_CellSpacing(s)
-    local gs = mod.RF_GroupSpacing(s)
-    local bug, bgg = mod._RFEffectiveGrowth(s.unitGrowth or "DOWN", s.groupGrowth or "RIGHT", s.mergeGroups)
-    local bw, bh = mod._RFFootprint(s.frameWidth or 72, s.frameHeight or 46, bug, bgg, cs, gs)
+    local cs = mod.RF_CellSpacing(cfg)
+    local gs = mod.RF_GroupSpacing(cfg)
+    local bug, bgg = mod._RFEffectiveGrowth(cfg.unitGrowth or "DOWN", cfg.groupGrowth or "RIGHT", cfg.mergeGroups)
+    local bw, bh = mod._RFFootprint(cfg.frameWidth or 72, cfg.frameHeight or 46, bug, bgg, cs, gs)
     local ug, gg = mod._RFEffectiveGrowth(
-        shade.unitGrowth or s.unitGrowth or "DOWN",
-        shade.groupGrowth or s.groupGrowth or "RIGHT",
-        s.mergeGroups
+        shade.unitGrowth or cfg.unitGrowth or "DOWN",
+        shade.groupGrowth or cfg.groupGrowth or "RIGHT",
+        cfg.mergeGroups
     )
     local tw, th = mod._RFFootprint(
-        shade.width or s.frameWidth or 72,
-        shade.height or s.frameHeight or 46,
+        shade.width or cfg.frameWidth or 72,
+        shade.height or cfg.frameHeight or 46,
         ug,
         gg,
         cs,
@@ -853,15 +853,15 @@ end
 -- stamped at birth -- otherwise the next _NormalizeTierOffsetAnchors pass
 -- would "convert" (and silently shift) offsets that were never old-scheme.
 mod._EnsureRaidSizeOverrides = function()
-    local s = saved.profile
-    if not s.raidSizeOverrides then
-        s.raidSizeOverrides = { _topLeftAnchored = true, _cornerAnchored = true }
+    local cfg = saved.profile
+    if not cfg.raidSizeOverrides then
+        cfg.raidSizeOverrides = { _topLeftAnchored = true, _cornerAnchored = true }
     else
         -- Existing table: run any pending conversion now so edits that
         -- follow operate on post-conversion values.
         mod._NormalizeTierOffsetAnchors()
     end
-    return s.raidSizeOverrides
+    return cfg.raidSizeOverrides
 end
 
 -- One-time conversions (markers travel INSIDE raidSizeOverrides, so imported/swapped
@@ -874,11 +874,11 @@ end
 --      growth-derived pinned corner (ns._RFGrowthCorner). Only tiers whose effective
 --      growth pins RIGHT and/or BOTTOM change; DOWN+RIGHT tiers keep identical offsets.
 mod._NormalizeTierOffsetAnchors = function()
-    local s = saved and saved.profile
-    if not s then
+    local cfg = saved and saved.profile
+    if not cfg then
         return
     end
-    local shade = s.raidSizeOverrides
+    local shade = cfg.raidSizeOverrides
     if not shade then
         return
     end
@@ -910,9 +910,9 @@ mod._NormalizeTierOffsetAnchors = function()
     if shade._topLeftAnchored and shade._cornerAnchored then
         return
     end
-    local cs = mod.RF_CellSpacing(s)
-    local gs = mod.RF_GroupSpacing(s)
-    local place = s.unlockPos
+    local cs = mod.RF_CellSpacing(cfg)
+    local gs = mod.RF_GroupSpacing(cfg)
+    local place = cfg.unlockPos
     local bl, bt, bw, bh = mod._RFBaseTopLeft()
     if not shade._topLeftAnchored then
         shade._topLeftAnchored = true
@@ -920,13 +920,13 @@ mod._NormalizeTierOffsetAnchors = function()
             for _, o in pairs(shade) do
                 if type(o) == "table" then
                     local ug, gg = mod._RFEffectiveGrowth(
-                        o.unitGrowth or s.unitGrowth or "DOWN",
-                        o.groupGrowth or s.groupGrowth or "RIGHT",
-                        s.mergeGroups
+                        o.unitGrowth or cfg.unitGrowth or "DOWN",
+                        o.groupGrowth or cfg.groupGrowth or "RIGHT",
+                        cfg.mergeGroups
                     )
                     local tw, th = mod._RFFootprint(
-                        o.width or s.frameWidth or 72,
-                        o.height or s.frameHeight or 46,
+                        o.width or cfg.frameWidth or 72,
+                        o.height or cfg.frameHeight or 46,
                         ug,
                         gg,
                         cs,
@@ -945,13 +945,13 @@ mod._NormalizeTierOffsetAnchors = function()
             for _, o in pairs(shade) do
                 if type(o) == "table" then
                     local ug, gg = mod._RFEffectiveGrowth(
-                        o.unitGrowth or s.unitGrowth or "DOWN",
-                        o.groupGrowth or s.groupGrowth or "RIGHT",
-                        s.mergeGroups
+                        o.unitGrowth or cfg.unitGrowth or "DOWN",
+                        o.groupGrowth or cfg.groupGrowth or "RIGHT",
+                        cfg.mergeGroups
                     )
                     local tw, th = mod._RFFootprint(
-                        o.width or s.frameWidth or 72,
-                        o.height or s.frameHeight or 46,
+                        o.width or cfg.frameWidth or 72,
+                        o.height or cfg.frameHeight or 46,
                         ug,
                         gg,
                         cs,
@@ -1009,19 +1009,19 @@ mod._ApplyTierOffset = function()
         end
         return
     end
-    local s = saved.profile
-    if not s.unlockPos then
+    local cfg = saved.profile
+    if not cfg.unlockPos then
         return
     end
     local _, shade = mod._RFResolveTierOverride(mod._GetEffectiveRaidSize())
-    local cs = mod.RF_CellSpacing(s)
-    local gs = mod.RF_GroupSpacing(s)
-    local fw = (shade and shade.width) or s.frameWidth or 72
-    local fh = (shade and shade.height) or s.frameHeight or 46
+    local cs = mod.RF_CellSpacing(cfg)
+    local gs = mod.RF_GroupSpacing(cfg)
+    local fw = (shade and shade.width) or cfg.frameWidth or 72
+    local fh = (shade and shade.height) or cfg.frameHeight or 46
     local ug, gg = mod._RFEffectiveGrowth(
-        (shade and shade.unitGrowth) or s.unitGrowth or "DOWN",
-        (shade and shade.groupGrowth) or s.groupGrowth or "RIGHT",
-        s.mergeGroups
+        (shade and shade.unitGrowth) or cfg.unitGrowth or "DOWN",
+        (shade and shade.groupGrowth) or cfg.groupGrowth or "RIGHT",
+        cfg.mergeGroups
     )
     local tw, th = mod._RFFootprint(fw, fh, ug, gg, cs, gs)
     local posX, posY = mod._RFTierTopLeft(

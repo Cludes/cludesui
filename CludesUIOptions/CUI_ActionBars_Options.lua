@@ -94,9 +94,9 @@ CludesUI.AtOptionsLogin(function()
         if not ABAR or not ABAR.db then
             return true
         end
-        local s = ABAR.db.profile.bars[barId]
-        if s and s.enabled ~= nil then
-            return s.enabled
+        local cfg = ABAR.db.profile.bars[barId]
+        if cfg and cfg.enabled ~= nil then
+            return cfg.enabled
         end
         return true
     end
@@ -198,8 +198,8 @@ CludesUI.AtOptionsLogin(function()
         end
         -- BagBar / MicroBar: show only when hidden or mouseover
         if barId == "BagBar" or barId == "MicroBar" then
-            local s = ABAR.db.profile.bars[barId]
-            if s and (s.alwaysHidden or s.mouseoverEnabled) then
+            local cfg = ABAR.db.profile.bars[barId]
+            if cfg and (cfg.alwaysHidden or cfg.mouseoverEnabled) then
                 for _, details in ipairs(EXTRA_BARS) do
                     if details.key == barId and details.frameName then
                         return _G[details.frameName]
@@ -540,14 +540,14 @@ CludesUI.AtOptionsLogin(function()
                 function(keyName, value)
                     -- Both sides are written, the untouched one as the bar
                     -- shows it now: a written side never reads a default.
-                    local s = o.store()
+                    local cfg = o.store()
                     local l, r = mod.AB_CapsSides(o.key())
                     if keyName == "L" then
                         l = value and true or false
                     else
                         r = value and true or false
                     end
-                    s.endCapLeft, s.endCapRight = l, r
+                    cfg.endCapLeft, cfg.endCapRight = l, r
                     o.write()
                 end,
                 nil,

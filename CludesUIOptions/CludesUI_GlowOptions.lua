@@ -231,31 +231,31 @@ end
 -- Render spec for StartSpecGlow from the site's current values (one reused
 -- table per descriptor).
 function GO.Spec(desc)
-    local s = desc._spec
-    if not s then
-        s = {}
-        desc._spec = s
+    local color = desc._spec
+    if not color then
+        color = {}
+        desc._spec = color
     end
     local posX = CurrentExtra(desc)
-    s.style = GO.ToShared(desc, desc.get("style")) or (posX and posX.style) or 1
-    s.excludes = desc.excludes
+    color.style = GO.ToShared(desc, desc.get("style")) or (posX and posX.style) or 1
+    color.excludes = desc.excludes
     local dc = desc.defaultColor
     local mode = desc.caps and desc.caps.mode and desc.get("mode") or "custom"
     local cr, cg, checkBtn = desc.get("color")
-    s.r, s.g, s.b = G.ResolveColor(mode, cr, cg, checkBtn, dc and dc.r, dc and dc.g, dc and dc.b)
+    color.r, color.g, color.b = G.ResolveColor(mode, cr, cg, checkBtn, dc and dc.r, dc and dc.g, dc and dc.b)
     local caps = desc.caps or {}
     if caps.params then
-        s.lines, s.thickness, s.speed = desc.get("lines"), desc.get("thickness"), desc.get("speed")
+        color.lines, color.thickness, color.speed = desc.get("lines"), desc.get("thickness"), desc.get("speed")
     else
-        s.lines, s.thickness, s.speed = nil, nil, nil
+        color.lines, color.thickness, color.speed = nil, nil, nil
     end
     if caps.bg and desc.get("bg") then
-        s.bg = true
-        s.bgR, s.bgG, s.bgB = desc.get("bgColor")
+        color.bg = true
+        color.bgR, color.bgG, color.bgB = desc.get("bgColor")
     else
-        s.bg, s.bgR, s.bgG, s.bgB = nil, nil, nil, nil
+        color.bg, color.bgR, color.bgG, color.bgB = nil, nil, nil, nil
     end
-    return s
+    return color
 end
 
 -- Refresh the module, then this site's current preview (skipped once that
@@ -777,14 +777,14 @@ function GO.BuildPreview(hostFrame, desc, options)
     local wid = options.width or (isBar and 110 or 36)
     local height = options.height or (isBar and 16 or 36)
 
-    local f = CreateFrame("Frame", nil, hostFrame)
+    local frame = CreateFrame("Frame", nil, hostFrame)
     -- This build's dress of the preview: the descriptor keeps Refresh past later
     -- builds (desc._preview), which can dress these frames for another use.
-    local dressGen = PoolGen(f)
-    Pix.Size(f, wid, height)
+    local dressGen = PoolGen(frame)
+    Pix.Size(frame, wid, height)
     if options.anchor then
         Pix.Point(
-            f,
+            frame,
             options.point or "RIGHT",
             options.anchor,
             options.relPoint or "LEFT",
@@ -792,7 +792,7 @@ function GO.BuildPreview(hostFrame, desc, options)
             options.y or 0
         )
     end
-    local texture = f:CreateTexture(nil, "ARTWORK")
+    local texture = frame:CreateTexture(nil, "ARTWORK")
     texture:SetAllPoints()
     -- opts.icon: a texture, or a function re-read on every refresh.
     local iconFn = type(options.icon) == "function" and options.icon or nil
@@ -803,11 +803,11 @@ function GO.BuildPreview(hostFrame, desc, options)
         texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     end
     -- 1px black edge (below the glow overlay, which sits one level higher).
-    Pix.CreateBorder(f, 0, 0, 0, 1, 1, "OVERLAY", 6)
+    Pix.CreateBorder(frame, 0, 0, 0, 1, 1, "OVERLAY", 6)
 
-    local shade = CreateFrame("Frame", nil, f)
-    shade:SetAllPoints(f)
-    shade:SetFrameLevel(f:GetFrameLevel() + 2)
+    local shade = CreateFrame("Frame", nil, frame)
+    shade:SetAllPoints(frame)
+    shade:SetFrameLevel(frame:GetFrameLevel() + 2)
     shade:EnableMouse(false)
     shade._cuiGlowPreview = true -- exempt from CDM's Show Glows Only in Combat gate
 
@@ -815,7 +815,7 @@ function GO.BuildPreview(hostFrame, desc, options)
         -- Hidden: stays stopped until OnShow (a page refresh with the panel
         -- closed must not put it back into the glow driver). Dressed again
         -- by a later build: those frames are no longer this preview.
-        if PoolGen(f) ~= dressGen or not f:IsVisible() then
+        if PoolGen(frame) ~= dressGen or not frame:IsVisible() then
             return
         end
         if iconFn and not isBar then
@@ -823,24 +823,24 @@ function GO.BuildPreview(hostFrame, desc, options)
         end
         if not GO.Renders(desc) then
             G.StopGlow(shade)
-            f:SetAlpha(0.3)
+            frame:SetAlpha(0.3)
             return
         end
-        f:SetAlpha(1)
+        frame:SetAlpha(1)
         G.StartSpecGlow(shade, GO.Spec(desc), wid, height, desc.host, G.PANEL_EXTRA)
     end
     -- A hidden preview (options closed, page left or rebuilt) stops its glow,
     -- so it leaves the glow driver and a closed panel costs nothing; shown
     -- again (a cached page coming back), it restarts from the current values.
-    f:SetScript("OnHide", function()
+    frame:SetScript("OnHide", function()
         G.StopGlow(shade)
     end)
-    f:SetScript("OnShow", Refresh)
+    frame:SetScript("OnShow", Refresh)
     -- Latest build only: descriptors outlive page rebuilds, a list would grow.
-    desc._preview, desc._previewFrame = Refresh, f
+    desc._preview, desc._previewFrame = Refresh, frame
     CludesUI.RegisterWidgetRefresh(Refresh)
     Refresh()
-    return f, Refresh
+    return frame, Refresh
 end
 
 -------------------------------------------------------------------------------
@@ -902,51 +902,51 @@ function GO.PrefixSite(getT, p, host, onChange, defColor)
         onChange = onChange,
     }
     function desc.get(f)
-        local t = getT()
-        if not t then
+        local tbl = getT()
+        if not tbl then
             return nil
         end
         if f == "style" then
-            return t[key.type] or 0
+            return tbl[key.type] or 0
         elseif f == "mode" then
-            return G.DeriveColorMode(t[key.mode], t[key.class])
+            return G.DeriveColorMode(tbl[key.mode], tbl[key.class])
         elseif f == "color" then
-            return t[key.r], t[key.g], t[key.b]
+            return tbl[key.r], tbl[key.g], tbl[key.b]
         elseif f == "lines" then
-            return t[key.lines]
+            return tbl[key.lines]
         elseif f == "thickness" then
-            return t[key.th]
+            return tbl[key.th]
         elseif f == "speed" then
-            return t[key.speed]
+            return tbl[key.speed]
         elseif f == "bg" then
-            return t[key.bg] == true
+            return tbl[key.bg] == true
         elseif f == "bgColor" then
-            return t[key.bgR], t[key.bgG], t[key.bgB]
+            return tbl[key.bgR], tbl[key.bgG], tbl[key.bgB]
         end
     end
     function desc.set(f, a, b, c)
-        local t = getT()
-        if not t then
+        local tbl = getT()
+        if not tbl then
             return
         end
         if f == "style" then
-            t[key.type] = a
+            tbl[key.type] = a
         elseif f == "mode" then
             -- The legacy class flag stays in step for older readers of this table.
-            t[key.mode] = a
-            t[key.class] = (a == "class") or nil
+            tbl[key.mode] = a
+            tbl[key.class] = (a == "class") or nil
         elseif f == "color" then
-            t[key.r], t[key.g], t[key.b] = a, b, c
+            tbl[key.r], tbl[key.g], tbl[key.b] = a, b, c
         elseif f == "lines" then
-            t[key.lines] = a
+            tbl[key.lines] = a
         elseif f == "thickness" then
-            t[key.th] = a
+            tbl[key.th] = a
         elseif f == "speed" then
-            t[key.speed] = a
+            tbl[key.speed] = a
         elseif f == "bg" then
-            t[key.bg] = a and true or nil
+            tbl[key.bg] = a and true or nil
         elseif f == "bgColor" then
-            t[key.bgR], t[key.bgG], t[key.bgB] = a, b, c
+            tbl[key.bgR], tbl[key.bgG], tbl[key.bgB] = a, b, c
         end
     end
     return desc

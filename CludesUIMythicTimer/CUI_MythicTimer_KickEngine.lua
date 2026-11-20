@@ -191,21 +191,21 @@ end
 -- The meter's rows name a spec by its icon; each class's specs map their icon
 -- back to the spec ID (built once per class).
 local function IconSpecs(classID, classFile)
-    local t = specOfIcon[classFile]
-    if t then
-        return t
+    local tbl = specOfIcon[classFile]
+    if tbl then
+        return tbl
     end
-    t = {}
-    specOfIcon[classFile] = t
+    tbl = {}
+    specOfIcon[classFile] = tbl
     local num = C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0
     for i = 1, num do
         local ident, _, _, iconTex = GetSpecializationInfoForClassID(classID, i)
         if ident and iconTex then
-            t[iconTex] = ident
+            tbl[iconTex] = ident
             specIconOf[ident] = iconTex
         end
     end
-    return t
+    return tbl
 end
 
 -- The icon the meter's rows show for a member's spec, from their class's
@@ -384,14 +384,14 @@ RefreshPlayer = function(m, quiet)
     m.specID = (type(ident) == "number" and ident > 0) and ident or nil
     m.specIcon = IconOf(m.classID, m.class, m.specID)
     m.specSrc = "self"
-    local t = m.talents or {}
-    wipe(t)
+    local tbl = m.talents or {}
+    wipe(tbl)
     for spellRef in pairs(KD.WATCHED_TALENTS) do
         if IsPlayerSpell(spellRef) then
-            t[spellRef] = true
+            tbl[spellRef] = true
         end
     end
-    m.talents = t
+    m.talents = tbl
     m.pet = PetFamily("player")
     local didChange = ResolveKick(m)
     if didChange and not quiet then

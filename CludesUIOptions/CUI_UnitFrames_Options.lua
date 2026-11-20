@@ -141,14 +141,14 @@ function mod.UF_ClassicCastBorderRow(W, hostFrame, cursorY, settingGet, settingK
         hostFrame,
         cursorY,
         BS.ClassicBorderSizeCfg(function()
-            local s = settingGet()
-            return s and s[settingKey]
+            local cfg = settingGet()
+            return cfg and cfg[settingKey]
         end, function(value)
-            local s = settingGet()
-            if not s then
+            local cfg = settingGet()
+            if not cfg then
                 return
             end
-            s[settingKey] = value
+            cfg[settingKey] = value
             changed()
             if matchKey and CludesUI.ReapplyMatchPads then
                 CludesUI.ReapplyMatchPads(matchKey)
@@ -159,12 +159,12 @@ function mod.UF_ClassicCastBorderRow(W, hostFrame, cursorY, settingGet, settingK
     if syncFn and not CludesUI._prebuilding then
         local region = line._leftRegion
         local function applyFn(units)
-            local s = settingGet()
-            local value = s and s[settingKey]
+            local cfg = settingGet()
+            local value = cfg and cfg[settingKey]
             for idx = 1, #units do
-                local t = syncFn.db(units[idx])
-                if t then
-                    t[mod.UF_CastClassicKey(units[idx])] = value
+                local tbl = syncFn.db(units[idx])
+                if tbl then
+                    tbl[mod.UF_CastClassicKey(units[idx])] = value
                 end
             end
             syncFn.reload()
@@ -180,11 +180,11 @@ function mod.UF_ClassicCastBorderRow(W, hostFrame, cursorY, settingGet, settingK
                 applyFn(syncFn.units)
             end,
             isSynced = function()
-                local s = settingGet()
-                local value = s and s[settingKey]
+                local cfg = settingGet()
+                local value = cfg and cfg[settingKey]
                 for idx = 1, #syncFn.units do
-                    local t = syncFn.db(syncFn.units[idx])
-                    if t and t[mod.UF_CastClassicKey(syncFn.units[idx])] ~= value then
+                    local tbl = syncFn.db(syncFn.units[idx])
+                    if tbl and tbl[mod.UF_CastClassicKey(syncFn.units[idx])] ~= value then
                         return false
                     end
                 end
@@ -277,12 +277,12 @@ do
         end
         local enabled
         for _, keyName in ipairs(UNITS) do
-            local s = prof[keyName]
+            local cfg = prof[keyName]
             if
-                type(s) == "table"
-                and s.portraitMirror
-                and (s.portraitMode or prof.portraitMode or "2d") == "2d"
-                and (s.portraitStyle or prof.portraitStyle) ~= "none"
+                type(cfg) == "table"
+                and cfg.portraitMirror
+                and (cfg.portraitMode or prof.portraitMode or "2d") == "2d"
+                and (cfg.portraitStyle or prof.portraitStyle) ~= "none"
             then
                 enabled = enabled or {}
                 enabled[#enabled + 1] = keyName
@@ -347,20 +347,20 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
                 return settingGet().castBorderStyle or "solid"
             end,
             setValue = function(value)
-                local s = settingGet()
-                s.castBorderStyle = value
-                s.castBorderOffsetX, s.castBorderOffsetY = nil, nil
-                s.castBorderShiftX, s.castBorderShiftY = nil, nil
+                local cfg = settingGet()
+                cfg.castBorderStyle = value
+                cfg.castBorderOffsetX, cfg.castBorderOffsetY = nil, nil
+                cfg.castBorderShiftX, cfg.castBorderShiftY = nil, nil
                 local col, behind = CludesUI.GetBorderStyleSelectDefaults(value)
-                s.castBorderColor, s.castBorderAlpha, s.castBorderBehind = col, 1, behind
+                cfg.castBorderColor, cfg.castBorderAlpha, cfg.castBorderBehind = col, 1, behind
                 local defSz = CludesUI.GetBorderDefaultSize("unitframes", value)
                 if defSz then
-                    s.castBorderSize = defSz
+                    cfg.castBorderSize = defSz
                 end
                 -- A style pick returns the bar to its legacy step; clear a set
                 -- exact size (false travels through mirror sync, nil would not).
-                if s.castBorderSizePx then
-                    s.castBorderSizePx = false
+                if cfg.castBorderSizePx then
+                    cfg.castBorderSizePx = false
                 end
                 Changed()
                 -- The Width / Height Offset row exists only under a textured style.
@@ -441,12 +441,12 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
     do
         -- A stored shift, else the registry default for the style and size.
         local function Shift(settingKey, isY)
-            local s = settingGet()
-            if s[settingKey] then
-                return s[settingKey]
+            local cfg = settingGet()
+            if cfg[settingKey] then
+                return cfg[settingKey]
             end
             local _, _, dsx, dsy =
-                CludesUI.GetBorderDefaults("unitframes", s.castBorderStyle or "solid", s.castBorderSize or 1)
+                CludesUI.GetBorderDefaults("unitframes", cfg.castBorderStyle or "solid", cfg.castBorderSize or 1)
             if isY then
                 return dsy
             end
@@ -454,10 +454,10 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
         end
         -- The shown default stores nil, any other value (0 included) is kept.
         local function SetShift(settingKey, isY, value)
-            local s = settingGet()
-            s[settingKey] = nil
+            local cfg = settingGet()
+            cfg[settingKey] = nil
             if value ~= Shift(settingKey, isY) then
-                s[settingKey] = value
+                cfg[settingKey] = value
             end
             Changed()
         end
@@ -520,13 +520,13 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
     do
         local region = line._rightRegion
         local sw, updateSw = CludesUI.BuildColorSwatch(region, line:GetFrameLevel() + 3, function()
-            local s = settingGet()
-            local color = s.castBorderColor
-            return color and color.r or 0, color and color.g or 0, color and color.b or 0, s.castBorderAlpha or 1
+            local cfg = settingGet()
+            local color = cfg.castBorderColor
+            return color and color.r or 0, color and color.g or 0, color and color.b or 0, cfg.castBorderAlpha or 1
         end, function(red, green, blue, a)
-            local s = settingGet()
-            s.castBorderColor = { r = red, g = green, b = blue }
-            s.castBorderAlpha = a
+            local cfg = settingGet()
+            cfg.castBorderColor = { r = red, g = green, b = blue }
+            cfg.castBorderAlpha = a
             changed()
         end, true, 20)
         CludesUI.PanelPP.Point(sw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
@@ -995,9 +995,9 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
             ),
         })
         local sw, updateSw = CludesUI.BuildColorSwatch(region, line:GetFrameLevel() + 3, function()
-            local s = Src()
-            local color = s.borderColor
-            return color and color.r or 0, color and color.g or 0, color and color.b or 0, s.borderAlpha or 1
+            local cfg = Src()
+            local color = cfg.borderColor
+            return color and color.r or 0, color and color.g or 0, color and color.b or 0, cfg.borderAlpha or 1
         end, function(red, green, blue, a)
             B.borderColor = { r = red, g = green, b = blue }
             B.borderAlpha = a
@@ -1047,14 +1047,14 @@ local TRACKED_TITLES = {
 }
 local function TrackedList(unitName, field)
     local saved = mod.db
-    local s = saved and saved.profile and saved.profile[unitName]
-    if not s then
+    local cfg = saved and saved.profile and saved.profile[unitName]
+    if not cfg then
         return nil
     end
-    if not s[field] then
-        s[field] = {}
+    if not cfg[field] then
+        cfg[field] = {}
     end
-    return s[field]
+    return cfg[field]
 end
 function mod.UFOpt_ShowTrackedAuras(unitName)
     local choices = {}
@@ -1596,22 +1596,22 @@ CludesUI.AtLogin(function()
                 defaultColor = CludesUI.Glows.DEFAULT_COLOR,
                 onChange = ReloadAndUpdate,
                 get = function(f)
-                    local s = settingGet()
+                    local cfg = settingGet()
                     if f == "style" then
-                        return s.buffPurgeGlow or 0
+                        return cfg.buffPurgeGlow or 0
                     elseif f == "mode" then
-                        return s.buffPurgeGlowColorMode or (s.buffPurgeGlowColor and "custom" or "default")
+                        return cfg.buffPurgeGlowColorMode or (cfg.buffPurgeGlowColor and "custom" or "default")
                     end
-                    return CludesUI.GlowOptions.FlatGet(s, "buffPurgeGlow", f)
+                    return CludesUI.GlowOptions.FlatGet(cfg, "buffPurgeGlow", f)
                 end,
                 set = function(f, a, b, c)
-                    local s = settingGet()
+                    local cfg = settingGet()
                     if f == "style" then
-                        s.buffPurgeGlow = (a ~= 0) and a or nil
+                        cfg.buffPurgeGlow = (a ~= 0) and a or nil
                     elseif f == "mode" then
-                        s.buffPurgeGlowColorMode = a
+                        cfg.buffPurgeGlowColorMode = a
                     else
-                        CludesUI.GlowOptions.FlatSet(s, "buffPurgeGlow", f, a, b, c)
+                        CludesUI.GlowOptions.FlatSet(cfg, "buffPurgeGlow", f, a, b, c)
                     end
                 end,
             }
@@ -1628,27 +1628,27 @@ CludesUI.AtLogin(function()
                     return settingGet().castbarImportantGlow ~= true
                 end,
                 get = function(f)
-                    local s = settingGet()
+                    local cfg = settingGet()
                     if f == "style" then
-                        return s.castbarImportantGlowStyle or 1
+                        return cfg.castbarImportantGlowStyle or 1
                     elseif f == "mode" then
-                        return s.castbarImportantGlowColorMode or "custom"
+                        return cfg.castbarImportantGlowColorMode or "custom"
                     end
-                    return CludesUI.GlowOptions.FlatGet(s, "castbarImportantGlow", f)
+                    return CludesUI.GlowOptions.FlatGet(cfg, "castbarImportantGlow", f)
                 end,
                 set = function(f, a, b, c)
-                    local s = settingGet()
+                    local cfg = settingGet()
                     if f == "style" then
                         if a == 0 then
-                            s.castbarImportantGlow = false
+                            cfg.castbarImportantGlow = false
                         else
-                            s.castbarImportantGlow = true
-                            s.castbarImportantGlowStyle = a
+                            cfg.castbarImportantGlow = true
+                            cfg.castbarImportantGlowStyle = a
                         end
                     elseif f == "mode" then
-                        s.castbarImportantGlowColorMode = a
+                        cfg.castbarImportantGlowColorMode = a
                     else
-                        CludesUI.GlowOptions.FlatSet(s, "castbarImportantGlow", f, a, b, c)
+                        CludesUI.GlowOptions.FlatSet(cfg, "castbarImportantGlow", f, a, b, c)
                     end
                 end,
             }
@@ -4171,21 +4171,21 @@ CludesUI.AtLogin(function()
                     return "This option requires a health Fill Opacity of 100."
                 end,
                 get = function()
-                    local s = unitFn()
-                    if not s then
+                    local cfg = unitFn()
+                    if not cfg then
                         return false
                     end
-                    if Inheriting(s) then
+                    if Inheriting(cfg) then
                         return mod.UF_TexBgOn(mini)
                     end
-                    return s.textureBg == true
+                    return cfg.textureBg == true
                 end,
                 set = function(value)
-                    local s = unitFn()
-                    if not s then
+                    local cfg = unitFn()
+                    if not cfg then
                         return
                     end
-                    s.textureBg = value and true or false
+                    cfg.textureBg = value and true or false
                     applyFn()
                 end,
             }

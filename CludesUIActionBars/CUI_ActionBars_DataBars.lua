@@ -976,9 +976,9 @@ local function RegisterDataBarsWithUnlockMode()
                 getSize = function()
                     -- Return stored DB values so cog menu shows what the
                     -- user typed, not the pixel-snapped frame size.
-                    local s = ABAR.db.profile.bars[bk]
-                    if s then
-                        return s.width or 400, s.height or 18
+                    local cfg = ABAR.db.profile.bars[bk]
+                    if cfg then
+                        return cfg.width or 400, cfg.height or 18
                     end
                     return 400, 18
                 end,
@@ -987,39 +987,39 @@ local function RegisterDataBarsWithUnlockMode()
                 -- paints with). nil while Custom Border is off: MakeBorder's
                 -- line and solid strips sit inside the frame.
                 getMatchPad = function()
-                    local s = ABAR.db and ABAR.db.profile and ABAR.db.profile.bars[bk]
-                    if not (s and s.customBorder) then
+                    local cfg = ABAR.db and ABAR.db.profile and ABAR.db.profile.bars[bk]
+                    if not (cfg and cfg.customBorder) then
                         return nil
                     end
-                    local sz, px = ResolveBorderThickness(s)
-                    local color = s.borderColor
+                    local sz, px = ResolveBorderThickness(cfg)
+                    local color = cfg.borderColor
                     return CludesUI.BorderMatchPad(
                         sz,
-                        s.borderTexture or "solid",
-                        s.borderTextureOffset,
-                        s.borderTextureOffsetY,
-                        s.borderTextureShiftX,
-                        s.borderTextureShiftY,
+                        cfg.borderTexture or "solid",
+                        cfg.borderTextureOffset,
+                        cfg.borderTextureOffsetY,
+                        cfg.borderTextureShiftX,
+                        cfg.borderTextureShiftY,
                         "actionbars",
-                        s.borderThickness or "thin",
+                        cfg.borderThickness or "thin",
                         px,
                         nil,
                         color and color.a or 1
                     )
                 end,
                 setWidth = function(_, wid)
-                    local s = ABAR.db.profile.bars[bk]
+                    local cfg = ABAR.db.profile.bars[bk]
                     local PPab = CludesUI and CludesUI.PP
-                    if s then
-                        s.width = PPab and PPab.Snap(wid) or math.floor(wid + 0.5)
+                    if cfg then
+                        cfg.width = PPab and PPab.Snap(wid) or math.floor(wid + 0.5)
                     end
                     ApplyDataBarLayout(bk)
                 end,
                 setHeight = function(_, hgt)
-                    local s = ABAR.db.profile.bars[bk]
+                    local cfg = ABAR.db.profile.bars[bk]
                     local PPab = CludesUI and CludesUI.PP
-                    if s then
-                        s.height = PPab and PPab.Snap(hgt) or math.floor(hgt + 0.5)
+                    if cfg then
+                        cfg.height = PPab and PPab.Snap(hgt) or math.floor(hgt + 0.5)
                     end
                     ApplyDataBarLayout(bk)
                 end,

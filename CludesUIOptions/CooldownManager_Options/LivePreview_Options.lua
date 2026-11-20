@@ -287,9 +287,9 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         lastInsertIdx = nil
         -- Clear swap highlight
         if swapIdx then
-            local s = slotList[swapIdx]
-            if s and s._hlBrd then
-                s._hlBrd:Hide()
+            local cfg = slotList[swapIdx]
+            if cfg and cfg._hlBrd then
+                cfg._hlBrd:Hide()
             end
             swapIdx = nil
         end
@@ -447,12 +447,12 @@ local function BuildCDMLivePreview(hostFrame, yOff)
 
         for vi = 1, #rowSlots do
             local record = rowSlots[vi]
-            local s = record.slot
+            local cfg = record.slot
             local i = record.idx
-            local slotL = s._baseX
+            local slotL = cfg._baseX
             local slotR = slotL + iconSz
             local slotCX = slotL + iconSz / 2
-            local isBlank = not s._icon or not s._icon:GetTexture()
+            local isBlank = not cfg._icon or not cfg._icon:GetTexture()
             local zone = isBlank and blankSwapZone or swapZone
             if localX >= slotL - gap * 0.5 and localX < slotR + gap * 0.5 then
                 if i ~= sourceIdx and math.abs(localX - slotCX) < zone then
@@ -496,9 +496,9 @@ local function BuildCDMLivePreview(hostFrame, yOff)
         if mode == "swap" then
             dropLine:Hide()
             if swapIdx and swapIdx ~= goalIdx then
-                local s = slotList[swapIdx]
-                if s and s._hlBrd then
-                    s._hlBrd:Hide()
+                local cfg = slotList[swapIdx]
+                if cfg and cfg._hlBrd then
+                    cfg._hlBrd:Hide()
                 end
             end
             if lastInsertIdx then
@@ -519,18 +519,18 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 lastInsertIdx = nil
             end
             swapIdx = goalIdx
-            local s = slotList[goalIdx]
-            if s and s._hlBrd then
-                s._hlBrd:Show()
+            local cfg = slotList[goalIdx]
+            if cfg and cfg._hlBrd then
+                cfg._hlBrd:Show()
             end
             return
         end
 
         -- Insert mode: clear swap highlight first
         if swapIdx then
-            local s = slotList[swapIdx]
-            if s and s._hlBrd then
-                s._hlBrd:Hide()
+            local cfg = slotList[swapIdx]
+            if cfg and cfg._hlBrd then
+                cfg._hlBrd:Hide()
             end
             swapIdx = nil
         end
@@ -1019,7 +1019,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 if not sdMid or not sdMid.assignedSpells then
                     return
                 end
-                local t = sdMid.assignedSpells
+                local tbl = sdMid.assignedSpells
                 -- Remove every assignedSpells entry collapsed into this preview slot. A legacy
                 -- duplicate buff maps >1 stored id to one slot; a normal slot maps exactly one (plain remove). Highest index first keeps the lower indices valid across removes.
                 local grp = (popFrame._buffDispGroups and popFrame._buffDispGroups[si]) or { si }
@@ -1032,7 +1032,7 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                 end)
                 local removedAny = false
                 for _, position in ipairs(sequence) do
-                    if t[position] and t[position] ~= 0 then
+                    if tbl[position] and tbl[position] ~= 0 then
                         mod.RemoveTrackedSpell(edge.key, position)
                         removedAny = true
                     end
@@ -1240,12 +1240,12 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     end
 
                     for i = 1, MAX_PREVIEW_ICONS do
-                        local s = slotList[i]
-                        if s then
-                            s._targetOffX = nil
-                            s._currentOffX = nil
-                            s._targetOffY = nil
-                            s._currentOffY = nil
+                        local cfg = slotList[i]
+                        if cfg then
+                            cfg._targetOffX = nil
+                            cfg._currentOffX = nil
+                            cfg._targetOffY = nil
+                            cfg._currentOffY = nil
                         end
                     end
                     animRunning = false
@@ -1323,9 +1323,9 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     return
                 end
             else
-                local t = sdDrag and sdDrag.assignedSpells or {}
+                local tbl = sdDrag and sdDrag.assignedSpells or {}
                 local di = BuffDataIdx(si)
-                if not t[di] or t[di] == 0 then
+                if not tbl[di] or tbl[di] == 0 then
                     return
                 end
             end

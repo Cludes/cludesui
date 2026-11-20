@@ -1331,8 +1331,8 @@ CUI_NS.unlockParts.Tools = function(LM)
         if not details then
             return nil
         end
-        local s = ABAR.db.profile.bars[lookupKey]
-        if not s then
+        local cfg = ABAR.db.profile.bars[lookupKey]
+        if not cfg then
             return nil
         end
 
@@ -1347,20 +1347,20 @@ CUI_NS.unlockParts.Tools = function(LM)
             end
         end
 
-        local numVisible = s.overrideNumIcons or s.numIcons or details.count
+        local numVisible = cfg.overrideNumIcons or cfg.numIcons or details.count
         if numVisible < 1 then
             numVisible = details.count
         end
-        local numRows = s.overrideNumRows or s.numRows or 1
+        local numRows = cfg.overrideNumRows or cfg.numRows or 1
         if numRows < 1 then
             numRows = 1
         end
 
-        local pad = s.buttonPadding or 2
+        local pad = cfg.buttonPadding or 2
 
         -- Use explicit button dimensions if set
-        local bwOverride = (s.buttonWidth and s.buttonWidth > 0) and s.buttonWidth or nil
-        local bhOverride = (s.buttonHeight and s.buttonHeight > 0) and s.buttonHeight or nil
+        local bwOverride = (cfg.buttonWidth and cfg.buttonWidth > 0) and cfg.buttonWidth or nil
+        local bhOverride = (cfg.buttonHeight and cfg.buttonHeight > 0) and cfg.buttonHeight or nil
         if bwOverride then
             btnW = bwOverride
         end
@@ -1368,7 +1368,7 @@ CUI_NS.unlockParts.Tools = function(LM)
             btnH = bhOverride
         end
 
-        local shape = s.buttonShape or "none"
+        local shape = cfg.buttonShape or "none"
         if shape ~= "none" and shape ~= "cropped" then
             btnW = btnW + (mod.SHAPE_BTN_EXPAND or 10)
             btnH = btnH + (mod.SHAPE_BTN_EXPAND or 10)
@@ -1377,7 +1377,7 @@ CUI_NS.unlockParts.Tools = function(LM)
             btnH = btnH * 0.80
         end
 
-        local isVert = (s.orientation == "vertical")
+        local isVert = (cfg.orientation == "vertical")
         local stride = math.ceil(numVisible / numRows)
 
         local gridW, gridH

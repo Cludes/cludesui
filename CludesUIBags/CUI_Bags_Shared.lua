@@ -70,11 +70,11 @@ local function CreateInsetBorder(button, isSlot, iconTex)
     t:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
     t:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, 0)
     t:SetHeight(px)
-    local b = button:CreateTexture(nil, "OVERLAY", nil, 2)
-    b:SetTexture(WHITE)
-    b:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0)
-    b:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0)
-    b:SetHeight(px)
+    local widget = button:CreateTexture(nil, "OVERLAY", nil, 2)
+    widget:SetTexture(WHITE)
+    widget:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0)
+    widget:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0)
+    widget:SetHeight(px)
     local l = button:CreateTexture(nil, "OVERLAY", nil, 2)
     l:SetTexture(WHITE)
     l:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
@@ -85,7 +85,7 @@ local function CreateInsetBorder(button, isSlot, iconTex)
     region:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, 0)
     region:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0)
     region:SetWidth(px)
-    button._brdT, button._brdB, button._brdL, button._brdR = t, b, l, region
+    button._brdT, button._brdB, button._brdL, button._brdR = t, widget, l, region
 end
 
 local function SetInsetBorderColor(button, cr, cg, callback, ca)
@@ -697,22 +697,22 @@ do
     local ARROW_DOWN = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-down3.png"
 
     local function MakeStep(hostFrame, size, iconTex, onClick)
-        local b = CreateFrame("Button", nil, hostFrame)
-        b:SetSize(size, size)
-        local t = b:CreateTexture(nil, "OVERLAY")
+        local widget = CreateFrame("Button", nil, hostFrame)
+        widget:SetSize(size, size)
+        local t = widget:CreateTexture(nil, "OVERLAY")
         t:SetSize(size - 4, size - 4)
-        t:SetPoint("CENTER", b, "CENTER", 0, 0)
+        t:SetPoint("CENTER", widget, "CENTER", 0, 0)
         t:SetTexture(iconTex)
-        b:SetAlpha(0.5)
-        b:SetScript("OnEnter", function(self)
+        widget:SetAlpha(0.5)
+        widget:SetScript("OnEnter", function(self)
             self:SetAlpha(0.9)
         end)
-        b:SetScript("OnLeave", function(self)
+        widget:SetScript("OnLeave", function(self)
             self:SetAlpha(0.5)
         end)
-        b:SetScript("OnClick", onClick)
-        b:Hide()
-        return b
+        widget:SetScript("OnClick", onClick)
+        widget:Hide()
+        return widget
     end
 
     -- Up/down step buttons for a wheel-only scroller: step(1) scrolls up one
@@ -997,26 +997,26 @@ do
     end
 
     local function MakeButton(hostFrame, wid, hgt, labelText, Pix)
-        local b = CreateFrame("Button", nil, hostFrame)
-        b:SetSize(wid, hgt)
-        local backdrop = b:CreateTexture(nil, "BACKGROUND")
+        local widget = CreateFrame("Button", nil, hostFrame)
+        widget:SetSize(wid, hgt)
+        local backdrop = widget:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0.15, 0.15, 0.15, 1)
         if Pix and Pix.CreateBorder then
-            Pix.CreateBorder(b, 0.25, 0.25, 0.25, 1)
+            Pix.CreateBorder(widget, 0.25, 0.25, 0.25, 1)
         end
-        local fontStr = b:CreateFontString(nil, "OVERLAY")
+        local fontStr = widget:CreateFontString(nil, "OVERLAY")
         SetBagFont(fontStr, 12)
         fontStr:SetPoint("CENTER", 0, 0)
         fontStr:SetTextColor(1, 1, 1, 0.9)
         fontStr:SetText(labelText)
-        b:SetScript("OnEnter", function()
+        widget:SetScript("OnEnter", function()
             backdrop:SetColorTexture(0.2, 0.2, 0.2, 1)
         end)
-        b:SetScript("OnLeave", function()
+        widget:SetScript("OnLeave", function()
             backdrop:SetColorTexture(0.15, 0.15, 0.15, 1)
         end)
-        return b
+        return widget
     end
 
     local function DoSplit(auto)

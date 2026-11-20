@@ -337,24 +337,24 @@ do
     end
 
     local function SpellIdSet(ident)
-        local t = { [ident] = true }
+        local tbl = { [ident] = true }
         local a = safeNum(GetOverrideSpell, ident)
         if a then
-            t[a] = true
+            tbl[a] = true
         end
         local b = safeNum(GetBaseSpell, ident)
         if b then
-            t[b] = true
+            tbl[b] = true
         end
         local c = safeNum(FindBaseSpellByID, ident)
         if c then
-            t[c] = true
+            tbl[c] = true
         end
         local skinData = safeNum(FindSpellOverrideByID, ident)
         if skinData then
-            t[skinData] = true
+            tbl[skinData] = true
         end
-        return t
+        return tbl
     end
 
     local function IconMatches(pressedSet, iconSid)

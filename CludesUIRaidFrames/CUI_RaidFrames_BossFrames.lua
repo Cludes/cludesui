@@ -132,10 +132,10 @@ do
         if not FB.rangeSpell then
             return
         end
-        local s = mod._scaledProfile or saved.profile
+        local cfg = mod._scaledProfile or saved.profile
         local inRange = C_Spell.IsSpellInRange(FB.rangeSpell, FB.UnitOf(widget))
         if issecretvalue(inRange) or inRange ~= nil then
-            widget:SetAlphaFromBoolean(inRange, 1, s.oorAlpha or 0.4)
+            widget:SetAlphaFromBoolean(inRange, 1, cfg.oorAlpha or 0.4)
         else
             widget:SetAlpha(1)
         end
@@ -202,14 +202,14 @@ do
         if not Pix or not widget._borderFrame or not saved then
             return
         end
-        local s = FB.Source(widget)
-        local targeted = FB.tgt[widget] and s.targetBorderEnabled ~= false
-        if mod.RF_PetCompactOn(widget, s) then
-            mod.RF_PetCompactHighlight(widget, s)
+        local cfg = FB.Source(widget)
+        local targeted = FB.tgt[widget] and cfg.targetBorderEnabled ~= false
+        if mod.RF_PetCompactOn(widget, cfg) then
+            mod.RF_PetCompactHighlight(widget, cfg)
             return
         end
         if widget.stockEdge then
-            local hover = FB.hov[widget] and s.hoverBorderEnabled ~= false
+            local hover = FB.hov[widget] and cfg.hoverBorderEnabled ~= false
             local lvl = widget:GetFrameLevel() + (hover and mod.LVL_RAISE or 8)
             if widget._borderFrame:GetFrameLevel() ~= lvl then
                 widget._borderFrame:SetFrameLevel(lvl)
@@ -218,28 +218,28 @@ do
                     boxHolder:SetFrameLevel(lvl + 1)
                 end
             end
-            mod.RF_StockHighlight(widget, widget._borderFrame, s, hover, targeted)
+            mod.RF_StockHighlight(widget, widget._borderFrame, cfg, hover, targeted)
             return
         end
         local region, g, bcol, a
         local raised, hlSize, hlPx = false, nil, nil
-        if FB.hov[widget] and s.hoverBorderEnabled ~= false then
-            local color = s.hoverBorderColor or { r = 1, g = 1, b = 1 }
-            region, g, bcol, a = color.r, color.g, color.b, s.hoverBorderAlpha or 1
-            raised, hlSize = true, s.hoverBorderSize or 1
-            hlPx = CludesUI.BorderPx(s.hoverBorderSizePx, hlSize, s.borderTexture or "solid")
+        if FB.hov[widget] and cfg.hoverBorderEnabled ~= false then
+            local color = cfg.hoverBorderColor or { r = 1, g = 1, b = 1 }
+            region, g, bcol, a = color.r, color.g, color.b, cfg.hoverBorderAlpha or 1
+            raised, hlSize = true, cfg.hoverBorderSize or 1
+            hlPx = CludesUI.BorderPx(cfg.hoverBorderSizePx, hlSize, cfg.borderTexture or "solid")
         elseif targeted then
-            local color = s.targetBorderColor or { r = 1, g = 1, b = 1 }
-            region, g, bcol, a = color.r, color.g, color.b, s.targetBorderAlpha or 1
-            raised, hlSize = true, s.targetBorderSize or 1
-            hlPx = CludesUI.BorderPx(s.targetBorderSizePx, hlSize, s.borderTexture or "solid")
+            local color = cfg.targetBorderColor or { r = 1, g = 1, b = 1 }
+            region, g, bcol, a = color.r, color.g, color.b, cfg.targetBorderAlpha or 1
+            raised, hlSize = true, cfg.targetBorderSize or 1
+            hlPx = CludesUI.BorderPx(cfg.targetBorderSizePx, hlSize, cfg.borderTexture or "solid")
         else
-            local color = s.borderColor or { r = 0, g = 0, b = 0 }
-            region, g, bcol, a = color.r, color.g, color.b, s.borderAlpha or 1
+            local color = cfg.borderColor or { r = 0, g = 0, b = 0 }
+            region, g, bcol, a = color.r, color.g, color.b, cfg.borderAlpha or 1
         end
         -- Raise above neighbors while highlighted (as the raid buttons: overlapping frames would cover it).
         local pl = widget:GetFrameLevel()
-        local lvl = s.borderBehind and math.max(0, pl - 1) or (pl + (raised and mod.LVL_RAISE or 8))
+        local lvl = cfg.borderBehind and math.max(0, pl - 1) or (pl + (raised and mod.LVL_RAISE or 8))
         -- The container too, like ApplyBorderLevel: FB.StyleBorder moves only the border
         -- frame, so a Show Behind flip would otherwise leave the strips on the old level.
         local boxHolder = Pix.GetBorders(widget._borderFrame)
@@ -254,12 +254,12 @@ do
                 edge:SetFrameLevel(lvl)
             end
         end
-        if (s.borderSize or 1) <= 0 then
-            mod.ApplyHighlightBorder(widget._borderFrame, s, hlSize, region, g, bcol, a, hlPx)
+        if (cfg.borderSize or 1) <= 0 then
+            mod.ApplyHighlightBorder(widget._borderFrame, cfg, hlSize, region, g, bcol, a, hlPx)
             return
         end
         if hlSize then
-            region, g, bcol = mod.RF_VisibleHighlight(s, region, g, bcol)
+            region, g, bcol = mod.RF_VisibleHighlight(cfg, region, g, bcol)
         end
         widget._borderFrame._hlBorderSize = nil
         CludesUI.SetBorderStyleColor(widget._borderFrame, region, g, bcol, a)
@@ -270,12 +270,12 @@ do
         if not Pix or not widget._borderFrame then
             return
         end
-        local s = FB.Source(widget)
-        local bs = s.borderSize or 1
-        local bc = s.borderColor or { r = 0, g = 0, b = 0 }
+        local cfg = FB.Source(widget)
+        local bs = cfg.borderSize or 1
+        local bc = cfg.borderColor or { r = 0, g = 0, b = 0 }
         local pl = widget:GetFrameLevel()
         local skinData = Inner.FFD[widget]
-        local compact = mod.RF_PetCompactOn(widget, s)
+        local compact = mod.RF_PetCompactOn(widget, cfg)
         if compact or (skinData and skinData._petCompactBorder) then
             skinData._petCompactBorder = compact
         end
@@ -294,35 +294,35 @@ do
             CludesUI.RoundCorners(widget, 0)
             return
         end
-        widget._borderFrame:SetFrameLevel(s.borderBehind and math.max(0, pl - 1) or (pl + 8))
+        widget._borderFrame:SetFrameLevel(cfg.borderBehind and math.max(0, pl - 1) or (pl + 8))
         CludesUI.ApplyBorderStyle(
             widget._borderFrame,
             bs,
             bc.r,
             bc.g,
             bc.b,
-            s.borderAlpha or 1,
-            s.borderTexture or "solid",
-            s.borderTextureOffset,
-            s.borderTextureOffsetY,
-            s.borderTextureShiftX,
-            s.borderTextureShiftY,
+            cfg.borderAlpha or 1,
+            cfg.borderTexture or "solid",
+            cfg.borderTextureOffset,
+            cfg.borderTextureOffsetY,
+            cfg.borderTextureShiftX,
+            cfg.borderTextureShiftY,
             "unitframes",
             bs,
             nil,
-            CludesUI.BorderPx(s.borderSizePx, bs, s.borderTexture or "solid")
+            CludesUI.BorderPx(cfg.borderSizePx, bs, cfg.borderTexture or "solid")
         )
         FB.ApplyBorderColor(widget)
         -- Rounded corners with the owner's Corner Radius, as on the raid cells
         -- (CludesUI_RoundedCorners.lua; nothing at radius 0).
-        local radius = s.cornerRadius or 0
+        local radius = cfg.cornerRadius or 0
         if radius > 0 then
             CludesUI.RoundCorners(widget, radius, {
                 roots = { widget._health },
                 textures = { widget._bg },
                 border = widget._borderFrame,
-                style = s.borderTexture or "solid",
-                corners = s.cornerMask,
+                style = cfg.borderTexture or "solid",
+                corners = cfg.cornerMask,
             })
         else
             CludesUI.RoundCorners(widget, 0)
@@ -487,22 +487,22 @@ do
         FB.container = boxHolder
 
         for index = 1, 5 do
-            local b = CreateFrame("Button", "ERFFriendlyBoss" .. index, boxHolder, "SecureUnitButtonTemplate")
-            b._fbUnit = "boss" .. index
-            b:SetAttribute("unit", b._fbUnit)
-            b:SetAttribute("*type1", "target")
-            b:RegisterForClicks("AnyUp")
+            local widget = CreateFrame("Button", "ERFFriendlyBoss" .. index, boxHolder, "SecureUnitButtonTemplate")
+            widget._fbUnit = "boss" .. index
+            widget:SetAttribute("unit", widget._fbUnit)
+            widget:SetAttribute("*type1", "target")
+            widget:RegisterForClicks("AnyUp")
             -- The engine gates SecureUnitButton's togglemenu; route right-click through a SecureActionButton proxy so the menu works without taint.
             if CludesUI.AttachSecureUnitMenu then
-                CludesUI.AttachSecureUnitMenu(b)
+                CludesUI.AttachSecureUnitMenu(widget)
             else
-                b:SetAttribute("*type2", "togglemenu")
+                widget:SetAttribute("*type2", "togglemenu")
             end
-            b:Hide()
-            FB.BuildVisuals(b, true)
+            widget:Hide()
+            FB.BuildVisuals(widget, true)
 
             -- Refresh as soon as the driver shows the button; visible-count drives the ticker lifecycle.
-            b:HookScript("OnShow", function(self)
+            widget:HookScript("OnShow", function(self)
                 FB.visCount = (FB.visCount or 0) + 1
                 -- Containers first: an error in the legacy refresh must not starve the unit assignment.
                 if mod.RFC_OnUnitAssigned then
@@ -516,24 +516,24 @@ do
                 FB.ApplyRange(self)
                 FB.UpdateRangeTicker()
             end)
-            b:HookScript("OnHide", function(self)
+            widget:HookScript("OnHide", function(self)
                 FB.visCount = math.max(0, (FB.visCount or 0) - 1)
                 FB.UpdateRangeTicker()
             end)
 
             -- Hover highlight (these are our own buttons; hooks are safe)
-            b:HookScript("OnEnter", function(self)
+            widget:HookScript("OnEnter", function(self)
                 FB.hov[self] = true
                 FB.ApplyBorderColor(self)
             end)
-            b:HookScript("OnLeave", function(self)
+            widget:HookScript("OnLeave", function(self)
                 FB.hov[self] = nil
                 FB.ApplyBorderColor(self)
             end)
 
             -- Re-render when the slot controller reassigns this slot's unit mid-combat (a boss
             -- spawning/despawning reflows the slots without an OnShow on already-visible buttons).
-            b:HookScript("OnAttributeChanged", function(self, label)
+            widget:HookScript("OnAttributeChanged", function(self, label)
                 if label == "unit" and self:IsVisible() then
                     -- Containers first (same rationale as the OnShow hook).
                     if mod.RFC_OnUnitAssigned then
@@ -550,7 +550,7 @@ do
 
             -- Full click-cast / hovercast binding suite (mouseover heals included)
             if mod.CC_RegisterFrame then
-                mod.CC_RegisterFrame(b)
+                mod.CC_RegisterFrame(widget)
             end
 
             -- Boss units are outside the roster trackers; track here. The slot controller may have
@@ -570,11 +570,11 @@ do
             end)
             FB.trackers[index] = t
 
-            FB.buttons[index] = b
+            FB.buttons[index] = widget
 
             if mod.RFC_SetupButton then
-                local skinData = GetFFD(b)
-                mod.RFC_SetupButton(b, b._health, skinData)
+                local skinData = GetFFD(widget)
+                mod.RFC_SetupButton(widget, widget._health, skinData)
             end
         end
 
@@ -648,12 +648,12 @@ do
         if not ownerFrame.built then
             return
         end
-        local s = mod._scaledProfile or saved.profile
+        local cfg = mod._scaledProfile or saved.profile
         local fallbackSet = ownerFrame.Settings()
         -- Per-group size offset on the shared raid frame size (Extra Width/Height sliders; clamped so a negative offset can't invert a small frame).
-        local wid = PixelSnap(math.max(10, (s.frameWidth or 125) + ((fallbackSet and fallbackSet.extraWidth) or 0)))
-        local hgt = PixelSnap(math.max(10, (s.frameHeight or 60) + ((fallbackSet and fallbackSet.extraHeight) or 0)))
-        local sp = FB.Pitch(fallbackSet, s)
+        local wid = PixelSnap(math.max(10, (cfg.frameWidth or 125) + ((fallbackSet and fallbackSet.extraWidth) or 0)))
+        local hgt = PixelSnap(math.max(10, (cfg.frameHeight or 60) + ((fallbackSet and fallbackSet.extraHeight) or 0)))
+        local sp = FB.Pitch(fallbackSet, cfg)
         ownerFrame.pitch = sp
         -- Free Move ignores the raid growth settings: vertical stack by default, horizontal via the
         -- Horizontal Frames cog. Attached modes keep stacking like a real group (unitGrowth).
@@ -661,10 +661,10 @@ do
         if fallbackSet and fallbackSet.position == "free" then
             growDir = fallbackSet.freeHorizontal and "RIGHT" or "DOWN"
         else
-            growDir = s.unitGrowth or "DOWN"
+            growDir = cfg.unitGrowth or "DOWN"
         end
         local texPath = ResolveHealthTexture()
-        local bgc = s.customBgColor or { r = 17 / 255, g = 17 / 255, b = 17 / 255 }
+        local bgc = cfg.customBgColor or { r = 17 / 255, g = 17 / 255, b = 17 / 255 }
 
         local stepW, stepH = 0, 0
         if growDir == "DOWN" or growDir == "UP" then
@@ -689,7 +689,7 @@ do
                 btn:SetPoint("TOPLEFT", ownerFrame.container, "TOPLEFT", 0, -off * stepH)
             end
 
-            FB.StyleVisuals(btn, s, wid, hgt, texPath, bgc)
+            FB.StyleVisuals(btn, cfg, wid, hgt, texPath, bgc)
         end
     end
 
@@ -795,12 +795,12 @@ do
             ownerFrame.anchorDirty = true
             return
         end
-        local s = saved.profile
+        local cfg = saved.profile
         local fallback = ownerFrame.Settings()
         local c = ownerFrame.container
         -- A group's pitch follows the frames it sits beside (owner.Pitch: the boss group, the
         -- Extra Frames): re-lay it once that moved.
-        if ownerFrame.Pitch and ownerFrame.pitch ~= ownerFrame.Pitch(fallback, mod._scaledProfile or s) then
+        if ownerFrame.Pitch and ownerFrame.pitch ~= ownerFrame.Pitch(fallback, mod._scaledProfile or cfg) then
             if ownerFrame.Layout then
                 ownerFrame.Layout()
             else
@@ -835,14 +835,14 @@ do
                 -- Beside the party frames the chain runs on the party attach axis, not the raid growth,
                 -- with the same kit side and clearance, and the corner the party stack grows from.
                 if anchorHeader and ownerFrame.attachParty then
-                    local spacing = s.groupSpacing or -1
+                    local spacing = cfg.groupSpacing or -1
                     local before = (fallback.position == "left")
                     if mod.RF_PartyKit() then
                         local extra
-                        before, extra = mod.RF_KitAttach(s, before)
+                        before, extra = mod.RF_KitAttach(cfg, before)
                         spacing = spacing + extra
                     end
-                    local growDir = mod._PartyGrowth(s)
+                    local growDir = mod._PartyGrowth(cfg)
                     if growDir == "UP" then
                         if before then
                             FB.Pin(c, "BOTTOMRIGHT", anchorHeader, "BOTTOMLEFT", -spacing, 0)
@@ -855,7 +855,7 @@ do
                         else
                             FB.Pin(c, "TOPRIGHT", anchorHeader, "BOTTOMRIGHT", 0, -spacing)
                         end
-                    elseif s.partyHorizontal then
+                    elseif cfg.partyHorizontal then
                         if before then
                             FB.Pin(c, "BOTTOMLEFT", anchorHeader, "TOPLEFT", 0, spacing)
                         else
@@ -883,27 +883,27 @@ do
             then
                 local pc = mod._partyContainerFrame
                 if pc and pc:IsShown() then
-                    local spacing = s.groupSpacing or -1
+                    local spacing = cfg.groupSpacing or -1
                     local before = (fallback.position == "left")
                     -- Party Frames kit: clear the auras it draws outside the frames.
                     if mod.RF_PartyKit() then
                         local extra
-                        before, extra = mod.RF_KitAttach(s, before)
+                        before, extra = mod.RF_KitAttach(cfg, before)
                         spacing = spacing + extra
                     end
                     -- The group clears the party target frames on its side, and the boss group the
                     -- Beside Owner pets there too (the pet header is down while those are up).
                     spacing = spacing
                         + mod.PT_Reserve(
-                            s.partyHorizontal,
+                            cfg.partyHorizontal,
                             before,
-                            (ownerFrame == FB) and mod.PF_OwnerReserve(s.partyHorizontal, before) or nil
+                            (ownerFrame == FB) and mod.PF_OwnerReserve(cfg.partyHorizontal, before) or nil
                         )
                     -- Pets line up with the first party frame: Flip Frame Growth and Centered start
                     -- the stack away from the container's top-left.
                     if ownerFrame ~= FB then
                         local first = mod._partyFirstSlot or pc
-                        local growDir = mod._PartyGrowth(s)
+                        local growDir = mod._PartyGrowth(cfg)
                         if growDir == "UP" then
                             if before then
                                 FB.Pin(c, "BOTTOMRIGHT", first, "BOTTOMLEFT", -spacing, 0)
@@ -924,7 +924,7 @@ do
                     -- Party growth axis comes from partyHorizontal alone (_LayoutPartyFrames): the flip
                     -- and "centered" variants only reverse it, and the container spans all five slots
                     -- either way, so the perpendicular attach point is the same.
-                    if s.partyHorizontal then
+                    if cfg.partyHorizontal then
                         if before then
                             FB.Pin(c, "BOTTOMLEFT", pc, "TOPLEFT", 0, spacing)
                         else
@@ -939,7 +939,7 @@ do
                     end
                     return
                 end
-            elseif not anchorHeader and s.mergeGroups then
+            elseif not anchorHeader and cfg.mergeGroups then
                 anchorHeader = mod._flatHeader
             elseif not anchorHeader then
                 -- The boss group slots in before the first / after the last group that is BOTH enabled
@@ -961,7 +961,7 @@ do
                     end
                 end
                 local first, last
-                local groupOrder = s.customGroupOrder and mod._RFValidatedGroupOrder(s.groupOrder)
+                local groupOrder = cfg.customGroupOrder and mod._RFValidatedGroupOrder(cfg.groupOrder)
                 for slotIndex = 1, 8 do
                     local growInfo = groupOrder and groupOrder[slotIndex] or slotIndex
                     if vg[growInfo] ~= false and separatedHdrs[growInfo] and occupied[growInfo] then
@@ -986,8 +986,8 @@ do
             end
             if anchorHeader then
                 -- Slot in along the group growth axis exactly like a real group.
-                local spacing = s.groupSpacing or -1
-                local growDir = s.groupGrowth or "RIGHT"
+                local spacing = cfg.groupSpacing or -1
+                local growDir = cfg.groupGrowth or "RIGHT"
                 local before = (fallback.position == "left")
                 if growDir == "RIGHT" or growDir == "DOWNRIGHT" then
                     -- The grid flow's last group also ends in the rightmost column,

@@ -425,31 +425,31 @@ local function ApplyLayer(layerRec, baseLayer)
             if pass == 2 then
                 field, source = "unlockHeightMatchExtra", layerRec.heightMatchExtra
             end
-            local t = CludesUIDB[field]
+            local tbl = CludesUIDB[field]
             local kept
-            if t then
-                for k, val in pairs(t) do
+            if tbl then
+                for k, val in pairs(tbl) do
                     if IsTBBChildKey(k) then
                         kept = kept or {}
                         kept[k] = val
                     end
                 end
-                wipe(t)
+                wipe(tbl)
             end
             if type(source) == "table" then
                 for k, val in pairs(source) do
                     if not IsTBBChildKey(k) then
-                        if not t then
-                            t = {}
-                            CludesUIDB[field] = t
+                        if not tbl then
+                            tbl = {}
+                            CludesUIDB[field] = tbl
                         end
-                        t[k] = val
+                        tbl[k] = val
                     end
                 end
             end
             if kept then
                 for k, val in pairs(kept) do
-                    t[k] = val
+                    tbl[k] = val
                 end
             end
         end
@@ -461,14 +461,14 @@ local function ApplyLayer(layerRec, baseLayer)
         -- (they would be harvested INTO this layer next).
         local place = layerRec.cdmPos or (baseLayer and baseLayer.cdmPos)
         if place then
-            local t = cdmStore.cdmBarPositions
-            if not t then
-                t = {}
-                cdmStore.cdmBarPositions = t
+            local tbl = cdmStore.cdmBarPositions
+            if not tbl then
+                tbl = {}
+                cdmStore.cdmBarPositions = tbl
             end
-            wipe(t)
+            wipe(tbl)
             for k, val in pairs(place) do
-                t[k] = DeepCopy(val)
+                tbl[k] = DeepCopy(val)
             end
             -- Per-bar missing-means-baseline: a layer's cdmPos is a snapshot from its
             -- last harvest, so bars created AFTER it have no entry in older layers and
@@ -478,8 +478,8 @@ local function ApplyLayer(layerRec, baseLayer)
             local bpos = baseLayer and baseLayer.cdmPos
             if bpos and bpos ~= place then
                 for k, val in pairs(bpos) do
-                    if t[k] == nil then
-                        t[k] = DeepCopy(val)
+                    if tbl[k] == nil then
+                        tbl[k] = DeepCopy(val)
                     end
                 end
             end
@@ -512,21 +512,21 @@ local function ApplyLayer(layerRec, baseLayer)
     if ab then
         local place = layerRec.abPos or (baseLayer and baseLayer.abPos)
         if place then
-            local t = ab.barPositions
-            if not t then
-                t = {}
-                ab.barPositions = t
+            local tbl = ab.barPositions
+            if not tbl then
+                tbl = {}
+                ab.barPositions = tbl
             end
-            wipe(t)
+            wipe(tbl)
             for k, val in pairs(place) do
-                t[k] = DeepCopy(val)
+                tbl[k] = DeepCopy(val)
             end
             -- Per-bar missing-means-baseline, same as cdmPos above.
             local bpos = baseLayer and baseLayer.abPos
             if bpos and bpos ~= place then
                 for k, val in pairs(bpos) do
-                    if t[k] == nil then
-                        t[k] = DeepCopy(val)
+                    if tbl[k] == nil then
+                        tbl[k] = DeepCopy(val)
                     end
                 end
             end
@@ -626,24 +626,24 @@ function CludesUI.SpecOverrides_ApplyUnlock(specId, force)
             if not profileTbl then
                 return false
             end
-            local t = profileTbl[storeKey]
-            if not t then
-                t = {}
-                profileTbl[storeKey] = t
+            local tbl = profileTbl[storeKey]
+            if not tbl then
+                tbl = {}
+                profileTbl[storeKey] = tbl
             end
             local added = false
             if layerPos then
                 for k, val in pairs(layerPos) do
-                    if t[k] == nil then
-                        t[k] = DeepCopy(val)
+                    if tbl[k] == nil then
+                        tbl[k] = DeepCopy(val)
                         added = true
                     end
                 end
             end
             if basePos and basePos ~= layerPos then
                 for k, val in pairs(basePos) do
-                    if t[k] == nil then
-                        t[k] = DeepCopy(val)
+                    if tbl[k] == nil then
+                        tbl[k] = DeepCopy(val)
                         added = true
                     end
                 end

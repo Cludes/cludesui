@@ -1900,15 +1900,15 @@ function mod.SwapBuffDisplayKeys(key1, key2)
         return false
     end
     local barSpells = mod.GetBarSpellData("buffs")
-    local t = barSpells and barSpells.buffDisplayOrder
-    if not t then
+    local tbl = barSpells and barSpells.buffDisplayOrder
+    if not tbl then
         return false
     end
-    local i1, i2 = BuffOrderIndexOf(t, key1), BuffOrderIndexOf(t, key2)
+    local i1, i2 = BuffOrderIndexOf(tbl, key1), BuffOrderIndexOf(tbl, key2)
     if not i1 or not i2 then
         return false
     end
-    t[i1], t[i2] = t[i2], t[i1]
+    tbl[i1], tbl[i2] = tbl[i2], tbl[i1]
     FinishBuffOrderWrite(barSpells)
     return true
 end
@@ -1920,23 +1920,23 @@ function mod.MoveBuffDisplayKey(dragKey, beforeKey)
         return false
     end
     local barSpells = mod.GetBarSpellData("buffs")
-    local t = barSpells and barSpells.buffDisplayOrder
-    if not t then
+    local text = barSpells and barSpells.buffDisplayOrder
+    if not text then
         return false
     end
-    local from = BuffOrderIndexOf(t, dragKey)
+    local from = BuffOrderIndexOf(text, dragKey)
     if not from then
         return false
     end
-    local val = table.remove(t, from)
+    local val = table.remove(text, from)
     local to
     if beforeKey then
-        to = BuffOrderIndexOf(t, beforeKey)
+        to = BuffOrderIndexOf(text, beforeKey)
     end
     if not to then
-        to = #t + 1
+        to = #text + 1
     end
-    table.insert(t, to, val)
+    table.insert(text, to, val)
     FinishBuffOrderWrite(barSpells)
     return true
 end

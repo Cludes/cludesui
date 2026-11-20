@@ -41,17 +41,17 @@ mod.ApplyBossBorderState = function(self)
     if not self.unifiedBorder then
         return
     end
-    local s = saved.profile.boss
-    if not s then
+    local cfg = saved.profile.boss
+    if not cfg then
         return
     end
     local red, green, blue, a
-    if self._hovered and s.bossHoverBorderEnabled then
-        local color = s.bossHoverBorderColor or { r = 1, g = 1, b = 1 }
-        red, green, blue, a = color.r, color.g, color.b, s.bossHoverBorderAlpha or 1
-    elseif self._isTarget and s.bossTargetBorderEnabled then
-        local color = s.bossTargetBorderColor or { r = 1, g = 1, b = 1 }
-        red, green, blue, a = color.r, color.g, color.b, s.bossTargetBorderAlpha or 1
+    if self._hovered and cfg.bossHoverBorderEnabled then
+        local color = cfg.bossHoverBorderColor or { r = 1, g = 1, b = 1 }
+        red, green, blue, a = color.r, color.g, color.b, cfg.bossHoverBorderAlpha or 1
+    elseif self._isTarget and cfg.bossTargetBorderEnabled then
+        local color = cfg.bossTargetBorderColor or { r = 1, g = 1, b = 1 }
+        red, green, blue, a = color.r, color.g, color.b, cfg.bossTargetBorderAlpha or 1
     else
         -- The normal colour the reload sweep painted: the same settings table
         -- (the donor's while inheriting, never the unused boss copy).

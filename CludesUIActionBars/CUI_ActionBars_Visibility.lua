@@ -357,8 +357,8 @@ function ABAR._PadSync()
     local barList = ABAR.db.profile.bars
     local any = false
     for index = 1, #BAR_CONFIG do
-        local s = barList[BAR_CONFIG[index].key]
-        if s and s.gamepadHideBar == true then
+        local cfg = barList[BAR_CONFIG[index].key]
+        if cfg and cfg.gamepadHideBar == true then
             any = true
             break
         end

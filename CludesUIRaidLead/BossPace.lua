@@ -27,12 +27,12 @@ local TICK = 0.25
 function mod.PaceSettings()
     local p = mod.RaidLeadDB()
     p.pace = p.pace or {}
-    local s = p.pace
-    if s.enabled == nil then
-        s.enabled = true
+    local cfg = p.pace
+    if cfg.enabled == nil then
+        cfg.enabled = true
     end
-    s.targets = s.targets or {} -- { { boss = "name", seconds = 300 }, ... }
-    return s
+    cfg.targets = cfg.targets or {} -- { { boss = "name", seconds = 300 }, ... }
+    return cfg
 end
 
 --- "m:ss" or "s" to seconds.

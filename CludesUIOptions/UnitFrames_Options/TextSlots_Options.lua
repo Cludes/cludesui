@@ -243,27 +243,27 @@ function mod.UFO_BuildTextSlots(W, hostFrame, cursorY, options)
         mod._ufTextNotify = { unit = options.unit, key = key }
     end
     for idx = 1, #slots do
-        local s = slots[idx]
-        sequence[idx], values[s.key], byKey[s.key] = s.key, s.position, s
+        local cfg = slots[idx]
+        sequence[idx], values[cfg.key], byKey[cfg.key] = cfg.key, cfg.position, cfg
         if textValues.custom then
             -- Custom is an action entry: it opens the format popup, and a saved
             -- format selects it for the slot (a selection rebuilds the page).
-            s.cfg.values = mod.UFO_CustomTextValues(textValues, s.cfg.getValue, function()
-                mod.UFO_EditCustomText(s.key, options.db(), options.unit, function()
-                    Notify(s.key)
-                    s.cfg.setValue("custom")
+            cfg.cfg.values = mod.UFO_CustomTextValues(textValues, cfg.cfg.getValue, function()
+                mod.UFO_EditCustomText(cfg.key, options.db(), options.unit, function()
+                    Notify(cfg.key)
+                    cfg.cfg.setValue("custom")
                 end)
             end)
         else
-            s.cfg.values = textValues
+            cfg.cfg.values = textValues
         end
-        if s.cfg.getValue() ~= "none" then
-            cells[#cells + 1] = s
+        if cfg.cfg.getValue() ~= "none" then
+            cells[#cells + 1] = cfg
         end
     end
     local function Assigned(key)
-        local s = byKey[key]
-        return s and s.cfg.getValue() ~= "none"
+        local cfg = byKey[key]
+        return cfg and cfg.cfg.getValue() ~= "none"
     end
     local function Full()
         for idx = 1, #slots do

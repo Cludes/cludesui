@@ -351,18 +351,18 @@ end
 -- subsystem actually reads and skip calls whose inputs are unchanged.
 local function FP(...)
     local num = select("#", ...)
-    local t = {}
+    local tbl = {}
     for i = 1, num do
         local val = select(i, ...)
         -- Numbers round to 2 decimals: scaled sizes carry float noise that
         -- would otherwise flip fingerprints on every pass.
         if type(val) == "number" then
-            t[i] = string.format("%.2f", val)
+            tbl[i] = string.format("%.2f", val)
         else
-            t[i] = tostring(val)
+            tbl[i] = tostring(val)
         end
     end
-    return table.concat(t, "|")
+    return table.concat(tbl, "|")
 end
 
 local function CK(c)
@@ -382,13 +382,13 @@ function mod.RFC_AuraBorder(cfg, prefixText, into)
     local color = cfg[prefixText .. "Color"]
     local red, green, blue = ColorParts(color, 0, 0, 0)
     local texture = cfg[prefixText .. "Texture"]
-    local t = into or {}
-    t[1], t[2], t[3], t[4] = red, green, blue, color and color.a or 1
-    t.size, t.texture = px, texture
-    t.edgePx = CludesUI.BorderPx(cfg[prefixText .. "SizePx"], px, texture or "solid")
-    t.offsetX, t.offsetY = cfg[prefixText .. "TextureOffset"], cfg[prefixText .. "TextureOffsetY"]
-    t.shiftX, t.shiftY = cfg[prefixText .. "TextureShiftX"], cfg[prefixText .. "TextureShiftY"]
-    return t
+    local tbl = into or {}
+    tbl[1], tbl[2], tbl[3], tbl[4] = red, green, blue, color and color.a or 1
+    tbl.size, tbl.texture = px, texture
+    tbl.edgePx = CludesUI.BorderPx(cfg[prefixText .. "SizePx"], px, texture or "solid")
+    tbl.offsetX, tbl.offsetY = cfg[prefixText .. "TextureOffset"], cfg[prefixText .. "TextureOffsetY"]
+    tbl.shiftX, tbl.shiftY = cfg[prefixText .. "TextureShiftX"], cfg[prefixText .. "TextureShiftY"]
+    return tbl
 end
 
 function mod.RFC_AuraBorderFP(cfg, prefixText)
@@ -2909,11 +2909,11 @@ local function BmVisualKey(kindName, indicator, px, font, spellId)
 end
 
 local function BmOwnKey(metaRec)
-    local t = {}
+    local tbl = {}
     for i = 1, #metaRec do
-        t[i] = BmOwnSig(metaRec[i].ind)
+        tbl[i] = BmOwnSig(metaRec[i].ind)
     end
-    return table.concat(t, ";")
+    return table.concat(tbl, ";")
 end
 
 -- Geometry fingerprint over every input AnchorBmSlots reads: slot-button SetSize/

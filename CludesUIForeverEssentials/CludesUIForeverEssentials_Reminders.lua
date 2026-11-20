@@ -159,8 +159,8 @@ local R = module.Feature("restock", {
 }, { point = "CENTER", relPoint = "CENTER", x = 0, y = 120 })
 
 local function Target(itemId)
-    local t = R.Read().targets
-    return (t and t[itemId]) or TARGETS[itemId]
+    local tbl = R.Read().targets
+    return (tbl and tbl[itemId]) or TARGETS[itemId]
 end
 
 local pending = {}
@@ -652,15 +652,15 @@ end
 
 local GUpdate
 local function Icon(index)
-    local b = gIcons[index]
-    if b then
-        return b
+    local widget = gIcons[index]
+    if widget then
+        return widget
     end
-    b = CreateFrame("Button", nil, gFrame)
-    b.tex = b:CreateTexture(nil, "ARTWORK")
-    b.tex:SetAllPoints()
-    b.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    b:SetScript("OnEnter", function(self)
+    widget = CreateFrame("Button", nil, gFrame)
+    widget.tex = widget:CreateTexture(nil, "ARTWORK")
+    widget.tex:SetAllPoints()
+    widget.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    widget:SetScript("OnEnter", function(self)
         if not self.slot then
             return
         end
@@ -670,17 +670,17 @@ local function Icon(index)
         GameTooltip:AddLine(CludesUI.L("Ctrl-click to hide it until you take it off."), 0.6, 0.6, 0.6)
         GameTooltip:Show()
     end)
-    b:SetScript("OnLeave", function()
+    widget:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-    b:SetScript("OnMouseUp", function(self)
+    widget:SetScript("OnMouseUp", function(self)
         if self.slot and IsControlKeyDown() then
             dismissed[self.slot] = GetInventoryItemID("player", self.slot)
             GUpdate()
         end
     end)
-    gIcons[index] = b
-    return b
+    gIcons[index] = widget
+    return widget
 end
 
 GUpdate = function()
@@ -709,13 +709,13 @@ GUpdate = function()
         end
         if show then
             isShown = isShown + 1
-            local b = Icon(isShown)
-            b:SetSize(size, size)
-            b:ClearAllPoints()
-            b:SetPoint("LEFT", gFrame, "LEFT", (isShown - 1) * (size + 4), 0)
-            b.tex:SetTexture(texture)
-            b.slot = slot
-            b:Show()
+            local widget = Icon(isShown)
+            widget:SetSize(size, size)
+            widget:ClearAllPoints()
+            widget:SetPoint("LEFT", gFrame, "LEFT", (isShown - 1) * (size + 4), 0)
+            widget.tex:SetTexture(texture)
+            widget.slot = slot
+            widget:Show()
         end
     end
     for index = isShown + 1, #gIcons do

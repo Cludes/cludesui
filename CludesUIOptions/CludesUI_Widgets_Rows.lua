@@ -520,13 +520,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         if type(tipText) ~= "string" then
             return nil
         end
-        local s = CludesUI.L(tipText):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|n", "\n")
-        s = s:match("^[^\n]+") or ""
-        s = (s:match("^(.-[%.%!%?])%s") or s):gsub("^%s+", ""):gsub("%s+$", "")
-        if s == "" then
+        local text = CludesUI.L(tipText):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|n", "\n")
+        text = text:match("^[^\n]+") or ""
+        text = (text:match("^(.-[%.%!%?])%s") or text):gsub("^%s+", ""):gsub("%s+$", "")
+        if text == "" then
             return nil
         end
-        return s
+        return text
     end
 
     function WidgetFactory:DualRow(hostFrame, yOffset, leftCfg, rightCfg)

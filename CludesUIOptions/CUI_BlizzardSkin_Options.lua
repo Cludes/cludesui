@@ -3606,12 +3606,12 @@ CludesUI.AtOptionsLogin(function()
         if not CludesUIDB then
             CludesUIDB = {}
         end
-        local t = CludesUIDB[settingKey]
-        if not t then
-            t = {}
-            CludesUIDB[settingKey] = t
+        local tbl = CludesUIDB[settingKey]
+        if not tbl then
+            tbl = {}
+            CludesUIDB[settingKey] = tbl
         end
-        t[field] = val
+        tbl[field] = val
         if CludesUI._WSkinRefreshLooks then
             CludesUI._WSkinRefreshLooks()
         end
@@ -4725,22 +4725,22 @@ CludesUI.AtOptionsLogin(function()
                 disabled = MasterOff,
                 disabledTooltip = "Enable Skin Third-Party Addons",
                 getValue = function()
-                    local t = CludesUIDB and CludesUIDB.thirdPartySkinAddons
-                    return not (t and t[name] == false)
+                    local tbl = CludesUIDB and CludesUIDB.thirdPartySkinAddons
+                    return not (tbl and tbl[name] == false)
                 end,
                 setValue = function(val)
                     if not CludesUIDB then
                         CludesUIDB = {}
                     end
-                    local t = CludesUIDB.thirdPartySkinAddons
-                    if not t then
-                        t = {}
-                        CludesUIDB.thirdPartySkinAddons = t
+                    local tbl = CludesUIDB.thirdPartySkinAddons
+                    if not tbl then
+                        tbl = {}
+                        CludesUIDB.thirdPartySkinAddons = tbl
                     end
                     if val then
-                        t[name] = nil
+                        tbl[name] = nil
                     else
-                        t[name] = false
+                        tbl[name] = false
                     end
                     if val then
                         TurnedOn()
@@ -4991,9 +4991,9 @@ CludesUI.AtOptionsLogin(function()
         end
     end
     local function EDR_SetField(key, field, val)
-        local t = EDR_Cfg(key)
-        if t then
-            t[field] = val
+        local tbl = EDR_Cfg(key)
+        if tbl then
+            tbl[field] = val
         end
     end
     local function EDR_Rebuild()
@@ -5428,8 +5428,8 @@ CludesUI.AtOptionsLogin(function()
                 region:GetFrameLevel() + 2,
                 nameItems,
                 function(key)
-                    local t = CBVal("showName")
-                    return type(t) == "table" and t[key] == true
+                    local tbl = CBVal("showName")
+                    return type(tbl) == "table" and tbl[key] == true
                 end,
                 function(key, val)
                     local saved = BBDB()
@@ -5883,8 +5883,8 @@ CludesUI.AtOptionsLogin(function()
                     region,
                     borderRow:GetFrameLevel() + 3,
                     function()
-                        local t = EDR_Cfg("borderColor")
-                        return t.r, t.g, t.b, t.a
+                        local color = EDR_Cfg("borderColor")
+                        return color.r, color.g, color.b, color.a
                     end,
                     function(red, green, blue, a)
                         local p = EDR_Cfg("borderColor")
@@ -5949,8 +5949,8 @@ CludesUI.AtOptionsLogin(function()
                             {
                                 text = "Background",
                                 getValue = function()
-                                    local t = EDR_Cfg("skyridingBg")
-                                    return t.r, t.g, t.b, t.a
+                                    local color = EDR_Cfg("skyridingBg")
+                                    return color.r, color.g, color.b, color.a
                                 end,
                                 setValue = function(red, green, blue, a)
                                     local p = EDR_Cfg("skyridingBg")
@@ -5963,8 +5963,8 @@ CludesUI.AtOptionsLogin(function()
                             {
                                 text = "Stacks",
                                 getValue = function()
-                                    local t = EDR_Cfg("skyridingFilled")
-                                    return t.r, t.g, t.b, t.a
+                                    local color = EDR_Cfg("skyridingFilled")
+                                    return color.r, color.g, color.b, color.a
                                 end,
                                 setValue = function(red, green, blue, a)
                                     local p = EDR_Cfg("skyridingFilled")
@@ -5996,8 +5996,8 @@ CludesUI.AtOptionsLogin(function()
                             {
                                 text = "Background",
                                 getValue = function()
-                                    local t = EDR_Cfg("secondWindBg")
-                                    return t.r, t.g, t.b, t.a
+                                    local color = EDR_Cfg("secondWindBg")
+                                    return color.r, color.g, color.b, color.a
                                 end,
                                 setValue = function(red, green, blue, a)
                                     local p = EDR_Cfg("secondWindBg")
@@ -6010,8 +6010,8 @@ CludesUI.AtOptionsLogin(function()
                             {
                                 text = "Second Wind",
                                 getValue = function()
-                                    local t = EDR_Cfg("secondWindFilled")
-                                    return t.r, t.g, t.b, t.a
+                                    local color = EDR_Cfg("secondWindFilled")
+                                    return color.r, color.g, color.b, color.a
                                 end,
                                 setValue = function(red, green, blue, a)
                                     local p = EDR_Cfg("secondWindFilled")
@@ -6062,8 +6062,8 @@ CludesUI.AtOptionsLogin(function()
                         {
                             text = "Background",
                             getValue = function()
-                                local t = EDR_Cfg("speedBarBg")
-                                return t.r, t.g, t.b, t.a
+                                local color = EDR_Cfg("speedBarBg")
+                                return color.r, color.g, color.b, color.a
                             end,
                             setValue = function(red, green, blue, a)
                                 local p = EDR_Cfg("speedBarBg")
@@ -6076,8 +6076,8 @@ CludesUI.AtOptionsLogin(function()
                         {
                             text = "Speed",
                             getValue = function()
-                                local t = EDR_Cfg("normalColor")
-                                return t.r, t.g, t.b, t.a
+                                local color = EDR_Cfg("normalColor")
+                                return color.r, color.g, color.b, color.a
                             end,
                             setValue = function(red, green, blue, a)
                                 local p = EDR_Cfg("normalColor")
@@ -6095,8 +6095,8 @@ CludesUI.AtOptionsLogin(function()
                         {
                             text = "Hash",
                             getValue = function()
-                                local t = EDR_Cfg("tickColor")
-                                return t.r, t.g, t.b, t.a
+                                local color = EDR_Cfg("tickColor")
+                                return color.r, color.g, color.b, color.a
                             end,
                             setValue = function(red, green, blue, a)
                                 local p = EDR_Cfg("tickColor")
@@ -6109,8 +6109,8 @@ CludesUI.AtOptionsLogin(function()
                         {
                             text = "Thrill",
                             getValue = function()
-                                local t = EDR_Cfg("thrillColor")
-                                return t.r, t.g, t.b, t.a
+                                local color = EDR_Cfg("thrillColor")
+                                return color.r, color.g, color.b, color.a
                             end,
                             setValue = function(red, green, blue, a)
                                 local p = EDR_Cfg("thrillColor")

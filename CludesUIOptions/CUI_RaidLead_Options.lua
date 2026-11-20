@@ -760,11 +760,11 @@ CludesUI.AtOptionsLogin(function()
             local num = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(ident)
             return type(num) == "string" and num or nil
         end)
-        local s = #entries .. " reminder" .. (#entries == 1 and "" or "s")
+        local text = #entries .. " reminder" .. (#entries == 1 and "" or "s")
         if skipped > 0 then
-            s = s .. ", " .. skipped .. " phase line" .. (skipped == 1 and "" or "s") .. " skipped"
+            text = text .. ", " .. skipped .. " phase line" .. (skipped == 1 and "" or "s") .. " skipped"
         end
-        return s
+        return text
     end
 
     local function BuildRemindersPage(_, hostFrame, yOffset)

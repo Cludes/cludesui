@@ -2112,14 +2112,14 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
     local _pp = {} -- f, place
 
     local function _ppButton(frame, textValue)
-        local b = CreateFrame("Button", nil, frame)
-        b:SetSize(128, 21)
-        b:EnableMouse(false)
-        b:SetNormalTexture("Interface\\Buttons\\UI-DialogBox-Button-Up")
-        b:GetNormalTexture():SetTexCoord(0, 1, 0, 0.71875)
-        b:SetNormalFontObject(GameFontNormal)
-        b:SetText(textValue)
-        return b
+        local widget = CreateFrame("Button", nil, frame)
+        widget:SetSize(128, 21)
+        widget:EnableMouse(false)
+        widget:SetNormalTexture("Interface\\Buttons\\UI-DialogBox-Button-Up")
+        widget:GetNormalTexture():SetTexCoord(0, 1, 0, 0.71875)
+        widget:SetNormalFontObject(GameFontNormal)
+        widget:SetText(textValue)
+        return widget
     end
 
     local function _ppPaint()

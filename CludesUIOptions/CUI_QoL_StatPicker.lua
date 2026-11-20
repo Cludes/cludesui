@@ -59,22 +59,22 @@ end
 
 -- A text-only link (All / None / Check All) that brightens on hover.
 local function Link(textValue, onClick)
-    local b = CreateFrame("Button", nil, panelFrame)
-    local fontStr = CludesUI.MakeFont(b, 12, "", 1, 1, 1, 0.5)
+    local widget = CreateFrame("Button", nil, panelFrame)
+    local fontStr = CludesUI.MakeFont(widget, 12, "", 1, 1, 1, 0.5)
     fontStr:SetText(textValue)
     fontStr:SetPoint("CENTER")
-    b:SetSize(fontStr:GetStringWidth() + 6, 16)
-    b:SetScript("OnEnter", function()
+    widget:SetSize(fontStr:GetStringWidth() + 6, 16)
+    widget:SetScript("OnEnter", function()
         fontStr:SetTextColor(1, 1, 1, 0.9)
     end)
-    b:SetScript("OnLeave", function()
+    widget:SetScript("OnLeave", function()
         fontStr:SetTextColor(1, 1, 1, 0.5)
     end)
-    b:SetScript("OnClick", function()
+    widget:SetScript("OnClick", function()
         onClick()
         RefreshAll()
     end)
-    return b
+    return widget
 end
 
 local function Build()

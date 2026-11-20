@@ -193,10 +193,10 @@ function M.SubscribeTick(key, interval, func)
     if not key or type(func) ~= "function" then
         return
     end
-    local s = tickSubs[key]
-    if s then
-        s.fn = func
-        s.interval = interval or WATCH_SLOW
+    local cfg = tickSubs[key]
+    if cfg then
+        cfg.fn = func
+        cfg.interval = interval or WATCH_SLOW
     else
         tickCount = tickCount + 1
         tickSubs[key] = { fn = func, interval = interval or WATCH_SLOW, acc = 0 }

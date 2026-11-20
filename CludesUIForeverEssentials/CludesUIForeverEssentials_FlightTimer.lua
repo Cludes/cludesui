@@ -524,36 +524,36 @@ end
 -- mover takes the frame's own size, so this gives it a grabbable area. The
 -- track is the thin line through its middle.
 local function BuildBar(hostFrame)
-    local b = CreateFrame("Frame", nil, hostFrame)
-    local track = CreateFrame("StatusBar", nil, b)
+    local widget = CreateFrame("Frame", nil, hostFrame)
+    local track = CreateFrame("StatusBar", nil, widget)
     track:SetPoint("LEFT")
     track:SetPoint("RIGHT")
     track:SetMinMaxValues(0, 1)
     track:SetValue(0)
     track.bg = track:CreateTexture(nil, "BACKGROUND")
     track.bg:SetAllPoints()
-    b.track = track
-    b.time = b:CreateFontString(nil, "OVERLAY")
-    b.time:SetJustifyH("RIGHT")
+    widget.track = track
+    widget.time = widget:CreateFontString(nil, "OVERLAY")
+    widget.time:SetJustifyH("RIGHT")
     -- Border hosts and their PP children sit above the track; marks stay on top.
-    b.over = CreateFrame("Frame", nil, b)
-    b.over:SetAllPoints()
-    b.ends = { NewMark(b.over, WHITE, PIN_SIZE / 2), NewMark(b.over, WHITE, PIN_SIZE / 2) }
-    b.ends[1].icon:SetPoint("CENTER", b, "LEFT")
-    b.ends[2].icon:SetPoint("CENTER", b, "RIGHT")
-    b.you = NewMark(b.over, WHITE, 2, PIN_SIZE + 4)
-    b.you.icon:SetPoint("CENTER", b, "CENTER")
+    widget.over = CreateFrame("Frame", nil, widget)
+    widget.over:SetAllPoints()
+    widget.ends = { NewMark(widget.over, WHITE, PIN_SIZE / 2), NewMark(widget.over, WHITE, PIN_SIZE / 2) }
+    widget.ends[1].icon:SetPoint("CENTER", widget, "LEFT")
+    widget.ends[2].icon:SetPoint("CENTER", widget, "RIGHT")
+    widget.you = NewMark(widget.over, WHITE, 2, PIN_SIZE + 4)
+    widget.you.icon:SetPoint("CENTER", widget, "CENTER")
     -- The stops ride a strip inside a clipping frame (see ScrollStrip).
-    b.clip = CreateFrame("Frame", nil, b)
-    b.clip:SetClipsChildren(true)
-    b.clip.strip = CreateFrame("Frame", nil, b.clip)
-    b.clip.strip:SetSize(1, 1)
-    b.clip.glide = b.clip.strip:CreateAnimationGroup()
-    b.clip.glide.move = b.clip.glide:CreateAnimation("Translation")
-    b.clip.glide.move:SetSmoothing("NONE")
-    b.clip.glide.move:SetDuration(SLIDE)
-    b.stops = {}
-    return b
+    widget.clip = CreateFrame("Frame", nil, widget)
+    widget.clip:SetClipsChildren(true)
+    widget.clip.strip = CreateFrame("Frame", nil, widget.clip)
+    widget.clip.strip:SetSize(1, 1)
+    widget.clip.glide = widget.clip.strip:CreateAnimationGroup()
+    widget.clip.glide.move = widget.clip.glide:CreateAnimation("Translation")
+    widget.clip.glide.move:SetSmoothing("NONE")
+    widget.clip.glide.move:SetDuration(SLIDE)
+    widget.stops = {}
+    return widget
 end
 
 local function CreateBar()

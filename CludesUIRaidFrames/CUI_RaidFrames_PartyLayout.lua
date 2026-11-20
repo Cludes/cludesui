@@ -56,14 +56,14 @@ mod._LayoutPartyFrames = function()
         return
     end
 
-    local s = store.profile
-    local pw, ph, pcs = mod.RF_PartyDims(s)
+    local cfg = store.profile
+    local pw, ph, pcs = mod.RF_PartyDims(cfg)
     local bw, bh, cs = PixelSnap(pw), PixelSnap(ph), PixelSnap(pcs)
     -- Party target frames along the stack sit between the frames: the pitch opens by their room.
-    local along = mod.PT_AlongPitch(s)
+    local along = mod.PT_AlongPitch(cfg)
     mod._ptPitchApplied = along
     cs = cs + along
-    local unitGrowth = mod._PartyGrowth(s)
+    local unitGrowth = mod._PartyGrowth(cfg)
 
     local hdrPoint, hdrXOff, hdrYOff
     if unitGrowth == "DOWN" then
@@ -113,16 +113,16 @@ mod._LayoutPartyFrames = function()
     -- slot 0 and the party header excludes the player (showPlayer=false);
     -- self ordering only matters in a group (see ns._PositionPartySlots).
     local useSelf = mod._PositionPartySlots(bw, bh, cs, unitGrowth)
-    local hideSelf = s.partyHideSelf
+    local hideSelf = cfg.partyHideSelf
 
     -- Size container for unlock mode mover (always sized for 5 units)
     mod._SizePartyContainer(bw, bh, cs, unitGrowth)
 
     -- Apply sort attributes + player visibility to the party header
     if not InCombatLockdown() then
-        local pSortMode = s.partySortMode or s.sortMode
+        local pSortMode = cfg.partySortMode or cfg.sortMode
         local sortByRole = pSortMode == "ROLE"
-        local roleOrder = s.partyRoleOrder or s.roleOrder or { "TANK", "HEALER", "DAMAGER" }
+        local roleOrder = cfg.partyRoleOrder or cfg.roleOrder or { "TANK", "HEALER", "DAMAGER" }
         -- A party set the group state hides takes no nameList: a nameList is also
         -- a filter, and the visibility driver can show the set mid-fight, when no
         -- list can be rebuilt, so a stale one would drop the new members. The
@@ -159,13 +159,13 @@ mod._LayoutPartyFrames = function()
                 wantNameList = mod._BuildFrameSortRaidPartyNameList(fsRank, hideSelf, smallRaidGroup)
             end
             if not wantNameList then
-                local pSelfFirst = s.partyShowSelfFirst
+                local pSelfFirst = cfg.partyShowSelfFirst
                 if pSelfFirst == nil then
-                    pSelfFirst = s.showSelfFirst
+                    pSelfFirst = cfg.showSelfFirst
                 end
-                local pSelfLast = s.partySelfLast
+                local pSelfLast = cfg.partySelfLast
                 if pSelfLast == nil then
-                    pSelfLast = s.showSelfLast
+                    pSelfLast = cfg.showSelfLast
                 end
                 wantNameList = mod._BuildArenaNameList(
                     hideSelf,
@@ -178,9 +178,9 @@ mod._LayoutPartyFrames = function()
             end
         elseif fsRank then
             wantNameList = mod._BuildFrameSortPartyNameList(fsRank, wantShowPlayer)
-        elseif s.partyPrioritizeClass then
+        elseif cfg.partyPrioritizeClass then
             wantNameList =
-                mod._BuildPartyClassNameList(wantShowPlayer, sortByRole, roleOrder, s.partyClassOrder)
+                mod._BuildPartyClassNameList(wantShowPlayer, sortByRole, roleOrder, cfg.partyClassOrder)
         end
         if wantNameList then
             wantGroupBy = nil
@@ -195,7 +195,7 @@ mod._LayoutPartyFrames = function()
             -- Small Raid keeps its group-1 limit in a party too (every party member
             -- is subgroup 1 there), so a party the driver keeps shown as it turns
             -- into a small raid mid-fight shows group 1, not the first five raiders.
-            local fGroup = smallRaidGroup or ((s.partySmallRaid == true and not mod._InArena()) and 1) or nil
+            local fGroup = smallRaidGroup or ((cfg.partySmallRaid == true and not mod._InArena()) and 1) or nil
             wantGroupFilter = fGroup and tostring(fGroup) or "1,2,3,4,5,6,7,8"
         end
 
@@ -348,15 +348,15 @@ mod._UpdatePartyVisibility = function()
         end
     end
 
-    local s = store.profile
+    local cfg = store.profile
     -- Profile and spec-override swaps: Include Own Target first, so an enable edge below takes it.
-    if mod._ptInclDesired ~= (s.partyTargetIncludeSelf == true) then
-        mod.PT_SetIncludeSelf(s.partyTargetIncludeSelf)
+    if mod._ptInclDesired ~= (cfg.partyTargetIncludeSelf == true) then
+        mod.PT_SetIncludeSelf(cfg.partyTargetIncludeSelf)
     end
     -- An enable edge here refreshes the target frames itself (the show edge below then skips it).
     local ptWas = mod._ptEnabled
-    if mod._ptDesired ~= (s.partyShowTargets == true) then
-        mod.PT_SetEnabled(s.partyShowTargets)
+    if mod._ptDesired ~= (cfg.partyShowTargets == true) then
+        mod.PT_SetEnabled(cfg.partyShowTargets)
     end
     -- Arena and Small Raid mode show party frames even though IsInRaid() is
     -- true. The header binds raid units via showRaid=true; the raid container
@@ -371,7 +371,7 @@ mod._UpdatePartyVisibility = function()
     -- Update showSolo attribute, but only when it changed -- re-setting a
     -- SecureGroupHeader attribute re-triggers a full child re-process even when
     -- unchanged (see UpdateVisibility's showSolo guard).
-    local wantPartySolo = s.partyShowWhenSolo or false
+    local wantPartySolo = cfg.partyShowWhenSolo or false
     if mod._partyHeader and mod._partyHeader:GetAttribute("showSolo") ~= wantPartySolo then
         mod._partyHeader:SetAttribute("showSolo", wantPartySolo)
     end

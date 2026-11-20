@@ -18,11 +18,11 @@ local _, mod = ...
 
 local function Settings()
     CludesUIDB.foreverTraining = CludesUIDB.foreverTraining or {}
-    local s = CludesUIDB.foreverTraining
-    if s.levelUpMessage == nil then
-        s.levelUpMessage = true
+    local cfg = CludesUIDB.foreverTraining
+    if cfg.levelUpMessage == nil then
+        cfg.levelUpMessage = true
     end
-    return s
+    return cfg
 end
 mod.TrainingSettings = Settings
 

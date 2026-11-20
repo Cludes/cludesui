@@ -17,7 +17,7 @@ function _G._CUI_BuildForeverTrainingPage(_, hostFrame, yOffset)
     local W = CludesUI.Widgets
     local cursorY = yOffset
     local _, height
-    local s = mod.TrainingSettings()
+    local cfg = mod.TrainingSettings()
 
     CludesUI:ClearContentHeader()
 
@@ -28,10 +28,10 @@ function _G._CUI_BuildForeverTrainingPage(_, hostFrame, yOffset)
         text = "Message on Level Up",
         tooltip = "When you level up, a chat line says how many new spells your trainer has for you and what they cost.",
         getValue = function()
-            return s.levelUpMessage
+            return cfg.levelUpMessage
         end,
         setValue = function(val)
-            s.levelUpMessage = val and true or false
+            cfg.levelUpMessage = val and true or false
         end,
     }, {
         type = "label",

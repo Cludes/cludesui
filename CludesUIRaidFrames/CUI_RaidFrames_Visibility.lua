@@ -384,9 +384,9 @@ end
 -- frames in a party (arena and Small Raid included), each set's Show When Solo
 -- outside a group. ns._RF_VIS_MACROS spells the same rule as macro conditions.
 mod._RFVisWanted = function()
-    local s = saved.profile
+    local cfg = saved.profile
     if not IsInGroup() then
-        return s.showWhenSolo and true or false, s.partyShowWhenSolo and true or false
+        return cfg.showWhenSolo and true or false, cfg.partyShowWhenSolo and true or false
     end
     if IsInRaid() and not mod._PartyInRaid() then
         return true, false
@@ -440,11 +440,11 @@ mod._RFSyncVisDrivers = function()
     if not containerFrame or not pc or InCombatLockdown() then
         return
     end
-    local s = saved.profile
+    local cfg = saved.profile
     local M = mod._RF_VIS_MACROS
-    local mode = (mod._InArena() and "arena") or ((s.partySmallRaid == true) and "small") or "group"
-    local region = M.raid[mode][s.showWhenSolo and true or false]
-    local p = M.party[mode][s.partyShowWhenSolo and true or false]
+    local mode = (mod._InArena() and "arena") or ((cfg.partySmallRaid == true) and "small") or "group"
+    local region = M.raid[mode][cfg.showWhenSolo and true or false]
+    local p = M.party[mode][cfg.partyShowWhenSolo and true or false]
     if mod._rfRaidVisMacro ~= region then
         RegisterStateDriver(containerFrame, "visibility", region)
         mod._rfRaidVisMacro = region
@@ -491,7 +491,7 @@ local function UpdateVisibility()
         containerFrame:SetAlpha(1)
     end
 
-    local s = saved.profile
+    local cfg = saved.profile
     -- Arena and Small Raid mode hide the raid frames. The player is in a raid
     -- group there, but we show our party frames instead (see
     -- _UpdatePartyVisibility), so the raid container must stay hidden even
@@ -512,7 +512,7 @@ local function UpdateVisibility()
     -- even when unchanged, so doing it every combat exit / visibility recompute
     -- was a large needless secure-header spike. showWhenSolo is a static setting;
     -- mirrors the needsHideShow guard in ApplySortToHeaders.
-    local wantSolo = s.showWhenSolo or false
+    local wantSolo = cfg.showWhenSolo or false
     for _, heading in ipairs(separatedHdrs) do
         if heading and heading:GetAttribute("showSolo") ~= wantSolo then
             heading:SetAttribute("showSolo", wantSolo)

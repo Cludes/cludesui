@@ -81,12 +81,12 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
 
     -- The label for cur of total, and whether "to level" / the name goes with it.
     local function Label(current, total)
-        local s = Settings()
-        local display = mod.GetXPRepTextDisplay(s)
+        local cfg = Settings()
+        local display = mod.GetXPRepTextDisplay(cfg)
         if display == "off" then
             return "", false
         end
-        local context = s.textFormat ~= "plain"
+        local context = cfg.textFormat ~= "plain"
         if display == "values" then
             return Number(current) .. " / " .. Number(total), context, true
         end

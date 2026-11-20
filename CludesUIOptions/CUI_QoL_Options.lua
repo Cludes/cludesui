@@ -293,13 +293,13 @@ local function ShowTransformsPopup()
         end)
         applyButton:SetScript("OnClick", function()
             Account().hideTransformItems = CludesUIDB.hideTransformItems or {}
-            local t = CludesUIDB.hideTransformItems
+            local tbl = CludesUIDB.hideTransformItems
             for _, entry in ipairs(payload.items) do
                 local staged = transformsStaged[entry.key] and true or false
                 if staged == not entry.defaultOff then
-                    t[entry.key] = nil -- matches the per-key default
+                    tbl[entry.key] = nil -- matches the per-key default
                 else
-                    t[entry.key] = staged -- stored deviations only
+                    tbl[entry.key] = staged -- stored deviations only
                 end
             end
             if CludesUI._applyHideTransforms then
@@ -3092,12 +3092,12 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Color Out of Range",
             tooltip = function()
-                local s = CludesUI.L("Changes the crosshair color when your current target is out of range.")
+                local text = CludesUI.L("Changes the crosshair color when your current target is out of range.")
                 if CludesUI._getCrosshairCutoffRange then
                     local range = CludesUI._getCrosshairCutoffRange()
-                    s = s .. " " .. CludesUI.Lf("Currently active range cutoff: %1$syd.", range)
+                    text = text .. " " .. CludesUI.Lf("Currently active range cutoff: %1$syd.", range)
                 end
-                return s
+                return text
             end,
             disabled = function()
                 return crosshairOff()

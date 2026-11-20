@@ -206,8 +206,8 @@ do
             BankOne(an, b.anchors)
             BankOne(wm, b.wm)
             BankOne(hm, b.hm)
-            local t = mod.GetTrackedBuffBars and mod.GetTrackedBuffBars()
-            local barList = (t and t.bars) or {}
+            local tbl = mod.GetTrackedBuffBars and mod.GetTrackedBuffBars()
+            local barList = (tbl and tbl.bars) or {}
             local sets = { b.anchors, b.wm, b.hm }
             for i = 1, 3 do
                 local set, drop = sets[i], nil

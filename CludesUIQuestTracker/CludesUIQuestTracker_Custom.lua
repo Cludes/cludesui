@@ -498,65 +498,65 @@ local function FocusOnEnter(self)
 end
 
 local function FocusButton(line)
-    local b = line.focus
-    if b then
-        return b
+    local widget = line.focus
+    if widget then
+        return widget
     end
-    b = CreateFrame("Button", nil, line)
-    b.glow = b:CreateTexture(nil, "BACKGROUND")
-    b.glow:SetPoint("CENTER")
-    b.glow:SetAtlas("UI-QuestPoi-OuterGlow")
+    widget = CreateFrame("Button", nil, line)
+    widget.glow = widget:CreateTexture(nil, "BACKGROUND")
+    widget.glow:SetPoint("CENTER")
+    widget.glow:SetAtlas("UI-QuestPoi-OuterGlow")
     -- Blizzard draws 32px art on a 20px button: the atlases carry padding.
-    b.ring = b:CreateTexture(nil, "ARTWORK")
-    b.ring:SetPoint("CENTER")
-    b.icon = b:CreateTexture(nil, "OVERLAY")
-    b.icon:SetPoint("CENTER")
-    local highlight = b:CreateTexture(nil, "HIGHLIGHT")
+    widget.ring = widget:CreateTexture(nil, "ARTWORK")
+    widget.ring:SetPoint("CENTER")
+    widget.icon = widget:CreateTexture(nil, "OVERLAY")
+    widget.icon:SetPoint("CENTER")
+    local highlight = widget:CreateTexture(nil, "HIGHLIGHT")
     highlight:SetPoint("CENTER")
     highlight:SetAtlas("UI-QuestPoi-InnerGlow")
-    b.hl = highlight
+    widget.hl = highlight
     highlight:SetBlendMode("ADD")
-    b:SetScript("OnClick", function(self)
+    widget:SetScript("OnClick", function(self)
         ToggleFocus(self.id)
     end)
-    b:SetScript("OnEnter", function(self)
+    widget:SetScript("OnEnter", function(self)
         UpdateHover()
         FocusOnEnter(self)
     end)
-    b:SetScript("OnLeave", function()
+    widget:SetScript("OnLeave", function()
         UpdateHover()
         CludesUI.HideWidgetTooltip()
     end)
-    line.focus = b
-    return b
+    line.focus = widget
+    return widget
 end
 
 local function ShowFocusButton(line, questId, isComplete, px)
-    local b = FocusButton(line)
+    local widget = FocusButton(line)
     local focused = questId == C_SuperTrack.GetSuperTrackedQuestID()
-    b.id = questId
-    b:Show()
-    if b.lastSize == px and b.lastFocused == focused and b.lastComplete == isComplete then
+    widget.id = questId
+    widget:Show()
+    if widget.lastSize == px and widget.lastFocused == focused and widget.lastComplete == isComplete then
         return
     end
-    b.lastSize, b.lastFocused, b.lastComplete = px, focused, isComplete
-    b:SetSize(px, px)
+    widget.lastSize, widget.lastFocused, widget.lastComplete = px, focused, isComplete
+    widget:SetSize(px, px)
     local art = px * 1.6
-    b.ring:SetSize(art, art)
-    b.hl:SetSize(art, art)
-    b:ClearAllPoints()
-    b:SetPoint("TOPRIGHT", line, "TOPLEFT", -FOCUS_GAP, (px - (Cfg("titleFontSize") or 12)) / 2)
+    widget.ring:SetSize(art, art)
+    widget.hl:SetSize(art, art)
+    widget:ClearAllPoints()
+    widget:SetPoint("TOPRIGHT", line, "TOPLEFT", -FOCUS_GAP, (px - (Cfg("titleFontSize") or 12)) / 2)
     if isComplete then
-        b.ring:SetAtlas("UI-QuestIcon-TurnIn-Normal")
-        b.icon:Hide()
+        widget.ring:SetAtlas("UI-QuestIcon-TurnIn-Normal")
+        widget.icon:Hide()
     else
-        b.ring:SetAtlas(focused and "UI-QuestPoi-QuestNumber-SuperTracked" or "UI-QuestPoi-QuestNumber")
-        b.icon:SetAtlas(focused and "Quest-In-Progress-Icon-Brown" or "Quest-In-Progress-Icon-yellow")
-        b.icon:SetSize(px * 0.75, px * 0.75)
-        b.icon:Show()
+        widget.ring:SetAtlas(focused and "UI-QuestPoi-QuestNumber-SuperTracked" or "UI-QuestPoi-QuestNumber")
+        widget.icon:SetAtlas(focused and "Quest-In-Progress-Icon-Brown" or "Quest-In-Progress-Icon-yellow")
+        widget.icon:SetSize(px * 0.75, px * 0.75)
+        widget.icon:Show()
     end
-    b.glow:SetSize(art * 1.25, art * 1.25)
-    b.glow:SetShown(focused)
+    widget.glow:SetSize(art * 1.25, art * 1.25)
+    widget.glow:SetShown(focused)
 end
 
 local function AddObjectives(questId, posY, width, posX)
@@ -938,27 +938,27 @@ local function UpdateItemCooldown(b)
 end
 
 local function ItemButton(index)
-    local b = itemList[index]
-    if b then
-        return b
+    local widget = itemList[index]
+    if widget then
+        return widget
     end
-    b = CreateFrame("Button", nil, itemLayer, "SecureActionButtonTemplate")
-    b:RegisterForClicks("AnyUp")
-    b:SetAttribute("type", "item")
-    b:SetAttribute("useOnKeyDown", false)
-    local backdrop = b:CreateTexture(nil, "BACKGROUND")
+    widget = CreateFrame("Button", nil, itemLayer, "SecureActionButtonTemplate")
+    widget:RegisterForClicks("AnyUp")
+    widget:SetAttribute("type", "item")
+    widget:SetAttribute("useOnKeyDown", false)
+    local backdrop = widget:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0, 0, 0, 1)
-    b.icon = b:CreateTexture(nil, "ARTWORK")
-    b.icon:SetPoint("TOPLEFT", 1, -1)
-    b.icon:SetPoint("BOTTOMRIGHT", -1, 1)
-    b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    b.cd = CreateFrame("Cooldown", nil, b, "CooldownFrameTemplate")
-    b.cd:SetAllPoints(b.icon)
-    b.count = b:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
-    b.count:SetPoint("BOTTOMRIGHT", -1, 1)
-    b:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
-    b:SetScript("OnEnter", function(self)
+    widget.icon = widget:CreateTexture(nil, "ARTWORK")
+    widget.icon:SetPoint("TOPLEFT", 1, -1)
+    widget.icon:SetPoint("BOTTOMRIGHT", -1, 1)
+    widget.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    widget.cd = CreateFrame("Cooldown", nil, widget, "CooldownFrameTemplate")
+    widget.cd:SetAllPoints(widget.icon)
+    widget.count = widget:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
+    widget.count:SetPoint("BOTTOMRIGHT", -1, 1)
+    widget:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    widget:SetScript("OnEnter", function(self)
         UpdateHover()
         GameTooltip:SetOwner(self, TooltipSide())
         local logIndex = C_QuestLog.GetLogIndexForQuestID(self.questID)
@@ -967,12 +967,12 @@ local function ItemButton(index)
         end
         GameTooltip:Show()
     end)
-    b:SetScript("OnLeave", function()
+    widget:SetScript("OnLeave", function()
         UpdateHover()
         GameTooltip:Hide()
     end)
-    itemList[index] = b
-    return b
+    itemList[index] = widget
+    return widget
 end
 
 -- Shows a button for each wanted item whose title row is fully in view.
@@ -993,24 +993,24 @@ function SyncItems()
             local lt, lr = l:GetTop(), l:GetRight()
             if lt and lt <= topY + 0.5 and lt - wid.size >= bottom - 0.5 then
                 num = num + 1
-                local b = ItemButton(num)
-                local s = l:GetEffectiveScale() / b:GetEffectiveScale()
+                local widget = ItemButton(num)
+                local s = l:GetEffectiveScale() / widget:GetEffectiveScale()
                 local posX, posY, px = (lr + hookW + 4) * s, lt * s, wid.size * s
-                if b.lastX ~= posX or b.lastY ~= posY or b.lastSize ~= px then
-                    b.lastX, b.lastY, b.lastSize = posX, posY, px
-                    b:SetSize(px, px)
-                    b:ClearAllPoints()
-                    b:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", posX, posY)
+                if widget.lastX ~= posX or widget.lastY ~= posY or widget.lastSize ~= px then
+                    widget.lastX, widget.lastY, widget.lastSize = posX, posY, px
+                    widget:SetSize(px, px)
+                    widget:ClearAllPoints()
+                    widget:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", posX, posY)
                 end
-                if b.itemID ~= wid.itemID then
-                    b.itemID = wid.itemID
-                    b:SetAttribute("item", "item:" .. wid.itemID)
+                if widget.itemID ~= wid.itemID then
+                    widget.itemID = wid.itemID
+                    widget:SetAttribute("item", "item:" .. wid.itemID)
                 end
-                b.questID = wid.questID
-                b.icon:SetTexture(wid.tex)
-                b.count:SetText((wid.charges and wid.charges > 1) and wid.charges or "")
-                UpdateItemCooldown(b)
-                b:Show()
+                widget.questID = wid.questID
+                widget.icon:SetTexture(wid.tex)
+                widget.count:SetText((wid.charges and wid.charges > 1) and wid.charges or "")
+                UpdateItemCooldown(widget)
+                widget:Show()
             end
         end
     end

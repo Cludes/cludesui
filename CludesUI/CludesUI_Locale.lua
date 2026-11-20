@@ -101,11 +101,11 @@ CludesUI.L = L
 -- Format helper for the hard-case long tail. Uses WoW positional %1$s / %2$d
 -- specifiers so translators can reorder placeholders for other word orders.
 CludesUI.Lf = function(s, ...)
-    local t = L(s)
-    if type(t) ~= "string" or select("#", ...) == 0 then
-        return t
+    local text = L(s)
+    if type(text) ~= "string" or select("#", ...) == 0 then
+        return text
     end
-    return t:format(...)
+    return text:format(...)
 end
 
 -- Reverse-map identity primitive. Where code reads a rendered FontString back
@@ -273,9 +273,9 @@ Activate()
 -- them all, only when the override picks a translation.
 -- localeData already populated (the child loaded before this point) skips
 -- the call.
-local f = CreateFrame("Frame")
-f:RegisterEvent("ADDON_LOADED")
-f:SetScript("OnEvent", function(self, _, loaded)
+local frame = CreateFrame("Frame")
+frame:RegisterEvent("ADDON_LOADED")
+frame:SetScript("OnEvent", function(self, _, loaded)
     if loaded == ADDON_NAME then
         self:UnregisterEvent("ADDON_LOADED")
         local client = GetLocale()

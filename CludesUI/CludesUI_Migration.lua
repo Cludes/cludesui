@@ -1866,8 +1866,8 @@ CludesUI.RegisterMigration({
 
         local winner -- first non-"none" override, in canonical order
         for _, unitToken in ipairs({ "player", "target", "focus" }) do
-            local s = ufStore[unitToken]
-            local val = type(s) == "table" and s.healthBarTexture
+            local cfg = ufStore[unitToken]
+            local val = type(cfg) == "table" and cfg.healthBarTexture
             if type(val) == "string" and val ~= "" and val ~= "none" then
                 winner = val
                 break
@@ -1880,9 +1880,9 @@ CludesUI.RegisterMigration({
 
         -- Strip per-unit overrides so the global value is the single source.
         for _, unitToken in ipairs({ "player", "target", "focus", "pet", "totPet", "boss" }) do
-            local s = ufStore[unitToken]
-            if type(s) == "table" then
-                s.healthBarTexture = nil
+            local cfg = ufStore[unitToken]
+            if type(cfg) == "table" then
+                cfg.healthBarTexture = nil
             end
         end
     end,
@@ -2205,11 +2205,11 @@ CludesUI.RegisterMigration({
         end
 
         for _, unitName in ipairs({ "target", "focus" }) do
-            local s = ufStore[unitName]
-            if s then
-                local cw = s.castbarWidth or 0
+            local cfg = ufStore[unitName]
+            if cfg then
+                local cw = cfg.castbarWidth or 0
                 if cw == 0 then
-                    s.castbarWidth = s.frameWidth or 181
+                    cfg.castbarWidth = cfg.frameWidth or 181
                 end
             end
         end
@@ -2333,9 +2333,9 @@ CludesUI.RegisterMigration({
         end
         local global = ufStore.portraitStyle or "attached"
         for _, unitName in ipairs({ "player", "target", "focus" }) do
-            local s = ufStore[unitName]
-            if s and s.portraitStyle == nil then
-                s.portraitStyle = global
+            local cfg = ufStore[unitName]
+            if cfg and cfg.portraitStyle == nil then
+                cfg.portraitStyle = global
             end
         end
     end,
@@ -3351,11 +3351,11 @@ CludesUI.RegisterMigration({
                 fontMap.neverShowSlug = slug and true or false
             end
             if fontMap.outlineIconText == nil and type(oit) == "table" then
-                local t = {}
+                local tbl = {}
                 for k, val in pairs(oit) do
-                    t[k] = val
+                    tbl[k] = val
                 end
-                fontMap.outlineIconText = t
+                fontMap.outlineIconText = tbl
             end
         end
         -- Live working copy = what a full export snapshots via DeepCopy(GetFontsDB()).
@@ -4491,8 +4491,8 @@ do
         end
         local hasDisabled = false
         for _, section in ipairs(RB_SECTIONS) do
-            local s = resourceBars[section.key]
-            if type(s) == "table" and type(s.disabledSpecs) == "table" and next(s.disabledSpecs) then
+            local cfg = resourceBars[section.key]
+            if type(cfg) == "table" and type(cfg.disabledSpecs) == "table" and next(cfg.disabledSpecs) then
                 hasDisabled = true
                 break
             end
@@ -5127,17 +5127,17 @@ CludesUI.RegisterMigration({
             return
         end
         for _, unitName in ipairs({ "target", "focus", "boss" }) do
-            local s = ufStore[unitName]
+            local cfg = ufStore[unitName]
             if
-                type(s) == "table"
-                and s.debuffFilterMode == nil
-                and s.onlyPlayerDebuffs ~= true
-                and s.debuffPriorityAura ~= true
-                and type(s.debuffInclude) == "table"
+                type(cfg) == "table"
+                and cfg.debuffFilterMode == nil
+                and cfg.onlyPlayerDebuffs ~= true
+                and cfg.debuffPriorityAura ~= true
+                and type(cfg.debuffInclude) == "table"
             then
-                for _, on in pairs(s.debuffInclude) do
+                for _, on in pairs(cfg.debuffInclude) do
                     if on then
-                        s.debuffFilterMode = "tracked"
+                        cfg.debuffFilterMode = "tracked"
                         break
                     end
                 end
@@ -5684,21 +5684,21 @@ do
     -- The bar table an override path names inside playerAuraBars (list indexes
     -- are stored as strings, as the override engine writes them).
     local function BarAt(pab, relative)
-        local t = pab
+        local tbl = pab
         for seg in relative:gmatch("[^\30]+") do
-            if type(t) ~= "table" then
+            if type(tbl) ~= "table" then
                 return nil
             end
-            local val = t[seg]
+            local val = tbl[seg]
             if val == nil then
                 local num = tonumber(seg)
                 if num then
-                    val = t[num]
+                    val = tbl[num]
                 end
             end
-            t = val
+            tbl = val
         end
-        return type(t) == "table" and t or nil
+        return type(tbl) == "table" and tbl or nil
     end
 
     -- One stored override value map: a whole subtree is walked like the
@@ -5713,8 +5713,8 @@ do
                     local barConf = fieldKey:sub(1, -#ZOOM_LEAF - 1)
                     local shape = map[barConf .. SHAPE_LEAF]
                     if shape == nil and pab then
-                        local t = BarAt(pab, barConf:sub(#PAB_PREFIX + 1))
-                        shape = t and t.iconShape
+                        local tbl = BarAt(pab, barConf:sub(#PAB_PREFIX + 1))
+                        shape = tbl and tbl.iconShape
                     end
                     if shape ~= NIL_SENT and Shaped(shape) then
                         map[fieldKey] = ZOOM
@@ -6522,10 +6522,10 @@ do
         -- A planning error still stamps the mark (logged): never cleared twice.
         function FvBW.ProcessUF(ufStore, profileTbl, modeName)
             local ufT = type(ufStore) == "table"
-            local s = ufT and ufStore.playerAuraBars or nil
-            local swingCfg = type(s) == "table"
+            local cfg = ufT and ufStore.playerAuraBars or nil
+            local swingCfg = type(cfg) == "table"
             local strip, clear
-            if swingCfg and s[KEY] ~= nil then
+            if swingCfg and cfg[KEY] ~= nil then
                 if modeName ~= "import" then
                     return
                 end
@@ -6550,14 +6550,14 @@ do
             end
             local plan = { n = 0, rm = {} }
             local success, err =
-                pcall(PlanUF, clear and ufT and ufStore or nil, clear and swingCfg and s or nil, profileTbl, strip, plan)
+                pcall(PlanUF, clear and ufT and ufStore or nil, clear and swingCfg and cfg or nil, profileTbl, strip, plan)
             if success then
                 Commit(plan)
             else
                 Log(err)
             end
             if clear and swingCfg then
-                s[KEY] = 1
+                cfg[KEY] = 1
             end
         end
 
@@ -6707,9 +6707,9 @@ do
                 -- A brand-new account (no saved data yet): nothing to freeze. It is
                 -- marked once its saved data exists, so its own first session's data
                 -- never reads as the old layout's next time.
-                local f = CreateFrame("Frame")
-                f:RegisterEvent("PLAYER_LOGIN")
-                f:SetScript("OnEvent", function(self)
+                local frame = CreateFrame("Frame")
+                frame:RegisterEvent("PLAYER_LOGIN")
+                frame:SetScript("OnEvent", function(self)
                     self:UnregisterAllEvents()
                     local d = CludesUIDB
                     if type(d) == "table" then
@@ -6799,9 +6799,9 @@ do
             if type(saved) ~= "table" then
                 -- A brand-new account: nothing to move. Marked at login, so
                 -- its own first session's choices are never overwritten.
-                local f = CreateFrame("Frame")
-                f:RegisterEvent("PLAYER_LOGIN")
-                f:SetScript("OnEvent", function(self)
+                local frame = CreateFrame("Frame")
+                frame:RegisterEvent("PLAYER_LOGIN")
+                frame:SetScript("OnEvent", function(self)
                     self:UnregisterAllEvents()
                     local d = CludesUIDB
                     if type(d) == "table" then
@@ -6867,15 +6867,15 @@ do
         if plateCfg.useClassicStyle or not (plateCfg.useBlizzardStyle and plateCfg.useForeverStyle) then
             return
         end
-        local s = plateCfg._foreverStyleSlots
-        if type(s) ~= "table" then
-            s = {}
-            plateCfg._foreverStyleSlots = s
+        local cfg = plateCfg._foreverStyleSlots
+        if type(cfg) ~= "table" then
+            cfg = {}
+            plateCfg._foreverStyleSlots = cfg
         end
-        local cui = s.cui
+        local cui = cfg.cui
         if type(cui) ~= "table" then
             cui = {}
-            s.cui = cui
+            cfg.cui = cui
         end
         cui.classificationHideRare = plateCfg.classificationHideRare
         plateCfg.classificationHideRare = true
@@ -6891,9 +6891,9 @@ do
             if type(saved) ~= "table" then
                 -- A brand-new account: nothing to move. Marked at login, so
                 -- its own first session's choices are never overwritten.
-                local f = CreateFrame("Frame")
-                f:RegisterEvent("PLAYER_LOGIN")
-                f:SetScript("OnEvent", function(self)
+                local frame = CreateFrame("Frame")
+                frame:RegisterEvent("PLAYER_LOGIN")
+                frame:SetScript("OnEvent", function(self)
                     self:UnregisterAllEvents()
                     local d = CludesUIDB
                     if type(d) == "table" then
@@ -7013,9 +7013,9 @@ do
             if type(saved) ~= "table" then
                 -- A brand-new account: nothing to move. Marked at login, so
                 -- its own first session's choices are never overwritten.
-                local f = CreateFrame("Frame")
-                f:RegisterEvent("PLAYER_LOGIN")
-                f:SetScript("OnEvent", function(self)
+                local frame = CreateFrame("Frame")
+                frame:RegisterEvent("PLAYER_LOGIN")
+                frame:SetScript("OnEvent", function(self)
                     self:UnregisterAllEvents()
                     local d = CludesUIDB
                     if type(d) == "table" then

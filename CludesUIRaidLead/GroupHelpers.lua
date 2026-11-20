@@ -54,20 +54,20 @@ end
 function mod.HelperSettings()
     local p = mod.RaidLeadDB()
     p.helpers = p.helpers or {}
-    local s = p.helpers
-    if s.drops == nil then
-        s.drops = true
+    local cfg = p.helpers
+    if cfg.drops == nil then
+        cfg.drops = true
     end
-    if s.dropSound == nil then
-        s.dropSound = true
+    if cfg.dropSound == nil then
+        cfg.dropSound = true
     end
-    if s.gateway == nil then
-        s.gateway = true
+    if cfg.gateway == nil then
+        cfg.gateway = true
     end
-    if s.stats == nil then
-        s.stats = false
+    if cfg.stats == nil then
+        cfg.stats = false
     end
-    return s
+    return cfg
 end
 
 -------------------------------------------------------------------------------
@@ -75,13 +75,13 @@ end
 -------------------------------------------------------------------------------
 --- Called by Comms.lua (and for our own drops) with who dropped what.
 function mod.ReceiveDrop(who, kind)
-    local s = mod.HelperSettings()
-    if not s.drops or not DROP_TEXT[kind] then
+    local cfg = mod.HelperSettings()
+    if not cfg.drops or not DROP_TEXT[kind] then
         return
     end
     local name = (CludesUI.GetNickname and CludesUI.GetNickname(who)) or who
     CludesUI.Print(("|cff4cc9f0Raid Lead:|r %s dropped %s."):format(name, DROP_TEXT[kind]))
-    if s.dropSound then
+    if cfg.dropSound then
         PlaySound(SOUNDKIT.READY_CHECK, "Master")
     end
 end
@@ -106,22 +106,22 @@ end)
 --  Movable text frames (Gateway Usable, Stats)
 -------------------------------------------------------------------------------
 local function Movable(name, key, labelText, sequence, wid, hgt, default, isHidden)
-    local f = CreateFrame("Frame", name, UIParent)
-    f:SetSize(wid, hgt)
+    local frame = CreateFrame("Frame", name, UIParent)
+    frame:SetSize(wid, hgt)
     local function Place()
         if InCombatLockdown() then
             return
         end
         local p = mod.HelperSettings()[key]
-        f:ClearAllPoints()
+        frame:ClearAllPoints()
         if p then
-            f:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
+            frame:SetPoint(p.point or "CENTER", UIParent, p.relPoint or "CENTER", p.x or 0, p.y or 0)
         else
-            f:SetPoint(unpack(default))
+            frame:SetPoint(unpack(default))
         end
     end
     Place()
-    f.register = function()
+    frame.register = function()
         CludesUI:RegisterUnlockElements({
             CludesUI.MakeUnlockElement({
                 key = "RLEAD_" .. key,
@@ -132,10 +132,10 @@ local function Movable(name, key, labelText, sequence, wid, hgt, default, isHidd
                 noResize = true,
                 isHidden = isHidden,
                 getFrame = function()
-                    return f
+                    return frame
                 end,
                 getSize = function()
-                    return f:GetWidth(), f:GetHeight()
+                    return frame:GetWidth(), frame:GetHeight()
                 end,
                 savePos = function(_, anchorPoint, relPoint, posX, posY)
                     mod.HelperSettings()[key] =
@@ -151,7 +151,7 @@ local function Movable(name, key, labelText, sequence, wid, hgt, default, isHidd
             }),
         }, "CludesUIRaidLead")
     end
-    return f
+    return frame
 end
 
 -------------------------------------------------------------------------------

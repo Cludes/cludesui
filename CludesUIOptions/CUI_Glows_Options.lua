@@ -61,48 +61,48 @@ local function TemplateDesc()
         excludes = { [4] = true },
         caps = { mode = true, params = true, bg = true },
         get = function(f)
-            local t = Template()
+            local color = Template()
             if f == "style" then
-                return t.style or 1
+                return color.style or 1
             elseif f == "mode" then
-                return t.mode or "default"
+                return color.mode or "default"
             elseif f == "color" then
-                return t.r, t.g, t.b
+                return color.r, color.g, color.b
             elseif f == "lines" then
-                return t.lines
+                return color.lines
             elseif f == "thickness" then
-                return t.thickness
+                return color.thickness
             elseif f == "speed" then
-                return t.speed
+                return color.speed
             elseif f == "bg" then
-                return t.bg == true
+                return color.bg == true
             elseif f == "bgColor" then
-                return t.bgR, t.bgG, t.bgB
+                return color.bgR, color.bgG, color.bgB
             end
         end,
         set = function(f, a, b, c)
-            local t = TemplateW()
+            local color = TemplateW()
             if f == "style" then
-                t.style = a
+                color.style = a
             elseif f == "mode" then
-                t.mode = a
+                color.mode = a
                 -- Custom without a picked color would apply nothing visible: seed gold.
-                if a == "custom" and t.r == nil then
+                if a == "custom" and color.r == nil then
                     local d = CludesUI.Glows.DEFAULT_COLOR
-                    t.r, t.g, t.b = d.r, d.g, d.b
+                    color.r, color.g, color.b = d.r, d.g, d.b
                 end
             elseif f == "color" then
-                t.r, t.g, t.b = a, b, c
+                color.r, color.g, color.b = a, b, c
             elseif f == "lines" then
-                t.lines = a
+                color.lines = a
             elseif f == "thickness" then
-                t.thickness = a
+                color.thickness = a
             elseif f == "speed" then
-                t.speed = a
+                color.speed = a
             elseif f == "bg" then
-                t.bg = a and true or nil
+                color.bg = a and true or nil
             elseif f == "bgColor" then
-                t.bgR, t.bgG, t.bgB = a, b, c
+                color.bgR, color.bgG, color.bgB = a, b, c
             end
         end,
     }
@@ -498,18 +498,18 @@ end
 local SUB_H = 30
 local function SubHeader(hostFrame, cursorY, textValue)
     local Pix = CludesUI.PanelPP
-    local f = CreateFrame("Frame", nil, hostFrame)
-    Pix.Size(f, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, SUB_H)
-    Pix.Point(f, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
-    local fontStr = CludesUI.MakeFont(f, 11, nil, 1, 1, 1, 0.55)
-    Pix.Point(fontStr, "BOTTOMLEFT", f, "BOTTOMLEFT", 20, 7)
+    local frame = CreateFrame("Frame", nil, hostFrame)
+    Pix.Size(frame, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, SUB_H)
+    Pix.Point(frame, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
+    local fontStr = CludesUI.MakeFont(frame, 11, nil, 1, 1, 1, 0.55)
+    Pix.Point(fontStr, "BOTTOMLEFT", frame, "BOTTOMLEFT", 20, 7)
     fontStr:SetText(textValue)
-    local line = f:CreateTexture(nil, "ARTWORK")
+    local line = frame:CreateTexture(nil, "ARTWORK")
     line:SetColorTexture(1, 1, 1, 0.06)
     line:SetHeight(1)
     Pix.Point(line, "LEFT", fontStr, "RIGHT", 10, 0)
-    Pix.Point(line, "RIGHT", f, "RIGHT", -20, 0)
-    f._labelText = textValue
+    Pix.Point(line, "RIGHT", frame, "RIGHT", -20, 0)
+    frame._labelText = textValue
     CludesUI._rowCounters[hostFrame] = 0
     return cursorY - SUB_H
 end
@@ -518,14 +518,14 @@ end
 local DIV_H = 11
 local function CardDivider(hostFrame, cursorY)
     local Pix = CludesUI.PanelPP
-    local f = CreateFrame("Frame", nil, hostFrame)
-    Pix.Size(f, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, DIV_H)
-    Pix.Point(f, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
-    local line = f:CreateTexture(nil, "ARTWORK")
+    local frame = CreateFrame("Frame", nil, hostFrame)
+    Pix.Size(frame, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, DIV_H)
+    Pix.Point(frame, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
+    local line = frame:CreateTexture(nil, "ARTWORK")
     line:SetColorTexture(1, 1, 1, 0.1)
     line:SetHeight(1)
-    Pix.Point(line, "LEFT", f, "LEFT", 20, 0)
-    Pix.Point(line, "RIGHT", f, "RIGHT", -20, 0)
+    Pix.Point(line, "LEFT", frame, "LEFT", 20, 0)
+    Pix.Point(line, "RIGHT", frame, "RIGHT", -20, 0)
     CludesUI._rowCounters[hostFrame] = 0
     return cursorY - DIV_H
 end
@@ -544,17 +544,17 @@ local function InfoGlyph(region, kind)
     local holderFrame = CreateFrame("Frame", nil, region)
     holderFrame:SetPoint(p, rel, rp, posX, cursorY)
     local function Button(size, glow)
-        local b = CreateFrame("Frame", nil, holderFrame)
-        Pix.Size(b, size, size)
-        local texture = b:CreateTexture(nil, "ARTWORK")
+        local widget = CreateFrame("Frame", nil, holderFrame)
+        Pix.Size(widget, size, size)
+        local texture = widget:CreateTexture(nil, "ARTWORK")
         texture:SetAllPoints()
         texture:SetColorTexture(0.1, 0.1, 0.1, 1)
         if glow then
-            CludesUI.MakeBorder(b, ACC.r, ACC.g, ACC.b, 0.8, Pix)
+            CludesUI.MakeBorder(widget, ACC.r, ACC.g, ACC.b, 0.8, Pix)
         else
-            CludesUI.MakeBorder(b, 1, 1, 1, 0.15, Pix)
+            CludesUI.MakeBorder(widget, 1, 1, 1, 0.15, Pix)
         end
-        return b
+        return widget
     end
     if kind == "bar" then
         Pix.Size(holderFrame, 32, 10)

@@ -114,11 +114,11 @@ local XPPreviewRepaint -- forward: the queued retry calls it
 local function XPPreviewWanted()
     local environ = mod._ABO_OptEnv
     local p = environ.EAB.db.profile
-    local s = p.bars[XP]
-    if not s or p.useBlizzardDataBars or s.enabled == false then
+    local cfg = p.bars[XP]
+    if not cfg or p.useBlizzardDataBars or cfg.enabled == false then
         return false
     end
-    return environ.GetVisibilityKey(s) ~= "never" and not s.alwaysHidden
+    return environ.GetVisibilityKey(cfg) ~= "never" and not cfg.alwaysHidden
 end
 
 -- One text's reach past each of the bar's edges (l r t b), its Text
@@ -195,10 +195,10 @@ local function XPPreviewFit(availW, wid, height, scale, oL, oR, oT, oB)
 end
 
 local function XPPreviewPaint(noRetry)
-    local s = mod._ABO_OptEnv.EAB.db.profile.bars[XP]
-    local f = preview.frame
-    local hostFrame = f:GetParent()
-    local wid, height = s.width or 400, s.height or 18
+    local cfg = mod._ABO_OptEnv.EAB.db.profile.bars[XP]
+    local frame = preview.frame
+    local hostFrame = frame:GetParent()
+    local wid, height = cfg.width or 400, cfg.height or 18
     local scale = UIParent:GetEffectiveScale() / hostFrame:GetEffectiveScale()
     -- The header's width now (a resized panel), else the one it was built at.
     local hdrW = hostFrame:GetWidth()
@@ -210,9 +210,9 @@ local function XPPreviewPaint(noRetry)
     -- once; a different one is styled again at its own scale, so its 1px
     -- lines snap to it (texts keep their frame-unit places across a rescale).
     local fit = XPPreviewFit(availW, wid, height, scale, preview.oL or 0, preview.oR or 0, preview.oT or 0, preview.oB or 0)
-    f:SetScale(scale * fit)
-    XPPreviewStyle(f, s)
-    local oL, oR, oT, oB = XPPreviewOverhang(f)
+    frame:SetScale(scale * fit)
+    XPPreviewStyle(frame, cfg)
+    local oL, oR, oT, oB = XPPreviewOverhang(frame)
     if oL then
         preview.oL, preview.oR, preview.oT, preview.oB = oL, oR, oT, oB
     else
@@ -225,12 +225,12 @@ local function XPPreviewPaint(noRetry)
     local fit2 = XPPreviewFit(availW, wid, height, scale, oL, oR, oT, oB)
     if math.abs(fit2 - fit) > 0.001 then
         fit = fit2
-        f:SetScale(scale * fit)
-        XPPreviewStyle(f, s)
+        frame:SetScale(scale * fit)
+        XPPreviewStyle(frame, cfg)
     end
     local fullH = height + oT + oB
-    f:ClearAllPoints()
-    mod._ABO_OptEnv.PP.Point(f, "CENTER", hostFrame, "CENTER", (oL - oR) / 2, (oB - oT) / 2)
+    frame:ClearAllPoints()
+    mod._ABO_OptEnv.PP.Point(frame, "CENTER", hostFrame, "CENTER", (oL - oR) / 2, (oB - oT) / 2)
     return math.floor(fullH * scale * fit + PV_PAD * 2 + 0.5)
 end
 
@@ -239,12 +239,12 @@ end
 -- force: the header height is written even when unchanged (a restored
 -- header comes back at its cached height). noRetry: the queued measurement.
 XPPreviewRepaint = function(valueOnly, force, noRetry)
-    local f = preview.frame
-    if not (f and f:IsVisible()) then
+    local frame = preview.frame
+    if not (frame and frame:IsVisible()) then
         return
     end
     if valueOnly then
-        mod.PaintXPFill(f, mod._ABO_OptEnv.EAB.db.profile.bars[XP], PV_CUR, PV_MAX, PV_RESTED)
+        mod.PaintXPFill(frame, mod._ABO_OptEnv.EAB.db.profile.bars[XP], PV_CUR, PV_MAX, PV_RESTED)
         return
     end
     local height = XPPreviewPaint(noRetry)
@@ -258,16 +258,16 @@ local function XPHeaderBuilder(heading, hdrW)
     -- Every header root sits at the content header's own level
     -- (SetContentHeader), so the levels the frame set up when built (text
     -- host, border) hold in each header it moves into.
-    local f = preview.frame
-    if not f then
-        f = mod.CreateXPBarFrame(nil, heading)
-        preview.frame = f
+    local frame = preview.frame
+    if not frame then
+        frame = mod.CreateXPBarFrame(nil, heading)
+        preview.frame = frame
     else
-        f:SetParent(heading)
+        frame:SetParent(heading)
     end
-    f:ClearAllPoints()
-    mod._ABO_OptEnv.PP.Point(f, "CENTER", heading, "CENTER", 0, 0)
-    f:Show()
+    frame:ClearAllPoints()
+    mod._ABO_OptEnv.PP.Point(frame, "CENTER", heading, "CENTER", 0, 0)
+    frame:Show()
     preview.hdrW = hdrW
     preview.h = XPPreviewPaint()
     return preview.h
@@ -1534,9 +1534,9 @@ local function BuildXPBarPage(page, hostFrame, yOffset)
         getValue = FillKey,
         setValue = function(val)
             local was = FillKind()
-            local s = S()
-            s.fillGradient = GRAD_DIR[val]
-            s.fvFill = (val ~= "custom" and not GRAD_DIR[val]) and val or nil
+            local cfg = S()
+            cfg.fillGradient = GRAD_DIR[val]
+            cfg.fvFill = (val ~= "custom" and not GRAD_DIR[val]) and val or nil
             mod.ApplyDataBarLayout(XP)
             -- Another kind needs its own inline control: rebuild.
             if FillKind() ~= was then

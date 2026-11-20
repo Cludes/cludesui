@@ -118,17 +118,17 @@ local COPPER_ICON = "|TInterface\\MoneyFrame\\UI-CopperIcon:12:12:1:0|t"
 
 local function FormatValue(copperValue, short)
     local g = math.floor(copperValue / 10000)
-    local s = math.floor((copperValue % 10000) / 100)
+    local text = math.floor((copperValue % 10000) / 100)
     local c = copperValue % 100
     if g > 0 then
         local result = BreakUpLargeNumbers(g) .. GOLD_ICON
-        if s > 0 and not short then
-            result = result .. " " .. s .. SILVER_ICON
+        if text > 0 and not short then
+            result = result .. " " .. text .. SILVER_ICON
         end
         return result
     end
-    if s > 0 then
-        local result = s .. SILVER_ICON
+    if text > 0 then
+        local result = text .. SILVER_ICON
         if c > 0 and not short then
             result = result .. " " .. c .. COPPER_ICON
         end

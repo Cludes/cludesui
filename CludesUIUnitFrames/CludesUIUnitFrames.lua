@@ -1642,8 +1642,8 @@ local function ApplyHealthBarTexture(healthBar, unitName, texKeyOverride)
     end
     local texKey = texKeyOverride
     if not texKey then
-        local s = unitName and saved.profile[unitName]
-        texKey = (s and s.healthBarTexture) or saved.profile.healthBarTexture or "none"
+        local cfg = unitName and saved.profile[unitName]
+        texKey = (cfg and cfg.healthBarTexture) or saved.profile.healthBarTexture or "none"
     end
     local filePath = CludesUI.ResolveTexturePath(healthBarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
     healthBar:SetStatusBarTexture(filePath)
@@ -1716,16 +1716,16 @@ do
 
     -- A mini frame follows its donor while its Bar Texture is Inherit.
     function mod.UF_TexBgOn(unitName)
-        local s = unitName and saved.profile[unitName]
-        if not s then
+        local cfg = unitName and saved.profile[unitName]
+        if not cfg then
             return false
         end
-        local own = s.healthBarTexture
+        local own = cfg.healthBarTexture
         if MINI[unitName] and (own == nil or own == "inherit") then
             local skinData = mod.GetMiniDonorSettings(unitName)
             return (skinData and skinData.textureBg) == true
         end
-        return s.textureBg == true
+        return cfg.textureBg == true
     end
 
     -- Unset per-frame choices keep the profile's existing Dark Mode setting.
@@ -1884,12 +1884,12 @@ do
         end
         local ownerFrame = castBar.__owner
         local key = ownerFrame and UnitToSettingsKey(ownerFrame._cuiUnit)
-        local s = key and saved.profile[key]
-        mod.UF_TexBgTint(backdrop, mod.UF_TexBgCastPath(s, texKey, castBar._blizzCast))
+        local cfg = key and saved.profile[key]
+        mod.UF_TexBgTint(backdrop, mod.UF_TexBgCastPath(cfg, texKey, castBar._blizzCast))
         -- Repaint now: the reload paints this bg before the textures are applied.
-        if s and not castBar._blizzCast then
-            local color = s.castBgColor
-            backdrop:SetColorTexture(color and color.r or 0, color and color.g or 0, color and color.b or 0, s.castBgAlpha or 0.5)
+        if cfg and not castBar._blizzCast then
+            local color = cfg.castBgColor
+            backdrop:SetColorTexture(color and color.r or 0, color and color.g or 0, color and color.b or 0, cfg.castBgAlpha or 0.5)
         end
     end
 end
@@ -2012,8 +2012,8 @@ local function ApplyHealthBarAlpha(healthBar, unitName)
     if not healthBar then
         return
     end
-    local s = unitName and saved.profile[unitName]
-    local opacity = s and (s.healthBarOpacity or 90) or 90
+    local cfg = unitName and saved.profile[unitName]
+    local opacity = cfg and (cfg.healthBarOpacity or 90) or 90
     -- Old profiles stored opacity as a 0-1 float instead of a 0-100 int.
     if opacity <= 1.0 then
         opacity = opacity * 100
@@ -2023,10 +2023,10 @@ local function ApplyHealthBarAlpha(healthBar, unitName)
     -- With a gradient active the opacity is baked into the gradient endpoints,
     -- so region alpha must stay 1 to avoid double-dimming.
     if fillTex then
-        fillTex:SetAlpha((s and s.gradientEnabled) and 1 or fillA)
+        fillTex:SetAlpha((cfg and cfg.gradientEnabled) and 1 or fillA)
     end
     if healthBar.bg then
-        healthBar.bg:SetAlpha((s and (s.customBgAlpha or 100) or 100) / 100)
+        healthBar.bg:SetAlpha((cfg and (cfg.customBgAlpha or 100) or 100) / 100)
     end
 end
 
@@ -2067,8 +2067,8 @@ local function ApplyPowerBarAlpha(powerBar, unitName)
     if not powerBar then
         return
     end
-    local s = unitName and saved.profile[unitName]
-    local opacity = s and (s.powerBarOpacity or 100) or 100
+    local cfg = unitName and saved.profile[unitName]
+    local opacity = cfg and (cfg.powerBarOpacity or 100) or 100
     -- Old profiles stored opacity as a 0-1 float instead of a 0-100 int.
     if opacity <= 1.0 then
         opacity = opacity * 100
@@ -2077,10 +2077,10 @@ local function ApplyPowerBarAlpha(powerBar, unitName)
     local fillTex = powerBar:GetStatusBarTexture()
     -- Gradient bakes opacity into its endpoints, so keep region alpha at 1 then.
     if fillTex then
-        fillTex:SetAlpha((s and s.powerGradientEnabled) and 1 or fillA)
+        fillTex:SetAlpha((cfg and cfg.powerGradientEnabled) and 1 or fillA)
     end
     if powerBar.bg then
-        powerBar.bg:SetAlpha((s and (s.customPowerBgAlpha or 100) or 100) / 100)
+        powerBar.bg:SetAlpha((cfg and (cfg.customPowerBgAlpha or 100) or 100) / 100)
     end
     -- Below 100 the bg retreats to the empty portion so the translucent fill
     -- shows the world (matches the health/cast bar Fill Opacity model).

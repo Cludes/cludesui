@@ -1195,18 +1195,18 @@ local function BuildBaseDetailDM(widget, fontFile)
             local tiles = mod.DM_ActiveTiles and mod.DM_ActiveTiles()
             if tiles then
                 for idx = 1, #tiles do
-                    local t = tiles[idx]
-                    if t.enabled then
-                        if t.all == true then
+                    local tbl = tiles[idx]
+                    if tbl.enabled then
+                        if tbl.all == true then
                             return true
                         end
                         -- A Match All indicator whose picks can never match shows nothing.
-                        if not mod.DM_TileMatchEmpty(t) then
-                            if t.hasDuration == true then
+                        if not mod.DM_TileMatchEmpty(tbl) then
+                            if tbl.hasDuration == true then
                                 return true
                             end
-                            if t.claim then
-                                for _, on in pairs(t.claim) do
+                            if tbl.claim then
+                                for _, on in pairs(tbl.claim) do
                                     if on then
                                         return true
                                     end
@@ -2437,9 +2437,9 @@ function mod.DMP_RefreshPreview()
                 local gl = mod.DM_BucketTiles and mod.DM_BucketTiles(inhG[gi])
                 if gl then
                     for idx = 1, #gl do
-                        local t = gl[idx]
-                        if not (mod.DM_InhDisabled and mod.DM_InhDisabled(dmSpecSel, t.id)) then
-                            tiles[#tiles + 1] = t
+                        local tbl = gl[idx]
+                        if not (mod.DM_InhDisabled and mod.DM_InhDisabled(dmSpecSel, tbl.id)) then
+                            tiles[#tiles + 1] = tbl
                         end
                     end
                 end
@@ -2520,11 +2520,11 @@ function mod.DMP_RefreshPreview()
             cooldown:Hide()
             tile._cooldown = cooldown
             if Pix then
-                local b = CreateFrame("Frame", nil, tile)
-                b:SetAllPoints()
-                b:SetFrameLevel(tile:GetFrameLevel() + 1)
-                Pix.CreateBorder(b, 0, 0, 0, 1, 1)
-                tile._borderFrame = b
+                local widget = CreateFrame("Frame", nil, tile)
+                widget:SetAllPoints()
+                widget:SetFrameLevel(tile:GetFrameLevel() + 1)
+                Pix.CreateBorder(widget, 0, 0, 0, 1, 1)
+                tile._borderFrame = widget
                 local hb = CreateFrame("Frame", nil, tile)
                 hb:SetAllPoints()
                 hb:SetFrameLevel(tile:GetFrameLevel() + 8)
@@ -3158,27 +3158,27 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             local gname = ginfo and L(ginfo.name) or gkey
             local gl = (mod.DM_BucketTiles and mod.DM_BucketTiles(gkey)) or {}
             for idx = 1, #gl do
-                local t = gl[idx]
-                local disHere = mod.DM_InhDisabled and mod.DM_InhDisabled(dmSpecSel, t.id)
+                local tbl = gl[idx]
+                local disHere = mod.DM_InhDisabled and mod.DM_InhDisabled(dmSpecSel, tbl.id)
                 AddTile({
-                    icon = TileFaceTexture(t),
-                    title = TileName(t),
-                    posText = TilePosText(t),
+                    icon = TileFaceTexture(tbl),
+                    title = TileName(tbl),
+                    posText = TilePosText(tbl),
                     subtitle = gname,
                     inheritedTooltip = CludesUI.Lf("Inherited from %1$s. Editable only there.", gname),
-                    selected = (inheritSel and inheritSel.group == gkey and inheritSel.id == t.id) and true
+                    selected = (inheritSel and inheritSel.group == gkey and inheritSel.id == tbl.id) and true
                         or false,
                     -- Pill = the PER-SPEC enable only; a group-level disable
                     -- dims the tile instead (the pill must never look dead).
-                    dimmed = not t.enabled or nil,
+                    dimmed = not tbl.enabled or nil,
                     enabled = (not disHere) and true or false,
                     showToggle = true,
                     onSelect = function()
-                        inheritSel = { group = gkey, id = t.id }
+                        inheritSel = { group = gkey, id = tbl.id }
                         CludesUI:RefreshPage(true)
                     end,
                     onToggle = function()
-                        mod.DM_SetInhDisabled(dmSpecSel, t.id, not mod.DM_InhDisabled(dmSpecSel, t.id))
+                        mod.DM_SetInhDisabled(dmSpecSel, tbl.id, not mod.DM_InhDisabled(dmSpecSel, tbl.id))
                         ApplyAndRedraw()
                     end,
                 })
@@ -3189,23 +3189,23 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     -- Tile list (BM tile parity: icon face, type title, gray position
     -- suffix, routed-filters subtitle, pill toggle, atlas delete)
     for idx = 1, #tiles do
-        local t = tiles[idx]
+        local tbl = tiles[idx]
         AddTile({
-            icon = TileFaceTexture(t),
+            icon = TileFaceTexture(tbl),
             -- User-typed name over the type-name default. Display-only
             -- (additive key; DM_CfgFP serializes explicit fields, so a
             -- rename never re-declares containers).
-            title = TileName(t),
-            posText = TilePosText(t),
+            title = TileName(tbl),
+            posText = TilePosText(tbl),
             -- Live: filter and Match Mode clicks refresh without a rebuild.
             subtitleFn = function()
-                return TileSubtitle(t)
+                return TileSubtitle(tbl)
             end,
-            selected = (dmSel == t.id and not inheritSel),
-            enabled = t.enabled and true or false,
+            selected = (dmSel == tbl.id and not inheritSel),
+            enabled = tbl.enabled and true or false,
             showToggle = true,
             onSelect = function()
-                dmSel = t.id
+                dmSel = tbl.id
                 inheritSel = nil
                 CludesUI:RefreshPage(true)
             end,
@@ -3220,19 +3220,19 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     fontPath = fontFile,
                     items = CludesUI.SpecBucketMenuItems(dmSpecSel, nil, mod.DM_ForeverKey),
                     onPick = function(filterKey)
-                        if mod.DM_CopyTile and mod.DM_CopyTile(t, filterKey) then
+                        if mod.DM_CopyTile and mod.DM_CopyTile(tbl, filterKey) then
                             ApplyAndRedraw()
                         end
                     end,
                 })
             end,
             onToggle = function(val)
-                t.enabled = val and true or false
+                tbl.enabled = val and true or false
                 ApplyAndRedraw()
             end,
             editTooltip = L("Rename Indicator"),
             onEdit = function()
-                local current = TileName(t)
+                local current = TileName(tbl)
                 CludesUI:ShowInputPopup({
                     title = L("Rename Indicator"),
                     message = L("Enter a new name for this indicator:"),
@@ -3242,7 +3242,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     onConfirm = function(textValue)
                         textValue = textValue and textValue:gsub("^%s+", ""):gsub("%s+$", "") or ""
                         -- Empty reverts to the type-name default.
-                        t.name = (textValue ~= "") and textValue or nil
+                        tbl.name = (textValue ~= "") and textValue or nil
                         CludesUI:RefreshPage(true)
                     end,
                 })
@@ -3255,9 +3255,9 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     cancelText = L("Cancel"),
                     onConfirm = function()
                         if mod.DM_DeleteTile then
-                            mod.DM_DeleteTile(t.id)
+                            mod.DM_DeleteTile(tbl.id)
                         end
-                        if dmSel == t.id then
+                        if dmSel == tbl.id then
                             dmSel = "base"
                         end
                         ApplyAndRedraw()
@@ -3509,9 +3509,9 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                             end
                         end
                     end
-                    local t = mod.DM_AddTile and mod.DM_AddTile(dmSelType, dmSpecSel)
+                    local tbl = mod.DM_AddTile and mod.DM_AddTile(dmSelType, dmSpecSel)
                     dialog:Hide()
-                    if t then
+                    if tbl then
                         if mode then
                             local dm2 = DmTable()
                             if dm2 then
@@ -3520,22 +3520,22 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                         end
                         -- Every tile type takes the full picked set now
                         -- (effect tiles run one slot per category).
-                        if not t.claim then
-                            t.claim = {}
+                        if not tbl.claim then
+                            tbl.claim = {}
                         end
                         for category in pairs(picked) do
-                            t.claim[category] = true
+                            tbl.claim[category] = true
                         end
                         if negPicked then
-                            t.neg = negPicked
+                            tbl.neg = negPicked
                         end
                         if caAll then
-                            t.all = true
+                            tbl.all = true
                         end
                         if caDur then
-                            t.hasDuration = true
+                            tbl.hasDuration = true
                         end
-                        dmSel = t.id
+                        dmSel = tbl.id
                         inheritSel = nil
                         ApplyAndRedraw()
                     end

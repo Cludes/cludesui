@@ -695,17 +695,17 @@ CludesUI.AtOptionsLogin(function()
     -- logout.
     local function WhereGet(store)
         return function(keyName)
-            local t = store()
-            return not (t and t[keyName] == false)
+            local tbl = store()
+            return not (tbl and tbl[keyName] == false)
         end
     end
     local function WhereSet(store, changed)
         return function(keyName, value)
-            local t = store(true)
-            if not t then
+            local tbl = store(true)
+            if not tbl then
                 return
             end
-            t[keyName] = value and true or false
+            tbl[keyName] = value and true or false
             if changed then
                 changed()
             end
@@ -713,17 +713,17 @@ CludesUI.AtOptionsLogin(function()
     end
     local function WhenGet(store)
         return function(keyName)
-            local t = store()
-            return t and t[keyName] == true
+            local tbl = store()
+            return tbl and tbl[keyName] == true
         end
     end
     local function WhenSet(store, changed)
         return function(keyName, value)
-            local t = store()
-            if not t then
+            local tbl = store()
+            if not tbl then
                 return
             end
-            t[keyName] = value and true or false
+            tbl[keyName] = value and true or false
             if changed then
                 changed()
             end
@@ -733,12 +733,12 @@ CludesUI.AtOptionsLogin(function()
     -- A section's own sub-table accessor (the table is made on first use).
     local function SubTable(section, field)
         return function()
-            local t = section()
-            if not t then
+            local tbl = section()
+            if not tbl then
                 return nil
             end
-            t[field] = t[field] or {}
-            return t[field]
+            tbl[field] = tbl[field] or {}
+            return tbl[field]
         end
     end
     -- Per-section "Where to Show" stores.
@@ -795,15 +795,15 @@ CludesUI.AtOptionsLogin(function()
                 values = nameList,
                 order = order,
                 get = function()
-                    local t = getSec()
-                    return (t and t[field]) or "none"
+                    local tbl = getSec()
+                    return (tbl and tbl[field]) or "none"
                 end,
                 set = function(value)
-                    local t = getSec()
-                    if not t then
+                    local tbl = getSec()
+                    if not tbl then
                         return
                     end
-                    t[field] = value ~= "none" and value or nil
+                    tbl[field] = value ~= "none" and value or nil
                     PreviewSound(value)
                 end,
             },
@@ -856,26 +856,26 @@ CludesUI.AtOptionsLogin(function()
             values = nameList,
             order = order,
             getValue = function()
-                local t = sec()
-                local f = t and Field()
+                local tbl = sec()
+                local f = tbl and Field()
                 if not f then
                     return "none"
                 end
                 if special and _G._CUABR_SpecialsSound then
-                    return _G._CUABR_SpecialsSound(t, f) or "none"
+                    return _G._CUABR_SpecialsSound(tbl, f) or "none"
                 end
-                return t[f] or "none"
+                return tbl[f] or "none"
             end,
             setValue = function(value)
-                local t = sec()
-                local f = t and Field()
+                local tbl = sec()
+                local f = tbl and Field()
                 if not f then
                     return
                 end
                 if value == "none" and not special then
-                    t[f] = nil
+                    tbl[f] = nil
                 else
-                    t[f] = value
+                    tbl[f] = value
                 end
                 PreviewSound(value)
             end,
@@ -2333,13 +2333,13 @@ CludesUI.AtOptionsLogin(function()
             key = entry.key,
             tooltip = tooltip,
             getVal = function()
-                local t = section()
-                return t and t.enabled and t.enabled[entry.key]
+                local tbl = section()
+                return tbl and tbl.enabled and tbl.enabled[entry.key]
             end,
             setVal = function(value)
-                local t = section()
-                if t and t.enabled then
-                    t.enabled[entry.key] = value
+                local tbl = section()
+                if tbl and tbl.enabled then
+                    tbl.enabled[entry.key] = value
                 end
             end,
         }
@@ -2572,13 +2572,13 @@ CludesUI.AtOptionsLogin(function()
             text = text,
             tooltip = tooltip,
             getValue = function()
-                local t = section()
-                return t and t.enabled and t.enabled[key] ~= false
+                local tbl = section()
+                return tbl and tbl.enabled and tbl.enabled[key] ~= false
             end,
             setValue = function(value)
-                local t = section()
-                if t and t.enabled then
-                    t.enabled[key] = value
+                local tbl = section()
+                if tbl and tbl.enabled then
+                    tbl.enabled[key] = value
                     RefreshAll()
                     RebuildPreviewHeader()
                 end
@@ -3252,8 +3252,8 @@ CludesUI.AtOptionsLogin(function()
                 ddWidth = 200,
                 get = function()
                     local foreverCfg = FDB()
-                    local t = foreverCfg and foreverCfg.weaponHands and foreverCfg.weaponHands[class]
-                    return t and t[field] or "auto"
+                    local tbl = foreverCfg and foreverCfg.weaponHands and foreverCfg.weaponHands[class]
+                    return tbl and tbl[field] or "auto"
                 end,
                 set = function(value)
                     local foreverCfg = FDB()
@@ -3545,7 +3545,7 @@ CludesUI.AtOptionsLogin(function()
     local function BuildRemindersPage(pageName, parent, yOffset)
         local y = yOffset
         local cells = {} -- [item key] = its grid cell (the preview's item clicks)
-        local s = {} -- the sections and rows the preview's clicks lead to
+        local cfg = {} -- the sections and rows the preview's clicks lead to
 
         -- The preview header (retail only; WoW Forever has no preview).
         if not FOREVER then
@@ -3558,19 +3558,19 @@ CludesUI.AtOptionsLogin(function()
             y = ForeverPurposeBanner(parent, y)
         end
         y = BuildCoreSection(parent, y)
-        y, s.display, s.border, s.name = BuildDisplaySection(parent, y)
-        y, s.raid = BuildRaidBuffSection(parent, y, cells)
+        y, cfg.display, cfg.border, cfg.name = BuildDisplaySection(parent, y)
+        y, cfg.raid = BuildRaidBuffSection(parent, y, cells)
         if FOREVER then
             -- No preview header here, so no click-to-scroll mappings to wire.
             return math.abs(BuildForeverSection(parent, y))
         end
-        y, s.aura = BuildAuraSection(parent, y, cells)
+        y, cfg.aura = BuildAuraSection(parent, y, cells)
         y = BuildClassSections(parent, y, cells)
         y = BuildPetSection(parent, y)
-        y, s.warlock, s.warlockRow = BuildWarlockSection(parent, y)
-        y, s.consum = BuildConsumableRows(parent, y)
+        y, cfg.warlock, cfg.warlockRow = BuildWarlockSection(parent, y)
+        y, cfg.consum = BuildConsumableRows(parent, y)
         y = BuildConsumableExtras(parent, y)
-        MapPreviewClicks(s, cells)
+        MapPreviewClicks(cfg, cells)
         return math.abs(y)
     end
 

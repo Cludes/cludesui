@@ -463,7 +463,7 @@ local function NPCustomIconBorder()
     local texture = PVal("customBorderTexture")
     local sz = PVal("customBorderSize") or 1
     local colour = PVal("customBorderColor")
-    local t = {
+    local tbl = {
         colour.r,
         colour.g,
         colour.b,
@@ -472,11 +472,11 @@ local function NPCustomIconBorder()
         edgePx = CludesUI.BorderPx(PVal("customBorderSizePx"), sz, texture),
     }
     if texture and texture ~= "" and texture ~= "solid" then
-        t.texture, t.sizeKey, t.addonKey = texture, sz, "nameplates"
-        t.offsetX, t.offsetY = PVal("customBorderOffset"), PVal("customBorderOffsetY")
-        t.shiftX, t.shiftY = PVal("customBorderShiftX"), PVal("customBorderShiftY")
+        tbl.texture, tbl.sizeKey, tbl.addonKey = texture, sz, "nameplates"
+        tbl.offsetX, tbl.offsetY = PVal("customBorderOffset"), PVal("customBorderOffsetY")
+        tbl.shiftX, tbl.shiftY = PVal("customBorderShiftX"), PVal("customBorderShiftY")
     end
-    return t
+    return tbl
 end
 
 local function BuildNPStyle(kindName, variant)
@@ -596,22 +596,22 @@ function mod.NPF_Root()
     if not p then
         return nil
     end
-    local t = p.npAuraFilters
-    if not t then
-        t = { debuffs = { all = PVal("showAllDebuffs") == true }, fv3 = true }
-        p.npAuraFilters = t
-    elseif not t.fv3 then
+    local tbl = p.npAuraFilters
+    if not tbl then
+        tbl = { debuffs = { all = PVal("showAllDebuffs") == true }, fv3 = true }
+        p.npAuraFilters = tbl
+    elseif not tbl.fv3 then
         -- One-shot (per profile, first touch): category selections moved
         -- from stored per-kind sets to the internal composition above --
         -- clear them, keep Show All and both spell lists (existing lists
         -- become the debuff side; the cc side starts empty).
-        t.debuffs = { all = (t.debuffs and t.debuffs.all == true) or false }
-        t.cc = nil
-        t.dcc = nil
-        t.fv2 = nil
-        t.fv3 = true
+        tbl.debuffs = { all = (tbl.debuffs and tbl.debuffs.all == true) or false }
+        tbl.cc = nil
+        tbl.dcc = nil
+        tbl.fv2 = nil
+        tbl.fv3 = true
     end
-    return t
+    return tbl
 end
 
 -- Read-only per-kind VIEW (static tables, no per-call allocation):
@@ -620,12 +620,12 @@ end
 -- the debuffs kind has that mode, so the view pins all = false for
 -- dcc/cc.
 function mod.NPF_Config(kindName)
-    local t = mod.NPF_Root()
-    local val = t and NPF_VIEW[kindName]
+    local tbl = mod.NPF_Root()
+    local val = tbl and NPF_VIEW[kindName]
     if not val then
         return nil
     end
-    val.all = (kindName == "debuffs") and (t.debuffs and t.debuffs.all == true) or false
+    val.all = (kindName == "debuffs") and (tbl.debuffs and tbl.debuffs.all == true) or false
     return val
 end
 
@@ -684,9 +684,9 @@ end
 -- internal constants now, so the ONLY inputs are the debuffs slot's Show All flag and
 -- the four spell lists (list edits must re-drive every group's candidates).
 function mod.NPF_FP()
-    local t = mod.NPF_Root()
+    local tbl = mod.NPF_Root()
     local parts = {}
-    parts[1] = (t and t.debuffs and t.debuffs.all == true) and "A" or "-"
+    parts[1] = (tbl and tbl.debuffs and tbl.debuffs.all == true) and "A" or "-"
     local function ListPart(prefixText, entries)
         if entries and next(entries) ~= nil then
             local o = {}
@@ -742,15 +742,15 @@ end
 -- identity-legal on hostile units (harmful-on-attackable passes the
 -- gate), so these are real engine filters, not Lua scans.
 function mod.NPF_Exclude(edgeSide)
-    local t = mod.NPF_Root()
-    if not t then
+    local tbl = mod.NPF_Root()
+    if not tbl then
         return nil
     end
     local auraKey = (edgeSide == "cc") and "ccExclude" or "exclude"
-    if not t[auraKey] then
-        t[auraKey] = {}
+    if not tbl[auraKey] then
+        tbl[auraKey] = {}
     end
-    return t[auraKey]
+    return tbl[auraKey]
 end
 
 -- Include lists (Tracked Auras popup, INCLUDED column): same tri-state
@@ -761,15 +761,15 @@ end
 -- every other group's candidates on that container, so a spell that also matches the
 -- slot's composition (or Show All) can never double-render.
 function mod.NPF_Include(edgeSide)
-    local t = mod.NPF_Root()
-    if not t then
+    local tbl = mod.NPF_Root()
+    if not tbl then
         return nil
     end
     local auraKey = (edgeSide == "cc") and "ccInclude" or "include"
-    if not t[auraKey] then
-        t[auraKey] = {}
+    if not tbl[auraKey] then
+        tbl[auraKey] = {}
     end
-    return t[auraKey]
+    return tbl[auraKey]
 end
 
 -- Any-caster OPT-OUTS for include entries (default is Only My Casts): a
@@ -777,15 +777,15 @@ end
 -- `v == true` reader of the include list stays valid, and the flag
 -- survives disable/re-enable cycles.
 function mod.NPF_IncludeAny(edgeSide)
-    local t = mod.NPF_Root()
-    if not t then
+    local tbl = mod.NPF_Root()
+    if not tbl then
         return nil
     end
     local auraKey = (edgeSide == "cc") and "ccIncludeAnyCaster" or "includeAnyCaster"
-    if not t[auraKey] then
-        t[auraKey] = {}
+    if not tbl[auraKey] then
+        tbl[auraKey] = {}
     end
-    return t[auraKey]
+    return tbl[auraKey]
 end
 
 -- Debuffs the player can stack MANY copies of on one target under one spell
@@ -2384,8 +2384,8 @@ function NPB.ReleaseGlowButtons(b, force)
     end
     local st = AK.styles
     local c = b.containers.debuffs
-    local s = st["np:debuffs"]
-    if c and s and NPB.Animated(s.pandemicGlow, s.pandemicSpec) then
+    local cfg = st["np:debuffs"]
+    if c and cfg and NPB.Animated(cfg.pandemicGlow, cfg.pandemicSpec) then
         NPB.CycleGroup(c, "np")
         if c._npfGroups then
             for auraKey in pairs(c._npfGroups) do
@@ -2397,12 +2397,12 @@ function NPB.ReleaseGlowButtons(b, force)
     if not c then
         return
     end
-    s = st["np:buffs"]
-    if s and NPB.Animated(s.purgeGlow, s.purgeSpec) then
+    cfg = st["np:buffs"]
+    if cfg and NPB.Animated(cfg.purgeGlow, cfg.purgeSpec) then
         NPB.CycleGroup(c, "np")
     end
-    s = st["np:buffs2"]
-    if c._npbSplit and s and NPB.Animated(s.purgeGlow, s.purgeSpec) then
+    cfg = st["np:buffs2"]
+    if c._npbSplit and cfg and NPB.Animated(cfg.purgeGlow, cfg.purgeSpec) then
         NPB.CycleGroup(c, "np2")
     end
 end

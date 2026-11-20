@@ -197,8 +197,8 @@ end
 
 -- The outline flags a snapshot read (a family's roman member, or a plain object).
 local function SnapFlags(snapshot)
-    local s = snapshot and (snapshot.plain or snapshot.roman)
-    return s and s.flags
+    local cfg = snapshot and (snapshot.plain or snapshot.roman)
+    return cfg and cfg.flags
 end
 
 -- User-configurable size for friendly name-only player names. The names render

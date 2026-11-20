@@ -124,19 +124,19 @@ function mod.UF_ClassFallbackNeedsSwap(widget, unitId)
         return false
     end
     local uKey = UnitToSettingsKey(widget._cuiBaseUnit or unitId)
-    local s = uKey and saved.profile[uKey]
+    local cfg = uKey and saved.profile[uKey]
     if p.isClass then
         -- Not opted in: the fallback is "2d" and the class object stays.
-        if not (s and s.portraitNonPlayerOn) then
+        if not (cfg and cfg.portraitNonPlayerOn) then
             return false, "2d"
         end
-    elseif ((s and s.portraitMode) or saved.profile.portraitMode or "2d") ~= "class" then
+    elseif ((cfg and cfg.portraitMode) or saved.profile.portraitMode or "2d") ~= "class" then
         return false
     end
     if not UnitExists(unitId) then
         return false
     end
-    local fb = not UnitIsPlayer(unitId) and mod.UF_ClassFallback(s) or nil
+    local fb = not UnitIsPlayer(unitId) and mod.UF_ClassFallback(cfg) or nil
     if p.isClass then
         return fb == "3d", fb
     end
@@ -2005,8 +2005,8 @@ function SwapPortraitMode(widget, painting)
         local unitId = widget._cuiUnit or widget:GetAttribute("unit")
         -- The frame's own settings: a vehicle's live token has none.
         local uKey = UnitToSettingsKey(widget._cuiBaseUnit or unitId)
-        local s = uKey and saved.profile[uKey]
-        wantMode = (s and s.portraitMode) or saved.profile.portraitMode or "2d"
+        local cfg = uKey and saved.profile[uKey]
+        wantMode = (cfg and cfg.portraitMode) or saved.profile.portraitMode or "2d"
         -- A non-player on Class art takes the model when its fallback is 3D
         -- ("none" stays on the class object: the class lane draws nothing).
         if
@@ -2014,7 +2014,7 @@ function SwapPortraitMode(widget, painting)
             and unitId
             and UnitExists(unitId)
             and not UnitIsPlayer(unitId)
-            and mod.UF_ClassFallback(s) == "3d"
+            and mod.UF_ClassFallback(cfg) == "3d"
         then
             wantMode = "3d"
         end
@@ -2112,11 +2112,11 @@ local PORTRAIT_CLICK = {
         if not edge or not edge:IsShown() or mod.UF_Blizz() then
             return false
         end
-        local s = GetSettingsForUnit(u)
-        return s
-            and s.detachedPortraitClickable
-            and (s.portraitStyle or saved.profile.portraitStyle or "attached") == "detached"
-            and s.showPortrait ~= false
+        local cfg = GetSettingsForUnit(u)
+        return cfg
+            and cfg.detachedPortraitClickable
+            and (cfg.portraitStyle or saved.profile.portraitStyle or "attached") == "detached"
+            and cfg.showPortrait ~= false
     end,
     backdrop = function(widget)
         return widget.Portrait.backdrop

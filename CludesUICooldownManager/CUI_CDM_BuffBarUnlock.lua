@@ -77,13 +77,13 @@ function mod.RegisterTBBUnlockElements()
                 -- Outside reach of the bar's textured border: taken off a width /
                 -- height it is matched to, so what it draws is what matches.
                 getMatchPad = function()
-                    local t = mod.GetTrackedBuffBars()
-                    local c = t and t.bars and t.bars[position]
+                    local tbl = mod.GetTrackedBuffBars()
+                    local c = tbl and tbl.bars and tbl.bars[position]
                     return mod.TBBBorderMatchPad(c, tbbFrames[position])
                 end,
                 isHidden = function()
-                    local t = mod.GetTrackedBuffBars()
-                    local b = t and t.bars
+                    local tbl = mod.GetTrackedBuffBars()
+                    local b = tbl and tbl.bars
                     if not b or position > #b then
                         return true
                     end
@@ -112,8 +112,8 @@ function mod.RegisterTBBUnlockElements()
                 -- position comes from the registry via BuildTrackedBuffBars, and the
                 -- TBBG_ element carries the group's anchorable identity instead.
                 isAnchored = function()
-                    local t = mod.GetTrackedBuffBars()
-                    local b = t and t.bars
+                    local tbl = mod.GetTrackedBuffBars()
+                    local b = tbl and tbl.bars
                     local c = b and b[position]
                     local groupId = c and mod.TBBBarGroupID(c) or 0
                     if groupId == 0 then
@@ -127,8 +127,8 @@ function mod.RegisterTBBUnlockElements()
                 getFrame = function()
                     -- Never expose a stale frame when the current spec has fewer bars: anchors
                     -- involving this key stay dormant (children hold position) instead of gluing to a hidden frame at another spec's coordinates.
-                    local t = mod.GetTrackedBuffBars()
-                    local b = t and t.bars
+                    local tbl = mod.GetTrackedBuffBars()
+                    local b = tbl and tbl.bars
                     if not b or position > #b then
                         return nil
                     end
@@ -136,8 +136,8 @@ function mod.RegisterTBBUnlockElements()
                 end,
                 getSize = function()
                     -- width/height ARE the total footprint (icon included), so matching reads the stored dims directly.
-                    local t = mod.GetTrackedBuffBars()
-                    local c = t.bars and t.bars[position]
+                    local tbl = mod.GetTrackedBuffBars()
+                    local c = tbl.bars and tbl.bars[position]
                     local PPg = CludesUI and CludesUI.PP
                     local sn = PPg and PPg.Snap
                         or function(val)
@@ -149,8 +149,8 @@ function mod.RegisterTBBUnlockElements()
                     return 270, 24
                 end,
                 setWidth = function(_, wid)
-                    local t = mod.GetTrackedBuffBars()
-                    local c = t.bars and t.bars[position]
+                    local tbl = mod.GetTrackedBuffBars()
+                    local c = tbl.bars and tbl.bars[position]
                     if not c then
                         return
                     end
@@ -170,8 +170,8 @@ function mod.RegisterTBBUnlockElements()
                     end
                 end,
                 setHeight = function(_, hgt)
-                    local t = mod.GetTrackedBuffBars()
-                    local c = t.bars and t.bars[position]
+                    local tbl = mod.GetTrackedBuffBars()
+                    local c = tbl.bars and tbl.bars[position]
                     if not c then
                         return
                     end
@@ -195,15 +195,15 @@ function mod.RegisterTBBUnlockElements()
                     -- member leaves the group or is disabled) the new anchor would read a
                     -- stale coordinate and teleport. Mirror the group origin into every
                     -- member's key so whichever bar becomes the anchor reads it correctly.
-                    local t = mod.GetTrackedBuffBars()
-                    local c0 = t.bars and t.bars[position]
+                    local tbl = mod.GetTrackedBuffBars()
+                    local c0 = tbl.bars and tbl.bars[position]
                     local groupId = c0 and mod.TBBBarGroupID(c0) or 0
                     if
                         groupId ~= 0
                         and position == mod.TBBGroupAnchorIndex(groupId)
                         and mod.TBBGroupedCount(groupId) >= 2
                     then
-                        for jdx, c in ipairs(t.bars or {}) do
+                        for jdx, c in ipairs(tbl.bars or {}) do
                             if jdx ~= position and mod.TBBBarGroupID(c) == groupId then
                                 place[tostring(jdx)] =
                                     { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
@@ -273,8 +273,8 @@ function mod.RegisterTBBUnlockElements()
                 getMatchPad = function()
                     local groupId = mod.TBBLocalGidForGlobal(gk)
                     local ai = groupId and mod.TBBGroupAnchorIndex(groupId)
-                    local t = ai and mod.GetTrackedBuffBars()
-                    local c = t and t.bars and t.bars[ai]
+                    local tbl = ai and mod.GetTrackedBuffBars()
+                    local c = tbl and tbl.bars and tbl.bars[ai]
                     return mod.TBBBorderMatchPad(c, ai and tbbFrames[ai])
                 end,
                 isHidden = function()
@@ -306,8 +306,8 @@ function mod.RegisterTBBUnlockElements()
                 getSize = function()
                     local groupId = mod.TBBLocalGidForGlobal(gk)
                     local ai = groupId and mod.TBBGroupAnchorIndex(groupId)
-                    local t = mod.GetTrackedBuffBars()
-                    local c = ai and t.bars and t.bars[ai]
+                    local tbl = mod.GetTrackedBuffBars()
+                    local c = ai and tbl.bars and tbl.bars[ai]
                     local PPg = CludesUI and CludesUI.PP
                     local sn = PPg and PPg.Snap
                         or function(val)
@@ -327,8 +327,8 @@ function mod.RegisterTBBUnlockElements()
                 setWidth = function(_, wid)
                     local groupId = mod.TBBLocalGidForGlobal(gk)
                     local ai = groupId and mod.TBBGroupAnchorIndex(groupId)
-                    local t = mod.GetTrackedBuffBars()
-                    local c = ai and t.bars and t.bars[ai]
+                    local tbl = mod.GetTrackedBuffBars()
+                    local c = ai and tbl.bars and tbl.bars[ai]
                     local PPt = CludesUI and CludesUI.PP
                     wid = PPt and PPt.Snap(wid) or math.floor(wid + 0.5)
                     if c then
@@ -366,8 +366,8 @@ function mod.RegisterTBBUnlockElements()
                 setHeight = function(_, hgt)
                     local groupId = mod.TBBLocalGidForGlobal(gk)
                     local ai = groupId and mod.TBBGroupAnchorIndex(groupId)
-                    local t = mod.GetTrackedBuffBars()
-                    local c = ai and t.bars and t.bars[ai]
+                    local tbl = mod.GetTrackedBuffBars()
+                    local c = ai and tbl.bars and tbl.bars[ai]
                     local PPt = CludesUI and CludesUI.PP
                     hgt = PPt and PPt.Snap(hgt) or math.floor(hgt + 0.5)
                     if c then

@@ -818,27 +818,27 @@ end
 local function PaintTabs()
     local posX = 0
     for index, tab in ipairs(TabOrder()) do
-        local b = tabButtons[index]
-        if not b then
-            b = CludesUI.Kit.Button(window.tabBar, "", 90, 22, nil, { key = "essentials" })
-            b:SetHeight(22)
-            tabButtons[index] = b
+        local widget = tabButtons[index]
+        if not widget then
+            widget = CludesUI.Kit.Button(window.tabBar, "", 90, 22, nil, { key = "essentials" })
+            widget:SetHeight(22)
+            tabButtons[index] = widget
         end
-        b:SetText(tab.label)
-        b:SetWidth(math.max(80, b:GetTextWidth() + 24))
-        b:ClearAllPoints()
-        b:SetPoint("LEFT", window.tabBar, "LEFT", posX, 0)
-        b:SetScript("OnClick", function()
+        widget:SetText(tab.label)
+        widget:SetWidth(math.max(80, widget:GetTextWidth() + 24))
+        widget:ClearAllPoints()
+        widget:SetPoint("LEFT", window.tabBar, "LEFT", posX, 0)
+        widget:SetScript("OnClick", function()
             currentTab = tab.key
             Redraw()
         end)
         if tab.key == currentTab then
-            b:SetActive(true)
+            widget:SetActive(true)
         else
-            b:SetActive(false)
+            widget:SetActive(false)
         end
-        b:Show()
-        posX = posX + b:GetWidth() + 4
+        widget:Show()
+        posX = posX + widget:GetWidth() + 4
     end
 end
 
@@ -1067,15 +1067,15 @@ local function DrawField(R, tools)
         fieldSwitch = {}
         local posX = 0
         for _, page in ipairs(PAGES) do
-            local b = CludesUI.Kit.Button(tools, "", 90, 22, nil, { key = "essentials" })
-            b:SetSize(90, 22)
-            b:SetPoint("LEFT", tools, "LEFT", posX, 0)
-            b:SetText(PAGE_NAMES[page])
-            b:SetScript("OnClick", function()
+            local widget = CludesUI.Kit.Button(tools, "", 90, 22, nil, { key = "essentials" })
+            widget:SetSize(90, 22)
+            widget:SetPoint("LEFT", tools, "LEFT", posX, 0)
+            widget:SetText(PAGE_NAMES[page])
+            widget:SetScript("OnClick", function()
                 fieldPage = page
                 Redraw()
             end)
-            fieldSwitch[page] = b
+            fieldSwitch[page] = widget
             posX = posX + 94
         end
     end

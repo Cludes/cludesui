@@ -419,8 +419,8 @@ local function BuildTotemBar()
     if not _totemHooked and TotemFrame then
         _totemHooked = true
         local function OnTotemUpdate()
-            local s = GetTotemSettings()
-            if s and s.enabledClasses then
+            local cfg = GetTotemSettings()
+            if cfg and cfg.enabledClasses then
                 LayoutTotemBar()
             end
         end

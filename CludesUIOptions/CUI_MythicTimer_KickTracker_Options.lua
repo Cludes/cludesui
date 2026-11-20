@@ -154,8 +154,8 @@ end
 -- a missing one would be filled back in with its default at the next login.
 local function WhereGet(keyName)
     local c = KT()
-    local t = c and c.whereToShow
-    return type(t) == "table" and t[keyName] == true
+    local tbl = c and c.whereToShow
+    return type(tbl) == "table" and tbl[keyName] == true
 end
 
 local function WhereSet(keyName, val)
@@ -163,12 +163,12 @@ local function WhereSet(keyName, val)
     if not c then
         return
     end
-    local t = c.whereToShow
-    if type(t) ~= "table" then
-        t = {}
-        c.whereToShow = t
+    local tbl = c.whereToShow
+    if type(tbl) ~= "table" then
+        tbl = {}
+        c.whereToShow = tbl
     end
-    t[keyName] = val and true or false
+    tbl[keyName] = val and true or false
     Refresh()
 end
 

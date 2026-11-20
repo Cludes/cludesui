@@ -98,16 +98,16 @@ CludesUI.AtLogin(function()
 
     -- Pull durations live in a fixed 3-slot array; each slider owns one slot.
     local function PullGet(idx)
-        local t = Cfg("pullTimes")
-        return (t and t[idx]) or mod.PULL_DEFAULTS[idx]
+        local tbl = Cfg("pullTimes")
+        return (tbl and tbl[idx]) or mod.PULL_DEFAULTS[idx]
     end
 
     local function PullSet(idx, value)
-        local t = Cfg("pullTimes")
-        if not t then
+        local tbl = Cfg("pullTimes")
+        if not tbl then
             return
         end
-        t[idx] = value
+        tbl[idx] = value
         Refresh()
     end
 

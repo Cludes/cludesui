@@ -674,17 +674,17 @@ end
 local MAX_TIER = 13 -- 1-11, then ? and ??
 
 local function ChosenTiers()
-    local t = Cfg().delveTiers
-    if type(t) ~= "table" then
+    local tbl = Cfg().delveTiers
+    if type(tbl) ~= "table" then
         return nil
     end
     local n = 0
     for index = 1, MAX_TIER do
-        if t[index] then
+        if tbl[index] then
             n = n + 1
         end
     end
-    return (n > 0 and n < MAX_TIER) and t or nil, n
+    return (n > 0 and n < MAX_TIER) and tbl or nil, n
 end
 
 local function DelveFilterActive()
@@ -974,17 +974,17 @@ local RAID_DIFFS_MENU = {
 }
 
 local function ChosenRaidDiffs()
-    local t = Cfg().raidDiffs
-    if type(t) ~= "table" then
+    local tbl = Cfg().raidDiffs
+    if type(tbl) ~= "table" then
         return nil, 0
     end
     local n = 0
     for _, skinData in ipairs(RAID_DIFFS_MENU) do
-        if t[skinData.key] then
+        if tbl[skinData.key] then
             n = n + 1
         end
     end
-    return (n > 0 and n < #RAID_DIFFS_MENU) and t or nil, n
+    return (n > 0 and n < #RAID_DIFFS_MENU) and tbl or nil, n
 end
 
 local function HideWorldBosses()
@@ -1000,17 +1000,17 @@ local PLAYSTYLES = {
 }
 
 local function ChosenRaidPlaystyles()
-    local t = Cfg().raidPlaystyles
-    if type(t) ~= "table" then
+    local tbl = Cfg().raidPlaystyles
+    if type(tbl) ~= "table" then
         return nil, 0
     end
     local n = 0
     for index = 1, #PLAYSTYLES do
-        if t[index] then
+        if tbl[index] then
             n = n + 1
         end
     end
-    return (n > 0 and n < #PLAYSTYLES) and t or nil, n
+    return (n > 0 and n < #PLAYSTYLES) and tbl or nil, n
 end
 
 -- dungeon playstyles from the advanced filter; nil when all or none.
@@ -1170,8 +1170,8 @@ XF.REMAINING = { TANK = "TANK_REMAINING", HEALER = "HEALER_REMAINING", DAMAGER =
 XF.PARTY = { "party1", "party2", "party3", "party4" }
 
 function XF.CountRule(roleName)
-    local t = Cfg().roleCounts
-    local region = type(t) == "table" and t[roleName]
+    local tbl = Cfg().roleCounts
+    local region = type(tbl) == "table" and tbl[roleName]
     local n = type(region) == "table" and region.on and tonumber(region.n)
     if n then
         return region.op or "lt", n
@@ -3144,11 +3144,11 @@ local function BuildRaidDiffMenu()
     for _, skinData in ipairs(RAID_DIFFS_MENU) do
         local filterKey = skinData.key
         m.items[filterKey] = MenuItem(m, posY, skinData.label, function()
-            local t = Diffs()
-            t[filterKey] = (not t[filterKey]) or nil
+            local tbl = Diffs()
+            tbl[filterKey] = (not tbl[filterKey]) or nil
             local _, n = ChosenRaidDiffs()
             if n == #RAID_DIFFS_MENU then
-                wipe(t)
+                wipe(tbl)
             end
             Refilter()
             Paint()
@@ -3210,36 +3210,36 @@ end
 -- button in the skin's look (WSkin.button); skin off, blizzard's rounded menu button
 local function SkinnedButton(hostFrame, wid, hgt, keepKeys, decorate)
     local stock = not XF.SkinOn()
-    local b = CreateFrame("Button", nil, hostFrame, stock and "UIMenuButtonStretchTemplate" or nil)
-    b:SetSize(wid, hgt)
-    b:SetNormalFontObject("GameFontHighlight")
-    b:SetHighlightFontObject("GameFontHighlight")
-    b:SetDisabledFontObject("GameFontDisable")
-    b:SetText(" ")
+    local widget = CreateFrame("Button", nil, hostFrame, stock and "UIMenuButtonStretchTemplate" or nil)
+    widget:SetSize(wid, hgt)
+    widget:SetNormalFontObject("GameFontHighlight")
+    widget:SetHighlightFontObject("GameFontHighlight")
+    widget:SetDisabledFontObject("GameFontDisable")
+    widget:SetText(" ")
     if decorate then
-        decorate(b)
+        decorate(widget)
     end
     local S = Skin()
     if stock then
         -- no edge of ours: a picked square holds the template's highlight on (XF.PickBorder), and a
         -- border colour write on a frame with no border does nothing
-        return b
+        return widget
     elseif S and S.Button then
-        S.Button(b, keepKeys)
+        S.Button(widget, keepKeys)
     else
-        local backdrop = b:CreateTexture(nil, "BACKGROUND")
+        local backdrop = widget:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0.06, 0.06, 0.06, 0.95)
-        CM.MakeBorder(b, 0.25, 0.25, 0.25, 1, CM.PanelPP)
-        local highlight = b:CreateTexture(nil, "HIGHLIGHT")
+        CM.MakeBorder(widget, 0.25, 0.25, 0.25, 1, CM.PanelPP)
+        local highlight = widget:CreateTexture(nil, "HIGHLIGHT")
         highlight:SetAllPoints()
         highlight:SetColorTexture(1, 1, 1, 0.1)
     end
-    return b
+    return widget
 end
 
 local function DropButton(hostFrame, wid, hgt)
-    local b = SkinnedButton(hostFrame, wid, hgt, { "Arrow" }, function(button)
+    local widget = SkinnedButton(hostFrame, wid, hgt, { "Arrow" }, function(button)
         button.Arrow = button:CreateTexture(nil, "OVERLAY")
         button.Arrow:SetAtlas("Azerite-PointingArrow")
         button.Arrow:SetDesaturated(true)
@@ -3247,14 +3247,14 @@ local function DropButton(hostFrame, wid, hgt)
         button.Arrow:SetSize(11, 8)
         button.Arrow:SetPoint("RIGHT", button, "RIGHT", -8, 0)
     end)
-    local fontStr = b:GetFontString()
+    local fontStr = widget:GetFontString()
     fontStr:ClearAllPoints()
-    fontStr:SetPoint("LEFT", b, "LEFT", 9, 0)
-    fontStr:SetPoint("RIGHT", b.Arrow, "LEFT", -4, 0)
+    fontStr:SetPoint("LEFT", widget, "LEFT", 9, 0)
+    fontStr:SetPoint("RIGHT", widget.Arrow, "LEFT", -4, 0)
     fontStr:SetJustifyH("LEFT")
     fontStr:SetWordWrap(false)
-    b.label = fontStr
-    return b
+    widget.label = fontStr
+    return widget
 end
 
 -- square glyph button; atlas = true means tex is an atlas.
@@ -3329,7 +3329,7 @@ end
 -- dungeon square: a skinned button with the icon inset 1px.
 local function MakeSquare(hostFrame)
     local px = XF.SkinOn() and CM.PP.mult or 3 -- blizzard's button: its black inside
-    local b = SkinnedButton(hostFrame, BTN, BTN, { "Icon" }, function(button)
+    local widget = SkinnedButton(hostFrame, BTN, BTN, { "Icon" }, function(button)
         button:SetText("")
         button.Icon = button:CreateTexture(nil, "ARTWORK")
         button.Icon:SetPoint("TOPLEFT", button, "TOPLEFT", px, -px)
@@ -3345,10 +3345,10 @@ local function MakeSquare(hostFrame)
             button.Icon:AddMaskTexture(mask)
         end
     end)
-    b.icon = b.Icon
-    b:SetScript("OnEnter", SquareEnter)
-    b:SetScript("OnLeave", XF.Untip)
-    b:SetScript("OnClick", function(self)
+    widget.icon = widget.Icon
+    widget:SetScript("OnEnter", SquareEnter)
+    widget:SetScript("OnLeave", XF.Untip)
+    widget:SetScript("OnClick", function(self)
         if self.dungeon then
             ToggleDungeon(self.dungeon.groupID)
         end
@@ -3356,7 +3356,7 @@ local function MakeSquare(hostFrame)
             SquareEnter(self)
         end
     end)
-    return b
+    return widget
 end
 
 local function DelveEnter(self)
@@ -3374,35 +3374,35 @@ end
 
 -- delve square: same button with the short name.
 local function MakeDelveSquare(hostFrame)
-    local b = SkinnedButton(hostFrame, BTN, BTN, nil, function(button)
+    local widget = SkinnedButton(hostFrame, BTN, BTN, nil, function(button)
         button:SetText("")
     end)
-    local fontStr = b:GetFontString()
+    local fontStr = widget:GetFontString()
     fontStr:ClearAllPoints()
     fontStr:SetPoint("CENTER")
     fontStr:SetWordWrap(false)
     local function Layer(level)
-        local frame = CreateFrame("Frame", nil, b)
-        frame:SetAllPoints(b)
-        frame:SetFrameLevel(b:GetFrameLevel() + level)
+        local frame = CreateFrame("Frame", nil, widget)
+        frame:SetAllPoints(widget)
+        frame:SetFrameLevel(widget:GetFrameLevel() + level)
         frame:EnableMouse(false)
         return frame
     end
-    b.gold = Layer(2)
-    b.edge = Layer(3)
-    local line = b.gold:CreateTexture(nil, "OVERLAY")
+    widget.gold = Layer(2)
+    widget.edge = Layer(3)
+    local line = widget.gold:CreateTexture(nil, "OVERLAY")
     line:SetColorTexture(GOLD_R, GOLD_G, GOLD_B, 1)
     line:SetPoint("TOPLEFT", fontStr, "BOTTOMLEFT", 0, -1)
     line:SetPoint("TOPRIGHT", fontStr, "BOTTOMRIGHT", 0, -1)
     line:SetHeight(2)
     if XF.SkinOn() then
         local region, g, bl, a = ThemeBorder()
-        CM.PanelPP.CreateBorder(b.edge, region, g, bl, a, 1, "OVERLAY", 7)
+        CM.PanelPP.CreateBorder(widget.edge, region, g, bl, a, 1, "OVERLAY", 7)
     end
-    b.gold:Hide()
-    b:SetScript("OnEnter", DelveEnter)
-    b:SetScript("OnLeave", XF.Untip)
-    b:SetScript("OnClick", function(self)
+    widget.gold:Hide()
+    widget:SetScript("OnEnter", DelveEnter)
+    widget:SetScript("OnLeave", XF.Untip)
+    widget:SetScript("OnClick", function(self)
         local skinData = self.delve
         if not skinData then
             return
@@ -3427,7 +3427,7 @@ local function MakeDelveSquare(hostFrame)
             DelveEnter(self)
         end
     end)
-    return b
+    return widget
 end
 
 -- grid slot i after the reset, right-aligned, wrapping.
@@ -3621,24 +3621,24 @@ end
 
 -- boss square with the journal portrait cropped to the middle.
 local function MakeBossSquare(hostFrame)
-    local b = MakeSquare(hostFrame)
-    b.icon:SetTexCoord(0.25, 0.75, 0, 1)
+    local widget = MakeSquare(hostFrame)
+    widget.icon:SetTexCoord(0.25, 0.75, 0, 1)
     if not XF.SkinOn() then
         -- alive / dead outline around the icon, above blizzard's rounded edge
-        b.state = CreateFrame("Frame", nil, b)
-        b.state:SetPoint("TOPLEFT", b.icon, "TOPLEFT", -1, 1)
-        b.state:SetPoint("BOTTOMRIGHT", b.icon, "BOTTOMRIGHT", 1, -1)
-        b.state:SetFrameLevel(b:GetFrameLevel() + 2)
-        b.state:EnableMouse(false)
-        CM.PanelPP.CreateBorder(b.state, 0, 0, 0, 0, 1, "OVERLAY", 7)
+        widget.state = CreateFrame("Frame", nil, widget)
+        widget.state:SetPoint("TOPLEFT", widget.icon, "TOPLEFT", -1, 1)
+        widget.state:SetPoint("BOTTOMRIGHT", widget.icon, "BOTTOMRIGHT", 1, -1)
+        widget.state:SetFrameLevel(widget:GetFrameLevel() + 2)
+        widget.state:EnableMouse(false)
+        CM.PanelPP.CreateBorder(widget.state, 0, 0, 0, 0, 1, "OVERLAY", 7)
     end
-    b:SetScript("OnEnter", BossEnter)
-    b:SetScript("OnClick", function(self)
+    widget:SetScript("OnEnter", BossEnter)
+    widget:SetScript("OnClick", function(self)
         if self.boss then
             OpenBossPick(self)
         end
     end)
-    return b
+    return widget
 end
 
 local function LayoutBosses(px, after, show, cols, slots)
@@ -3853,11 +3853,11 @@ local function BuildTierMenu()
     posY = posY + 7
     for tier = 1, MAX_TIER do
         tierMenu.items[tier] = MenuItem(tierMenu, posY, XF.TierLabel(tier), function()
-            local t = Tiers()
-            t[tier] = (not t[tier]) or nil
+            local tbl = Tiers()
+            tbl[tier] = (not tbl[tier]) or nil
             local _, n = ChosenTiers()
             if n == MAX_TIER then
-                wipe(t)
+                wipe(tbl)
             end
             Refilter()
             Paint()
@@ -4764,12 +4764,12 @@ local function PinBottomButtons(panelFrame, lefts, right)
     local pw = panelFrame:GetWidth()
     local wid = (type(pw) == "number" and pw > 0) and (pw - padding - x0 - SQ_GAP) / 2 or nil
     for _, k in ipairs(lefts) do
-        local b = panelFrame[k]
-        if type(b) == "table" then
-            b:ClearAllPoints()
-            b:SetPoint("BOTTOMLEFT", panelFrame, "BOTTOMLEFT", x0, BOTTOM_Y)
+        local widget = panelFrame[k]
+        if type(widget) == "table" then
+            widget:ClearAllPoints()
+            widget:SetPoint("BOTTOMLEFT", panelFrame, "BOTTOMLEFT", x0, BOTTOM_Y)
             if wid then
-                b:SetWidth(wid)
+                widget:SetWidth(wid)
             end
         end
     end

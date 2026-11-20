@@ -499,10 +499,10 @@ local function OnEvent(self, evt, arg1, ...)
         -- and the map keeps stale tokens.
         local entries = mod._partyAllButtons
         for index = 1, #entries do
-            local b = entries[index]
-            local u = b:GetAttribute("unit")
+            local widget = entries[index]
+            local u = widget:GetAttribute("unit")
             if u and (arg1 == nil or u == arg1) then
-                local edge = GetFFD(b)
+                local edge = GetFFD(widget)
                 if (edge.kitPortrait or edge.pt) and UnitExists(u) then
                     mod.RF_PtPaint(edge, u, evt)
                 end
@@ -772,12 +772,12 @@ local function OnEvent(self, evt, arg1, ...)
                             return
                         end
                         mod._rezPend[unitToken] = nil
-                        local b = unitToButton[unitToken] or mod._partyUnitToButton[unitToken]
-                        if b and b:IsVisible() then
+                        local widget = unitToButton[unitToken] or mod._partyUnitToButton[unitToken]
+                        if widget and widget:IsVisible() then
                             if mod._UpdateButtonHealth then
-                                mod._UpdateButtonHealth(b)
+                                mod._UpdateButtonHealth(widget)
                             end
-                            UpdateReadyCheck(b, unitToken)
+                            UpdateReadyCheck(widget, unitToken)
                         end
                     end)
                 else

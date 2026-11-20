@@ -34,29 +34,29 @@ mod.ERB_BlizzArtBlockRegions = function(regions)
             blocks = {}
             for idx = 1, #regions do
                 local region = regions[idx]
-                local b = CreateFrame("Frame", nil, region)
-                b:SetAllPoints()
-                b:SetFrameLevel(region:GetFrameLevel() + 50)
-                b:EnableMouse(true)
-                b:SetScript("OnEnter", function()
+                local widget = CreateFrame("Frame", nil, region)
+                widget:SetAllPoints()
+                widget:SetFrameLevel(region:GetFrameLevel() + 50)
+                widget:EnableMouse(true)
+                widget:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(
-                        b,
+                        widget,
                         CludesUI.DisabledTooltip("Blizzard Class Resource Art", "disabled")
                     )
                 end)
-                b:SetScript("OnLeave", function()
+                widget:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                blocks[#blocks + 1] = b
+                blocks[#blocks + 1] = widget
             end
         end
         if not blocks then
             return
         end
         for idx = 1, #blocks do
-            local b = blocks[idx]
-            b:GetParent():SetAlpha(on and 0.3 or 1)
-            b:SetShown(on)
+            local widget = blocks[idx]
+            widget:GetParent():SetAlpha(on and 0.3 or 1)
+            widget:SetShown(on)
         end
     end
     Update()
@@ -1037,20 +1037,20 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                             return
                         end
                         local was = mod.ERB_TexturedBars(profile)
-                        local s = profile.secondary
+                        local cfg = profile.secondary
                         local function apply(tbl)
-                            tbl.borderTexture = s.borderTexture
-                            tbl.borderTextureOffset = s.borderTextureOffset
-                            tbl.borderTextureOffsetY = s.borderTextureOffsetY
-                            tbl.borderTextureShiftX = s.borderTextureShiftX
-                            tbl.borderTextureShiftY = s.borderTextureShiftY
-                            tbl.borderR = s.borderR
-                            tbl.borderG = s.borderG
-                            tbl.borderB = s.borderB
-                            tbl.borderA = s.borderA
-                            tbl.borderSize = s.borderSize
-                            mod.ERB_CopyBorderPx(tbl, s)
-                            tbl.borderBehind = s.borderBehind
+                            tbl.borderTexture = cfg.borderTexture
+                            tbl.borderTextureOffset = cfg.borderTextureOffset
+                            tbl.borderTextureOffsetY = cfg.borderTextureOffsetY
+                            tbl.borderTextureShiftX = cfg.borderTextureShiftX
+                            tbl.borderTextureShiftY = cfg.borderTextureShiftY
+                            tbl.borderR = cfg.borderR
+                            tbl.borderG = cfg.borderG
+                            tbl.borderB = cfg.borderB
+                            tbl.borderA = cfg.borderA
+                            tbl.borderSize = cfg.borderSize
+                            mod.ERB_CopyBorderPx(tbl, cfg)
+                            tbl.borderBehind = cfg.borderBehind
                         end
                         apply(profile.primary)
                         apply(profile.health)

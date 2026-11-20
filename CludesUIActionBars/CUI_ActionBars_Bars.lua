@@ -162,8 +162,8 @@ local function CreateBarFrame(details)
     )
     -- If always-hidden or disabled, start hidden so the secure snippet hides
     -- it immediately, before combat can return after a brief reload regen.
-    local s = ABAR.db and ABAR.db.profile.bars[key]
-    local startHidden = s and (ABAR.VisibilityCompat.IsNever(s) or s.enabled == false)
+    local cfg = ABAR.db and ABAR.db.profile.bars[key]
+    local startHidden = cfg and (ABAR.VisibilityCompat.IsNever(cfg) or cfg.enabled == false)
     RegisterStateDriver(widget, "eabvis", startHidden and "hide" or "show")
 
     -- Register with the override controller so vehicle/override/petbattle

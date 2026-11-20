@@ -251,7 +251,7 @@ local function TextBlock(blockCfg, slot, contentFrame, barCtx, spec)
             return
         end
 
-        local s = blockCfg.settings or {}
+        local cfg = blockCfg.settings or {}
         local fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
         local barH = barCtx.GetThickness()
         text = text or spec.text()
@@ -261,7 +261,7 @@ local function TextBlock(blockCfg, slot, contentFrame, barCtx, spec)
         Paint()
         K.SetBlockIcon(iconTex, blockCfg)
         local iconSize = 0
-        if s.showIcon ~= false then
+        if cfg.showIcon ~= false then
             iconSize = fontSize + ICON_EXTRA
             iconTex:SetSize(iconSize, iconSize)
             iconTex:Show()
@@ -440,11 +440,11 @@ mod.BlockFactories.location = function(blockCfg, slot, contentFrame, barCtx)
         -- Sized from the live name (zone changes are rare; reserving the
         -- longest zone name would waste the space all the time).
         width = function()
-            local s = Settings()
-            if mod.LocationWidthMode(s) ~= "manual" then
+            local cfg = Settings()
+            if mod.LocationWidthMode(cfg) ~= "manual" then
                 return nil
             end
-            return s.maxWidth or DEFAULT_WIDTH
+            return cfg.maxWidth or DEFAULT_WIDTH
         end,
     })
 end

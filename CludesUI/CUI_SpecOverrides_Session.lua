@@ -509,18 +509,18 @@ end
 -- not resolve (module not loaded, array entry deleted). Same walk ReadLive does.
 local function OwnerOf(fieldKey)
     local folder, filePath = SplitFKey(fieldKey)
-    local t = folder and DBFor(folder)
-    if type(t) ~= "table" or not filePath then
+    local tbl = folder and DBFor(folder)
+    if type(tbl) ~= "table" or not filePath then
         return nil
     end
     local segs = { strsplit(PS, filePath) }
     for idx = 1, #segs - 1 do
-        t = t[SegKey(t, segs[idx])]
-        if type(t) ~= "table" then
+        tbl = tbl[SegKey(tbl, segs[idx])]
+        if type(tbl) ~= "table" then
             return nil
         end
     end
-    return t, SegKey(t, segs[#segs])
+    return tbl, SegKey(tbl, segs[#segs])
 end
 
 -- do ... end: the helper below is released at `end` instead of taking a

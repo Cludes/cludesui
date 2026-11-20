@@ -17,16 +17,16 @@ local _, mod = ...
 local badges = {} -- nameplate -> badge frame (reused with the nameplate)
 
 local function GetBadge(nameplate)
-    local b = badges[nameplate]
-    if not b then
-        b = CreateFrame("Frame", nil, nameplate)
-        b:SetFrameStrata("MEDIUM")
-        b.tex = b:CreateTexture(nil, "ARTWORK")
-        b.tex:SetAllPoints()
-        b:Hide()
-        badges[nameplate] = b
+    local widget = badges[nameplate]
+    if not widget then
+        widget = CreateFrame("Frame", nil, nameplate)
+        widget:SetFrameStrata("MEDIUM")
+        widget.tex = widget:CreateTexture(nil, "ARTWORK")
+        widget.tex:SetAllPoints()
+        widget:Hide()
+        badges[nameplate] = widget
     end
-    return b
+    return widget
 end
 
 -- The target's left arrow sits just left of the name; while the badge is up it
@@ -55,7 +55,7 @@ local function Refresh(fp)
     if not (nameplate and unitToken) then
         return
     end
-    local b = badges[nameplate]
+    local widget = badges[nameplate]
     local atlas, size
     -- Slot None: no unit queries, only a badge left up from before is hidden.
     if mod.NP_GetFactionSlot() ~= "none" then
@@ -63,35 +63,35 @@ local function Refresh(fp)
     end
     local fontStr = fp.name
     if not (atlas and fontStr) then
-        if b then
-            b:Hide()
+        if widget then
+            widget:Hide()
         end
         if fontStr then
             ArrowTo(fp, fontStr)
         end
         return
     end
-    b = b or GetBadge(nameplate)
+    widget = widget or GetBadge(nameplate)
     local sz = mod.NP_GetFactionIconSize()
-    b:SetSize(sz, sz)
-    b:SetFrameLevel(nameplate:GetFrameLevel() + 5)
-    b:ClearAllPoints()
-    b:SetPoint("RIGHT", fontStr, "LEFT", -2, 0)
+    widget:SetSize(sz, sz)
+    widget:SetFrameLevel(nameplate:GetFrameLevel() + 5)
+    widget:ClearAllPoints()
+    widget:SetPoint("RIGHT", fontStr, "LEFT", -2, 0)
     -- Repaint only when the art or the dim changes (inputs: faction, Icon Style, honor
     -- badge, dim).
     local style = mod.NP_GetFactionStyle()
     local badge = CludesUI.FactionBadgeFor(style, unitToken)
-    if b.facArt ~= atlas or b.facStyle ~= style or b.facBadge ~= badge then
-        CludesUI.SetFactionArt(b.tex, style, atlas, badge)
-        b.facArt, b.facStyle, b.facBadge = atlas, style, badge
+    if widget.facArt ~= atlas or widget.facStyle ~= style or widget.facBadge ~= badge then
+        CludesUI.SetFactionArt(widget.tex, style, atlas, badge)
+        widget.facArt, widget.facStyle, widget.facBadge = atlas, style, badge
     end
-    if b.facDim ~= size then
-        b.tex:SetDesaturated(size)
-        b.tex:SetAlpha(size and 0.6 or 1)
-        b.facDim = size
+    if widget.facDim ~= size then
+        widget.tex:SetDesaturated(size)
+        widget.tex:SetAlpha(size and 0.6 or 1)
+        widget.facDim = size
     end
-    b:Show()
-    ArrowTo(fp, b)
+    widget:Show()
+    ArrowTo(fp, widget)
 end
 
 mod.NP_FriendlyFactionRefresh = Refresh
@@ -99,9 +99,9 @@ mod.NP_FriendlyFactionRefresh = Refresh
 -- The friendly plate is released (plate removed, switch to name-only) or its
 -- unit promoted to an enemy plate, which draws its own badge.
 function mod.NP_FriendlyFactionHide(fp)
-    local b = fp.nameplate and badges[fp.nameplate]
-    if b then
-        b:Hide()
+    local widget = fp.nameplate and badges[fp.nameplate]
+    if widget then
+        widget:Hide()
     end
     if fp.name then
         ArrowTo(fp, fp.name)

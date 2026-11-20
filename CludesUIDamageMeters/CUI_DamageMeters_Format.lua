@@ -491,13 +491,13 @@ function mod._DMHiddenDeathsPass(wid)
     if not _sharedTicker then
         StartSharedTicker()
     end
-    local s = C_DamageMeter
+    local cfg = C_DamageMeter
         and C_DamageMeter.GetCombatSessionFromType
         and C_DamageMeter.GetCombatSessionFromType(
             Enum.DamageMeterSessionType.Current,
             Enum.DamageMeterType.Deaths
         )
-    local srcs = s and s.combatSources
+    local srcs = cfg and cfg.combatSources
     if not srcs then
         return
     end

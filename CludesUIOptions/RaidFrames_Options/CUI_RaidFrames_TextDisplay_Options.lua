@@ -236,7 +236,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
     -- then Class, Accent, Power) and the colour mode accessor of one shown
     -- text. The level is drawn in the name's colour: no swatches of its own.
     local function Decorate(region, cell)
-        local t = cell.text
+        local tbl = cell.text
         local rowList = {
             {
                 type = "slider",
@@ -245,10 +245,10 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 max = 26,
                 step = 1,
                 get = function()
-                    return SVal(t.size, 10)
+                    return SVal(tbl.size, 10)
                 end,
                 set = function(val)
-                    environ.SSet(t.size, val)
+                    environ.SSet(tbl.size, val)
                 end,
             },
             {
@@ -258,10 +258,10 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 max = 500,
                 step = 1,
                 get = function()
-                    return SVal(t.x, 0)
+                    return SVal(tbl.x, 0)
                 end,
                 set = function(val)
-                    environ.SSet(t.x, val)
+                    environ.SSet(tbl.x, val)
                 end,
             },
             {
@@ -271,18 +271,18 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 max = 500,
                 step = 1,
                 get = function()
-                    return SVal(t.y, 0)
+                    return SVal(tbl.y, 0)
                 end,
                 set = function(val)
-                    environ.SSet(t.y, val)
+                    environ.SSet(tbl.y, val)
                 end,
             },
         }
         -- The name length is shared by every name text of the view (Name Format
         -- has its own row: it shapes the Top Name Bar too).
-        local showsName = t.kind == "name"
-        if t.kind == "custom" then
-            local parsed = CludesUI.TextTags.Parse(mod.RF_TextTags, SVal(t.fmt))
+        local showsName = tbl.kind == "name"
+        if tbl.kind == "custom" then
+            local parsed = CludesUI.TextTags.Parse(mod.RF_TextTags, SVal(tbl.fmt))
             showsName = parsed and parsed.has and parsed.has.name and true or false
         end
         if showsName then
@@ -301,16 +301,16 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
             }
         end
         -- Show Above Icons: the name's own key; every other text follows it until set here.
-        if t.kind == "name" then
+        if tbl.kind == "name" then
             rowList[#rowList + 1] = {
                 type = "toggle",
                 label = "Show Above Icons",
                 tooltip = "Render the name above buff and debuff icons. Texts without a setting of their own follow it.",
                 get = function()
-                    return SVal(t.above, false) and true or false
+                    return SVal(tbl.above, false) and true or false
                 end,
                 set = function(val)
-                    environ.SSet(t.above, val)
+                    environ.SSet(tbl.above, val)
                 end,
             }
         else
@@ -319,23 +319,23 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 label = "Show Above Icons",
                 tooltip = "Render this text above buff and debuff icons. Follows the name's setting until changed here.",
                 get = function()
-                    local val = SVal(t.above)
+                    local val = SVal(tbl.above)
                     if val == nil then
                         val = SVal("nameTextAboveIcons", false)
                     end
                     return val and true or false
                 end,
                 set = function(val)
-                    environ.SSet(t.above, val)
+                    environ.SSet(tbl.above, val)
                 end,
             }
         end
         CludesUI.BuildInlineCog(region, {
-            title = CludesUI.Lf("%1$s Settings", CludesUI.L(t.label)),
+            title = CludesUI.Lf("%1$s Settings", CludesUI.L(tbl.label)),
             rows = rowList,
         })
-        if t.kind ~= "level" then
-            local modeKey = t.cm
+        if tbl.kind ~= "level" then
+            local modeKey = tbl.cm
             local function AddSwatch(getColor, setColor, mode, opensPicker, tooltip)
                 local sw = CludesUI.BuildColorSwatch(
                     region,
@@ -374,13 +374,13 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 vis()
             end
             AddSwatch(function()
-                local c = SVal(t.col)
+                local c = SVal(tbl.col)
                 if c then
                     return c.r or 1, c.g or 1, c.b or 1, 1
                 end
                 return 1, 1, 1, 1
             end, function(red, green, blue)
-                SWrite(t.col, { r = red, g = green, b = blue })
+                SWrite(tbl.col, { r = red, g = green, b = blue })
                 ReloadAndUpdate()
             end, "custom", true, "Custom Color")
             AddSwatch(function()
@@ -395,7 +395,7 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
                 local red, green, blue = CludesUI.ResolveActiveAccent()
                 return red or 1, green or 1, blue or 1, 1
             end, function() end, "accent", false, "Accent Color")
-            if AllowsPower(t) then
+            if AllowsPower(tbl) then
                 AddSwatch(function()
                     local _, pToken = UnitPowerType("player")
                     local details = CludesUI.GetPowerColor(pToken or "MANA")
@@ -408,13 +408,13 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
             -- The mode is written only by the swatch clicks above.
             local modeValues = { custom = "Custom Color", class = "Class Color", accent = "Accent Color" }
             local modeOrder = { "custom", "class", "accent" }
-            if AllowsPower(t) then
+            if AllowsPower(tbl) then
                 modeValues.power = "Power Colored Text"
                 modeOrder[4] = "power"
             end
             CludesUI.AddCaptureAccessor(region, {
                 type = "dropdown",
-                text = t.label .. " Color Mode",
+                text = tbl.label .. " Color Mode",
                 values = modeValues,
                 order = modeOrder,
                 getValue = function()
@@ -447,29 +447,29 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
     local cells = {}
     for jdx = 1, #isShown do
         local cell = isShown[jdx]
-        local t = cell.text
+        local tbl = cell.text
         local rowConf = {
             type = "dropdown",
             text = POS[cell.pos] or cell.pos,
-            order = MODE_ORDER[t.kind],
+            order = MODE_ORDER[tbl.kind],
             getValue = function()
-                return ModeOf(t)
+                return ModeOf(tbl)
             end,
             setValue = function(val)
-                SetMode(t, val)
+                SetMode(tbl, val)
             end,
         }
-        if t.kind == "pp" then
+        if tbl.kind == "pp" then
             rowConf.tooltip = "Shows only on frames whose power bar shows."
-        elseif t.kind == "name" and kit then
+        elseif tbl.kind == "name" and kit then
             rowConf.tooltip =
                 "On Party Frames style the name keeps the frame's own spot; its offsets still apply."
-        elseif t.kind == "level" then
+        elseif tbl.kind == "level" then
             rowConf.tooltip = "Drawn in the name's colour."
         end
-        rowConf.values = CustomText.Values(MODE_VALUES[t.kind], t.kind == "custom" and function()
-            CustomText.Edit(t.fmt, CustomText.Color(t), function()
-                Notify(t)
+        rowConf.values = CustomText.Values(MODE_VALUES[tbl.kind], tbl.kind == "custom" and function()
+            CustomText.Edit(tbl.fmt, CustomText.Color(tbl), function()
+                Notify(tbl)
                 Apply()
             end)
         end or nil)
@@ -484,31 +484,31 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
     local customId
     local nameShown = Shown(TEXTS[1])
     for idx = 1, #TEXTS do
-        local t = TEXTS[idx]
-        local hidden = not Shown(t)
+        local tbl = TEXTS[idx]
+        local hidden = not Shown(tbl)
         -- An attached level shows in the name tile while the name does; with the
         -- name hidden (the Top Name Bar may still use it) it can go on its own spot.
-        if t.kind == "level" and ATTACH_VALUE[PosOf(t)] and nameShown then
+        if tbl.kind == "level" and ATTACH_VALUE[PosOf(tbl)] and nameShown then
             hidden = false
         end
-        if hidden and t.kind == "custom" then
+        if hidden and tbl.kind == "custom" then
             if not customId then
-                customId = t.id
-                addValues[t.id] = {
+                customId = tbl.id
+                addValues[tbl.id] = {
                     text = "Custom Text",
                     action = function()
-                        Show(t)
+                        Show(tbl)
                     end,
                 }
             end
         elseif hidden then
-            addOrder[#addOrder + 1] = t.id
-            addValues[t.id] = t.label
+            addOrder[#addOrder + 1] = tbl.id
+            addValues[tbl.id] = tbl.label
             -- An attached level placed on its own spot leaves the Top Name Bar's prefix.
-            if t.kind == "level" and ATTACH_VALUE[PosOf(t)] and SVal("topNameBarEnabled", false) then
-                addValues[t.id] = "Level (moves it off the Top Name Bar)"
+            if tbl.kind == "level" and ATTACH_VALUE[PosOf(tbl)] and SVal("topNameBarEnabled", false) then
+                addValues[tbl.id] = "Level (moves it off the Top Name Bar)"
             end
-            addText[t.id] = t
+            addText[tbl.id] = tbl
         end
     end
     if customId then
@@ -581,29 +581,29 @@ function mod.RFO_BuildTextDisplay(W, hostFrame, cursorY, options)
         if CludesUI._prebuilding then
             return
         end
-        local t = cell.text
+        local tbl = cell.text
         -- Spec Overrides name a captured write after the text, not its position
         -- (several texts may share one).
         if region._captureCfg then
-            region._captureCfg = setmetatable({ text = t.label }, { __index = region._captureCfg })
+            region._captureCfg = setmetatable({ text = tbl.label }, { __index = region._captureCfg })
         end
         CludesUI.BuildRowLabelMenu(region, {
             order = POSITIONS,
             values = POS,
             getValue = function()
-                return PosOf(t)
+                return PosOf(tbl)
             end,
             setValue = function(val)
-                Move(t, val)
+                Move(tbl, val)
             end,
             tooltip = "Choose this text's position.",
         })
         Decorate(region, cell)
-        if t.kind == "custom" then
-            CustomText.AddAccessor(region, t.label, t.fmt)
+        if tbl.kind == "custom" then
+            CustomText.AddAccessor(region, tbl.label, tbl.fmt)
         end
         local pending = mod._rfTextNotify
-        if pending and pending.page == options.page and pending.key == t.id then
+        if pending and pending.page == options.page and pending.key == tbl.id then
             mod._rfTextNotify = nil
             -- The text read now, while this build's cell is its dress.
             local snap = CludesUI._SOAttribution(region)

@@ -51,13 +51,13 @@ Inner.previewContainerSetters[#Inner.previewContainerSetters + 1] = function(val
 end
 
 local function CreatePreviewFrame(index, party)
-    local s = saved.profile
-    local wid = PixelSnap(s.frameWidth or 72)
-    local hgt = PixelSnap(s.frameHeight or 46)
-    local powerH = IsPowerBarEnabled(s) and PixelSnap(s.powerHeight or 4) or 0
+    local cfg = saved.profile
+    local wid = PixelSnap(cfg.frameWidth or 72)
+    local hgt = PixelSnap(cfg.frameHeight or 46)
+    local powerH = IsPowerBarEnabled(cfg) and PixelSnap(cfg.powerHeight or 4) or 0
     -- Party Frames kit (party preview only): the stock frame's own layout.
     local kit = party and mod.RF_PartyKit()
-    local healthH = PixelSnap(hgt - mod.RF_HealthPowerInset(s, powerH))
+    local healthH = PixelSnap(hgt - mod.RF_HealthPowerInset(cfg, powerH))
 
     local frame = CreateFrame("Frame", nil, previewContainer or containerFrame)
     frame:SetSize(wid, hgt)
@@ -65,10 +65,10 @@ local function CreatePreviewFrame(index, party)
     frame:Hide()
 
     -- Background
-    local bgc = s.customBgColor or defaultSet.customBgColor
+    local bgc = cfg.customBgColor or defaultSet.customBgColor
     local backdrop = frame:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (s.bgDarkness or 50) / 100)
+    backdrop:SetColorTexture(bgc.r, bgc.g, bgc.b, (cfg.bgDarkness or 50) / 100)
     if Pix then
         Pix.DisablePixelSnap(backdrop)
     end
@@ -337,10 +337,10 @@ local function CreatePreviewFrame(index, party)
         local pwBg = power:CreateTexture(nil, "BACKGROUND")
         pwBg:SetAllPoints()
         pwBg:SetColorTexture(
-            (s.powerBgColor or {}).r or 0,
-            (s.powerBgColor or {}).g or 0,
-            (s.powerBgColor or {}).b or 0,
-            (s.powerBgDarkness or 70) / 100
+            (cfg.powerBgColor or {}).r or 0,
+            (cfg.powerBgColor or {}).g or 0,
+            (cfg.powerBgColor or {}).b or 0,
+            (cfg.powerBgDarkness or 70) / 100
         )
         if Pix then
             Pix.DisablePixelSnap(pwBg)
@@ -369,26 +369,26 @@ local function CreatePreviewFrame(index, party)
         end
         -- Overlay ahead of _scaledProfile: border/hover/target keys are not
         -- tier-scaled, so the effective overlay may shadow them safely.
-        local s = mod._previewSettingsOverride
+        local cfg = mod._previewSettingsOverride
             or (mod._partyPvActive and mod._scaledPartyProxy)
             or mod._pvOverlayProxy
             or mod._scaledProfile
-        if mod.RF_ButtonCompact(frame, s) then
-            mod.RF_CompactHighlight(bdrFrame, frame, s, frame)
+        if mod.RF_ButtonCompact(frame, cfg) then
+            mod.RF_CompactHighlight(bdrFrame, frame, cfg, frame)
             return
         end
         if frame.kit then
             mod.RF_KitHighlight(
                 frame,
                 bdrFrame,
-                s,
-                frame._hovered and s.hoverBorderEnabled ~= false,
-                frame._isTarget and s.targetBorderEnabled ~= false
+                cfg,
+                frame._hovered and cfg.hoverBorderEnabled ~= false,
+                frame._isTarget and cfg.targetBorderEnabled ~= false
             )
             return
         end
         if frame.stockEdge then
-            local hover = frame._hovered and s.hoverBorderEnabled ~= false
+            local hover = frame._hovered and cfg.hoverBorderEnabled ~= false
             local lvl = frame:GetFrameLevel() + (hover and mod.LVL_RAISE or 8)
             if bdrFrame:GetFrameLevel() ~= lvl then
                 bdrFrame:SetFrameLevel(lvl)
@@ -397,26 +397,26 @@ local function CreatePreviewFrame(index, party)
                     boxHolder:SetFrameLevel(lvl + 1)
                 end
             end
-            mod.RF_StockHighlight(frame, bdrFrame, s, hover, frame._isTarget and s.targetBorderEnabled ~= false)
+            mod.RF_StockHighlight(frame, bdrFrame, cfg, hover, frame._isTarget and cfg.targetBorderEnabled ~= false)
             return
         end
         local red, green, blue, a
         local raised, hlSize, hlPx = false, nil, nil
-        if frame._pvDispelBdrC and s.borderBehind then
+        if frame._pvDispelBdrC and cfg.borderBehind then
             -- Show Behind: the live copy sits over the never-raised base border, so the
             -- type color covers hover/target there too.
             local c = frame._pvDispelBdrC
             red, green, blue, a = c.r, c.g, c.b, c.a or 1
-        elseif frame._hovered and s.hoverBorderEnabled ~= false then
-            local color = s.hoverBorderColor or { r = 1, g = 1, b = 1 }
-            red, green, blue, a = color.r, color.g, color.b, s.hoverBorderAlpha or 1
-            raised, hlSize = true, s.hoverBorderSize or 1
-            hlPx = CludesUI.BorderPx(s.hoverBorderSizePx, hlSize, s.borderTexture or "solid")
-        elseif frame._isTarget and s.targetBorderEnabled ~= false then
-            local color = s.targetBorderColor or { r = 1, g = 1, b = 1 }
-            red, green, blue, a = color.r, color.g, color.b, s.targetBorderAlpha or 1
-            raised, hlSize = true, s.targetBorderSize or 1
-            hlPx = CludesUI.BorderPx(s.targetBorderSizePx, hlSize, s.borderTexture or "solid")
+        elseif frame._hovered and cfg.hoverBorderEnabled ~= false then
+            local color = cfg.hoverBorderColor or { r = 1, g = 1, b = 1 }
+            red, green, blue, a = color.r, color.g, color.b, cfg.hoverBorderAlpha or 1
+            raised, hlSize = true, cfg.hoverBorderSize or 1
+            hlPx = CludesUI.BorderPx(cfg.hoverBorderSizePx, hlSize, cfg.borderTexture or "solid")
+        elseif frame._isTarget and cfg.targetBorderEnabled ~= false then
+            local color = cfg.targetBorderColor or { r = 1, g = 1, b = 1 }
+            red, green, blue, a = color.r, color.g, color.b, cfg.targetBorderAlpha or 1
+            raised, hlSize = true, cfg.targetBorderSize or 1
+            hlPx = CludesUI.BorderPx(cfg.targetBorderSizePx, hlSize, cfg.borderTexture or "solid")
         elseif frame._pvAggroBdr then
             -- Threat Borders' Color Custom Borders (set by ApplyPreviewData): the threat
             -- color, raised like the real frames, below hover/target and above dispel.
@@ -427,14 +427,14 @@ local function CreatePreviewFrame(index, party)
             local c = frame._pvDispelBdrC
             red, green, blue, a = c.r, c.g, c.b, c.a or 1
         else
-            local color = s.borderColor or { r = 0, g = 0, b = 0 }
-            red, green, blue, a = color.r, color.g, color.b, s.borderAlpha or 1
+            local color = cfg.borderColor or { r = 0, g = 0, b = 0 }
+            red, green, blue, a = color.r, color.g, color.b, cfg.borderAlpha or 1
         end
         -- Match real frames: raise the inset border above overlapping neighbors
         -- while highlighted (handles negative Frame Spacing in the preview too).
         -- Guard the level writes so a refresh only touches them on a real change.
         local pl = frame:GetFrameLevel()
-        local lvl = s.borderBehind and math.max(0, pl - 1) or (pl + (raised and mod.LVL_RAISE or 8))
+        local lvl = cfg.borderBehind and math.max(0, pl - 1) or (pl + (raised and mod.LVL_RAISE or 8))
         local boxHolder = Pix.GetBorders(bdrFrame)
         if bdrFrame:GetFrameLevel() ~= lvl or (boxHolder and boxHolder:GetFrameLevel() ~= lvl + 1) then
             bdrFrame:SetFrameLevel(lvl)
@@ -447,23 +447,23 @@ local function CreatePreviewFrame(index, party)
                 edge:SetFrameLevel(lvl)
             end
         end
-        if (s.borderSize or 1) <= 0 then
-            mod.ApplyHighlightBorder(bdrFrame, s, hlSize, red, green, blue, a, hlPx)
+        if (cfg.borderSize or 1) <= 0 then
+            mod.ApplyHighlightBorder(bdrFrame, cfg, hlSize, red, green, blue, a, hlPx)
             return
         end
         if hlSize then
-            red, green, blue = mod.RF_VisibleHighlight(s, red, green, blue)
+            red, green, blue = mod.RF_VisibleHighlight(cfg, red, green, blue)
         end
         bdrFrame._hlBorderSize = nil
         CludesUI.SetBorderStyleColor(bdrFrame, red, green, blue, a)
         if
-            s.powerBorderMatchColor == true
+            cfg.powerBorderMatchColor == true
             and frame._powerBorder
             and frame._powerBorder._powerArtMode == "divider"
         then
             mod.RF_ColorPowerDivider(frame._powerBorder, red, green, blue, a)
         end
-        if s.topNameBarDividerMatchColor == true and frame._topNameBar and frame._topNameBar._divider then
+        if cfg.topNameBarDividerMatchColor == true and frame._topNameBar and frame._topNameBar._divider then
             mod.RF_ColorPowerDivider(frame._topNameBar._divider, red, green, blue, a)
         end
     end
@@ -540,19 +540,19 @@ local function CreatePreviewFrame(index, party)
 
     -- Raid marker (on marker carrier, above the border)
     local raidMarker = markerCarrier:CreateTexture(nil, "OVERLAY", nil, 2)
-    local rmSz = PixelSnap(s.raidMarkerSize or 16)
+    local rmSz = PixelSnap(cfg.raidMarkerSize or 16)
     raidMarker:SetSize(rmSz, rmSz)
     raidMarker:Hide()
 
     -- Ready check icon (position/size re-applied in the preview indicator pass)
     local readyCheck = markerCarrier:CreateTexture(nil, "OVERLAY")
-    readyCheck:SetSize(PixelSnap(s.readyCheckSize or 20), PixelSnap(s.readyCheckSize or 20))
+    readyCheck:SetSize(PixelSnap(cfg.readyCheckSize or 20), PixelSnap(cfg.readyCheckSize or 20))
     readyCheck:SetPoint("CENTER", health, "CENTER", 0, 0)
     readyCheck:Hide()
 
     -- Combat icon (position/size/style re-applied in the preview indicator pass)
     local combatIcon = markerCarrier:CreateTexture(nil, "OVERLAY", nil, 1)
-    combatIcon:SetSize(PixelSnap(s.combatIndicatorSize or 16), PixelSnap(s.combatIndicatorSize or 16))
+    combatIcon:SetSize(PixelSnap(cfg.combatIndicatorSize or 16), PixelSnap(cfg.combatIndicatorSize or 16))
     combatIcon:Hide()
 
     -- Text carrier: text band (above every border incl. the raise, below auras).
@@ -564,8 +564,8 @@ local function CreatePreviewFrame(index, party)
 
     -- Status text (DEAD / OFFLINE / AFK)
     local statusFS = textCarrier:CreateFontString(nil, "OVERLAY")
-    local pvStc = s.statusTextColor or { r = 1, g = 1, b = 1 }
-    ApplyFont(statusFS, s.statusTextSize or 14)
+    local pvStc = cfg.statusTextColor or { r = 1, g = 1, b = 1 }
+    ApplyFont(statusFS, cfg.statusTextSize or 14)
     statusFS:SetJustifyH("CENTER")
     statusFS:SetTextColor(pvStc.r, pvStc.g, pvStc.b)
     statusFS:Hide()
@@ -577,22 +577,22 @@ local function CreatePreviewFrame(index, party)
     roleCarrier:SetAllPoints(health)
     roleCarrier:SetFrameLevel(frame:GetFrameLevel() + (mod.LVL_AURA - 1))
     local roleIcon = roleCarrier:CreateTexture(nil, "OVERLAY")
-    local riSz = PixelSnap(s.roleIconSize or 14)
+    local riSz = PixelSnap(cfg.roleIconSize or 14)
     roleIcon:SetSize(riSz, riSz)
 
     -- Leader icon: on the text carrier band (above the general border, below the
     -- aura layer) to mirror the real frames -- the hover/target raise covers it,
     -- the general border does not.
     local leaderIcon = textCarrier:CreateTexture(nil, "OVERLAY")
-    local liSz = PixelSnap(s.leaderIconSize or 14)
+    local liSz = PixelSnap(cfg.leaderIconSize or 14)
     leaderIcon:SetSize(liSz, liSz)
-    local liPos = (s.leaderIconPosition or "top"):upper()
+    local liPos = (cfg.leaderIconPosition or "top"):upper()
     leaderIcon:SetPoint(
         liPos,
-        mod.RF_AnchorHost(health, s),
+        mod.RF_AnchorHost(health, cfg),
         liPos,
-        s.leaderIconOffsetX or 0,
-        s.leaderIconOffsetY or 0
+        cfg.leaderIconOffsetX or 0,
+        cfg.leaderIconOffsetY or 0
     )
     leaderIcon:Hide()
 
@@ -601,14 +601,14 @@ local function CreatePreviewFrame(index, party)
     tnb:SetFrameLevel(frame:GetFrameLevel() + 4)
     tnb:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
     tnb:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
-    tnb:SetHeight(PixelSnap(s.topNameBarHeight or 20))
+    tnb:SetHeight(PixelSnap(cfg.topNameBarHeight or 20))
     local tnbBg = tnb:CreateTexture(nil, "BACKGROUND")
     tnbBg:SetAllPoints()
     if Pix then
         Pix.DisablePixelSnap(tnbBg)
     end
     local tnbText = tnb:CreateFontString(nil, "OVERLAY")
-    ApplyFont(tnbText, s.topNameBarTextSize or 11)
+    ApplyFont(tnbText, cfg.topNameBarTextSize or 11)
     tnbText:SetWordWrap(false)
     tnb:Hide()
 
@@ -690,16 +690,16 @@ local function CreatePreviewFrame(index, party)
     -- frame can showcase a full wrapping layout; only a few are shown otherwise.
     frame._pvDebuffs = {}
     for index = 1, 8 do
-        frame._pvDebuffs[index] = MakePreviewAuraIcon(frame, frame:GetFrameLevel() + mod.LVL_AURA, mod.RFC_DebuffSize(s))
+        frame._pvDebuffs[index] = MakePreviewAuraIcon(frame, frame:GetFrameLevel() + mod.LVL_AURA, mod.RFC_DebuffSize(cfg))
     end
 
     -- Static dispel debuff icon (shown when dispel eyeball is on)
-    frame._pvDispelDebuff = MakePreviewAuraIcon(frame, frame:GetFrameLevel() + mod.LVL_AURA, mod.RFC_DebuffSize(s))
+    frame._pvDispelDebuff = MakePreviewAuraIcon(frame, frame:GetFrameLevel() + mod.LVL_AURA, mod.RFC_DebuffSize(cfg))
 
     -- Defensive preview icons
     frame._pvDefs = {}
     for index = 1, 4 do
-        frame._pvDefs[index] = MakePreviewAuraIcon(frame, frame:GetFrameLevel() + mod.LVL_AURA, s.defSize or 22)
+        frame._pvDefs[index] = MakePreviewAuraIcon(frame, frame:GetFrameLevel() + mod.LVL_AURA, cfg.defSize or 22)
     end
 
     -- Buff preview icons (test mode: configured buffs cycled across frames)

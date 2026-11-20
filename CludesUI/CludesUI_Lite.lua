@@ -76,16 +76,16 @@ local function GetOrCreateEventFrame(addon)
     if addon._eventFrame then
         return addon._eventFrame
     end
-    local f = CreateFrame("Frame")
-    f._handlers = {}
-    f:SetScript("OnEvent", function(self, evt, ...)
+    local frame = CreateFrame("Frame")
+    frame._handlers = {}
+    frame:SetScript("OnEvent", function(self, evt, ...)
         local handler = self._handlers[evt]
         if handler then
             handler(addon, evt, ...)
         end
     end)
-    addon._eventFrame = f
-    return f
+    addon._eventFrame = frame
+    return frame
 end
 
 --- Create a new addon object. Replaces AceAddon:NewAddon().
@@ -133,7 +133,7 @@ end
 --   addon:RegisterEvent("EVENT_NAME", "MethodName")
 --   addon:RegisterEvent("EVENT_NAME")  -- calls self:EVENT_NAME(event, ...)
 function CUILite._RegisterEvent(self, eventname, callback)
-    local f = GetOrCreateEventFrame(self)
+    local frame = GetOrCreateEventFrame(self)
     local handler
     if type(callback) == "function" then
         -- Stored directly. The dispatcher calls handler(addon, event, ...),
@@ -157,18 +157,18 @@ function CUILite._RegisterEvent(self, eventname, callback)
             end
         end
     end
-    f._handlers[eventname] = handler
-    f:RegisterEvent(eventname)
+    frame._handlers[eventname] = handler
+    frame:RegisterEvent(eventname)
 end
 
 --- Unregister a Blizzard event.
 function CUILite._UnregisterEvent(self, eventname)
-    local f = self._eventFrame
-    if not f then
+    local frame = self._eventFrame
+    if not frame then
         return
     end
-    f._handlers[eventname] = nil
-    f:UnregisterEvent(eventname)
+    frame._handlers[eventname] = nil
+    frame:UnregisterEvent(eventname)
 end
 
 --------------------------------------------------------------------------------

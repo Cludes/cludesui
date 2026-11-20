@@ -891,8 +891,8 @@ CludesUI.AtOptionsLogin(function()
         end
         local success, ABAR = pcall(CludesUI.Lite.GetAddon, "CludesUIActionBars")
         if success and ABAR and ABAR.db and ABAR.db.profile and ABAR.db.profile.bars then
-            local s = ABAR.db.profile.bars[barId]
-            if s and s.buttonShape and s.buttonShape ~= "none" and s.buttonShape ~= "cropped" then
+            local cfg = ABAR.db.profile.bars[barId]
+            if cfg and cfg.buttonShape and cfg.buttonShape ~= "none" and cfg.buttonShape ~= "cropped" then
                 return true
             end
         end
@@ -1054,9 +1054,9 @@ CludesUI.AtOptionsLogin(function()
         C_Timer.After(0.15, glowPreview.Flush)
     end
     function glowPreview.Arm()
-        local f = glowPreview.frame
+        local frame = glowPreview.frame
         for i = 1, #glowPreview.events do
-            f:RegisterEvent(glowPreview.events[i])
+            frame:RegisterEvent(glowPreview.events[i])
         end
     end
     function glowPreview.Disarm()
@@ -2870,10 +2870,10 @@ CludesUI.AtOptionsLogin(function()
             return Settings().position or mod.CDM_ROTATION_ICON_DEFAULT_POS
         end
         local function SetOffset(axis, value)
-            local s = Settings()
-            local place = s.position or CopyTable(mod.CDM_ROTATION_ICON_DEFAULT_POS)
+            local cfg = Settings()
+            local place = cfg.position or CopyTable(mod.CDM_ROTATION_ICON_DEFAULT_POS)
             place[axis] = CludesUI.PP.FromPixels(value)
-            s.position = place
+            cfg.position = place
             mod.RefreshRotationAssistIcon()
         end
 

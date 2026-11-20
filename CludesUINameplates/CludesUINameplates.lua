@@ -941,11 +941,11 @@ local CAST_H = 17
 do
     if CludesUI and CludesUI.RegisterBorderDefaults then
         local function AllSizes(ox, oy, sx, sy)
-            local t = {}
+            local tbl = {}
             for k = 0, 4 do
-                t[k] = { offsetX = ox, offsetY = oy, shiftX = sx, shiftY = sy }
+                tbl[k] = { offsetX = ox, offsetY = oy, shiftX = sx, shiftY = sy }
             end
-            return t
+            return tbl
         end
         CludesUI.RegisterBorderDefaults("nameplates", {
             ["glow"] = { defaultSize = 1, sizes = AllSizes(0, 0, 0, 0) },

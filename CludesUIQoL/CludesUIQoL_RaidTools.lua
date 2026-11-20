@@ -581,19 +581,19 @@ end
 -- white label (WSkin.Button + WhiteButtonLabel, replicated). `needsLeader`
 -- narrows the gate from assist to leader.
 local function MakeGroupButton(hostFrame, textValue, width, onClick, needsLeader)
-    local b = CreateFrame("Button", nil, hostFrame)
-    b:SetSize(width, ROW_H)
-    SkinButtonChrome(b)
-    local labelFS = TrackFont(hostFrame, CludesUI.MakeFont(b, 11, nil, 1, 1, 1), 11)
+    local widget = CreateFrame("Button", nil, hostFrame)
+    widget:SetSize(width, ROW_H)
+    SkinButtonChrome(widget)
+    local labelFS = TrackFont(hostFrame, CludesUI.MakeFont(widget, 11, nil, 1, 1, 1), 11)
     labelFS:SetPoint("CENTER")
     if textValue ~= "" then
         labelFS:SetText(CludesUI.L(textValue))
     end
-    b:SetScript("OnClick", onClick)
-    b._lbl = labelFS
-    b.needsLeader = needsLeader
-    groupBtns[#groupBtns + 1] = b
-    return b
+    widget:SetScript("OnClick", onClick)
+    widget._lbl = labelFS
+    widget.needsLeader = needsLeader
+    groupBtns[#groupBtns + 1] = widget
+    return widget
 end
 
 -- Secure marker button. Action attributes are set here, at build, and never
@@ -607,63 +607,63 @@ end
 --   * the worldmarker type takes `marker` as a STRING, and splits placing from
 --     clearing across action1 and action2.
 local function MakeMarkerButton(hostFrame, index, kindName)
-    local b = CreateFrame("Button", nil, hostFrame, "SecureActionButtonTemplate")
+    local widget = CreateFrame("Button", nil, hostFrame, "SecureActionButtonTemplate")
     local isCompact = kindName == "compact" or kindName == "compact-clear"
     local size = isCompact and COMPACT_ICON or MARKER_SZ
-    b:SetSize(size, size)
+    widget:SetSize(size, size)
     -- One phase only: the "!" prefix toggles the marker, so firing on both the
     -- down and the up would set it and immediately clear it again. useOnKeyDown
     -- is pinned because left unset it follows the ActionButtonUseKeyDown CVar,
     -- and at 0 the secure handler acts on the up phase we never register --
     -- every marker button goes dead.
-    b:RegisterForClicks("AnyDown")
-    b:SetAttribute("useOnKeyDown", true)
+    widget:RegisterForClicks("AnyDown")
+    widget:SetAttribute("useOnKeyDown", true)
 
-    local iconTex = b:CreateTexture(nil, "ARTWORK")
+    local iconTex = widget:CreateTexture(nil, "ARTWORK")
     iconTex:SetAllPoints()
-    b.icon = iconTex
+    widget.icon = iconTex
 
     if kindName == "compact" then
         local worldMarkerId = SYMBOL_TO_WORLD[index]
         -- One symbol, four combat-safe actions. The ordinary clicks perform
         -- the frequent actions; Shift exposes their explicit clear variants.
-        b:SetAttribute("type1", "macro")
-        b:SetAttribute("macrotext1", (SLASH_TARGET_MARKER1 or "/tm") .. " !" .. index)
-        b:SetAttribute("type2", "worldmarker")
-        b:SetAttribute("marker2", tostring(worldMarkerId))
-        b:SetAttribute("action2", "set")
-        b:SetAttribute("shift-type1", "macro")
-        b:SetAttribute("shift-macrotext1", (SLASH_TARGET_MARKER1 or "/tm") .. " 0")
-        b:SetAttribute("shift-type2", "worldmarker")
-        b:SetAttribute("shift-marker2", tostring(worldMarkerId))
-        b:SetAttribute("shift-action2", "clear")
-        b._worldID = worldMarkerId
+        widget:SetAttribute("type1", "macro")
+        widget:SetAttribute("macrotext1", (SLASH_TARGET_MARKER1 or "/tm") .. " !" .. index)
+        widget:SetAttribute("type2", "worldmarker")
+        widget:SetAttribute("marker2", tostring(worldMarkerId))
+        widget:SetAttribute("action2", "set")
+        widget:SetAttribute("shift-type1", "macro")
+        widget:SetAttribute("shift-macrotext1", (SLASH_TARGET_MARKER1 or "/tm") .. " 0")
+        widget:SetAttribute("shift-type2", "worldmarker")
+        widget:SetAttribute("shift-marker2", tostring(worldMarkerId))
+        widget:SetAttribute("shift-action2", "clear")
+        widget._worldID = worldMarkerId
     elseif kindName == "compact-clear" then
-        b:SetAttribute("type1", "macro")
-        b:SetAttribute("macrotext1", (SLASH_TARGET_MARKER1 or "/tm") .. " 0")
-        b:SetAttribute("type2", "macro")
-        b:SetAttribute("macrotext2", (SLASH_CLEAR_WORLD_MARKER1 or "/cwm") .. " " .. (ALL or "All"))
+        widget:SetAttribute("type1", "macro")
+        widget:SetAttribute("macrotext1", (SLASH_TARGET_MARKER1 or "/tm") .. " 0")
+        widget:SetAttribute("type2", "macro")
+        widget:SetAttribute("macrotext2", (SLASH_CLEAR_WORLD_MARKER1 or "/cwm") .. " " .. (ALL or "All"))
     elseif kindName == "target" then
         -- Left: toggle this marker on the target. Right: clear it.
-        b:SetAttribute("type", "macro")
+        widget:SetAttribute("type", "macro")
         if index == 0 then
-            b:SetAttribute("macrotext", (SLASH_TARGET_MARKER1 or "/tm") .. " 0")
+            widget:SetAttribute("macrotext", (SLASH_TARGET_MARKER1 or "/tm") .. " 0")
         else
-            b:SetAttribute("macrotext1", (SLASH_TARGET_MARKER1 or "/tm") .. " !" .. index)
-            b:SetAttribute("macrotext2", (SLASH_TARGET_MARKER1 or "/tm") .. " 0")
+            widget:SetAttribute("macrotext1", (SLASH_TARGET_MARKER1 or "/tm") .. " !" .. index)
+            widget:SetAttribute("macrotext2", (SLASH_TARGET_MARKER1 or "/tm") .. " 0")
         end
     elseif index == 0 then
         -- Clear-all is a macro, not a worldmarker action: the attribute form
         -- clears one index at a time.
-        b:SetAttribute("type", "macro")
-        b:SetAttribute("macrotext", (SLASH_CLEAR_WORLD_MARKER1 or "/cwm") .. " " .. (ALL or "All"))
+        widget:SetAttribute("type", "macro")
+        widget:SetAttribute("macrotext", (SLASH_CLEAR_WORLD_MARKER1 or "/cwm") .. " " .. (ALL or "All"))
     else
-        b:SetAttribute("type", "worldmarker")
+        widget:SetAttribute("type", "worldmarker")
         -- `index` is the SYMBOL the button shows; the attribute wants the
         -- world-marker ID of the flare carrying that symbol (see the map).
-        b:SetAttribute("marker", tostring(SYMBOL_TO_WORLD[index]))
-        b:SetAttribute("action1", "set")
-        b:SetAttribute("action2", "clear")
+        widget:SetAttribute("marker", tostring(SYMBOL_TO_WORLD[index]))
+        widget:SetAttribute("action1", "set")
+        widget:SetAttribute("action2", "clear")
     end
 
     if index == 0 then
@@ -679,28 +679,28 @@ local function MakeMarkerButton(hostFrame, index, kindName)
     -- brighten on hover, so the dim never lies. _baseAlpha is ours to write
     -- (our CreateFrame'd button); RefreshPermissions owns its value.
     iconTex:SetAlpha(0.8)
-    b._baseAlpha = 0.8
+    widget._baseAlpha = 0.8
     if kindName == "compact" then
         -- The "marker is down" underline rides its own child FRAME: its
         -- visibility follows an answer that can be secret (see
         -- RefreshCompactMarkerState), and SetAlphaFromBoolean -- the
         -- secret-safe switch -- renders nothing on a texture. A plain frame
         -- takes no mouse input, so the host never eats the button's clicks.
-        local markerOwner = CreateFrame("Frame", nil, b)
-        markerOwner:SetAllPoints(b)
+        local markerOwner = CreateFrame("Frame", nil, widget)
+        markerOwner:SetAllPoints(widget)
         markerOwner:SetAlpha(0)
         local isActive = markerOwner:CreateTexture(nil, "OVERLAY")
-        isActive:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 2, -2)
-        isActive:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -2, -2)
+        isActive:SetPoint("BOTTOMLEFT", widget, "BOTTOMLEFT", 2, -2)
+        isActive:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -2, -2)
         isActive:SetHeight(2)
         local ar, ag, ab = 0.30, 0.79, 0.94
         if CludesUI.GetAccentColor then
             ar, ag, ab = CludesUI.GetAccentColor()
         end
         isActive:SetColorTexture(ar, ag, ab, 0.95)
-        b._activeHost = markerOwner
+        widget._activeHost = markerOwner
     end
-    b:SetScript("OnEnter", function(self)
+    widget:SetScript("OnEnter", function(self)
         if (self._baseAlpha or 0.8) >= 0.8 then
             self.icon:SetAlpha(1)
         end
@@ -712,15 +712,15 @@ local function MakeMarkerButton(hostFrame, index, kindName)
             end
         end
     end)
-    b:SetScript("OnLeave", function(self)
+    widget:SetScript("OnLeave", function(self)
         self.icon:SetAlpha(self._baseAlpha or 0.8)
         if isCompact and HideCompactTip then
             HideCompactTip(self)
         end
     end)
 
-    markerButtons[#markerButtons + 1] = b
-    return b
+    markerButtons[#markerButtons + 1] = widget
+    return widget
 end
 
 -------------------------------------------------------------------------------
@@ -1216,8 +1216,8 @@ local function BuildMarkersContent()
         posY = posY - MARKER_LBL_H - 2
 
         for index = 0, 8 do
-            local b = MakeMarkerButton(frame, index == 8 and 0 or (index + 1), line.kind)
-            b:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD + step * index, posY)
+            local widget = MakeMarkerButton(frame, index == 8 and 0 or (index + 1), line.kind)
+            widget:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD + step * index, posY)
         end
         posY = posY - MARKER_SZ
         if region < #MARKER_ROWS then
@@ -1372,26 +1372,26 @@ do
 end
 
 local function MakeCompactActionButton(hostFrame, labelText, tipBuilder, onClick)
-    local b = CreateFrame("Button", nil, hostFrame)
-    b:SetSize(COMPACT_ICON, COMPACT_ICON)
-    b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    b:SetScript("OnClick", onClick)
-    local fontStr = TrackFont(hostFrame, CludesUI.MakeFont(b, 11, nil, 1, 1, 1), 11)
+    local widget = CreateFrame("Button", nil, hostFrame)
+    widget:SetSize(COMPACT_ICON, COMPACT_ICON)
+    widget:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    widget:SetScript("OnClick", onClick)
+    local fontStr = TrackFont(hostFrame, CludesUI.MakeFont(widget, 11, nil, 1, 1, 1), 11)
     fontStr:SetPoint("CENTER")
     fontStr:SetText(labelText)
     fontStr:SetAlpha(0.8)
-    b.label = fontStr
-    b:SetScript("OnEnter", function(self)
+    widget.label = fontStr
+    widget:SetScript("OnEnter", function(self)
         self.label:SetAlpha(1)
         local title, actions = tipBuilder()
         ShowCompactTip(self, title, actions)
     end)
-    b:SetScript("OnLeave", function(self)
+    widget:SetScript("OnLeave", function(self)
         self.label:SetAlpha(0.8)
         HideCompactTip(self)
     end)
-    groupBtns[#groupBtns + 1] = b
-    return b
+    groupBtns[#groupBtns + 1] = widget
+    return widget
 end
 
 local function CompactPullTime(slot)

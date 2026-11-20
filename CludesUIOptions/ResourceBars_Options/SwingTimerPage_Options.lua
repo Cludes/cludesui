@@ -378,16 +378,16 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     if not q then
                         return
                     end
-                    local t = q.classTalentConditions
+                    local tbl = q.classTalentConditions
                     if entries then
-                        if not t then
-                            t = {}
-                            q.classTalentConditions = t
+                        if not tbl then
+                            tbl = {}
+                            q.classTalentConditions = tbl
                         end
-                        t[class] = entries
-                    elseif t then
-                        t[class] = nil
-                        if not next(t) then
+                        tbl[class] = entries
+                    elseif tbl then
+                        tbl[class] = nil
+                        if not next(tbl) then
                             q.classTalentConditions = nil
                         end
                     end

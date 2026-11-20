@@ -896,20 +896,20 @@ local function GetUnlockStore(create)
     if not profileTbl then
         return nil
     end
-    local s = profileTbl.specUnlockOverrides
-    if not s then
+    local cfg = profileTbl.specUnlockOverrides
+    if not cfg then
         if not create then
             return nil
         end
-        s = {}
-        profileTbl.specUnlockOverrides = s
+        cfg = {}
+        profileTbl.specUnlockOverrides = cfg
     end
     -- Layer model: layouts[gid] = a COMPLETE unlock-layout fork for that group;
     -- baselineLayout = the shared layout, stored whenever a group layer is
     -- live; active = which layer the LIVE stores currently hold (nil =
     -- baseline).
-    s.layouts = s.layouts or {}
-    return s
+    cfg.layouts = cfg.layouts or {}
+    return cfg
 end
 
 --- True when any override entry -- spec or conditional -- holds this setting
@@ -1019,11 +1019,11 @@ end
 --- session's unlock positions (recorded layer elems; anchored containers use
 --- their recorded bookkeeping coordinates).
 function CludesUI.SpecOverrides_EditSessionUnlockLayer()
-    local s = GetUnlockStore()
+    local cfg = GetUnlockStore()
     if _editGroup then
-        local layer = s and s.layouts and s.layouts[_editGroup.id]
+        local layer = cfg and cfg.layouts and cfg.layouts[_editGroup.id]
         if layer then
-            return layer, s.baselineLayout
+            return layer, cfg.baselineLayout
         end
         return nil
     end
@@ -1033,7 +1033,7 @@ function CludesUI.SpecOverrides_EditSessionUnlockLayer()
         local condStore = C.GetUnlockStore and C.GetUnlockStore()
         local layer = condStore and condStore.layouts and condStore.layouts[e.id]
         if layer then
-            return layer, s and s.baselineLayout or nil
+            return layer, cfg and cfg.baselineLayout or nil
         end
     end
     return nil
@@ -1163,8 +1163,8 @@ end
 
 --- Active layer gid; nil = the baseline layout is live.
 function CludesUI.SpecOverrides_UnlockActive()
-    local s = GetUnlockStore()
-    return s and s.active or nil
+    local cfg = GetUnlockStore()
+    return cfg and cfg.active or nil
 end
 
 --- Deterministic owner layer for a spec: the FIRST group in creation order that
@@ -1173,12 +1173,12 @@ local function OwnerGid(specId)
     if not specId then
         return nil
     end
-    local s = GetUnlockStore()
-    if not s or not next(s.layouts) then
+    local cfg = GetUnlockStore()
+    if not cfg or not next(cfg.layouts) then
         return nil
     end
     for _, group in ipairs(GetGroups() or {}) do
-        if s.layouts[group.id] then
+        if cfg.layouts[group.id] then
             for _, spellRef in ipairs(group.specs or {}) do
                 if spellRef == specId then
                     return group.id
@@ -1197,8 +1197,8 @@ end
 --- real preview must show the layer that WOULD apply at the next boundary.
 --- Second return is baselineLayout for per-element fallback.
 function CludesUI.SpecOverrides_EffectiveUnlockLayer()
-    local s = GetUnlockStore()
-    if not s then
+    local cfg = GetUnlockStore()
+    if not cfg then
         return nil
     end
     local specId = CurrentSpecID()
@@ -1206,8 +1206,8 @@ function CludesUI.SpecOverrides_EffectiveUnlockLayer()
         return nil
     end
     local wanted = OwnerGid(specId)
-    if wanted and s.layouts and s.layouts[wanted] then
-        return s.layouts[wanted], s.baselineLayout
+    if wanted and cfg.layouts and cfg.layouts[wanted] then
+        return cfg.layouts[wanted], cfg.baselineLayout
     end
     local C = CludesUI._CondOv
     local cond = C and C.ResolveGid and C.ResolveGid() or nil
@@ -1215,7 +1215,7 @@ function CludesUI.SpecOverrides_EffectiveUnlockLayer()
         local condStore = C.GetUnlockStore and C.GetUnlockStore()
         local layer = condStore and condStore.layouts and condStore.layouts[cond]
         if layer then
-            return layer, s.baselineLayout
+            return layer, cfg.baselineLayout
         end
     end
     return nil

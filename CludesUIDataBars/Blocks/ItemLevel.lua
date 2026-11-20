@@ -76,15 +76,15 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
 
     -- The text for the current averages and settings.
     local function Text()
-        local s = Settings()
+        local cfg = Settings()
         local all, equipped = Averages()
         -- Shared with the options' "Band" colour swatch and its preview.
         K.lastAvgIlvl = equipped or all
-        local decimals = s.precision or 0
+        local decimals = cfg.precision or 0
         local body
-        if s.value == "total" then
+        if cfg.value == "total" then
             body = Show(all, decimals)
-        elseif s.value == "both" then
+        elseif cfg.value == "both" then
             body = Show(equipped, decimals) .. " / " .. Show(all, decimals)
         else
             body = Show(equipped, decimals)
@@ -92,7 +92,7 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
         -- Bar text is set directly, not through the tooltip helpers that
         -- translate, so the short prefix is translated here; the long one is
         -- the game's own translated label.
-        local prefix = s.prefix or "short"
+        local prefix = cfg.prefix or "short"
         if prefix == "short" then
             return CludesUI.L(L["ILVL"]) .. " " .. body
         elseif prefix == "long" then

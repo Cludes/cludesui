@@ -499,15 +499,15 @@ local function BuildRow(defaults)
     -- The countdown, written engine-side from the row's duration object.
     local fmt = C_DurationUtil.CreateDurationTextBinding and TimeFormatter()
     if fmt then
-        local b = C_DurationUtil.CreateDurationTextBinding()
-        b:SetFontString(swingTime)
-        b:SetDuration(swingRow._durObj)
-        b:SetFormatter(fmt)
-        b:SetUpdateInterval(0.05)
-        b:SetExpiredText("")
-        b:SetZeroDurationText("")
-        b:SetEnabled(false)
-        swingRow._timeBind = b
+        local widget = C_DurationUtil.CreateDurationTextBinding()
+        widget:SetFontString(swingTime)
+        widget:SetDuration(swingRow._durObj)
+        widget:SetFormatter(fmt)
+        widget:SetUpdateInterval(0.05)
+        widget:SetExpiredText("")
+        widget:SetZeroDurationText("")
+        widget:SetEnabled(false)
+        swingRow._timeBind = widget
         swingRow._timeBindOn = false
     end
 
@@ -890,16 +890,16 @@ local function CueBind(swingRow)
         return nil
     end
     swingRow._cueObj = C_DurationUtil.CreateDuration()
-    local b = C_DurationUtil.CreateDurationTextBinding()
-    b:SetFontString(swingRow._time)
-    b:SetDuration(swingRow._cueObj)
-    b:SetFormatter(fmt)
-    b:SetUpdateInterval(0.05)
-    b:SetExpiredText(CludesUI.L("Still"))
-    b:SetZeroDurationText(CludesUI.L("Still"))
-    b:SetEnabled(false)
-    swingRow._cueBind, swingRow._cueBindOn = b, false
-    return b
+    local widget = C_DurationUtil.CreateDurationTextBinding()
+    widget:SetFontString(swingRow._time)
+    widget:SetDuration(swingRow._cueObj)
+    widget:SetFormatter(fmt)
+    widget:SetUpdateInterval(0.05)
+    widget:SetExpiredText(CludesUI.L("Still"))
+    widget:SetZeroDurationText(CludesUI.L("Still"))
+    widget:SetEnabled(false)
+    swingRow._cueBind, swingRow._cueBindOn = widget, false
+    return widget
 end
 
 -- The time text. Mid-swing the engine writes it: the swing's countdown, or with
@@ -907,8 +907,8 @@ end
 -- Still and, in the swing's last latency, Go. Every other state writes its own
 -- text with both bindings off. Runs at each edge and on a settings pass.
 function SyncTimeText(swingRow, conf)
-    local b = swingRow._timeBind
-    if not b then
+    local widget = swingRow._timeBind
+    if not widget then
         return
     end
     local phaseNum
@@ -948,12 +948,12 @@ function SyncTimeText(swingRow, conf)
         end
         if target ~= swingRow._bindObj then
             swingRow._bindObj = target
-            b:SetDuration(target)
+            widget:SetDuration(target)
         end
     end
     if swinging ~= swingRow._timeBindOn then
         swingRow._timeBindOn = swinging
-        b:SetEnabled(swinging)
+        widget:SetEnabled(swinging)
     end
     local callback = swingRow._cueBind
     local moveOn = phaseNum == "move"
@@ -965,7 +965,7 @@ function SyncTimeText(swingRow, conf)
         callback:SetEnabled(moveOn)
     end
     if swinging then
-        b:UpdateFontString()
+        widget:UpdateFontString()
     elseif moveOn then
         callback:UpdateFontString()
     elseif phaseNum == "still" then

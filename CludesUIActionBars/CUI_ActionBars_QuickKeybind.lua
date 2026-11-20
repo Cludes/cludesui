@@ -502,10 +502,10 @@ local function EAB_UpdateQuickKeybindVisibility(show)
     if show then
         for _, details in ipairs(BAR_CONFIG) do
             local key = details.key
-            local s = ABAR.db and ABAR.db.profile and ABAR.db.profile.bars and ABAR.db.profile.bars[key]
+            local cfg = ABAR.db and ABAR.db.profile and ABAR.db.profile.bars and ABAR.db.profile.bars[key]
             local widget = barFrames[key]
             local status = hoverStates[key]
-            if widget and ShouldQuickKeybindSurfaceBar(s) and s.mouseoverEnabled then
+            if widget and ShouldQuickKeybindSurfaceBar(cfg) and cfg.mouseoverEnabled then
                 StopFade(widget, 1)
                 if status then
                     status.fadeDir = "in"
@@ -626,25 +626,25 @@ _quickKeybindState.InitButtons = function()
                                     highlight:SetVertexColor(hr, hg, hb, 1)
                                 end
                                 local bk = EFD(self).barKey
-                                local s = bk
+                                local cfg = bk
                                     and ABAR.db
                                     and ABAR.db.profile
                                     and ABAR.db.profile.bars
                                     and ABAR.db.profile.bars[bk]
-                                if s and Pix then
-                                    local color = s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
+                                if cfg and Pix then
+                                    local color = cfg.borderColor or { r = 0, g = 0, b = 0, a = 1 }
                                     local cr, cg, callback, ca = color.r, color.g, color.b, color.a or 1
-                                    if s.borderClassColor then
+                                    if cfg.borderClassColor then
                                         local _, classTok = UnitClass("player")
                                         local cc = classTok and RAID_CLASS_COLORS[classTok]
                                         if cc then
                                             cr, cg, callback = cc.r, cc.g, cc.b
                                         end
                                     end
-                                    local sz, px = ResolveBorderThickness(s)
+                                    local sz, px = ResolveBorderThickness(cfg)
                                     -- Solid strips: an exact size flows only for a solid bar
                                     -- (a textured bar's exact size is its edge art, not a strip).
-                                    if px and (s.borderTexture or "solid") == "solid" then
+                                    if px and (cfg.borderTexture or "solid") == "solid" then
                                         sz = px
                                     end
                                     if sz > 0 then

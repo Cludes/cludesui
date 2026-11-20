@@ -267,12 +267,12 @@ end
 
 -- nf, valueType -> precision, threshold (stored values validated, else the defaults)
 local function TypeSettings(nf, valueType)
-    local t = nf and nf.types and nf.types[valueType]
-    local precision = t and t.precision
+    local tbl = nf and nf.types and nf.types[valueType]
+    local precision = tbl and tbl.precision
     if not VALID_PRECISION[precision] then
         precision = "standard"
     end
-    local threshold = t and t.threshold
+    local threshold = tbl and tbl.threshold
     if not VALID_THRESHOLD[threshold] then
         threshold = DEFAULT_THRESHOLD
     end

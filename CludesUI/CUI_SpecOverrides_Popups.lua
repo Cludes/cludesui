@@ -355,17 +355,17 @@ local function BuildNameIconPopup(groupDefs, onCreate)
     for idx, groupDef in ipairs(groupDefs) do
         local col = (idx - 1) % PER_ROW
         local rowI = math.floor((idx - 1) / PER_ROW)
-        local b = CreateFrame("Button", nil, dialog)
-        b:SetSize(SZ, SZ)
-        b:SetPoint("TOPLEFT", dialog, "TOPLEFT", 20 + col * (SZ + GAP), -122 - rowI * (SZ + GAP))
-        local t = b:CreateTexture(nil, "ARTWORK")
+        local widget = CreateFrame("Button", nil, dialog)
+        widget:SetSize(SZ, SZ)
+        widget:SetPoint("TOPLEFT", dialog, "TOPLEFT", 20 + col * (SZ + GAP), -122 - rowI * (SZ + GAP))
+        local t = widget:CreateTexture(nil, "ARTWORK")
         t:SetAllPoints()
         ApplyGroupIcon(t, groupDef)
         -- The icon takes the tile's round shape.
-        local brd = CludesUI.MakeRoundedBorder(b, 1, 1, 1, 0.10, t)
-        b._def = groupDef
-        b._brd = brd
-        b:SetScript("OnClick", function(self)
+        local brd = CludesUI.MakeRoundedBorder(widget, 1, 1, 1, 0.10, t)
+        widget._def = groupDef
+        widget._brd = brd
+        widget:SetScript("OnClick", function(self)
             dialog._selectedIcon = self._def
             for _, otherBtn in ipairs(dialog._iconBtns) do
                 if otherBtn._brd and otherBtn._brd.SetColor then
@@ -377,8 +377,8 @@ local function BuildNameIconPopup(groupDefs, onCreate)
                 otherBtn:SetAlpha(otherBtn == self and 1 or 0.7)
             end
         end)
-        b:SetAlpha(0.7)
-        dialog._iconBtns[#dialog._iconBtns + 1] = b
+        widget:SetAlpha(0.7)
+        dialog._iconBtns[#dialog._iconBtns + 1] = widget
     end
 
     local create = CreateFrame("Button", nil, dialog)

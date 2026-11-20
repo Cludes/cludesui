@@ -1213,25 +1213,25 @@ end
 local _purchaseBtnChar, _purchaseBtnWarband
 do
     local function MakeSecurePurchaseBtn(bankKind)
-        local b = CreateFrame("Button", nil, sideBar, "BankPanelPurchaseButtonScriptTemplate")
-        b:SetAttribute("overrideBankType", bankKind)
-        b:SetFrameStrata(sideBar:GetFrameStrata())
-        b:SetFrameLevel(sideBar:GetFrameLevel() + 20)
-        b:EnableMouse(true)
-        b:SetAlpha(0)
-        b:Hide()
+        local widget = CreateFrame("Button", nil, sideBar, "BankPanelPurchaseButtonScriptTemplate")
+        widget:SetAttribute("overrideBankType", bankKind)
+        widget:SetFrameStrata(sideBar:GetFrameStrata())
+        widget:SetFrameLevel(sideBar:GetFrameLevel() + 20)
+        widget:EnableMouse(true)
+        widget:SetAlpha(0)
+        widget:Hide()
         -- Hover: brighten the visual entry underneath
-        b:SetScript("OnEnter", function(self)
+        widget:SetScript("OnEnter", function(self)
             if self._visualBtn then
                 self._visualBtn._bg:SetColorTexture(1, 1, 1, 0.06)
             end
         end)
-        b:SetScript("OnLeave", function(self)
+        widget:SetScript("OnLeave", function(self)
             if self._visualBtn then
                 self._visualBtn._bg:SetColorTexture(1, 1, 1, 0)
             end
         end)
-        return b
+        return widget
     end
     _purchaseBtnChar = MakeSecurePurchaseBtn(Enum.BankType.Character)
     _purchaseBtnWarband = MakeSecurePurchaseBtn(Enum.BankType.Account)

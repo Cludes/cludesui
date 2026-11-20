@@ -263,17 +263,17 @@ end
 local scratch, scratchN, depth = {}, {}, 0
 local function Pack(...)
     depth = depth + 1
-    local t = scratch[depth]
-    if not t then
-        t = {}
-        scratch[depth] = t
+    local tbl = scratch[depth]
+    if not tbl then
+        tbl = {}
+        scratch[depth] = tbl
     end
     local num = select("#", ...)
     for i = 1, num do
-        t[i] = (select(i, ...))
+        tbl[i] = (select(i, ...))
     end
     scratchN[depth] = num
-    return t, num
+    return tbl, num
 end
 local function Release()
     local t, num = scratch[depth], scratchN[depth]
@@ -662,12 +662,12 @@ local function O_SetScript(self, slotIndex, func)
         ExemptSlot(self, record, slotIndex, "set")
         return
     end
-    local s = record.scripts
-    if not s then
-        s = {}
-        record.scripts = s
+    local cfg = record.scripts
+    if not cfg then
+        cfg = {}
+        record.scripts = cfg
     end
-    s[slotIndex] = true
+    cfg[slotIndex] = true
 end
 
 local function O_HookScript(self, slotIndex, func, ...)
@@ -680,12 +680,12 @@ local function O_HookScript(self, slotIndex, func, ...)
         ExemptSlot(self, record, slotIndex, "hooked")
         return r
     end
-    local s = record.scripts
-    if not s then
-        s = {}
-        record.scripts = s
+    local cfg = record.scripts
+    if not cfg then
+        cfg = {}
+        record.scripts = cfg
     end
-    s[slotIndex] = true
+    cfg[slotIndex] = true
     return r
 end
 
@@ -967,12 +967,12 @@ local function ForgetPixelSnap(object)
 end
 
 local function ResetScripts(object, record, m, base)
-    local s = record.scripts
-    if s and next(s) then
+    local cfg = record.scripts
+    if cfg and next(cfg) then
         local set = m.SetScript
-        for slotIndex in pairs(s) do
+        for slotIndex in pairs(cfg) do
             set(object, slotIndex, base and base[slotIndex] or nil)
-            s[slotIndex] = nil
+            cfg[slotIndex] = nil
         end
     end
 end
@@ -1250,10 +1250,10 @@ local function FreezeWalk(hostFrame, hostRec, hostMoved)
     end
     local ref = hostMoved and PlacedBy(hostFrame) or hostFrame
     for i = 1, frzN do
-        local f = frzList[i]
+        local frame = frzList[i]
         depBudget = 64
-        if f ~= ref and f:IsShown() and PlacedByMoved(f, serial) then
-            FreezeTo(f, ref)
+        if frame ~= ref and frame:IsShown() and PlacedByMoved(frame, serial) then
+            FreezeTo(frame, ref)
         end
     end
 end
@@ -2789,22 +2789,22 @@ function Pool._DevVerifyReset()
     local function VerifyFrame(frameType, template, entries)
         local kindName = template and (frameType .. "|" .. template) or frameType
         local a = _G.CreateFrame(frameType, nil, hostFrame, template)
-        local b = Pool.CreateFrame(frameType, nil, hostFrame, template)
-        if not REC[b] then
+        local widget = Pool.CreateFrame(frameType, nil, hostFrame, template)
+        if not REC[widget] then
             Say(kindName, "pool", "pooled", "not pooled")
             return
         end
-        local finish = Run(kindName, entries, a, b, DressFrame)
+        local finish = Run(kindName, entries, a, widget, DressFrame)
         local roleMap = ENGINE_ROLES[frameType]
         if roleMap then
             for _, roleName in ipairs(roleMap) do
-                if roleName.make and b[roleName.make] then
+                if roleName.make and widget[roleName.make] then
                     if roleName.text then
-                        pcall(b.SetNormalFontObject, b, _G.GameFontNormal)
+                        pcall(widget.SetNormalFontObject, widget, _G.GameFontNormal)
                     end
-                    pcall(b[roleName.make], b, roleName.text and "x" or ART)
+                    pcall(widget[roleName.make], widget, roleName.text and "x" or ART)
                 end
-                local registry = b[roleName.get] and SafeCall(b[roleName.get], b)
+                local registry = widget[roleName.get] and SafeCall(widget[roleName.get], widget)
                 if registry then
                     if registry.SetVertexColor then
                         pcall(registry.SetVertexColor, registry, 1, 0, 0, 0.5)
@@ -2818,23 +2818,23 @@ function Pool._DevVerifyReset()
             end
         end
         if frameType == "ScrollFrame" then
-            local childFrame = _G.CreateFrame("Frame", nil, b)
+            local childFrame = _G.CreateFrame("Frame", nil, widget)
             childFrame:SetSize(10, 500)
-            b:SetScrollChild(childFrame)
+            widget:SetScrollChild(childFrame)
         end
-        Pool._ResetForTest(b)
+        Pool._ResetForTest(widget)
         finish()
         if frameType == "ScrollFrame" then
-            local ca, checkBtn = a:GetScrollChild(), b:GetScrollChild()
+            local ca, checkBtn = a:GetScrollChild(), widget:GetScrollChild()
             if ca ~= nil or (checkBtn ~= nil and not Pool._IsPlaceholder(checkBtn)) then
                 Say(kindName, "GetScrollChild", ca, checkBtn)
             end
         end
         if roleMap then
             for _, roleName in ipairs(roleMap) do
-                local ga, gb = a[roleName.get], b[roleName.get]
+                local ga, gb = a[roleName.get], widget[roleName.get]
                 local ra = ga and SafeCall(ga, a)
-                local rebuild = gb and SafeCall(gb, b)
+                local rebuild = gb and SafeCall(gb, widget)
                 if rebuild and not roleName.live and ra == nil and rebuild:IsShown() then
                     local drawn = (rebuild.GetTexture and (rebuild:GetTexture() or (rebuild.GetAtlas and rebuild:GetAtlas())))
                         or (rebuild.GetText and rebuild:GetText() ~= "" and rebuild:GetText())
@@ -2845,16 +2845,16 @@ function Pool._DevVerifyReset()
                 if roleName.make and a[roleName.make] then
                     if roleName.text then
                         pcall(a.SetNormalFontObject, a, _G.GameFontNormal)
-                        pcall(b.SetNormalFontObject, b, _G.GameFontNormal)
+                        pcall(widget.SetNormalFontObject, widget, _G.GameFontNormal)
                     end
                     pcall(a[roleName.make], a, roleName.text and "y" or ART)
-                    pcall(b[roleName.make], b, roleName.text and "y" or ART)
+                    pcall(widget[roleName.make], widget, roleName.text and "y" or ART)
                     ra = ga and SafeCall(ga, a)
-                    rebuild = gb and SafeCall(gb, b)
+                    rebuild = gb and SafeCall(gb, widget)
                 end
                 if ra and rebuild then
                     for _, g in ipairs(REGION_LOOK) do
-                        Compare(kindName, roleName.get .. ":" .. g, ra, rebuild, g, g == "GetPoint" and { 1 } or nil, a, b)
+                        Compare(kindName, roleName.get .. ":" .. g, ra, rebuild, g, g == "GetPoint" and { 1 } or nil, a, widget)
                     end
                 elseif (ra == nil) ~= (rebuild == nil) and (roleName.make or roleName.live) then
                     Say(kindName, roleName.get, ra, rebuild)
@@ -2939,12 +2939,12 @@ function Pool._DevVerifyReset()
     -- back, the pool must retire it (never hand it out again)
     do
         local a = _G.CreateFrame("EditBox", nil, hostFrame)
-        local b = Pool.CreateFrame("EditBox", nil, hostFrame)
-        if REC[b] and pcall(b.SetHistoryLines, b, 5) then
-            Pool._ResetForTest(b)
-            local r = REC[b]
-            if not SameVal(a:GetHistoryLines(), b:GetHistoryLines()) and not (r and r.engine) then
-                Say("EditBox", "GetHistoryLines (handed out again)", a:GetHistoryLines(), b:GetHistoryLines())
+        local widget = Pool.CreateFrame("EditBox", nil, hostFrame)
+        if REC[widget] and pcall(widget.SetHistoryLines, widget, 5) then
+            Pool._ResetForTest(widget)
+            local r = REC[widget]
+            if not SameVal(a:GetHistoryLines(), widget:GetHistoryLines()) and not (r and r.engine) then
+                Say("EditBox", "GetHistoryLines (handed out again)", a:GetHistoryLines(), widget:GetHistoryLines())
             end
         end
         a:Hide()

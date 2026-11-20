@@ -25,13 +25,13 @@ mod.IMMUNITY_DEFAULTS = {
 function mod.ImmunitySettings()
     local p = mod.RaidLeadDB()
     p.immunities = p.immunities or {}
-    local s = p.immunities
-    if s.enabled == nil then
-        s.enabled = true
+    local cfg = p.immunities
+    if cfg.enabled == nil then
+        cfg.enabled = true
     end
-    s.size = s.size or 40
-    s.extra = s.extra or {}
-    return s
+    cfg.size = cfg.size or 40
+    cfg.extra = cfg.extra or {}
+    return cfg
 end
 
 local function SpellSet()
@@ -70,16 +70,16 @@ local function Build()
     if type(AuraContainerSortMethod) ~= "table" then
         return
     end
-    local s = mod.ImmunitySettings()
+    local cfg = mod.ImmunitySettings()
     anchor = CreateFrame("Frame", "CludesUIRaidLeadImmunities", UIParent)
-    anchor:SetSize(s.size * 3 + 8, s.size)
+    anchor:SetSize(cfg.size * 3 + 8, cfg.size)
     ApplyPosition()
     local success, c = pcall(CreateFrame, "AuraContainer", nil, anchor, "CustomAuraContainerTemplate")
     if not success or not c then
         rejected = true
         return
     end
-    c:SetSize(s.size, s.size)
+    c:SetSize(cfg.size, cfg.size)
     c:SetFlowLayoutAxis(AnchorUtil.FlowLayoutAxis.Horizontal)
     c:SetFlowLayoutAnchorPoint("TOPLEFT")
     c:SetFlowLayoutGrowthDirection(AnchorUtil.FlowDirection.Right, AnchorUtil.FlowDirection.Down)
@@ -100,7 +100,7 @@ local function Build()
             cd:SetReverse(true)
             button:SetDurationCooldown(cd)
         end,
-        layout = { elementSpacing = 4, lineSpacing = 4, elementWidth = s.size, elementHeight = s.size },
+        layout = { elementSpacing = 4, lineSpacing = 4, elementWidth = cfg.size, elementHeight = cfg.size },
     })
     if not added then
         rejected = true
@@ -116,21 +116,21 @@ function mod.RefreshImmunities()
     if not boxHolder then
         return
     end
-    local s = mod.ImmunitySettings()
+    local cfg = mod.ImmunitySettings()
     pcall(boxHolder.SetAuraGroupCandidateFilters, boxHolder, "immunities", { includeSpellIDs = SpellSet() })
     pcall(
         boxHolder.SetAuraGroupLayout,
         boxHolder,
         "immunities",
-        { elementSpacing = 4, lineSpacing = 4, elementWidth = s.size, elementHeight = s.size }
+        { elementSpacing = 4, lineSpacing = 4, elementWidth = cfg.size, elementHeight = cfg.size }
     )
-    if s.enabled then
+    if cfg.enabled then
         boxHolder:SetUnit("player")
     end
-    boxHolder:SetEnabled(s.enabled)
+    boxHolder:SetEnabled(cfg.enabled)
     if not InCombatLockdown() then
-        boxHolder:SetShown(s.enabled)
-        anchor:SetSize(s.size * 3 + 8, s.size)
+        boxHolder:SetShown(cfg.enabled)
+        anchor:SetSize(cfg.size * 3 + 8, cfg.size)
     end
 end
 
@@ -162,8 +162,8 @@ eventFrame:SetScript("OnEvent", function()
                 return anchor
             end,
             getSize = function()
-                local s = mod.ImmunitySettings()
-                return s.size * 3 + 8, s.size
+                local cfg = mod.ImmunitySettings()
+                return cfg.size * 3 + 8, cfg.size
             end,
             savePos = function(_, anchorPoint, relPoint, posX, posY)
                 mod.ImmunitySettings().pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }

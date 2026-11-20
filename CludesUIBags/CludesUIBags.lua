@@ -226,8 +226,8 @@ do
     -- setting: bagAutoOpenWindows or bagAutoCloseWindows, which hold false for an
     -- unselected window. A window not listed is always on.
     function mod.BagAutoWindowOn(setting, key)
-        local t = BP()[setting]
-        return not (key and t and t[key] == false)
+        local tbl = BP()[setting]
+        return not (key and tbl and tbl[key] == false)
     end
 end
 
@@ -309,9 +309,9 @@ local function CurrencyOrder()
         byChar = {}
         CludesUIDB.bagCurrencyByChar = byChar
     end
-    local t = byChar[key]
-    if type(t) ~= "table" then
-        t = {}
+    local tbl = byChar[key]
+    if type(tbl) ~= "table" then
+        tbl = {}
         -- Seed once per character from the legacy shared profile table. The
         -- legacy table is deliberately never deleted: a per-character
         -- migration is never a one-shot (a character that has not logged in
@@ -320,13 +320,13 @@ local function CurrencyOrder()
         if type(legacy) == "table" then
             for cID, sequence in pairs(legacy) do
                 if type(sequence) == "number" then
-                    t[cID] = sequence
+                    tbl[cID] = sequence
                 end
             end
         end
-        byChar[key] = t
+        byChar[key] = tbl
     end
-    return t
+    return tbl
 end
 CUI._BagsCurrencyOrder = CurrencyOrder
 

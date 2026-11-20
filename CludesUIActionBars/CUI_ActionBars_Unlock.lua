@@ -189,8 +189,8 @@ local function RegisterWithUnlockMode()
             group = "Action Bars",
             order = orderBase + position,
             isHidden = function()
-                local s = ABAR.db.profile.bars[details.key]
-                if not s then
+                local cfg = ABAR.db.profile.bars[details.key]
+                if not cfg then
                     return false
                 end
                 -- Honor the runtime "Toggle Action Bar" override the same way
@@ -201,7 +201,7 @@ local function RegisterWithUnlockMode()
                 if shade then
                     return shade == "never"
                 end
-                return ABAR.VisibilityCompat.IsNever(s) or (ABAR._padHide and s.gamepadHideBar == true)
+                return ABAR.VisibilityCompat.IsNever(cfg) or (ABAR._padHide and cfg.gamepadHideBar == true)
             end,
             getFrame = function()
                 return barFrames[details.key]
@@ -228,39 +228,39 @@ local function RegisterWithUnlockMode()
                 if not (p and p.squareIcons) or mod.AB_Style() ~= "cui" then
                     return nil
                 end
-                local s = p.bars[details.key]
-                if not s then
+                local cfg = p.bars[details.key]
+                if not cfg then
                     return nil
                 end
-                local shape = s.buttonShape or "none"
+                local shape = cfg.buttonShape or "none"
                 if shape ~= "none" and shape ~= "cropped" then
                     return nil
                 end
-                local sz, px = mod.ResolveBorderThickness(s)
-                local color = s.borderColor
+                local sz, px = mod.ResolveBorderThickness(cfg)
+                local color = cfg.borderColor
                 return CludesUI.BorderMatchPad(
                     sz,
-                    s.borderTexture or "solid",
-                    s.borderTextureOffset,
-                    s.borderTextureOffsetY,
-                    s.borderTextureShiftX,
-                    s.borderTextureShiftY,
+                    cfg.borderTexture or "solid",
+                    cfg.borderTextureOffset,
+                    cfg.borderTextureOffsetY,
+                    cfg.borderTextureShiftX,
+                    cfg.borderTextureShiftY,
                     "actionbars",
-                    s.borderThickness or "thin",
+                    cfg.borderThickness or "thin",
                     px,
                     nil,
                     color and color.a or 1
                 )
             end,
             setWidth = function(_, wid)
-                local s = ABAR.db.profile.bars[details.key]
-                if not s then
+                local cfg = ABAR.db.profile.bars[details.key]
+                if not cfg then
                     return
                 end
                 -- Reverse-engineer square button size from total bar width
                 -- using physical pixel math to distribute remainder pixels.
-                local numIcons = s.overrideNumIcons or s.numIcons or details.count
-                local numRows = s.overrideNumRows or s.numRows or 1
+                local numIcons = cfg.overrideNumIcons or cfg.numIcons or details.count
+                local numRows = cfg.overrideNumRows or cfg.numRows or 1
                 if numRows < 1 then
                     numRows = 1
                 end
@@ -268,9 +268,9 @@ local function RegisterWithUnlockMode()
                 if stride < 1 then
                     stride = 1
                 end
-                local isVert = (s.orientation == "vertical")
-                local pad = s.buttonPadding or 2
-                local shape = mod.AB_LayoutShape(s)
+                local isVert = (cfg.orientation == "vertical")
+                local pad = cfg.buttonPadding or 2
+                local shape = mod.AB_LayoutShape(cfg)
                 local cols = isVert and numRows or stride
                 local Pix = CludesUI and CludesUI.PP
                 local onePx = Pix and Pix.mult or 1
@@ -284,8 +284,8 @@ local function RegisterWithUnlockMode()
                     rawPhysBtn = 8
                 end
                 local basePhysBtn = math.floor(rawPhysBtn)
-                s.buttonWidth = basePhysBtn * onePx
-                s.buttonHeight = s.buttonWidth
+                cfg.buttonWidth = basePhysBtn * onePx
+                cfg.buttonHeight = cfg.buttonWidth
                 -- Compute remainder pixels to distribute across columns
                 local shapePhys = 0
                 if shape ~= "none" and shape ~= "cropped" then
@@ -294,21 +294,21 @@ local function RegisterWithUnlockMode()
                 local idealPhys = cols * (basePhysBtn + shapePhys) + (cols - 1) * physPad
                 local extra = physTarget - idealPhys
                 if extra > 0 and extra <= cols then
-                    s._matchExtraPixels = extra
+                    cfg._matchExtraPixels = extra
                 else
-                    s._matchExtraPixels = nil
+                    cfg._matchExtraPixels = nil
                 end
                 LayoutBar(details.key)
             end,
             setHeight = function(_, hgt)
-                local s = ABAR.db.profile.bars[details.key]
-                if not s then
+                local cfg = ABAR.db.profile.bars[details.key]
+                if not cfg then
                     return
                 end
                 -- Reverse-engineer square button size from total bar height
                 -- using physical pixel math to distribute remainder pixels.
-                local numIcons = s.overrideNumIcons or s.numIcons or details.count
-                local numRows = s.overrideNumRows or s.numRows or 1
+                local numIcons = cfg.overrideNumIcons or cfg.numIcons or details.count
+                local numRows = cfg.overrideNumRows or cfg.numRows or 1
                 if numRows < 1 then
                     numRows = 1
                 end
@@ -316,9 +316,9 @@ local function RegisterWithUnlockMode()
                 if stride < 1 then
                     stride = 1
                 end
-                local isVert = (s.orientation == "vertical")
-                local pad = s.buttonPadding or 2
-                local shape = mod.AB_LayoutShape(s)
+                local isVert = (cfg.orientation == "vertical")
+                local pad = cfg.buttonPadding or 2
+                local shape = mod.AB_LayoutShape(cfg)
                 local rowList = isVert and stride or numRows
                 local Pix = CludesUI and CludesUI.PP
                 local onePx = Pix and Pix.mult or 1
@@ -334,8 +334,8 @@ local function RegisterWithUnlockMode()
                     rawPhysBtn = 8
                 end
                 local basePhysBtn = math.floor(rawPhysBtn)
-                s.buttonWidth = basePhysBtn * onePx
-                s.buttonHeight = s.buttonWidth
+                cfg.buttonWidth = basePhysBtn * onePx
+                cfg.buttonHeight = cfg.buttonWidth
                 -- Compute remainder pixels to distribute across rows
                 local shapePhys = 0
                 if shape ~= "none" and shape ~= "cropped" then
@@ -348,9 +348,9 @@ local function RegisterWithUnlockMode()
                 local idealPhys = rowList * croppedH + (rowList - 1) * physPad
                 local extra = physTarget - idealPhys
                 if extra > 0 and extra <= rowList then
-                    s._matchExtraPixelsH = extra
+                    cfg._matchExtraPixelsH = extra
                 else
-                    s._matchExtraPixelsH = nil
+                    cfg._matchExtraPixelsH = nil
                 end
                 LayoutBar(details.key)
             end,
@@ -374,8 +374,8 @@ local function RegisterWithUnlockMode()
                 -- bars, leaving the follow off and the pure pin unchanged.
                 do
                     local record = ABAR.db.profile.barPositions[details.key]
-                    local s = ABAR.db.profile.bars[details.key]
-                    local gd = s and (s.growDirection or "up"):upper()
+                    local cfg = ABAR.db.profile.bars[details.key]
+                    local gd = cfg and (cfg.growDirection or "up"):upper()
                     if record and gd and gd ~= "CENTER" and CludesUI.GetAnchorTargetCenterUI then
                         record.tgtx, record.tgty = CludesUI.GetAnchorTargetCenterUI(details.key)
                         if CludesUI.GetAnchorTargetEdgesUI then
@@ -401,8 +401,8 @@ local function RegisterWithUnlockMode()
                 -- with growth direction need edge bounds applied first so the
                 -- live-edge reading in ApplyAnchorPosition has correct data.
                 if CludesUI and CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(details.key) then
-                    local s = ABAR.db.profile.bars[details.key]
-                    local gd = s and (s.growDirection or "up"):upper()
+                    local cfg = ABAR.db.profile.bars[details.key]
+                    local gd = cfg and (cfg.growDirection or "up"):upper()
                     if gd and gd ~= "CENTER" and gd ~= "UP" then
                         local place = ABAR.db.profile.barPositions[details.key]
                         local widget = barFrames[details.key]
@@ -570,8 +570,8 @@ local function RegisterWithUnlockMode()
     if CludesUI.ReapplyOwnAnchor then
         for _, details in ipairs(BAR_CONFIG) do
             if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(details.key) then
-                local s = ABAR.db.profile.bars[details.key]
-                local gd = s and (s.growDirection or "up"):upper()
+                local cfg = ABAR.db.profile.bars[details.key]
+                local gd = cfg and (cfg.growDirection or "up"):upper()
                 if not gd or gd == "CENTER" or gd == "UP" then
                     CludesUI.ReapplyOwnAnchor(details.key)
                 end

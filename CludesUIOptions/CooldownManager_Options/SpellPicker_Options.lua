@@ -1865,24 +1865,24 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     -- One scope row: _active drives BOTH the accent label colour and the
                     -- persistent white overlay (the "selected" look, same as a subnav item); _rest repaints from it.
                     local function MakeScopeItem(textValue)
-                        local b = CreateFrame("Button", nil, sInner)
-                        b:SetHeight(ITEM_H)
-                        b:SetFrameLevel(s:GetFrameLevel() + 2)
-                        local l = b:CreateFontString(nil, "OVERLAY")
+                        local widget = CreateFrame("Button", nil, sInner)
+                        widget:SetHeight(ITEM_H)
+                        widget:SetFrameLevel(s:GetFrameLevel() + 2)
+                        local l = widget:CreateFontString(nil, "OVERLAY")
                         l:SetFont(FONT_PATH, 11, GetCDMOptOutline())
                         l:SetPoint("LEFT", 10, 0)
                         l:SetJustifyH("LEFT")
                         l:SetText(textValue)
                         l:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                        local highlight = b:CreateTexture(nil, "ARTWORK")
+                        local highlight = widget:CreateTexture(nil, "ARTWORK")
                         highlight:SetAllPoints()
                         highlight:SetColorTexture(1, 1, 1, hlA)
                         highlight:SetAlpha(0)
-                        b._label = l
-                        b._hl = highlight
-                        b._active = false
-                        b._rest = function()
-                            if b._active then
+                        widget._label = l
+                        widget._hl = highlight
+                        widget._active = false
+                        widget._rest = function()
+                            if widget._active then
                                 local aR, aG, aB = CludesUI.GetAccentColor()
                                 l:SetTextColor(aR, aG, aB, 1)
                                 highlight:SetAlpha(1)
@@ -1891,17 +1891,17 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 highlight:SetAlpha(0)
                             end
                         end
-                        b:SetScript("OnEnter", function()
+                        widget:SetScript("OnEnter", function()
                             l:SetTextColor(1, 1, 1, 1)
                             highlight:SetAlpha(1)
                         end)
-                        b:SetScript("OnLeave", function()
-                            b._rest()
+                        widget:SetScript("OnLeave", function()
+                            widget._rest()
                         end)
-                        b._setText = function(t)
+                        widget._setText = function(t)
                             l:SetText(t)
                         end
-                        return b
+                        return widget
                     end
                     local thisBtn = MakeScopeItem(CludesUI.L("Apply to This Spell"))
                     local b1 = MakeScopeItem(CludesUI.L("Apply to Bar"))
@@ -3396,9 +3396,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             scalarApply = true,
                             dynamicLabel = function()
                                 local baseCaption = CludesUI.L("Threshold Seconds")
-                                local s = armedSeconds()
-                                if s > 0 then
-                                    return baseCaption .. " (" .. s .. "s)"
+                                local text = armedSeconds()
+                                if text > 0 then
+                                    return baseCaption .. " (" .. text .. "s)"
                                 end
                                 return baseCaption
                             end,
@@ -3590,9 +3590,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 scalarApply = true,
                                 dynamicLabel = function()
                                     local baseCaption = CludesUI.L("Also Show Below")
-                                    local s = tonumber(spellSettings.missingShowBelow) or 0
-                                    if s > 0 then
-                                        return baseCaption .. " (" .. s .. "s)"
+                                    local text = tonumber(spellSettings.missingShowBelow) or 0
+                                    if text > 0 then
+                                        return baseCaption .. " (" .. text .. "s)"
                                     end
                                     return baseCaption
                                 end,

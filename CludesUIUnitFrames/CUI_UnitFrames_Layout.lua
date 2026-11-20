@@ -82,9 +82,9 @@ end
 -- once its Border Style leaves "Inherit (Main Frames)" (borderCustom), else the
 -- mini frame donor's. Boss1-5 share the one boss table.
 function mod.UF_BossBorderSettings()
-    local s = saved.profile.boss
-    if s and s.borderCustom == true then
-        return s
+    local cfg = saved.profile.boss
+    if cfg and cfg.borderCustom == true then
+        return cfg
     end
     return GetMiniDonorSettings()
 end

@@ -62,18 +62,18 @@ end
 -- Formatting -------------------------------------------------------------------
 
 function mod.Fmt(num)
-    local s = tostring(math.floor(num + 0.5))
+    local text = tostring(math.floor(num + 0.5))
     local sign = ""
-    if s:sub(1, 1) == "-" then
-        sign, s = "-", s:sub(2)
+    if text:sub(1, 1) == "-" then
+        sign, text = "-", text:sub(2)
     end
-    s = s:reverse():gsub("(%d%d%d)", "%1,"):reverse()
-    return sign .. (s:gsub("^,", ""))
+    text = text:reverse():gsub("(%d%d%d)", "%1,"):reverse()
+    return sign .. (text:gsub("^,", ""))
 end
 
 function mod.DateText(t, long)
-    local s = date(long and "%a %d %b" or "%d %b", t)
-    return (s:gsub(" 0", " "):gsub("^0", ""))
+    local text = date(long and "%a %d %b" or "%d %b", t)
+    return (text:gsub(" 0", " "):gsub("^0", ""))
 end
 
 function mod.Hex(cfg)
@@ -337,24 +337,24 @@ function mod.Summary(regionFrame, history, nowTime, you)
         if pts and #pts > 0 then
             local fit = mod.Fit(pts, regionFrame.startsAt)
             local lineNow = mod.LineValue(pts, fit, nowTime)
-            local s = { tier = tier, pts = pts, fit = fit, lineNow = lineNow, gap = lineNow - you }
-            if s.gap > 0 then
-                s.days = mod.Crossing(pts, fit, nowTime, you, pace)
-                s.eta = s.days and (nowTime + s.days * DAY)
-                s.afterEnd = s.eta and endsAt and s.eta > endsAt
+            local cfg = { tier = tier, pts = pts, fit = fit, lineNow = lineNow, gap = lineNow - you }
+            if cfg.gap > 0 then
+                cfg.days = mod.Crossing(pts, fit, nowTime, you, pace)
+                cfg.eta = cfg.days and (nowTime + cfg.days * DAY)
+                cfg.afterEnd = cfg.eta and endsAt and cfg.eta > endsAt
                 -- The same crossing against the low and high side of the line's range.
                 local early, late =
                     mod.Crossing(pts, fit, nowTime, you, pace, -1),
                     mod.Crossing(pts, fit, nowTime, you, pace, 1)
-                s.etaEarly = early and (nowTime + early * DAY)
-                s.etaLate = late and (nowTime + late * DAY)
+                cfg.etaEarly = early and (nowTime + early * DAY)
+                cfg.etaLate = late and (nowTime + late * DAY)
             end
             -- Where the line should finish, and the daily gain that reaches it.
             if daysLeft then
-                s.lineEndLow, s.lineEnd, s.lineEndHigh = mod.LineRange(pts, fit, endsAt)
-                s.need = math.max(0, (s.lineEnd - you) / math.max(daysLeft, 1))
+                cfg.lineEndLow, cfg.lineEnd, cfg.lineEndHigh = mod.LineRange(pts, fit, endsAt)
+                cfg.need = math.max(0, (cfg.lineEnd - you) / math.max(daysLeft, 1))
             end
-            tiers[#tiers + 1] = s
+            tiers[#tiers + 1] = cfg
         end
     end
     return {

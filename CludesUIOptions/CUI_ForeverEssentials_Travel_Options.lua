@@ -218,11 +218,11 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
 
     local texValues, texOrder = {}, {}
     do
-        local t = FT.textures
-        CludesUI.AppendSharedMediaTextures(t.names, t.order, nil, t.lookup)
-        for _, key in ipairs(t.order) do
+        local tbl = FT.textures
+        CludesUI.AppendSharedMediaTextures(tbl.names, tbl.order, nil, tbl.lookup)
+        for _, key in ipairs(tbl.order) do
             if key ~= "---" then
-                texValues[key] = t.names[key] or key
+                texValues[key] = tbl.names[key] or key
             end
             texOrder[#texOrder + 1] = key
         end

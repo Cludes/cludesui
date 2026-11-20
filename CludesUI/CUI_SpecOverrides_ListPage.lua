@@ -647,10 +647,10 @@ local function PromoteGroupToProfile(group)
     --    per-key baseline gap-fill, grow keys under the authority rule, elems
     --    overlaid onto the baseline's. All copies -- the new baseline shares no
     --    tables with the wiped fork buckets.
-    local s = GetUnlockStore()
-    if s then
-        local layerRec = s.layouts and s.layouts[group.id]
-        local base = s.baselineLayout
+    local cfg = GetUnlockStore()
+    if cfg then
+        local layerRec = cfg.layouts and cfg.layouts[group.id]
+        local base = cfg.baselineLayout
         if layerRec then
             local nb = {
                 anchors = {},
@@ -741,10 +741,10 @@ local function PromoteGroupToProfile(group)
                     nb.elems[k] = DeepCopy(record)
                 end
             end
-            s.baselineLayout = nb
+            cfg.baselineLayout = nb
         end
-        wipe(s.layouts)
-        s.active = nil
+        wipe(cfg.layouts)
+        cfg.active = nil
     end
 
     -- 3) BUFF MANAGER: BM layers are complete wholesale subtrees; the fork

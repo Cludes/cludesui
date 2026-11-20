@@ -175,20 +175,20 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
     local drawn -- money and slot count as last drawn
 
     local function State()
-        local s = Settings()
-        return (Ledger.Money() or 0) .. "|" .. (s.showBagSpace == true and FreeSlots() or "-")
+        local cfg = Settings()
+        return (Ledger.Money() or 0) .. "|" .. (cfg.showBagSpace == true and FreeSlots() or "-")
     end
 
     -- The money text, coin coloured or plain (plain on hover, so the accent shows).
     local function MoneyText(money, coloured)
-        local s = Settings()
+        local cfg = Settings()
         return mod.FormatMoney(
             money,
             coloured,
-            s.showSmall == true,
-            s.coinIcons == true,
-            s.abbreviate == true,
-            s.forceEnglishUnits == true
+            cfg.showSmall == true,
+            cfg.coinIcons == true,
+            cfg.abbreviate == true,
+            cfg.forceEnglishUnits == true
         )
     end
 
@@ -211,12 +211,12 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     function inst:Refresh()
-        local s = Settings()
+        local cfg = Settings()
         K.SetBlockIcon(iconTex, blockCfg)
         local barH = barCtx.GetThickness()
         local fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
         -- The bag icon runs 4px bigger than the text, and sits 2px closer.
-        local iconSize = s.showIcons ~= false and fontSize + 4 or 0
+        local iconSize = cfg.showIcons ~= false and fontSize + 4 or 0
         local gap = K.ICON_GAP - 2
         local money = Ledger.Money() or 0
         local coinColours = blockCfg.useCoinColor == true and not hovered
@@ -229,11 +229,11 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
             -- One coin per line.
             local lines = mod.MoneyTokens(
                 money,
-                s.showSmall == true,
-                s.coinIcons == true,
+                cfg.showSmall == true,
+                cfg.coinIcons == true,
                 coinColours,
-                s.abbreviate == true,
-                s.forceEnglishUnits == true
+                cfg.abbreviate == true,
+                cfg.forceEnglishUnits == true
             )
             mod.SetFont(label, min(fontSize, max(10, floor(K.CONTENT_BASE * 0.52 + 0.5))), barCtx.cfg)
             label:SetText(concat(lines, "\n"))
@@ -241,7 +241,7 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
             label:SetText(MoneyText(money, coinColours))
         end
         label:SetTextColor(red, green, blue, 1)
-        if s.showBagSpace == true then
+        if cfg.showBagSpace == true then
             slots:SetText("(" .. FreeSlots() .. ")")
             slots:Show()
         else
@@ -297,7 +297,7 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
             label:SetPoint("LEFT", button, "LEFT", iconSize + gap, 0)
             slots:ClearAllPoints()
             slots:SetPoint("LEFT", label, "RIGHT", 4, 0)
-            local slotsW = s.showBagSpace == true and (slots:GetStringWidth() or 0) + 4 or 0
+            local slotsW = cfg.showBagSpace == true and (slots:GetStringWidth() or 0) + 4 or 0
             local moneyW = label:GetStringWidth() or 0
             local ruler = mod.MeasureFS()
             if ruler then
@@ -346,18 +346,18 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     local function ShowTooltip()
-        local s = Settings()
-        local small, icons = s.showSmall == true, s.coinIcons == true
+        local cfg = Settings()
+        local small, icons = cfg.showSmall == true, cfg.coinIcons == true
         local function Money(copper)
             return mod.FormatMoney(copper, true, small, icons)
         end
         -- Characters and the warbank need account tracking (Bags options);
         -- the session needs nothing.
         local tracking = Ledger.IsTracking()
-        local withChars = s.tipCharacters ~= false and tracking
+        local withChars = cfg.tipCharacters ~= false and tracking
         mod.Tip_Begin(button)
         mod.Tip_AddLine(L["GOLD"], 1, 1, 1)
-        if s.tipSession ~= false then
+        if cfg.tipSession ~= false then
             mod.Tip_AddLine(" ")
             mod.Tip_AddLine(L["SESSION"], 0.8, 0.8, 0.8)
             mod.Tip_AddDouble(L["EARNED"], Money(session.earned), 0.6, 0.6, 0.6, 0, 1, 0)
@@ -449,11 +449,11 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
             end
             mod.Tip_AddLine(" ")
             mod.Tip_AddDouble(L["TOTAL"], Money(sum), 1, 1, 1, 1, 1, 1)
-        elseif not tracking and s.tipCharacters ~= false then
+        elseif not tracking and cfg.tipCharacters ~= false then
             mod.Tip_AddLine(" ")
             mod.Tip_AddLine(CludesUI.L("Account gold tracking is disabled"), 0.6, 0.6, 0.6)
         end
-        if s.tipToken ~= false and session.tokenPrice and session.tokenPrice > 0 then
+        if cfg.tipToken ~= false and session.tokenPrice and session.tokenPrice > 0 then
             mod.Tip_AddLine(" ")
             mod.Tip_AddDouble(L["WOW_TOKEN"], Money(session.tokenPrice), 0, 0.8, 1, 1, 1, 1)
         end
@@ -535,8 +535,8 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
         if barCtx.IsVertical() then
             local fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
             -- As Refresh: no icon room when icons are off.
-            local s = blockCfg.settings
-            local iconRoom = (not s or s.showIcons ~= false) and fontSize + 2 or 0
+            local cfg = blockCfg.settings
+            local iconRoom = (not cfg or cfg.showIcons ~= false) and fontSize + 2 or 0
             local textH = label:GetStringHeight() or fontSize
             local slotsH = slots:IsShown() and (slots:GetStringHeight() or 0) + 2 or 0
             return max(8 + iconRoom + textH + slotsH + 4, barCtx.GetThickness(), 50)

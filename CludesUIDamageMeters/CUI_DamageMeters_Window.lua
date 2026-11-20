@@ -1297,19 +1297,19 @@ local function CreateDMWindow(winIdx)
             if sessions and #sessions > 0 then
                 local startIdx = math.max(1, #sessions - 19)
                 for i = startIdx, #sessions do
-                    local s = sessions[i]
-                    local segName = s.name
+                    local cfg = sessions[i]
+                    local segName = cfg.name
                     if not segName or (issecretvalue and issecretvalue(segName)) or segName == "" then
                         segName = "Combat"
                     end
-                    local segTime = FormatTimer(s.durationSeconds or 0)
+                    local segTime = FormatTimer(cfg.durationSeconds or 0)
                     itemList[#itemList + 1] = {
                         text = segName,
                         timerText = segTime,
                         compact = true,
-                        isActive = (W.curSessionID == s.sessionID),
+                        isActive = (W.curSessionID == cfg.sessionID),
                         onClick = function()
-                            mod.ApplySegmentSelection(W, nil, s.sessionID)
+                            mod.ApplySegmentSelection(W, nil, cfg.sessionID)
                         end,
                     }
                 end
@@ -1572,19 +1572,19 @@ local function CreateDMWindow(winIdx)
         if fontStr:GetStringWidth() <= avail then
             return
         end
-        local s = full
-        while #s > 1 do
+        local text = full
+        while #text > 1 do
             -- Drop one character, not one byte: localised titles are UTF-8 and a mid-codepoint cut renders as garbage
-            local i = #s
+            local i = #text
             while i > 1 do
-                local b = string.byte(s, i)
+                local b = string.byte(text, i)
                 if b < 0x80 or b >= 0xC0 then
                     break
                 end
                 i = i - 1
             end
-            s = string.sub(s, 1, i - 1)
-            fontStr:SetText(s .. "...")
+            text = string.sub(text, 1, i - 1)
+            fontStr:SetText(text .. "...")
             if fontStr:GetStringWidth() <= avail then
                 break
             end
@@ -2626,9 +2626,9 @@ local function CreateDMWindow(winIdx)
                 CleanupFeignCache()
                 local rev = {}
                 for ri = #sources, 1, -1 do
-                    local s = sources[ri]
-                    local rid = s.deathRecapID
-                    local sg = s.sourceGUID
+                    local cfg = sources[ri]
+                    local rid = cfg.deathRecapID
+                    local sg = cfg.sourceGUID
                     -- _feignDeathGUIDs[secret] throws ("cannot be indexed with secret keys"), so only
                     -- consult the cache for a plain-string GUID; secret-GUID rows fall back to the deathRecapID-only filter
                     local sgOk = sg and (not issecretvalue or not issecretvalue(sg))
@@ -2638,7 +2638,7 @@ local function CreateDMWindow(winIdx)
                         and rid > 0
                         and not (sgOk and _feignDeathGUIDs[sg])
                     then
-                        rev[#rev + 1] = s
+                        rev[#rev + 1] = cfg
                     end
                 end
                 sources = rev
@@ -3531,7 +3531,7 @@ local function CreateDMWindow(winIdx)
                         break
                     end
                     local barFrame = W.spellPool[tIdx]
-                    local t = tList[ti]
+                    local tbl = tList[ti]
                     barFrame.row:Show()
                     barFrame.row:ClearAllPoints()
                     barFrame.row:SetPoint("TOPLEFT", W.srcContent, "TOPLEFT", 0, tStartY - ((ti - 1) * stride))
@@ -3544,14 +3544,14 @@ local function CreateDMWindow(winIdx)
                     barFrame.fill:SetHeight(barH)
                     ApplyBarTexture(barFrame.fill, texPath, texKey)
                     barFrame.fill:SetMinMaxValues(0, tMaxAmt)
-                    barFrame.fill:SetValue(t.total)
+                    barFrame.fill:SetValue(tbl.total)
                     barFrame.fill:SetStatusBarColor(0xDD / 255, 0x31 / 255, 0x31 / 255)
                     SetDMFont(barFrame.label, leftFS)
                     SetDMFont(barFrame.amount, rightFS)
                     barFrame.label:SetTextColor(1, 1, 1)
                     barFrame.amount:SetTextColor(1, 1, 1)
-                    barFrame.label:SetText(t.name)
-                    barFrame.amount:SetText(FormatBarValue(t.total, t.amountPerSecond, cfg.numberFormat or 2))
+                    barFrame.label:SetText(tbl.name)
+                    barFrame.amount:SetText(FormatBarValue(tbl.total, tbl.amountPerSecond, cfg.numberFormat or 2))
                     barFrame._spellID = nil
                     targetsRendered = targetsRendered + 1
                 end

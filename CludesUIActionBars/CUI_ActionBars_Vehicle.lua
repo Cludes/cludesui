@@ -395,8 +395,8 @@ local function OnGridChange()
     for _, details in ipairs(BAR_CONFIG) do
         local buttons = barButtons[details.key]
         if buttons then
-            local s = ABAR.db.profile.bars[details.key]
-            local numIcons = s and (s.overrideNumIcons or s.numIcons) or details.count
+            local cfg = ABAR.db.profile.bars[details.key]
+            local numIcons = cfg and (cfg.overrideNumIcons or cfg.numIcons) or details.count
             if not numIcons or numIcons < 1 then
                 numIcons = details.count
             end
@@ -508,9 +508,9 @@ function ABAR._UpdateSpellbookNeverBars(resync)
         if mo then
             _gridState._sbMoForced = nil
             for key in pairs(mo) do
-                local s = ABAR.db.profile.bars[key]
+                local cfg = ABAR.db.profile.bars[key]
                 local status = hoverStates[key]
-                if s and s.mouseoverEnabled and status and not status.isHovered then
+                if cfg and cfg.mouseoverEnabled and status and not status.isHovered then
                     EAB_VTABLE.Hover.FadeOut(key, status)
                 end
             end
@@ -525,14 +525,14 @@ function ABAR._UpdateSpellbookNeverBars(resync)
     elseif not _gridState._sbNeverForced then
         local forced
         for _, details in ipairs(BAR_CONFIG) do
-            local s = ABAR.db.profile.bars[details.key]
+            local cfg = ABAR.db.profile.bars[details.key]
             if
-                s
-                and s.spellbookShow
-                and s.enabled ~= false
-                and ((CludesUI.VisOverrideValue(s) or s.barVisibility or "always") ~= "always" or ABAR.VisibilityCompat.IsNever(
-                    s
-                ) or (ABAR._padHide and s.gamepadHideBar == true))
+                cfg
+                and cfg.spellbookShow
+                and cfg.enabled ~= false
+                and ((CludesUI.VisOverrideValue(cfg) or cfg.barVisibility or "always") ~= "always" or ABAR.VisibilityCompat.IsNever(
+                    cfg
+                ) or (ABAR._padHide and cfg.gamepadHideBar == true))
                 and not (ABAR._visOverride and ABAR._visOverride[details.key])
             then
                 ABAR._visOverride = ABAR._visOverride or {}
@@ -548,8 +548,8 @@ function ABAR._UpdateSpellbookNeverBars(resync)
     end
     local mo
     for _, details in ipairs(BAR_CONFIG) do
-        local s = ABAR.db.profile.bars[details.key]
-        if s and s.spellbookShow and s.enabled ~= false and s.mouseoverEnabled then
+        local cfg = ABAR.db.profile.bars[details.key]
+        if cfg and cfg.spellbookShow and cfg.enabled ~= false and cfg.mouseoverEnabled then
             local widget = barFrames[details.key]
             if widget then
                 -- Through the hover system's OWN fade-in, never a raw

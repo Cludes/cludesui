@@ -456,49 +456,49 @@ local function ScrollStrip(cfg, step)
 end
 
 local function StripArrow(s, line, file, step)
-    local b = CreateFrame("Button", nil, line)
-    b.tex = b:CreateTexture(nil, "OVERLAY")
-    b.tex:SetTexture(ARROW_DIR .. file)
-    b.tex:SetSize(16, 16)
-    b.tex:SetPoint("CENTER")
-    b:SetScript("OnClick", function()
+    local widget = CreateFrame("Button", nil, line)
+    widget.tex = widget:CreateTexture(nil, "OVERLAY")
+    widget.tex:SetTexture(ARROW_DIR .. file)
+    widget.tex:SetSize(16, 16)
+    widget.tex:SetPoint("CENTER")
+    widget:SetScript("OnClick", function()
         ScrollStrip(s, step)
     end)
-    b:SetScript("OnEnter", function(self)
+    widget:SetScript("OnEnter", function(self)
         if self.live then
             self.tex:SetAlpha(1)
         end
     end)
-    b:SetScript("OnLeave", function(self)
+    widget:SetScript("OnLeave", function(self)
         self.tex:SetAlpha(self.live and 0.8 or 0.2)
     end)
-    return b
+    return widget
 end
 
 -- one strip. key = the square's data field, fill dresses a square
 local function NewStrip(key, fillTex)
-    local s = { offset = 0 }
+    local cfg = { offset = 0 }
     return function(entries, squares, Make, px, after, show, cols, slots, line, spacing, paint)
-        s.paint = paint
-        if not s.clip then
-            s.clip = CreateFrame("Frame", nil, line)
-            s.clip:SetClipsChildren(true)
-            s.clip:EnableMouseWheel(true)
-            s.clip:SetScript("OnMouseWheel", function(_, delta)
-                ScrollStrip(s, delta > 0 and -1 or 1)
+        cfg.paint = paint
+        if not cfg.clip then
+            cfg.clip = CreateFrame("Frame", nil, line)
+            cfg.clip:SetClipsChildren(true)
+            cfg.clip:EnableMouseWheel(true)
+            cfg.clip:SetScript("OnMouseWheel", function(_, delta)
+                ScrollStrip(cfg, delta > 0 and -1 or 1)
             end)
-            s.left = StripArrow(s, line, "cui-arrow-left.png", -1)
-            s.right = StripArrow(s, line, "cui-arrow-right.png", 1)
+            cfg.left = StripArrow(cfg, line, "cui-arrow-left.png", -1)
+            cfg.right = StripArrow(cfg, line, "cui-arrow-right.png", 1)
         end
         if not show or #entries == 0 or not after then
             for _, sq in ipairs(squares) do
                 sq[key] = nil
                 sq:Hide()
             end
-            s.clip:Hide()
-            s.left:Hide()
-            s.right:Hide()
-            s.list = nil
+            cfg.clip:Hide()
+            cfg.left:Hide()
+            cfg.right:Hide()
+            cfg.list = nil
             return 1
         end
         local per = px + spacing
@@ -506,40 +506,40 @@ local function NewStrip(key, fillTex)
         local room = cols * per - spacing
         local fits = #entries * per - spacing <= room
         local vis = fits and #entries or math.max(1, math.floor((room - 2 * (ARROW_W + spacing) + spacing) / per))
-        s.clip:ClearAllPoints()
-        s.left:ClearAllPoints()
-        s.right:ClearAllPoints()
-        s.left:SetSize(ARROW_W, px)
-        s.right:SetSize(ARROW_W, px)
+        cfg.clip:ClearAllPoints()
+        cfg.left:ClearAllPoints()
+        cfg.right:ClearAllPoints()
+        cfg.left:SetSize(ARROW_W, px)
+        cfg.right:SetSize(ARROW_W, px)
         if fits then
-            s.left:Hide()
-            s.right:Hide()
-            s.clip:SetPoint("LEFT", after, "RIGHT", startX, 0)
+            cfg.left:Hide()
+            cfg.right:Hide()
+            cfg.clip:SetPoint("LEFT", after, "RIGHT", startX, 0)
         else
-            s.left:SetPoint("LEFT", after, "RIGHT", startX, 0)
-            s.left:Show()
-            s.clip:SetPoint("LEFT", s.left, "RIGHT", spacing, 0)
+            cfg.left:SetPoint("LEFT", after, "RIGHT", startX, 0)
+            cfg.left:Show()
+            cfg.clip:SetPoint("LEFT", cfg.left, "RIGHT", spacing, 0)
         end
         -- scrolling: runs to the row's right edge
         local clipW = vis * per - spacing
         if fits then
-            s.clip:SetSize(clipW, px)
+            cfg.clip:SetSize(clipW, px)
         else
-            s.right:SetPoint("RIGHT", line, "RIGHT", 4, 0) -- a touch wider so the last border isn't clipped
-            s.right:Show()
-            s.clip:SetPoint("RIGHT", s.right, "LEFT", -spacing, 0)
-            s.clip:SetHeight(px)
+            cfg.right:SetPoint("RIGHT", line, "RIGHT", 4, 0) -- a touch wider so the last border isn't clipped
+            cfg.right:Show()
+            cfg.clip:SetPoint("RIGHT", cfg.right, "LEFT", -spacing, 0)
+            cfg.clip:SetHeight(px)
             clipW = room + 4 - 2 * (ARROW_W + spacing)
         end
-        s.clip:Show()
+        cfg.clip:Show()
         for index, skinData in ipairs(entries) do
             local sq = squares[index]
             if not sq then
                 sq = Make()
                 squares[index] = sq
             end
-            if sq:GetParent() ~= s.clip then
-                sq:SetParent(s.clip)
+            if sq:GetParent() ~= cfg.clip then
+                sq:SetParent(cfg.clip)
             end
             sq[key] = skinData
             fillTex(sq, skinData)
@@ -549,8 +549,8 @@ local function NewStrip(key, fillTex)
             squares[index][key] = nil
             squares[index]:Hide()
         end
-        s.list, s.squares, s.size, s.gap, s.clipW = entries, squares, px, spacing, clipW
-        PlaceStrip(s)
+        cfg.list, cfg.squares, cfg.size, cfg.gap, cfg.clipW = entries, squares, px, spacing, clipW
+        PlaceStrip(cfg)
         return 1
     end
 end

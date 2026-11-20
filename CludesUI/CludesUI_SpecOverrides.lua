@@ -849,18 +849,18 @@ end
 
 local function ReadLive(fkey)
     local folder, filePath = SplitFKey(fkey)
-    local t = folder and DBFor(folder)
-    if type(t) ~= "table" then
+    local tbl = folder and DBFor(folder)
+    if type(tbl) ~= "table" then
         return nil
     end
     local segs = { strsplit(PS, filePath) }
     for idx = 1, #segs - 1 do
-        t = t[SegKey(t, segs[idx])]
-        if type(t) ~= "table" then
+        tbl = tbl[SegKey(tbl, segs[idx])]
+        if type(tbl) ~= "table" then
             return nil
         end
     end
-    return t[SegKey(t, segs[#segs])]
+    return tbl[SegKey(tbl, segs[#segs])]
 end
 
 --- True when the fkey resolves to a REGISTERED DEFAULT in the owning module's
@@ -902,8 +902,8 @@ end
 
 local function WriteLive(fkey, val)
     local folder, filePath = SplitFKey(fkey)
-    local t = folder and DBFor(folder)
-    if type(t) ~= "table" then
+    local tbl = folder and DBFor(folder)
+    if type(tbl) ~= "table" then
         return false
     end
     -- Raid-size tier overrides are the ONE allowlisted subtree whose numeric
@@ -913,8 +913,8 @@ local function WriteLive(fkey, val)
     local isRaidSizeOv = fkey:sub(1, #RAID_SIZE_OV_PREFIX) == RAID_SIZE_OV_PREFIX
     local segs = { strsplit(PS, filePath) }
     for idx = 1, #segs - 1 do
-        local k = SegKey(t, segs[idx])
-        local nxt = t[k]
+        local k = SegKey(tbl, segs[idx])
+        local nxt = tbl[k]
         if type(nxt) ~= "table" then
             if val == nil then
                 return false
@@ -942,36 +942,36 @@ local function WriteLive(fkey, val)
             if type(k) == "string" and num ~= nil then
                 k = num
             end
-            t[k] = nxt
+            tbl[k] = nxt
         end
-        t = nxt
+        tbl = nxt
     end
-    local k = SegKey(t, segs[#segs])
-    if t[k] == nil and val ~= nil then
+    local k = SegKey(tbl, segs[#segs])
+    if tbl[k] == nil and val ~= nil then
         local num = tonumber(k)
         if type(k) == "string" and num ~= nil then
             k = num
         end
     end
-    t[k] = val
+    tbl[k] = val
     return true
 end
 
 -- Reads a value out of a profiles snapshot (pre-change originals).
 local function SnapValue(snap, fkey)
     local folder, filePath = SplitFKey(fkey)
-    local t = folder and snap[folder]
-    if type(t) ~= "table" then
+    local tbl = folder and snap[folder]
+    if type(tbl) ~= "table" then
         return nil
     end
     local segs = { strsplit(PS, filePath) }
     for idx = 1, #segs - 1 do
-        t = t[SegKey(t, segs[idx])]
-        if type(t) ~= "table" then
+        tbl = tbl[SegKey(tbl, segs[idx])]
+        if type(tbl) ~= "table" then
             return nil
         end
     end
-    return t[SegKey(t, segs[#segs])]
+    return tbl[SegKey(tbl, segs[#segs])]
 end
 
 -------------------------------------------------------------------------------

@@ -129,40 +129,40 @@ do
     end
 
     local function _rotSolidBorder(overlayFrame, thickness, red, green, blue)
-        local t = overlayFrame._rotSolid
-        if not t then
-            t = {}
+        local tbl = overlayFrame._rotSolid
+        if not tbl then
+            tbl = {}
             for index = 1, 4 do
-                t[index] = overlayFrame:CreateTexture(nil, "OVERLAY", nil, 7)
+                tbl[index] = overlayFrame:CreateTexture(nil, "OVERLAY", nil, 7)
             end
-            t[1]:SetPoint("TOPLEFT")
-            t[1]:SetPoint("TOPRIGHT")
-            t[2]:SetPoint("BOTTOMLEFT")
-            t[2]:SetPoint("BOTTOMRIGHT")
-            t[3]:SetPoint("TOPLEFT")
-            t[3]:SetPoint("BOTTOMLEFT")
-            t[4]:SetPoint("TOPRIGHT")
-            t[4]:SetPoint("BOTTOMRIGHT")
-            overlayFrame._rotSolid = t
+            tbl[1]:SetPoint("TOPLEFT")
+            tbl[1]:SetPoint("TOPRIGHT")
+            tbl[2]:SetPoint("BOTTOMLEFT")
+            tbl[2]:SetPoint("BOTTOMRIGHT")
+            tbl[3]:SetPoint("TOPLEFT")
+            tbl[3]:SetPoint("BOTTOMLEFT")
+            tbl[4]:SetPoint("TOPRIGHT")
+            tbl[4]:SetPoint("BOTTOMRIGHT")
+            overlayFrame._rotSolid = tbl
         end
         local px = SnapForScale(thickness)
-        t[1]:SetHeight(px)
-        t[2]:SetHeight(px)
-        t[3]:SetWidth(px)
-        t[4]:SetWidth(px)
+        tbl[1]:SetHeight(px)
+        tbl[2]:SetHeight(px)
+        tbl[3]:SetWidth(px)
+        tbl[4]:SetWidth(px)
         for index = 1, 4 do
-            t[index]:SetColorTexture(red, green, blue, 1)
-            t[index]:Show()
+            tbl[index]:SetColorTexture(red, green, blue, 1)
+            tbl[index]:Show()
         end
     end
 
     local function _rotHideSolid(overlayFrame)
-        local t = overlayFrame and overlayFrame._rotSolid
-        if not t then
+        local tbl = overlayFrame and overlayFrame._rotSolid
+        if not tbl then
             return
         end
         for index = 1, 4 do
-            t[index]:Hide()
+            tbl[index]:Hide()
         end
     end
 

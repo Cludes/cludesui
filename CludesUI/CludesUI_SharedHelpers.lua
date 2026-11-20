@@ -58,9 +58,9 @@ function CludesUI.BankEuiStyleSlot(profile, keyList)
         local filePath = keyList[idx]
         local a, b = filePath:match("^([^.]+)%.(.+)$")
         if a then
-            local s = profile[a]
-            if type(s) == "table" then
-                result[filePath] = s[b]
+            local cfg = profile[a]
+            if type(cfg) == "table" then
+                result[filePath] = cfg[b]
             end
         else
             result[filePath] = profile[filePath]

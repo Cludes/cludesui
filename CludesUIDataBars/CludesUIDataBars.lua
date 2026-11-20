@@ -1071,11 +1071,11 @@ do
         end
         actionsDirty = false
         for i = 1, #actionPool do
-            local b = actionPool[i]
-            b:Hide()
-            b:ClearAllPoints()
-            b:SetScript("OnEnter", nil)
-            b:SetScript("OnLeave", nil)
+            local widget = actionPool[i]
+            widget:Hide()
+            widget:ClearAllPoints()
+            widget:SetScript("OnEnter", nil)
+            widget:SetScript("OnLeave", nil)
         end
         activeActions = 0
     end
@@ -1110,11 +1110,11 @@ do
             -- next OOC Tip_Show re-attaches the host.
             actionsDirty = false
             for i = 1, #actionPool do
-                local b = actionPool[i]
-                b:Hide()
-                b:ClearAllPoints()
-                b:SetScript("OnEnter", nil)
-                b:SetScript("OnLeave", nil)
+                local widget = actionPool[i]
+                widget:Hide()
+                widget:ClearAllPoints()
+                widget:SetScript("OnEnter", nil)
+                widget:SetScript("OnLeave", nil)
             end
             activeActions = 0
             actionHost:ClearAllPoints()
@@ -1135,29 +1135,29 @@ do
 
     local function AcquireActionButton()
         activeActions = activeActions + 1
-        local b = actionPool[activeActions]
-        if not b then
-            b = CreateFrame("Button", nil, EnsureActionHost(), "SecureActionButtonTemplate")
-            b:SetFrameLevel(TIP_LEVEL + 10)
-            b:EnableMouse(true)
+        local widget = actionPool[activeActions]
+        if not widget then
+            widget = CreateFrame("Button", nil, EnsureActionHost(), "SecureActionButtonTemplate")
+            widget:SetFrameLevel(TIP_LEVEL + 10)
+            widget:EnableMouse(true)
             -- AnyUp only + useOnKeyDown=false: registering both click phases lets
             -- ActionButtonUseKeyDown fire the cast twice, and the second press
             -- cancels the cast the first started (same rule as the travel
             -- block's hearth button).
-            b:RegisterForClicks("AnyUp")
-            b:SetAttribute("useOnKeyDown", false)
-            AddRowHighlight(b)
+            widget:RegisterForClicks("AnyUp")
+            widget:SetAttribute("useOnKeyDown", false)
+            AddRowHighlight(widget)
             -- Default type; the overlay build swaps type/payload per row
             -- (spell rows and toy rows share this pool).
-            b:SetAttribute("type", "spell")
+            widget:SetAttribute("type", "spell")
             -- Static handler, installed once; pooled reuse only swaps the
             -- action attributes and the hover recolor scripts.
-            b:HookScript("PostClick", function()
+            widget:HookScript("PostClick", function()
                 mod.Tip_Hide()
             end)
-            actionPool[activeActions] = b
+            actionPool[activeActions] = widget
         end
-        return b
+        return widget
     end
 
     -- Insecure clickable pool (social/guild rows): callbacks call unprotected
@@ -1168,14 +1168,14 @@ do
             return
         end
         for i = 1, #clickPool do
-            local b = clickPool[i]
-            b:Hide()
-            b:ClearAllPoints()
-            b:SetScript("OnClick", nil)
-            b:SetScript("OnEnter", nil)
-            b:SetScript("OnLeave", nil)
-            b:SetScript("OnMouseWheel", nil)
-            b:EnableMouseWheel(false)
+            local widget = clickPool[i]
+            widget:Hide()
+            widget:ClearAllPoints()
+            widget:SetScript("OnClick", nil)
+            widget:SetScript("OnEnter", nil)
+            widget:SetScript("OnLeave", nil)
+            widget:SetScript("OnMouseWheel", nil)
+            widget:EnableMouseWheel(false)
         end
         activeClicks = 0
     end
@@ -1184,16 +1184,16 @@ do
     -- and sit above its FontStrings so the overlay wins hit testing.
     local function AcquireClickButton()
         activeClicks = activeClicks + 1
-        local b = clickPool[activeClicks]
-        if not b then
-            b = CreateFrame("Button", nil, EnsureTip())
-            b:SetFrameLevel(tipText:GetFrameLevel() + 5)
-            b:EnableMouse(true)
-            b:RegisterForClicks("AnyUp")
-            AddRowHighlight(b)
-            clickPool[activeClicks] = b
+        local widget = clickPool[activeClicks]
+        if not widget then
+            widget = CreateFrame("Button", nil, EnsureTip())
+            widget:SetFrameLevel(tipText:GetFrameLevel() + 5)
+            widget:EnableMouse(true)
+            widget:RegisterForClicks("AnyUp")
+            AddRowHighlight(widget)
+            clickPool[activeClicks] = widget
         end
-        return b
+        return widget
     end
 
     -- Lay an overlay button over row i and wire its hover affordance. Shared by
@@ -1710,35 +1710,35 @@ do
                             owner:SetFrameLevel(hw)
                         end
                     end
-                    local b = AcquireActionButton()
+                    local widget = AcquireActionButton()
                     -- Pooled reuse swaps type + payload; the unused payload is
                     -- cleared so a recycled button can never fire a stale one.
                     local hgt = skinData.actionHouse and not skinData.actionHouse.returnTrip and skinData.actionHouse.house
-                    b:SetAttribute("house-neighborhood-guid", hgt and hgt.neighborhoodGUID or nil)
-                    b:SetAttribute("house-guid", hgt and hgt.houseGUID or nil)
-                    b:SetAttribute("house-plot-id", hgt and hgt.plotID or nil)
+                    widget:SetAttribute("house-neighborhood-guid", hgt and hgt.neighborhoodGUID or nil)
+                    widget:SetAttribute("house-guid", hgt and hgt.houseGUID or nil)
+                    widget:SetAttribute("house-plot-id", hgt and hgt.plotID or nil)
                     if skinData.action then
-                        b:SetAttribute("type", "spell")
-                        b:SetAttribute("spell", skinData.action)
-                        b:SetAttribute("toy", nil)
-                        b:SetAttribute("macrotext", nil)
+                        widget:SetAttribute("type", "spell")
+                        widget:SetAttribute("spell", skinData.action)
+                        widget:SetAttribute("toy", nil)
+                        widget:SetAttribute("macrotext", nil)
                     elseif skinData.actionToy then
-                        b:SetAttribute("type", "toy")
-                        b:SetAttribute("toy", skinData.actionToy)
-                        b:SetAttribute("spell", nil)
-                        b:SetAttribute("macrotext", nil)
+                        widget:SetAttribute("type", "toy")
+                        widget:SetAttribute("toy", skinData.actionToy)
+                        widget:SetAttribute("spell", nil)
+                        widget:SetAttribute("macrotext", nil)
                     elseif skinData.actionHouse then
-                        b:SetAttribute("type", skinData.actionHouse.returnTrip and "returnhome" or "teleporthome")
-                        b:SetAttribute("spell", nil)
-                        b:SetAttribute("toy", nil)
-                        b:SetAttribute("macrotext", nil)
+                        widget:SetAttribute("type", skinData.actionHouse.returnTrip and "returnhome" or "teleporthome")
+                        widget:SetAttribute("spell", nil)
+                        widget:SetAttribute("toy", nil)
+                        widget:SetAttribute("macrotext", nil)
                     else
-                        b:SetAttribute("type", "macro")
-                        b:SetAttribute("macrotext", skinData.actionMacro)
-                        b:SetAttribute("spell", nil)
-                        b:SetAttribute("toy", nil)
+                        widget:SetAttribute("type", "macro")
+                        widget:SetAttribute("macrotext", skinData.actionMacro)
+                        widget:SetAttribute("spell", nil)
+                        widget:SetAttribute("toy", nil)
                     end
-                    PlaceRowOverlay(b, i, innerW)
+                    PlaceRowOverlay(widget, i, innerW)
                 end
             end
         end
@@ -1751,17 +1751,17 @@ do
             local skinData = payload[i]
             if skinData.onClick then
                 interactive = true
-                local b = AcquireClickButton()
+                local widget = AcquireClickButton()
                 local callback = skinData.onClick
-                PlaceRowOverlay(b, i, innerW)
-                b:SetScript("OnClick", function(_, mouseButton)
+                PlaceRowOverlay(widget, i, innerW)
+                widget:SetScript("OnClick", function(_, mouseButton)
                     callback(mouseButton)
                 end)
                 local wcb = skinData.onWheel
                 if wcb then
                     anyWheel = true
-                    b:EnableMouseWheel(true)
-                    b:SetScript("OnMouseWheel", function(_, delta)
+                    widget:EnableMouseWheel(true)
+                    widget:SetScript("OnMouseWheel", function(_, delta)
                         wcb(delta)
                     end)
                 end
@@ -2090,12 +2090,12 @@ function mod.SolveLayout(barConf, L, measure)
         local base = floor(regionStart + 0.5)
         local cum, lastEdge = 0, 0
         for i = first, last do
-            local s = segmentList[i]
+            local cfg = segmentList[i]
             local wid
-            if s.isFill then
+            if cfg.isFill then
                 wid = fillPx
             else
-                wid = s.desired * scale
+                wid = cfg.desired * scale
             end
             cum = cum + wid
             local edgeName = floor(cum + 0.5)
@@ -2103,8 +2103,8 @@ function mod.SolveLayout(barConf, L, measure)
                 -- Pin the run's far edge exactly onto the region bound.
                 edgeName = floor(regionEnd + 0.5) - base
             end
-            s.px = edgeName - lastEdge
-            s.at = base + lastEdge
+            cfg.px = edgeName - lastEdge
+            cfg.at = base + lastEdge
             lastEdge = edgeName
         end
     end
@@ -3814,28 +3814,28 @@ function mod.CreateBar(templateKey)
     if not profileTbl then
         return nil
     end
-    local t = TEMPLATES[templateKey]
-    if not t then
-        t = TEMPLATES.empty
+    local tbl = TEMPLATES[templateKey]
+    if not tbl then
+        tbl = TEMPLATES.empty
     end
     profileTbl.nextBarId = (profileTbl.nextBarId or 0) + 1
     local ident = profileTbl.nextBarId
     local spacing = nil
-    if t.savedPos then
-        spacing = { point = t.savedPos.point, relPoint = t.savedPos.relPoint, x = t.savedPos.x, y = t.savedPos.y }
+    if tbl.savedPos then
+        spacing = { point = tbl.savedPos.point, relPoint = tbl.savedPos.relPoint, x = tbl.savedPos.x, y = tbl.savedPos.y }
     end
     local conf = {
         id = ident,
-        name = UniqueBarName(t.name),
-        orientation = t.orientation,
-        lengthMode = t.lengthMode,
-        length = t.length,
-        thickness = t.thickness,
-        snapEdge = t.snapEdge,
-        sizingMode = t.sizingMode,
+        name = UniqueBarName(tbl.name),
+        orientation = tbl.orientation,
+        lengthMode = tbl.lengthMode,
+        length = tbl.length,
+        thickness = tbl.thickness,
+        snapEdge = tbl.snapEdge,
+        sizingMode = tbl.sizingMode,
         fontScale = 100,
         theme = {
-            style = t.theme,
+            style = tbl.theme,
             cuiAlpha = 0.5,
             modernColor = { r = 0.067, g = 0.067, b = 0.067, a = 0.95 },
         },
@@ -3847,7 +3847,7 @@ function mod.CreateBar(templateKey)
     profileTbl.bars[#profileTbl.bars + 1] = conf
     -- Template block entries may carry per-block overrides beyond the
     -- seeded defaults (gaps, align, offsets, color, settings tweaks).
-    for _, bt in ipairs(t.blocks) do
+    for _, bt in ipairs(tbl.blocks) do
         local b = mod.AddBlock(ident, bt.type)
         if b then
             for k, v in pairs(bt) do
@@ -3863,9 +3863,9 @@ function mod.CreateBar(templateKey)
     end
     -- Template-designated Fill Remaining block (first block of fillType);
     -- otherwise EnsureFillBlock heals to the last block on first solve.
-    if t.fillType then
+    if tbl.fillType then
         for i = 1, #conf.blocks do
-            if conf.blocks[i].type == t.fillType then
+            if conf.blocks[i].type == tbl.fillType then
                 conf.fillBlockId = conf.blocks[i].id
                 break
             end
@@ -3873,10 +3873,10 @@ function mod.CreateBar(templateKey)
     end
     -- Template-designated Force Centered block (first block of centerType).
     -- Center and fill are combinable, so the fill block is a legal pick.
-    if t.centerType then
+    if tbl.centerType then
         for i = 1, #conf.blocks do
             local tb = conf.blocks[i]
-            if tb.type == t.centerType then
+            if tb.type == tbl.centerType then
                 conf.centerBlockId = tb.id
                 break
             end

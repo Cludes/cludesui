@@ -212,8 +212,8 @@ do
                 if type(n) ~= "number" then
                     return false
                 end
-                local s = tostring(n)
-                return not (s:find("nan", 1, true) or s:find("inf", 1, true))
+                local text = tostring(n)
+                return not (text:find("nan", 1, true) or text:find("inf", 1, true))
             end
         end
     end
@@ -778,9 +778,9 @@ do
         local GetParentFn = UIParent.GetParent
         for idx = 1, allBordersN do
             local record = allBorders[idx]
-            local f = record.frame
-            if f and record.container then
-                local hostFrame, mode = f, nil
+            local frame = record.frame
+            if frame and record.container then
+                local hostFrame, mode = frame, nil
                 for _ = 1, 10 do
                     local success, p = pcall(GetParentFn, hostFrame)
                     if not success or not p then
@@ -792,7 +792,7 @@ do
                         break
                     end
                 end
-                if mode and mode ~= "skip" and (mode ~= "shown" or f:IsVisible()) then
+                if mode and mode ~= "skip" and (mode ~= "shown" or frame:IsVisible()) then
                     SnapEntry(record)
                 end
             end
@@ -1367,11 +1367,11 @@ do
         if not texture or not texture.sizes then
             return 0, 0, 0, 0
         end
-        local s = texture.sizes[sizeKey]
-        if not s then
+        local cfg = texture.sizes[sizeKey]
+        if not cfg then
             return 0, 0, 0, 0
         end
-        return s.offsetX or 0, s.offsetY or 0, s.shiftX or 0, s.shiftY or 0
+        return cfg.offsetX or 0, cfg.offsetY or 0, cfg.shiftX or 0, cfg.shiftY or 0
     end
 
     --- Get the default size key for a texture in a specific addon: the addon's
@@ -1405,11 +1405,11 @@ do
     -- tuning. Read-only: modules pass them to RegisterBorderDefaults as is.
     do
         local function AllSizes(offX, offY, shiftAmtX, shiftAmtY)
-            local t = {}
+            local tbl = {}
             for k = 0, 4 do
-                t[k] = { offsetX = offX, offsetY = offY, shiftX = shiftAmtX, shiftY = shiftAmtY }
+                tbl[k] = { offsetX = offX, offsetY = offY, shiftX = shiftAmtX, shiftY = shiftAmtY }
             end
-            return t
+            return tbl
         end
         CludesUI.BORDER_DEFAULTS_BARS = {
             ["glow"] = {
@@ -1451,11 +1451,11 @@ do
     do
         local ALL_SIZES = { "none", "thin", "normal", "heavy", "strong" }
         local function AllSizes(offX, offY, shiftAmtX, shiftAmtY)
-            local t = {}
+            local tbl = {}
             for _, k in ipairs(ALL_SIZES) do
-                t[k] = { offsetX = offX, offsetY = offY, shiftX = shiftAmtX, shiftY = shiftAmtY }
+                tbl[k] = { offsetX = offX, offsetY = offY, shiftX = shiftAmtX, shiftY = shiftAmtY }
             end
-            return t
+            return tbl
         end
         CludesUI.BORDER_DEFAULTS_BUTTONS = {
             ["glow"] = {
@@ -1485,11 +1485,11 @@ do
     do
         local ALL_SIZES = { [0] = true, [1] = true, [2] = true, [3] = true, [4] = true }
         local function AllSizes(offX, offY, shiftAmtX, shiftAmtY)
-            local t = {}
+            local tbl = {}
             for k in pairs(ALL_SIZES) do
-                t[k] = { offsetX = offX, offsetY = offY, shiftX = shiftAmtX, shiftY = shiftAmtY }
+                tbl[k] = { offsetX = offX, offsetY = offY, shiftX = shiftAmtX, shiftY = shiftAmtY }
             end
-            return t
+            return tbl
         end
         CludesUI.BORDER_DEFAULTS_FRAMES = {
             ["glow"] = {

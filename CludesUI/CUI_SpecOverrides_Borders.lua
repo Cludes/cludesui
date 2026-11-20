@@ -715,14 +715,14 @@ local function SlotTipFor(sink)
     if #_tipNames == 0 then
         return nil
     end
-    local s = "|cffc7a65a" .. L("Overridden by:") .. "|r " .. table.concat(_tipNames, ", ")
+    local text = "|cffc7a65a" .. L("Overridden by:") .. "|r " .. table.concat(_tipNames, ", ")
     if not _editGroup and not Cond._edit then
-        s = s
+        text = text
             .. "\n|cff909090"
             .. L("Changes here edit the shared default; overrides keep their own values.")
             .. "|r"
     end
-    return s
+    return text
 end
 
 local function GoldWalk(widget, forceOff, condGid, condName)

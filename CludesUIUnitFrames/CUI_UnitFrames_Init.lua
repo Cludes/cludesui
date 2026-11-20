@@ -1235,12 +1235,12 @@ local function InitializeFrames()
         local _leaderUnits = {}
 
         local function _leaderRefresh(ufStore)
-            local s = ufStore and ufStore._leaderSettings
-            if not (ufStore and ufStore._leaderIndicator and s) then
+            local cfg = ufStore and ufStore._leaderSettings
+            if not (ufStore and ufStore._leaderIndicator and cfg) then
                 return
             end
             local texture = ufStore._leaderIndicator
-            if s.leaderIndicatorEnabled == false then
+            if cfg.leaderIndicatorEnabled == false then
                 texture:Hide()
                 return
             end
@@ -1256,7 +1256,7 @@ local function InitializeFrames()
             local isLeader = UnitIsGroupLeader(unitToken)
             local isAssist = UnitIsGroupAssistant(unitToken)
             -- Icon Style: Blizzard's crown/assistant art or the Pixels pair.
-            local art = mod.UF_LEADER_ART[s.leaderIndicatorStyle] or mod.UF_LEADER_ART.blizzard
+            local art = mod.UF_LEADER_ART[cfg.leaderIndicatorStyle] or mod.UF_LEADER_ART.blizzard
             -- Secrecy check MUST run before any truthiness test: boolean-testing
             -- a secret errors, so "value and not issecretvalue(value)" crashes.
             if not issecretvalue(isLeader) and isLeader then
@@ -1354,17 +1354,17 @@ local function InitializeFrames()
         local eliteWatch
 
         local function _eliteRefresh(ufStore)
-            local s = ufStore and ufStore._eliteSettings
-            if not (ufStore and ufStore._eliteIndicator and s) then
+            local cfg = ufStore and ufStore._eliteSettings
+            if not (ufStore and ufStore._eliteIndicator and cfg) then
                 return
             end
             local texture = ufStore._eliteIndicator
             -- Dragon texture: exists only once its style was first used.
             local eliteDragon = ufStore._eliteDragon
             if
-                s.eliteIndicatorEnabled ~= true
-                or mod.UF_DragonLegacy(s)
-                or (not s.eliteIndicatorShowInInstances and IsInInstance())
+                cfg.eliteIndicatorEnabled ~= true
+                or mod.UF_DragonLegacy(cfg)
+                or (not cfg.eliteIndicatorShowInInstances and IsInInstance())
             then
                 texture:Hide()
                 if eliteDragon then
@@ -1411,8 +1411,8 @@ local function InitializeFrames()
         local function _eliteArmEvents()
             local enabled = false
             for index = 1, #_eliteFrames do
-                local s = _eliteFrames[index]._eliteSettings
-                if s and s.eliteIndicatorEnabled == true and not mod.UF_DragonLegacy(s) then
+                local cfg = _eliteFrames[index]._eliteSettings
+                if cfg and cfg.eliteIndicatorEnabled == true and not mod.UF_DragonLegacy(cfg) then
                     enabled = true
                     break
                 end
@@ -1528,12 +1528,12 @@ local function InitializeFrames()
         local factionWatch
 
         local function _factionRefresh(ufStore)
-            local s = ufStore and ufStore._factionSettings
-            if not (ufStore and ufStore._factionIndicator and s) then
+            local cfg = ufStore and ufStore._factionSettings
+            if not (ufStore and ufStore._factionIndicator and cfg) then
                 return
             end
             local texture = ufStore._factionIndicator
-            local mode = s.factionIndicatorMode or "off"
+            local mode = cfg.factionIndicatorMode or "off"
             -- The frame's base unit, not its live token: the player frame swaps to
             -- "vehicle" on a ride, but this badge (like Blizzard's PvP icon) and
             -- the UNIT_FACTION registration below are about the player.
@@ -1542,7 +1542,7 @@ local function InitializeFrames()
                 texture:Hide()
                 return
             end
-            if s.factionIndicatorPlayersOnly then
+            if cfg.factionIndicatorPlayersOnly then
                 local isPlayer = UnitIsPlayer(unitToken)
                 if issecretvalue(isPlayer) or not isPlayer then
                     texture:Hide()
@@ -1578,7 +1578,7 @@ local function InitializeFrames()
             end
             local dim = false
             if atlasName then
-                local pvpMode = s.factionIndicatorPvP or "dim"
+                local pvpMode = cfg.factionIndicatorPvP or "dim"
                 if pvpMode ~= "ignore" then
                     -- Unreadable counts as flagged: never hide or grey on a guess.
                     local pvp = UnitIsPVP(unitToken)
@@ -1593,7 +1593,7 @@ local function InitializeFrames()
                 -- Paint only on a real change: faction, style, dim and the honor
                 -- badge are the paint's only inputs (the texture is ours, so the
                 -- memo lives on it).
-                local look = s.factionIndicatorStyle or "pvp"
+                local look = cfg.factionIndicatorStyle or "pvp"
                 local badge = CludesUI.FactionBadgeFor(look, unitToken)
                 if
                     texture._facFac ~= fac
@@ -1619,8 +1619,8 @@ local function InitializeFrames()
             local enabled, targetOn = false, false
             for index = 1, #_factionFrames do
                 local ufStore = _factionFrames[index]
-                local s = ufStore._factionSettings
-                if s and (s.factionIndicatorMode or "off") ~= "off" then
+                local cfg = ufStore._factionSettings
+                if cfg and (cfg.factionIndicatorMode or "off") ~= "off" then
                     enabled = true
                     if ufStore._cuiBaseUnit == "target" then
                         targetOn = true
@@ -2029,18 +2029,18 @@ local function InitializeFrames()
         -- One state table per pass for the multi-select visibility engine
         local visState = { inCombat = _ufInCombat, inRaid = raidNow, inParty = inParty }
         for _, unitName in ipairs({ "player", "target", "focus" }) do
-            local s = saved.profile[unitName]
+            local cfg = saved.profile[unitName]
             local widget = frameList[unitName]
             -- Visibility "never" no longer clears enabledFrames, so a frame hidden that
             -- way stays on this path and is hidden below, reversibly.
-            if widget and not mod.VisUnitDisabled(saved.profile, unitName) and s then
-                local hiddenByOpts = CludesUI.CheckVisibilityOptions(s)
-                local visible = s.barVisibility or "always"
+            if widget and not mod.VisUnitDisabled(saved.profile, unitName) and cfg then
+                local hiddenByOpts = CludesUI.CheckVisibilityOptions(cfg)
+                local visible = cfg.barVisibility or "always"
 
                 -- Multi-select / dragonriding path: non-nil = engine-owned.
                 -- nil = legacy single mode, untouched.
                 local ext =
-                    CludesUI.EvalVisibilityExtended(s, "barVisibility", visState, CludesUI.VIS_CAPS_DEFAULT)
+                    CludesUI.EvalVisibilityExtended(cfg, "barVisibility", visState, CludesUI.VIS_CAPS_DEFAULT)
 
                 -- Secure condition driver: an engine-owned selection compiles into a
                 -- state-visibility driver (the action bar mechanism), replacing the
@@ -2050,7 +2050,7 @@ local function InitializeFrames()
                 -- ignores the mouseover key); the alpha bucket + hover handlers do the
                 -- revealing. Registration is out-of-combat only; a selection changed
                 -- during combat rides on alpha until the regen pass registers the driver.
-                local drvSet = CludesUI.GetActiveVisibilityModes(s, "barVisibility")
+                local drvSet = CludesUI.GetActiveVisibilityModes(cfg, "barVisibility")
                 -- Condition scalars ride the driver too: dragonriding (engine owns it
                 -- everywhere) and the combat pair, whose legacy alpha-hide left an
                 -- invisible click-absorbing frame out of combat. Visibility is
@@ -2071,11 +2071,11 @@ local function InitializeFrames()
                 local visTail
                 -- An applied Visibility override replaces the whole setting, so the tail
                 -- is a constant and the shared selection never reaches the driver.
-                local visOv = CludesUI.VisOverrideValue(s)
+                local visOv = CludesUI.VisOverrideValue(cfg)
                 if visOv then
                     visTail = (visOv == "never") and "hide" or "show"
-                elseif s.visibilityMatch == "any" and CludesUI.BuildAnyMatchTail then
-                    local tail, _, liveAxes = CludesUI.BuildAnyMatchTail(s, "barVisibility", drvSet)
+                elseif cfg.visibilityMatch == "any" and CludesUI.BuildAnyMatchTail then
+                    local tail, _, liveAxes = CludesUI.BuildAnyMatchTail(cfg, "barVisibility", drvSet)
                     -- Gated on liveAxes: with no soft-target edge here, target/enemy axes
                     -- resolve in Lua, and a driver compiled from those alone would be a
                     -- frozen constant. Zero live axes keeps the frame on the live ext/alpha path.
@@ -2092,7 +2092,7 @@ local function InitializeFrames()
                 local visNever = (visOv or visible) == "never"
                 -- Health cannot be a secure macro condition. Keep the unit watch
                 -- active and let the secret-safe alpha curve reveal injured units.
-                if mod.HealthVisibilityEnabled(s, widget) then
+                if mod.HealthVisibilityEnabled(cfg, widget) then
                     visTail = nil
                 end
                 local wantDriver
@@ -2127,9 +2127,9 @@ local function InitializeFrames()
                 -- so the frame looks hidden while the secure bucket below stays untouched:
                 -- a dismount inside a lockdown would otherwise hide it permanently.
                 -- _ufInCombat leads InCombatLockdown() on regen, so the ooc fade is instant.
-                local bodyAlpha, hoverGated = mod.ResolveVisResting(s, widget, ext, hiddenByOpts, _ufInCombat)
-                if s.showWhenHealthMissing and not hiddenByOpts then
-                    bodyAlpha = mod.HealthVisibilityAlpha(s, widget, bodyAlpha, hoverGated, _ufInCombat)
+                local bodyAlpha, hoverGated = mod.ResolveVisResting(cfg, widget, ext, hiddenByOpts, _ufInCombat)
+                if cfg.showWhenHealthMissing and not hiddenByOpts then
+                    bodyAlpha = mod.HealthVisibilityAlpha(cfg, widget, bodyAlpha, hoverGated, _ufInCombat)
                 else
                     -- Off, or a Visibility Option hides it: health ticks must not reveal.
                     widget._healthVisLive = nil
@@ -2174,7 +2174,7 @@ local function InitializeFrames()
                         -- answers false rather than nil, which would keep the frame
                         -- secure-Shown at alpha 0 and still eating clicks.
                         showIt = false
-                    elseif mod.HealthVisibilityEnabled(s, widget) then
+                    elseif mod.HealthVisibilityEnabled(cfg, widget) then
                         showIt = true
                     elseif ext ~= nil then
                         -- Engine-owned: frame stays secure-Shown; the alpha
@@ -2211,9 +2211,9 @@ local function InitializeFrames()
                                 local wantsCastbar
                                 if unitName == "player" then
                                     -- Hide While Using Gamepad keeps it off (ns.UF_ApplyGamepadCastbar).
-                                    wantsCastbar = s.showPlayerCastbar and not mod._ufCastPadHidden
+                                    wantsCastbar = cfg.showPlayerCastbar and not mod._ufCastPadHidden
                                 else
-                                    wantsCastbar = s.showCastbar ~= false
+                                    wantsCastbar = cfg.showCastbar ~= false
                                 end
                                 if wantsCastbar then
                                     mod.SetCastbarElement(widget, true)
@@ -2449,38 +2449,38 @@ local function InitializeFrames()
     -- target change and on its UNIT_TARGET, and on UNIT_PET for the pet frame.
     local function ReapplyFrameTextClassColors(unitName)
         local widget = frameList[unitName]
-        local s = widget and saved.profile[unitName]
-        if not s then
+        local cfg = widget and saved.profile[unitName]
+        if not cfg then
             return
         end
-        if widget.LeftText and s.leftTextClassColor ~= nil then
+        if widget.LeftText and cfg.leftTextClassColor ~= nil then
             ApplyClassColor(
                 widget.LeftText,
                 unitName,
-                s.leftTextClassColor,
-                s.leftTextColorR,
-                s.leftTextColorG,
-                s.leftTextColorB
+                cfg.leftTextClassColor,
+                cfg.leftTextColorR,
+                cfg.leftTextColorG,
+                cfg.leftTextColorB
             )
         end
-        if widget.RightText and s.rightTextClassColor ~= nil then
+        if widget.RightText and cfg.rightTextClassColor ~= nil then
             ApplyClassColor(
                 widget.RightText,
                 unitName,
-                s.rightTextClassColor,
-                s.rightTextColorR,
-                s.rightTextColorG,
-                s.rightTextColorB
+                cfg.rightTextClassColor,
+                cfg.rightTextColorR,
+                cfg.rightTextColorG,
+                cfg.rightTextColorB
             )
         end
-        if widget.CenterText and s.centerTextClassColor ~= nil then
+        if widget.CenterText and cfg.centerTextClassColor ~= nil then
             ApplyClassColor(
                 widget.CenterText,
                 unitName,
-                s.centerTextClassColor,
-                s.centerTextColorR,
-                s.centerTextColorG,
-                s.centerTextColorB
+                cfg.centerTextClassColor,
+                cfg.centerTextColorR,
+                cfg.centerTextColorG,
+                cfg.centerTextColorB
             )
         end
     end
@@ -2510,7 +2510,7 @@ local function InitializeFrames()
     -- OnEnter/OnLeave hooks; this only tracks target. Both borders default off, so
     -- this is a cheap no-op unless the user enabled one. On ns for the 200-local cap.
     mod.UpdateBossTargetBorders = function()
-        local s = saved.profile.boss
+        local cfg = saved.profile.boss
         for index = 1, 5 do
             local bUnit = "boss" .. index
             local frame = frameList[bUnit]
@@ -2520,35 +2520,35 @@ local function InitializeFrames()
                     frame._isTarget = (not issecretvalue(isT) and isT) and true or false
                     mod.ApplyBossBorderState(frame)
                 end
-                if s then
-                    if frame.LeftText and s.leftTextClassColor ~= nil then
+                if cfg then
+                    if frame.LeftText and cfg.leftTextClassColor ~= nil then
                         ApplyClassColor(
                             frame.LeftText,
                             bUnit,
-                            s.leftTextClassColor,
-                            s.leftTextColorR,
-                            s.leftTextColorG,
-                            s.leftTextColorB
+                            cfg.leftTextClassColor,
+                            cfg.leftTextColorR,
+                            cfg.leftTextColorG,
+                            cfg.leftTextColorB
                         )
                     end
-                    if frame.RightText and s.rightTextClassColor ~= nil then
+                    if frame.RightText and cfg.rightTextClassColor ~= nil then
                         ApplyClassColor(
                             frame.RightText,
                             bUnit,
-                            s.rightTextClassColor,
-                            s.rightTextColorR,
-                            s.rightTextColorG,
-                            s.rightTextColorB
+                            cfg.rightTextClassColor,
+                            cfg.rightTextColorR,
+                            cfg.rightTextColorG,
+                            cfg.rightTextColorB
                         )
                     end
-                    if frame.CenterText and s.centerTextClassColor ~= nil then
+                    if frame.CenterText and cfg.centerTextClassColor ~= nil then
                         ApplyClassColor(
                             frame.CenterText,
                             bUnit,
-                            s.centerTextClassColor,
-                            s.centerTextColorR,
-                            s.centerTextColorG,
-                            s.centerTextColorB
+                            cfg.centerTextClassColor,
+                            cfg.centerTextColorR,
+                            cfg.centerTextColorG,
+                            cfg.centerTextColorB
                         )
                     end
                 end
@@ -2576,9 +2576,9 @@ local function InitializeFrames()
         for _, unitName in ipairs({ "player", "target", "focus", "pet" }) do
             local widget = frameList[unitName]
             if widget and widget.Power and widget.Health then
-                local s = GetSettingsForUnit(unitName)
-                if s then
-                    local powerPos = s.powerPosition or "below"
+                local cfg = GetSettingsForUnit(unitName)
+                if cfg then
+                    local powerPos = cfg.powerPosition or "below"
                     if powerPos == "below" or powerPos == "above" then
                         widget.Power:ClearAllPoints()
                         if powerPos == "above" then
@@ -2595,9 +2595,9 @@ local function InitializeFrames()
         for index = 1, 5 do
             local bf = frameList["boss" .. index]
             if bf and bf.Power and bf.Health then
-                local s = GetSettingsForUnit("boss")
-                if s then
-                    local powerPos = s.powerPosition or "below"
+                local cfg = GetSettingsForUnit("boss")
+                if cfg then
+                    local powerPos = cfg.powerPosition or "below"
                     if powerPos == "below" or powerPos == "above" then
                         bf.Power:ClearAllPoints()
                         if powerPos == "above" then

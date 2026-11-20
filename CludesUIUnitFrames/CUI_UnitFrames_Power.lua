@@ -365,9 +365,9 @@ if CludesUI.SpellCostPrediction then
         -- Power Bar Opacity, normalized as ApplyPowerBarAlpha does: the fill's
         -- own alpha stays at 1 while a gradient carries the opacity.
         Color = function()
-            local s = GetSettingsForUnit("player")
-            local red, green, b = mod.UF_PowerCostColor(s)
-            local op = (s and s.powerBarOpacity) or 100
+            local cfg = GetSettingsForUnit("player")
+            local red, green, b = mod.UF_PowerCostColor(cfg)
+            local op = (cfg and cfg.powerBarOpacity) or 100
             if op <= 1.0 then
                 op = op * 100
             end
@@ -802,12 +802,12 @@ local function CreatePowerBar(widget, unitToken, prefs)
     -- it for player, friendly units, enemy players, bosses, minibosses, casters.
     power._grayedOut = false
     power.PostUpdate = function(self, unit, current, min, max)
-        local s = GetSettingsForUnit(unit)
-        if not s then
+        local cfg = GetSettingsForUnit(unit)
+        if not cfg then
             return
         end
 
-        local pp = mod.UF_PowerPos(s)
+        local pp = mod.UF_PowerPos(cfg)
         if pp == "none" or pp == "detached_top" or pp == "detached_bottom" then
             return
         end
@@ -826,7 +826,7 @@ local function CreatePowerBar(widget, unitToken, prefs)
             end
         elseif not shouldGray and self._grayedOut then
             self._grayedOut = false
-            if s.powerBgPowerColored and self.bg then
+            if cfg.powerBgPowerColored and self.bg then
                 -- Restore this unit's power color (mirrors the fill); the next
                 -- PostUpdateColor keeps it tracking thereafter.
                 local pr, pg, pb = CludesUI.ResolveUnitPowerColor(unit)
@@ -837,7 +837,7 @@ local function CreatePowerBar(widget, unitToken, prefs)
                     self.bg:SetColorTexture(17 / 255, 17 / 255, 17 / 255, 1)
                 end
             else
-                local customBg = s.customPowerBgColor
+                local customBg = cfg.customPowerBgColor
                 if customBg then
                     if self.bg then
                         self.bg:SetColorTexture(customBg.r, customBg.g, customBg.b, 1)
@@ -851,7 +851,7 @@ local function CreatePowerBar(widget, unitToken, prefs)
             -- Bg alpha comes from customPowerBgAlpha (matching ApplyPowerBarAlpha),
             -- NOT powerBarOpacity, which is the FILL opacity.
             if self.bg then
-                self.bg:SetAlpha((s and (s.customPowerBgAlpha or 100) or 100) / 100)
+                self.bg:SetAlpha((cfg and (cfg.customPowerBgAlpha or 100) or 100) / 100)
             end
         end
     end

@@ -741,7 +741,7 @@ do
             CludesUI.PadHint(noteFrame, "nodepass")
             CludesUI.PadHint(dimmer, "nodepass")
         end
-        local f = CludesUI._syncConfirmFrame
+        local frame = CludesUI._syncConfirmFrame
 
         local function MakeFont(hostFrame, size, red, green, blue, a)
             local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
@@ -754,9 +754,9 @@ do
         end
 
         local function MakeBtn(labelText, red, green, blue, a, hr, hg, hb)
-            local button = CreateFrame("Button", nil, f)
+            local button = CreateFrame("Button", nil, frame)
             button:SetSize(120, 26)
-            button:SetFrameLevel(f:GetFrameLevel() + 1)
+            button:SetFrameLevel(frame:GetFrameLevel() + 1)
             local bgT = button:CreateTexture(nil, "BACKGROUND")
             bgT:SetAllPoints()
             bgT:SetColorTexture(red, green, blue, a)
@@ -789,7 +789,7 @@ do
 
         -- The dropdown lists this call's members. Its values and order tables are the
         -- same ones every call, so the built control keeps reading them.
-        local parts = f._ui
+        local parts = frame._ui
         local ddValues = parts and parts.ddValues or { _noLoc = true } -- profile names: never translate
         local ddOrder = parts and parts.ddOrder or {}
         local members = options.memberOrder
@@ -816,20 +816,20 @@ do
         -- positions and the buttons' actions.
         if not parts then
             parts = { ddValues = ddValues, ddOrder = ddOrder }
-            f._ui = parts
+            frame._ui = parts
             if Pix then
-                CludesUI.MakeRoundedBorder(f, 1, 1, 1, 0.15, f._bg)
+                CludesUI.MakeRoundedBorder(frame, 1, 1, 1, 0.15, frame._bg)
             end
-            parts.title = MakeFont(f, 14, 1, 1, 1, 0.9)
-            parts.msg = MakeFont(f, 11, 1, 1, 1, 0.6)
+            parts.title = MakeFont(frame, 14, 1, 1, 1, 0.9)
+            parts.msg = MakeFont(frame, 11, 1, 1, 1, 0.6)
             parts.msg:SetWidth(W - PAD * 2)
             parts.msg:SetJustifyH("CENTER")
-            parts.ddLabel = MakeFont(f, 11, 1, 1, 1, 0.5)
+            parts.ddLabel = MakeFont(frame, 11, 1, 1, 1, 0.5)
 
             parts.seedChoice = options.defaultSeed
-            local ddHolder = CreateFrame("Frame", nil, f)
+            local ddHolder = CreateFrame("Frame", nil, frame)
             ddHolder:SetSize(ddVisW, ddVisH)
-            ddHolder:SetFrameLevel(f:GetFrameLevel() + 1)
+            ddHolder:SetFrameLevel(frame:GetFrameLevel() + 1)
             local ddBtn = CludesUI.BuildDropdownControl(
                 ddHolder,
                 DD_W,
@@ -853,7 +853,7 @@ do
             end)
             parts.ddHolder, parts.ddBtn = ddHolder, ddBtn
 
-            parts.warn = MakeFont(f, 10, 0.92, 0.3, 0.3, 1)
+            parts.warn = MakeFont(frame, 10, 0.92, 0.3, 0.3, 1)
             parts.warn:SetWidth(W - PAD * 2)
             parts.warn:SetJustifyH("CENTER")
             parts.warn:SetText(
@@ -872,22 +872,22 @@ do
             end
         end
 
-        f:ClearAllPoints()
-        f:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
+        frame:ClearAllPoints()
+        frame:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
 
         local rowY = -PAD
 
         local title = parts.title
         title:SetFont(fontFile, 14, "")
         title:ClearAllPoints()
-        title:SetPoint("TOP", f, "TOP", 0, rowY)
+        title:SetPoint("TOP", frame, "TOP", 0, rowY)
         title:SetText(CludesUI.L(options.hadGroup and "Update Sync Group" or "Create Sync Group"))
         rowY = rowY - 22 - 8
 
         local msg = parts.msg
         msg:SetFont(fontFile, 11, "")
         msg:ClearAllPoints()
-        msg:SetPoint("TOP", f, "TOP", 0, rowY)
+        msg:SetPoint("TOP", frame, "TOP", 0, rowY)
         msg:SetText(
             CludesUI.Lf(
                 "All selected profiles will keep their %1$s settings in sync: changes made on any of them carry over to the others. Choose which profile's settings the group starts from.",
@@ -899,19 +899,19 @@ do
         local ddLabel = parts.ddLabel
         ddLabel:SetFont(fontFile, 11, "")
         ddLabel:ClearAllPoints()
-        ddLabel:SetPoint("TOP", f, "TOP", 0, rowY)
+        ddLabel:SetPoint("TOP", frame, "TOP", 0, rowY)
         ddLabel:SetText(CludesUI.L("Sync settings from:"))
         rowY = rowY - 16 - 6
 
         parts.ddHolder:ClearAllPoints()
-        parts.ddHolder:SetPoint("TOP", f, "TOP", 0, rowY)
+        parts.ddHolder:SetPoint("TOP", frame, "TOP", 0, rowY)
         rowY = rowY - ddVisH - 14
 
         local warn = parts.warn
         if options.hasWarning then
             warn:SetFont(fontFile, 10, "")
             warn:ClearAllPoints()
-            warn:SetPoint("TOP", f, "TOP", 0, rowY)
+            warn:SetPoint("TOP", frame, "TOP", 0, rowY)
             warn:Show()
             rowY = rowY - (warn:GetStringHeight() or 26) - 14
         else
@@ -922,15 +922,15 @@ do
         cancelBtn._reset(fontFile)
         confirmBtn._reset(fontFile)
         cancelBtn:ClearAllPoints()
-        cancelBtn:SetPoint("TOPRIGHT", f, "TOP", -6, rowY)
+        cancelBtn:SetPoint("TOPRIGHT", frame, "TOP", -6, rowY)
         confirmBtn:ClearAllPoints()
-        confirmBtn:SetPoint("TOPLEFT", f, "TOP", 6, rowY)
+        confirmBtn:SetPoint("TOPLEFT", frame, "TOP", 6, rowY)
         rowY = rowY - 26
 
-        f:SetSize(W, -rowY + PAD)
+        frame:SetSize(W, -rowY + PAD)
 
         confirmBtn:SetScript("OnClick", function()
-            f:Hide()
+            frame:Hide()
             if not CludesUIDB.syncedModules then
                 CludesUIDB.syncedModules = {}
             end
@@ -944,18 +944,18 @@ do
             end
         end)
         cancelBtn:SetScript("OnClick", function()
-            f:Hide()
+            frame:Hide()
             if options.onCancel then
                 options.onCancel()
             end
         end)
         -- Controller cursor: its cancel press backs out through Cancel.
         if CludesUI.PadCP() then
-            f.CloseButton = cancelBtn
+            frame.CloseButton = cancelBtn
         end
 
-        f._dimmer:Show()
-        f:Show()
+        frame._dimmer:Show()
+        frame:Show()
         -- Controller cursor: start on the safe button.
         CludesUI.PadFocus(cancelBtn)
     end

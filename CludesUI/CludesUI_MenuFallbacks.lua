@@ -109,22 +109,22 @@ end
 -- Flat dark block with a subtle white hover and a white label; secure = a
 -- SecureActionButton whose attributes the caller sets.
 local function MakeButton(hostFrame, name, labelText, wid, hgt, secure)
-    local b = CreateFrame("Button", name, hostFrame, secure and "SecureActionButtonTemplate" or nil)
-    b:SetSize(wid, hgt)
-    b:RegisterForClicks("AnyUp")
+    local widget = CreateFrame("Button", name, hostFrame, secure and "SecureActionButtonTemplate" or nil)
+    widget:SetSize(wid, hgt)
+    widget:RegisterForClicks("AnyUp")
     if secure then
-        b:SetAttribute("useOnKeyDown", false)
+        widget:SetAttribute("useOnKeyDown", false)
     end
-    local fill = SolidTex(b, "BACKGROUND", T.bgR, T.bgG, T.bgB, T.bgA)
-    fill:SetAllPoints(b)
-    AddBorder(b)
-    local hover = SolidTex(b, "HIGHLIGHT", 1, 1, 1, 0.1)
-    hover:SetAllPoints(b)
-    local t = MakeText(b, 12)
+    local fill = SolidTex(widget, "BACKGROUND", T.bgR, T.bgG, T.bgB, T.bgA)
+    fill:SetAllPoints(widget)
+    AddBorder(widget)
+    local hover = SolidTex(widget, "HIGHLIGHT", 1, 1, 1, 0.1)
+    hover:SetAllPoints(widget)
+    local t = MakeText(widget, 12)
     t:SetPoint("CENTER")
     t:SetText(labelText)
-    b:SetFontString(t)
-    return b
+    widget:SetFontString(t)
+    return widget
 end
 
 local function MakeCloseButton(hostFrame)
@@ -240,26 +240,26 @@ local listEv = CreateFrame("Frame")
 
 local function BuildList()
     ResolveTheme()
-    local f = CreateFrame("Frame", "CludesUI_HouseVisitFrame", UIParent)
-    f:SetFrameStrata("DIALOG")
-    f:SetScale((CludesUI.GetPopupScale()) or 1)
-    f:SetWidth(FRAME_W)
-    f:SetHeight(HEADER_H + 10 + MAX_ROWS * (ROW_H + ROW_GAP) + 6)
-    f:SetPoint("CENTER", UIParent, "CENTER", 0, 80)
-    f:EnableMouse(true)
-    f:SetMovable(true)
-    f:SetClampedToScreen(true)
-    f:RegisterForDrag("LeftButton")
-    f:SetScript("OnDragStart", f.StartMoving)
-    f:SetScript("OnDragStop", f.StopMovingOrSizing)
-    f:Hide()
-    Panel(f)
+    local frame = CreateFrame("Frame", "CludesUI_HouseVisitFrame", UIParent)
+    frame:SetFrameStrata("DIALOG")
+    frame:SetScale((CludesUI.GetPopupScale()) or 1)
+    frame:SetWidth(FRAME_W)
+    frame:SetHeight(HEADER_H + 10 + MAX_ROWS * (ROW_H + ROW_GAP) + 6)
+    frame:SetPoint("CENTER", UIParent, "CENTER", 0, 80)
+    frame:EnableMouse(true)
+    frame:SetMovable(true)
+    frame:SetClampedToScreen(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", frame.StartMoving)
+    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+    frame:Hide()
+    Panel(frame)
 
     -- Header band (inset fill) with the title and the close glyph, like a
     -- skinned window's title bar.
-    local header = CreateFrame("Frame", nil, f)
-    header:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-    header:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
+    local header = CreateFrame("Frame", nil, frame)
+    header:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+    header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
     header:SetHeight(HEADER_H)
     local hbg = SolidTex(header, "BACKGROUND", T.insetR, T.insetG, T.insetB, T.insetA, -5)
     hbg:SetAllPoints(header)
@@ -276,21 +276,21 @@ local function BuildList()
     local close = MakeCloseButton(header)
     close:SetPoint("RIGHT", header, "RIGHT", -6, 0)
     close:SetScript("OnClick", function()
-        f:Hide()
+        frame:Hide()
     end)
 
-    statusText = MakeText(f, 12, 0.7, 0.7, 0.7)
-    statusText:SetPoint("TOPLEFT", f, "TOPLEFT", 12, -(HEADER_H + 12))
-    statusText:SetPoint("TOPRIGHT", f, "TOPRIGHT", -12, -(HEADER_H + 12))
+    statusText = MakeText(frame, 12, 0.7, 0.7, 0.7)
+    statusText:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -(HEADER_H + 12))
+    statusText:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -12, -(HEADER_H + 12))
     statusText:SetJustifyH("LEFT")
 
     rowList = {}
     for idx = 1, MAX_ROWS do
-        local row = CreateFrame("Frame", nil, f)
+        local row = CreateFrame("Frame", nil, frame)
         row:SetHeight(ROW_H)
         local posY = -(HEADER_H + 10 + (idx - 1) * (ROW_H + ROW_GAP))
-        row:SetPoint("TOPLEFT", f, "TOPLEFT", 8, posY)
-        row:SetPoint("TOPRIGHT", f, "TOPRIGHT", -8, posY)
+        row:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, posY)
+        row:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -8, posY)
         Panel(row, true)
 
         row.name = MakeText(row, 13, nil, nil, nil, true)
@@ -314,10 +314,10 @@ local function BuildList()
     end
 
     if CludesUI.RegisterEscapeClose then
-        CludesUI.RegisterEscapeClose(f)
+        CludesUI.RegisterEscapeClose(frame)
     end
-    listFrame = f
-    return f
+    listFrame = frame
+    return frame
 end
 
 local function ClearRows()
@@ -398,11 +398,11 @@ function OpenHousesFor(contextData)
     if not contextData then
         return
     end
-    local f = listFrame
-    if not f then
-        f = BuildList()
-        f:SetScript("OnShow", ListOnShow)
-        f:SetScript("OnHide", ListOnHide)
+    local frame = listFrame
+    if not frame then
+        frame = BuildList()
+        frame:SetScript("OnShow", ListOnShow)
+        frame:SetScript("OnHide", ListOnHide)
     end
     local unitToken = contextData.unit
     local name = (
@@ -427,7 +427,7 @@ function OpenHousesFor(contextData)
     ClearRows()
     statusText:SetText(CludesUI.L("Loading houses..."))
     statusText:Show()
-    f:Show()
+    frame:Show()
     C_Housing.GetOthersOwnedHouses(unitGuid, contextData.bnetIDAccount, not not contextData.isGuildMember)
 end
 
