@@ -54,7 +54,7 @@ end
 -- Player's specs + whether each has CDM data, for the sync spec pickers. (Shared
 -- helper that used to live in the retired layouts file; the RPT UI needs it.)
 function mod.GetCDMSpecInfo()
-    local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
+    local specProfiles = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
     local result = {}
     -- WoW Forever: one row for the player's class, keyed by the store key the
     -- Cooldown Manager runs on.
@@ -64,7 +64,7 @@ function mod.GetCDMSpecInfo()
             return result
         end
         local token = select(2, UnitClass("player"))
-        local prof = sp and sp[key]
+        local prof = specProfiles and specProfiles[key]
         local hasData = false
         if type(prof) == "table" then
             if prof.barSpells and next(prof.barSpells) ~= nil then
@@ -86,7 +86,7 @@ function mod.GetCDMSpecInfo()
         local specID, sName, _, sIcon = C_SpecializationInfo.GetSpecializationInfo(index)
         if specID then
             local key = tostring(specID)
-            local prof = sp and sp[key]
+            local prof = specProfiles and specProfiles[key]
             local hasData = false
             if type(prof) == "table" then
                 if prof.barSpells and next(prof.barSpells) ~= nil then
@@ -118,7 +118,7 @@ end
 -- every OTHER class's specs are listed only when this profile actually holds CDM
 -- data for them (an empty other-class spec is useless as a source).
 function mod.GetAllCDMSpecInfo()
-    local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
+    local specProfiles = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
     local _, curClassFile = UnitClass("player")
     local result = {}
 
@@ -144,9 +144,9 @@ function mod.GetAllCDMSpecInfo()
             local isCurrentClass = (token == curClassFile)
             local key = isCurrentClass and mod.GetActiveSpecKey and mod.GetActiveSpecKey() or nil
             if not key then
-                key = tostring(CludesUI.ForeverClassSpec(token, CludesUI.SpecHasStringEntry, sp, true))
+                key = tostring(CludesUI.ForeverClassSpec(token, CludesUI.SpecHasStringEntry, specProfiles, true))
             end
-            local hasData = HasData(sp and sp[key])
+            local hasData = HasData(specProfiles and specProfiles[key])
             if isCurrentClass or hasData then
                 result[#result + 1] = {
                     key = key,
@@ -168,7 +168,7 @@ function mod.GetAllCDMSpecInfo()
             local specID, sName, _, sIcon = GetSpecializationInfoForClassID(classID, specIndex)
             if specID then
                 local key = tostring(specID)
-                local hasData = HasData(sp and sp[key])
+                local hasData = HasData(specProfiles and specProfiles[key])
                 if isCurrentClass or hasData then
                     -- Disambiguate other-class specs (e.g. Frost Mage vs Frost DK)
                     -- by appending the class name; the current class needs no suffix.

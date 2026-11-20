@@ -3688,14 +3688,14 @@ local function UpdateFriendsVisibility()
     if LegacyFriendsRetired() then
         return
     end
-    local p = SKIN.db and SKIN.db.profile and SKIN.db.profile.friends
-    if not p or not p.enabled then
+    local profile = SKIN.db and SKIN.db.profile and SKIN.db.profile.friends
+    if not profile or not profile.enabled then
         return
     end
     if not FriendsFrame or not FriendsFrame:IsShown() then
         return
     end
-    local vis = CludesUI.EvalVisibility(p)
+    local vis = CludesUI.EvalVisibility(profile)
     if vis == "mouseover" then
         FriendsFrame:SetAlpha(0)
     else

@@ -2437,10 +2437,10 @@ local function BuildPartyPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Horizontal Frames",
         disabled = function()
-            local p = db.profile
-            return p.partyCompactMode
-                and p.partyShowTargets
-                and mod.PT_PositionAlongStack(p.partyTargetPosition, not p.partyHorizontal)
+            local profile = db.profile
+            return profile.partyCompactMode
+                and profile.partyShowTargets
+                and mod.PT_PositionAlongStack(profile.partyTargetPosition, not profile.partyHorizontal)
         end,
         disabledTooltip = "Move Party Targets beside the frame stack or turn off Compact Mode.",
         rawTooltip = true,
@@ -2448,15 +2448,15 @@ local function BuildPartyPage(page, hostFrame, yOffset)
             return db.profile.partyHorizontal
         end,
         setValue = function(value)
-            local p = db.profile
+            local profile = db.profile
             if
-                p.partyCompactMode
-                and p.partyShowTargets
-                and mod.PT_PositionAlongStack(p.partyTargetPosition, value)
+                profile.partyCompactMode
+                and profile.partyShowTargets
+                and mod.PT_PositionAlongStack(profile.partyTargetPosition, value)
             then
                 return
             end
-            p.partyHorizontal = value
+            profile.partyHorizontal = value
             PartyReloadAndUpdate()
             CludesUI:RefreshPage()
         end,

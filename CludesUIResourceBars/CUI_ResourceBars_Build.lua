@@ -1942,9 +1942,9 @@ local function BuildBars()
     -- None-forever profile schedules ZERO anchor work, and never fires during
     -- unlock mode (unlock entry/exit manage the shift).
     do
-        local sp = ERB.db and ERB.db.profile and ERB.db.profile.secondary
-        local isActive = sp ~= nil
-            and (sp.shiftElementsIfNoResource == "Up" or sp.shiftElementsIfNoResource == "Down")
+        local secondary = ERB.db and ERB.db.profile and ERB.db.profile.secondary
+        local isActive = secondary ~= nil
+            and (secondary.shiftElementsIfNoResource == "Up" or secondary.shiftElementsIfNoResource == "Down")
         -- Re-cascade only on an actual shift-state CHANGE (present<->absent, or
         -- feature toggled off) -- firing every BuildBars while merely enabled
         -- would re-walk the whole anchor chain each rebuild, a large CPU drain on

@@ -567,8 +567,8 @@ local function OnEvent(self, evt, ...)
         -- the points moving to a new target, changes the count with no power
         -- event behind it. Skipped while the Class Resource is off.
         if secondaryCache and secondaryCache.onTarget then
-            local sp = ERB.db and ERB.db.profile and ERB.db.profile.secondary
-            if sp and sp.enabled ~= false and not IsSpecDisabled(sp) then
+            local secondary = ERB.db and ERB.db.profile and ERB.db.profile.secondary
+            if secondary and secondary.enabled ~= false and not IsSpecDisabled(secondary) then
                 UpdateSecondaryResource()
             end
         end
@@ -823,11 +823,11 @@ function ERB:OnInitialize()
     -- Visual-only; never written to saved positions. Direction the shift WOULD
     -- apply (ignores unlock state): +1 = Up, -1 = Down, 0 = none.
     local function ResolveShiftDir()
-        local sp = ERB.db and ERB.db.profile and ERB.db.profile.secondary
-        if not sp then
+        local secondary = ERB.db and ERB.db.profile and ERB.db.profile.secondary
+        if not secondary then
             return 0
         end
-        local mode = sp.shiftElementsIfNoResource
+        local mode = secondary.shiftElementsIfNoResource
         if mode ~= "Up" and mode ~= "Down" then
             return 0
         end
@@ -839,9 +839,9 @@ function ERB:OnInitialize()
         -- exactly, or a form-hidden bar's empty slot stays uncovered (the shift
         -- never fires).
         if
-            sp.enabled ~= false
-            and not IsSpecDisabled(sp)
-            and not _G._CURB_BarHiddenByForm(sp)
+            secondary.enabled ~= false
+            and not IsSpecDisabled(secondary)
+            and not _G._CURB_BarHiddenByForm(secondary)
             and GetSecondaryResource()
         then
             return 0
@@ -893,8 +893,8 @@ function ERB:OnInitialize()
                 if direction == 0 then
                     return 0
                 end
-                local sp = ERB.db and ERB.db.profile and ERB.db.profile.secondary
-                return direction, (sp and sp.shiftElementsIfNoResourceExtraY) or 0
+                local secondary = ERB.db and ERB.db.profile and ERB.db.profile.secondary
+                return direction, (secondary and secondary.shiftElementsIfNoResourceExtraY) or 0
             end
             if targetKey == "ERB_Power" then
                 local direction = ResolveShiftDirPower()

@@ -69,9 +69,9 @@ end
 
 -- Opacity setting change or HUD edge: one alpha write, whatever the visibility state.
 function SKIN._ApplyMapAlpha()
-    local p = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-    if Minimap and p and p.enabled then
-        SKIN._WriteMapAlpha(Minimap, p)
+    local profile = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
+    if Minimap and profile and profile.enabled then
+        SKIN._WriteMapAlpha(Minimap, profile)
     end
 end
 
@@ -95,8 +95,8 @@ function SKIN._EditModeIconScale()
     return nil
 end
 function SKIN._ApplyMinimapIconScale()
-    local p = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-    local val = p and p.iconScale
+    local profile = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
+    local val = profile and profile.iconScale
     if not (Minimap and Minimap.SetIconScale) then
         return
     end
@@ -174,12 +174,12 @@ local function MinimapDriverString(profile, vm)
 end
 
 local function UpdateMinimapVisibility()
-    local p = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
+    local profile = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
     local minimap = Minimap
     if not minimap then
         return
     end
-    if not p or not p.enabled then
+    if not profile or not profile.enabled then
         -- Module off: hand visibility back to Blizzard instead of leaving a driver on.
         if _mmDriverStr and not InCombatLockdown() then
             UnregisterStateDriver(minimap, "visibility")
@@ -190,19 +190,19 @@ local function UpdateMinimapVisibility()
 
     -- Opacity first, in every branch (the driver's, and in combat): the alpha is ours
     -- whoever owns Show()/Hide(), and a hidden map carries it into its next Show().
-    SKIN._WriteMapAlpha(minimap, p)
+    SKIN._WriteMapAlpha(minimap, profile)
 
     -- Minimap:Show()/Hide() is protected during lockdown, and combat transitions deliver
     -- inside lockdown (PLAYER_REGEN_DISABLED already reports InCombatLockdown), so
     -- skipping the update would leave "Out of Combat" permanently visible and "In Combat"
     -- permanently hidden. Alpha is no stand-in: engine-drawn blips ignore frame alpha,
     -- and a transparent map still takes the mouse. A secure state driver is the only thing that can legally hide this frame mid-combat, so combat-dependent selections get one; others keep plain Show()/Hide().
-    local vm = CludesUI.GetActiveVisibilityModes(p, "visibility")
+    local vm = CludesUI.GetActiveVisibilityModes(profile, "visibility")
     -- Mouseover cannot be expressed as a macro conditional, and the poll's own Show()/Hide() would fight a driver, so those selections stay on Lua.
     local wanted = not _mmKeyHidden
-            and CludesUI.VisDependsOnCombat(p, "visibility")
+            and CludesUI.VisDependsOnCombat(profile, "visibility")
             and not (vm and vm.mouseover)
-            and MinimapDriverString(p, vm)
+            and MinimapDriverString(profile, vm)
         or nil
     if wanted ~= _mmDriverStr and not InCombatLockdown() then
         -- Registering evaluates immediately (Show()s/Hide()s the frame), so only swap out of combat; the dispatcher re-fires on PLAYER_REGEN_ENABLED to finish.
@@ -221,7 +221,7 @@ local function UpdateMinimapVisibility()
     if InCombatLockdown() then
         return
     end
-    local vis = CludesUI.EvalVisibility(p)
+    local vis = CludesUI.EvalVisibility(profile)
     if _mmKeyHidden then
         minimap:Hide()
     elseif vis == "mouseover" then
@@ -252,8 +252,8 @@ hooksecurefunc("ToggleMinimap", function()
         return
     end
     SetMMKeyHidden(not Minimap:IsShown())
-    local p = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-    if p and p.enabled then
+    local profile = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
+    if profile and profile.enabled then
         UpdateMinimapVisibility()
     end
 end)
@@ -587,12 +587,12 @@ function SKIN:OnInitialize()
             if InCombatLockdown() or _mmKeyHidden then
                 return false
             end
-            local p = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-            if not (p and p.enabled) then
+            local profile = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
+            if not (profile and profile.enabled) then
                 return false
             end
             -- Hover-gated sets only reveal while their conditions pass.
-            return CludesUI.VisWantsMouseover(p, "visibility")
+            return CludesUI.VisWantsMouseover(profile, "visibility")
         end, function()
             -- A hover reveal shows the map at its Opacity, not full alpha.
             return SKIN._MapAlpha(SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap)

@@ -396,14 +396,14 @@ function mod.GetTrackedBuffBars()
     if not specKey then
         return { selectedBar = 1, bars = {} }
     end
-    local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-    if not sp then
+    local specProfiles = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
+    if not specProfiles then
         return { selectedBar = 1, bars = {} }
     end
-    if not sp[specKey] then
-        sp[specKey] = { barSpells = {} }
+    if not specProfiles[specKey] then
+        specProfiles[specKey] = { barSpells = {} }
     end
-    local prof = sp[specKey]
+    local prof = specProfiles[specKey]
     if not prof.trackedBuffBars then
         prof.trackedBuffBars = { selectedBar = 1, bars = {} }
     end
@@ -481,11 +481,11 @@ function mod.GetTBBPositions()
     if not specKey then
         return {}
     end
-    local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-    if not sp or not sp[specKey] then
+    local specProfiles = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
+    if not specProfiles or not specProfiles[specKey] then
         return {}
     end
-    local prof = sp[specKey]
+    local prof = specProfiles[specKey]
     if not prof.tbbPositions then
         prof.tbbPositions = {}
     end

@@ -537,8 +537,8 @@ function mod.AddBarToAllSpecs(srcIdx)
 
     local srcPos = mod.GetTBBPositions()[tostring(srcIdx)]
 
-    local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-    if not sp then
+    local specProfiles = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
+    if not specProfiles then
         return 0
     end
 
@@ -571,10 +571,10 @@ function mod.AddBarToAllSpecs(srcIdx)
         if specID then
             local key = tostring(specID)
             if key ~= activeKey then
-                if not sp[key] then
-                    sp[key] = { barSpells = {} }
+                if not specProfiles[key] then
+                    specProfiles[key] = { barSpells = {} }
                 end
-                local prof = sp[key]
+                local prof = specProfiles[key]
                 if not prof.trackedBuffBars then
                     prof.trackedBuffBars = { selectedBar = 1, bars = {} }
                 end
@@ -639,8 +639,8 @@ function mod.RemoveBarFromAllSpecs(srcIdx)
         return 0
     end
 
-    local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-    if not sp then
+    local specProfiles = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
+    if not specProfiles then
         return 0
     end
 
@@ -663,7 +663,7 @@ function mod.RemoveBarFromAllSpecs(srcIdx)
         if specID then
             local specKey = tostring(specID)
             if specKey ~= activeKey then
-                local prof = sp[specKey]
+                local prof = specProfiles[specKey]
                 local tbb = prof and prof.trackedBuffBars
                 if tbb and tbb.bars and #tbb.bars > 0 then
                     -- Rebuild excluding matches, re-keying positions so compacted indices and

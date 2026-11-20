@@ -96,9 +96,9 @@ local function EnsureAssignedSpells(barKeyE)
     -- ghosting -- the import happens FROM this panel, so this rebuild fires before migration runs; the gate is essential.
     local importPending = false
     do
-        local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
+        local specProfiles = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
         local sk = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-        local aprof = sp and sk and sp[sk]
+        local aprof = specProfiles and sk and specProfiles[sk]
         if aprof and aprof._importGhostMode then
             importPending = true
         end
@@ -129,9 +129,9 @@ local function EnsureAssignedSpells(barKeyE)
         -- must arbitrate. Claimed set built from the active spec's STORED bars, not the live route map (momentarily stale during the swap).
         local claimedElsewhere
         do
-            local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
+            local specProfiles = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
             local sk = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-            local aprof = sp and sk and sp[sk]
+            local aprof = specProfiles and sk and specProfiles[sk]
             local bsAll = aprof and aprof.barSpells
             if bsAll and mod.StoreVariantValue then
                 for key, bsd in pairs(bsAll) do
@@ -245,9 +245,9 @@ local function EnsureAssignedSpells(barKeyE)
     then
         local aprofM, migrated
         do
-            local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
+            local specProfiles = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
             local sk = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-            aprofM = sp and sk and sp[sk]
+            aprofM = specProfiles and sk and specProfiles[sk]
             migrated = aprofM and aprofM._barFilterModelV6 and true or false
         end
         local catalog = migrated and mod.EnumerateCDMSettingsCatalog() or nil

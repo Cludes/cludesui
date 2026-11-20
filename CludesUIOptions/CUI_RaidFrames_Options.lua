@@ -182,17 +182,17 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
     -- An Art Style pick, with the side effects of leaving and entering 3D
     -- (Inside positions and the None shape are 3D only).
     local function SetArt(value)
-        local p = db.profile
-        p.partyPortraitMode = value
-        if value == "3d" and p.partyPortraitStyle == "detached" then
-            p.partyPortraitShape = "none"
+        local profile = db.profile
+        profile.partyPortraitMode = value
+        if value == "3d" and profile.partyPortraitStyle == "detached" then
+            profile.partyPortraitShape = "none"
         end
         if value ~= "3d" then
-            if p.partyPortraitShape == "none" then
-                p.partyPortraitShape = "portrait"
+            if profile.partyPortraitShape == "none" then
+                profile.partyPortraitShape = "portrait"
             end
-            if IsInside(p.partyPortraitSide) then
-                p.partyPortraitSide = "left"
+            if IsInside(profile.partyPortraitSide) then
+                profile.partyPortraitSide = "left"
             end
         end
         Refresh()
@@ -261,19 +261,19 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                 return PV("partyPortraitStyle", "none")
             end,
             setValue = function(value)
-                local p = db.profile
-                local prev = p.partyPortraitStyle or "none"
+                local profile = db.profile
+                local prev = profile.partyPortraitStyle or "none"
                 if value == prev then
                     return
                 end
-                if value == "detached" and (p.partyPortraitMode or "2d") == "3d" then
-                    p.partyPortraitShape = "none"
+                if value == "detached" and (profile.partyPortraitMode or "2d") == "3d" then
+                    profile.partyPortraitShape = "none"
                 end
                 if value ~= "detached" then
-                    p.partyPortraitSize = 0
-                    local sd = p.partyPortraitSide
+                    profile.partyPortraitSize = 0
+                    local sd = profile.partyPortraitSide
                     if sd == "top" or IsInside(sd) then
-                        p.partyPortraitSide = "left"
+                        profile.partyPortraitSide = "left"
                     end
                 end
                 PSSet("partyPortraitStyle", value)
@@ -690,8 +690,8 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         text = "Enable Party Targets",
         tooltip = "Show a smaller secure target button beside each party frame. Left-click a button to target that party member's current target.",
         disabled = function()
-            local p = db.profile
-            return not p.partyShowTargets and p.partyCompactMode and mod.PT_AlongStack(p, true)
+            local profile = db.profile
+            return not profile.partyShowTargets and profile.partyCompactMode and mod.PT_AlongStack(profile, true)
         end,
         disabledTooltip = "Move Party Targets beside the frame stack or turn off Compact Mode.",
         rawTooltip = true,
@@ -910,14 +910,14 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         values = { top = "Top", bottom = "Bottom", left = "Left", right = "Right" },
         order = { "top", "bottom", "left", "right" },
         itemDisabled = function(value)
-            local p = db.profile
-            if p.partyCompactMode and mod.PT_PositionAlongStack(value, p.partyHorizontal) then
+            local profile = db.profile
+            if profile.partyCompactMode and mod.PT_PositionAlongStack(value, profile.partyHorizontal) then
                 return true
             end
-            if p.partyHorizontal or not mod.RF_PartyKit() then
+            if profile.partyHorizontal or not mod.RF_PartyKit() then
                 return false
             end
-            local m = mod.RF_KitBuffMode(p)
+            local m = mod.RF_KitBuffMode(profile)
             return (m == "RIGHT" and value == "right") or (m == "LEFT" and value == "left")
         end,
         itemDisabledTooltip = function(value)

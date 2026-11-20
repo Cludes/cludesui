@@ -1011,19 +1011,19 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     arrowVals._menuOpts = {
         itemHeight = 26,
         icon = function(settingKey)
-            local st = mod.TARGET_ARROW_STYLES[settingKey]
-            if not st then
+            local arrowStyle = mod.TARGET_ARROW_STYLES[settingKey]
+            if not arrowStyle then
                 return nil
             end -- "none" has no preview
-            return mod.TARGET_ARROW_DIR .. st.l .. ".png"
+            return mod.TARGET_ARROW_DIR .. arrowStyle.l .. ".png"
         end,
         iconWidth = function(settingKey)
-            local st = mod.TARGET_ARROW_STYLES[settingKey]
-            if not st then
+            local arrowStyle = mod.TARGET_ARROW_STYLES[settingKey]
+            if not arrowStyle then
                 return nil
             end
             -- Match in-game aspect: drawn width is st.w at height 16, icon slot is itemHeight(32)-8=24 tall, so scale width by 24/16.
-            return math.floor(st.w * 24 / 16 + 0.5)
+            return math.floor(arrowStyle.w * 24 / 16 + 0.5)
         end,
     }
     targetGlowRow, height = W:DualRow(hostFrame, cursorY, {

@@ -90,13 +90,13 @@ if CludesUI.IS_FOREVER then
         if not specID or specID == 0 then
             return nil
         end
-        local sp = mod.GetActiveSpecProfiles()
+        local specProfiles = mod.GetActiveSpecProfiles()
         local m = mod._fvSpecKeyMemo
-        if m and m.root == sp and m.raw == specID then
+        if m and m.root == specProfiles and m.raw == specID then
             return m.key
         end
-        local key = tostring(CludesUI.SpecFor(specID, CludesUI.SpecHasStringEntry, sp))
-        mod._fvSpecKeyMemo = { root = sp, raw = specID, key = key }
+        local key = tostring(CludesUI.SpecFor(specID, CludesUI.SpecHasStringEntry, specProfiles))
+        mod._fvSpecKeyMemo = { root = specProfiles, raw = specID, key = key }
         return key
     end
     mod.ComputeLiveSpecKey = ComputeLiveSpecKey

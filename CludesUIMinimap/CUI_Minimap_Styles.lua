@@ -207,8 +207,8 @@ end
 -- Parenting the canvas to the layout frame of the visible size is what crops the
 -- blips, for every crop.
 local function DesiredMapParent(minimap)
-    local p = SKIN.db and SKIN.db.profile.minimap
-    if p and SKIN._MapCrop(p, p.mapSize or 140) > 0 then
+    local profile = SKIN.db and SKIN.db.profile.minimap
+    if profile and SKIN._MapCrop(profile, profile.mapSize or 140) > 0 then
         return GetFFD(minimap).layoutFrame or UIParent
     end
     return UIParent
@@ -386,20 +386,20 @@ end
 -- hooks: CUI stacks them at the bottom-right corner; the stock styles place
 -- them where their stock map does (offsets scale with the map size).
 SKIN._ZoomAnchor = function(button, isIn, minimap)
-    local p = SKIN.db and SKIN.db.profile.minimap
+    local profile = SKIN.db and SKIN.db.profile.minimap
     button:ClearAllPoints()
-    local style = p and SKIN._MinimapStyle() or "cui"
+    local style = profile and SKIN._MinimapStyle() or "cui"
     if style == "classic" then
         -- Vanilla: MinimapZoomIn CENTER 69,-37 and MinimapZoomOut CENTER 43,-65
         -- of the backdrop centred on the 140px map.
-        local s = (p.mapSize or 140) / 140
+        local s = (profile.mapSize or 140) / 140
         if isIn then
             button:SetPoint("CENTER", minimap, "CENTER", 69 * s, -37 * s)
         else
             button:SetPoint("CENTER", minimap, "CENTER", 43 * s, -65 * s)
         end
     elseif style == "blizzard" then
-        local s = (p.mapSize or 140) / 198
+        local s = (profile.mapSize or 140) / 198
         if isIn then
             button:SetPoint("CENTER", minimap, "CENTER", 88 * s, -68 * s)
         else

@@ -208,11 +208,11 @@ local function ApplyBtnOffset(widget)
 end
 
 local function SaveZoomLevel()
-    local p = SKIN.db and SKIN.db.profile.minimap
-    if not p then
+    local profile = SKIN.db and SKIN.db.profile.minimap
+    if not profile then
         return
     end
-    p.savedZoom = Minimap:GetZoom()
+    profile.savedZoom = Minimap:GetZoom()
 end
 
 -- Auto Zoom Reset: (re)arms a one-shot timer on every manual zoom change (scroll wheel, zoom buttons) that snaps the map back to zoom level 0 (max distance) after zoomResetSeconds of inactivity. 0 = disabled.
@@ -222,8 +222,8 @@ local function RestartZoomResetTimer()
         zoomResetTimer:Cancel()
         zoomResetTimer = nil
     end
-    local p = SKIN.db and SKIN.db.profile.minimap
-    local secs = p and p.zoomResetSeconds or 0
+    local profile = SKIN.db and SKIN.db.profile.minimap
+    local secs = profile and profile.zoomResetSeconds or 0
     if not secs or secs <= 0 then
         return
     end

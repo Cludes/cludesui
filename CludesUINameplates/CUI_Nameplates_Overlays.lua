@@ -504,9 +504,9 @@ local function EnsureArrows(backing)
     if backing.leftArrow then
         return
     end
-    local st = mod.ResolveTargetArrowStyle(p)
+    local arrowStyle = mod.ResolveTargetArrowStyle(p)
     local sc = (p and p.targetArrowScale) or 1.0
-    local aw, ah = math.floor(st.w * sc + 0.5), math.floor(16 * sc + 0.5)
+    local aw, ah = math.floor(arrowStyle.w * sc + 0.5), math.floor(16 * sc + 0.5)
     -- Regions OF the health bar (the plate subtree is aspect-restricted and unmeasurable). NO
     -- creation anchors: single-point + size rects render DISPLACED inside the restricted tree,
     -- so the only sanctioned form is the fully-anchored TOP+BOTTOM scheme from
@@ -528,9 +528,9 @@ local function EnsureArrows(backing)
         arrowParent = holderFrame
     end
     backing.leftArrow = arrowParent:CreateTexture(nil, "OVERLAY")
-    backing.leftArrow:SetTexture(mod.TARGET_ARROW_DIR .. st.l .. ".png")
+    backing.leftArrow:SetTexture(mod.TARGET_ARROW_DIR .. arrowStyle.l .. ".png")
     backing.rightArrow = arrowParent:CreateTexture(nil, "OVERLAY")
-    backing.rightArrow:SetTexture(mod.TARGET_ARROW_DIR .. st.r .. ".png")
+    backing.rightArrow:SetTexture(mod.TARGET_ARROW_DIR .. arrowStyle.r .. ".png")
     Pix.Size(backing.leftArrow, aw, ah)
     backing.leftArrow:Hide()
     Pix.Size(backing.rightArrow, aw, ah)

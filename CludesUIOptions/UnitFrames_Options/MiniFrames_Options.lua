@@ -2617,12 +2617,12 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
         -- four Location/Simple setters capture this BEFORE writing and force a full
         -- rebuild on change: any of them can flip EITHER row (collision pushes, SwapAuraSlot displacing the other anchor, simple forcing showBuffs/debuffAnchor).
         local function BossBuffRowShown()
-            local p = saved.profile.boss
-            return mod.GetBossSimpleBuffMode(p) == "none" and p.showBuffs ~= false
+            local bossCfg = saved.profile.boss
+            return mod.GetBossSimpleBuffMode(bossCfg) == "none" and bossCfg.showBuffs ~= false
         end
         local function BossDebuffRowShown()
-            local p = saved.profile.boss
-            return mod.GetBossSimpleDebuffMode(p) == "none" and (p.debuffAnchor or "bottomleft") ~= "none"
+            local bossCfg = saved.profile.boss
+            return mod.GetBossSimpleDebuffMode(bossCfg) == "none" and (bossCfg.debuffAnchor or "bottomleft") ~= "none"
         end
         local function BossAuraRowsState()
             return tostring(BossBuffRowShown()) .. "/" .. tostring(BossDebuffRowShown())
@@ -3219,15 +3219,15 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
         -- frames + both previews. Debuff Size (and its cog) disable while Simple
         -- Debuff Display frame-matches the size, or when no debuffs show at all (Simple None + Location None).
         local bossDebuffSizeOff = function()
-            local p = saved.profile.boss
-            return mod.GetBossSimpleDebuffMode(p) ~= "none" or (p.debuffAnchor or "bottomleft") == "none"
+            local bossCfg = saved.profile.boss
+            return mod.GetBossSimpleDebuffMode(bossCfg) ~= "none" or (bossCfg.debuffAnchor or "bottomleft") == "none"
         end
         -- Buff Size (and its directions cog) are disabled while Simple Buff
         -- Display frame-matches the size, or when buffs are hidden (Buffs
         -- Location None). Shared so the cog matches.
         local bossBuffSizeOff = function()
-            local p = saved.profile.boss
-            return mod.GetBossSimpleBuffMode(p) ~= "none" or p.showBuffs == false
+            local bossCfg = saved.profile.boss
+            return mod.GetBossSimpleBuffMode(bossCfg) ~= "none" or bossCfg.showBuffs == false
         end
         -- Buff Text Size gates on the "Show Duration" toggle inside its
         -- Duration & Stack cog (mirrors Debuff Text Size on the row below).
@@ -3941,8 +3941,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             -- Boss Buff Filter.
             local filterRow
             local filterOff = function()
-                local p = saved.profile.boss
-                return mod.GetBossSimpleDebuffMode(p) == "none" and (p.debuffAnchor or "bottomleft") == "none"
+                local bossCfg = saved.profile.boss
+                return mod.GetBossSimpleDebuffMode(bossCfg) == "none" and (bossCfg.debuffAnchor or "bottomleft") == "none"
             end
             local function BossS()
                 return saved.profile.boss
@@ -3950,8 +3950,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             local buffFilterOff
             local bossFilterRightSlot = { type = "label", text = "" }
             buffFilterOff = function()
-                local p = saved.profile.boss
-                return mod.GetBossSimpleBuffMode(p) == "none" and not p.showBuffs
+                local bossCfg = saved.profile.boss
+                return mod.GetBossSimpleBuffMode(bossCfg) == "none" and not bossCfg.showBuffs
             end
             bossFilterRightSlot = {
                 type = "dropdown",

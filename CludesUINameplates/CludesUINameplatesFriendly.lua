@@ -1911,15 +1911,15 @@ function FriendlyFrame:ApplyTarget()
     local plate = FP()
     local showArrows = isTarget and plate and plate.showTargetArrows
     if showArrows then
-        local st = mod.ResolveTargetArrowStyle(plate)
-        self.leftArrow:SetTexture(mod.TARGET_ARROW_DIR .. st.l .. ".png")
-        self.rightArrow:SetTexture(mod.TARGET_ARROW_DIR .. st.r .. ".png")
+        local arrowStyle = mod.ResolveTargetArrowStyle(plate)
+        self.leftArrow:SetTexture(mod.TARGET_ARROW_DIR .. arrowStyle.l .. ".png")
+        self.rightArrow:SetTexture(mod.TARGET_ARROW_DIR .. arrowStyle.r .. ".png")
         local acr, acg, acb = mod.GetTargetArrowColor(plate)
         self.leftArrow:SetVertexColor(acr, acg, acb)
         self.rightArrow:SetVertexColor(acr, acg, acb)
-        self.leftArrow:SetSize(st.w, 16)
-        self.rightArrow:SetSize(st.w, 16)
-        self._arrowW = st.w
+        self.leftArrow:SetSize(arrowStyle.w, 16)
+        self.rightArrow:SetSize(arrowStyle.w, 16)
+        self._arrowW = arrowStyle.w
     end
     self.leftArrow:SetShown(showArrows or false)
     self.rightArrow:SetShown(showArrows or false)

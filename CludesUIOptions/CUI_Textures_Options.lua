@@ -1229,15 +1229,15 @@ local function TileQoL(hostFrame, cursorY, W, tile)
         },
         order = { "ring_normal", "ring_light", "custom", "---", "ring_thin", "ring_heavy", "ring_thick" },
         getValue = function()
-            local p = cursorDB()
-            return (p and p.texture) or "ring_normal"
+            local profile = cursorDB()
+            return (profile and profile.texture) or "ring_normal"
         end,
         setValue = function(value)
-            local p = cursorDB()
-            if not p then
+            local profile = cursorDB()
+            if not profile then
                 return
             end
-            p.texture = value
+            profile.texture = value
             if _G._CUCL_Apply then
                 _G._CUCL_Apply()
             end
@@ -1257,13 +1257,13 @@ local function TileQoL(hostFrame, cursorY, W, tile)
         values = ringValues,
         order = ringOrder,
         getValue = function()
-            local p = cursorDB()
-            local g = p and p.gcd
+            local profile = cursorDB()
+            local g = profile and profile.gcd
             return (g and g.ringTex) or "light"
         end,
         setValue = function(value)
-            local p = cursorDB()
-            local g = p and p.gcd
+            local profile = cursorDB()
+            local g = profile and profile.gcd
             if not g then
                 return
             end
@@ -1282,13 +1282,13 @@ local function TileQoL(hostFrame, cursorY, W, tile)
         values = ringValues,
         order = ringOrder,
         getValue = function()
-            local p = cursorDB()
-            local c = p and p.castCircle
+            local profile = cursorDB()
+            local c = profile and profile.castCircle
             return (c and c.ringTex) or "normal"
         end,
         setValue = function(value)
-            local p = cursorDB()
-            local c = p and p.castCircle
+            local profile = cursorDB()
+            local c = profile and profile.castCircle
             if not c then
                 return
             end

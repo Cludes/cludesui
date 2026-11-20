@@ -217,17 +217,17 @@ local function Clamp(st)
 end
 
 local function DrawGuild(panelFrame)
-    local st = panelFrame.scroll
+    local scroll = panelFrame.scroll
     local kit, wid = Kit(panelFrame), mod.UI.PANEL_W
-    Clamp(st)
-    Para(panelFrame, 0, st.header)
+    Clamp(scroll)
+    Para(panelFrame, 0, scroll.header)
 
-    local scrolls = #st.entries > st.capacity
+    local scrolls = #scroll.entries > scroll.capacity
     local right = scrolls and (wid - BAR_W - 10) or wid
     local RANK, NAME = 30, 40
-    local posY = st.top
-    for idx = st.offset + 1, math.min(#st.entries, st.offset + st.capacity) do
-        local e = st.entries[idx]
+    local posY = scroll.top
+    for idx = scroll.offset + 1, math.min(#scroll.entries, scroll.offset + scroll.capacity) do
+        local e = scroll.entries[idx]
         if e.line then
             local cfg = e.line
             local color = cfg.tier.color
@@ -264,10 +264,10 @@ local function DrawGuild(panelFrame)
     local bar = panelFrame.bar
     bar:SetShown(scrolls)
     if scrolls then
-        local trackH = st.capacity * ROW_H
-        local thumbH = math.max(20, trackH * st.capacity / #st.entries)
+        local trackH = scroll.capacity * ROW_H
+        local thumbH = math.max(20, trackH * scroll.capacity / #scroll.entries)
         local travel = trackH - thumbH
-        Rect(kit.fill, panelFrame, wid - BAR_W, st.top + 3, BAR_W, trackH, C.grid)
+        Rect(kit.fill, panelFrame, wid - BAR_W, scroll.top + 3, BAR_W, trackH, C.grid)
         bar.travel, bar.trackH = travel, trackH
         bar:SetSize(BAR_W, thumbH)
         bar:ClearAllPoints()
@@ -276,21 +276,21 @@ local function DrawGuild(panelFrame)
             panelFrame,
             "TOPLEFT",
             wid - BAR_W,
-            st.top + 3 - travel * st.offset / (#st.entries - st.capacity)
+            scroll.top + 3 - travel * scroll.offset / (#scroll.entries - scroll.capacity)
         )
     end
 end
 
 -- Move the list by `rows`, redrawing only if it actually moved.
 local function ScrollBy(panelFrame, rowList)
-    local st = panelFrame.scroll
-    if not st then
+    local scroll = panelFrame.scroll
+    if not scroll then
         return
     end
-    local before = st.offset
-    st.offset = st.offset + rowList
-    Clamp(st)
-    if st.offset ~= before then
+    local before = scroll.offset
+    scroll.offset = scroll.offset + rowList
+    Clamp(scroll)
+    if scroll.offset ~= before then
         DrawGuild(panelFrame)
     end
 end
@@ -327,17 +327,17 @@ local function SetUpScrolling(panelFrame)
     end)
     -- Dragging: rows follow the cursor at the track's scale.
     bar:SetScript("OnMouseDown", function(self)
-        local st = panelFrame.scroll
-        if not st or self.travel <= 0 then
+        local scroll = panelFrame.scroll
+        if not scroll or self.travel <= 0 then
             return
         end
         local _, posY = GetCursorPosition()
-        self.dragging, self.startY, self.startOffset = true, posY / self:GetEffectiveScale(), st.offset
+        self.dragging, self.startY, self.startOffset = true, posY / self:GetEffectiveScale(), scroll.offset
         self:SetScript("OnUpdate", function()
             local _, curY = GetCursorPosition()
             local moved = self.startY - curY / self:GetEffectiveScale()
-            local rowList = (#st.entries - st.capacity) * moved / self.travel
-            ScrollBy(panelFrame, math.floor(self.startOffset + rowList + 0.5) - st.offset)
+            local rowList = (#scroll.entries - scroll.capacity) * moved / self.travel
+            ScrollBy(panelFrame, math.floor(self.startOffset + rowList + 0.5) - scroll.offset)
         end)
     end)
     bar:SetScript("OnMouseUp", function(self)

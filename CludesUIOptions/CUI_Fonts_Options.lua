@@ -801,15 +801,15 @@ local function TileQoL(hostFrame, cursorY, W, tile)
             max = maxV,
             step = 1,
             getValue = function()
-                local p = brDB()
-                return (p and p[key]) or def
+                local profile = brDB()
+                return (profile and profile[key]) or def
             end,
             setValue = function(val)
-                local p = brDB()
-                if not p then
+                local profile = brDB()
+                if not profile then
                     return
                 end
-                p[key] = val
+                profile[key] = val
                 if _G._CUI_BattleRes_Apply then
                     _G._CUI_BattleRes_Apply()
                 end
@@ -917,15 +917,15 @@ local function TileQoL(hostFrame, cursorY, W, tile)
             values = brFontValues,
             order = brFontOrder,
             getValue = function()
-                local p = brDB()
-                return (p and p.font) or "__global"
+                local profile = brDB()
+                return (profile and profile.font) or "__global"
             end,
             setValue = function(val)
-                local p = brDB()
-                if not p then
+                local profile = brDB()
+                if not profile then
                     return
                 end
-                p.font = val
+                profile.font = val
                 if _G._CUI_BattleRes_Apply then
                     _G._CUI_BattleRes_Apply()
                 end
@@ -942,15 +942,15 @@ local function TileQoL(hostFrame, cursorY, W, tile)
             },
             order = { "__global", "none", "outline", "thick" },
             getValue = function()
-                local p = brDB()
-                return (p and p.outlineMode) or "__global"
+                local profile = brDB()
+                return (profile and profile.outlineMode) or "__global"
             end,
             setValue = function(val)
-                local p = brDB()
-                if not p then
+                local profile = brDB()
+                if not profile then
                     return
                 end
-                p.outlineMode = val
+                profile.outlineMode = val
                 if _G._CUI_BattleRes_Apply then
                     _G._CUI_BattleRes_Apply()
                 end

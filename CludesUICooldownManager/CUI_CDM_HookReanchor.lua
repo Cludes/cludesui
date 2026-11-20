@@ -2682,8 +2682,8 @@ local function CollectAndReanchor()
     -- diversions) and queue another reanchor (now-ghost-routed frames move out of the default bars).
     if mod.MigrateSpecToBarFilterModelV6 then
         local specKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-        local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-        local prof = sp and specKey and sp[specKey]
+        local specProfiles = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
+        local prof = specProfiles and specKey and specProfiles[specKey]
         local needsMigration = prof and not prof._barFilterModelV6
         if needsMigration then
             local added = mod.MigrateSpecToBarFilterModelV6()

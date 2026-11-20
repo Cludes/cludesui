@@ -82,14 +82,14 @@ function mod.GetBarGlows()
     end
     -- Bar glows are spec-specific and per-profile: specProfiles[specKey].barGlows
     -- under the active profile's bucket (ns.GetActiveSpecProfiles).
-    local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-    if not sp then
+    local specProfiles = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
+    if not specProfiles then
         return { enabled = true, selectedBar = "cooldowns", assignments = {} }
     end
-    if not sp[specKey] then
-        sp[specKey] = { barSpells = {} }
+    if not specProfiles[specKey] then
+        specProfiles[specKey] = { barSpells = {} }
     end
-    local prof = sp[specKey]
+    local prof = specProfiles[specKey]
     if not prof.barGlows or not next(prof.barGlows) then
         prof.barGlows = {
             enabled = true,

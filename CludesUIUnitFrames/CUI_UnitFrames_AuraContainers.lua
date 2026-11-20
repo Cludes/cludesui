@@ -3584,14 +3584,14 @@ local TypeIcons = { LIFT = 18, GROW = { up = "UP", down = "DOWN", left = "LEFT",
 do
     local memoFP, memoMap
     PlayerDispelPalette = function()
-        local p = mod.UF_GetProfile and mod.UF_GetProfile()
-        if not p then
+        local profile = mod.UF_GetProfile and mod.UF_GetProfile()
+        if not profile then
             return nil, nil
         end
         local filterPass = ""
         for index = 1, #DISPEL_SLOTS do
             local slotIndex = DISPEL_SLOTS[index]
-            local color = p[slotIndex.colorKey]
+            local color = profile[slotIndex.colorKey]
             filterPass = filterPass
                 .. string.format(
                     "%.3f,%.3f,%.3f;",
@@ -3604,7 +3604,7 @@ do
             local map = {}
             for index = 1, #DISPEL_SLOTS do
                 local slotIndex = DISPEL_SLOTS[index]
-                local color = p[slotIndex.colorKey]
+                local color = profile[slotIndex.colorKey]
                 map[DISPEL_TYPE_TOKENS[slotIndex.key]] = CreateColor(
                     (color and color.r) or slotIndex.fallback[1],
                     (color and color.g) or slotIndex.fallback[2],
@@ -3980,22 +3980,22 @@ local function DispelSlotsShown(profile)
 end
 
 local function BuildDispelStyles(widget)
-    local p = mod.UF_GetProfile and mod.UF_GetProfile()
-    if not p then
+    local profile = mod.UF_GetProfile and mod.UF_GetProfile()
+    if not profile then
         return false
     end
-    local modeName = p.dispelOverlay or "none"
+    local modeName = profile.dispelOverlay or "none"
     -- "Only Dispellable by You": slot filters are fixed at declaration and
     -- containers are never swapped (engine buttons leak), so BOTH filter
     -- variants exist as slots from creation and the INACTIVE variant is
     -- styled to opacity 0. Toggling the option only restyles.
-    local byMe = p.dispelOverlayByMe == true
-    local op = p.dispelOverlayOpacity or 100
+    local byMe = profile.dispelOverlayByMe == true
+    local op = profile.dispelOverlayOpacity or 100
     -- Color Custom Borders: the player frame border's own ApplyBorderStyle
     -- inputs, so each type's copy matches it (read-only, shared by the slots).
     local customBorder
-    if DispelCustomBorderOn(p) then
-        local cfg = p.player
+    if DispelCustomBorderOn(profile) then
+        local cfg = profile.player
         local bs = cfg.borderSize or 1
         local btex = cfg.borderTexture
         customBorder = {
@@ -4009,14 +4009,14 @@ local function BuildDispelStyles(widget)
         }
     end
     -- The Outer Ring copy's lift over the portrait backdrop (ApplyDispelSlotStyle).
-    local ringLift = (customBorder and mod.UF_CastIconOnPortrait("player", p.player)) and 4 or 1
+    local ringLift = (customBorder and mod.UF_CastIconOnPortrait("player", profile.player)) and 4 or 1
     -- Type Icon Position: one geometry for every type's icon (its art per slot).
     -- A Growth Direction moves the icons to their own row (TypeIcons.CreateRow).
-    local iconCorner = p.showDispelIcons == true
-            and (p.dispelIconGrowth or "none") == "none"
-            and (p.dispelIconPosition or "right"):upper()
+    local iconCorner = profile.showDispelIcons == true
+            and (profile.dispelIconGrowth or "none") == "none"
+            and (profile.dispelIconPosition or "right"):upper()
         or nil
-    local rowSize = p.dispelIconSize or 16
+    local rowSize = profile.dispelIconSize or 16
     for index = 1, #DISPEL_SLOTS do
         local slotIndex = DISPEL_SLOTS[index]
         -- A type the engine token can never match keeps using the PLAIN slot in
@@ -4024,7 +4024,7 @@ local function BuildDispelStyles(widget)
         -- entirely.
         local tokenBlind = TokenBlindDispelSlot(slotIndex.key)
         local byMeLive = byMe and not tokenBlind
-        local colour = p[slotIndex.colorKey]
+        local colour = profile[slotIndex.colorKey]
         local color = {
             r = colour and colour.r or slotIndex.fallback[1],
             g = colour and colour.g or slotIndex.fallback[2],
@@ -4034,9 +4034,9 @@ local function BuildDispelStyles(widget)
                 and {
                     atlas = slotIndex.atlas,
                     corner = iconCorner,
-                    size = p.dispelIconSize or 16,
-                    offX = p.dispelIconOffsetX or 0,
-                    offY = p.dispelIconOffsetY or 0,
+                    size = profile.dispelIconSize or 16,
+                    offX = profile.dispelIconOffsetX or 0,
+                    offY = profile.dispelIconOffsetY or 0,
                 }
             or nil
         -- Plain twin, then the by-me twin. The overlay, the border copy and the
@@ -4083,7 +4083,7 @@ local function BuildDispelStyles(widget)
             applyExtra = TypeIcons.ApplyCell,
         }
     end
-    return DispelSlotsShown(p)
+    return DispelSlotsShown(profile)
 end
 
 -- One set: the decoration set (fill false) on the unit frame, or the overlay
@@ -4161,9 +4161,9 @@ local function SyncDispelSets(widget, record, decorShown, fillShown, iconsShown)
     end
     if iconsShown and not record.dispelIconsBuilt then
         TypeIcons.CreateRow(widget, record)
-        local p = mod.UF_GetProfile and mod.UF_GetProfile()
-        if p then
-            TypeIcons.LayoutRow(widget, record, p)
+        local profile = mod.UF_GetProfile and mod.UF_GetProfile()
+        if profile then
+            TypeIcons.LayoutRow(widget, record, profile)
         end
     end
     if record.dispel then
@@ -4257,11 +4257,11 @@ local function ReloadDispelSlots(widget, record)
     if not record.dispelDone then
         return
     end
-    local p = mod.UF_GetProfile and mod.UF_GetProfile()
-    if not p then
+    local profile = mod.UF_GetProfile and mod.UF_GetProfile()
+    if not profile then
         return
     end
-    local val = DispelFP(p, widget)
+    local val = DispelFP(profile, widget)
     if ufFP.dispel ~= val then
         ufFP.dispel = val
         BuildDispelStyles(widget)
@@ -4274,12 +4274,12 @@ local function ReloadDispelSlots(widget, record)
             AK.RestyleSoon(TypeIcons.StyleKey(auraKey))
         end
         if record.dispelIconsBuilt then
-            TypeIcons.LayoutRow(widget, record, p)
+            TypeIcons.LayoutRow(widget, record, profile)
         end
     end
     -- A set turned on for the first time is built here, from the styles just
     -- made current.
-    SyncDispelSets(widget, record, DispelSlotsShown(p))
+    SyncDispelSets(widget, record, DispelSlotsShown(profile))
 end
 
 -- Options-panel poke (via ns.UpdatePlayerDispelOverlay): re-run the
@@ -4858,9 +4858,9 @@ local function BuildUnitContainers(widget, unitToken)
         -- settings, so the final-stage reload must not queue a redundant
         -- restyle (harmless noise OOC, but denied button writes when built
         -- under restriction -- the in-instance /reload case).
-        local p = mod.UF_GetProfile and mod.UF_GetProfile()
-        if p then
-            ufFP.dispel = DispelFP(p, widget)
+        local profile = mod.UF_GetProfile and mod.UF_GetProfile()
+        if profile then
+            ufFP.dispel = DispelFP(profile, widget)
         end
         return "again"
     end

@@ -2261,9 +2261,9 @@ local function PositionArrowsOutsideAuras(backing)
     if not backing.leftArrow:IsShown() then
         return
     end
-    local st = mod.ResolveTargetArrowStyle(p)
+    local arrowStyle = mod.ResolveTargetArrowStyle(p)
     local sc = (p and p.targetArrowScale) or 1.0
-    local aw = math.floor(((st and st.w) or 16) * sc + 0.5)
+    local aw = math.floor(((arrowStyle and arrowStyle.w) or 16) * sc + 0.5)
     local ah = math.floor(16 * sc + 0.5)
     -- The cast icon (and Classic WoW UI's border), measured on the arrows' own span.
     local leftExtent = mod.NP_SideIconPush(backing, "left", 0, ah)
