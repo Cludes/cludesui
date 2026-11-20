@@ -368,7 +368,7 @@ do
         return start, dur
     end
 
-    local function UpdateCooldownEvent()
+    local function SyncCooldownEvent()
         if not watcher then
             return
         end
@@ -394,12 +394,12 @@ do
         local itemId = pendingItem
         pendingItem = nil
         if not itemId then
-            UpdateCooldownEvent()
+            SyncCooldownEvent()
             return
         end
         -- Last one used up: nothing to be ready for.
         if (C_Item.GetItemCount(itemId) or 0) <= 0 then
-            UpdateCooldownEvent()
+            SyncCooldownEvent()
             return
         end
         -- A cooldown extended since we armed is re-read here, so the alert is
@@ -412,7 +412,7 @@ do
                 return
             end
         end
-        UpdateCooldownEvent()
+        SyncCooldownEvent()
         ShowAlert()
     end
 
@@ -420,7 +420,7 @@ do
         CancelTimer()
         pendingItem = itemId
         timer = C_Timer.NewTimer(math.max(delay, 0), OnReady)
-        UpdateCooldownEvent()
+        SyncCooldownEvent()
     end
 
     -- Try to start tracking the potion just used. Returns true once armed or given up.
@@ -432,7 +432,7 @@ do
         local start, dur = ReadCD(itemId)
         if not start then
             usedItem = nil
-            UpdateCooldownEvent()
+            SyncCooldownEvent()
             return true
         end
         if dur > MIN_CD then
@@ -488,12 +488,12 @@ do
             end
             usedItem = itemId
             if not TrackUsed() then
-                UpdateCooldownEvent()
+                SyncCooldownEvent()
                 -- No cooldown ever appeared (nothing to wait for): stop listening.
                 C_Timer.After(2, function()
                     if usedItem == itemId then
                         usedItem = nil
-                        UpdateCooldownEvent()
+                        SyncCooldownEvent()
                     end
                 end)
             end
@@ -538,7 +538,7 @@ do
             Alerts.Hide("potion")
         end
         if installed then
-            UpdateCooldownEvent()
+            SyncCooldownEvent()
         end
         Alerts.Refresh()
     end

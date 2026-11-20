@@ -223,7 +223,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         -- OFF = the knob one pad in from the left edge, ON = one pad in from the
         -- right, in whole pixels between them.
-        local function ApplyVisual(p)
+        local function PlaceKnob(p)
             local pad = L.padPx
             if pad then
                 knob:ClearAllPoints()
@@ -249,10 +249,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             )
         end
         L.apply = function()
-            ApplyVisual(animFrac)
+            PlaceKnob(animFrac)
         end
         L:Fit()
-        ApplyVisual(animFrac)
+        PlaceKnob(animFrac)
 
         -- The click handlers stand down after the setter when it rebuilt the page and
         -- this toggle was dressed again for another use (the rebuild painted it).
@@ -266,7 +266,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
                 animFrac = value and 1 or 0
                 animTarget = animFrac
-                ApplyVisual(animFrac)
+                PlaceKnob(animFrac)
             end)
         else
             local function AnimOnUpdate(self, elapsed)
@@ -276,7 +276,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     animFrac = animTarget
                     self:SetScript("OnUpdate", nil)
                 end
-                ApplyVisual(animFrac)
+                PlaceKnob(animFrac)
             end
             toggle:SetScript("OnClick", function()
                 local value = not getValue()
@@ -294,11 +294,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local value = getValue() and 1 or 0
             animFrac = value
             animTarget = value
-            ApplyVisual(value)
+            PlaceKnob(value)
             toggle:SetScript("OnUpdate", nil)
         end
 
-        return toggle, ApplyVisual, SnapToState
+        return toggle, PlaceKnob, SnapToState
     end
 
     -------------------------------------------------------------------------------
@@ -327,7 +327,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- The outline's radius less the inset, so the fill's corners follow it.
         CludesUI.RoundBody(boxFrame, check, 2)
 
-        local function ApplyVisual(isOn, isHovering)
+        local function PlaceKnob(isOn, isHovering)
             check:SetColorTexture(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
             if isOn then
                 check:Show()
@@ -341,7 +341,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
         end
 
-        return boxFrame, check, boxBorder, ApplyVisual
+        return boxFrame, check, boxBorder, PlaceKnob
     end
 
     -- Button constants
@@ -3482,7 +3482,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         local isHovering = false
 
-        local function ApplyVisual()
+        local function PlaceKnob()
             local enabled = getValue()
             cbApply(enabled, isHovering)
             if enabled then
@@ -3492,7 +3492,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 label:SetTextColor(TEXT_WHITE.r * a, TEXT_WHITE.g * a, TEXT_WHITE.b * a, a)
             end
         end
-        ApplyVisual()
+        PlaceKnob()
 
         button:SetScript("OnClick", function()
             local value = not getValue()
@@ -3502,19 +3502,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if PoolGen(button) ~= g then
                 return
             end
-            ApplyVisual()
+            PlaceKnob()
         end)
 
         button:SetScript("OnEnter", function()
             isHovering = true
-            ApplyVisual()
+            PlaceKnob()
         end)
         button:SetScript("OnLeave", function()
             isHovering = false
-            ApplyVisual()
+            PlaceKnob()
         end)
 
-        RegisterWidgetRefresh(ApplyVisual)
+        RegisterWidgetRefresh(PlaceKnob)
 
         return widget, ROW_H
     end

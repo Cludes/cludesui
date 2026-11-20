@@ -84,7 +84,7 @@ local REQ_PLATES = "Show on Nameplates"
 local function BarsOn()
     return On() and Get("showBars", true) ~= false
 end
-local function BarsOff()
+local function BarsHidden()
     return not BarsOn()
 end
 local REQ_BARS = "Show Bars"
@@ -675,7 +675,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         cursorY = cursorY - height
         CludesUI.BuildSectionUnlockJump(
             heading,
-            { key = "EMT_KickBars", disabled = BarsOff, disabledTooltip = REQ_BARS }
+            { key = "EMT_KickBars", disabled = BarsHidden, disabledTooltip = REQ_BARS }
         )
 
         row, height = W:DualRow(hostFrame, cursorY, {
@@ -694,7 +694,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             max = 600,
             step = 1,
             pixel = true,
-            disabled = BarsOff,
+            disabled = BarsHidden,
             disabledTooltip = REQ_BARS,
             getValue = GetRow("barWidth", 200),
             setValue = SetRow("barWidth"),
@@ -708,7 +708,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             max = 60,
             step = 1,
             pixel = true,
-            disabled = BarsOff,
+            disabled = BarsHidden,
             disabledTooltip = REQ_BARS,
             getValue = GetRow("barHeight", 22),
             setValue = SetRow("barHeight"),
@@ -719,7 +719,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             max = 20,
             step = 1,
             pixel = true,
-            disabled = BarsOff,
+            disabled = BarsHidden,
             disabledTooltip = REQ_BARS,
             getValue = GetRow("barSpacing", 2),
             setValue = SetRow("barSpacing"),
@@ -734,7 +734,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             type = "segmented",
             text = "Grow Direction",
             tooltip = "Which way the rows stack.",
-            disabled = BarsOff,
+            disabled = BarsHidden,
             disabledTooltip = REQ_BARS,
             values = { DOWN = "Down", UP = "Up" },
             order = { "DOWN", "UP" },
@@ -747,7 +747,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
         }, {
             type = "dropdown",
             text = "Bar Texture",
-            disabled = BarsOff,
+            disabled = BarsHidden,
             disabledTooltip = REQ_BARS,
             values = texValues,
             order = texOrder,
@@ -760,7 +760,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             type = "multiSwatch",
             text = "Background Color",
             tooltip = "Behind each row: a darkened version of the member's class color, or one custom color.",
-            disabled = BarsOff,
+            disabled = BarsHidden,
             disabledTooltip = REQ_BARS,
             swatches = {
                 -- Suite-wide convention: a mode swatch selects its mode; the
@@ -827,7 +827,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             max = 5,
             step = 1,
             pixel = true,
-            disabled = BarsOff,
+            disabled = BarsHidden,
             disabledTooltip = REQ_BARS,
             getValue = GetRow("barBorderSize", 0),
             setValue = SetRow("barBorderSize"),
@@ -838,7 +838,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             type = "dropdown",
             text = "Display Elements",
             tooltip = "The interrupt's icon, the member's name, the seconds left on the interrupt and the raid marker of the enemy they interrupted.",
-            disabled = BarsOff,
+            disabled = BarsHidden,
             disabledTooltip = REQ_BARS,
             values = { __placeholder = "..." },
             order = { "__placeholder" },
@@ -850,7 +850,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             type = "toggle",
             text = "Include Yourself",
             tooltip = "Adds your own row, with its cooldown read from your talents.",
-            disabled = BarsOff,
+            disabled = BarsHidden,
             disabledTooltip = REQ_BARS,
             getValue = function()
                 return Get("barIncludeSelf", true) == true
@@ -885,7 +885,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                 nil,
                 nil,
                 nil,
-                { disabled = BarsOff, disabledTooltip = REQ_BARS, emptyLabel = "None" }
+                { disabled = BarsHidden, disabledTooltip = REQ_BARS, emptyLabel = "None" }
             )
             CludesUI.PanelPP.Point(elDD, "RIGHT", elRgn, "RIGHT", -20, 0)
             elRgn._control = elDD
@@ -894,7 +894,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             CludesUI.BuildInlineCog(elRgn, {
                 tip = "Element Settings",
                 title = "Display Elements",
-                disabled = BarsOff,
+                disabled = BarsHidden,
                 disabledTooltip = REQ_BARS,
                 rows = {
                     {

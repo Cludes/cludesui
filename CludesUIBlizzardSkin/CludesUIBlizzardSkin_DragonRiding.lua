@@ -207,7 +207,7 @@ end
 
 -- Forward declarations
 local function Build() end
-local function Rebuild() end
+local function RebuildBar() end
 local function Redraw() end
 local function UpdateVisibility() end
 local function OnUpdate() end
@@ -224,7 +224,7 @@ local function TickWanted()
         or whirlStale
         or ((_gliding or smoothedSpeed > 0) and saved.profile.showSpeed ~= false)
 end
-local function SyncTick()
+local function SyncTicker()
     if not rootHost then
         return
     end
@@ -325,7 +325,7 @@ function UpdateVisibility()
         -- and any edge missed while hidden), then arm only if there is work.
         local gliding = C_PlayerInfo.GetGlidingInfo()
         _gliding = gliding == true
-        SyncTick()
+        SyncTicker()
         RegisterSpellEvents()
     else
         rootHost:SetScript("OnUpdate", nil)
@@ -585,7 +585,7 @@ function OnUpdate(self, dt)
     -- Self-disarm once every section settled and we are grounded; every dirty
     -- writer and the gliding edge re-arm through SyncTick.
     if not TickWanted() then
-        SyncTick()
+        SyncTicker()
     end
 end
 
@@ -1514,7 +1514,7 @@ function Build()
     liveCells = NewSet(rootHost, borderedFrames)
     speedBar, stackFrame, swFrame, whirlIcon = liveCells.speed, liveCells.stack, liveCells.sw, liveCells.icon
 
-    Rebuild()
+    RebuildBar()
 end
 
 -- Sizes and anchors one set for the layout L.
@@ -1663,7 +1663,7 @@ end
 
 local RepaintSample
 
-function Rebuild()
+function RebuildBar()
     if not rootHost then
         return
     end
@@ -1694,7 +1694,7 @@ function Redraw(L)
     lastSoundCur = -1
     lastCdStart, lastCdDur = -1, -1
     -- Settings applied: the repaint above rides the tick, so arm it if shown.
-    SyncTick()
+    SyncTicker()
     -- Every settings path ends here (options, Unlock Mode mover, profile
     -- switch), so the options header's sample follows them all.
     RepaintSample()
@@ -1833,7 +1833,7 @@ _G._CUDR_Rebuild = function()
     if not rootHost then
         return
     end
-    Rebuild()
+    RebuildBar()
     ApplyPos()
 end
 
@@ -1862,7 +1862,7 @@ function RegisterUnlockElements()
                     -- No bars in the column: the handle scales the gems, if any.
                     if L.classic then
                         profile.classicScale = max(0.5, min(2, floor(wid / CLASSIC_W * 100 + 0.5) / 100))
-                        Rebuild()
+                        RebuildBar()
                     end
                     return
                 end
@@ -1880,7 +1880,7 @@ function RegisterUnlockElements()
                 end
                 local iconPart = L.icon and (profile.gap + L.iconSize) or 0
                 profile.width = max(60, PPSnap(clusterW - iconPart - 2 * L.padX))
-                Rebuild()
+                RebuildBar()
             end,
             -- Height is built from independently-sized bars (Second Wind, modern
             -- charges, Speed) plus fixed gaps, the icon beside them, and the classic
@@ -1896,7 +1896,7 @@ function RegisterUnlockElements()
                 if L.clusterH == 0 then
                     if L.classic then
                         profile.classicScale = max(0.5, min(2, floor(hgt / CLASSIC_H * 100 + 0.5) / 100))
-                        Rebuild()
+                        RebuildBar()
                     end
                     return
                 end
@@ -1912,7 +1912,7 @@ function RegisterUnlockElements()
                 end
                 local rowList = L.rows
                 if #rowList == 0 then
-                    Rebuild()
+                    RebuildBar()
                     return
                 end
                 -- Bars top to bottom (Second Wind, charges, speed): the order
@@ -1949,7 +1949,7 @@ function RegisterUnlockElements()
                     for _, button in ipairs(barList) do
                         profile[button.field] = DB_DEFAULTS.profile[button.field]
                     end
-                    Rebuild()
+                    RebuildBar()
                     return
                 end
 
@@ -2001,7 +2001,7 @@ function RegisterUnlockElements()
                 for _, button in ipairs(barList) do
                     profile[button.field] = button.new
                 end
-                Rebuild()
+                RebuildBar()
             end,
             savePos = SavePos,
             loadPos = LoadPos,
@@ -2047,16 +2047,16 @@ initFrame:SetScript("OnEvent", function(self)
         if evt == "SPELL_UPDATE_CHARGES" then
             skyridingStale = true
             secondWindStale = true
-            SyncTick()
+            SyncTicker()
             return
         elseif evt == "SPELL_UPDATE_COOLDOWN" then
             whirlStale = true
-            SyncTick()
+            SyncTicker()
             return
         elseif evt == "PLAYER_IS_GLIDING_CHANGED" then
             local gliding = C_PlayerInfo.GetGlidingInfo()
             _gliding = gliding == true
-            SyncTick()
+            SyncTicker()
             return
         elseif evt == "PLAYER_ENTERING_WORLD" then
             skyridingStale = true
@@ -2092,16 +2092,16 @@ mod.edrRebuild = function()
                 if evt == "SPELL_UPDATE_CHARGES" then
                     skyridingStale = true
                     secondWindStale = true
-                    SyncTick()
+                    SyncTicker()
                     return
                 elseif evt == "SPELL_UPDATE_COOLDOWN" then
                     whirlStale = true
-                    SyncTick()
+                    SyncTicker()
                     return
                 elseif evt == "PLAYER_IS_GLIDING_CHANGED" then
                     local gliding = C_PlayerInfo.GetGlidingInfo()
                     _gliding = gliding == true
-                    SyncTick()
+                    SyncTicker()
                     return
                 elseif evt == "PLAYER_ENTERING_WORLD" then
                     skyridingStale = true
@@ -2113,7 +2113,7 @@ mod.edrRebuild = function()
         end
         RegisterUnlockElements()
     end
-    Rebuild()
+    RebuildBar()
 end
 mod.edrRedraw = function()
     Redraw()

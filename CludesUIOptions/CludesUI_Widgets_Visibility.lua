@@ -642,7 +642,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
     -- alsoOther: the click wrote a mode AND an option (a lane clearing Never, or Always
     -- clearing the Show lanes), so both caller chains run; neither is a subset of the other
     -- (Action Bars recompiles its housing driver only in the option chain).
-    local function AfterChange(closeMenu, isOption, alsoOther)
+    local function OnChoiceMade(closeMenu, isOption, alsoOther)
         local optionFn = (isOption or alsoOther) and options.onOptionChanged
         local modeFn = ((not isOption) or alsoOther) and options.onChanged
         if optionFn then
@@ -736,7 +736,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
                     stores[idx].visibilityOverride = keyName
                 end
             end
-            AfterChange(true)
+            OnChoiceMade(true)
             return
         end
 
@@ -744,13 +744,13 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
         -- deliberately clears nothing else.
         if def.modifier then
             SetMatchAny(def.matchValue == "any")
-            AfterChange(false, true)
+            OnChoiceMade(false, true)
             return
         end
 
         if def.axis == "extra" then
             def.set(checked)
-            AfterChange(false, true)
+            OnChoiceMade(false, true)
             return
         end
 
@@ -774,7 +774,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
                     clearedNever = true
                 end
             end
-            AfterChange(false, true, clearedNever)
+            OnChoiceMade(false, true, clearedNever)
             return
         end
 
@@ -802,7 +802,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
                 sel[other] = nil
             end
             WriteSel(sel, storage)
-            AfterChange(false)
+            OnChoiceMade(false)
             return
         end
 
@@ -816,14 +816,14 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
                 sel[other] = nil
             end
             WriteSel(sel, storage)
-            AfterChange(false)
+            OnChoiceMade(false)
             return
         end
 
         if keyName == "mouseover" then
             sel.mouseover = checked or nil
             WriteSel(sel, storage)
-            AfterChange(false)
+            OnChoiceMade(false)
             return
         end
 
@@ -851,7 +851,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
                     end
                 end
             end
-            AfterChange(true, false, clearedOpts)
+            OnChoiceMade(true, false, clearedOpts)
             return
         end
 
@@ -864,7 +864,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
             end
             storage.visibilityModes = nil
             SetMatchAny(false)
-            AfterChange(true)
+            OnChoiceMade(true)
         end
     end
 

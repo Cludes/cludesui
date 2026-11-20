@@ -741,7 +741,7 @@ end
 local PUSH_DELAY = 0.15
 local pushQueued = false
 
-local function RequestPush()
+local function QueuePush()
     -- Nothing to schedule: the writes are refused for as long as the fight
     -- lasts, and PLAYER_REGEN_ENABLED is what picks this up.
     if InCombatLockdown() then
@@ -1038,7 +1038,7 @@ function mod.UpdateBindings()
     -- ask for a push. Without this, the first hold on a freshly bound key would
     -- open an empty palette.
     if built then
-        RequestPush()
+        QueuePush()
     end
 end
 
@@ -1075,7 +1075,7 @@ local function SpecSync(_, _, unitToken)
     end
     activeSig = sig
     mod.UpdateBindings()
-    RequestPush()
+    QueuePush()
 end
 
 -------------------------------------------------------------------------------
@@ -1170,11 +1170,11 @@ function SetEventsEnabled(on)
         -- spellbook and the macro set. A change re-pushes -- deferred and
         -- coalesced by RequestPush, refused in combat and paid off by
         -- PLAYER_REGEN_ENABLED like every other push.
-        EQD:RegisterEvent("SPELLS_CHANGED", RequestPush)
-        EQD:RegisterEvent("UPDATE_MACROS", RequestPush)
+        EQD:RegisterEvent("SPELLS_CHANGED", QueuePush)
+        EQD:RegisterEvent("UPDATE_MACROS", QueuePush)
         -- Re-resolve player-facing indexes after outfits change order.
-        EQD:RegisterEvent("TRANSMOG_OUTFITS_CHANGED", RequestPush)
-        EQD:RegisterEvent("EQUIPMENT_SETS_CHANGED", RequestPush)
+        EQD:RegisterEvent("TRANSMOG_OUTFITS_CHANGED", QueuePush)
+        EQD:RegisterEvent("EQUIPMENT_SETS_CHANGED", QueuePush)
         -- Which world markers are down, for a menu that is open while they
         -- move. That is SOMEBODY ELSE's doing: firing an entry closes the menu,
         -- so the presser never sees their own pip change. It is worth the one
@@ -1233,7 +1233,7 @@ function SetEventsEnabled(on)
                 -- redraw, and RequestPush coalesces and defers like every other
                 -- push, so the cost of a mount cast is one comparison for
                 -- everyone else.
-                RequestPush()
+                QueuePush()
             end
         end)
     else
@@ -1271,7 +1271,7 @@ function mod.Refresh()
     end
 
     RefreshFonts()
-    RequestPush()
+    QueuePush()
     activeSig = ActiveSig()
 
     if liveView and liveView:GetFrame():IsShown() then

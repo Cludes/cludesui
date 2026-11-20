@@ -1976,7 +1976,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
         -- Straight to the module: this display is not part of the bar build,
         -- so a full ApplyAll would rebuild every bar to retint one string.
         -- The preview header shows the same sample, so it follows too.
-        local function RefreshAS()
+        local function ApplyArcaneSoul()
             if mod.AS_Apply then
                 mod.AS_Apply()
             end
@@ -2011,7 +2011,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     return
                 end
                 profile.arcaneSoul.enabled = value
-                RefreshAS()
+                ApplyArcaneSoul()
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -2033,7 +2033,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     return
                 end
                 profile.arcaneSoul.threshold = value
-                RefreshAS()
+                ApplyArcaneSoul()
             end,
         })
         cursorY = cursorY - height
@@ -2075,7 +2075,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                             arcaneCfg.unlockPos = arcaneCfg.unlockPos
                                 or { point = "CENTER", relPoint = "CENTER", x = 0, y = -150 }
                             arcaneCfg.unlockPos.x = value
-                            RefreshAS()
+                            ApplyArcaneSoul()
                         end,
                     },
                     {
@@ -2101,7 +2101,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                             arcaneCfg.unlockPos = arcaneCfg.unlockPos
                                 or { point = "CENTER", relPoint = "CENTER", x = 0, y = -150 }
                             arcaneCfg.unlockPos.y = value
-                            RefreshAS()
+                            ApplyArcaneSoul()
                         end,
                     },
                 },
@@ -2140,7 +2140,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     return
                 end
                 profile.arcaneSoul.countMode = value
-                RefreshAS()
+                ApplyArcaneSoul()
             end,
         }, {
             type = "slider",
@@ -2160,7 +2160,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                     return
                 end
                 profile.arcaneSoul.textSize = value
-                RefreshAS()
+                ApplyArcaneSoul()
                 if CludesUI.NotifyElementResized then
                     CludesUI.NotifyElementResized("CUI_ArcaneSoul")
                 end
@@ -2195,7 +2195,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         return
                     end
                     profile.arcaneSoul.font = value
-                    RefreshAS()
+                    ApplyArcaneSoul()
                 end,
             }, {
                 type = "dropdown",
@@ -2214,7 +2214,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         return
                     end
                     profile.arcaneSoul.outlineMode = value
-                    RefreshAS()
+                    ApplyArcaneSoul()
                 end,
             })
             cursorY = cursorY - height
@@ -2245,7 +2245,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         end
                         local arcaneCfg = profile.arcaneSoul
                         arcaneCfg.preR, arcaneCfg.preG, arcaneCfg.preB = red, green, blue
-                        RefreshAS()
+                        ApplyArcaneSoul()
                     end,
                 },
                 {
@@ -2266,7 +2266,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         end
                         local arcaneCfg = profile.arcaneSoul
                         arcaneCfg.soulR, arcaneCfg.soulG, arcaneCfg.soulB = red, green, blue
-                        RefreshAS()
+                        ApplyArcaneSoul()
                     end,
                 },
                 -- Only ever rendered in GCD Count mode (the LAST warning).
@@ -2293,7 +2293,7 @@ function mod.ERB_BuildBarDisplayPage(page, hostFrame, yOffset)
                         end
                         local arcaneCfg = profile.arcaneSoul
                         arcaneCfg.lastR, arcaneCfg.lastG, arcaneCfg.lastB = red, green, blue
-                        RefreshAS()
+                        ApplyArcaneSoul()
                     end,
                 },
             },

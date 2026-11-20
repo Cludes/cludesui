@@ -33,18 +33,18 @@ CludesUI.AtOptionsLogin(function()
         end
         return {}
     end
-    local function Cfg(keyName)
+    local function TrackerGet(keyName)
         return DB()[keyName]
     end
     -- Row getters over Cfg: a key's value (or a default), or whether it is true.
     local function CfgOr(key, default)
         return function()
-            return Cfg(key) or default
+            return TrackerGet(key) or default
         end
     end
     local function CfgIs(key)
         return function()
-            return Cfg(key) == true
+            return TrackerGet(key) == true
         end
     end
     local function Set(keyName, val)
@@ -125,7 +125,7 @@ CludesUI.AtOptionsLogin(function()
             fosFS:SetTextColor(ACC.r, ACC.g, ACC.b, 0.75)
             fosFS:SetPoint("CENTER")
             local function UpdateForceOnScreenLabel()
-                local enabled = Cfg("forceOnScreen") == true
+                local enabled = TrackerGet("forceOnScreen") == true
                 fosFS:SetText(
                     CludesUI.L(
                         enabled and "Allow Quest Tracker to be Moved Offscreen"
@@ -146,7 +146,7 @@ CludesUI.AtOptionsLogin(function()
                 if InCombatLockdown() then
                     return
                 end
-                Set("forceOnScreen", not (Cfg("forceOnScreen") == true))
+                Set("forceOnScreen", not (TrackerGet("forceOnScreen") == true))
                 if EQT.ApplyForceOnScreen then
                     EQT.ApplyForceOnScreen()
                 end
@@ -202,7 +202,7 @@ CludesUI.AtOptionsLogin(function()
                 disabled = Off,
                 disabledTooltip = "Custom Quest Tracker",
                 getValue = function()
-                    return Cfg("customGroupByZone") ~= false
+                    return TrackerGet("customGroupByZone") ~= false
                 end,
                 setValue = function(val)
                     Set("customGroupByZone", val)
@@ -220,7 +220,7 @@ CludesUI.AtOptionsLogin(function()
                     return (select(4, EQT.CustomZoneRGB()))
                 end
                 local function PickZone(accent)
-                    local was = Cfg("customZoneUseAccent")
+                    local was = TrackerGet("customZoneUseAccent")
                     Set("customZoneUseAccent", accent)
                     EQT.RefreshCustom()
                     if was ~= accent then
@@ -232,11 +232,11 @@ CludesUI.AtOptionsLogin(function()
                         tooltip = "Custom Colored",
                         hasAlpha = false,
                         getValue = function()
-                            if Cfg("customZoneUseAccent") == nil and not ZoneAccent() then
+                            if TrackerGet("customZoneUseAccent") == nil and not ZoneAccent() then
                                 local red, green, b = EQT.CustomZoneRGB()
                                 return red, green, b
                             end
-                            return Cfg("customZoneR") or 1, Cfg("customZoneG") or 1, Cfg("customZoneB") or 1
+                            return TrackerGet("customZoneR") or 1, TrackerGet("customZoneG") or 1, TrackerGet("customZoneB") or 1
                         end,
                         setValue = function(red, green, blue)
                             Set("customZoneR", red)
@@ -273,7 +273,7 @@ CludesUI.AtOptionsLogin(function()
                     },
                 }, {
                     disabled = function()
-                        return Off() or Cfg("customGroupByZone") == false
+                        return Off() or TrackerGet("customGroupByZone") == false
                     end,
                     disabledTooltip = function()
                         return Off() and "Custom Quest Tracker" or "Group Quests by Zone"
@@ -328,7 +328,7 @@ CludesUI.AtOptionsLogin(function()
                 disabled = Off,
                 disabledTooltip = "Custom Quest Tracker",
                 getValue = function()
-                    return Cfg("customGrowUp") and "UP" or "DOWN"
+                    return TrackerGet("customGrowUp") and "UP" or "DOWN"
                 end,
                 setValue = function(val)
                     EQT.SetCustomGrowUp(val == "UP")
@@ -408,7 +408,7 @@ CludesUI.AtOptionsLogin(function()
                 disabled = Off,
                 disabledTooltip = "Custom Quest Tracker",
                 getValue = function()
-                    return Cfg("customWrapTitles") ~= false
+                    return TrackerGet("customWrapTitles") ~= false
                 end,
                 setValue = SetRowThen("customWrapTitles"),
             })
@@ -422,7 +422,7 @@ CludesUI.AtOptionsLogin(function()
                 disabled = Off,
                 disabledTooltip = "Custom Quest Tracker",
                 getValue = function()
-                    return Cfg("customWrapObjectives") ~= false
+                    return TrackerGet("customWrapObjectives") ~= false
                 end,
                 setValue = SetRowThen("customWrapObjectives"),
             }, {
@@ -520,7 +520,7 @@ CludesUI.AtOptionsLogin(function()
                 text = "Show Top Line",
                 tooltip = "Draws a 1px accent line above the background at the top of the tracker.",
                 getValue = function()
-                    return Cfg("showTopLine") ~= false
+                    return TrackerGet("showTopLine") ~= false
                 end,
                 setValue = function(val)
                     Set("showTopLine", val)
@@ -547,12 +547,12 @@ CludesUI.AtOptionsLogin(function()
                                 type = "toggle",
                                 label = "Fade In and Out",
                                 disabled = function()
-                                    return not Cfg("customBgHover")
+                                    return not TrackerGet("customBgHover")
                                 end,
                                 disabledTooltip = "Requires Show Only When Hovered.",
                                 rawTooltip = true,
                                 get = function()
-                                    return Cfg("customBgFade") ~= false
+                                    return TrackerGet("customBgFade") ~= false
                                 end,
                                 set = SetRow("customBgFade"),
                             },
@@ -563,7 +563,7 @@ CludesUI.AtOptionsLogin(function()
                     region,
                     bgRow:GetFrameLevel() + 3,
                     function()
-                        return (Cfg("bgR") or 0), (Cfg("bgG") or 0), (Cfg("bgB") or 0)
+                        return (TrackerGet("bgR") or 0), (TrackerGet("bgG") or 0), (TrackerGet("bgB") or 0)
                     end,
                     function(red, green, blue)
                         Set("bgR", red)
@@ -675,7 +675,7 @@ CludesUI.AtOptionsLogin(function()
                     if EQT.ShouldHideMasterHeader then
                         return EQT.ShouldHideMasterHeader()
                     end
-                    return Cfg("hideAllObjectivesHeader") ~= false
+                    return TrackerGet("hideAllObjectivesHeader") ~= false
                 end,
                 setValue = function(val)
                     Set("hideAllObjectivesHeader", val)
@@ -705,9 +705,9 @@ CludesUI.AtOptionsLogin(function()
                 { r = "completedR", g = "completedG", b = "completedB" }, { 0.251, 1.0, 0.349 }
             local function ColorGetter(keyList, default)
                 return function()
-                    return (Cfg(keyList.r) or default[1]),
-                        (Cfg(keyList.g) or default[2]),
-                        (Cfg(keyList.b) or default[3])
+                    return (TrackerGet(keyList.r) or default[1]),
+                        (TrackerGet(keyList.g) or default[2]),
+                        (TrackerGet(keyList.b) or default[3])
                 end
             end
             local function ColorSetter(keyList)
@@ -811,10 +811,10 @@ CludesUI.AtOptionsLogin(function()
                 local rKey, gKey, bKey = prefixText .. "R", prefixText .. "G", prefixText .. "B"
 
                 local function isClass()
-                    return Cfg(classKey) == true
+                    return TrackerGet(classKey) == true
                 end
                 local function isAccent()
-                    return not isClass() and Cfg(accentKey) ~= false
+                    return not isClass() and TrackerGet(accentKey) ~= false
                 end
 
                 local classSwatch = {
@@ -843,9 +843,9 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Custom Color",
                     hasAlpha = false,
                     getValue = function()
-                        return (Cfg(rKey) or customDefault[1]),
-                            (Cfg(gKey) or customDefault[2]),
-                            (Cfg(bKey) or customDefault[3])
+                        return (TrackerGet(rKey) or customDefault[1]),
+                            (TrackerGet(gKey) or customDefault[2]),
+                            (TrackerGet(bKey) or customDefault[3])
                     end,
                     setValue = function(red, green, blue)
                         Set(rKey, red)
@@ -911,7 +911,7 @@ CludesUI.AtOptionsLogin(function()
                         r._leftRegion,
                         r:GetFrameLevel() + 3,
                         function()
-                            return (Cfg("focusR") or 0.871), (Cfg("focusG") or 0.251), (Cfg("focusB") or 1.0)
+                            return (TrackerGet("focusR") or 0.871), (TrackerGet("focusG") or 0.251), (TrackerGet("focusB") or 1.0)
                         end,
                         function(cr, cg, checkBtn)
                             Set("focusR", cr)
@@ -962,7 +962,7 @@ CludesUI.AtOptionsLogin(function()
                             type = "colorpicker",
                             label = labelText,
                             get = function()
-                                return Cfg(kr) or d[1], Cfg(kg) or d[2], Cfg(kb) or d[3]
+                                return TrackerGet(kr) or d[1], TrackerGet(kg) or d[2], TrackerGet(kb) or d[3]
                             end,
                             set = function(cr, cg, checkBtn)
                                 Set(kr, cr)
@@ -974,7 +974,7 @@ CludesUI.AtOptionsLogin(function()
                     end
                     CludesUI.BuildInlineCog(r._rightRegion, {
                         disabled = function()
-                            return not Cfg("objProgressColor")
+                            return not TrackerGet("objProgressColor")
                         end,
                         disabledTooltip = "Color Objectives by Progress",
                         title = "Progress Colors",
@@ -1003,7 +1003,7 @@ CludesUI.AtOptionsLogin(function()
                 }, CludesUI.BlankRowCfg())
                 CludesUI.BuildInlineCog(row._leftRegion, {
                     disabled = function()
-                        return not Cfg("objDimCompleted")
+                        return not TrackerGet("objDimCompleted")
                     end,
                     disabledTooltip = "Dim Completed Objectives",
                     title = "Dim Settings",
@@ -1048,7 +1048,7 @@ CludesUI.AtOptionsLogin(function()
             -- Quest Log Order is the base sort mode (a saved "default", the retired
             -- Blizzard order mode, reads as it).
             local function SortModeCfg()
-                local m = Cfg("questSortMode")
+                local m = TrackerGet("questSortMode")
                 if m == nil or m == "default" then
                     return "log"
                 end
@@ -1058,13 +1058,13 @@ CludesUI.AtOptionsLogin(function()
             -- built only while Experimental Quest Tools is on; turning
             -- it on or off rebuilds the page. The progress rows always show.
             -- The custom tracker needs no switch: it never edits the watch list.
-            local toolsOn = CUSTOM or Cfg("questWatchExperimental") == true
+            local toolsOn = CUSTOM or TrackerGet("questWatchExperimental") == true
             local function FilterRow(key, labelText)
                 return {
                     type = "toggle",
                     label = labelText,
                     get = function()
-                        return Cfg(key) or false
+                        return TrackerGet(key) or false
                     end,
                     set = function(val)
                         Set(key, val)
@@ -1083,7 +1083,7 @@ CludesUI.AtOptionsLogin(function()
                 disabledTooltip = "Always on with the Custom Quest Tracker.",
                 rawTooltip = CUSTOM or nil,
                 getValue = function()
-                    return CUSTOM or Cfg("questWatchExperimental") == true
+                    return CUSTOM or TrackerGet("questWatchExperimental") == true
                 end,
                 setValue = function(val)
                     if not val then
@@ -1241,7 +1241,7 @@ CludesUI.AtOptionsLogin(function()
                     -- Open while the header button shows too: it turns Filter Quests
                     -- off, and its own row is in here.
                     disabled = function()
-                        return not Cfg("filterEnabled") and not Cfg("filterHeaderToggle")
+                        return not TrackerGet("filterEnabled") and not TrackerGet("filterHeaderToggle")
                     end,
                     disabledTooltip = "Filter Quests",
                     title = "Filter Settings",
@@ -1295,7 +1295,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 label = "Prevent Multi Quest Accept",
                 get = function()
-                    return Cfg("autoAcceptPreventMulti") ~= false
+                    return TrackerGet("autoAcceptPreventMulti") ~= false
                 end,
                 set = SetRow("autoAcceptPreventMulti"),
             },
@@ -1315,7 +1315,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 label = "Hold Shift to Skip",
                 get = function()
-                    return Cfg("autoAcceptShiftSkip") ~= false
+                    return TrackerGet("autoAcceptShiftSkip") ~= false
                 end,
                 set = function(val)
                     Set("autoAcceptShiftSkip", val)
@@ -1363,7 +1363,7 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     label = "Hold Shift to Skip",
                     get = function()
-                        return Cfg("autoTurnInShiftSkip") ~= false
+                        return TrackerGet("autoTurnInShiftSkip") ~= false
                     end,
                     set = function(val)
                         Set("autoTurnInShiftSkip", val)
@@ -1392,7 +1392,7 @@ CludesUI.AtOptionsLogin(function()
         CludesUI.BuildInlineCog(kbRow._rightRegion, {
             title = "Wowhead Link Settings",
             disabled = function()
-                return not Cfg("wowheadQuestLinks")
+                return not TrackerGet("wowheadQuestLinks")
             end,
             disabledTooltip = "Wowhead Quest Links",
             rows = {
@@ -1431,7 +1431,7 @@ CludesUI.AtOptionsLogin(function()
                 pp = Pix,
                 level = 5,
                 get = function()
-                    return Cfg("questItemHotkey")
+                    return TrackerGet("questItemHotkey")
                 end,
                 set = function(val)
                     Set("questItemHotkey", val)

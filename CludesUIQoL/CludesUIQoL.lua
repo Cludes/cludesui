@@ -5742,7 +5742,7 @@ do
         return "25-30", 25
     end
 
-    local function ApplyFrameSettings()
+    local function ApplyRangeFrame()
         if not distancePanel then
             return
         end
@@ -5805,13 +5805,13 @@ do
         fontStr:SetPoint("CENTER", distancePanel, "CENTER", 0, 0)
         fontStr:SetJustifyH("CENTER")
         distancePanel._text = fontStr
-        ApplyFrameSettings()
+        ApplyRangeFrame()
         distancePanel:Hide()
     end
 
     local function ShowSample()
         CreateDistFrame()
-        ApplyFrameSettings()
+        ApplyRangeFrame()
         local textValue, colorY = SampleForFormat()
         distancePanel._text:SetText(textValue)
         distancePanel._text:SetTextColor(ColorForYards(colorY))
@@ -5895,7 +5895,7 @@ do
             return
         end
         CreateDistFrame()
-        ApplyFrameSettings()
+        ApplyRangeFrame()
         distancePanel._text:SetText(textValue)
         distancePanel._text:SetTextColor(ColorForYards(colorY))
         distancePanel:Show()
@@ -5908,7 +5908,7 @@ do
             end
             Tick()
             if distancePanel then
-                ApplyFrameSettings()
+                ApplyRangeFrame()
             end
         else
             StopDriver()
@@ -5921,7 +5921,7 @@ do
             return
         end
         CreateDistFrame()
-        ApplyFrameSettings()
+        ApplyRangeFrame()
         Tick()
     end
 
@@ -5967,7 +5967,7 @@ do
                     CludesUIDB.targetDistancePos =
                         { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                     if distancePanel and not CludesUI._unlockActive then
-                        ApplyFrameSettings()
+                        ApplyRangeFrame()
                     end
                 end,
                 loadPos = function()
@@ -5987,7 +5987,7 @@ do
                         CludesUIDB.targetDistancePos = nil
                     end
                     if distancePanel then
-                        ApplyFrameSettings()
+                        ApplyRangeFrame()
                     end
                 end,
                 applyPos = function()
@@ -5995,7 +5995,7 @@ do
                         return
                     end
                     CreateDistFrame()
-                    ApplyFrameSettings()
+                    ApplyRangeFrame()
                     if CludesUI._unlockActive then
                         ShowSample()
                     end

@@ -2892,7 +2892,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         end
         return profile.healerMana
     end
-    local function HMRefresh()
+    local function RebuildHealthMarkers()
         if mod.HM_Rebuild then
             mod.HM_Rebuild()
         end
@@ -2935,13 +2935,13 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     local hm = HMS()
                     hm.color = { r = red, g = green, b = blue }
                     hm.colorMode = "custom"
-                    HMRefresh()
+                    RebuildHealthMarkers()
                 end,
                 onClick = function(self)
                     local hm = HMS()
                     if hm.colorMode == "power" then
                         hm.colorMode = "custom"
-                        HMRefresh()
+                        RebuildHealthMarkers()
                         CludesUI:RefreshPage()
                         return
                     end
@@ -2972,7 +2972,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 onClick = function()
                     local hm = HMS()
                     hm.colorMode = "power"
-                    HMRefresh()
+                    RebuildHealthMarkers()
                     CludesUI:RefreshPage()
                 end,
                 refreshAlpha = function()
@@ -2999,7 +2999,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     end,
                     set = function(val)
                         HMS().textSize = val
-                        HMRefresh()
+                        RebuildHealthMarkers()
                     end,
                 },
                 {
@@ -3014,7 +3014,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     end,
                     set = function(val)
                         HMS().spacing = val
-                        HMRefresh()
+                        RebuildHealthMarkers()
                     end,
                 },
                 {
@@ -3028,7 +3028,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     end,
                     set = function(keyName)
                         HMS().align = keyName
-                        HMRefresh()
+                        RebuildHealthMarkers()
                     end,
                 },
                 {
@@ -3042,7 +3042,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     end,
                     set = function(keyName)
                         HMS().growth = keyName
-                        HMRefresh()
+                        RebuildHealthMarkers()
                     end,
                 },
                 {
@@ -3060,7 +3060,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         else
                             HMS().showNames = false
                         end
-                        HMRefresh()
+                        RebuildHealthMarkers()
                     end,
                 },
                 {
@@ -3075,7 +3075,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         else
                             HMS().classNames = false
                         end
-                        HMRefresh()
+                        RebuildHealthMarkers()
                     end,
                 },
             },
@@ -3128,7 +3128,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             end
             return profile.playerGroup
         end
-        local function PGRefresh()
+        local function ApplyPowerGlow()
             if mod.PG_Apply then
                 mod.PG_Apply()
             end
@@ -3143,7 +3143,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             local function Pick(m)
                 return function()
                     PGS()[modeKey] = m
-                    PGRefresh()
+                    ApplyPowerGlow()
                     CludesUI:RefreshPage()
                 end
             end
@@ -3163,7 +3163,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     end,
                     setValue = function(red, green, blue, a)
                         PGS()[colorKey] = { r = red, g = green, b = blue, a = a }
-                        PGRefresh()
+                        ApplyPowerGlow()
                     end,
                     onClick = function(self)
                         if Mode() ~= "custom" then
@@ -3213,7 +3213,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 if not val then
                     mod._pgPreview = nil
                 end
-                PGRefresh()
+                ApplyPowerGlow()
                 -- The mover's isHidden verdict changed: re-register.
                 if mod._RFRegisterUnlock then
                     mod._RFRegisterUnlock()
@@ -3243,7 +3243,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     end,
                     setValue = function(red, green, blue, a)
                         PGS().bgColor = { r = red, g = green, b = blue, a = a }
-                        PGRefresh()
+                        ApplyPowerGlow()
                     end,
                 },
             },
@@ -3270,7 +3270,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     end,
                     set = function(val)
                         PGS()[key] = (val > 0) and val or nil
-                        PGRefresh()
+                        ApplyPowerGlow()
                     end,
                 }
             end
@@ -3289,7 +3289,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         end,
                         set = function(keyName)
                             PGS().format = keyName
-                            PGRefresh()
+                            ApplyPowerGlow()
                         end,
                     },
                     {
@@ -3303,7 +3303,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         end,
                         set = function(val)
                             PGS().textSize = val
-                            PGRefresh()
+                            ApplyPowerGlow()
                         end,
                     },
                     {
@@ -3317,7 +3317,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         end,
                         set = function(val)
                             PGS().padding = val
-                            PGRefresh()
+                            ApplyPowerGlow()
                         end,
                     },
                     SizeRow("Width", "width"),
@@ -3333,7 +3333,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         end,
                         set = function(val)
                             PGS().borderSize = val
-                            PGRefresh()
+                            ApplyPowerGlow()
                         end,
                     },
                 },

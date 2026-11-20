@@ -223,7 +223,7 @@ end
 
 -- Flat solid panel. opts.noBg = strip only (let the parent backdrop show through);
 -- opts.inset = darker nested fill; opts.noBorder = skip border.
-local function SkinPanel(widget, options)
+local function SkinFinderPanel(widget, options)
     if not widget or widget:IsForbidden() then
         return
     end
@@ -933,7 +933,7 @@ local function Skin_PVEFrame()
     -- Left column inset: strip its art so the shell backdrop shows through.
     local leftInset = PVEFrame.Inset or _G["PVEFrameLeftInset"]
     if leftInset then
-        SkinPanel(leftInset, { noBg = true, noBorder = true })
+        SkinFinderPanel(leftInset, { noBg = true, noBorder = true })
     end
 
     -- Rail zone: 10% black wash over the LEFT sidebar column + a
@@ -989,16 +989,16 @@ local function Skin_GroupFinder()
 
     -- Dungeon Finder (LFD)
     if LFDParentFrame then
-        SkinPanel(LFDParentFrame, { noBg = true, noBorder = true })
+        SkinFinderPanel(LFDParentFrame, { noBg = true, noBorder = true })
     end
     if _G.LFDParentFrameInset then
         FadeInset(_G.LFDParentFrameInset)
     end
     if LFDQueueFrame then
-        SkinPanel(LFDQueueFrame, { noBg = true, noBorder = true })
+        SkinFinderPanel(LFDQueueFrame, { noBg = true, noBorder = true })
     end
     if LFDQueueFrameRandomScrollFrame then
-        SkinPanel(LFDQueueFrameRandomScrollFrame, { noBg = true, noBorder = true })
+        SkinFinderPanel(LFDQueueFrameRandomScrollFrame, { noBg = true, noBorder = true })
     end
     if LFDQueueFrameFindGroupButton then
         SkinButton(LFDQueueFrameFindGroupButton)
@@ -1071,7 +1071,7 @@ local function Skin_LFGList()
 
     local CS = LFGListFrame.CategorySelection
     if CS then
-        SkinPanel(CS, { noBg = true, noBorder = true })
+        SkinFinderPanel(CS, { noBg = true, noBorder = true })
         if CS.Inset then
             FadeInset(CS.Inset)
         end
@@ -1112,7 +1112,7 @@ local function Skin_LFGList()
 
     local SP = LFGListFrame.SearchPanel
     if SP then
-        SkinPanel(SP, { noBg = true, noBorder = true })
+        SkinFinderPanel(SP, { noBg = true, noBorder = true })
         if SP.ResultsInset then
             FadeInset(SP.ResultsInset)
         end
@@ -1147,7 +1147,7 @@ local function Skin_LFGList()
 
     local EC = LFGListFrame.EntryCreation
     if EC then
-        SkinPanel(EC, { noBg = true, noBorder = true })
+        SkinFinderPanel(EC, { noBg = true, noBorder = true })
         if EC.Inset then
             FadeInset(EC.Inset)
         end
@@ -1194,7 +1194,7 @@ local function Skin_LFGList()
     -- below does not run.
     local AV = LFGListFrame.ApplicationViewer
     if AV and not AV:IsProtected() then
-        SkinPanel(AV, { noBg = true, noBorder = true })
+        SkinFinderPanel(AV, { noBg = true, noBorder = true })
         if AV.Inset then
             FadeInset(AV.Inset)
         end
@@ -1294,7 +1294,7 @@ end
 local _rfShowHooked = false
 local function Skin_RaidFinder()
     if RaidFinderFrame then
-        SkinPanel(RaidFinderFrame, { noBg = true, noBorder = true })
+        SkinFinderPanel(RaidFinderFrame, { noBg = true, noBorder = true })
     end
     FadeRaidFinderArt()
     if RaidFinderFrame and not _rfShowHooked then
@@ -1302,7 +1302,7 @@ local function Skin_RaidFinder()
         RaidFinderFrame:HookScript("OnShow", FadeRaidFinderArt)
     end
     if RaidFinderQueueFrame then
-        SkinPanel(RaidFinderQueueFrame, { noBg = true, noBorder = true })
+        SkinFinderPanel(RaidFinderQueueFrame, { noBg = true, noBorder = true })
     end
     if RaidFinderFrameFindRaidButton then
         SkinButton(RaidFinderFrameFindRaidButton)
@@ -1499,7 +1499,7 @@ local function Skin_Challenges()
             end
         end)
     end
-    SkinPanel(castFrame, { noBg = true, noBorder = true })
+    SkinFinderPanel(castFrame, { noBg = true, noBorder = true })
     -- The M+ main-area scenic backdrop (ChallengesFrame.Background + an anon
     -- BG texture) defeated every ALPHA approach we tried -- Blizzard re-raises
     -- their alpha from paths we never caught. Disabling the whole BACKGROUND
@@ -1514,7 +1514,7 @@ local function Skin_Challenges()
     end
     local kf = _G.ChallengesKeystoneFrame
     if kf then
-        SkinPanel(kf, { inset = true })
+        SkinFinderPanel(kf, { inset = true })
         if kf.StartButton then
             SkinButton(kf.StartButton)
         end
@@ -1563,10 +1563,10 @@ local function Skin_PVP()
             end)
         end)
     end
-    SkinPanel(pvp, { noBg = true, noBorder = true })
+    SkinFinderPanel(pvp, { noBg = true, noBorder = true })
     local pq = _G.PVPQueueFrame
     if pq then
-        SkinPanel(pq, { noBg = true, noBorder = true })
+        SkinFinderPanel(pq, { noBg = true, noBorder = true })
         for idx = 1, 4 do
             local b = PVPCategoryButton(idx)
             if b then
@@ -1578,7 +1578,7 @@ local function Skin_PVP()
     -- Casual (Honor) panel.
     local hf = _G.HonorFrame
     if hf then
-        SkinPanel(hf, { noBg = true, noBorder = true })
+        SkinFinderPanel(hf, { noBg = true, noBorder = true })
         local insetPx = hf.Inset or _G.HonorFrameInset
         if insetPx then
             FadeInset(insetPx)
@@ -1596,13 +1596,13 @@ local function Skin_PVP()
             SkinScrollBar(scrollBar)
         end
         if hf.BonusFrame then
-            SkinPanel(hf.BonusFrame, { noBg = true, noBorder = true })
+            SkinFinderPanel(hf.BonusFrame, { noBg = true, noBorder = true })
         end
     end
     -- Rated (Conquest) panel.
     local castFrame = _G.ConquestFrame
     if castFrame then
-        SkinPanel(castFrame, { noBg = true, noBorder = true })
+        SkinFinderPanel(castFrame, { noBg = true, noBorder = true })
         local insetPx = castFrame.Inset or _G.ConquestFrameInset
         if insetPx then
             FadeInset(insetPx)
@@ -1615,7 +1615,7 @@ local function Skin_PVP()
     -- Training Grounds panel (PvP practice queue; mirrors the Honor panel).
     local tg = _G.TrainingGroundsFrame
     if tg then
-        SkinPanel(tg, { noBg = true, noBorder = true })
+        SkinFinderPanel(tg, { noBg = true, noBorder = true })
         local insetPx = tg.Inset or _G.TrainingGroundsFrameInset
         if insetPx then
             FadeInset(insetPx)
@@ -1629,7 +1629,7 @@ local function Skin_PVP()
         end
         local specInfo = tg.SpecificTrainingGroundList
         if specInfo then
-            SkinPanel(specInfo, { noBg = true, noBorder = true })
+            SkinFinderPanel(specInfo, { noBg = true, noBorder = true })
             local scrollBar = specInfo.ScrollBar or (specInfo.ScrollBox and specInfo.ScrollBox.ScrollBar)
             if scrollBar then
                 SkinScrollBar(scrollBar)
@@ -1637,7 +1637,7 @@ local function Skin_PVP()
         end
         local bonus = tg.BonusTrainingGroundList
         if bonus then
-            SkinPanel(bonus, { noBg = true, noBorder = true })
+            SkinFinderPanel(bonus, { noBg = true, noBorder = true })
             -- Leftover scenic art the panel sweep does not reach by region.
             if bonus.ShadowOverlay and bonus.ShadowOverlay.SetAlpha then
                 bonus.ShadowOverlay:SetAlpha(0)

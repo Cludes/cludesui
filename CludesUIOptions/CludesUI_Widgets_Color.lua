@@ -304,7 +304,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local UpdateAlphaBar, UpdateHexInput, UpdateOpacityInput
         local newPreviewTex, prevPreviewTex
 
-        local function FireCallbacks()
+        local function NotifySwatch()
             if swatchFunc then
                 swatchFunc()
             end
@@ -421,7 +421,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 svDragging = true
                 currentS, currentV = SVFromCursor()
                 UpdateAllControls()
-                FireCallbacks()
+                NotifySwatch()
                 self:SetScript("OnUpdate", function()
                     if not IsMouseButtonDown("LeftButton") then
                         svDragging = false
@@ -430,7 +430,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                     currentS, currentV = SVFromCursor()
                     UpdateAllControls()
-                    FireCallbacks()
+                    NotifySwatch()
                 end)
             end
         end)
@@ -499,7 +499,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 hueDragging = true
                 currentH = HueFromCursor()
                 UpdateAllControls()
-                FireCallbacks()
+                NotifySwatch()
                 self:SetScript("OnUpdate", function()
                     if not IsMouseButtonDown("LeftButton") then
                         hueDragging = false
@@ -508,7 +508,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                     currentH = HueFromCursor()
                     UpdateAllControls()
-                    FireCallbacks()
+                    NotifySwatch()
                 end)
             end
         end)
@@ -572,7 +572,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 alphaDragging = true
                 currentA = AlphaFromCursor()
                 UpdateAllControls()
-                FireCallbacks()
+                NotifySwatch()
                 self:SetScript("OnUpdate", function()
                     if not IsMouseButtonDown("LeftButton") then
                         alphaDragging = false
@@ -581,7 +581,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                     currentA = AlphaFromCursor()
                     UpdateAllControls()
-                    FireCallbacks()
+                    NotifySwatch()
                 end)
             end
         end)
@@ -635,7 +635,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             currentH, currentS, currentV = RGBtoHSV(prevR, prevG, prevB)
             currentA = hasOpacity and prevA or 1
             UpdateAllControls()
-            FireCallbacks()
+            NotifySwatch()
         end)
 
         local pl = MakeFont(rightCol, 10, nil, 1, 1, 1)
@@ -697,7 +697,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             currentH, currentS, currentV = RGBtoHSV(ri, gi, bi)
             lastValidHex = digits
             UpdateAllControls()
-            FireCallbacks()
+            NotifySwatch()
         end
         local function CommitHex()
             local digits = ParseHex(hexBox:GetText(), true)
@@ -783,7 +783,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 currentA = num / 100
                 lastOpacityPct = num
                 UpdateAllControls()
-                FireCallbacks()
+                NotifySwatch()
                 return true
             elseif commit then
                 opacityBox:SetText(tostring(math.floor(currentA * 100 + 0.5)))
@@ -831,7 +831,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         MakeStyledButton(okBtn, "OK", 10, RB_COLOURS, function()
             RecordRecentColor(HSVtoRGB(currentH, currentS, currentV))
             -- Fire on OK even when nothing changed, to confirm the selection
-            FireCallbacks()
+            NotifySwatch()
             _confirmed = true
             dialog:Hide()
         end)
@@ -905,7 +905,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 else
                     currentH, currentS, currentV = RGBtoHSV(color[1], color[2], color[3])
                     UpdateAllControls()
-                    FireCallbacks()
+                    NotifySwatch()
                 end
             end)
             button:Hide()

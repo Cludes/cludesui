@@ -14,7 +14,7 @@ local CUI = CludesUI
 local mod = select(2, ...)
 local GetItemInfoInstant = C_Item.GetItemInfoInstant
 local _emptyP = {}
-local function BP()
+local function BagsProfile()
     return (CUI._bagsDB and CUI._bagsDB.profile) or _emptyP
 end
 
@@ -195,9 +195,9 @@ function CategoryManager:InitCategories()
     local Lite = CludesUI and CludesUI.Lite
     self._builtReady = (Lite and Lite.IsDBReady and Lite.IsDBReady()) or false
     -- User state: { [defaultName] = { rename, groupName, groupNameCustom } }
-    local customState = BP().bagCategoryState or {}
+    local customState = BagsProfile().bagCategoryState or {}
     -- User order: list of default names in display order
-    local customOrder = BP().bagCategoryOrder
+    local customOrder = BagsProfile().bagCategoryOrder
 
     -- Build ordered list of default names
     -- Index DEFAULT_CATEGORIES by name for fast lookup
@@ -207,7 +207,7 @@ function CategoryManager:InitCategories()
     end
     -- Index user-created custom categories by key
     local userCatByKey = {}
-    local customCats = BP().bagUserCategories
+    local customCats = BagsProfile().bagUserCategories
     if customCats then
         for _, userCat in ipairs(customCats) do
             userCatByKey[userCat.key] = userCat
@@ -357,7 +357,7 @@ function CategoryManager:InitCategories()
             -- the "Item Set Gear" anchor. Runtime-only -- SaveState skips them, so
             -- per-character set names never reach the shared profile; the sidebar
             -- renders them nested one level under the anchor, wherever it sits.
-            if catDef.isSetGear and BP().bagSplitSetGearBySet then
+            if catDef.isSetGear and BagsProfile().bagSplitSetGearBySet then
                 local setIDs = C_EquipmentSet.GetEquipmentSetIDs()
                 if setIDs then
                     local sets = {}
@@ -520,13 +520,13 @@ function CategoryManager:SaveState()
     end
     -- Junk is out of the list while the Junk Marker is off: keep its saved rename
     if not sawJunk then
-        local old = BP().bagCategoryState
+        local old = BagsProfile().bagCategoryState
         if old and old[self.JUNK_KEY] then
             customState[self.JUNK_KEY] = old[self.JUNK_KEY]
         end
     end
-    BP().bagCategoryState = customState
-    BP().bagCategoryOrder = customOrder
+    BagsProfile().bagCategoryState = customState
+    BagsProfile().bagCategoryOrder = customOrder
 
     -- Rebuild user-created categories list from runtime state
     local ucList = {}
@@ -536,7 +536,7 @@ function CategoryManager:SaveState()
                 { key = category._defaultName, name = category._defaultName, icon = category.icon }
         end
     end
-    BP().bagUserCategories = #ucList > 0 and ucList or nil
+    BagsProfile().bagUserCategories = #ucList > 0 and ucList or nil
 end
 
 -------------------------------------------------------------------------------
@@ -590,7 +590,7 @@ local function BuildSetGearLookup()
         return
     end
     -- Names only feed the on-item label; skip the API calls when it's off
-    local wantNames = BP().bagShowSetGearName == true
+    local wantNames = BagsProfile().bagShowSetGearName == true
     -- WoW Forever crashes the client inside GetItemLocations for some sets:
     -- there the sets' item IDs are matched against the container slots instead.
     local foreverList = CludesUI.IS_FOREVER and _foreverSetItems
@@ -870,7 +870,7 @@ function CategoryManager:ClassifyAll(itemList)
     -- Refill gated on split mode (no children exist when it's off).
     local setCatIdx = self._setCatIdxBySetID or {}
     wipe(setCatIdx)
-    if BP().bagSplitSetGearBySet then
+    if BagsProfile().bagSplitSetGearBySet then
         for i, category in ipairs(categoryList) do
             if category.equipSetID then
                 setCatIdx[category.equipSetID] = i
@@ -892,7 +892,7 @@ function CategoryManager:ClassifyAll(itemList)
     local sum = 0
 
     -- Disabled categories: items route to catch-all instead (keyed by _defaultName)
-    local disabledCats = BP().bagDisabledCategories
+    local disabledCats = BagsProfile().bagDisabledCategories
     local catchAllIdx
     wipe(_claDisabledIdxSet)
     local disabledIdxSet
@@ -915,7 +915,7 @@ function CategoryManager:ClassifyAll(itemList)
 
     -- On-item label stamping gated on its toggle (recycled tables are wiped on
     -- acquire, so no stale _setName survives while it's off)
-    local stampNames = BP().bagShowSetGearName == true
+    local stampNames = BagsProfile().bagShowSetGearName == true
     for _, payload in ipairs(itemList) do
         if payload.info and payload.itemLink then
             local position = self:ClassifyItem(
@@ -1192,13 +1192,13 @@ function CategoryManager:AddCustomCategory(name)
     if not name or name == "" then
         return nil
     end
-    if not BP().bagUserCategories then
-        BP().bagUserCategories = {}
+    if not BagsProfile().bagUserCategories then
+        BagsProfile().bagUserCategories = {}
     end
 
     -- Generate a unique key
     local maxN = 0
-    for _, userCat in ipairs(BP().bagUserCategories) do
+    for _, userCat in ipairs(BagsProfile().bagUserCategories) do
         local num = tonumber(userCat.key:match("Custom_(%d+)"))
         if num and num > maxN then
             maxN = num
@@ -1206,7 +1206,7 @@ function CategoryManager:AddCustomCategory(name)
     end
     local key = "Custom_" .. (maxN + 1)
 
-    BP().bagUserCategories[#BP().bagUserCategories + 1] = { key = key, name = name }
+    BagsProfile().bagUserCategories[#BagsProfile().bagUserCategories + 1] = { key = key, name = name }
 
     -- Insert into runtime list before catch-all
     local categoryList = self:GetCategories()
@@ -1261,8 +1261,8 @@ function CategoryManager:RemoveCustomCategory(catIdx)
     table.remove(categoryList, catIdx)
 
     -- Remove from disabled list
-    if BP().bagDisabledCategories then
-        BP().bagDisabledCategories[key] = nil
+    if BagsProfile().bagDisabledCategories then
+        BagsProfile().bagDisabledCategories[key] = nil
     end
 
     self:SaveState()
@@ -1383,7 +1383,7 @@ CategoryManager.JUNK_KEY = "Junk"
 
 -- The Junk Icon of Bag Top Bar Icons switches the whole Junk Marker
 function CategoryManager:IsJunkMarkerEnabled()
-    return BP().bagShowJunkIcon ~= false
+    return BagsProfile().bagShowJunkIcon ~= false
 end
 
 -- Marked, or grey and not filed in another category (a grey quest item files as

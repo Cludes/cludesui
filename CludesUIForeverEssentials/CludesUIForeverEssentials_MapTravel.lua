@@ -26,7 +26,7 @@ local F = module.Feature(
 )
 
 -- A set of pins shows while Map Markers is on and its cog toggle too.
-local function On(key)
+local function FeatureOn(key)
     return F.Get("enabled") and F.Get(key)
 end
 
@@ -49,7 +49,7 @@ local shownKey -- what the pins show (map and toggles); nil when cleared
 local shownMap -- the map the pins are on
 
 local function AnyOn()
-    return On("transports") or On("exits") or On("instances") or On("flights")
+    return FeatureOn("transports") or FeatureOn("exits") or FeatureOn("instances") or FeatureOn("flights")
 end
 
 -- A pin's tooltip, led by its icon (a transport's lines carry their own).
@@ -343,14 +343,14 @@ end
 
 -- A zone map's pins.
 local function DrawZone(zone)
-    if On("transports") then
+    if FeatureOn("transports") then
         local groups = TransportGroups(zone)
         for index = 1, #groups do
             local g = groups[index]
             Place(g.x / 100, g.y / 100, g.atlas, PIN_SIZE, g.tip, nil, g.count, g.link)
         end
     end
-    if On("instances") then
+    if FeatureOn("instances") then
         local entries = payload.instances[zone]
         if entries then
             for index = 1, #entries do
@@ -368,7 +368,7 @@ local function DrawZone(zone)
             end
         end
     end
-    if On("exits") then
+    if FeatureOn("exits") then
         local entries = payload.exits[zone]
         if entries then
             for index = 1, #entries do
@@ -405,7 +405,7 @@ end
 -- A world or continent map's pins: the transports, and on a continent the
 -- instance entrances too, each linking back to its zone.
 local function DrawWider(map, instances)
-    if On("transports") then
+    if FeatureOn("transports") then
         for zone in pairs(payload.transports) do
             local groups = TransportGroups(zone)
             for index = 1, #groups do
@@ -418,7 +418,7 @@ local function DrawWider(map, instances)
             end
         end
     end
-    if instances and On("instances") then
+    if instances and FeatureOn("instances") then
         for zone, entries in pairs(payload.instances) do
             for index = 1, #entries do
                 local entry = entries[index]
@@ -511,10 +511,10 @@ local function Refresh(force)
     local key = mapID
         and (
             mapID * 16
-            + (On("transports") and 1 or 0)
-            + (On("instances") and 2 or 0)
-            + (On("exits") and 4 or 0)
-            + (On("flights") and 8 or 0)
+            + (FeatureOn("transports") and 1 or 0)
+            + (FeatureOn("instances") and 2 or 0)
+            + (FeatureOn("exits") and 4 or 0)
+            + (FeatureOn("flights") and 8 or 0)
         )
     if key and key == shownKey and force ~= true then
         Rescale()
@@ -534,7 +534,7 @@ local function Refresh(force)
     elseif details.mapType == Enum.UIMapType.Continent then
         DrawWider(mapID, true)
     elseif details.mapType ~= Enum.UIMapType.Cosmic then
-        if On("flights") then
+        if FeatureOn("flights") then
             DrawFlights(mapID)
         end
         DrawZone(mapID)
@@ -605,7 +605,7 @@ local function Apply()
         added = true
     end
     -- A flight point found: the next draw rebuilds the pins.
-    if On("flights") then
+    if FeatureOn("flights") then
         if not taxiWatch then
             taxiWatch = CreateFrame("Frame")
             taxiWatch:SetScript("OnEvent", function()
@@ -624,7 +624,7 @@ end
 -- Options-page entry points.
 CludesUI._MapTravel = {
     Get = F.Get,
-    On = On,
+    On = FeatureOn,
     Cfg = F.Cfg,
     Apply = Apply,
 }

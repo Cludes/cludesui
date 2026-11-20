@@ -1572,7 +1572,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
     cursorY = cursorY - height
 
     -- When Buff/Debuff Display is "none", everything in that column is disabled.
-    local function BuffDisabled()
+    local function BuffsOff()
         local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
         if not cfg then
             return false
@@ -1584,7 +1584,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         end
         return cfg.showBuffs == false
     end
-    local function DebuffDisabled()
+    local function DebuffsOff()
         return SValSupported("debuffAnchor", "bottomleft") == "none"
     end
 
@@ -1624,7 +1624,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         values = buffDispValues,
         order = buffDispOrder,
         itemDisabled = function(value)
-            return value == "anchor_debuffs" and DebuffDisabled()
+            return value == "anchor_debuffs" and DebuffsOff()
         end,
         itemDisabledTooltip = function(value)
             if value == "anchor_debuffs" then
@@ -1647,7 +1647,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         -- with Debuff Display, the filter row) hides while None; only
         -- the None <-> shown flip forces the full rebuild.
         setValue = CludesUI.DependentSetValue(function()
-            return not BuffDisabled()
+            return not BuffsOff()
         end, function(value)
             local cfg = UNIT_DB_MAP[optionState.selectedUnit]()
             if value == "anchor_debuffs" then
@@ -1675,7 +1675,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         min = 10,
         max = 70,
         step = 1,
-        disabled = BuffDisabled,
+        disabled = BuffsOff,
         disabledTooltip = "Buff Display",
         getValue = SValSupportedRow("buffSize", 22),
         setValue = SSetSupportedRow("buffSize"),
@@ -1758,7 +1758,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
             set = SSetSupportedRow("buffDispelBorder"),
         }
         CludesUI.BuildInlineCog(leftRegion, {
-            disabled = BuffDisabled,
+            disabled = BuffsOff,
             disabledTooltip = "Buff Display",
             title = "Buff Settings",
             rows = buffCogRows,
@@ -1768,7 +1768,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
     if not CludesUI._prebuilding then
         local rightRegion = sharedAddRow2._rightRegion
         CludesUI.BuildInlineCog(rightRegion, {
-            disabled = BuffDisabled,
+            disabled = BuffsOff,
             disabledTooltip = "Buff Display",
             title = "Buff Position",
             rows = mod.UFO_AuraPositionRows("buff", SValSupported, SSetSupported),
@@ -1778,12 +1778,12 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
     -- Buffs row 2: Duration Text Size | Stack Size. HIDDEN while Buff Display is
     -- None (DependentSetValue rebuilds). Duration Size is gated by an inline
     -- "Show Cooldown Text" toggle; off disables the slider/cog/label.
-    if not BuffDisabled() then
+    if not BuffsOff() then
         local buffDurOff = function()
-            return BuffDisabled() or not SValSupported("buffShowCooldownText", false)
+            return BuffsOff() or not SValSupported("buffShowCooldownText", false)
         end
         local buffDurTip = function()
-            return BuffDisabled() and "Buff Display" or "Show Cooldown Text"
+            return BuffsOff() and "Buff Display" or "Show Cooldown Text"
         end
         local sharedBuffRow2
         sharedBuffRow2, height = W:DualRow(hostFrame, cursorY, {
@@ -1803,7 +1803,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
             min = 6,
             max = 100,
             step = 1,
-            disabled = BuffDisabled,
+            disabled = BuffsOff,
             disabledTooltip = "Buff Display",
             getValue = SValSupportedRow("buffStackTextSize", 14),
             setValue = SSetSupportedRow("buffStackTextSize"),
@@ -1867,7 +1867,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             local rightRegion = sharedBuffRow2._rightRegion
             CludesUI.BuildInlineCog(rightRegion, {
-                disabled = BuffDisabled,
+                disabled = BuffsOff,
                 disabledTooltip = "Buff Display",
                 title = "Stack Position",
                 rows = {
@@ -1920,7 +1920,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         -- with Buff Display, the filter row) hides while None; only the
         -- None <-> shown flip forces the full rebuild.
         setValue = CludesUI.DependentSetValue(function()
-            return not DebuffDisabled()
+            return not DebuffsOff()
         end, function(value)
             SwapAuraSlot(UNIT_DB_MAP[optionState.selectedUnit](), "debuffAnchor", value)
             ReloadAndUpdate()
@@ -1933,7 +1933,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         min = 10,
         max = 70,
         step = 1,
-        disabled = DebuffDisabled,
+        disabled = DebuffsOff,
         disabledTooltip = "Debuff Display",
         getValue = SValSupportedRow("debuffSize", 22),
         setValue = SSetSupportedRow("debuffSize"),
@@ -2020,7 +2020,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
             }
         end
         CludesUI.BuildInlineCog(leftRegion, {
-            disabled = DebuffDisabled,
+            disabled = DebuffsOff,
             disabledTooltip = "Debuff Display",
             title = "Debuff Settings",
             rows = debuffCogRows,
@@ -2030,7 +2030,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
     if not CludesUI._prebuilding then
         local rightRegion = sharedAddRow3._rightRegion
         CludesUI.BuildInlineCog(rightRegion, {
-            disabled = DebuffDisabled,
+            disabled = DebuffsOff,
             disabledTooltip = "Debuff Display",
             title = "Debuff Position",
             rows = mod.UFO_AuraPositionRows("debuff", SValSupported, SSetSupported),
@@ -2040,12 +2040,12 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
     -- Debuffs row 2: Duration Text Size | Stack Size. HIDDEN while Debuff Display
     -- is None (DependentSetValue rebuilds). Duration Size is gated by an inline
     -- "Show Cooldown Text" toggle; off disables the slider/cog/label.
-    if not DebuffDisabled() then
+    if not DebuffsOff() then
         local debuffDurOff = function()
-            return DebuffDisabled() or not SValSupported("debuffShowCooldownText", false)
+            return DebuffsOff() or not SValSupported("debuffShowCooldownText", false)
         end
         local debuffDurTip = function()
-            return DebuffDisabled() and "Debuff Display" or "Show Cooldown Text"
+            return DebuffsOff() and "Debuff Display" or "Show Cooldown Text"
         end
         local sharedDebuffRow2
         sharedDebuffRow2, height = W:DualRow(hostFrame, cursorY, {
@@ -2065,7 +2065,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
             min = 6,
             max = 100,
             step = 1,
-            disabled = DebuffDisabled,
+            disabled = DebuffsOff,
             disabledTooltip = "Debuff Display",
             getValue = SValSupportedRow("debuffStackTextSize", 14),
             setValue = SSetSupportedRow("debuffStackTextSize"),
@@ -2129,7 +2129,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         if not CludesUI._prebuilding then
             local rightRegion = sharedDebuffRow2._rightRegion
             CludesUI.BuildInlineCog(rightRegion, {
-                disabled = DebuffDisabled,
+                disabled = DebuffsOff,
                 disabledTooltip = "Debuff Display",
                 title = "Stack Position",
                 rows = {
@@ -2427,7 +2427,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
     -- (DebuffModeDropdownCfg). HIDDEN only when BOTH displays are None
     -- (either dropdown's DependentSetValue rebuilds on its None flip); with
     -- one side shown, the off side just grays out.
-    if not (BuffDisabled() and DebuffDisabled()) then
+    if not (BuffsOff() and DebuffsOff()) then
         do
             local buffFilterItems, BUFF_FILTER_KEYS, BUFF_NEG_SKEYS
             -- Two-lane rows: Show narrows the frame to checked classes (legacy
@@ -2500,7 +2500,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                     optionState.selectedUnit,
                     SDB,
                     ReloadAndUpdate,
-                    { disabled = DebuffDisabled, disabledTooltip = "Debuffs", requireState = "displayed" }
+                    { disabled = DebuffsOff, disabledTooltip = "Debuffs", requireState = "displayed" }
                 )
             end
             local filterRow
@@ -2772,7 +2772,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         checkDrop,
                         CludesUI.L("You are displaying NO buffs at all."),
                         function()
-                            return BuffDisabled()
+                            return BuffsOff()
                                 or ps.buffShowAll ~= false
                                 or ps.buffHasDuration == true
                                 or OtherContent()
@@ -2836,7 +2836,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                 region._control = checkDrop
                 region._lastInline = nil
                 RegisterWidgetRefresh(cbRefresh)
-                ApplyFilterDisabled(checkDrop, region._label, BuffDisabled)
+                ApplyFilterDisabled(checkDrop, region._label, BuffsOff)
 
                 -- Purgeable Buff Glow (target/focus): inline cog beside the Buff
                 -- Filter. The glow styles whichever purgeable buffs the filter
@@ -2853,7 +2853,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         title = "Purgeable Buffs",
                         tip = "Glow the buffs you can purge or spellsteal",
                         -- Greys out with the Buff Display (None = no buffs to glow).
-                        disabled = BuffDisabled,
+                        disabled = BuffsOff,
                         disabledTooltip = "Buffs",
                         rows = pgRows,
                     })
@@ -3120,7 +3120,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         checkDrop,
                         CludesUI.L("You are displaying NO debuffs at all."),
                         function()
-                            return DebuffDisabled()
+                            return DebuffsOff()
                                 or AllOn()
                                 or (ps.debuffHasDuration == true and not AnyShowClass())
                                 or (
@@ -3134,19 +3134,19 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                 region._control = checkDrop
                 region._lastInline = nil
                 RegisterWidgetRefresh(cbRefresh)
-                ApplyFilterDisabled(checkDrop, region._label, DebuffDisabled)
+                ApplyFilterDisabled(checkDrop, region._label, DebuffsOff)
             end
             -- Target/focus: Only Tracked Auras with an empty list renders
             -- nothing, so the mode dropdown carries the standard empty warning.
             if optionState.selectedUnit ~= "player" and not CludesUI._prebuilding then
-                AttachDebuffModeWarn(filterRow._rightRegion, SDB, DebuffDisabled)
+                AttachDebuffModeWarn(filterRow._rightRegion, SDB, DebuffsOff)
                 -- Has Duration: an AND-modifier on the picked mode (engine:
                 -- ChainFor), in the row's cog since the mode dropdown is
                 -- single-select.
                 CludesUI.BuildInlineCog(filterRow._rightRegion, {
                     title = "Debuff Filter",
                     tip = "Debuff Filter Options",
-                    disabled = DebuffDisabled,
+                    disabled = DebuffsOff,
                     disabledTooltip = "Debuffs",
                     requireState = "displayed",
                     rows = {
@@ -3182,7 +3182,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         }
         local dispelOverlayOrder =
             { "none", "fill", "full", "gradient", "gradient_sharp", "gradient_reverse" }
-        local function DispelRefresh()
+        local function ApplyDispelOverlay()
             if mod.UpdatePlayerDispelOverlay then
                 mod.UpdatePlayerDispelOverlay()
             end
@@ -3193,7 +3193,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
         -- pet's (while it copies the player frame's aura look), whose
         -- restyle is fingerprint-gated on the palette.
         local function PaletteRefresh()
-            DispelRefresh()
+            ApplyDispelOverlay()
             if saved.profile.player.debuffDispelUsePalette == true then
                 if frameList.player then
                     mod.UF_ReloadAuraContainers(frameList.player, "player")
@@ -3232,7 +3232,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
             -- state tracks the overlay selection live.
             setValue = function(value)
                 saved.profile.dispelOverlay = value
-                DispelRefresh()
+                ApplyDispelOverlay()
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -3355,7 +3355,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         end,
                         set = function(value)
                             saved.profile.dispelOverlayOpacity = value
-                            DispelRefresh()
+                            ApplyDispelOverlay()
                         end,
                     },
                     {
@@ -3372,7 +3372,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         -- RefreshPage (fast path) so the Dispel Colors disabled state tracks it.
                         set = function(value)
                             saved.profile.dispelCustomBorder = value and true or false
-                            DispelRefresh()
+                            ApplyDispelOverlay()
                             CludesUI:RefreshPage()
                         end,
                     },
@@ -3410,7 +3410,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                     profile.dispelIconPosition = value
                 end
                 -- RefreshPage (fast path) so the cog's disabled state follows.
-                DispelRefresh()
+                ApplyDispelOverlay()
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -3422,7 +3422,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
             end,
             setValue = function(value)
                 saved.profile.dispelOverlayByMe = value and true or false
-                DispelRefresh()
+                ApplyDispelOverlay()
             end,
         })
         cursorY = cursorY - height
@@ -3445,7 +3445,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         end,
                         set = function(value)
                             saved.profile.dispelIconSize = value
-                            DispelRefresh()
+                            ApplyDispelOverlay()
                         end,
                     },
                     {
@@ -3458,7 +3458,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         end,
                         set = function(value)
                             saved.profile.dispelIconGrowth = value
-                            DispelRefresh()
+                            ApplyDispelOverlay()
                         end,
                     },
                     {
@@ -3472,7 +3472,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         end,
                         set = function(value)
                             saved.profile.dispelIconOffsetX = value
-                            DispelRefresh()
+                            ApplyDispelOverlay()
                         end,
                     },
                     {
@@ -3486,7 +3486,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, cursorY, context)
                         end,
                         set = function(value)
                             saved.profile.dispelIconOffsetY = value
-                            DispelRefresh()
+                            ApplyDispelOverlay()
                         end,
                     },
                 },

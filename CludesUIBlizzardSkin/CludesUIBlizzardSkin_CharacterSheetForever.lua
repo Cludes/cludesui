@@ -570,7 +570,7 @@ local function DpsText(itemLink)
     return textValue
 end
 
-local function DB(key)
+local function SavedVal(key)
     local saved = CludesUIDB
     return saved and saved[key]
 end
@@ -606,12 +606,12 @@ local itemWatch -- GET_ITEM_INFO_RECEIVED, registered only while a slot waits
 -- name mode at paint.
 local function ApplyLabelFonts(skinData)
     local filePath = FontPath()
-    local size = DB("charSheetUpgradeTrackSize") or 11
-    local flags = DB("charSheetUpgradeTrackOutline") and CludesUI.SlugFlag("OUTLINE, SLUG") or ""
-    CludesUI.PrimeFontShadow(skinData.stats, DB("charSheetUpgradeTrackShadow"))
+    local size = SavedVal("charSheetUpgradeTrackSize") or 11
+    local flags = SavedVal("charSheetUpgradeTrackOutline") and CludesUI.SlugFlag("OUTLINE, SLUG") or ""
+    CludesUI.PrimeFontShadow(skinData.stats, SavedVal("charSheetUpgradeTrackShadow"))
     skinData.stats:SetFont(filePath, size, flags)
     if skinData.dps then
-        CludesUI.PrimeFontShadow(skinData.dps, DB("charSheetUpgradeTrackShadow"))
+        CludesUI.PrimeFontShadow(skinData.dps, SavedVal("charSheetUpgradeTrackShadow"))
         skinData.dps:SetFont(filePath, size, flags)
     end
     skinData.fontVer = textVer
@@ -819,10 +819,10 @@ local function PaintSlotText(slot)
     -- The item's colour as retail colours its item level: the custom colour,
     -- else the item's quality (unless turned off), else white.
     local red, green, blue = 1, 1, 1
-    local custom = DB("charSheetItemLevelUseColor") and DB("charSheetItemLevelColor")
+    local custom = SavedVal("charSheetItemLevelUseColor") and SavedVal("charSheetItemLevelColor")
     if custom then
         red, green, blue = custom.r, custom.g, custom.b
-    elseif DB("charSheetColorItemLevel") ~= false then
+    elseif SavedVal("charSheetColorItemLevel") ~= false then
         local qr, qg, qb = QualityColor(slot)
         if qr then
             red, green, blue = qr, qg, qb
@@ -832,10 +832,10 @@ local function PaintSlotText(slot)
     -- The upgrade track's key and colour override: the item's stats (or its
     -- armor), else in the item's colour.
     -- A weapon's damage per second rides the same key and colour.
-    local showStats = DB("showUpgradeTrack") ~= false
+    local showStats = SavedVal("showUpgradeTrack") ~= false
     local statText = showStats and StatText(itemLink) or ""
     stats:SetText(statText)
-    local sc = DB("charSheetUpgradeTrackUseColor") and DB("charSheetUpgradeTrackColor")
+    local sc = SavedVal("charSheetUpgradeTrackUseColor") and SavedVal("charSheetUpgradeTrackColor")
     local sr, sg, scrollBar = red, green, blue
     if sc then
         sr, sg, scrollBar = sc.r, sc.g, sc.b
@@ -854,11 +854,11 @@ local function PaintSlotText(slot)
     -- item's colour). Capped at 45% of the gap between the columns, as on
     -- retail, less Blizz Default's extra inset on each side (so the two
     -- columns' enchants keep a gap in the middle).
-    local name = DB("showEnchants") ~= false and EnchantName(slotID) or ""
+    local name = SavedVal("showEnchants") ~= false and EnchantName(slotID) or ""
     ench:SetText(name)
     if name ~= "" then
-        local size = DB("charSheetEnchantSize") or 9
-        if DB("charSheetEnchantNames") then
+        local size = SavedVal("charSheetEnchantSize") or 9
+        if SavedVal("charSheetEnchantNames") then
             ench:SetFont(FontPath(), size, CludesUI.SlugFlag("OUTLINE, SLUG"))
             ench:SetTextColor(red + (1 - red) * 0.5, green + (1 - green) * 0.5, blue + (1 - blue) * 0.5, 0.9)
         else
@@ -967,7 +967,7 @@ local function BuildSlotText()
                 skinData.dps:SetWordWrap(false)
             end
             skinData.ench = overlayFrame:CreateFontString(nil, "OVERLAY")
-            skinData.ench:SetFont(filePath, DB("charSheetEnchantSize") or 9, "")
+            skinData.ench:SetFont(filePath, SavedVal("charSheetEnchantSize") or 9, "")
             skinData.ench:SetWordWrap(false)
             ApplyLabelFonts(skinData)
             if slot == ranged then

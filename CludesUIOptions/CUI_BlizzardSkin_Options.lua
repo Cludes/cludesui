@@ -356,7 +356,7 @@ CludesUI.AtOptionsLogin(function()
             CludesUI._repaintTooltipPreview()
         end
     end
-    local function PopupPreviewRepaint()
+    local function RepaintPopupPreview()
         if CludesUI._repaintPopupPreview then
             CludesUI._repaintPopupPreview()
         end
@@ -464,10 +464,10 @@ CludesUI.AtOptionsLogin(function()
                     end
                     CludesUI:RefreshPage(true)
                 end,
-            }, BorderSizeSlider("popupMenu", "Border Size", popupOff, PopupPreviewRepaint))
+            }, BorderSizeSlider("popupMenu", "Border Size", popupOff, RepaintPopupPreview))
             cursorY = cursorY - height
-            AttachBorderControls(outer, "popupMenu", popupOff, true, { apply = PopupPreviewRepaint })
-            BorderOffsetRow("popupMenu", popupOff, PopupPreviewRepaint)
+            AttachBorderControls(outer, "popupMenu", popupOff, true, { apply = RepaintPopupPreview })
+            BorderOffsetRow("popupMenu", popupOff, RepaintPopupPreview)
             local buttons
             buttons, height = W:DualRow(hostFrame, cursorY, {
                 type = "dropdown",
@@ -495,11 +495,11 @@ CludesUI.AtOptionsLogin(function()
                 "popupMenuButton",
                 "Button Border Size",
                 popupOff,
-                PopupPreviewRepaint
+                RepaintPopupPreview
             ))
             cursorY = cursorY - height
-            AttachBorderControls(buttons, "popupMenuButton", popupOff, nil, { apply = PopupPreviewRepaint })
-            BorderOffsetRow("popupMenuButton", popupOff, PopupPreviewRepaint)
+            AttachBorderControls(buttons, "popupMenuButton", popupOff, nil, { apply = RepaintPopupPreview })
+            BorderOffsetRow("popupMenuButton", popupOff, RepaintPopupPreview)
         end
 
         _, height = W:DualRow(hostFrame, cursorY, {
@@ -513,7 +513,7 @@ CludesUI.AtOptionsLogin(function()
             end,
             setValue = function(red, green, blue, a)
                 CludesUIDB.popupMenuButtonBackgroundColor = { r = red, g = green, b = blue, a = a }
-                PopupPreviewRepaint()
+                RepaintPopupPreview()
             end,
         }, {
             type = "multiSwatch",
@@ -532,7 +532,7 @@ CludesUI.AtOptionsLogin(function()
                     setValue = function() end,
                     onClick = function()
                         CludesUIDB.popupMenuButtonTextColorMode = "native"
-                        PopupPreviewRepaint()
+                        RepaintPopupPreview()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
@@ -551,7 +551,7 @@ CludesUI.AtOptionsLogin(function()
                     setValue = function() end,
                     onClick = function()
                         CludesUIDB.popupMenuButtonTextColorMode = "accent"
-                        PopupPreviewRepaint()
+                        RepaintPopupPreview()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
@@ -570,14 +570,14 @@ CludesUI.AtOptionsLogin(function()
                     setValue = function(red, green, blue)
                         CludesUIDB.popupMenuButtonTextColorMode = "custom"
                         CludesUIDB.popupMenuButtonTextColor = { r = red, g = green, b = blue }
-                        PopupPreviewRepaint()
+                        RepaintPopupPreview()
                     end,
                     onClick = function(self)
                         local m = CludesUI._getPopupMenuElementMode and CludesUI._getPopupMenuElementMode()
                             or "native"
                         if m ~= "custom" then
                             CludesUIDB.popupMenuButtonTextColorMode = "custom"
-                            PopupPreviewRepaint()
+                            RepaintPopupPreview()
                             CludesUI:RefreshPage()
                             return
                         end
@@ -600,7 +600,7 @@ CludesUI.AtOptionsLogin(function()
                     setValue = function() end,
                     onClick = function()
                         CludesUIDB.popupMenuButtonTextColorMode = "class"
-                        PopupPreviewRepaint()
+                        RepaintPopupPreview()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
@@ -6221,7 +6221,7 @@ CludesUI.AtOptionsLogin(function()
     -- repaint checks that its own sample is the one on screen.
     local function CatchUpPreviews()
         TooltipPreviewRepaint()
-        PopupPreviewRepaint()
+        RepaintPopupPreview()
         if mod.EDR_RepaintSample then
             mod.EDR_RepaintSample()
         end
@@ -6272,7 +6272,7 @@ CludesUI.AtOptionsLogin(function()
         onPageCacheRestore = function(pageTitle)
             if pageTitle == PAGE_TOOLTIPS then
                 TooltipPreviewRepaint()
-                PopupPreviewRepaint()
+                RepaintPopupPreview()
             end
             if pageTitle == PAGE_DRAGONRIDING and mod.EDR_RepaintSample then
                 mod.EDR_RepaintSample()

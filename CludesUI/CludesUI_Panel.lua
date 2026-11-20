@@ -2712,7 +2712,7 @@ local function BuildContent()
     PanelPP.Point(contentHeaderDiv, "BOTTOMRIGHT", headStrip, "BOTTOMRIGHT", 0, 0)
     contentHeaderDiv:SetHeight(1)
 
-    local function ApplyContentLayout()
+    local function LayoutContent()
         local wasSuppressed = suppressScrollRangeChanged
         suppressScrollRangeChanged = true
 
@@ -3063,7 +3063,7 @@ local function BuildContent()
         headStrip:Hide()
         headStrip:SetHeight(1)
         contentHeaderH = 0
-        ApplyContentLayout()
+        LayoutContent()
     end
 
     -- Cache the content header's children/regions, reparented to a hidden stash so
@@ -3086,7 +3086,7 @@ local function BuildContent()
             headStrip:Hide()
             headStrip:SetHeight(1)
             contentHeaderH = 0
-            ApplyContentLayout()
+            LayoutContent()
             return true
         end
         local children = {}
@@ -3121,7 +3121,7 @@ local function BuildContent()
         headStrip:Hide()
         headStrip:SetHeight(1)
         contentHeaderH = 0
-        ApplyContentLayout()
+        LayoutContent()
         return true
     end
 
@@ -3148,7 +3148,7 @@ local function BuildContent()
             headStrip:Show()
             contentHeaderH = H.height[pageKey]
             PanelPP.Height(headStrip, contentHeaderH)
-            ApplyContentLayout()
+            LayoutContent()
             return true
         end
         local record = _contentHeaderCache[pageKey]
@@ -3178,7 +3178,7 @@ local function BuildContent()
         headStrip:Show()
         contentHeaderH = record.height
         PanelPP.Height(headStrip, record.height)
-        ApplyContentLayout()
+        LayoutContent()
         return true
     end
 
@@ -3264,7 +3264,7 @@ local function BuildContent()
                 CUI_NS.PoolDevEndPass(target, entryKey)
             end
         end
-        ApplyContentLayout()
+        LayoutContent()
     end
 
     function CludesUI:UpdateContentHeaderHeight(h)
@@ -3283,7 +3283,7 @@ local function BuildContent()
         -- real change differ from h-oldH by a sub-pixel amount (1px content shift).
         local newActualH = headStrip:GetHeight()
         local stepDelta = newActualH - oldActualH
-        ApplyContentLayout()
+        LayoutContent()
         -- The scroll frame moved by |delta| px; scroll content the same to hold the viewport.
         if stepDelta ~= 0 and contentScroll then
             local adjusted = math.max(0, savedScroll + stepDelta)
@@ -3305,7 +3305,7 @@ local function BuildContent()
         end
         contentHeaderH = h
         PanelPP.Height(headStrip, h)
-        ApplyContentLayout()
+        LayoutContent()
     end
 
     function CludesUI:ClearContentHeader()
@@ -3341,7 +3341,7 @@ local function BuildContent()
         headStrip:Hide()
         headStrip:SetHeight(1)
         contentHeaderH = 0
-        ApplyContentLayout()
+        LayoutContent()
     end
 
     -- Expose cache functions for SelectPage (outside CreateMainFrame scope)

@@ -60,7 +60,7 @@ CludesUI.AtOptionsLogin(function()
         return saved and saved.profile
     end
 
-    local function Refresh()
+    local function ApplyCDM()
         if _G._CUCME_Apply then
             _G._CUCME_Apply()
         end
@@ -1001,7 +1001,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 refreshChecks()
                 backdrop.assignments[assignmentKey] = buffList
-                Refresh()
+                ApplyCDM()
                 ImmediateUpdate()
             end,
         })
@@ -1853,7 +1853,7 @@ CludesUI.AtOptionsLogin(function()
                         -- Row 1: When (icon) <buff> is [Active] | And [buff] is [Active] (toggle)
                         -- (CUI_CooldownManager_BarGlowConditions.lua)
                         local removeAIdx = aIdx
-                        cursorY = mod.BuildBarGlowWhenRow(W, hostFrame, cursorY, record, Refresh, cdmSid)
+                        cursorY = mod.BuildBarGlowWhenRow(W, hostFrame, cursorY, record, ApplyCDM, cdmSid)
 
                         -- Helper: resolve current glow color and restart preview if active
                         local pvKey = assignmentKey .. "_" .. aIdx
@@ -1906,7 +1906,7 @@ CludesUI.AtOptionsLogin(function()
                             end,
                             setValue = function(val)
                                 record.stackEnabled = val or nil
-                                Refresh()
+                                ApplyCDM()
                                 CludesUI:RefreshPage()
                             end,
                         }, {
@@ -1926,7 +1926,7 @@ CludesUI.AtOptionsLogin(function()
                             end,
                             setValue = function(val)
                                 record.glowStyle = tonumber(val) or 1
-                                Refresh()
+                                ApplyCDM()
                                 RefreshPreviewGlow()
                                 CludesUI:RefreshPage()
                             end,
@@ -1969,7 +1969,7 @@ CludesUI.AtOptionsLogin(function()
                                         end,
                                         set = function(val)
                                             record.stackOperator = val ~= "gte" and val or nil
-                                            Refresh()
+                                            ApplyCDM()
                                         end,
                                     },
                                     {
@@ -1989,7 +1989,7 @@ CludesUI.AtOptionsLogin(function()
                                                 t = 99
                                             end
                                             record.stackThreshold = t
-                                            Refresh()
+                                            ApplyCDM()
                                         end,
                                     },
                                 },
@@ -2125,7 +2125,7 @@ CludesUI.AtOptionsLogin(function()
                                 if #buffList == 0 then
                                     backdrop.assignments[assignmentKey] = nil
                                 end
-                                Refresh()
+                                ApplyCDM()
                                 CludesUI:RefreshPage(true)
                             end,
                         }
@@ -2134,7 +2134,7 @@ CludesUI.AtOptionsLogin(function()
                             colorRow, height = W:DualRow(
                                 hostFrame,
                                 cursorY,
-                                mod.BarGlowCombatCfg(record, Refresh),
+                                mod.BarGlowCombatCfg(record, ApplyCDM),
                                 glowColorCfg
                             )
                             cursorY = cursorY - height
@@ -2144,7 +2144,7 @@ CludesUI.AtOptionsLogin(function()
                             cursorY = cursorY - height
                             removeRgn = removeRow._leftRegion
                         else
-                            cursorY = mod.BuildBarGlowCombatRow(W, hostFrame, cursorY, record, Refresh)
+                            cursorY = mod.BuildBarGlowCombatRow(W, hostFrame, cursorY, record, ApplyCDM)
                             colorRow, height = W:DualRow(hostFrame, cursorY, glowColorCfg, removeCfg)
                             cursorY = cursorY - height
                             colorRgn, removeRgn = colorRow._leftRegion, colorRow._rightRegion
@@ -2171,7 +2171,7 @@ CludesUI.AtOptionsLogin(function()
                                         end,
                                         hasClassColor = true,
                                         onChange = function()
-                                            Refresh()
+                                            ApplyCDM()
                                             RefreshPreviewGlow()
                                             CludesUI:RefreshPage()
                                         end,
@@ -2194,7 +2194,7 @@ CludesUI.AtOptionsLogin(function()
                                     buffList,
                                     aIdx,
                                     function()
-                                        Refresh()
+                                        ApplyCDM()
                                         CludesUI:RefreshPage(true)
                                     end
                                 )
@@ -2220,7 +2220,7 @@ CludesUI.AtOptionsLogin(function()
     local BuildBuffBarsPage, RefreshTBBPopout = mod.CDMO_InitBuffBarsPage(
         Pix,
         DB,
-        Refresh,
+        ApplyCDM,
         FONT_PATH,
         GetCDMOptOutline,
         GateBlizzardOnly,
@@ -2825,7 +2825,7 @@ CludesUI.AtOptionsLogin(function()
         NormalizeToBase = NormalizeToBase,
         optState = optionState,
         PP = Pix,
-        Refresh = Refresh,
+        Refresh = ApplyCDM,
         RefreshCDPreview = RefreshCDPreview,
         ResolveIconArt = ResolveIconArt,
         ResolveToLive = ResolveToLive,

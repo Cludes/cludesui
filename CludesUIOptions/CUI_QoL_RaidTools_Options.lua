@@ -62,12 +62,12 @@ CludesUI.AtLogin(function()
         end
     end
 
-    local function Disabled()
+    local function ModeNever()
         return (Cfg("mode") or "never") == "never"
     end
 
     local function QuickFireDisabled()
-        return Disabled() or Cfg("quickFire") ~= true
+        return ModeNever() or Cfg("quickFire") ~= true
     end
 
     -- The runtime owns the normalize (unknown values retain One Window).
@@ -79,21 +79,21 @@ CludesUI.AtLogin(function()
     end
 
     local function LegacyDisabled()
-        return Disabled() or ShowAsVal() == "compact"
+        return ModeNever() or ShowAsVal() == "compact"
     end
     local function RoleCheckDisabled()
-        return Disabled() or ShowAsVal() == "markers"
+        return ModeNever() or ShowAsVal() == "markers"
     end
     local function FullPanelButtonDisabled()
         local mode = ShowAsVal()
-        return Disabled() or mode == "compact" or mode == "markers"
+        return ModeNever() or mode == "compact" or mode == "markers"
     end
     -- Raid Buff Check is retail only: its rows are not built on WoW Forever.
     local function BuffCheckOff()
         return Cfg("buffCheck") ~= true
     end
     local function PullDisabled()
-        return Disabled() or ShowAsVal() == "markers"
+        return ModeNever() or ShowAsVal() == "markers"
     end
 
     -- Pull durations live in a fixed 3-slot array; each slider owns one slot.
@@ -143,7 +143,7 @@ CludesUI.AtLogin(function()
                 end
                 return "CUI_RaidTools_Group"
             end,
-            disabled = Disabled,
+            disabled = ModeNever,
             disabledTooltip = "Show Raid Tools",
         })
 
@@ -196,7 +196,7 @@ CludesUI.AtLogin(function()
                     ApplyRaidTools()
                     CludesUI._NotifySettingWrite(region, snap)
                 end,
-                disabled = Disabled,
+                disabled = ModeNever,
                 disabledTip = "Show Raid Tools",
                 tooltip = "Toggles the Raid Tools panels, in or out of combat.\n\nLeft-click to set a keybind.\nRight-click to unbind.",
             })
@@ -236,7 +236,7 @@ CludesUI.AtLogin(function()
             type = "dropdown",
             text = "Show as",
             tooltip = "Compact Band puts markers, ready check and pull timer in one resizable row. The other choices keep the original window layouts.",
-            disabled = Disabled,
+            disabled = ModeNever,
             values = {
                 compact = "Compact Band",
                 one = "One Window",
@@ -263,7 +263,7 @@ CludesUI.AtLogin(function()
             min = 0.5,
             max = 2.0,
             step = 0.05,
-            disabled = Disabled,
+            disabled = ModeNever,
             getValue = function()
                 return Cfg("scale") or 1
             end,
@@ -303,7 +303,7 @@ CludesUI.AtLogin(function()
             type = "toggle",
             text = "Enable Quick Fire",
             tooltip = "Adds three optional world-marker keybinds that remain usable in combat. Place drops the first free marker at the cursor in Star to Skull order; Undo removes the last marker placed through Quick Fire; Clear removes all world markers. Every binding starts empty. Marker changes made elsewhere during combat are picked up afterward.",
-            disabled = Disabled,
+            disabled = ModeNever,
             getValue = function()
                 return Cfg("quickFire") == true
             end,
@@ -344,7 +344,7 @@ CludesUI.AtLogin(function()
                     end,
                     disabled = QuickFireDisabled,
                     disabledTip = function()
-                        return Disabled() and "Show Raid Tools" or "Enable Quick Fire"
+                        return ModeNever() and "Show Raid Tools" or "Enable Quick Fire"
                     end,
                 })
                 Pix.Point(btnFrame, "RIGHT", regionFrame, "RIGHT", -20, 0)
@@ -381,7 +381,7 @@ CludesUI.AtLogin(function()
                 type = "toggle",
                 text = textValue,
                 tooltip = tooltip,
-                disabled = disabled or Disabled,
+                disabled = disabled or ModeNever,
                 getValue = function()
                     return Cfg(key) ~= false
                 end,
@@ -430,7 +430,7 @@ CludesUI.AtLogin(function()
                         if BuffCheckOff() then
                             return "Raid Buff Check"
                         end
-                        if Disabled() then
+                        if ModeNever() then
                             return "Show Raid Tools"
                         end
                         return "This option requires a Show as layout with the group buttons."

@@ -89,13 +89,13 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  Refresh helpers
     ---------------------------------------------------------------------------
-    local function RefreshAddon()
+    local function ApplyCursor()
         if _G._CUCL_Apply then
             _G._CUCL_Apply()
         end
     end
 
-    local function RefreshGCD()
+    local function ApplyGcdCircle()
         if _G._CUCL_ApplyGCDCircle then
             _G._CUCL_ApplyGCDCircle()
         end
@@ -104,7 +104,7 @@ CludesUI.AtOptionsLogin(function()
         end
     end
 
-    local function RefreshCast()
+    local function ApplyCastCircle()
         if _G._CUCL_ApplyCastCircle then
             _G._CUCL_ApplyCastCircle()
         end
@@ -160,7 +160,7 @@ CludesUI.AtOptionsLogin(function()
                     return
                 end
                 profile.enabled = val
-                RefreshAddon()
+                ApplyCursor()
                 CludesUI:RefreshPage()
             end),
         }, {
@@ -184,7 +184,7 @@ CludesUI.AtOptionsLogin(function()
                             return
                         end
                         profile.hex = RGBToHex(red, green, blue)
-                        RefreshAddon()
+                        ApplyCursor()
                     end,
                     onClick = function(self)
                         local profile = DB()
@@ -194,7 +194,7 @@ CludesUI.AtOptionsLogin(function()
                         if profile.useClassColor or profile.useAccentColor then
                             profile.useClassColor = false
                             profile.useAccentColor = false
-                            RefreshAddon()
+                            ApplyCursor()
                             CludesUI:RefreshPage()
                             return
                         end
@@ -229,7 +229,7 @@ CludesUI.AtOptionsLogin(function()
                         end
                         profile.useClassColor = true
                         profile.useAccentColor = false
-                        RefreshAddon()
+                        ApplyCursor()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
@@ -255,7 +255,7 @@ CludesUI.AtOptionsLogin(function()
                         end
                         profile.useAccentColor = true
                         profile.useClassColor = false
-                        RefreshAddon()
+                        ApplyCursor()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
@@ -329,7 +329,7 @@ CludesUI.AtOptionsLogin(function()
                         return
                     end
                     profile.texture = val
-                    RefreshAddon()
+                    ApplyCursor()
                 end,
             }, {
                 type = "slider",
@@ -347,7 +347,7 @@ CludesUI.AtOptionsLogin(function()
                         return
                     end
                     profile.scale = val
-                    RefreshAddon()
+                    ApplyCursor()
                 end,
             })
             cursorY = cursorY - height
@@ -369,7 +369,7 @@ CludesUI.AtOptionsLogin(function()
                         return
                     end
                     profile.alpha = val
-                    RefreshAddon()
+                    ApplyCursor()
                 end,
             }, {
                 type = "toggle",
@@ -466,7 +466,7 @@ CludesUI.AtOptionsLogin(function()
                         return
                     end
                     profile.reticle = val
-                    RefreshAddon()
+                    ApplyCursor()
                 end,
             })
             cursorY = cursorY - height
@@ -509,7 +509,7 @@ CludesUI.AtOptionsLogin(function()
                 return GCD_DB().enabled or false
             end, function(val)
                 GCD_DB().enabled = val
-                RefreshGCD()
+                ApplyGcdCircle()
                 CludesUI:RefreshPage()
             end),
         }, {
@@ -527,14 +527,14 @@ CludesUI.AtOptionsLogin(function()
                     setValue = function(red, green, blue)
                         local gd = GCD_DB()
                         gd.hex = RGBToHex(red, green, blue)
-                        RefreshGCD()
+                        ApplyGcdCircle()
                     end,
                     onClick = function(self)
                         local gcdCfg = GCD_DB()
                         if gcdCfg.useClassColor or gcdCfg.useAccentColor then
                             gcdCfg.useClassColor = false
                             gcdCfg.useAccentColor = false
-                            RefreshGCD()
+                            ApplyGcdCircle()
                             CludesUI:RefreshPage()
                             return
                         end
@@ -566,7 +566,7 @@ CludesUI.AtOptionsLogin(function()
                         local gcdCfg = GCD_DB()
                         gcdCfg.useClassColor = true
                         gcdCfg.useAccentColor = false
-                        RefreshGCD()
+                        ApplyGcdCircle()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
@@ -589,7 +589,7 @@ CludesUI.AtOptionsLogin(function()
                         local gcdCfg = GCD_DB()
                         gcdCfg.useAccentColor = true
                         gcdCfg.useClassColor = false
-                        RefreshGCD()
+                        ApplyGcdCircle()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
@@ -642,7 +642,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = function(val)
                     GCD_DB().ringTex = val
-                    RefreshGCD()
+                    ApplyGcdCircle()
                 end,
             }, {
                 type = "slider",
@@ -655,7 +655,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = function(val)
                     GCD_DB().radius = val
-                    RefreshGCD()
+                    ApplyGcdCircle()
                 end,
             })
             cursorY = cursorY - height
@@ -672,7 +672,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = function(val)
                     GCD_DB().alpha = val
-                    RefreshGCD()
+                    ApplyGcdCircle()
                 end,
             }, {
                 type = "toggle",
@@ -682,7 +682,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = function(val)
                     GCD_DB().attached = val
-                    RefreshGCD()
+                    ApplyGcdCircle()
                     CludesUI:RefreshPage()
                 end,
             })
@@ -757,7 +757,7 @@ CludesUI.AtOptionsLogin(function()
                 return Cast_DB().enabled or false
             end, function(val)
                 Cast_DB().enabled = val
-                RefreshCast()
+                ApplyCastCircle()
                 CludesUI:RefreshPage()
             end),
         }, {
@@ -775,14 +775,14 @@ CludesUI.AtOptionsLogin(function()
                     setValue = function(red, green, blue)
                         local cd = Cast_DB()
                         cd.hex = RGBToHex(red, green, blue)
-                        RefreshCast()
+                        ApplyCastCircle()
                     end,
                     onClick = function(self)
                         local cfg = Cast_DB()
                         if cfg.useClassColor or cfg.useAccentColor then
                             cfg.useClassColor = false
                             cfg.useAccentColor = false
-                            RefreshCast()
+                            ApplyCastCircle()
                             CludesUI:RefreshPage()
                             return
                         end
@@ -814,7 +814,7 @@ CludesUI.AtOptionsLogin(function()
                         local cfg = Cast_DB()
                         cfg.useClassColor = true
                         cfg.useAccentColor = false
-                        RefreshCast()
+                        ApplyCastCircle()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
@@ -837,7 +837,7 @@ CludesUI.AtOptionsLogin(function()
                         local cfg = Cast_DB()
                         cfg.useAccentColor = true
                         cfg.useClassColor = false
-                        RefreshCast()
+                        ApplyCastCircle()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
@@ -893,7 +893,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     set = function(val)
                         Cast_DB().sparkEnabled = val
-                        RefreshCast()
+                        ApplyCastCircle()
                     end,
                 },
             },
@@ -913,7 +913,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = function(val)
                     Cast_DB().ringTex = val
-                    RefreshCast()
+                    ApplyCastCircle()
                 end,
             }, {
                 type = "slider",
@@ -926,7 +926,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = function(val)
                     Cast_DB().radius = val
-                    RefreshCast()
+                    ApplyCastCircle()
                 end,
             })
             cursorY = cursorY - height
@@ -943,7 +943,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = function(val)
                     Cast_DB().alpha = val
-                    RefreshCast()
+                    ApplyCastCircle()
                 end,
             }, {
                 type = "toggle",
@@ -953,7 +953,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = function(val)
                     Cast_DB().attached = val
-                    RefreshCast()
+                    ApplyCastCircle()
                     CludesUI:RefreshPage()
                 end,
             })
@@ -1004,9 +1004,9 @@ CludesUI.AtOptionsLogin(function()
         if _G._CUCL_AceDB then
             _G._CUCL_AceDB:ResetProfile()
         end
-        RefreshAddon()
-        RefreshGCD()
-        RefreshCast()
+        ApplyCursor()
+        ApplyGcdCircle()
+        ApplyCastCircle()
         if _G._CUCL_ApplyTrail then
             _G._CUCL_ApplyTrail()
         end

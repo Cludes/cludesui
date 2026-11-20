@@ -2058,20 +2058,20 @@ function CludesUI.BuildReorderCBDropdown(parentFrame, ddW, fLevel, itemList, get
             local highlight = row:CreateTexture(nil, "ARTWORK")
             highlight:SetAllPoints()
             local hover = false
-            local function Paint()
+            local function PaintEntry()
                 local lit = hover or (selFn and selFn(entry.key))
                 labelFS:SetTextColor(lit and 1 or 0.75, lit and 1 or 0.75, lit and 1 or 0.75, 1)
                 highlight:SetColorTexture(1, 1, 1, lit and 0.04 or 0)
             end
-            Paint()
-            plainPaints[#plainPaints + 1] = Paint
+            PaintEntry()
+            plainPaints[#plainPaints + 1] = PaintEntry
             row:SetScript("OnEnter", function()
                 hover = true
-                Paint()
+                PaintEntry()
             end)
             row:SetScript("OnLeave", function()
                 hover = false
-                Paint()
+                PaintEntry()
             end)
             row:SetScript("OnClick", function()
                 hover = false
@@ -2439,7 +2439,7 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, option
     local arrow = CludesUI.MakeDropdownArrow(dropdownBtn, 12, Pix)
     dropCaption:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
 
-    local function Paint(hover)
+    local function PaintEntry(hover)
         if PoolGen(dropdownBtn) ~= dressGen then
             return
         end
@@ -2452,7 +2452,7 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, option
             hover and CludesUI.DD_BG_HA or CludesUI.DD_BG_A
         )
     end
-    Paint(false)
+    PaintEntry(false)
 
     local function SyncCaption()
         if PoolGen(dropdownBtn) ~= dressGen then
@@ -2572,7 +2572,7 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, option
             if CludesUI._openDropdownMenu == self then
                 CludesUI._openDropdownMenu = nil
             end
-            Paint(dropdownBtn:IsMouseOver())
+            PaintEntry(dropdownBtn:IsMouseOver())
             -- Controller cursor: back onto the button (a no-op once that is hidden too).
             if CludesUI.PadCursorShown() then
                 CludesUI.PadFocus(dropdownBtn)
@@ -2597,7 +2597,7 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, option
         -- The menu lives on the overlay parent: match the panel's scale.
         dropMenu:SetScale(dropdownBtn:GetEffectiveScale() / UIParent:GetEffectiveScale())
         CludesUI.SeatDropdownMenu(dropMenu)
-        Paint(true)
+        PaintEntry(true)
         dropMenu:Show()
         CludesUI._openDropdownMenu = dropMenu
         local sf = CludesUI._scrollFrame
@@ -2638,11 +2638,11 @@ function CludesUI.BuildSliderDropdown(parentFrame, ddW, fLevel, itemList, option
         end
     end
     dropdownBtn:SetScript("OnEnter", function()
-        Paint(true)
+        PaintEntry(true)
     end)
     dropdownBtn:SetScript("OnLeave", function()
         if not (dropMenu and dropMenu:IsShown()) then
-            Paint(false)
+            PaintEntry(false)
         end
     end)
     dropdownBtn:SetScript("OnClick", ShowMenu)

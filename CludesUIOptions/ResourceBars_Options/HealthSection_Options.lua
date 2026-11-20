@@ -56,7 +56,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
             end
         end
     end
-    local function healthOff()
+    local function healthBarOff()
         local rowCfg = rowConf()
         return not (rowCfg and rowCfg.enabled)
     end
@@ -67,7 +67,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
     -- Move in Unlock Mode on the title; handed back so the page's preview eye sits after it.
     local unlockJump = CludesUI.BuildSectionUnlockJump(
         heading,
-        { key = "ERB_Health", disabled = healthOff, disabledTooltip = "Health Bar" }
+        { key = "ERB_Health", disabled = healthBarOff, disabledTooltip = "Health Bar" }
     )
     cursorY = CludesUI.BlizzStyle.Note(hostFrame, cursorY, "resourcebars")
 
@@ -94,7 +94,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
     }, {
         type = "dropdown",
         text = "Orientation",
-        disabled = healthOff,
+        disabled = healthBarOff,
         disabledTooltip = "Health Bar",
         values = { HORIZONTAL = "Horizontal", VERTICAL_UP = "Vertical Up", VERTICAL_DOWN = "Vertical Down" },
         order = { "HORIZONTAL", "VERTICAL_UP", "VERTICAL_DOWN" },
@@ -159,7 +159,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
         end
         CludesUI.BuildInlineCog(healthEnableRow._leftRegion, {
             title = "Max Health Reduction",
-            disabled = healthOff,
+            disabled = healthBarOff,
             disabledTooltip = "Health Bar",
             rows = {
                 {
@@ -226,7 +226,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
     -- Per-spec health enables live in Spec Overrides: "Show Health Bar" is captured while editing as a group.
 
     -- Everything below Row 1 is hidden entirely while the bar is off.
-    if not healthOff() then
+    if not healthBarOff() then
         -- Absorb Style | Absorb Opacity, then Heal Absorb Style | Heal Absorb Opacity: None turns
         -- the overlay off, the inline swatch sets its colour and the slider its opacity.
         for _, def in ipairs({
@@ -509,7 +509,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
             return (c and c.orientation) or (p and p.general and p.general.orientation)
         end
         local function guard(propKey)
-            return mod.OrientedMatchGuard("ERB_Health", propKey, healthOri, healthOff, "Health Bar")
+            return mod.OrientedMatchGuard("ERB_Health", propKey, healthOri, healthBarOff, "Health Bar")
         end
         local hhDis, hhTip, hhRaw = guard("Height")
         local hwDis, hwTip, hwRaw = guard("Width")
@@ -619,7 +619,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                 CludesUI.BlizzStyle.Gate("resourcebars", {
                     type = "dropdown",
                     text = "Border Style",
-                    disabled = healthOff,
+                    disabled = healthBarOff,
                     disabledTooltip = "Health Bar",
                     values = texValues,
                     order = texOrder,
@@ -654,7 +654,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                 mod.ERB_ClassicBorderRow()
                         and mod.ERB_ClassicBorderSizeCfg(
                             rowConf,
-                            healthOff,
+                            healthBarOff,
                             "Health Bar",
                             RebuildHealth,
                             "ERB_Health"
@@ -663,7 +663,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         "resourcebars",
                         CludesUI.BorderPxSliderCfg({
                             text = "Border Size",
-                            disabled = healthOff,
+                            disabled = healthBarOff,
                             disabledTooltip = "Health Bar",
                             getStep = function()
                                 local rowCfg = rowConf()
@@ -709,7 +709,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                     end
                     local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                         addonKey = "resourcebars",
-                        disabled = healthOff,
+                        disabled = healthBarOff,
                         disabledTooltip = "Health Bar",
                         getTex = function()
                             local rowCfg = rowConf()
@@ -765,7 +765,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         title = "Corner Radius",
                         tip = "Corner Radius",
                         disabled = function()
-                            if healthOff() or CludesUI.BlizzStyle.Get("resourcebars") then
+                            if healthBarOff() or CludesUI.BlizzStyle.Get("resourcebars") then
                                 return true
                             end
                             local rowCfg = rowConf()
@@ -775,7 +775,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                             if CludesUI.BlizzStyle.Get("resourcebars") then
                                 return CludesUI.BlizzStyle.Label("resourcebars")
                             end
-                            if healthOff() then
+                            if healthBarOff() then
                                 return "Health Bar"
                             end
                             return "This option requires the Solid, Glow or Shadow border style."
@@ -841,7 +841,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                     CludesUI.HideWidgetTooltip()
                 end)
                 local function UpdateBorderSwDis()
-                    if healthOff() then
+                    if healthBarOff() then
                         borderSwatch:SetAlpha(0.3)
                         swBlock:Show()
                     else
@@ -1089,7 +1089,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
             min = 0,
             max = 100,
             step = 5,
-            disabled = healthOff,
+            disabled = healthBarOff,
             disabledTooltip = "Health Bar",
             getValue = function()
                 local rowCfg = rowConf()
@@ -1112,7 +1112,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
             step = 1,
             trackWidth = 120,
             tooltip = "Opacity of the bar fill; below 100 the world shows through the fill instead of the background.",
-            disabled = healthOff,
+            disabled = healthBarOff,
             disabledTooltip = "Health Bar",
             getValue = function()
                 local rowCfg = rowConf()
@@ -1267,7 +1267,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                         return isClassColored and 1 or 0.3
                     end,
                 },
-            }, { size = 20, disabled = healthOff, disabledTooltip = "Health Bar" })
+            }, { size = 20, disabled = healthBarOff, disabledTooltip = "Health Bar" })
         end
         if not context.advanced and context.syncRows and not CludesUI._prebuilding then
             context.syncRows.healthOpacity = healthBorderRow._leftRegion
@@ -1384,7 +1384,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
         healthTextSizeRow, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Health Text",
-            disabled = healthOff,
+            disabled = healthBarOff,
             disabledTooltip = "Health Bar",
             values = {
                 none = "None",
@@ -1559,7 +1559,7 @@ function mod.ERB_BuildHealthSection(hostFrame, cursorY, context)
                 rebuildFn = function()
                     RebuildHealth()
                 end,
-                disabledFn = healthOff,
+                disabledFn = healthBarOff,
                 disabledTip = "Health Bar",
                 roleShortcuts = true,
                 thresholdLabel = "Threshold %",

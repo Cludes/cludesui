@@ -128,7 +128,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
     local db = mod.db
     local kit = mod.RF_OptPartyKit() -- build time only (the page rebuilds)
     local _, height
-    local function PV(keyName, d)
+    local function ProfileVal(keyName, d)
         local value = db.profile[keyName]
         if value == nil then
             return d
@@ -138,7 +138,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
     -- A row getter over PV: the key's value, or the default given.
     local function PVRow(key, default)
         return function()
-            return PV(key, default)
+            return ProfileVal(key, default)
         end
     end
     local function Refresh()
@@ -258,7 +258,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                 if kit then
                     return "attached"
                 end
-                return PV("partyPortraitStyle", "none")
+                return ProfileVal("partyPortraitStyle", "none")
             end,
             setValue = function(value)
                 local profile = db.profile
@@ -286,7 +286,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
             values = artValues,
             order = { "3d", "2d", "class" },
             disabled = function()
-                return not kit and PV("partyPortraitStyle", "none") == "none"
+                return not kit and ProfileVal("partyPortraitStyle", "none") == "none"
             end,
             disabledTooltip = "Portrait Mode is set to None",
             rawTooltip = true,
@@ -301,9 +301,9 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
             end,
             itemRequireState = "disabled",
             getValue = function()
-                local m = PV("partyPortraitMode", "2d")
+                local m = ProfileVal("partyPortraitMode", "2d")
                 if m == "class" then
-                    return PV("partyPortraitClassStyle", "modern")
+                    return ProfileVal("partyPortraitClassStyle", "modern")
                 end
                 if kit and m == "3d" then
                     return "2d"
@@ -313,7 +313,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
             setValue = function(value)
                 if
                     value == "3d"
-                    and PV("partyPortraitMode", "2d") ~= "3d"
+                    and ProfileVal("partyPortraitMode", "2d") ~= "3d"
                     and not (CludesUIDB and CludesUIDB.dismissed3DWarning)
                 then
                     CludesUI:ShowConfirmPopup({
@@ -345,7 +345,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
     CludesUI.BuildInlineCog(modeRow._leftRegion, {
         title = "Portrait Settings",
         disabled = function()
-            return kit or PV("partyPortraitStyle", "none") ~= "detached"
+            return kit or ProfileVal("partyPortraitStyle", "none") ~= "detached"
         end,
         disabledTooltip = function()
             if kit then
@@ -373,7 +373,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                 hasAlpha = true,
                 tooltip = "Fill color behind the detached portrait.",
                 disabled = function()
-                    return PV("partyPortraitShape", "portrait") == "none"
+                    return ProfileVal("partyPortraitShape", "portrait") == "none"
                 end,
                 disabledTooltip = "This option requires a Shape other than None.",
                 rawTooltip = true,
@@ -391,7 +391,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
         },
     })
 
-    if kit or PV("partyPortraitStyle", "none") == "none" then
+    if kit or ProfileVal("partyPortraitStyle", "none") == "none" then
         return cursorY
     end
 
@@ -404,8 +404,8 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
         max = 100,
         step = 1,
         disabled = function()
-            return PV("partyPortraitStyle", "none") ~= "detached"
-                and not IsInside(PV("partyPortraitSide", "left"))
+            return ProfileVal("partyPortraitStyle", "none") ~= "detached"
+                and not IsInside(ProfileVal("partyPortraitSide", "left"))
         end,
         disabledTooltip = "Only available in Detached or Inside modes",
         rawTooltip = true,
@@ -424,12 +424,12 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
         },
         order = { "left", "right", "top", "insideleft", "insideright", "insidecenter" },
         itemDisabled = function(value)
-            local st = PV("partyPortraitStyle", "none")
+            local st = ProfileVal("partyPortraitStyle", "none")
             if value == "top" and st == "attached" then
                 return true
             end
             if IsInside(value) then
-                if PV("partyPortraitMode", "2d") ~= "3d" then
+                if ProfileVal("partyPortraitMode", "2d") ~= "3d" then
                     return true
                 end
                 if st ~= "detached" then
@@ -443,7 +443,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                 return "Top position is only available in Detached mode"
             end
             if IsInside(value) then
-                if PV("partyPortraitMode", "2d") ~= "3d" then
+                if ProfileVal("partyPortraitMode", "2d") ~= "3d" then
                     return "Inside positions require 3D Art Style"
                 end
                 return "Inside positions require Detached mode"
@@ -486,8 +486,8 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                 step = 1,
                 tooltip = "Scales the 3D character from the portrait's bottom edge, for use with the full-body 3D Zoom range above 300.",
                 disabled = function()
-                    return PV("partyPortraitStyle", "none") ~= "detached"
-                        or not IsInside(PV("partyPortraitSide", "left"))
+                    return ProfileVal("partyPortraitStyle", "none") ~= "detached"
+                        or not IsInside(ProfileVal("partyPortraitSide", "left"))
                 end,
                 disabledTooltip = "This option requires an Inside position",
                 get = PVRow("partyPortraitCharScale", 100),
@@ -518,12 +518,12 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
             },
         },
         disabled = function()
-            return PV("partyPortraitStyle", "none") ~= "detached"
+            return ProfileVal("partyPortraitStyle", "none") ~= "detached"
         end,
         disabledTooltip = "This option requires Portrait Mode to be set to Detached.",
     })
 
-    if PV("partyPortraitStyle", "none") ~= "detached" then
+    if ProfileVal("partyPortraitStyle", "none") ~= "detached" then
         return cursorY
     end
 
@@ -544,7 +544,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
         },
         order = { "none", "portrait", "circle", "square", "csquare", "diamond", "hexagon", "shield" },
         itemDisabled = function(value)
-            return value == "none" and PV("partyPortraitMode", "2d") ~= "3d"
+            return value == "none" and ProfileVal("partyPortraitMode", "2d") ~= "3d"
         end,
         itemDisabledTooltip = function(value)
             if value == "none" then
@@ -568,7 +568,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                     PtSet("partyPortraitBorderColor", { r = red, g = green, b = blue })
                 end,
                 onClick = function(self)
-                    if PV("partyPortraitBorderClassColor", true) then
+                    if ProfileVal("partyPortraitBorderClassColor", true) then
                         PtSet("partyPortraitBorderClassColor", false)
                         CludesUI:RefreshPage()
                         return
@@ -578,7 +578,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                     end
                 end,
                 refreshAlpha = function()
-                    return PV("partyPortraitBorderClassColor", true) and 0.3 or 1
+                    return ProfileVal("partyPortraitBorderClassColor", true) and 0.3 or 1
                 end,
             },
             {
@@ -598,7 +598,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, cursorY, W, PSSet)
                     CludesUI:RefreshPage()
                 end,
                 refreshAlpha = function()
-                    return PV("partyPortraitBorderClassColor", true) and 1 or 0.3
+                    return ProfileVal("partyPortraitBorderClassColor", true) and 1 or 0.3
                 end,
             },
         },
@@ -639,7 +639,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
     local db = mod.db
     local BLANK = CludesUI.BlankRowCfg
     local _, height, row
-    local function PV(keyName, d)
+    local function ProfileVal(keyName, d)
         local value = db.profile[keyName]
         if value == nil then
             return d
@@ -649,7 +649,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
     -- A row getter over PV: the key's value, or the default given.
     local function PVRow(key, default)
         return function()
-            return PV(key, default)
+            return ProfileVal(key, default)
         end
     end
     -- The party preview draws its own target frames (the real ones are dimmed under it).
@@ -751,7 +751,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         max = 100,
         step = 1,
         disabled = function()
-            return PV("partyTargetHealthColorMode", "class") == "dark"
+            return ProfileVal("partyTargetHealthColorMode", "class") == "dark"
         end,
         disabledTooltip = DARK_TIP,
         rawTooltip = true,
@@ -782,7 +782,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
             CludesUI.HideWidgetTooltip()
         end)
         local function UpdateSwatchVis()
-            if PV("partyTargetHealthColorMode", "class") == "custom" then
+            if ProfileVal("partyTargetHealthColorMode", "class") == "custom" then
                 colorSwatch:SetAlpha(1)
                 block:Hide()
             else
@@ -829,7 +829,7 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
         end, false, 20)
         bgSwatch._eabOrigClick = bgSwatch:GetScript("OnClick")
         bgSwatch:SetScript("OnClick", function(self)
-            if PV("partyTargetBgClassColored", false) then
+            if ProfileVal("partyTargetBgClassColored", false) then
                 PtSet("partyTargetBgClassColored", false)
                 CludesUI:RefreshPage()
                 return
@@ -859,13 +859,13 @@ function mod.RF_BuildPartyTargets(hostFrame, cursorY, W)
             CludesUI.HideWidgetTooltip()
         end)
         local function UpdateBgSwatchVis()
-            if PV("partyTargetHealthColorMode", "class") == "dark" then
+            if ProfileVal("partyTargetHealthColorMode", "class") == "dark" then
                 bgSwatch:SetAlpha(0.3)
                 bgClassSwatch:SetAlpha(0.3)
                 bgBlock:Show()
             else
                 bgBlock:Hide()
-                local classOn = PV("partyTargetBgClassColored", false)
+                local classOn = ProfileVal("partyTargetBgClassColored", false)
                 bgSwatch:SetAlpha(classOn and 0.3 or 1)
                 bgClassSwatch:SetAlpha(classOn and 1 or 0.3)
             end

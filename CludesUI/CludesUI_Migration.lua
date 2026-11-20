@@ -5824,11 +5824,11 @@ do
     end
     -- Two independent client checks: the suite's flag and the raw interface
     -- number. Tested here and again inside every function that writes.
-    local function ClientOK()
+    local function OnForeverClient()
         return CludesUI ~= nil and CludesUI.IS_FOREVER == true and TocForever()
     end
 
-    if ClientOK() then
+    if OnForeverClient() then
         local KEY = "fvBuffWipe"
         local SWEEP_ID = "forever_buff_wipe_sweep_v1"
         local UF, RF = "CludesUIUnitFrames", "CludesUIRaidFrames"
@@ -6091,7 +6091,7 @@ do
             if type(b) ~= "table" or b[KEY] == nil then
                 return
             end
-            if not ClientOK() then
+            if not OnForeverClient() then
                 return
             end
             if swingCfg then
@@ -6102,7 +6102,7 @@ do
             end
         end
 
-        local FvBW = { KEY = KEY, ClientOK = ClientOK }
+        local FvBW = { KEY = KEY, ClientOK = OnForeverClient }
 
         -- Raid Frames live store (p = the Raid Frames profile): every indicator
         -- group in every bucket goes, replaced by the blank payload, and the mark
@@ -6117,7 +6117,7 @@ do
             if type(b) == "table" and b[KEY] ~= nil then
                 return nil
             end
-            if not ClientOK() then
+            if not OnForeverClient() then
                 return nil
             end
             local f = BlankFork()
@@ -6153,7 +6153,7 @@ do
             then
                 return true
             end
-            if not ClientOK() then
+            if not OnForeverClient() then
                 return false
             end
             if type(specs) ~= "table" then
@@ -6190,7 +6190,7 @@ do
         -- converted from its retired legacy fields. False only when the client
         -- check fails.
         function FvBW.BlankLayer(layer)
-            if type(layer) ~= "table" or not ClientOK() then
+            if type(layer) ~= "table" or not OnForeverClient() then
                 return false
             end
             layer.bm2 = BlankFork()
@@ -6214,7 +6214,7 @@ do
             end
             local sM, cM = swingCfg and s[KEY] ~= nil, cT and c[KEY] ~= nil
             if sM or cM then
-                if ((swingCfg and not sM) or (cT and not cM)) and ClientOK() then
+                if ((swingCfg and not sM) or (cT and not cM)) and OnForeverClient() then
                     if swingCfg and not sM then
                         s[KEY] = 1
                     end
@@ -6224,7 +6224,7 @@ do
                 end
                 return
             end
-            if not ClientOK() then
+            if not OnForeverClient() then
                 return
             end
             if type(_G._CURF_BM2PresetFork) ~= "function" then
@@ -6433,7 +6433,7 @@ do
             if not (idList.defensives or idList.externals or idList.consumables or idList.coreheals) then
                 return false
             end
-            if not ClientOK() then
+            if not OnForeverClient() then
                 return false
             end
             -- The profile root holding this store: the fork stores live there.
@@ -6545,7 +6545,7 @@ do
             else
                 return
             end
-            if not ClientOK() then
+            if not OnForeverClient() then
                 return
             end
             local plan = { n = 0, rm = {} }
@@ -6589,7 +6589,7 @@ do
             end
             self:UnregisterEvent("ADDON_LOADED")
             local saved = CludesUIDB
-            if type(saved) ~= "table" or not ClientOK() then
+            if type(saved) ~= "table" or not OnForeverClient() then
                 return
             end
             local flagSet = saved._migrations
@@ -6631,7 +6631,7 @@ do
     -- The full-account import keeps the recipient's mark (CludesUI_Profiles.lua).
     CludesUI._FvSnapFlag = FLAG
 
-    local function ClientOK()
+    local function OnForeverClient()
         local tocVersion = select(4, GetBuildInfo())
         return CludesUI ~= nil
             and CludesUI.IS_FOREVER == true
@@ -6697,9 +6697,9 @@ do
         end
     end
 
-    if ClientOK() then
+    if OnForeverClient() then
         CludesUI.Lite.OnSavedVariablesLoaded(function()
-            if not ClientOK() then
+            if not OnForeverClient() then
                 return
             end
             local saved = CludesUIDB
@@ -6755,7 +6755,7 @@ do
     local OVERRIDE_KEY = "CludesUINameplates\31npEnemyBuffFilter"
     local NIL_SENT = "__SPECOV_NIL__"
 
-    local function ClientOK()
+    local function OnForeverClient()
         local tocVersion = select(4, GetBuildInfo())
         return CludesUI ~= nil
             and CludesUI.IS_FOREVER == true
@@ -6790,9 +6790,9 @@ do
         end
     end
 
-    if ClientOK() then
+    if OnForeverClient() then
         CludesUI.Lite.OnSavedVariablesLoaded(function()
-            if not ClientOK() then
+            if not OnForeverClient() then
                 return
             end
             local saved = CludesUIDB
@@ -6845,7 +6845,7 @@ end
 do
     local FLAG = "forever_np_rare_box_v1"
 
-    local function ClientOK()
+    local function OnForeverClient()
         local tocVersion = select(4, GetBuildInfo())
         return CludesUI ~= nil
             and CludesUI.IS_FOREVER == true
@@ -6882,9 +6882,9 @@ do
         plateCfg.foreverRareSeeded = true
     end
 
-    if ClientOK() then
+    if OnForeverClient() then
         CludesUI.Lite.OnSavedVariablesLoaded(function()
-            if not ClientOK() then
+            if not OnForeverClient() then
                 return
             end
             local saved = CludesUIDB
@@ -6937,7 +6937,7 @@ do
     local FLAG = "forever_power_text_value_v1"
     local SMART, VALUE = "smart", "curpp"
 
-    local function ClientOK()
+    local function OnForeverClient()
         local tocVersion = select(4, GetBuildInfo())
         return CludesUI ~= nil
             and CludesUI.IS_FOREVER == true
@@ -7004,9 +7004,9 @@ do
         end
     end
 
-    if ClientOK() then
+    if OnForeverClient() then
         CludesUI.Lite.OnSavedVariablesLoaded(function()
-            if not ClientOK() then
+            if not OnForeverClient() then
                 return
             end
             local saved = CludesUIDB

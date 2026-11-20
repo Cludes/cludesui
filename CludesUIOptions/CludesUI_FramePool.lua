@@ -2786,7 +2786,7 @@ function Pool._DevVerifyReset()
         end
     end
 
-    local function VerifyFrame(frameType, template, entries)
+    local function CheckPooledFrame(frameType, template, entries)
         local kindName = template and (frameType .. "|" .. template) or frameType
         local a = _G.CreateFrame(frameType, nil, hostFrame, template)
         local widget = Pool.CreateFrame(frameType, nil, hostFrame, template)
@@ -2917,15 +2917,15 @@ function Pool._DevVerifyReset()
         end
     end
 
-    VerifyFrame("Frame", nil, { FRAME })
-    VerifyFrame("Frame", "BackdropTemplate", { FRAME })
-    VerifyFrame("Button", nil, { FRAME, BUTTON })
-    VerifyFrame("CheckButton", nil, { FRAME, BUTTON, CHECK })
-    VerifyFrame("EditBox", nil, { FRAME, EDIT })
-    VerifyFrame("ScrollFrame", nil, { FRAME, SCROLL })
-    VerifyFrame("StatusBar", nil, { FRAME, BAR })
-    VerifyFrame("Cooldown", "CooldownFrameTemplate", { FRAME, CD })
-    VerifyFrame("PlayerModel", nil, { FRAME, MODEL })
+    CheckPooledFrame("Frame", nil, { FRAME })
+    CheckPooledFrame("Frame", "BackdropTemplate", { FRAME })
+    CheckPooledFrame("Button", nil, { FRAME, BUTTON })
+    CheckPooledFrame("CheckButton", nil, { FRAME, BUTTON, CHECK })
+    CheckPooledFrame("EditBox", nil, { FRAME, EDIT })
+    CheckPooledFrame("ScrollFrame", nil, { FRAME, SCROLL })
+    CheckPooledFrame("StatusBar", nil, { FRAME, BAR })
+    CheckPooledFrame("Cooldown", "CooldownFrameTemplate", { FRAME, CD })
+    CheckPooledFrame("PlayerModel", nil, { FRAME, MODEL })
     VerifyRegion("Texture", "CreateTexture", { REGION, TEX })
     VerifyRegion("FontString", "CreateFontString", { REGION, FS })
     VerifyRegion(

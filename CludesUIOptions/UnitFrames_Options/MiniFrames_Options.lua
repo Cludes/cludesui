@@ -82,7 +82,7 @@ local function BuildMiniTextAndSize(
             MSet(settingKey, value)
         end
     end
-    local function MVal(settingKey, default)
+    local function UnitVal(settingKey, default)
         local value = unitSettings[settingKey]
         if value ~= nil then
             return value
@@ -92,7 +92,7 @@ local function BuildMiniTextAndSize(
     -- A row getter over MVal: the key's value, or the default given.
     local function MValRow(settingKey, default)
         return function()
-            return MVal(settingKey, default)
+            return UnitVal(settingKey, default)
         end
     end
 
@@ -541,7 +541,7 @@ local function BuildMiniTextAndSize(
                         ReloadAndUpdate()
                     end,
                     onClick = function(self)
-                        if MVal("healthClassColored", false) then
+                        if UnitVal("healthClassColored", false) then
                             if MGet("customFillColor") == nil then
                                 unitSettings.customFillColor = { r = 37 / 255, g = 193 / 255, b = 29 / 255 }
                             end
@@ -555,7 +555,7 @@ local function BuildMiniTextAndSize(
                         end
                     end,
                     refreshAlpha = function()
-                        return MVal("healthClassColored", false) and 0.3 or 1
+                        return UnitVal("healthClassColored", false) and 0.3 or 1
                     end,
                 },
                 {
@@ -576,7 +576,7 @@ local function BuildMiniTextAndSize(
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        return MVal("healthClassColored", false) and 1 or 0.3
+                        return UnitVal("healthClassColored", false) and 1 or 0.3
                     end,
                 },
             }
@@ -729,7 +729,7 @@ local function BuildMiniTextAndSize(
                         ReloadAndUpdate()
                     end,
                     onClick = function(self)
-                        if MVal("bgClassColored", false) then
+                        if UnitVal("bgClassColored", false) then
                             unitSettings.bgClassColored = false
                             ReloadAndUpdate()
                             CludesUI:RefreshPage()
@@ -740,7 +740,7 @@ local function BuildMiniTextAndSize(
                         end
                     end,
                     refreshAlpha = function()
-                        return MVal("bgClassColored", false) and 0.3 or 1
+                        return UnitVal("bgClassColored", false) and 0.3 or 1
                     end,
                 },
                 {
@@ -761,7 +761,7 @@ local function BuildMiniTextAndSize(
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        return MVal("bgClassColored", false) and 1 or 0.3
+                        return UnitVal("bgClassColored", false) and 1 or 0.3
                     end,
                 },
             })
@@ -825,7 +825,7 @@ local function BuildMiniTextAndSize(
                         max = 100,
                         step = 1,
                         get = function()
-                            return MVal("blizzLevelSize", MVal("leftTextSize", unitSettings.textSize or 12))
+                            return UnitVal("blizzLevelSize", UnitVal("leftTextSize", unitSettings.textSize or 12))
                         end,
                         set = MSetRow("blizzLevelSize"),
                     },
@@ -870,7 +870,7 @@ local function BuildMiniTextAndSize(
         local contentKey = settingKey .. "Content"
         local classKey = settingKey .. "ClassColor"
         local function Content()
-            return MVal(contentKey, default)
+            return UnitVal(contentKey, default)
         end
         local function Off()
             return Content() == "none"
@@ -883,7 +883,7 @@ local function BuildMiniTextAndSize(
                 max = hi,
                 step = step,
                 get = function()
-                    return MVal(settingKey .. suffix, type(def) == "function" and def() or def)
+                    return UnitVal(settingKey .. suffix, type(def) == "function" and def() or def)
                 end,
                 set = function(value)
                     MSet(settingKey .. suffix, value)
@@ -904,7 +904,7 @@ local function BuildMiniTextAndSize(
                 values = { ["left"] = "Left", ["right"] = "Right", ["center"] = "Center" },
                 order = { "left", "right", "center" },
                 get = function()
-                    return MVal(settingKey .. "Align", "left")
+                    return UnitVal(settingKey .. "Align", "left")
                 end,
                 set = function(value)
                     MSet(settingKey .. "Align", value)
@@ -932,7 +932,7 @@ local function BuildMiniTextAndSize(
                     tooltip = "Custom Colored",
                     hasAlpha = false,
                     getValue = function()
-                        local color = MVal(sepKey, nil)
+                        local color = UnitVal(sepKey, nil)
                         if type(color) == "table" then
                             return color.r or 1, color.g or 1, color.b or 1
                         end
@@ -942,7 +942,7 @@ local function BuildMiniTextAndSize(
                         MSet(sepKey, { r = red, g = green, b = blue })
                     end,
                     onClick = function(self)
-                        if MVal(sepClassKey, false) then
+                        if UnitVal(sepClassKey, false) then
                             MSet(sepClassKey, false)
                             return
                         end
@@ -951,7 +951,7 @@ local function BuildMiniTextAndSize(
                         end
                     end,
                     refreshAlpha = function()
-                        return MVal(sepClassKey, false) and 0.3 or 1
+                        return UnitVal(sepClassKey, false) and 0.3 or 1
                     end,
                 },
                 {
@@ -963,7 +963,7 @@ local function BuildMiniTextAndSize(
                         MSet(sepClassKey, true)
                     end,
                     refreshAlpha = function()
-                        return MVal(sepClassKey, false) and 1 or 0.3
+                        return UnitVal(sepClassKey, false) and 1 or 0.3
                     end,
                 },
             },
@@ -973,7 +973,7 @@ local function BuildMiniTextAndSize(
             label = "Separator",
             inputWidth = 60,
             get = function()
-                return MVal(settingKey .. "TargetSep", ">")
+                return UnitVal(settingKey .. "TargetSep", ">")
             end,
             set = function(value)
                 value = Clean(value)
@@ -990,7 +990,7 @@ local function BuildMiniTextAndSize(
             inputWidth = 60,
             tooltip = "Text shown before the target's name.",
             get = function()
-                return MVal(settingKey .. "TargetPrefix", "T:")
+                return UnitVal(settingKey .. "TargetPrefix", "T:")
             end,
             -- Unlike Separator, empty is kept: no prefix.
             set = function(value)
@@ -1034,7 +1034,7 @@ local function BuildMiniTextAndSize(
                     disabled = Off,
                     disabledTooltip = "This option requires a text selection other than none.",
                     title = o.name .. " Settings",
-                    rows = mod.UF_CoreTextRows(settingKey, default, MVal, MSet, rows),
+                    rows = mod.UF_CoreTextRows(settingKey, default, UnitVal, MSet, rows),
                 })
                 -- Class, then Custom, left of the cog. Both are dead while the slot
                 -- shows nothing; the one not in use dims.
@@ -1063,7 +1063,7 @@ local function BuildMiniTextAndSize(
                 end)
                 CludesUI.HoverTip(classSw, "Class Colored")
                 local swatch, swUp = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
-                    return MVal(settingKey .. "ColorR", 1), MVal(settingKey .. "ColorG", 1), MVal(settingKey .. "ColorB", 1)
+                    return UnitVal(settingKey .. "ColorR", 1), UnitVal(settingKey .. "ColorG", 1), UnitVal(settingKey .. "ColorB", 1)
                 end, function(red, green, blue)
                     unitSettings[settingKey .. "ColorR"] = red
                     unitSettings[settingKey .. "ColorG"] = green
@@ -1077,7 +1077,7 @@ local function BuildMiniTextAndSize(
                     if Off() then
                         return
                     end
-                    if MVal(classKey, false) then
+                    if UnitVal(classKey, false) then
                         MSet(classKey, false)
                         CludesUI:RefreshPage()
                         return
@@ -1088,7 +1088,7 @@ local function BuildMiniTextAndSize(
                 end)
                 CludesUI.HoverTip(swatch, "Custom Colored")
                 local function Dim()
-                    local isNone, isClass = Off(), MVal(classKey, false)
+                    local isNone, isClass = Off(), UnitVal(classKey, false)
                     swatch:SetAlpha((isClass or isNone) and 0.3 or 1)
                     classSw:SetAlpha((isClass and not isNone) and 1 or 0.3)
                 end
@@ -1175,7 +1175,7 @@ local function BuildMiniTextAndSize(
                 type = "toggle",
                 text = "Above Health Bar",
                 getValue = function()
-                    return MVal("powerPosition", "below") == "above"
+                    return UnitVal("powerPosition", "below") == "above"
                 end,
                 setValue = function(value)
                     MSet("powerPosition", value and "above" or "below")
@@ -1286,9 +1286,9 @@ local function BuildMiniTextAndSize(
             region._lastInline = powerSwatch
             RegisterWidgetRefresh(function()
                 powerSwatchUpdate()
-                powerSwatch:SetAlpha((MVal("powerPercentPowerColor", true) ~= false) and 1 or 0.3)
+                powerSwatch:SetAlpha((UnitVal("powerPercentPowerColor", true) ~= false) and 1 or 0.3)
             end)
-            powerSwatch:SetAlpha((MVal("powerPercentPowerColor", true) ~= false) and 1 or 0.3)
+            powerSwatch:SetAlpha((UnitVal("powerPercentPowerColor", true) ~= false) and 1 or 0.3)
 
             local fGet = function()
                 local color = MGet("customPowerFillColor")
@@ -1305,7 +1305,7 @@ local function BuildMiniTextAndSize(
                 CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, fGet, fSet, false, 20)
             fillSwatch._eabOrigClick = fillSwatch:GetScript("OnClick")
             fillSwatch:SetScript("OnClick", function(self)
-                if MVal("powerPercentPowerColor", true) ~= false then
+                if UnitVal("powerPercentPowerColor", true) ~= false then
                     unitSettings.powerPercentPowerColor = false
                     ReloadAndUpdate()
                     CludesUI:RefreshPage()
@@ -1325,9 +1325,9 @@ local function BuildMiniTextAndSize(
             region._lastInline = fillSwatch
             RegisterWidgetRefresh(function()
                 fillSwatchUpdate()
-                fillSwatch:SetAlpha((MVal("powerPercentPowerColor", true) ~= false) and 0.3 or 1)
+                fillSwatch:SetAlpha((UnitVal("powerPercentPowerColor", true) ~= false) and 0.3 or 1)
             end)
-            fillSwatch:SetAlpha((MVal("powerPercentPowerColor", true) ~= false) and 0.3 or 1)
+            fillSwatch:SetAlpha((UnitVal("powerPercentPowerColor", true) ~= false) and 0.3 or 1)
         end
 
         -- Row 3: Power Text (format) + Text Position -- ported from Main Frames.
@@ -1336,7 +1336,7 @@ local function BuildMiniTextAndSize(
         local pwrTextRow
         local function SetPowerTextFormat(value)
             unitSettings.powerTextFormat = value
-            if value ~= "none" and MVal("powerPercentText", "none") == "none" then
+            if value ~= "none" and UnitVal("powerPercentText", "none") == "none" then
                 unitSettings.powerPercentText = "center"
             end
             if value == "none" then
@@ -1357,7 +1357,7 @@ local function BuildMiniTextAndSize(
                 ["perpp"] = "Power %",
                 ["both"] = "Value | %",
             }, function()
-                return MVal("powerTextFormat", "perpp")
+                return UnitVal("powerTextFormat", "perpp")
             end, function()
                 mod.UFO_EditCustomText("powerText", unitSettings, unitName, function()
                     SetPowerTextFormat("custom")
@@ -1375,7 +1375,7 @@ local function BuildMiniTextAndSize(
                 "both",
             }),
             getValue = function()
-                return CludesUI.PowerTextFormat(MVal("powerTextFormat", "perpp"))
+                return CludesUI.PowerTextFormat(UnitVal("powerTextFormat", "perpp"))
             end,
             setValue = SetPowerTextFormat,
         }, {
@@ -1398,7 +1398,7 @@ local function BuildMiniTextAndSize(
                 pwrTextRow._leftRegion,
                 "Power Text",
                 "powerText",
-                MVal("powerTextFormat", "perpp"),
+                UnitVal("powerTextFormat", "perpp"),
                 function()
                     return unitSettings
                 end,
@@ -1410,7 +1410,7 @@ local function BuildMiniTextAndSize(
             local region = pwrTextRow._leftRegion
             CludesUI.BuildInlineCog(
                 region,
-                mod.UFO_PowerTextCog(MVal, MSet, { none = true, curpp = true }, function(value)
+                mod.UFO_PowerTextCog(UnitVal, MSet, { none = true, curpp = true }, function(value)
                     MSet("powerShowPercent", value)
                 end)
             )
@@ -1442,7 +1442,7 @@ local function BuildMiniTextAndSize(
             region._lastInline = customSw
             local customOrigClick = customSw:GetScript("OnClick")
             customSw:SetScript("OnClick", function(self, ...)
-                if MVal("powerPercentTextPowerColor", false) then
+                if UnitVal("powerPercentTextPowerColor", false) then
                     unitSettings.powerPercentTextPowerColor = false
                     ReloadAndUpdate()
                     CludesUI:RefreshPage()
@@ -1478,7 +1478,7 @@ local function BuildMiniTextAndSize(
             end)
             CludesUI.HoverTip(powerSw, "Power Colored Text")
             local function UpdSwatches()
-                local isPower = MVal("powerPercentTextPowerColor", false)
+                local isPower = UnitVal("powerPercentTextPowerColor", false)
                 customSw:SetAlpha(isPower and 0.3 or 1)
                 powerSw:SetAlpha(isPower and 1 or 0.3)
             end
@@ -1494,7 +1494,7 @@ local function BuildMiniTextAndSize(
             local region = pwrTextRow._rightRegion
             CludesUI.BuildInlineCog(region, {
                 disabled = function()
-                    return MVal("powerPercentText", "none") == "none"
+                    return UnitVal("powerPercentText", "none") == "none"
                 end,
                 disabledTooltip = "This option requires a text position other than none.",
                 title = "Text Position",
@@ -1550,7 +1550,7 @@ local function BuildMiniTextAndSize(
                 pwrBorderRow:GetFrameLevel() + 3,
                 function()
                     local color = MGet("powerBorderColor") or { r = 0, g = 0, b = 0 }
-                    return color.r, color.g, color.b, MVal("powerBorderAlpha", 1)
+                    return color.r, color.g, color.b, UnitVal("powerBorderAlpha", 1)
                 end,
                 function(red, green, blue, a)
                     unitSettings.powerBorderColor = { r = red, g = green, b = blue }

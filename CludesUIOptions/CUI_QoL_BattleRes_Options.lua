@@ -169,7 +169,7 @@ end
 
 -- Text display mode ("2 | 4:14"): shared predicates + swatches for the
 -- Display Style controls.
-local function TextModeOn()
+local function ShowsText()
     return (Cfg("displayMode") or "icon") == "text"
 end
 
@@ -484,7 +484,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         type = "slider",
         text = "Icon Size",
         disabled = function()
-            return Cfg("visibility") == "NEVER" or TextModeOn()
+            return Cfg("visibility") == "NEVER" or ShowsText()
         end,
         disabledTooltip = function()
             if Cfg("visibility") == "NEVER" then
@@ -509,7 +509,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Icon Shape",
-            disabled = TextModeOn,
+            disabled = ShowsText,
             disabledTooltip = ICON_ROWS_TIP,
             values = SHAPE_VALUES,
             order = SHAPE_ORDER,
@@ -520,7 +520,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         }, {
             type = "multiSwatch",
             text = "Border Color",
-            disabled = TextModeOn,
+            disabled = ShowsText,
             disabledTooltip = ICON_ROWS_TIP,
             swatches = MakeBorderColorSwatches(),
         })
@@ -537,18 +537,18 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         cursorY = cursorY - height
 
         row, height =
-            W:DualRow(hostFrame, cursorY, BorderSizeSliderCfg(Cfg, Set, ApplyBattleRes, TextModeOn, ICON_ROWS_TIP), {
+            W:DualRow(hostFrame, cursorY, BorderSizeSliderCfg(Cfg, Set, ApplyBattleRes, ShowsText, ICON_ROWS_TIP), {
                 type = "slider",
                 text = "Icon Zoom",
                 disabled = function()
-                    if TextModeOn() then
+                    if ShowsText() then
                         return true
                     end
                     local s = Cfg("shape") or "none"
                     return s ~= "none" and s ~= "cropped"
                 end,
                 disabledTooltip = function()
-                    if TextModeOn() then
+                    if ShowsText() then
                         return ICON_ROWS_TIP
                     end
                     return "This option requires Icon Shape to be set to None or Cropped"
@@ -567,7 +567,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "slider",
             text = "Duration Size",
-            disabled = TextModeOn,
+            disabled = ShowsText,
             disabledTooltip = ICON_ROWS_TIP,
             min = 8,
             max = 30,
@@ -580,7 +580,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         }, {
             type = "slider",
             text = "Count Size",
-            disabled = TextModeOn,
+            disabled = ShowsText,
             disabledTooltip = ICON_ROWS_TIP,
             min = 8,
             max = 20,
@@ -629,7 +629,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                     },
                     gap = 6,
                     chain = false,
-                    disabled = TextModeOn,
+                    disabled = ShowsText,
                 })
             end
             _attachOffsetCog(row._leftRegion, "Duration Position", "durationOffsetX", "durationOffsetY")
@@ -657,7 +657,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             type = "slider",
             text = "Text Size",
             disabled = function()
-                return not TextModeOn()
+                return not ShowsText()
             end,
             disabledTooltip = TEXT_ROWS_TIP,
             min = 8,
@@ -696,7 +696,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                 )
                 Pix.Point(colorSwatch, "RIGHT", anchorTo, "LEFT", -8, 0)
                 colorSwatch:HookScript("OnEnter", function()
-                    if TextModeOn() then
+                    if ShowsText() then
                         CludesUI.ShowWidgetTooltip(colorSwatch, tipText)
                     end
                 end)
@@ -712,7 +712,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                 end)
                 local function UpdateState()
                     updateSwatch()
-                    if TextModeOn() then
+                    if ShowsText() then
                         colorSwatch:SetAlpha(1)
                         block:Hide()
                     else
@@ -729,7 +729,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             end, function(val)
                 Set("desaturateNoCharges", val)
                 ApplyBattleRes()
-            end, TextModeOn, ICON_ROWS_TIP)
+            end, ShowsText, ICON_ROWS_TIP)
 
             local timerSwatch =
                 MakeInlineTextSwatch("textTimerColor", "Timer Color", region._lastInline or region._control)
@@ -754,7 +754,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                 type = "dropdown",
                 text = "Font",
                 disabled = function()
-                    return not TextModeOn()
+                    return not ShowsText()
                 end,
                 disabledTooltip = TEXT_ROWS_TIP,
                 values = fontValues,
@@ -767,7 +767,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                 type = "dropdown",
                 text = "Font Outline",
                 disabled = function()
-                    return not TextModeOn()
+                    return not ShowsText()
                 end,
                 disabledTooltip = TEXT_ROWS_TIP,
                 values = outlineValues,

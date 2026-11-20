@@ -511,7 +511,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- hover: the enter / leave scripts say which edge they are (a rect test at
         -- the moment of the event can disagree with the hit test on an edge);
         -- a refresh pass asks the rect.
-        local function State(hover)
+        local function PaintState(hover)
             local off = options.disabled and options.disabled()
             local popFrame = type(show) == "table" and show._popupFrame
             local open = (options.isOpen and options.isOpen(button))
@@ -552,7 +552,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 block:SetShown(off and true or false)
             end
         end
-        button._cuiCogState = State
+        button._cuiCogState = PaintState
         -- opts.paint reads the accent (the unlock jump), so it repaints on accent changes.
         -- Keyed by the texture: the page pool forgets the entry when it resets it.
         if paint then
@@ -560,19 +560,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 type = "callback",
                 obj = texture,
                 fn = function()
-                    State()
+                    PaintState()
                 end,
             })
         end
 
         button:SetScript("OnEnter", function(self)
-            State(true)
+            PaintState(true)
             if options.tip then
                 ShowWidgetTooltip(self, options.tip)
             end
         end)
         button:SetScript("OnLeave", function()
-            State(false)
+            PaintState(false)
             if options.tip then
                 HideWidgetTooltip()
             end
@@ -588,11 +588,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
             show(self)
         end)
-        State()
+        PaintState()
         -- A refresh re-reads the disabled states: the cog's own and, for the dot,
         -- its setting's.
         if options.disabled or (hostCfg and hostCfg.disabled) then
-            RegisterWidgetRefresh(State)
+            RegisterWidgetRefresh(PaintState)
         end
         return button, show
     end
@@ -662,7 +662,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             -- Motion scripts keep running while disabled, so hover explains the lock.
             button:SetMotionScriptsWhileDisabled(true)
             local shownOff
-            local function State()
+            local function PaintState()
                 local off = disabled() and true or false
                 if off == shownOff then
                     return
@@ -677,8 +677,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     OnEnter(button)
                 end
             end
-            State()
-            RegisterWidgetRefresh(State)
+            PaintState()
+            RegisterWidgetRefresh(PaintState)
         end
         return button
     end

@@ -858,7 +858,7 @@ local function LineRows(body, cursorY, context, l)
     local function Add(c)
         cells[#cells + 1] = c
     end
-    local function Changed()
+    local function NotifyChange()
         context.onChange(false)
     end
     local v1 = l.variants[1]
@@ -876,7 +876,7 @@ local function LineRows(body, cursorY, context, l)
             return v1.arg
         end, function(t)
             v1.arg = t
-            Changed()
+            NotifyChange()
         end, { ph = K.ph }))
         if not chanV then
             chanV, chanO = ListValues(B.CHANNELS)
@@ -885,21 +885,21 @@ local function LineRows(body, cursorY, context, l)
             return l.chan
         end, function(c)
             l.chan = c
-            Changed()
+            NotifyChange()
         end))
     elseif K.arg == "spells" then
         Add(Input("Spells", function()
             return v1.arg
         end, function(t)
             v1.arg = t
-            Changed()
+            NotifyChange()
         end, { ph = K.ph or "Spell1, Spell2, Spell3", suggest = "list" }))
         if K.reset then
             Add(Input("Reset", function()
                 return l.reset
             end, function(t)
                 l.reset = t
-                Changed()
+                NotifyChange()
             end, {
                 ph = "target/combat/8",
                 tip = "When the sequence starts over: target (target change), combat (leaving combat), shift/ctrl/alt or seconds. Separate several with /.",
@@ -927,7 +927,7 @@ local function LineRows(body, cursorY, context, l)
                 return val.arg
             end, function(m)
                 val.arg = m
-                Changed()
+                NotifyChange()
             end))
         elseif K.arg and K.arg ~= "spells" and K.key ~= "chat" then
             local textValue = K.arg == "spell" and "Spell" or (K.arg == "unit" and "Unit or Name" or "Text")
@@ -935,7 +935,7 @@ local function LineRows(body, cursorY, context, l)
                 return val.arg
             end, function(t)
                 val.arg = t
-                Changed()
+                NotifyChange()
             end, { ph = K.ph, suggest = K.arg == "spell" or nil }))
         end
         if K.conds then
@@ -946,7 +946,7 @@ local function LineRows(body, cursorY, context, l)
                 return val.target ~= "" and val.target or "none"
             end, function(t)
                 val.target = t == "none" and "" or t
-                Changed()
+                NotifyChange()
             end))
             if not stanceV then
                 stanceV, stanceO = ListValues(B.Stances(), "any")
@@ -955,7 +955,7 @@ local function LineRows(body, cursorY, context, l)
                 return val.stance ~= "" and val.stance or "any"
             end, function(s)
                 val.stance = s == "any" and "" or s
-                Changed()
+                NotifyChange()
             end, "Numbers follow your stance bar; 0 = no stance or normal form."))
             -- Checking a condition with a value adds its value row, and Not
             -- renames it ("not ..."): the page rebuilds once the menu closes.
@@ -1006,7 +1006,7 @@ local function LineRows(body, cursorY, context, l)
                             val.conds[key] = nil
                         end
                     end
-                    Changed()
+                    NotifyChange()
                 end,
                 onClosed = function()
                     if addedRows then
@@ -1023,7 +1023,7 @@ local function LineRows(body, cursorY, context, l)
                 local textValue = (prm.no and (L("not") .. " ") or "") .. L(P.label or prm.key)
                 local function SetVal(t)
                     prm.value = t
-                    Changed()
+                    NotifyChange()
                 end
                 if P.options then
                     local opts = P.options()

@@ -1961,7 +1961,7 @@ end
 ---------------------------------------------------------------------------
 -- Party reuses BuildPreviewModeRow (same previewMode key + pvModeDropdowns).
 
-local function PartyReloadAndUpdate()
+local function RebuildParty()
     -- ReloadPartyFrames handles container sizing internally.
     if mod.ReloadPartyFrames then
         mod.ReloadPartyFrames()
@@ -1994,17 +1994,17 @@ local function PSSet(key, val)
         -- Container SetSize re-processes the secure header (= blink), so the container resize is deferred off the hot path and run the moment the drag releases via the slider system's end-of-drag callback set, snapping frames to final position instead of on options close.
         if CludesUI._sliderDragging then
             CludesUI._deferredDriftChecks = CludesUI._deferredDriftChecks or {}
-            CludesUI._deferredDriftChecks[PartyReloadAndUpdate] = true
+            CludesUI._deferredDriftChecks[RebuildParty] = true
         else
             -- Direct set (input box / post-release commit): finalize now and drop any pending registration so it runs once.
             if CludesUI._deferredDriftChecks then
-                CludesUI._deferredDriftChecks[PartyReloadAndUpdate] = nil
+                CludesUI._deferredDriftChecks[RebuildParty] = nil
             end
-            PartyReloadAndUpdate()
+            RebuildParty()
         end
         return
     end
-    PartyReloadAndUpdate()
+    RebuildParty()
 end
 -- Row setters over PSSet: the key written with the row's value.
 local function PSSetRow(key)
@@ -2457,7 +2457,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
                 return
             end
             profile.partyHorizontal = value
-            PartyReloadAndUpdate()
+            RebuildParty()
             CludesUI:RefreshPage()
         end,
     }, {
@@ -2485,7 +2485,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
             end,
             writeRoles = function(ro)
                 db.profile.partyRoleOrder = ro
-                PartyReloadAndUpdate()
+                RebuildParty()
             end,
         })
     end
@@ -2538,7 +2538,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
                     end,
                     set = function(value)
                         db.profile.partyPrioritizeClass = value
-                        PartyReloadAndUpdate()
+                        RebuildParty()
                     end,
                     disabled = FsOwns,
                     disabledTooltip = "FrameSort sets the order while Sort By is FrameSort.",
@@ -2551,7 +2551,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
                     items = GetClassItems,
                     set = function(keyList)
                         db.profile.partyClassOrder = keyList
-                        PartyReloadAndUpdate()
+                        RebuildParty()
                     end,
                     disabled = function()
                         return not db.profile.partyPrioritizeClass or FsOwns()
@@ -2588,7 +2588,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
         -- RefreshPage re-reads Include Own Target's disabled state.
         setValue = function(value)
             db.profile.partyHideSelf = value
-            PartyReloadAndUpdate()
+            RebuildParty()
             CludesUI:RefreshPage()
         end,
     })
@@ -2726,7 +2726,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
             else
                 db.profile.partyFlipGrowth = false
             end
-            PartyReloadAndUpdate()
+            RebuildParty()
         end,
     }, {
         type = "toggle",

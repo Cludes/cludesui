@@ -462,7 +462,7 @@ local function FlushQueued()
     flushQueued = false
     Flush()
 end
-local function Queue(bags, bank)
+local function QueueSave(bags, bank)
     if bags then
         pendingBags = true
     end
@@ -499,24 +499,24 @@ eventFrame:SetScript("OnEvent", function(_, evt, arg)
             dirty[arg] = true
         elseif atBank and (CHAR_POS[arg] or WARBAND_POS[arg]) then
             dirty[arg] = true
-            Queue(false, true)
+            QueueSave(false, true)
         end
     elseif evt == "BAG_UPDATE_DELAYED" then
-        Queue(true, false)
+        QueueSave(true, false)
     elseif evt == "BAG_CONTAINER_UPDATE" then
         MarkAll(BAGS)
-        Queue(true, false)
+        QueueSave(true, false)
         -- forever: a bag went in or out of a bank tab
         if atCharBank and CUI.IS_FOREVER then
             MarkAll(CHAR_BANK)
-            Queue(false, true)
+            QueueSave(false, true)
         end
     elseif evt == "PLAYER_INTERACTION_MANAGER_FRAME_SHOW" then
         if BANKERS[arg] ~= nil then
             atBank, atCharBank = true, BANKERS[arg]
             MarkAll(CHAR_BANK)
             MarkAll(WARBAND_BANK)
-            Queue(false, true)
+            QueueSave(false, true)
         end
     elseif evt == "PLAYER_INTERACTION_MANAGER_FRAME_HIDE" then
         if BANKERS[arg] ~= nil then
@@ -529,10 +529,10 @@ eventFrame:SetScript("OnEvent", function(_, evt, arg)
         -- slot changes come through BAG_UPDATE with the tab's bag id
         if arg == Enum.BankType.Account then
             MarkAll(WARBAND_BANK)
-            Queue(false, true)
+            QueueSave(false, true)
         elseif arg == Enum.BankType.Character then
             MarkAll(CHAR_BANK)
-            Queue(false, true)
+            QueueSave(false, true)
         end
     end
 end)
@@ -563,7 +563,7 @@ function Offline.Sync()
     end
     if enabled then
         MarkAll(BAGS)
-        Queue(true, false)
+        QueueSave(true, false)
     end
 end
 
@@ -577,7 +577,7 @@ function Offline.Wipe()
     -- this character saves again right away
     MarkAll(BAGS)
     if listening then
-        Queue(true, false)
+        QueueSave(true, false)
     end
 end
 

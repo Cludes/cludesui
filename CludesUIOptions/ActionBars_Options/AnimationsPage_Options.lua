@@ -367,7 +367,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
     -- Assisted Highlight preview. A custom glow runs on the shared glow engine,
     -- as on the live buttons; the ring and overlay styles draw a plain stand-in
     -- of their own, so the preview never touches a live button's glow.
-    local function UpdateAssistGlowPreview(frame)
+    local function PaintAssistGlowPreview(frame)
         if not frame then
             return
         end
@@ -893,7 +893,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                     profile.assistGlowStyle = val
                 end
                 mod.UpdateAssistHighlights()
-                UpdateAssistGlowPreview(_assistGlowPreview)
+                PaintAssistGlowPreview(_assistGlowPreview)
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -912,7 +912,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
             setValue = function(val)
                 profile.assistGlowOutset = val
                 mod.UpdateAssistHighlights()
-                UpdateAssistGlowPreview(_assistGlowPreview)
+                PaintAssistGlowPreview(_assistGlowPreview)
             end,
         })
         if not CludesUI._prebuilding then
@@ -939,7 +939,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                     setValue = function(red, green, blue)
                         profile.assistGlowColor = { r = red, g = green, b = blue }
                         mod.UpdateAssistHighlights()
-                        UpdateAssistGlowPreview(_assistGlowPreview)
+                        PaintAssistGlowPreview(_assistGlowPreview)
                     end,
                 },
             }, {
@@ -966,10 +966,10 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                 end
                 self._assistPvType = nil
             end)
-            _assistGlowPreview:SetScript("OnShow", UpdateAssistGlowPreview)
-            UpdateAssistGlowPreview(_assistGlowPreview)
+            _assistGlowPreview:SetScript("OnShow", PaintAssistGlowPreview)
+            PaintAssistGlowPreview(_assistGlowPreview)
             CludesUI.RegisterWidgetRefresh(function()
-                UpdateAssistGlowPreview(_assistGlowPreview)
+                PaintAssistGlowPreview(_assistGlowPreview)
             end)
         end
         cursorY = cursorY - height
@@ -992,7 +992,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
             setValue = function(val)
                 profile.assistGlowOverlayAlpha = val
                 mod.UpdateAssistHighlights()
-                UpdateAssistGlowPreview(_assistGlowPreview)
+                PaintAssistGlowPreview(_assistGlowPreview)
             end,
         }, {
             type = "toggle",
@@ -1021,7 +1021,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
                     setValue = function(red, green, blue)
                         profile.assistGlowOverlayColor = { r = red, g = green, b = blue }
                         mod.UpdateAssistHighlights()
-                        UpdateAssistGlowPreview(_assistGlowPreview)
+                        PaintAssistGlowPreview(_assistGlowPreview)
                     end,
                 },
             }, {
@@ -1047,7 +1047,7 @@ local function InitAnimationsPage(Pix, ABAR, PAGE_ANIMATIONS)
             setValue = function(val)
                 profile.assistGlowUseClassColor = val
                 mod.UpdateAssistHighlights()
-                UpdateAssistGlowPreview(_assistGlowPreview)
+                PaintAssistGlowPreview(_assistGlowPreview)
                 CludesUI:RefreshPage()
             end,
         }, CludesUI.BlankRowCfg())

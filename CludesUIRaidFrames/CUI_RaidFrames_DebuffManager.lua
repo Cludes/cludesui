@@ -1338,18 +1338,18 @@ local function BuildRecords(s, dmCfg)
     -- excludeDispelTypes, boolean categories use false-valued candidate booleans
     -- (nonplayer via the complementary TRUE).
     local negated = baseView.neg
-    local function NegHas(category) return negated ~= nil and negated[category] == true end
+    local function IsNegated(category) return negated ~= nil and negated[category] == true end
     local sub = allOn and {
-        boss = NegHas("boss"), role = NegHas("role"),
-        priority = NegHas("priority"), raid = NegHas("raid"),
-        raidcombat = NegHas("raidcombat"), dispel = NegHas("dispel"),
-        nonplayer = NegHas("nonplayer"), canapply = NegHas("canapply"),
+        boss = IsNegated("boss"), role = IsNegated("role"),
+        priority = IsNegated("priority"), raid = IsNegated("raid"),
+        raidcombat = IsNegated("raidcombat"), dispel = IsNegated("dispel"),
+        nonplayer = IsNegated("nonplayer"), canapply = IsNegated("canapply"),
     } or nil
     -- Non-cc records always exclude CROWD_CONTROL under Show All (cc group
     -- renders CC while on, and a subtracted cc -- parked by the apply pass --
     -- must stay hidden everywhere), when cc is effectively on, and when the
     -- hide lane subtracts cc in add mode.
-    local ccOn = allOn or (eff.cc and true or false) or NegHas("cc")
+    local ccOn = allOn or (eff.cc and true or false) or IsNegated("cc")
     -- Non-Player flavor: the nonplayer category renders isFromPlayerOrPlayerPet
     -- = false ("Non-Player Auras") or = true ("From Any Player"); every fold the
     -- category applies to OTHER records carries the complement.
@@ -1358,7 +1358,7 @@ local function BuildRecords(s, dmCfg)
     -- Cast By You (PLAYER token) ranks lowest among token categories: it negates
     -- every other token owner, and every non-token record negates !PLAYER while
     -- it is shown or hidden anywhere (same shape as raid/raidcombat).
-    local castActive = (eff.castbyme and true or false) or NegHas("castbyme")
+    local castActive = (eff.castbyme and true or false) or IsNegated("castbyme")
     -- Per-type dispel ownership: a type shown as its own record, or hidden, is
     -- excluded from every other record (the typed dispel record loses it from
     -- its include map, everything else gains an exclude entry). Per-type records
@@ -1366,7 +1366,7 @@ local function BuildRecords(s, dmCfg)
     local typeEx
     for i = 1, #TYPE_ORDER do
         local category = TYPE_ORDER[i]
-        if (eff[category] and (claimMap[category] or effectCats[category] or not allOn)) or NegHas(category) then
+        if (eff[category] and (claimMap[category] or effectCats[category] or not allOn)) or IsNegated(category) then
             typeEx = typeEx or {}
             typeEx[TYPE_CATS[category]] = true
         end
@@ -1401,13 +1401,13 @@ local function BuildRecords(s, dmCfg)
     -- dispelActive covers the hide lane too: a hidden dispel category emits no
     -- record but its !token / typed exclude must still reach the others.
     local dispelOn = eff.dispel and true or false
-    local dispelActive = dispelOn or NegHas("dispel")
+    local dispelActive = dispelOn or IsNegated("dispel")
     local dispelMode = (dmCfg.dispelMode == "typed") and "typed" or "you"
     local dispelToken = (dispelActive and dispelMode == "you") and "RAID_PLAYER_DISPELLABLE" or nil
     -- Typed exclude applies only while the typed dispel record is really BUILT (claimed, or base without Show All)
     -- or the category is hidden, else Show All excludes debuffs nothing re-adds.
     local typedMap = dispelActive and dispelMode == "typed"
-        and ((claimMap.dispel or effectCats.dispel or not allOn or NegHas("dispel")) and true or false)
+        and ((claimMap.dispel or effectCats.dispel or not allOn or IsNegated("dispel")) and true or false)
 
     -- Internal exclude set: hardcoded sated list (honoring Show Lust Debuff
     -- opt-out) plus the always-hide pair. 68824's never-secret identity-gate
@@ -1457,7 +1457,7 @@ local function BuildRecords(s, dmCfg)
     local function Neg(tokenList, negCC, negDispel, negRaid)
         if negCC and ccOn then tokenList[#tokenList + 1] = "!CROWD_CONTROL" end
         if negDispel and dispelToken then tokenList[#tokenList + 1] = "!" .. dispelToken end
-        if negRaid and (eff.raid or NegHas("raid")) then tokenList[#tokenList + 1] = "!RAID" end
+        if negRaid and (eff.raid or IsNegated("raid")) then tokenList[#tokenList + 1] = "!RAID" end
         return tokenList
     end
 
@@ -1469,9 +1469,9 @@ local function BuildRecords(s, dmCfg)
     if allOn or durAlone then
         local tokenList = { "HARMFUL" }
         Neg(tokenList, true,
-            ((sub and sub.dispel) or claimMap.dispel or effectCats.dispel or NegHas("dispel")) and true or false,
-            ((sub and sub.raid) or claimMap.raid or effectCats.raid or NegHas("raid")) and true or false)
-        if (sub and sub.raidcombat) or claimMap.raidcombat or effectCats.raidcombat or NegHas("raidcombat") then tokenList[#tokenList + 1] = "!RAID_IN_COMBAT" end
+            ((sub and sub.dispel) or claimMap.dispel or effectCats.dispel or IsNegated("dispel")) and true or false,
+            ((sub and sub.raid) or claimMap.raid or effectCats.raid or IsNegated("raid")) and true or false)
+        if (sub and sub.raidcombat) or claimMap.raidcombat or effectCats.raidcombat or IsNegated("raidcombat") then tokenList[#tokenList + 1] = "!RAID_IN_COMBAT" end
         if castActive then tokenList[#tokenList + 1] = "!PLAYER" end
         local castFrame = Cand(false)
         -- Subtracted boolean categories (see `sub`); fx-routed keeps its forced base record (effect wins over
@@ -1534,7 +1534,7 @@ local function BuildRecords(s, dmCfg)
     -- legacy "cc" group's filter is declaration-fixed): the record the sized path
     -- builds, bound to the row's own CC-glow style and leading the row (ccLead).
     if matchSets and not claimMap.cc and not (eff.cc and FxSizeFor(baseView.fxList, "cc")) then
-        local ccRow = (allOn and not NegHas("cc")) or (not allOn and baseView.cc == true and not matchOn)
+        local ccRow = (allOn and not IsNegated("cc")) or (not allOn and baseView.cc == true and not matchOn)
             or effectCats.cc == true
         if ccRow then
             for i = 1, #matchSets do
@@ -1573,7 +1573,7 @@ local function BuildRecords(s, dmCfg)
 
     local function BoolTokens()
         local tokenList = Neg({ "HARMFUL" }, true, true, true)
-        if eff.raidcombat or NegHas("raidcombat") then tokenList[#tokenList + 1] = "!RAID_IN_COMBAT" end
+        if eff.raidcombat or IsNegated("raidcombat") then tokenList[#tokenList + 1] = "!RAID_IN_COMBAT" end
         if castActive then tokenList[#tokenList + 1] = "!PLAYER" end
         return tokenList
     end
@@ -1581,7 +1581,7 @@ local function BuildRecords(s, dmCfg)
     -- owner; per-type dispel ownership reaches it through Cand's type folds).
     if eff.castbyme and (claimMap.castbyme or effectCats.castbyme or not allOn) then
         local tokenList = Neg({ "HARMFUL", "PLAYER" }, true, true, true)
-        if eff.raidcombat or NegHas("raidcombat") then tokenList[#tokenList + 1] = "!RAID_IN_COMBAT" end
+        if eff.raidcombat or IsNegated("raidcombat") then tokenList[#tokenList + 1] = "!RAID_IN_COMBAT" end
         records[#records + 1] = { key = "castbyme", tokens = tokenList, cand = Cand(false), tile = claimMap.castbyme }
     end
     -- Per-type dispels: one include-map record per shown type. Only crowd

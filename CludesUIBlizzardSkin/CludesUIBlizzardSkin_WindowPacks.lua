@@ -17478,7 +17478,7 @@ do
         end
         HP.FadeKeys(win, HP.ART_KEYS)
 
-        local function Pass()
+        local function SkinStatusEntries()
             local pool = win.statusEntriesPool
             if not (pool and pool.EnumerateActive) then
                 return
@@ -17491,7 +17491,7 @@ do
                 HP.SkinQueueEntry(record)
             end
         end
-        Pass()
+        SkinStatusEntries()
         -- Update rebuilds the entry list; it is the only thing that changes what
         -- is on screen, so nothing else needs polling.
         HP.HookMethod(
@@ -17499,7 +17499,7 @@ do
             "Update",
             Skin.Debounce(function()
                 if win:IsVisible() then
-                    Pass()
+                    SkinStatusEntries()
                 end
             end)
         )
@@ -17532,7 +17532,7 @@ do
             return
         end
 
-        local function Pass()
+        local function SkinStatusEntries()
             -- FOUR TARGETED CHANGES, by maintainer call. The full window shell was
             -- built, shown to him and REJECTED, so there is deliberately no
             -- HP.Shell, no region fade and no font pass here: Blizzard's
@@ -17575,15 +17575,15 @@ do
             -- deliberately untouched, see the block header.
         end
 
-        Pass()
-        HP.OnShow(win, Pass)
+        SkinStatusEntries()
+        HP.OnShow(win, SkinStatusEntries)
         -- Switching tier re-lays the reward list.
         HP.HookMethod(
             win,
             "CheckAndSetDisplayMode",
             Skin.Debounce(function()
                 if win:IsVisible() then
-                    Pass()
+                    SkinStatusEntries()
                 end
             end)
         )
@@ -17751,7 +17751,7 @@ do
             return
         end
 
-        local function Pass()
+        local function SkinStatusEntries()
             HP.Shell("playerchoice", win)
             HP.FadeKeys(win, HP.ART_KEYS)
             if win.NineSlice then
@@ -17821,14 +17821,14 @@ do
             end
         end
 
-        Pass()
-        HP.OnShow(win, Pass)
+        SkinStatusEntries()
+        HP.OnShow(win, SkinStatusEntries)
         -- Both layout paths re-texture every option from the texture kit, so both
         -- must re-skin. Debounced: SetupOptions and AlignOptionHeights can fire
         -- several times for one window.
         local restrip = Skin.Debounce(function()
             if win:IsVisible() then
-                Pass()
+                SkinStatusEntries()
             end
         end)
         HP.HookMethod(win, "SetupOptions", restrip)
@@ -17867,7 +17867,7 @@ do
             return
         end
 
-        local function Pass()
+        local function SkinStatusEntries()
             HP.Shell("merchant", win, { noTopBar = true })
             HP.FadeKeys(win, HP.ART_KEYS)
             if win.SingleItemSplitBackground then
@@ -17978,7 +17978,7 @@ do
             end
         end
 
-        Pass()
+        SkinStatusEntries()
         -- Every open runs ChooseFrameType (both clients open the box only through
         -- OpenStackSplitFrame), and so does a shift-click on another item while the
         -- box is up, which fires no OnShow. It swaps the two backdrops, resizes the
@@ -17988,7 +17988,7 @@ do
             "ChooseFrameType",
             Skin.Debounce(function()
                 if win:IsVisible() then
-                    Pass()
+                    SkinStatusEntries()
                 end
             end)
         )
@@ -18291,7 +18291,7 @@ do
             }
         end
 
-        local function Pass()
+        local function SkinStatusEntries()
             local ph, failed = fieldData.tradePhases, fieldData.tradeFailed
             for idx = 1, #ph do
                 local success, err = pcall(ph[idx])
@@ -18306,10 +18306,10 @@ do
             end
         end
 
-        Pass()
+        SkinStatusEntries()
         -- Re-run on show: the slots are repopulated per trade, and Blizzard
         -- re-textures an ItemButton every time its slot changes hands.
-        HP.OnShow(win, Pass)
+        HP.OnShow(win, SkinStatusEntries)
     end
 
     function HP.TradeEdges()

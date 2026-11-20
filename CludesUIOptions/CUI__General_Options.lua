@@ -1860,7 +1860,7 @@ CludesUI.AtOptionsLogin(function()
     -- leaves the scroll frame, and nil marks it as needing a build before it
     -- shows again. The frame stays its builder's (options page pool): the
     -- next build parents it to the scroll frame again and dresses it again.
-    local function CleanupProfilesRoot()
+    local function HideProfilesRoot()
         local root = CludesUI._profilesRoot
         if root then
             root:Hide()
@@ -1921,7 +1921,7 @@ CludesUI.AtOptionsLogin(function()
             end
             -- Clean up profiles root when switching to a non-Profiles tab
             if page ~= PAGE_PROFILES then
-                CleanupProfilesRoot()
+                HideProfilesRoot()
             end
             if page == PAGE_GENERAL then
                 return BuildGeneralPage(page, hostFrame, yOffset)
@@ -1979,7 +1979,7 @@ CludesUI.AtOptionsLogin(function()
                 end)
             end
             if page ~= PAGE_PROFILES then
-                CleanupProfilesRoot()
+                HideProfilesRoot()
             elseif page == PAGE_PROFILES and not CludesUI._profilesRoot then
                 C_Timer.After(0, function()
                     if CludesUI:GetActiveModule() == GLOBAL_KEY and CludesUI:GetActivePage() == page then
@@ -2214,11 +2214,11 @@ CludesUI.AtOptionsLogin(function()
                 return
             end
             if page == PAGE_OVERRIDES then
-                CleanupProfilesRoot()
+                HideProfilesRoot()
                 return BuildOverridesPage(hostFrame, yOffset)
             end
             if page == PAGE_FULLEXPORT then
-                CleanupProfilesRoot()
+                HideProfilesRoot()
                 return BuildFullExportPage(hostFrame, yOffset)
             end
             return _G._CUI_BuildProfilesPage(page, hostFrame, yOffset)
@@ -2227,9 +2227,9 @@ CludesUI.AtOptionsLogin(function()
             if page == PAGE_FULLEXPORT then
                 -- The Profiles page builds onto the SHARED profiles root, which outlives page switches, so a cached Full Export page would show
                 -- profiles content layered over it. The page itself is static, so cleanup is enough -- no rebuild.
-                CleanupProfilesRoot()
+                HideProfilesRoot()
             elseif page == PAGE_OVERRIDES then
-                CleanupProfilesRoot()
+                HideProfilesRoot()
                 -- The override list changes while the page is cached; rebuild.
                 C_Timer.After(0, function()
                     if CludesUI:GetActiveModule() == PROFILES_KEY and CludesUI:GetActivePage() == page then
@@ -2413,18 +2413,18 @@ CludesUI.AtOptionsLogin(function()
 
     -- Clean up profiles root when panel closes
     CludesUI:RegisterOnHide(function()
-        CleanupProfilesRoot()
+        HideProfilesRoot()
     end)
 
     -- Clean up profiles root when switching to any module other than Profiles
     if CludesUI.SelectModule then
         hooksecurefunc(CludesUI, "SelectModule", function(_, folderName)
             if folderName ~= PROFILES_KEY then
-                CleanupProfilesRoot()
+                HideProfilesRoot()
             end
         end)
     end
 
     -- HideAllChildren (every page switch) hides the profiles root too.
-    CludesUI._AddScrollRootHider(CleanupProfilesRoot)
+    CludesUI._AddScrollRootHider(HideProfilesRoot)
 end)

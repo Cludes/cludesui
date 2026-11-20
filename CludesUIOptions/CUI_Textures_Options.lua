@@ -117,7 +117,7 @@ end
 -- A texture row's Textured Background cog: the module page's own toggle row
 -- (rowFn builds it; nil while the module's options are not loaded), greyed while
 -- the Blizzard Style of styleKey draws its stock art there instead.
-local function TexBgCog(region, rowFn, styleKey)
+local function AddTexBgCog(region, rowFn, styleKey)
     if CludesUI._prebuilding then
         return
     end
@@ -412,14 +412,14 @@ local function TileNameplates(hostFrame, cursorY, W, tile)
     )
     cursorY = cursorY - height
     -- Textured Background cogs.
-    local function Row(kind)
+    local function TexRowCfg(kind)
         return function()
             local environ = mod._NPO_OptEnv
             return environ and environ.TexBgRowCfg(kind, NPTexApply)
         end
     end
-    TexBgCog(texRow._leftRegion, Row("health"), "nameplates")
-    TexBgCog(texRow._rightRegion, Row("cast"), "nameplates")
+    AddTexBgCog(texRow._leftRegion, TexRowCfg("health"), "nameplates")
+    AddTexBgCog(texRow._rightRegion, TexRowCfg("cast"), "nameplates")
     _, height = W:DualRow(hostFrame, cursorY, {
         type = "dropdown",
         text = "Absorb Style",
@@ -620,7 +620,7 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
     cursorY = cursorY - height
     -- Textured Background cogs (u nil: the cast bars' row).
     local environ = mod._UFO_OptEnv
-    local function Row(unit)
+    local function TexRowCfg(unit)
         return function()
             return environ
                 and environ.TexBgRowCfg(unit and function()
@@ -628,10 +628,10 @@ local function TileUnitFrames(hostFrame, cursorY, W, tile)
                 end, UFReload)
         end
     end
-    TexBgCog(ptRow._leftRegion, Row("player"))
-    TexBgCog(ptRow._rightRegion, Row("target"))
-    TexBgCog(focusRow._leftRegion, Row("focus"))
-    TexBgCog(castRow._rightRegion, Row(), "unitframes")
+    AddTexBgCog(ptRow._leftRegion, TexRowCfg("player"))
+    AddTexBgCog(ptRow._rightRegion, TexRowCfg("target"))
+    AddTexBgCog(focusRow._leftRegion, TexRowCfg("focus"))
+    AddTexBgCog(castRow._rightRegion, TexRowCfg(), "unitframes")
     cursorY = LinkRow(
         hostFrame,
         cursorY,
@@ -845,7 +845,7 @@ local function TileRaidFrames(hostFrame, cursorY, W, tile)
         end
         RFReload()
     end
-    TexBgCog(texRow._leftRegion, function()
+    AddTexBgCog(texRow._leftRegion, function()
         local environ = mod._RFO_OptEnv
         return environ and environ.TexBgRowCfg(RaidRead, RaidWrite)
     end)
@@ -1008,13 +1008,13 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
     cursorY = cursorY - height
     -- Textured Background cogs.
     local environ = mod._CURB_OptEnv
-    local function Row(kind)
+    local function TexRowCfg(kind)
         return function()
             return environ and environ.TexBgRowCfg(kind, RBApply)
         end
     end
-    TexBgCog(barTexRow._leftRegion, Row("bars"))
-    TexBgCog(barTexRow._rightRegion, Row("cast"), "castbar")
+    AddTexBgCog(barTexRow._leftRegion, TexRowCfg("bars"))
+    AddTexBgCog(barTexRow._rightRegion, TexRowCfg("cast"), "castbar")
     if split then
         local function BarRow(textValue, barId)
             local value, o =
@@ -1077,7 +1077,7 @@ local function TileResourceBars(hostFrame, cursorY, W, tile)
         end,
     }, BLANK())
     cursorY = cursorY - height
-    TexBgCog(gcdTexRow._leftRegion, Row("gcd"))
+    AddTexBgCog(gcdTexRow._leftRegion, TexRowCfg("gcd"))
     cursorY = LinkRow(
         hostFrame,
         cursorY,

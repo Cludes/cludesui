@@ -113,7 +113,7 @@ end
 -- are registered only while an overlay that reads them is on.
 local eventFrame = CreateFrame("Frame")
 local registered = {}
-local function WantEvent(evt, wanted)
+local function SetEventWanted(evt, wanted)
     wanted = wanted and true or false
     if registered[evt] == wanted then
         return
@@ -399,11 +399,11 @@ local function Deactivate()
             ab._glow.host:Hide()
         end
     end
-    WantEvent("UNIT_ABSORB_AMOUNT_CHANGED", false)
-    WantEvent("UNIT_HEAL_ABSORB_AMOUNT_CHANGED", false)
-    WantEvent("UNIT_MAXHEALTH", false)
-    WantEvent("UNIT_MAX_HEALTH_MODIFIERS_CHANGED", false)
-    WantEvent("UNIT_HEALTH", false)
+    SetEventWanted("UNIT_ABSORB_AMOUNT_CHANGED", false)
+    SetEventWanted("UNIT_HEAL_ABSORB_AMOUNT_CHANGED", false)
+    SetEventWanted("UNIT_MAXHEALTH", false)
+    SetEventWanted("UNIT_MAX_HEALTH_MODIFIERS_CHANGED", false)
+    SetEventWanted("UNIT_HEALTH", false)
     local inset = CludesUI.PP.mult * 0.25
     scrollBar:ClearAllPoints()
     scrollBar:SetPoint("TOPLEFT", owner, "TOPLEFT", inset, -inset)
@@ -492,12 +492,12 @@ function mod.HealthIndicatorsApply(barFrame, conf, orientation)
     loss = ReadLoss()
     Layout()
 
-    WantEvent("UNIT_ABSORB_AMOUNT_CHANGED", showA)
-    WantEvent("UNIT_HEAL_ABSORB_AMOUNT_CHANGED", showH)
-    WantEvent("UNIT_MAXHEALTH", showA or showH)
-    WantEvent("UNIT_MAX_HEALTH_MODIFIERS_CHANGED", showL)
+    SetEventWanted("UNIT_ABSORB_AMOUNT_CHANGED", showA)
+    SetEventWanted("UNIT_HEAL_ABSORB_AMOUNT_CHANGED", showH)
+    SetEventWanted("UNIT_MAXHEALTH", showA or showH)
+    SetEventWanted("UNIT_MAX_HEALTH_MODIFIERS_CHANGED", showL)
     local ab = barList.absorb
-    WantEvent("UNIT_HEALTH", ab and ab._glowOn and ab._glow.ge ~= 3)
+    SetEventWanted("UNIT_HEALTH", ab and ab._glowOn and ab._glow.ge ~= 3)
 
     PaintMax()
     if showA then

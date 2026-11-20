@@ -327,7 +327,7 @@ end
 function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, matchKey, syncFn)
     local BS = CludesUI.BlizzStyle
     local y0 = cursorY
-    local function Changed()
+    local function NotifyChange()
         changed()
         if matchKey then
             CludesUI.ReapplyMatchPads(matchKey)
@@ -362,7 +362,7 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
                 if cfg.castBorderSizePx then
                     cfg.castBorderSizePx = false
                 end
-                Changed()
+                NotifyChange()
                 -- The Width / Height Offset row exists only under a textured style.
                 CludesUI:RefreshPage(true)
             end,
@@ -389,7 +389,7 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
                 end,
                 -- The refresh dims the colour swatch at 0.
                 apply = function()
-                    Changed()
+                    NotifyChange()
                     CludesUI:RefreshPage()
                 end,
             })
@@ -426,7 +426,7 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
                 setY = function(value)
                     settingGet().castBorderOffsetY = value
                 end,
-                apply = Changed,
+                apply = NotifyChange,
             })
             local _, oh =
                 W:DualRow(hostFrame, cursorY, BS.Gate("unitframes", ocfgL), BS.Gate("unitframes", ocfgR))
@@ -459,7 +459,7 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
             if value ~= Shift(settingKey, isY) then
                 cfg[settingKey] = value
             end
-            Changed()
+            NotifyChange()
         end
         local cogBtn = CludesUI.BuildInlineCog(line._leftRegion, {
             title = "Border Options",
@@ -499,7 +499,7 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, match
                     end,
                     set = function(value)
                         settingGet().castBorderBehind = value
-                        Changed()
+                        NotifyChange()
                     end,
                 },
             },
@@ -1064,7 +1064,7 @@ function mod.UFOpt_ShowTrackedAuras(unitName)
             choices[#choices + 1] = u
         end
     end
-    local function Changed()
+    local function NotifyChange()
         if mod.ReloadFrames then
             mod.ReloadFrames()
         end
@@ -1101,7 +1101,7 @@ function mod.UFOpt_ShowTrackedAuras(unitName)
         },
         includePrompt = "Enter the spell ID to always show on this frame.",
         excludePrompt = "Enter the spell ID to exclude from this frame.",
-        onChanged = Changed,
+        onChanged = NotifyChange,
         copyFrom = {
             label = "Copy Included/Excluded Spells From:",
             choices = choices,
@@ -1148,7 +1148,7 @@ function mod.UFOpt_ShowTrackedAuras(unitName)
                         dst.debuffIncludeAnyCaster = nil
                     end
                 end
-                Changed()
+                NotifyChange()
             end,
         },
     })

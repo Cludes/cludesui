@@ -236,7 +236,7 @@ end
 -------------------------------------------------------------------------------
 local _assignSelectCatKey = nil
 
-local function ExitAssignSelectMode()
+local function LeaveAssignMode()
     local wasJunk = CUI_Bags._junkMode
     CUI_Bags._assignSelectMode = false
     CUI_Bags._junkMode = nil
@@ -383,14 +383,14 @@ EnterAssignSelectMode = function(catKey, junkList)
         shade.bg:SetAllPoints()
         shade.bg:SetColorTexture(0, 0, 0, 0.6)
         shade:SetScript("OnMouseDown", function()
-            ExitAssignSelectMode()
+            LeaveAssignMode()
         end)
         -- Escape (and controller Back) ends the mode before closing the bags,
         -- through the escape proxy: the overlay takes no keyboard input
         CludesUI.RegisterEscapeClose(shade, {
             notOwned = true,
             onEscape = function()
-                ExitAssignSelectMode()
+                LeaveAssignMode()
             end,
         })
         CUI_Bags[cacheKey] = shade
@@ -434,7 +434,7 @@ EnterAssignSelectMode = function(catKey, junkList)
         castFrame:EnableMouse(true)
         -- Combat ends the mode (registered only while it is on)
         castFrame:SetScript("OnEvent", function()
-            ExitAssignSelectMode()
+            LeaveAssignMode()
         end)
 
         local hoverOverlay = castFrame:CreateTexture(nil, "OVERLAY")
@@ -496,14 +496,14 @@ EnterAssignSelectMode = function(catKey, junkList)
         castFrame:SetScript("OnMouseDown", function(_, btnFrame)
             if btnFrame == "RightButton" then
                 ClearHover()
-                ExitAssignSelectMode()
+                LeaveAssignMode()
                 return
             end
             -- Junk Marker: the close button still closes the bags (the coin
             -- sits above this catcher and takes its own clicks)
             local junkMode = CUI_Bags._junkMode
             if junkMode and CUI_Bags._closeBtn and CUI_Bags._closeBtn:IsMouseOver() then
-                ExitAssignSelectMode()
+                LeaveAssignMode()
                 CUI_Bags._closeBtn:Click()
                 return
             end
@@ -523,7 +523,7 @@ EnterAssignSelectMode = function(catKey, junkList)
                         else
                             ClearHover()
                             CUI_CategoryManager:AssignItem(details.itemID, _assignSelectCatKey)
-                            ExitAssignSelectMode()
+                            LeaveAssignMode()
                             CUI_Bags:RefreshInventory()
                         end
                         return
@@ -536,7 +536,7 @@ EnterAssignSelectMode = function(catKey, junkList)
                 return
             end
             ClearHover()
-            ExitAssignSelectMode()
+            LeaveAssignMode()
         end)
 
         castFrame:SetAllPoints(UIParent)
@@ -585,7 +585,7 @@ do
             CUI.HideWidgetTooltip()
             -- Mark mode on: the coin ends it
             if CUI_Bags._junkMode then
-                ExitAssignSelectMode()
+                LeaveAssignMode()
                 return
             end
             if InCombatLockdown() then
@@ -698,7 +698,7 @@ do
             search:SetPoint("RIGHT", edge, "LEFT", -6, 0)
         end
         if not junkOn and self._junkMode then
-            ExitAssignSelectMode()
+            LeaveAssignMode()
         end
         if not forever then
             self._hdrEdge = edge
@@ -1061,7 +1061,7 @@ EnterPinSelectMode = function()
     CUI_Bags._pinCatcher:Show()
 end
 
-Inner.ExitAssignSelectMode, Inner.ExitPinSelectMode = ExitAssignSelectMode, ExitPinSelectMode
+Inner.ExitAssignSelectMode, Inner.ExitPinSelectMode = LeaveAssignMode, ExitPinSelectMode
 Inner.GetOrCreateAssignOverlay = GetOrCreateAssignOverlay
 Inner.GetOrCreatePinOverlay, Inner.ResetAssignOverlays = GetOrCreatePinOverlay, ResetAssignOverlays
 Inner.broken = false

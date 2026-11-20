@@ -61,7 +61,7 @@ end
 local REANCHOR_THROTTLE = 0.2
 local _lastReanchorTime = 0
 
-local function QueueReanchor()
+local function QueueAnchorPass()
     -- Always queue, never drop. If a spec swap is in progress the
     -- ProcessReanchorQueue gate will hold the request until the flag
     -- clears, then the queued reanchor fires naturally.
@@ -70,7 +70,7 @@ local function QueueReanchor()
         reanchorFrame:Show()
     end
 end
-mod.QueueReanchor = QueueReanchor
+mod.QueueReanchor = QueueAnchorPass
 
 -- Cancel any pending queued reanchor. Used by FullCDMRebuild's spec swap branch when it
 -- runs CollectAndReanchor directly -- without this, the reanchor BuildAllCDMBars queued
@@ -129,7 +129,7 @@ end
 --  by hand), consistent with the CD/utility side.
 -------------------------------------------------------------------------------
 function mod.SyncExtraBuffBarsWithViewer()
-    QueueReanchor()
+    QueueAnchorPass()
 end
 
 -------------------------------------------------------------------------------
@@ -182,7 +182,7 @@ function mod.SetupViewerHooks()
     if CooldownViewerBuffIconItemMixin and CooldownViewerBuffIconItemMixin.OnCooldownIDSet then
         hooksecurefunc(CooldownViewerBuffIconItemMixin, "OnCooldownIDSet", function(widget)
             ResetFrameCache(widget)
-            QueueReanchor()
+            QueueAnchorPass()
         end)
     end
     if CooldownViewerBuffBarItemMixin and CooldownViewerBuffBarItemMixin.OnCooldownIDSet then
@@ -196,7 +196,7 @@ function mod.SetupViewerHooks()
                 mod.InvalidateTBBFrameCache()
             end
             ResetFrameCache(widget)
-            QueueReanchor()
+            QueueAnchorPass()
         end)
     end
     -- CD/utility mixins: clear cache only (static set, rebuilt by FullCDMRebuild)
@@ -251,7 +251,7 @@ function mod.SetupViewerHooks()
                         end
                         self:Hide()
                         _activeStateReanchorPending = false
-                        QueueReanchor()
+                        QueueAnchorPass()
                     end)
                     local isBarViewer = viewerFrame == _G["BuffBarCooldownViewer"]
                     hooksecurefunc(widget, "OnActiveStateChanged", function(itemIcon)
@@ -305,7 +305,7 @@ function mod.SetupViewerHooks()
                 -- Only buff viewers need real-time reanchors on Acquire.
                 -- CD/utility spell sets are static (rebuilt by FullCDMRebuild).
                 if isBuff then
-                    QueueReanchor()
+                    QueueAnchorPass()
                 end
             end)
             -- Hook existing frames too
@@ -468,7 +468,7 @@ function mod.SetupViewerHooks()
     -- so their assignedSpells entries become orphans stuck in the preview.
     if EventRegistry and EventRegistry.RegisterCallback then
         local cdmSettingsOwner = {}
-        EventRegistry:RegisterCallback("CooldownViewerSettings.OnShow", QueueReanchor, cdmSettingsOwner)
+        EventRegistry:RegisterCallback("CooldownViewerSettings.OnShow", QueueAnchorPass, cdmSettingsOwner)
         EventRegistry:RegisterCallback("CooldownViewerSettings.OnHide", function()
             -- In-place edits to the ACTIVE Blizzard layout (spell added to the
             -- layout you are already on) do not change its layout id, so the
@@ -482,7 +482,7 @@ function mod.SetupViewerHooks()
             if mod._reseededSpecsSession then
                 wipe(mod._reseededSpecsSession)
             end
-            C_Timer.After(0.1, QueueReanchor)
+            C_Timer.After(0.1, QueueAnchorPass)
             -- Delay sync slightly longer so Blizzard finishes rebuilding pools
             C_Timer.After(0.3, function()
                 mod.SyncExtraBuffBarsWithViewer()
@@ -506,7 +506,7 @@ function mod.SetupViewerHooks()
         if mod.InvalidateTBBFrameCache then
             mod.InvalidateTBBFrameCache()
         end
-        QueueReanchor()
+        QueueAnchorPass()
     end
     C_Timer.After(1, DelayedFullRefresh)
     C_Timer.After(3, DelayedFullRefresh)
@@ -965,7 +965,7 @@ function mod.SetupViewerHooks()
                 end
             end
             if needsReanchor then
-                QueueReanchor()
+                QueueAnchorPass()
             end
             -- Refresh aura active cache. This is the sole maintainer of _activeCache;
             -- bar glow overlays read from ns._tickBlizzActiveCache. Walk the live
@@ -1192,20 +1192,20 @@ function mod.SetupViewerHooks()
     -- CDM settings panel: reanchor when user finishes editing
     if CooldownViewerSettings then
         CooldownViewerSettings:HookScript("OnHide", function()
-            C_Timer.After(0.3, QueueReanchor)
+            C_Timer.After(0.3, QueueAnchorPass)
         end)
     end
 
     -- CUI options panel: reanchor on show/hide
     CludesUI:RegisterOnShow(function()
         C_Timer.After(0.1, function()
-            QueueReanchor()
+            QueueAnchorPass()
             UpdateCustomBuffBars()
         end)
     end)
     CludesUI:RegisterOnHide(function()
         C_Timer.After(0.1, function()
-            QueueReanchor()
+            QueueAnchorPass()
             UpdateCustomBuffBars()
         end)
     end)
@@ -1232,7 +1232,7 @@ function mod.SetupViewerHooks()
         local emEventFrame = mod.TakeShell()
         emEventFrame:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED")
         emEventFrame:SetScript("OnEvent", function()
-            QueueReanchor()
+            QueueAnchorPass()
         end)
     end
 
@@ -1241,7 +1241,7 @@ function mod.SetupViewerHooks()
 
     -- Initial reanchor
     C_Timer.After(0.2, function()
-        QueueReanchor()
+        QueueAnchorPass()
         UpdateCustomBuffBars()
     end)
 end

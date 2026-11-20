@@ -38,7 +38,7 @@ local _ftExpanded = {}
 -- Reload popup for font changes; same funnel contract as the module pages:
 -- the resolution cache must drop even when the user picks Later, because the
 -- new value is already live in the DB.
-local function FontReload()
+local function AskFontReload()
     CludesUI.InvalidateFontCache()
     CludesUI:ShowConfirmPopup({
         title = "Reload Required",
@@ -131,7 +131,7 @@ local function ModuleOutlineCfg(folder, display)
             else
                 EnsureModuleFontEntry(folder, display).outline = val
             end
-            FontReload()
+            AskFontReload()
         end,
     }
 end
@@ -851,14 +851,14 @@ local function TileQoL(hostFrame, cursorY, W, tile)
     -- last slot.
     local FOREVER = CludesUI.IS_FOREVER
     local slots = {}
-    local function add(rowConf)
+    local function addSlot(rowConf)
         slots[#slots + 1] = rowConf
     end
-    add(ModuleOutlineCfg(tile.folder, tile.display))
-    add(gsize("Map Coordinates Text Size", "mapCoordsTextSize", 8, 24, 12, "_applyMapCoords"))
-    add(gsize("Group Death Alert Text Size", "groupDeathTextSize", 14, 64, 34, "_applyGroupDeathAlert"))
-    add(gsize("Combat Alert Text Size", "combatAlertTextSize", 14, 64, 22, "_applyCombatAlertFrame"))
-    add({
+    addSlot(ModuleOutlineCfg(tile.folder, tile.display))
+    addSlot(gsize("Map Coordinates Text Size", "mapCoordsTextSize", 8, 24, 12, "_applyMapCoords"))
+    addSlot(gsize("Group Death Alert Text Size", "groupDeathTextSize", 14, 64, 34, "_applyGroupDeathAlert"))
+    addSlot(gsize("Combat Alert Text Size", "combatAlertTextSize", 14, 64, 22, "_applyCombatAlertFrame"))
+    addSlot({
         type = "slider",
         text = "FPS Counter Text Size",
         min = 8,
@@ -879,10 +879,10 @@ local function TileQoL(hostFrame, cursorY, W, tile)
             end
         end,
     })
-    add(gsize("Durability Warning Text Size", "durWarnTextSize", 10, 50, 30, "_durWarnApplySettings"))
-    add(gsize("Target Distance Text Size", "targetDistanceTextSize", 10, 48, 18, "_applyTargetDistanceFrame"))
+    addSlot(gsize("Durability Warning Text Size", "durWarnTextSize", 10, 50, 30, "_durWarnApplySettings"))
+    addSlot(gsize("Target Distance Text Size", "targetDistanceTextSize", 10, 48, 18, "_applyTargetDistanceFrame"))
     if not FOREVER then
-        add({
+        addSlot({
             type = "slider",
             text = "Keystone Popup Text Size",
             min = 8,
@@ -907,11 +907,11 @@ local function TileQoL(hostFrame, cursorY, W, tile)
         })
     end
     if not FOREVER then
-        add(brSize("Battle Res Duration Size", "durationSize", 8, 30, 12))
-        add(brSize("Battle Res Count Size", "countSize", 8, 20, 11))
-        add(brSize("Battle Res Text Size", "textSize", 8, 40, 14))
+        addSlot(brSize("Battle Res Duration Size", "durationSize", 8, 30, 12))
+        addSlot(brSize("Battle Res Count Size", "countSize", 8, 20, 11))
+        addSlot(brSize("Battle Res Text Size", "textSize", 8, 40, 14))
         local brFontValues, brFontOrder = CludesUI.BuildFontDropdownData()
-        add({
+        addSlot({
             type = "dropdown",
             text = "Battle Res Font",
             values = brFontValues,
@@ -931,7 +931,7 @@ local function TileQoL(hostFrame, cursorY, W, tile)
                 end
             end,
         })
-        add({
+        addSlot({
             type = "dropdown",
             text = "Battle Res Outline",
             values = {
@@ -956,10 +956,10 @@ local function TileQoL(hostFrame, cursorY, W, tile)
                 end
             end,
         })
-        add(blSize("Bloodlust Duration Size", "durationSize", 8, 30, 12))
-        add(blSize("Bloodlust Count Size", "countSize", 8, 20, 11))
+        addSlot(blSize("Bloodlust Duration Size", "durationSize", 8, 30, 12))
+        addSlot(blSize("Bloodlust Count Size", "countSize", 8, 20, 11))
     end
-    add({
+    addSlot({
         type = "slider",
         text = "Movement Alert Text Size",
         min = 8,
@@ -1773,7 +1773,7 @@ local function TileQuestTracker(hostFrame, cursorY, W, tile)
                 QTApply()
                 return
             end
-            FontReload()
+            AskFontReload()
         end,
     })
     cursorY = cursorY - height
@@ -2067,7 +2067,7 @@ local function BuildFontCard(hostFrame, cursorY, W, tile)
                     else
                         EnsureModuleFontEntry(tile.folder, tile.display).font = val
                     end
-                    FontReload()
+                    AskFontReload()
                 end
             )
             CludesUI.PanelPP.Point(dropdown, "RIGHT", heading, "RIGHT", -44, 0)
@@ -2240,7 +2240,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
                     refreshList[i2]()
                 end
             end
-            FontReload()
+            AskFontReload()
         end,
     }, {
         type = "dropdown",
@@ -2263,7 +2263,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
                     refreshList[i2]()
                 end
             end
-            FontReload()
+            AskFontReload()
         end,
     })
     cursorY = cursorY - height
@@ -2280,7 +2280,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
                     end,
                     set = function(val)
                         CludesUI.GetFontsDB().applyToAllGameText = val and true or false
-                        FontReload()
+                        AskFontReload()
                     end,
                 },
             },
@@ -2313,7 +2313,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
         end,
         setValue = function(val)
             CludesUI.GetFontsDB().neverShowSlug = val and true or false
-            FontReload()
+            AskFontReload()
         end,
     })
     cursorY = cursorY - height
@@ -2354,7 +2354,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
                 end
                 fontsDB.outlineIconText[keyName] = val and true or false
                 -- Reload prompt from setFn, NOT an onChanged callback: a non-nil onChanged re-anchors the open CB dropdown menu absolutely (for page rebuilds), visibly shifting it.
-                FontReload()
+                AskFontReload()
             end
         )
         Pix.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
@@ -2451,7 +2451,7 @@ function _G._CUI_BuildFontsPage(page, hostFrame, yOffset)
                 end
                 if changed or gtsPending then
                     gtsPending = nil
-                    FontReload()
+                    AskFontReload()
                 end
             end,
         })

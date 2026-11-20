@@ -145,7 +145,7 @@ local function Compile(source)
         return nil
     end
     local place = 1
-    local function peek()
+    local function peekKind()
         return toks[place] and toks[place].t
     end
     local function take()
@@ -183,7 +183,7 @@ local function Compile(source)
         error(CludesUI.Lf('unexpected "%1$s"', tk.t), 0)
     end
     local function Unary()
-        if peek() == "-" then
+        if peekKind() == "-" then
             take()
             local frame = Unary()
             return function(environ)
@@ -194,7 +194,7 @@ local function Compile(source)
     end
     local function Mul()
         local frame = Unary()
-        while peek() == "*" or peek() == "/" do
+        while peekKind() == "*" or peekKind() == "/" do
             local op, a, b = take().t, frame, Unary()
             if op == "*" then
                 frame = function(environ)
@@ -211,7 +211,7 @@ local function Compile(source)
     end
     local function Add()
         local frame = Mul()
-        while peek() == "+" or peek() == "-" do
+        while peekKind() == "+" or peekKind() == "-" do
             local op, a, b = take().t, frame, Mul()
             if op == "+" then
                 frame = function(environ)
@@ -247,7 +247,7 @@ local function Compile(source)
     }
     local function Cmp()
         local frame = Add()
-        local test = CMP[peek() or ""]
+        local test = CMP[peekKind() or ""]
         if test then
             take()
             local a, b = frame, Add()
@@ -258,7 +258,7 @@ local function Compile(source)
         return frame
     end
     local function Not()
-        if peek() == "not" then
+        if peekKind() == "not" then
             take()
             local frame = Not()
             return function(environ)
@@ -269,7 +269,7 @@ local function Compile(source)
     end
     local function And()
         local frame = Not()
-        while peek() == "and" do
+        while peekKind() == "and" do
             take()
             local a, b = frame, Not()
             frame = function(environ)
@@ -280,7 +280,7 @@ local function Compile(source)
     end
     Or = function()
         local frame = And()
-        while peek() == "or" do
+        while peekKind() == "or" do
             take()
             local a, b = frame, And()
             frame = function(environ)

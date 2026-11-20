@@ -756,7 +756,7 @@ end
 -- the absorber pass's own tracker (the real path reads it off the parent
 -- frame; the absorber parent is shared, so the pass tracks it here), and
 -- the selector context comes from the same global the live path uses.
-local function AbsorberRegister(labelText, tooltipText, isSection)
+local function RegisterAbsorbed(labelText, tooltipText, isSection)
     if not CludesUI._RegisterSearchEntry then
         return
     end
@@ -781,11 +781,11 @@ end
 local AbsorberW = {}
 function AbsorberW:SectionHeader(hostFrame, textValue, yOffset)
     _absSection = textValue
-    AbsorberRegister(textValue, nil, true)
+    RegisterAbsorbed(textValue, nil, true)
     return MakeAbsorber(), 40
 end
 function AbsorberW:Toggle(hostFrame, textValue, yOffset, getValue, setValue, tipText)
-    AbsorberRegister(textValue, tipText)
+    RegisterAbsorbed(textValue, tipText)
     return MakeAbsorber(), 40
 end
 function AbsorberW:Slider(
@@ -800,27 +800,27 @@ function AbsorberW:Slider(
     tipText,
     pixel
 )
-    AbsorberRegister(textValue, tipText)
+    RegisterAbsorbed(textValue, tipText)
     return MakeAbsorber(), 40
 end
 function AbsorberW:Dropdown(hostFrame, textValue, yOffset, values, getValue, setValue, sequence, tipText)
-    AbsorberRegister(textValue, tipText)
+    RegisterAbsorbed(textValue, tipText)
     return MakeAbsorber(), 40
 end
 function AbsorberW:Checkbox(hostFrame, textValue, yOffset, getValue, setValue, tipText)
-    AbsorberRegister(textValue, tipText)
+    RegisterAbsorbed(textValue, tipText)
     return MakeAbsorber(), 40
 end
 function AbsorberW:ColorPicker(hostFrame, textValue, yOffset, getValue, setValue, hasAlpha)
-    AbsorberRegister(textValue, nil)
+    RegisterAbsorbed(textValue, nil)
     return MakeAbsorber(), 40
 end
 function AbsorberW:Button(hostFrame, textValue, yOffset, onClick)
-    AbsorberRegister(textValue, nil)
+    RegisterAbsorbed(textValue, nil)
     return MakeAbsorber(), 40
 end
 function AbsorberW:WideButton(hostFrame, textValue, yOffset, onClick, btnWidth)
-    AbsorberRegister(textValue, nil)
+    RegisterAbsorbed(textValue, nil)
     return MakeAbsorber(), 40
 end
 function AbsorberW:DualRow(hostFrame, yOffset, leftConfig, rightConfig)
@@ -829,29 +829,29 @@ function AbsorberW:DualRow(hostFrame, yOffset, leftConfig, rightConfig)
     if BS and BS.RowHidden and BS.RowHidden(leftConfig, rightConfig) then
         return MakeAbsorber(), 0
     end
-    AbsorberRegister(leftConfig and leftConfig.text, leftConfig and leftConfig.tooltip)
-    AbsorberRegister(rightConfig and rightConfig.text, rightConfig and rightConfig.tooltip)
+    RegisterAbsorbed(leftConfig and leftConfig.text, leftConfig and leftConfig.tooltip)
+    RegisterAbsorbed(rightConfig and rightConfig.text, rightConfig and rightConfig.tooltip)
     return MakeAbsorber(), 40
 end
 function AbsorberW:TripleRow(hostFrame, yOffset, leftConfig, midCfg, rightConfig, splits)
-    AbsorberRegister(leftConfig and leftConfig.text, leftConfig and leftConfig.tooltip)
-    AbsorberRegister(midCfg and midCfg.text, midCfg and midCfg.tooltip)
-    AbsorberRegister(rightConfig and rightConfig.text, rightConfig and rightConfig.tooltip)
+    RegisterAbsorbed(leftConfig and leftConfig.text, leftConfig and leftConfig.tooltip)
+    RegisterAbsorbed(midCfg and midCfg.text, midCfg and midCfg.tooltip)
+    RegisterAbsorbed(rightConfig and rightConfig.text, rightConfig and rightConfig.tooltip)
     return MakeAbsorber(), 40
 end
 function AbsorberW:MultiSwatchRow(hostFrame, yOffset, conf)
-    AbsorberRegister(conf and conf.text, nil)
+    RegisterAbsorbed(conf and conf.text, nil)
     return MakeAbsorber(), 40
 end
 function AbsorberW:DropdownWithOffsets(hostFrame, yOffset, dropdownCfg, xSliderCfg, ySliderCfg)
-    AbsorberRegister(dropdownCfg and dropdownCfg.text, dropdownCfg and dropdownCfg.tooltip)
-    AbsorberRegister(xSliderCfg and xSliderCfg.text, xSliderCfg and xSliderCfg.tooltip)
-    AbsorberRegister(ySliderCfg and ySliderCfg.text, ySliderCfg and ySliderCfg.tooltip)
+    RegisterAbsorbed(dropdownCfg and dropdownCfg.text, dropdownCfg and dropdownCfg.tooltip)
+    RegisterAbsorbed(xSliderCfg and xSliderCfg.text, xSliderCfg and xSliderCfg.tooltip)
+    RegisterAbsorbed(ySliderCfg and ySliderCfg.text, ySliderCfg and ySliderCfg.tooltip)
     return MakeAbsorber(), 40
 end
 function AbsorberW:WideDualButton(hostFrame, text1, text2, yOffset, onClick1, onClick2, btnWidth)
-    AbsorberRegister(text1, nil)
-    AbsorberRegister(text2, nil)
+    RegisterAbsorbed(text1, nil)
+    RegisterAbsorbed(text2, nil)
     return MakeAbsorber(), 40
 end
 function AbsorberW:WideTripleButton(
@@ -866,9 +866,9 @@ function AbsorberW:WideTripleButton(
     btnWidth,
     disabledOpts
 )
-    AbsorberRegister(text1, nil)
-    AbsorberRegister(text2, nil)
-    AbsorberRegister(text3, nil)
+    RegisterAbsorbed(text1, nil)
+    RegisterAbsorbed(text2, nil)
+    RegisterAbsorbed(text3, nil)
     return MakeAbsorber(), 40
 end
 function AbsorberW:WideDropdown(
@@ -882,13 +882,13 @@ function AbsorberW:WideDropdown(
     btnWidth,
     disabledValuesFn
 )
-    AbsorberRegister(title, nil)
+    RegisterAbsorbed(title, nil)
     return MakeAbsorber(), 40
 end
 function AbsorberW:TripleDropdown(hostFrame, configList, yOffset)
-    AbsorberRegister(configList and configList[1] and configList[1][1], nil)
-    AbsorberRegister(configList and configList[2] and configList[2][1], nil)
-    AbsorberRegister(configList and configList[3] and configList[3][1], nil)
+    RegisterAbsorbed(configList and configList[1] and configList[1][1], nil)
+    RegisterAbsorbed(configList and configList[2] and configList[2][1], nil)
+    RegisterAbsorbed(configList and configList[3] and configList[3][1], nil)
     return MakeAbsorber(), 40
 end
 function AbsorberW:TripleSlider(hostFrame, configList, yOffset)
