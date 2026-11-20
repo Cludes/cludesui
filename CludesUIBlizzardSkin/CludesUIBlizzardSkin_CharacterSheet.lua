@@ -1067,8 +1067,8 @@ local function PreSkinCharacterSheet()
             end
             local iconTexture = _G[slotKey .. "IconTexture"]
             if iconTexture then
-                local z = (CludesUIDB and CludesUIDB.charSheetIconZoom) or 0.07
-                iconTexture:SetTexCoord(z, z, z, 1 - z, 1 - z, z, 1 - z, 1 - z)
+                local zoom = (CludesUIDB and CludesUIDB.charSheetIconZoom) or 0.07
+                iconTexture:SetTexCoord(zoom, zoom, zoom, 1 - zoom, 1 - zoom, zoom, 1 - zoom, 1 - zoom)
             end
             local normalTexture = _G[slotKey .. "NormalTexture"]
             if normalTexture then
@@ -2035,7 +2035,7 @@ local function SkinCharacterSheet()
         end
         local showLabel = CludesUIDB.charSheetDurabilityShowLabel ~= false
         local percent = GetDurabilityPercent()
-        local region, g, button = GetDurabilityTextColor(percent)
+        local red, green, blue = GetDurabilityTextColor(percent)
         local textValue = FormatDurabilityText(percent, showLabel)
 
         HideAllDurabilityLabels()
@@ -2047,16 +2047,16 @@ local function SkinCharacterSheet()
                 headerLabel:SetPoint("TOP", anchorFrame, "BOTTOM", 0, -4)
             end
             headerLabel:SetText(textValue)
-            headerLabel:SetTextColor(region, g, button, 1)
+            headerLabel:SetTextColor(red, green, blue, 1)
             headerLabel:Show()
         elseif location == "footer" and footerText then
             AnchorDurabilityFooterLabel(footerText)
             footerText:SetText(textValue)
-            footerText:SetTextColor(region, g, button, 1)
+            footerText:SetTextColor(red, green, blue, 1)
             footerText:Show()
         elseif modelLabel then
             modelLabel:SetText(textValue)
-            modelLabel:SetTextColor(region, g, button, 1)
+            modelLabel:SetTextColor(red, green, blue, 1)
             modelLabel:Show()
             if overlayFrame then
                 overlayFrame:Show()
@@ -4060,8 +4060,8 @@ local function SkinCharacterSheet()
         end
 
         if slotFrame.icon then
-            local z = (CludesUIDB and CludesUIDB.charSheetIconZoom) or 0.07
-            slotFrame.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+            local zoom = (CludesUIDB and CludesUIDB.charSheetIconZoom) or 0.07
+            slotFrame.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         end
 
         local normalTexture = _G[slotKey .. "NormalTexture"]
@@ -4513,16 +4513,16 @@ local function SkinCharacterSheet()
         -- button row + list (354px) is taller than the column, so the WHOLE pane
         -- is scaled to fit instead: every frame inside keeps its own width and
         -- height, so no size handler runs. Offsets on the pane are in its units.
-        local emPane = _G.PaperDollFrame and _G.PaperDollFrame.EquipmentManagerPane
-        if emPane then
+        local equipMgrPane = _G.PaperDollFrame and _G.PaperDollFrame.EquipmentManagerPane
+        if equipMgrPane then
             local EM_PANE_SCALE = 0.85
-            emPane:SetScale(EM_PANE_SCALE)
-            emPane:ClearAllPoints()
-            emPane:SetPoint("TOPLEFT", statsPane, "TOPLEFT", 0, -27 / EM_PANE_SCALE)
-            emPane:SetFrameLevel(statsPane:GetFrameLevel() + 1)
-            if emPane.ScrollBox then
-                emPane.ScrollBox:ClearAllPoints()
-                emPane.ScrollBox:SetPoint("TOPLEFT", emPane, "TOPLEFT", 0, -23)
+            equipMgrPane:SetScale(EM_PANE_SCALE)
+            equipMgrPane:ClearAllPoints()
+            equipMgrPane:SetPoint("TOPLEFT", statsPane, "TOPLEFT", 0, -27 / EM_PANE_SCALE)
+            equipMgrPane:SetFrameLevel(statsPane:GetFrameLevel() + 1)
+            if equipMgrPane.ScrollBox then
+                equipMgrPane.ScrollBox:ClearAllPoints()
+                equipMgrPane.ScrollBox:SetPoint("TOPLEFT", equipMgrPane, "TOPLEFT", 0, -23)
             end
 
             -- Equip / Save and the scroll bar trade Blizzard's red panel-button
@@ -4532,8 +4532,8 @@ local function SkinCharacterSheet()
             local WS = mod.WSkin
             if WS then
                 local emButtons = {
-                    emPane.EquipSet or _G.PaperDollFrameEquipSet,
-                    emPane.SaveSet or _G.PaperDollFrameSaveSet,
+                    equipMgrPane.EquipSet or _G.PaperDollFrameEquipSet,
+                    equipMgrPane.SaveSet or _G.PaperDollFrameSaveSet,
                 }
                 for _, button in ipairs(emButtons) do
                     WS.Button(button)
@@ -4564,7 +4564,7 @@ local function SkinCharacterSheet()
                 end
                 hooksecurefunc("PaperDollEquipmentManagerPane_Update", PaintEMLabels)
                 PaintEMLabels()
-                local sb = emPane.ScrollBar
+                local sb = equipMgrPane.ScrollBar
                 if sb then
                     WS.ScrollBar(sb)
                     -- WowTrimScrollBar keeps its trough on a child frame that
@@ -4580,8 +4580,8 @@ local function SkinCharacterSheet()
             -- a button chained to its sibling follows it. Moving the buttons
             -- leaves the list's size alone.
             local EM_BUTTON_LIFT = 8
-            local equipBtn = emPane.EquipSet or _G.PaperDollFrameEquipSet
-            local saveBtn = emPane.SaveSet or _G.PaperDollFrameSaveSet
+            local equipBtn = equipMgrPane.EquipSet or _G.PaperDollFrameEquipSet
+            local saveBtn = equipMgrPane.SaveSet or _G.PaperDollFrameSaveSet
             for _, button in ipairs({ equipBtn, saveBtn }) do
                 local anchors, chained = {}, false
                 for i = 1, button:GetNumPoints() do
@@ -4607,7 +4607,7 @@ local function SkinCharacterSheet()
             -- a sheet skinned in combat widens when the fight ends. A frame with
             -- access constraints or forbidden aspects is left alone: the snippet
             -- would pass forbidden on to every frame it referenced.
-            local entries = emPane.ScrollBox
+            local entries = equipMgrPane.ScrollBox
             if entries and equipBtn and saveBtn then
                 -- Pane units; the scroll bar keeps its 8 px gap and 8 px width.
                 local listW = math.floor(statsPane:GetWidth() / EM_PANE_SCALE) - 16
@@ -5190,8 +5190,8 @@ local function SkinCharacterSheet()
                                 quality = region
                             end
                         end
-                        local region, g, button, a = GemBorderColor(quality)
-                        PP_GEM.SetBorderColor(gemIcon, region, g, button, a)
+                        local red, green, blue, a = GemBorderColor(quality)
+                        PP_GEM.SetBorderColor(gemIcon, red, green, blue, a)
 
                         gemIcon:Show()
 
@@ -5944,8 +5944,8 @@ do
             ring:SetAlpha(0)
         end
         if btnFrame.icon then
-            local region, g, button = Skin.RingQuality(ring)
-            Skin.QualityBorder(btnFrame, btnFrame.icon, region or 0, g or 0, button or 0)
+            local red, green, blue = Skin.RingQuality(ring)
+            Skin.QualityBorder(btnFrame, btnFrame.icon, red or 0, green or 0, blue or 0)
         end
     end
 
@@ -6371,11 +6371,11 @@ function CludesUI._refreshCharSheetIconZoom()
     if mod.CharSheetStock() then
         return
     end
-    local z = (CludesUIDB and CludesUIDB.charSheetIconZoom) or 0.07
+    local zoom = (CludesUIDB and CludesUIDB.charSheetIconZoom) or 0.07
     for _, slotKey in ipairs(CUI_ALL_SLOTS) do
         local slotFrame = _G[slotKey]
         if slotFrame and slotFrame.icon then
-            slotFrame.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+            slotFrame.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         end
     end
 end

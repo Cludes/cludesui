@@ -175,12 +175,12 @@ function Kit.Button(hostFrame, textValue, wid, hgt, onClick, options)
     widget.label:SetPoint("CENTER")
     widget.label:SetText(textValue or "")
     local function Paint(hovered)
-        local r, g, bl = Kit.Accent()
+        local red, green, blue = Kit.Accent()
         local lit = hovered or widget._active
-        Border(widget, r, g, bl, lit and 1 or 0.45)
+        Border(widget, red, green, blue, lit and 1 or 0.45)
         if widget._active then
-            widget.label:SetTextColor(r, g, bl)
-            backdrop:SetColorTexture(r, g, bl, 0.15)
+            widget.label:SetTextColor(red, green, blue)
+            backdrop:SetColorTexture(red, green, blue, 0.15)
         else
             widget.label:SetTextColor(hovered and 1 or IDLE[1], hovered and 1 or IDLE[2], hovered and 1 or IDLE[3])
             backdrop:SetColorTexture(CONTROL_BG[1], CONTROL_BG[2], CONTROL_BG[3], CONTROL_BG[4])

@@ -150,13 +150,13 @@ local function PaintBag(button)
     local ident = button.GetID and button:GetID()
     local itemId = ident and ident > 0 and GetInventoryItemID("player", ident)
     local q = itemId and C_Item.GetItemQualityByID(itemId)
-    local region, g, button
+    local red, green, blue
     if q and q >= 2 then
-        region, g, button = C_Item.GetItemQualityColor(q)
+        red, green, blue = C_Item.GetItemQualityColor(q)
     end
     local Pix = BorderPP()
-    if region then
-        Pix.SetBorderColor(skinData.box, region, g, button, 1)
+    if red then
+        Pix.SetBorderColor(skinData.box, red, green, blue, 1)
     else
         Pix.SetBorderColor(skinData.box, Theme.brdR, Theme.brdG, Theme.brdB, Theme.brdA)
     end

@@ -492,8 +492,8 @@ do
             end
             local headerText = header.Text or (header.GetRegions and select(1, header:GetRegions()))
             if headerText and headerText.SetTextColor then
-                local region, g, button = CludesUI._getPopupMenuButtonTextColor()
-                headerText:SetTextColor(region, g, button, 1)
+                local red, green, blue = CludesUI._getPopupMenuButtonTextColor()
+                headerText:SetTextColor(red, green, blue, 1)
                 local cuiFont = CludesUI.GetFontPath("blizzardSkin") or "Fonts\\FRIZQT__.TTF"
                 local _, hSize = headerText:GetFont()
                 headerText:SetFont(cuiFont, hSize or 16, "")
@@ -521,8 +521,8 @@ do
             local fontStr = button:GetFontString()
             -- Native mode keeps Blizzard's own gold on our dark inset.
             if fontStr and CludesUI._getPopupMenuElementMode() ~= "native" then
-                local region, g, button = CludesUI._getPopupMenuButtonTextColor()
-                fontStr:SetTextColor(region, g, button, 1)
+                local red, green, blue = CludesUI._getPopupMenuButtonTextColor()
+                fontStr:SetTextColor(red, green, blue, 1)
             end
         end
         local function ApplyMenuStyle()

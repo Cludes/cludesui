@@ -783,9 +783,9 @@ local function ApplyFont(fontStr, size)
     fontStr:SetFont(font, size or 12, flag)
 end
 
-local function CreateSolidTexture(hostFrame, layer, sublevel, region, g, button, a)
+local function CreateSolidTexture(hostFrame, layer, sublevel, red, green, blue, a)
     local texture = hostFrame:CreateTexture(nil, layer or "BACKGROUND", nil, sublevel or 0)
-    texture:SetColorTexture(region or 0, g or 0, button or 0, a or 1)
+    texture:SetColorTexture(red or 0, green or 0, blue or 0, a or 1)
     texture:SetSnapToPixelGrid(false)
     texture:SetTexelSnappingBias(0)
     return texture

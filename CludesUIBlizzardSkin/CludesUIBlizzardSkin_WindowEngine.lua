@@ -82,14 +82,14 @@ local function ResolveTheme()
 end
 Skin.ResolveTheme = ResolveTheme
 
-local function SolidTex(hostFrame, layer, region, g, button, a, sublevel)
+local function SolidTex(hostFrame, layer, red, green, blue, a, sublevel)
     local tex = hostFrame:CreateTexture(nil, layer, nil, sublevel)
-    tex:SetColorTexture(region, g, button, a)
+    tex:SetColorTexture(red, green, blue, a)
     return tex
 end
 Skin.SolidTex = SolidTex
 
-local function AddBorder(widget, region, g, button, a, layer, sublevel)
+local function AddBorder(widget, red, green, blue, a, layer, sublevel)
     if GetFFD(widget).border then
         return
     end
@@ -105,9 +105,9 @@ local function AddBorder(widget, region, g, button, a, layer, sublevel)
         -- parent's level under art the parent draws (flag carrier panels).
         local c = Pix.CreateBorder(
             widget,
-            region or Theme.brdR,
-            g or Theme.brdG,
-            button or Theme.brdB,
+            red or Theme.brdR,
+            green or Theme.brdG,
+            blue or Theme.brdB,
             a or Theme.brdA,
             1,
             layer or "BORDER",
@@ -319,11 +319,11 @@ local function ApplyShellStyle(winKey)
                     skinData.bgOverlay:SetAlpha(0)
                 end
                 if skinData.modernBg then
-                    local region, g, button, a = Skin.GetModernBG()
+                    local red, green, blue, a = Skin.GetModernBG()
                     if tint then
-                        region, g, button, a = tint.r, tint.g, tint.b, tint.a or a
+                        red, green, blue, a = tint.r, tint.g, tint.b, tint.a or a
                     end
-                    skinData.modernBg:SetColorTexture(region, g, button, a)
+                    skinData.modernBg:SetColorTexture(red, green, blue, a)
                     -- Re-raise the region alpha too: a foreign restrip pass may
                     -- have zeroed it (color alpha and region alpha multiply).
                     skinData.modernBg:SetAlpha(opacity)
@@ -541,15 +541,15 @@ function Skin.Panel(widget, options)
     FadeRegions(widget, keep)
     Register(widget, true)
     if not skinData.bg and not options.noBg then
-        local region, g, button, a = Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA
+        local red, green, blue, a = Theme.bgR, Theme.bgG, Theme.bgB, Theme.bgA
         if options.inset then
-            region, g, button, a = Theme.insetR, Theme.insetG, Theme.insetB, Theme.insetA
+            red, green, blue, a = Theme.insetR, Theme.insetG, Theme.insetB, Theme.insetA
         end
         if options.shade then
-            region, g, button, a = 0, 0, 0, 0.25
+            red, green, blue, a = 0, 0, 0, 0.25
         end
         local backdrop = widget:CreateTexture(nil, "BACKGROUND", nil, -6)
-        backdrop:SetColorTexture(region, g, button, a)
+        backdrop:SetColorTexture(red, green, blue, a)
         backdrop:SetAllPoints(widget)
         skinData.bg = backdrop
     end
@@ -577,13 +577,13 @@ end
 -- size (optional): the size to set; otherwise the string keeps its own (12 if none).
 -- A string already on one of our font families keeps it (WSkin.FontFamily), so a
 -- region walk never pins a name text that took a family.
-function Skin.Font(fontStr, region, g, button, size)
+function Skin.Font(fontStr, red, green, blue, size)
     if not fontStr or not fontStr.GetFont or (fontStr.IsForbidden and fontStr:IsForbidden()) then
         return
     end
     local fo = fontStr.GetFontObject and fontStr:GetFontObject()
     if fo and CUI._fontFamilySet[fo] then
-        return Skin.FontFamily(fontStr, region, g, button, size)
+        return Skin.FontFamily(fontStr, red, green, blue, size)
     end
     local _, current = fontStr:GetFont()
     if current and issecretvalue(current) then
@@ -593,8 +593,8 @@ function Skin.Font(fontStr, region, g, button, size)
     -- SetShadowOffset. Prime BEFORE SetFont (SetFont then restores the face).
     CUI.PrimeFontShadow(fontStr, Theme.fontShadow)
     fontStr:SetFont(Theme.fontPath, size or current or 12, Theme.fontFlag or "")
-    if region then
-        fontStr:SetTextColor(region, g, button or region)
+    if red then
+        fontStr:SetTextColor(red, green, blue or red)
     end
 end
 
@@ -602,7 +602,7 @@ end
 -- comments): the house font as a font family, which draws the scripts that font
 -- lacks. A string given a family takes every later font write through here,
 -- never through WSkin.Font (a plain SetFont pins the face for good).
-function Skin.FontFamily(fontStr, region, g, button, size)
+function Skin.FontFamily(fontStr, red, green, blue, size)
     if not fontStr or not fontStr.GetFont or (fontStr.IsForbidden and fontStr:IsForbidden()) then
         return
     end
@@ -611,15 +611,15 @@ function Skin.FontFamily(fontStr, region, g, button, size)
         return
     end
     CUI.SetFontFamily(fontStr, Theme.fontPath, size or current or 12, Theme.fontFlag or "", Theme.fontShadow)
-    if region then
-        fontStr:SetTextColor(region, g, button or region)
+    if red then
+        fontStr:SetTextColor(red, green, blue or red)
     end
 end
 
 -- Force a FontString readable-white without touching its font file.
-function Skin.White(fontStr, region, g, button)
+function Skin.White(fontStr, red, green, blue)
     if fontStr and fontStr.SetTextColor then
-        fontStr:SetTextColor(region or 1, g or 1, button or 1)
+        fontStr:SetTextColor(red or 1, green or 1, blue or 1)
     end
 end
 
@@ -1275,14 +1275,14 @@ function Skin.RingQuality(ring)
     if not ring:IsShown() then
         return
     end
-    local region, g, button = ring:GetVertexColor()
-    if type(region) ~= "number" or type(g) ~= "number" or type(button) ~= "number" then
+    local red, green, blue = ring:GetVertexColor()
+    if type(red) ~= "number" or type(green) ~= "number" or type(blue) ~= "number" then
         return
     end
-    if (math.max(region, g, button) - math.min(region, g, button)) <= QUALITY_CHROMA then
+    if (math.max(red, green, blue) - math.min(red, green, blue)) <= QUALITY_CHROMA then
         return
     end
-    return region, g, button
+    return red, green, blue
 end
 
 -- Tiles whose border follows Blizzard's ring, so the hook below knows which
@@ -1307,11 +1307,11 @@ local function PaintQuality(button)
     -- boxes ARE the slot -- they show where an item can be dropped -- and with
     -- them gone the trade window read as having no item slots at all. Empty is
     -- black, filled is the rarity.
-    local region, g, button = Skin.RingQuality(button.IconBorder)
+    local red, green, button = Skin.RingQuality(button.IconBorder)
     -- No rarity -> BLACK, not hidden: every other icon in the suite carries a
     -- 1px black edge, so a common drop should look like the rest of them
     -- rather than like a tile that lost its border.
-    Pix.SetBorderColor(owner, region or 0, g or 0, button or 0, 1)
+    Pix.SetBorderColor(owner, red or 0, green or 0, button or 0, 1)
 end
 
 -- Runs inside Blizzard's call stack, from bag and bank updates as well as ours.
@@ -1337,7 +1337,7 @@ end
 -- pooled tiles correct without any pack having to guess when Blizzard
 -- repopulates them. Pass r,g,b for surfaces that have no ring to read
 -- (the loot roll popups carry quality in an ATLAS NAME instead).
-function Skin.QualityBorder(ownerFrame, iconTex, region, g, button)
+function Skin.QualityBorder(ownerFrame, iconTex, red, green, blue)
     if not (ownerFrame and iconTex) then
         return
     end
@@ -1381,10 +1381,10 @@ function Skin.QualityBorder(ownerFrame, iconTex, region, g, button)
         Pix.CreateBorder(owner, 0, 0, 0, 1, 1, "OVERLAY", 7)
         skinData.qBorder = owner
     end
-    if region then
+    if red then
         _qTiles[ownerFrame] = nil
         if Pix.SetBorderColor then
-            Pix.SetBorderColor(owner, region, g, button, 1)
+            Pix.SetBorderColor(owner, red, green, blue, 1)
         end
         return
     end
@@ -2042,8 +2042,8 @@ function Skin.BarFillColor()
         end
         return 1, 1, 1, a
     end
-    local region, g, button = LiveAccent()
-    return region * 0.8, g * 0.8, button * 0.8, a
+    local red, green, blue = LiveAccent()
+    return red * 0.8, green * 0.8, blue * 0.8, a
 end
 
 function Skin.LinkColor()
@@ -2059,12 +2059,12 @@ function Skin.LinkColor()
 end
 
 function Skin.LinkColorHex()
-    local region, g, button = Skin.LinkColor()
+    local red, green, blue = Skin.LinkColor()
     return string.format(
         "%02x%02x%02x",
-        math.floor(region * 255 + 0.5),
-        math.floor(g * 255 + 0.5),
-        math.floor(button * 255 + 0.5)
+        math.floor(red * 255 + 0.5),
+        math.floor(green * 255 + 0.5),
+        math.floor(blue * 255 + 0.5)
     )
 end
 
@@ -2080,8 +2080,8 @@ function Skin.ApplyBarFill(barFrame)
         return
     end
     _fillBars[barFrame] = true
-    local region, g, button, a = Skin.BarFillColor()
-    barFrame:SetStatusBarColor(region, g, button, a)
+    local red, green, blue, a = Skin.BarFillColor()
+    barFrame:SetStatusBarColor(red, green, blue, a)
 end
 
 function Skin.RegisterAccentUnderline(texture)

@@ -2163,15 +2163,15 @@ CludesUI.AtOptionsLogin(function()
                     b2 = 0.067
                 end
                 return r, g, b2
-            end, function(r, g, b2)
+            end, function(red, green, blue)
                 local color = skinName.modernColor
                 if not color then
                     color = { a = 0.95 }
                     skinName.modernColor = color
                 end
-                color.r = r
-                color.g = g
-                color.b = b2
+                color.r = red
+                color.g = green
+                color.b = blue
                 mod.ApplyTheme(barId)
                 RefreshPreviewTheme()
             end, false, 20)
@@ -2646,8 +2646,8 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return 1, 1, 1
                         end,
-                        setValue = function(r, g, bl)
-                            b.color = { r = r, g = g, b = bl }
+                        setValue = function(red, green, blue)
+                            b.color = { r = red, g = green, b = blue }
                             ApplyBlockColor()
                         end,
                         onClick = function(self)
@@ -2871,8 +2871,8 @@ CludesUI.AtOptionsLogin(function()
                         end
                         return r, g, b2, a
                     end,
-                    function(r, g, b2, a)
-                        b.bg = { r = r, g = g, b = b2, a = a }
+                    function(red, green, blue, a)
+                        b.bg = { r = red, g = green, b = blue, a = a }
                         Apply()
                     end,
                     true,
@@ -2947,8 +2947,8 @@ CludesUI.AtOptionsLogin(function()
                                 end
                                 return mod.BlockIconDefault(b.type, cfg)
                             end,
-                            setValue = function(r, g, bl)
-                                b.iconColor = { r = r, g = g, b = bl }
+                            setValue = function(red, green, blue)
+                                b.iconColor = { r = red, g = green, b = blue }
                                 ApplyBlockColor()
                             end,
                             onClick = function(self)
@@ -4284,8 +4284,8 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return 1, 1, 1
                         end,
-                        set = function(r, g, bl)
-                            b.iconColor = { r = r, g = g, b = bl }
+                        set = function(red, green, blue)
+                            b.iconColor = { r = red, g = green, b = blue }
                             ApplyBlockColor()
                         end,
                         -- House multiSwatch convention: a click on an inactive
@@ -4312,8 +4312,8 @@ CludesUI.AtOptionsLogin(function()
                         region,
                         msIconRow:GetFrameLevel() + 3,
                         function()
-                            local r, g, bl = sp.get()
-                            return r, g, bl, 1
+                            local red, green, blue = sp.get()
+                            return red, green, blue, 1
                         end,
                         sp.set or function() end,
                         false,
@@ -4356,8 +4356,8 @@ CludesUI.AtOptionsLogin(function()
                         end
                         return d[1], d[2], d[3]
                     end,
-                    function(r, g, bl)
-                        cfg.lowColor = { r = r, g = g, b = bl }
+                    function(red, green, blue)
+                        cfg.lowColor = { r = red, g = green, b = blue }
                         Apply()
                     end,
                     false,
@@ -4584,8 +4584,8 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return color.r or 0.925, color.g or 0.839, color.b or 0.447
                         end,
-                        function(r, g, b2)
-                            cfg.guildNoteColor = { r = r, g = g, b = b2 }
+                        function(red, green, blue)
+                            cfg.guildNoteColor = { r = red, g = green, b = blue }
                             Apply()
                         end,
                         false,

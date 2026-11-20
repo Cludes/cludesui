@@ -75,15 +75,15 @@ CUI_NS.unlockParts.Movers = function(LM)
             end
         end
         local enabled = active and OverlapModifierDown(snapMethod) or false
-        for _, m in pairs(handles) do
-            m:EnableMouseWheel(enabled)
-            if m._linkBtns then
-                for _, button in ipairs(m._linkBtns) do
+        for _, handle in pairs(handles) do
+            handle:EnableMouseWheel(enabled)
+            if handle._linkBtns then
+                for _, button in ipairs(handle._linkBtns) do
                     button:EnableMouseWheel(enabled)
                 end
             end
-            if m._cogBtn then
-                m._cogBtn:EnableMouseWheel(enabled)
+            if handle._cogBtn then
+                handle._cogBtn:EnableMouseWheel(enabled)
             end
         end
     end
@@ -95,12 +95,12 @@ CUI_NS.unlockParts.Movers = function(LM)
             return
         end
         local hits = {}
-        for _, m in pairs(handles) do
-            if m._dragging then
+        for _, handle in pairs(handles) do
+            if handle._dragging then
                 return
             end
-            if m:IsShown() and m:IsMouseOver() then
-                hits[#hits + 1] = { mover = m, base = m._baseLevel, raised = m._raisedLevel }
+            if handle:IsShown() and handle:IsMouseOver() then
+                hits[#hits + 1] = { mover = handle, base = handle._baseLevel, raised = handle._raisedLevel }
             end
         end
         if #hits < 2 then
@@ -188,25 +188,25 @@ CUI_NS.unlockParts.Movers = function(LM)
     end
 
     function MenuPool.Begin(dropMenu, shadowed, fineDivs)
-        local p = dropMenu._pool
-        if not p then
-            p = { shadowed = shadowed, fineDivs = fineDivs, items = {}, fields = {}, titles = {}, divs = {} }
-            dropMenu._pool = p
+        local pool = dropMenu._pool
+        if not pool then
+            pool = { shadowed = shadowed, fineDivs = fineDivs, items = {}, fields = {}, titles = {}, divs = {} }
+            dropMenu._pool = pool
         end
-        p.nItems, p.nFields, p.nTitles, p.nDivs = 0, 0, 0, 0
+        pool.nItems, pool.nFields, pool.nTitles, pool.nDivs = 0, 0, 0, 0
     end
 
     function MenuPool.End(dropMenu)
-        local p = dropMenu._pool
-        for idx = p.nItems + 1, #p.items do
-            local entry = p.items[idx]
+        local pool = dropMenu._pool
+        for idx = pool.nItems + 1, #pool.items do
+            local entry = pool.items[idx]
             entry:Hide()
             if entry._sub then
                 entry._sub:Hide()
             end
         end
-        for idx = p.nFields + 1, #p.fields do
-            local row = p.fields[idx]
+        for idx = pool.nFields + 1, #pool.fields do
+            local row = pool.fields[idx]
             row:Hide()
             -- A hidden edit box keeps the keyboard: release it with the row.
             local checkBox = row._box
@@ -214,11 +214,11 @@ CUI_NS.unlockParts.Movers = function(LM)
                 checkBox:ClearFocus()
             end
         end
-        for idx = p.nTitles + 1, #p.titles do
-            p.titles[idx]:Hide()
+        for idx = pool.nTitles + 1, #pool.titles do
+            pool.titles[idx]:Hide()
         end
-        for idx = p.nDivs + 1, #p.divs do
-            p.divs[idx]:Hide()
+        for idx = pool.nDivs + 1, #pool.divs do
+            pool.divs[idx]:Hide()
         end
     end
 
@@ -235,10 +235,10 @@ CUI_NS.unlockParts.Movers = function(LM)
     -- scripts, the highlight clear, the label idle grey, anchored on its left only
     -- and wrapping, and the arrow, check box and flyout of an earlier use hidden.
     function MenuPool.Item(dropMenu, posY, hgt)
-        local p = dropMenu._pool
-        local num = p.nItems + 1
-        p.nItems = num
-        local entry = p.items[num]
+        local pool = dropMenu._pool
+        local num = pool.nItems + 1
+        pool.nItems = num
+        local entry = pool.items[num]
         if not entry then
             entry = CreateFrame("Button", nil, dropMenu)
             entry:RegisterForClicks("AnyUp")
@@ -246,10 +246,10 @@ CUI_NS.unlockParts.Movers = function(LM)
             highlight:SetAllPoints()
             entry._hl = highlight
             local labelFS = entry:CreateFontString(nil, "OVERLAY")
-            MenuPool.Font(p, labelFS, 11)
+            MenuPool.Font(pool, labelFS, 11)
             labelFS:SetJustifyH("LEFT")
             entry._lbl = labelFS
-            p.items[num] = entry
+            pool.items[num] = entry
         end
         entry:SetHeight(hgt)
         entry:ClearAllPoints()
@@ -313,35 +313,35 @@ CUI_NS.unlockParts.Movers = function(LM)
 
     -- Right-pointing arrow on a pooled row (a row that opens a flyout).
     function MenuPool.Arrow(entry, texture, alpha)
-        local a = entry._arrow
-        if not a then
-            a = entry:CreateTexture(nil, "ARTWORK")
-            a:SetSize(10, 10)
-            a:SetPoint("RIGHT", entry, "RIGHT", -8, 0)
-            entry._arrow = a
+        local arrow = entry._arrow
+        if not arrow then
+            arrow = entry:CreateTexture(nil, "ARTWORK")
+            arrow:SetSize(10, 10)
+            arrow:SetPoint("RIGHT", entry, "RIGHT", -8, 0)
+            entry._arrow = arrow
         end
-        a:SetTexture(texture)
-        a:SetAlpha(alpha)
-        a:Show()
-        return a
+        arrow:SetTexture(texture)
+        arrow:SetAlpha(alpha)
+        arrow:Show()
+        return arrow
     end
 
     -- Label row with an optional edit box on its right. The label comes back idle
     -- grey and wrapping; the box enabled, white, unfocused and without hover
     -- scripts. The caller sets the box's numeric mode, letter cap, value and keys.
     function MenuPool.Field(dropMenu, posY, hgt, withBox)
-        local p = dropMenu._pool
-        local num = p.nFields + 1
-        p.nFields = num
-        local row = p.fields[num]
+        local pool = dropMenu._pool
+        local num = pool.nFields + 1
+        pool.nFields = num
+        local row = pool.fields[num]
         if not row then
             row = CreateFrame("Frame", nil, dropMenu)
             local labelFS = row:CreateFontString(nil, "OVERLAY")
-            MenuPool.Font(p, labelFS, 11)
+            MenuPool.Font(pool, labelFS, 11)
             labelFS:SetJustifyH("LEFT")
             labelFS:SetPoint("LEFT", row, "LEFT", 10, 0)
             row._lbl = labelFS
-            p.fields[num] = row
+            pool.fields[num] = row
         end
         row:SetHeight(hgt)
         row:ClearAllPoints()
@@ -384,16 +384,16 @@ CUI_NS.unlockParts.Movers = function(LM)
 
     -- Dimmed size-10 section title; the caller anchors it and sets its text.
     function MenuPool.Title(dropMenu)
-        local p = dropMenu._pool
-        local num = p.nTitles + 1
-        p.nTitles = num
-        local fontStr = p.titles[num]
+        local pool = dropMenu._pool
+        local num = pool.nTitles + 1
+        pool.nTitles = num
+        local fontStr = pool.titles[num]
         if not fontStr then
             fontStr = dropMenu:CreateFontString(nil, "OVERLAY")
-            MenuPool.Font(p, fontStr, 10)
+            MenuPool.Font(pool, fontStr, 10)
             fontStr:SetTextColor(1, 1, 1, 0.40)
             fontStr:SetJustifyH("LEFT")
-            p.titles[num] = fontStr
+            pool.titles[num] = fontStr
         end
         fontStr:ClearAllPoints()
         fontStr:Show()
@@ -402,18 +402,18 @@ CUI_NS.unlockParts.Movers = function(LM)
 
     -- Faint divider line across the menu at y, h tall.
     function MenuPool.Div(dropMenu, posY, hgt)
-        local p = dropMenu._pool
-        local num = p.nDivs + 1
-        p.nDivs = num
-        local d = p.divs[num]
+        local pool = dropMenu._pool
+        local num = pool.nDivs + 1
+        pool.nDivs = num
+        local d = pool.divs[num]
         if not d then
             d = dropMenu:CreateTexture(nil, "ARTWORK")
-            if p.fineDivs and d.SetSnapToPixelGrid then
+            if pool.fineDivs and d.SetSnapToPixelGrid then
                 d:SetSnapToPixelGrid(false)
                 d:SetTexelSnappingBias(0)
             end
             d:SetColorTexture(1, 1, 1, 0.10)
-            p.divs[num] = d
+            pool.divs[num] = d
         end
         d:SetHeight(hgt)
         d:ClearAllPoints()
@@ -520,20 +520,20 @@ CUI_NS.unlockParts.Movers = function(LM)
 
         -- Optional dimmed subtitle under the label (element definition field)
         if regElem and regElem.subtitle then
-            local subFS = nameTag:CreateFontString(nil, "OVERLAY")
-            CludesUI.PrimeFontShadow(subFS, true)
-            subFS:SetFont(FONT_PATH, 8 + (UIParent:GetEffectiveScale() < 0.6 and 1 or 0), "")
-            subFS:SetText(CludesUI.L(regElem.subtitle))
-            subFS:SetTextColor(1, 1, 1, 0.40)
-            subFS:SetJustifyH("CENTER")
-            subFS:SetWordWrap(true)
-            subFS:SetNonSpaceWrap(false)
-            subFS:SetPoint("TOP", nameText, "BOTTOM", 0, -3)
-            subFS:SetPoint("LEFT", nameTag, "LEFT", 8, 0)
-            subFS:SetPoint("RIGHT", nameTag, "RIGHT", -8, 0)
-            handle._subtitle = subFS
+            local subLabel = nameTag:CreateFontString(nil, "OVERLAY")
+            CludesUI.PrimeFontShadow(subLabel, true)
+            subLabel:SetFont(FONT_PATH, 8 + (UIParent:GetEffectiveScale() < 0.6 and 1 or 0), "")
+            subLabel:SetText(CludesUI.L(regElem.subtitle))
+            subLabel:SetTextColor(1, 1, 1, 0.40)
+            subLabel:SetJustifyH("CENTER")
+            subLabel:SetWordWrap(true)
+            subLabel:SetNonSpaceWrap(false)
+            subLabel:SetPoint("TOP", nameText, "BOTTOM", 0, -3)
+            subLabel:SetPoint("LEFT", nameTag, "LEFT", 8, 0)
+            subLabel:SetPoint("RIGHT", nameTag, "RIGHT", -8, 0)
+            handle._subtitle = subLabel
             if not LM.darkOverlaysEnabled then
-                subFS:Hide()
+                subLabel:Hide()
             end
         end
 
@@ -575,14 +575,14 @@ CUI_NS.unlockParts.Movers = function(LM)
         atBtn:EnableMouse(true)
         atBtn:Hide()
 
-        local gdBtn = CreateFrame("Button", nil, nameTag)
-        gdBtn:SetFrameLevel(nameTag:GetFrameLevel() + 2)
-        gdBtn:RegisterForClicks("LeftButtonUp")
-        gdBtn:EnableMouse(true)
-        gdBtn:Hide()
+        local growBtn = CreateFrame("Button", nil, nameTag)
+        growBtn:SetFrameLevel(nameTag:GetFrameLevel() + 2)
+        growBtn:RegisterForClicks("LeftButtonUp")
+        growBtn:EnableMouse(true)
+        growBtn:Hide()
 
         -- Store link buttons on mover so OnLeave can check if any are hovered
-        handle._linkBtns = { wmBtn, hmBtn, atBtn, gdBtn }
+        handle._linkBtns = { wmBtn, hmBtn, atBtn, growBtn }
         for _, button in ipairs(handle._linkBtns) do
             button:EnableMouseWheel(OverlapScrollDown())
             button:SetScript("OnMouseWheel", OnMoverWheel)
@@ -610,36 +610,36 @@ CUI_NS.unlockParts.Movers = function(LM)
         anchorText:SetText(CludesUI.L(AT_TEXT))
         anchorText:SetPoint("CENTER")
 
-        local gdFS = gdBtn:CreateFontString(nil, "OVERLAY")
-        CludesUI.PrimeFontShadow(gdFS, true)
-        gdFS:SetFont(FONT_PATH, 9, "")
-        gdFS:SetTextColor(accR, accG, accB, 0.85)
-        gdFS:SetText(CludesUI.L(GD_TEXT))
-        gdFS:SetPoint("CENTER")
+        local growLabel = growBtn:CreateFontString(nil, "OVERLAY")
+        CludesUI.PrimeFontShadow(growLabel, true)
+        growLabel:SetFont(FONT_PATH, 9, "")
+        growLabel:SetTextColor(accR, accG, accB, 0.85)
+        growLabel:SetText(CludesUI.L(GD_TEXT))
+        growLabel:SetPoint("CENTER")
 
         -- 1px pixel-perfect divider lines between action links
         local Pix = CludesUI and CludesUI.PP
         local divPx = Pix and Pix.mult or 1
 
-        local div1 = nameTag:CreateTexture(nil, "OVERLAY")
-        div1:SetColorTexture(1, 1, 1, 0.25)
-        div1:SetWidth(divPx)
-        div1:SetHeight(10)
-        if div1.SetSnapToPixelGrid then
-            div1:SetSnapToPixelGrid(false)
-            div1:SetTexelSnappingBias(0)
+        local rule1 = nameTag:CreateTexture(nil, "OVERLAY")
+        rule1:SetColorTexture(1, 1, 1, 0.25)
+        rule1:SetWidth(divPx)
+        rule1:SetHeight(10)
+        if rule1.SetSnapToPixelGrid then
+            rule1:SetSnapToPixelGrid(false)
+            rule1:SetTexelSnappingBias(0)
         end
-        div1:Hide()
+        rule1:Hide()
 
-        local div2 = nameTag:CreateTexture(nil, "OVERLAY")
-        div2:SetColorTexture(1, 1, 1, 0.25)
-        div2:SetWidth(divPx)
-        div2:SetHeight(10)
-        if div2.SetSnapToPixelGrid then
-            div2:SetSnapToPixelGrid(false)
-            div2:SetTexelSnappingBias(0)
+        local rule2 = nameTag:CreateTexture(nil, "OVERLAY")
+        rule2:SetColorTexture(1, 1, 1, 0.25)
+        rule2:SetWidth(divPx)
+        rule2:SetHeight(10)
+        if rule2.SetSnapToPixelGrid then
+            rule2:SetSnapToPixelGrid(false)
+            rule2:SetTexelSnappingBias(0)
         end
-        div2:Hide()
+        rule2:Hide()
 
         local div3 = nameTag:CreateTexture(nil, "OVERLAY")
         div3:SetColorTexture(1, 1, 1, 0.25)
@@ -698,7 +698,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 t[#t + 1] = { btn = atBtn, fs = anchorText, fb = 45 }
             end
             if canGrow then
-                t[#t + 1] = { btn = gdBtn, fs = gdFS, fb = 30 }
+                t[#t + 1] = { btn = growBtn, fs = growLabel, fb = 30 }
             end
             return t
         end
@@ -713,7 +713,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             if #itemList == 0 then
                 return
             end
-            local divs = { div1, div2, div3 }
+            local divs = { rule1, rule2, div3 }
             local totalW = 0
             for idx, entry in ipairs(itemList) do
                 entry.w = entry.fs:GetStringWidth() or entry.fb
@@ -796,9 +796,9 @@ CUI_NS.unlockParts.Movers = function(LM)
                 if RectSecret(widget) then
                     return
                 end
-                local s = widget:GetEffectiveScale()
+                local scale = widget:GetEffectiveScale()
                 local uiZoom = UIParent:GetEffectiveScale()
-                local elemScale = s / uiZoom
+                local elemScale = scale / uiZoom
                 -- Update size from bar (+ any below-frame extra, e.g. boss castbar).
                 local element = registeredElements[barKey]
                 local extra = (element and element.getBottomExtra and (element.getBottomExtra(barKey) or 0) or 0)
@@ -882,8 +882,8 @@ CUI_NS.unlockParts.Movers = function(LM)
                 anchorText:SetText(CludesUI.L("Anchor"))
                 anchorText:SetTextColor(accR, accG, accB, 0.85)
             end
-            gdFS:SetText(CludesUI.L("Grow"))
-            gdFS:SetTextColor(1, 0.7, 0.3, 0.85)
+            growLabel:SetText(CludesUI.L("Grow"))
+            growLabel:SetTextColor(1, 0.7, 0.3, 0.85)
         end
 
         -- Update the name label color based on anchor state
@@ -940,9 +940,9 @@ CUI_NS.unlockParts.Movers = function(LM)
             _linkVis(wmBtn)
             _linkVis(hmBtn)
             _linkVis(atBtn)
-            _linkVis(gdBtn)
+            _linkVis(growBtn)
             local nDivs = #links > 0 and (#links - 1) or 0
-            local divsV = { div1, div2, div3 }
+            local divsV = { rule1, rule2, div3 }
             for idx = 1, 3 do
                 if idx <= nDivs then
                     divsV[idx]:SetAlpha(s)
@@ -1098,9 +1098,9 @@ CUI_NS.unlockParts.Movers = function(LM)
             wmBtn:Hide()
             hmBtn:Hide()
             atBtn:Hide()
-            gdBtn:Hide()
-            div1:Hide()
-            div2:Hide()
+            growBtn:Hide()
+            rule1:Hide()
+            rule2:Hide()
             div3:Hide()
             hoverState = 0
             hoverTarget = 0
@@ -1451,7 +1451,7 @@ CUI_NS.unlockParts.Movers = function(LM)
             LM.PointPicker.Begin(handle)
         end)
 
-        gdBtn:SetScript("OnClick", function()
+        growBtn:SetScript("OnClick", function()
             CludesUI.HideWidgetTooltip()
             -- Build and show the grow direction dropdown
             if not LM.growDropdownFrame then
@@ -1647,11 +1647,11 @@ CUI_NS.unlockParts.Movers = function(LM)
             LM.growDropdownFrame:Show()
             LM.growDropdownCatcher:Show()
         end)
-        gdBtn:SetScript("OnEnter", function(self)
-            BtnEnter(self, gdFS, "grow")
+        growBtn:SetScript("OnEnter", function(self)
+            BtnEnter(self, growLabel, "grow")
         end)
-        gdBtn:SetScript("OnLeave", function(self)
-            BtnLeave(self, gdFS, "grow")
+        growBtn:SetScript("OnLeave", function(self)
+            BtnLeave(self, growLabel, "grow")
         end)
 
         -- Helper: update coordinate readout from mover's current position
@@ -1881,10 +1881,10 @@ CUI_NS.unlockParts.Movers = function(LM)
                 end
             end
             self._secretResync = nil
-            local s = widget:GetEffectiveScale()
+            local scale = widget:GetEffectiveScale()
             local uiZoom = UIParent:GetEffectiveScale()
             local wid, hgt
-            local elemScale = s / uiZoom
+            local elemScale = scale / uiZoom
             -- Visual insets (optional, e.g. a Blizzard Style unit frame whose stock
             -- box carries transparent padding round its art): the mover outlines
             -- the rect inside them. UIParent units.
@@ -1945,11 +1945,11 @@ CUI_NS.unlockParts.Movers = function(LM)
                     local cx, cy
                     local bCX, bCY = widget:GetCenter()
                     if bCX and bCY then
-                        cx = bCX * s / uiZoom + (il - ir) * 0.5 - wid * 0.5
-                        cy = bCY * s / uiZoom + (ib - entry) * 0.5 - UIParent:GetHeight() + hgt * 0.5 + centerYOff
+                        cx = bCX * scale / uiZoom + (il - ir) * 0.5 - wid * 0.5
+                        cy = bCY * scale / uiZoom + (ib - entry) * 0.5 - UIParent:GetHeight() + hgt * 0.5 + centerYOff
                     elseif boxLeft and bT then
-                        cx = boxLeft * s / uiZoom
-                        cy = bT * s / uiZoom - UIParent:GetHeight()
+                        cx = boxLeft * scale / uiZoom
+                        cy = bT * scale / uiZoom - UIParent:GetHeight()
                     else
                         -- No screen position yet -- fall back to saved pos
                         local place = element.loadPosition and element.loadPosition(barKey)
@@ -2010,10 +2010,10 @@ CUI_NS.unlockParts.Movers = function(LM)
             else
                 local widget = LM.GetBarFrame(barKey)
                 if widget then
-                    local s = widget:GetEffectiveScale()
+                    local scale = widget:GetEffectiveScale()
                     local uiZoom = UIParent:GetEffectiveScale()
-                    realW = (widget:GetWidth() or realW) * s / uiZoom
-                    realH = (widget:GetHeight() or realH) * s / uiZoom
+                    realW = (widget:GetWidth() or realW) * scale / uiZoom
+                    realH = (widget:GetHeight() or realH) * scale / uiZoom
                 end
             end
             -- moverCX/moverCY are already updated by RecenterBarAnchor (called before
@@ -4969,15 +4969,15 @@ CUI_NS.unlockParts.Movers = function(LM)
                     local foci = GetMouseFoci()
                     local seY = -4
                     for idx = 1, #EDGE_ITEMS do
-                        local e = EDGE_ITEMS[idx]
-                        local checked = (e.key ~= nil and (e.key == nowT or e.key == curEdge))
-                            or (e.key == nil and centered)
+                        local edgeItem = EDGE_ITEMS[idx]
+                        local checked = (edgeItem.key ~= nil and (edgeItem.key == nowT or edgeItem.key == curEdge))
+                            or (edgeItem.key == nil and centered)
                         -- An edge cannot join the one across the screen from it, and
                         -- Center has nothing to clear while no screen edge is checked
                         -- (an element linked to another element only).
                         local disabled
-                        if e.key then
-                            disabled = e.opp == nowT or e.opp == curEdge
+                        if edgeItem.key then
+                            disabled = edgeItem.opp == nowT or edgeItem.opp == curEdge
                         else
                             disabled = not centered and nowT == nil and curEdge == nil
                         end
@@ -4994,7 +4994,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                         subLabel:SetTextColor(red, green, blue, a)
                         subLabel:SetPoint("RIGHT", subItem, "RIGHT", -8, 0)
                         subLabel:SetWordWrap(false)
-                        subLabel:SetText(CludesUI.L(e.text))
+                        subLabel:SetText(CludesUI.L(edgeItem.text))
                         if not disabled then
                             local function OnEnter()
                                 subHighlight:SetColorTexture(1, 1, 1, 0.08)
@@ -5004,33 +5004,33 @@ CUI_NS.unlockParts.Movers = function(LM)
                                     subLabel:SetTextColor(1, 1, 1, 1)
                                 end
                                 -- Preview: show the line the element would hold on to.
-                                if e.key then
-                                    CludesUI._ShowScreenEdgeMarker(e.key)
+                                if edgeItem.key then
+                                    CludesUI._ShowScreenEdgeMarker(edgeItem.key)
                                 end
                             end
                             subItem:SetScript("OnEnter", OnEnter)
                             subItem:SetScript("OnLeave", function()
                                 subHighlight:SetColorTexture(1, 1, 1, checked and 0.04 or 0)
                                 subLabel:SetTextColor(red, green, blue, a)
-                                if e.key then
-                                    CludesUI._HideScreenEdgeMarker(e.key)
+                                if edgeItem.key then
+                                    CludesUI._HideScreenEdgeMarker(edgeItem.key)
                                 end
                             end)
                             subItem:SetScript("OnClick", function()
-                                if InCombatLockdown() or (checked and not e.key) then
+                                if InCombatLockdown() or (checked and not edgeItem.key) then
                                     return
                                 end
                                 if ownScreen then
                                     ownScreen.setScreenPoint(
                                         barId,
-                                        ScreenPointWith(ownScreen.getScreenPoint(barId), e.key, not checked)
+                                        ScreenPointWith(ownScreen.getScreenPoint(barId), edgeItem.key, not checked)
                                     )
-                                elseif not e.key then
+                                elseif not edgeItem.key then
                                     ClearScreenAnchor()
                                 elseif checked then
-                                    DropScreenEdge(e.key)
+                                    DropScreenEdge(edgeItem.key)
                                 else
-                                    SetScreenAnchor(e.key, e.side)
+                                    SetScreenAnchor(edgeItem.key, edgeItem.side)
                                 end
                                 handle._cogEdgeDirty = true
                                 -- The anchor rows' offset boxes read the links live.

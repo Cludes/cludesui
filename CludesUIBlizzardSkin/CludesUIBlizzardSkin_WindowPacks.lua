@@ -10352,18 +10352,18 @@ do
 
         local tintRed = not details.isPurchasable or (not details.isUsable and not isHeirloom)
         SetItemButtonDesaturated(btnFrame, isKnownHeirloom)
-        local region, g, button = 1, 1, 1
+        local red, green, blue = 1, 1, 1
         if numAvailable == 0 or isKnownHeirloom then
             if tintRed then
-                region, g, button = 0.5, 0, 0
+                red, green, blue = 0.5, 0, 0
             else
-                region, g, button = 0.5, 0.5, 0.5
+                red, green, blue = 0.5, 0.5, 0.5
             end
         elseif tintRed then
-            region, g, button = 0.9, 0, 0
+            red, green, blue = 0.9, 0, 0
         end
-        SetItemButtonTextureVertexColor(btnFrame, region, g, button)
-        SetItemButtonNormalTextureVertexColor(btnFrame, region, g, button)
+        SetItemButtonTextureVertexColor(btnFrame, red, green, blue)
+        SetItemButtonNormalTextureVertexColor(btnFrame, red, green, blue)
     end
 
     local EX_Update
@@ -15923,14 +15923,14 @@ do
             return
         end
         LP.vertexFills[texture] = true
-        local region, g, button, a = Skin.BarFillColor()
-        texture:SetVertexColor(region, g, button, a)
+        local red, green, blue, a = Skin.BarFillColor()
+        texture:SetVertexColor(red, green, blue, a)
     end
     Skin.OnLooksChanged(function()
-        local region, g, button, a = Skin.BarFillColor()
+        local red, green, blue, a = Skin.BarFillColor()
         for texture in pairs(LP.vertexFills) do
             if texture.SetVertexColor then
-                texture:SetVertexColor(region, g, button, a)
+                texture:SetVertexColor(red, green, blue, a)
             end
         end
     end)
@@ -18588,9 +18588,9 @@ do
             local color = CludesUI.GetClassColor(token)
             return true, color.r, color.g, color.b
         end
-        local success, region, g, button = CludesUI.GetClassColorForRestrictedUnit(unitToken, token)
+        local success, red, green, blue = CludesUI.GetClassColorForRestrictedUnit(unitToken, token)
         if success then
-            return true, region, g, button
+            return true, red, green, blue
         end
         local color = C_ClassColor.GetClassColor(token)
         if color then
@@ -18601,15 +18601,15 @@ do
 
     -- Every colour write on a health bar of ours: Blizzard's default green is
     -- taken over by the class colour, any other write is kept.
-    function FC.HealthColor(barFrame, region, g, button)
+    function FC.HealthColor(barFrame, red, green, blue)
         local skinData = FFD[barFrame]
         if not skinData or skinData.fcPaint then
             return
         end
-        if issecretvalue(region) or issecretvalue(g) or issecretvalue(button) then
+        if issecretvalue(red) or issecretvalue(green) or issecretvalue(blue) then
             return
         end
-        if region ~= 0 or g ~= 1 or button ~= 0 then
+        if red ~= 0 or green ~= 1 or blue ~= 0 then
             return
         end
         local success, cr, cg, creatureBtn = FC.ClassRGB(skinData.fcUnit)

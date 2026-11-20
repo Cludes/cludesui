@@ -269,18 +269,18 @@ CludesUI.AtOptionsLogin(function()
                 local colW = ((building and hdrW or headerText:GetWidth()) - 2 * CludesUI.CONTENT_PAD) / num
                 local maxH = 0
                 for idx = 1, num do
-                    local c = state[idx]
-                    if c and c.w then
-                        local fit = (c.w > 0) and math.min(1, colW / (c.w * uiScale)) or 1
-                        c.root:SetScale(uiScale * fit)
-                        maxH = math.max(maxH, c.h * uiScale * fit)
+                    local cell = state[idx]
+                    if cell and cell.w then
+                        local fit = (cell.w > 0) and math.min(1, colW / (cell.w * uiScale)) or 1
+                        cell.root:SetScale(uiScale * fit)
+                        maxH = math.max(maxH, cell.h * uiScale * fit)
                     end
                 end
                 local blockH = maxH + titleH
                 for idx = 1, num do
-                    local c = state[idx]
-                    if c and c.w then
-                        local rootFrame = c.root
+                    local cell = state[idx]
+                    if cell and cell.w then
+                        local rootFrame = cell.root
                         rootFrame:ClearAllPoints()
                         if titled then
                             -- Offsets in the sample's own units, snapped to its physical pixels.
@@ -297,9 +297,9 @@ CludesUI.AtOptionsLogin(function()
                                 Snap(cx / hs),
                                 Snap((blockH / 2 - titleH) / hs)
                             )
-                            c.fs:ClearAllPoints()
-                            c.fs:SetPoint("BOTTOMLEFT", rootFrame, "TOPLEFT", 0, 3)
-                            c.fs:Show()
+                            cell.fs:ClearAllPoints()
+                            cell.fs:SetPoint("BOTTOMLEFT", rootFrame, "TOPLEFT", 0, 3)
+                            cell.fs:Show()
                         else
                             rootFrame:SetPoint("CENTER", headerText, "CENTER", 0, 0)
                         end
@@ -1624,11 +1624,11 @@ CludesUI.AtOptionsLogin(function()
                 warnBtn:SetSize(28, 28)
                 warnBtn:SetPoint("RIGHT", toggle, "LEFT", -4, 0)
                 warnBtn:SetFrameLevel(region:GetFrameLevel() + 5)
-                local warnFS = warnBtn:CreateFontString(nil, "OVERLAY")
-                warnFS:SetFont(fontFile, 28, "")
-                warnFS:SetTextColor(1, 0.3, 0.3, 1)
-                warnFS:SetText("!")
-                warnFS:SetPoint("CENTER")
+                local warnLabel = warnBtn:CreateFontString(nil, "OVERLAY")
+                warnLabel:SetFont(fontFile, 28, "")
+                warnLabel:SetTextColor(1, 0.3, 0.3, 1)
+                warnLabel:SetText("!")
+                warnLabel:SetPoint("CENTER")
                 warnBtn:SetScript("OnEnter", function(self)
                     CludesUI.ShowWidgetTooltip(
                         self,
@@ -1764,7 +1764,7 @@ CludesUI.AtOptionsLogin(function()
         local _, height
         local Pix = CludesUI.PanelPP
 
-        local function themedOff()
+        local function themeOff()
             return CludesUIDB and CludesUIDB.themedCharacterSheet == false
         end
         -- The card's Blizz Default, as the sheet runs it this session (the
@@ -1794,7 +1794,7 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI.HideWidgetTooltip()
             end)
             local function refreshFn()
-                if themedOff() then
+                if themeOff() then
                     cover:Show()
                     goal:SetAlpha(0.3)
                 else
@@ -2119,7 +2119,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Season Panel",
                 tooltip = "Show an Omnium Folio shortcut to the right of the socket panel during Midnight seasons. The cog adds a Great Vault shortcut.",
-                disabled = themedOff,
+                disabled = themeOff,
                 disabledTooltip = "Character Sheet",
                 getValue = function()
                     return not (CludesUIDB and CludesUIDB.charSheetSeasonPanel == false)
@@ -2209,10 +2209,10 @@ CludesUI.AtOptionsLogin(function()
             if seasonCfg then
                 CludesUI.BuildInlineCog(durSeasonRow._rightRegion, {
                     disabled = function()
-                        return themedOff() or (CludesUIDB and CludesUIDB.charSheetSeasonPanel == false)
+                        return themeOff() or (CludesUIDB and CludesUIDB.charSheetSeasonPanel == false)
                     end,
                     disabledTooltip = function()
-                        return themedOff() and "Character Sheet" or "Season Panel"
+                        return themeOff() and "Character Sheet" or "Season Panel"
                     end,
                     title = "Season Panel Settings",
                     rows = {
@@ -2292,7 +2292,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Hide Slot Flyout Arrows",
                 tooltip = "Hide the arrows beside equipment slots on the Equipment tab. The slot flyouts remain usable.",
-                disabled = themedOff,
+                disabled = themeOff,
                 disabledTooltip = "Character Sheet",
                 getValue = function()
                     return CludesUIDB and CludesUIDB.charSheetHideSlotFlyoutArrows == true
@@ -2528,7 +2528,7 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.BuildInlineCog(leftRegion, {
                 title = "Stat Section Settings",
                 rows = rowList,
-                disabled = themedOff,
+                disabled = themeOff,
                 disabledTooltip = "Character Sheet",
             })
         end
@@ -2707,7 +2707,7 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - height
 
         if not CludesUI._prebuilding then
-            local function themedOff()
+            local function themeOff()
                 return not (CludesUIDB and CludesUIDB.themedInspectSheet)
             end
 
@@ -2725,7 +2725,7 @@ CludesUI.AtOptionsLogin(function()
             end)
 
             CludesUI.RegisterWidgetRefresh(function()
-                if themedOff() then
+                if themeOff() then
                     inspectCover:Show()
                     inspectRow:SetAlpha(0.3)
                 else
@@ -2733,7 +2733,7 @@ CludesUI.AtOptionsLogin(function()
                     inspectRow:SetAlpha(1)
                 end
             end)
-            if themedOff() then
+            if themeOff() then
                 inspectCover:Show()
                 inspectRow:SetAlpha(0.3)
             else
@@ -2957,7 +2957,7 @@ CludesUI.AtOptionsLogin(function()
         local W = CludesUI.Widgets
         local _, height
 
-        local function themedOff()
+        local function themeOff()
             return CludesUIDB and CludesUIDB.reskinMerchant == false
         end
 
@@ -2975,7 +2975,7 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI.HideWidgetTooltip()
             end)
             local function refreshFn()
-                if themedOff() then
+                if themeOff() then
                     cover:Show()
                     goal:SetAlpha(0.3)
                 else
@@ -5141,9 +5141,9 @@ CludesUI.AtOptionsLogin(function()
             local warnFrame = CreateFrame("Frame", nil, hostFrame)
             Pix.Size(warnFrame, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, 30)
             Pix.Point(warnFrame, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
-            local warnFS = CludesUI.MakeFont(warnFrame, 14, "", 1, 0.25, 0.25, 1)
-            warnFS:SetPoint("LEFT", warnFrame, "LEFT", 0, 0)
-            warnFS:SetText(CludesUI.L("Only works outside of Instances"))
+            local warnLabel = CludesUI.MakeFont(warnFrame, 14, "", 1, 0.25, 0.25, 1)
+            warnLabel:SetPoint("LEFT", warnFrame, "LEFT", 0, 0)
+            warnLabel:SetText(CludesUI.L("Only works outside of Instances"))
         end
         cursorY = cursorY - 30
 

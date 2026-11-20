@@ -78,9 +78,9 @@ local function IsGreatVaultSkinEnabled()
 end
 
 local function BuildThemeContext()
-    local region, g, button = CludesUI.GetAccentColor()
+    local red, green, blue = CludesUI.GetAccentColor()
     return {
-        accent = { r = region, g = g, b = button },
+        accent = { r = red, g = green, b = blue },
         borderAPI = CludesUI.PP or CludesUI.PanelPP,
         fontPath = CludesUI.GetFontPath("blizzardSkin") or STANDARD_TEXT_FONT,
         reskin = CludesUI.RESKIN or DEFAULT_RESKIN,
@@ -135,14 +135,14 @@ local function SuppressTexture(artTexture)
     end
 end
 
-local function ApplyFont(fontString, skinName, size, region, g, button, a, flags)
+local function ApplyFont(fontString, skinName, size, red, green, blue, a, flags)
     if not fontString then
         return
     end
 
     CludesUI.PrimeFontShadow(fontString, true)
     fontString:SetFont((skinName and skinName.fontPath) or STANDARD_TEXT_FONT, size, flags or "")
-    fontString:SetTextColor(region or 1, g or 1, button or 1, a or 1)
+    fontString:SetTextColor(red or 1, green or 1, blue or 1, a or 1)
 end
 
 local function EnsureBackdrop(widget, skinName, alpha)
@@ -327,14 +327,14 @@ local function ResolveItemBorderColor(linkText)
     end
 
     if quality then
-        local region, g, button
+        local red, green, blue
         if C_Item and C_Item.GetItemQualityColor then
-            region, g, button = C_Item.GetItemQualityColor(quality)
+            red, green, blue = C_Item.GetItemQualityColor(quality)
         elseif GetItemQualityColor then
-            region, g, button = GetItemQualityColor(quality)
+            red, green, blue = GetItemQualityColor(quality)
         end
-        if region and g and button then
-            return { r = region, g = g, b = button, a = 1 }
+        if red and green and blue then
+            return { r = red, g = green, b = blue, a = 1 }
         end
     end
 

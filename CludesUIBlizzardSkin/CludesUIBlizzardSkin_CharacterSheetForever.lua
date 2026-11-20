@@ -200,7 +200,7 @@ local function OnePixel(widget)
     return perfect / es
 end
 
-local function SkinHeader(widget, region, g, button)
+local function SkinHeader(widget, red, green, blue)
     local skinData = GetFFD(widget)
     if not skinData.done then
         skinData.done = true
@@ -220,16 +220,16 @@ local function SkinHeader(widget, region, g, button)
         skinData.rightBar = rightBar
     end
     if widget.Title then
-        widget.Title:SetTextColor(region, g, button, 1)
+        widget.Title:SetTextColor(red, green, blue, 1)
     end
     local pixel = OnePixel(widget)
-    skinData.leftBar:SetColorTexture(region, g, button, 0.8)
-    skinData.rightBar:SetColorTexture(region, g, button, 0.8)
+    skinData.leftBar:SetColorTexture(red, green, blue, 0.8)
+    skinData.rightBar:SetColorTexture(red, green, blue, 0.8)
     skinData.leftBar:SetHeight(pixel)
     skinData.rightBar:SetHeight(pixel)
 end
 
-local function SkinRow(widget, region, g, button)
+local function SkinRow(widget, red, green, blue)
     local skinData = GetFFD(widget)
     if not skinData.done then
         skinData.done = true
@@ -254,7 +254,7 @@ local function SkinRow(widget, region, g, button)
         widget.Label:SetTextColor(0.7, 0.7, 0.7, 0.8)
     end
     if widget.Value then
-        widget.Value:SetTextColor(region, g, button, 1)
+        widget.Value:SetTextColor(red, green, blue, 1)
     end
 end
 
@@ -354,14 +354,14 @@ end
 local function QualityColor(slot)
     local quality = GetInventoryItemQuality("player", slot:GetID())
     if quality and not (issecretvalue and issecretvalue(quality)) then
-        local region, g, button
+        local red, green, blue
         if C_Item and C_Item.GetItemQualityColor then
-            region, g, button = C_Item.GetItemQualityColor(quality)
+            red, green, blue = C_Item.GetItemQualityColor(quality)
         elseif GetItemQualityColor then
-            region, g, button = GetItemQualityColor(quality)
+            red, green, blue = GetItemQualityColor(quality)
         end
-        if region then
-            return region, g, button
+        if red then
+            return red, green, blue
         end
     end
 end
@@ -369,9 +369,9 @@ end
 -- The slot border colour: the equipped item's quality, dark grey when empty
 -- (the retail sheet's values).
 local function SlotBorderColor(slot)
-    local region, g, button = QualityColor(slot)
-    if region then
-        return region, g, button
+    local red, green, blue = QualityColor(slot)
+    if red then
+        return red, green, blue
     end
     return 0.4, 0.4, 0.4
 end
@@ -381,8 +381,8 @@ local function ColorSlotBorder(slot)
     if not (PanelPP and PanelPP.SetBorderColor) then
         return
     end
-    local region, g, button = SlotBorderColor(slot)
-    PanelPP.SetBorderColor(slot, region, g, button, 1)
+    local red, green, blue = SlotBorderColor(slot)
+    PanelPP.SetBorderColor(slot, red, green, blue, 1)
 end
 
 --------------------------------------------------------------------------------
@@ -818,14 +818,14 @@ local function PaintSlotText(slot)
 
     -- The item's colour as retail colours its item level: the custom colour,
     -- else the item's quality (unless turned off), else white.
-    local region, g, button = 1, 1, 1
+    local red, green, blue = 1, 1, 1
     local custom = DB("charSheetItemLevelUseColor") and DB("charSheetItemLevelColor")
     if custom then
-        region, g, button = custom.r, custom.g, custom.b
+        red, green, blue = custom.r, custom.g, custom.b
     elseif DB("charSheetColorItemLevel") ~= false then
         local qr, qg, qb = QualityColor(slot)
         if qr then
-            region, g, button = qr, qg, qb
+            red, green, blue = qr, qg, qb
         end
     end
 
@@ -836,7 +836,7 @@ local function PaintSlotText(slot)
     local statText = showStats and StatText(itemLink) or ""
     stats:SetText(statText)
     local sc = DB("charSheetUpgradeTrackUseColor") and DB("charSheetUpgradeTrackColor")
-    local sr, sg, scrollBar = region, g, button
+    local sr, sg, scrollBar = red, green, blue
     if sc then
         sr, sg, scrollBar = sc.r, sc.g, sc.b
     end
@@ -860,7 +860,7 @@ local function PaintSlotText(slot)
         local size = DB("charSheetEnchantSize") or 9
         if DB("charSheetEnchantNames") then
             ench:SetFont(FontPath(), size, CludesUI.SlugFlag("OUTLINE, SLUG"))
-            ench:SetTextColor(region + (1 - region) * 0.5, g + (1 - g) * 0.5, button + (1 - button) * 0.5, 0.9)
+            ench:SetTextColor(red + (1 - red) * 0.5, green + (1 - green) * 0.5, blue + (1 - blue) * 0.5, 0.9)
         else
             ench:SetFont(FontPath(), size, "")
             ench:SetTextColor(1, 1, 1, 0.8)
