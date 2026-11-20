@@ -124,7 +124,7 @@ local function Accent()
     return a.r, a.g, a.b
 end
 -- the skin's window engine, so our buttons follow its theme
-local function Skin()
+local function WindowSkin()
     local skinNS = CM._ModuleNS.CludesUIBlizzardSkin
     return skinNS and skinNS.WSkin
 end
@@ -136,7 +136,7 @@ function XF.SkinOn()
         return isOn
     end
     local style = CM.GetBlizzWindowStyle -- nil while blizzard skins+ is off
-    isOn = (Skin() ~= nil and style ~= nil and style("lfg") ~= "off") and true or false
+    isOn = (WindowSkin() ~= nil and style ~= nil and style("lfg") ~= "off") and true or false
     if IsLoggedIn() then
         XF.skinOn = isOn
     end
@@ -147,14 +147,14 @@ local function ThemeBorder()
     if not XF.SkinOn() then
         return 0.38, 0.38, 0.38, 1
     end -- blizzard's search box grey
-    local S = Skin()
+    local S = WindowSkin()
     local T = S and S.Theme
     if T and T.brdR then
         return T.brdR, T.brdG, T.brdB, T.brdA
     end
     return 0.2, 0.2, 0.2, 1
 end
-mod.Skin, mod.ThemeBorder = Skin, ThemeBorder
+mod.Skin, mod.ThemeBorder = WindowSkin, ThemeBorder
 -- an unpicked square's edge: the theme's, or none on blizzard's rounded button
 function XF.RestBorder(frame)
     if XF.SkinOn() then
@@ -2299,7 +2299,7 @@ mod.GFTooltipMembers = XF.AddMembers
 local ITEM_H, CHECK_SZ, ITEM_FONT = 20, 12, 9
 
 local function ThemeFill()
-    local S = Skin()
+    local S = WindowSkin()
     local T = S and S.Theme
     if T and T.bgR then
         return T.bgR, T.bgG, T.bgB
@@ -3047,7 +3047,7 @@ local function BuildSidePanel(menu, raids)
     edge:SetPoint("BOTTOMRIGHT", menu, "BOTTOMRIGHT", 0, 0)
     edge:SetFrameLevel(menu:GetFrameLevel() + 10)
     edge:EnableMouse(false)
-    local S = Skin()
+    local S = WindowSkin()
     if S and S.AddBorder then
         S.AddBorder(edge)
     else
@@ -3219,7 +3219,7 @@ local function SkinnedButton(hostFrame, wid, hgt, keepKeys, decorate)
     if decorate then
         decorate(widget)
     end
-    local S = Skin()
+    local S = WindowSkin()
     if stock then
         -- no edge of ours: a picked square holds the template's highlight on (XF.PickBorder), and a
         -- border colour write on a frame with no border does nothing
@@ -3699,7 +3699,7 @@ local function BuildRaidMenu()
     backdrop:SetAllPoints()
     local red, green, blue = ThemeFill()
     backdrop:SetColorTexture(red, green, blue, 0.98)
-    local S = Skin()
+    local S = WindowSkin()
     if S and S.AddBorder then
         S.AddBorder(raidMenu)
     else
@@ -3824,7 +3824,7 @@ local function BuildTierMenu()
     backdrop:SetAllPoints()
     local red, green, blue = ThemeFill()
     backdrop:SetColorTexture(red, green, blue, 0.98)
-    local S = Skin()
+    local S = WindowSkin()
     if S and S.AddBorder then
         S.AddBorder(tierMenu)
     else

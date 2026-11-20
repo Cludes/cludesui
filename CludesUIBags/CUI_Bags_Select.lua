@@ -954,7 +954,7 @@ EnterPinSelectMode = function()
         local pinRed, pinSavedG, pinSavedB, pinSavedA
         local pinSavedBrdSize
 
-        local function ClearPinHover()
+        local function DropPinHover()
             if pinHoveredBtn then
                 if pinRed then
                     SetInsetBorderColor(pinHoveredBtn, pinRed, pinSavedG, pinSavedB, pinSavedA)
@@ -969,7 +969,7 @@ EnterPinSelectMode = function()
             pinHover:ClearAllPoints()
             pinHover:Hide()
         end
-        castFrame._clearHover = ClearPinHover
+        castFrame._clearHover = DropPinHover
 
         -- Re-tests only when the cursor or the scroll moved, or on a show or a
         -- bag refresh (_hoverDirty); the wheel scrolls under a still cursor
@@ -987,7 +987,7 @@ EnterPinSelectMode = function()
             if button == pinHoveredBtn then
                 return
             end
-            ClearPinHover()
+            DropPinHover()
             if button and button.icon and button.icon:IsShown() then
                 pinRed, pinSavedG, pinSavedB, pinSavedA, pinSavedBrdSize = GetInsetBorderStyle(button)
                 if pinRed then
@@ -1006,7 +1006,7 @@ EnterPinSelectMode = function()
 
         castFrame:SetScript("OnMouseDown", function(_, btnFrame)
             if btnFrame == "RightButton" then
-                ClearPinHover()
+                DropPinHover()
                 ExitPinSelectMode()
                 return
             end
@@ -1019,26 +1019,26 @@ EnterPinSelectMode = function()
                     if details and details.itemID then
                         local isPinned = PinnedItems(true)
                         if not isPinned then
-                            ClearPinHover()
+                            DropPinHover()
                             ExitPinSelectMode()
                             return
                         end
                         local itemLink = C_Container.GetContainerItemLink(bagID, slotId)
                         local pinKey = NormalizePinKey(itemLink, details.itemID)
                         isPinned[pinKey] = (isPinned[pinKey] or 0) + 1
-                        ClearPinHover()
+                        DropPinHover()
                         ExitPinSelectMode()
                         CUI_Bags:RefreshInventory()
                         return
                     end
                 end
             end
-            ClearPinHover()
+            DropPinHover()
             ExitPinSelectMode()
         end)
 
         castFrame:SetScript("OnHide", function()
-            ClearPinHover()
+            DropPinHover()
         end)
         CUI_Bags._pinCatcher = castFrame
     end

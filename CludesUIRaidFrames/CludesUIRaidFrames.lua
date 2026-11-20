@@ -1034,7 +1034,7 @@ do
     -- snap state under our taint), keeping the frame's spot: Edit Mode's save
     -- recomputes a moved party or raid frame's anchor from its geometry times
     -- its scale.
-    local function suppressEditModeOverlay(widget)
+    local function hideEditModeOverlay(widget)
         if not widget then
             return
         end
@@ -1067,7 +1067,7 @@ do
             if not InCombatLockdown() then
                 CludesUI.HideFrame(self)
             end
-            suppressEditModeOverlay(self)
+            hideEditModeOverlay(self)
         end)
     end
 
@@ -1100,8 +1100,8 @@ do
             -- Party Edit Mode overlay: only while we own the party frames (from
             -- UpdateVisibility), so untouched Blizzard party frames keep movers.
             -- PartyFrame = standard; CompactPartyFrame = raid-style (may be absent).
-            suppressEditModeOverlay(PartyFrame)
-            suppressEditModeOverlay(_G["CompactPartyFrame"])
+            hideEditModeOverlay(PartyFrame)
+            hideEditModeOverlay(_G["CompactPartyFrame"])
         end
     end
 
@@ -1111,10 +1111,10 @@ do
     -- CompactRaidFrameManager_UpdateShown global.
     local function applyEditModeOverlaySuppression()
         -- Manager omitted on purpose: the shared "Hide Blizzard Party Panel" toggle owns it.
-        suppressEditModeOverlay(CompactRaidFrameContainer)
+        hideEditModeOverlay(CompactRaidFrameContainer)
         -- Party overlays unconditional: Blizzard's party frame is empty/hidden when solo, so no group gate is needed.
-        suppressEditModeOverlay(PartyFrame)
-        suppressEditModeOverlay(_G["CompactPartyFrame"])
+        hideEditModeOverlay(PartyFrame)
+        hideEditModeOverlay(_G["CompactPartyFrame"])
     end
     mod._ApplyEditModeOverlaySuppression = applyEditModeOverlaySuppression
 

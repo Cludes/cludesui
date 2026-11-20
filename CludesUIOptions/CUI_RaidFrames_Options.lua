@@ -2376,7 +2376,7 @@ CludesUI.AtLogin(function()
         -- DM add and BM2 editor popups; "dm" = those DM/BM2 popups only when
         -- the DM root drops. stripAlways: hide the CC spell strip (parented to
         -- the panel, not the CC root; kept for the next build) even with no CC root.
-        local function DropManagerRoots(keepPage, popups, stripAlways)
+        local function DropManagerPanels(keepPage, popups, stripAlways)
             if popups == true and mod._addNewPopup then
                 mod._addNewPopup:Hide()
             end
@@ -2467,7 +2467,7 @@ CludesUI.AtLogin(function()
                     return
                 end
                 -- Drop the BM / DM / CC roots when switching away.
-                DropManagerRoots(pageName)
+                DropManagerPanels(pageName)
                 if pageName == PAGE_MAIN then
                     local mode = db.profile.previewMode or "overlay"
                     -- Skip-restore keeps real party frames hidden under the preview so they don't flash on return to the party tab; restore only for "none", where real frames are meant to be visible.
@@ -2531,7 +2531,7 @@ CludesUI.AtLogin(function()
             onPageCacheRestore = function(pageName)
                 -- Mirrors buildPage's root cleanup: fires INSTEAD of buildPage when the target page is already cached.
                 -- Without it, switching from Buffs/HoverCast to a cached page never hides ns._bmRoot/ns._ccRoot, which are built onto the shared live scroll frame (not a per-page wrapper) and would stay stuck over the restored page.
-                DropManagerRoots(pageName)
+                DropManagerPanels(pageName)
                 -- Presets, spec changes and profile switches can alter the text list
                 -- while the page is cached (CUI_RaidFrames_TextDisplay_Options.lua).
                 local textCheck = mod._rfTextChecks and mod._rfTextChecks[pageName]
@@ -2707,14 +2707,14 @@ CludesUI.AtLogin(function()
                     end
                 end
                 -- BM root + Add New popup: the popup is DIALOG strata and otherwise persists after close.
-                DropManagerRoots(nil, true, true)
+                DropManagerPanels(nil, true, true)
             end)
         end
 
         -- HideAllChildren callback: BM/CC intentionally bypass the scroll child, so their scrollFrame-parented roots need explicit cleanup.
         -- Registered beside the other modules' scroll-root hiders (never in place of them).
         local function HideManagerRoots()
-            DropManagerRoots(nil, true, true)
+            DropManagerPanels(nil, true, true)
         end
         CludesUI._AddScrollRootHider(HideManagerRoots)
 
@@ -2729,7 +2729,7 @@ CludesUI.AtLogin(function()
                     if mod.EnsureRealFramesRestored then
                         mod.EnsureRealFramesRestored()
                     end
-                    DropManagerRoots(nil, true)
+                    DropManagerPanels(nil, true)
                 end
             end)
         end
@@ -2864,7 +2864,7 @@ CludesUI.AtLogin(function()
                     end
                 end
                 -- Drop the BM / DM / CC roots when switching away.
-                DropManagerRoots(pageName, "dm")
+                DropManagerPanels(pageName, "dm")
                 return result
             end
         end

@@ -330,7 +330,7 @@ do
 
     -- Park the anchor frame at the ACTIVE profile's position (center offsets from UIParent
     -- center, matching how the mover stores CENTER coords). Reading the profile live every call makes profile switches self-heal on the next tooltip show, with zero extra wiring.
-    local function PositionFromSaved()
+    local function PlaceFromSaved()
         local anchorFrame = EnsureFixedFrame()
         EnsureSeeded()
         local profileTbl = ActiveProfile()
@@ -424,7 +424,7 @@ do
         if CludesUI._unlockActive then
             EnsureSeeded()
         elseif not CludesUI.IsUnlockAnchored("CUI_TooltipAnchor") then
-            PositionFromSaved()
+            PlaceFromSaved()
         end
         tipFrame:SetOwner(hostFrame, "ANCHOR_NONE")
         EnforceFixed(tipFrame)
@@ -470,7 +470,7 @@ do
 
     -- Reposition (and seed if needed) now: login, world entry, reset paths.
     CludesUI._applyTooltipFixedAnchor = function()
-        PositionFromSaved()
+        PlaceFromSaved()
     end
 
     -- Unlock Mode element: a real draggable mover for the tooltip position. Writes ONLY
@@ -526,10 +526,10 @@ do
                     if profileTbl then
                         profileTbl.tooltipFixedPos = nil
                     end
-                    PositionFromSaved()
+                    PlaceFromSaved()
                 end,
                 applyPos = function()
-                    PositionFromSaved()
+                    PlaceFromSaved()
                 end,
             }),
         })
@@ -541,12 +541,12 @@ do
     bootFrame:SetScript("OnEvent", function(self, evt)
         if evt == "PLAYER_LOGIN" then
             EnsureFixedFrame()
-            PositionFromSaved()
+            PlaceFromSaved()
             RegisterUnlock()
         else
             -- Edit Mode layouts land after login, so the one-time seed may have found no container rect yet. Retry once in-world, then stop listening (later seeds happen lazily at tooltip show).
             self:UnregisterAllEvents()
-            PositionFromSaved()
+            PlaceFromSaved()
         end
     end)
 end

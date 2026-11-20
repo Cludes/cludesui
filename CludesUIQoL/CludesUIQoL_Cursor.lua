@@ -560,7 +560,7 @@ local function CreateGCDCircle()
     gcdRoot:Hide()
 end
 
-local function ApplyGCDCircle()
+local function PaintGcdCircle()
     local gcdCfg = GCD_DB()
     local enabled = gcdCfg.enabled
     if not enabled then
@@ -1069,7 +1069,7 @@ local function CreateCastCircle()
     castRoot:Hide()
 end
 
-local function ApplyCastCircle()
+local function PaintCastCircle()
     local cfg = Cast_DB()
     local enabled = cfg.enabled
     if not enabled then
@@ -1237,7 +1237,7 @@ local function RegisterUnlockElements()
                 end
                 local PPg = CludesUI and CludesUI.PP
                 profile.gcd.radius = math.max(PPg and PPg.Snap(wid / 2) or math.floor(wid / 2 + 0.5), 5)
-                ApplyGCDCircle()
+                PaintGcdCircle()
                 if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
                     CludesUI.RepositionBarToMover("ECL_GCD")
                 end
@@ -1249,7 +1249,7 @@ local function RegisterUnlockElements()
                 end
                 local PPg = CludesUI and CludesUI.PP
                 profile.gcd.radius = math.max(PPg and PPg.Snap(hgt / 2) or math.floor(hgt / 2 + 0.5), 5)
-                ApplyGCDCircle()
+                PaintGcdCircle()
                 if CludesUI._unlockActive and CludesUI.RepositionBarToMover then
                     CludesUI.RepositionBarToMover("ECL_GCD")
                 end
@@ -1264,7 +1264,7 @@ local function RegisterUnlockElements()
                 end
                 profile.gcd.pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                 if not CludesUI._unlockActive then
-                    ApplyGCDCircle()
+                    PaintGcdCircle()
                 end
             end,
             loadPos = function()
@@ -1310,7 +1310,7 @@ local function RegisterUnlockElements()
                 end
                 local PPc = CludesUI and CludesUI.PP
                 profile.castCircle.radius = math.max(PPc and PPc.Snap(wid / 2) or math.floor(wid / 2 + 0.5), 5)
-                ApplyCastCircle()
+                PaintCastCircle()
                 CludesUI.RepositionBarToMover("ECL_Cast")
             end,
             setHeight = function(_, hgt)
@@ -1320,7 +1320,7 @@ local function RegisterUnlockElements()
                 end
                 local PPc = CludesUI and CludesUI.PP
                 profile.castCircle.radius = math.max(PPc and PPc.Snap(hgt / 2) or math.floor(hgt / 2 + 0.5), 5)
-                ApplyCastCircle()
+                PaintCastCircle()
                 CludesUI.RepositionBarToMover("ECL_Cast")
             end,
             savePos = function(key, anchorPoint, relPoint, posX, posY)
@@ -1333,7 +1333,7 @@ local function RegisterUnlockElements()
                 end
                 profile.castCircle.pos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                 if not CludesUI._unlockActive then
-                    ApplyCastCircle()
+                    PaintCastCircle()
                 end
             end,
             loadPos = function()
@@ -1547,8 +1547,8 @@ function ECL:OnInitialize()
     _G._CUCL_UpdateVisibility = UpdateVisibility
     _G._CUCL_ApplyCombatOnlyEvents = ApplyCombatOnlyEvents
     CludesUI.RegisterVisibilityUpdater(UpdateVisibility)
-    _G._CUCL_ApplyGCDCircle = ApplyGCDCircle
-    _G._CUCL_ApplyCastCircle = ApplyCastCircle
+    _G._CUCL_ApplyGCDCircle = PaintGcdCircle
+    _G._CUCL_ApplyCastCircle = PaintCastCircle
     _G._CUCL_RegisterUnlock = RegisterUnlockElements
     _G._CUCL_RING_TEXTURES = RING_TEXTURES
     _G._CUCL_ApplyTrail = ApplyTrail
@@ -1612,10 +1612,10 @@ function ECL:OnEnable()
                 Apply()
             end
             if profile.gcd and profile.gcd.useAccentColor then
-                ApplyGCDCircle()
+                PaintGcdCircle()
             end
             if profile.castCircle and profile.castCircle.useAccentColor then
-                ApplyCastCircle()
+                PaintCastCircle()
             end
         end,
     })
@@ -1626,8 +1626,8 @@ function ECL:OnEnable()
         -- registered before the core notified (event-dispatch order, not a
         -- guarantee). This runs past the login resolution either way.
         Apply()
-        ApplyGCDCircle()
-        ApplyCastCircle()
+        PaintGcdCircle()
+        PaintCastCircle()
         ApplyTrail()
         ApplyOnlyWhenHidden()
         RegisterUnlockElements()
@@ -1653,8 +1653,8 @@ function ECL:OnEnable()
                 else
                     -- Re-apply: an attached circle resumes live cursor
                     -- tracking, a detached one snaps back to its saved spot.
-                    ApplyGCDCircle()
-                    ApplyCastCircle()
+                    PaintGcdCircle()
+                    PaintCastCircle()
                 end
             end)
         end

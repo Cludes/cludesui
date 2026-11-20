@@ -60,7 +60,7 @@ end
 --  a coalesced deferred pass; this also re-hides anything of Blizzard's tab
 --  plane that its own event passes re-showed.
 -------------------------------------------------------------------------------
-local function UpdateTabColors()
+local function PaintTabs()
     if CHAT.TabsSweepBlizzard then
         CHAT.TabsSweepBlizzard()
     end
@@ -210,7 +210,7 @@ initFrame:SetScript("OnEvent", function(self)
                 castFrame:SetIndentedWordWrap(true)
             end
         end
-        UpdateTabColors()
+        PaintTabs()
         CHAT.ApplyTabLayout()
         if CHAT.ApplyInputPosition then
             CHAT.ApplyInputPosition()
@@ -252,7 +252,7 @@ initFrame:SetScript("OnEvent", function(self)
         _tabPassQueued = true
         C_Timer.After(0, function()
             _tabPassQueued = false
-            UpdateTabColors()
+            PaintTabs()
             CHAT.ApplyTabLayout()
             -- Every restyle trigger is also a moment panel geometry can
             -- shift or the dock selection can have changed; all calls
@@ -402,7 +402,7 @@ initFrame:SetScript("OnEvent", function(self)
         pinFrame:RegisterEvent("LOADING_SCREEN_DISABLED")
         pinFrame:SetScript("OnEvent", function(self)
             self:UnregisterAllEvents()
-            UpdateTabColors()
+            PaintTabs()
             CHAT.ApplyTabLayout()
             -- Chat position ownership begins at the first settled sight:
             -- capture Edit Mode's placement as ours if unsaved, arm the
@@ -463,7 +463,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- text-derived widths are re-applied across a few deferred passes and saved
     -- Inner Padding X is correct without requiring a tab click.
     local function ApplyInitialTabLayout()
-        UpdateTabColors()
+        PaintTabs()
         CHAT.ApplyTabLayout()
     end
     C_Timer.After(0, ApplyInitialTabLayout)
@@ -477,7 +477,7 @@ initFrame:SetScript("OnEvent", function(self)
         _tabColorTimer = true
         C_Timer.After(0, function()
             _tabColorTimer = nil
-            UpdateTabColors()
+            PaintTabs()
             CHAT.ApplyTabLayout()
         end)
     end
@@ -867,7 +867,7 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     --  7. Accent color + timestamps
     ---------------------------------------------------------------------------
-    CUI.RegAccent({ type = "callback", fn = UpdateTabColors })
+    CUI.RegAccent({ type = "callback", fn = PaintTabs })
 
     -- Enable scroll-to-scroll chat (Blizzard disables by default)
     CludesUI.SetCVar("chatMouseScroll", 1, "CludesUIChat")

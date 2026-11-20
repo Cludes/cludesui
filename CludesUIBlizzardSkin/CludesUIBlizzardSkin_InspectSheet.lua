@@ -1337,7 +1337,7 @@ end
 -- INSPECT window is held still and the CHARACTER sheet is the one that docks beside it.
 -- If the user has pinned the character sheet with the Shifter, that is respected (it
 -- stays put) and the inspect window yields instead; if both are pinned, neither moves.
-local function RefreshDock()
+local function SyncDock()
     local insp, castFrame = InspectFrame, _G.CharacterFrame
     if not insp or not castFrame then
         return
@@ -1436,7 +1436,7 @@ if CludesUI then
         InspectFrame:HookScript("OnShow", function()
             skinned = false
             ApplyThemedInspectSheet()
-            RefreshDock()
+            SyncDock()
             C_Timer.After(0.1, function()
                 if not InspectFrame or not InspectFrame:IsShown() then
                     return
@@ -1455,14 +1455,14 @@ if CludesUI then
 
         InspectFrame:HookScript("OnHide", function()
             skinned = false
-            RefreshDock()
+            SyncDock()
         end)
 
         -- When the inspect window itself moves (Shifter drag, Blizzard relayout),
         -- the docked character sheet follows it, so re-pair on its SetPoint too.
         hooksecurefunc(InspectFrame, "SetPoint", function()
             if not _ignoreSP then
-                RefreshDock()
+                SyncDock()
             end
         end)
 
@@ -1470,11 +1470,11 @@ if CludesUI then
         -- OnShow/OnHide re-pair; the SetPoint hook catches Blizzard's own panel
         -- relayout (which otherwise blinks the sheet back to its default spot).
         if _G.CharacterFrame then
-            _G.CharacterFrame:HookScript("OnShow", RefreshDock)
-            _G.CharacterFrame:HookScript("OnHide", RefreshDock)
+            _G.CharacterFrame:HookScript("OnShow", SyncDock)
+            _G.CharacterFrame:HookScript("OnHide", SyncDock)
             hooksecurefunc(_G.CharacterFrame, "SetPoint", function()
                 if not _ignoreSP then
-                    RefreshDock()
+                    SyncDock()
                 end
             end)
         end

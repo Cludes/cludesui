@@ -4996,7 +4996,7 @@ CludesUI.AtOptionsLogin(function()
             tbl[field] = val
         end
     end
-    local function EDR_Rebuild()
+    local function RebuildDragonRiding()
         if mod.edrRebuild then
             mod.edrRebuild()
         end
@@ -5011,7 +5011,7 @@ CludesUI.AtOptionsLogin(function()
     local function EDR_SetRowThen(settingKey)
         return function(value)
             EDR_Set(settingKey, value)
-            EDR_Rebuild()
+            RebuildDragonRiding()
         end
     end
     local function EDR_Redraw()
@@ -5625,7 +5625,7 @@ CludesUI.AtOptionsLogin(function()
                 return EDR_Cfg("enabled") == true
             end, function(val)
                 EDR_Set("enabled", val)
-                EDR_Rebuild()
+                RebuildDragonRiding()
             end),
         }, {
             type = "toggle",
@@ -5670,7 +5670,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = EDR_ShowSpeed,
                 setValue = CludesUI.DependentSetValue(EDR_ShowSpeed, function(val)
                     EDR_Set("showSpeed", val)
-                    EDR_Rebuild()
+                    RebuildDragonRiding()
                 end),
             }, {
                 type = "toggle",
@@ -5678,7 +5678,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = EDR_ShowSW,
                 setValue = CludesUI.DependentSetValue(EDR_ShowSW, function(val)
                     EDR_Set("showSecondWind", val)
-                    EDR_Rebuild()
+                    RebuildDragonRiding()
                 end),
             })
             cursorY = cursorY - height
@@ -5725,7 +5725,7 @@ CludesUI.AtOptionsLogin(function()
                                 else
                                     EDR_Set("iconSize", EDR_AutoIconSize())
                                 end
-                                EDR_Rebuild()
+                                RebuildDragonRiding()
                             end,
                         },
                         {
@@ -5762,7 +5762,7 @@ CludesUI.AtOptionsLogin(function()
                 end,
                 setValue = CludesUI.DependentSetValue(EDR_IsGems, function(val)
                     EDR_Set("vigorStyle", val)
-                    EDR_Rebuild()
+                    RebuildDragonRiding()
                 end),
             }, {
                 type = "slider",
@@ -5842,7 +5842,7 @@ CludesUI.AtOptionsLogin(function()
                     return EDR_Cfg("classicFrameSize")
                 end, function(val)
                     EDR_Set("classicFrameSize", val)
-                    EDR_Rebuild()
+                    RebuildDragonRiding()
                 end)
             else
                 borderCfg = BS.Gate("dragonriding", {

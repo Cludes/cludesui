@@ -2409,7 +2409,7 @@ local function SkinFriendsFrame()
             StripTextures(tabSystem)
         end
 
-        local function UpdateSubTabs()
+        local function SyncSubTabs()
             local fp3 = SKIN.db and SKIN.db.profile and SKIN.db.profile.friends
             local useAccent = fp3 and fp3.accentColors ~= false
             local ar, ag, ab = ACC.r, ACC.g, ACC.b
@@ -2435,7 +2435,7 @@ local function SkinFriendsFrame()
         end
         GetFFD(widget).updateSubTabs = function()
             UpdateSubTabWidths()
-            UpdateSubTabs()
+            SyncSubTabs()
         end
 
         local ar, ag, ab = ACC.r, ACC.g, ACC.b
@@ -2496,7 +2496,7 @@ local function SkinFriendsFrame()
                         stock:EnableMouse(false)
                     end
                     _activeSubTab = i
-                    UpdateSubTabs()
+                    SyncSubTabs()
                     SyncCustomTabs()
                     return
                 else
@@ -2513,7 +2513,7 @@ local function SkinFriendsFrame()
                     end
                 end
                 _activeSubTab = i
-                UpdateSubTabs()
+                SyncSubTabs()
                 SyncCustomTabs()
             end)
 
@@ -2676,10 +2676,10 @@ local function SkinFriendsFrame()
         if customSubTabs[1] then
             customSubTabs[1]._label:SetTextColor(1, 1, 1, 1)
         end
-        C_Timer.After(0.1, UpdateSubTabs)
-        C_Timer.After(0.5, UpdateSubTabs)
+        C_Timer.After(0.1, SyncSubTabs)
+        C_Timer.After(0.5, SyncSubTabs)
         hooksecurefunc(widget, "Show", function()
-            C_Timer.After(0.1, UpdateSubTabs)
+            C_Timer.After(0.1, SyncSubTabs)
         end)
     end
     SkinSubTabs()

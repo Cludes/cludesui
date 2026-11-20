@@ -2558,7 +2558,7 @@ local function IsValidTimeSpiralProc(alertSpell)
     return true
 end
 
-local function CancelTimeSpiralCountdown()
+local function StopSpiralCountdown()
     if timeSpiralCountdownTimer then
         timeSpiralCountdownTimer:Cancel()
         timeSpiralCountdownTimer = nil
@@ -2569,7 +2569,7 @@ local function UpdateTimeSpiralCountdown()
     local alertCfg = AlertCfg()
     if not alertCfg.tsEnabled or not timeSpiralActiveTime then
         spiralFrame:Hide()
-        CancelTimeSpiralCountdown()
+        StopSpiralCountdown()
         return
     end
     local remaining = 10 - (GetTime() - timeSpiralActiveTime)
@@ -2581,7 +2581,7 @@ local function UpdateTimeSpiralCountdown()
     else
         timeSpiralActiveTime = nil
         spiralFrame:Hide()
-        CancelTimeSpiralCountdown()
+        StopSpiralCountdown()
     end
 end
 
@@ -2596,7 +2596,7 @@ local function ApplyTimeSpiralFrame()
     -- here so it can't get stuck on screen.
     if not alertCfg.tsEnabled then
         timeSpiralActiveTime = nil
-        CancelTimeSpiralCountdown()
+        StopSpiralCountdown()
         spiralFrame:Hide()
         return
     end
@@ -2640,18 +2640,18 @@ local lastGatewayUsable = false
 local lastGatewayText = nil
 local gatewayPollTicker = nil
 
-local function StopGatewayPolling()
+local function StopGatewayTicker()
     if gatewayPollTicker then
         gatewayPollTicker:Cancel()
         gatewayPollTicker = nil
     end
 end
 
-local function CheckGatewayUsable()
+local function PollGateway()
     local alertCfg = AlertCfg()
     if not alertCfg.gwEnabled then
         gateFrame:Hide()
-        StopGatewayPolling()
+        StopGatewayTicker()
         return
     end
 
@@ -2670,7 +2670,7 @@ local function CheckGatewayUsable()
     if alertCfg.gwCombatOnly and not inCombat then
         gateFrame:Hide()
         lastGatewayUsable = false
-        StopGatewayPolling()
+        StopGatewayTicker()
         return
     end
 
@@ -2695,15 +2695,15 @@ local function CheckGatewayUsable()
         gateFrame:Hide()
     end
 end
-CludesUI._CheckGatewayUsable = CheckGatewayUsable
+CludesUI._CheckGatewayUsable = PollGateway
 
 local function StartGatewayPolling()
-    StopGatewayPolling()
+    StopGatewayTicker()
     local alertCfg = AlertCfg()
     if not alertCfg.gwEnabled then
         return
     end
-    CheckGatewayUsable()
+    PollGateway()
     -- CheckGatewayUsable already self-pauses (via StopGatewayPolling) when
     -- Combat Only is on and we're out of combat -- don't immediately
     -- recreate the ticker it just stopped. PLAYER_REGEN_DISABLED calls
@@ -2711,7 +2711,7 @@ local function StartGatewayPolling()
     if alertCfg.gwCombatOnly and not inCombat then
         return
     end
-    gatewayPollTicker = C_Timer.NewTicker(0.1, CheckGatewayUsable)
+    gatewayPollTicker = C_Timer.NewTicker(0.1, PollGateway)
 end
 
 local function ApplyGatewayFrame()
@@ -2742,14 +2742,14 @@ local function ApplyGatewayFrame()
     local red, green, blue = ResolveAlertColor("gwColor", "gwColorUseClass")
     gatewayText:SetTextColor(red, green, blue)
     if not alertCfg.gwEnabled then
-        StopGatewayPolling()
+        StopGatewayTicker()
         gateFrame:Hide()
     elseif CludesUI._unlockActive then
         -- Pause the poll ticker while Unlock Mode is active: CheckGatewayUsable
         -- can Hide() this frame the instant the item isn't currently usable
         -- (the common case), fighting the user mid-drag. Force it visible
         -- instead so it can be repositioned regardless of current item state.
-        StopGatewayPolling()
+        StopGatewayTicker()
         gateFrame:Show()
     else
         StartGatewayPolling()
@@ -2861,13 +2861,13 @@ local function UpdateEventRegistration()
         loadFrame:UnregisterEvent("SPELL_ACTIVATION_OVERLAY_GLOW_HIDE")
         loadFrame:UnregisterEvent("UNIT_SPELLCAST_SENT")
         timeSpiralEventsRegistered = false
-        CancelTimeSpiralCountdown()
+        StopSpiralCountdown()
     end
 
     if alertCfg.gwEnabled then
         StartGatewayPolling()
     else
-        StopGatewayPolling()
+        StopGatewayTicker()
         if not alertCfg.gwEnabled then
             gateFrame:Hide()
         end
@@ -3015,7 +3015,7 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
         timeSpiralActiveTime = nil
         LoadMovementSpells(true)
         CheckMovementCooldown()
-        CheckGatewayUsable()
+        PollGateway()
     elseif evt == "PLAYER_REGEN_DISABLED" then
         inCombat = true
         CheckMovementCooldown()
@@ -3026,7 +3026,7 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
         if alertCfg.gwEnabled then
             StartGatewayPolling()
         else
-            CheckGatewayUsable()
+            PollGateway()
         end
     elseif evt == "PLAYER_REGEN_ENABLED" then
         inCombat = false
@@ -3052,7 +3052,7 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
         end
         LoadMovementSpells()
         CheckMovementCooldown()
-        CheckGatewayUsable()
+        PollGateway()
     elseif
         evt == "SPELL_UPDATE_COOLDOWN"
         or evt == "SPELL_UPDATE_USABLE"
@@ -3129,7 +3129,7 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
             timeSpiralActiveSpells[alertSpell] = true
             timeSpiralActiveTime = GetTime()
             FireTrackerAlert("ts")
-            CancelTimeSpiralCountdown()
+            StopSpiralCountdown()
             UpdateTimeSpiralCountdown()
         end
     elseif evt == "SPELL_ACTIVATION_OVERLAY_GLOW_HIDE" then
@@ -3139,7 +3139,7 @@ loadFrame:SetScript("OnEvent", function(self, evt, ...)
         end
         if not next(timeSpiralActiveSpells) then
             timeSpiralActiveTime = nil
-            CancelTimeSpiralCountdown()
+            StopSpiralCountdown()
             spiralFrame:Hide()
         end
     end

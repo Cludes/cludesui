@@ -681,7 +681,7 @@ end
 -- Event driven: INSPECT_READY chains to the next member; a pull ending, a
 -- roster change or the loot window closing restarts it. Fewest attempts goes
 -- first, so one player out of range cannot starve everyone behind them.
-local function InspectSweep()
+local function SweepInspects()
     local runState, order = InspectRoster()
     if not runState then
         return
@@ -873,7 +873,7 @@ local function StartCollecting(skipBaseline)
         segRec.snapDur = baseDuration
     end
     SyncSummaryEvents()
-    InspectSweep()
+    SweepInspects()
 end
 
 -- Leaves the finish watch alone on purpose: the key resetting behind us is
@@ -1334,7 +1334,7 @@ local function ShowPending()
     -- The roster scan is done; the settling watch, inspects included, runs on.
     collectingNow = false
     SyncSummaryEvents()
-    InspectSweep()
+    SweepInspects()
 end
 
 -- Leaving the instance closes the settling phase: one last attempt at the
@@ -1515,7 +1515,7 @@ local function OnEvent(_, evt, ...)
         end
         TryFinishHarvest()
         RefreshScores()
-        InspectSweep()
+        SweepInspects()
     elseif evt == "ADDON_RESTRICTION_STATE_CHANGED" then
         -- The combat restriction's edges (see ResetScope): switching on means
         -- a pull began (its gains are unbanked until the next checkpoint);
@@ -1542,7 +1542,7 @@ local function OnEvent(_, evt, ...)
         -- A pull ended: an inspect still pending from before it was dropped,
         -- so free the slot and carry on.
         inspectPending = nil
-        InspectSweep()
+        SweepInspects()
         TryFinishHarvest()
     elseif evt == "PLAYER_ENTERING_WORLD" then
         EndSettling()
@@ -1553,12 +1553,12 @@ local function OnEvent(_, evt, ...)
                 RefreshWindowIfOpen()
             end
         end
-        InspectSweep()
+        SweepInspects()
     elseif evt == "CHALLENGE_MODE_MEMBER_INFO_UPDATED" or evt == "GROUP_ROSTER_UPDATE" then
         if collectingNow then
             ScanRoster(true)
         end
-        InspectSweep()
+        SweepInspects()
         RefreshScores()
     end
 end

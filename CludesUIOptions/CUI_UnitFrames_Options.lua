@@ -1442,7 +1442,7 @@ CludesUI.AtLogin(function()
             end
         end
 
-        local function ReloadAndUpdate()
+        local function RebuildAndReload()
             -- Resolve at call time: ns.ReloadFrames is wrapped after this file's setup
             -- (aura containers, dispel overlay); a load-time capture bypasses those hooks.
             local rf = mod.ReloadFrames or ReloadFrames
@@ -1594,7 +1594,7 @@ CludesUI.AtLogin(function()
                 extras = { { value = border, label = "Blizzard Border", style = border } },
                 caps = { mode = true, params = true, bg = true },
                 defaultColor = CludesUI.Glows.DEFAULT_COLOR,
-                onChange = ReloadAndUpdate,
+                onChange = RebuildAndReload,
                 get = function(f)
                     local cfg = settingGet()
                     if f == "style" then
@@ -1623,7 +1623,7 @@ CludesUI.AtLogin(function()
                 host = "bar",
                 caps = { mode = true, params = true, bg = true },
                 defaultColor = { r = 1, g = 0.2, b = 0.2 },
-                onChange = changed or ReloadAndUpdate,
+                onChange = changed or RebuildAndReload,
                 isOff = function()
                     return settingGet().castbarImportantGlow ~= true
                 end,
@@ -2938,7 +2938,7 @@ CludesUI.AtLogin(function()
                         if mod.UpdateFrameVisibility then
                             mod.UpdateFrameVisibility()
                         end
-                        ReloadAndUpdate()
+                        RebuildAndReload()
                         CludesUI:RefreshPage(true)
                         -- Close the cog popup before the reload prompt: the page under
                         -- it was just rebuilt, so it would float stale rows behind the dialog.
@@ -3074,7 +3074,7 @@ CludesUI.AtLogin(function()
                     end
                 end
             end
-            ReloadAndUpdate()
+            RebuildAndReload()
             CludesUI:RefreshPage(true)
         end
         -- "Copy Look From" (a mini frame's, beside its Apply All Settings From): the
@@ -3100,7 +3100,7 @@ CludesUI.AtLogin(function()
                         return
                     end
                     saved.profile[unitName].lookSource = (value ~= "focus") and value or nil
-                    ReloadAndUpdate()
+                    RebuildAndReload()
                     CludesUI:RefreshPage(true)
                 end
             )
@@ -3228,7 +3228,7 @@ CludesUI.AtLogin(function()
             end
             local function SSet(settingKey, val)
                 UNIT_DB_MAP[optionState.selectedUnit]()[settingKey] = val
-                ReloadAndUpdate()
+                RebuildAndReload()
             end
             local function SDB()
                 return UNIT_DB_MAP[optionState.selectedUnit]()
@@ -3243,7 +3243,7 @@ CludesUI.AtLogin(function()
             -- Set that also writes to the current unit (for UNIT_SUPPORTS keys)
             local function SSetSupported(settingKey, val)
                 UNIT_DB_MAP[optionState.selectedUnit]()[settingKey] = val
-                ReloadAndUpdate()
+                RebuildAndReload()
                 RepaintPreviews()
             end
             local function SGetSupported(settingKey)
@@ -4252,7 +4252,7 @@ CludesUI.AtLogin(function()
             PREVIEW_FONT = PREVIEW_FONT,
             PromptReloadIfUnspawned = PromptReloadIfUnspawned,
             RegisterWidgetRefresh = RegisterWidgetRefresh,
-            ReloadAndUpdate = ReloadAndUpdate,
+            ReloadAndUpdate = RebuildAndReload,
             ResolveBlizzPreview = ResolveBlizzPreview,
             SetPVFont = SetPVFont,
             SHORT_LABELS = SHORT_LABELS,

@@ -185,14 +185,14 @@ local _bankRouted = setmetatable({}, { __mode = "k" })
 local CUI = CludesUI
 -- Profile access helper (DB created in CUI_Bags_Options.lua, loaded first per TOC)
 local _emptyP = {}
-local function BP()
+local function BagsProfile()
     return (CUI._bagsDB and CUI._bagsDB.profile) or _emptyP
 end
 
 -- Uninstall CUI: Sort to Bottom flips Blizzard's own sort direction, so the
 -- player's is handed back, as turning the option off does.
 CUI.OnUninstall(function()
-    local profile = BP()
+    local profile = BagsProfile()
     if profile.bagSortToBottom and profile.bagSortBlizzRTLWas ~= nil then
         C_Container.SetSortBagsRightToLeft(profile.bagSortBlizzRTLWas)
     end
@@ -226,7 +226,7 @@ do
     -- setting: bagAutoOpenWindows or bagAutoCloseWindows, which hold false for an
     -- unselected window. A window not listed is always on.
     function mod.BagAutoWindowOn(setting, key)
-        local tbl = BP()[setting]
+        local tbl = BagsProfile()[setting]
         return not (key and tbl and tbl[key] == false)
     end
 end
@@ -234,7 +234,7 @@ end
 -- Frame Strata: the layer of the bags and the bank. Unset reads the retired
 -- Allow Windows Over Bags toggle (off = High), so its choice carries over.
 function mod.BagFrameStrata()
-    local profile = BP()
+    local profile = BagsProfile()
     return profile.bagFrameStrata or (profile.bagAllowWindowsOverBags == false and "HIGH" or "MEDIUM")
 end
 
@@ -316,7 +316,7 @@ local function CurrencyOrder()
         -- legacy table is deliberately never deleted: a per-character
         -- migration is never a one-shot (a character that has not logged in
         -- yet still seeds from it later), and nothing writes it any more.
-        local legacy = BP().currencyOrder
+        local legacy = BagsProfile().currencyOrder
         if type(legacy) == "table" then
             for cID, sequence in pairs(legacy) do
                 if type(sequence) == "number" then
@@ -381,11 +381,11 @@ mod.PinnedItems = PinnedItems
 -- Default bag-type view ("all"|"onebag"|"multibag"), falling back to legacy
 -- bagDefaultOneBag bool (imports converted in ApplyProfileData before DeepMergeDefaults masks it); exposed on CUI so bank file matches.
 local function GetDefaultBagType()
-    local val = BP().bagDefaultBagType
+    local val = BagsProfile().bagDefaultBagType
     if val == "all" or val == "onebag" or val == "multibag" then
         return val
     end
-    return BP().bagDefaultOneBag and "onebag" or "all"
+    return BagsProfile().bagDefaultOneBag and "onebag" or "all"
 end
 CUI._GetBagDefaultType = GetDefaultBagType
 
@@ -399,7 +399,7 @@ function CUI_Bags.IsListMode()
         if not CUI.Lite.IsDBReady() then
             return nil
         end
-        local mode = BP().bagDisplayMode
+        local mode = BagsProfile().bagDisplayMode
         _listMode = mode == "list"
         CUI_Bags._compactMode = mode == "compact"
         CUI_Bags._modernMode = mode == "modern"
@@ -424,11 +424,11 @@ end
 -- Auto-Size to Fit: not offered with the List display (its rows take the
 -- grip-set width), so a value saved under another display stays off there
 function CUI_Bags.AutoSizeOn()
-    return BP().bagAutoSize == true and not CUI_Bags.IsListMode()
+    return BagsProfile().bagAutoSize == true and not CUI_Bags.IsListMode()
 end
 
 local function ApplyBagScale()
-    local s = BP().bagScale or 1
+    local s = BagsProfile().bagScale or 1
     if CUI_Bags then
         CUI_Bags:SetScale(s)
     end
@@ -534,10 +534,10 @@ local function GetColumns()
     if CUI_Bags and CUI_Bags._asCols and CUI_Bags.AutoSizeOn() then
         return CUI_Bags._asCols
     end
-    return BP().bagColumns or 12
+    return BagsProfile().bagColumns or 12
 end
 local function GetCatTitleSize()
-    return BP().bagCatTitleSize or 11
+    return BagsProfile().bagCatTitleSize or 11
 end
 
 -- Abbreviate a dungeon name to initials (skipping connector words); Cyrillic entries cover clients where GetMapUIInfo returns translated names.
@@ -596,7 +596,7 @@ CludesUI.NewInternals(mod, "_bagsInternals", {
     AbbrevDungeon = AbbrevDungeon,
     ApplyBagScale = ApplyBagScale,
     BagsItemUnusable = BagsItemUnusable,
-    BP = BP,
+    BP = BagsProfile,
     CurrencyOrder = CurrencyOrder,
     GetAccentRGB = GetAccentRGB,
     GetCatTitleSize = GetCatTitleSize,
@@ -640,7 +640,7 @@ function mod.OnSlotMetrics(func)
 end
 -- both refreshes call this first; a change made in combat waits for the next one
 function mod.ApplySlotMetrics()
-    local profile = BP()
+    local profile = BagsProfile()
     -- the sliders' ranges: a hand-edited or imported 0 would divide by zero
     local size = math.min(math.max(tonumber(profile.bagSlotSize) or 34, 24), 56)
     local gap = math.min(math.max(tonumber(profile.bagSlotSpacing) or 4, 0), 12)

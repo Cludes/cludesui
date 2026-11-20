@@ -106,7 +106,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
         local function Mode()
             return mod.NP_SlotColorMode(slotKey, DB())
         end
-        local function Apply()
+        local function ApplyColoring()
             mod.RefreshAllSettings()
             UpdatePreview()
         end
@@ -136,7 +136,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                         end,
                         set = function(val)
                             DB()[nameOnKey] = val
-                            Apply()
+                            ApplyColoring()
                         end,
                     },
                     {
@@ -150,7 +150,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                         end,
                         set = function(red, green, blue)
                             DB()[nameColorKey] = { r = red, g = green, b = blue }
-                            Apply()
+                            ApplyColoring()
                         end,
                     },
                     {
@@ -164,7 +164,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                             if val then
                                 DB()[diffKey] = false
                             end
-                            Apply()
+                            ApplyColoring()
                         end,
                     },
                     {
@@ -178,7 +178,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                         end,
                         set = function(red, green, blue)
                             DB()[lvlColorKey] = { r = red, g = green, b = blue }
-                            Apply()
+                            ApplyColoring()
                         end,
                     },
                     -- The whole text already takes the difficulty colour in Level
@@ -197,7 +197,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
                             if val then
                                 DB()[lvlOnKey] = false
                             end
-                            Apply()
+                            ApplyColoring()
                         end,
                     },
                 },
@@ -213,7 +213,7 @@ local function BuildCoreTextColoring(hostFrame, cursorY, W)
             return color.r, color.g, color.b
         end, function(red, green, blue)
             DB()[colorKey] = { r = red, g = green, b = blue }
-            Apply()
+            ApplyColoring()
         end, nil, 20)
         Pix.Point(custom, "RIGHT", anchor, "LEFT", gap, 0)
         custom:SetScript("OnEnter", function()

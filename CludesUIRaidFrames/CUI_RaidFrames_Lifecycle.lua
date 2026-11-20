@@ -680,13 +680,13 @@ function ERF:OnEnable()
             return true
         end
         if NSAPI and NSAPI.RegisterCallback then
-            local function onChange()
+            local function onNamesChanged()
                 if mod.RefreshAllNames then
                     mod.RefreshAllNames()
                 end
             end
-            NSAPI.RegisterCallback("CludesUI", "NSRT_NICKNAME_UPDATED", onChange)
-            NSAPI.RegisterCallback("CludesUI", mod.EXT_NICK.nsToggle, onChange)
+            NSAPI.RegisterCallback("CludesUI", "NSRT_NICKNAME_UPDATED", onNamesChanged)
+            NSAPI.RegisterCallback("CludesUI", mod.EXT_NICK.nsToggle, onNamesChanged)
             mod._nsrtNickHooked = true
             return true
         end
@@ -802,16 +802,16 @@ function ERF:OnEnable()
                 mod.RefreshAllNames()
             end
         end
-        local function onChange()
+        local function onNamesChanged()
             if pending then
                 return
             end
             pending = true
             C_Timer.After(0, flush)
         end
-        CN.RegisterCallback("CludesUI", "Name_Added", onChange)
-        CN.RegisterCallback("CludesUI", "Name_Update", onChange)
-        CN.RegisterCallback("CludesUI", "Name_Removed", onChange)
+        CN.RegisterCallback("CludesUI", "Name_Added", onNamesChanged)
+        CN.RegisterCallback("CludesUI", "Name_Update", onNamesChanged)
+        CN.RegisterCallback("CludesUI", "Name_Removed", onNamesChanged)
         if mod.RefreshAllNames then
             mod.RefreshAllNames()
         end

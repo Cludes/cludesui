@@ -1015,7 +1015,7 @@ local function ResolveActiveUnit(widget)
     return mod or real or widget._cuiBaseUnit
 end
 
-local function EvalActiveUnit(widget)
+local function SyncActiveUnit(widget)
     if not widget then
         return
     end
@@ -1038,7 +1038,7 @@ local function EvalActiveUnit(widget)
         Engine.RepaintAll(widget, "UnitChanged")
     end
 end
-Engine.EvalActiveUnit = EvalActiveUnit
+Engine.EvalActiveUnit = SyncActiveUnit
 
 -------------------------------------------------------------------------------
 --  Element compatibility surface: the settings code toggles rendering per
@@ -1153,7 +1153,7 @@ function Engine.SpawnUnitFrame(unitId, name)
     -- transitions; re-resolve whenever it moves.
     widget:HookScript("OnAttributeChanged", function(self, attr)
         if attr == "unit" or attr == "toggleForVehicle" then
-            EvalActiveUnit(self)
+            SyncActiveUnit(self)
         end
     end)
     RegisterUnitWatch(widget)
@@ -1179,7 +1179,7 @@ vehicleWatch:RegisterUnitEvent("UNIT_ENTERED_VEHICLE", "player")
 vehicleWatch:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player")
 vehicleWatch:RegisterUnitEvent("UNIT_PET", "player")
 vehicleWatch:SetScript("OnEvent", function(_, evt)
-    EvalActiveUnit(unitFrames.player)
+    SyncActiveUnit(unitFrames.player)
     local pet = unitFrames.pet
     if evt == "UNIT_PET" and pet and pet._cuiUnit == "pet" and UnitExists("pet") then
         -- Pet SWAP: the token stays "pet", so EvalActiveUnit sees no change and
@@ -1190,7 +1190,7 @@ vehicleWatch:SetScript("OnEvent", function(_, evt)
         Engine.RepaintAll(pet, "UnitChanged")
         return
     end
-    EvalActiveUnit(pet)
+    SyncActiveUnit(pet)
 end)
 
 -------------------------------------------------------------------------------
@@ -1292,8 +1292,8 @@ sharedFrame:SetScript("OnEvent", function(self, evt, unitId)
         -- Loading screens can land mid-vehicle-transition; re-resolve the
         -- swappable frames before repainting so the repaint reads the right
         -- unit.
-        EvalActiveUnit(unitFrames.player)
-        EvalActiveUnit(unitFrames.pet)
+        SyncActiveUnit(unitFrames.player)
+        SyncActiveUnit(unitFrames.pet)
         for widget in pairs(attached) do
             if widget:IsShown() then
                 Engine.RepaintAll(widget, evt)

@@ -1963,7 +1963,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
 
                 -- A count threshold: 30 (%) for bar-type resources, 3 for pips, 7 for the Enhance five-bar style
                 newEntry = function(ids, cfg)
-                    local isBar = mod.IsSpecBarType(ids[1])
+                    local entryIsBar = mod.IsSpecBarType(ids[1])
                     local enhAdd = false
                     if cfg.enhanceFiveBar then
                         for _, spellRef in ipairs(ids) do
@@ -1982,7 +1982,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         hashColorB = 1,
                         hashColorA = 0.7,
                         thresholdEnabled = true,
-                        thresholdCount = enhAdd and 7 or (isBar and 30 or 3),
+                        thresholdCount = enhAdd and 7 or (entryIsBar and 30 or 3),
                         thresholdPartialOnly = false,
                         thresholdR = cfg.thresholdR or 0x0c / 255,
                         thresholdG = cfg.thresholdG or 0xd2 / 255,
@@ -1992,7 +1992,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     -- Default for "Threshold color below value": the only bar-type spender class resource is Hunter
                     -- Focus, so it starts ON (warn when low); builders (Maelstrom/Insanity/Astral) start OFF.
                     -- Only when the entry covers the current spec (resource readable).
-                    if isBar then
+                    if entryIsBar then
                         local curIdx = C_SpecializationInfo.GetSpecialization()
                         local curSpecID = curIdx and C_SpecializationInfo.GetSpecializationInfo(curIdx)
                         -- WoW Forever: the entry covers the player when it names a spec of the class.
@@ -2020,7 +2020,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     title = "Threshold Options",
                     minWidth = 320,
                     rows = function(current, redraw)
-                        local function isBar()
+                        local function entryIsBar()
                             local entry = current()
                             return (entry and mod.IsEntryBarType(entry)) and true or false
                         end
@@ -2093,13 +2093,13 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                                 labels = { percent = "Percent", value = "Value" },
                                 rawTooltip = true,
                                 disabled = function()
-                                    return (not usable()) or (not isBar()) or isStagger()
+                                    return (not usable()) or (not entryIsBar()) or isStagger()
                                 end,
                                 disabledTooltip = function()
                                     if not usable() then
                                         return offTip()
                                     end
-                                    if not isBar() then
+                                    if not entryIsBar() then
                                         return "This option applies to bar-type resources only (pips use stack counts)."
                                     end
                                     return STAGGER_PCT_TIP
@@ -2153,7 +2153,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                                 label = "Only color at/above threshold",
                                 rawTooltip = true,
                                 disabled = function()
-                                    return (not usable()) or isBar() or isUpTo() or isWarrCharge()
+                                    return (not usable()) or entryIsBar() or isUpTo() or isWarrCharge()
                                 end,
                                 disabledTooltip = function()
                                     if isWarrCharge() and usable() then
@@ -2162,7 +2162,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                                     if not usable() then
                                         return offTip()
                                     end
-                                    if isBar() then
+                                    if entryIsBar() then
                                         return "This option applies to pip-type resources only."
                                     end
                                     return "Only available with the 'From' direction -- it highlights the pips at/above the threshold."
@@ -2190,7 +2190,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                 -- Per-entry rules, keyed off the SELECTED entry's specs rather than the live spec, so
                 -- editing another spec's entry while playing that spec stays unlocked
                 entryRules = function(ent, r, cfg)
-                    local isBar = mod.IsEntryBarType(ent)
+                    local entryIsBar = mod.IsEntryBarType(ent)
                     local isGuardian, isIgnorePain, isVengeance, isStagger, isEnhance
                     if ent.specIDs then
                         for _, spec in ipairs(ent.specIDs) do
@@ -2224,14 +2224,14 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                         ent.thresholdMode = "percent"
                     end
                     -- Bar-type reads the threshold as % (max 100) or an absolute value (higher cap); pips count stacks
-                    local isValue = isBar and not isStagger and ent.thresholdMode == "value"
-                    r.pips = not isBar
+                    local isValue = entryIsBar and not isStagger and ent.thresholdMode == "value"
+                    r.pips = not entryIsBar
                     -- The Guardian Ironfur and Prot Ignore Pain bars draw their own hash lines
                     r.hideHash = (isGuardian or isIgnorePain) and true or false
                     r.thrMin = isEnhance and 7 or 1
-                    r.thrMax = isStagger and 500 or (isBar and (isValue and 1000 or 100) or 20)
-                    r.thrDef = isEnhance and 7 or (isBar and 30 or 3)
-                    r.thrLabel = CludesUI.L("Threshold") .. ((isBar and not isValue) and " %" or "")
+                    r.thrMax = isStagger and 500 or (entryIsBar and (isValue and 1000 or 100) or 20)
+                    r.thrDef = isEnhance and 7 or (entryIsBar and 30 or 3)
+                    r.thrLabel = CludesUI.L("Threshold") .. ((entryIsBar and not isValue) and " %" or "")
                     if isEnhance then
                         r.thrTip = CludesUI.L(
                             "Enhance 5 Bar minimum is %d (if you want less just change 5 bar color)"

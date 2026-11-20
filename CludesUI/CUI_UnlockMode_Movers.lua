@@ -3531,7 +3531,7 @@ CUI_NS.unlockParts.Movers = function(LM)
         local snapList
         local regSubMenus = {}
 
-        local function CloseSnapMenu()
+        local function HideSnapMenu()
             if snapList then
                 snapList:Hide()
             end
@@ -3646,7 +3646,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 end)
                 menuItem:SetScript("OnClick", function()
                     onClick()
-                    CloseSnapMenu()
+                    HideSnapMenu()
                     UpdateSnapLabel()
                 end)
                 itemList[#itemList + 1] = menuItem
@@ -3785,7 +3785,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                         end)
                         subItem:SetScript("OnClick", function()
                             handle._snapTarget = ek
-                            CloseSnapMenu()
+                            HideSnapMenu()
                             UpdateSnapLabel()
                         end)
                         rsYOff = rsYOff - ITEM_H
@@ -3848,7 +3848,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 snapClickCatcher._umCatcher = true -- not an element for the hover bar
                 snapClickCatcher:RegisterForClicks("AnyUp")
                 snapClickCatcher:SetScript("OnClick", function()
-                    CloseSnapMenu()
+                    HideSnapMenu()
                 end)
             end
             snapClickCatcher:Show()
@@ -3859,8 +3859,8 @@ CUI_NS.unlockParts.Movers = function(LM)
             end
         end
 
-        local origCloseSnapMenu = CloseSnapMenu
-        CloseSnapMenu = function()
+        local origCloseSnapMenu = HideSnapMenu
+        HideSnapMenu = function()
             origCloseSnapMenu()
             HideClickCatcher()
             handle._menuOpen = false
@@ -3872,7 +3872,7 @@ CUI_NS.unlockParts.Movers = function(LM)
                 return
             end
             if snapList and snapList:IsShown() then
-                CloseSnapMenu()
+                HideSnapMenu()
             else
                 handle._menuOpen = true
                 BuildSnapMenu()
@@ -3881,7 +3881,7 @@ CUI_NS.unlockParts.Movers = function(LM)
         end)
 
         -- Also close menu when dropdown hides (e.g. mover deselected)
-        snapDropdown:SetScript("OnHide", CloseSnapMenu)
+        snapDropdown:SetScript("OnHide", HideSnapMenu)
 
         ---------------------------------------------------------------------------
         --  Layout: cog flush with mover top-right (flips below if near screen top)

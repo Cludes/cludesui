@@ -505,7 +505,7 @@ qolFrame:SetScript("OnEvent", function(self)
         local function SlotKey(bagId, slotId)
             return bagId * 1000 + slotId
         end
-        local function IsEnabled()
+        local function AutoOpenOn()
             return CludesUIDB and CludesUIDB.autoOpenContainers == true
         end
         -- This payout can award this capped currency; hold only the known pair.
@@ -640,7 +640,7 @@ qolFrame:SetScript("OnEvent", function(self)
         local scanHost = CreateFrame("Frame")
         scanHost:Hide()
         scanHost:SetScript("OnUpdate", function(self)
-            if not IsEnabled() then
+            if not AutoOpenOn() then
                 self:Hide()
                 return
             end
@@ -677,7 +677,7 @@ qolFrame:SetScript("OnEvent", function(self)
         -- Live apply: registers bag listeners and (until cache exists) runs the
         -- incremental scan; disable stops it. Called at login and from the toggle.
         CludesUI._applyAutoOpenContainers = function()
-            if IsEnabled() then
+            if AutoOpenOn() then
                 holder:RegisterEvent("BAG_UPDATE_DELAYED")
                 -- Raw per-slot event, far more frequent than the coalesced DELAYED one; used ONLY to timestamp _lastBagChurn, no scan work here.
                 holder:RegisterEvent("BAG_UPDATE")
@@ -744,7 +744,7 @@ qolFrame:SetScript("OnEvent", function(self)
 
         -- Initial kick 2s after login (bags need a moment to settle)
         C_Timer.After(2, function()
-            if IsEnabled() then
+            if AutoOpenOn() then
                 CludesUI._applyAutoOpenContainers()
             end
         end)
@@ -769,7 +769,7 @@ qolFrame:SetScript("OnEvent", function(self)
             if not _cacheBuilt then
                 return
             end
-            if not IsEnabled() then
+            if not AutoOpenOn() then
                 return
             end
             if InCombatLockdown() then
@@ -831,7 +831,7 @@ qolFrame:SetScript("OnEvent", function(self)
                 _openBusy = false
                 if
                     (madeProgress or _missedScan)
-                    and IsEnabled()
+                    and AutoOpenOn()
                     and not InCombatLockdown()
                     and not MerchantOpen()
                     and not MailOpen()
@@ -853,7 +853,7 @@ qolFrame:SetScript("OnEvent", function(self)
                 if position > #toOpen then
                     return finish()
                 end
-                if not IsEnabled() or InCombatLockdown() or MerchantOpen() or MailOpen() or BankOpen() then
+                if not AutoOpenOn() or InCombatLockdown() or MerchantOpen() or MailOpen() or BankOpen() then
                     return finish()
                 end
                 -- Re-checked per step: the cycle paces itself across seconds of timers, so a cast can start long after the entry gate passed.
@@ -2120,7 +2120,7 @@ qolFrame:SetScript("OnEvent", function(self)
         -- Install now, or arm ONE waiter for the frame's addon (shared by the
         -- login install and a mid-session enable).
         local waitArmed = false
-        local function EnsureInstalled()
+        local function HookTalkingHead()
             local threatFrame = _G.TalkingHeadFrame
             if threatFrame then
                 Install(threatFrame)
@@ -2136,7 +2136,7 @@ qolFrame:SetScript("OnEvent", function(self)
             waitFrame:SetScript("OnEvent", function(self)
                 if _G.TalkingHeadFrame then
                     self:UnregisterAllEvents()
-                    EnsureInstalled()
+                    HookTalkingHead()
                 end
             end)
         end
@@ -2145,7 +2145,7 @@ qolFrame:SetScript("OnEvent", function(self)
         -- included.
         CludesUI._applyHideTalkingHead = function()
             if Wanted() then
-                EnsureInstalled()
+                HookTalkingHead()
                 local threatFrame = _G.TalkingHeadFrame
                 if CludesUIDB.muteTalkingHead and threatFrame and threatFrame.voHandle then
                     StopSound(threatFrame.voHandle)
@@ -2158,7 +2158,7 @@ qolFrame:SetScript("OnEvent", function(self)
         -- Login install only with an option on (nothing is hooked otherwise;
         -- a later enable installs through _applyHideTalkingHead above).
         if Wanted() then
-            EnsureInstalled()
+            HookTalkingHead()
         end
     end
 
@@ -2246,7 +2246,7 @@ qolFrame:SetScript("OnEvent", function(self)
         -- creation -- without the waiter half, that enable would silently
         -- never hook.
         local waitArmed = false
-        local function EnsureInstalled()
+        local function HookTalkingHead()
             if _G.GroupLootHistoryFrame then
                 HookHistory()
                 return
@@ -2270,7 +2270,7 @@ qolFrame:SetScript("OnEvent", function(self)
         -- changes or the feature is switched off mid-countdown.
         CludesUI._applyHideLootHistory = function()
             if CludesUIDB and CludesUIDB.hideLootHistory then
-                EnsureInstalled()
+                HookTalkingHead()
             end
             closeSerial = closeSerial + 1
             local frame = HistoryFrame()
@@ -2284,7 +2284,7 @@ qolFrame:SetScript("OnEvent", function(self)
         -- no hooks -- a later enable installs through _applyHideLootHistory
         -- above).
         if CludesUIDB and CludesUIDB.hideLootHistory then
-            EnsureInstalled()
+            HookTalkingHead()
         end
     end
 
@@ -5185,7 +5185,7 @@ do
     local DEFAULT_TEXT_SIZE = 34
 
     -- Configured font size + saved position (default center-top).
-    local function ApplyOverlaySettings()
+    local function StyleAlertOverlay()
         if not alertFrame then
             return
         end
@@ -5231,7 +5231,7 @@ do
         local fontStr = alertFrame:CreateFontString(nil, "OVERLAY")
         fontStr:SetPoint("CENTER")
         alertFrame._text = fontStr
-        ApplyOverlaySettings()
+        StyleAlertOverlay()
 
         -- Quick fade-in, brief hold, fade-out; hide when finished.
         local animGroup = alertFrame:CreateAnimationGroup()
@@ -5266,7 +5266,7 @@ do
             return
         end
         CreateAlertOverlay()
-        ApplyOverlaySettings()
+        StyleAlertOverlay()
 
         local colored = label
         local c = classFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classFile]
@@ -5439,7 +5439,7 @@ do
     -- Re-apply font size/position (called from the Text Size slider and from unlock mode on saved-position change).
     CludesUI._applyGroupDeathAlert = function()
         CreateAlertOverlay()
-        ApplyOverlaySettings()
+        StyleAlertOverlay()
     end
 
     -- Register the alert with Unlock Mode so its position can be dragged.
@@ -5479,7 +5479,7 @@ do
                     CludesUIDB.groupDeathAlertPos =
                         { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                     if alertFrame and not CludesUI._unlockActive then
-                        ApplyOverlaySettings()
+                        StyleAlertOverlay()
                     end
                 end,
                 loadPos = function()
@@ -5494,12 +5494,12 @@ do
                         CludesUIDB.groupDeathAlertPos = nil
                     end
                     if alertFrame then
-                        ApplyOverlaySettings()
+                        StyleAlertOverlay()
                     end
                 end,
                 applyPos = function()
                     CreateAlertOverlay()
-                    ApplyOverlaySettings()
+                    StyleAlertOverlay()
                 end,
             }),
         })
@@ -5819,7 +5819,7 @@ do
         distancePanel:Show()
     end
 
-    local function IsEnabled()
+    local function AutoOpenOn()
         return CludesUIDB and CludesUIDB.targetDistanceEnabled
     end
 
@@ -5849,14 +5849,14 @@ do
         if not rangeEvents then
             rangeEvents = CreateFrame("Frame")
             rangeEvents:SetScript("OnEvent", function()
-                if not IsEnabled() then
+                if not AutoOpenOn() then
                     return
                 end
                 Tick()
             end)
         end
         driver:SetScript("OnUpdate", function(_, elapsed)
-            if not IsEnabled() then
+            if not AutoOpenOn() then
                 return
             end
             acc = acc + elapsed
@@ -5874,7 +5874,7 @@ do
     end
 
     Tick = function()
-        if not IsEnabled() then
+        if not AutoOpenOn() then
             return
         end
         if CludesUI._unlockActive then
@@ -5902,7 +5902,7 @@ do
     end
 
     local function ApplyTargetDistance()
-        if IsEnabled() then
+        if AutoOpenOn() then
             if not isInstalled then
                 StartDriver()
             end
@@ -5917,7 +5917,7 @@ do
     CludesUI._applyTargetDistance = ApplyTargetDistance
 
     CludesUI._applyTargetDistanceFrame = function()
-        if not IsEnabled() then
+        if not AutoOpenOn() then
             return
         end
         CreateDistFrame()
@@ -5941,10 +5941,10 @@ do
                 order = 722,
                 noResize = true,
                 isHidden = function()
-                    return not IsEnabled()
+                    return not AutoOpenOn()
                 end,
                 getFrame = function()
-                    if not IsEnabled() then
+                    if not AutoOpenOn() then
                         return nil
                     end
                     CreateDistFrame()
@@ -5991,7 +5991,7 @@ do
                     end
                 end,
                 applyPos = function()
-                    if not IsEnabled() then
+                    if not AutoOpenOn() then
                         return
                     end
                     CreateDistFrame()
@@ -6010,7 +6010,7 @@ do
     bootFrame:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
         self:SetScript("OnEvent", nil)
-        if IsEnabled() then
+        if AutoOpenOn() then
             ApplyTargetDistance()
         end
     end)

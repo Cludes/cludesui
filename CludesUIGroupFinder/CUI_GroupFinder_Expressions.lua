@@ -767,7 +767,7 @@ local function BuildHelp(panelFrame, K, onClick)
 end
 
 local button, panelFrame, box, status, hint, isShown
-local function Paint(K)
+local function PaintBtn(K)
     if not button then
         return
     end
@@ -938,13 +938,13 @@ local function Build(SP, K)
         local c = GFNS.Cfg()
         local textValue = self:GetText()
         c.extraExpr = textValue:find("%S") and textValue or nil
-        Paint(K)
+        PaintBtn(K)
         K.Refilter()
     end)
     clear:SetScript("OnClick", function()
         box:SetText("")
         GFNS.Cfg().extraExpr = nil
-        Paint(K)
+        PaintBtn(K)
         K.Refilter()
     end)
 
@@ -973,7 +973,7 @@ local function Build(SP, K)
         box:SetCursorPosition(place + #word)
         local c = GFNS.Cfg()
         c.extraExpr = box:GetText()
-        Paint(K)
+        PaintBtn(K)
         K.Refilter()
     end
     local help = BuildHelp(panelFrame, K, Insert)
@@ -1001,7 +1001,7 @@ local function Build(SP, K)
         end
         LayoutPanel()
         box:SetText(GFNS.Cfg().extraExpr or "")
-        Paint(K)
+        PaintBtn(K)
         box:SetFocus()
         box:SetCursorPosition(#box:GetText())
     end)
@@ -1047,7 +1047,7 @@ local function Build(SP, K)
         if box then
             box:SetText("")
         end
-        Paint(K)
+        PaintBtn(K)
     end
 end
 
@@ -1110,7 +1110,7 @@ GFNS.ExtraExprButton = function(SP, refresh, show, K)
     button:ClearAllPoints()
     button:SetPoint("RIGHT", refresh, "LEFT", -K.GAP, 0)
     button:SetShown(show)
-    Paint(K)
+    PaintBtn(K)
     return show and button or refresh
 end
 

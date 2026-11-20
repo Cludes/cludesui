@@ -41,7 +41,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         CludesUI:ClearContentHeader()
     end
 
-    local function LiveRefresh()
+    local function RefreshOpenCalc()
         local fr = _G["CUIUpgCalcFrame"]
         if fr and fr:IsShown() and CUIUpgCalc and CUIUpgCalc.PopulateGear then
             CUIUpgCalc.PopulateGear()
@@ -150,7 +150,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         end,
         setValue = function(val)
             GetAddonDB().showMaxed = val
-            LiveRefresh()
+            RefreshOpenCalc()
         end,
     }, {
         type = "toggle",
@@ -161,7 +161,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         end,
         setValue = function(val)
             GetAddonDB().hideCrafted = val
-            LiveRefresh()
+            RefreshOpenCalc()
         end,
     })
     cursorY = cursorY - height
@@ -219,7 +219,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
                 local saved = GetAddonDB()
                 saved.slotFilter = saved.slotFilter or {}
                 saved.slotFilter[keyName] = val
-                LiveRefresh()
+                RefreshOpenCalc()
             end
         )
         Pix.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
@@ -245,7 +245,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
                 local saved = GetAddonDB()
                 saved.crestFilter = saved.crestFilter or {}
                 saved.crestFilter[keyName] = val
-                LiveRefresh()
+                RefreshOpenCalc()
             end
         )
         Pix.Point(checkDrop, "RIGHT", rightRegion, "RIGHT", -20, 0)
@@ -265,7 +265,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         end,
         setValue = function(val)
             GetAddonDB().showEarnedCap = val
-            LiveRefresh()
+            RefreshOpenCalc()
         end,
     }, {
         type = "toggle",
@@ -276,7 +276,7 @@ local function BuildUpgradeCalcPage(page, hostFrame, yOffset)
         end,
         setValue = function(val)
             GetAddonDB().showWeeklyRemaining = val
-            LiveRefresh()
+            RefreshOpenCalc()
         end,
     })
     cursorY = cursorY - height

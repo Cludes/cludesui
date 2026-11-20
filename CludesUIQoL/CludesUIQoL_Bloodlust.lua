@@ -789,7 +789,7 @@ end
 FormatTime = mod.FormatTime
 
 local _lastDurText
-local function _setDur(s)
+local function _showDuration(s)
     if s ~= _lastDurText then
         durationFS:SetText(s)
         _lastDurText = s
@@ -815,7 +815,7 @@ local function _showPreviewLockout()
             cdFrame:SetCooldown(GetTime(), 600)
         end
     end
-    _setDur(FormatTime(_previewExpiry - GetTime()))
+    _showDuration(FormatTime(_previewExpiry - GetTime()))
 end
 
 -- Text ticker: updates the countdown number and re-confirms the debuff is still present
@@ -841,7 +841,7 @@ local function PollSated()
                 _ticker:Cancel()
                 _ticker = nil
             end
-            _setDur("")
+            _showDuration("")
             _showReadyState()
             _syncDesat()
             return
@@ -855,7 +855,7 @@ local function PollSated()
             _syncDesat()
             return
         end
-        _setDur("")
+        _showDuration("")
         return UpdateVisibility()
     end
     if _readyShown then
@@ -869,12 +869,12 @@ local function PollSated()
     if expiresAt and not issecretvalue(expiresAt) then
         _syncSatedGuess(auraInfo)
         local remaining = expiresAt - GetTime()
-        _setDur(remaining > 0 and FormatTime(remaining) or "")
+        _showDuration(remaining > 0 and FormatTime(remaining) or "")
     elseif _satedExpiryGuess > GetTime() then
         -- Real value secret (12.1 combat): count down on the cached expiry.
-        _setDur(FormatTime(_satedExpiryGuess - GetTime()))
+        _showDuration(FormatTime(_satedExpiryGuess - GetTime()))
     else
-        _setDur("")
+        _showDuration("")
     end
     _syncDesat()
 end
@@ -915,7 +915,7 @@ function UpdateVisibility()
             if cdFrame then
                 cdFrame:Clear()
             end
-            _setDur("")
+            _showDuration("")
         end
     end
 end

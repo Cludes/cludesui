@@ -157,7 +157,7 @@ end
 
 -- Ends the run. One that ends short (a red error, full bags, the merchant
 -- closed, a new order) says how far it got.
-local function StopJob()
+local function CancelJob()
     local jdx = job
     job = nil
     SyncEvents()
@@ -179,7 +179,7 @@ local function StepJob()
     end
     local total = C_Item.GetItemCount(jdx.itemID)
     if total < jdx.last then
-        StopJob()
+        CancelJob()
         return
     end
     jdx.last = total
@@ -189,7 +189,7 @@ local function StepJob()
     end
     local num = floor(min(jdx.chunk, jdx.target - got) / jdx.step) * jdx.step
     if num <= 0 or GetMerchantItemID(jdx.index) ~= jdx.itemID then
-        StopJob()
+        CancelJob()
         return
     end
     jdx.issued = got + num
@@ -199,7 +199,7 @@ end
 -- One order at a time: a new one ends the run still going (and says so).
 local function StartJob(index, itemId, qty, step, chunk)
     if job then
-        StopJob()
+        CancelJob()
     end
     if GetMerchantItemID(index) ~= itemId then
         return
@@ -580,7 +580,7 @@ CludesUI._Merchant_RefreshBulkBuy = function()
     if dialog then
         dialog:Hide()
     end
-    StopJob()
+    CancelJob()
 end
 
 events:SetScript("OnEvent", function(self, evt, arg1)
@@ -602,11 +602,11 @@ events:SetScript("OnEvent", function(self, evt, arg1)
         if dialog then
             dialog:Hide()
         end
-        StopJob()
+        CancelJob()
     else
         -- UI_ERROR_MESSAGE: any red error during a run ends it, so a purchase
         -- the server refused (full bags, too little money) never stalls it.
-        StopJob()
+        CancelJob()
     end
 end)
 events:RegisterEvent("ADDON_LOADED")

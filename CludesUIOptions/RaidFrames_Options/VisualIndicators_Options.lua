@@ -2297,7 +2297,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         _, height = W:SectionHeader(hostFrame, "EXTRA FRAMES", cursorY)
         cursorY = cursorY - height
 
-        local function XFSet()
+        local function ExtraFramesCfg()
             local profile = saved.profile
             if not profile.extraFrames then
                 profile.extraFrames = { showTanks = false, position = "right", players = {} }
@@ -2306,7 +2306,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
         end
         -- Position settings only matter once something can feed the group: the tanks toggle or a bound hotkey.
         local function XFConfigured()
-            return XFSet().showTanks == true or (CludesUIDB and CludesUIDB.extraFramesKey) ~= nil
+            return ExtraFramesCfg().showTanks == true or (CludesUIDB and CludesUIDB.extraFramesKey) ~= nil
         end
         -- Row 1: Add to Extra Group Hotkey (capture) | Show Tanks toggle
         row, height = W:DualRow(hostFrame, cursorY, { type = "label", text = "Add to Extra Group Hotkey" }, {
@@ -2314,11 +2314,11 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
             text = "Show Tanks in Extra Group",
             tooltip = "Automatically duplicates the raid's tanks into the Extra Frames group. Shares the frame cap with hotkey picks.",
             getValue = function()
-                return XFSet().showTanks == true
+                return ExtraFramesCfg().showTanks == true
             end,
             -- Rows below are HIDDEN while unconfigured (no tanks toggle AND no hotkey); only a configured-state flip forces the rebuild.
             setValue = CludesUI.DependentSetValue(XFConfigured, function(val)
-                XFSet().showTanks = val
+                ExtraFramesCfg().showTanks = val
                 mod.XF_Apply()
                 -- Feature may have just gone dark; the mover can't stay up.
                 if not XFConfigured() then
@@ -2339,10 +2339,10 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                         label = "Exclude Myself",
                         tooltip = "Skips your own frame when Show Tanks duplicates the raid's tanks. Hotkey picks can still add you.",
                         get = function()
-                            return XFSet().excludeSelfTank == true
+                            return ExtraFramesCfg().excludeSelfTank == true
                         end,
                         set = function(val)
-                            XFSet().excludeSelfTank = val or nil
+                            ExtraFramesCfg().excludeSelfTank = val or nil
                             mod.XF_Apply()
                         end,
                     },
@@ -2404,10 +2404,10 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 values = { left = "Before First Group", right = "After Last Group", free = "Free Move" },
                 order = { "left", "right", "free" },
                 getValue = function()
-                    return XFSet().position or "right"
+                    return ExtraFramesCfg().position or "right"
                 end,
                 setValue = function(val)
-                    XFSet().position = val
+                    ExtraFramesCfg().position = val
                     if val ~= "free" then
                         mod.XF_SetMoverShown(false)
                     end
@@ -2421,16 +2421,16 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 isShown = mod.XF_IsMoverShown,
                 setShown = mod.XF_SetMoverShown,
                 allowed = function()
-                    return XFConfigured() and (XFSet().position == "free") and not InCombatLockdown()
+                    return XFConfigured() and (ExtraFramesCfg().position == "free") and not InCombatLockdown()
                 end,
             })
 
             -- Free Move ONLY (hidden otherwise; Position's setValue forces a rebuild): growth axes of the free-floating grid, with Wrap After in an inline cog on Wrap Direction.
             -- Attached positions need none of this -- they stack group-sized runs of 5 along the raid's own growth settings, like extra raid groups.
             -- Grow Direction defaults from the legacy freeHorizontal key, so existing layouts read back unchanged.
-            if XFSet().position == "free" then
+            if ExtraFramesCfg().position == "free" then
                 local function XFGrowDir()
-                    local set = XFSet()
+                    local set = ExtraFramesCfg()
                     return set.growDirection or (set.freeHorizontal and "RIGHT" or "DOWN")
                 end
                 local function XFReapply()
@@ -2450,7 +2450,7 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     order = { "DOWN", "UP", "RIGHT", "LEFT" },
                     getValue = XFGrowDir,
                     setValue = function(val)
-                        local set = XFSet()
+                        local set = ExtraFramesCfg()
                         set.growDirection = val
                         -- Keep the legacy key coherent for exports/older reads.
                         set.freeHorizontal = (val == "RIGHT" or val == "LEFT")
@@ -2464,14 +2464,14 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                     values = xfHoriz and { DOWN = "Down", UP = "Up" } or { RIGHT = "Right", LEFT = "Left" },
                     order = xfHoriz and { "DOWN", "UP" } or { "RIGHT", "LEFT" },
                     getValue = function()
-                        local wd = XFSet().wrapDirection
+                        local wd = ExtraFramesCfg().wrapDirection
                         if XFGrowDir() == "RIGHT" or XFGrowDir() == "LEFT" then
                             return (wd == "UP" or wd == "DOWN") and wd or "DOWN"
                         end
                         return (wd == "LEFT" or wd == "RIGHT") and wd or "RIGHT"
                     end,
                     setValue = function(val)
-                        XFSet().wrapDirection = val
+                        ExtraFramesCfg().wrapDirection = val
                         XFReapply()
                     end,
                 })
@@ -2488,10 +2488,10 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                                 max = 20,
                                 step = 1,
                                 get = function()
-                                    return XFSet().wrapAfter or 0
+                                    return ExtraFramesCfg().wrapAfter or 0
                                 end,
                                 set = function(val)
-                                    XFSet().wrapAfter = val
+                                    ExtraFramesCfg().wrapAfter = val
                                     XFReapply()
                                 end,
                             },
@@ -2509,10 +2509,10 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 step = 1,
                 tooltip = "Widens or narrows the extra frames relative to the raid frame size.",
                 getValue = function()
-                    return XFSet().extraWidth or 0
+                    return ExtraFramesCfg().extraWidth or 0
                 end,
                 setValue = function(val)
-                    XFSet().extraWidth = val
+                    ExtraFramesCfg().extraWidth = val
                     mod.XF_Apply()
                     if mod.XF_IsMoverShown() then
                         mod.XF_SetMoverShown(true)
@@ -2526,10 +2526,10 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                 step = 1,
                 tooltip = "Makes the extra frames taller or shorter relative to the raid frame size.",
                 getValue = function()
-                    return XFSet().extraHeight or 0
+                    return ExtraFramesCfg().extraHeight or 0
                 end,
                 setValue = function(val)
-                    XFSet().extraHeight = val
+                    ExtraFramesCfg().extraHeight = val
                     mod.XF_Apply()
                     if mod.XF_IsMoverShown() then
                         mod.XF_SetMoverShown(true)
@@ -2549,14 +2549,14 @@ local function BuildVisualIndicators(hostFrame, cursorY, W, onSection, EYE, Cust
                             type = "toggle",
                             label = "Auto Resize Indicators",
                             get = function()
-                                return XFSet().autoResizeIndicators ~= false
+                                return ExtraFramesCfg().autoResizeIndicators ~= false
                             end,
                             set = function(val)
                                 -- nil = on (additive key, zero migration); false = off.
                                 if val then
-                                    XFSet().autoResizeIndicators = nil
+                                    ExtraFramesCfg().autoResizeIndicators = nil
                                 else
-                                    XFSet().autoResizeIndicators = false
+                                    ExtraFramesCfg().autoResizeIndicators = false
                                 end
                                 mod.XF_Apply()
                             end,

@@ -1044,7 +1044,7 @@ local function CreateDMWindow(winIdx)
     local btnPad = mod.DMHdrIconPad()
 
     W.hdrIcons = {}
-    local function GetIconColor()
+    local function IconColor()
         local cfg = DB()
         if cfg.iconColorUseAccent then
             return GetAccentRGB()
@@ -1060,7 +1060,7 @@ local function CreateDMWindow(winIdx)
         button:SetSize(btnSize, btnSize)
         button:SetPoint("RIGHT", header, "RIGHT", xOff, mod.DMHdrLift())
         button:SetFrameLevel(header:GetFrameLevel() + 2)
-        local ir, ig, ib = GetIconColor()
+        local ir, ig, ib = IconColor()
         local iconTex = button:CreateTexture(nil, "ARTWORK")
         iconTex:SetAllPoints()
         button._hdrIcon = iconTex
@@ -1072,7 +1072,7 @@ local function CreateDMWindow(winIdx)
         W.hdrIcons[#W.hdrIcons + 1] = iconTex
         button:SetScript("OnEnter", function(self)
             if not mod.DMHdrHover(iconTex, true) then
-                local red, green, blue = GetIconColor()
+                local red, green, blue = IconColor()
                 iconTex:SetVertexColor(red, green, blue, ICON_HOVER_ALPHA)
             end
             -- Suppress tooltip while this button's menu is open
@@ -1083,7 +1083,7 @@ local function CreateDMWindow(winIdx)
         end)
         button:SetScript("OnLeave", function()
             if not mod.DMHdrHover(iconTex, false) then
-                local red, green, blue = GetIconColor()
+                local red, green, blue = IconColor()
                 iconTex:SetVertexColor(red, green, blue, ICON_ALPHA)
             end
             CUI.HideWidgetTooltip()
@@ -1500,7 +1500,7 @@ local function CreateDMWindow(winIdx)
         else
             W.winActionBtn:HookScript("OnEnter", function(self)
                 if W.windowLocked then
-                    local ir, ig, ib = GetIconColor()
+                    local ir, ig, ib = IconColor()
                     if not mod.DMHdrHover(iconTex, false, true) then
                         iconTex:SetVertexColor(ir, ig, ib, ICON_ALPHA * 0.5)
                     end
@@ -1510,7 +1510,7 @@ local function CreateDMWindow(winIdx)
             end)
             W.winActionBtn:HookScript("OnLeave", function()
                 if W.windowLocked then
-                    local ir, ig, ib = GetIconColor()
+                    local ir, ig, ib = IconColor()
                     if not mod.DMHdrHover(iconTex, false, true) then
                         iconTex:SetVertexColor(ir, ig, ib, ICON_ALPHA * 0.5)
                     end
@@ -1520,7 +1520,7 @@ local function CreateDMWindow(winIdx)
     end
     -- Apply initial close icon dimming if window starts locked
     if winIdx ~= 1 and W.windowLocked and W._closeIconTex then
-        local ir, ig, ib = GetIconColor()
+        local ir, ig, ib = IconColor()
         if not mod.DMHdrHover(W._closeIconTex, false, true) then
             W._closeIconTex:SetVertexColor(ir, ig, ib, ICON_ALPHA * 0.5)
         end
@@ -2030,7 +2030,7 @@ local function CreateDMWindow(winIdx)
         end
         -- Dim close icon when locked (non-window-1 only)
         if winIdx ~= 1 and W._closeIconTex then
-            local ir, ig, ib = GetIconColor()
+            local ir, ig, ib = IconColor()
             if not mod.DMHdrHover(W._closeIconTex, false, W.windowLocked) then
                 W._closeIconTex:SetVertexColor(
                     ir,
@@ -2242,21 +2242,21 @@ local function CreateDMWindow(winIdx)
                 end
             end
         end
-        local function StartHoverPoll()
+        local function PollHover()
             if hoverTicker then
                 return
             end
             hoverTicker = C_Timer.NewTicker(0.1, HoverPoll)
         end
         -- OnEnter on the main frame starts the poll
-        widget:HookScript("OnEnter", StartHoverPoll)
+        widget:HookScript("OnEnter", PollHover)
         -- Also start from children that sit above the frame
-        header:HookScript("OnEnter", StartHoverPoll)
-        viewport:HookScript("OnEnter", StartHoverPoll)
-        rightClickCatcher:HookScript("OnEnter", StartHoverPoll)
-        W.resizeGrip:HookScript("OnEnter", StartHoverPoll)
-        W.lockBtn:HookScript("OnEnter", StartHoverPoll)
-        W._startHoverPoll = StartHoverPoll
+        header:HookScript("OnEnter", PollHover)
+        viewport:HookScript("OnEnter", PollHover)
+        rightClickCatcher:HookScript("OnEnter", PollHover)
+        W.resizeGrip:HookScript("OnEnter", PollHover)
+        W.lockBtn:HookScript("OnEnter", PollHover)
+        W._startHoverPoll = PollHover
         -- Ends any hover at once (W.Park): the poll and the fade stop, and the grip and lock go to alpha 0.
         W._endHover = function()
             if hoverTicker then
@@ -2272,10 +2272,10 @@ local function CreateDMWindow(winIdx)
         end
         -- Hook bar rows so entering from the content area starts the poll
         for _, barFrame in ipairs(W.rowPool) do
-            barFrame.row:HookScript("OnEnter", StartHoverPoll)
+            barFrame.row:HookScript("OnEnter", PollHover)
         end
         if W.stickyPlayer then
-            W.stickyPlayer.row:HookScript("OnEnter", StartHoverPoll)
+            W.stickyPlayer.row:HookScript("OnEnter", PollHover)
         end
     end
 
@@ -4328,7 +4328,7 @@ local function CreateDMWindow(winIdx)
         W.timerText:SetShown(not wdb.hideTimer)
         -- Header buttons: size, glyph colour, meter type icon, close icon, lock state
         local sz = mod.DMHdrIconSize(cfg)
-        local ir, ig, ib = GetIconColor()
+        local ir, ig, ib = IconColor()
         for _, button in ipairs(W.hdrBtns) do
             button:SetSize(sz, sz)
         end

@@ -825,7 +825,7 @@ local function MarkDirty(unitToken)
     Arm()
 end
 
-local function MarkAll()
+local function ArmFull()
     fullArmed = true
     Arm()
 end
@@ -948,17 +948,17 @@ world:SetScript("OnEvent", function(_, evt, rtype)
         -- A buff learned or lost (a rank trained, the Divine Spirit talent
         -- taken or dropped) re-reads everyone; anything else costs one scan.
         if ScanProviders() then
-            MarkAll()
+            ArmFull()
         end
     elseif evt == "ADDON_RESTRICTION_STATE_CHANGED" then
         -- A restriction starting or lifting changes which buffs can be read.
         -- The pass runs next frame, after the activation dispatch, so it reads
         -- the settled state; addon chat restrictions never touch auras.
         if rtype ~= CHAT_RESTRICTION then
-            MarkAll()
+            ArmFull()
         end
     else
-        MarkAll()
+        ArmFull()
     end
 end)
 
@@ -1028,7 +1028,7 @@ local function Sync()
         enabled = wanted
         SetEvents(wanted)
         if wanted then
-            MarkAll()
+            ArmFull()
         else
             wipe(status)
             wipe(instance)
@@ -1037,7 +1037,7 @@ local function Sync()
             PaintAll()
         end
     elseif wanted and changed then
-        MarkAll()
+        ArmFull()
     end
 end
 

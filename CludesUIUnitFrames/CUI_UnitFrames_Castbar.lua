@@ -756,7 +756,7 @@ end
 -- Cast bar positioning is owned by the centralized unlock/anchor system
 -- (ApplySavedPositions).
 
-local function GetActiveKickSpell()
+local function KickSpell()
     return CludesUI.GetActiveKickSpell()
 end
 local function ComputeCastBarTint(readyTint, plainTint)
@@ -911,7 +911,7 @@ local function UpdateUnitFrameKickTick(castBar)
     end
     local tickOn = GetCastbarKickTickEnabled(prefs)
     local midOn = GetCastbarInterruptMidCastEnabled(prefs)
-    if (not (tickOn or midOn)) or not GetActiveKickSpell() then
+    if (not (tickOn or midOn)) or not KickSpell() then
         HideUnitFrameKickTick(castBar)
         return
     end
@@ -952,7 +952,7 @@ local function UpdateUnitFrameKickTick(castBar)
     castBar._kickIsChannel = isChannel
     castBar._kickIsEmpowered = isEmpowered
     local totalDur = castDur:GetTotalDuration()
-    local kickCD = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
+    local kickCD = C_Spell.GetSpellCooldownDuration(KickSpell())
     if not kickCD then
         -- Transient read miss (see above): skip, do not hide.
         return
@@ -1065,11 +1065,11 @@ local function UpdateUnitFrameKickTick(castBar)
             HideUnitFrameKickTick(castBar)
             return
         end
-        if not GetActiveKickSpell() then
+        if not KickSpell() then
             HideUnitFrameKickTick(castBar)
             return
         end
-        local icd = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
+        local icd = C_Spell.GetSpellCooldownDuration(KickSpell())
         if icd and icd.IsZero and C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean then
             local interruptible = C_CurveUtil.EvaluateColorValueFromBoolean(castBar._kickProtected, 0, 1)
             local kickReady = icd:IsZero()
@@ -1088,11 +1088,11 @@ local function RefreshUnitFrameKickTick(castBar)
     if not castBar or not castBar.kickPositioner then
         return
     end
-    if not GetActiveKickSpell() or not (C_Spell and C_Spell.GetSpellCooldownDuration) then
+    if not KickSpell() or not (C_Spell and C_Spell.GetSpellCooldownDuration) then
         HideUnitFrameKickTick(castBar)
         return
     end
-    local kickCD = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
+    local kickCD = C_Spell.GetSpellCooldownDuration(KickSpell())
     if not kickCD then
         -- Transient read miss during an ongoing cast: skip, do not hide.
         return
@@ -1163,7 +1163,7 @@ local function NotifyCastbarStarted(castBar)
     if activeCastbarCount == 1 then
         ufKickWatcher:RegisterEvent("SPELL_UPDATE_COOLDOWN")
         ufKickWatcher:RegisterEvent("SPELL_UPDATE_USABLE")
-        if GetActiveKickSpell() and not _ufCastColorTicker then
+        if KickSpell() and not _ufCastColorTicker then
             _ufCastColorTicker = C_Timer.NewTicker(0.2, function()
                 for callback in pairs(mod._castingCastbars) do
                     if callback:IsShown() then

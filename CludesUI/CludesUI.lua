@@ -3345,7 +3345,7 @@ function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
         end
         return CludesUI.SafeScrollRange(scrollFrame)
     end
-    local UpdateThumb = function() end
+    local SyncThumb = function() end
     local rail, knob
     if options.thumb ~= false then
         local wid, thumbMin, tp =
@@ -3374,7 +3374,7 @@ function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
         SolidTex(knob, "ARTWORK", 1, 1, 1, options.thumbAlpha or 0.27):SetAllPoints()
         -- Controller cursor: a drag-only control, never a stop.
         CludesUI.PadHint(knob, "nodeignore")
-        UpdateThumb = function()
+        SyncThumb = function()
             local scrollMax = MaxScroll()
             if scrollMax <= 0 then
                 rail:Hide()
@@ -3415,7 +3415,7 @@ function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
     end
     local function Set(v)
         scrollFrame:SetVerticalScroll(v)
-        UpdateThumb()
+        SyncThumb()
         if onScroll then
             onScroll(v)
         end
@@ -3461,10 +3461,10 @@ function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
         Set(goal)
     end
     if not knob then
-        return UpdateThumb, ScrollTo
+        return SyncThumb, ScrollTo
     end
     scrollFrame:SetScript("OnScrollRangeChanged", function()
-        UpdateThumb()
+        SyncThumb()
     end)
 
     -- Controller cursor: it scrolls the frame itself to reach a control, so the
@@ -3472,7 +3472,7 @@ function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
     if CludesUI.PadCP() then
         scrollFrame:HookScript("OnVerticalScroll", function()
             if not smoothing and not knob:GetScript("OnUpdate") then
-                UpdateThumb()
+                SyncThumb()
             end
         end)
     end
@@ -3584,7 +3584,7 @@ function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
             self:SetScript("OnUpdate", nil)
         end
     end)
-    return UpdateThumb, ScrollTo
+    return SyncThumb, ScrollTo
 end
 
 -- Utility functions
@@ -5325,7 +5325,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
             return false
         end
 
-        local function RefreshProxy()
+        local function SyncProxy()
             if closing then
                 return
             end
@@ -5360,7 +5360,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
                 return
             end
             if ModalOpen() then
-                RefreshProxy()
+                SyncProxy()
                 return
             end
             -- Controller Back (a real Hide, the gamepad pointer in control):
@@ -5386,7 +5386,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
                 local success, err = pcall(CloseListed, count)
                 closing = false
                 wipe(closeList)
-                RefreshProxy()
+                SyncProxy()
                 if not success then
                     geterrorhandler()(err)
                 end
@@ -5428,14 +5428,14 @@ initFrame:SetScript("OnEvent", function(self, evt)
                 end
             end
             padShown[#padShown + 1] = f
-            RefreshProxy()
+            SyncProxy()
         end
 
         local function PadOnlyHidden(f)
             for i = #padShown, 1, -1 do
                 if padShown[i] == f then
                     table.remove(padShown, i)
-                    RefreshProxy()
+                    SyncProxy()
                     return
                 end
             end
@@ -5462,8 +5462,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
                 escModal[#escModal + 1] = widget
             end
             escapeFrames[#escapeFrames + 1] = widget
-            widget:HookScript("OnShow", RefreshProxy)
-            widget:HookScript("OnHide", RefreshProxy)
+            widget:HookScript("OnShow", SyncProxy)
+            widget:HookScript("OnHide", SyncProxy)
         end
 
         -- The options page pool (CludesUI_FramePool.lua) resets a frame it hands
@@ -5490,7 +5490,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
                     table.remove(padShown, i)
                 end
             end
-            RefreshProxy()
+            SyncProxy()
         end
 
         -- Register the Vault once, regardless of which shortcut opens it.
@@ -5500,7 +5500,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
                 return false
             end
             CludesUI.RegisterEscapeClose(WeeklyRewardsFrame, { notOwned = true })
-            RefreshProxy()
+            SyncProxy()
             return true
         end
 

@@ -259,7 +259,7 @@ do
         _comparisonClearPending = false
         ClearSuppressedComparisons()
     end
-    local function QueueSuppressedComparisonClear()
+    local function QueueComparisonClear()
         if not _comparisonSupportActive then
             return
         end
@@ -295,7 +295,7 @@ do
                     return
                 end
                 if CludesUI._tooltipSuppressedByMode(tip) then
-                    QueueSuppressedComparisonClear()
+                    QueueComparisonClear()
                 end
             end)
             -- Blizzard resets the field itself before hooks run, so only forget
@@ -312,7 +312,7 @@ do
                             return
                         end
                         if CludesUI._tooltipSuppressedByMode(GameTooltip) then
-                            QueueSuppressedComparisonClear()
+                            QueueComparisonClear()
                         end
                     end)
                 end
@@ -325,7 +325,7 @@ do
             and TooltipComparisonManager
             and type(TooltipComparisonManager.AnchorShoppingTooltips) == "function"
         then
-            hooksecurefunc(TooltipComparisonManager, "AnchorShoppingTooltips", QueueSuppressedComparisonClear)
+            hooksecurefunc(TooltipComparisonManager, "AnchorShoppingTooltips", QueueComparisonClear)
             _comparisonManagerHookInstalled = true
         end
     end
@@ -381,7 +381,7 @@ do
         if CludesUI._tooltipSuppressedByMode(tip) then
             ArmComparisonSuppression(tip)
             ParkTooltip(tip)
-            QueueSuppressedComparisonClear()
+            QueueComparisonClear()
         else
             ReleaseComparisonSuppression(tip)
             UnparkTooltip(tip)
@@ -449,7 +449,7 @@ do
         if GameTooltip:IsShown() then
             ApplySuppression(GameTooltip)
         end
-        QueueSuppressedComparisonClear()
+        QueueComparisonClear()
     end
     UpdateStateWatcher = function()
         if not ComparisonSuppressionModeEnabled() then
@@ -576,7 +576,7 @@ do
         elseif GameTooltip:IsShown() and CludesUI._tooltipSuppressedByMode(GameTooltip) then
             ArmComparisonSuppression(GameTooltip)
             ParkTooltip(GameTooltip)
-            QueueSuppressedComparisonClear()
+            QueueComparisonClear()
         end
     end)
 end

@@ -397,17 +397,17 @@ local function RegisterUFUnlockElements()
         -- Core unit frames. Only register a mover for units that actually use
         -- the CludesUI frame; a unit set to Blizzard-default or Hidden has no
         -- CUI frame to move.
-        local function AddUFElement(unit, sequence)
+        local function AddFrameElement(unit, sequence)
             if mod.GetUnitFrameSource(unit) == "cui" then
                 elements[#elements + 1] = MakeUFElement(unit, sequence)
             end
         end
-        AddUFElement("player", 1)
-        AddUFElement("target", 2)
-        AddUFElement("focus", 3)
-        AddUFElement("pet", 4)
-        AddUFElement("targettarget", 5)
-        AddUFElement("focustarget", 6)
+        AddFrameElement("player", 1)
+        AddFrameElement("target", 2)
+        AddFrameElement("focus", 3)
+        AddFrameElement("pet", 4)
+        AddFrameElement("targettarget", 5)
+        AddFrameElement("focustarget", 6)
         if mod.GetUnitFrameSource("boss") == "cui" then
             local bossElem = MakeUFElement("boss", 7)
             -- Boss is a stack of 5 chained frames; resize / match actions don't make

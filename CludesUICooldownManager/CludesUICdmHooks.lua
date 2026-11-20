@@ -164,7 +164,7 @@ do
         st.started = true
     end
 
-    local function StopStackGlow(st)
+    local function EndStackGlow(st)
         if st.started then
             mod.StopNativeGlow(st.glow)
             st.started = nil
@@ -186,7 +186,7 @@ do
         local fd = hookFrameData[iconTex]
         local st = fd and fd.stackGlow
         if st then
-            StopStackGlow(st)
+            EndStackGlow(st)
         end
     end
 
@@ -212,7 +212,7 @@ do
         if not (threshold and threshold >= 1 and style and style >= 1) then
             if st and st.threshold then
                 st.threshold = nil
-                StopStackGlow(st)
+                EndStackGlow(st)
                 mod._btDirty = true
                 if mod.ArmBuffTicker then
                     mod.ArmBuffTicker()
@@ -276,7 +276,7 @@ do
         st.lines, st.thickness, st.speed = lines, thickness, speed
         st.background, st.bgR, st.bgG, st.bgB = background, bgR, bgG, bgB
         if changed then
-            StopStackGlow(st)
+            EndStackGlow(st)
             local max = operator == "lt" or operator == "lte"
             local edge = (operator == "gt" or operator == "lte") and threshold + 1 or threshold
             st.gate:SetMinMaxValues(edge - 1, edge)
@@ -296,7 +296,7 @@ do
                 st.mask2:SetPoint(equality and "LEFT" or "RIGHT", st.fill2 or st.gate2, "RIGHT", 0, 0)
                 st.closeValue2 = equality and threshold + 1 or 0
             end
-            StopStackGlow(st)
+            EndStackGlow(st)
         end
         mod._btDirty = true
         if mod.ArmBuffTicker then
@@ -314,7 +314,7 @@ do
             return
         end
         if not isActive then
-            StopStackGlow(st)
+            EndStackGlow(st)
             return
         end
         local applications = ReadBuffApplications(iconTex)
@@ -325,7 +325,7 @@ do
             if applications == nil then
                 applications = st.openValue
             elseif not StackGlowMatches(applications, st.operator, st.threshold) then
-                StopStackGlow(st)
+                EndStackGlow(st)
                 return
             end
         end

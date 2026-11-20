@@ -194,7 +194,7 @@ end
 
 -- Position the FocusKick bar against the tracked unit's nameplate. Called on focus/target change,
 -- nameplate add/remove, and nameplate moves. The stored nameplateAnchorSide picks the plate side (LEFT/RIGHT/TOP/BOTTOM); stored offsets shift from that anchor point.
-local function ApplyFocusKickAnchor()
+local function PlaceFocusKick()
     local widget = cdmBarFrames[FOCUSKICK_BAR_KEY]
     if not widget then
         return
@@ -232,7 +232,7 @@ local function ApplyFocusKickAnchor()
     end
     SetFocusKickAlpha(1)
 end
-mod.ApplyFocusKickAnchor = ApplyFocusKickAnchor
+mod.ApplyFocusKickAnchor = PlaceFocusKick
 
 -- Single event proxy, created once and persistent; just calls ApplyFocusKickAnchor on relevant
 -- events. Range-fade handling: when the tracked unit walks out of range, Blizzard fades the
@@ -250,7 +250,7 @@ mod.ReapplyFocusKick = function()
         return
     end
     _focusKickLastPlateVisible = nil
-    ApplyFocusKickAnchor()
+    PlaceFocusKick()
 end
 local function EnsureFocusKickProxy()
     if _focusKickProxy then
@@ -277,7 +277,7 @@ local function EnsureFocusKickProxy()
                 return
             end
             _focusKickLastPlateVisible = nil
-            ApplyFocusKickAnchor()
+            PlaceFocusKick()
             if self._arm then
                 self._arm()
             end
@@ -286,7 +286,7 @@ local function EnsureFocusKickProxy()
                 return
             end
             _focusKickLastPlateVisible = nil
-            ApplyFocusKickAnchor()
+            PlaceFocusKick()
             if self._arm then
                 self._arm()
             end
@@ -294,12 +294,12 @@ local function EnsureFocusKickProxy()
             -- Only react when the tracked unit's plate is removed. Reacting to every plate removal caused the bar to flicker off during AoE when unrelated mobs died or faded.
             if unitToken and (unitToken == kickUnit or UnitIsUnit(unitToken, kickUnit)) then
                 _focusKickLastPlateVisible = nil
-                ApplyFocusKickAnchor()
+                PlaceFocusKick()
             end
         elseif evt == "NAME_PLATE_UNIT_ADDED" then
             if unitToken and (unitToken == kickUnit or UnitIsUnit(unitToken, kickUnit)) then
                 _focusKickLastPlateVisible = nil
-                ApplyFocusKickAnchor()
+                PlaceFocusKick()
                 if self._arm then
                     self._arm()
                 end
@@ -1139,7 +1139,7 @@ function mod.RefreshFocusKickProxies()
     if hasIcons then
         EnsureFocusKickProxy()
         _focusKickLastPlateVisible = nil
-        ApplyFocusKickAnchor()
+        PlaceFocusKick()
         EnsureFocusReminderProxy()
         RefreshFocusReminders()
     else

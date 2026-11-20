@@ -362,7 +362,7 @@ CludesUI.AtOptionsLogin(function()
         button:Show()
     end
 
-    local function UpdatePreviewHeader()
+    local function SyncPreviewHeader()
         if not _previewIcons or #_previewIcons == 0 then
             return
         end
@@ -402,7 +402,7 @@ CludesUI.AtOptionsLogin(function()
             _G._CUABR_ApplyAllIconBorders()
         end
         RequestRefresh()
-        UpdatePreviewHeader()
+        SyncPreviewHeader()
     end
 
     ---------------------------------------------------------------------------
@@ -590,7 +590,7 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end
             end
-            UpdatePreviewHeader()
+            SyncPreviewHeader()
             -- The full build's height (never nil, which would collapse the header).
             return PREVIEW_H + ((not IsPreviewHintDismissed()) and 35 or 0)
         end
@@ -626,7 +626,7 @@ CludesUI.AtOptionsLogin(function()
             local button = MakePreviewIcon(container, data, display, sz, iconH, x + (i - 1) * (sz + spacing))
             _previewIcons[i] = { frame = button, data = data }
         end
-        UpdatePreviewHeader() -- glows
+        SyncPreviewHeader() -- glows
 
         -- Each icon leads to its own row (else its category); a shown text to Show Name.
         wipe(_eabrHitOverlays)
@@ -1430,7 +1430,7 @@ CludesUI.AtOptionsLogin(function()
                 defaultColor = { r = 1.0, g = 0.788, b = 0.137 },
                 onChange = function()
                     RequestRefresh()
-                    UpdatePreviewHeader()
+                    SyncPreviewHeader()
                 end,
                 get = function(f)
                     local display = DDB()
@@ -1548,7 +1548,7 @@ CludesUI.AtOptionsLogin(function()
     -- and runs after (default: refresh the reminders and the preview).
     local function Live()
         RequestRefresh()
-        UpdatePreviewHeader()
+        SyncPreviewHeader()
     end
     local function Get(key, default)
         return function()
@@ -1762,7 +1762,7 @@ CludesUI.AtOptionsLogin(function()
     -- A shape change re-masks the reminder icons and the preview.
     local function Reshape()
         ns.RefreshIconShapes()
-        UpdatePreviewHeader()
+        SyncPreviewHeader()
     end
 
     -- Icon Shape (+ crop cog) | Icon Zoom.
@@ -4423,7 +4423,7 @@ CludesUI.AtOptionsLogin(function()
     -- preview): the icons refreshed, the hint only shown or hidden (never
     -- made here), and the header sized for it.
     local function RestoreRemindersPage()
-        UpdatePreviewHeader()
+        SyncPreviewHeader()
         local dismissed = IsPreviewHintDismissed()
         if _previewHintFS then
             if dismissed then

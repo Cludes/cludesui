@@ -823,7 +823,7 @@ local BL_OWN_KEYS = {
     desaturateSated = true,
 }
 
-local function BL_Cfg(key, fallback)
+local function LustCfg(key, fallback)
     local bl = BL_P()
     if BL_OWN_KEYS[key] then
         if not bl then
@@ -864,7 +864,7 @@ local function MakeBloodlustBorderColorSwatches()
             tooltip = "Custom Color",
             hasAlpha = false,
             getValue = function()
-                local color = BL_Cfg("borderColor")
+                local color = LustCfg("borderColor")
                 if color then
                     return color.r or 0, color.g or 0, color.b or 0
                 end
@@ -875,7 +875,7 @@ local function MakeBloodlustBorderColorSwatches()
                 ApplyBloodlust()
             end,
             onClick = function(self)
-                if BL_Cfg("borderUseClass") then
+                if LustCfg("borderUseClass") then
                     BL_Set("borderUseClass", false)
                     ApplyBloodlust()
                     CludesUI:RefreshPage()
@@ -886,10 +886,10 @@ local function MakeBloodlustBorderColorSwatches()
                 end
             end,
             refreshAlpha = function()
-                if BL_Cfg("enabled") == false or BL_Cfg("visibility") == "NEVER" then
+                if LustCfg("enabled") == false or LustCfg("visibility") == "NEVER" then
                     return 0.15
                 end
-                return BL_Cfg("borderUseClass") and 0.3 or 1
+                return LustCfg("borderUseClass") and 0.3 or 1
             end,
         },
         {
@@ -910,10 +910,10 @@ local function MakeBloodlustBorderColorSwatches()
                 CludesUI:RefreshPage()
             end,
             refreshAlpha = function()
-                if BL_Cfg("enabled") == false or BL_Cfg("visibility") == "NEVER" then
+                if LustCfg("enabled") == false or LustCfg("visibility") == "NEVER" then
                     return 0.15
                 end
-                return BL_Cfg("borderUseClass") and 1 or 0.3
+                return LustCfg("borderUseClass") and 1 or 0.3
             end,
         },
     }
@@ -930,7 +930,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
     CludesUI.BuildSectionUnlockJump(heading, {
         key = "CUI_Bloodlust",
         disabled = function()
-            return BL_Cfg("visibility") == "NEVER"
+            return LustCfg("visibility") == "NEVER"
         end,
         disabledTooltip = "Bloodlust Icon",
     })
@@ -965,14 +965,14 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
         values = VIS_VALUES,
         order = VIS_ORDER,
         getValue = function()
-            return BL_Cfg("visibility") or "NEVER"
+            return LustCfg("visibility") or "NEVER"
         end,
         -- DependentSetValue: the rows below Row 1 are hidden while Never;
         -- only the Never <-> shown flip forces the full rebuild.
         setValue = CludesUI.DependentSetValue(function()
-            return BL_Cfg("visibility") ~= "NEVER"
+            return LustCfg("visibility") ~= "NEVER"
         end, function(val)
-            local was = BL_Cfg("visibility") or "NEVER"
+            local was = LustCfg("visibility") or "NEVER"
             BL_Set("visibility", val)
             if was == "NEVER" and val ~= "NEVER" and _G._CUI_Bloodlust_SeedPos then
                 _G._CUI_Bloodlust_SeedPos()
@@ -984,7 +984,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
         type = "slider",
         text = "Icon Size",
         disabled = function()
-            return BL_Cfg("visibility") == "NEVER"
+            return LustCfg("visibility") == "NEVER"
         end,
         disabledTooltip = "Bloodlust Icon",
         min = 16,
@@ -992,7 +992,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
         step = 1,
         isPercent = false,
         getValue = function()
-            return BL_Cfg("iconSize") or 40
+            return LustCfg("iconSize") or 40
         end,
         setValue = function(val)
             BL_Set("iconSize", val)
@@ -1003,14 +1003,14 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
 
     -- Rows below are HIDDEN entirely while the icon is set to Never (the
     -- dropdown's DependentSetValue forces the rebuild on flips).
-    if BL_Cfg("visibility") ~= "NEVER" then
+    if LustCfg("visibility") ~= "NEVER" then
         row, height = W:DualRow(hostFrame, cursorY, {
             type = "dropdown",
             text = "Icon Shape",
             values = SHAPE_VALUES,
             order = SHAPE_ORDER,
             getValue = function()
-                return BL_Cfg("shape") or "none"
+                return LustCfg("shape") or "none"
             end,
             setValue = function(val)
                 BL_Set("shape", val)
@@ -1033,11 +1033,11 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
         end
         cursorY = cursorY - height
 
-        row, height = W:DualRow(hostFrame, cursorY, BorderSizeSliderCfg(BL_Cfg, BL_Set, ApplyBloodlust), {
+        row, height = W:DualRow(hostFrame, cursorY, BorderSizeSliderCfg(LustCfg, BL_Set, ApplyBloodlust), {
             type = "slider",
             text = "Icon Zoom",
             disabled = function()
-                local s = BL_Cfg("shape") or "none"
+                local s = LustCfg("shape") or "none"
                 return s ~= "none" and s ~= "cropped"
             end,
             disabledTooltip = "This option requires Icon Shape to be set to None or Cropped",
@@ -1046,7 +1046,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
             step = 0.5,
             isPercent = false,
             getValue = function()
-                return BL_Cfg("iconZoom") or 11
+                return LustCfg("iconZoom") or 11
             end,
             setValue = function(val)
                 BL_Set("iconZoom", val)
@@ -1063,7 +1063,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
             step = 1,
             isPercent = false,
             getValue = function()
-                return BL_Cfg("durationSize") or 12
+                return LustCfg("durationSize") or 12
             end,
             setValue = function(val)
                 BL_Set("durationSize", val)
@@ -1077,7 +1077,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
             step = 1,
             isPercent = false,
             getValue = function()
-                return BL_Cfg("countSize") or 11
+                return LustCfg("countSize") or 11
             end,
             setValue = function(val)
                 BL_Set("countSize", val)
@@ -1112,7 +1112,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                             max = 50,
                             step = 1,
                             get = function()
-                                return BL_Cfg(xKey) or 0
+                                return LustCfg(xKey) or 0
                             end,
                             set = function(val)
                                 BL_Set(xKey, val)
@@ -1126,7 +1126,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                             max = 50,
                             step = 1,
                             get = function()
-                                return BL_Cfg(yKey) or 0
+                                return LustCfg(yKey) or 0
                             end,
                             set = function(val)
                                 BL_Set(yKey, val)
@@ -1155,7 +1155,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                 text = "Show Icon when Sated",
                 tooltip = "Show the Sated/Exhaustion lockout countdown on the icon.",
                 getValue = function()
-                    return BL_Cfg("showSated") ~= false
+                    return LustCfg("showSated") ~= false
                 end,
                 setValue = function(val)
                     BL_Set("showSated", val)
@@ -1167,7 +1167,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                 text = "Show Icon with Ready Text",
                 tooltip = "Once the lockout expires, show a Ready label on the icon in place of the countdown. The visibility rule above still applies.",
                 getValue = function()
-                    return BL_Cfg("showReady") == true
+                    return LustCfg("showReady") == true
                 end,
                 setValue = function(val)
                     BL_Set("showReady", val)
@@ -1179,12 +1179,12 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
 
             if not CludesUI._prebuilding then
                 AttachToggleCog(row._leftRegion, "Sated Settings", "Desaturate when Sated", function()
-                    return BL_Cfg("desaturateSated") ~= false
+                    return LustCfg("desaturateSated") ~= false
                 end, function(val)
                     BL_Set("desaturateSated", val)
                     ApplyBloodlust()
                 end, function()
-                    return BL_Cfg("showSated") == false
+                    return LustCfg("showSated") == false
                 end, "Show Icon when Sated")
             end
 
@@ -1192,7 +1192,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
             -- disabled (not hidden) while Show Ready is off so the layout never
             -- reshuffles on the toggle.
             local function readyOff()
-                return BL_Cfg("showReady") ~= true
+                return LustCfg("showReady") ~= true
             end
             row, height = W:DualRow(hostFrame, cursorY, {
                 type = "slider",
@@ -1204,7 +1204,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                 step = 1,
                 isPercent = false,
                 getValue = function()
-                    return BL_Cfg("readySize") or 12
+                    return LustCfg("readySize") or 12
                 end,
                 setValue = function(val)
                     BL_Set("readySize", val)
@@ -1228,7 +1228,7 @@ _G._CUI_BuildBloodlustSection = function(hostFrame, yOffset, W, Pix)
                     leftRegion,
                     leftRegion:GetFrameLevel() + 5,
                     function()
-                        local color = BL_Cfg("readyColor")
+                        local color = LustCfg("readyColor")
                         if color then
                             return color.r or 1, color.g or 1, color.b or 1
                         end

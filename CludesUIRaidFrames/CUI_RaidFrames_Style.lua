@@ -1131,7 +1131,7 @@ local function StyleButton(btnFrame)
     -- Recolor the single border for the current state: hover > target > aggro (Threat
     -- Borders' Color Custom Borders, flagged by ns.RF_PaintThreat) > normal. A borderless
     -- frame has nothing to recolor, so the highlight draws its own (ns.ApplyHighlightBorder).
-    local function ApplyBorderColor()
+    local function PaintBorder()
         if not (Pix and skinData.borderFrame) then
             return
         end
@@ -1204,7 +1204,7 @@ local function StyleButton(btnFrame)
             mod.RF_ColorPowerDivider(skinData.topNameBar._divider, red, green, blue, a)
         end
     end
-    skinData.ApplyBorderColor = ApplyBorderColor
+    skinData.ApplyBorderColor = PaintBorder
 
     -- Apply border (style/size/texture/offsets via shared ApplyBorderStyle,
     -- then recolor for state). "Show Behind" lowers it below the frame; else +8.
@@ -1224,7 +1224,7 @@ local function StyleButton(btnFrame)
         end
         if compact then
             CludesUI.ApplyBorderStyle(skinData.borderFrame, 0, 0, 0, 0, 0, "solid")
-            ApplyBorderColor()
+            PaintBorder()
             CludesUI.RoundCorners(btnFrame, 0)
             return
         end
@@ -1234,7 +1234,7 @@ local function StyleButton(btnFrame)
             skinData.borderFrame:SetFrameLevel(pl + 8)
             CludesUI.ApplyBorderStyle(skinData.borderFrame, 0, 0, 0, 0, 0, "solid")
             skinData.borderFrame._hlBorderSize = nil
-            ApplyBorderColor()
+            PaintBorder()
             CludesUI.RoundCorners(btnFrame, 0)
             return
         end
@@ -1243,7 +1243,7 @@ local function StyleButton(btnFrame)
             CludesUI.ApplyBorderStyle(skinData.borderFrame, 0, 0, 0, 0, 0, "solid")
             skinData.borderFrame._hlBorderSize = nil
             mod.RF_StockSeat(skinData)
-            ApplyBorderColor()
+            PaintBorder()
             CludesUI.RoundCorners(btnFrame, 0)
             return
         end
@@ -1265,7 +1265,7 @@ local function StyleButton(btnFrame)
             nil,
             CludesUI.BorderPx(cfg.borderSizePx, bs, texKey)
         )
-        ApplyBorderColor()
+        PaintBorder()
         -- Rounded corners (CludesUI_RoundedCorners.lua; nothing at radius 0).
         -- The power border rides in the body so its edge strips round too.
         local radius = cfg.cornerRadius or 0
@@ -1324,7 +1324,7 @@ local function StyleButton(btnFrame)
                     and cfg.powerBorderMatchColor == true
                     and skinData.powerBorderFrame._powerArtMode == "divider"
                 then
-                    ApplyBorderColor()
+                    PaintBorder()
                 end
                 return
             end

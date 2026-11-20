@@ -2616,7 +2616,7 @@ local function SkinCharacterSheet()
         PvP = { r = 0.671, g = 0.431, b = 0.349 },
     }
 
-    local function GetCategoryColor(titleText)
+    local function CategoryColor(titleText)
         local blizz = mod.CharSheetBlizzColor()
         if blizz then
             return blizz
@@ -2640,14 +2640,14 @@ local function SkinCharacterSheet()
             {
                 title = "Attributes",
                 colorKey = "Attributes",
-                color = GetCategoryColor("Attributes"),
+                color = CategoryColor("Attributes"),
                 stats = GetFilteredAttributeStats(),
             },
             {
                 title = "Secondary",
                 colorKey = "Secondary Stats",
                 settingKey = "SecondaryStats",
-                color = GetCategoryColor("Secondary Stats"),
+                color = CategoryColor("Secondary Stats"),
                 stats = {
                     {
                         name = "Critical Strike",
@@ -2701,7 +2701,7 @@ local function SkinCharacterSheet()
                 title = "Tertiary",
                 colorKey = "Tertiary Stats",
                 settingKey = "Tertiary",
-                color = GetCategoryColor("Tertiary Stats"),
+                color = CategoryColor("Tertiary Stats"),
                 stats = {
                     -- GetLifesteal/GetAvoidance/GetSpeed return TOTAL percent (incl.
                     -- talent/racial bonuses); GetCombatRatingBonus is rating-only and
@@ -2741,7 +2741,7 @@ local function SkinCharacterSheet()
             {
                 title = "Attack",
                 colorKey = "Attack",
-                color = GetCategoryColor("Attack"),
+                color = CategoryColor("Attack"),
                 stats = {
                     {
                         name = "Spell Power",
@@ -2763,7 +2763,7 @@ local function SkinCharacterSheet()
             {
                 title = "Defense",
                 colorKey = "Defense",
-                color = GetCategoryColor("Defense"),
+                color = CategoryColor("Defense"),
                 stats = {
                     {
                         name = "Armor",
@@ -2811,7 +2811,7 @@ local function SkinCharacterSheet()
             {
                 title = "Crests",
                 colorKey = "Crests",
-                color = GetCategoryColor("Crests"),
+                color = CategoryColor("Crests"),
                 -- SEASON UPDATE: the season's crest currency ids, highest tier first.
                 stats = {
                     {
@@ -2865,7 +2865,7 @@ local function SkinCharacterSheet()
                 title = "PvP",
                 colorKey = "PvP",
                 settingKey = "PvP",
-                color = GetCategoryColor("PvP"),
+                color = CategoryColor("PvP"),
                 stats = {
                     {
                         name = "Honor Level",
@@ -6296,7 +6296,7 @@ function CludesUI._refreshCharacterSheetColors()
         PvP = { r = 0.671, g = 0.431, b = 0.349 },
     }
 
-    local function GetCategoryColor(titleText)
+    local function CategoryColor(titleText)
         local blizz = mod.CharSheetBlizzColor()
         if blizz then
             return blizz
@@ -6322,7 +6322,7 @@ function CludesUI._refreshCharacterSheetColors()
     -- Recolor each section by its persisted colorKey (DB key), not display title, so mismatches like "Secondary" vs "Secondary Stats" resolve correctly.
     for _, sectionInfo in ipairs(GetFFD(charFrame).statsSections) do
         local key = sectionInfo.colorKey or sectionInfo.sectionTitle
-        local pickedColor = GetCategoryColor(key)
+        local pickedColor = CategoryColor(key)
 
         if sectionInfo.titleFS then
             sectionInfo.titleFS:SetTextColor(pickedColor.r, pickedColor.g, pickedColor.b, 1)

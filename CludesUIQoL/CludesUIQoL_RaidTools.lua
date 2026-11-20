@@ -529,7 +529,7 @@ local function P()
 end
 mod.RaidToolsProfile = P
 
-local function Mode()
+local function ShowMode()
     local profile = P()
     return (profile and profile.mode) or "never"
 end
@@ -1872,7 +1872,7 @@ local MODE_DRIVERS = {
 -- Reached only from Apply, which has already returned if we are in combat.
 local function ApplyVisibility()
     local profile = P()
-    local modeName = Mode()
+    local modeName = ShowMode()
     local driver = MODE_DRIVERS[modeName]
     -- The out-of-combat settle for the state a driver will not re-fire
     -- (registering one only fires _onstate on a CHANGE). Always mode has no
@@ -1971,7 +1971,7 @@ local function ApplyToggleKeybind()
     -- The gate takes the binding with it rather than leaving a key that eats
     -- its own keypress: the snippet would refuse a disabled frame, and an
     -- override binding swallows whatever the key does otherwise.
-    if k and k ~= "" and Mode() ~= "never" and not AssistSuppressed() then
+    if k and k ~= "" and ShowMode() ~= "never" and not AssistSuppressed() then
         SetOverrideBindingClick(toggleBtn, false, k, "CludesUIRaidToolsToggle")
     end
 end
@@ -2196,7 +2196,7 @@ local function ApplyQuickFireBindings()
     if runState.qfBindingOwner then
         ClearOverrideBindings(runState.qfBindingOwner)
     end
-    if not profile or profile.quickFire ~= true or Mode() == "never" or AssistSuppressed() then
+    if not profile or profile.quickFire ~= true or ShowMode() == "never" or AssistSuppressed() then
         return
     end
 
@@ -2251,7 +2251,7 @@ local function EnsureEvents()
                 Apply()
                 return
             end
-            if Mode() == "never" then
+            if ShowMode() == "never" then
                 return
             end
             -- A zone change repaints the band too: the markers it showed belong
@@ -2289,7 +2289,7 @@ local function EnsureEvents()
     eventName:RegisterEvent("PLAYER_ENTERING_WORLD")
     eventName:RegisterEvent("PLAYER_REGEN_ENABLED")
     local profile = P()
-    if Mode() ~= "never" and (ShowAs() == "compact" or (profile and profile.quickFire == true)) then
+    if ShowMode() ~= "never" and (ShowAs() == "compact" or (profile and profile.quickFire == true)) then
         eventName:RegisterEvent("RAID_TARGET_UPDATE")
     else
         eventName:UnregisterEvent("RAID_TARGET_UPDATE")
@@ -2326,7 +2326,7 @@ local function RegisterUnlock()
             order = 540 + index,
             noResize = true,
             getFrame = function()
-                if Mode() == "never" then
+                if ShowMode() == "never" then
                     return nil
                 end
                 -- Nothing to move while the assist gate has the whole feature
@@ -2416,7 +2416,7 @@ local function RegisterUnlock()
         group = "Raid Tools",
         order = 540,
         getFrame = function()
-            if Mode() == "never" or AssistSuppressed() or ShowAs() ~= "compact" then
+            if ShowMode() == "never" or AssistSuppressed() or ShowAs() ~= "compact" then
                 return nil
             end
             BuildAll()
@@ -2511,7 +2511,7 @@ function Apply()
     -- The settings preview builds and shows even on Never: the page being in
     -- front means the user is configuring the thing, and an invisible subject
     -- makes every control feel dead. Preview off restores the true teardown.
-    if Mode() == "never" and not previewOn then
+    if ShowMode() == "never" and not previewOn then
         if sectionList.Group then
             for _, toolKey in ipairs(SECTION_KEYS) do
                 local frame = sectionList[toolKey]
@@ -2585,7 +2585,7 @@ end
 
 SLASH_CUIRAIDTOOLS1 = "/cuiraid"
 SlashCmdList["CUIRAIDTOOLS"] = function()
-    if Mode() == "never" then
+    if ShowMode() == "never" then
         CludesUI.Print(
             CludesUI.COLOR_CODES.BRAND
                 .. "CludesUI:|r "

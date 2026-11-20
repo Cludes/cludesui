@@ -81,7 +81,7 @@ local function AnchorPos()
     return DEFAULT_POS
 end
 
-local function PlaceAnchor()
+local function PositionAnchor()
     if not anchor then
         return
     end
@@ -99,7 +99,7 @@ local function EnsureAnchor()
     anchor = CreateFrame("Frame", nil, UIParent)
     anchor:EnableMouse(false)
     anchor:SetMouseClickEnabled(false)
-    PlaceAnchor()
+    PositionAnchor()
 end
 
 local function Layout()
@@ -186,7 +186,7 @@ local function NewLine(def)
             return
         end
         EnsureAnchor()
-        PlaceAnchor()
+        PositionAnchor()
         Style(line)
         fontStr:SetText(textValue)
         fontStr:SetTextColor(red or 1, green or 1, blue or 1)
@@ -241,7 +241,7 @@ end
 function Alerts.Refresh()
     if anchor or AnyEnabled() then
         EnsureAnchor()
-        PlaceAnchor()
+        PositionAnchor()
     end
     for _, line in pairs(lines) do
         Style(line)
@@ -296,7 +296,7 @@ local function RegisterUnlock()
                 end
                 CludesUIDB.alertsPos = { point = anchorPoint, relPoint = relPoint, x = posX, y = posY }
                 if anchor and not CUI._unlockActive then
-                    PlaceAnchor()
+                    PositionAnchor()
                     Layout()
                 end
             end,
@@ -310,14 +310,14 @@ local function RegisterUnlock()
                     CludesUIDB.combatAlertPos = nil
                 end
                 if anchor then
-                    PlaceAnchor()
+                    PositionAnchor()
                     Layout()
                 end
             end,
             applyPos = function()
                 if anchor or AnyEnabled() then
                     EnsureAnchor()
-                    PlaceAnchor()
+                    PositionAnchor()
                     Layout()
                 end
             end,

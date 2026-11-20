@@ -110,20 +110,20 @@ CludesUI.AtOptionsLogin(function()
     --  Helpers
     ---------------------------------------------------------------------------
     local _selectedBarKey = "MainBar"
-    local function SelectedKey()
+    local function PickedBarKey()
         return _selectedBarKey
     end
 
-    local function SB()
-        return ABAR.db.profile.bars[SelectedKey()] or {}
+    local function PickedBarCfg()
+        return ABAR.db.profile.bars[PickedBarKey()] or {}
     end
 
     local function IsVisOnly()
-        return VISIBILITY_ONLY[SelectedKey()]
+        return VISIBILITY_ONLY[PickedBarKey()]
     end
 
     local function IsDataBar()
-        return DATA_BAR[SelectedKey()]
+        return DATA_BAR[PickedBarKey()]
     end
 
     -- First button of a bar (source of default size): our EABButton, else the
@@ -375,7 +375,7 @@ CludesUI.AtOptionsLogin(function()
 
     -- Spec Overrides capture: label captured entries with the selected bar's element (e.g. "Action Bars > Bar 1 > ...").
     CludesUI.RegisterCaptureContext("CludesUIActionBars", function()
-        local key = SelectedKey()
+        local key = PickedBarKey()
         return SHORT_LABELS[key] or key
     end)
 
@@ -700,26 +700,26 @@ CludesUI.AtOptionsLogin(function()
         --  Unified Get / Set / DB abstraction
         ---------------------------------------------------------------
         local function SGet(key)
-            return SB()[key]
+            return PickedBarCfg()[key]
         end
         local function SSet(key, val, applyFn)
-            SB()[key] = val
+            PickedBarCfg()[key] = val
             if applyFn then
-                applyFn(SelectedKey())
+                applyFn(PickedBarKey())
             end
             CludesUI:RefreshPage()
         end
         local function SDB()
-            return SB()
+            return PickedBarCfg()
         end
         local function SVal(key, default)
-            local value = SB()[key]
+            local value = PickedBarCfg()[key]
             return value ~= nil and value or default
         end
         local function SSetColor(key, red, green, blue, a, applyFn)
-            SB()[key] = { r = red, g = green, b = blue, a = a }
+            PickedBarCfg()[key] = { r = red, g = green, b = blue, a = a }
             if applyFn then
-                applyFn(SelectedKey())
+                applyFn(PickedBarKey())
             end
             CludesUI:RefreshPage()
         end
@@ -745,8 +745,8 @@ CludesUI.AtOptionsLogin(function()
             if anchor then
                 nx, ny = ABAR.StockTextOffsets(kind, anchor)
             end
-            SB()[oxKey] = SVal(oxKey, 0) - px + nx
-            SB()[oyKey] = SVal(oyKey, 0) - py + ny
+            PickedBarCfg()[oxKey] = SVal(oxKey, 0) - px + nx
+            PickedBarCfg()[oyKey] = SVal(oyKey, 0) - py + ny
         end
         local function SUpdatePreviewAndResize()
             UpdatePreviewAndResize()
@@ -759,7 +759,7 @@ CludesUI.AtOptionsLogin(function()
         local keybindRow, chargesRow
 
         local function BgDisabled()
-            return not SB().bgEnabled
+            return not PickedBarCfg().bgEnabled
         end
 
         -- The sections live in ActionBars_Options\BarVisibilityLayout_Options.lua
@@ -900,9 +900,9 @@ CludesUI.AtOptionsLogin(function()
         -- Tag every option registered while building this page with the selected bar, so a global-search
         -- jump to a bar-specific setting restores this exact selection first via _setActionBarKey
         -- (full reasoning: the matching _buildingSelector comment in CUI_CooldownManager_Options.lua).
-        CludesUI._buildingSelector = { setter = CludesUI._setActionBarKey, key = SelectedKey() }
+        CludesUI._buildingSelector = { setter = CludesUI._setActionBarKey, key = PickedBarKey() }
 
-        ShowEditOverlay(SelectedKey())
+        ShowEditOverlay(PickedBarKey())
 
         -------------------------------------------------------------------
         --  CONTENT HEADER  (dropdown + preview)
@@ -926,7 +926,7 @@ CludesUI.AtOptionsLogin(function()
                 barLabels,
                 barOrder,
                 function()
-                    return SelectedKey()
+                    return PickedBarKey()
                 end,
                 function(value)
                     _selectedBarKey = value
@@ -1075,12 +1075,12 @@ CludesUI.AtOptionsLogin(function()
         pcall = pcall,
         PP = Pix,
         RANGE_INDICATOR = RANGE_INDICATOR,
-        SB = SB,
+        SB = PickedBarCfg,
         SECTION_ICON_APPEARANCE = SECTION_ICON_APPEARANCE,
         SECTION_LAYOUT = SECTION_LAYOUT,
         SECTION_TEXT = SECTION_TEXT,
         SECTION_VISIBILITY = SECTION_VISIBILITY,
-        SelectedKey = SelectedKey,
+        SelectedKey = PickedBarKey,
         SHORT_LABELS = SHORT_LABELS,
         ShownBorderDefaults = ShownBorderDefaults,
         TEXT_ANCHOR_DROPDOWN_ORDER = TEXT_ANCHOR_DROPDOWN_ORDER,
@@ -1132,7 +1132,7 @@ CludesUI.AtOptionsLogin(function()
         onPageCacheRestore = function(page)
             if page == PAGE_DISPLAY then
                 UpdatePreview()
-                ShowEditOverlay(SelectedKey())
+                ShowEditOverlay(PickedBarKey())
                 local dismissed = IsPreviewHintDismissed()
                 if _abPreviewHintFS then
                     if dismissed then

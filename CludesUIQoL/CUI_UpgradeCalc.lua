@@ -771,7 +771,7 @@ end
 --  UI
 -------------------------------------------------------------------------------
 
-local function SolidTex(p, l, red, green, blue, a)
+local function FlatTex(p, l, red, green, blue, a)
     return CUI.SolidTex(p, l, red, green, blue, a)
 end
 
@@ -921,7 +921,7 @@ if CUI and CUI.PanelPP then
     CUI.PanelPP.CreateBorder(frame, 0.1, 0.1, 0.1, 1, 1, "OVERLAY", 7)
 end
 
-local titleBg = SolidTex(frame, "BORDER", 0, 0, 0, 0.25)
+local titleBg = FlatTex(frame, "BORDER", 0, 0, 0, 0.25)
 Pix.Point(titleBg, "TOPLEFT", frame, "TOPLEFT", 1, -1)
 Pix.Point(titleBg, "TOPRIGHT", frame, "TOPRIGHT", -1, 0)
 Pix.Height(titleBg, 32)
@@ -956,7 +956,7 @@ local tabY = -36
 local function MakeRow(hostFrame, cols, yOffset, isAlt)
     local row = {}
     if isAlt then
-        local backdrop = SolidTex(hostFrame, "BACKGROUND", 0, 0, 0, 0.15)
+        local backdrop = FlatTex(hostFrame, "BACKGROUND", 0, 0, 0, 0.15)
         Pix.Point(backdrop, "TOPLEFT", hostFrame, "TOPLEFT", 0, yOffset)
         Pix.Point(backdrop, "TOPRIGHT", hostFrame, "TOPRIGHT", 0, yOffset)
         Pix.Height(backdrop, ROW_H)
@@ -976,7 +976,7 @@ local function MakeButton(hostFrame, labelText, wid, hgt, yOff, xOff)
     local button = CreateFrame("Button", nil, hostFrame)
     Pix.Size(button, wid, hgt)
     Pix.Point(button, "TOPLEFT", hostFrame, "TOPLEFT", xOff, yOff)
-    local btnBg = SolidTex(button, "BACKGROUND", 0, 0, 0, 0.35)
+    local btnBg = FlatTex(button, "BACKGROUND", 0, 0, 0, 0.35)
     btnBg:SetAllPoints()
     local bb = CUI.MakeBorder(button, 0.2, 0.2, 0.2, 1)
     if bb.SetColor then
@@ -1013,7 +1013,7 @@ Pix.Height(cc, FRAME_H - 100)
 
 -- ── iLvl Timeline bar ──────────────────────────────────────────────────────────
 -- iLvl timeline bar: same line as the stat label, starts after "(estimated)"
-local tlTrack = SolidTex(frame.charPane, "BACKGROUND", 0, 0, 0, 0.3)
+local tlTrack = FlatTex(frame.charPane, "BACKGROUND", 0, 0, 0, 0.3)
 Pix.Point(tlTrack, "LEFT", ilvlEstLbl, "RIGHT", 10, 0)
 Pix.Height(tlTrack, 10)
 -- Right edge aligns with tile row right edge (cc x=10 + TILE_ROW_W)
@@ -1024,7 +1024,7 @@ local tlClip = CreateFrame("Frame", nil, frame.charPane)
 tlClip:SetPoint("TOPLEFT", tlTrack, "TOPLEFT", 0, 0)
 tlClip:SetPoint("BOTTOMRIGHT", tlTrack, "BOTTOMRIGHT", 0, 0)
 tlClip:SetClipsChildren(true)
-local tlFill = SolidTex(tlClip, "ARTWORK", G.r, G.g, G.b, 0.9)
+local tlFill = FlatTex(tlClip, "ARTWORK", G.r, G.g, G.b, 0.9)
 Pix.Point(tlFill, "TOPLEFT", tlClip, "TOPLEFT", 0, 0)
 Pix.Point(tlFill, "BOTTOMLEFT", tlClip, "BOTTOMLEFT", 0, 0)
 tlFill:SetWidth(1) -- updated each refresh
@@ -1037,11 +1037,11 @@ for i = 1, 18 do
     local button = CreateFrame("Button", nil, cc)
     Pix.Size(button, TILE_W, TILE_H)
     button:Hide()
-    local backdrop = SolidTex(button, "BACKGROUND", 1, 1, 1, 0.05)
+    local backdrop = FlatTex(button, "BACKGROUND", 1, 1, 1, 0.05)
     backdrop:SetAllPoints(button)
     button.bg = backdrop
     -- Left accent bar (3 px, track colour)
-    local accentBar = SolidTex(button, "BORDER", 0.5, 0.5, 0.5, 1)
+    local accentBar = FlatTex(button, "BORDER", 0.5, 0.5, 0.5, 1)
     Pix.Point(accentBar, "TOPLEFT", button, "TOPLEFT", 0, 0)
     Pix.Point(accentBar, "BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0)
     accentBar:SetWidth(Pix.mult * 3)
@@ -1052,7 +1052,7 @@ for i = 1, 18 do
     local queueOv = CreateFrame("Frame", nil, button)
     queueOv:SetAllPoints(button)
     queueOv:SetFrameLevel(button:GetFrameLevel() + 5)
-    local queueOvBg = SolidTex(queueOv, "BACKGROUND", 0, 0, 0, 0.75)
+    local queueOvBg = FlatTex(queueOv, "BACKGROUND", 0, 0, 0, 0.75)
     queueOvBg:SetAllPoints()
     local queueOvTxt = MFont(queueOv, 11, "OUTLINE", 1, 1, 1, 0.9)
     queueOvTxt:SetPoint("CENTER", queueOv, "CENTER", 0, 0)
@@ -1150,7 +1150,7 @@ end
 -- Section header labels and group separator line (repositioned each refresh)
 local sHdrNeeds = MFont(cc, 11, "OUTLINE", 1, 1, 1, 1)
 local sHdrMax = MFont(cc, 10, "OUTLINE", 0.48, 0.48, 0.48, 1)
-local groupSepLine = SolidTex(cc, "BORDER", 0.2, 0.2, 0.2, 1)
+local groupSepLine = FlatTex(cc, "BORDER", 0.2, 0.2, 0.2, 1)
 groupSepLine:SetHeight(Pix.mult)
 Pix.Width(groupSepLine, TILE_ROW_W)
 
@@ -1205,7 +1205,7 @@ for i = 1, 16 do
     Pix.Size(ef, QUEUE_W, Q_ROW_H)
     Pix.Point(ef, "TOPLEFT", queuePanel, "TOPLEFT", 0, -(23 + (i - 1) * Q_ROW_STEP))
     ef:Hide()
-    local ebg = SolidTex(ef, "BACKGROUND", 1, 1, 1, 0.05)
+    local ebg = FlatTex(ef, "BACKGROUND", 1, 1, 1, 0.05)
     ebg:SetAllPoints(ef)
     local nLbl = MFont(ef, 10, "OUTLINE", 0.8, 0.8, 0.8, 1)
     Pix.Point(nLbl, "LEFT", ef, "LEFT", 4, 0)
@@ -1400,7 +1400,7 @@ Pix.Point(crestSection, "TOPLEFT", cc, "TOPLEFT", 0, -430) -- initial; overwritt
 Pix.Point(crestSection, "TOPRIGHT", cc, "TOPRIGHT", 0, -430)
 Pix.Height(crestSection, 200) -- large enough; content determines visible area
 
-local gearSep = SolidTex(crestSection, "BORDER", 0.2, 0.2, 0.2, 1)
+local gearSep = FlatTex(crestSection, "BORDER", 0.2, 0.2, 0.2, 1)
 Pix.Point(gearSep, "TOPLEFT", crestSection, "TOPLEFT", 0, 4)
 Pix.Point(gearSep, "TOPRIGHT", crestSection, "TOPRIGHT", 0, 4)
 gearSep:SetHeight(Pix.mult)
@@ -1439,7 +1439,7 @@ local CC_PLUS_X = TILE_ROW_W - CC_BTN_W
 
 local crestTblHdr = CreateFrame("Frame", nil, crestSection)
 Pix.Size(crestTblHdr, TILE_ROW_W, CROW_H)
-local cHdrBg = SolidTex(crestTblHdr, "BACKGROUND", 0, 0, 0, 0.35)
+local cHdrBg = FlatTex(crestTblHdr, "BACKGROUND", 0, 0, 0, 0.35)
 cHdrBg:SetAllPoints()
 local function MakeCHdr(hostFrame, textValue, posX, wid, align)
     local labelFS = MFont(hostFrame, 10, "OUTLINE", 1, 1, 1, 0.9)
@@ -1463,7 +1463,7 @@ for ri, trackLabel in ipairs(Data.trackOrder) do
     local row = CreateFrame("Frame", nil, crestSection)
     Pix.Size(row, TILE_ROW_W, CROW_H)
     if ri % 2 == 0 then
-        local altBg = SolidTex(row, "BACKGROUND", 0, 0, 0, 0.15)
+        local altBg = FlatTex(row, "BACKGROUND", 0, 0, 0, 0.15)
         altBg:SetAllPoints()
     end
     local function MakeCell(posX, wid, align)

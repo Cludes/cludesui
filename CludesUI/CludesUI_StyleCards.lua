@@ -47,7 +47,7 @@ CludesUI.STYLE_CARD_DISPLAY_H = DISPLAY_CARD_H
 local PICK_CARDS = IS_FOREVER and 4 or 3
 CludesUI.STYLE_CARDS_W = PICK_CARDS * CARD_W + (PICK_CARDS - 1) * CARD_GAP
 
-local function AtlasOK(name)
+local function AtlasExists(name)
     return name and C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(name) and true or false
 end
 
@@ -126,7 +126,7 @@ local function DrawBlizzMock(stage, Pix, MakeBorder, _eg, _font, forever)
     local SLOT = "UI-HUD-ActionBar-IconFrame-Slot"
     local widget = CreateFrame("Frame", nil, stage)
     widget:SetFrameLevel(stage:GetFrameLevel() + 1)
-    if AtlasOK(ART) then
+    if AtlasExists(ART) then
         -- The 198x71 art at 0.78, its bars placed from the stock geometry
         -- (the bars sit at 85/40 and 85/61 in the 232x100 box whose art
         -- is centred with 17 and 14.5 of transparent margin).
@@ -142,13 +142,13 @@ local function DrawBlizzMock(stage, Pix, MakeBorder, _eg, _font, forever)
         else
             CludesUI.StockAtlas(art, ART, false)
         end
-        if AtlasOK(HEALTH) then
+        if AtlasExists(HEALTH) then
             local hgt = widget:CreateTexture(nil, "ARTWORK", nil, 1)
             hgt:SetAtlas(HEALTH, false)
             Pix.Size(hgt, 124 * s * 0.82, 20 * s)
             Pix.Point(hgt, "TOPLEFT", widget, "TOPLEFT", (85 - 17) * s, -(40 - 14.5) * s)
         end
-        if AtlasOK(MANA) then
+        if AtlasExists(MANA) then
             local m = widget:CreateTexture(nil, "ARTWORK", nil, 1)
             m:SetAtlas(MANA, false)
             Pix.Size(m, 124 * s * 0.6, 10 * s)
@@ -173,7 +173,7 @@ local function DrawBlizzMock(stage, Pix, MakeBorder, _eg, _font, forever)
 
     local ICON, GAP, N = 24, 4, 4
     local rowW = N * ICON + (N - 1) * GAP
-    local slotOK = AtlasOK(SLOT)
+    local slotOK = AtlasExists(SLOT)
     for idx = 1, N do
         local ic = CreateFrame("Frame", nil, stage)
         ic:SetFrameLevel(stage:GetFrameLevel() + 1)
@@ -200,7 +200,7 @@ local function DrawBlizzMock(stage, Pix, MakeBorder, _eg, _font, forever)
         local CAP_H, OVERLAP = 28, 3
         for side = 1, 2 do
             local name = (side == 1) and "ui-hud-actionbar-gryphon-left" or "ui-hud-actionbar-gryphon-right"
-            if AtlasOK(name) then
+            if AtlasExists(name) then
                 local cap = CreateFrame("Frame", nil, stage)
                 cap:SetFrameLevel(stage:GetFrameLevel() + 2)
                 Pix.Size(cap, CAP_H * 104.5 / 98, CAP_H)
@@ -230,7 +230,7 @@ local function DrawForeverMock(stage, Pix, MakeBorder, ACC, font)
     -- Level badge: Blizzard's Forever spot is BOTTOMLEFT 13,7 of the 232x100
     -- box, i.e. -4,-7.5 off the centred art, at the mock's 0.78.
     local BADGE = "UI-HUD-UnitFrame-SmallCircle"
-    if AtlasOK(BADGE) then
+    if AtlasExists(BADGE) then
         local bf = CreateFrame("Frame", nil, stage)
         bf:SetFrameLevel(stage:GetFrameLevel() + 2)
         Pix.Size(bf, 24, 24)

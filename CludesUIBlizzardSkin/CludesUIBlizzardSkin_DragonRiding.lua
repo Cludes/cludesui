@@ -634,7 +634,7 @@ local BLIZZ_ICON = {
     ring = "Interface\\Buttons\\UI-Quickslot2",
 }
 
-local function PPSnap(val)
+local function SnapPx(val)
     local PPdr = CludesUI and CludesUI.PP
     if PPdr and PPdr.Snap then
         return PPdr.Snap(val)
@@ -662,14 +662,14 @@ end
 local function ArtOverhang(chromeFrame, keyName)
     if chromeFrame == "blizzard" then
         local C = BLIZZ_CHROME
-        return PPSnap((C.rimT + C.rimB) / 2), PPSnap(C.rimX)
+        return SnapPx((C.rimT + C.rimB) / 2), SnapPx(C.rimX)
     elseif chromeFrame == "classic" then
         local CF = CludesUI.ClassicFrame
         if not CF then
             return 0, 0
         end
         local padW, padH = CF.Pad(keyName)
-        return PPSnap(padH / 2), PPSnap(padW / 2)
+        return SnapPx(padH / 2), SnapPx(padW / 2)
     end
     return 0, 0
 end
@@ -735,8 +735,8 @@ local function ComputeLayout(profile)
     local clusterH = max(colH, iconSize)
 
     local scale = profile.classicScale or 1
-    local classicW = classic and PPSnap(CLASSIC_W * scale) or 0
-    local classicH = classic and PPSnap(CLASSIC_H * scale) or 0
+    local classicW = classic and SnapPx(CLASSIC_W * scale) or 0
+    local classicH = classic and SnapPx(CLASSIC_H * scale) or 0
     local rawW = max(clusterW, classicW)
     local rawH = clusterH + classicH + ((classic and clusterH > 0) and profile.gap or 0)
     -- The even-pixel rounding is for the stock frames and the classic gems
@@ -754,10 +754,10 @@ local function ComputeLayout(profile)
         colH = colH,
         colW = colW,
         padX = padX,
-        colY = PPSnap((clusterH - colH) / 2),
+        colY = SnapPx((clusterH - colH) / 2),
         icon = iconTex,
         iconSize = iconSize,
-        iconY = PPSnap((clusterH - iconSize) / 2),
+        iconY = SnapPx((clusterH - iconSize) / 2),
         clusterW = clusterW,
         clusterH = clusterH,
         classicW = classicW,
@@ -1538,7 +1538,7 @@ local function LayoutSet(S, profile, L)
         end
     end
     local spacing = profile.stackSpacing
-    local clusterX = PPSnap((L.totalW - L.clusterW) / 2)
+    local clusterX = SnapPx((L.totalW - L.clusterW) / 2)
     local posY = L.colY + L.ov
     local geo = {}
     for idx, key in ipairs(L.rows) do
@@ -1582,7 +1582,7 @@ local function LayoutSet(S, profile, L)
         frame:SetScale(L.scale)
         frame:ClearAllPoints()
         -- Offsets on a scaled frame are in its own units.
-        frame:SetPoint("TOPLEFT", S.root, "TOPLEFT", PPSnap((L.totalW - L.classicW) / 2) / L.scale, 0)
+        frame:SetPoint("TOPLEFT", S.root, "TOPLEFT", SnapPx((L.totalW - L.classicW) / 2) / L.scale, 0)
     elseif S.classic then
         S.classic:Hide()
     end
@@ -1879,7 +1879,7 @@ function RegisterUnlockElements()
                     return
                 end
                 local iconPart = L.icon and (profile.gap + L.iconSize) or 0
-                profile.width = max(60, PPSnap(clusterW - iconPart - 2 * L.padX))
+                profile.width = max(60, SnapPx(clusterW - iconPart - 2 * L.padX))
                 RebuildBar()
             end,
             -- Height is built from independently-sized bars (Second Wind, modern
@@ -1904,7 +1904,7 @@ function RegisterUnlockElements()
                 if L.totalH ~= L.rawH and abs(hgt - L.totalH) < 0.01 then
                     return
                 end
-                local newTotalH = PPSnap(hgt)
+                local newTotalH = SnapPx(hgt)
                 local classicPart = L.classic and (L.classicH + profile.gap) or 0
                 local keyName = max(8, newTotalH - classicPart) / L.clusterH
                 if L.icon and profile.iconSize then

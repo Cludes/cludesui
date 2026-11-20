@@ -381,7 +381,7 @@ CUI_NS.unlockParts.Tools = function(LM)
         return brd
     end
 
-    local function ClearSnapHighlight()
+    local function DropSnapHighlight()
         if snapLitKey and handles[snapLitKey] then
             local handle = handles[snapLitKey]
             if handle._snapBrd then
@@ -416,7 +416,7 @@ CUI_NS.unlockParts.Tools = function(LM)
         end
         local handle = handles[targetKey]
         if not handle then
-            ClearSnapHighlight()
+            DropSnapHighlight()
             return
         end
         snapLitKey = targetKey
@@ -438,7 +438,7 @@ CUI_NS.unlockParts.Tools = function(LM)
             snapHighlightElapsed = snapHighlightElapsed + elapsed
             local target = handles[snapLitKey]
             if not target or not target._snapBrd then
-                ClearSnapHighlight()
+                DropSnapHighlight()
                 return
             end
             local opacity = 0.45 + 0.45 * sin(snapHighlightElapsed * 9.42)
@@ -457,7 +457,7 @@ CUI_NS.unlockParts.Tools = function(LM)
     -- Full cleanup including snap highlight (used when drag stops)
     local function HideAllGuidesAndHighlight()
         HideAllGuides()
-        ClearSnapHighlight()
+        DropSnapHighlight()
     end
 
     -------------------------------------------------------------------------------
@@ -517,7 +517,7 @@ CUI_NS.unlockParts.Tools = function(LM)
         elseif prevSnap.closestKey then
             ShowSnapHighlight(prevSnap.closestKey)
         else
-            ClearSnapHighlight()
+            DropSnapHighlight()
         end
     end
 
@@ -758,7 +758,7 @@ CUI_NS.unlockParts.Tools = function(LM)
             if tgt and tgt ~= "_disable_" and tgt ~= "_select_" and handles[tgt] then
                 ShowSnapHighlight(tgt)
             else
-                ClearSnapHighlight()
+                DropSnapHighlight()
             end
         end
     end
@@ -786,7 +786,7 @@ CUI_NS.unlockParts.Tools = function(LM)
                 LM.selectedMover._coordFS:Hide()
             end
             -- Clear snap highlight
-            ClearSnapHighlight()
+            DropSnapHighlight()
             -- Cancel select-element pick mode if this mover was the picker -- restore previous target
             if LM.selectElementPicker == LM.selectedMover then
                 LM.selectedMover._snapTarget = LM.selectedMover._preSelectTarget
@@ -1702,7 +1702,7 @@ CUI_NS.unlockParts.Tools = function(LM)
     end
 
     LM.GetAccent, LM.CreateGrid, LM.ClearSnapHighlight, LM.ShowSnapHighlight =
-        GetAccent, CreateGrid, ClearSnapHighlight, ShowSnapHighlight
+        GetAccent, CreateGrid, DropSnapHighlight, ShowSnapHighlight
     LM.HideAllGuidesAndHighlight, LM.ShowAlignmentGuides, LM.SnapPosition, LM.SelectMover =
         HideAllGuidesAndHighlight, ShowAlignmentGuides, SnapPosition, SelectMover
     LM.DeselectMover, LM.ApplyDarkOverlays, LM.SetupArrowKeyFrame, LM.GetActionBarVisualSize =

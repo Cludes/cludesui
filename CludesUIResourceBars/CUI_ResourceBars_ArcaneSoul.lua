@@ -578,7 +578,7 @@ end
 --  Build
 -------------------------------------------------------------------------------
 
-local function EnsureProxy()
+local function MakeProxy()
     if S.proxy then
         return
     end
@@ -650,7 +650,7 @@ end
 -- frame the player is dragging straight back to the stored position. Only
 -- applyPos and ordinary (non-unlock) applies call it. Same split as the Target
 -- Distance element, whose getFrame deliberately skips ApplyFrameSettings.
-local function ApplyPosition()
+local function PlaceProxy()
     if not S.proxy then
         return
     end
@@ -707,7 +707,7 @@ end
 
 local function ApplySettings()
     ApplyLook()
-    ApplyPosition()
+    PlaceProxy()
 end
 
 local function Build()
@@ -716,7 +716,7 @@ local function Build()
         return
     end
     AK.styles[STYLE_KEY] = AK.styles[STYLE_KEY] or { noRegions = true, width = 1, height = 1 }
-    EnsureProxy()
+    MakeProxy()
     BuildPhase("surge", SURGE_INCLUDE)
     BuildPhase("soul", SOUL_INCLUDE)
     S.built = true
@@ -789,8 +789,8 @@ _G._CURB_StyleArcaneSoulSample = StyleSample
 -- The sample sits on its own host over the proxy, so it can show while the
 -- proxy (and with it any engine slot built earlier) stays hidden. Showing the
 -- proxy is Activate's: every caller runs it first.
-local function ShowSample()
-    EnsureProxy()
+local function ShowPreview()
+    MakeProxy()
     local fontStr = S.sample
     if not fontStr then
         local owner = CreateFrame("Frame", nil, UIParent)
@@ -896,7 +896,7 @@ end
 _G._CURB_ArcaneSoulDemoOnUpdate = DemoOnUpdate
 
 local function ShowDemo()
-    ShowSample()
+    ShowPreview()
     if not S.demo then
         S.demo = CreateFrame("Frame", nil, S.sampleHost)
         S.demo:SetScript("OnUpdate", DemoOnUpdate)
@@ -912,13 +912,13 @@ end
 --  than parking a display the player asked for.
 -------------------------------------------------------------------------------
 
-local function EnabledForClass()
+local function OnForClass()
     local profile = P()
     return (profile and profile.enabled and S.class == "MAGE" and not FOREVER) and true or false
 end
 
 local function GateOK()
-    if not EnabledForClass() then
+    if not OnForClass() then
         return false
     end
     -- Both spellings are live in this codebase (the options pages use the
@@ -970,7 +970,7 @@ end
 -- slot built earlier, hidden (the options live preview for a Mage the gate
 -- does not pass; its sample has a host of its own).
 local function StartTracking(placeOnly)
-    EnsureProxy()
+    MakeProxy()
     if placeOnly then
         S.proxy:SetSize(ProxySize())
     else
@@ -978,7 +978,7 @@ local function StartTracking(placeOnly)
     end
     -- Placement belongs to the mover while unlock mode is open (see ApplyPosition).
     if not (CludesUI and CludesUI._unlockActive) then
-        ApplyPosition()
+        PlaceProxy()
     end
     if placeOnly then
         S.proxy:Hide()
@@ -1082,7 +1082,7 @@ end
 -- Brings S.demoApplied (what AS_Apply reads) and the combat events in line
 -- with the owner; true when that changed anything.
 local function SyncDemo()
-    local wanted = (S.demoOwner ~= nil) and EnabledForClass()
+    local wanted = (S.demoOwner ~= nil) and OnForClass()
     if wanted == (S.demoApplied or false) then
         return false
     end
@@ -1109,7 +1109,7 @@ end
 
 function mod.AS_Apply()
     SyncDemo()
-    if not EnabledForClass() then
+    if not OnForClass() then
         DropGateEvents()
         Park()
         return
@@ -1117,7 +1117,7 @@ function mod.AS_Apply()
     EnsureGateEvents()
     if CludesUI and CludesUI._unlockActive then
         StartTracking()
-        ShowSample()
+        ShowPreview()
         return
     end
     HideSample()
@@ -1170,9 +1170,9 @@ function mod.AS_MakeUnlockElement(MK)
         S.unlockHooked = true
         CludesUI:RegisterUnlockModeListener(UNLOCK_KEY, function(isActive)
             if isActive then
-                if EnabledForClass() then
+                if OnForClass() then
                     StartTracking()
-                    ShowSample()
+                    ShowPreview()
                 end
             else
                 HideSample()
@@ -1191,20 +1191,20 @@ function mod.AS_MakeUnlockElement(MK)
         noResize = true,
         noAnchorTarget = true,
         isHidden = function()
-            return not EnabledForClass()
+            return not OnForClass()
         end,
         getFrame = function()
-            if not EnabledForClass() then
+            if not OnForClass() then
                 return nil
             end
             if CludesUI._unlockActive then
                 StartTracking()
-                ShowSample()
+                ShowPreview()
             else
                 -- Outside unlock mode this is a pure geometry request (anchor
                 -- resolution), so it hands back the proxy WITHOUT showing it.
                 -- See MoverShowOK: Activate() ends in proxy:Show().
-                EnsureProxy()
+                MakeProxy()
                 if MoverShowOK() then
                     StartTracking()
                 end
@@ -1224,7 +1224,7 @@ function mod.AS_MakeUnlockElement(MK)
             end
             profile.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
             if not CludesUI._unlockActive then
-                ApplyPosition()
+                PlaceProxy()
             end
         end,
         loadPos = function()
@@ -1251,22 +1251,22 @@ function mod.AS_MakeUnlockElement(MK)
                 profile.unlockPos = nil
             end
             if S.proxy then
-                ApplyPosition()
+                PlaceProxy()
             end
         end,
         applyPos = function()
-            if not EnabledForClass() then
+            if not OnForClass() then
                 return
             end
-            EnsureProxy()
+            MakeProxy()
             -- applyPos IS the "put it where it is stored" request, so it PLACES
             -- unconditionally -- but placing is not showing (see MoverShowOK).
             if MoverShowOK() then
                 StartTracking()
             end
-            ApplyPosition()
+            PlaceProxy()
             if CludesUI._unlockActive then
-                ShowSample()
+                ShowPreview()
             end
         end,
     })

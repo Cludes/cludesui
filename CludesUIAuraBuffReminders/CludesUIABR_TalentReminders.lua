@@ -415,7 +415,7 @@ local function Refresh()
     end
 end
 
-local function RequestRefresh()
+local function QueueRefresh()
     if _refreshQueued then
         return
     end
@@ -480,13 +480,13 @@ eventFrame:SetScript("OnEvent", function(_, evt, ...)
         eventFrame:RegisterEvent("PLAYER_DEAD")
         eventFrame:RegisterEvent("PLAYER_ALIVE")
 
-        C_Timer.After(1, RequestRefresh)
+        C_Timer.After(1, QueueRefresh)
         return
     end
 
     if evt == "PLAYER_ENTERING_WORLD" then
-        RequestRefresh()
-        C_Timer.After(0.5, RequestRefresh)
+        QueueRefresh()
+        C_Timer.After(0.5, QueueRefresh)
         return
     end
 
@@ -496,12 +496,12 @@ eventFrame:SetScript("OnEvent", function(_, evt, ...)
     end
 
     if evt == "PLAYER_REGEN_ENABLED" then
-        RequestRefresh()
+        QueueRefresh()
         return
     end
 
     if evt == "PLAYER_DEAD" or evt == "PLAYER_ALIVE" then
-        RequestRefresh()
+        QueueRefresh()
         return
     end
 
@@ -518,11 +518,11 @@ eventFrame:SetScript("OnEvent", function(_, evt, ...)
         end
     end
 
-    RequestRefresh()
+    QueueRefresh()
 end)
 
 -------------------------------------------------------------------------------
 --  Public API (for options and unlock mode)
 -------------------------------------------------------------------------------
-_G._CUABR_TR_RequestRefresh = RequestRefresh
+_G._CUABR_TR_RequestRefresh = QueueRefresh
 _G._CUABR_TR_HideIcons = HideIcons

@@ -48,7 +48,7 @@ local PAGE_STYLE = "Style"
 -- other modules' pages through it too.
 local CreateFrame = CludesUI._Pool.CreateFrame
 
-local function NS(folder)
+local function ModuleNS(folder)
     return CludesUI._ModuleNS and CludesUI._ModuleNS[folder]
 end
 
@@ -59,12 +59,12 @@ end
 -------------------------------------------------------------------------------
 
 local function ABProfile()
-    local mod = NS("CludesUIActionBars")
+    local mod = ModuleNS("CludesUIActionBars")
     local ABAR = mod and mod.EAB
     return ABAR and ABAR.db and ABAR.db.profile
 end
 local function UFProfile()
-    local mod = NS("CludesUIUnitFrames")
+    local mod = ModuleNS("CludesUIUnitFrames")
     return mod and mod.db and mod.db.profile
 end
 local function PABProfile()
@@ -72,7 +72,7 @@ local function PABProfile()
     return p and p.playerAuraBars
 end
 local function NPProfile()
-    local mod = NS("CludesUINameplates")
+    local mod = ModuleNS("CludesUINameplates")
     return mod and mod.db and mod.db.profile
 end
 local function CDMProfile()
@@ -110,12 +110,12 @@ end
 -- The Skyriding HUD keeps its own per-profile DB inside Blizz UI Enhanced
 -- (created at PLAYER_LOGIN, even while the HUD itself is off).
 local function DragonRidingProfile()
-    local num = NS("CludesUIBlizzardSkin")
+    local num = ModuleNS("CludesUIBlizzardSkin")
     local d = num and num.edrDB
     return d and d.profile
 end
 local function RFProfile()
-    local num = NS("CludesUIRaidFrames")
+    local num = ModuleNS("CludesUIRaidFrames")
     return num and num.db and num.db.profile
 end
 
@@ -175,7 +175,7 @@ end
 -- "blizzard", like every latch).
 local function ActiveFn(folder, fnName)
     return function()
-        local num = NS(folder)
+        local num = ModuleNS(folder)
         local func = num and num[fnName]
         local val = func and func()
         if val == "blizzard" or val == "classic" then
@@ -247,7 +247,7 @@ Register(
     -- seed; it also runs at enable for a profile that arrives already
     -- switched). WoW Forever's own seed rides its Forever-only slots below.
     function(p, styleKey)
-        local uf = NS("CludesUIUnitFrames")
+        local uf = ModuleNS("CludesUIUnitFrames")
         if uf and uf.UF_SeedStock then
             uf.UF_SeedStock(p, styleKey)
         end
@@ -276,7 +276,7 @@ Register(
     -- seeds; they also run at enable for a profile that arrives already
     -- switched). WoW Forever's own seed rides its Forever-only slots below.
     function(p, styleKey)
-        local np = NS("CludesUINameplates")
+        local np = ModuleNS("CludesUINameplates")
         if np and np.NP_SeedStock then
             np.NP_SeedStock(p)
         end
@@ -315,7 +315,7 @@ Register(
     -- per profile (the module's own seed; it also runs at enable for a
     -- profile that arrives already switched).
     function(p)
-        local erb = NS("CludesUIResourceBars")
+        local erb = ModuleNS("CludesUIResourceBars")
         if erb and erb.ERB_SeedStockCast then
             erb.ERB_SeedStockCast(p)
         end
@@ -334,7 +334,7 @@ Register(
     -- per profile (the module's own seed; it also runs at enable for a
     -- profile that arrives already switched).
     function(p, styleKey)
-        local erb = NS("CludesUIResourceBars")
+        local erb = ModuleNS("CludesUIResourceBars")
         if erb and erb.ERB_SeedStockBars then
             erb.ERB_SeedStockBars(p, styleKey)
         end
@@ -417,7 +417,7 @@ Register(
 -- Forever Essentials is disabled.
 if CludesUI.IS_FOREVER then
     local function TMStore(create)
-        if not NS("CludesUIForeverEssentials") or not CludesUIDB then
+        if not ModuleNS("CludesUIForeverEssentials") or not CludesUIDB then
             return nil
         end
         local t = CludesUIDB.threatMeter
@@ -445,7 +445,7 @@ if CludesUI.IS_FOREVER then
         -- near-black window and quarter-black bar track (the module also runs
         -- Classic's at login for a table that arrives already switched).
         function(p, styleKey, isForever)
-            local fe = NS("CludesUIForeverEssentials")
+            local fe = ModuleNS("CludesUIForeverEssentials")
             if fe and fe.TM_SeedStock then
                 fe.TM_SeedStock(p, styleKey, isForever)
             end
@@ -487,7 +487,7 @@ if IS_FOREVER then
         foreverLatch = "BagsForever",
         get = function()
             local p = BagsProfile()
-            local num = p and NS("CludesUIBags")
+            local num = p and ModuleNS("CludesUIBags")
             return (num and num.BagsForeverWanted(p)) and "forever" or "cui"
         end,
         set = function(styleKey)
@@ -497,7 +497,7 @@ if IS_FOREVER then
             end
         end,
         active = function()
-            local num = NS("CludesUIBags")
+            local num = ModuleNS("CludesUIBags")
             return num and num.BagsForever and num.BagsForever() and "blizzard" or "cui"
         end,
     }
@@ -519,7 +519,7 @@ Register(
     "useClassicStyle",
     "RF_Style",
     function(p, styleKey)
-        local rf = NS("CludesUIRaidFrames")
+        local rf = ModuleNS("CludesUIRaidFrames")
         if rf and rf.RF_SeedStock then
             rf.RF_SeedStock(p, styleKey)
         end
@@ -576,7 +576,7 @@ local SLOT_KEYS = {
                 "player.combatIndicatorStyle",
                 "player.combatIndicatorPosition",
             }
-            local uf = NS("CludesUIUnitFrames")
+            local uf = ModuleNS("CludesUIUnitFrames")
             local units = uf and uf.UF_TEXTURE_UNITS
             if units then
                 for idx = 1, #units do
@@ -770,7 +770,7 @@ if IS_FOREVER then
                 return "foreverLevelSlotSeeded"
             end,
             seed = function(p)
-                local num = NS("CludesUINameplates")
+                local num = ModuleNS("CludesUINameplates")
                 if num and num.NP_SeedForever then
                     num.NP_SeedForever(p)
                 end
@@ -783,7 +783,7 @@ if IS_FOREVER then
                 return "foreverClassPowerSeeded"
             end,
             seed = function(p)
-                local num = NS("CludesUIUnitFrames")
+                local num = ModuleNS("CludesUIUnitFrames")
                 if num and num.UF_SeedForever then
                     num.UF_SeedForever(p)
                 end
@@ -1029,7 +1029,7 @@ local function InferredStockStyle()
     local b, c = 0, 0
     for idx = 1, #MODULES do
         local module = MODULES[idx]
-        if NS(module.folder) ~= nil then
+        if ModuleNS(module.folder) ~= nil then
             local keyName = BaseKey(module.get())
             if keyName == "blizzard" then
                 b = b + 1
@@ -1078,7 +1078,7 @@ function BlizzStyle.Forever(key)
     end
     local latch = m.foreverLatch
     if latch then
-        local num = NS(m.folder)
+        local num = ModuleNS(m.folder)
         local func = num and num[latch]
         return (func ~= nil and func()) and true or false
     end
@@ -1413,7 +1413,7 @@ local function StyleChangesFor(styleKey)
     local changes = {}
     for idx = 1, #MODULES do
         local module = MODULES[idx]
-        if SupportsStyle(module, styleKey) and NS(module.folder) ~= nil and module.get() ~= styleKey then
+        if SupportsStyle(module, styleKey) and ModuleNS(module.folder) ~= nil and module.get() ~= styleKey then
             changes[#changes + 1] = { m = module, key = styleKey }
         end
     end
@@ -1490,7 +1490,7 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
                     local loaded, differ = 0, 0
                     for idx = 1, #MODULES do
                         local module = MODULES[idx]
-                        if SupportsStyle(module, key) and NS(module.folder) ~= nil then
+                        if SupportsStyle(module, key) and ModuleNS(module.folder) ~= nil then
                             loaded = loaded + 1
                             if module.get() ~= key then
                                 differ = differ + 1
@@ -1517,7 +1517,7 @@ function _G._CUI_BuildStylePage(page, hostFrame, yOffset)
             -- once; leaving the page drops the picks.
             local pending = {} -- module key -> picked style, only where it differs
             local function Loaded(m)
-                return NS(m.folder) ~= nil
+                return ModuleNS(m.folder) ~= nil
             end
             local function PickOf(m)
                 return pending[m.key] or m.get()

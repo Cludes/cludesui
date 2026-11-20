@@ -346,20 +346,20 @@ end
 
 -- The namespaced lookups (the legacy globals are not registered on WoW
 -- Forever). A spec-less character answers id 0 there; that is "no spec".
-local function GetCurrentSpecID()
+local function CurrentSpecID()
     local position = C_SpecializationInfo.GetSpecialization()
     local ident = position and (C_SpecializationInfo.GetSpecializationInfo(position))
     return (ident and ident ~= 0) and ident or nil
 end
 local function GetCurrentSpecName()
-    if not GetCurrentSpecID() then
+    if not CurrentSpecID() then
         return "No Spec"
     end
     local _, num = C_SpecializationInfo.GetSpecializationInfo(C_SpecializationInfo.GetSpecialization())
     return num or "No Spec"
 end
 local function GetCurrentSpecIcon()
-    local position = GetCurrentSpecID() and C_SpecializationInfo.GetSpecialization()
+    local position = CurrentSpecID() and C_SpecializationInfo.GetSpecialization()
     if position then
         local _, _, _, ic = C_SpecializationInfo.GetSpecializationInfo(position)
         return ic
@@ -372,7 +372,7 @@ local function GetSpecBindings(specID)
     if not clickDB then
         return {}
     end
-    specID = specID or GetCurrentSpecID()
+    specID = specID or CurrentSpecID()
     if specID and clickDB.specs[specID] then
         return clickDB.specs[specID]
     end
@@ -2484,7 +2484,7 @@ end
 
 -- Runs before every registration sweep (init, enable, regen) so an eater is
 -- always wrapped with ITS bodies before DoRegisterFrame could reach it.
-local function SyncTipEaters()
+local function SyncTooltipEaters()
     if not (ccInitialized and headerText) then
         return
     end
@@ -2498,7 +2498,7 @@ function mod.CC_RegisterTipEater(widget)
     if InCombatLockdown() then
         pendingTipSync = true
     else
-        SyncTipEaters()
+        SyncTooltipEaters()
     end
     -- Click attributes follow the enabled state like any owned unit button
     -- (self-queues to regen in combat; the sync above runs first there).
@@ -2959,7 +2959,7 @@ function mod.CC_AddSpecBinding(bindRec)
     if not clickDB then
         return
     end
-    local specID = GetCurrentSpecID()
+    local specID = CurrentSpecID()
     if not specID then
         return
     end
@@ -2978,7 +2978,7 @@ function mod.CC_RemoveSpecBinding(index)
     if not clickDB then
         return
     end
-    local specID = GetCurrentSpecID()
+    local specID = CurrentSpecID()
     if not specID or not clickDB.specs[specID] then
         return
     end
@@ -3011,7 +3011,7 @@ end
 mod.CC_GetActiveBindings = GetActiveBindings
 mod.CC_GetSpecBindings = GetSpecBindings
 mod.CC_GetGlobalBindings = GetGlobalBindings
-mod.CC_GetCurrentSpecID = GetCurrentSpecID
+mod.CC_GetCurrentSpecID = CurrentSpecID
 mod.CC_GetCurrentSpecName = GetCurrentSpecName
 mod.CC_GetCurrentSpecIcon = GetCurrentSpecIcon
 mod.CC_GetClickCastDB = GetClickCastDB
@@ -3043,7 +3043,7 @@ local function ForEachKeySharer(excludeBinding, func)
             return true
         end
     end
-    local specID = GetCurrentSpecID()
+    local specID = CurrentSpecID()
     local activeList = specID and clickDB.specs[specID]
     if activeList then
         for _, bind in ipairs(activeList) do
@@ -3193,7 +3193,7 @@ function mod.CC_SetEnabled(enabled)
             RemoveFrameFromClickCast(widget)
         end
         SetupClickCastFramesHook()
-        SyncTipEaters()
+        SyncTooltipEaters()
         for widget in pairs(ownedFrames) do
             if not registeredFrames[widget] then
                 DoRegisterFrame(widget)
@@ -3221,7 +3221,7 @@ function mod.CC_SetEnabled(enabled)
         end
         -- The unregister above dropped the eaters' wraps with everyone else's;
         -- the peek needs them back even with click-casting off.
-        SyncTipEaters()
+        SyncTooltipEaters()
     end
 end
 
@@ -3240,7 +3240,7 @@ local function ReapplyWhenSpecReady()
         return
     end
     -- WoW Forever characters have no spec to wait for.
-    if GetCurrentSpecID() or CludesUI.IS_FOREVER then
+    if CurrentSpecID() or CludesUI.IS_FOREVER then
         mod.CC_ApplyBindings()
         return
     end
@@ -3256,7 +3256,7 @@ local function ReapplyWhenSpecReady()
     local tries = 0
     specReadyTicker = C_Timer.NewTicker(0.25, function(t)
         tries = tries + 1
-        if GetCurrentSpecID() then
+        if CurrentSpecID() then
             t:Cancel()
             specReadyTicker = nil
             if not InCombatLockdown() then
@@ -3284,7 +3284,7 @@ local function OnCCEvent(self, evt)
         -- Eater wraps first: DoRegisterFrame below must find them already wrapped.
         if pendingTipSync then
             pendingTipSync = false
-            SyncTipEaters()
+            SyncTooltipEaters()
         end
         -- Apply a deferred enable/disable sweep that was requested during combat.
         if pendingSetEnabled ~= nil then
@@ -3433,7 +3433,7 @@ function mod.CC_Init()
 
     -- Tooltip-modifier eaters: wrapped whatever the enabled state (before the
     -- registration sweep below), and a key parked before init applies now.
-    SyncTipEaters()
+    SyncTooltipEaters()
     if pendingTipKey ~= nil then
         local modKey = pendingTipKey
         pendingTipKey = nil

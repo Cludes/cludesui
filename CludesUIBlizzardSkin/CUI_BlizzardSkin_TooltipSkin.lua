@@ -144,7 +144,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
 
     -- Element & Text Color mode. "native" = surfaces keep original coloring (Game Menu header
     -- stays branded green). UNSET resolves to native unless the user had the legacy Accent Colored Elements toggle on, so old choices carry forward with no migration write and a fresh install sees no change.
-    local function _elementColorMode()
+    local function _elemColorMode()
         local saved = CludesUIDB or {}
         local modeName = saved.popupMenuButtonTextColorMode
         if modeName == nil then
@@ -152,11 +152,11 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
         end
         return modeName
     end
-    CludesUI._getPopupMenuElementMode = _elementColorMode
+    CludesUI._getPopupMenuElementMode = _elemColorMode
 
     local function _getElementColor()
         local saved = CludesUIDB or {}
-        local modeName = _elementColorMode()
+        local modeName = _elemColorMode()
         if modeName == "custom" then
             local color = saved.popupMenuButtonTextColor or { r = 1, g = 1, b = 1 }
             return color.r, color.g, color.b
@@ -264,7 +264,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
 
     local function _accentEnabled()
         -- False in native mode so gated surfaces keep their else-branch look (unrecolored/plain white).
-        return _elementColorMode() ~= "native"
+        return _elemColorMode() ~= "native"
     end
 
     -- Unified inspect system: while Show Item Level is active, one INSPECT_READY handler fills the tooltip ilvl cache from every inspect, whoever requested it; the tooltip's own requests are paced below.
@@ -1586,7 +1586,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                     if fontStr then
                         if enabled then
                             -- Native mode enabled color is white.
-                            if _elementColorMode() == "native" then
+                            if _elemColorMode() == "native" then
                                 fontStr:SetTextColor(1, 1, 1, 1)
                             else
                                 local red, green, blue = _getElementColor()
@@ -1665,7 +1665,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
             GetFFD(ebBg).owned = true
             -- Border matching the popup buttons: accent, or white in native.
             local borderR, borderG, borderB = 1, 1, 1
-            if _elementColorMode() ~= "native" then
+            if _elemColorMode() ~= "native" then
                 borderR, borderG, borderB = _getElementColor()
             end
             if not _PP then
@@ -2418,7 +2418,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                         local fontStr = button:GetFontString()
                         if fontStr then
                             -- Native mode text is plain white.
-                            if _elementColorMode() == "native" then
+                            if _elemColorMode() == "native" then
                                 fontStr:SetTextColor(1, 1, 1, 1)
                             else
                                 local red, green, blue = _getElementColor()
@@ -2695,7 +2695,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
             _applyConfiguredBorder(button, "popupMenuButton", 1)
             local fontStr = button:GetFontString()
             if fontStr then
-                if _elementColorMode() == "native" then
+                if _elemColorMode() == "native" then
                     fontStr:SetTextColor(1, 1, 1, 1)
                 else
                     local red, green, blue = _getElementColor()
