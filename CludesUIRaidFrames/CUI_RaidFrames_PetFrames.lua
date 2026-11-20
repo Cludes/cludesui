@@ -43,7 +43,7 @@ end
 -------------------------------------------------------------------------------
 do
     local FB = mod._FB
-    local PF = {
+    local PetKit = {
         buttons = {},
         trackers = {},
         byUnit = {},
@@ -55,48 +55,48 @@ do
         petEv = false,
         tgtWanted = false,
     }
-    mod._PF = PF
+    mod._PF = PetKit
 
-    PF.MAX = 40
-    PF.UNITS = { "pet" }
+    PetKit.MAX = 40
+    PetKit.UNITS = { "pet" }
     for index = 1, 4 do
-        PF.UNITS[#PF.UNITS + 1] = "partypet" .. index
+        PetKit.UNITS[#PetKit.UNITS + 1] = "partypet" .. index
     end
     for index = 1, 40 do
-        PF.UNITS[#PF.UNITS + 1] = "raidpet" .. index
+        PetKit.UNITS[#PetKit.UNITS + 1] = "raidpet" .. index
     end
     -- Tracker frames (two tokens each): every token, or while raid pets are off the first seven, which
     -- hold your pet, the party pets and raidpet1-9 (inside a raid the party frames run below ten
     -- members).
-    PF.ALL_TRACKERS = math.ceil(#PF.UNITS / 2)
-    PF.SMALL_TRACKERS = 7
-    PF.EVENTS = { "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_NAME_UPDATE" }
+    PetKit.ALL_TRACKERS = math.ceil(#PetKit.UNITS / 2)
+    PetKit.SMALL_TRACKERS = 7
+    PetKit.EVENTS = { "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_NAME_UPDATE" }
     -- A party frame's token -> its pet's token.
-    PF.PET_OF = { player = "pet" }
+    PetKit.PET_OF = { player = "pet" }
     for index = 1, 4 do
-        PF.PET_OF["party" .. index] = "partypet" .. index
+        PetKit.PET_OF["party" .. index] = "partypet" .. index
     end
     for index = 1, 40 do
-        PF.PET_OF["raid" .. index] = "raidpet" .. index
+        PetKit.PET_OF["raid" .. index] = "raidpet" .. index
     end
-    PF.DEFAULT_BG = { r = 17 / 255, g = 17 / 255, b = 17 / 255 }
+    PetKit.DEFAULT_BG = { r = 17 / 255, g = 17 / 255, b = 17 / 255 }
     -- Beside Owner pet -> the party frame it sits beside (your own pet has none); header button -> the
     -- style generation it was last styled at; Beside Owner pet -> its preview mouse blocker.
-    PF.ownerOf = setmetatable({}, { __mode = "k" })
-    PF.styledGen = setmetatable({}, { __mode = "k" })
-    PF.pvBlock = setmetatable({}, { __mode = "k" })
+    PetKit.ownerOf = setmetatable({}, { __mode = "k" })
+    PetKit.styledGen = setmetatable({}, { __mode = "k" })
+    PetKit.pvBlock = setmetatable({}, { __mode = "k" })
 
-    PF.Raw = function()
+    PetKit.Raw = function()
         return saved and saved.profile and saved.profile.petFrames
     end
     -- The painter's Pet Health Color read (one setting for both tabs, off the per-tab view).
-    PF.ColorSettings = PF.Raw
+    PetKit.ColorSettings = PetKit.Raw
 
     -- The Party and Raid tabs each keep their own Position, Extra Width/Height, Free Move spot and Free
     -- Move Growth Direction. A tab reads the shared key until it sets its own: a view over the saved
     -- table that never writes on read. Every other key (the tab toggles, Pet Health Color, Pet Side) is
     -- the saved one.
-    PF.TAB_KEY = {
+    PetKit.TAB_KEY = {
         party = {
             position = "party_position",
             extraWidth = "party_extraWidth",
@@ -114,16 +114,16 @@ do
             freeGrowth = "raid_freeGrowth",
         },
     }
-    PF.views = {}
-    PF.View = function(context)
-        local v = PF.views[context]
+    PetKit.views = {}
+    PetKit.View = function(context)
+        local v = PetKit.views[context]
         if v then
             return v
         end
-        local keyList = PF.TAB_KEY[context]
+        local keyList = PetKit.TAB_KEY[context]
         v = setmetatable({}, {
             __index = function(_, key)
-                local rawValue = PF.Raw()
+                local rawValue = PetKit.Raw()
                 if not rawValue then
                     return nil
                 end
@@ -137,48 +137,48 @@ do
                 return rawValue[key]
             end,
             __newindex = function(_, key, val)
-                local rawValue = PF.Raw()
+                local rawValue = PetKit.Raw()
                 if rawValue then
                     rawValue[keyList[key] or key] = val
                 end
             end,
         })
-        PF.views[context] = v
+        PetKit.views[context] = v
         return v
     end
-    mod.PF_View = PF.View
+    mod.PF_View = PetKit.View
 
     -- The toggle that counts is the one for the frames on screen: the party frames also run inside
     -- small raids and arenas.
-    PF.PartyMode = function()
+    PetKit.PartyMode = function()
         return not IsInRaid() or mod._PartyInRaid()
     end
 
-    PF.Ctx = function()
-        return PF.PartyMode() and "party" or "raid"
+    PetKit.Ctx = function()
+        return PetKit.PartyMode() and "party" or "raid"
     end
 
     -- The live tab's view.
-    PF.Settings = function()
-        return PF.Raw() and PF.View(PF.Ctx())
+    PetKit.Settings = function()
+        return PetKit.Raw() and PetKit.View(PetKit.Ctx())
     end
 
     -- Beside Owner: Show Pets on the Party tab with its Position on Beside Owner, while the party frames
     -- are the ones on screen.
-    PF.OwnerChosen = function()
-        local rawValue = PF.Raw()
-        return (rawValue and rawValue.party == true and PF.PartyMode() and PF.View("party").position == "owner")
+    PetKit.OwnerChosen = function()
+        local rawValue = PetKit.Raw()
+        return (rawValue and rawValue.party == true and PetKit.PartyMode() and PetKit.View("party").position == "owner")
             or false
     end
 
     -- The pet header (Beside Owner leaves it down).
-    PF.Wanted = function()
-        local rawValue = PF.Raw()
+    PetKit.Wanted = function()
+        local rawValue = PetKit.Raw()
         if not rawValue then
             return false
         end
-        if PF.PartyMode() then
-            return rawValue.party == true and PF.View("party").position ~= "owner"
+        if PetKit.PartyMode() then
+            return rawValue.party == true and PetKit.View("party").position ~= "owner"
         end
         return rawValue.raid == true
     end
@@ -186,11 +186,11 @@ do
     -- Settings the pets are styled from: the party settings beside the party frames, else the raid's.
     -- The header's follows the mode PF.Layout last laid it out for (PF.styleCtx), so the paint path
     -- never re-derives the mode.
-    PF.PartySource = function()
+    PetKit.PartySource = function()
         return mod._scaledPartyProxy
     end
-    PF.StyleSource = function()
-        if PF.styleCtx == "party" then
+    PetKit.StyleSource = function()
+        if PetKit.styleCtx == "party" then
             return mod._scaledPartyProxy
         end
         return mod._scaledProfile or saved.profile
@@ -198,7 +198,7 @@ do
 
     -- Beside Owner pets ignore their party frame's alpha (its range, offline and Buff Manager fades
     -- are the owner's), so the party container's own dims (the options previews) apply here instead.
-    PF.ContainerAlpha = function()
+    PetKit.ContainerAlpha = function()
         local alpha = mod._partyContainerFrame:GetAlpha()
         if issecretvalue(alpha) then
             return 1
@@ -208,12 +208,12 @@ do
 
     -- As the raid buttons: UnitInRange's first return straight into SetAlphaFromBoolean, which takes
     -- a secret. Its unchecked case is your own units, so your pet stays at full alpha like you do.
-    PF.ApplyRange = function(petBtn)
+    PetKit.ApplyRange = function(petBtn)
         local unitToken = FB.UnitOf(petBtn)
         if not unitToken then
             return
         end
-        local ca = PF.ownerOf[petBtn] and PF.ContainerAlpha() or 1
+        local ca = PetKit.ownerOf[petBtn] and PetKit.ContainerAlpha() or 1
         local own = UnitIsUnit(unitToken, "pet")
         if issecretvalue(own) then
             own = false
@@ -228,21 +228,21 @@ do
 
     -- fn(b, unit) on every pet button on screen: the header's, and beside the party frames the Beside
     -- Owner pets and your own pet button.
-    PF.EachShown = function(func)
-        if PF.active then
-            for unit, petBtn in pairs(PF.byUnit) do
+    PetKit.EachShown = function(func)
+        if PetKit.active then
+            for unit, petBtn in pairs(PetKit.byUnit) do
                 if petBtn:IsVisible() then
                     func(petBtn, unit)
                 end
             end
         end
-        if PF.ownerActive then
-            for unit, petBtn in pairs(PF.ownerByUnit) do
+        if PetKit.ownerActive then
+            for unit, petBtn in pairs(PetKit.ownerByUnit) do
                 if petBtn:IsVisible() then
                     func(petBtn, unit)
                 end
             end
-            local petSettings = PF.selfPet
+            local petSettings = PetKit.selfPet
             if petSettings:IsVisible() then
                 func(petSettings, "pet")
             end
@@ -251,12 +251,12 @@ do
 
     -- Whether a target change can repaint anything: Target Border on in the settings the pets that are
     -- up are styled from. Re-read by every apply and party restyle (PF.SyncListeners).
-    PF.TargetWanted = function()
-        local src = PF.active and PF.StyleSource()
+    PetKit.TargetWanted = function()
+        local src = PetKit.active and PetKit.StyleSource()
         if src and src.targetBorderEnabled ~= false then
             return true
         end
-        src = PF.ownerActive and PF.PartySource()
+        src = PetKit.ownerActive and PetKit.PartySource()
         return (src and src.targetBorderEnabled ~= false) and true or false
     end
 
@@ -264,31 +264,31 @@ do
     -- battle, or the party frames down, leaves none): the trackers' health, name and range, the vehicle
     -- edges, UNIT_PET beside the party frames, and target changes while a Target Border can show. A
     -- button coming on screen paints in full, which covers whatever it missed.
-    PF.SyncShownEvents = function()
-        local wanted = (PF.tracking and (PF.visCount or 0) > 0) and true or false
-        local eventFrame = PF.eventFrame
-        local tgt = wanted and PF.tgtWanted
-        if PF.tgtEv ~= tgt then
-            PF.tgtEv = tgt
+    PetKit.SyncShownEvents = function()
+        local wanted = (PetKit.tracking and (PetKit.visCount or 0) > 0) and true or false
+        local eventFrame = PetKit.eventFrame
+        local tgt = wanted and PetKit.tgtWanted
+        if PetKit.tgtEv ~= tgt then
+            PetKit.tgtEv = tgt
             if tgt then
                 eventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
             else
                 eventFrame:UnregisterEvent("PLAYER_TARGET_CHANGED")
             end
         end
-        local pet = (wanted and PF.ownerActive) and true or false
-        if PF.petEv ~= pet then
-            PF.petEv = pet
+        local pet = (wanted and PetKit.ownerActive) and true or false
+        if PetKit.petEv ~= pet then
+            PetKit.petEv = pet
             if pet then
                 eventFrame:RegisterEvent("UNIT_PET")
             else
                 eventFrame:UnregisterEvent("UNIT_PET")
             end
         end
-        if PF.shownEv == wanted then
+        if PetKit.shownEv == wanted then
             return
         end
-        PF.shownEv = wanted
+        PetKit.shownEv = wanted
         if wanted then
             eventFrame:RegisterEvent("UNIT_ENTERED_VEHICLE")
             eventFrame:RegisterEvent("UNIT_EXITED_VEHICLE")
@@ -296,27 +296,27 @@ do
             eventFrame:UnregisterEvent("UNIT_ENTERED_VEHICLE")
             eventFrame:UnregisterEvent("UNIT_EXITED_VEHICLE")
         end
-        for _, tr in ipairs(PF.trackers) do
-            PF.TrackerEvents(tr, wanted)
+        for _, tr in ipairs(PetKit.trackers) do
+            PetKit.TrackerEvents(tr, wanted)
         end
     end
 
     -- The listeners after an apply or a party restyle, which can change the pets that are up and the
     -- Target Border setting.
-    PF.SyncListeners = function()
-        PF.tgtWanted = PF.TargetWanted()
-        PF.SyncShownEvents()
+    PetKit.SyncListeners = function()
+        PetKit.tgtWanted = PetKit.TargetWanted()
+        PetKit.SyncShownEvents()
     end
 
     -- One tracker's health, name and range listeners. Your own pet takes no range fade, so its token is
     -- left out of range.
-    PF.TrackerEvents = function(tr, enabled)
+    PetKit.TrackerEvents = function(tr, enabled)
         local frame = tr.frame
         if not enabled then
             frame:UnregisterAllEvents()
             return
         end
-        for _, eventFrame in ipairs(PF.EVENTS) do
+        for _, eventFrame in ipairs(PetKit.EVENTS) do
             frame:RegisterUnitEvent(eventFrame, tr.u1, tr.u2)
         end
         if tr.u1 == "pet" then
@@ -329,29 +329,29 @@ do
     -- Range re-read with no range update behind it (phasing, the Out of Range Alpha slider, roster
     -- passes): the tail of the raid frames' own range seed.
     function mod._PF_RangeSeed()
-        if PF.shownEv then
-            PF.EachShown(PF.ApplyRange)
+        if PetKit.shownEv then
+            PetKit.EachShown(PetKit.ApplyRange)
         end
     end
 
     -- A group member's connection changed: re-read its pet's range.
     function mod._PF_OwnerRange(ownerFrame)
-        local point = PF.shownEv and PF.PET_OF[ownerFrame]
+        local point = PetKit.shownEv and PetKit.PET_OF[ownerFrame]
         if not point then
             return
         end
-        local petBtn = PF.active and PF.byUnit[point]
+        local petBtn = PetKit.active and PetKit.byUnit[point]
         if petBtn and petBtn:IsVisible() then
-            PF.ApplyRange(petBtn)
+            PetKit.ApplyRange(petBtn)
         end
-        petBtn = PF.ownerActive and PF.ownerByUnit[point]
+        petBtn = PetKit.ownerActive and PetKit.ownerByUnit[point]
         if petBtn and petBtn:IsVisible() then
-            PF.ApplyRange(petBtn)
+            PetKit.ApplyRange(petBtn)
         end
     end
 
     -- A target change repaints only the pets whose target state flipped (the old and new target).
-    PF.TargetFlip = function(petBtn, unit)
+    PetKit.TargetFlip = function(petBtn, unit)
         if FB.ReadTarget(petBtn, unit) then
             FB.ApplyBorderColor(petBtn)
         end
@@ -359,11 +359,11 @@ do
 
     -- The full paint, which stamps the occupant it painted (unit + GUID, a secret GUID never stored) so
     -- a re-assignment of the same pet can skip it. A pet that does not exist yet still gets its border.
-    PF.Refresh = function(petBtn)
-        if not FB.Update(petBtn, PF) then
+    PetKit.Refresh = function(petBtn)
+        if not FB.Update(petBtn, PetKit) then
             FB.ApplyBorderColor(petBtn)
         end
-        PF.ApplyRange(petBtn)
+        PetKit.ApplyRange(petBtn)
         local unit = FB.UnitOf(petBtn)
         local g = unit and UnitGUID(unit)
         if issecretvalue(g) then
@@ -375,7 +375,7 @@ do
 
     -- Repaints a shown button only when its occupant differs from the stamped one (a secret or missing
     -- GUID always repaints).
-    PF.Revalidate = function(petBtn)
+    PetKit.Revalidate = function(petBtn)
         if not (petBtn and petBtn:IsVisible()) then
             return
         end
@@ -390,20 +390,20 @@ do
                 return
             end
         end
-        PF.Refresh(petBtn)
+        PetKit.Refresh(petBtn)
     end
 
     -- Every pet button on screen (cross-module colour and name pushes).
     function mod._PF_RefreshVisible()
-        PF.EachShown(PF.Refresh)
+        PetKit.EachShown(PetKit.Refresh)
     end
 
     -- The buttons of one list that are on screen (PF.buttons or PF.ownerButtons), after a settings
     -- reload or a party/raid flip.
-    PF.RepaintShown = function(entries)
+    PetKit.RepaintShown = function(entries)
         for _, petBtn in ipairs(entries) do
             if petBtn:IsVisible() then
-                PF.Refresh(petBtn)
+                PetKit.Refresh(petBtn)
             end
         end
     end
@@ -412,36 +412,36 @@ do
     -- a new pet (UNIT_PET, Beside Owner only: the pet header re-assigns its own buttons on it), or the
     -- owner entering or leaving a vehicle, which the pet token then stands for. Only that owner's pet
     -- buttons are re-checked. owner: the event's unit.
-    PF.OnPetChanged = function(ownerFrame)
-        local point = ownerFrame and PF.PET_OF[ownerFrame]
+    PetKit.OnPetChanged = function(ownerFrame)
+        local point = ownerFrame and PetKit.PET_OF[ownerFrame]
         if not point then
             return
         end
-        if PF.active then
-            PF.Revalidate(PF.byUnit[point])
+        if PetKit.active then
+            PetKit.Revalidate(PetKit.byUnit[point])
         end
-        if PF.ownerActive then
-            PF.Revalidate(PF.ownerByUnit[point])
+        if PetKit.ownerActive then
+            PetKit.Revalidate(PetKit.ownerByUnit[point])
             if point == "pet" then
-                PF.Revalidate(PF.selfPet)
+                PetKit.Revalidate(PetKit.selfPet)
             end
         end
     end
 
     -- The party container's alpha changed (the options previews): re-apply the Beside Owner pets'.
     function mod._PF_AlphaSync()
-        if not PF.ownerActive then
+        if not PetKit.ownerActive then
             return
         end
-        for _, petBtn in ipairs(PF.ownerButtons) do
-            if PF.ownerOf[petBtn] and petBtn:IsVisible() then
-                PF.ApplyRange(petBtn)
+        for _, petBtn in ipairs(PetKit.ownerButtons) do
+            if PetKit.ownerOf[petBtn] and petBtn:IsVisible() then
+                PetKit.ApplyRange(petBtn)
             end
         end
     end
 
     -- The side a group attached beside the party frames takes, the Party Frames kit's flip included.
-    PF.KitSide = function(place)
+    PetKit.KitSide = function(place)
         local prior = place == "left"
         if mod.RF_PartyKit() then
             prior = mod.RF_KitAttach(saved.profile, prior)
@@ -452,18 +452,18 @@ do
     -- The pet group goes after Friendly Boss and Extra Frames when they sit on the same side. Beside
     -- the party frames only a Show in Dungeons boss group is attached there to follow, and Extra
     -- Frames (raid only) never is.
-    PF.ChainAnchor = function(pset)
+    PetKit.ChainAnchor = function(pset)
         if pset.position == "free" or pset.position == "owner" then
             return
         end
-        local party = PF.PartyMode()
+        local party = PetKit.PartyMode()
         local fontStr = FB.Settings()
         if fontStr and FB.built and FB.container:IsShown() then
             if party then
                 if
                     fontStr.position ~= "free"
                     and fontStr.showInDungeons == true
-                    and PF.KitSide(fontStr.position) == PF.KitSide(pset.position)
+                    and PetKit.KitSide(fontStr.position) == PetKit.KitSide(pset.position)
                 then
                     return FB.container
                 end
@@ -482,7 +482,7 @@ do
     end
 
     -- map: the unit -> button map the button keeps itself in (none for your own Beside Owner pet).
-    PF.StyleButton = function(petBtn, map)
+    PetKit.StyleButton = function(petBtn, map)
         petBtn:RegisterForClicks("AnyUp")
         petBtn:SetAttribute("*type1", "target")
         -- The engine gates SecureUnitButton's togglemenu; route right-click through a SecureActionButton proxy so the menu works without taint.
@@ -490,7 +490,7 @@ do
         FB.BuildVisuals(petBtn, true)
 
         petBtn:HookScript("OnShow", function(self)
-            PF.visCount = (PF.visCount or 0) + 1
+            PetKit.visCount = (PetKit.visCount or 0) + 1
             -- A button showing again holds its unit's map entry, which another button may have taken
             -- and dropped while this one was off screen with the same unit.
             if map then
@@ -506,18 +506,18 @@ do
                 skinData.pfUnit = unit
             end
             -- Header buttons hidden at the last restyle catch up as they show.
-            local g = PF.styledGen[self]
-            if g and g ~= PF.styleGen then
-                PF.StyleHeaderButton(self)
+            local g = PetKit.styledGen[self]
+            if g and g ~= PetKit.styleGen then
+                PetKit.StyleHeaderButton(self)
             end
-            PF.Refresh(self)
-            PF.SyncShownEvents()
+            PetKit.Refresh(self)
+            PetKit.SyncShownEvents()
         end)
         petBtn:HookScript("OnHide", function(self)
-            PF.visCount = math.max(0, (PF.visCount or 0) - 1)
+            PetKit.visCount = math.max(0, (PetKit.visCount or 0) - 1)
             local skinData = GetFFD(self)
             skinData.pfPaintUnit, skinData.pfGuid = nil, nil
-            PF.SyncShownEvents()
+            PetKit.SyncShownEvents()
         end)
         petBtn:HookScript("OnEnter", function(self)
             FB.hov[self] = true
@@ -562,7 +562,7 @@ do
                     return
                 end
             end
-            PF.Refresh(self)
+            PetKit.Refresh(self)
         end)
 
         -- Full click-cast / hovercast binding suite (mouseover heals included)
@@ -572,24 +572,24 @@ do
     end
 
     -- One header button at the header's current size and style.
-    PF.StyleHeaderButton = function(petBtn)
-        if not PF.w then
+    PetKit.StyleHeaderButton = function(petBtn)
+        if not PetKit.w then
             return
         end
-        local src = PF.StyleSource()
-        FB.StyleVisuals(petBtn, src, PF.w, PF.h, ResolveHealthTexture(src), src.customBgColor or PF.DEFAULT_BG)
-        PF.styledGen[petBtn] = PF.styleGen
+        local src = PetKit.StyleSource()
+        FB.StyleVisuals(petBtn, src, PetKit.w, PetKit.h, ResolveHealthTexture(src), src.customBgColor or PetKit.DEFAULT_BG)
+        PetKit.styledGen[petBtn] = PetKit.styleGen
     end
 
     -- Every setting the button styler reads (FB.StyleVisuals with FB.StyleBorder; the size is checked on
     -- its own), plus the UI scale its pixel-sized borders follow, gathered into a reused list, so a
     -- reload that changed none of them leaves the pets' fonts, textures and borders alone. The hover and
     -- target borders are painted, not styled.
-    PF.STYLE_N = 26 + mod.RF_TEXT_STYLE_N
-    PF.fp = {}
-    PF.fpNew = {}
-    PF.StyleInputs = function(inputs, src, texPath)
-        local bgRGB = src.customBgColor or PF.DEFAULT_BG
+    PetKit.STYLE_N = 26 + mod.RF_TEXT_STYLE_N
+    PetKit.fp = {}
+    PetKit.fpNew = {}
+    PetKit.StyleInputs = function(inputs, src, texPath)
+        local bgRGB = src.customBgColor or PetKit.DEFAULT_BG
         local borderRGB = src.borderColor
         inputs[1], inputs[2], inputs[3], inputs[4], inputs[5] = bgRGB.r, bgRGB.g, bgRGB.b, src.bgDarkness, texPath
         inputs[6], inputs[7] = src.healthVerticalFill, src.healthBarOpacity
@@ -603,7 +603,7 @@ do
         inputs[24], inputs[25] = src.cornerRadius, src.cornerMask
         -- The texts: the plan signature, then offsets and size of each (t[26] on).
         mod.RF_TextStyleInputs(inputs, 25, src)
-        inputs[PF.STYLE_N] = src.textureBg -- Textured Background
+        inputs[PetKit.STYLE_N] = src.textureBg -- Textured Background
     end
 
     -- True when the inputs differ from the ones last styled under key ("hdr": the header, "owner": the
@@ -612,15 +612,15 @@ do
     -- ones, n slots in all (the party target frames' colour settings). The second return is the first
     -- slot that differs (0 with nothing styled yet), so a key with extra slots can tell a change to
     -- its own inputs alone (past PF.STYLE_N) from one the styler reads.
-    PF.StyleChanged = function(key, src, texPath, extra, num)
-        local new = PF.fpNew
-        PF.StyleInputs(new, src, texPath)
+    PetKit.StyleChanged = function(key, src, texPath, extra, num)
+        local new = PetKit.fpNew
+        PetKit.StyleInputs(new, src, texPath)
         if extra then
             extra(new)
         end
-        local old, at = PF.fp[key], 0
+        local old, at = PetKit.fp[key], 0
         if old then
-            for index = 1, num or PF.STYLE_N do
+            for index = 1, num or PetKit.STYLE_N do
                 if old[index] ~= new[index] then
                     at = index
                     break
@@ -630,38 +630,38 @@ do
                 return false
             end
         end
-        PF.fp[key] = new
-        PF.fpNew = old or {}
+        PetKit.fp[key] = new
+        PetKit.fpNew = old or {}
         return true, at
     end
 
-    PF.CompactStyleInput = function(inputs)
-        inputs[PF.STYLE_N + 1] = mod.RF_CompactOn(PF.StyleSource(), PF.styleCtx == "party")
+    PetKit.CompactStyleInput = function(inputs)
+        inputs[PetKit.STYLE_N + 1] = mod.RF_CompactOn(PetKit.StyleSource(), PetKit.styleCtx == "party")
     end
 
     -- Header buttons: five in one column beside the party frames, all forty (eight columns) once raid
     -- pets are on. The column count caps what the header shows, so it never makes a button itself.
-    PF.Capacity = function()
-        local rawValue = PF.Raw()
-        return (rawValue and rawValue.raid == true) and PF.MAX or 5
+    PetKit.Capacity = function()
+        local rawValue = PetKit.Raw()
+        return (rawValue and rawValue.raid == true) and PetKit.MAX or 5
     end
 
     -- A header makes children only while visible, so the buttons up to the capacity are made up front
     -- (the raid headers' startingIndex pass, its parent shown for it) and set up once; the header then
     -- assigns pets to them. The pass leaves the header hidden for the apply to show laid out. With the
     -- UI hidden (a cinematic, Alt-Z) nothing is made and the next apply tries again. OOC only.
-    PF.EnsureBuilt = function()
-        local cap = PF.Capacity()
-        local have = #PF.buttons
+    PetKit.EnsureBuilt = function()
+        local cap = PetKit.Capacity()
+        local have = #PetKit.buttons
         if have >= cap then
             return true
         end
-        local heading = PF.container
+        local heading = PetKit.container
         if not heading then
             -- The header's parent carries its pet-battle and solo hide (see PF.SetHider).
             local hideHost = CreateFrame("Frame", nil, UIParent)
             hideHost:SetAllPoints(UIParent)
-            PF.hider = hideHost
+            PetKit.hider = hideHost
             heading = CreateFrame("Frame", "ERFPetHeader", hideHost, "SecureGroupPetHeaderTemplate")
             heading:SetAttribute("template", "SecureUnitButtonTemplate")
             heading:SetAttribute("templateType", "Button")
@@ -673,14 +673,14 @@ do
             -- The forty-button pass lays its buttons out in columns, which needs a column anchor;
             -- PF.Layout sets the real one.
             heading:SetAttribute("columnAnchorPoint", "LEFT")
-            PF.container = heading
+            PetKit.container = heading
             -- Switched on with a preview up: dim it like the other real frames.
             if mod._raidPvActive or mod._partyPvActive then
                 mod._SetRealFramesPreviewHidden(true)
             end
         end
         if not heading[cap] then
-            local hideHost = PF.hider
+            local hideHost = PetKit.hider
             local hid = not hideHost:IsShown()
             heading:Hide()
             if hid then
@@ -701,32 +701,32 @@ do
                 break
             end
             GetFFD(petBtn)._petHeader = true
-            PF.StyleButton(petBtn, PF.byUnit)
-            FB.src[petBtn] = PF.StyleSource
-            PF.styledGen[petBtn] = 0
-            PF.buttons[index] = petBtn
+            PetKit.StyleButton(petBtn, PetKit.byUnit)
+            FB.src[petBtn] = PetKit.StyleSource
+            PetKit.styledGen[petBtn] = 0
+            PetKit.buttons[index] = petBtn
         end
-        local num = #PF.buttons
+        local num = #PetKit.buttons
         if num == 0 then
             return false
         end
         -- New buttons take their size on the next layout.
         if num > have then
-            PF.w = nil
+            PetKit.w = nil
         end
-        PF.EnsureTrackers(num >= PF.MAX and PF.ALL_TRACKERS or PF.SMALL_TRACKERS)
-        PF.built = true
+        PetKit.EnsureTrackers(num >= PetKit.MAX and PetKit.ALL_TRACKERS or PetKit.SMALL_TRACKERS)
+        PetKit.built = true
         return true
     end
 
     -- Per-event slices of the full paint (PF.Refresh): health events repaint the health value and texts,
     -- name events the name, range updates the range fade.
-    PF.PaintHealth = function(petBtn, unit)
+    PetKit.PaintHealth = function(petBtn, unit)
         if UnitExists(unit) then
             FB.PaintHealth(petBtn, unit, FB.Source(petBtn))
         end
     end
-    PF.PaintName = function(petBtn, unit)
+    PetKit.PaintName = function(petBtn, unit)
         if UnitExists(unit) then
             FB.PaintName(petBtn, unit, FB.Source(petBtn))
         end
@@ -734,23 +734,23 @@ do
 
     -- The event's pet is on the header button holding it, and beside the party frames on its Beside
     -- Owner pet (your pet on your own pet button or on the party frame showing you: one of them shows).
-    PF.OnTrackerEvent = function(_, evt, unit)
-        local paint = PF.PaintHealth
+    PetKit.OnTrackerEvent = function(_, evt, unit)
+        local paint = PetKit.PaintHealth
         if evt == "UNIT_IN_RANGE_UPDATE" then
-            paint = PF.ApplyRange
+            paint = PetKit.ApplyRange
         elseif evt == "UNIT_NAME_UPDATE" then
-            paint = PF.PaintName
+            paint = PetKit.PaintName
         end
-        local petBtn = PF.byUnit[unit]
+        local petBtn = PetKit.byUnit[unit]
         if petBtn and petBtn:IsVisible() then
             paint(petBtn, unit)
         end
-        if PF.ownerActive then
-            petBtn = PF.ownerByUnit[unit]
+        if PetKit.ownerActive then
+            petBtn = PetKit.ownerByUnit[unit]
             if petBtn and petBtn:IsVisible() then
                 paint(petBtn, unit)
             end
-            petBtn = PF.selfPet
+            petBtn = PetKit.selfPet
             if unit == "pet" and petBtn:IsVisible() then
                 paint(petBtn, unit)
             end
@@ -759,15 +759,15 @@ do
 
     -- Up to n tracker frames, two pet tokens each (RegisterUnitEvent takes two units), from the shell
     -- pool. Frames added while pets are on screen listen at once (the listeners switch on edges).
-    PF.EnsureTrackers = function(num)
-        for k = #PF.trackers + 1, num do
+    PetKit.EnsureTrackers = function(num)
+        for k = #PetKit.trackers + 1, num do
             local index = 2 * k - 1
             local inputs = mod.TakeShell()
-            inputs:SetScript("OnEvent", PF.OnTrackerEvent)
-            local tr = { frame = inputs, u1 = PF.UNITS[index], u2 = PF.UNITS[index + 1] }
-            PF.trackers[k] = tr
-            if PF.shownEv then
-                PF.TrackerEvents(tr, true)
+            inputs:SetScript("OnEvent", PetKit.OnTrackerEvent)
+            local tr = { frame = inputs, u1 = PetKit.UNITS[index], u2 = PetKit.UNITS[index + 1] }
+            PetKit.trackers[k] = tr
+            if PetKit.shownEv then
+                PetKit.TrackerEvents(tr, true)
             end
         end
     end
@@ -793,7 +793,7 @@ do
     --  combat-end reseed (ns._ptSelfDirty -> ns._PT_SyncSelf): your own target
     --  shows, and the member now on your old token loses theirs, until then.
     -------------------------------------------------------------------------------
-    PF.OWNER_SNIPPET = [[
+    PetKit.OWNER_SNIPPET = [[
     local u = self:GetAttribute("unit")
     if self:GetAttribute("pf-on") then
         local pu
@@ -819,41 +819,41 @@ do
 ]]
 
     -- OOC only.
-    PF.EnsureOwnerBuilt = function()
-        if PF.ownerBuilt then
+    PetKit.EnsureOwnerBuilt = function()
+        if PetKit.ownerBuilt then
             return
         end
-        PF.ownerBuilt = true
+        PetKit.ownerBuilt = true
         -- Your pet hangs off the container, not the self button, so it can outlive Hide Self.
         local petSettings = CreateFrame("Button", nil, mod._partyContainerFrame, "SecureUnitButtonTemplate")
         petSettings:SetAttribute("unit", "pet")
         petSettings:Hide()
-        PF.StyleButton(petSettings)
-        FB.src[petSettings] = PF.PartySource
-        PF.selfPet = petSettings
-        PF.ownerButtons[1] = petSettings
+        PetKit.StyleButton(petSettings)
+        FB.src[petSettings] = PetKit.PartySource
+        PetKit.selfPet = petSettings
+        PetKit.ownerButtons[1] = petSettings
         for _, ownerFrame in ipairs(mod._partyAllButtons) do
             if ownerFrame ~= mod._partySelfButton then
                 local petBtn = CreateFrame("Button", nil, ownerFrame, "SecureUnitButtonTemplate")
                 petBtn:Hide()
                 petBtn:SetIgnoreParentAlpha(true)
-                PF.ownerOf[petBtn] = ownerFrame
-                PF.StyleButton(petBtn, PF.ownerByUnit)
-                FB.src[petBtn] = PF.PartySource
-                PF.ownerButtons[#PF.ownerButtons + 1] = petBtn
+                PetKit.ownerOf[petBtn] = ownerFrame
+                PetKit.StyleButton(petBtn, PetKit.ownerByUnit)
+                FB.src[petBtn] = PetKit.PartySource
+                PetKit.ownerButtons[#PetKit.ownerButtons + 1] = petBtn
                 SecureHandlerSetFrameRef(ownerFrame, "pfpet", petBtn)
                 SecureHandlerSetFrameRef(ownerFrame, "pfself", petSettings)
             end
         end
-        PF.EnsureTrackers(PF.SMALL_TRACKERS)
+        PetKit.EnsureTrackers(PetKit.SMALL_TRACKERS)
     end
 
     -- The party frames' one unit snippet, installed while the Beside Owner pets or the party target
     -- frames' Include Own Target gate (ns._ptNoSelf) need it, with the pet part switched by pf-on.
     -- Only changed attributes are written. OOC only.
-    PF.SyncUnitSnippet = function()
-        local pets = PF.ownerActive and true or nil
-        local code = (pets or mod._ptNoSelf) and PF.OWNER_SNIPPET or nil
+    PetKit.SyncUnitSnippet = function()
+        local pets = PetKit.ownerActive and true or nil
+        local code = (pets or mod._ptNoSelf) and PetKit.OWNER_SNIPPET or nil
         for _, owner in ipairs(mod._partyAllButtons) do
             if owner ~= mod._partySelfButton then
                 if owner:GetAttribute("pf-on") ~= pets then
@@ -865,30 +865,30 @@ do
             end
         end
     end
-    mod.PF_SyncUnitSnippet = PF.SyncUnitSnippet
+    mod.PF_SyncUnitSnippet = PetKit.SyncUnitSnippet
 
     -- Switches the snippet's pet part on or off; on, seeds each pet's unit from its frame's current one
     -- (written as the snippet does, the same token included). OOC only.
-    PF.SetOwnerLinks = function(enabled)
+    PetKit.SetOwnerLinks = function(enabled)
         if enabled then
-            for _, petBtn in ipairs(PF.ownerButtons) do
-                local owner = PF.ownerOf[petBtn]
+            for _, petBtn in ipairs(PetKit.ownerButtons) do
+                local owner = PetKit.ownerOf[petBtn]
                 if owner then
                     local unit = owner:GetAttribute("unit")
-                    petBtn:SetAttribute("unit", unit and PF.PET_OF[unit])
+                    petBtn:SetAttribute("unit", unit and PetKit.PET_OF[unit])
                 end
             end
         end
-        PF.SyncUnitSnippet()
+        PetKit.SyncUnitSnippet()
     end
 
     -- Unit watches on the Beside Owner pets run only while the party frames are on screen. OOC only.
-    PF.SetOwnerWatch = function()
-        local wanted = (PF.ownerActive and mod._partyContainerFrame:IsShown()) and true or false
-        if PF.watching ~= wanted then
-            PF.watching = wanted
-            for _, petBtn in ipairs(PF.ownerButtons) do
-                if PF.ownerOf[petBtn] then
+    PetKit.SetOwnerWatch = function()
+        local wanted = (PetKit.ownerActive and mod._partyContainerFrame:IsShown()) and true or false
+        if PetKit.watching ~= wanted then
+            PetKit.watching = wanted
+            for _, petBtn in ipairs(PetKit.ownerButtons) do
+                if PetKit.ownerOf[petBtn] then
                     if wanted then
                         RegisterUnitWatch(petBtn)
                     else
@@ -898,12 +898,12 @@ do
                 end
             end
         end
-        PF.PlaceSelfPet()
+        PetKit.PlaceSelfPet()
     end
 
     -- Party frame size (the raid frame size under the Party Frames layout, whose size is its portrait
     -- box, as Friendly Boss does).
-    PF.PartySize = function(src)
+    PetKit.PartySize = function(src)
         local wid, hgt, petSettings = mod.RF_PartyDims(saved.profile)
         if mod.RF_PartyKit() then
             wid, hgt, petSettings = src.frameWidth or 125, src.frameHeight or 60, src.cellSpacing or -1
@@ -914,11 +914,11 @@ do
     -- A tab's pet size (its frames' size plus that tab's Extra Width/Height), spacing and growth: the
     -- party frames' size and stacking on the Party tab, the raid frame size and growth on the Raid tab.
     -- Free Move takes the tab's Growth Direction when one is set, its columns turned across it.
-    PF.Geometry = function(context)
+    PetKit.Geometry = function(context)
         local src = mod._scaledProfile or saved.profile
         local wid, hgt, petSettings, unitGrowth, groupGrowth
         if context == "party" then
-            wid, hgt, petSettings = PF.PartySize(src)
+            wid, hgt, petSettings = PetKit.PartySize(src)
             unitGrowth = mod._PartyGrowth(saved.profile)
             groupGrowth = (unitGrowth == "RIGHT" or unitGrowth == "LEFT") and "DOWN" or "RIGHT"
         else
@@ -929,7 +929,7 @@ do
         if mod.RF_CompactOn(context == "party" and mod._partyProxy or src, context == "party") then
             petSettings = mod.RF_OnePixel(context == "party")
         end
-        local v = PF.View(context)
+        local v = PetKit.View(context)
         local fg = v.position == "free" and v.freeGrowth
         if fg then
             unitGrowth = fg
@@ -940,15 +940,15 @@ do
         wid = PixelSnap(math.max(10, wid + (v.extraWidth or 0)))
         hgt = PixelSnap(math.max(10, hgt + (v.extraHeight or 0)))
         -- Same grid as FB.FreePin: the pet header's own scale.
-        petSettings = CludesUI.PP.SnapForES(petSettings, (PF.container or UIParent):GetEffectiveScale())
+        petSettings = CludesUI.PP.SnapForES(petSettings, (PetKit.container or UIParent):GetEffectiveScale())
         return wid, hgt, petSettings, unitGrowth, groupGrowth
     end
 
     -- Pet Side, fitted to the party frames' orientation: across the stack only (Left/Right beside
     -- stacked frames, Above/Below horizontal ones), so a pet never lands on the next frame. A choice
     -- that no longer fits reads as the default until it fits again. s: the profile (or preview view).
-    PF.OwnerSide = function(src)
-        local rawValue = PF.Raw()
+    PetKit.OwnerSide = function(src)
+        local rawValue = PetKit.Raw()
         local edgeSide = rawValue and rawValue.ownerSide
         if src.partyHorizontal then
             if edgeSide ~= "above" and edgeSide ~= "below" then
@@ -960,13 +960,13 @@ do
         return edgeSide
     end
     function mod.PF_OwnerSide()
-        return PF.OwnerSide(saved.profile)
+        return PetKit.OwnerSide(saved.profile)
     end
 
     -- The side the pets take and the extra gap: the Party Frames kit moves them off its outside auras
     -- as it does the Friendly Boss group.
-    PF.ResolveOwnerSide = function(src)
-        local edgeSide = PF.OwnerSide(src)
+    PetKit.ResolveOwnerSide = function(src)
+        local edgeSide = PetKit.OwnerSide(src)
         local extra = 0
         if mod.RF_PartyKit() then
             local prior = edgeSide == "left" or edgeSide == "above"
@@ -980,7 +980,7 @@ do
         return edgeSide, extra
     end
 
-    PF.OwnerPoint = function(petBtn, ownerFrame, edgeSide, spacing)
+    PetKit.OwnerPoint = function(petBtn, ownerFrame, edgeSide, spacing)
         if edgeSide == "left" then
             petBtn:SetPoint("TOPRIGHT", ownerFrame, "TOPLEFT", -spacing, 0)
         elseif edgeSide == "below" then
@@ -995,45 +995,45 @@ do
     -- Size, side and style of the Beside Owner pets: only what changed is touched (the party layout pass
     -- runs this on every roster edge). restyle (a settings reload) checks the style inputs, and restyles
     -- the fonts, textures and borders only when they changed; a size change alone resizes. OOC only.
-    PF.OwnerLayout = function(needsRestyle)
-        local wid, hgt, petSettings = PF.Geometry("party")
-        local edgeSide, extra = PF.ResolveOwnerSide(saved.profile)
+    PetKit.OwnerLayout = function(needsRestyle)
+        local wid, hgt, petSettings = PetKit.Geometry("party")
+        local edgeSide, extra = PetKit.ResolveOwnerSide(saved.profile)
         local baseGap = PixelSnap(petSettings)
         local spacing = baseGap + PixelSnap(extra)
-        local didResize = wid ~= PF.ownerW or hgt ~= PF.ownerH
-        local moved = edgeSide ~= PF.ownerSideCur or spacing ~= PF.ownerGap
-        PF.ownerW, PF.ownerH, PF.ownerSideCur, PF.ownerGap, PF.ownerBaseGap = wid, hgt, edgeSide, spacing, baseGap
+        local didResize = wid ~= PetKit.ownerW or hgt ~= PetKit.ownerH
+        local moved = edgeSide ~= PetKit.ownerSideCur or spacing ~= PetKit.ownerGap
+        PetKit.ownerW, PetKit.ownerH, PetKit.ownerSideCur, PetKit.ownerGap, PetKit.ownerBaseGap = wid, hgt, edgeSide, spacing, baseGap
         local src, texPath
         local didRestyle = false
         if needsRestyle then
-            src = PF.PartySource()
+            src = PetKit.PartySource()
             texPath = ResolveHealthTexture(src)
-            didRestyle = PF.StyleChanged("owner", src, texPath)
+            didRestyle = PetKit.StyleChanged("owner", src, texPath)
         end
         if didRestyle then
-            local bgRGB = src.customBgColor or PF.DEFAULT_BG
-            for _, petBtn in ipairs(PF.ownerButtons) do
+            local bgRGB = src.customBgColor or PetKit.DEFAULT_BG
+            for _, petBtn in ipairs(PetKit.ownerButtons) do
                 petBtn:SetSize(wid, hgt)
                 FB.StyleVisuals(petBtn, src, wid, hgt, texPath, bgRGB)
             end
         elseif didResize then
-            for _, petBtn in ipairs(PF.ownerButtons) do
+            for _, petBtn in ipairs(PetKit.ownerButtons) do
                 petBtn:SetSize(wid, hgt)
                 FB.SizeVisuals(petBtn, wid, hgt)
             end
         end
         if moved then
-            for _, petBtn in ipairs(PF.ownerButtons) do
-                local owner = PF.ownerOf[petBtn]
+            for _, petBtn in ipairs(PetKit.ownerButtons) do
+                local owner = PetKit.ownerOf[petBtn]
                 if owner then
                     petBtn:ClearAllPoints()
-                    PF.OwnerPoint(petBtn, owner, edgeSide, spacing)
+                    PetKit.OwnerPoint(petBtn, owner, edgeSide, spacing)
                 end
             end
         end
         if didResize or moved then
-            PF.PlaceSelfPet(true)
-            PF.NotifyReserve()
+            PetKit.PlaceSelfPet(true)
+            PetKit.NotifyReserve()
         end
     end
 
@@ -1042,25 +1042,25 @@ do
     -- unit snippet after whichever frame the header fills last, so joins, leaves and re-sorts in combat
     -- carry it along. While the party header shows you, that frame's own pet has it and this one stays
     -- hidden. Repeat calls with nothing changed return at once. OOC only.
-    PF.PlaceSelfPet = function(force)
-        local petBtn = PF.selfPet
+    PetKit.PlaceSelfPet = function(force)
+        local petBtn = PetKit.selfPet
         if not petBtn then
             return
         end
         if InCombatLockdown() then
-            PF.anchorDirty = true
+            PetKit.anchorDirty = true
             return
         end
         local mode = "off"
-        if PF.watching then
+        if PetKit.watching then
             local m = mod._partySelfMode
             if m == "button" or (m == "hidden" and IsInGroup()) then
                 mode = m
             end
         end
         if mode == "off" then
-            if force or PF.spMode ~= "off" then
-                PF.spMode = "off"
+            if force or PetKit.spMode ~= "off" then
+                PetKit.spMode = "off"
                 petBtn:SetAttribute("pf-hs", nil)
                 UnregisterUnitWatch(petBtn)
                 petBtn:Hide()
@@ -1073,16 +1073,16 @@ do
         local slotGap = PixelSnap(psp) + mod.PT_AlongPitch(saved.profile)
         if
             not force
-            and mode == PF.spMode
-            and PF.ownerSideCur == PF.spSide
-            and PF.ownerGap == PF.spGap
-            and growDir == PF.spGrow
-            and slotGap == PF.spSlotGap
+            and mode == PetKit.spMode
+            and PetKit.ownerSideCur == PetKit.spSide
+            and PetKit.ownerGap == PetKit.spGap
+            and growDir == PetKit.spGrow
+            and slotGap == PetKit.spSlotGap
         then
             return
         end
-        PF.spMode, PF.spSide, PF.spGap, PF.spGrow, PF.spSlotGap =
-            mode, PF.ownerSideCur, PF.ownerGap, growDir, slotGap
+        PetKit.spMode, PetKit.spSide, PetKit.spGap, PetKit.spGrow, PetKit.spSlotGap =
+            mode, PetKit.ownerSideCur, PetKit.ownerGap, growDir, slotGap
         if mode == "hidden" then
             local point, rp, posX, posY, base
             if growDir == "UP" then
@@ -1116,14 +1116,14 @@ do
         else
             petBtn:SetAttribute("pf-hs", nil)
             petBtn:ClearAllPoints()
-            PF.OwnerPoint(petBtn, mod._partySelfButton, PF.ownerSideCur, PF.ownerGap)
+            PetKit.OwnerPoint(petBtn, mod._partySelfButton, PetKit.ownerSideCur, PetKit.ownerGap)
         end
         RegisterUnitWatch(petBtn)
     end
 
     -- A Show in Dungeons boss group beside the party frames clears the Beside Owner pets' column, and
     -- the party target frames follow the pets on their side.
-    PF.NotifyReserve = function()
+    PetKit.NotifyReserve = function()
         mod._PT_Layout()
         local fontStr = FB.Settings()
         if FB.built and fontStr and fontStr.showInDungeons == true then
@@ -1134,16 +1134,16 @@ do
     -- The room the Beside Owner pets take on the side a group attaches to the party frames (horizontal:
     -- the party frames' orientation; before: left, or above horizontal frames).
     function mod.PF_OwnerReserve(horizontal, prior)
-        local edgeSide = PF.ownerActive and PF.ownerSideCur
+        local edgeSide = PetKit.ownerActive and PetKit.ownerSideCur
         if not edgeSide then
             return 0
         end
         if horizontal then
             if (prior and edgeSide == "above") or (not prior and edgeSide == "below") then
-                return PF.ownerH + PF.ownerBaseGap
+                return PetKit.ownerH + PetKit.ownerBaseGap
             end
         elseif (prior and edgeSide == "left") or (not prior and edgeSide == "right") then
-            return PF.ownerW + PF.ownerBaseGap
+            return PetKit.ownerW + PetKit.ownerBaseGap
         end
         return 0
     end
@@ -1151,12 +1151,12 @@ do
     -- Whether either kind of pet is up. Its listeners follow the pets on screen (PF.SyncShownEvents),
     -- the vehicle edges among them: an owner entering or leaving a vehicle swaps what its pet token
     -- stands for without touching any unit attribute (PF.OnPetChanged re-checks that owner's pet).
-    PF.SetTracking = function(enabled)
-        if PF.tracking == enabled then
+    PetKit.SetTracking = function(enabled)
+        if PetKit.tracking == enabled then
             return
         end
-        PF.tracking = enabled
-        PF.SyncShownEvents()
+        PetKit.tracking = enabled
+        PetKit.SyncShownEvents()
     end
 
     -- One write of a batch on the header: the batch's first change sets _ignore, so the header skips its
@@ -1179,29 +1179,29 @@ do
     -- only when the macro changes. Grouped = a raid1/party1 unit exists, which stays live in combat
     -- (see ns._RF_VIS_MACROS).
     -- solo: the header's showSolo. OOC only.
-    PF.SetHider = function(solo)
+    PetKit.SetHider = function(solo)
         local m = solo and "[petbattle] hide; show"
             or "[petbattle] hide; [@raid1,exists][@party1,exists][group] show; hide"
-        if PF.hiderMacro ~= m then
-            RegisterStateDriver(PF.hider, "visibility", m)
-            PF.hiderMacro = m
+        if PetKit.hiderMacro ~= m then
+            RegisterStateDriver(PetKit.hider, "visibility", m)
+            PetKit.hiderMacro = m
         end
     end
 
     -- Teardown, after the header is hidden: the driver goes and the parent shows again, so a later build
     -- makes its buttons under a shown parent. OOC only.
-    PF.ClearHider = function()
-        if not PF.hiderMacro then
+    PetKit.ClearHider = function()
+        if not PetKit.hiderMacro then
             return
         end
-        UnregisterStateDriver(PF.hider, "visibility")
-        PF.hiderMacro = nil
-        PF.hider:Show()
+        UnregisterStateDriver(PetKit.hider, "visibility")
+        PetKit.hiderMacro = nil
+        PetKit.hider:Show()
     end
 
     -- Show Groups as a groupFilter: nil with every group on, one cached string per group set.
-    PF.gf = {}
-    PF.RaidGroupFilter = function()
+    PetKit.gf = {}
+    PetKit.RaidGroupFilter = function()
         local vg = mod._VisibleGroups() -- Mythic 5-8 aware (read-only)
         if not vg then
             return nil
@@ -1215,7 +1215,7 @@ do
         if mask == 255 then
             return nil
         end
-        local text = PF.gf[mask]
+        local text = PetKit.gf[mask]
         if not text then
             text = ""
             for gi = 1, 8 do
@@ -1223,7 +1223,7 @@ do
                     text = (text == "") and tostring(gi) or (text .. "," .. gi)
                 end
             end
-            PF.gf[mask] = text
+            PetKit.gf[mask] = text
         end
         return text
     end
@@ -1233,35 +1233,35 @@ do
     -- is touched: restyle (a settings or profile reload) and a party/raid flip restyle only when the
     -- style inputs changed, a size change alone resizes, and buttons off screen catch up as they show.
     -- Both also repaint the pets on screen, whose paint reads the settings too. OOC only.
-    PF.Layout = function(needsRestyle)
-        local context = PF.Ctx()
+    PetKit.Layout = function(needsRestyle)
+        local context = PetKit.Ctx()
         local party = context == "party"
-        local wid, hgt, petSettings, unitGrowth, groupGrowth = PF.Geometry(context)
-        local heading = PF.container
-        local didResize = wid ~= PF.w or hgt ~= PF.h
-        PF.w, PF.h, PF.sp, PF.unitGrowth, PF.groupGrowth = wid, hgt, petSettings, unitGrowth, groupGrowth
-        local flipped = PF.styleCtx ~= context
+        local wid, hgt, petSettings, unitGrowth, groupGrowth = PetKit.Geometry(context)
+        local heading = PetKit.container
+        local didResize = wid ~= PetKit.w or hgt ~= PetKit.h
+        PetKit.w, PetKit.h, PetKit.sp, PetKit.unitGrowth, PetKit.groupGrowth = wid, hgt, petSettings, unitGrowth, groupGrowth
+        local flipped = PetKit.styleCtx ~= context
         local didRestyle = false
         if needsRestyle or flipped then
-            PF.styleCtx = context
-            local ss = PF.StyleSource()
+            PetKit.styleCtx = context
+            local ss = PetKit.StyleSource()
             didRestyle =
-                PF.StyleChanged("hdr", ss, ResolveHealthTexture(ss), PF.CompactStyleInput, PF.STYLE_N + 1)
+                PetKit.StyleChanged("hdr", ss, ResolveHealthTexture(ss), PetKit.CompactStyleInput, PetKit.STYLE_N + 1)
         end
         if didResize then
-            for _, petBtn in ipairs(PF.buttons) do
+            for _, petBtn in ipairs(PetKit.buttons) do
                 petBtn:SetSize(wid, hgt)
             end
         end
         if didRestyle or didResize then
-            PF.styleGen = (PF.styleGen or 0) + 1
-            for _, petBtn in ipairs(PF.buttons) do
+            PetKit.styleGen = (PetKit.styleGen or 0) + 1
+            for _, petBtn in ipairs(PetKit.buttons) do
                 if petBtn:IsVisible() then
                     if didRestyle then
-                        PF.StyleHeaderButton(petBtn)
+                        PetKit.StyleHeaderButton(petBtn)
                     else
                         FB.SizeVisuals(petBtn, wid, hgt)
-                        PF.styledGen[petBtn] = PF.styleGen
+                        PetKit.styledGen[petBtn] = PetKit.styleGen
                     end
                 end
             end
@@ -1269,7 +1269,7 @@ do
         -- Before the header re-runs below: the pets it re-assigns paint in their unit hook, and the
         -- ones it shows as they show.
         if needsRestyle or flipped then
-            PF.RepaintShown(PF.buttons)
+            PetKit.RepaintShown(PetKit.buttons)
         end
 
         local src = mod._scaledProfile or saved.profile
@@ -1280,12 +1280,12 @@ do
             local g = mod._SmallRaidGroup()
             group = g and tostring(g) or nil
         else
-            group = PF.RaidGroupFilter()
+            group = PetKit.RaidGroupFilter()
         end
         -- Beside the party frames the pets keep the party frames' pitch, which party target frames along
         -- the stack open (the kit's pets take the raid frame size, which never lines up with them).
         local pitch = petSettings
-        if party and not mod.RF_PartyKit() and PF.View("party").position ~= "free" then
+        if party and not mod.RF_PartyKit() and PetKit.View("party").position ~= "free" then
             pitch = petSettings + mod.PT_AlongPitch(saved.profile)
         end
         local anchorPoint, xOff, yOff = mod._RFHeaderPoint(unitGrowth, pitch)
@@ -1303,7 +1303,7 @@ do
             changed
         )
         changed = SetAttr(heading, "columnAnchorPoint", mod._RFColAnchor(unitGrowth, groupGrowth), changed)
-        changed = SetAttr(heading, "maxColumns", #PF.buttons >= PF.MAX and 8 or 1, changed)
+        changed = SetAttr(heading, "maxColumns", #PetKit.buttons >= PetKit.MAX and 8 or 1, changed)
         if changed then
             heading:SetAttribute("_ignore", nil)
         end
@@ -1313,21 +1313,21 @@ do
         -- attributes (clearing _ignore runs nothing, and a new size alone changes no attribute), with
         -- no pet hidden and re-shown. A header not on screen re-runs as it shows.
         if didResize or changed then
-            for _, petBtn in ipairs(PF.buttons) do
+            for _, petBtn in ipairs(PetKit.buttons) do
                 petBtn:ClearAllPoints()
             end
             heading:SetAttribute("pf-relayout", not heading:GetAttribute("pf-relayout"))
         end
         -- Last, so a parent that shows here runs the header once on the final attributes.
-        PF.SetHider(solo)
+        PetKit.SetHider(solo)
         mod.RF_SyncPetCompact()
     end
 
     -- Free Move: the header is pinned at the corner its pets grow from, so pet 1 stays put as pets come
     -- and go. The overlay covers five pets; until its first drag they are centred on freePos. ctx: the
     -- tab whose spot and size this is.
-    PF.FreeCorner = function(keySet, context)
-        local wid, hgt, petSettings, unitGrowth, groupGrowth = PF.Geometry(context)
+    PetKit.FreeCorner = function(keySet, context)
+        local wid, hgt, petSettings, unitGrowth, groupGrowth = PetKit.Geometry(context)
         local vertical = unitGrowth ~= "RIGHT" and unitGrowth ~= "LEFT"
         local hDir = vertical and groupGrowth or unitGrowth
         local vDir = vertical and unitGrowth or groupGrowth
@@ -1347,102 +1347,102 @@ do
         return corner, posX, posY, wid, hgt
     end
 
-    PF.FreeAnchor = function(c, keySet)
-        local corner, posX, posY = PF.FreeCorner(keySet, PF.Ctx())
+    PetKit.FreeAnchor = function(c, keySet)
+        local corner, posX, posY = PetKit.FreeCorner(keySet, PetKit.Ctx())
         FB.FreePin(c, corner, posX, posY)
         return true
     end
 
     -- The Move Frames overlay places the spot of the tab it was opened on, which need not be the live one.
-    PF.MoverSettings = function()
-        return PF.Raw() and PF.View(PF.moverCtx or PF.Ctx())
+    PetKit.MoverSettings = function()
+        return PetKit.Raw() and PetKit.View(PetKit.moverCtx or PetKit.Ctx())
     end
 
     -- Before the overlay shows: the live header, when up, takes the current settings.
-    PF.MoverPrep = function()
-        if PF.active and not InCombatLockdown() then
-            PF.Layout()
-            PF.Anchor()
+    PetKit.MoverPrep = function()
+        if PetKit.active and not InCombatLockdown() then
+            PetKit.Layout()
+            PetKit.Anchor()
         end
     end
 
-    PF.PlaceMover = function(m, keySet)
-        local corner, posX, posY, wid, hgt = PF.FreeCorner(keySet, PF.moverCtx or PF.Ctx())
+    PetKit.PlaceMover = function(m, keySet)
+        local corner, posX, posY, wid, hgt = PetKit.FreeCorner(keySet, PetKit.moverCtx or PetKit.Ctx())
         m:SetSize(wid, hgt)
         FB.FreePin(m, corner, posX, posY)
     end
 
-    PF.SaveFreeRect = function(mover)
-        FB.SaveMoverRect(mover, PF.MoverSettings())
+    PetKit.SaveFreeRect = function(mover)
+        FB.SaveMoverRect(mover, PetKit.MoverSettings())
     end
 
     -- ctx: "party" or "raid", the tab the overlay is for (the live one when nil).
     function mod.PF_SetMoverShown(show, context)
         if show then
-            PF.moverCtx = context or PF.Ctx()
+            PetKit.moverCtx = context or PetKit.Ctx()
         end
-        FB.SetMoverShown(PF, show, "ERFPetFramesMover", "Pet Frames")
+        FB.SetMoverShown(PetKit, show, "ERFPetFramesMover", "Pet Frames")
     end
 
     -- ctx: true only when the overlay is up for that tab (any tab when nil).
     function mod.PF_IsMoverShown(context)
-        return (PF.mover and PF.mover:IsShown() and (context == nil or PF.moverCtx == context)) or false
+        return (PetKit.mover and PetKit.mover:IsShown() and (context == nil or PetKit.moverCtx == context)) or false
     end
 
     -- A size change on the tab whose overlay is up: the overlay takes the new size (the apply before
     -- this has already re-laid the live group).
     function mod.PF_PlaceMover(context)
-        local m = PF.mover
-        if not (m and m:IsShown() and PF.moverCtx == context) then
+        local m = PetKit.mover
+        if not (m and m:IsShown() and PetKit.moverCtx == context) then
             return
         end
-        local keySet = PF.MoverSettings()
+        local keySet = PetKit.MoverSettings()
         if not keySet then
             return
         end
         m:ClearAllPoints()
-        PF.PlaceMover(m, keySet)
+        PetKit.PlaceMover(m, keySet)
     end
 
     -- Options preview: made-up pets beside the preview frames, on the same visuals. Plain frames, built
     -- the first time a preview shows with Show Pets on; the preview code makes room and places them.
-    PF.PV_PETS = {
+    PetKit.PV_PETS = {
         { name = "Felhunter", hp = 100 },
         { name = "Ghoul", hp = 64 },
         { name = "Spirit Beast", hp = 100 },
         { name = "Water Elemental", hp = 38 },
         { name = "Imp", hp = 85 },
     }
-    PF.OPPOSITE = { RIGHT = "LEFT", LEFT = "RIGHT", DOWN = "UP", UP = "DOWN" }
-    PF.pv = {}
+    PetKit.OPPOSITE = { RIGHT = "LEFT", LEFT = "RIGHT", DOWN = "UP", UP = "DOWN" }
+    PetKit.pv = {}
 
     -- The settings the preview pets are painted with (their border reads it through FB.Source).
-    PF.PvStyle = function()
-        return PF.pvStyle
+    PetKit.PvStyle = function()
+        return PetKit.pvStyle
     end
 
     -- One preview pass's shared paint values (reused table). The texts are the frame's texts (no
     -- class for pets: a class colour mode reads white).
-    PF.pvc = {}
-    PF.PvColors = function(src)
-        local c = PF.pvc
-        PF.pvStyle = src
+    PetKit.pvc = {}
+    PetKit.PvColors = function(src)
+        local c = PetKit.pvc
+        PetKit.pvStyle = src
         c.texPath = ResolveHealthTexture(src)
-        c.bgc = src.customBgColor or PF.DEFAULT_BG
-        local rawValue = PF.Raw()
+        c.bgc = src.customBgColor or PetKit.DEFAULT_BG
+        local rawValue = PetKit.Raw()
         c.hc = rawValue and rawValue.healthColor
         c.opacity = (src.healthBarOpacity or 100) / 100
         return c
     end
 
     -- Preview pet i at w x h, styled and painted (the caller places it).
-    PF.PvFrame = function(index, hostFrame, src, wid, hgt, cfg, grouped)
-        local frame = PF.pv[index]
+    PetKit.PvFrame = function(index, hostFrame, src, wid, hgt, cfg, grouped)
+        local frame = PetKit.pv[index]
         if not frame then
             frame = CreateFrame("Frame", nil, hostFrame)
             FB.BuildVisuals(frame, true)
-            FB.src[frame] = PF.PvStyle
-            PF.pv[index] = frame
+            FB.src[frame] = PetKit.PvStyle
+            PetKit.pv[index] = frame
         elseif frame:GetParent() ~= hostFrame then
             frame:SetParent(hostFrame)
         end
@@ -1457,7 +1457,7 @@ do
         end
         FB.StyleVisuals(frame, src, wid, hgt, cfg.texPath, cfg.bgc)
 
-        local pet = PF.PV_PETS[index]
+        local pet = PetKit.PV_PETS[index]
         local pct = pet.hp
         local hc = cfg.hc
         frame._health:SetMinMaxValues(0, 100)
@@ -1483,16 +1483,16 @@ do
     -- Beside Owner preview: the pet size, side and gap as the real pets take them, the room it needs
     -- around the party frames (pads), and with Hide Self the slot after the last frame (sp: the party
     -- frames' spacing). s: the preview's view; w, h, sp: its party frame size and spacing.
-    PF.OwnerPreviewSpec = function(src, wid, hgt, petSettings)
+    PetKit.OwnerPreviewSpec = function(src, wid, hgt, petSettings)
         local pw, ph, spacing = wid, hgt, petSettings
         if mod.RF_PartyKit() then
             pw, ph, spacing =
                 PixelSnap(src.frameWidth or 125), PixelSnap(src.frameHeight or 60), PixelSnap(src.cellSpacing or -1)
         end
-        local v = PF.View("party")
+        local v = PetKit.View("party")
         pw = PixelSnap(math.max(10, pw + (v.extraWidth or 0)))
         ph = PixelSnap(math.max(10, ph + (v.extraHeight or 0)))
-        local edgeSide, extra = PF.ResolveOwnerSide(src)
+        local edgeSide, extra = PetKit.ResolveOwnerSide(src)
         spacing = spacing + PixelSnap(extra)
         local max = math.max
         local specInfo = {
@@ -1544,17 +1544,17 @@ do
     -- w, h, sp: the preview's frame size and spacing; ptSpec: the preview's party target frames
     -- (ns.PT_PreviewSpec), whose room the pets clear as the real ones do.
     function mod.PF_PreviewSpec(party, src, wid, hgt, petSettings, boxW, boxH, ptSpec)
-        local rawValue = PF.Raw()
+        local rawValue = PetKit.Raw()
         if not rawValue or rawValue[party and "party" or "raid"] ~= true then
             return
         end
-        local keySet = PF.View(party and "party" or "raid")
+        local keySet = PetKit.View(party and "party" or "raid")
         if keySet.position == "free" then
             return
         end
         if keySet.position == "owner" then
             if party then
-                return PF.OwnerPreviewSpec(src, wid, hgt, petSettings)
+                return PetKit.OwnerPreviewSpec(src, wid, hgt, petSettings)
             end
             return
         end
@@ -1595,7 +1595,7 @@ do
                 edgeSide = "RIGHT"
             end
             if prior then
-                edgeSide = PF.OPPOSITE[edgeSide]
+                edgeSide = PetKit.OPPOSITE[edgeSide]
             end
         end
 
@@ -1630,9 +1630,9 @@ do
     -- Shows the spec's pets with the group's top-left at x, y from rel's top-left. s: the settings they
     -- are styled from.
     function mod.PF_ShowPreview(specInfo, src, hostFrame, rel, posX, posY)
-        local color = PF.PvColors(src)
+        local color = PetKit.PvColors(src)
         for index = 1, specInfo.n do
-            local frame = PF.PvFrame(index, hostFrame, src, specInfo.w, specInfo.h, color, true)
+            local frame = PetKit.PvFrame(index, hostFrame, src, specInfo.w, specInfo.h, color, true)
             local off = index - 1
             local fx, fy = posX, posY
             if specInfo.grow == "RIGHT" then
@@ -1647,41 +1647,41 @@ do
             frame:ClearAllPoints()
             frame:SetPoint("TOPLEFT", rel, "TOPLEFT", fx, fy)
         end
-        for index = specInfo.n + 1, #PF.pv do
-            PF.pv[index]:Hide()
+        for index = specInfo.n + 1, #PetKit.pv do
+            PetKit.pv[index]:Hide()
         end
-        mod.RF_PreviewPetCompact(PF.pv, src, mod._partyPvActive == true, specInfo.grow)
+        mod.RF_PreviewPetCompact(PetKit.pv, src, mod._partyPvActive == true, specInfo.grow)
     end
 
     -- Beside Owner preview: a pet beside each shown party preview frame, and with Hide Self one after
     -- lastF (the last frame along the growth). s: the settings they are styled from.
     function mod.PF_ShowOwnerPreview(specInfo, src, hostFrame, lastF)
         mod.RF_PreviewPetCompact(nil)
-        local color = PF.PvColors(src)
+        local color = PetKit.PvColors(src)
         local num = 0
         for index = 1, 5 do
             local owner = mod._partyPvFrames[index]
             if owner and owner:IsShown() then
                 num = num + 1
-                local frame = PF.PvFrame(num, hostFrame, src, specInfo.w, specInfo.h, color)
+                local frame = PetKit.PvFrame(num, hostFrame, src, specInfo.w, specInfo.h, color)
                 frame:ClearAllPoints()
-                PF.OwnerPoint(frame, owner, specInfo.side, specInfo.gap)
+                PetKit.OwnerPoint(frame, owner, specInfo.side, specInfo.gap)
             end
         end
-        if specInfo.selfSlot and lastF and num < #PF.PV_PETS then
+        if specInfo.selfSlot and lastF and num < #PetKit.PV_PETS then
             num = num + 1
-            local frame = PF.PvFrame(num, hostFrame, src, specInfo.w, specInfo.h, color)
+            local frame = PetKit.PvFrame(num, hostFrame, src, specInfo.w, specInfo.h, color)
             frame:ClearAllPoints()
             frame:SetPoint(specInfo.sPt, lastF, specInfo.sRp, specInfo.sX, specInfo.sY)
         end
-        for index = num + 1, #PF.pv do
-            PF.pv[index]:Hide()
+        for index = num + 1, #PetKit.pv do
+            PetKit.pv[index]:Hide()
         end
     end
 
     function mod.PF_HidePreview()
         mod.RF_PreviewPetCompact(nil)
-        for _, frame in ipairs(PF.pv) do
+        for _, frame in ipairs(PetKit.pv) do
             frame:Hide()
         end
     end
@@ -1689,32 +1689,32 @@ do
     -- Real-frame previews hide the real frames by alpha; while they do, our own mouse blockers keep the
     -- invisible pet buttons from taking clicks: one over the pet header, and one on each Beside Owner
     -- pet (they sit outside the party frames' blocker). Our frames, so Hide() is combat-legal.
-    PF.SetPreviewBlock = function(enabled)
-        PF.pvBlockOn = enabled or nil
-        local heading = PF.container
-        if enabled and PF.active and heading then
-            local block = PF.hdrBlock
+    PetKit.SetPreviewBlock = function(enabled)
+        PetKit.pvBlockOn = enabled or nil
+        local heading = PetKit.container
+        if enabled and PetKit.active and heading then
+            local block = PetKit.hdrBlock
             if not block then
                 -- Under the header's parent, so it hides with the header's pet-battle and solo hide.
-                block = CreateFrame("Frame", nil, PF.hider)
+                block = CreateFrame("Frame", nil, PetKit.hider)
                 block:EnableMouse(true)
-                PF.hdrBlock = block
+                PetKit.hdrBlock = block
             end
             block:SetAllPoints(heading)
             block:SetFrameStrata(heading:GetFrameStrata())
             block:SetFrameLevel(heading:GetFrameLevel() + 50)
             block:Show()
-        elseif PF.hdrBlock then
-            PF.hdrBlock:Hide()
+        elseif PetKit.hdrBlock then
+            PetKit.hdrBlock:Hide()
         end
-        for _, petBtn in ipairs(PF.ownerButtons) do
-            local block = PF.pvBlock[petBtn]
-            if enabled and PF.ownerActive then
+        for _, petBtn in ipairs(PetKit.ownerButtons) do
+            local block = PetKit.pvBlock[petBtn]
+            if enabled and PetKit.ownerActive then
                 if not block then
                     block = CreateFrame("Frame", nil, petBtn)
                     block:SetAllPoints(petBtn)
                     block:EnableMouse(true)
-                    PF.pvBlock[petBtn] = block
+                    PetKit.pvBlock[petBtn] = block
                 end
                 block:SetFrameLevel(petBtn:GetFrameLevel() + 50)
                 block:Show()
@@ -1723,49 +1723,49 @@ do
             end
         end
     end
-    mod._PF_SetPreviewBlock = PF.SetPreviewBlock
+    mod._PF_SetPreviewBlock = PetKit.SetPreviewBlock
 
     -- A frame strata change while blocked: re-seat the blockers.
     function mod._PF_RefreshPreviewBlock()
-        if PF.pvBlockOn then
-            PF.SetPreviewBlock(true)
+        if PetKit.pvBlockOn then
+            PetKit.SetPreviewBlock(true)
         end
     end
 
     -- The header's placement. FB.Anchor remembers the group it followed in PF.chainTgt (none on Free
     -- Move), which the Friendly Boss / Extra Frames probe compares against. A combat call is deferred
     -- to the combat-end flush by FB.Anchor.
-    PF.Anchor = function()
-        PF.attachParty = PF.PartyMode()
+    PetKit.Anchor = function()
+        PetKit.attachParty = PetKit.PartyMode()
         if not InCombatLockdown() then
-            PF.chainTgt = false
+            PetKit.chainTgt = false
         end
-        FB.Anchor(PF)
+        FB.Anchor(PetKit)
     end
 
     function mod.PF_ReAnchor()
         if not InCombatLockdown() then
-            PF.anchorDirty = nil
+            PetKit.anchorDirty = nil
         end
-        PF.PlaceSelfPet()
-        if PF.active then
-            PF.Anchor()
+        PetKit.PlaceSelfPet()
+        if PetKit.active then
+            PetKit.Anchor()
         end
     end
 
     -- Friendly Boss and Extra Frames can appear, move or go away without a roster change. A group that
     -- moves carries the pets chained after it along, so the header re-anchors only when the group it
     -- follows changes.
-    PF.ProbeChain = function()
-        if not PF.active then
+    PetKit.ProbeChain = function()
+        if not PetKit.active then
             return
         end
-        local keySet = PF.Settings()
+        local keySet = PetKit.Settings()
         if not keySet or keySet.position == "free" then
             return
         end
-        if (PF.ChainAnchor(keySet) or false) ~= PF.chainTgt then
-            PF.Anchor()
+        if (PetKit.ChainAnchor(keySet) or false) ~= PetKit.chainTgt then
+            PetKit.Anchor()
         end
     end
 
@@ -1775,12 +1775,12 @@ do
     -- anchoring, so the attached groups are pinned once, on the new reserve.
     function mod.PF_PartyRelayout()
         if not InCombatLockdown() then
-            if PF.active and PF.PartyMode() then
-                PF.Layout()
+            if PetKit.active and PetKit.PartyMode() then
+                PetKit.Layout()
             end
-            if PF.ownerActive then
-                PF.OwnerLayout()
-                PF.SetOwnerWatch()
+            if PetKit.ownerActive then
+                PetKit.OwnerLayout()
+                PetKit.SetOwnerWatch()
             end
         end
         mod._PT_Layout()
@@ -1791,24 +1791,24 @@ do
     -- and the header beside the party frames): they check their style (restyled only when it changed)
     -- and repaint. Deferred through combat to the combat-end flush.
     function mod.PF_PartyRestyle()
-        local header = PF.active and PF.PartyMode()
-        if not (header or PF.ownerActive) then
-            PF.partyRestyleDirty = nil
+        local header = PetKit.active and PetKit.PartyMode()
+        if not (header or PetKit.ownerActive) then
+            PetKit.partyRestyleDirty = nil
             return
         end
         if InCombatLockdown() then
-            PF.partyRestyleDirty = true
+            PetKit.partyRestyleDirty = true
             return
         end
-        PF.partyRestyleDirty = nil
-        if PF.ownerActive then
-            PF.OwnerLayout(true)
-            PF.RepaintShown(PF.ownerButtons)
+        PetKit.partyRestyleDirty = nil
+        if PetKit.ownerActive then
+            PetKit.OwnerLayout(true)
+            PetKit.RepaintShown(PetKit.ownerButtons)
         end
         if header then
-            PF.Layout(true)
+            PetKit.Layout(true)
         end
-        PF.SyncListeners()
+        PetKit.SyncListeners()
     end
 
     -- Master apply: the options, the raid frames' reloads and the roster flush (below). OOC only;
@@ -1819,87 +1819,87 @@ do
         if not saved or not saved.profile then
             return
         end
-        local rawValue = PF.Raw()
+        local rawValue = PetKit.Raw()
         if not rawValue then
             return
         end
         if InCombatLockdown() then
-            PF.applyDirty = true
-            PF.restyleDirty = PF.restyleDirty or needsRestyle
+            PetKit.applyDirty = true
+            PetKit.restyleDirty = PetKit.restyleDirty or needsRestyle
             return
         end
         -- This pass covers a roster change or a combat-deferred apply still waiting for the flush.
-        needsRestyle = needsRestyle or PF.restyleDirty
-        PF.dirty, PF.applyDirty, PF.restyleDirty = nil, nil, nil
+        needsRestyle = needsRestyle or PetKit.restyleDirty
+        PetKit.dirty, PetKit.applyDirty, PetKit.restyleDirty = nil, nil, nil
 
         -- Beside Owner. Chosen before the party frames exist (early login), neither kind comes up: the
         -- next apply brings the pets up. Only their activation edge checks their style here, before
         -- they show (and paint as they do).
-        local chosen = PF.OwnerChosen()
+        local chosen = PetKit.OwnerChosen()
         local ownerFrame = chosen and mod._partySelfButton ~= nil
         if ownerFrame then
-            local edge = not PF.ownerActive
+            local edge = not PetKit.ownerActive
             if edge then
-                PF.EnsureOwnerBuilt()
-                PF.ownerActive = true
-                PF.SetOwnerLinks(true)
+                PetKit.EnsureOwnerBuilt()
+                PetKit.ownerActive = true
+                PetKit.SetOwnerLinks(true)
             end
-            PF.OwnerLayout(edge)
-            PF.SetOwnerWatch()
-            PF.SetTracking(true)
+            PetKit.OwnerLayout(edge)
+            PetKit.SetOwnerWatch()
+            PetKit.SetTracking(true)
             if edge then
-                PF.NotifyReserve()
+                PetKit.NotifyReserve()
             end
-        elseif PF.ownerActive then
-            PF.ownerActive = nil
-            PF.SetOwnerLinks(false)
-            PF.SetOwnerWatch()
-            PF.NotifyReserve()
+        elseif PetKit.ownerActive then
+            PetKit.ownerActive = nil
+            PetKit.SetOwnerLinks(false)
+            PetKit.SetOwnerWatch()
+            PetKit.NotifyReserve()
         end
 
-        if chosen or not PF.Wanted() or not PF.EnsureBuilt() then
-            PF.active = nil
+        if chosen or not PetKit.Wanted() or not PetKit.EnsureBuilt() then
+            PetKit.active = nil
             mod.RF_SyncPetCompact()
-            PF.chainTgt = nil
-            if PF.built then
-                PF.container:Hide()
+            PetKit.chainTgt = nil
+            if PetKit.built then
+                PetKit.container:Hide()
             end
-            PF.ClearHider()
+            PetKit.ClearHider()
             if not ownerFrame then
-                PF.SetTracking(false)
+                PetKit.SetTracking(false)
             end
-            if PF.pvBlockOn then
-                PF.SetPreviewBlock(true)
+            if PetKit.pvBlockOn then
+                PetKit.SetPreviewBlock(true)
             end
-            PF.SyncListeners()
+            PetKit.SyncListeners()
             return
         end
 
         -- The activation edge checks the style too: settings can change while the header is down.
-        local edge = not PF.active
-        PF.active = true
-        PF.SetTracking(true)
+        local edge = not PetKit.active
+        PetKit.active = true
+        PetKit.SetTracking(true)
         -- Layout also registers the parent's hide (PF.SetHider) and repaints the pets on screen on a
         -- restyle; the header shows last, laid out, its pets painting as they show. The roster's own
         -- re-assignments paint in the buttons' unit hook.
-        PF.Layout((needsRestyle and PF.Ctx() == "raid") or edge)
+        PetKit.Layout((needsRestyle and PetKit.Ctx() == "raid") or edge)
         mod.PF_ReAnchor()
-        if not PF.container:IsShown() then
-            PF.container:Show()
+        if not PetKit.container:IsShown() then
+            PetKit.container:Show()
         end
-        if PF.pvBlockOn then
-            PF.SetPreviewBlock(true)
+        if PetKit.pvBlockOn then
+            PetKit.SetPreviewBlock(true)
         end
-        PF.SyncListeners()
+        PetKit.SyncListeners()
     end
 
     -- Roster and zoning edges, folded into the raid frames' own passes: the roster change and the zone-in
     -- mark the pets dirty (in combat too), and the raid frames' roster pass, zone-in settle and combat
     -- end each flush once, after their own layout. Both toggles off, nothing is marked.
     function mod.PF_MarkDirty()
-        local rawValue = PF.Raw()
+        local rawValue = PetKit.Raw()
         if rawValue and (rawValue.party == true or rawValue.raid == true) then
-            PF.dirty = true
+            PetKit.dirty = true
         end
     end
 
@@ -1909,10 +1909,10 @@ do
         if InCombatLockdown() then
             return
         end
-        if PF.dirty or PF.applyDirty then
+        if PetKit.dirty or PetKit.applyDirty then
             mod.PF_Apply()
         end
-        if PF.partyRestyleDirty then
+        if PetKit.partyRestyleDirty then
             mod.PF_PartyRestyle()
         end
         -- A combat-deferred party target include edge or attribute seed (secure writes), then a
@@ -1923,13 +1923,13 @@ do
         if mod._ptLayoutDirty then
             mod._PT_Layout()
         end
-        if PF.anchorDirty then
+        if PetKit.anchorDirty then
             mod.PF_ReAnchor()
         end
     end
 
-    hooksecurefunc(mod, "FB_Apply", PF.ProbeChain)
-    hooksecurefunc(mod, "XF_Apply", PF.ProbeChain)
+    hooksecurefunc(mod, "FB_Apply", PetKit.ProbeChain)
+    hooksecurefunc(mod, "XF_Apply", PetKit.ProbeChain)
 
     -- Target, pet and vehicle listeners; each is registered only while pets that need it are on screen
     -- (PF.SyncShownEvents).
@@ -1940,12 +1940,12 @@ do
                 return
             end
             if evt == "PLAYER_TARGET_CHANGED" then
-                PF.EachShown(PF.TargetFlip)
+                PetKit.EachShown(PetKit.TargetFlip)
             else -- UNIT_PET / UNIT_ENTERED_VEHICLE / UNIT_EXITED_VEHICLE
-                PF.OnPetChanged(unitToken)
+                PetKit.OnPetChanged(unitToken)
             end
         end)
-        PF.eventFrame = eventFrame
+        PetKit.eventFrame = eventFrame
     end
 end -- PF scope block
 

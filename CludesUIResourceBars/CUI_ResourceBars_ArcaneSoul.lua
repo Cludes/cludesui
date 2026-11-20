@@ -63,8 +63,8 @@ local DEFAULT_POS = { point = "CENTER", relPoint = "CENTER", x = 0, y = -150 }
 -- class; ph[phase] = { container, btn, fs, stamp }; options live preview:
 -- demo (driver), demoOwner/demoPending (page watcher), demoApplied/demoCombat/
 -- demoEv (SyncDemo)
-local S = { ph = { surge = {}, soul = {} } }
-S.class = select(2, UnitClass("player"))
+local SoulState = { ph = { surge = {}, soul = {} } }
+SoulState.class = select(2, UnitClass("player"))
 
 -------------------------------------------------------------------------------
 --  Settings access
@@ -262,7 +262,7 @@ local function CalcGcdLen()
         end
     end
     if not length then
-        length = S.gcdLen or 1.5
+        length = SoulState.gcdLen or 1.5
     end
     if length < 0.75 then
         length = 0.75
@@ -274,7 +274,7 @@ end
 
 local function GetGcdLen()
     local length = CalcGcdLen()
-    S.gcdLen = length
+    SoulState.gcdLen = length
     return length
 end
 
@@ -545,7 +545,7 @@ end
 
 local function BindPhase(phaseNum, force)
     local AK = CludesUI.AuraKit
-    local state = S.ph[phaseNum]
+    local state = SoulState.ph[phaseNum]
     if not (AK and state.btn and state.fs) then
         return
     end
@@ -570,7 +570,7 @@ local function BindPhase(phaseNum, force)
         state.stamp = stamp
     else
         state.stamp = nil
-        S.dirty = true
+        SoulState.dirty = true
     end
 end
 
@@ -579,12 +579,12 @@ end
 -------------------------------------------------------------------------------
 
 local function MakeProxy()
-    if S.proxy then
+    if SoulState.proxy then
         return
     end
-    S.proxy = CreateFrame("Frame", nil, UIParent)
-    S.proxy:SetSize(ProxySize())
-    S.proxy:Hide()
+    SoulState.proxy = CreateFrame("Frame", nil, UIParent)
+    SoulState.proxy:SetSize(ProxySize())
+    SoulState.proxy:Hide()
 end
 
 local SURGE_INCLUDE = { [SURGE_AURA_ID] = true, [SURGE_CAST_ID] = true }
@@ -592,12 +592,12 @@ local SOUL_INCLUDE = { [SOUL_AURA_ID] = true }
 
 local function BuildPhase(phaseNum, include)
     local AK = CludesUI.AuraKit
-    local state = S.ph[phaseNum]
+    local state = SoulState.ph[phaseNum]
     if state.container then
         return
     end
 
-    local boxHolder = AK.CreateContainerShell(S.proxy, { point = { "CENTER" } })
+    local boxHolder = AK.CreateContainerShell(SoulState.proxy, { point = { "CENTER" } })
     AK.AddSlotToContainer(boxHolder, {
         key = phaseNum,
         filter = { "HELPFUL" },
@@ -607,7 +607,7 @@ local function BuildPhase(phaseNum, include)
             -- Creation window: the only legal moment to touch this subtree.
             -- Two-point anchoring sizes the button by anchors forever; all
             -- repositioning after this is proxy moves.
-            btnFrame:SetAllPoints(S.proxy)
+            btnFrame:SetAllPoints(SoulState.proxy)
             -- Display-only overlay with no OnClick: an engine aura button comes
             -- mouse-enabled, and clicks alone would make it an invisible blocker
             -- over its whole rect for as long as the buff is up.
@@ -634,13 +634,13 @@ local function BuildPhase(phaseNum, include)
                 BindPhase(phaseNum, true)
             end)
             if not okFS then
-                S.fsErr = errFS
+                SoulState.fsErr = errFS
             end
         end,
     })
     AK.FinishContainer(boxHolder, "player")
     -- One container-level set lifts the whole engine subtree above the proxy.
-    boxHolder:SetFrameLevel(S.proxy:GetFrameLevel() + 1)
+    boxHolder:SetFrameLevel(SoulState.proxy:GetFrameLevel() + 1)
     state.container = boxHolder
 end
 
@@ -651,14 +651,14 @@ end
 -- applyPos and ordinary (non-unlock) applies call it. Same split as the Target
 -- Distance element, whose getFrame deliberately skips ApplyFrameSettings.
 local function PlaceProxy()
-    if not S.proxy then
+    if not SoulState.proxy then
         return
     end
     -- Anchored to another element: the unlock anchor system owns placement;
     -- re-applying the stored absolute here would slam the frame back to a
     -- stale spot on every apply (same guard as the GCD / totem bars).
     local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(UNLOCK_KEY)
-    if anchored and S.proxy:GetLeft() then
+    if anchored and SoulState.proxy:GetLeft() then
         return
     end
 
@@ -668,37 +668,37 @@ local function PlaceProxy()
     local px, py = place.x or 0, place.y or 0
     local PPa = CludesUI and CludesUI.PP
     if PPa then
-        local effScale = S.proxy:GetEffectiveScale()
+        local effScale = SoulState.proxy:GetEffectiveScale()
         -- CENTER anchor with stored CENTER offsets: SnapCenterForDim gives
         -- odd-pixel-dim frames the +0.5 offset that lands edges on whole pixels.
         local isCenterAnchor = (point == "CENTER") and (place.relPoint == "CENTER" or place.relPoint == nil)
         if isCenterAnchor and PPa.SnapCenterForDim then
-            px = PPa.SnapCenterForDim(px, S.proxy:GetWidth() or 0, effScale)
-            py = PPa.SnapCenterForDim(py, S.proxy:GetHeight() or 0, effScale)
+            px = PPa.SnapCenterForDim(px, SoulState.proxy:GetWidth() or 0, effScale)
+            py = PPa.SnapCenterForDim(py, SoulState.proxy:GetHeight() or 0, effScale)
         elseif PPa.SnapForES then
             px = PPa.SnapForES(px, effScale)
             py = PPa.SnapForES(py, effScale)
         end
     end
-    S.proxy:ClearAllPoints()
-    S.proxy:SetPoint(point, UIParent, place.relPoint or point, px, py)
+    SoulState.proxy:ClearAllPoints()
+    SoulState.proxy:SetPoint(point, UIParent, place.relPoint or point, px, py)
 end
 
 -- LOOK ONLY: size, fonts, colors, duration bindings. Safe to run at any time,
 -- including mid-drag.
 local function ApplyLook()
-    if not S.proxy then
+    if not SoulState.proxy then
         return
     end
-    S.proxy:SetSize(ProxySize())
+    SoulState.proxy:SetSize(ProxySize())
 
     -- Font/size/color live on OUR regions, but they are children of an engine
     -- aura button, so post-creation writes are denied under aura secrecy like
     -- any other write into that subtree: pcall and defer to the lift.
-    for phaseNum, state in pairs(S.ph) do
+    for phaseNum, state in pairs(SoulState.ph) do
         if state.fs then
             if not pcall(ApplyFsLook, phaseNum, state.fs) then
-                S.dirty = true
+                SoulState.dirty = true
             end
         end
         BindPhase(phaseNum)
@@ -712,24 +712,24 @@ end
 
 local function Build()
     local AK = CludesUI.AuraKit
-    if S.built or not AK then
+    if SoulState.built or not AK then
         return
     end
     AK.styles[STYLE_KEY] = AK.styles[STYLE_KEY] or { noRegions = true, width = 1, height = 1 }
     MakeProxy()
     BuildPhase("surge", SURGE_INCLUDE)
     BuildPhase("soul", SOUL_INCLUDE)
-    S.built = true
+    SoulState.built = true
 
     -- Self-guarded dirty flag: lift callbacks are never unregistered, so an
     -- idle firing must cost one boolean test.
-    if not S.liftHooked and AK.OnRestrictionLift then
-        S.liftHooked = true
+    if not SoulState.liftHooked and AK.OnRestrictionLift then
+        SoulState.liftHooked = true
         AK.OnRestrictionLift(function()
-            if not S.dirty then
+            if not SoulState.dirty then
                 return
             end
-            S.dirty = nil
+            SoulState.dirty = nil
             if mod.AS_Apply then
                 mod.AS_Apply()
             end
@@ -738,22 +738,22 @@ local function Build()
 end
 
 local function EnsureBuilt()
-    if S.built or S.queued or S.buildErr then
+    if SoulState.built or SoulState.queued or SoulState.buildErr then
         return
     end
     local AK = CludesUI.AuraKit
     if not (AK and AK.QueueBuildJob) then
         return
     end
-    S.queued = true
+    SoulState.queued = true
     AKWorker:Queue(function()
-        S.queued = nil
+        SoulState.queued = nil
         -- Latched, not retried: every ERB:ApplyAll would otherwise re-enter a
         -- hard build failure and turn one broken container into an error storm.
         -- The display stays absent until a /reload; the reason sits in S.buildErr.
         local success, err = pcall(Build)
         if not success then
-            S.buildErr = err
+            SoulState.buildErr = err
             return
         end
         ApplySettings()
@@ -791,31 +791,31 @@ _G._CURB_StyleArcaneSoulSample = StyleSample
 -- proxy is Activate's: every caller runs it first.
 local function ShowPreview()
     MakeProxy()
-    local fontStr = S.sample
+    local fontStr = SoulState.sample
     if not fontStr then
         local owner = CreateFrame("Frame", nil, UIParent)
-        owner:SetAllPoints(S.proxy)
-        owner:SetFrameStrata(S.proxy:GetFrameStrata())
-        owner:SetFrameLevel(S.proxy:GetFrameLevel() + 10)
-        S.sampleHost = owner
+        owner:SetAllPoints(SoulState.proxy)
+        owner:SetFrameStrata(SoulState.proxy:GetFrameStrata())
+        owner:SetFrameLevel(SoulState.proxy:GetFrameLevel() + 10)
+        SoulState.sampleHost = owner
         fontStr = owner:CreateFontString(nil, "OVERLAY")
         fontStr:SetPoint("CENTER", owner, "CENTER", 0, 0)
-        S.sample = fontStr
+        SoulState.sample = fontStr
     end
     StyleSample(fontStr)
-    if S.demo then
-        S.demo:Hide()
+    if SoulState.demo then
+        SoulState.demo:Hide()
     end
     fontStr:Show()
-    S.sampleHost:Show()
+    SoulState.sampleHost:Show()
 end
 
 local function HideSample()
-    if S.sampleHost then
-        S.sampleHost:Hide()
+    if SoulState.sampleHost then
+        SoulState.sampleHost:Hide()
     end
-    if S.demo then
-        S.demo:Hide()
+    if SoulState.demo then
+        SoulState.demo:Hide()
     end
 end
 
@@ -897,13 +897,13 @@ _G._CURB_ArcaneSoulDemoOnUpdate = DemoOnUpdate
 
 local function ShowDemo()
     ShowPreview()
-    if not S.demo then
-        S.demo = CreateFrame("Frame", nil, S.sampleHost)
-        S.demo:SetScript("OnUpdate", DemoOnUpdate)
+    if not SoulState.demo then
+        SoulState.demo = CreateFrame("Frame", nil, SoulState.sampleHost)
+        SoulState.demo:SetScript("OnUpdate", DemoOnUpdate)
     end
-    S.demo._fs = S.sample
-    S.demo:Show()
-    DemoTick(S.demo)
+    SoulState.demo._fs = SoulState.sample
+    SoulState.demo:Show()
+    DemoTick(SoulState.demo)
 end
 
 -------------------------------------------------------------------------------
@@ -914,7 +914,7 @@ end
 
 local function OnForClass()
     local profile = P()
-    return (profile and profile.enabled and S.class == "MAGE" and not FOREVER) and true or false
+    return (profile and profile.enabled and SoulState.class == "MAGE" and not FOREVER) and true or false
 end
 
 local function GateOK()
@@ -950,8 +950,8 @@ end
 
 local function Park()
     HideSample()
-    if S.proxy then
-        S.proxy:Hide()
+    if SoulState.proxy then
+        SoulState.proxy:Hide()
     end
 end
 
@@ -972,7 +972,7 @@ end
 local function StartTracking(placeOnly)
     MakeProxy()
     if placeOnly then
-        S.proxy:SetSize(ProxySize())
+        SoulState.proxy:SetSize(ProxySize())
     else
         ApplyLook()
     end
@@ -981,11 +981,11 @@ local function StartTracking(placeOnly)
         PlaceProxy()
     end
     if placeOnly then
-        S.proxy:Hide()
+        SoulState.proxy:Hide()
         return
     end
-    S.proxy:Show()
-    if not S.built then
+    SoulState.proxy:Show()
+    if not SoulState.built then
         EnsureBuilt()
     end
 end
@@ -1022,10 +1022,10 @@ local function OnGateEvent(_, evt, _, _, spellId)
         -- Rebind only on a genuine change: the deadband stops haste jitter from
         -- churning the formatter cache, and a denied rebind leaves the previous
         -- (still ticking) binding in place.
-        local previous = S.gcdLen
+        local previous = SoulState.gcdLen
         local length = GetGcdLen()
         if previous and length >= previous - 0.02 and length <= previous + 0.02 then
-            S.gcdLen = previous
+            SoulState.gcdLen = previous
             return
         end
         BindPhase("surge")
@@ -1036,33 +1036,33 @@ local function OnGateEvent(_, evt, _, _, spellId)
 end
 
 local function EnsureGateEvents()
-    if not S.ev then
-        S.ev = CreateFrame("Frame")
-        S.ev:SetScript("OnEvent", OnGateEvent)
+    if not SoulState.ev then
+        SoulState.ev = CreateFrame("Frame")
+        SoulState.ev:SetScript("OnEvent", OnGateEvent)
     end
-    if not S.evGate then
-        S.evGate = true
-        S.ev:RegisterEvent("PLAYER_ENTERING_WORLD")
-        S.ev:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-        S.ev:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
-        S.ev:RegisterEvent("TRAIT_CONFIG_UPDATED")
+    if not SoulState.evGate then
+        SoulState.evGate = true
+        SoulState.ev:RegisterEvent("PLAYER_ENTERING_WORLD")
+        SoulState.ev:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+        SoulState.ev:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
+        SoulState.ev:RegisterEvent("TRAIT_CONFIG_UPDATED")
     end
     local wantCast = NeedsGcd()
-    if wantCast and not S.evCast then
-        S.evCast = true
-        S.ev:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
-    elseif not wantCast and S.evCast then
-        S.evCast = nil
-        S.ev:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+    if wantCast and not SoulState.evCast then
+        SoulState.evCast = true
+        SoulState.ev:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+    elseif not wantCast and SoulState.evCast then
+        SoulState.evCast = nil
+        SoulState.ev:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED")
     end
 end
 
 local function DropGateEvents()
-    if not S.ev then
+    if not SoulState.ev then
         return
     end
-    S.ev:UnregisterAllEvents()
-    S.evGate, S.evCast = nil, nil
+    SoulState.ev:UnregisterAllEvents()
+    SoulState.evGate, SoulState.evCast = nil, nil
 end
 
 -------------------------------------------------------------------------------
@@ -1073,7 +1073,7 @@ end
 -------------------------------------------------------------------------------
 
 local function DemoOnEvent(_, evt)
-    S.demoCombat = (evt == "PLAYER_REGEN_DISABLED")
+    SoulState.demoCombat = (evt == "PLAYER_REGEN_DISABLED")
     if mod.AS_Apply then
         mod.AS_Apply()
     end
@@ -1082,22 +1082,22 @@ end
 -- Brings S.demoApplied (what AS_Apply reads) and the combat events in line
 -- with the owner; true when that changed anything.
 local function SyncDemo()
-    local wanted = (S.demoOwner ~= nil) and OnForClass()
-    if wanted == (S.demoApplied or false) then
+    local wanted = (SoulState.demoOwner ~= nil) and OnForClass()
+    if wanted == (SoulState.demoApplied or false) then
         return false
     end
-    S.demoApplied = wanted
+    SoulState.demoApplied = wanted
     if wanted then
-        if not S.demoEv then
-            S.demoEv = CreateFrame("Frame")
-            S.demoEv:SetScript("OnEvent", DemoOnEvent)
+        if not SoulState.demoEv then
+            SoulState.demoEv = CreateFrame("Frame")
+            SoulState.demoEv:SetScript("OnEvent", DemoOnEvent)
         end
-        S.demoEv:RegisterEvent("PLAYER_REGEN_DISABLED")
-        S.demoEv:RegisterEvent("PLAYER_REGEN_ENABLED")
-        S.demoCombat = InCombatLockdown() and true or nil
-    elseif S.demoEv then
-        S.demoEv:UnregisterAllEvents()
-        S.demoCombat = nil
+        SoulState.demoEv:RegisterEvent("PLAYER_REGEN_DISABLED")
+        SoulState.demoEv:RegisterEvent("PLAYER_REGEN_ENABLED")
+        SoulState.demoCombat = InCombatLockdown() and true or nil
+    elseif SoulState.demoEv then
+        SoulState.demoEv:UnregisterAllEvents()
+        SoulState.demoCombat = nil
     end
     return true
 end
@@ -1123,7 +1123,7 @@ function mod.AS_Apply()
     HideSample()
     -- Options page open, out of combat: the live preview, for any Mage (as
     -- unlock mode). The engine slots only for a Mage the gate passes.
-    if S.demoApplied and not S.demoCombat then
+    if SoulState.demoApplied and not SoulState.demoCombat then
         StartTracking(not GateOK())
         ShowDemo()
         return
@@ -1137,7 +1137,7 @@ end
 
 -- Applied a frame later, once: a rebuild hides and shows the watcher in one pass.
 local function ApplyDemoState()
-    S.demoPending = nil
+    SoulState.demoPending = nil
     if SyncDemo() and mod.AS_Apply then
         mod.AS_Apply()
     end
@@ -1145,14 +1145,14 @@ end
 
 _G._CURB_ArcaneSoulScreenDemo = function(ownerFrame, on)
     if on then
-        S.demoOwner = ownerFrame
-    elseif S.demoOwner == ownerFrame then
-        S.demoOwner = nil
+        SoulState.demoOwner = ownerFrame
+    elseif SoulState.demoOwner == ownerFrame then
+        SoulState.demoOwner = nil
     else
         return
     end
-    if not S.demoPending then
-        S.demoPending = true
+    if not SoulState.demoPending then
+        SoulState.demoPending = true
         C_Timer.After(0, ApplyDemoState)
     end
 end
@@ -1162,12 +1162,12 @@ end
 -------------------------------------------------------------------------------
 
 function mod.AS_MakeUnlockElement(MK)
-    if not MK or S.class ~= "MAGE" or FOREVER then
+    if not MK or SoulState.class ~= "MAGE" or FOREVER then
         return nil
     end
 
-    if not S.unlockHooked and CludesUI and CludesUI.RegisterUnlockModeListener then
-        S.unlockHooked = true
+    if not SoulState.unlockHooked and CludesUI and CludesUI.RegisterUnlockModeListener then
+        SoulState.unlockHooked = true
         CludesUI:RegisterUnlockModeListener(UNLOCK_KEY, function(isActive)
             if isActive then
                 if OnForClass() then
@@ -1209,7 +1209,7 @@ function mod.AS_MakeUnlockElement(MK)
                     StartTracking()
                 end
             end
-            return S.proxy
+            return SoulState.proxy
         end,
         getSize = function()
             return ProxySize()
@@ -1250,7 +1250,7 @@ function mod.AS_MakeUnlockElement(MK)
             if profile then
                 profile.unlockPos = nil
             end
-            if S.proxy then
+            if SoulState.proxy then
                 PlaceProxy()
             end
         end,

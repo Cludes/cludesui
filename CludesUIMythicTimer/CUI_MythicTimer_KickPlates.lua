@@ -233,11 +233,11 @@ local styleStamp = 0 -- bumped by a settings write and a UI scale change; an ico
 local measureText -- off-screen font string that measures the inline draw factor; built lazily
 local liveCount = 0 -- icons on a plate (live or sample)
 local plateSeq = 0 -- arrival counter: an icon's `seq` on its plate orders it within its readiness group
-local Rails = {} -- marker defaults: a rail per marked plate (the Marker defaults section)
+local MarkRails = {} -- marker defaults: a rail per marked plate (the Marker defaults section)
 -- Ghosts (the Ghosts section): live = the ghosts on plates and the ones
 -- waiting for their mob's plate (nWaiting of them), free = parked ones,
 -- reused forever. Nothing is built before the first gate packet.
-local Ghosts = { live = {}, free = {}, nWaiting = 0 }
+local GhostPool = { live = {}, free = {}, nWaiting = 0 }
 -- Show Above Overlapping Nameplates: `on` is the setting (ReadSettings),
 -- `frame` the shown holder under UIParent at STRATA that every placed icon,
 -- ghost and rail hangs from while it is on (EnsurePool, Place). A nameplate
@@ -673,7 +673,7 @@ local function SideGuest(backing, side, a0, a1)
     -- A marker defaults rail: its hug edge, the end of the row as the mob
     -- draws it, its own marker's lanes included (LayoutRail), never the
     -- rail's whole span.
-    local track = Rails.OnPlate(backing)
+    local track = MarkRails.OnPlate(backing)
     if track then
         outer = track.hug
     end
@@ -1053,9 +1053,9 @@ local function Place(b, owner, isCUI)
     local placed = b.wrap or b
     placed:SetParent(above or owner)
     if b.isRail then
-        Rails.SetLevels(b, layerStrata, frameLvl)
+        MarkRails.SetLevels(b, layerStrata, frameLvl)
     elseif b.isGhost then
-        Ghosts.SetLevels(b, layerStrata, frameLvl)
+        GhostPool.SetLevels(b, layerStrata, frameLvl)
     else
         SetIconLevels(b, layerStrata, frameLvl)
     end
@@ -1097,7 +1097,7 @@ local function LayoutPlate(unitToken)
             break
         end
     end
-    local track = Rails.railOf[unitToken]
+    local track = MarkRails.railOf[unitToken]
     if track and not track.placedHost then
         track = nil
     end
@@ -1189,7 +1189,7 @@ local function PutOnPlate(b, unitToken, owner, isCUI)
         -- The kicker's marker default stands down while their live icon sits
         -- on a plate.
         if b.kicker then
-            Rails.SetLiveHidden(b.kicker, true)
+            MarkRails.SetLiveHidden(b.kicker, true)
         end
     end
     if b.placedHost ~= owner or b.placedGen ~= styleStamp then
@@ -1363,10 +1363,10 @@ local function Detach(widget)
         TakeOffPlate(widget)
         widget.cuiPlate, widget.placedHost, widget.placedGen, widget.rel, widget.relBottom, widget.row = nil, nil, nil, nil, nil, nil
         if widget.kicker then
-            Rails.SetLiveHidden(widget.kicker, false)
+            MarkRails.SetLiveHidden(widget.kicker, false)
         end
     end
-    if driverFrame and liveCount == 0 and Rails.count == 0 then
+    if driverFrame and liveCount == 0 and MarkRails.count == 0 then
         driverFrame:Hide()
     end
 end
@@ -1393,15 +1393,15 @@ local function FreePlate(b)
 end
 
 local function ReleaseAll()
-    Ghosts.ReleaseAll()
+    GhostPool.ReleaseAll()
     for _, b in pairs(icons) do
         FreePlate(b)
     end
     wipe(isDetached)
     wipe(onPlate)
     liveCount = 0
-    Rails.ReleaseAll()
-    wipe(Rails.liveHidden)
+    MarkRails.ReleaseAll()
+    wipe(MarkRails.liveHidden)
     if driverFrame then
         driverFrame:Hide()
     end
@@ -1423,9 +1423,9 @@ local function PlateGone(unitToken)
             b.waitTarget = b.onTarget == true
             if b.isGhost then
                 if b.guid or b.waitTarget then
-                    Ghosts.Detach(b)
+                    GhostPool.Detach(b)
                 else
-                    Ghosts.Release(b)
+                    GhostPool.Release(b)
                 end
             elseif b.guid or b.waitTarget then
                 Detach(b)
@@ -1450,8 +1450,8 @@ local function OnTargetChanged()
             end
         end
     end
-    if Ghosts.nWaiting > 0 then
-        Ghosts.TargetChanged()
+    if GhostPool.nWaiting > 0 then
+        GhostPool.TargetChanged()
     end
     for unitToken, entries in pairs(onPlate) do
         local isTarget = IsTargetPlate(unitToken)
@@ -1551,11 +1551,11 @@ local function DriverOnUpdate(self, elapsed)
             end
         end
     end
-    Rails.Follow(plateList)
-    if Ghosts.live[1] then
-        Ghosts.Tick(nowTime)
+    MarkRails.Follow(plateList)
+    if GhostPool.live[1] then
+        GhostPool.Tick(nowTime)
     end
-    if liveCount == 0 and Rails.count == 0 then
+    if liveCount == 0 and MarkRails.count == 0 then
         self:Hide()
     end
 end
@@ -1782,13 +1782,13 @@ end
 --  cell's cooldown is over, so a cell that opened closes again, for good,
 --  when its member interrupts again (their newer kick shows instead).
 --------------------------------------------------------------------------------
-Ghosts.SPAN = Gate.SPAN -- gate width in spans: counts up to this many open the whole cell
-Ghosts.LEVELS = 5 -- frame levels a kit cell takes: icon, swipe, border, dispel, countdown (SetIconLevels)
+GhostPool.SPAN = Gate.SPAN -- gate width in spans: counts up to this many open the whole cell
+GhostPool.LEVELS = 5 -- frame levels a kit cell takes: icon, swipe, border, dispel, countdown (SetIconLevels)
 
 -- A ghost: born under the park for its aspect (it may hang from an aura
 -- row's edge frame like an icon), with an edge frame of its own, rendering
 -- at UIParent's scale (Style). Sub-cells are built on demand (BuildSub).
-function Ghosts.Build()
+function GhostPool.Build()
     local g = CreateFrame("Frame", nil, parked)
     g.isGhost = true
     g:Hide()
@@ -1818,7 +1818,7 @@ end
 -- (endFill, endPoint, endOffset) is what the next element hangs from
 -- (Gate.ElementEnd); endGen moves when the chain is laid out again, so the
 -- element after the ghost is anchored again (LayoutPlate).
-function Ghosts.Chain(g)
+function GhostPool.Chain(g)
     local goesLeft = stackAnchor == "LEFT"
     local from, fp = g, goesLeft and "RIGHT" or "LEFT"
     local subRows = g.subs
@@ -1842,7 +1842,7 @@ end
 -- A cell's step pairs fed as its gates are (Feed, FeedB): the first on the
 -- count before the update, the second on the count after it, both against
 -- the latest read (the count after the update until one comes).
-function Ghosts.FeedSteps(subRow)
+function GhostPool.FeedSteps(subRow)
     local goesLeft = stackAnchor == "LEFT"
     local current = (subRow.cCur ~= nil) and subRow.cCur or subRow.after
     local floorA = Gate.Base(subRow.before, subRow.gen)
@@ -1857,14 +1857,14 @@ end
 
 -- How far a gate (and so an open clip) reaches past the cell on every side,
 -- in the ghost's units (Gate.Margin).
-function Ghosts.Margin()
+function GhostPool.Margin()
     return Gate.Margin()
 end
 
 -- Both gates' size and place on ghost g for the cell width `cw`, in the
 -- ghost's units (Gate.Size). The clips are hung again after this (Feed,
 -- Hang), since the fills' edges moved with the gates.
-function Ghosts.Size(g, subRow, cellW)
+function GhostPool.Size(g, subRow, cellW)
     Gate.Size(subRow.gate, g, cellW)
     Gate.Size(subRow.gateB, g, cellW)
     Gate.SizeStep(subRow.stepA, iconPx + ICON_GAP, cellW)
@@ -1873,7 +1873,7 @@ end
 
 -- The clip from the gate's fill edge to the gate's right edge, anchored again
 -- after every feed so it never keeps the edge of a fill that moved.
-function Ghosts.Hang(subRow)
+function GhostPool.Hang(subRow)
     local clipFrame, fillTex, gateRec = subRow.clip, subRow.fill, subRow.gate
     clipFrame:ClearAllPoints()
     clipFrame:SetPoint("TOPLEFT", fillTex, "TOPRIGHT", 0, 0)
@@ -1885,31 +1885,31 @@ end
 -- The cell's count gate fed again as it was (its member's count after the
 -- update as the baseline, their latest count as the maximum, by the fight
 -- the baseline was read in), or whole while it was never fed.
-function Ghosts.FeedB(subRow)
+function GhostPool.FeedB(subRow)
     if subRow.cCur ~= nil then
         Gate.FeedWhole(subRow.gateB, subRow.fillB, subRow.clipB, Gate.Base(subRow.after, subRow.gen), subRow.cCur)
     else
         Gate.ResetWhole(subRow.gateB, subRow.fillB, subRow.clipB)
     end
-    Ghosts.FeedSteps(subRow)
+    GhostPool.FeedSteps(subRow)
 end
 
 -- The member's count after the update as the gate's maximum and before it as
 -- its value, then the clip hung again; the count gate and the step pairs
 -- likewise.
-function Ghosts.Feed(subRow)
+function GhostPool.Feed(subRow)
     local gateRec = subRow.gate
     gateRec:SetMinMaxValues(0, subRow.after)
     gateRec:SetValue(subRow.before)
-    Ghosts.Hang(subRow)
-    Ghosts.FeedB(subRow)
+    GhostPool.Hang(subRow)
+    GhostPool.FeedB(subRow)
 end
 
 -- Sub-cell k: the gate (closed until fed: a whole fill from plain values), the
 -- clip, and inside it the cell's count gate (whole until fed) with its clip
 -- holding a lane-style kit cell, anchored on the ghost for good. All of them
 -- are born under the ghost, so they carry the park's aspect.
-function Ghosts.BuildSub(g, key)
+function GhostPool.BuildSub(g, key)
     local gateRec, fillTex = Gate.New(g)
     gateRec:Hide()
     local clipFrame = Gate.NewClip(g)
@@ -1932,8 +1932,8 @@ function Ghosts.BuildSub(g, key)
         stepB = Gate.NewStep(g),
     }
     g.subs[key] = subRow
-    Ghosts.Size(g, subRow, Pix.Scale(iconPx))
-    Ghosts.Hang(subRow)
+    GhostPool.Size(g, subRow, Pix.Scale(iconPx))
+    GhostPool.Hang(subRow)
     Gate.HangWhole(clipB, fillB, gateBottom)
     return subRow
 end
@@ -1941,12 +1941,12 @@ end
 -- A sub-cell out of use: cooldown and countdown off, both gates closed or
 -- whole again with plain values, the hidden counts and its member dropped,
 -- gates and clip hidden.
-function Ghosts.Park(subRow)
+function GhostPool.Park(subRow)
     PaintCooldown(subRow.cell, nil, nil)
     local gateRec = subRow.gate
     gateRec:SetMinMaxValues(0, 1)
     gateRec:SetValue(1)
-    Ghosts.Hang(subRow)
+    GhostPool.Hang(subRow)
     subRow.cCur, subRow.gen = nil, nil
     Gate.ResetWhole(subRow.gateB, subRow.fillB, subRow.clipB)
     local goesLeft = stackAnchor == "LEFT"
@@ -1960,7 +1960,7 @@ end
 
 -- Scale and size for the current style: the ghost renders at UIParent's
 -- scale like an icon and is one cell wide; its gates follow the cell width.
-function Ghosts.Style(g)
+function GhostPool.Style(g)
     if g.uiScale ~= uiZoom then
         g:SetScale(uiZoom)
         g.uiScale = uiZoom
@@ -1970,9 +1970,9 @@ function Ghosts.Style(g)
     g.rowEnd:SetSize(1, cellW)
     local subRows = g.subs
     for k = 1, #subRows do
-        Ghosts.Size(g, subRows[k], cellW)
+        GhostPool.Size(g, subRows[k], cellW)
     end
-    Ghosts.Chain(g)
+    GhostPool.Chain(g)
     g.styleGen = styleStamp
 end
 
@@ -1980,13 +1980,13 @@ end
 -- and its clip above them, a whole cell's levels (LEVELS) per index, so a
 -- later cell draws wholly over an earlier one (two can open together when
 -- two members' counts rose in one update).
-function Ghosts.SetLevels(g, layerStrata, frameLvl)
+function GhostPool.SetLevels(g, layerStrata, frameLvl)
     g:SetFrameStrata(layerStrata)
     g:SetFrameLevel(frameLvl)
     local subRows = g.subs
     for k = 1, #subRows do
         local subRow = subRows[k]
-        local base = frameLvl + 1 + Ghosts.LEVELS * (k - 1)
+        local base = frameLvl + 1 + GhostPool.LEVELS * (k - 1)
         subRow.gate:SetFrameStrata(layerStrata)
         subRow.gate:SetFrameLevel(frameLvl)
         subRow.gateB:SetFrameStrata(layerStrata)
@@ -2001,7 +2001,7 @@ end
 
 -- A member's cooldown after a landed kick, while they can stand in a ghost:
 -- both counts handed over and their interrupt known. nil otherwise.
-function Ghosts.Dur(unit, before, after)
+function GhostPool.Dur(unit, before, after)
     if not (before[unit] ~= nil and after[unit] ~= nil) then
         return nil
     end
@@ -2013,8 +2013,8 @@ function Ghosts.Dur(unit, before, after)
 end
 
 -- Whether the kick at t already has its ghost on plate `unit`.
-function Ghosts.Has(t, unitToken)
-    local liveSet = Ghosts.live
+function GhostPool.Has(t, unitToken)
+    local liveSet = GhostPool.live
     for i = 1, #liveSet do
         local g = liveSet[i]
         if g.t == t and g.unit == unitToken then
@@ -2026,7 +2026,7 @@ end
 
 -- Off its plate, never orphaned: the cast watcher parks under its own holder
 -- (WatchCast), the ghost and its edge under the park.
-function Ghosts.Unplace(g)
+function GhostPool.Unplace(g)
     WatchCast(g, nil)
     g:Hide()
     g:ClearAllPoints()
@@ -2039,47 +2039,47 @@ function Ghosts.Unplace(g)
 end
 
 -- Whether a ghost waits for its mob's plate, kept with the count of them.
-function Ghosts.SetWaiting(g, on)
+function GhostPool.SetWaiting(g, on)
     on = on and true or nil
     if g.waiting == on then
         return
     end
     g.waiting = on
-    Ghosts.nWaiting = Ghosts.nWaiting + (on and 1 or -1)
+    GhostPool.nWaiting = GhostPool.nWaiting + (on and 1 or -1)
 end
 
 -- Off its plate (or out of waiting) and back to the free list, every
 -- sub-cell parked; its members' lanes take their baselines from the ghosts
 -- left (Ghosts.LanesAfter).
-function Ghosts.Release(g)
-    local liveSet = Ghosts.live
+function GhostPool.Release(g)
+    local liveSet = GhostPool.live
     for i = #liveSet, 1, -1 do
         if liveSet[i] == g then
             table.remove(liveSet, i)
             break
         end
     end
-    Ghosts.Unplace(g)
-    Ghosts.SetWaiting(g, false)
-    Ghosts.LanesAfter(g)
+    GhostPool.Unplace(g)
+    GhostPool.SetWaiting(g, false)
+    GhostPool.LanesAfter(g)
     local subRows = g.subs
     for k = 1, g.used do
-        Ghosts.Park(subRows[k])
+        GhostPool.Park(subRows[k])
     end
     g.used = 0
     g.t, g.cdStart, g.cdDur, g.expireAt = nil, nil, nil, nil
     g.guid, g.onTarget, g.waitTarget, g.seq, g.rdy = nil, nil, nil, nil, nil
-    local free = Ghosts.free
+    local free = GhostPool.free
     free[#free + 1] = g
-    if driverFrame and liveCount == 0 and Rails.count == 0 then
+    if driverFrame and liveCount == 0 and MarkRails.count == 0 then
         driverFrame:Hide()
     end
 end
 
-function Ghosts.ReleaseAll()
-    local liveSet = Ghosts.live
+function GhostPool.ReleaseAll()
+    local liveSet = GhostPool.live
     for i = #liveSet, 1, -1 do
-        Ghosts.Release(liveSet[i])
+        GhostPool.Release(liveSet[i])
     end
 end
 
@@ -2088,24 +2088,24 @@ end
 -- cells, counts and cooldowns kept, waiting until a plate that is its mob
 -- comes (Ghosts.Return), the target it counts on changes
 -- (Ghosts.TargetChanged) or its span ends (Ghosts.Tick, Ghosts.Return).
-function Ghosts.Detach(g)
-    Ghosts.Unplace(g)
-    Ghosts.SetWaiting(g, true)
-    if driverFrame and liveCount == 0 and Rails.count == 0 then
+function GhostPool.Detach(g)
+    GhostPool.Unplace(g)
+    GhostPool.SetWaiting(g, true)
+    if driverFrame and liveCount == 0 and MarkRails.count == 0 then
         driverFrame:Hide()
     end
 end
 
 -- The player's target changed: a waiting ghost that counted on it keeps
 -- waiting only where the GUID can still find its mob.
-function Ghosts.TargetChanged()
-    local liveSet = Ghosts.live
+function GhostPool.TargetChanged()
+    local liveSet = GhostPool.live
     for i = #liveSet, 1, -1 do
         local g = liveSet[i]
         if g.waiting and g.waitTarget then
             g.waitTarget = false
             if not g.guid then
-                Ghosts.Release(g)
+                GhostPool.Release(g)
             end
         end
     end
@@ -2114,10 +2114,10 @@ end
 -- Every used sub-cell's gate fed now, and once more on the driver's next
 -- pass (the gates were sized or the ghost placed again, which moves the
 -- fills' edges).
-function Ghosts.FeedAll(g)
+function GhostPool.FeedAll(g)
     local subRows = g.subs
     for k = 1, g.used do
-        Ghosts.Feed(subRows[k])
+        GhostPool.Feed(subRows[k])
     end
     g.feed = true
 end
@@ -2126,25 +2126,25 @@ end
 -- plain GUID, or the player's target while the ghost counts on it) comes
 -- back onto it, dressed for the current style and fed again; one whose span
 -- ended meanwhile goes.
-function Ghosts.Return(unitToken, unitGuid, isTarget)
-    local liveSet, nowTime = Ghosts.live, GetTime()
+function GhostPool.Return(unitToken, unitGuid, isTarget)
+    local liveSet, nowTime = GhostPool.live, GetTime()
     local owner, isCUI
     for i = #liveSet, 1, -1 do
         local g = liveSet[i]
         if g.waiting then
             if nowTime >= g.expireAt then
-                Ghosts.Release(g)
+                GhostPool.Release(g)
             elseif (unitGuid and g.guid == unitGuid) or (isTarget and g.waitTarget) then
                 if not owner then
                     owner, isCUI = ResolveHost(unitToken)
                 end
                 if owner then
-                    Ghosts.SetWaiting(g, false)
+                    GhostPool.SetWaiting(g, false)
                     if g.styleGen ~= styleStamp then
-                        Ghosts.Dress(g)
+                        GhostPool.Dress(g)
                     end
                     PutOnPlate(g, unitToken, owner, isCUI)
-                    Ghosts.FeedAll(g)
+                    GhostPool.FeedAll(g)
                     g:Show()
                     if not driverFrame:IsShown() then
                         driverAcc = 0
@@ -2158,17 +2158,17 @@ end
 
 -- The driver's pass: a ghost whose cooldowns can no longer run goes; a new
 -- one's gates are fed once more, a pass after it went up.
-function Ghosts.Tick(nowTime)
-    local liveSet = Ghosts.live
+function GhostPool.Tick(nowTime)
+    local liveSet = GhostPool.live
     for i = #liveSet, 1, -1 do
         local g = liveSet[i]
         if nowTime >= g.expireAt then
-            Ghosts.Release(g)
+            GhostPool.Release(g)
         elseif g.feed then
             g.feed = nil
             local subRows = g.subs
             for k = 1, g.used do
-                Ghosts.Feed(subRows[k])
+                GhostPool.Feed(subRows[k])
             end
         end
     end
@@ -2178,10 +2178,10 @@ end
 -- could have kicked and has a known cooldown, fed their counts and timed from
 -- t with their own cooldown. The ghost holds that span while the longest of
 -- them could still run (CdRunning: it sorts with the icons on cooldown).
-function Ghosts.Show(t, unitToken, owner, isCUI, units, before, after)
+function GhostPool.Show(t, unitToken, owner, isCUI, units, before, after)
     local num, longestText = 0, 0
     for i = 1, #units do
-        local duration = Ghosts.Dur(units[i], before, after)
+        local duration = GhostPool.Dur(units[i], before, after)
         if duration then
             num = num + 1
             if duration > longestText then
@@ -2193,24 +2193,24 @@ function Ghosts.Show(t, unitToken, owner, isCUI, units, before, after)
         return
     end
     Ready()
-    local free = Ghosts.free
+    local free = GhostPool.free
     local g = free[#free]
     if g then
         free[#free] = nil
     else
-        g = Ghosts.Build()
+        g = GhostPool.Build()
     end
     if g.styleGen ~= styleStamp then
-        Ghosts.Style(g)
+        GhostPool.Style(g)
     end
     local subRows, k = g.subs, 0
     local gen = KE.FightGen()
     for i = 1, #units do
         local u = units[i]
-        local duration = Ghosts.Dur(u, before, after)
+        local duration = GhostPool.Dur(u, before, after)
         if duration then
             k = k + 1
-            local subRow = subRows[k] or Ghosts.BuildSub(g, k)
+            local subRow = subRows[k] or GhostPool.BuildSub(g, k)
             local m = KE.Member(u)
             -- The member's GUID too: the cell stays theirs should their
             -- party token pass to someone else (Ghosts.MemberOf). The count
@@ -2220,7 +2220,7 @@ function Ghosts.Show(t, unitToken, owner, isCUI, units, before, after)
             subRow.gen, subRow.cCur = gen, nil
             subRow.gate:Show()
             subRow.gateB:Show()
-            Ghosts.Feed(subRow)
+            GhostPool.Feed(subRow)
             local cellFrame = subRow.cell
             if cellFrame.styleGen ~= styleStamp then
                 StyleIcon(cellFrame)
@@ -2233,13 +2233,13 @@ function Ghosts.Show(t, unitToken, owner, isCUI, units, before, after)
     end
     g.used = k
     g.t, g.cdStart, g.cdDur, g.expireAt = t, t, longestText, t + longestText
-    Ghosts.Chain(g)
-    local liveSet = Ghosts.live
+    GhostPool.Chain(g)
+    local liveSet = GhostPool.live
     liveSet[#liveSet + 1] = g
     PutOnPlate(g, unitToken, owner, isCUI)
     -- Placed: fed again now that the gates sit where they show, and once
     -- more on the driver's next pass.
-    Ghosts.FeedAll(g)
+    GhostPool.FeedAll(g)
     g:Show()
     if not driverFrame:IsShown() then
         driverAcc = 0
@@ -2250,7 +2250,7 @@ function Ghosts.Show(t, unitToken, owner, isCUI, units, before, after)
     for i = 1, k do
         local subRow = subRows[i]
         if after[subRow.unit] ~= nil then
-            Rails.Counts(subRow.unit, after[subRow.unit], t)
+            MarkRails.Counts(subRow.unit, after[subRow.unit], t)
         end
     end
 end
@@ -2259,11 +2259,11 @@ end
 -- oldest ghost still holding their cell (its fight's, 0 from an older one),
 -- or nil with none, so the lane hides while such a ghost may show them and
 -- comes back once every one of them is gone.
-function Ghosts.LaneBase(unitGuid)
+function GhostPool.LaneBase(unitGuid)
     if not unitGuid then
         return nil
     end
-    local liveSet = Ghosts.live
+    local liveSet = GhostPool.live
     for i = 1, #liveSet do
         local g = liveSet[i]
         local subRows = g.subs
@@ -2281,13 +2281,13 @@ end
 -- is fed their count as read now against its own baseline, once the cell's
 -- cooldown is over (a cell that opened closes for good when they interrupt
 -- again). By their GUID: a cell follows its member, not their token.
-function Ghosts.Counts(unit, current, T)
+function GhostPool.Counts(unit, current, T)
     local m = KE.Member(unit)
     local unitGuid = m and m.guid
     if not unitGuid then
         return
     end
-    local liveSet = Ghosts.live
+    local liveSet = GhostPool.live
     for i = 1, #liveSet do
         local g = liveSet[i]
         local subRows = g.subs
@@ -2295,7 +2295,7 @@ function Ghosts.Counts(unit, current, T)
             local subRow = subRows[k]
             if subRow.guid == unitGuid and not Gate.StillDownAt(unit, subRow.cell.cdStart, subRow.cell.cdDur, T) then
                 subRow.cCur = current
-                Ghosts.FeedB(subRow)
+                GhostPool.FeedB(subRow)
             end
         end
     end
@@ -2304,16 +2304,16 @@ end
 -- A ghost leaving (Release: it is out of the live list by now): its members'
 -- lanes take their baselines from the ghosts left, with the counts as the
 -- engine last read them.
-function Ghosts.LanesAfter(g)
-    if Rails.count == 0 then
+function GhostPool.LanesAfter(g)
+    if MarkRails.count == 0 then
         return
     end
     local subRows, nowTime = g.subs, GetTime()
     for k = 1, g.used do
-        local m = Ghosts.MemberOf(subRows[k])
+        local m = GhostPool.MemberOf(subRows[k])
         local current = m and KE.Count(m.unit)
         if current ~= nil then
-            Rails.Counts(m.unit, current, nowTime)
+            MarkRails.Counts(m.unit, current, nowTime)
         end
     end
 end
@@ -2322,7 +2322,7 @@ end
 -- still the same player, else the record of the unit holding their GUID now
 -- (the party tokens close up when someone leaves; the cell's unit follows),
 -- else nil (they left the group: the cell keeps its picture).
-function Ghosts.MemberOf(subRow)
+function GhostPool.MemberOf(subRow)
     local unitGuid = subRow.guid
     if not unitGuid then
         return nil
@@ -2346,8 +2346,8 @@ end
 -- its picture painted again by the Icon setting (from its member while they
 -- are in the group, else as it was) and its greying again. The gates moved:
 -- the caller feeds them after placing the ghost.
-function Ghosts.Dress(g)
-    Ghosts.Style(g)
+function GhostPool.Dress(g)
+    GhostPool.Style(g)
     local subRows = g.subs
     for k = 1, g.used do
         local subRow = subRows[k]
@@ -2355,7 +2355,7 @@ function Ghosts.Dress(g)
         if cellFrame.styleGen ~= styleStamp then
             StyleIcon(cellFrame)
         end
-        local m = Ghosts.MemberOf(subRow)
+        local m = GhostPool.MemberOf(subRow)
         local texture = cellFrame.kTex
         if m then
             texture = KickerTexture(m)
@@ -2370,18 +2370,18 @@ end
 -- A settings write: every ghost on a plate still on its old stamp is
 -- dressed, placed and fed again (a waiting one is dressed when it comes
 -- back, Ghosts.Return).
-function Ghosts.Restyle()
-    local liveSet = Ghosts.live
+function GhostPool.Restyle()
+    local liveSet = GhostPool.live
     for i = #liveSet, 1, -1 do
         local g = liveSet[i]
         if g.styleGen ~= styleStamp and g.unit then
             local owner, isCUI = ResolveHost(g.unit)
             if owner then
-                Ghosts.Dress(g)
+                GhostPool.Dress(g)
                 Place(g, owner, isCUI)
-                Ghosts.FeedAll(g)
+                GhostPool.FeedAll(g)
             else
-                Ghosts.Release(g)
+                GhostPool.Release(g)
             end
         end
     end
@@ -2389,14 +2389,14 @@ end
 
 -- A member's spec or interrupt became known: their sub-cells' pictures
 -- follow. A cell whose member left the group keeps its picture.
-function Ghosts.Repaint()
-    local liveSet = Ghosts.live
+function GhostPool.Repaint()
+    local liveSet = GhostPool.live
     for i = 1, #liveSet do
         local g = liveSet[i]
         local subRows = g.subs
         for k = 1, g.used do
             local subRow = subRows[k]
-            local m = Ghosts.MemberOf(subRow)
+            local m = GhostPool.MemberOf(subRow)
             if m then
                 local texture = KickerTexture(m)
                 if texture ~= subRow.cell.kTex then
@@ -2414,13 +2414,13 @@ end
 -- superseded cooldown. A cell leaves by trading places with the last used
 -- one; a ghost left with no cell goes, one left with cells holds the span of
 -- the longest of them.
-function Ghosts.Supersede(kicker, start)
+function GhostPool.Supersede(kicker, start)
     local m = KE.Member(kicker)
     local unitGuid = m and m.guid
     if not unitGuid then
         return
     end
-    local liveSet = Ghosts.live
+    local liveSet = GhostPool.live
     for i = #liveSet, 1, -1 do
         local g = liveSet[i]
         if start == nil or g.t <= start + 0.01 then
@@ -2429,7 +2429,7 @@ function Ghosts.Supersede(kicker, start)
             for k = num, 1, -1 do
                 local subRow = subRows[k]
                 if subRow.guid == unitGuid then
-                    Ghosts.Park(subRow)
+                    GhostPool.Park(subRow)
                     subRows[k], subRows[num] = subRows[num], subRow
                     num = num - 1
                     hit = true
@@ -2438,7 +2438,7 @@ function Ghosts.Supersede(kicker, start)
             if hit then
                 g.used = num
                 if num == 0 then
-                    Ghosts.Release(g)
+                    GhostPool.Release(g)
                 else
                     local longestText = 0
                     for k = 1, num do
@@ -2449,7 +2449,7 @@ function Ghosts.Supersede(kicker, start)
                     end
                     g.cdDur, g.expireAt = longestText, g.t + longestText
                     -- Fewer cells: the chain, and the row after the ghost.
-                    Ghosts.Chain(g)
+                    GhostPool.Chain(g)
                     if g.unit then
                         LayoutPlate(g.unit)
                     end
@@ -2463,16 +2463,16 @@ end
 -- kicked then that nobody was placed on. A plate joining the packet later
 -- (platesOnly) is simply new; one that has its ghost for t already is not.
 -- Every table is the engine's scratch, read here and never kept.
-function Ghosts.OnGate(t, units, before, after, plateList, platesOnly)
+function GhostPool.OnGate(t, units, before, after, plateList, platesOnly)
     if currentMode ~= MODE_LIVE then
         return
     end
     for i = 1, #plateList do
         local unitToken = plateList[i]
-        if NAMEPLATE_UNITS[unitToken] and not Ghosts.Has(t, unitToken) and IsHostile(unitToken) then
+        if NAMEPLATE_UNITS[unitToken] and not GhostPool.Has(t, unitToken) and IsHostile(unitToken) then
             local owner, isCUI = ResolveHost(unitToken)
             if owner then
-                Ghosts.Show(t, unitToken, owner, isCUI, units, before, after)
+                GhostPool.Show(t, unitToken, owner, isCUI, units, before, after)
             end
         end
     end
@@ -2525,9 +2525,9 @@ local function OnCooldown(kicker, start, duration)
     if b then
         PaintCooldown(b, start, duration)
     end
-    Rails.Cooldown(kicker, start, duration)
-    if Ghosts.live[1] then
-        Ghosts.Supersede(kicker, start)
+    MarkRails.Cooldown(kicker, start, duration)
+    if GhostPool.live[1] then
+        GhostPool.Supersede(kicker, start)
     end
 end
 
@@ -2545,12 +2545,12 @@ local function OnRoster()
             end
         end
     end
-    Ghosts.Repaint()
-    Rails.SyncKickers()
-    Rails.SyncAll()
+    GhostPool.Repaint()
+    MarkRails.SyncKickers()
+    MarkRails.SyncAll()
 end
 
-local HANDLERS = { kick = OnKick, cooldown = OnCooldown, roster = OnRoster, gate = Ghosts.OnGate }
+local HANDLERS = { kick = OnKick, cooldown = OnCooldown, roster = OnRoster, gate = GhostPool.OnGate }
 
 -- The engine's counts event: each member's count as read at this update,
 -- for the count gates of their live icon, their cells in the ghosts and
@@ -2567,11 +2567,11 @@ function HANDLERS.counts(T, units, after)
             if b and b.gate then
                 Gate.FeedIcon(b, u, current, T)
             end
-            if Ghosts.live[1] then
-                Ghosts.Counts(u, current, T)
+            if GhostPool.live[1] then
+                GhostPool.Counts(u, current, T)
             end
-            if Rails.count > 0 then
-                Rails.Counts(u, current, T)
+            if MarkRails.count > 0 then
+                MarkRails.Counts(u, current, T)
             end
         end
     end
@@ -2602,21 +2602,21 @@ end
 --  hostile plates while a kicker is cached; markers are sent and heard only
 --  inside a Mythic dungeon or key, where the tracker itself runs.
 --------------------------------------------------------------------------------
-Rails.PREFIX = "E" .. "UIKT" -- the prefix every client of this tracker shares
-Rails.count = 0 -- rails on plates (the driver follows them like icons)
-Rails.gen = 0 -- bumped when the kicker list changes: lanes are laid out again
-Rails.markerOf = {} -- member GUID -> the marker they announced (1-8)
-Rails.kickers = {} -- in roster order: { unit, marker, lane }
-Rails.laneOf = {} -- kicker unit -> index in kickers
-Rails.railOf = {} -- plate unit -> its rail
-Rails.free = {} -- parked rails
-Rails.liveHidden = {} -- kicker unit -> true while their live icon sits on a plate
-Rails.inst = nil -- the dungeon the cache belongs to (GetInstanceInfo's instanceID)
-Rails.pendingRestore = false
-Rails.on = false -- the marker frame is live (SyncEvents: the plates are on)
-Rails.marker = 0 -- your Focus Announce marker while the tracker is on (SyncAnnounce), else 0
-Rails.askedT = -1 -- GetTime() of the last request sent
-Rails.replyArmed = false -- an answer to a request is on its way
+MarkRails.PREFIX = "E" .. "UIKT" -- the prefix every client of this tracker shares
+MarkRails.count = 0 -- rails on plates (the driver follows them like icons)
+MarkRails.gen = 0 -- bumped when the kicker list changes: lanes are laid out again
+MarkRails.markerOf = {} -- member GUID -> the marker they announced (1-8)
+MarkRails.kickers = {} -- in roster order: { unit, marker, lane }
+MarkRails.laneOf = {} -- kicker unit -> index in kickers
+MarkRails.railOf = {} -- plate unit -> its rail
+MarkRails.free = {} -- parked rails
+MarkRails.liveHidden = {} -- kicker unit -> true while their live icon sits on a plate
+MarkRails.inst = nil -- the dungeon the cache belongs to (GetInstanceInfo's instanceID)
+MarkRails.pendingRestore = false
+MarkRails.on = false -- the marker frame is live (SyncEvents: the plates are on)
+MarkRails.marker = 0 -- your Focus Announce marker while the tracker is on (SyncAnnounce), else 0
+MarkRails.askedT = -1 -- GetTime() of the last request sent
+MarkRails.replyArmed = false -- an answer to a request is on its way
 local RAIL_SPAN = 8 -- indexes of fill travel on either side of a kicker's marker
 local ASK_GAP = 2 -- seconds between requests: a zone-in's roster storm asks once
 local REPLY_DELAY = 1 -- seconds an answer waits, so a burst of requests gets one
@@ -2663,9 +2663,9 @@ local function SaveCache()
     if not plateRec then
         return
     end
-    plateRec.inst = Rails.inst
+    plateRec.inst = MarkRails.inst
     local m = {}
-    for g, markerKey in pairs(Rails.markerOf) do
+    for g, markerKey in pairs(MarkRails.markerOf) do
         m[g] = markerKey
     end
     plateRec.m = m
@@ -2674,12 +2674,12 @@ end
 -- The cached kickers against the roster: members with a cached marker and an
 -- interrupt. Lanes: the first of a marker sits nearest the plate, another
 -- kicker on the same marker one lane out.
-function Rails.SyncKickers()
-    local entries, laneOf = Rails.kickers, Rails.laneOf
+function MarkRails.SyncKickers()
+    local entries, laneOf = MarkRails.kickers, MarkRails.laneOf
     wipe(entries)
     wipe(laneOf)
-    Rails.gen = Rails.gen + 1
-    if next(Rails.markerOf) == nil then
+    MarkRails.gen = MarkRails.gen + 1
+    if next(MarkRails.markerOf) == nil then
         return
     end
     local usedSet
@@ -2687,7 +2687,7 @@ function Rails.SyncKickers()
     for i = 1, #units do
         local unitToken = units[i]
         local m = KE.Member(unitToken)
-        local markerKey = m and m.guid and m.kick and Rails.markerOf[m.guid]
+        local markerKey = m and m.guid and m.kick and MarkRails.markerOf[m.guid]
         if markerKey then
             usedSet = usedSet or {}
             local laneRec = usedSet[markerKey] or 0
@@ -2699,39 +2699,39 @@ function Rails.SyncKickers()
 end
 
 -- A member's marker (0: they have none now).
-function Rails.Learn(unitGuid, markerTex)
-    Rails.markerOf[unitGuid] = (markerTex >= 1 and markerTex <= 8) and markerTex or nil
-    Rails.inst = MarkerInstance()
+function MarkRails.Learn(unitGuid, markerTex)
+    MarkRails.markerOf[unitGuid] = (markerTex >= 1 and markerTex <= 8) and markerTex or nil
+    MarkRails.inst = MarkerInstance()
     SaveCache()
-    Rails.SyncKickers()
-    Rails.SyncAll()
+    MarkRails.SyncKickers()
+    MarkRails.SyncAll()
 end
 
 -- A zone-in: the markers of the last visit are gone, everywhere.
 local function ForgetMarkers()
-    wipe(Rails.markerOf)
-    Rails.inst = nil
+    wipe(MarkRails.markerOf)
+    MarkRails.inst = nil
     SaveCache()
-    Rails.SyncKickers()
-    Rails.SyncAll()
+    MarkRails.SyncKickers()
+    MarkRails.SyncAll()
 end
 
 -- A login or reload: the saved markers come back only inside the instance
 -- they were learned in. Read-only on the record.
 local function RestoreMarkers()
-    wipe(Rails.markerOf)
+    wipe(MarkRails.markerOf)
     local instance = MarkerInstance()
-    Rails.inst = instance
+    MarkRails.inst = instance
     local plateRec = SavedRecord()
     if plateRec and instance and plateRec.inst == instance and type(plateRec.m) == "table" then
         for g, markerKey in pairs(plateRec.m) do
             if type(g) == "string" and type(markerKey) == "number" and markerKey >= 1 and markerKey <= 8 and markerKey == floor(markerKey) then
-                Rails.markerOf[g] = markerKey
+                MarkRails.markerOf[g] = markerKey
             end
         end
     end
-    Rails.SyncKickers()
-    Rails.SyncAll()
+    MarkRails.SyncKickers()
+    MarkRails.SyncAll()
 end
 
 -- The chat type that reaches the whole group, as Blizzard's edit box picks it:
@@ -2739,7 +2739,7 @@ end
 -- speaks on INSTANCE_CHAT, a party of your own on PARTY (sent from a Dungeon
 -- Finder group alone, PARTY only brings back "You aren't in a party."); nil
 -- solo and in a raid.
-function Rails.Channel()
+function MarkRails.Channel()
     if IsInRaid() then
         return nil
     end
@@ -2758,7 +2758,7 @@ local function FullPartyInDungeon()
     if not MarkerInstance() then
         return false
     end
-    if not Rails.Channel() then
+    if not MarkRails.Channel() then
         return false
     end
     return GetNumGroupMembers() == 5
@@ -2771,12 +2771,12 @@ end
 -- inside one the lockdown drops it, and the result is not read.
 local function BroadcastMarker(kind)
     local myGuid = PlainString(UnitGUID("player"))
-    local channelling = Rails.Channel()
+    local channelling = MarkRails.Channel()
     if not (myGuid and channelling) then
         return
     end
-    Rails.Learn(myGuid, Rails.marker)
-    C_ChatInfo.SendAddonMessage(Rails.PREFIX, kind .. "\t" .. Rails.marker .. "\t" .. myGuid, channelling)
+    MarkRails.Learn(myGuid, MarkRails.marker)
+    C_ChatInfo.SendAddonMessage(MarkRails.PREFIX, kind .. "\t" .. MarkRails.marker .. "\t" .. myGuid, channelling)
 end
 
 -- A request on the edges where a client may have missed earlier sends: your
@@ -2788,27 +2788,27 @@ end
 -- covers the group as it stands and a member who arrives later asks on
 -- their own arrival.
 local function Request()
-    if not Rails.on or not FullPartyInDungeon() then
+    if not MarkRails.on or not FullPartyInDungeon() then
         return
     end
     local T = GetTime()
-    if Rails.askedT >= 0 and T - Rails.askedT < ASK_GAP then
+    if MarkRails.askedT >= 0 and T - MarkRails.askedT < ASK_GAP then
         return
     end
-    Rails.askedT = T
+    MarkRails.askedT = T
     BroadcastMarker("R")
 end
 
 -- Someone asked: your marker goes out REPLY_DELAY later, one answer for every
 -- request of a burst (a group zoning in together asks five times).
 local function Reply()
-    if Rails.replyArmed then
+    if MarkRails.replyArmed then
         return
     end
-    Rails.replyArmed = true
+    MarkRails.replyArmed = true
     C_Timer.After(REPLY_DELAY, function()
-        Rails.replyArmed = false
-        if Rails.on and MarkerInstance() then
+        MarkRails.replyArmed = false
+        if MarkRails.on and MarkerInstance() then
             BroadcastMarker("F")
         end
     end)
@@ -2885,7 +2885,7 @@ end
 -- ghost still holding their cell, else the count itself, whole), once the
 -- cooldown the lane shows (the kicker's own, from a sure kick) is over. With
 -- no count read: whole from plain values.
-function Rails.LaneFeed(laneRec, unit, current, T)
+function MarkRails.LaneFeed(laneRec, unit, current, T)
     if current == nil then
         laneRec.cBase, laneRec.cCur = nil, nil
         Gate.ResetWhole(laneRec.gateB, laneRec.fillB, laneRec.clipB)
@@ -2895,7 +2895,7 @@ function Rails.LaneFeed(laneRec, unit, current, T)
         return
     end
     local m = KE.Member(unit)
-    local base = Ghosts.LaneBase(m and m.guid)
+    local base = GhostPool.LaneBase(m and m.guid)
     if base == nil then
         base = current
     end
@@ -2905,7 +2905,7 @@ end
 
 -- Fed again as it was (the cell moved with the marker fill: the count gate
 -- and its fill's edge with it), or whole while it was never fed.
-function Rails.LaneRefeed(laneRec)
+function MarkRails.LaneRefeed(laneRec)
     if laneRec.cCur ~= nil then
         Gate.FeedWhole(laneRec.gateB, laneRec.fillB, laneRec.clipB, laneRec.cBase, laneRec.cCur)
     else
@@ -2987,7 +2987,7 @@ local function AnchorChain(track, chain, usedSet, goesLeft, from, fromPoint, off
     return from, fromPoint, off
 end
 
-function Rails.SetLevels(track, layerStrata, frameLvl)
+function MarkRails.SetLevels(track, layerStrata, frameLvl)
     track:SetFrameStrata(layerStrata)
     track:SetFrameLevel(frameLvl)
     for i = 1, #track.lanes do
@@ -3028,7 +3028,7 @@ local function StyleRail(track)
         track.uiScale = uiZoom
     end
     local cellW = Pix.Scale(iconPx)
-    local entries = Rails.kickers
+    local entries = MarkRails.kickers
     local built = false
     for i = 1, #entries do
         local laneRec = track.lanes[i]
@@ -3061,16 +3061,16 @@ local function StyleRail(track)
     end
     track.hug:SetSize(1, cellW)
     if built and track.placedHost then
-        Rails.SetLevels(track, track:GetFrameStrata(), track:GetFrameLevel())
+        MarkRails.SetLevels(track, track:GetFrameStrata(), track:GetFrameLevel())
     end
-    track.styleGen, track.kickGen = styleStamp, Rails.gen
+    track.styleGen, track.kickGen = styleStamp, MarkRails.gen
 end
 
 -- Each lane for the kicker it stands for: picture, cooldown, the gate's range
 -- about their marker, its count gate fed the count the engine last read, and
 -- whether their live icon stands in for it. Spare lanes hide.
 local function DressRail(track)
-    local entries = Rails.kickers
+    local entries = MarkRails.kickers
     local nowTime = GetTime()
     for i = 1, #entries do
         local k = entries[i]
@@ -3081,7 +3081,7 @@ local function DressRail(track)
         laneRec.floor = k.marker - RAIL_SPAN
         laneRec.gate:SetMinMaxValues(laneRec.floor, k.marker + RAIL_SPAN)
         laneRec.kicker = k.unit
-        Rails.LaneFeed(laneRec, k.unit, KE.Count(k.unit), nowTime)
+        MarkRails.LaneFeed(laneRec, k.unit, KE.Count(k.unit), nowTime)
         laneRec.cell:Show()
         laneRec.gate:Show()
     end
@@ -3102,12 +3102,12 @@ end
 -- the park never keeps the fill its last plate gave it.
 local function FeedRail(track, position)
     local lanes = track.lanes
-    for i = 1, #Rails.kickers do
+    for i = 1, #MarkRails.kickers do
         local laneRec = lanes[i]
         laneRec.gate:SetValue(position)
         laneRec.cell:ClearAllPoints()
         laneRec.cell:SetPoint("LEFT", laneRec.fill, "RIGHT", 0, 0)
-        Rails.LaneRefeed(laneRec)
+        MarkRails.LaneRefeed(laneRec)
     end
     FeedChain(track, position)
 end
@@ -3141,7 +3141,7 @@ end
 -- arrows left room for lanes the mob did not show; 2026-10-22: a line at
 -- the row's end, so a hidden icon's empty slot is never hugged either).
 LayoutRail = function(track, R, L, entries)
-    local kickers, lanes = Rails.kickers, track.lanes
+    local kickers, lanes = MarkRails.kickers, track.lanes
     local pitch = iconPx + ICON_GAP
     local cellW = Pix.Scale(iconPx)
     local goesLeft = stackAnchor == "LEFT"
@@ -3153,7 +3153,7 @@ LayoutRail = function(track, R, L, entries)
     local usedSet, isShown = 0, 0
     for i = 1, #kickers do
         local k, laneRec = kickers[i], lanes[i]
-        laneRec.shown = laneRec.kicker ~= nil and not Rails.liveHidden[k.unit]
+        laneRec.shown = laneRec.kicker ~= nil and not MarkRails.liveHidden[k.unit]
         if laneRec.shown and not CdRunning(laneRec.cell) then
             local num = readyBy[k.marker] or 0
             laneRec.slotNo = R + 1 + num
@@ -3255,26 +3255,26 @@ LayoutRail = function(track, R, L, entries)
 end
 
 local function AcquireRail(unitToken)
-    local num = #Rails.free
+    local num = #MarkRails.free
     local track
     if num > 0 then
-        track = Rails.free[num]
-        Rails.free[num] = nil
+        track = MarkRails.free[num]
+        MarkRails.free[num] = nil
     else
         track = BuildRail()
     end
-    Rails.railOf[unitToken] = track
-    Rails.count = Rails.count + 1
+    MarkRails.railOf[unitToken] = track
+    MarkRails.count = MarkRails.count + 1
     return track
 end
 
-function Rails.Release(unitToken)
-    local track = Rails.railOf[unitToken]
+function MarkRails.Release(unitToken)
+    local track = MarkRails.railOf[unitToken]
     if not track then
         return
     end
-    Rails.railOf[unitToken] = nil
-    Rails.count = Rails.count - 1
+    MarkRails.railOf[unitToken] = nil
+    MarkRails.count = MarkRails.count - 1
     local backing = track.cuiPlate
     WatchCast(track, nil)
     -- Each dressed lane's gate goes to its floor (a plain value): the rail
@@ -3286,7 +3286,7 @@ function Rails.Release(unitToken)
             laneRec.gate:SetValue(laneRec.floor)
         end
         if laneRec.cCur ~= nil then
-            Rails.LaneFeed(laneRec, nil, nil, 0)
+            MarkRails.LaneFeed(laneRec, nil, nil, 0)
         end
     end
     track.feed = nil
@@ -3297,44 +3297,44 @@ function Rails.Release(unitToken)
     track.edge:SetParent(parked)
     track.unit, track.cuiPlate, track.placedHost, track.placedGen = nil, nil, nil, nil
     track.rel, track.relBottom, track.row = nil, nil, nil
-    Rails.free[#Rails.free + 1] = track
+    MarkRails.free[#MarkRails.free + 1] = track
     -- Live icons still on the plate hung from the rail's shift edge: they
     -- take the bar again.
     if onPlate[unitToken] then
         LayoutPlate(unitToken)
     end
     ArrowsFollow(backing)
-    if driverFrame and liveCount == 0 and Rails.count == 0 then
+    if driverFrame and liveCount == 0 and MarkRails.count == 0 then
         driverFrame:Hide()
     end
 end
 
-function Rails.ReleaseAll()
-    for unitToken in pairs(Rails.railOf) do
-        Rails.Release(unitToken)
+function MarkRails.ReleaseAll()
+    for unitToken in pairs(MarkRails.railOf) do
+        MarkRails.Release(unitToken)
     end
 end
 
 -- A plate's rail: up while the plate is a marked hostile and a kicker is
 -- cached, its lanes dressed, every gate fed the plate's marker index.
-function Rails.SyncPlate(unitToken)
-    if currentMode ~= MODE_LIVE or #Rails.kickers == 0 or not NAMEPLATE_UNITS[unitToken] then
-        Rails.Release(unitToken)
+function MarkRails.SyncPlate(unitToken)
+    if currentMode ~= MODE_LIVE or #MarkRails.kickers == 0 or not NAMEPLATE_UNITS[unitToken] then
+        MarkRails.Release(unitToken)
         return
     end
     local position = GetRaidTargetIndex(unitToken)
     if type(position) ~= "number" or not IsHostile(unitToken) then
-        Rails.Release(unitToken)
+        MarkRails.Release(unitToken)
         return
     end
     local owner, isCUI = ResolveHost(unitToken)
     if not owner then
-        Rails.Release(unitToken)
+        MarkRails.Release(unitToken)
         return
     end
     Ready()
-    local track = Rails.railOf[unitToken] or AcquireRail(unitToken)
-    if track.styleGen ~= styleStamp or track.kickGen ~= Rails.gen then
+    local track = MarkRails.railOf[unitToken] or AcquireRail(unitToken)
+    if track.styleGen ~= styleStamp or track.kickGen ~= MarkRails.gen then
         StyleRail(track)
     end
     DressRail(track)
@@ -3353,17 +3353,17 @@ function Rails.SyncPlate(unitToken)
 end
 
 -- Every plate on screen (a marker moved, the cache or the roster changed).
-function Rails.SyncAll()
-    if currentMode ~= MODE_LIVE or #Rails.kickers == 0 then
-        Rails.ReleaseAll()
+function MarkRails.SyncAll()
+    if currentMode ~= MODE_LIVE or #MarkRails.kickers == 0 then
+        MarkRails.ReleaseAll()
         return
     end
     for i = 1, #NAMEPLATE_TOKENS do
         local u = NAMEPLATE_TOKENS[i]
         if UnitExists(u) then
-            Rails.SyncPlate(u)
+            MarkRails.SyncPlate(u)
         else
-            Rails.Release(u)
+            MarkRails.Release(u)
         end
     end
 end
@@ -3371,16 +3371,16 @@ end
 -- A kicker's live icon came onto a plate (hidden = true) or left every plate:
 -- their lane on every rail follows, and each rail's plate lays its icons out
 -- again (the lane's slot and the chain changed).
-function Rails.SetLiveHidden(kicker, isHidden)
+function MarkRails.SetLiveHidden(kicker, isHidden)
     isHidden = isHidden == true
-    if (Rails.liveHidden[kicker] == true) == isHidden then
+    if (MarkRails.liveHidden[kicker] == true) == isHidden then
         return
     end
-    Rails.liveHidden[kicker] = isHidden or nil
-    if not Rails.laneOf[kicker] then
+    MarkRails.liveHidden[kicker] = isHidden or nil
+    if not MarkRails.laneOf[kicker] then
         return
     end
-    for unitToken, track in pairs(Rails.railOf) do
+    for unitToken, track in pairs(MarkRails.railOf) do
         if track.placedHost then
             LayoutPlate(unitToken)
         end
@@ -3390,17 +3390,17 @@ function Rails.SetLiveHidden(kicker, isHidden)
     if not isHidden then
         local current = KE.Count(kicker)
         if current ~= nil then
-            Rails.Counts(kicker, current, GetTime())
+            MarkRails.Counts(kicker, current, GetTime())
         end
     end
 end
 
-function Rails.Cooldown(kicker, start, duration)
-    local i = Rails.laneOf[kicker]
+function MarkRails.Cooldown(kicker, start, duration)
+    local i = MarkRails.laneOf[kicker]
     if not i then
         return
     end
-    for _, track in pairs(Rails.railOf) do
+    for _, track in pairs(MarkRails.railOf) do
         local laneRec = track.lanes[i]
         if laneRec and laneRec.kicker == kicker then
             PaintCooldown(laneRec.cell, start, duration)
@@ -3410,37 +3410,37 @@ end
 
 -- The engine's counts event for member u (and a ghost coming or going):
 -- their lane on every rail fed their count as read now (Rails.LaneFeed).
-function Rails.Counts(unit, current, T)
-    local i = Rails.laneOf[unit]
+function MarkRails.Counts(unit, current, T)
+    local i = MarkRails.laneOf[unit]
     if not i then
         return
     end
-    for _, track in pairs(Rails.railOf) do
+    for _, track in pairs(MarkRails.railOf) do
         local laneRec = track.lanes[i]
         if laneRec and laneRec.kicker == unit then
-            Rails.LaneFeed(laneRec, unit, current, T)
+            MarkRails.LaneFeed(laneRec, unit, current, T)
         end
     end
 end
 
 -- The driver's pass: a rail follows its unit's plate as the icons do.
-function Rails.Follow(plateList)
-    if Rails.count == 0 then
+function MarkRails.Follow(plateList)
+    if MarkRails.count == 0 then
         return
     end
-    for unitToken, track in pairs(Rails.railOf) do
+    for unitToken, track in pairs(MarkRails.railOf) do
         local p = plateList and plateList[unitToken]
         if p ~= track.cuiPlate then
             if p and p.health then
                 Place(track, p, true)
             elseif track.cuiPlate then
-                Rails.Release(unitToken)
+                MarkRails.Release(unitToken)
             end
         elseif p and track.row ~= SideRow(p) then
             Place(track, p, true)
         end
         -- The one deferred feed of a freshly placed rail, once it is visible.
-        if track.feed and Rails.railOf[unitToken] == track and track:IsVisible() then
+        if track.feed and MarkRails.railOf[unitToken] == track and track:IsVisible() then
             track.feed = nil
             local position = GetRaidTargetIndex(unitToken)
             if type(position) == "number" then
@@ -3451,16 +3451,16 @@ function Rails.Follow(plateList)
 end
 
 -- A settings write: every rail is sized, placed and painted again.
-function Rails.Restyle()
-    for unitToken in pairs(Rails.railOf) do
-        Rails.SyncPlate(unitToken)
+function MarkRails.Restyle()
+    for unitToken in pairs(MarkRails.railOf) do
+        MarkRails.SyncPlate(unitToken)
     end
 end
 
 -- The rail on an CludesUI plate, for the target arrows: only while it
 -- shows a lane (every lane hidden, nothing of it is on screen).
-function Rails.OnPlate(backing)
-    for _, track in pairs(Rails.railOf) do
+function MarkRails.OnPlate(backing)
+    for _, track in pairs(MarkRails.railOf) do
         if track.cuiPlate == backing then
             if track.shownCount > 0 then
                 return track
@@ -3478,13 +3478,13 @@ end
 local function OnMarkerEvent(_, event, a1, a2, a3)
     if event == "PLAYER_ENTERING_WORLD" then
         if a1 or a2 then
-            Rails.pendingRestore = true
+            MarkRails.pendingRestore = true
         else
-            Rails.pendingRestore = false
+            MarkRails.pendingRestore = false
             ForgetMarkers()
         end
     elseif event == "CHAT_MSG_ADDON" then
-        if a1 ~= Rails.PREFIX or (a3 ~= "PARTY" and a3 ~= "INSTANCE_CHAT") then
+        if a1 ~= MarkRails.PREFIX or (a3 ~= "PARTY" and a3 ~= "INSTANCE_CHAT") then
             return
         end
         local textValue = PlainString(a2)
@@ -3495,7 +3495,7 @@ local function OnMarkerEvent(_, event, a1, a2, a3)
         if not kind or unitGuid == PlainString(UnitGUID("player")) then
             return
         end
-        Rails.Learn(unitGuid, tonumber(markerKey))
+        MarkRails.Learn(unitGuid, tonumber(markerKey))
         if kind == "R" then
             Reply()
         end
@@ -3509,8 +3509,8 @@ end
 -- (MarkerInstance), a
 -- pending login or reload restore runs here, where the instance reads true,
 -- and a zone-in or a fresh enable asks the group (ask).
-function Rails.Settled(ask)
-    local frame = Rails.frame
+function MarkRails.Settled(ask)
+    local frame = MarkRails.frame
     if not frame then
         return
     end
@@ -3521,8 +3521,8 @@ function Rails.Settled(ask)
         frame:UnregisterEvent("CHAT_MSG_ADDON")
         frame:UnregisterEvent("GROUP_ROSTER_UPDATE")
     end
-    if Rails.pendingRestore then
-        Rails.pendingRestore = false
+    if MarkRails.pendingRestore then
+        MarkRails.pendingRestore = false
         RestoreMarkers()
     end
     if ask then
@@ -3533,28 +3533,28 @@ end
 -- From KT_Refresh: the marker frame and the addon prefix while the plates are
 -- enabled; a fresh enable restores the saved markers of this instance and
 -- asks the group.
-function Rails.SyncEvents(on)
+function MarkRails.SyncEvents(on)
     if not on then
-        Rails.on = false
-        if Rails.frame then
-            Rails.frame:UnregisterAllEvents()
+        MarkRails.on = false
+        if MarkRails.frame then
+            MarkRails.frame:UnregisterAllEvents()
         end
         return
     end
-    local fresh = not Rails.on
-    Rails.on = true
-    if not Rails.frame then
-        Rails.frame = CreateFrame("Frame")
-        Rails.frame:SetScript("OnEvent", OnMarkerEvent)
+    local fresh = not MarkRails.on
+    MarkRails.on = true
+    if not MarkRails.frame then
+        MarkRails.frame = CreateFrame("Frame")
+        MarkRails.frame:SetScript("OnEvent", OnMarkerEvent)
     end
-    if not Rails.prefixRegistered and C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
-        Rails.prefixRegistered = true
-        C_ChatInfo.RegisterAddonMessagePrefix(Rails.PREFIX)
+    if not MarkRails.prefixRegistered and C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
+        MarkRails.prefixRegistered = true
+        C_ChatInfo.RegisterAddonMessagePrefix(MarkRails.PREFIX)
     end
-    Rails.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-    Rails.pendingRestore = false
+    MarkRails.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    MarkRails.pendingRestore = false
     RestoreMarkers()
-    Rails.Settled(fresh)
+    MarkRails.Settled(fresh)
 end
 
 --------------------------------------------------------------------------------
@@ -3611,7 +3611,7 @@ local function OnPlateAdded(unitToken)
         PreviewUnit(unitToken)
         return
     end
-    if next(isDetached) == nil and Ghosts.nWaiting == 0 then
+    if next(isDetached) == nil and GhostPool.nWaiting == 0 then
         return
     end
     local g = PlainString(UnitGUID(unitToken))
@@ -3638,24 +3638,24 @@ local function OnPlateAdded(unitToken)
             end
         end
     end
-    if Ghosts.nWaiting > 0 then
-        Ghosts.Return(unitToken, g, isTarget)
+    if GhostPool.nWaiting > 0 then
+        GhostPool.Return(unitToken, g, isTarget)
     end
 end
 
 local function OnEvent(_, event, unitToken)
     if event == "NAME_PLATE_UNIT_REMOVED" then
         PlateGone(unitToken)
-        Rails.Release(unitToken)
+        MarkRails.Release(unitToken)
     elseif event == "NAME_PLATE_UNIT_ADDED" then
         if unitToken then
             OnPlateAdded(unitToken)
-            Rails.SyncPlate(unitToken)
+            MarkRails.SyncPlate(unitToken)
         end
     elseif event == "PLAYER_TARGET_CHANGED" then
         OnTargetChanged()
     elseif event == "RAID_TARGET_UPDATE" then
-        Rails.SyncAll()
+        MarkRails.SyncAll()
     end
 end
 
@@ -3686,8 +3686,8 @@ local function SwitchMode(mode)
     end
     if mode == MODE_LIVE then
         KE.Subscribe(WHERE_KEY, HANDLERS)
-        Rails.SyncKickers()
-        Rails.SyncAll()
+        MarkRails.SyncKickers()
+        MarkRails.SyncAll()
     else
         SeedPreview()
     end
@@ -3725,7 +3725,7 @@ local function OnWhere(event)
     end
     SyncState()
     if event == "RECHECK" then
-        Rails.Settled(true)
+        MarkRails.Settled(true)
     end
     if event == "PLAYER_ENTERING_WORLD" and currentMode == MODE_PREVIEW and liveCount == 0 then
         SeedPreview()
@@ -3758,8 +3758,8 @@ local function RestyleLive()
             end
         end
     end
-    Ghosts.Restyle()
-    Rails.Restyle()
+    GhostPool.Restyle()
+    MarkRails.Restyle()
 end
 
 --------------------------------------------------------------------------------
@@ -3848,7 +3848,7 @@ local function Announce(markerTex)
     if not MythicDungeon() then
         return
     end
-    local channelling = Rails.Channel()
+    local channelling = MarkRails.Channel()
     if not channelling then
         return
     end
@@ -3867,9 +3867,9 @@ local function SyncAnnounce(conf)
         markerTex = 0
     end
     announceMarker = markerTex
-    if markerTex ~= Rails.marker then
-        Rails.marker = markerTex
-        if Rails.on and MarkerInstance() then
+    if markerTex ~= MarkRails.marker then
+        MarkRails.marker = markerTex
+        if MarkRails.on and MarkerInstance() then
             BroadcastMarker("F")
         end
     end
@@ -3902,7 +3902,7 @@ function mod.KT_Refresh()
     end
     local conf = Cfg()
     SyncAnnounce(conf)
-    Rails.SyncEvents(Enabled(conf))
+    MarkRails.SyncEvents(Enabled(conf))
     if not Enabled(conf) then
         MTWhere.Unsubscribe(WHERE_KEY)
         previewing = false
@@ -3948,22 +3948,22 @@ end
 -- rail (nil: no rail), whether a kicker's lane stands down for their live
 -- icon, and the marker cached for a member GUID.
 function mod.KT_Defaults(unitToken)
-    local track = Rails.railOf[unitToken]
-    return track and #Rails.kickers or nil
+    local track = MarkRails.railOf[unitToken]
+    return track and #MarkRails.kickers or nil
 end
 
 function mod.KT_DefaultHidden(kicker)
-    return Rails.liveHidden[kicker] == true
+    return MarkRails.liveHidden[kicker] == true
 end
 
 function mod.KT_MarkerOf(unitGuid)
-    return Rails.markerOf[unitGuid]
+    return MarkRails.markerOf[unitGuid]
 end
 
 -- The ghosts on a plate unit (with nil, every ghost, those waiting for their
 -- mob's plate included), for /dump and the harness.
 function mod.KT_Ghosts(unitToken)
-    local liveSet, num = Ghosts.live, 0
+    local liveSet, num = GhostPool.live, 0
     for i = 1, #liveSet do
         if unitToken == nil or liveSet[i].unit == unitToken then
             num = num + 1
@@ -3982,18 +3982,18 @@ function mod.KT_Dump()
     print("Kick Tracker engine: " .. KE.Listening())
     local mode = (currentMode == MODE_LIVE) and "live" or (currentMode == MODE_PREVIEW) and "preview" or "off"
     local cached = 0
-    for _ in pairs(Rails.markerOf) do
+    for _ in pairs(MarkRails.markerOf) do
         cached = cached + 1
     end
     local parts = {}
-    for i = 1, #Rails.kickers do
-        local k = Rails.kickers[i]
+    for i = 1, #MarkRails.kickers do
+        local k = MarkRails.kickers[i]
         parts[#parts + 1] = format(
             "%s marker %d lane %d%s",
             k.unit,
             k.marker,
             k.lane + 1,
-            Rails.liveHidden[k.unit] and " (live icon up)" or ""
+            MarkRails.liveHidden[k.unit] and " (live icon up)" or ""
         )
     end
     print(
@@ -4002,7 +4002,7 @@ function mod.KT_Dump()
             mode,
             Lift.on and " (above overlapping plates)" or "",
             cached,
-            tostring(Rails.inst),
+            tostring(MarkRails.inst),
             (#parts > 0) and table.concat(parts, "; ") or "none"
         )
     )
@@ -4018,8 +4018,8 @@ function mod.KT_Dump()
         )
     end
     local nowTime = GetTime()
-    for i = 1, #Ghosts.live do
-        local g = Ghosts.live[i]
+    for i = 1, #GhostPool.live do
+        local g = GhostPool.live[i]
         local cands = {}
         for k = 1, g.used do
             cands[k] = g.subs[k].unit
@@ -4035,9 +4035,9 @@ function mod.KT_Dump()
             )
         )
     end
-    for unitToken, track in pairs(Rails.railOf) do
+    for unitToken, track in pairs(MarkRails.railOf) do
         local lanes = {}
-        for i = 1, #Rails.kickers do
+        for i = 1, #MarkRails.kickers do
             local laneRec = track.lanes[i]
             lanes[#lanes + 1] = format(
                 "%d %s slot %d%s",
@@ -4071,7 +4071,7 @@ function mod.KT_Dump()
                     u,
                     type(position),
                     Secret(position) and " (hidden)" or "",
-                    Rails.railOf[u] and ", rail" or ""
+                    MarkRails.railOf[u] and ", rail" or ""
                 )
             )
         end

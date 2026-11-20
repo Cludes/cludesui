@@ -352,10 +352,10 @@ end
 -------------------------------------------------------------------------------
 do
     -- Single-table state: this file sits at Lua 5.1's 200-local cap, so the whole feature uses ONE chunk local (RT), everything else as table fields.
-    local RT = { acc = 0 }
+    local Range = { acc = 0 }
 
-    function RT.Anchor(backing)
-        RT.fs:ClearAllPoints()
+    function Range.Anchor(backing)
+        Range.fs:ClearAllPoints()
         local offX = (p and p.rangeTextOffsetX) or 0
         local offY = (p and p.rangeTextOffsetY) or 0
         local rightEl = GetTextSlot("textSlotRight")
@@ -381,60 +381,60 @@ do
             end
         end
         if anchorTo and anchorTo.IsShown and anchorTo:IsShown() then
-            RT.fs:SetPoint("RIGHT", anchorTo, "LEFT", -5 + offX, offY)
+            Range.fs:SetPoint("RIGHT", anchorTo, "LEFT", -5 + offX, offY)
         else
             -- WoW Forever: past the level box right of the bar.
-            RT.fs:SetPoint("LEFT", backing.health or backing, "RIGHT", 5 + offX + mod.NP_ForeverSide(), offY)
+            Range.fs:SetPoint("LEFT", backing.health or backing, "RIGHT", 5 + offX + mod.NP_ForeverSide(), offY)
         end
     end
 
-    function RT.Appearance()
-        SetFSFont(RT.fs, (p and p.rangeTextSize) or defaultSet.rangeTextSize, GetNPOutline())
+    function Range.Appearance()
+        SetFSFont(Range.fs, (p and p.rangeTextSize) or defaultSet.rangeTextSize, GetNPOutline())
         local color = (p and p.rangeTextColor) or defaultSet.rangeTextColor
-        RT.fs:SetTextColor(color.r, color.g, color.b, 1)
+        Range.fs:SetTextColor(color.r, color.g, color.b, 1)
     end
 
-    function RT.Detach()
-        RT.plate = nil
-        if RT.carrier then
-            RT.carrier:Hide()
-            RT.carrier:SetParent(nil)
+    function Range.Detach()
+        Range.plate = nil
+        if Range.carrier then
+            Range.carrier:Hide()
+            Range.carrier:SetParent(nil)
         end
     end
 
-    function RT.Tick()
+    function Range.Tick()
         local backing = mod._cachedTargetPlate
         if not backing or not backing.unit or not backing:IsShown() then
-            if RT.plate then
-                RT.Detach()
+            if Range.plate then
+                Range.Detach()
             end
             return
         end
-        if backing ~= RT.plate then
-            if not RT.carrier then
-                RT.carrier = CreateFrame("Frame")
-                RT.carrier:SetSize(2, 2)
-                RT.fs = RT.carrier:CreateFontString(nil, "OVERLAY")
+        if backing ~= Range.plate then
+            if not Range.carrier then
+                Range.carrier = CreateFrame("Frame")
+                Range.carrier:SetSize(2, 2)
+                Range.fs = Range.carrier:CreateFontString(nil, "OVERLAY")
             end
-            RT.carrier:SetParent(backing)
-            RT.carrier:SetPoint("CENTER", backing, "CENTER", 0, 0)
+            Range.carrier:SetParent(backing)
+            Range.carrier:SetPoint("CENTER", backing, "CENTER", 0, 0)
             -- Well above the health bar/text frames: with the Right Text slot occupied the
             -- text sits ON the bar, and a low frame level would draw it underneath the fill.
-            RT.carrier:SetFrameLevel(backing:GetFrameLevel() + 30)
-            RT.plate = backing
-            RT.Appearance()
-            RT.Anchor(backing)
-            RT.carrier:Show()
+            Range.carrier:SetFrameLevel(backing:GetFrameLevel() + 30)
+            Range.plate = backing
+            Range.Appearance()
+            Range.Anchor(backing)
+            Range.carrier:Show()
         end
         -- "0+" (basically melee) shows nothing: the indicator only matters at distance. Queried
         -- as "target" rather than plate.unit -- this is the target's plate by definition, and
         -- the token lets the shared engine serve the QoL text from one cached walk.
         local lower = CludesUI.Range_LowerBound("target")
         if lower and lower > 0 then
-            RT.fs:SetText(lower .. "+")
-            RT.fs:Show()
+            Range.fs:SetText(lower .. "+")
+            Range.fs:Show()
         else
-            RT.fs:Hide()
+            Range.fs:Hide()
         end
     end
 
@@ -448,27 +448,27 @@ do
     -- Melee note: at cutoff 5 verdicts rely on the protection-gated item
     -- walk, so in instanced combat the fade can degrade to "no fade" for
     -- melee specs -- deliberate fail-open, never a blocked action.
-    function RT.FadeTick()
+    function Range.FadeTick()
         local customCutoff = p and p.outOfRangeMode == "custom" and p.outOfRangeCustomRange
         local cutoff = CludesUI.Range_GetAttackCutoff(customCutoff)
-        local q = RT.fadeQ
+        local q = Range.fadeQ
         if not q then
             q = {}
-            RT.fadeQ = q
+            Range.fadeQ = q
         end
-        if not RT.fadeIdx or RT.fadeIdx > #q then
+        if not Range.fadeIdx or Range.fadeIdx > #q then
             -- New cycle: snapshot the live plate set (reused table, one wipe
             -- per cycle). Plates that detach mid-cycle are re-checked below.
             wipe(q)
             for _, backing in pairs(mod.plates) do
                 q[#q + 1] = backing
             end
-            RT.fadeIdx = 1
+            Range.fadeIdx = 1
         end
         local budget = 8
-        while RT.fadeIdx <= #q and budget > 0 do
-            local backing = q[RT.fadeIdx]
-            RT.fadeIdx = RT.fadeIdx + 1
+        while Range.fadeIdx <= #q and budget > 0 do
+            local backing = q[Range.fadeIdx]
+            Range.fadeIdx = Range.fadeIdx + 1
             budget = budget - 1
             local unitToken = backing.unit
             if unitToken and mod.plates[unitToken] == backing then
@@ -491,13 +491,13 @@ do
         end
     end
 
-    function RT.ResetFade()
+    function Range.ResetFade()
         -- Drop the round-robin cursor and its plate snapshot too: a disable
         -- mid-cycle must not pin recycled plates in the reused queue.
-        if RT.fadeQ then
-            wipe(RT.fadeQ)
+        if Range.fadeQ then
+            wipe(Range.fadeQ)
         end
-        RT.fadeIdx = nil
+        Range.fadeIdx = nil
         for _, backing in pairs(mod.plates) do
             if backing._oorCurAlpha then
                 backing._oorCurAlpha = nil
@@ -508,9 +508,9 @@ do
 
     -- Options: re-apply font/color/anchor on the live attachment.
     mod.RangeText_Refresh = function()
-        if RT.plate and RT.fs then
-            RT.Appearance()
-            RT.Anchor(RT.plate)
+        if Range.plate and Range.fs then
+            Range.Appearance()
+            Range.Anchor(Range.plate)
         end
     end
 
@@ -527,37 +527,37 @@ do
             and mod._oorAlpha < 1
         local fadeEnabled = mod._oorFadeEnabled
         if textEnabled or fadeEnabled then
-            if not RT.drv then
-                RT.drv = CreateFrame("Frame")
-                RT.drv:Hide()
-                RT.drv:SetScript("OnUpdate", function(_, elapsed)
-                    RT.acc = RT.acc + elapsed
-                    if RT.acc < 0.2 then
+            if not Range.drv then
+                Range.drv = CreateFrame("Frame")
+                Range.drv:Hide()
+                Range.drv:SetScript("OnUpdate", function(_, elapsed)
+                    Range.acc = Range.acc + elapsed
+                    if Range.acc < 0.2 then
                         return
                     end
-                    RT.acc = 0
+                    Range.acc = 0
                     if p and p.rangeTextEnabled then
-                        RT.Tick()
+                        Range.Tick()
                     end
                     if mod._oorFadeEnabled then
-                        RT.FadeTick()
+                        Range.FadeTick()
                     end
                 end)
             end
             -- Ladder builds and invalidation live in the shared range engine.
             CludesUI.Range_SetActive("npRange", true)
-            RT.drv:Show()
+            Range.drv:Show()
         else
             CludesUI.Range_SetActive("npRange", false)
-            if RT.drv then
-                RT.drv:Hide()
+            if Range.drv then
+                Range.drv:Hide()
             end
         end
         if not textEnabled then
-            RT.Detach()
+            Range.Detach()
         end
         if not fadeEnabled then
-            RT.ResetFade()
+            Range.ResetFade()
         end
     end
 end

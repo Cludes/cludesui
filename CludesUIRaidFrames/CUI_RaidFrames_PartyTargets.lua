@@ -71,7 +71,7 @@ do
     -- Layout state (the last applied size, side, gaps and offsets: the layout's delta gate and the
     -- reserve's source), the colour settings the paint reads (cached by the restyle), the listeners,
     -- and the owner bookkeeping: owner token -> "<token>target", header button -> its target frame.
-    local PT = {
+    local PartyTgt = {
         tgtOf = {},
         frameOf = setmetatable({}, { __mode = "k" }),
         tgtEv = {},
@@ -80,7 +80,7 @@ do
         DEF_FILL = { r = 37 / 255, g = 193 / 255, b = 29 / 255 },
     }
     -- The shared style inputs plus the target frames' own ten (PT_FpExtra).
-    PT.FP_N = mod._PF.STYLE_N + 10
+    PartyTgt.FP_N = mod._PF.STYLE_N + 10
 
     -- Owner unit -> its target frame, for UNIT_TARGET. Frames showing your own target stay out: they
     -- read "target" and follow PLAYER_TARGET_CHANGED.
@@ -93,10 +93,10 @@ do
 
     -- "party1" -> "party1target", built once per token.
     local function PT_TargetOf(unit)
-        local t = PT.tgtOf[unit]
+        local t = PartyTgt.tgtOf[unit]
         if not t then
             t = unit .. "target"
-            PT.tgtOf[unit] = t
+            PartyTgt.tgtOf[unit] = t
         end
         return t
     end
@@ -118,11 +118,11 @@ do
     -- true when the frame's owner changed.
     local function PT_Classify(widget)
         local ou, own
-        if widget == PT.selfFrame then
+        if widget == PartyTgt.selfFrame then
             own = true
         else
             ou = widget._ptOwner:GetAttribute("unit")
-            own = ou ~= nil and (ou == "player" or ou == PT.me)
+            own = ou ~= nil and (ou == "player" or ou == PartyTgt.me)
         end
         local key = (not own) and ou or nil
         local old = widget._ptOwnerUnit
@@ -201,7 +201,7 @@ do
             return
         end
         widget._nameText:SetText(UnitName(u))
-        local health, backdrop, mode = widget._health, widget._bg, PT.mode
+        local health, backdrop, mode = widget._health, widget._bg, PartyTgt.mode
         local fillTex = health:GetStatusBarTexture()
         if mode == "dark" then
             local red, green, blue, a = CUI.GetDarkModeFill()
@@ -215,22 +215,22 @@ do
                 fillTex:SetAlpha(1)
             end
             local success, red, green, blue = false
-            if (mode ~= "classic" and mode ~= "custom") or PT.bgClass then
+            if (mode ~= "classic" and mode ~= "custom") or PartyTgt.bgClass then
                 success, red, green, blue = PT_ClassRGB(u, widget)
             end
             if mode == "classic" then
                 PT_PaintClassic(health, u)
             elseif mode == "custom" then
-                health:SetStatusBarColor(PT.fr, PT.fg, PT.fb, 1)
+                health:SetStatusBarColor(PartyTgt.fr, PartyTgt.fg, PartyTgt.fb, 1)
             elseif success then
                 health:SetStatusBarColor(red, green, blue, 1)
             else
                 health:SetStatusBarColor(0.5, 0.5, 0.5, 1)
             end
-            if success and PT.bgClass then
-                backdrop:SetColorTexture(red, green, blue, PT.bgA)
+            if success and PartyTgt.bgClass then
+                backdrop:SetColorTexture(red, green, blue, PartyTgt.bgA)
             else
-                backdrop:SetColorTexture(PT.br, PT.bgg, PT.bb, PT.bgA)
+                backdrop:SetColorTexture(PartyTgt.br, PartyTgt.bgg, PartyTgt.bb, PartyTgt.bgA)
             end
         end
         health:SetValue(GetSafeHealthPercent(u))
@@ -240,13 +240,13 @@ do
     -- gradient follows the value.
     local function PT_PaintValue(widget, unit)
         local health = widget._health
-        local smooth = PT.smooth
+        local smooth = PartyTgt.smooth
         if smooth then
             health:SetValue(GetSafeHealthPercent(unit), smooth)
         else
             health:SetValue(GetSafeHealthPercent(unit))
         end
-        if PT.mode == "classic" then
+        if PartyTgt.mode == "classic" then
             PT_PaintClassic(health, unit)
         end
     end
@@ -271,7 +271,7 @@ do
     -- events while one shows with Include Own Target on. Nameplates and every other unit stay out.
     -- except: a frame on its way off screen.
     local function PT_CountWanted(except)
-        local wanted, poll, own = PT.tgtWant, 0, 0
+        local wanted, poll, own = PartyTgt.tgtWant, 0, 0
         wipe(wanted)
         if mod._ptEnabled then
             for i, frame in ipairs(mod._partyTargetFrames) do
@@ -285,8 +285,8 @@ do
                 end
             end
         end
-        for k = 1, #PT.tgtEv do
-            local ev = PT.tgtEv[k]
+        for k = 1, #PartyTgt.tgtEv do
+            local ev = PartyTgt.tgtEv[k]
             local u1, u2 = wanted[2 * k - 1], wanted[2 * k]
             if ev.ptU1 ~= u1 or ev.ptU2 ~= u2 then
                 ev.ptU1, ev.ptU2 = u1, u2
@@ -298,21 +298,21 @@ do
                 end
             end
         end
-        local tk = PT.ticker
+        local tk = PartyTgt.ticker
         if tk then
             if poll > 0 then
                 if not tk:IsShown() then
-                    PT.acc = 0
+                    PartyTgt.acc = 0
                     tk:Show()
                 end
             elseif tk:IsShown() then
                 tk:Hide()
             end
         end
-        local ownOn = (own > 0 and PT.include) and true or false
-        local ev = PT.ownFrame
-        if ev and PT.ownEv ~= ownOn then
-            PT.ownEv = ownOn
+        local ownOn = (own > 0 and PartyTgt.include) and true or false
+        local ev = PartyTgt.ownFrame
+        if ev and PartyTgt.ownEv ~= ownOn then
+            PartyTgt.ownEv = ownOn
             if ownOn then
                 ev:RegisterEvent("PLAYER_TARGET_CHANGED")
                 ev:RegisterUnitEvent("UNIT_HEALTH", "target")
@@ -327,12 +327,12 @@ do
     -- The ticker (hidden while idle): every 0.5 s, the values of the polled frames on screen. A mob's
     -- colour follows its tap and reaction, which raise no events on these units: a change repaints.
     local function PT_Tick(_, elapsed)
-        local acc = PT.acc + elapsed
+        local acc = PartyTgt.acc + elapsed
         if acc < 0.5 then
-            PT.acc = acc
+            PartyTgt.acc = acc
             return
         end
-        PT.acc = 0
+        PartyTgt.acc = 0
         for _, frame in ipairs(mod._partyTargetFrames) do
             local u = frame._ptUnit
             if u and not frame._ptOwn and frame:IsVisible() and UnitExists(u) then
@@ -367,10 +367,10 @@ do
     -- Include Own Target off: the header frame showing you drops its target frame's unit. Written here
     -- out of combat by the rule the party frames' unit snippet applies in combat (PF.OWNER_SNIPPET).
     local function PT_SeedAttrs()
-        local noself = (mod._ptEnabled and not PT.include) and true or nil
-        local me = PT.me
+        local noself = (mod._ptEnabled and not PartyTgt.include) and true or nil
+        local me = PartyTgt.me
         for _, widget in ipairs(mod._partyTargetFrames) do
-            if widget ~= PT.selfFrame then
+            if widget ~= PartyTgt.selfFrame then
                 if widget:GetAttribute("pt-noself") ~= noself then
                     widget:SetAttribute("pt-noself", noself)
                 end
@@ -393,7 +393,7 @@ do
         if not mod._ptEnabled then
             return
         end
-        PT.me = PT_Me()
+        PartyTgt.me = PT_Me()
         for _, widget in ipairs(mod._partyTargetFrames) do
             PT_Classify(widget)
         end
@@ -409,8 +409,8 @@ do
     -- Roster and zoning storms: one refresh on the next frame, after the header re-assigned its buttons.
     -- Nothing while the party frames are hidden (a raid): their show edge refreshes once instead
     -- (ns._UpdatePartyVisibility).
-    PT.Flush = function()
-        PT.flushQueued = nil
+    PartyTgt.Flush = function()
+        PartyTgt.flushQueued = nil
         mod._PT_RefreshAll()
     end
 
@@ -420,9 +420,9 @@ do
             if widget and widget:IsVisible() then
                 PT_Paint(widget)
             end
-        elseif mod._partyFramesVisible and not PT.flushQueued then
-            PT.flushQueued = true
-            C_Timer.After(0, PT.Flush)
+        elseif mod._partyFramesVisible and not PartyTgt.flushQueued then
+            PartyTgt.flushQueued = true
+            C_Timer.After(0, PartyTgt.Flush)
         end
     end
 
@@ -503,11 +503,11 @@ do
     -- sit past them, along it level with them, so there the farther reach counts.
     function mod.PT_Reserve(horizontal, before, pets)
         pets = pets or 0
-        if not (mod._ptEnabled and PT.w) then
+        if not (mod._ptEnabled and PartyTgt.w) then
             return pets
         end
-        local region = PT_ReserveOf(PT, horizontal, before)
-        if PT.across then
+        local region = PT_ReserveOf(PartyTgt, horizontal, before)
+        if PartyTgt.across then
             return region + pets
         end
         return (region > pets) and region or pets
@@ -606,27 +606,27 @@ do
                 + ((side == "above" or side == "below") and popFrame.ownerH or popFrame.ownerW)
                 + gap
         end
-        local resized = wid ~= PT.w or hgt ~= PT.h
+        local resized = wid ~= PartyTgt.w or hgt ~= PartyTgt.h
         -- The reserve's inputs (PT_ReserveOf): beside stacked frames the width and X offset, beside
         -- horizontal ones the height and Y offset, and along the stack the party frame's size too. A
         -- full layout (PT.w cleared) re-pins the attached groups, which read none meanwhile.
-        local reserve = PT.w == nil
-            or side ~= PT.side
-            or across ~= PT.across
-            or gap ~= PT.gap
-            or horiz ~= PT.horiz
+        local reserve = PartyTgt.w == nil
+            or side ~= PartyTgt.side
+            or across ~= PartyTgt.across
+            or gap ~= PartyTgt.gap
+            or horiz ~= PartyTgt.horiz
         if not reserve then
             if horiz then
-                reserve = hgt ~= PT.h or posY ~= PT.y or (not across and ph ~= PT.ph)
+                reserve = hgt ~= PartyTgt.h or posY ~= PartyTgt.y or (not across and ph ~= PartyTgt.ph)
             else
-                reserve = wid ~= PT.w or posX ~= PT.x or (not across and pw ~= PT.pw)
+                reserve = wid ~= PartyTgt.w or posX ~= PartyTgt.x or (not across and pw ~= PartyTgt.pw)
             end
         end
-        PT.pw, PT.ph, PT.horiz = pw, ph, horiz
-        if not (reserve or resized) and off == PT.off and posX == PT.x and posY == PT.y then
+        PartyTgt.pw, PartyTgt.ph, PartyTgt.horiz = pw, ph, horiz
+        if not (reserve or resized) and off == PartyTgt.off and posX == PartyTgt.x and posY == PartyTgt.y then
             return
         end
-        PT.w, PT.h, PT.side, PT.gap, PT.off, PT.across, PT.x, PT.y =
+        PartyTgt.w, PartyTgt.h, PartyTgt.side, PartyTgt.gap, PartyTgt.off, PartyTgt.across, PartyTgt.x, PartyTgt.y =
             wid, hgt, side, gap, off, across, posX, posY
         local sizeVisuals = mod._FB.SizeVisuals
         for _, widget in ipairs(mod._partyTargetFrames) do
@@ -646,7 +646,7 @@ do
     -- Background (class or custom colour, darkness) and Smooth Bars.
     local function PT_FpExtra(tbl)
         local p, num = saved.profile, mod._PF.STYLE_N
-        local fc = p.partyTargetCustomFillColor or PT.DEF_FILL
+        local fc = p.partyTargetCustomFillColor or PartyTgt.DEF_FILL
         local bc = p.partyTargetCustomBgColor or mod._PF.DEFAULT_BG
         tbl[num + 1], tbl[num + 2], tbl[num + 3], tbl[num + 4] = p.partyTargetHealthColorMode, fc.r, fc.g, fc.b
         tbl[num + 5], tbl[num + 6], tbl[num + 7], tbl[num + 8] = p.partyTargetBgClassColored, bc.r, bc.g, bc.b
@@ -694,20 +694,20 @@ do
         end
         local cfg = PT_Source()
         local texPath = ResolveHealthTexture(cfg)
-        local changed, at = mod._PF.StyleChanged("pt", cfg, texPath, PT_FpExtra, PT.FP_N)
+        local changed, at = mod._PF.StyleChanged("pt", cfg, texPath, PT_FpExtra, PartyTgt.FP_N)
         if not changed then
             return
         end
         local profile = saved.profile
-        local fc = profile.partyTargetCustomFillColor or PT.DEF_FILL
+        local fc = profile.partyTargetCustomFillColor or PartyTgt.DEF_FILL
         local bc = profile.partyTargetCustomBgColor or mod._PF.DEFAULT_BG
-        PT.mode = profile.partyTargetHealthColorMode or "class"
-        PT.fr, PT.fg, PT.fb = fc.r, fc.g, fc.b
-        PT.bgClass = profile.partyTargetBgClassColored and true or nil
-        PT.br, PT.bgg, PT.bb = bc.r, bc.g, bc.b
-        PT.bgA = (profile.partyTargetBgDarkness or 50) / 100
+        PartyTgt.mode = profile.partyTargetHealthColorMode or "class"
+        PartyTgt.fr, PartyTgt.fg, PartyTgt.fb = fc.r, fc.g, fc.b
+        PartyTgt.bgClass = profile.partyTargetBgClassColored and true or nil
+        PartyTgt.br, PartyTgt.bgg, PartyTgt.bb = bc.r, bc.g, bc.b
+        PartyTgt.bgA = (profile.partyTargetBgDarkness or 50) / 100
         local interp = Enum.StatusBarInterpolation
-        PT.smooth = (cfg.smoothBars and interp and interp.ExponentialEaseOut) or nil
+        PartyTgt.smooth = (cfg.smoothBars and interp and interp.ExponentialEaseOut) or nil
         -- 0: nothing styled yet (new frames); up to STYLE_N: a shared input changed.
         if at <= mod._PF.STYLE_N then
             local nameSize = cfg.nameSize or 10
@@ -765,7 +765,7 @@ do
         if name ~= "unit" or not mod._ptEnabled then
             return
         end
-        local widget = PT.frameOf[ownerFrame]
+        local widget = PartyTgt.frameOf[ownerFrame]
         if widget and PT_Classify(widget) and widget:IsVisible() then
             PT_Paint(widget)
             PT_CountWanted()
@@ -776,7 +776,7 @@ do
     -- frame (they sit outside the party frames' blocker) keeps the invisible buttons from taking
     -- clicks. Our frames, so Hide() is combat-legal; each blocker hides with its target frame.
     mod._PT_SetPreviewBlock = function(enabled)
-        PT.pvBlockOn = enabled or nil
+        PartyTgt.pvBlockOn = enabled or nil
         for _, widget in ipairs(mod._partyTargetFrames) do
             local blk = widget._ptBlock
             if enabled and mod._ptEnabled then
@@ -797,7 +797,7 @@ do
     -- The enable/disable edges, a new frame and a frame strata change while blocked: re-seat the
     -- blockers.
     mod._PT_RefreshPreviewBlock = function()
-        if PT.pvBlockOn then
+        if PartyTgt.pvBlockOn then
             mod._PT_SetPreviewBlock(true)
         end
     end
@@ -829,7 +829,7 @@ do
         -- Header buttons: the unit snippet reaches the frame through a frame ref, and a unit
         -- re-assignment re-reads it (a lookup table, never a key on the header's button).
         if ownerFrame ~= mod._partySelfButton then
-            PT.frameOf[ownerFrame] = widget
+            PartyTgt.frameOf[ownerFrame] = widget
             SecureHandlerSetFrameRef(ownerFrame, "ptframe", widget)
             ownerFrame:HookScript("OnAttributeChanged", PT_OwnerAttr)
         end
@@ -841,10 +841,10 @@ do
     -- it hides with the self button while that is unused), built the first time Include Own Target is
     -- on. True when built now. OOC only.
     local function PT_EnsureSelf()
-        if PT.selfFrame or not mod._partySelfButton then
+        if PartyTgt.selfFrame or not mod._partySelfButton then
             return false
         end
-        PT.selfFrame = PT_Build(mod._partySelfButton, "ERFPartyTargetSelf")
+        PartyTgt.selfFrame = PT_Build(mod._partySelfButton, "ERFPartyTargetSelf")
         -- New frames take the next restyle in full.
         mod._PF.fp.pt = nil
         return true
@@ -877,17 +877,17 @@ do
         end
         mod._ptSelfDirty = nil
         local inc = (mod._ptEnabled and mod._ptInclDesired) and true or nil
-        PT.include = inc
+        PartyTgt.include = inc
         if inc and PT_EnsureSelf() then
             -- Sized, placed and styled before it can show.
-            PT.w = nil
+            PartyTgt.w = nil
             mod._PT_Layout()
             mod._PT_Restyle()
             mod._PT_RefreshPreviewBlock()
         end
-        local scrollFrame = PT.selfFrame
-        if scrollFrame and PT.selfWatched ~= inc then
-            PT.selfWatched = inc
+        local scrollFrame = PartyTgt.selfFrame
+        if scrollFrame and PartyTgt.selfWatched ~= inc then
+            PartyTgt.selfWatched = inc
             if inc then
                 PT_Classify(scrollFrame)
                 RegisterUnitWatch(scrollFrame)
@@ -929,30 +929,30 @@ do
                 for k = 1, 3 do
                     frame = mod.TakeShell()
                     frame:SetScript("OnEvent", PT_OnEvent)
-                    PT.tgtEv[k] = frame
+                    PartyTgt.tgtEv[k] = frame
                 end
                 frame = mod.TakeShell()
                 frame:SetScript("OnEvent", PT_OnOwnEvent)
-                PT.ownFrame = frame
+                PartyTgt.ownFrame = frame
                 frame = mod.TakeShell()
                 frame:Hide()
                 frame:SetScript("OnUpdate", PT_Tick)
-                PT.ticker = frame
+                PartyTgt.ticker = frame
             end
             local events = mod._ptEventFrame
             events:RegisterEvent("GROUP_ROSTER_UPDATE")
             events:RegisterEvent("PLAYER_ENTERING_WORLD")
             mod._ptEnabled = true
-            PT.include = mod._ptInclDesired or nil
+            PartyTgt.include = mod._ptInclDesired or nil
             -- A full layout (the attached groups gain the reserve), a style check and the units, then
             -- the frames come up: the attributes gating yours are set before the watches.
-            PT.w = nil
+            PartyTgt.w = nil
             mod._PT_Layout()
             mod._PT_Restyle()
             mod._PT_RefreshAll()
             PT_ApplyInclude()
             for _, widget in ipairs(mod._partyTargetFrames) do
-                if widget ~= PT.selfFrame then
+                if widget ~= PartyTgt.selfFrame then
                     RegisterUnitWatch(widget)
                 end
             end
@@ -963,7 +963,7 @@ do
                 UnregisterUnitWatch(widget)
                 widget:Hide()
             end
-            PT.include, PT.selfWatched, mod._ptNoSelf = nil, nil, nil
+            PartyTgt.include, PartyTgt.selfWatched, mod._ptNoSelf = nil, nil, nil
             mod._ptLayoutDirty, mod._ptSelfDirty = nil, nil
             -- Every listener and the ticker off; the gate attributes cleared, so a unit snippet kept for
             -- the pets leaves the target frames alone.
@@ -1004,8 +1004,8 @@ do
     -- Options preview: a made-up target beside each party preview frame while Party Targets is on, on
     -- the real frames' visuals and with their size, side, offsets and colours. Plain frames, built the
     -- first time a preview shows them; ns.PT_PreviewSpec measures them and the room they need.
-    PT.pv, PT.pvSpec = {}, {}
-    PT.PV = {
+    PartyTgt.pv, PartyTgt.pvSpec = {}, {}
+    PartyTgt.PV = {
         { name = "Gnoll Brute", hp = 72, re = 2 },
         { name = "Kobold Miner", hp = 100, re = 4 },
         { name = "Defias Thug", hp = 38, re = 2 },
@@ -1021,7 +1021,7 @@ do
         if cfg.partyShowTargets ~= true then
             return nil
         end
-        local tbl = PT.pvSpec
+        local tbl = PartyTgt.pvSpec
         local wid, hgt = PixelSnap(cfg.partyTargetWidth or 70), PixelSnap(cfg.partyTargetHeight or 33)
         local posX, posY = PixelSnap(cfg.partyTargetOffsetX or 0), PixelSnap(cfg.partyTargetOffsetY or 0)
         local gap = PixelSnap(PT_Gap(cfg))
@@ -1058,7 +1058,7 @@ do
     -- (made-up mobs: Class Color reads their reaction).
     local function PT_PvFrame(i, hostFrame, cfg, specInfo)
         local FB = mod._FB
-        local frame = PT.pv[i]
+        local frame = PartyTgt.pv[i]
         if not frame then
             frame = CreateFrame("Frame", nil, hostFrame)
             FB.BuildVisuals(frame)
@@ -1068,7 +1068,7 @@ do
             name:SetJustifyH("CENTER")
             name:SetJustifyV("MIDDLE")
             name:SetTextColor(1, 1, 1, 1)
-            PT.pv[i] = frame
+            PartyTgt.pv[i] = frame
         elseif frame:GetParent() ~= hostFrame then
             frame:SetParent(hostFrame)
         end
@@ -1091,7 +1091,7 @@ do
         ApplyFont(name, st.nameSize or 10)
         name:SetWidth(max(1, wid - 6))
         FB.StyleBorder(frame)
-        local mock = PT.PV[i]
+        local mock = PartyTgt.PV[i]
         health:SetMinMaxValues(0, 100)
         health:SetValue(mock.hp)
         name:SetText(mock.name)
@@ -1117,7 +1117,7 @@ do
                 local p = mock.hp / 100
                 health:SetStatusBarColor(p < 0.5 and 1 or (1 - (p - 0.5) * 2), p > 0.5 and 1 or (p * 2), 0, 1)
             elseif mode == "custom" then
-                local color = cfg.partyTargetCustomFillColor or PT.DEF_FILL
+                local color = cfg.partyTargetCustomFillColor or PartyTgt.DEF_FILL
                 health:SetStatusBarColor(color.r, color.g, color.b, 1)
             else
                 health:SetStatusBarColor(rc.r, rc.g, rc.b, 1)
@@ -1154,13 +1154,13 @@ do
                 end
             end
         end
-        for i = num + 1, #PT.pv do
-            PT.pv[i]:Hide()
+        for i = num + 1, #PartyTgt.pv do
+            PartyTgt.pv[i]:Hide()
         end
     end
 
     function mod.PT_HidePreview()
-        for _, frame in ipairs(PT.pv) do
+        for _, frame in ipairs(PartyTgt.pv) do
             frame:Hide()
         end
     end

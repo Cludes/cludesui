@@ -53,16 +53,16 @@ end
 --  combat. Excluded from preview/unlock mode like FB.
 -------------------------------------------------------------------------------
 do
-    local XF = { buttons = {}, trackers = {} }
-    mod._XF = XF
+    local Extras = { buttons = {}, trackers = {} }
+    mod._XF = Extras
     local FB = mod._FB
 
-    XF.Settings = function()
+    Extras.Settings = function()
         return saved and saved.profile and saved.profile.extraFrames
     end
 
-    XF.ShouldBeActive = function()
-        local set = XF.Settings()
+    Extras.ShouldBeActive = function()
+        local set = Extras.Settings()
         if not set then
             return false
         end
@@ -71,7 +71,7 @@ do
 
     -- Hard selection bound (internal, no user setting): a full mythic roster's
     -- worth of duplicates while keeping per-unit event mirroring bounded.
-    XF.CAP = 20
+    Extras.CAP = 20
 
     -- Effective growth axes: primary run direction + perpendicular wrap.
     -- Attached modes stack group-sized runs of 5 like additional raid groups:
@@ -81,7 +81,7 @@ do
     -- Direction (falling back to the legacy Horizontal toggle) and wraps along
     -- Wrap Direction. Wrap values not perpendicular to the primary run (stale
     -- after a direction change, or a parallel group growth) fall back to the default.
-    XF.GrowInfo = function(set, cfg)
+    Extras.GrowInfo = function(set, cfg)
         local grow, wrap
         if set and set.position == "free" then
             grow = set.growDirection or (set.freeHorizontal and "RIGHT" or "DOWN")
@@ -122,33 +122,33 @@ do
     -- selection (the container is sized to the live selection; a CENTER pin
     -- would drift). Falls back to the legacy CENTER anchor (freePos) until the
     -- user drags the mover once. Called by FB.Anchor through the owner hook.
-    XF.FreeAnchor = function(c, set)
+    Extras.FreeAnchor = function(c, set)
         local region = set and set.freeRect
         if not region then
             return false
         end
-        local grow, wrap, horizontal = XF.GrowInfo(set, saved and saved.profile)
+        local grow, wrap, horizontal = Extras.GrowInfo(set, saved and saved.profile)
         local corner, posX, posY = FB.CornerPin(horizontal and grow or wrap, horizontal and wrap or grow, region)
         FB.FreePin(c, corner, posX, posY)
         return true
     end
 
     -- Called by the shared mover on drag stop: capture the dropped rect for the corner pin above.
-    XF.SaveFreeRect = function(mover)
-        FB.SaveMoverRect(mover, XF.Settings())
+    Extras.SaveFreeRect = function(mover)
+        FB.SaveMoverRect(mover, Extras.Settings())
     end
 
     -- Ordered raid units to duplicate (bounded by XF.CAP): tanks in roster order first
     -- (Show Tanks on), then manually added names currently in the raid. Names are stored
     -- AND matched in GetRaidRosterInfo's format so realm suffixes always agree; names not
     -- in the roster are skipped but kept (they reappear when that player rejoins).
-    XF.ResolveUnits = function()
-        local set = XF.Settings()
+    Extras.ResolveUnits = function()
+        local set = Extras.Settings()
         local units = {}
         if not set or not IsInRaid() then
             return units
         end
-        local cap = XF.CAP
+        local cap = Extras.CAP
         local seen = {}
         local num = GetNumGroupMembers() or 0
         if set.showTanks then
@@ -191,12 +191,12 @@ do
     -- The pitch between the duplicates. Attached beside Compact raid frames they take
     -- the groups' one pixel, so their rows stay level with the groups' (FB.Pitch: the
     -- boss group does the same).
-    XF.Pitch = function(set, cfg)
+    Extras.Pitch = function(set, cfg)
         if set and set.position ~= "free" and mod.RF_CompactOn(saved.profile, false) then
             return mod.RF_OnePixel(false)
         end
         -- Same grid as FB.FreePin: the extra container's own scale.
-        return CludesUI.PP.SnapForES(cfg.cellSpacing or 2, XF.container:GetEffectiveScale())
+        return CludesUI.PP.SnapForES(cfg.cellSpacing or 2, Extras.container:GetEffectiveScale())
     end
 
     -- Geometry only: container size, button stacking, per-button size (Extra
@@ -204,12 +204,12 @@ do
     -- ns._ResizeButtons). All VISUALS come from the shared StyleButton /
     -- ReloadFrames pipeline (buttons are in allButtons); ReloadFrames tail-calls
     -- XF_Apply so this offset pass always runs after the bulk base-size pass.
-    XF.Layout = function()
-        if not XF.built then
+    Extras.Layout = function()
+        if not Extras.built then
             return
         end
         local cfg = mod._scaledProfile or saved.profile
-        local set = XF.Settings()
+        local set = Extras.Settings()
         local wid = PixelSnap(
             math.max(10, (mod._activeSizeW or cfg.frameWidth or 72) + ((set and set.extraWidth) or 0))
         )
@@ -234,21 +234,21 @@ do
             mod._RefreshProxyModes()
         end
         mod._xfBmScale = (mod._bmScale or 1) * ratio
-        local sp = XF.Pitch(set, cfg)
-        XF.pitch = sp
+        local sp = Extras.Pitch(set, cfg)
+        Extras.pitch = sp
         -- Free Move lays out on its own axes; attached modes stack group-sized
         -- runs of 5 (unitGrowth within a run, group growth across).
-        local grow, wrap, horizontal = XF.GrowInfo(set, cfg)
+        local grow, wrap, horizontal = Extras.GrowInfo(set, cfg)
         -- Grid size = the live selection; when the mover is shown outside a raid
         -- there is no selection yet, so estimate from the configuration.
-        local total = XF.activeCount or 0
+        local total = Extras.activeCount or 0
         if total < 1 then
             total = ((set and set.showTanks) and 2 or 0) + ((set and set.players) and #set.players or 0)
             if total < 1 then
                 total = 1
             end
-            if total > XF.CAP then
-                total = XF.CAP
+            if total > Extras.CAP then
+                total = Extras.CAP
             end
         end
         -- Frames per run: attached always uses full group-sized runs of 5 (a
@@ -271,15 +271,15 @@ do
         -- grows away from, so frame 1 holds position as the selection changes.
         local runW, runH = wid * per + sp * (per - 1), hgt * per + sp * (per - 1)
         if horizontal then
-            XF.container:SetSize(runW, hgt * lines + sp * (lines - 1))
+            Extras.container:SetSize(runW, hgt * lines + sp * (lines - 1))
         else
-            XF.container:SetSize(wid * lines + sp * (lines - 1), runH)
+            Extras.container:SetSize(wid * lines + sp * (lines - 1), runH)
         end
 
         local stepW, stepH = wid + sp, hgt + sp
         local powerH = IsPowerBarEnabled(cfg) and PixelSnap(cfg.powerHeight or 4) or 0
         local topBarH = (cfg.topNameBarEnabled and PixelSnap(cfg.topNameBarHeight or 20)) or 0
-        for i, btn in ipairs(XF.buttons) do
+        for i, btn in ipairs(Extras.buttons) do
             btn:SetSize(wid, hgt)
             btn:ClearAllPoints()
             local off = i - 1
@@ -297,7 +297,7 @@ do
             local corner = (vDir == "UP" and "BOTTOM" or "TOP") .. (hDir == "LEFT" and "RIGHT" or "LEFT")
             btn:SetPoint(
                 corner,
-                XF.container,
+                Extras.container,
                 corner,
                 (hDir == "LEFT" and -hUnits or hUnits) * stepW,
                 (vDir == "UP" and vUnits or -vUnits) * stepH
@@ -405,7 +405,7 @@ do
     -- UNIT_* only (safe for RegisterUnitEvent's C-side filter); the two
     -- unit-payload broadcast events (READY_CHECK_CONFIRM, PLAYER_FLAGS_CHANGED)
     -- are plain registrations filtered in the handler.
-    XF.EVENTS = {
+    Extras.EVENTS = {
         -- UNIT_AURA deliberately absent (Blizzard parity: their CompactUnitFrame
         -- repaints prediction from health/absorb events only). The one gap -- an
         -- aura-granted shield expiring on its TIMER on an unhit, topped unit
@@ -431,20 +431,20 @@ do
     -- only when the selection reaches them (callers are all OOC). d._isExtra is set BEFORE
     -- StyleButton so the OnAttributeChanged hook it installs never writes the real routing
     -- maps. Buttons join allButtons so every bulk restyle/update pass covers them.
-    XF.EnsureBuilt = function(total)
-        if not XF.built then
-            XF.built = true
+    Extras.EnsureBuilt = function(total)
+        if not Extras.built then
+            Extras.built = true
             local boxHolder = CreateFrame("Frame", "ERFExtraFramesContainer", UIParent)
             boxHolder:Hide()
-            XF.container = boxHolder
+            Extras.container = boxHolder
         end
         local wanted = total or 5
         if wanted < 5 then
             wanted = 5
         end
 
-        for i = #XF.buttons + 1, wanted do
-            local widget = CreateFrame("Button", "ERFExtraFrame" .. i, XF.container, "SecureUnitButtonTemplate")
+        for i = #Extras.buttons + 1, wanted do
+            local widget = CreateFrame("Button", "ERFExtraFrame" .. i, Extras.container, "SecureUnitButtonTemplate")
             widget:Hide()
             GetFFD(widget)._isExtra = true
             mod._StyleButtonSecure(widget)
@@ -582,9 +582,9 @@ do
                     end
                 end
             end)
-            XF.trackers[i] = t
+            Extras.trackers[i] = t
 
-            XF.buttons[i] = widget
+            Extras.buttons[i] = widget
         end
     end
 
@@ -599,29 +599,29 @@ do
         if not saved or not saved.profile then
             return
         end
-        local set = XF.Settings()
+        local set = Extras.Settings()
         if not set then
             return
         end
         if InCombatLockdown() then
-            XF.applyDirty = true
+            Extras.applyDirty = true
             return
         end
 
-        local units = XF.ShouldBeActive() and XF.ResolveUnits() or {}
-        XF.activeCount = #units
+        local units = Extras.ShouldBeActive() and Extras.ResolveUnits() or {}
+        Extras.activeCount = #units
         if #units == 0 then
-            if XF.built then
-                for _, btn in ipairs(XF.buttons) do
+            if Extras.built then
+                for _, btn in ipairs(Extras.buttons) do
                     btn:Hide()
                 end
-                XF.container:Hide()
-                for i = 1, #XF.trackers do
-                    XF.trackers[i]:UnregisterAllEvents()
+                Extras.container:Hide()
+                for i = 1, #Extras.trackers do
+                    Extras.trackers[i]:UnregisterAllEvents()
                 end
             end
-            if XF.mover then
-                XF.mover:Hide()
+            if Extras.mover then
+                Extras.mover:Hide()
             end
             wipe(mod._xfUnitToButton)
             -- The boss group may have been chained behind this container;
@@ -633,15 +633,15 @@ do
             return
         end
 
-        XF.EnsureBuilt(#units)
-        XF.Layout()
-        FB.Anchor(XF)
-        XF.container:Show()
+        Extras.EnsureBuilt(#units)
+        Extras.Layout()
+        FB.Anchor(Extras)
+        Extras.container:Show()
         wipe(mod._xfUnitToButton)
-        for i = 1, #XF.buttons do
-            local widget = XF.buttons[i]
+        for i = 1, #Extras.buttons do
+            local widget = Extras.buttons[i]
             local unitToken = units[i]
-            local t = XF.trackers[i]
+            local t = Extras.trackers[i]
             t:UnregisterAllEvents()
             if unitToken then
                 -- Class token cache for the power border (mirrors RebuildUnitMap)
@@ -673,7 +673,7 @@ do
                     end
                     C_Timer.After(2, RetryName)
                 end
-                for _, ev in ipairs(XF.EVENTS) do
+                for _, ev in ipairs(Extras.EVENTS) do
                     t:RegisterUnitEvent(ev, unitToken)
                 end
                 -- UNIT_FLAGS is opt-in: extra frames mirror the raid combat-icon toggle.
@@ -707,11 +707,11 @@ do
     end
 
     function mod.XF_IsMoverShown()
-        return XF.mover and XF.mover:IsShown() or false
+        return Extras.mover and Extras.mover:IsShown() or false
     end
 
     function mod.XF_SetMoverShown(show)
-        FB.SetMoverShown(XF, show, "ERFExtraFramesMover", "Extra Frames")
+        FB.SetMoverShown(Extras, show, "ERFExtraFramesMover", "Extra Frames")
     end
 
     -- Hidden bind target (pure Lua keybinding, no Bindings.xml; same pattern as
@@ -720,14 +720,14 @@ do
     local bindBtn = CreateFrame("Button", "ERFExtraFramesBindBtn", UIParent)
     bindBtn:Hide()
 
-    XF.ToggleHovered = function()
+    Extras.ToggleHovered = function()
         if not saved or not saved.profile then
             return
         end
         if not IsInRaid() then
             return
         end
-        local set = XF.Settings()
+        local set = Extras.Settings()
         if not set then
             return
         end
@@ -741,7 +741,7 @@ do
             end
         end
         if not unitToken then
-            for _, btn in ipairs(XF.buttons) do
+            for _, btn in ipairs(Extras.buttons) do
                 if btn:IsShown() and btn:IsMouseOver() then
                     unitToken = btn:GetAttribute("unit")
                     break
@@ -776,7 +776,7 @@ do
         then
             return
         end
-        if #XF.ResolveUnits() >= XF.CAP then
+        if #Extras.ResolveUnits() >= Extras.CAP then
             return
         end
         players[#players + 1] = name
@@ -784,7 +784,7 @@ do
     end
 
     bindBtn:SetScript("OnClick", function()
-        XF.ToggleHovered()
+        Extras.ToggleHovered()
     end)
 
     -- Standing event frame: exists even while inactive so the tanks toggle or a
@@ -811,22 +811,22 @@ do
                 return
             end
             if evt == "PLAYER_REGEN_ENABLED" then
-                if XF.applyDirty then
-                    XF.applyDirty = nil
+                if Extras.applyDirty then
+                    Extras.applyDirty = nil
                     mod.XF_Apply()
                 end
-                if XF.anchorDirty then
-                    XF.anchorDirty = nil
-                    FB.Anchor(XF)
+                if Extras.anchorDirty then
+                    Extras.anchorDirty = nil
+                    FB.Anchor(Extras)
                 end
             else -- GROUP_ROSTER_UPDATE / PLAYER_ROLES_ASSIGNED
                 -- Raid indices and the tank set both shift with the roster
-                if XF.ShouldBeActive() or XF.built then
+                if Extras.ShouldBeActive() or Extras.built then
                     mod.XF_Apply()
                 end
             end
         end)
-        XF.eventFrame = ev
+        Extras.eventFrame = ev
     end
 end -- XF scope block
 

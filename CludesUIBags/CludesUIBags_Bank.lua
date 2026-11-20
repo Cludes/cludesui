@@ -263,34 +263,34 @@ end
 -------------------------------------------------------------------------------
 --  Main Frame
 -------------------------------------------------------------------------------
-local CUI_Bank = CreateFrame("Frame", "CUI_BankFrame", UIParent)
-CUI_Bank:SetToplevel(true)
+local BankWin = CreateFrame("Frame", "CUI_BankFrame", UIParent)
+BankWin:SetToplevel(true)
 do
     local frameStrata = mod.BagFrameStrata()
-    CUI_Bank:SetFrameStrata(frameStrata)
-    CUI_Bank:SetFrameLevel(frameStrata == "HIGH" and 50 or 1)
+    BankWin:SetFrameStrata(frameStrata)
+    BankWin:SetFrameLevel(frameStrata == "HIGH" and 50 or 1)
 end
-CUI_Bank:EnableMouse(true)
-CUI_Bank:SetMovable(true)
-CUI_Bank:SetClampedToScreen(true)
-CUI_Bank:Hide()
+BankWin:EnableMouse(true)
+BankWin:SetMovable(true)
+BankWin:SetClampedToScreen(true)
+BankWin:Hide()
 
 -- Background: atlas matching bags module (full alpha, covers entire window)
-local bgAtlas = CUI_Bank:CreateTexture(nil, "BACKGROUND")
+local bgAtlas = BankWin:CreateTexture(nil, "BACKGROUND")
 bgAtlas:SetAllPoints()
 bgAtlas:SetTexture("Interface\\AddOns\\CludesUI\\media\\modern_blizz.png")
-local bgOverlay = CUI_Bank:CreateTexture(nil, "BACKGROUND", nil, 1)
+local bgOverlay = BankWin:CreateTexture(nil, "BACKGROUND", nil, 1)
 bgOverlay:SetAllPoints()
 bgOverlay:SetColorTexture(0, 0, 0, 0.25)
-CUI_Bank._bg, CUI_Bank._bgOverlay = bgAtlas, bgOverlay -- background color/opacity
-CUI_Bank._flatBorder = CUI.MakeBorder(CUI_Bank, 1, 1, 1, 0.15, CUI.PP)._frame
+BankWin._bg, BankWin._bgOverlay = bgAtlas, bgOverlay -- background color/opacity
+BankWin._flatBorder = CUI.MakeBorder(BankWin, 1, 1, 1, 0.15, CUI.PP)._frame
 
 -------------------------------------------------------------------------------
 --  Header
 -------------------------------------------------------------------------------
-local headerBar = CreateFrame("Frame", nil, CUI_Bank)
-headerBar:SetPoint("TOPLEFT", CUI_Bank, "TOPLEFT", 0, 0)
-headerBar:SetPoint("TOPRIGHT", CUI_Bank, "TOPRIGHT", 0, 0)
+local headerBar = CreateFrame("Frame", nil, BankWin)
+headerBar:SetPoint("TOPLEFT", BankWin, "TOPLEFT", 0, 0)
+headerBar:SetPoint("TOPRIGHT", BankWin, "TOPRIGHT", 0, 0)
 headerBar:SetHeight(HEADER_H)
 local hdrBg = headerBar:CreateTexture(nil, "BACKGROUND", nil, 1)
 hdrBg:SetAllPoints()
@@ -301,13 +301,13 @@ SetBankFont(titleText, 13)
 titleText:SetPoint("LEFT", headerBar, "LEFT", 8, 0)
 titleText:SetTextColor(1, 1, 1)
 titleText:SetText(CludesUI.L("Bank"))
-CUI_Bank._headerTitle = titleText -- the alt button sits next to this
+BankWin._headerTitle = titleText -- the alt button sits next to this
 
 local itemCount = headerBar:CreateFontString(nil, "OVERLAY")
 SetBankFont(itemCount, 11)
 itemCount:SetPoint("LEFT", titleText, "RIGHT", 8, 0)
 itemCount:SetTextColor(0.6, 0.6, 0.6)
-CUI_Bank._headerItemCount = itemCount
+BankWin._headerItemCount = itemCount
 
 -- Search box
 local searchBox = CreateFrame("EditBox", "CUI_BankSearchBox", headerBar)
@@ -328,7 +328,7 @@ SetBankFont(searchPlaceholder, 11)
 searchPlaceholder:SetPoint("LEFT", searchBox, "LEFT", 5, 0)
 searchPlaceholder:SetText(CludesUI.L("Search..."))
 searchPlaceholder:SetTextColor(0.4, 0.4, 0.4)
-CUI_Bank._searchBox = searchBox
+BankWin._searchBox = searchBox
 
 -- Search clear button
 local clearSearchBtn = CreateFrame("Button", nil, searchBox)
@@ -436,7 +436,7 @@ closeBtn:SetScript("OnLeave", function()
     closeBtn.icon:SetAlpha(0.7)
 end)
 closeBtn:SetScript("OnClick", function()
-    CUI_Bank:Hide()
+    BankWin:Hide()
 end)
 
 -- Header bottom-edge separator (1px physical pixel)
@@ -461,10 +461,10 @@ local bankBagsWindow
 if CUI.IS_FOREVER then
     local BANK_BAG_SLOTS = Enum.BagIndex.Characterbanktab
 
-    local bankBagsPanel = CreateFrame("Frame", nil, CUI_Bank)
+    local bankBagsPanel = CreateFrame("Frame", nil, BankWin)
     bankBagsWindow = bankBagsPanel
     bankBagsPanel:Hide()
-    bankBagsPanel:SetFrameLevel(CUI_Bank:GetFrameLevel() + 20)
+    bankBagsPanel:SetFrameLevel(BankWin:GetFrameLevel() + 20)
     bankBagsPanel:EnableMouse(true)
     bankBagsPanel:SetClampedToScreen(true)
     local winBg = bankBagsPanel:CreateTexture(nil, "BACKGROUND")
@@ -473,7 +473,7 @@ if CUI.IS_FOREVER then
     CUI.PanelPP.CreateBorder(bankBagsPanel, 0.1, 0.1, 0.1, 1, 1, "OVERLAY", 7)
 
     local bankBagsBtn = CreateFrame("Button", nil, headerBar)
-    CUI_Bank._bagsBtn = bankBagsBtn
+    BankWin._bagsBtn = bankBagsBtn
     bankBagsBtn:SetSize(24, 24)
     bankBagsBtn:SetPoint("RIGHT", sortButton, "LEFT", -6, 0)
     bankBagsBtn.icon = bankBagsBtn:CreateTexture(nil, "ARTWORK")
@@ -605,9 +605,9 @@ end
 --  Footer: Player Gold (left) + Warband Gold (right)
 -------------------------------------------------------------------------------
 do
-    local footerBar = CreateFrame("Frame", nil, CUI_Bank)
-    footerBar:SetPoint("BOTTOMLEFT", CUI_Bank, "BOTTOMLEFT", 0, 0)
-    footerBar:SetPoint("BOTTOMRIGHT", CUI_Bank, "BOTTOMRIGHT", 0, 0)
+    local footerBar = CreateFrame("Frame", nil, BankWin)
+    footerBar:SetPoint("BOTTOMLEFT", BankWin, "BOTTOMLEFT", 0, 0)
+    footerBar:SetPoint("BOTTOMRIGHT", BankWin, "BOTTOMRIGHT", 0, 0)
     footerBar:SetHeight(FOOTER_H)
     local ftrBg = footerBar:CreateTexture(nil, "BACKGROUND", nil, 1)
     ftrBg:SetAllPoints()
@@ -622,7 +622,7 @@ do
     ftrSep:SetPoint("TOPRIGHT", footerBar, "TOPRIGHT", 0, 0)
     ftrSep:SetColorTexture(0.15, 0.15, 0.15, 1)
     footerBar.bg, footerBar.separator = ftrBg, ftrSep
-    CUI_Bank.Footer = footerBar
+    BankWin.Footer = footerBar
 
     -- Shared formatting
     local GOLD_ICON = "|TInterface\\MoneyFrame\\UI-GoldIcon:14:14:0:0|t"
@@ -673,7 +673,7 @@ do
     warbandMoney:SetPoint("RIGHT", footerBar, "RIGHT", -10, 0)
     warbandMoney:SetTextColor(1, 1, 1)
     -- The resize grip's inset moves it clear of the grip (_bankGripCfg)
-    CUI_Bank._warbandGoldText = warbandMoney
+    BankWin._warbandGoldText = warbandMoney
 
     local warbandHitbox = CreateFrame("Frame", nil, footerBar)
     warbandHitbox:SetPoint("TOPLEFT", warbandMoney, "TOPLEFT", -4, 4)
@@ -804,13 +804,13 @@ do
         end
     end)
 
-    function CUI_Bank:UpdateFooterGold()
+    function BankWin:UpdateFooterGold()
         local GL = CUI.GetGoldLedger()
         goldText:SetText(FormatGold(GL.Money() or 0))
         warbandMoney:SetText(FormatGold(GL.WarbandMoney() or 0))
     end
 
-    function CUI_Bank:UpdateDepositButton(warbandBank)
+    function BankWin:UpdateDepositButton(warbandBank)
         if warbandBank then
             depositText:SetText(CludesUI.L("Deposit Warbound Items"))
             depositAllBtn._bankType = Enum.BankType.Account
@@ -830,7 +830,7 @@ end
 -------------------------------------------------------------------------------
 --  Drag to Move (not while the footer's lock icon is locked)
 -------------------------------------------------------------------------------
-CUI_Bank:SetScript("OnMouseDown", function(self, btnFrame)
+BankWin:SetScript("OnMouseDown", function(self, btnFrame)
     self:Raise()
     self:RepinIconLevels()
     if btnFrame == "LeftButton" and not BagsProfile().bankWindowLocked then
@@ -838,7 +838,7 @@ CUI_Bank:SetScript("OnMouseDown", function(self, btnFrame)
         self._moving = true
     end
 end)
-CUI_Bank:SetScript("OnMouseUp", function(self, btnFrame)
+BankWin:SetScript("OnMouseUp", function(self, btnFrame)
     if self._moving then
         self:StopMovingOrSizing()
         self._moving = nil
@@ -853,7 +853,7 @@ end)
 -------------------------------------------------------------------------------
 -- Bank Tab Settings Dialog
 -------------------------------------------------------------------------------
-local CUI_BankTabConfigFrame = CreateFrame("Frame", "CUI_BankFrame_TabSettingsMenu", CUI_Bank)
+local CUI_BankTabConfigFrame = CreateFrame("Frame", "CUI_BankFrame_TabSettingsMenu", BankWin)
 CUI_BankTabConfigFrame:SetWidth(240) -- Height is automatically determined by content
 CUI_BankTabConfigFrame:SetFrameStrata("DIALOG")
 CUI_BankTabConfigFrame:Hide()
@@ -1146,7 +1146,7 @@ local function EnsureBankTabConfigFrame()
     function CUI_BankTabConfigFrame:OpenBankTabSettings(tabInfo, tabId)
         self:Hide()
         self:ClearAllPoints()
-        self:SetPoint("TOPLEFT", CUI_Bank, "TOPRIGHT", PADDING_X, 0)
+        self:SetPoint("TOPLEFT", BankWin, "TOPRIGHT", PADDING_X, 0)
 
         -- Save datas for use in Save button logic
         self.bankType = tabInfo.isWarband and Enum.BankType.Account or Enum.BankType.Character
@@ -1184,13 +1184,13 @@ end
 -------------------------------------------------------------------------------
 --  Sidebar
 -------------------------------------------------------------------------------
-local sideBar = CreateFrame("Frame", nil, CUI_Bank)
+local sideBar = CreateFrame("Frame", nil, BankWin)
 sideBar._leftInset = 0
 local function GetBankSidebarContentWidth()
     return GetBankSidebarWidth() - sideBar._leftInset
 end
 sideBar:SetPoint("TOPLEFT", headerBar, "BOTTOMLEFT", 0, 0)
-sideBar:SetPoint("BOTTOMLEFT", CUI_Bank, "BOTTOMLEFT", 0, FOOTER_H)
+sideBar:SetPoint("BOTTOMLEFT", BankWin, "BOTTOMLEFT", 0, FOOTER_H)
 sideBar:SetWidth(GetBankSidebarContentWidth())
 local sidebarBg = sideBar:CreateTexture(nil, "BACKGROUND", nil, 2)
 sidebarBg:SetAllPoints()
@@ -1237,7 +1237,7 @@ do
     _purchaseBtnWarband = MakeSecurePurchaseBtn(Enum.BankType.Account)
 end
 
-function CUI_Bank:ApplyWindowLayering()
+function BankWin:ApplyWindowLayering()
     local frameStrata = mod.BagFrameStrata()
     self:SetFrameStrata(frameStrata)
     -- High starts above that layer's other windows (see CUI_Bags:ApplyWindowLayering)
@@ -1253,7 +1253,7 @@ function CUI_Bank:ApplyWindowLayering()
 end
 
 -- As CUI_Bags:RepinIconLevels, for the bank's own buttons
-function CUI_Bank:RepinIconLevels()
+function BankWin:RepinIconLevels()
     mod.PinItemPool(self._bankSlots, self, "_slotPinLevel")
     mod.ResyncListRowLevels()
 end
@@ -1264,24 +1264,24 @@ local sidebarHdr, collapseBtn, UpdateBankCollapseArrow =
 
 collapseBtn:SetScript("OnClick", function()
     -- Determine which edge to preserve based on screen position
-    local center = CUI_Bank:GetCenter()
+    local center = BankWin:GetCenter()
     local screenW = UIParent:GetWidth()
     local onRightSide = center and screenW and (center > screenW / 2)
-    local oldWidth = onRightSide and CUI_Bank:GetWidth() or nil
+    local oldWidth = onRightSide and BankWin:GetWidth() or nil
 
     BagsProfile().bankSidebarCollapsed = not BagsProfile().bankSidebarCollapsed
     UpdateBankCollapseArrow()
     sideBar:SetWidth(GetBankSidebarContentWidth())
-    CUI_Bank:RefreshBank()
+    BankWin:RefreshBank()
 
     -- Shift frame by width difference to preserve right edge
     if onRightSide and oldWidth then
-        local newWidth = CUI_Bank:GetWidth()
+        local newWidth = BankWin:GetWidth()
         local shift = oldWidth - newWidth
         if math.abs(shift) > 0.5 then
-            local anchorPoint, relTo, relPoint, posX, posY = CUI_Bank:GetPoint()
-            CUI_Bank:ClearAllPoints()
-            CUI_Bank:SetPoint(anchorPoint, relTo, relPoint, posX + shift, posY)
+            local anchorPoint, relTo, relPoint, posX, posY = BankWin:GetPoint()
+            BankWin:ClearAllPoints()
+            BankWin:SetPoint(anchorPoint, relTo, relPoint, posX + shift, posY)
             BagsProfile().bankPosition = { point = anchorPoint, relativePoint = relPoint, x = posX + shift, y = posY }
         end
     end
@@ -1289,7 +1289,7 @@ end)
 
 -- Sidebar scroll frame (below header, fills rest of sidebar)
 local sidebarSF = CreateFrame("ScrollFrame", nil, sideBar)
-CUI_Bank._sidebarSF = sidebarSF -- an alt's tabs get drawn over this
+BankWin._sidebarSF = sidebarSF -- an alt's tabs get drawn over this
 sidebarSF:SetPoint("TOPLEFT", sidebarHdr, "BOTTOMLEFT", 0, 0)
 sidebarSF:SetPoint("BOTTOMRIGHT", sideBar, "BOTTOMRIGHT", 0, 0)
 sidebarSF:EnableMouseWheel(true)
@@ -1314,9 +1314,9 @@ local _sidebarBtns = {}
 -------------------------------------------------------------------------------
 --  Scroll Frame + Scrollbar
 -------------------------------------------------------------------------------
-local scrollFrame = CreateFrame("ScrollFrame", nil, CUI_Bank)
-scrollFrame:SetPoint("TOPLEFT", CUI_Bank, "TOPLEFT", GetBankSidebarWidth(), -HEADER_H)
-scrollFrame:SetPoint("BOTTOMRIGHT", CUI_Bank, "BOTTOMRIGHT", -1, FOOTER_H)
+local scrollFrame = CreateFrame("ScrollFrame", nil, BankWin)
+scrollFrame:SetPoint("TOPLEFT", BankWin, "TOPLEFT", GetBankSidebarWidth(), -HEADER_H)
+scrollFrame:SetPoint("BOTTOMRIGHT", BankWin, "BOTTOMRIGHT", -1, FOOTER_H)
 scrollFrame:EnableMouseWheel(true)
 local childFrame = CreateFrame("Frame", nil, scrollFrame)
 childFrame:SetWidth(1)
@@ -1325,15 +1325,15 @@ childFrame:EnableMouse(false)
 scrollFrame:SetScrollChild(childFrame)
 
 -- Track (always visible when content scrolls)
-local track, thumb, UpdateThumb = mod.AttachGridScrollbar(CUI_Bank, scrollFrame, false, true)
+local track, thumb, UpdateThumb = mod.AttachGridScrollbar(BankWin, scrollFrame, false, true)
 track:SetPoint("TOPRIGHT", headerBar, "BOTTOMRIGHT", -1, -1)
-track:SetPoint("BOTTOMRIGHT", CUI_Bank, "BOTTOMRIGHT", -1, FOOTER_H)
+track:SetPoint("BOTTOMRIGHT", BankWin, "BOTTOMRIGHT", -1, FOOTER_H)
 
-CUI_Bank._scrollFrame = scrollFrame
-CUI_Bank._scrollChild = childFrame
-CUI_Bank._scrollTrack = track
-CUI_Bank._scrollThumb = thumb
-CUI_Bank._updateThumb = UpdateThumb
+BankWin._scrollFrame = scrollFrame
+BankWin._scrollChild = childFrame
+BankWin._scrollTrack = track
+BankWin._scrollThumb = thumb
+BankWin._updateThumb = UpdateThumb
 
 -------------------------------------------------------------------------------
 --  Base bank slots (WoW Forever)
@@ -1356,7 +1356,7 @@ if CUI.IS_FOREVER then
     end
 
     local function BuildPrompt()
-        promptText = CreateFrame("Frame", nil, CUI_Bank)
+        promptText = CreateFrame("Frame", nil, BankWin)
         promptText:SetPoint("TOPLEFT", scrollFrame, "TOPLEFT", 0, 0)
         promptText:SetPoint("BOTTOMRIGHT", scrollFrame, "BOTTOMRIGHT", 0, 0)
         promptText:SetFrameLevel(scrollFrame:GetFrameLevel() + 10)
@@ -1414,13 +1414,13 @@ end
 -------------------------------------------------------------------------------
 local _bankSlots = {}
 local _bankSlotIdx = 0
-CUI_Bank._bankSlots = _bankSlots
+BankWin._bankSlots = _bankSlots
 
 --- Returns the bagID of the currently selected bank tab, or nil if viewing
 --- "All Tabs" / "OneBank" (in which case default Blizzard routing applies).
 --- For aggregate warband views (-2, -3), returns the first warband tab
 --- with an empty slot so right-click deposits go to warband, not character bank.
-function CUI_Bank:GetSelectedTabBagID()
+function BankWin:GetSelectedTabBagID()
     if _selectedView == -2 or _selectedView == -3 then
         -- Aggregate warband view: find first warband tab with space
         for _, tabBtn in ipairs(_allTabs) do
@@ -1444,7 +1444,7 @@ end
 
 --- Bags an Auto Split from srcBag may fill: the source tab first, then the
 --- other tabs of the same bank type. Character and warband slots never mix.
-function CUI_Bank:GetSplitTargetBags(sourceBag)
+function BankWin:GetSplitTargetBags(sourceBag)
     local targets = { sourceBag }
     local warbandBank = false
     for _, tabBtn in ipairs(_allTabs) do
@@ -1462,7 +1462,7 @@ end
 
 --- Returns true if the current view is any warband view (all warbank,
 --- onewarbank, or an individual warband tab).
-function CUI_Bank:IsWarbandView()
+function BankWin:IsWarbandView()
     if _selectedView == -2 or _selectedView == -3 then
         return true
     end
@@ -1489,8 +1489,8 @@ local _lastTSMBankType = nil
 
 if not _G.Addon_GetBankType then
     _G.Addon_GetBankType = function()
-        if CUI_Bank:IsVisible() then
-            return CUI_Bank:IsWarbandView() and Enum.BankType.Account or Enum.BankType.Character
+        if BankWin:IsVisible() then
+            return BankWin:IsWarbandView() and Enum.BankType.Account or Enum.BankType.Character
         end
         if BankFrame and BankFrame.GetActiveBankType then
             return BankFrame:GetActiveBankType()
@@ -1684,7 +1684,7 @@ end
 
 --- Public: queue a bag item for transfer to the selected bank tab.
 --- Called from the bag button PreClick hook.
-function CUI_Bank:QueueTransfer(sourceBag, srcSlot)
+function BankWin:QueueTransfer(sourceBag, srcSlot)
     EnsureTransferEventFrame()
     _transferEventFrame:RegisterEvent("BAG_UPDATE")
     if not ProcessTransfer(sourceBag, srcSlot) then
@@ -1695,7 +1695,7 @@ end
 -- A slot or row skipped in combat is filled by one refresh at combat end
 -- (RefreshBank returns while the bank is closed).
 local function RetryBankRefresh()
-    CUI_Bank:RefreshBank()
+    BankWin:RefreshBank()
 end
 local function QueueBankRetry()
     mod.CombatQueue.Defer("bankRetry", RetryBankRefresh)
@@ -1710,16 +1710,16 @@ local function GetOrCreateBankSlot(position)
         QueueBankRetry()
         return nil
     end
-    local slotParent = CreateFrame("Frame", nil, CUI_Bank)
+    local slotParent = CreateFrame("Frame", nil, BankWin)
     mod.SizeSlot(slotParent)
     local button = CreateFrame("ItemButton", nil, slotParent, "ContainerFrameItemButtonTemplate")
-    mod.PinItemButton(button, CUI_Bank)
+    mod.PinItemButton(button, BankWin)
     button:SetAllPoints(slotParent)
     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     button:RegisterForDrag("LeftButton")
 
     button:HookScript("PostClick", function(self)
-        CUI_Bags.ShowStackSplitter(self, CUI_Bank:GetSplitTargetBags(self:GetParent():GetID()), CUI_Bank)
+        CUI_Bags.ShowStackSplitter(self, BankWin:GetSplitTargetBags(self:GetParent():GetID()), BankWin)
     end)
 
     -- OnReceiveDrag: handles native Blizzard drags (shift-click pickup etc.)
@@ -1749,7 +1749,7 @@ local _bankRows = {}
 -- switching needs a reload, so only one bank display builds per session.
 -- "grid" | "list" | "compact", from ns.BankDisplayMode (CludesUIBags_Compact.lua).
 local _bankMode
-function CUI_Bank.IsListMode()
+function BankWin.IsListMode()
     if _bankMode == nil then
         if not CUI.Lite.IsDBReady() then
             return nil
@@ -1759,8 +1759,8 @@ function CUI_Bank.IsListMode()
     return _bankMode == "list"
 end
 -- Compact display: the grid's entries packed into full rows (same latch)
-function CUI_Bank.IsCompactMode()
-    if CUI_Bank.IsListMode() == nil then
+function BankWin.IsCompactMode()
+    if BankWin.IsListMode() == nil then
         return nil
     end
     return _bankMode == "compact"
@@ -1775,9 +1775,9 @@ local function GetOrCreateBankRow(position)
         QueueBankRetry()
         return nil
     end
-    local button = mod.CreateListRow(CUI_Bank)
+    local button = mod.CreateListRow(BankWin)
     button:HookScript("PostClick", function(self)
-        CUI_Bags.ShowStackSplitter(self, CUI_Bank:GetSplitTargetBags(self:GetParent():GetID()), CUI_Bank)
+        CUI_Bags.ShowStackSplitter(self, BankWin:GetSplitTargetBags(self:GetParent():GetID()), BankWin)
     end)
     button:SetScript("OnReceiveDrag", function(self)
         C_Container.PickupContainerItem(self:GetParent():GetID(), self:GetID())
@@ -1891,10 +1891,10 @@ do
         if not result then
             result = mod.CompactNewOut()
         end
-        local pool = CUI_Bank._compactLabels
+        local pool = BankWin._compactLabels
         if not pool then
             pool = {}
-            CUI_Bank._compactLabels = pool
+            BankWin._compactLabels = pool
         end
         mod.CompactHideLabels(pool, 1)
         local num = mod.CompactSegmentLayout(layout, size, labelText, labelEntry)
@@ -1905,7 +1905,7 @@ do
             if textValue then
                 k = k + 1
                 labelW[g] =
-                    mod.CompactMeasureLabel(mod.CompactLabel(pool, k, CUI_Bank), textValue, LABEL_SIZE)
+                    mod.CompactMeasureLabel(mod.CompactLabel(pool, k, BankWin), textValue, LABEL_SIZE)
                 local leftEdge = labelEntries[k]
                 if not leftEdge then
                     leftEdge = {
@@ -2327,7 +2327,7 @@ local function GetOrCreateBankHeader(position)
     if _bankHeaders[position] then
         return _bankHeaders[position]
     end
-    local frame = CreateFrame("Frame", nil, CUI_Bank)
+    local frame = CreateFrame("Frame", nil, BankWin)
     frame:SetHeight(20)
     frame._label = frame:CreateFontString(nil, "OVERLAY")
     SetBankFont(frame._label, 11)
@@ -2357,7 +2357,7 @@ local function ReadBankTabs()
         tab.isWarband = true
         _allTabs[#_allTabs + 1] = tab
     end
-    CUI_Bank._allTabs = _allTabs
+    BankWin._allTabs = _allTabs
 end
 
 -- Fast font size update for bank slots (mirrors bags RefreshTextSizes)
@@ -2385,7 +2385,7 @@ local function RefreshBankTextSizes()
         end
     end
 end
-CUI_Bank.RefreshTextSizes = RefreshBankTextSizes
+BankWin.RefreshTextSizes = RefreshBankTextSizes
 
 -- Fast icon-zoom update for bank slots (mirrors bags RefreshIconZoom)
 local function RefreshBankIconZoom()
@@ -2396,7 +2396,7 @@ local function RefreshBankIconZoom()
         end
     end
 end
-CUI_Bank.RefreshIconZoom = RefreshBankIconZoom
+BankWin.RefreshIconZoom = RefreshBankIconZoom
 
 local function CountUsedSlots(bagId, slotCount)
     local used = 0
@@ -2422,7 +2422,7 @@ local _bankGripCfg = {
         UpdateThumb()
     end,
     finish = function()
-        CUI_Bank:RefreshBank()
+        BankWin:RefreshBank()
     end,
     savePos = function(leftX, topY)
         BagsProfile().bankPosition = { point = "TOPLEFT", relativePoint = "BOTTOMLEFT", x = leftX, y = topY }
@@ -2430,11 +2430,11 @@ local _bankGripCfg = {
     reset = function()
         local profile = BagsProfile()
         profile.bankColumns, profile.bankHeight, profile.bankListWidth = nil, nil, nil
-        CUI_Bank:RefreshBank()
+        BankWin:RefreshBank()
     end,
     -- The warband gold text sits at the footer's right edge
     inset = function(px)
-        local wg = CUI_Bank._warbandGoldText
+        local wg = BankWin._warbandGoldText
         if not wg then
             return
         end
@@ -2474,7 +2474,7 @@ local _bankListGripCfg = setmetatable({
 mod.OnSlotMetrics(function(m)
     _bankGripCfg.step = m[1] + m[2]
     _bankGripCfg.minCols = math.max(1, math.ceil(8 * 38 / (m[1] + m[2])))
-    CUI_Bank._compactCols, CUI_Bank._compactW = nil, nil
+    BankWin._compactCols, BankWin._compactW = nil, nil
     for _, frame in pairs(_bankHeaders) do
         frame._line:ClearAllPoints()
         frame._line:SetPoint("LEFT", frame._label, "RIGHT", 6, 0)
@@ -2486,8 +2486,8 @@ mod.OnSlotMetrics(function(m)
 end)
 
 local BuildBankSidebar -- defined further down
-function CUI_Bank:RefreshBank()
-    if not CUI_Bank:IsVisible() then
+function BankWin:RefreshBank()
+    if not BankWin:IsVisible() then
         return
     end
     local forever = mod.BagsForever()
@@ -2514,8 +2514,8 @@ function CUI_Bank:RefreshBank()
 
     -- Search filter
     local searchQuery = ""
-    if CUI_Bank._searchBox then
-        searchQuery = CUI_Bank._searchBox:GetText() or ""
+    if BankWin._searchBox then
+        searchQuery = BankWin._searchBox:GetText() or ""
     end
     local hasSearch = searchQuery ~= ""
 
@@ -2530,14 +2530,14 @@ function CUI_Bank:RefreshBank()
     sideBar:SetWidth(GetBankSidebarContentWidth())
     local rightInset = forever and 7 or 1
     scrollFrame:ClearAllPoints()
-    scrollFrame:SetPoint("TOPLEFT", CUI_Bank, "TOPLEFT", sidebarW, -HEADER_H)
-    scrollFrame:SetPoint("BOTTOMRIGHT", CUI_Bank, "BOTTOMRIGHT", -rightInset, FOOTER_H)
+    scrollFrame:SetPoint("TOPLEFT", BankWin, "TOPLEFT", sidebarW, -HEADER_H)
+    scrollFrame:SetPoint("BOTTOMRIGHT", BankWin, "BOTTOMRIGHT", -rightInset, FOOTER_H)
 
     local gridPadX = 10
     local COLUMNS = GetBankColumns()
     local gridWidth = COLUMNS * (SLOT_SIZE + SPACING)
     -- List rows take the grip-set width, by default the default pitch's
-    if CUI_Bank.IsListMode() then
+    if BankWin.IsListMode() then
         gridWidth = BagsProfile().bankListWidth or COLUMNS * LIST_PITCH
     end
     local startX = gridPadX + 5
@@ -2545,8 +2545,8 @@ function CUI_Bank:RefreshBank()
 
     -- Set frame size BEFORE rendering so scroll frame has non-zero bounds
     local totalW = sidebarW + gridWidth + gridPadX * 2 + SCROLLBAR_HIT_W + 2
-    CUI_Bank:SetWidth(totalW)
-    CUI_Bank:SetHeight(GetBankHeight())
+    BankWin:SetWidth(totalW)
+    BankWin:SetHeight(GetBankHeight())
     childFrame:SetWidth(gridWidth + contentPad)
 
     -- Helper: check if a slot passes the search filter
@@ -2939,15 +2939,15 @@ function CUI_Bank:RefreshBank()
     end
 
     local listCols, listRowW
-    if CUI_Bank.IsListMode() then
+    if BankWin.IsListMode() then
         -- Left / Right Gap: space between the list area edges and the rows
         local listX = BagsProfile().bagListGapL or 15
         listRowW = math.max(100, gridWidth + contentPad - listX - (BagsProfile().bagListGapR or 23))
         _layout, nextY = ToListLayout(_layout, startX, listX)
         listCols = mod.ListLayoutColumns(listRowW)
-        local hdrH = mod.UpdateListHeaderBar(CUI_Bank, listCols, sidebarW, -HEADER_H, listX)
-        scrollFrame:SetPoint("TOPLEFT", CUI_Bank, "TOPLEFT", sidebarW, -(HEADER_H + hdrH))
-    elseif CUI_Bank.IsCompactMode() then
+        local hdrH = mod.UpdateListHeaderBar(BankWin, listCols, sidebarW, -HEADER_H, listX)
+        scrollFrame:SetPoint("TOPLEFT", BankWin, "TOPLEFT", sidebarW, -(HEADER_H + hdrH))
+    elseif BankWin.IsCompactMode() then
         -- Compact: the same entries as blocks, each under a thin label band.
         -- The window drops the remainder its widest band leaves short of the
         -- columns, less than a cell; while open it only grows back, and a new
@@ -2955,16 +2955,16 @@ function CUI_Bank:RefreshBank()
         local contentW
         _layout, nextY, contentW = ToCompactLayout(_layout, startX, COLUMNS)
         if contentW and contentW < gridWidth then
-            if CUI_Bank._compactCols ~= COLUMNS then
-                CUI_Bank._compactCols, CUI_Bank._compactW = COLUMNS, contentW
-            elseif contentW > (CUI_Bank._compactW or 0) then
-                CUI_Bank._compactW = contentW
+            if BankWin._compactCols ~= COLUMNS then
+                BankWin._compactCols, BankWin._compactW = COLUMNS, contentW
+            elseif contentW > (BankWin._compactW or 0) then
+                BankWin._compactW = contentW
             end
-            gridWidth = CUI_Bank._compactW
+            gridWidth = BankWin._compactW
         else
-            CUI_Bank._compactCols, CUI_Bank._compactW = COLUMNS, gridWidth
+            BankWin._compactCols, BankWin._compactW = COLUMNS, gridWidth
         end
-        CUI_Bank:SetWidth(sidebarW + gridWidth + gridPadX * 2 + SCROLLBAR_HIT_W + 2)
+        BankWin:SetWidth(sidebarW + gridWidth + gridPadX * 2 + SCROLLBAR_HIT_W + 2)
         childFrame:SetWidth(gridWidth + contentPad)
     end
 
@@ -2973,15 +2973,15 @@ function CUI_Bank:RefreshBank()
     if not isWarbandView and _selectedView > 0 and _allTabs[_selectedView] then
         isWarbandView = _allTabs[_selectedView].isWarband
     end
-    CUI_Bank:UpdateDepositButton(isWarbandView)
+    BankWin:UpdateDepositButton(isWarbandView)
 
     -- Set scroll child height from layout
     childFrame:SetHeight(math.abs(nextY) + 10)
 
     -- Phase 2: render the layout, 100 entries per frame (all at once while the resize grip is dragged).
-    CUI_Bank._layout = _layout
-    CUI_Bank._layoutStartX = startX
-    CUI_Bank._layoutGridW = gridWidth
+    BankWin._layout = _layout
+    BankWin._layoutStartX = startX
+    BankWin._layoutGridW = gridWidth
 
     -- Shared slot render: updates a single button with item or empty state
     -- One reused data table for third-party overlay painters (CUI_Bags.RunItemOverlays).
@@ -3174,7 +3174,7 @@ function CUI_Bank:RefreshBank()
 
     -- Render in batches of 100 per frame via OnUpdate. While the resize grip
     -- is dragged, render everything this frame so headers never blink.
-    local BATCH_SIZE = CUI_Bank._resizing and math.huge or 100
+    local BATCH_SIZE = BankWin._resizing and math.huge or 100
     local wasRendered = 0
     local slotIdx, rowIdx = 0, 0
 
@@ -3185,7 +3185,7 @@ function CUI_Bank:RefreshBank()
             if record.isHeader then
                 if record.compact then
                     -- Compact group label (font and text set by ToCompactLayout)
-                    local lf = mod.CompactLabel(CUI_Bank._compactLabels, record.headerIdx, CUI_Bank)
+                    local lf = mod.CompactLabel(BankWin._compactLabels, record.headerIdx, BankWin)
                     mod.CompactShowLabel(
                         lf,
                         childFrame,
@@ -3270,15 +3270,15 @@ function CUI_Bank:RefreshBank()
     -- Render first batch immediately (same frame) so item moves don't blink.
     -- Remaining batches deferred via OnUpdate for large refreshes (tab open).
     RenderBatch()
-    if not CUI_Bank._batchFrame then
-        CUI_Bank._batchFrame = CreateFrame("Frame")
+    if not BankWin._batchFrame then
+        BankWin._batchFrame = CreateFrame("Frame")
     end
     if wasRendered >= #_layout then
-        CUI_Bank._batchFrame:SetScript("OnUpdate", nil)
+        BankWin._batchFrame:SetScript("OnUpdate", nil)
         HideUnused()
     else
-        CUI_Bank._batchFrame:SetScript("OnUpdate", function(self)
-            if wasRendered >= #_layout or not CUI_Bank:IsVisible() then
+        BankWin._batchFrame:SetScript("OnUpdate", function(self)
+            if wasRendered >= #_layout or not BankWin:IsVisible() then
                 self:SetScript("OnUpdate", nil)
                 HideUnused()
                 return
@@ -3298,7 +3298,7 @@ function CUI_Bank:RefreshBank()
 
     -- Build sidebar
     BuildBankSidebar()
-    mod.UpdateResizeGrip(CUI_Bank, CUI_Bank.IsListMode() and _bankListGripCfg or _bankGripCfg)
+    mod.UpdateResizeGrip(BankWin, BankWin.IsListMode() and _bankListGripCfg or _bankGripCfg)
 end
 
 -------------------------------------------------------------------------------
@@ -3528,7 +3528,7 @@ local function FinishDrag(apply)
             end
         end
     end
-    CUI_Bank:RefreshBank()
+    BankWin:RefreshBank()
     if CUI_Bags:IsVisible() then
         CUI_Bags:RefreshInventory()
     end
@@ -3708,10 +3708,10 @@ function BuildBankSidebar()
                     _catSel = nil
                     _selectedView = self._viewIdx
                 end
-                if CUI_Bank._scrollFrame then
-                    CUI_Bank._scrollFrame:SetVerticalScroll(0)
+                if BankWin._scrollFrame then
+                    BankWin._scrollFrame:SetVerticalScroll(0)
                 end
-                CUI_Bank:RefreshBank()
+                BankWin:RefreshBank()
                 -- Refresh bags so warbank dim overlay updates immediately
                 if _G.CUI_Bags and _G.CUI_Bags:IsVisible() and _G.CUI_Bags.RefreshInventory then
                     _G.CUI_Bags:RefreshInventory()
@@ -3839,11 +3839,11 @@ function BuildBankSidebar()
     end
 
     -- Update header item count
-    if CUI_Bank._headerItemCount then
+    if BankWin._headerItemCount then
         if _warbandOnly then
-            CUI_Bank._headerItemCount:SetText(CludesUI.Lf("%d / %d Slots", warbUsed, warbTotal))
+            BankWin._headerItemCount:SetText(CludesUI.Lf("%d / %d Slots", warbUsed, warbTotal))
         else
-            CUI_Bank._headerItemCount:SetText(
+            BankWin._headerItemCount:SetText(
                 CludesUI.Lf("%d / %d Slots", charUsed + warbUsed, charTotal + warbTotal)
             )
         end
@@ -4202,8 +4202,8 @@ local function ScheduleBankRefresh()
     bankRefreshPending = true
     C_Timer.After(0.1, function()
         bankRefreshPending = false
-        if CUI_Bank:IsVisible() then
-            CUI_Bank:RefreshBank()
+        if BankWin:IsVisible() then
+            BankWin:RefreshBank()
             if RefreshBankBags then
                 RefreshBankBags()
             end
@@ -4215,7 +4215,7 @@ end
 -- Alt-Z also fires OnHide but leaves IsShown true.
 CUI_Bags:HookScript("OnHide", function(self)
     if not self:IsShown() then
-        CUI_Bank._autoOpenedBags = false
+        BankWin._autoOpenedBags = false
     end
 end)
 
@@ -4248,28 +4248,28 @@ watcher:SetScript("OnEvent", function(_, evt)
             _selectedView = oneBagDefault and -3 or -2
         end
         -- Position
-        CUI_Bank:ClearAllPoints()
+        BankWin:ClearAllPoints()
         if BagsProfile().bankPosition then
             local place = BagsProfile().bankPosition
-            CUI_Bank:SetPoint(place.point, UIParent, place.relativePoint, place.x, place.y)
+            BankWin:SetPoint(place.point, UIParent, place.relativePoint, place.x, place.y)
         else
-            CUI_Bank:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 15, -100)
+            BankWin:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 15, -100)
         end
         -- Clear search on open
-        if CUI_Bank._searchBox then
-            CUI_Bank._searchBox:SetText("")
-            CUI_Bank._searchBox:ClearFocus()
+        if BankWin._searchBox then
+            BankWin._searchBox:SetText("")
+            BankWin._searchBox:ClearFocus()
         end
         CUI_Bags.ClearSearch()
         local bankScale = BagsProfile().bagScale or 1
-        CUI_Bank:SetScale(bankScale)
-        CUI_Bank:Show()
-        CUI_Bank:Raise()
-        CUI_Bank:RepinIconLevels()
+        BankWin:SetScale(bankScale)
+        BankWin:Show()
+        BankWin:Raise()
+        BankWin:RepinIconLevels()
         -- Controller cursor: scroll step buttons and a visible scrollbar,
         -- built only once a controller is in use.
-        if CUI_Bank._padBuilt or CUI.PadInUse() then
-            CUI_Bank._padBuilt = true
+        if BankWin._padBuilt or CUI.PadInUse() then
+            BankWin._padBuilt = true
             local enabled = CUI.PadInUse()
             track.PadSync(enabled)
             mod.PadSidebarSync(sidebarHdr, sidebarSF, sideChild, "bankSidebarCollapsed", enabled)
@@ -4280,9 +4280,9 @@ watcher:SetScript("OnEvent", function(_, evt)
             if CUI_Bags.RefreshInventory then
                 CUI_Bags:RefreshInventory()
             end
-            CUI_Bank._autoOpenedBags = true
+            BankWin._autoOpenedBags = true
         else
-            CUI_Bank._autoOpenedBags = false
+            BankWin._autoOpenedBags = false
             -- Refresh bags so warbank dim overlay applies immediately
             if CUI_Bags and CUI_Bags:IsVisible() and CUI_Bags.RefreshInventory then
                 CUI_Bags:RefreshInventory()
@@ -4290,24 +4290,24 @@ watcher:SetScript("OnEvent", function(_, evt)
         end
         -- Set initial size so frame is visible immediately
         local gridWidth = GetBankColumns() * (SLOT_SIZE + SPACING)
-        CUI_Bank:SetWidth(GetBankSidebarWidth() + gridWidth + 10 * 2 + SCROLLBAR_HIT_W + 2)
-        CUI_Bank:SetHeight(GetBankHeight())
+        BankWin:SetWidth(GetBankSidebarWidth() + gridWidth + 10 * 2 + SCROLLBAR_HIT_W + 2)
+        BankWin:SetHeight(GetBankHeight())
         -- Bank item data loads asynchronously after BANKFRAME_OPENED.
         -- Defer discovery + refresh to next frame via OnUpdate.
-        if not CUI_Bank._openPoller then
-            CUI_Bank._openPoller = CreateFrame("Frame")
+        if not BankWin._openPoller then
+            BankWin._openPoller = CreateFrame("Frame")
         end
-        CUI_Bank._openPoller:SetScript("OnUpdate", function(self)
+        BankWin._openPoller:SetScript("OnUpdate", function(self)
             self:SetScript("OnUpdate", nil)
-            if not CUI_Bank:IsVisible() then
+            if not BankWin:IsVisible() then
                 return
             end
             ReadBankTabs()
-            CUI_Bank:RefreshBank()
+            BankWin:RefreshBank()
             if RefreshBankBags then
                 RefreshBankBags()
             end
-            CUI_Bank:UpdateFooterGold()
+            BankWin:UpdateFooterGold()
             -- Money data is ready once the tabs are: the open event can land before it.
             CUI.GetGoldLedger().RecordWarband()
         end)
@@ -4319,24 +4319,24 @@ watcher:SetScript("OnEvent", function(_, evt)
         _lastTSMBankType = nil
         WipeTransferState()
         -- Clear search on close
-        if CUI_Bank._searchBox then
-            CUI_Bank._searchBox:SetText("")
-            CUI_Bank._searchBox:ClearFocus()
+        if BankWin._searchBox then
+            BankWin._searchBox:SetText("")
+            BankWin._searchBox:ClearFocus()
         end
         CUI_Bags.ClearSearch()
-        CUI_Bank:Hide()
+        BankWin:Hide()
         -- Auto-close bags if we auto-opened them
         if
-            CUI_Bank._autoOpenedBags
+            BankWin._autoOpenedBags
             and CUI_Bags
             and CUI_Bags:IsVisible()
             and mod.BagAutoWindowOn("bagAutoCloseWindows", "bank")
         then
             CUI_Bags:Hide()
         end
-        CUI_Bank._autoOpenedBags = false
+        BankWin._autoOpenedBags = false
     elseif evt == "BANK_TABS_CHANGED" or evt == "BANK_TAB_SETTINGS_UPDATED" then
-        if CUI_Bank:IsVisible() then
+        if BankWin:IsVisible() then
             local prevCount = #_allTabs
             ReadBankTabs()
             ScheduleBankRefresh()
@@ -4344,7 +4344,7 @@ watcher:SetScript("OnEvent", function(_, evt)
             -- Poll until tab count changes or we give up after 300 frames. Only a
             -- purchase changes the count, and one reused frame serves every poll.
             if evt == "BANK_TABS_CHANGED" and #_allTabs == prevCount then
-                local pollFrame = CUI_Bank._tabPoller
+                local pollFrame = BankWin._tabPoller
                 if not pollFrame then
                     -- Hidden while idle: a poll request arms its fields and shows it,
                     -- and it hides itself when the poll ends.
@@ -4355,17 +4355,17 @@ watcher:SetScript("OnEvent", function(_, evt)
                         if self.attempts % 6 ~= 0 then
                             return
                         end -- ~0.1s per check
-                        if not CUI_Bank:IsVisible() or self.attempts > 300 then
+                        if not BankWin:IsVisible() or self.attempts > 300 then
                             self:Hide()
                             return
                         end
                         ReadBankTabs()
                         if #_allTabs ~= self.prevCount then
                             self:Hide()
-                            CUI_Bank:RefreshBank()
+                            BankWin:RefreshBank()
                         end
                     end)
-                    CUI_Bank._tabPoller = pollFrame
+                    BankWin._tabPoller = pollFrame
                 end
                 pollFrame.attempts = 0
                 pollFrame.prevCount = prevCount
@@ -4377,13 +4377,13 @@ watcher:SetScript("OnEvent", function(_, evt)
         or evt == "PLAYERBANKSLOTS_CHANGED"
         or evt == "PLAYER_ACCOUNT_BANK_TAB_SLOTS_CHANGED"
     then
-        if CUI_Bank:IsVisible() then
+        if BankWin:IsVisible() then
             ScheduleBankRefresh()
         end
     elseif evt == "BAG_CONTAINER_UPDATE" then
         -- Forever: a bag went into or came out of a bank bag slot, which adds or
         -- removes that tab.
-        if CUI_Bank:IsVisible() then
+        if BankWin:IsVisible() then
             local selTab = _selectedView > 0 and _allTabs[_selectedView]
             ReadBankTabs()
             if selTab then
@@ -4413,9 +4413,9 @@ do
 end
 
 -- Close bank when pressing Escape
-CUI_Bank:SetScript("OnHide", function()
+BankWin:SetScript("OnHide", function()
     -- The Compact display's grow-only width (RefreshBank)
-    CUI_Bank._compactCols, CUI_Bank._compactW = nil, nil
+    BankWin._compactCols, BankWin._compactW = nil, nil
     if CUI_BankTabConfigFrame then
         CUI_BankTabConfigFrame:Hide()
     end
@@ -4435,22 +4435,22 @@ local loader = CreateFrame("Frame")
 loader:RegisterEvent("PLAYER_LOGIN")
 loader:SetScript("OnEvent", function(self)
     self:UnregisterAllEvents()
-    if mod.SkinForeverBagWindow(CUI_Bank, bgAtlas, bgOverlay, true, true) then
-        CUI_Bank._flatBorder:Hide()
-        headerBar:SetPoint("TOPLEFT", CUI_Bank, "TOPLEFT", 1, -1)
-        headerBar:SetPoint("TOPRIGHT", CUI_Bank, "TOPRIGHT", -1, -1)
+    if mod.SkinForeverBagWindow(BankWin, bgAtlas, bgOverlay, true, true) then
+        BankWin._flatBorder:Hide()
+        headerBar:SetPoint("TOPLEFT", BankWin, "TOPLEFT", 1, -1)
+        headerBar:SetPoint("TOPRIGHT", BankWin, "TOPRIGHT", -1, -1)
         mod.LayoutForeverBagHeader(headerBar)
         HEADER_H = headerBar:GetHeight() + 1
-        local inset = mod.ForeverBagSidebarInset(CUI_Bank)
+        local inset = mod.ForeverBagSidebarInset(BankWin)
         sideBar._leftInset = inset
-        sideBar:SetPoint("TOPLEFT", CUI_Bank, "TOPLEFT", inset, -headerBar:GetHeight())
-        sideBar:SetPoint("BOTTOMLEFT", CUI_Bank, "BOTTOMLEFT", inset, FOOTER_H)
+        sideBar:SetPoint("TOPLEFT", BankWin, "TOPLEFT", inset, -headerBar:GetHeight())
+        sideBar:SetPoint("BOTTOMLEFT", BankWin, "BOTTOMLEFT", inset, FOOTER_H)
         sideBar:SetWidth(GetBankSidebarContentWidth())
         sideChild:SetWidth(GetBankSidebarContentWidth())
-        scrollFrame:SetPoint("TOPLEFT", CUI_Bank, "TOPLEFT", GetBankSidebarWidth(), -HEADER_H)
-        scrollFrame:SetPoint("BOTTOMRIGHT", CUI_Bank, "BOTTOMRIGHT", -7, FOOTER_H)
-        track:SetPoint("TOPRIGHT", CUI_Bank, "TOPRIGHT", -7, -HEADER_H)
-        track:SetPoint("BOTTOMRIGHT", CUI_Bank, "BOTTOMRIGHT", -7, FOOTER_H)
+        scrollFrame:SetPoint("TOPLEFT", BankWin, "TOPLEFT", GetBankSidebarWidth(), -HEADER_H)
+        scrollFrame:SetPoint("BOTTOMRIGHT", BankWin, "BOTTOMRIGHT", -7, FOOTER_H)
+        track:SetPoint("TOPRIGHT", BankWin, "TOPRIGHT", -7, -HEADER_H)
+        track:SetPoint("BOTTOMRIGHT", BankWin, "BOTTOMRIGHT", -7, FOOTER_H)
         hdrBg:Hide()
         headerBar.separator:Hide()
         sidebarBg:SetColorTexture(0.10, 0.065, 0.035, 0.45)
@@ -4464,15 +4464,15 @@ loader:SetScript("OnEvent", function(self)
         sortButton:SetPoint("RIGHT", headerBar, "TOPRIGHT", -9, headerBar._foreverToolsY)
         searchBox:ClearAllPoints()
         searchBox:SetPoint("LEFT", headerBar, "TOPLEFT", 45, headerBar._foreverToolsY)
-        searchBox:SetPoint("RIGHT", CUI_Bank._bagsBtn or sortButton, "LEFT", -6, 0)
+        searchBox:SetPoint("RIGHT", BankWin._bagsBtn or sortButton, "LEFT", -6, 0)
         searchBox:SetFont(GetFont(), 12, CUI.GetFontOutlineFlag("bags"))
         CUI.PanelPP.HideBorder(searchBox)
         mod.SkinForeverBagSearch(searchBox, searchBg, searchPlaceholder, clearSearchBtn)
-        local footerBar = CUI_Bank.Footer
+        local footerBar = BankWin.Footer
         mod.SkinForeverBagFooter(footerBar, footerBar.bg, footerBar.separator)
         footerBar.playerGold:ClearAllPoints()
         footerBar.playerGold:SetPoint("LEFT", footerBar._coinBox, "LEFT", 5, 0)
-        _bankGripCfg.inset(CUI_Bank._gripInset or 0)
+        _bankGripCfg.inset(BankWin._gripInset or 0)
     end
     -- WoW Forever with the Gamepad interface style at login: Blizzard's bank
     -- keeps the D-pad navigation, so it goes back under its own parent.
@@ -4485,11 +4485,11 @@ loader:SetScript("OnEvent", function(self)
     end
     -- Register for Escape close
     if CUI and CUI.RegisterEscapeClose then
-        CUI.RegisterEscapeClose(CUI_Bank)
+        CUI.RegisterEscapeClose(BankWin)
     end
     -- Controller cursor: Cancel finds the bank's close button.
     if CUI.PadCP() then
-        CUI_Bank.CloseButton = closeBtn
+        BankWin.CloseButton = closeBtn
     end
 
     -- Auto-shift DressUpFrame to the right of the bank when both are open
@@ -4497,12 +4497,12 @@ loader:SetScript("OnEvent", function(self)
     if dressUpFrame then
         local _duIgnoreSP = false
         local function ShiftDressUp()
-            if not CUI_Bank:IsVisible() or InCombatLockdown() then
+            if not BankWin:IsVisible() or InCombatLockdown() then
                 return
             end
             _duIgnoreSP = true
             dressUpFrame:ClearAllPoints()
-            dressUpFrame:SetPoint("TOPLEFT", CUI_Bank, "TOPRIGHT", 4, 0)
+            dressUpFrame:SetPoint("TOPLEFT", BankWin, "TOPRIGHT", 4, 0)
             _duIgnoreSP = false
         end
         dressUpFrame:HookScript("OnShow", ShiftDressUp)
@@ -4512,7 +4512,7 @@ loader:SetScript("OnEvent", function(self)
             end
             ShiftDressUp()
         end)
-        CUI_Bank:HookScript("OnShow", function()
+        BankWin:HookScript("OnShow", function()
             if dressUpFrame:IsVisible() then
                 ShiftDressUp()
             end

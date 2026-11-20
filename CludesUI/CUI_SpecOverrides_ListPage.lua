@@ -9,38 +9,38 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 local _, CUI_NS = ...
 CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS -- standalone builds: the core's own table (CludesUI.lua)
-local I = CUI_NS._soInternals
+local Inner = CUI_NS._soInternals
 -- CludesUI_SpecOverrides.lua or an earlier Spec Overrides file failed to
 -- load.
-if not I or I.broken then
+if not Inner or Inner.broken then
     return
 end
-I.broken = true
+Inner.broken = true
 
-local ACCENT_B, ACCENT_G, ACCENT_R = I.ACCENT_B, I.ACCENT_G, I.ACCENT_R
-local BlacklistedFKey, CurrentSpecID, DeepCopy = I.BlacklistedFKey, I.CurrentSpecID, I.DeepCopy
-local EntryHolderGroup, EntryOwning = I.EntryHolderGroup, I.EntryOwning
-local FKeyLoaded, GetGroups, GetStore, GOLD_B = I.FKeyLoaded, I.GetGroups, I.GetStore, I.GOLD_B
-local GOLD_G, GOLD_R, GroupById = I.GOLD_G, I.GOLD_R, I.GroupById
-local HasRegisteredDefault, L, MatchOwnedFKey = I.HasRegisteredDefault, I.L, I.MatchOwnedFKey
-local NIL_SENT, ReadLive, RebuildFKeyIndex = I.NIL_SENT, I.ReadLive, I.RebuildFKeyIndex
-local RunRefreshers, SpecInAnyGroup, SpecName = I.RunRefreshers, I.SpecInAnyGroup, I.SpecName
-local SpecStrandedOnEntry, SplitFKey = I.SpecStrandedOnEntry, I.SplitFKey
-local WriteLive, GetUnlockStore = I.WriteLive, I.GetUnlockStore
-local WriteDefaultValues, GetBmStore = I.WriteDefaultValues, I.GetBmStore
-local GetCondBmStore, GetCondDmStore = I.GetCondBmStore, I.GetCondDmStore
-local GetDmStore, IsTBBChildKey, LayerSkipsKey = I.GetDmStore, I.IsTBBChildKey, I.LayerSkipsKey
-local Cond, EXCLUDED_CONTEXTS, RequestGoldWalk = I.Cond, I.EXCLUDED_CONTEXTS, I.RequestGoldWalk
-local EnterGroupEdit, BuildEntryCrumb = I.EnterGroupEdit, I.BuildEntryCrumb
+local ACCENT_B, ACCENT_G, ACCENT_R = Inner.ACCENT_B, Inner.ACCENT_G, Inner.ACCENT_R
+local BlacklistedFKey, CurrentSpecID, DeepCopy = Inner.BlacklistedFKey, Inner.CurrentSpecID, Inner.DeepCopy
+local EntryHolderGroup, EntryOwning = Inner.EntryHolderGroup, Inner.EntryOwning
+local FKeyLoaded, GetGroups, GetStore, GOLD_B = Inner.FKeyLoaded, Inner.GetGroups, Inner.GetStore, Inner.GOLD_B
+local GOLD_G, GOLD_R, GroupById = Inner.GOLD_G, Inner.GOLD_R, Inner.GroupById
+local HasRegisteredDefault, L, MatchOwnedFKey = Inner.HasRegisteredDefault, Inner.L, Inner.MatchOwnedFKey
+local NIL_SENT, ReadLive, RebuildFKeyIndex = Inner.NIL_SENT, Inner.ReadLive, Inner.RebuildFKeyIndex
+local RunRefreshers, SpecInAnyGroup, SpecName = Inner.RunRefreshers, Inner.SpecInAnyGroup, Inner.SpecName
+local SpecStrandedOnEntry, SplitFKey = Inner.SpecStrandedOnEntry, Inner.SplitFKey
+local WriteLive, GetUnlockStore = Inner.WriteLive, Inner.GetUnlockStore
+local WriteDefaultValues, GetBmStore = Inner.WriteDefaultValues, Inner.GetBmStore
+local GetCondBmStore, GetCondDmStore = Inner.GetCondBmStore, Inner.GetCondDmStore
+local GetDmStore, IsTBBChildKey, LayerSkipsKey = Inner.GetDmStore, Inner.IsTBBChildKey, Inner.LayerSkipsKey
+local Cond, EXCLUDED_CONTEXTS, RequestGoldWalk = Inner.Cond, Inner.EXCLUDED_CONTEXTS, Inner.RequestGoldWalk
+local EnterGroupEdit, BuildEntryCrumb = Inner.EnterGroupEdit, Inner.BuildEntryCrumb
 
 -- This file's copies of shared names; Set<Name> keeps every copy current
 -- (the lists are built at the end of CludesUI_SpecOverrides.lua).
 local _editGroup = nil
-I.editGroupSetters[#I.editGroupSetters + 1] = function(v)
+Inner.editGroupSetters[#Inner.editGroupSetters + 1] = function(v)
     _editGroup = v
 end
 local _activeSpec = nil
-I.activeSpecSetters[#I.activeSpecSetters + 1] = function(v)
+Inner.activeSpecSetters[#Inner.activeSpecSetters + 1] = function(v)
     _activeSpec = v
 end
 
@@ -1311,5 +1311,5 @@ function CludesUI.Conditions_BuildListPage(host, startY)
     return -rowY + 40
 end
 
-I.PruneOrphanEntries = PruneOrphanEntries
-I.broken = false
+Inner.PruneOrphanEntries = PruneOrphanEntries
+Inner.broken = false

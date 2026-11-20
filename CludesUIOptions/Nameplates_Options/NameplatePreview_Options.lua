@@ -1125,7 +1125,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
     end
 
     -- Class power pips (cosmetic preview queries live class/spec resource count); packed into a single table to stay under Lua's 60-upvalue limit.
-    local CP = {
+    local PipKit = {
         PIP_W = 8,
         PIP_H = 3,
         PIP_GAP = 2,
@@ -1174,44 +1174,44 @@ local function BuildNameplatePreview(hostFrame, parentW)
         WHITE = "Interface\\Buttons\\WHITE8X8",
         SQUARE_SHAPE = { square = true, circle = true, diamond = true, hexagon = true, shield = true },
     }
-    CP.pips = {}
-    for i = 1, CP.MAX_POSSIBLE do
+    PipKit.pips = {}
+    for i = 1, PipKit.MAX_POSSIBLE do
         local backdrop = popFrame:CreateTexture(nil, "OVERLAY", nil, 2)
-        backdrop:SetTexture(CP.WHITE)
+        backdrop:SetTexture(PipKit.WHITE)
         backdrop:SetVertexColor(0.082, 0.082, 0.082, 1)
         backdrop:Hide()
         local pipTex = popFrame:CreateTexture(nil, "OVERLAY", nil, 3)
-        pipTex:SetTexture(CP.WHITE)
+        pipTex:SetTexture(PipKit.WHITE)
         pipTex:SetVertexColor(1, 1, 1, 1)
-        pipTex:SetSize(CP.PIP_W, CP.PIP_H)
+        pipTex:SetSize(PipKit.PIP_W, PipKit.PIP_H)
         pipTex:Hide()
         pipTex._bg = backdrop
-        CP.pips[i] = pipTex
+        PipKit.pips[i] = pipTex
     end
     -- Bar-type class resource (e.g. stagger) preview
-    CP.bar = CreateFrame("StatusBar", nil, popFrame)
-    CP.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    CP.bar:SetFrameLevel(popFrame:GetFrameLevel() + 5)
-    CP.bar:Hide()
-    CP.bar._bg = CP.bar:CreateTexture(nil, "BACKGROUND")
-    CP.bar._bg:SetAllPoints()
-    CP.bar._bg:SetColorTexture(0.082, 0.082, 0.082, 1)
+    PipKit.bar = CreateFrame("StatusBar", nil, popFrame)
+    PipKit.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    PipKit.bar:SetFrameLevel(popFrame:GetFrameLevel() + 5)
+    PipKit.bar:Hide()
+    PipKit.bar._bg = PipKit.bar:CreateTexture(nil, "BACKGROUND")
+    PipKit.bar._bg:SetAllPoints()
+    PipKit.bar._bg:SetColorTexture(0.082, 0.082, 0.082, 1)
 
     -- Offset badge: shown by UpdateCP (via CP.Clamp) only when the class-resource
     -- Y offset is clamped to the plate in the preview. Reports the real offset
     -- at the clamped pip position so the configured value is still communicated
     -- without the pips dragging the header or leaving the frame.
-    CP.offBadge = popFrame:CreateFontString(nil, "OVERLAY")
-    SetPVFont(CP.offBadge, FONT_PATH, 9, GetNPOptOutline())
-    CP.offBadge:SetTextColor(1, 0.82, 0.30) -- gold: marks a clamped value
-    CP.offBadge:Hide()
+    PipKit.offBadge = popFrame:CreateFontString(nil, "OVERLAY")
+    SetPVFont(PipKit.offBadge, FONT_PATH, 9, GetNPOptOutline())
+    PipKit.offBadge:SetTextColor(1, 0.82, 0.30) -- gold: marks a clamped value
+    PipKit.offBadge:Hide()
     -- Delta arrow drawn beside the badge, pointing the way the offset continues
     -- past the clamped pips.
-    CP.offArrow = popFrame:CreateTexture(nil, "OVERLAY")
-    CP.offArrow:SetVertexColor(1, 0.82, 0.30)
-    CP.offArrow:Hide()
-    CP.ARROW_UP = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-up3.png"
-    CP.ARROW_DOWN = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-down3.png"
+    PipKit.offArrow = popFrame:CreateTexture(nil, "OVERLAY")
+    PipKit.offArrow:SetVertexColor(1, 0.82, 0.30)
+    PipKit.offArrow:Hide()
+    PipKit.ARROW_UP = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-up3.png"
+    PipKit.ARROW_DOWN = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-down3.png"
 
     -- Preview-only: clamp the class-resource pips to the plate's own edges so a
     -- large Y offset can't drag the header or push pips out of frame.
@@ -1221,7 +1221,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
     -- coordinates. Returns the offset to draw, the real offset (only when
     -- clamped), and the clamped group's inboard edge with the direction into
     -- the plate (for the badge).
-    function CP.Clamp(topPos, yDir, off, ph, healthTopY, castBotY)
+    function PipKit.Clamp(topPos, yDir, off, ph, healthTopY, castBotY)
         local anchorY = topPos and healthTopY or castBotY
         local bandTop = -2 -- just inside pf top
         -- Just below the cast bar: measured from castBotY (which includes the
@@ -1251,16 +1251,16 @@ local function BuildNameplatePreview(hostFrame, parentW)
     -- Shows the real offset centred on centerX (pf coordinates) beside the
     -- clamped pips, with the arrow just left of the number pointing the way the
     -- offset continues.
-    function CP.ShowBadge(edgeInboard, dirInboard, centerX, realOff)
-        local widget = CP.offBadge
+    function PipKit.ShowBadge(edgeInboard, dirInboard, centerX, realOff)
+        local widget = PipKit.offBadge
         widget:SetText(string.format("%+d", math.floor(realOff + 0.5)))
         local textH = widget:GetStringHeight()
         local cy = SnapPx(edgeInboard + dirInboard * (textH / 2 + 3))
         widget:ClearAllPoints()
         widget:SetPoint("CENTER", popFrame, "TOPLEFT", SnapPx(centerX), cy)
         widget:Show()
-        local a = CP.offArrow
-        a:SetTexture((dirInboard == -1) and CP.ARROW_UP or CP.ARROW_DOWN)
+        local a = PipKit.offArrow
+        a:SetTexture((dirInboard == -1) and PipKit.ARROW_UP or PipKit.ARROW_DOWN)
         -- The chevron fills 22 x 12 of its 30 px image.
         local asz = math.max(8, math.floor(textH * 1.1 + 0.5))
         a:SetSize(asz, asz)
@@ -1540,7 +1540,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 -- Reserve only the base pip height above the bar; the Y offset is
                 -- NOT added here so the preview frame never grows with the offset.
                 -- UpdateCP clamps the pips inside the plate and badges the real value.
-                cpPush = CP.PIP_H * cpScale
+                cpPush = PipKit.PIP_H * cpScale
             end
         end
         -- Apply current random preview values (regenerated on tab switch only)
@@ -3585,8 +3585,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
             local cpResourceName = nil
             -- Hide the clamp badge/arrow by default; the render branches below re-show
             -- them only when the offset is actually clamped to the plate.
-            CP.offBadge:Hide()
-            CP.offArrow:Hide()
+            PipKit.offBadge:Hide()
+            PipKit.offArrow:Hide()
             if showCP then
                 -- The pips are clamped to the plate (CP.Clamp) and the real offset is
                 -- badged when clamped, so the preview frame size never changes with
@@ -3595,11 +3595,11 @@ local function BuildNameplatePreview(hostFrame, parentW)
                 local castBotY = -healthFromTop - barH + pCastY - castH
                 -- Determine pip count from player's class, using live UnitPowerMax when available
                 local _, playerClass = UnitClass("player")
-                local comboInfo = CP.CLASS_MAP[playerClass]
+                local comboInfo = PipKit.CLASS_MAP[playerClass]
                 -- Match the module: vanilla content has only these two resources,
                 -- so previewing the rest would promise pips that never appear.
                 if CludesUI.IS_FOREVER then
-                    comboInfo = (playerClass == "ROGUE" or playerClass == "DRUID") and CP.CLASS_MAP[playerClass]
+                    comboInfo = (playerClass == "ROGUE" or playerClass == "DRUID") and PipKit.CLASS_MAP[playerClass]
                         or nil
                 end
                 local comboMax = 0
@@ -3638,14 +3638,14 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         end
                     end
                 end
-                local cpCur = math.floor(comboMax * CP.FILL_FRAC + 0.5)
+                local cpCur = math.floor(comboMax * PipKit.FILL_FRAC + 0.5)
                 local useClassColors = DBVal("classPowerClassColors")
                 if useClassColors == nil then
                     useClassColors = defaultSet.classPowerClassColors
                 end
-                local cpColor = CP.DEFAULT_COLOR
+                local cpColor = PipKit.DEFAULT_COLOR
                 if useClassColors then
-                    cpColor = CP.CLASS_COLORS[playerClass] or CP.DEFAULT_COLOR
+                    cpColor = PipKit.CLASS_COLORS[playerClass] or PipKit.DEFAULT_COLOR
                 else
                     local classColor = (DB() and DB().classPowerCustomColor) or defaultSet.classPowerCustomColor
                     cpColor = { classColor.r, classColor.g, classColor.b }
@@ -3655,19 +3655,19 @@ local function BuildNameplatePreview(hostFrame, parentW)
 
                 if cpIsBarType then
                     -- Bar-type preview (stagger): single StatusBar
-                    for i = 1, CP.MAX_POSSIBLE do
-                        CP.pips[i]:Hide()
-                        if CP.pips[i]._bg then
-                            CP.pips[i]._bg:Hide()
+                    for i = 1, PipKit.MAX_POSSIBLE do
+                        PipKit.pips[i]:Hide()
+                        if PipKit.pips[i]._bg then
+                            PipKit.pips[i]._bg:Hide()
                         end
-                        mod.HidePipDecor(CP.pips[i])
+                        mod.HidePipDecor(PipKit.pips[i])
                     end
                     local cpScale = DBVal("classPowerScale") or defaultSet.classPowerScale
                     local cpYOff = DBVal("classPowerYOffset") or defaultSet.classPowerYOffset
                     local cpXOff = DBVal("classPowerXOffset") or defaultSet.classPowerXOffset
                     local cpPos = DBVal("classPowerPos") or defaultSet.classPowerPos
-                    local scaledH = SnapPx(CP.PIP_H * cpScale)
-                    local barW = SnapPx(CP.PIP_W * cpScale * 6)
+                    local scaledH = SnapPx(PipKit.PIP_H * cpScale)
+                    local barW = SnapPx(PipKit.PIP_W * cpScale * 6)
 
                     local anchorPoint, anchorRelPoint, anchorFrame, yDir
                     if cpPos == "top" then
@@ -3682,9 +3682,9 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         yDir = -1
                     end
                     local cpYShown, cpYReal, cpEdgeIn, cpDirIn =
-                        CP.Clamp(cpPos == "top", yDir, cpYOff, scaledH, -healthFromTop, castBotY)
+                        PipKit.Clamp(cpPos == "top", yDir, cpYOff, scaledH, -healthFromTop, castBotY)
 
-                    local bar = CP.bar
+                    local bar = PipKit.bar
                     bar:ClearAllPoints()
                     bar:SetSize(barW, scaledH)
                     bar:SetPoint(
@@ -3704,19 +3704,19 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         cpExtraH = scaledH
                     end
                     if cpYReal then
-                        CP.ShowBadge(cpEdgeIn, cpDirIn, cpCenterX + cpXOff, cpYReal)
+                        PipKit.ShowBadge(cpEdgeIn, cpDirIn, cpCenterX + cpXOff, cpYReal)
                     end
                 elseif comboMax <= 0 then
-                    for i = 1, CP.MAX_POSSIBLE do
-                        CP.pips[i]:Hide()
-                        if CP.pips[i]._bg then
-                            CP.pips[i]._bg:Hide()
+                    for i = 1, PipKit.MAX_POSSIBLE do
+                        PipKit.pips[i]:Hide()
+                        if PipKit.pips[i]._bg then
+                            PipKit.pips[i]._bg:Hide()
                         end
-                        mod.HidePipDecor(CP.pips[i])
+                        mod.HidePipDecor(PipKit.pips[i])
                     end
-                    CP.bar:Hide()
+                    PipKit.bar:Hide()
                 else
-                    CP.bar:Hide()
+                    PipKit.bar:Hide()
                     local cpScale = DBVal("classPowerScale") or defaultSet.classPowerScale
                     local cpYOff = DBVal("classPowerYOffset") or defaultSet.classPowerYOffset
                     local cpXOff = DBVal("classPowerXOffset") or defaultSet.classPowerXOffset
@@ -3730,9 +3730,9 @@ local function BuildNameplatePreview(hostFrame, parentW)
                             and SnapPx(DBVal("classPowerBorderSize") or defaultSet.classPowerBorderSize)
                         or 0
                     local cpIconKind = mod.GetPipIconKind(cpShape)
-                    local cpSquare = CP.SQUARE_SHAPE[cpShape] or (cpIconKind ~= nil)
-                    local scaledW = SnapPx(CP.PIP_W * cpScale)
-                    local scaledH = cpSquare and scaledW or SnapPx(CP.PIP_H * cpScale)
+                    local cpSquare = PipKit.SQUARE_SHAPE[cpShape] or (cpIconKind ~= nil)
+                    local scaledW = SnapPx(PipKit.PIP_W * cpScale)
+                    local scaledH = cpSquare and scaledW or SnapPx(PipKit.PIP_H * cpScale)
                     local scaledGap = SnapPx(cpGap * cpScale)
                     local totalPipW = comboMax * scaledW + (comboMax - 1) * scaledGap
 
@@ -3751,7 +3751,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         yDir = -1
                     end
                     local cpYShown, cpYReal, cpEdgeIn, cpDirIn =
-                        CP.Clamp(cpPos == "top", yDir, cpYOff, scaledH, -healthFromTop, castBotY)
+                        PipKit.Clamp(cpPos == "top", yDir, cpYOff, scaledH, -healthFromTop, castBotY)
 
                     local cpEmptyCol = (DB() and DB().classPowerEmptyColor) or defaultSet.classPowerEmptyColor
 
@@ -3765,8 +3765,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
 
                     local leftAnchor = (anchorPoint == "BOTTOM") and "BOTTOMLEFT" or "TOPLEFT"
 
-                    for i = 1, CP.MAX_POSSIBLE do
-                        local pipTex = CP.pips[i]
+                    for i = 1, PipKit.MAX_POSSIBLE do
+                        local pipTex = PipKit.pips[i]
                         if i <= comboMax then
                             pipTex:ClearAllPoints()
                             pipTex:SetSize(scaledW, scaledH)
@@ -3784,7 +3784,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                             if backdrop then
                                 backdrop:ClearAllPoints()
                                 backdrop:SetAllPoints(pipTex)
-                                backdrop:SetTexture(CP.WHITE)
+                                backdrop:SetTexture(PipKit.WHITE)
                                 backdrop:SetTexCoord(0, 1, 0, 1)
                                 backdrop:SetDesaturated(false)
                                 backdrop:SetVertexColor(cpBgCol.r, cpBgCol.g, cpBgCol.b, cpBgCol.a)
@@ -3827,7 +3827,7 @@ local function BuildNameplatePreview(hostFrame, parentW)
                                 UnsnapTex(pipTex)
                                 pipTex:Show()
                             else
-                                pipTex:SetTexture(CP.WHITE)
+                                pipTex:SetTexture(PipKit.WHITE)
                                 pipTex:SetTexCoord(0, 1, 0, 1)
                                 if i <= cpCur then
                                     pipTex:SetVertexColor(cpColor[1], cpColor[2], cpColor[3], 1)
@@ -3856,18 +3856,18 @@ local function BuildNameplatePreview(hostFrame, parentW)
                         cpExtraH = scaledH
                     end
                     if cpYReal then
-                        CP.ShowBadge(cpEdgeIn, cpDirIn, cpCenterX + cpXOff, cpYReal)
+                        PipKit.ShowBadge(cpEdgeIn, cpDirIn, cpCenterX + cpXOff, cpYReal)
                     end
                 end
             else
-                for i = 1, CP.MAX_POSSIBLE do
-                    CP.pips[i]:Hide()
-                    if CP.pips[i]._bg then
-                        CP.pips[i]._bg:Hide()
+                for i = 1, PipKit.MAX_POSSIBLE do
+                    PipKit.pips[i]:Hide()
+                    if PipKit.pips[i]._bg then
+                        PipKit.pips[i]._bg:Hide()
                     end
-                    mod.HidePipDecor(CP.pips[i])
+                    mod.HidePipDecor(PipKit.pips[i])
                 end
-                CP.bar:Hide()
+                PipKit.bar:Hide()
             end
             return cpExtraH
         end
@@ -4024,9 +4024,9 @@ local function BuildNameplatePreview(hostFrame, parentW)
     popFrame._questTextFrame = popFrame._qt.frame
     popFrame._health = healthBar
     popFrame._healthWrapper = healthHolder
-    popFrame._cpPips = CP.pips
-    popFrame._cpBar = CP.bar
-    popFrame._cpMax = CP.MAX_POSSIBLE
+    popFrame._cpPips = PipKit.pips
+    popFrame._cpBar = PipKit.bar
+    popFrame._cpMax = PipKit.MAX_POSSIBLE
     popFrame._arrows = arrowList
 
     optionState.activePreview = popFrame

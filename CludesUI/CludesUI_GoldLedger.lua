@@ -36,7 +36,7 @@ local CUI = _G.CludesUI
 local built
 
 local function Build()
-    local GL = {}
+    local Ledger = {}
 
     local type, pairs = type, pairs
     local issecretvalue = issecretvalue
@@ -137,7 +137,7 @@ local function Build()
     --- The ledger table. Never nil; a throwaway table if the account DB is somehow
     --- absent (never assign the global here: a pre-SavedVariables call could
     --- shadow the real table).
-    function GL.Data()
+    function Ledger.Data()
         local saved = _G.CludesUIDB
         if type(saved) ~= "table" then
             return { chars = {} }
@@ -156,7 +156,7 @@ local function Build()
     end
 
     --- The current character's GUID, or nil while it cannot be read.
-    function GL.CharKey()
+    function Ledger.CharKey()
         local unitGuid = UnitGUID("player")
         if not unitGuid or (issecretvalue and issecretvalue(unitGuid)) then
             return nil
@@ -188,24 +188,24 @@ local function Build()
     --- The current character's balance, for display. Does not write the ledger
     --- (writing is the caller's call; Bags can turn tracking off). When the live
     --- read is unusable, falls back to the last stored balance; nil if neither.
-    function GL.Money()
+    function Ledger.Money()
         local money = LiveMoney()
         if money then
             return money
         end
-        local key = GL.CharKey()
-        local e = key and GL.Data().chars[key]
+        local key = Ledger.CharKey()
+        local e = key and Ledger.Data().chars[key]
         return e and e.money
     end
 
     --- The warband bank balance, for display. Live when the read is usable,
     --- otherwise the last stored balance; nil if never seen. Does not write.
-    function GL.WarbandMoney()
+    function Ledger.WarbandMoney()
         local money = LiveWarband()
         if money then
             return money
         end
-        local wid = GL.Data().warband
+        local wid = Ledger.Data().warband
         return wid and wid.money
     end
 
@@ -213,21 +213,21 @@ local function Build()
     --- Returns the balance, or nil when the read was unusable (secret or not a
     --- number); a failed read never overwrites a good entry. Nothing is written
     --- while tracking is off, but the balance is still returned.
-    function GL.RecordCharacter(money)
+    function Ledger.RecordCharacter(money)
         if money == nil then
             money = LiveMoney()
         end
         if not IsUsable(money) then
             return nil
         end
-        if not GL.IsTracking() then
+        if not Ledger.IsTracking() then
             return money
         end
-        local key = GL.CharKey()
+        local key = Ledger.CharKey()
         if not key then
             return money
         end
-        local chars = GL.Data().chars
+        local chars = Ledger.Data().chars
         -- Drop the entries older builds filed under "Name-Realm".
         local short = UnitName("player")
         if short then
@@ -249,15 +249,15 @@ local function Build()
 
     --- Store the warband bank balance. An unusable read (secret or not a number)
     --- changes nothing and the stored value stays.
-    function GL.RecordWarband()
-        if not GL.IsTracking() then
+    function Ledger.RecordWarband()
+        if not Ledger.IsTracking() then
             return nil
         end
         local money = LiveWarband()
         if not money then
             return nil
         end
-        local ledger = GL.Data()
+        local ledger = Ledger.Data()
         local wid = ledger.warband
         if not wid then
             wid = {}
@@ -268,21 +268,21 @@ local function Build()
     end
 
     --- Account-wide tracking switch. On by default; only the off state is stored.
-    function GL.IsTracking()
-        return GL.Data().tracking ~= false
+    function Ledger.IsTracking()
+        return Ledger.Data().tracking ~= false
     end
 
-    function GL.SetTracking(enabled)
-        local ledger = GL.Data()
+    function Ledger.SetTracking(enabled)
+        local ledger = Ledger.Data()
         if enabled == false then
             ledger.tracking = false
         else
             ledger.tracking = nil
         end
-        GL.SyncEvents()
+        Ledger.SyncEvents()
         if enabled ~= false then
-            GL.RecordCharacter()
-            GL.RecordWarband()
+            Ledger.RecordCharacter()
+            Ledger.RecordWarband()
         end
     end
 
@@ -301,7 +301,7 @@ local function Build()
     local consumers, consumerCount = {}, 0
     local eventFrame
 
-    function GL.SyncEvents()
+    function Ledger.SyncEvents()
         if not eventFrame then
             return
         end
@@ -310,7 +310,7 @@ local function Build()
             return
         end
         eventFrame:RegisterEvent("PLAYER_MONEY")
-        if GL.IsTracking() then
+        if Ledger.IsTracking() then
             eventFrame:RegisterEvent("ACCOUNT_MONEY")
             eventFrame:RegisterEvent("BANKFRAME_OPENED")
             eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -324,11 +324,11 @@ local function Build()
         flushQueued = false
         if dirtyChar then
             dirtyChar = false
-            GL.RecordCharacter()
+            Ledger.RecordCharacter()
         end
         if dirtyWarband then
             dirtyWarband = false
-            GL.RecordWarband()
+            Ledger.RecordWarband()
         end
     end
 
@@ -336,7 +336,7 @@ local function Build()
         local money
         if evt ~= "ACCOUNT_MONEY" and evt ~= "BANKFRAME_OPENED" then
             money = LiveMoney()
-            if GL.IsTracking() then
+            if Ledger.IsTracking() then
                 dirtyChar = true
             end
         end
@@ -359,7 +359,7 @@ local function Build()
 
     --- Start money tracking for `owner` (any unique key). `fn` is optional.
     --- Registering twice for one owner just replaces its callback.
-    function GL.Register(ownerFrame, func)
+    function Ledger.Register(ownerFrame, func)
         if consumers[ownerFrame] == nil then
             consumerCount = consumerCount + 1
         end
@@ -368,35 +368,35 @@ local function Build()
             eventFrame = CreateFrame("Frame")
             eventFrame:SetScript("OnEvent", OnMoneyEvent)
         end
-        GL.SyncEvents()
-        if GL.IsTracking() then
-            GL.RecordCharacter()
-            GL.RecordWarband()
+        Ledger.SyncEvents()
+        if Ledger.IsTracking() then
+            Ledger.RecordCharacter()
+            Ledger.RecordWarband()
         end
     end
 
-    function GL.Unregister(ownerFrame)
+    function Ledger.Unregister(ownerFrame)
         if consumers[ownerFrame] == nil then
             return
         end
         consumers[ownerFrame] = nil
         consumerCount = consumerCount - 1
-        GL.SyncEvents()
+        Ledger.SyncEvents()
     end
 
     --- Drop a character the player no longer has (renamed, deleted, transferred).
-    function GL.Forget(key)
-        GL.Data().chars[key] = nil
+    function Ledger.Forget(key)
+        Ledger.Data().chars[key] = nil
     end
 
     --- Wipe every character and the warband figure.
-    function GL.Reset()
-        local ledger = GL.Data()
+    function Ledger.Reset()
+        local ledger = Ledger.Data()
         ledger.chars = {}
         ledger.warband = nil
     end
 
-    return GL
+    return Ledger
 end
 
 function CUI.GetGoldLedger()

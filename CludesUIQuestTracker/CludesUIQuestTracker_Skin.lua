@@ -22,7 +22,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --   border           = PanelPP.CreateBorder 1px black, physical pixel perfect
 -------------------------------------------------------------------------------
 local _, mod = ...
-local EQT = mod.EQT
+local TrackerNS = mod.EQT
 
 -- External weak-keyed table for block skin state (never write custom keys
 -- onto Blizzard pool frames -- causes taint).
@@ -39,21 +39,21 @@ local STOCK, CLASSIC = false, false
 -- Blizzard's native quest POI icons instead of our classified icons: the
 -- user's toggle, or forced by either stock style.
 local function StockIconsOn()
-    return STOCK or EQT.Cfg("showQuestIcons")
+    return STOCK or TrackerNS.Cfg("showQuestIcons")
 end
 
 -- Color helpers. All four user-facing text colors come from DB so they
 -- follow the Colors section in the options page.
 local function GetTitleRGB()
-    local cfg = EQT.DB()
+    local cfg = TrackerNS.DB()
     return cfg.titleR or 1.0, cfg.titleG or 0.910, cfg.titleB or 0.471
 end
 local function GetCompletedRGB()
-    local cfg = EQT.DB()
+    local cfg = TrackerNS.DB()
     return cfg.completedR or 0.251, cfg.completedG or 1.0, cfg.completedB or 0.349
 end
 local function GetFocusRGB()
-    local cfg = EQT.DB()
+    local cfg = TrackerNS.DB()
     return cfg.focusR or 0.871, cfg.focusG or 0.251, cfg.focusB or 1.0
 end
 local SUB_TRACKERS = {
@@ -83,13 +83,13 @@ end
 -- Shared font sizes -- read from DB so the options panel can tweak them.
 -- Defaults are seeded in the loader's QT_DEFAULTS table.
 local function GetTitleSize()
-    return EQT.Cfg("titleFontSize") or 13
+    return TrackerNS.Cfg("titleFontSize") or 13
 end
 local function GetObjSize()
-    return EQT.Cfg("objectiveFontSize") or 11
+    return TrackerNS.Cfg("objectiveFontSize") or 11
 end
 local function GetHeaderSize()
-    return EQT.Cfg("headerFontSize") or 13
+    return TrackerNS.Cfg("headerFontSize") or 13
 end
 
 -------------------------------------------------------------------------------
@@ -144,7 +144,7 @@ local function GetHeaderRGB()
         end
         return 1.0, 0.82, 0.0
     end
-    local cfg = EQT.DB()
+    local cfg = TrackerNS.DB()
     if cfg.headerShowClassColor then
         return GetClassColorRGB()
     end
@@ -158,7 +158,7 @@ end
 -- options: Class Color / Custom Color / Accent Color. Defaults to Accent Color
 -- (lineUseAccent is treated as true unless explicitly set to false).
 local function GetLineRGB()
-    local cfg = EQT.DB()
+    local cfg = TrackerNS.DB()
     if cfg.lineShowClassColor then
         return GetClassColorRGB()
     end
@@ -249,7 +249,7 @@ end
 
 -- Bulk re-template everything we've touched. Called when user changes font
 -- settings in options.
-function EQT.RefreshFonts()
+function TrackerNS.RefreshFonts()
     for fontStr in pairs(_eqtFontRegistry) do
         if fontStr and fontStr.GetFont then
             local _, size = fontStr:GetFont()
@@ -454,7 +454,7 @@ local function SkinHeader(headerFrame, knownCollapsed)
     if not headerFrame then
         return
     end
-    if not EQT.Cfg("skinHeaders") then
+    if not TrackerNS.Cfg("skinHeaders") then
         return
     end
 
@@ -531,7 +531,7 @@ local function SkinHeader(headerFrame, knownCollapsed)
                 end
             end
             -- WoW Forever's filter toggle beside it (nil on retail).
-            local toggle = EQT.FilterToggle
+            local toggle = TrackerNS.FilterToggle
             if toggle and toggle:GetParent() == headerFrame then
                 tint(toggle:GetNormalTexture())
                 tint(toggle:GetPushedTexture())
@@ -605,7 +605,7 @@ local function SkinHeader(headerFrame, knownCollapsed)
     end
 end
 -- The Forever filter toggle re-skins its header once built.
-EQT.SkinHeader = SkinHeader
+TrackerNS.SkinHeader = SkinHeader
 
 -------------------------------------------------------------------------------
 -- Block skin: color quest title gold, objectives gray, completed green.
@@ -763,17 +763,17 @@ do
             _refreshClassifyCache()
         end)
     end)
-    if not EQT._eventFrames then
-        EQT._eventFrames = {}
+    if not TrackerNS._eventFrames then
+        TrackerNS._eventFrames = {}
     end
-    if not EQT._eventRegistrations then
-        EQT._eventRegistrations = {}
+    if not TrackerNS._eventRegistrations then
+        TrackerNS._eventRegistrations = {}
     end
-    local position = #EQT._eventFrames + 1
-    EQT._eventFrames[position] = frame
-    EQT._eventRegistrations[position] =
+    local position = #TrackerNS._eventFrames + 1
+    TrackerNS._eventFrames[position] = frame
+    TrackerNS._eventRegistrations[position] =
         { "QUEST_LOG_UPDATE", "QUEST_ACCEPTED", "QUEST_REMOVED", "PLAYER_ENTERING_WORLD" }
-    EQT._classifyFrameIdx = position
+    TrackerNS._classifyFrameIdx = position
 end
 
 -- Hides Blizzard's built-in quest type icon(s) on a block (without
@@ -900,25 +900,25 @@ do
         -- Defer one frame so Blizzard's assignment lands first. Nothing to
         -- suppress while native icons show, unless the hidden tracker needs
         -- the fresh button mouse-off.
-        if event == "SUPER_TRACKING_CHANGED" and (not StockIconsOn() or EQT._trackerMouseOff) then
+        if event == "SUPER_TRACKING_CHANGED" and (not StockIconsOn() or TrackerNS._trackerMouseOff) then
             C_Timer.After(0, function()
-                if not EQT._SuppressAllPOIs then
+                if not TrackerNS._SuppressAllPOIs then
                     return
                 end
-                EQT._SuppressAllPOIs()
+                TrackerNS._SuppressAllPOIs()
             end)
         end
     end)
-    if not EQT._eventFrames then
-        EQT._eventFrames = {}
+    if not TrackerNS._eventFrames then
+        TrackerNS._eventFrames = {}
     end
-    if not EQT._eventRegistrations then
-        EQT._eventRegistrations = {}
+    if not TrackerNS._eventRegistrations then
+        TrackerNS._eventRegistrations = {}
     end
-    local position = #EQT._eventFrames + 1
-    EQT._eventFrames[position] = scrollFrame
-    EQT._eventRegistrations[position] = { "SUPER_TRACKING_CHANGED", "PLAYER_ENTERING_WORLD" }
-    EQT._superTrackFrameIdx = position
+    local position = #TrackerNS._eventFrames + 1
+    TrackerNS._eventFrames[position] = scrollFrame
+    TrackerNS._eventRegistrations[position] = { "SUPER_TRACKING_CHANGED", "PLAYER_ENTERING_WORLD" }
+    TrackerNS._superTrackFrameIdx = position
 end
 
 -- One-time layout setup for the title fontstring: font, anchors, width.
@@ -1023,16 +1023,16 @@ local function ApplyFocusHighlight(questBlock)
 end
 
 -- Shared with the custom tracker (Custom.lua) and the options.
-EQT.GetFont = GetFont
-EQT.GetTitleRGB, EQT.GetCompletedRGB, EQT.GetFocusRGB = GetTitleRGB, GetCompletedRGB, GetFocusRGB
-EQT.TitleDifficultyOn, EQT.QuestDifficultyRGB = TitleDifficultyOn, QuestDifficultyRGB
-EQT.GetHeaderRGB, EQT.GetLineRGB = GetHeaderRGB, GetLineRGB
+TrackerNS.GetFont = GetFont
+TrackerNS.GetTitleRGB, TrackerNS.GetCompletedRGB, TrackerNS.GetFocusRGB = GetTitleRGB, GetCompletedRGB, GetFocusRGB
+TrackerNS.TitleDifficultyOn, TrackerNS.QuestDifficultyRGB = TitleDifficultyOn, QuestDifficultyRGB
+TrackerNS.GetHeaderRGB, TrackerNS.GetLineRGB = GetHeaderRGB, GetLineRGB
 
 -- Skip all skinning work when the tracker is force-hidden (M+, raid, arena).
 -- Uses the cached suppression flag only (set by ApplySuppression /
 -- UpdateVisibility). No per-call API queries.
 local function ShouldSkipSkin()
-    return EQT.IsSuppressed and EQT.IsSuppressed()
+    return TrackerNS.IsSuppressed and TrackerNS.IsSuppressed()
 end
 
 -- Hook block line-add APIs once per block instance. Catches every line
@@ -1050,7 +1050,7 @@ local function HookBlockLineMethods(questBlock)
         ApplyFocusHighlight(questBlock)
         -- Hover highlight swaps line colors too (WoW Forever's objective
         -- colors; nil on retail).
-        local paint = EQT.ColorObjectiveLines
+        local paint = TrackerNS.ColorObjectiveLines
         if paint then
             paint(questBlock)
         end
@@ -1306,7 +1306,7 @@ local function DisableMouse(frame)
     frame:EnableMouse(false)
 end
 -- For frames built while the tracker is hidden (the Forever filter toggle).
-EQT.MouseOff = DisableMouse
+TrackerNS.MouseOff = DisableMouse
 
 -- One block's click sinks: the block frame itself (bonus blocks), the header
 -- button (the quest log click), the item, group-finder and POI buttons, the
@@ -1542,7 +1542,7 @@ local function SkinExistingBlocks(trackerFrame)
         end
 
         -- Style objective lines (and WoW Forever's objective colors).
-        local paint = EQT.ColorObjectiveLines
+        local paint = TrackerNS.ColorObjectiveLines
         for _, questBlock in ipairs(ordered) do
             if questBlock.lines then
                 for _, line in pairs(questBlock.lines) do
@@ -1586,13 +1586,13 @@ end
 -- background behind the tracker, a hidden header would leave its reserved slot
 -- as an empty band above the first section.
 local function ShouldHideMasterHeader()
-    local val = EQT.Cfg("hideAllObjectivesHeader")
+    local val = TrackerNS.Cfg("hideAllObjectivesHeader")
     if val == nil then
-        return not EQT.Blizz()
+        return not TrackerNS.Blizz()
     end
     return val ~= false
 end
-EQT.ShouldHideMasterHeader = ShouldHideMasterHeader
+TrackerNS.ShouldHideMasterHeader = ShouldHideMasterHeader
 
 local function ApplyMasterHeaderVisibility()
     local objectiveTracker = _G.ObjectiveTrackerFrame
@@ -1612,12 +1612,12 @@ local function ApplyMasterHeaderVisibility()
     -- Never back on while the tracker is alpha-hidden (EQT.ApplyTrackerMouse
     -- brings it back with the tracker).
     if minimizeBtn and minimizeBtn.EnableMouse then
-        minimizeBtn:EnableMouse(not hide and not EQT._trackerMouseOff)
+        minimizeBtn:EnableMouse(not hide and not TrackerNS._trackerMouseOff)
     end
 
     EnsureAccentDivider(headerFrame)
 end
-EQT.ApplyMasterHeaderVisibility = ApplyMasterHeaderVisibility
+TrackerNS.ApplyMasterHeaderVisibility = ApplyMasterHeaderVisibility
 
 -------------------------------------------------------------------------------
 -- Hook a single sub-tracker.
@@ -1659,11 +1659,11 @@ local function HookTracker(trackerFrame)
                 -- Hidden tracker: affix / spell frames this pass acquired come
                 -- out mouse-off too (deferred: no frame work inline in a
                 -- module Update post-hook).
-                if EQT._trackerMouseOff and trackerFrame == _G.ScenarioObjectiveTracker and not _scMouseDirty then
+                if TrackerNS._trackerMouseOff and trackerFrame == _G.ScenarioObjectiveTracker and not _scMouseDirty then
                     _scMouseDirty = true
                     C_Timer.After(0, function()
                         _scMouseDirty = false
-                        if EQT._trackerMouseOff then
+                        if TrackerNS._trackerMouseOff then
                             ApplyScenarioMouse(_G.ScenarioObjectiveTracker)
                         end
                     end)
@@ -1672,8 +1672,8 @@ local function HookTracker(trackerFrame)
                 if STOCK or ShouldSkipSkin() then
                     return
                 end
-                if EQT.QueueResize then
-                    EQT.QueueResize()
+                if TrackerNS.QueueResize then
+                    TrackerNS.QueueResize()
                 end
                 if self.Header and not _dividerDirty then
                     _dividerDirty = true
@@ -1711,7 +1711,7 @@ local function HookTracker(trackerFrame)
         hooksecurefunc(trackerFrame, "AddBlock", function(_, questBlock)
             -- A block handed out while the tracker is alpha-hidden must not
             -- come out clickable; independent of the skin (runs suppressed too).
-            if questBlock and EQT._trackerMouseOff then
+            if questBlock and TrackerNS._trackerMouseOff then
                 ApplyBlockMouse(questBlock)
             end
             if ShouldSkipSkin() then
@@ -1736,17 +1736,17 @@ local function HookTracker(trackerFrame)
             end
             -- Suppressed (M+ / raid tools) or a stock style: no skin work, but
             -- a hidden tracker still needs the blocks this pass touched mouse-off.
-            if (STOCK or ShouldSkipSkin()) and not EQT._trackerMouseOff then
+            if (STOCK or ShouldSkipSkin()) and not TrackerNS._trackerMouseOff then
                 return
             end
             _updateDirty = true
             C_Timer.After(0, function()
                 _updateDirty = false
                 local skip = STOCK or ShouldSkipSkin()
-                local mouseOff = EQT._trackerMouseOff
+                local mouseOff = TrackerNS._trackerMouseOff
                 -- WoW Forever's objective colors (nil on retail).
-                local paint = EQT.ColorObjectiveLines
-                local colorLines = paint and EQT.ObjColorsWanted()
+                local paint = TrackerNS.ColorObjectiveLines
+                local colorLines = paint and TrackerNS.ObjColorsWanted()
                 if skip and not mouseOff then
                     return
                 end
@@ -1754,8 +1754,8 @@ local function HookTracker(trackerFrame)
                     if trackerFrame.Header then
                         EnsureAccentDivider(trackerFrame.Header)
                     end
-                    if EQT.QueueResize then
-                        EQT.QueueResize()
+                    if TrackerNS.QueueResize then
+                        TrackerNS.QueueResize()
                     end
                 end
                 if trackerFrame.usedBlocks then
@@ -1832,8 +1832,8 @@ end
 -- Sweep all tracker blocks and suppress any unsuppressed POI buttons.
 -- Called from SUPER_TRACKING_CHANGED (deferred) to catch fresh POIs
 -- that Blizzard assigns when the player clicks a quest on the map.
-EQT._SuppressAllPOIs = function()
-    local mouseOff = EQT._trackerMouseOff
+TrackerNS._SuppressAllPOIs = function()
+    local mouseOff = TrackerNS._trackerMouseOff
     EachTracker(function(trackerFrame)
         -- Shared-widget-pool trackers have no quest POI buttons and touching
         -- their blocks taints the tooltip widget pool (see SharesWidgetPool).
@@ -1890,12 +1890,12 @@ end
 -- its own hide rule again (SkinHeader keeps it off while the header is
 -- hidden by option). Both directions early-out when already applied, so a
 -- visibility pass on an unchanged state costs one field read.
-EQT.ApplyTrackerMouse = function(enabled)
+TrackerNS.ApplyTrackerMouse = function(enabled)
     if enabled then
-        if not EQT._trackerMouseOff then
+        if not TrackerNS._trackerMouseOff then
             return
         end
-        EQT._trackerMouseOff = nil
+        TrackerNS._trackerMouseOff = nil
         for frame, mode in pairs(_mouseOffSet) do
             _mouseOffSet[frame] = nil
             if mode == 3 or not frame.SetMouseClickEnabled then
@@ -1911,15 +1911,15 @@ EQT.ApplyTrackerMouse = function(enabled)
         local objectiveTracker = _G.ObjectiveTrackerFrame
         local mainTracker = objectiveTracker and (objectiveTracker.HeaderMenu or objectiveTracker.Header)
         local mb = mainTracker and mainTracker.MinimizeButton
-        if mb and mb.EnableMouse and EQT.ShouldHideMasterHeader then
-            mb:EnableMouse(not EQT.ShouldHideMasterHeader())
+        if mb and mb.EnableMouse and TrackerNS.ShouldHideMasterHeader then
+            mb:EnableMouse(not TrackerNS.ShouldHideMasterHeader())
         end
         return
     end
-    if EQT._trackerMouseOff then
+    if TrackerNS._trackerMouseOff then
         return
     end
-    EQT._trackerMouseOff = true
+    TrackerNS._trackerMouseOff = true
     EachTracker(TrackerMouseOff)
     ApplyScenarioMouse(_G.ScenarioObjectiveTracker)
     local objectiveTracker = _G.ObjectiveTrackerFrame
@@ -1929,14 +1929,14 @@ EQT.ApplyTrackerMouse = function(enabled)
         DisableMouse(mainTracker.FilterButton)
     end
     -- WoW Forever's filter toggle (nil on retail).
-    DisableMouse(EQT.FilterToggle)
+    DisableMouse(TrackerNS.FilterToggle)
 end
 
 -- Custom tracker (WoW Forever): Blizzard's tracker stays shown but alpha 0 and
 -- click-through, never skinned. No Hide(): its OnHide relayouts the right
 -- managed frame container from our execution. Blocks are laid out before
 -- AddBlock, so the hook catches their lines and right-edge buttons too.
-function EQT.MuteBlizzardTracker()
+function TrackerNS.MuteBlizzardTracker()
     local objectiveTracker = _G.ObjectiveTrackerFrame
     if not objectiveTracker then
         return
@@ -1948,7 +1948,7 @@ function EQT.MuteBlizzardTracker()
             self:SetAlpha(0)
         end
     end)
-    EQT.ApplyTrackerMouse(false)
+    TrackerNS.ApplyTrackerMouse(false)
     local function hook(trackerFrame)
         if _hookedTrackers[trackerFrame] or SharesWidgetPool(trackerFrame) or not trackerFrame.AddBlock then
             return
@@ -1977,25 +1977,25 @@ end
 -------------------------------------------------------------------------------
 -- Entry point called from the loader after Blizzard_ObjectiveTracker loads.
 -------------------------------------------------------------------------------
-function EQT.InitSkin()
-    STOCK = EQT.Blizz()
-    CLASSIC = EQT.Classic()
+function TrackerNS.InitSkin()
+    STOCK = TrackerNS.Blizz()
+    CLASSIC = TrackerNS.Classic()
     -- Stock styles (fixed until reload): the classify cache has no reader and
     -- the super-track frame needs only SUPER_TRACKING_CHANGED (the hidden
     -- tracker's POI mouse-off). Blanking their registration lists keeps
     -- ResumeQTEvents from re-registering what is dropped here.
-    if STOCK and EQT._eventFrames then
-        local ci = EQT._classifyFrameIdx
-        local castFrame = ci and EQT._eventFrames[ci]
+    if STOCK and TrackerNS._eventFrames then
+        local ci = TrackerNS._classifyFrameIdx
+        local castFrame = ci and TrackerNS._eventFrames[ci]
         if castFrame then
             castFrame:UnregisterAllEvents()
-            EQT._eventRegistrations[ci] = {}
+            TrackerNS._eventRegistrations[ci] = {}
         end
-        local si = EQT._superTrackFrameIdx
-        local scrollFrame = si and EQT._eventFrames[si]
+        local si = TrackerNS._superTrackFrameIdx
+        local scrollFrame = si and TrackerNS._eventFrames[si]
         if scrollFrame then
             scrollFrame:UnregisterEvent("PLAYER_ENTERING_WORLD")
-            EQT._eventRegistrations[si] = { "SUPER_TRACKING_CHANGED" }
+            TrackerNS._eventRegistrations[si] = { "SUPER_TRACKING_CHANGED" }
         end
     end
     local objectiveTracker = _G.ObjectiveTrackerFrame
@@ -2067,7 +2067,7 @@ function EQT.InitSkin()
             end
             C_Timer.After(0, function()
                 HookTracker(module)
-                if EQT._trackerMouseOff then
+                if TrackerNS._trackerMouseOff then
                     TrackerMouseOff(module)
                 end
             end)
@@ -2098,19 +2098,19 @@ function EQT.InitSkin()
             -- here on SUPER_TRACKING_CHANGED; removed -- see the FORBIDDEN
             -- comment near the top of this file. Focus-change layout staleness
             -- self-heals on Blizzard's next natural update.
-            if EQT.QueueResize then
-                EQT.QueueResize()
+            if TrackerNS.QueueResize then
+                TrackerNS.QueueResize()
             end
         end)
-        if not EQT._eventFrames then
-            EQT._eventFrames = {}
+        if not TrackerNS._eventFrames then
+            TrackerNS._eventFrames = {}
         end
-        if not EQT._eventRegistrations then
-            EQT._eventRegistrations = {}
+        if not TrackerNS._eventRegistrations then
+            TrackerNS._eventRegistrations = {}
         end
-        local position = #EQT._eventFrames + 1
-        EQT._eventFrames[position] = eventName
-        EQT._eventRegistrations[position] = {
+        local position = #TrackerNS._eventFrames + 1
+        TrackerNS._eventFrames[position] = eventName
+        TrackerNS._eventRegistrations[position] = {
             "QUEST_LOG_UPDATE",
             "QUEST_WATCH_LIST_CHANGED",
             "SCENARIO_UPDATE",
@@ -2126,7 +2126,7 @@ function EQT.InitSkin()
     -- the deferred tracker.Update dirty-flag and event handlers above.
     -- Each hooksecurefunc charged Blizzard's full OTF:Update() to us.
 
-    EQT.RestyleAll = function()
+    TrackerNS.RestyleAll = function()
         -- Clear skin stamps so the full strip+restyle runs again
         EachTracker(function(tbl)
             if tbl.usedBlocks then
@@ -2166,8 +2166,8 @@ function EQT.InitSkin()
         CludesUI.RegAccent({
             type = "callback",
             fn = function()
-                if EQT.RestyleAll then
-                    EQT.RestyleAll()
+                if TrackerNS.RestyleAll then
+                    TrackerNS.RestyleAll()
                 end
             end,
         })

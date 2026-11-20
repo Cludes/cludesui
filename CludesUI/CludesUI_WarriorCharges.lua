@@ -61,12 +61,12 @@ local PHASES = {
 }
 
 local function Host(key)
-    local H = S.hosts[key]
-    if not H then
-        H = { key = key, ph = {}, seps = {} }
-        S.hosts[key] = H
+    local HostRec = S.hosts[key]
+    if not HostRec then
+        HostRec = { key = key, ph = {}, seps = {} }
+        S.hosts[key] = HostRec
     end
-    return H
+    return HostRec
 end
 
 -------------------------------------------------------------------------------
@@ -110,17 +110,17 @@ local function HookLift()
     end
     S.liftHooked = true
     AK.OnRestrictionLift(function()
-        for _, H in pairs(S.hosts) do
-            if H.dirty then
-                H.dirty = nil
-                if H.armed and H.pendR then
-                    local key = H.armed
-                    local red, green, blue, a = H.pendR, H.pendG, H.pendB, H.pendA
-                    H.lastR = nil -- force the change gate open
-                    HostRecolor(H, key, red, green, blue, a)
+        for _, HostRec in pairs(S.hosts) do
+            if HostRec.dirty then
+                HostRec.dirty = nil
+                if HostRec.armed and HostRec.pendR then
+                    local key = HostRec.armed
+                    local red, green, blue, a = HostRec.pendR, HostRec.pendG, HostRec.pendB, HostRec.pendA
+                    HostRec.lastR = nil -- force the change gate open
+                    HostRecolor(HostRec, key, red, green, blue, a)
                 end
-                if H.armed and H.syncFrame then
-                    HostSyncByKey(H, H.syncFrame, H.armed, H.syncOpts)
+                if HostRec.armed and HostRec.syncFrame then
+                    HostSyncByKey(HostRec, HostRec.syncFrame, HostRec.armed, HostRec.syncOpts)
                 end
             end
         end
@@ -130,23 +130,23 @@ end
 -- Change-gated live recolor (a few compares per call). The latest color is
 -- always stashed as pend: the creation-window bake reads it (the only write
 -- that always lands) and the lift re-applies it.
-HostRecolor = function(H, powerKey, red, green, blue, a)
-    if H.armed ~= powerKey then
+HostRecolor = function(HostRec, powerKey, red, green, blue, a)
+    if HostRec.armed ~= powerKey then
         return
     end
-    H.pendR, H.pendG, H.pendB, H.pendA = red, green, blue, a
-    local st = H.ph[powerKey]
+    HostRec.pendR, HostRec.pendG, HostRec.pendB, HostRec.pendA = red, green, blue, a
+    local st = HostRec.ph[powerKey]
     local bft = st and st.bft
     if not bft then
         return
     end -- not built yet: stash only, no write to try
-    if H.lastR == red and H.lastG == green and H.lastB == blue and H.lastA == a then
+    if HostRec.lastR == red and HostRec.lastG == green and HostRec.lastB == blue and HostRec.lastA == a then
         return
     end
     if pcall(bft.SetVertexColor, bft, red, green, blue, a or 1) then
-        H.lastR, H.lastG, H.lastB, H.lastA = red, green, blue, a
+        HostRec.lastR, HostRec.lastG, HostRec.lastB, HostRec.lastA = red, green, blue, a
     else
-        H.dirty = true
+        HostRec.dirty = true
         HookLift()
     end
 end
@@ -155,19 +155,19 @@ end
 --  Container build (one slot per host+buff, engine-owned end to end)
 -------------------------------------------------------------------------------
 
-local function BuildHostPhase(H, powerKey, options)
+local function BuildHostPhase(HostRec, powerKey, options)
     local AK = CUI.AuraKit
     local conf = PHASES[powerKey]
-    local st = H.ph[powerKey]
+    local st = HostRec.ph[powerKey]
     if st.container then
         return
     end
 
-    local styleKey = "war:" .. H.key .. ":" .. powerKey
+    local styleKey = "war:" .. HostRec.key .. ":" .. powerKey
     AK.styles[styleKey] = AK.styles[styleKey] or { noRegions = true, width = 1, height = 1 }
-    if not H.proxy then
-        H.proxy = CreateFrame("Frame", nil, UIParent)
-        H.proxy:Hide()
+    if not HostRec.proxy then
+        HostRec.proxy = CreateFrame("Frame", nil, UIParent)
+        HostRec.proxy:Hide()
     end
 
     -- Bake the fill's look now: the subtree is denied to addon code after the
@@ -177,14 +177,14 @@ local function BuildHostPhase(H, powerKey, options)
     -- queued job runs; opts colors are the belt for a job that outruns it.
     local maxApps = EffectiveMaxApps(powerKey, conf)
     local texPath = options.texPath or "Interface\\Buttons\\WHITE8x8"
-    local r = H.pendR or options.r or 1
-    local g = H.pendG or options.g or 1
-    local b = H.pendB or options.b or 1
-    local a = (H.pendR and (H.pendA or 1)) or options.a or 1
+    local r = HostRec.pendR or options.r or 1
+    local g = HostRec.pendG or options.g or 1
+    local b = HostRec.pendB or options.b or 1
+    local a = (HostRec.pendR and (HostRec.pendA or 1)) or options.a or 1
     local fillAlpha = options.fillAlpha or 1
     local ori = options.ori or "HORIZONTAL"
 
-    local boxHolder = AK.CreateContainerShell(H.proxy, { point = { "CENTER" } })
+    local boxHolder = AK.CreateContainerShell(HostRec.proxy, { point = { "CENTER" } })
     AK.AddSlotToContainer(boxHolder, {
         key = powerKey,
         filter = { "HELPFUL" },
@@ -194,7 +194,7 @@ local function BuildHostPhase(H, powerKey, options)
             -- Creation window: the only legal moment to touch this subtree.
             -- Two-point anchoring sizes the button by anchors forever; all
             -- repositioning after this is proxy moves.
-            btnFrame:SetAllPoints(H.proxy)
+            btnFrame:SetAllPoints(HostRec.proxy)
             -- Display-only overlay: an engine aura button comes mouse-enabled,
             -- and clicks alone would make it an invisible blocker over the
             -- host's row for as long as the buff is up.
@@ -332,11 +332,11 @@ local function BuildHostPhase(H, powerKey, options)
     st.built = true
 end
 
-local function EnsureHostBuilt(H, powerKey, options)
-    local st = H.ph[powerKey]
+local function EnsureHostBuilt(HostRec, powerKey, options)
+    local st = HostRec.ph[powerKey]
     if not st then
         st = {}
-        H.ph[powerKey] = st
+        HostRec.ph[powerKey] = st
     end
     if st.built or st.queued or st.err then
         return
@@ -350,17 +350,17 @@ local function EnsureHostBuilt(H, powerKey, options)
         st.queued = nil
         -- Latched, not retried: a hard build failure must not re-enter on
         -- every consumer pass and turn one broken container into a storm.
-        local success, err = pcall(BuildHostPhase, H, powerKey, options)
+        local success, err = pcall(BuildHostPhase, HostRec, powerKey, options)
         if not success then
             st.err = err
             return
         end
         -- The build was deferred past the Sync that requested it: re-run the
         -- attach with the stored sync args.
-        if H.armed == powerKey and H.syncFrame then
-            HostSyncByKey(H, H.syncFrame, powerKey, H.syncOpts)
+        if HostRec.armed == powerKey and HostRec.syncFrame then
+            HostSyncByKey(HostRec, HostRec.syncFrame, powerKey, HostRec.syncOpts)
         end
-    end, "war:" .. H.key .. ":" .. powerKey)
+    end, "war:" .. HostRec.key .. ":" .. powerKey)
 end
 
 -------------------------------------------------------------------------------
@@ -369,10 +369,10 @@ end
 --  land exactly on the boundaries.
 -------------------------------------------------------------------------------
 
-local function StyleSeparators(H, widget, sp, num)
-    if not H.sepHost then
-        H.sepHost = CreateFrame("Frame", nil, H.proxy)
-        H.sepHost:SetAllPoints(H.proxy)
+local function StyleSeparators(HostRec, widget, sp, num)
+    if not HostRec.sepHost then
+        HostRec.sepHost = CreateFrame("Frame", nil, HostRec.proxy)
+        HostRec.sepHost:SetAllPoints(HostRec.proxy)
     end
     local sep = sp.sep or {}
     -- Color: an explicit sep color from the host, else the legacy gap-strip
@@ -404,27 +404,27 @@ local function StyleSeparators(H, widget, sp, num)
     -- pips carry an "empty" color rather than relying on the row backdrop).
     -- Proxy-level texture: children (the engine container) render above it.
     if sep.empty then
-        if not H.emptyTex then
-            H.emptyTex = H.proxy:CreateTexture(nil, "BACKGROUND")
+        if not HostRec.emptyTex then
+            HostRec.emptyTex = HostRec.proxy:CreateTexture(nil, "BACKGROUND")
         end
         local inset = sep.emptyInset or 0
-        H.emptyTex:ClearAllPoints()
+        HostRec.emptyTex:ClearAllPoints()
         if vertical then
-            H.emptyTex:SetPoint("TOPLEFT", H.proxy, "TOPLEFT", 0, -inset)
-            H.emptyTex:SetPoint("BOTTOMRIGHT", H.proxy, "BOTTOMRIGHT", 0, inset)
+            HostRec.emptyTex:SetPoint("TOPLEFT", HostRec.proxy, "TOPLEFT", 0, -inset)
+            HostRec.emptyTex:SetPoint("BOTTOMRIGHT", HostRec.proxy, "BOTTOMRIGHT", 0, inset)
         else
-            H.emptyTex:SetPoint("TOPLEFT", H.proxy, "TOPLEFT", inset, 0)
-            H.emptyTex:SetPoint("BOTTOMRIGHT", H.proxy, "BOTTOMRIGHT", -inset, 0)
+            HostRec.emptyTex:SetPoint("TOPLEFT", HostRec.proxy, "TOPLEFT", inset, 0)
+            HostRec.emptyTex:SetPoint("BOTTOMRIGHT", HostRec.proxy, "BOTTOMRIGHT", -inset, 0)
         end
-        H.emptyTex:SetColorTexture(
+        HostRec.emptyTex:SetColorTexture(
             sep.empty.r or 0.2,
             sep.empty.g or 0.2,
             sep.empty.b or 0.2,
             sep.empty.a or 1
         )
-        H.emptyTex:Show()
-    elseif H.emptyTex then
-        H.emptyTex:Hide()
+        HostRec.emptyTex:Show()
+    elseif HostRec.emptyTex then
+        HostRec.emptyTex:Hide()
     end
 
     -- Boundary positions. Parametric cell geometry when the host supplies it
@@ -444,10 +444,10 @@ local function StyleSeparators(H, widget, sp, num)
     end
 
     for idx = 1, num - 1 do
-        local t = H.seps[idx]
+        local t = HostRec.seps[idx]
         if not t then
-            t = H.sepHost:CreateTexture(nil, "ARTWORK")
-            H.seps[idx] = t
+            t = HostRec.sepHost:CreateTexture(nil, "ARTWORK")
+            HostRec.seps[idx] = t
         end
         t:SetColorTexture(red, green, blue, a)
         t:ClearAllPoints()
@@ -460,24 +460,24 @@ local function StyleSeparators(H, widget, sp, num)
         if vertical then
             -- Fill runs top-down (or bottom-up for VERTICAL_UP); either way
             -- the boundaries sit at the same fractions from the fill edge.
-            t:SetPoint("LEFT", H.sepHost, "LEFT", 0, 0)
-            t:SetPoint("RIGHT", H.sepHost, "RIGHT", 0, 0)
+            t:SetPoint("LEFT", HostRec.sepHost, "LEFT", 0, 0)
+            t:SetPoint("RIGHT", HostRec.sepHost, "RIGHT", 0, 0)
             if ori == "VERTICAL_UP" then
-                t:SetPoint("BOTTOM", H.sepHost, "BOTTOM", 0, off)
+                t:SetPoint("BOTTOM", HostRec.sepHost, "BOTTOM", 0, off)
             else
-                t:SetPoint("TOP", H.sepHost, "TOP", 0, -off)
+                t:SetPoint("TOP", HostRec.sepHost, "TOP", 0, -off)
             end
             t:SetHeight(sepW)
         else
-            t:SetPoint("TOP", H.sepHost, "TOP", 0, 0)
-            t:SetPoint("BOTTOM", H.sepHost, "BOTTOM", 0, 0)
-            t:SetPoint("LEFT", H.sepHost, "LEFT", off, 0)
+            t:SetPoint("TOP", HostRec.sepHost, "TOP", 0, 0)
+            t:SetPoint("BOTTOM", HostRec.sepHost, "BOTTOM", 0, 0)
+            t:SetPoint("LEFT", HostRec.sepHost, "LEFT", off, 0)
             t:SetWidth(sepW)
         end
         t:Show()
     end
-    for idx = num, #H.seps do
-        H.seps[idx]:Hide()
+    for idx = num, #HostRec.seps do
+        HostRec.seps[idx]:Hide()
     end
 end
 
@@ -495,13 +495,13 @@ end
 --  "Up to" (reverse) modes have no engine expression and render nothing.
 -------------------------------------------------------------------------------
 
-local function StyleThresholds(H, widget, sp, num)
-    local st = H.armed and H.ph[H.armed]
+local function StyleThresholds(HostRec, widget, sp, num)
+    local st = HostRec.armed and HostRec.ph[HostRec.armed]
     local strips = st and st.thStrips
     if not strips then
         return
     end
-    local specInfo = H.thSpec
+    local specInfo = HostRec.thSpec
     -- Every write below touches the slot subtree post-window (the strips and
     -- mask were BAKED in the creation window; an outside mask anchored to
     -- bft is denied as a forbidden-aspect dependent -- field-proven): legal
@@ -554,7 +554,7 @@ local function StyleThresholds(H, widget, sp, num)
         end
     end)
     if not success then
-        H.dirty = true
+        HostRec.dirty = true
         HookLift()
     end
 end
@@ -562,11 +562,11 @@ end
 -- Threshold inputs, handed raw from the consumer's paint pass and
 -- change-gated here with ALLOC-FREE field compares (the pass cadence is the
 -- class bar tick; a rebuild only runs on a real settings/spec/cap change).
-local function HostThresholds(H, powerKey, mode, total, red, green, blue, a, bandOn, bands, bandReverse, reverse)
-    if H.armed ~= powerKey then
+local function HostThresholds(HostRec, powerKey, mode, total, red, green, blue, a, bandOn, bands, bandReverse, reverse)
+    if HostRec.armed ~= powerKey then
         return
     end
-    local st = H.ph[powerKey]
+    local st = HostRec.ph[powerKey]
     local num = (st and st.regMax) or 0
     -- v1: "Up to" modes render nothing (no engine expression).
     if reverse then
@@ -575,10 +575,10 @@ local function HostThresholds(H, powerKey, mode, total, red, green, blue, a, ban
     if bandReverse then
         bandOn = false
     end
-    local inp = H.thIn
+    local inp = HostRec.thIn
     if not inp then
         inp = { bands = {} }
-        H.thIn = inp
+        HostRec.thIn = inp
     end
     local bn = (bandOn and bands and #bands) or 0
     local changed = inp.mode ~= mode
@@ -610,10 +610,10 @@ local function HostThresholds(H, powerKey, mode, total, red, green, blue, a, ban
     end
     inp.mode, inp.count, inp.n = mode, total, num
     inp.r, inp.g, inp.b, inp.a, inp.bn = red, green, blue, a, bn
-    local specInfo = H.thSpecStore
+    local specInfo = HostRec.thSpecStore
     if not specInfo then
         specInfo = {}
-        H.thSpecStore = specInfo
+        HostRec.thSpecStore = specInfo
     end
     local used = 0
     if bn > 0 then
@@ -654,9 +654,9 @@ local function HostThresholds(H, powerKey, mode, total, red, green, blue, a, ban
     for idx = used + 1, #specInfo do
         specInfo[idx] = nil
     end
-    H.thSpec = (used > 0) and specInfo or nil
-    if H.lastStyleFrame then
-        StyleThresholds(H, H.lastStyleFrame, H.lastStyleOpts, H.lastStyleN)
+    HostRec.thSpec = (used > 0) and specInfo or nil
+    if HostRec.lastStyleFrame then
+        StyleThresholds(HostRec, HostRec.lastStyleFrame, HostRec.lastStyleOpts, HostRec.lastStyleN)
     end
 end
 
@@ -664,39 +664,39 @@ end
 --  Host sync / gate (generic core)
 -------------------------------------------------------------------------------
 
-local function HostGate(H)
-    H.armed = nil
-    if H.proxy then
-        H.proxy:Hide()
+local function HostGate(HostRec)
+    HostRec.armed = nil
+    if HostRec.proxy then
+        HostRec.proxy:Hide()
     end
 end
 
-HostSyncByKey = function(H, widget, powerKey, options)
+HostSyncByKey = function(HostRec, widget, powerKey, options)
     if S.class ~= "WARRIOR" then
         return
     end
     local conf = powerKey and PHASES[powerKey]
     if not (conf and widget and options) then
-        HostGate(H)
+        HostGate(HostRec)
         return
     end
-    if H.armed ~= powerKey then
-        H.lastR = nil
+    if HostRec.armed ~= powerKey then
+        HostRec.lastR = nil
     end -- phase swap: re-apply color
-    H.armed = powerKey
-    H.syncFrame, H.syncOpts = widget, options
-    local st = H.ph[powerKey]
+    HostRec.armed = powerKey
+    HostRec.syncFrame, HostRec.syncOpts = widget, options
+    local st = HostRec.ph[powerKey]
     if not (st and st.built) then
-        EnsureHostBuilt(H, powerKey, options)
+        EnsureHostBuilt(HostRec, powerKey, options)
         -- Nothing to show yet (sub-second build window): row stays empty.
-        if H.proxy then
-            H.proxy:Hide()
+        if HostRec.proxy then
+            HostRec.proxy:Hide()
         end
         return
     end
     if st.err or not st.bar then
-        if H.proxy then
-            H.proxy:Hide()
+        if HostRec.proxy then
+            HostRec.proxy:Hide()
         end
         return
     end
@@ -705,11 +705,11 @@ HostSyncByKey = function(H, widget, powerKey, options)
     -- manualAttach hosts (nameplate) position and size the proxy themselves
     -- BEFORE calling Sync -- the proxy then IS the row frame.
     if not options.manualAttach then
-        H.proxy:SetParent(widget)
-        H.proxy:ClearAllPoints()
-        H.proxy:SetAllPoints(widget)
+        HostRec.proxy:SetParent(widget)
+        HostRec.proxy:ClearAllPoints()
+        HostRec.proxy:SetAllPoints(widget)
     end
-    local lvl = options.manualAttach and H.proxy:GetFrameLevel() or widget:GetFrameLevel()
+    local lvl = options.manualAttach and HostRec.proxy:GetFrameLevel() or widget:GetFrameLevel()
     st.container:SetFrameLevel(lvl + 1)
     st.container:Show()
     -- Talent-dependent cap (Broad Strokes): re-register the bar when the
@@ -729,44 +729,44 @@ HostSyncByKey = function(H, widget, powerKey, options)
         if okR then
             st.regMax = wantMax
         else
-            H.dirty = true
+            HostRec.dirty = true
             HookLift()
         end
     end
-    StyleSeparators(H, options.manualAttach and H.proxy or widget, options, st.regMax or wantMax)
+    StyleSeparators(HostRec, options.manualAttach and HostRec.proxy or widget, options, st.regMax or wantMax)
     -- Stashed for mid-session threshold restyles (settings edit between
     -- Syncs); NOT a resize-heal mechanism.
-    H.lastStyleFrame = options.manualAttach and H.proxy or widget
-    H.lastStyleOpts = options
-    H.lastStyleN = st.regMax or wantMax
-    StyleThresholds(H, H.lastStyleFrame, options, H.lastStyleN)
+    HostRec.lastStyleFrame = options.manualAttach and HostRec.proxy or widget
+    HostRec.lastStyleOpts = options
+    HostRec.lastStyleN = st.regMax or wantMax
+    StyleThresholds(HostRec, HostRec.lastStyleFrame, options, HostRec.lastStyleN)
     -- +4, not +1..+3: the engine subtree stacks container(+1) -> slot button
     -- -> fill bar, so the fill paints around +2/+3 (its exact level cannot be
     -- read back; the Ebon Might driver clears it with the same margin).
-    H.sepHost:SetFrameLevel(lvl + 4)
+    HostRec.sepHost:SetFrameLevel(lvl + 4)
     -- Count text visibility rides every Sync (the carrier is ours to toggle;
     -- the fontstring itself is engine-fed). Denied writes defer to the lift.
     if st.tc and options.text then
         if not pcall(st.tc.SetShown, st.tc, options.text.shown and true or false) then
-            H.dirty = true
+            HostRec.dirty = true
             HookLift()
         end
     end
-    H.proxy:Show()
+    HostRec.proxy:Show()
     -- Only one phase is ever armed per host; park the others so a spec swap
     -- never leaves two overlays stacked on the same rect.
-    for key, other in pairs(H.ph) do
+    for key, other in pairs(HostRec.ph) do
         if key ~= powerKey and other.container then
             other.container:Hide()
         end
     end
 end
 
-local function HostEngineOn(H, powerKey)
-    if not H or H.armed ~= powerKey then
+local function HostEngineOn(HostRec, powerKey)
+    if not HostRec or HostRec.armed ~= powerKey then
         return false
     end
-    local st = H.ph[powerKey]
+    local st = HostRec.ph[powerKey]
     return (st and st.built and st.bar and not st.err) and true or false
 end
 
@@ -785,24 +785,24 @@ _G._EWC = {
         HostSyncByKey(Host(hostKey), widget, powerKey, options)
     end,
     Thresholds = function(hostKey, powerKey, mode, total, red, green, blue, a, bandOn, bands, bandReverse, reverse)
-        local H = S.hosts[hostKey]
-        if H then
-            HostThresholds(H, powerKey, mode, total, red, green, blue, a, bandOn, bands, bandReverse, reverse)
+        local HostRec = S.hosts[hostKey]
+        if HostRec then
+            HostThresholds(HostRec, powerKey, mode, total, red, green, blue, a, bandOn, bands, bandReverse, reverse)
         end
     end,
     Gate = function(hostKey)
-        local H = S.hosts[hostKey]
-        if H then
-            HostGate(H)
+        local HostRec = S.hosts[hostKey]
+        if HostRec then
+            HostGate(HostRec)
         end
     end,
     EngineOn = function(hostKey, powerKey)
         return HostEngineOn(S.hosts[hostKey], powerKey)
     end,
     Recolor = function(hostKey, powerKey, red, green, blue, a)
-        local H = S.hosts[hostKey]
-        if H then
-            HostRecolor(H, powerKey, red, green, blue, a)
+        local HostRec = S.hosts[hostKey]
+        if HostRec then
+            HostRecolor(HostRec, powerKey, red, green, blue, a)
         end
     end,
     -- Talent-aware registration cap for a power key (0 for unknown keys) --
@@ -814,11 +814,11 @@ _G._EWC = {
     -- Create-on-demand proxy handle for manualAttach hosts: they position and
     -- size it, then call Sync with the same frame and opts.manualAttach.
     GetProxy = function(hostKey)
-        local H = Host(hostKey)
-        if not H.proxy then
-            H.proxy = CreateFrame("Frame", nil, UIParent)
-            H.proxy:Hide()
+        local HostRec = Host(hostKey)
+        if not HostRec.proxy then
+            HostRec.proxy = CreateFrame("Frame", nil, UIParent)
+            HostRec.proxy:Hide()
         end
-        return H.proxy
+        return HostRec.proxy
     end,
 }

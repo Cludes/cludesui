@@ -47,12 +47,12 @@ local HINT_GREY = 0.35 -- the (and) / (or) bit, never takes the accent
 local DIM_HEX = CludesUI.COLOR_CODES.DIM
 
 -- label + grey hint
-local function TwoPart(ownerFrame, K)
+local function TwoPart(ownerFrame, SortKit)
     local main = ownerFrame:CreateFontString(nil, "OVERLAY")
-    K.Font(main, K.ITEM_FONT)
+    SortKit.Font(main, SortKit.ITEM_FONT)
     main:SetPoint("LEFT", ownerFrame, "LEFT", 7, 0)
     local hintText = ownerFrame:CreateFontString(nil, "OVERLAY")
-    K.Font(hintText, K.ITEM_FONT)
+    SortKit.Font(hintText, SortKit.ITEM_FONT)
     hintText:SetPoint("LEFT", main, "RIGHT", 3, 0)
     hintText:SetTextColor(HINT_GREY, HINT_GREY, HINT_GREY, 1)
     return main, hintText
@@ -100,7 +100,7 @@ local function RoundIcon(hostFrame, iconTex, after)
 end
 
 -- skinned dropdown button: label, grey hint, arrow
-local function ArrowButton(ownerFrame, K)
+local function ArrowButton(ownerFrame, SortKit)
     local button = CreateFrame("Button", nil, ownerFrame)
     button:SetNormalFontObject("GameFontHighlight")
     button:SetText(" ")
@@ -108,7 +108,7 @@ local function ArrowButton(ownerFrame, K)
     button.Arrow:SetTexture(ARROW)
     button.Arrow:SetSize(13, 13) -- how it looks in the settings
     button.Arrow:SetPoint("CENTER", button, "RIGHT", -10, 0)
-    button.Label, button.Hint = TwoPart(button, K)
+    button.Label, button.Hint = TwoPart(button, SortKit)
     button.Label:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
     -- icon room, made before the skin so it survives
     button.Icon = RoundIcon(button, nil, button.Label)
@@ -122,7 +122,7 @@ local function ArrowButton(ownerFrame, K)
         local backdrop = button:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0.06, 0.06, 0.06, 0.95)
-        CM.MakeBorder(button, K.ThemeBorder())
+        CM.MakeBorder(button, SortKit.ThemeBorder())
         local highlight = button:CreateTexture(nil, "HIGHLIGHT")
         highlight:SetAllPoints()
         highlight:SetColorTexture(1, 1, 1, 0.1)
@@ -151,8 +151,8 @@ end
 
 -- arrow button + its list. modes = { label, hint, icon }, get() = index,
 -- set(i) on pick, up opens it above the button. caller places it
-local function Dropdown(ownerFrame, K, modes, Get, Set, up)
-    local button = ArrowButton(ownerFrame, K)
+local function Dropdown(ownerFrame, SortKit, modes, Get, Set, up)
+    local button = ArrowButton(ownerFrame, SortKit)
     function button:ShowMode()
         local modeName = modes[Get()] or modes[1]
         self.Label:SetText(modeName.button or modeName.label)
@@ -171,7 +171,7 @@ local function Dropdown(ownerFrame, K, modes, Get, Set, up)
     end
     button:ShowMode()
 
-    local entries = CreateFrame("Frame", nil, K.parent or ownerFrame)
+    local entries = CreateFrame("Frame", nil, SortKit.parent or ownerFrame)
     entries:SetFrameStrata("FULLSCREEN_DIALOG")
     entries:SetFrameLevel(330)
     entries:SetClampedToScreen(true)
@@ -179,14 +179,14 @@ local function Dropdown(ownerFrame, K, modes, Get, Set, up)
     local lbg = entries:CreateTexture(nil, "BACKGROUND")
     lbg:SetAllPoints()
     lbg:SetColorTexture(0, 0, 0, 1)
-    CM.MakeBorder(entries, K.ThemeBorder())
+    CM.MakeBorder(entries, SortKit.ThemeBorder())
     entries.items = {}
     for index, modeName in ipairs(modes) do
         local entry = CreateFrame("Button", nil, entries)
-        entry:SetHeight(K.ITEM_H)
-        entry:SetPoint("TOPLEFT", entries, "TOPLEFT", 1, -(2 + (index - 1) * K.ITEM_H))
-        entry:SetPoint("TOPRIGHT", entries, "TOPRIGHT", -1, -(2 + (index - 1) * K.ITEM_H))
-        entry.text, entry.hint = TwoPart(entry, K)
+        entry:SetHeight(SortKit.ITEM_H)
+        entry:SetPoint("TOPLEFT", entries, "TOPLEFT", 1, -(2 + (index - 1) * SortKit.ITEM_H))
+        entry:SetPoint("TOPRIGHT", entries, "TOPRIGHT", -1, -(2 + (index - 1) * SortKit.ITEM_H))
+        entry.text, entry.hint = TwoPart(entry, SortKit)
         entry.text:SetText(modeName.label)
         entry.hint:SetText(modeName.hint or "")
         if modeName.icon then
@@ -199,15 +199,15 @@ local function Dropdown(ownerFrame, K, modes, Get, Set, up)
             Set(index)
             button:ShowMode()
             entries:Hide()
-            K.Refilter()
-            K.Paint()
+            SortKit.Refilter()
+            SortKit.Paint()
         end)
         entries.items[index] = entry
     end
-    entries:SetHeight(4 + #modes * K.ITEM_H)
+    entries:SetHeight(4 + #modes * SortKit.ITEM_H)
     button.list = entries
     pops[#pops + 1] = entries
-    K.ClickOff(entries, function(self)
+    SortKit.ClickOff(entries, function(self)
         return self:IsMouseOver() or button:IsMouseOver()
     end)
     entries:Hide()
@@ -217,9 +217,9 @@ local function Dropdown(ownerFrame, K, modes, Get, Set, up)
             entries:Hide()
             return
         end
-        K.Untip()
+        SortKit.Untip()
         -- picked one in the accent color
-        local ar, ag, ab = K.Accent()
+        local ar, ag, ab = SortKit.Accent()
         for index, entry in ipairs(entries.items) do
             if index == Get() then
                 entry.text:SetTextColor(ar, ag, ab, 1)
@@ -243,7 +243,7 @@ local function Dropdown(ownerFrame, K, modes, Get, Set, up)
     button:SetScript("OnShow", function(self)
         self:ShowMode()
     end)
-    button:SetScript("OnLeave", K.Untip)
+    button:SetScript("OnLeave", SortKit.Untip)
     return button
 end
 
@@ -301,30 +301,30 @@ local function CountsOn(cfg)
     return num
 end
 
-GFNS.ExtraRoleCounts = function(m, posY, K)
+GFNS.ExtraRoleCounts = function(m, posY, SortKit)
     local sg = Block(m, posY)
-    sg:SetHeight(K.ITEM_H)
+    sg:SetHeight(SortKit.ITEM_H)
     m.extraSpecGrp = sg
-    local button = ArrowButton(sg, K)
-    button:SetHeight(K.ITEM_H - 2)
+    local button = ArrowButton(sg, SortKit)
+    button:SetHeight(SortKit.ITEM_H - 2)
     button:SetPoint("TOPLEFT", sg, "TOPLEFT", 9, -1)
     button:SetPoint("TOPRIGHT", sg, "TOPRIGHT", -9, -1)
     button.Label:SetText(CludesUI.L("Specific Roles"))
 
-    local popup = CreateFrame("Frame", nil, K.parent or m)
+    local popup = CreateFrame("Frame", nil, SortKit.parent or m)
     popup:SetFrameStrata("FULLSCREEN_DIALOG")
     popup:SetFrameLevel(325)
     popup:SetClampedToScreen(true)
     popup:EnableMouse(true)
     local pbg = popup:CreateTexture(nil, "BACKGROUND")
     pbg:SetAllPoints()
-    local fr, fg, fb = K.ThemeFill()
+    local fr, fg, fb = SortKit.ThemeFill()
     pbg:SetColorTexture(fr, fg, fb, 0.98)
-    CM.MakeBorder(popup, K.ThemeBorder())
+    CM.MakeBorder(popup, SortKit.ThemeBorder())
     pops[#pops + 1] = popup
 
     -- while open: veil over both columns, eats clicks
-    local shade = CreateFrame("Button", nil, K.parent or m)
+    local shade = CreateFrame("Button", nil, SortKit.parent or m)
     shade:SetFrameStrata("FULLSCREEN_DIALOG")
     shade:SetFrameLevel(m:GetFrameLevel() + 8)
     local vt = shade:CreateTexture(nil, "BACKGROUND")
@@ -334,50 +334,50 @@ GFNS.ExtraRoleCounts = function(m, posY, K)
 
     local py, toggles = 2, {}
     local function PaintMatch()
-        local any = K.Cfg().extraRolesAny == true
+        local any = SortKit.Cfg().extraRolesAny == true
         for _, t in ipairs(toggles) do
             t:SetChecked(t.any == any)
         end
     end
     for _, modeName in ipairs(MATCH) do
-        local t = K.MenuItem(popup, py, modeName.label, function()
-            K.Cfg().extraRolesAny = modeName.any or nil
+        local t = SortKit.MenuItem(popup, py, modeName.label, function()
+            SortKit.Cfg().extraRolesAny = modeName.any or nil
             PaintMatch()
-            K.Refilter()
-            K.Paint()
+            SortKit.Refilter()
+            SortKit.Paint()
         end)
         t.any = modeName.any
         local _, callback = t.label:GetPoint(1)
         t.label:ClearAllPoints()
         t.label:SetPoint("LEFT", callback, "RIGHT", 7, 0)
         local hintText = t:CreateFontString(nil, "OVERLAY")
-        K.Font(hintText, K.ITEM_FONT)
+        SortKit.Font(hintText, SortKit.ITEM_FONT)
         hintText:SetPoint("LEFT", t.label, "RIGHT", 3, 0)
         hintText:SetTextColor(HINT_GREY, HINT_GREY, HINT_GREY, 1)
         hintText:SetText(modeName.hint)
         t:HookScript("OnEnter", function(self)
-            K.Tip(self, modeName.tip)
+            SortKit.Tip(self, modeName.tip)
         end)
-        t:HookScript("OnLeave", K.Untip)
+        t:HookScript("OnLeave", SortKit.Untip)
         toggles[#toggles + 1] = t
-        py = py + K.ITEM_H
+        py = py + SortKit.ITEM_H
     end
     py = Divider(popup, py)
     -- count rows go in m.counts so the menu paints them
     m.counts = m.counts or {}
     popup.counts = m.counts
-    for _, region in ipairs(K.COUNT_ROLES) do
-        py = K.AddCountRow(popup, py, region.key, region.label)
+    for _, region in ipairs(SortKit.COUNT_ROLES) do
+        py = SortKit.AddCountRow(popup, py, region.key, region.label)
     end
     popup:SetHeight(py + 2)
-    K.ClickOff(popup, function(self)
-        return self:IsMouseOver() or button:IsMouseOver() or (K.OpListOver and K.OpListOver()) or false
+    SortKit.ClickOff(popup, function(self)
+        return self:IsMouseOver() or button:IsMouseOver() or (SortKit.OpListOver and SortKit.OpListOver()) or false
     end)
     popup:Hide()
 
     -- "(2 active)" so ticked rows aren't forgotten
     local function ShowHint()
-        local num = CountsOn(K.Cfg())
+        local num = CountsOn(SortKit.Cfg())
         button.Hint:SetText(num > 0 and CludesUI.Lf("(%1$d active)", num) or "")
     end
     local sgLevel = sg:GetFrameLevel()
@@ -406,7 +406,7 @@ GFNS.ExtraRoleCounts = function(m, posY, K)
         popup:Hide()
     end)
     ShowHint()
-    return posY + K.ITEM_H
+    return posY + SortKit.ITEM_H
 end
 
 -------------------------------------------------------------------------------
@@ -606,14 +606,14 @@ local CLASS_ROWS = {
         spell = 2825,
         has = CludesUI.L("Has Bloodlust"),
         missing = CludesUI.L("Missing Bloodlust"),
-        Tip = function(K)
+        Tip = function(SortKit)
             return CludesUI.L("Bloodlust"),
                 {
                     CludesUI.L("A member whose class has one of these spells:"),
-                    K.ClassLine("SHAMAN", CludesUI.L("Bloodlust / Heroism (Shaman)")),
-                    K.ClassLine("MAGE", CludesUI.L("Time Warp (Mage)")),
-                    K.ClassLine("HUNTER", CludesUI.L("Primal Rage (Hunter pet)")),
-                    K.ClassLine("EVOKER", CludesUI.L("Fury of the Aspects (Evoker)")),
+                    SortKit.ClassLine("SHAMAN", CludesUI.L("Bloodlust / Heroism (Shaman)")),
+                    SortKit.ClassLine("MAGE", CludesUI.L("Time Warp (Mage)")),
+                    SortKit.ClassLine("HUNTER", CludesUI.L("Primal Rage (Hunter pet)")),
+                    SortKit.ClassLine("EVOKER", CludesUI.L("Fury of the Aspects (Evoker)")),
                     CludesUI.L("Drums and other items don't count."),
                 }
         end,
@@ -624,14 +624,14 @@ local CLASS_ROWS = {
         spell = 20484,
         has = CludesUI.L("Has Battle Res"),
         missing = CludesUI.L("Missing Battle Res"),
-        Tip = function(K)
+        Tip = function(SortKit)
             return CludesUI.L("Battle Res"),
                 {
                     CludesUI.L("A member whose class has one of these spells:"),
-                    K.ClassLine("DRUID", CludesUI.L("Rebirth (Druid)")),
-                    K.ClassLine("DEATHKNIGHT", CludesUI.L("Raise Ally (Death Knight)")),
-                    K.ClassLine("WARLOCK", CludesUI.L("Soulstone (Warlock)")),
-                    K.ClassLine("PALADIN", CludesUI.L("Intercession (Paladin)")),
+                    SortKit.ClassLine("DRUID", CludesUI.L("Rebirth (Druid)")),
+                    SortKit.ClassLine("DEATHKNIGHT", CludesUI.L("Raise Ally (Death Knight)")),
+                    SortKit.ClassLine("WARLOCK", CludesUI.L("Soulstone (Warlock)")),
+                    SortKit.ClassLine("PALADIN", CludesUI.L("Intercession (Paladin)")),
                     CludesUI.L("Engineering and other items don't count."),
                 }
         end,
@@ -644,13 +644,13 @@ local CLASS_ROWS = {
         raidPick = "raidMyClassMissing", -- the raids tab keeps its own
         has = "Has Class",
         missing = "No Class", -- class name added at build
-        Tip = function(K)
+        Tip = function(SortKit)
             local label, file = MyClass()
             return CludesUI.L("Your Class"),
                 {
                     CludesUI.Lf(
                         "A member who's your class: %1$s",
-                        file and K.ClassLine(file, label) or label or ""
+                        file and SortKit.ClassLine(file, label) or label or ""
                     ),
                 }
         end,
@@ -674,17 +674,17 @@ local function Missing(cfg, line, raids)
     return val == true
 end
 
-GFNS.ExtraClassRows = function(m, posY, K)
+GFNS.ExtraClassRows = function(m, posY, SortKit)
     for _, k in ipairs({ "extraMyClass", "raidMyClass" }) do
-        if K.FLAG_KEYS and not tContains(K.FLAG_KEYS, k) then
-            K.FLAG_KEYS[#K.FLAG_KEYS + 1] = k
+        if SortKit.FLAG_KEYS and not tContains(SortKit.FLAG_KEYS, k) then
+            SortKit.FLAG_KEYS[#SortKit.FLAG_KEYS + 1] = k
         end
     end
-    local raids = K.raids
+    local raids = SortKit.raids
     m.extraRolesEnd = posY
-    m.extraItemH = K.ITEM_H
-    m.extraK = K
-    local roleG, miscG = Block(m, posY), Block(m, posY + K.ITEM_H)
+    m.extraItemH = SortKit.ITEM_H
+    m.extraK = SortKit
+    local roleG, miscG = Block(m, posY), Block(m, posY + SortKit.ITEM_H)
     m.extraClassGrp, m.extraMiscGrp = roleG, miscG
     local ry, my = 0, 0
     for _, line in ipairs(CLASS_ROWS) do
@@ -692,8 +692,8 @@ GFNS.ExtraClassRows = function(m, posY, K)
             if self.list and self.list:IsShown() then
                 return
             end
-            local title, lines = line.Tip(K)
-            K.Tip(self, title, unpack(lines))
+            local title, lines = line.Tip(SortKit)
+            SortKit.Tip(self, title, unpack(lines))
         end
         local inRoles = line.key == "extraMyClass"
         local key, pick = Keys(line, raids)
@@ -702,42 +702,42 @@ GFNS.ExtraClassRows = function(m, posY, K)
         local iconTex = line.spell and C_Spell.GetSpellTexture(line.spell)
         if inRoles then
             local label, file = MyClass()
-            local cls = (label and file) and K.ClassLine(file, label) or label or CludesUI.L("Class")
+            local cls = (label and file) and SortKit.ClassLine(file, label) or label or CludesUI.L("Class")
             has, missing = CludesUI.L("Has") .. " " .. cls, CludesUI.L("No") .. " " .. cls
             -- full alpha so the class color shows, has / no greyed by hand
             hasBtn, missingBtn =
                 DIM_HEX .. CludesUI.L("Has") .. "|r " .. cls, DIM_HEX .. CludesUI.L("No") .. "|r " .. cls
             iconTex = file and ("classicon-" .. file:lower())
         end
-        local entry = K.MenuItem(inRoles and roleG or miscG, inRoles and ry or my, "", function()
-            local c = K.Cfg()
+        local entry = SortKit.MenuItem(inRoles and roleG or miscG, inRoles and ry or my, "", function()
+            local c = SortKit.Cfg()
             c[key] = (not c[key]) or nil
-            K.Refilter()
-            K.Paint()
+            SortKit.Refilter()
+            SortKit.Paint()
         end)
         m.items["flag_" .. key] = entry
         entry.label:Hide()
-        local button = Dropdown(entry, K, {
+        local button = Dropdown(entry, SortKit, {
             { label = has, button = hasBtn, icon = iconTex },
             { label = missing, button = missingBtn, icon = iconTex },
         }, function()
-            return Missing(K.Cfg(), line, raids) and 2 or 1
+            return Missing(SortKit.Cfg(), line, raids) and 2 or 1
         end, function(index)
             -- picking turns the class row on; lust / brez leave the box alone
-            local c = K.Cfg()
+            local c = SortKit.Cfg()
             c[pick] = (index == 2)
             if inRoles then
                 c[key] = true
             end
         end)
-        button:SetHeight(K.ITEM_H - 2)
-        button:SetPoint("LEFT", entry, "LEFT", 8 + K.CHECK_SZ + 7, 0)
+        button:SetHeight(SortKit.ITEM_H - 2)
+        button:SetPoint("LEFT", entry, "LEFT", 8 + SortKit.CHECK_SZ + 7, 0)
         button:SetPoint("RIGHT", entry, "RIGHT", -8, 0)
         button:SetScript("OnEnter", ShowTip)
         if inRoles then
-            ry = ry + K.ITEM_H
+            ry = ry + SortKit.ITEM_H
         else
-            my = my + K.ITEM_H
+            my = my + SortKit.ITEM_H
         end
     end
     roleG:SetHeight(ry)
@@ -1119,20 +1119,20 @@ local function LayoutMisc(dropMenu, side)
     PlaceBlock(roleG, dropMenu, posY)
     posY = posY + roleG:GetHeight()
     -- sort by under your class, its list opening upwards
-    local K = dropMenu.extraK
-    if K then
+    local SortKit = dropMenu.extraK
+    if SortKit then
         local line = CreateFrame("Frame", nil, dropMenu)
         line:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 0, -posY)
         line:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", 0, -posY)
-        line:SetHeight(K.ITEM_H)
+        line:SetHeight(SortKit.ITEM_H)
         ChoiceItem(
             line,
             0,
             { key = "extraSortBy", label = CludesUI.L("Sort By"), choice = mod.SORT_MODES },
-            K,
+            SortKit,
             true
         )
-        posY = posY + K.ITEM_H
+        posY = posY + SortKit.ITEM_H
     end
     local hgt = math.max(side and side.extraEndY and (side.extraEndY + 3) or 0, posY + 3)
     dropMenu:SetHeight(hgt)

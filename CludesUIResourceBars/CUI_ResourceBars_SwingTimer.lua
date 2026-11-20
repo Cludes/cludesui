@@ -154,7 +154,7 @@ shellFrame:Hide()
 -- Per row, _rtt (the latency read for its swing) and, on a guide row, _aimAt
 -- (its Stop by point), _aiming and _aimFrom (an aim phase running, and from
 -- when).
-local S = {
+local SwingState = {
     rows = {},
     byType = {},
     shown = 0,
@@ -311,8 +311,8 @@ end
 -- weapon slots before). Feeds the unlock mover's size before the first build.
 -- A combined off hand rides the Main Hand bar and takes no row (RefreshRows).
 local function ShownCount()
-    if S.built then
-        return math.max(S.shown, 1)
+    if SwingState.built then
+        return math.max(SwingState.shown, 1)
     end
     local conf = P()
     local num = 0
@@ -522,7 +522,7 @@ end
 -- spark.
 local function ApplyRangeLook(swingRow, conf)
     conf = conf or P()
-    local outOfRange = swingRow._outOfRange and not S.sample
+    local outOfRange = swingRow._outOfRange and not SwingState.sample
     local alpha = outOfRange and ((conf and conf.outOfRangeAlpha) or 0.4) or 1
     local frameAlpha = swingRow._merged and 0 or alpha
     swingRow._bg:SetAlpha(frameAlpha)
@@ -559,13 +559,13 @@ end
 -- S.rangeOn is the memo UpdateRangeRow reads, not a send gate.
 local function SetRangeCheck(swingType, enabled)
     enabled = enabled and true or false
-    S.rangeOn[swingType] = enabled
+    SwingState.rangeOn[swingType] = enabled
     C_SwingTimer.EnableRangeCheck(swingType, enabled)
 end
 
 -- Re-read range for one row from the API (target change, row shown).
 local function UpdateRangeRow(swingRow)
-    if not S.rangeOn[swingRow._def.type] then
+    if not SwingState.rangeOn[swingRow._def.type] then
         SetOutOfRange(swingRow, false)
         return
     end
@@ -575,8 +575,8 @@ local function UpdateRangeRow(swingRow)
 end
 
 local function UpdateRangeAll()
-    for i = 1, #S.rows do
-        local swingRow = S.rows[i]
+    for i = 1, #SwingState.rows do
+        local swingRow = SwingState.rows[i]
         if swingRow:IsShown() then
             UpdateRangeRow(swingRow)
         end
@@ -591,9 +591,9 @@ end
 local function UpdateSpark(swingRow, conf)
     local enabled
     if swingRow._merged then
-        enabled = swingRow._live or S.sample
+        enabled = swingRow._live or SwingState.sample
     else
-        enabled = conf and conf.showSpark and ((swingRow._live and not swingRow._waiting) or S.sample)
+        enabled = conf and conf.showSpark and ((swingRow._live and not swingRow._waiting) or SwingState.sample)
     end
     swingRow._spark:SetShown(enabled and true or false)
 end
@@ -708,7 +708,7 @@ local function GuideOn(conf)
 end
 
 local function GuideRow(swingRow, conf)
-    return GuideOn(conf) and S.aimClass and swingRow._def.type == SWING.Ranged
+    return GuideOn(conf) and SwingState.aimClass and swingRow._def.type == SWING.Ranged
 end
 
 local function WindRow(swingRow, conf)
@@ -789,16 +789,16 @@ local SyncTimeText
 -- The auto attack and auto-repeat edges are tracked while a feature reads them:
 -- Attack State Full, or the Movement Guide for a wand or Auto Shot class.
 local function TracksAttack(conf)
-    return StateFull(conf) or (GuideOn(conf) and S.aimClass) or false
+    return StateFull(conf) or (GuideOn(conf) and SwingState.aimClass) or false
 end
 
 -- The row's attack is on right now (melee rows: Auto Attack; Ranged: the
 -- auto-repeat shot).
 local function AttackOn(defaults)
     if defaults.melee then
-        return S.meleeOn == true
+        return SwingState.meleeOn == true
     end
-    return S.repeatOn == true
+    return SwingState.repeatOn == true
 end
 
 -- A row not mid-swing waits (parks full) while its attack is on, under Attack
@@ -831,7 +831,7 @@ local function IdleRow(swingRow, conf)
     swingRow._aimAt = nil
     if swingRow._live then
         swingRow._live = nil
-        S.live = S.live - 1
+        SwingState.live = SwingState.live - 1
         UpdateSpark(swingRow, conf)
     end
     swingRow._end = nil
@@ -918,7 +918,7 @@ function SyncTimeText(swingRow, conf)
         and not swingRow._merged
         and swingRow._live
         and not swingRow._waiting
-        and not S.sample
+        and not SwingState.sample
     then
         phaseNum = "swing"
         if conf.moveCue and GuideRow(swingRow, conf) then
@@ -1012,7 +1012,7 @@ local function StartRow(swingRow, dur, conf)
     end
     if not swingRow._live then
         swingRow._live = true
-        S.live = S.live + 1
+        SwingState.live = SwingState.live + 1
         UpdateSpark(swingRow, conf)
     end
     local object = swingRow._durObj
@@ -1021,7 +1021,7 @@ local function StartRow(swingRow, dur, conf)
     UpdateZones(swingRow, conf, dur)
     ArmEdges(swingRow, conf)
     SyncTimeText(swingRow, conf)
-    if conf.hideWhenIdle and S.live == 1 and mod.ST_UpdateVisibility then
+    if conf.hideWhenIdle and SwingState.live == 1 and mod.ST_UpdateVisibility then
         mod.ST_UpdateVisibility()
     end
 end
@@ -1038,7 +1038,7 @@ local function EnterWaiting(swingRow, conf)
     swingRow._end = nil
     if not swingRow._live then
         swingRow._live = true
-        S.live = S.live + 1
+        SwingState.live = SwingState.live + 1
     end
     local object = swingRow._durObj
     object:SetTimeFromStart(GetTime() - 1, 1)
@@ -1065,7 +1065,7 @@ local function EnterAim(swingRow, conf, from, to)
     swingRow._end = to
     if not swingRow._live then
         swingRow._live = true
-        S.live = S.live + 1
+        SwingState.live = SwingState.live + 1
     end
     local object = swingRow._durObj
     object:SetTimeFromStart(from, to - from)
@@ -1085,13 +1085,13 @@ end
 -- swing runs. No SetValue here, the fill is the engine's.
 function EndEdge()
     local conf = P()
-    if not (conf and conf.enabled and S.built) then
+    if not (conf and conf.enabled and SwingState.built) then
         return
     end
     local nowTime = GetTime()
     local running = false
-    for i = 1, #S.rows do
-        local swingRow = S.rows[i]
+    for i = 1, #SwingState.rows do
+        local swingRow = SwingState.rows[i]
         -- Wind-Up reload done at Stop by: the aim phase, held while moving, none
         -- once the shot is off (no shot is coming). Segments keeps its bar.
         if
@@ -1104,7 +1104,7 @@ function EndEdge()
         then
             if not AttackOn(swingRow._def) then
                 IdleRow(swingRow, conf)
-            elseif S.moving then
+            elseif SwingState.moving then
                 EnterWaiting(swingRow, conf)
             else
                 EnterAim(swingRow, conf, swingRow._aimAt, swingRow._end)
@@ -1147,8 +1147,8 @@ function ApplyRowFill(swingRow, conf)
     local defaults = swingRow._def
     local pend = swingRow._waiting and StateFull(conf)
     local aimTex = not pend and swingRow._aiming
-    local q = not (pend or aimTex) and QueueRow(defaults, conf) and S.queued
-    local act = not (pend or aimTex or q) and S.active[defaults.melee and "melee" or "ranged"]
+    local q = not (pend or aimTex) and QueueRow(defaults, conf) and SwingState.queued
+    local act = not (pend or aimTex or q) and SwingState.active[defaults.melee and "melee" or "ranged"]
     local fR, fG, fB, fA
     if pend then
         local color = PENDING_COLOR
@@ -1201,7 +1201,7 @@ end
 -- this for every row on each weapon and attack speed change.
 local function ApplyRowTag(swingRow, conf)
     local defaults = swingRow._def
-    local q = S.queued and QueueRow(defaults, conf) and S.queued.name or false
+    local q = SwingState.queued and QueueRow(defaults, conf) and SwingState.queued.name or false
     local base = q and defaults.tag or TagText(swingRow, conf)
     if base == swingRow._tagBase and q == swingRow._tagQueued then
         return
@@ -1214,7 +1214,7 @@ end
 -- false. Reads only the names resolved at build; a restricted answer counts as
 -- not queued.
 local function QueuedSpell()
-    local entries = S.queueSpells
+    local entries = SwingState.queueSpells
     if #entries == 0 or not (C_Spell and C_Spell.IsCurrentSpell) then
         return false
     end
@@ -1230,16 +1230,16 @@ end
 -- Delta paint: touches the melee rows only when the queued attack changed.
 local function PaintQueue(conf)
     conf = conf or P()
-    if not (conf and S.built) then
+    if not (conf and SwingState.built) then
         return
     end
     local queued = QueueOn(conf) and QueuedSpell() or false
-    if queued == S.queued then
+    if queued == SwingState.queued then
         return
     end
-    S.queued = queued
-    for i = 1, #S.rows do
-        local swingRow = S.rows[i]
+    SwingState.queued = queued
+    for i = 1, #SwingState.rows do
+        local swingRow = SwingState.rows[i]
         if QueueRow(swingRow._def, conf) then
             ApplyRowFill(swingRow, conf)
             ApplyRowTag(swingRow, conf)
@@ -1251,7 +1251,7 @@ end
 -- to: the action bars' own auto-repeat test, and Auto Attack as the current
 -- spell. The edges keep them current from here.
 local function SeedActive()
-    S.seeded = true
+    SwingState.seeded = true
     local rep = false
     local isRep = C_ActionBar and C_ActionBar.IsAutoRepeatAction
     if isRep then
@@ -1263,28 +1263,28 @@ local function SeedActive()
             end
         end
     end
-    S.repeatOn = rep
+    SwingState.repeatOn = rep
     local current = C_Spell and C_Spell.IsCurrentSpell and C_Spell.IsCurrentSpell(AUTO_ATTACK)
-    S.meleeOn = (Plain(current) and current) and true or false
+    SwingState.meleeOn = (Plain(current) and current) and true or false
 end
 
 -- Delta paint: touches only the rows whose active state flipped.
 local function PaintActive(conf)
     conf = conf or P()
-    if not (conf and S.built) then
+    if not (conf and SwingState.built) then
         return
     end
     local enabled = StateFull(conf)
-    local melee = enabled and S.meleeOn == true
-    local ranged = enabled and S.repeatOn == true
-    local A = S.active
+    local melee = enabled and SwingState.meleeOn == true
+    local ranged = enabled and SwingState.repeatOn == true
+    local A = SwingState.active
     local dMelee, dRanged = melee ~= A.melee, ranged ~= A.ranged
     if not (dMelee or dRanged) then
         return
     end
     A.melee, A.ranged = melee, ranged
-    for i = 1, #S.rows do
-        local swingRow = S.rows[i]
+    for i = 1, #SwingState.rows do
+        local swingRow = SwingState.rows[i]
         if (swingRow._def.melee and dMelee) or (not swingRow._def.melee and dRanged) then
             ApplyRowFill(swingRow, conf)
         end
@@ -1296,8 +1296,8 @@ end
 -- weapon rows change; a row mid-swing is left to its end edge.
 local function SyncWaiting(conf)
     local changed = false
-    for i = 1, #S.rows do
-        local swingRow = S.rows[i]
+    for i = 1, #SwingState.rows do
+        local swingRow = SwingState.rows[i]
         if not (swingRow._live and not swingRow._waiting) then
             if ShouldWait(swingRow, conf) then
                 if not swingRow._waiting then
@@ -1323,12 +1323,12 @@ local function Layout(conf)
     local sp = RowGap(conf)
     local wid = conf.width or 220
     local position = 0
-    for i = 1, #S.rows do
-        local swingRow = S.rows[i]
+    for i = 1, #SwingState.rows do
+        local swingRow = SwingState.rows[i]
         if swingRow:IsShown() then
             swingRow:ClearAllPoints()
             if swingRow._merged then
-                swingRow:SetAllPoints(S.byType[SWING.MainHand])
+                swingRow:SetAllPoints(SwingState.byType[SWING.MainHand])
             else
                 swingRow:SetPoint("TOPLEFT", shellFrame, "TOPLEFT", 0, -position * (hgt + sp))
                 swingRow:SetSize(wid, hgt)
@@ -1336,12 +1336,12 @@ local function Layout(conf)
             end
         end
     end
-    S.shown = position
+    SwingState.shown = position
     local num = math.max(position, 1)
     local totalH = num * hgt + (num - 1) * sp
     shellFrame:SetSize(wid, totalH)
-    local changed = S.lastH ~= nil and S.lastH ~= totalH
-    S.lastH = totalH
+    local changed = SwingState.lastH ~= nil and SwingState.lastH ~= totalH
+    SwingState.lastH = totalH
     return changed
 end
 
@@ -1527,16 +1527,16 @@ end
 
 local function ApplyLook(conf)
     local wid, hgt = conf.width or 220, conf.height or 12
-    for i = 1, #S.rows do
-        ApplyRowLook(S.rows[i], conf, wid, hgt)
+    for i = 1, #SwingState.rows do
+        ApplyRowLook(SwingState.rows[i], conf, wid, hgt)
     end
 end
 
 -- Restyles the rows RefreshRows marked (see there).
 local function RestyleMarked(conf)
     local wid, hgt = conf.width or 220, conf.height or 12
-    for i = 1, #S.rows do
-        local swingRow = S.rows[i]
+    for i = 1, #SwingState.rows do
+        local swingRow = SwingState.rows[i]
         if swingRow._restyle then
             ApplyRowLook(swingRow, conf, wid, hgt)
         end
@@ -1555,13 +1555,13 @@ end
 -- takes the right look without an options apply.
 local function RefreshRows(conf)
     conf = conf or P()
-    if not (conf and S.built) then
+    if not (conf and SwingState.built) then
         return
     end
     local wantRange = conf.enabled and conf.rangeCheck ~= false
     local mhShown, marked = false, false
-    for i = 1, #S.rows do
-        local swingRow = S.rows[i]
+    for i = 1, #SwingState.rows do
+        local swingRow = SwingState.rows[i]
         local defaults = swingRow._def
         local canSwing = RowWanted(defaults, conf, swingRow)
         ApplyRowLabel(swingRow, conf)
@@ -1638,28 +1638,28 @@ end
 -- aim can run: the Movement Guide on, a wand or Auto Shot class, and the shot on.
 -- Registering reads where the player is now (GetUnitSpeed, restricted = still).
 local function ApplyMoveEvents(conf)
-    if not S.events then
+    if not SwingState.events then
         return
     end
-    if S.aimClass and GuideOn(conf) and S.repeatOn then
-        if not S.moveEvents then
-            S.moveEvents = true
+    if SwingState.aimClass and GuideOn(conf) and SwingState.repeatOn then
+        if not SwingState.moveEvents then
+            SwingState.moveEvents = true
             shellFrame:RegisterEvent("PLAYER_STARTED_MOVING")
             shellFrame:RegisterEvent("PLAYER_STOPPED_MOVING")
             local swingSpeed = GetUnitSpeed("player")
-            S.moving = (Plain(swingSpeed) and swingSpeed > 0) and true or false
+            SwingState.moving = (Plain(swingSpeed) and swingSpeed > 0) and true or false
         end
-    elseif S.moveEvents then
-        S.moveEvents = nil
+    elseif SwingState.moveEvents then
+        SwingState.moveEvents = nil
         shellFrame:UnregisterEvent("PLAYER_STARTED_MOVING")
         shellFrame:UnregisterEvent("PLAYER_STOPPED_MOVING")
-        S.moving = false
+        SwingState.moving = false
     end
 end
 
 shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3)
     local conf = P()
-    if not (conf and conf.enabled and S.built) then
+    if not (conf and conf.enabled and SwingState.built) then
         return
     end
     if evt == "PLAYER_SWING" then
@@ -1667,7 +1667,7 @@ shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3)
         if not (Plain(a1) and Plain(a2)) then
             return
         end
-        local swingRow = S.byType[a2]
+        local swingRow = SwingState.byType[a2]
         if swingRow then
             -- A swing proves its slot can swing: a row hidden only because its
             -- speed read was restricted comes back with it.
@@ -1685,10 +1685,10 @@ shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3)
     elseif evt == "ACTIONBAR_UPDATE_STATE" then
         PaintQueue(conf)
     elseif evt == "START_AUTOREPEAT_SPELL" or evt == "STOP_AUTOREPEAT_SPELL" then
-        S.repeatOn = evt == "START_AUTOREPEAT_SPELL"
-        if not S.repeatOn then
+        SwingState.repeatOn = evt == "START_AUTOREPEAT_SPELL"
+        if not SwingState.repeatOn then
             -- No shot is coming: an aim in progress ends with it.
-            local swingRow = S.byType[SWING.Ranged]
+            local swingRow = SwingState.byType[SWING.Ranged]
             if swingRow and swingRow._aiming then
                 IdleRow(swingRow, conf)
             end
@@ -1698,8 +1698,8 @@ shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3)
         PaintActive(conf)
     elseif evt == "PLAYER_STARTED_MOVING" then
         -- Moving holds the shot: an aim in progress stops and waits.
-        S.moving = true
-        local swingRow = S.byType[SWING.Ranged]
+        SwingState.moving = true
+        local swingRow = SwingState.byType[SWING.Ranged]
         if swingRow and swingRow._aiming then
             EnterWaiting(swingRow, conf)
         end
@@ -1707,8 +1707,8 @@ shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3)
         -- Standing still again: a shot held, or stopped for only after Stop by,
         -- fires AIM_TIME from now plus the round trip (the stop reaches the
         -- server, the swing comes back). Both guide styles show it as an aim.
-        S.moving = false
-        local swingRow = S.byType[SWING.Ranged]
+        SwingState.moving = false
+        local swingRow = SwingState.byType[SWING.Ranged]
         if swingRow and swingRow._live and GuideRow(swingRow, conf) and AttackOn(swingRow._def) then
             local nowTime = GetTime()
             if swingRow._waiting or (swingRow._aimAt and not swingRow._aiming and nowTime >= swingRow._aimAt) then
@@ -1721,16 +1721,16 @@ shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3)
             end
         end
     elseif evt == "PLAYER_ENTER_COMBAT" or evt == "PLAYER_LEAVE_COMBAT" then
-        S.meleeOn = evt == "PLAYER_ENTER_COMBAT"
+        SwingState.meleeOn = evt == "PLAYER_ENTER_COMBAT"
         SyncWaiting(conf)
         PaintActive(conf)
     elseif evt == "PLAYER_DEAD" then
-        for i = 1, #S.rows do
-            if S.rows[i]._live then
-                IdleRow(S.rows[i], conf)
+        for i = 1, #SwingState.rows do
+            if SwingState.rows[i]._live then
+                IdleRow(SwingState.rows[i], conf)
             end
         end
-        S.meleeOn, S.repeatOn = false, false
+        SwingState.meleeOn, SwingState.repeatOn = false, false
         ApplyMoveEvents(conf)
         PaintActive(conf)
     elseif evt == "PLAYER_SWING_RANGE_UPDATE" then
@@ -1738,15 +1738,15 @@ shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3)
         if not (Plain(a1) and Plain(a2) and Plain(a3)) then
             return
         end
-        local swingRow = S.byType[a1]
+        local swingRow = SwingState.byType[a1]
         if swingRow then
             SetOutOfRange(swingRow, a3 == true and a2 == false)
         end
     elseif evt == "PLAYER_TARGET_CHANGED" then
         -- Re-assert the range flags before the re-read (see SetRangeCheck).
         local wantRange = conf.rangeCheck ~= false
-        for i = 1, #S.rows do
-            local swingRow = S.rows[i]
+        for i = 1, #SwingState.rows do
+            local swingRow = SwingState.rows[i]
             SetRangeCheck(swingRow._def.type, wantRange and swingRow:IsShown())
         end
         UpdateRangeAll()
@@ -1773,10 +1773,10 @@ shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3)
 end)
 
 local function RegisterEvents()
-    if S.events then
+    if SwingState.events then
         return
     end
-    S.events = true
+    SwingState.events = true
     shellFrame:RegisterEvent("PLAYER_SWING")
     shellFrame:RegisterEvent("PLAYER_SWING_RANGE_UPDATE")
     shellFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
@@ -1789,10 +1789,10 @@ end
 -- The queue paint's event is registered only while the highlight is on (it is
 -- the one chatty event here).
 local function ApplyQueueEvents(conf)
-    if not S.events then
+    if not SwingState.events then
         return
     end
-    if QueueOn(conf) and #S.queueSpells > 0 then
+    if QueueOn(conf) and #SwingState.queueSpells > 0 then
         shellFrame:RegisterEvent("ACTIONBAR_UPDATE_STATE")
     else
         shellFrame:UnregisterEvent("ACTIONBAR_UPDATE_STATE")
@@ -1801,7 +1801,7 @@ end
 
 -- Equipment changes matter only to the shield handling.
 local function ApplyShieldEvents(conf)
-    if not S.events then
+    if not SwingState.events then
         return
     end
     if ShieldAware(conf) then
@@ -1814,7 +1814,7 @@ end
 -- The auto attack and auto-repeat edges, only while something reads them
 -- (TracksAttack).
 local function ApplyActiveEvents(conf)
-    if not S.events then
+    if not SwingState.events then
         return
     end
     if TracksAttack(conf) then
@@ -1831,11 +1831,11 @@ local function ApplyActiveEvents(conf)
 end
 
 local function UnregisterEvents()
-    if not S.events then
+    if not SwingState.events then
         return
     end
-    S.events = nil
-    S.moveEvents, S.moving = nil, false
+    SwingState.events = nil
+    SwingState.moveEvents, SwingState.moving = nil, false
     shellFrame:UnregisterAllEvents()
 end
 
@@ -1844,18 +1844,18 @@ end
 -------------------------------------------------------------------------------
 
 local function EnsureBuilt()
-    if S.built then
+    if SwingState.built then
         return
     end
-    S.built = true
+    SwingState.built = true
     shellFrame:SetFrameLevel(15)
     for i = 1, #ROWS do
         local swingRow = BuildRow(ROWS[i])
-        S.rows[i] = swingRow
-        S.byType[ROWS[i].type] = swingRow
+        SwingState.rows[i] = swingRow
+        SwingState.byType[ROWS[i].type] = swingRow
     end
     local _, class = UnitClass("player")
-    S.aimClass = AIM_CLASS[class]
+    SwingState.aimClass = AIM_CLASS[class]
     -- On-next-swing spell names, once per session, for a class that has one.
     local ids = CludesUI.FOREVER_NEXT_SWING and CludesUI.FOREVER_NEXT_SWING[class]
     if ids and C_Spell and C_Spell.GetSpellName then
@@ -1863,15 +1863,15 @@ local function EnsureBuilt()
             local name = C_Spell.GetSpellName(ids[i])
             if Plain(name) and name then
                 local color = QUEUE_COLORS[ids[i]] or QUEUE_COLOR
-                S.queueSpells[#S.queueSpells + 1] =
+                SwingState.queueSpells[#SwingState.queueSpells + 1] =
                     { id = ids[i], key = color.key, shared = color.shared, r = color.r, g = color.g, b = color.b, name = name }
             end
         end
     end
     -- Mouseover hover-reveal: same plain-table proxy the class/power/health bars
     -- register, gated on the eligibility flag ST_UpdateVisibility maintains.
-    if not S.moHooked and CludesUI.RegisterMouseoverTarget then
-        S.moHooked = true
+    if not SwingState.moHooked and CludesUI.RegisterMouseoverTarget then
+        SwingState.moHooked = true
         local proxy = {}
         proxy.GetRect = function()
             return shellFrame:GetRect()
@@ -1899,14 +1899,14 @@ end
 -- finds the timer off and does nothing); the frame stays shown at alpha 0
 -- so anchored neighbours keep a valid rect (SetElementVisibility rule).
 local function Teardown()
-    if not S.built then
+    if not SwingState.built then
         return
     end
     UnregisterEvents()
-    S.seeded = nil -- the edges stop here: re-read on the next enable
+    SwingState.seeded = nil -- the edges stop here: re-read on the next enable
     local conf = P()
-    for i = 1, #S.rows do
-        local swingRow = S.rows[i]
+    for i = 1, #SwingState.rows do
+        local swingRow = SwingState.rows[i]
         if swingRow._live then
             IdleRow(swingRow, conf)
         end
@@ -1928,12 +1928,12 @@ local function Arm(conf)
     ApplyShieldEvents(conf)
     -- Highlight turned off with an attack queued: the paint below must clear it.
     if not QueueOn(conf) then
-        S.queued = false
+        SwingState.queued = false
     end
     -- Attack state: read once per enable, kept by the edges while on.
     if not TracksAttack(conf) then
-        S.seeded = nil
-    elseif not S.seeded then
+        SwingState.seeded = nil
+    elseif not SwingState.seeded then
         SeedActive()
     end
     ApplyMoveEvents(conf)
@@ -1950,10 +1950,10 @@ end
 -- the idle render, so a Show Fill Color When Idle change shows at once, not
 -- at the next swing's end.
 local function PaintRows(conf)
-    for i = 1, #S.rows do
-        local swingRow = S.rows[i]
+    for i = 1, #SwingState.rows do
+        local swingRow = SwingState.rows[i]
         local object = swingRow._durObj
-        if S.sample then
+        if SwingState.sample then
             -- A combined off hand parks empty, so its spark shows at the far
             -- end from a full Main Hand bar's.
             local oh = swingRow._merged
@@ -2024,7 +2024,7 @@ end
 -- (Teardown) or resumes it; Unlock Mode keeps it running either way, and
 -- leaving Unlock Mode runs the full apply, which parks it while ruled out.
 function mod.ST_UpdateVisibility()
-    if not S.built then
+    if not SwingState.built then
         return
     end
     local conf = P()
@@ -2033,9 +2033,9 @@ function mod.ST_UpdateVisibility()
         return
     end
     local ruled = RuledOut(conf)
-    if ruled ~= (S.ruled or false) then
+    if ruled ~= (SwingState.ruled or false) then
         -- Set first: the row edges below can run this pass again.
-        S.ruled = ruled
+        SwingState.ruled = ruled
         if not CludesUI._unlockActive then
             if ruled then
                 Teardown()
@@ -2047,11 +2047,11 @@ function mod.ST_UpdateVisibility()
     local vis
     if CludesUI._unlockActive then
         vis = true
-    elseif S.ruled then
+    elseif SwingState.ruled then
         vis = false
     else
         vis = not ERB._inVehicle and mod.ShouldShowBar(conf)
-        if vis and conf.hideWhenIdle and S.live == 0 then
+        if vis and conf.hideWhenIdle and SwingState.live == 0 then
             vis = false
         end
     end
@@ -2069,7 +2069,7 @@ function mod.ST_SparkColor(key, unset)
     end
     for i = 1, #ROWS do
         if ROWS[i].key == key then
-            local swingRow = S.rows[i]
+            local swingRow = SwingState.rows[i]
             return SparkColor(conf, ROWS[i], swingRow and swingRow._merged, unset)
         end
     end
@@ -2090,16 +2090,16 @@ end
 function mod.ST_Apply()
     local conf = P()
     if not conf or not conf.enabled then
-        S.ruled = nil
+        SwingState.ruled = nil
         Teardown()
         return
     end
-    S.ruled = RuledOut(conf)
+    SwingState.ruled = RuledOut(conf)
     -- Ruled out by form or talents (outside Unlock Mode, which shows it with its
     -- sample): laid out and styled as usual, so anchored elements keep their
     -- spot and a resume needs no restyle, then parked like switched off (no
     -- events, every row idle, alpha 0).
-    local park = S.ruled and not CludesUI._unlockActive
+    local park = SwingState.ruled and not CludesUI._unlockActive
     EnsureBuilt()
     shellFrame:SetFrameStrata(conf.frameStrata or "MEDIUM")
     shellFrame:Show()
@@ -2132,12 +2132,12 @@ function mod.ST_MakeUnlockElement(MK, Rebuild)
     end
     local Pix = CludesUI.PP
 
-    if not S.unlockHooked and CludesUI.RegisterUnlockModeListener then
-        S.unlockHooked = true
+    if not SwingState.unlockHooked and CludesUI.RegisterUnlockModeListener then
+        SwingState.unlockHooked = true
         CludesUI:RegisterUnlockModeListener(UNLOCK_KEY, function(isActive)
             -- Sample fill while the movers are up so an idle bar has something
             -- to drag; ST_Apply restores the real state on exit.
-            S.sample = isActive and true or nil
+            SwingState.sample = isActive and true or nil
             if mod.ST_Apply then
                 mod.ST_Apply()
             end
@@ -2153,7 +2153,7 @@ function mod.ST_MakeUnlockElement(MK, Rebuild)
             return
         end
         conf.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
-        if not CludesUI._unlockActive and S.built then
+        if not CludesUI._unlockActive and SwingState.built then
             shellFrame:ClearAllPoints()
             shellFrame:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
         end
@@ -2178,7 +2178,7 @@ function mod.ST_MakeUnlockElement(MK, Rebuild)
     local function apply()
         local conf = P()
         local place = conf and conf.unlockPos
-        if not (place and S.built) then
+        if not (place and SwingState.built) then
             return
         end
         local sx, sy = mod.SnapXY(place.x, place.y, shellFrame, place)
@@ -2192,7 +2192,7 @@ function mod.ST_MakeUnlockElement(MK, Rebuild)
         group = "Resource Bars",
         order = 508,
         getFrame = function()
-            return S.built and shellFrame or nil
+            return SwingState.built and shellFrame or nil
         end,
         isHidden = function()
             local conf = P()
