@@ -1616,8 +1616,8 @@ local function ResetRowCounters()
     wipe(rowCounters)
 end
 
-local function lerp(a, b, t)
-    return a + (b - a) * t
+local function lerp(from, to, t)
+    return from + (to - from) * t
 end
 
 -- Shared /played: every module asks here, so modules share one request and its
@@ -1790,9 +1790,9 @@ function CludesUI.StripFriendNoteTag(noteText)
     if type(noteText) ~= "string" or issecretvalue(noteText) or noteText == "" then
         return nil
     end
-    local s = noteText:find("||E" .. "UI:", 1, true)
-    if s and noteText:find("||", s + 6, true) then
-        noteText = noteText:sub(1, s - 1):match("^(.-)%s*$")
+    local pos = noteText:find("||E" .. "UI:", 1, true)
+    if pos and noteText:find("||", pos + 6, true) then
+        noteText = noteText:sub(1, pos - 1):match("^(.-)%s*$")
         if noteText == "" then
             return nil
         end
@@ -1961,9 +1961,9 @@ function CludesUI.BuildAlertSoundTables()
     for i, key in ipairs(CludesUI.ALERT_SOUND_ORDER) do
         sequence[i] = key
         nameList[key] = CludesUI.ALERT_SOUND_NAMES[key]
-        local f = CludesUI.ALERT_SOUND_FILES[key]
-        if f then
-            paths[key] = dir .. f
+        local file = CludesUI.ALERT_SOUND_FILES[key]
+        if file then
+            paths[key] = dir .. file
         end
     end
     return paths, nameList, sequence
@@ -2064,9 +2064,9 @@ function CludesUI.BuildBarTextureTables(includeExtras)
         if includeExtras or (key ~= "blinkii-diamonds" and key ~= "kringel-window") then
             sequence[#sequence + 1] = key
             nameList[key] = CludesUI.BAR_TEXTURE_NAMES[key]
-            local f = CludesUI.BAR_TEXTURE_FILES[key]
-            if f then
-                texture[key] = dir .. f
+            local file = CludesUI.BAR_TEXTURE_FILES[key]
+            if file then
+                texture[key] = dir .. file
             end
         end
     end
@@ -3923,8 +3923,8 @@ function CludesUI.AppendSharedMediaTextures(nameList, sequence, castBarNames, te
     end
 
     -- Register this consumer (dedup by textures-table identity); sepAdded stays false so the first SM key adds exactly one "---" (the dedup guard prevents a second).
-    local c = CludesUI._smTexConsumers[textures]
-    if not c then
+    local consumers = CludesUI._smTexConsumers[textures]
+    if not consumers then
         -- The consumer's own display-name -> file pairs at registration (its
         -- module-side list is complete by then; SM keys are not in it yet),
         -- for the exact-duplicate test above. Keyed by NAME, not by file
@@ -3940,14 +3940,14 @@ function CludesUI.AppendSharedMediaTextures(nameList, sequence, castBarNames, te
                 native[string.lower(nm)] = filePath
             end
         end
-        c = {
+        consumers = {
             names = nameList,
             order = sequence,
             castBarNames = castBarNames,
             textures = textures,
             nativeNames = native,
         }
-        CludesUI._smTexConsumers[textures] = c
+        CludesUI._smTexConsumers[textures] = consumers
     end
 
     -- Sync all currently-registered SM textures (sorted alphabetically; late ones arriving via the callback append after, in registration order).
@@ -3963,7 +3963,7 @@ function CludesUI.AppendSharedMediaTextures(nameList, sequence, castBarNames, te
         if #ordered > 0 then
             table.sort(ordered)
             for _, label in ipairs(ordered) do
-                AppendOne(c, label, smTextures[label])
+                AppendOne(consumers, label, smTextures[label])
             end
         end
     end

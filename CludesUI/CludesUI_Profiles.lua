@@ -395,22 +395,22 @@ CludesUI._NoCheckboxFolder = NO_CHECKBOX_FOLDER
 local Serializer = {}
 
 local function SerializeValue(v, pieces)
-    local t = type(v)
-    if t == "string" then
+    local kind = type(v)
+    if kind == "string" then
         pieces[#pieces + 1] = "s"
         -- Length-prefixed to avoid delimiter issues
         pieces[#pieces + 1] = #v
         pieces[#pieces + 1] = ":"
         pieces[#pieces + 1] = v
-    elseif t == "number" then
+    elseif kind == "number" then
         pieces[#pieces + 1] = "n"
         pieces[#pieces + 1] = tostring(v)
         pieces[#pieces + 1] = ";"
-    elseif t == "boolean" then
+    elseif kind == "boolean" then
         pieces[#pieces + 1] = v and "T" or "F"
-    elseif t == "nil" then
+    elseif kind == "nil" then
         pieces[#pieces + 1] = "N"
-    elseif t == "table" then
+    elseif kind == "table" then
         pieces[#pieces + 1] = "{"
         -- Serialize array part first (integer keys 1..n)
         local num = #v
@@ -491,10 +491,10 @@ local function DeserializeValue(packed, place)
         local position = 1
         local p = place + 1
         while p <= #packed do
-            local c = packed:sub(p, p)
-            if c == "}" then
+            local char = packed:sub(p, p)
+            if char == "}" then
                 return dataTbl, p + 1
-            elseif c == "K" then
+            elseif char == "K" then
                 -- Key-value pair
                 local entryKey, value
                 entryKey, p = DeserializeValue(packed, p + 1)
@@ -679,14 +679,14 @@ function CludesUI.FilterLayoutToFolders(layout, folderSet, keyToFolder)
         if type(entryKey) ~= "string" then
             return false
         end
-        local f = keyToFolder[entryKey]
-        if not f then
+        local folder = keyToFolder[entryKey]
+        if not folder then
             return false
         end -- unclassifiable -> drop
-        if NO_CHECKBOX_FOLDER[f] then
+        if NO_CHECKBOX_FOLDER[folder] then
             return false
         end -- never export no-checkbox edges
-        return folderSet[f] == true -- both endpoints in S
+        return folderSet[folder] == true -- both endpoints in S
     end
     -- Screen-edge targets (CUI_UnlockMode) exist on every install and belong to no
     -- module: a link TO one travels with its child's module. Target only -- a screen
@@ -740,14 +740,14 @@ function CludesUI.BuildModuleComponents(layout, keyToFolder)
         end
         return posX
     end
-    local function union(a, b)
-        if not hostFrame[a] then
-            hostFrame[a] = a
+    local function union(lhs, rhs)
+        if not hostFrame[lhs] then
+            hostFrame[lhs] = lhs
         end
-        if not hostFrame[b] then
-            hostFrame[b] = b
+        if not hostFrame[rhs] then
+            hostFrame[rhs] = rhs
         end
-        local ra, rb = find(a), find(b)
+        local ra, rb = find(lhs), find(rhs)
         if ra ~= rb then
             hostFrame[ra] = rb
         end
@@ -1572,26 +1572,26 @@ function CludesUI.ApplyProfileData(profileRec)
                 -- imported profiles (inherited migration flags), so
                 -- forward-copy here BEFORE the merge masks the nil keys.
                 if record.folder == "CludesUIUnitFrames" and type(activeProfile.boss) == "table" then
-                    local b = activeProfile.boss
+                    local bossCfg = activeProfile.boss
                     if
-                        b.simpleDebuffCooldownTextSize == nil
-                        and type(b.debuffCooldownTextSize) == "number"
-                        and b.debuffCooldownTextSize ~= 10
+                        bossCfg.simpleDebuffCooldownTextSize == nil
+                        and type(bossCfg.debuffCooldownTextSize) == "number"
+                        and bossCfg.debuffCooldownTextSize ~= 10
                     then
-                        b.simpleDebuffCooldownTextSize = b.debuffCooldownTextSize
+                        bossCfg.simpleDebuffCooldownTextSize = bossCfg.debuffCooldownTextSize
                     end
-                    if b.simpleDebuffShowCooldownText == nil and b.debuffShowCooldownText == true then
-                        b.simpleDebuffShowCooldownText = true
+                    if bossCfg.simpleDebuffShowCooldownText == nil and bossCfg.debuffShowCooldownText == true then
+                        bossCfg.simpleDebuffShowCooldownText = true
                     end
                     if
-                        b.simpleBuffCooldownTextSize == nil
-                        and type(b.buffCooldownTextSize) == "number"
-                        and b.buffCooldownTextSize ~= 10
+                        bossCfg.simpleBuffCooldownTextSize == nil
+                        and type(bossCfg.buffCooldownTextSize) == "number"
+                        and bossCfg.buffCooldownTextSize ~= 10
                     then
-                        b.simpleBuffCooldownTextSize = b.buffCooldownTextSize
+                        bossCfg.simpleBuffCooldownTextSize = bossCfg.buffCooldownTextSize
                     end
-                    if b.simpleBuffShowCooldownText == nil and b.buffShowCooldownText == true then
-                        b.simpleBuffShowCooldownText = true
+                    if bossCfg.simpleBuffShowCooldownText == nil and bossCfg.buffShowCooldownText == true then
+                        bossCfg.simpleBuffShowCooldownText = true
                     end
                 end
                 -- Pre-MultiBag imports carry the legacy bagDefaultOneBag boolean
@@ -2639,11 +2639,11 @@ local function TranslateForeignName(text)
 end
 
 local function TranslateForeignPayload(v)
-    local t = type(v)
-    if t == "string" then
+    local kind = type(v)
+    if kind == "string" then
         return TranslateForeignName(v)
     end
-    if t ~= "table" then
+    if kind ~= "table" then
         return v
     end
     local output = {}
@@ -2789,12 +2789,12 @@ end
 -- only applies them when "Auto Assign to Specs" is enabled. Returns nil when the
 -- profile is not assigned to any spec (the common case), so the field is absent.
 local function CollectAssignedSpecs(profName)
-    local sp = CludesUIDB and CludesUIDB.specProfiles
-    if type(sp) ~= "table" then
+    local specProfiles = CludesUIDB and CludesUIDB.specProfiles
+    if type(specProfiles) ~= "table" then
         return nil
     end
     local entries
-    for specId, profileTbl in pairs(sp) do
+    for specId, profileTbl in pairs(specProfiles) do
         if profileTbl == profName then
             entries = entries or {}
             entries[#entries + 1] = specId
@@ -3743,7 +3743,7 @@ end
 function CludesUI.ForeverCDMSelection(assignments, options, output)
     local spellAssign = CludesUIDB and CludesUIDB.spellAssignments
     local b = spellAssign and spellAssign.profiles and spellAssign.profiles[CludesUIDB.activeProfile or "Default"]
-    local sp = (b and b.specProfiles) or {}
+    local specProfiles = (b and b.specProfiles) or {}
     local player = select(2, UnitClass("player"))
     local isOpen = {}
     local function Opened(entryKey)
@@ -3775,13 +3775,13 @@ function CludesUI.ForeverCDMSelection(assignments, options, output)
             if options.foreverAllKeys then
                 for i = 1, #ids do
                     local k = tostring(ids[i])
-                    if sp[k] ~= nil then
+                    if specProfiles[k] ~= nil then
                         output[k] = true
                         any = true
                     end
                 end
                 local lk = tostring(CludesUI.FOREVER_CLASS_SPEC[nameToken])
-                if sp[lk] ~= nil then
+                if specProfiles[lk] ~= nil then
                     output[lk] = true
                     any = true
                 end
@@ -3793,7 +3793,7 @@ function CludesUI.ForeverCDMSelection(assignments, options, output)
             end
             if not any then
                 local k = (nameToken == player) and options.foreverActiveKey
-                    or tostring(CludesUI.ForeverClassSpec(nameToken, CludesUI.SpecHasStringEntry, sp, true))
+                    or tostring(CludesUI.ForeverClassSpec(nameToken, CludesUI.SpecHasStringEntry, specProfiles, true))
                 output[k] = true
             end
         end
@@ -4631,13 +4631,13 @@ function CludesUI.ImportProfile(importText, profName)
         -- live tables onto the stored copy here; otherwise a "Include layout = off"
         -- (or layout-less) import would drop the current profile's live anchors.
         do
-            local baseUL = combined.unlockLayout or {}
-            baseUL.anchors = baseUL.anchors or {}
-            baseUL.widthMatch = baseUL.widthMatch or {}
-            baseUL.heightMatch = baseUL.heightMatch or {}
-            baseUL.phantomBounds = baseUL.phantomBounds or {}
-            baseUL.widthMatchExtra = baseUL.widthMatchExtra or {}
-            baseUL.heightMatchExtra = baseUL.heightMatchExtra or {}
+            local baseLayout = combined.unlockLayout or {}
+            baseLayout.anchors = baseLayout.anchors or {}
+            baseLayout.widthMatch = baseLayout.widthMatch or {}
+            baseLayout.heightMatch = baseLayout.heightMatch or {}
+            baseLayout.phantomBounds = baseLayout.phantomBounds or {}
+            baseLayout.widthMatchExtra = baseLayout.widthMatchExtra or {}
+            baseLayout.heightMatchExtra = baseLayout.heightMatchExtra or {}
             local function overlayLive(destination, live)
                 if type(live) == "table" then
                     for key, val in pairs(live) do
@@ -4655,20 +4655,20 @@ function CludesUI.ImportProfile(importText, profName)
                 -- other writer uses; TBB child entries are carried from live inside it.
                 local liveSnap = SnapshotUnlockLayout()
                 if liveSnap then
-                    overlayLive(baseUL.anchors, liveSnap.anchors)
-                    overlayLive(baseUL.widthMatch, liveSnap.widthMatch)
-                    overlayLive(baseUL.heightMatch, liveSnap.heightMatch)
+                    overlayLive(baseLayout.anchors, liveSnap.anchors)
+                    overlayLive(baseLayout.widthMatch, liveSnap.widthMatch)
+                    overlayLive(baseLayout.heightMatch, liveSnap.heightMatch)
                     -- Each live link overlaid above brings its live extra, or
                     -- clears the stored extra of the link it replaced.
-                    OverlayLinkedExtras(baseUL.widthMatchExtra, liveSnap.widthMatch, liveSnap.widthMatchExtra)
+                    OverlayLinkedExtras(baseLayout.widthMatchExtra, liveSnap.widthMatch, liveSnap.widthMatchExtra)
                     OverlayLinkedExtras(
-                        baseUL.heightMatchExtra,
+                        baseLayout.heightMatchExtra,
                         liveSnap.heightMatch,
                         liveSnap.heightMatchExtra
                     )
                 end
             end
-            combined.unlockLayout = baseUL -- current full layout (kept when no import layout)
+            combined.unlockLayout = baseLayout -- current full layout (kept when no import layout)
 
             -- Per-module merge of the imported relationships: keep base for modules
             -- NOT imported (e.g. ActionBars self-anchors); take imported for those
@@ -4681,7 +4681,7 @@ function CludesUI.ImportProfile(importText, profName)
                     end
                 end
                 combined.unlockLayout =
-                    CludesUI.MergeImportedLayout(baseUL, incoming.unlockLayout, importedFolders)
+                    CludesUI.MergeImportedLayout(baseLayout, incoming.unlockLayout, importedFolders)
             end
         end
         -- BASELINE-LINKS == PROFILE-LINKS contract (imported-profile DM
