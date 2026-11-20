@@ -759,11 +759,11 @@ end
 -- only hides the bag slots), so its caps sit on the shown buttons: their
 -- left edge and width in follower units, nil = the whole follower. WoW
 -- Forever hides that arrow, so its bar never collapses.
-function mod.AB_BagEdge(b, hs, highlight, minL, maxR)
-    if b and b:IsShown() then
-        local l, region = b:GetLeft(), b:GetRight()
+function mod.AB_BagEdge(widget, hs, highlight, minL, maxR)
+    if widget and widget:IsShown() then
+        local l, region = widget:GetLeft(), widget:GetRight()
         if l and region then
-            local k = b:GetEffectiveScale() / hs
+            local k = widget:GetEffectiveScale() / hs
             l, region = l * k - highlight, region * k - highlight
             if not minL or l < minL then
                 minL = l

@@ -850,27 +850,27 @@ local function Group(itemList)
     return catGroups
 end
 
-local function PaintSlot(b, item)
+local function PaintSlot(widget, item)
     local zoom = BP().bagItemIconZoom or 0.08
-    b.str = item.str
-    b.icon:SetTexture(item.icon or 134400)
-    b.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
-    CUI.ApplyIconTextFont(b.Count, GetFont(), BP().bagCountFontSize or 11, "bags")
-    b.Count:SetText(item.n > 1 and item.n or "")
-    b.Level:SetFont(GetFont(), BP().itemlevelFontSize or 12, CUI.SlugFlag("OUTLINE, SLUG"))
+    widget.str = item.str
+    widget.icon:SetTexture(item.icon or 134400)
+    widget.icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
+    CUI.ApplyIconTextFont(widget.Count, GetFont(), BP().bagCountFontSize or 11, "bags")
+    widget.Count:SetText(item.n > 1 and item.n or "")
+    widget.Level:SetFont(GetFont(), BP().itemlevelFontSize or 12, CUI.SlugFlag("OUTLINE, SLUG"))
     local lvl = item.gear and BP().showItemlevelInBags ~= false and C_Item.GetDetailedItemLevelInfo(item.str)
     if lvl and lvl > 1 then
-        b.Level:SetText(lvl)
-        b.Level:SetTextColor(1, 1, 1)
+        widget.Level:SetText(lvl)
+        widget.Level:SetTextColor(1, 1, 1)
     else
-        b.Level:SetText("")
+        widget.Level:SetText("")
     end
-    b._r, b._g, b._b = mod.QualityBorderColor(item.q)
-    if not b._fvSlotBorder and item.q <= 1 and BP().bagQualityBorder ~= false then
-        b._r, b._g, b._b = 0.25, 0.25, 0.25
+    widget._r, widget._g, widget._b = mod.QualityBorderColor(item.q)
+    if not widget._fvSlotBorder and item.q <= 1 and BP().bagQualityBorder ~= false then
+        widget._r, widget._g, widget._b = 0.25, 0.25, 0.25
     end
-    mod.SetInsetBorderColor(b, b._r, b._g, b._b, 1)
-    b:Show()
+    mod.SetInsetBorderColor(widget, widget._r, widget._g, widget._b, 1)
+    widget:Show()
 end
 
 -- the bar's gold: its right edge on the window's own gold readout

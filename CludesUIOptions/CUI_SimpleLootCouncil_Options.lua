@@ -491,9 +491,9 @@ CludesUI.AtLogin(function()
                     addHandlers.arrow(b, key)
                 end
             end)
-            addBox:SetScript("OnEscapePressed", function(b)
+            addBox:SetScript("OnEscapePressed", function(widget)
                 CloseSuggestions()
-                b:ClearFocus()
+                widget:ClearFocus()
             end)
             addBox:SetScript("OnHide", CloseSuggestions)
             addBox:SetScript("OnTextChanged", function(b, userInput)
@@ -1493,23 +1493,23 @@ CludesUI.AtLogin(function()
             end
 
             local isShown = {}
-            local function Fill(b, entry)
+            local function Fill(widget, entry)
                 local fill = specInfo.suggestionText(entry)
-                b:SetText(fill)
-                b:SetCursorPosition(#fill)
-                b:SetFocus()
+                widget:SetText(fill)
+                widget:SetCursorPosition(#fill)
+                widget:SetFocus()
             end
-            local function ShowList(b)
+            local function ShowList(widget)
                 CloseSuggestions()
                 if #isShown == 0 then
                     return
                 end
                 local p = SugPopup()
-                p.owner = b
+                p.owner = widget
                 p.onPick = function(entry)
                     CloseSuggestions()
                     isShown = {}
-                    Fill(b, entry)
+                    Fill(widget, entry)
                 end
                 for index, entry in ipairs(isShown) do
                     local row = SugRow(p, index)
@@ -1531,23 +1531,23 @@ CludesUI.AtLogin(function()
                 end
                 p.selected = 0
                 SugPaint(p)
-                local own, base = b:GetEffectiveScale(), _G.UIParent:GetEffectiveScale()
+                local own, base = widget:GetEffectiveScale(), _G.UIParent:GetEffectiveScale()
                 if type(own) == "number" and type(base) == "number" and base > 0 and own > 0 then
                     p:SetScale(own / base)
                 end
-                p:SetSize(b:GetWidth(), #isShown * SUG_ROW_H + 8)
+                p:SetSize(widget:GetWidth(), #isShown * SUG_ROW_H + 8)
                 p:ClearAllPoints()
-                p:SetPoint("TOPLEFT", b, "BOTTOMLEFT", 0, -2)
+                p:SetPoint("TOPLEFT", widget, "BOTTOMLEFT", 0, -2)
                 p._brd:Fit()
                 p:Show()
             end
-            local function Typed(b, userInput)
+            local function Typed(widget, userInput)
                 if not userInput then
                     return
                 end
                 CloseSuggestions()
                 isShown = {}
-                local textValue = (b:GetText() or ""):trim()
+                local textValue = (widget:GetText() or ""):trim()
 
                 if select(2, textValue:gsub("[^\128-\191]", "")) < SUGGEST_MIN_CHARS then
                     return
@@ -1556,7 +1556,7 @@ CludesUI.AtLogin(function()
                     return
                 end
                 isShown = specInfo.suggest(textValue, SUGGEST_MAX)
-                ShowList(b)
+                ShowList(widget)
             end
             local function Arrow(_, key)
                 if not SugOpen() or #isShown == 0 then

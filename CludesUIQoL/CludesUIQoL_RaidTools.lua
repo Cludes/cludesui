@@ -210,14 +210,14 @@ end
 
 -- Button chrome: flat fill, 1px line, white hover on the HIGHLIGHT layer
 -- (Buttons show that layer on mouseover natively, so no scripts).
-local function SkinButtonChrome(b)
-    local fillTex = b:CreateTexture(nil, "BACKGROUND")
+local function SkinButtonChrome(widget)
+    local fillTex = widget:CreateTexture(nil, "BACKGROUND")
     fillTex:SetColorTexture(BTN_R, BTN_G, BTN_B, BTN_A)
-    fillTex:SetAllPoints(b)
-    CludesUI.MakeBorder(b, BRD_R, BRD_G, BRD_B, BRD_A, CludesUI.PP)
-    local hover = b:CreateTexture(nil, "HIGHLIGHT")
+    fillTex:SetAllPoints(widget)
+    CludesUI.MakeBorder(widget, BRD_R, BRD_G, BRD_B, BRD_A, CludesUI.PP)
+    local hover = widget:CreateTexture(nil, "HIGHLIGHT")
     hover:SetColorTexture(1, 1, 1, 0.1)
-    hover:SetAllPoints(b)
+    hover:SetAllPoints(widget)
 end
 
 -- The collapsed-state button IS this image: no chrome, no border, no inset.
@@ -572,9 +572,9 @@ end
 -- Enable state without touching the button's own scripts: dimming the whole
 -- frame and cutting mouse input is both
 -- simpler and immune to a hover re-lighting a disabled control.
-local function SetButtonEnabled(b, enabled)
-    b:SetAlpha(enabled and 1 or 0.35)
-    b:EnableMouse(enabled)
+local function SetButtonEnabled(widget, enabled)
+    widget:SetAlpha(enabled and 1 or 0.35)
+    widget:EnableMouse(enabled)
 end
 
 -- Action button in the Window Skins style: flat fill, 1px line, white hover,

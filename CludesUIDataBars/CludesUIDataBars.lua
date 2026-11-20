@@ -1127,8 +1127,8 @@ do
     -- secure attribute writes are always legal. House style: white 0.10
     -- wash on hover, HIGHLIGHT layer, no scripts -- shared by both overlay
     -- pools so the two clickable-row kinds always look identical.
-    local function AddRowHighlight(b)
-        local highlight = b:CreateTexture(nil, "HIGHLIGHT")
+    local function AddRowHighlight(widget)
+        local highlight = widget:CreateTexture(nil, "HIGHLIGHT")
         highlight:SetAllPoints()
         highlight:SetColorTexture(1, 1, 1, 0.10)
     end
@@ -1200,27 +1200,27 @@ do
     -- both secure action rows and insecure clickable ones -- to the player
     -- they're the same thing, an interactive tooltip row. The accent recolor
     -- only shows if the row's left text carries no embedded |c..|r codes.
-    local function PlaceRowOverlay(b, i, innerW)
+    local function PlaceRowOverlay(widget, i, innerW)
         local skinData, line = payload[i], rowList[i]
         -- Re-stated per placement, not just at creation: the tip's level can
         -- rise on any Tip_Show, and a pooled button keeping the old base
         -- would sink under the background. Never lowered.
         local wanted = tipText:GetFrameLevel() + 5
-        if b:GetFrameLevel() < wanted then
-            b:SetFrameLevel(wanted)
+        if widget:GetFrameLevel() < wanted then
+            widget:SetFrameLevel(wanted)
         end
-        b:ClearAllPoints()
-        b:SetPoint("TOPLEFT", tipText, "TOPLEFT", PAD, skinData._y)
-        b:SetSize(max(1, innerW), max(1, skinData._h))
+        widget:ClearAllPoints()
+        widget:SetPoint("TOPLEFT", tipText, "TOPLEFT", PAD, skinData._y)
+        widget:SetSize(max(1, innerW), max(1, skinData._h))
         local ar, ag, ab = mod.GetAccent()
         local lr, lg, lb = skinData.lr or 1, skinData.lg or 1, skinData.lb or 1
-        b:SetScript("OnEnter", function()
+        widget:SetScript("OnEnter", function()
             line.left:SetTextColor(ar, ag, ab, 1)
         end)
-        b:SetScript("OnLeave", function()
+        widget:SetScript("OnLeave", function()
             line.left:SetTextColor(lr, lg, lb, 1)
         end)
-        b:Show()
+        widget:Show()
     end
 
     local function StopKeepAlive()

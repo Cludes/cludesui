@@ -1571,8 +1571,8 @@ local CUSTOM_ICON_POPUP = {
         preview:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         preview:SetTexture(QUESTION_MARK_ICON)
         dialog._prev = preview
-        boxFrame:SetScript("OnTextChanged", function(b)
-            local id = tonumber(b:GetText())
+        boxFrame:SetScript("OnTextChanged", function(widget)
+            local id = tonumber(widget:GetText())
             preview:SetTexture((id and id > 0) and id or QUESTION_MARK_ICON)
         end)
     end,

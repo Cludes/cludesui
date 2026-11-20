@@ -128,16 +128,16 @@ do
     -- accepts natively). The result can also be NIL (unit not range-checkable / spell momentarily not
     -- evaluable), which it rejects -- treat NIL as in range. issecretvalue runs FIRST so the nil check
     -- never touches a secret.
-    FB.ApplyRange = function(b)
+    FB.ApplyRange = function(widget)
         if not FB.rangeSpell then
             return
         end
         local s = mod._scaledProfile or saved.profile
-        local inRange = C_Spell.IsSpellInRange(FB.rangeSpell, FB.UnitOf(b))
+        local inRange = C_Spell.IsSpellInRange(FB.rangeSpell, FB.UnitOf(widget))
         if issecretvalue(inRange) or inRange ~= nil then
-            b:SetAlphaFromBoolean(inRange, 1, s.oorAlpha or 0.4)
+            widget:SetAlphaFromBoolean(inRange, 1, s.oorAlpha or 0.4)
         else
-            b:SetAlpha(1)
+            widget:SetAlpha(1)
         end
     end
 
@@ -162,8 +162,8 @@ do
 
     -- Current unit for a button. The slot controller collapses friendly bosses into the FIRST slots
     -- (slot 1 may show boss2), so the secure "unit" attribute is truth; _fbUnit is the build default.
-    FB.UnitOf = function(b)
-        return b:GetAttribute("unit") or b._fbUnit
+    FB.UnitOf = function(widget)
+        return widget:GetAttribute("unit") or widget._fbUnit
     end
 
     FB.Settings = function()
@@ -198,32 +198,32 @@ do
     -- Recolor the border for the current state. Mirrors the raid buttons' single recolored border:
     -- hover (raised) > target (raised) > normal, using the button's border settings (FB.Source: the raid
     -- ones for the boss group) -- nothing separate.
-    FB.ApplyBorderColor = function(b)
-        if not Pix or not b._borderFrame or not saved then
+    FB.ApplyBorderColor = function(widget)
+        if not Pix or not widget._borderFrame or not saved then
             return
         end
-        local s = FB.Source(b)
-        local targeted = FB.tgt[b] and s.targetBorderEnabled ~= false
-        if mod.RF_PetCompactOn(b, s) then
-            mod.RF_PetCompactHighlight(b, s)
+        local s = FB.Source(widget)
+        local targeted = FB.tgt[widget] and s.targetBorderEnabled ~= false
+        if mod.RF_PetCompactOn(widget, s) then
+            mod.RF_PetCompactHighlight(widget, s)
             return
         end
-        if b.stockEdge then
-            local hover = FB.hov[b] and s.hoverBorderEnabled ~= false
-            local lvl = b:GetFrameLevel() + (hover and mod.LVL_RAISE or 8)
-            if b._borderFrame:GetFrameLevel() ~= lvl then
-                b._borderFrame:SetFrameLevel(lvl)
-                local boxHolder = Pix.GetBorders(b._borderFrame)
+        if widget.stockEdge then
+            local hover = FB.hov[widget] and s.hoverBorderEnabled ~= false
+            local lvl = widget:GetFrameLevel() + (hover and mod.LVL_RAISE or 8)
+            if widget._borderFrame:GetFrameLevel() ~= lvl then
+                widget._borderFrame:SetFrameLevel(lvl)
+                local boxHolder = Pix.GetBorders(widget._borderFrame)
                 if boxHolder then
                     boxHolder:SetFrameLevel(lvl + 1)
                 end
             end
-            mod.RF_StockHighlight(b, b._borderFrame, s, hover, targeted)
+            mod.RF_StockHighlight(widget, widget._borderFrame, s, hover, targeted)
             return
         end
         local region, g, bcol, a
         local raised, hlSize, hlPx = false, nil, nil
-        if FB.hov[b] and s.hoverBorderEnabled ~= false then
+        if FB.hov[widget] and s.hoverBorderEnabled ~= false then
             local color = s.hoverBorderColor or { r = 1, g = 1, b = 1 }
             region, g, bcol, a = color.r, color.g, color.b, s.hoverBorderAlpha or 1
             raised, hlSize = true, s.hoverBorderSize or 1
@@ -238,65 +238,65 @@ do
             region, g, bcol, a = color.r, color.g, color.b, s.borderAlpha or 1
         end
         -- Raise above neighbors while highlighted (as the raid buttons: overlapping frames would cover it).
-        local pl = b:GetFrameLevel()
+        local pl = widget:GetFrameLevel()
         local lvl = s.borderBehind and math.max(0, pl - 1) or (pl + (raised and mod.LVL_RAISE or 8))
         -- The container too, like ApplyBorderLevel: FB.StyleBorder moves only the border
         -- frame, so a Show Behind flip would otherwise leave the strips on the old level.
-        local boxHolder = Pix.GetBorders(b._borderFrame)
-        if b._borderFrame:GetFrameLevel() ~= lvl or (boxHolder and boxHolder:GetFrameLevel() ~= lvl + 1) then
-            b._borderFrame:SetFrameLevel(lvl)
+        local boxHolder = Pix.GetBorders(widget._borderFrame)
+        if widget._borderFrame:GetFrameLevel() ~= lvl or (boxHolder and boxHolder:GetFrameLevel() ~= lvl + 1) then
+            widget._borderFrame:SetFrameLevel(lvl)
             if boxHolder then
                 boxHolder:SetFrameLevel(lvl + 1)
             end
             -- Textured styles: the backdrop child too (see ApplyBorderLevel).
-            local edge = CludesUI._bdBorderData and CludesUI._bdBorderData[b._borderFrame]
+            local edge = CludesUI._bdBorderData and CludesUI._bdBorderData[widget._borderFrame]
             if edge then
                 edge:SetFrameLevel(lvl)
             end
         end
         if (s.borderSize or 1) <= 0 then
-            mod.ApplyHighlightBorder(b._borderFrame, s, hlSize, region, g, bcol, a, hlPx)
+            mod.ApplyHighlightBorder(widget._borderFrame, s, hlSize, region, g, bcol, a, hlPx)
             return
         end
         if hlSize then
             region, g, bcol = mod.RF_VisibleHighlight(s, region, g, bcol)
         end
-        b._borderFrame._hlBorderSize = nil
-        CludesUI.SetBorderStyleColor(b._borderFrame, region, g, bcol, a)
+        widget._borderFrame._hlBorderSize = nil
+        CludesUI.SetBorderStyleColor(widget._borderFrame, region, g, bcol, a)
     end
 
     -- Apply the border style (size/color/texture/offsets) to one button, from its FB.Source.
-    FB.StyleBorder = function(b)
-        if not Pix or not b._borderFrame then
+    FB.StyleBorder = function(widget)
+        if not Pix or not widget._borderFrame then
             return
         end
-        local s = FB.Source(b)
+        local s = FB.Source(widget)
         local bs = s.borderSize or 1
         local bc = s.borderColor or { r = 0, g = 0, b = 0 }
-        local pl = b:GetFrameLevel()
-        local skinData = Inner.FFD[b]
-        local compact = mod.RF_PetCompactOn(b, s)
+        local pl = widget:GetFrameLevel()
+        local skinData = Inner.FFD[widget]
+        local compact = mod.RF_PetCompactOn(widget, s)
         if compact or (skinData and skinData._petCompactBorder) then
             skinData._petCompactBorder = compact
         end
         if compact then
-            CludesUI.ApplyBorderStyle(b._borderFrame, 0, 0, 0, 0, 0, "solid")
-            FB.ApplyBorderColor(b)
-            CludesUI.RoundCorners(b, 0)
+            CludesUI.ApplyBorderStyle(widget._borderFrame, 0, 0, 0, 0, 0, "solid")
+            FB.ApplyBorderColor(widget)
+            CludesUI.RoundCorners(widget, 0)
             return
         end
-        if b.stockEdge then
-            b._borderFrame:SetFrameLevel(pl + 8)
-            CludesUI.ApplyBorderStyle(b._borderFrame, 0, 0, 0, 0, 0, "solid")
-            b._borderFrame._hlBorderSize = nil
-            mod.RF_StockSeat(b)
-            FB.ApplyBorderColor(b)
-            CludesUI.RoundCorners(b, 0)
+        if widget.stockEdge then
+            widget._borderFrame:SetFrameLevel(pl + 8)
+            CludesUI.ApplyBorderStyle(widget._borderFrame, 0, 0, 0, 0, 0, "solid")
+            widget._borderFrame._hlBorderSize = nil
+            mod.RF_StockSeat(widget)
+            FB.ApplyBorderColor(widget)
+            CludesUI.RoundCorners(widget, 0)
             return
         end
-        b._borderFrame:SetFrameLevel(s.borderBehind and math.max(0, pl - 1) or (pl + 8))
+        widget._borderFrame:SetFrameLevel(s.borderBehind and math.max(0, pl - 1) or (pl + 8))
         CludesUI.ApplyBorderStyle(
-            b._borderFrame,
+            widget._borderFrame,
             bs,
             bc.r,
             bc.g,
@@ -312,20 +312,20 @@ do
             nil,
             CludesUI.BorderPx(s.borderSizePx, bs, s.borderTexture or "solid")
         )
-        FB.ApplyBorderColor(b)
+        FB.ApplyBorderColor(widget)
         -- Rounded corners with the owner's Corner Radius, as on the raid cells
         -- (CludesUI_RoundedCorners.lua; nothing at radius 0).
         local radius = s.cornerRadius or 0
         if radius > 0 then
-            CludesUI.RoundCorners(b, radius, {
-                roots = { b._health },
-                textures = { b._bg },
-                border = b._borderFrame,
+            CludesUI.RoundCorners(widget, radius, {
+                roots = { widget._health },
+                textures = { widget._bg },
+                border = widget._borderFrame,
                 style = s.borderTexture or "solid",
                 corners = s.cornerMask,
             })
         else
-            CludesUI.RoundCorners(b, 0)
+            CludesUI.RoundCorners(widget, 0)
         end
     end
 
@@ -433,44 +433,44 @@ do
     -- party target frames draw (they style it themselves). The pet header's buttons are made by the
     -- pet header, not by us: these keys on them are the one known exception to keeping state off
     -- header buttons (the rest lives in weak tables and GetFFD).
-    FB.BuildVisuals = function(b, texts)
-        local backdrop = b:CreateTexture(nil, "BACKGROUND")
+    FB.BuildVisuals = function(widget, texts)
+        local backdrop = widget:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         if Pix then
             Pix.DisablePixelSnap(backdrop)
         end
-        b._bg = backdrop
+        widget._bg = backdrop
 
-        local healthBar = CreateFrame("StatusBar", nil, b)
-        healthBar:SetFrameLevel(b:GetFrameLevel() + 2)
-        healthBar:SetPoint("TOPLEFT", b, "TOPLEFT", 0, 0)
-        healthBar:SetPoint("TOPRIGHT", b, "TOPRIGHT", 0, 0)
+        local healthBar = CreateFrame("StatusBar", nil, widget)
+        healthBar:SetFrameLevel(widget:GetFrameLevel() + 2)
+        healthBar:SetPoint("TOPLEFT", widget, "TOPLEFT", 0, 0)
+        healthBar:SetPoint("TOPRIGHT", widget, "TOPRIGHT", 0, 0)
         if Pix then
             Pix.DisablePixelSnap(healthBar)
         end
         healthBar:SetMinMaxValues(0, 100)
         healthBar:SetValue(100)
-        b._health = healthBar
+        widget._health = healthBar
 
-        local carrier = CreateFrame("Frame", nil, b)
+        local carrier = CreateFrame("Frame", nil, widget)
         carrier:SetAllPoints(healthBar)
-        carrier:SetFrameLevel(b:GetFrameLevel() + mod.LVL_TEXT)
+        carrier:SetFrameLevel(widget:GetFrameLevel() + mod.LVL_TEXT)
         if texts then
-            FB.txs[b] = { textCarrier = carrier, _txHost = healthBar, _txFB = true }
+            FB.txs[widget] = { textCarrier = carrier, _txHost = healthBar, _txFB = true }
         else
             local nameFS = carrier:CreateFontString(nil, "OVERLAY")
             nameFS:SetWordWrap(false)
-            b._nameText = nameFS
+            widget._nameText = nameFS
         end
 
         -- Border frame (same construction as the raid buttons; styled from the shared raid border settings in FB.StyleBorder)
-        local bdr = CreateFrame("Frame", nil, b)
-        bdr:SetAllPoints(b)
-        bdr:SetFrameLevel(b:GetFrameLevel() + 8)
-        b._borderFrame = bdr
+        local bdr = CreateFrame("Frame", nil, widget)
+        bdr:SetAllPoints(widget)
+        bdr:SetFrameLevel(widget:GetFrameLevel() + 8)
+        widget._borderFrame = bdr
         -- Stock styles: the stock edge and highlights.
         if mod.RF_Stock() then
-            mod.RF_StockBuild(b, b)
+            mod.RF_StockBuild(widget, widget)
         end
     end
 

@@ -480,9 +480,9 @@ local function StyleExit(b, fl)
     button:Show()
 end
 
-local function StyleBar(b, fl)
-    local track = b.track
-    b:SetSize(Get("width"), BoxHeight())
+local function StyleBar(widget, fl)
+    local track = widget.track
+    widget:SetSize(Get("width"), BoxHeight())
     track:SetHeight(Get("trackHeight"))
     track:SetStatusBarTexture(CludesUI.ResolveTexturePath(BAR_TEXTURES, Get("texture"), WHITE))
     -- The fill's one alpha owner: a texture's SetAlpha and its colour alpha
@@ -495,18 +495,18 @@ local function StyleBar(b, fl)
     StyleBorder(track)
     -- The time sits left of the track, mirroring the early exit button on the
     -- right; under the track is the stop names' lane.
-    b.time:SetShown(Get("timeText") ~= "none")
-    StyleFont(b.time, Get("timeSize"))
-    b.time:ClearAllPoints()
-    b.time:SetPoint("RIGHT", b, "LEFT", -PIN_SIZE / 2 - 6 + Get("timeX"), Get("timeY"))
-    LayoutRoute(b, fl)
-    local spark = b.spark
+    widget.time:SetShown(Get("timeText") ~= "none")
+    StyleFont(widget.time, Get("timeSize"))
+    widget.time:ClearAllPoints()
+    widget.time:SetPoint("RIGHT", widget, "LEFT", -PIN_SIZE / 2 - 6 + Get("timeX"), Get("timeY"))
+    LayoutRoute(widget, fl)
+    local spark = widget.spark
     if Get("showSpark") and fl and fl.eta and Get("fillOpacity") > 0 then
         if not spark then
             spark = track:CreateTexture(nil, "OVERLAY")
             spark:SetTexture("Interface\\AddOns\\CludesUI\\media\\textures\\shields\\pixels-glowline.tga")
             spark:SetBlendMode("ADD")
-            b.spark = spark
+            widget.spark = spark
         end
         -- The fill texture's edge moves with the native timer, without polling.
         spark:ClearAllPoints()
@@ -517,7 +517,7 @@ local function StyleBar(b, fl)
     elseif spark then
         spark:Hide()
     end
-    StyleExit(b, fl)
+    StyleExit(widget, fl)
 end
 
 -- An invisible box around the whole display, sized by StyleBar: the unlock

@@ -172,29 +172,29 @@ end
 
 -- Gold when full, green while it holds points or can take the first one, else
 -- grey with no rank.
-local function FillTalent(b, nodeID, cell)
+local function FillTalent(widget, nodeID, cell)
     local details = cell.info
     local spellId, iconTex = SpellOf(details)
-    b.nodeID, b.spellID = nodeID, spellId
-    b:ClearAllPoints()
-    b:SetPoint("TOPLEFT", LEFT + cell.col * STEP, -(TOP + cell.row * STEP))
-    b.icon:SetTexture(iconTex)
+    widget.nodeID, widget.spellID = nodeID, spellId
+    widget:ClearAllPoints()
+    widget:SetPoint("TOPLEFT", LEFT + cell.col * STEP, -(TOP + cell.row * STEP))
+    widget.icon:SetTexture(iconTex)
     local rank = details.activeRank
     local open = rank > 0 or (unspent > 0 and details.canPurchaseRank)
-    b.icon:SetDesaturated(not open)
+    widget.icon:SetDesaturated(not open)
     if rank >= details.maxRanks then
-        b.slot:SetVertexColor(1, 0.82, 0)
-        b.rank:SetTextColor(1, 0.82, 0)
+        widget.slot:SetVertexColor(1, 0.82, 0)
+        widget.rank:SetTextColor(1, 0.82, 0)
     elseif open then
-        b.slot:SetVertexColor(0.1, 1, 0.1)
-        b.rank:SetTextColor(0.1, 1, 0.1)
+        widget.slot:SetVertexColor(0.1, 1, 0.1)
+        widget.rank:SetTextColor(0.1, 1, 0.1)
     else
-        b.slot:SetVertexColor(0.5, 0.5, 0.5)
+        widget.slot:SetVertexColor(0.5, 0.5, 0.5)
     end
-    b.rank:SetText(rank)
-    b.rank:SetShown(open)
-    b.rankBorder:SetShown(open)
-    b:Show()
+    widget.rank:SetText(rank)
+    widget.rank:SetShown(open)
+    widget.rankBorder:SetShown(open)
+    widget:Show()
 end
 
 -- One piece of a sheet: its lit row, or the unlit one half a sheet lower.

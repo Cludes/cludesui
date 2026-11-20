@@ -852,34 +852,34 @@ end
 -- The button takes the mouse only while Ctrl is held (and lights up), so the
 -- row never blocks a click or a camera drag. Only a change of Ctrl (not Shift
 -- or Alt) repaints it.
-local function ResetArm(b)
+local function ResetArm(widget)
     local on = IsControlKeyDown()
-    if on == b.armed then
+    if on == widget.armed then
         return
     end
-    b.armed = on
+    widget.armed = on
     local c = on and 1 or RESET_DIM
-    b:EnableMouse(on)
-    b.text:SetTextColor(c, c, c)
+    widget:EnableMouse(on)
+    widget.text:SetTextColor(c, c, c)
     if not on then
-        ResetLeave(b)
+        ResetLeave(widget)
     end
 end
 
 -- The button shows and hides with the row: Ctrl is watched, and the minute
 -- clock runs, only while the row is on screen.
-local function ResetShow(b)
-    b:RegisterEvent("MODIFIER_STATE_CHANGED")
-    ResetArm(b)
+local function ResetShow(widget)
+    widget:RegisterEvent("MODIFIER_STATE_CHANGED")
+    ResetArm(widget)
     if summary and session.start then
         FillSummary()
     end
     SyncClock()
 end
 
-local function ResetHide(b)
-    b:UnregisterEvent("MODIFIER_STATE_CHANGED")
-    ResetLeave(b)
+local function ResetHide(widget)
+    widget:UnregisterEvent("MODIFIER_STATE_CHANGED")
+    ResetLeave(widget)
     SyncClock()
 end
 

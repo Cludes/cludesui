@@ -993,22 +993,22 @@ end
 -- The cell's strata and levels under its host: the kit's regions stacked
 -- from `lvl` in their build order; a pooled icon's wrap, gate and clip at
 -- `lvl` with it.
-local function SetIconLevels(b, layerStrata, frameLvl)
-    if b.wrap then
-        b.wrap:SetFrameStrata(layerStrata)
-        b.wrap:SetFrameLevel(frameLvl)
-        b.gate:SetFrameStrata(layerStrata)
-        b.gate:SetFrameLevel(frameLvl)
-        b.clip:SetFrameStrata(layerStrata)
-        b.clip:SetFrameLevel(frameLvl)
+local function SetIconLevels(widget, layerStrata, frameLvl)
+    if widget.wrap then
+        widget.wrap:SetFrameStrata(layerStrata)
+        widget.wrap:SetFrameLevel(frameLvl)
+        widget.gate:SetFrameStrata(layerStrata)
+        widget.gate:SetFrameLevel(frameLvl)
+        widget.clip:SetFrameStrata(layerStrata)
+        widget.clip:SetFrameLevel(frameLvl)
     end
-    b:SetFrameStrata(layerStrata)
-    b:SetFrameLevel(frameLvl)
-    local skinData = b.d
-    b.iconClip:SetFrameStrata(layerStrata)
-    b.iconClip:SetFrameLevel(frameLvl)
-    b.iconHolder:SetFrameStrata(layerStrata)
-    b.iconHolder:SetFrameLevel(frameLvl)
+    widget:SetFrameStrata(layerStrata)
+    widget:SetFrameLevel(frameLvl)
+    local skinData = widget.d
+    widget.iconClip:SetFrameStrata(layerStrata)
+    widget.iconClip:SetFrameLevel(frameLvl)
+    widget.iconHolder:SetFrameStrata(layerStrata)
+    widget.iconHolder:SetFrameLevel(frameLvl)
     skinData.cooldown:SetFrameStrata(layerStrata)
     skinData.cooldown:SetFrameLevel(frameLvl + 1)
     skinData.borderHost:SetFrameStrata(layerStrata)
@@ -1351,19 +1351,19 @@ end
 --  Pool: icons are built once and parked, never orphaned. A parked icon is
 --  hidden under our own holder, out of every nameplate tree.
 --------------------------------------------------------------------------------
-local function Detach(b)
-    if b.unit then
-        WatchCast(b, nil)
-        b:Hide()
-        local frame = b.wrap or b
+local function Detach(widget)
+    if widget.unit then
+        WatchCast(widget, nil)
+        widget:Hide()
+        local frame = widget.wrap or widget
         frame:ClearAllPoints()
         frame:SetParent(parked)
-        b.edge:ClearAllPoints()
-        b.edge:SetParent(parked)
-        TakeOffPlate(b)
-        b.cuiPlate, b.placedHost, b.placedGen, b.rel, b.relBottom, b.row = nil, nil, nil, nil, nil, nil
-        if b.kicker then
-            Rails.SetLiveHidden(b.kicker, false)
+        widget.edge:ClearAllPoints()
+        widget.edge:SetParent(parked)
+        TakeOffPlate(widget)
+        widget.cuiPlate, widget.placedHost, widget.placedGen, widget.rel, widget.relBottom, widget.row = nil, nil, nil, nil, nil, nil
+        if widget.kicker then
+            Rails.SetLiveHidden(widget.kicker, false)
         end
     end
     if driverFrame and liveCount == 0 and Rails.count == 0 then
