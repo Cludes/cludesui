@@ -25,8 +25,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Global Settings > Style keeps every choice
 --  reversible per module.
 -------------------------------------------------------------------------------
-local CludesUI = _G.CludesUI
-if not CludesUI then
+local CUI = _G.CludesUI
+if not CUI then
     return
 end
 local CUI_HOST_ADDON = ...
@@ -35,9 +35,9 @@ if IS_STANDALONE then
     return
 end
 
-local Pix = CludesUI.PanelPP
-local MakeBorder = CludesUI.MakeBorder
-local CLUDES_GREEN = CludesUI.CLUDES_GREEN
+local Pix = CUI.PanelPP
+local MakeBorder = CUI.MakeBorder
+local CLUDES_GREEN = CUI.CLUDES_GREEN
 
 local function Stamp()
     if not CludesUIDB then
@@ -51,12 +51,12 @@ end
 -- at the parent's ADDON_LOADED below; every close that does not reload runs
 -- it here (a reload's next session runs its own).
 local function ReleasePending()
-    if not CludesUI._styleChoicePending then
+    if not CUI._styleChoicePending then
         return
     end
-    CludesUI._styleChoicePending = nil
-    if CludesUIDB and CludesUIDB.firstInstallPopupShown and CludesUI._RunConflictCheck then
-        C_Timer.After(0.3, CludesUI._RunConflictCheck)
+    CUI._styleChoicePending = nil
+    if CludesUIDB and CludesUIDB.firstInstallPopupShown and CUI._RunConflictCheck then
+        C_Timer.After(0.3, CUI._RunConflictCheck)
     end
 end
 
@@ -66,17 +66,17 @@ end
 -- too on WoW Forever (CludesUI_FirstInstall.lua), as its reload's
 -- pre-reload work. The caller reloads.
 local function ApplyLook(styleKey)
-    if not CludesUI.EnsureOptionsLoaded() then
+    if not CUI.EnsureOptionsLoaded() then
         return false
     end
-    local BS = CludesUI.BlizzStyle
+    local BS = CUI.BlizzStyle
     if not (BS and BS.ApplyAll) then
         return false
     end
     BS.ApplyAll(styleKey)
     return true
 end
-CludesUI.ApplyFirstInstallLook = ApplyLook
+CUI.ApplyFirstInstallLook = ApplyLook
 
 -- A look other than the one this session renders: the reload every style
 -- change needs, asked for first in the click, then the look written as its
@@ -85,16 +85,16 @@ CludesUI.ApplyFirstInstallLook = ApplyLook
 local function ChooseOtherLook(styleKey, labelText, dimmer)
     Stamp()
     if C_AddOns.IsAddOnLoaded("CludesUIOptions") or C_AddOns.GetAddOnEnableState("CludesUIOptions") > 0 then
-        CludesUI.RequestReload(
+        CUI.RequestReload(
             nil,
-            CludesUI.L("Style changed for this profile. A UI reload is needed to apply it."),
+            CUI.L("Style changed for this profile. A UI reload is needed to apply it."),
             function()
                 ApplyLook(styleKey)
             end
         )
         return
     end
-    CludesUI.Print(
+    CUI.Print(
         "|cff4cc9f0CludesUI:|r " .. labelText .. " can be switched on under Global Settings > Style."
     )
     if dimmer then
@@ -104,24 +104,24 @@ local function ChooseOtherLook(styleKey, labelText, dimmer)
 end
 
 local function ShowStyleChoicePopup()
-    if not (Pix and MakeBorder and CLUDES_GREEN and CludesUI.BuildStyleCards) then
+    if not (Pix and MakeBorder and CLUDES_GREEN and CUI.BuildStyleCards) then
         ReleasePending()
         return
     end
-    local FONT = CludesUI._font
-        or CludesUI.EXPRESSWAY
+    local FONT = CUI._font
+        or CUI.EXPRESSWAY
         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
     local ACC = CLUDES_GREEN
     -- Wide enough for the card row (four cards on the WoW Forever client).
-    local POPUP_W, POPUP_H = math.max(700, CludesUI.STYLE_CARDS_W + 32), 480
+    local POPUP_W, POPUP_H = math.max(700, CUI.STYLE_CARDS_W + 32), 480
     -- The DEFAULT card: CludesUI, or on the WoW Forever client WoW
     -- Forever, the look a fresh install there starts on.
-    local defaultKey = CludesUI.IS_FOREVER and "forever" or "cui"
+    local defaultKey = CUI.IS_FOREVER and "forever" or "cui"
     -- The look this session renders, read from the modules: its card closes
     -- the popup with nothing written. The default while no styleable module
     -- is loaded; none while the loaded modules render different looks
     -- (every card applies then).
-    local rendered = CludesUI.RenderedLook()
+    local rendered = CUI.RenderedLook()
     local activeKey = rendered
     if activeKey == nil then
         activeKey = defaultKey
@@ -130,7 +130,7 @@ local function ShowStyleChoicePopup()
     end
     local KeepLook, OnPick
     -- Escape keeps whatever renders: it never writes.
-    local dimmer, dialog = CludesUI.BuildPopupShell("CUIStyleChoice", {
+    local dimmer, dialog = CUI.BuildPopupShell("CUIStyleChoice", {
         w = POPUP_W,
         h = POPUP_H,
         bump = 1.15,
@@ -144,13 +144,13 @@ local function ShowStyleChoicePopup()
     eyebrow:SetFont(FONT, 13, "")
     eyebrow:SetTextColor(ACC.r, ACC.g, ACC.b, 0.9)
     Pix.Point(eyebrow, "TOP", dialog, "TOP", 0, -26)
-    eyebrow:SetText(CludesUI.L("CHOOSE YOUR LOOK"))
+    eyebrow:SetText(CUI.L("CHOOSE YOUR LOOK"))
 
     local title = dialog:CreateFontString(nil, "OVERLAY")
     title:SetFont(FONT, 26, "")
     title:SetTextColor(1, 1, 1, 1)
     Pix.Point(title, "TOP", eyebrow, "BOTTOM", 0, -6)
-    title:SetText(CludesUI.L("How should CludesUI look?"))
+    title:SetText(CUI.L("How should CludesUI look?"))
 
     local desc = dialog:CreateFontString(nil, "OVERLAY")
     desc:SetFont(FONT, 14, "")
@@ -160,7 +160,7 @@ local function ShowStyleChoicePopup()
     desc:SetWordWrap(true)
     Pix.Point(desc, "TOP", title, "BOTTOM", 0, -10)
     desc:SetText(
-        CludesUI.L(
+        CUI.L(
             "CludesUI's features work with every look. Change your mind any time under Global Settings > Style."
         )
     )
@@ -188,7 +188,7 @@ local function ShowStyleChoicePopup()
     -- The look cards (CludesUI_StyleCards.lua, shared with the Style page
     -- header): three, plus WoW Forever on that client, CludesUI's first.
     -- Set 10 below the description so the IN USE badge above a card clears it.
-    local cards = CludesUI.BuildStyleCards(dialog, -138, {
+    local cards = CUI.BuildStyleCards(dialog, -138, {
         buttonText = {
             cui = "Use CludesUI Style",
             blizzard = "Use Blizzard Style",
@@ -213,27 +213,27 @@ local function ShowStyleChoicePopup()
     footnote:SetJustifyH("CENTER")
     Pix.Point(footnote, "BOTTOM", dialog, "BOTTOM", 0, 14)
     -- Names the cards that reload: every one but the active look's.
-    if CludesUI.IS_FOREVER and activeKey == "forever" then
+    if CUI.IS_FOREVER and activeKey == "forever" then
         footnote:SetText(
-            CludesUI.L(
+            CUI.L(
                 "CludesUI Style, Blizzard Style and Classic WoW UI reload the UI once to apply. Each module can be switched separately later."
             )
         )
-    elseif activeKey == "cui" and CludesUI.IS_FOREVER then
+    elseif activeKey == "cui" and CUI.IS_FOREVER then
         footnote:SetText(
-            CludesUI.L(
+            CUI.L(
                 "WoW Forever, Blizzard Style and Classic WoW UI reload the UI once to apply. Each module can be switched separately later."
             )
         )
     elseif activeKey == "cui" then
         footnote:SetText(
-            CludesUI.L(
+            CUI.L(
                 "Blizzard Style and Classic WoW UI reload the UI once to apply. Each module can be switched separately later."
             )
         )
     else
         footnote:SetText(
-            CludesUI.L(
+            CUI.L(
                 "Every look but the one in use reloads the UI once to apply. Each module can be switched separately later."
             )
         )
@@ -242,7 +242,7 @@ local function ShowStyleChoicePopup()
     dimmer:Show()
 end
 
-CludesUI.ShowStyleChoicePopup = ShowStyleChoicePopup
+CUI.ShowStyleChoicePopup = ShowStyleChoicePopup
 
 -------------------------------------------------------------------------------
 --  Trigger: the login after the module picker's reload, once.
@@ -259,8 +259,8 @@ loader:SetScript("OnEvent", function(self, evt, addonName)
         -- Arm the conflict-check hold on the same conditions the login
         -- branch shows under (the first-install loader, earlier in the TOC,
         -- has already raised _firstInstallPending by now).
-        if CludesUIDB and CludesUIDB.styleChoicePending and not CludesUI._firstInstallPending then
-            CludesUI._styleChoicePending = true
+        if CludesUIDB and CludesUIDB.styleChoicePending and not CUI._firstInstallPending then
+            CUI._styleChoicePending = true
         end
         return
     end
@@ -270,11 +270,11 @@ loader:SetScript("OnEvent", function(self, evt, addonName)
     end
     -- The picker itself is still due this session: it reloads, and its
     -- close path re-arms the stamp for the login after.
-    if CludesUI._firstInstallPending then
+    if CUI._firstInstallPending then
         return
     end
     -- A registered external installer owns the first-run experience.
-    if CludesUI._externalInstaller then
+    if CUI._externalInstaller then
         Stamp()
         ReleasePending()
         return

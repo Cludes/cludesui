@@ -6,17 +6,17 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  BuildSegmentedControl, the pill-shaped tab bar of the multi-edit headers.
 --  DEFERRED: body runs on first CludesUI:EnsureLoaded() call, not at load.
 -------------------------------------------------------------------------------
-local CludesUI = _G.CludesUI
-CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
+local CUI = _G.CludesUI
+CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- Page reuse: the frames this file builds go through the options frame pool
     -- (CludesUI_FramePool.lua), which hands a kept page or popup its previous
     -- build's frames back reset to new; on any other parent it creates as before.
-    local CreateFrame = CludesUI._Pool.CreateFrame
-    local Pix = CludesUI.PanelPP
-    local CLUDES_GREEN = CludesUI.CLUDES_GREEN
-    local MEDIA_PATH = CludesUI.MEDIA_PATH
-    local ShowWidgetTooltip = CludesUI.ShowWidgetTooltip
-    local HideWidgetTooltip = CludesUI.HideWidgetTooltip
+    local CreateFrame = CUI._Pool.CreateFrame
+    local Pix = CUI.PanelPP
+    local CLUDES_GREEN = CUI.CLUDES_GREEN
+    local MEDIA_PATH = CUI.MEDIA_PATH
+    local ShowWidgetTooltip = CUI.ShowWidgetTooltip
+    local HideWidgetTooltip = CUI.HideWidgetTooltip
 
     -------------------------------------------------------------------------------
     --  Segmented Control  (pill-shaped tab bar for multi-edit headers)
@@ -59,11 +59,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             tmpFS = UIParent:CreateFontString(nil, "OVERLAY")
             measureFS = tmpFS
         end
-        tmpFS:SetFont(CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF", FONT_SZ, "")
+        tmpFS:SetFont(CUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF", FONT_SZ, "")
         local segWidths, textW = {}, {}
         local pillW = 0
         for _, key in ipairs(rowConf.keys) do
-            tmpFS:SetText(CludesUI.L(rowConf.labels[key] or key))
+            tmpFS:SetText(CUI.L(rowConf.labels[key] or key))
             textW[key] = math.ceil(tmpFS:GetStringWidth())
             local wid = textW[key] + SEG_PAD * 2
             segWidths[key] = wid
@@ -113,7 +113,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0, 0, 0, 0) -- transparent; per-segment segBg handles background
         local boxBdr = SQUARE
-            and CludesUI.MakeRoundedBorder(
+            and CUI.MakeRoundedBorder(
                 pillBody,
                 INACTIVE_R,
                 INACTIVE_G,
@@ -281,7 +281,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             -- Square mode: the marker, a rounded outline with segBg as its body.
             local segTop, segBot, segLeft, segRight, marker
             if SQUARE then
-                marker = CludesUI.MakeRoundedBorder(button, ACTIVE_R, ACTIVE_G, ACTIVE_B, 0, segBg, 1)
+                marker = CUI.MakeRoundedBorder(button, ACTIVE_R, ACTIVE_G, ACTIVE_B, 0, segBg, 1)
             else
                 -- Full 1px border on all 4 sides matches MakeBorder's pixel-perfect technique: vertical edges inset by 1px to avoid overlapping corners.
                 segTop = button:CreateTexture(nil, "ARTWORK", nil, 7)
@@ -311,7 +311,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
 
             local labelFS = button:CreateFontString(nil, "OVERLAY")
-            labelFS:SetFont(CludesUI.EXPRESSWAY, FONT_SZ, "")
+            labelFS:SetFont(CUI.EXPRESSWAY, FONT_SZ, "")
             local lblOfsX = 0
             if i == 1 then
                 lblOfsX = -capW / 2
@@ -320,7 +320,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 lblOfsX = capW / 2
             end
             labelFS:SetPoint("CENTER", lblOfsX, 0)
-            labelFS:SetText(CludesUI.L(rowConf.labels[key] or key))
+            labelFS:SetText(CUI.L(rowConf.labels[key] or key))
 
             segments[i] = {
                 key = key,
@@ -597,5 +597,5 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         return widget, SEG_H, RefreshAll, btnByKey
     end
 
-    CludesUI.BuildSegmentedControl = BuildSegmentedControl
+    CUI.BuildSegmentedControl = BuildSegmentedControl
 end -- end deferred init

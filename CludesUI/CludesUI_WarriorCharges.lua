@@ -38,7 +38,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- and denied writes re-apply at the restriction lift. Separators and the
 -- empty-cell strip live on OUR proxy and restyle live.
 
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 
 -- hosts[key] = { key, proxy, emptyTex, sepHost, seps = {}, armed (power key),
 --   syncFrame/syncOpts, lastR/G/B/A, pendR/G/B/A, dirty,
@@ -104,7 +104,7 @@ local function HookLift()
     if S.liftHooked then
         return
     end
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     if not (AK and AK.OnRestrictionLift) then
         return
     end
@@ -156,7 +156,7 @@ end
 -------------------------------------------------------------------------------
 
 local function BuildHostPhase(H, powerKey, options)
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     local conf = PHASES[powerKey]
     local st = H.ph[powerKey]
     if st.container then
@@ -341,7 +341,7 @@ local function EnsureHostBuilt(H, powerKey, options)
     if st.built or st.queued or st.err then
         return
     end
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     if not (AK and AK.QueueBuildJob) then
         return
     end
@@ -389,7 +389,7 @@ local function StyleSeparators(H, widget, sp, num)
     end
     local ori = sp.pipOrientation or "HORIZONTAL"
     local vertical = ori ~= "HORIZONTAL"
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     local es = (widget.GetEffectiveScale and widget:GetEffectiveScale()) or 1
     local sepW = sep.w or sp.pipSpacing or 1
     if Pix and Pix.SnapForES then

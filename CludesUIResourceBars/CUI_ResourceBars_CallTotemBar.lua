@@ -44,8 +44,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- turned off.
 
 local _, mod = ...
-local CludesUI = _G.CludesUI
-if not (CludesUI and CludesUI.IS_FOREVER) then
+local CUI = _G.CludesUI
+if not (CUI and CUI.IS_FOREVER) then
     return
 end
 local barFrame = _G.MultiCastActionBarFrame
@@ -185,7 +185,7 @@ local function SkinButton(button, cfg)
     o:Show()
     local bs = cfg.borderSize or 0
     local texKey = cfg.borderTexture or "solid"
-    CludesUI.ApplyBorderStyle(
+    CUI.ApplyBorderStyle(
         o,
         bs,
         cfg.borderR or 0,
@@ -200,7 +200,7 @@ local function SkinButton(button, cfg)
         "resourcebars",
         bs,
         nil,
-        CludesUI.BorderPx(cfg.borderSizePx, bs, texKey)
+        CUI.BorderPx(cfg.borderSizePx, bs, texKey)
     )
 end
 
@@ -234,7 +234,7 @@ end
 local function SkinAll(cfg)
     local scale = (cfg.iconSize or 30) / BTN
     local size = math.max(6, math.floor((cfg.timerSize or 11) / scale + 0.5))
-    cdFont:SetFont(mod.GetRBFont(), size, CludesUI.GetFontOutlineFlag("resourceBars"))
+    cdFont:SetFont(mod.GetRBFont(), size, CUI.GetFontOutlineFlag("resourceBars"))
     if SUMMON then
         SkinButton(SUMMON, cfg)
     end
@@ -282,8 +282,8 @@ end
 -- Pin the bar's top-left corner to the holder's, through the system's base
 -- methods (Blizzard's SetPoint / ClearAllPoints overrides flag Edit Mode).
 local function PinBar()
-    CludesUI.ClearFramePoints(barFrame)
-    CludesUI.SetFramePoint(barFrame, "TOPLEFT", holderFrame, "TOPLEFT", 0, 0)
+    CUI.ClearFramePoints(barFrame)
+    CUI.SetFramePoint(barFrame, "TOPLEFT", holderFrame, "TOPLEFT", 0, 0)
 end
 
 -- The shown buttons in a row (left to right) or a column (top to bottom), each
@@ -300,7 +300,7 @@ local function Layout(cfg)
     local iconSize = cfg.iconSize or 30
     local scale = iconSize / BTN
     local spacing = cfg.spacing or 2
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     if Pix and Pix.Snap then
         spacing = Pix.Snap(spacing)
     end
@@ -356,7 +356,7 @@ local function Layout(cfg)
     else
         barFrame:SetSize(length, BTN)
     end
-    CludesUI.SetFrameScale(barFrame, scale)
+    CUI.SetFrameScale(barFrame, scale)
     barFrame:SetFrameStrata(cfg.frameStrata or "MEDIUM")
     PinBar()
 end
@@ -398,18 +398,18 @@ end
 -- the default (where Blizzard's own default puts the bar's right edge).
 local function PlaceHolder(cfg)
     -- Unlock Mode owns a placed holder while it is open.
-    if CludesUI._unlockActive and holderFrame:GetNumPoints() > 0 then
+    if CUI._unlockActive and holderFrame:GetNumPoints() > 0 then
         return
     end
     local place = cfg.unlockPos
     if place and place.point then
-        if CludesUI.IsUnlockAnchored(UNLOCK_KEY) and holderFrame:GetLeft() then
+        if CUI.IsUnlockAnchored(UNLOCK_KEY) and holderFrame:GetLeft() then
             return
         end
         local sx, sy = mod.SnapXY(place.x or 0, place.y or 0, holderFrame, place)
         holderFrame:ClearAllPoints()
         holderFrame:SetPoint(place.point, UIParent, place.relPoint or place.point, sx, sy)
-    elseif not CludesUI.IsUnlockAnchored(UNLOCK_KEY) then
+    elseif not CUI.IsUnlockAnchored(UNLOCK_KEY) then
         holderFrame:ClearAllPoints()
         holderFrame:SetPoint("RIGHT", UIParent, "BOTTOM", -28, 128)
     end
@@ -558,19 +558,19 @@ local function Release()
     RestoreLayout()
     ReleaseSelection()
     ReleaseBarMouse()
-    CludesUI.SetFrameScale(barFrame, home.scale)
+    CUI.SetFrameScale(barFrame, home.scale)
     barFrame:SetSize(home.w, home.h)
     barFrame:SetFrameStrata(home.strata)
     -- Back to the Edit Mode layout's spot (read from the system's own record).
     local details = barFrame.systemInfo
     local ai = details and details.anchorInfo
-    CludesUI.ClearFramePoints(barFrame)
+    CUI.ClearFramePoints(barFrame)
     if ai then
         local s = barFrame:GetScale()
-        CludesUI.SetFramePoint(barFrame, ai.point, ai.relativeTo, ai.relativePoint, ai.offsetX / s, ai.offsetY / s)
+        CUI.SetFramePoint(barFrame, ai.point, ai.relativeTo, ai.relativePoint, ai.offsetX / s, ai.offsetY / s)
         local ai2 = details.anchorInfo2
         if ai2 then
-            CludesUI.SetFramePoint(
+            CUI.SetFramePoint(
                 barFrame,
                 ai2.point,
                 ai2.relativeTo,
@@ -580,7 +580,7 @@ local function Release()
             )
         end
     else
-        CludesUI.SetFramePoint(barFrame, "RIGHT", UIParent, "BOTTOM", -28, 128)
+        CUI.SetFramePoint(barFrame, "RIGHT", UIParent, "BOTTOM", -28, 128)
     end
 end
 
@@ -640,7 +640,7 @@ function mod.CT_MakeUnlockElement(MK)
             return
         end
         profile.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
-        if not CludesUI._unlockActive and holderFrame then
+        if not CUI._unlockActive and holderFrame then
             holderFrame:ClearAllPoints()
             holderFrame:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
         end

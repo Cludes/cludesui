@@ -34,7 +34,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- frames is protected; the combat guard below is a safety net.
 
 local _, mod = ...
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 
 -- Per-class frame, looked up by name when claimed (nil-guarded).
 local ART_FRAMES = {
@@ -69,7 +69,7 @@ local hooked = setmetatable({}, { __mode = "k" }) -- frames carrying our OnShow 
 local lvlWatch -- PLAYER_LEVEL_UP while a held frame waits for its level
 
 local function UFns()
-    return CludesUI._ModuleNS and CludesUI._ModuleNS["CludesUIUnitFrames"]
+    return CUI._ModuleNS and CUI._ModuleNS["CludesUIUnitFrames"]
 end
 
 -- The Unit Frames "Blizzard" class resource style holds the frame (it wins a tie).
@@ -91,7 +91,7 @@ local function WantedBar(sp)
     if not (sp and sp.blizzardClassArt) or sp.enabled == false then
         return nil
     end
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         return nil
     end
     if UFOwns() then
@@ -521,7 +521,7 @@ end
 -- player frame's class resource, "resource" = no frame for this class, or the
 -- current class resource is one Blizzard draws as a bar or not at all.
 function mod.ERB_BlizzClassArtSupported()
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         return false, "client"
     end
     local barFrame = ClassFrame()

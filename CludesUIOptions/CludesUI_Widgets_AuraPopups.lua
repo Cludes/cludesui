@@ -6,13 +6,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Tracked auras and spell blacklist popups shared by the aura filter
 --  options. Loads right after CludesUI_Widgets.lua.
 -------------------------------------------------------------------------------
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 
 -- The options page pool (CludesUI_FramePool.lua, the options addon's first
 -- file): each popup below keeps its dimmer (and a named panel) for the session,
 -- reset to new on every open, and every frame made under them is handed out
 -- again. Captured once here, never read through the public slot later.
-local Pool = CludesUI._Pool
+local Pool = CUI._Pool
 local CreateFrame, PoolKept, PoolGen = Pool.CreateFrame, Pool.Kept, Pool.Gen
 -- Owner of the popups' kept frames.
 local POPUPS = {}
@@ -51,13 +51,13 @@ local function EscapeTrackedAuras(frame)
     _trackedAurasDimmer = nil
 end
 local TRACKED_AURAS_ESC = { padOnly = true, onEscape = EscapeTrackedAuras }
-function CludesUI.ShowTrackedAurasPopup(options)
+function CUI.ShowTrackedAurasPopup(options)
     -- The panel's pixel helper, like every popup scaled by GetPopupScale:
     -- the real-UI-scale PP lands 1px borders on fractional pixels here.
-    local Pix = CludesUI.PanelPP or CludesUI.PP
-    local fontFile = options.fontPath or CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
-    local ppScale = (CludesUI.GetPopupScale()) or 1
-    local ACC = CludesUI.CLUDES_GREEN
+    local Pix = CUI.PanelPP or CUI.PP
+    local fontFile = options.fontPath or CUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
+    local ppScale = (CUI.GetPopupScale()) or 1
+    local ACC = CUI.CLUDES_GREEN
 
     if _trackedAurasDimmer then
         _trackedAurasDimmer:Hide()
@@ -130,12 +130,12 @@ function CludesUI.ShowTrackedAurasPopup(options)
     eyebrow:SetFont(fontFile, 11, "")
     eyebrow:SetPoint("TOP", panelFrame, "TOP", 0, -16)
     eyebrow:SetTextColor(ACC.r, ACC.g, ACC.b, 0.9)
-    eyebrow:SetText(CludesUI.L(options.eyebrow or "TRACKED AURAS"))
+    eyebrow:SetText(CUI.L(options.eyebrow or "TRACKED AURAS"))
     local title = panelFrame:CreateFontString(nil, "OVERLAY")
     title:SetFont(fontFile, 20, "")
     title:SetPoint("TOP", panelFrame, "TOP", 0, -32)
     title:SetTextColor(1, 1, 1, 0.95)
-    title:SetText(CludesUI.L(options.title or "Tracked Auras"))
+    title:SetText(CUI.L(options.title or "Tracked Auras"))
     -- Optional one-line description under the title; everything below the
     -- header (band + lists) shifts down by hdrY and the panel grows to match.
     local hdrY = 0
@@ -146,7 +146,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
         subMenu:SetWidth(470)
         subMenu:SetJustifyH("CENTER")
         subMenu:SetTextColor(1, 1, 1, 0.6)
-        subMenu:SetText(CludesUI.L(options.subtitle))
+        subMenu:SetText(CUI.L(options.subtitle))
         hdrY = 18
         panelFrame:SetHeight(470 + hdrY)
     end
@@ -157,7 +157,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
     end
 
     -- Escape closes (consume Escape only; other keys propagate so chat/UI shortcuts keep working behind the dimmer).
-    CludesUI.PopupTakeKeys(panelFrame, shade)
+    CUI.PopupTakeKeys(panelFrame, shade)
     panelFrame:SetScript("OnKeyDown", function(self, key)
         if InCombatLockdown() then
             return
@@ -198,16 +198,16 @@ function CludesUI.ShowTrackedAurasPopup(options)
         local bbg = boxFrame:CreateTexture(nil, "BACKGROUND")
         bbg:SetAllPoints()
         bbg:SetColorTexture(0.114, 0.106, 0.099, 1)
-        local bbrd = CludesUI.MakeRoundedBorder(boxFrame, 0.4, 0.4, 0.4, 0.6, bbg)
+        local bbrd = CUI.MakeRoundedBorder(boxFrame, 0.4, 0.4, 0.4, 0.6, bbg)
         local chk = boxFrame:CreateTexture(nil, "ARTWORK")
         Pix.SetInside(chk, boxFrame, 2, 2)
         chk:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
-        CludesUI.RoundBody(boxFrame, chk, 2)
+        CUI.RoundBody(boxFrame, chk, 2)
         local tl = tog:CreateFontString(nil, "OVERLAY")
         tl:SetFont(fontFile, 13, "")
         tl:SetPoint("LEFT", boxFrame, "RIGHT", 8, 0)
         tl:SetTextColor(0.85, 0.85, 0.85)
-        tl:SetText(CludesUI.L(sa.label or "Show All"))
+        tl:SetText(CUI.L(sa.label or "Show All"))
         local function UpdAll()
             if PoolGen(shade) ~= dressGen then
                 return
@@ -233,7 +233,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
         labelFS:SetFont(fontFile, 12, "")
         labelFS:SetPoint("LEFT", panelFrame, "TOPLEFT", 24, -80 - hdrY)
         labelFS:SetTextColor(0.85, 0.85, 0.85)
-        labelFS:SetText(CludesUI.L(castFrame.label or "Copy From:"))
+        labelFS:SetText(CUI.L(castFrame.label or "Copy From:"))
 
         -- Apply (rightmost), source dropdown to its left.
         local applyBtn = CreateFrame("Button", nil, panelFrame)
@@ -242,12 +242,12 @@ function CludesUI.ShowTrackedAurasPopup(options)
         local apBg = applyBtn:CreateTexture(nil, "BACKGROUND")
         apBg:SetAllPoints()
         apBg:SetColorTexture(0.062, 0.070, 0.082, 0.92)
-        local apBrd = CludesUI.MakeRoundedBorder(applyBtn, ACC.r, ACC.g, ACC.b, 0.35, apBg)
+        local apBrd = CUI.MakeRoundedBorder(applyBtn, ACC.r, ACC.g, ACC.b, 0.35, apBg)
         local apLbl = applyBtn:CreateFontString(nil, "OVERLAY")
         apLbl:SetFont(fontFile, 12, "")
         apLbl:SetPoint("CENTER")
         apLbl:SetTextColor(ACC.r, ACC.g, ACC.b, 0.7)
-        apLbl:SetText(CludesUI.L("Apply"))
+        apLbl:SetText(CUI.L("Apply"))
         applyBtn:SetScript("OnEnter", function()
             apLbl:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
             if apBrd and apBrd.SetColor then
@@ -267,7 +267,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
         local ddBg = dropdownBtn:CreateTexture(nil, "BACKGROUND")
         ddBg:SetAllPoints()
         ddBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-        CludesUI.MakeRoundedBorder(dropdownBtn, 0.4, 0.4, 0.4, 0.6, ddBg)
+        CUI.MakeRoundedBorder(dropdownBtn, 0.4, 0.4, 0.4, 0.6, ddBg)
         local dropCaption = dropdownBtn:CreateFontString(nil, "OVERLAY")
         dropCaption:SetFont(fontFile, 12, "")
         dropCaption:SetPoint("LEFT", dropdownBtn, "LEFT", 8, 0)
@@ -275,8 +275,8 @@ function CludesUI.ShowTrackedAurasPopup(options)
         dropCaption:SetJustifyH("LEFT")
         dropCaption:SetWordWrap(false)
         dropCaption:SetTextColor(1, 1, 1, 0.8)
-        dropCaption:SetText(CludesUI.L("Select..."))
-        CludesUI.MakeDropdownArrow(dropdownBtn, 10, Pix)
+        dropCaption:SetText(CUI.L("Select..."))
+        CUI.MakeDropdownArrow(dropdownBtn, 10, Pix)
 
         local chosen
         local dropMenu = CreateFrame("Frame", nil, panelFrame)
@@ -286,7 +286,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
         local mBg = dropMenu:CreateTexture(nil, "BACKGROUND")
         mBg:SetAllPoints()
         mBg:SetColorTexture(0.062, 0.070, 0.082, 0.98)
-        CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, 0.15, mBg, nil, true)
+        CUI.MakeRoundedBorder(dropMenu, 1, 1, 1, 0.15, mBg, nil, true)
         dropMenu:Hide()
         for idx = 1, #castFrame.choices do
             local choice = castFrame.choices[idx]
@@ -301,7 +301,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
             rl:SetFont(fontFile, 12, "")
             rl:SetPoint("LEFT", mrow, "LEFT", 8, 0)
             rl:SetTextColor(0.85, 0.85, 0.85)
-            rl:SetText(CludesUI.L(choice.label))
+            rl:SetText(CUI.L(choice.label))
             mrow:SetScript("OnEnter", function()
                 highlight:SetColorTexture(1, 1, 1, 0.06)
             end)
@@ -310,7 +310,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
             end)
             mrow:SetScript("OnClick", function()
                 chosen = choice.key
-                dropCaption:SetText(CludesUI.L(choice.label))
+                dropCaption:SetText(CUI.L(choice.label))
                 dropCaption:SetTextColor(1, 1, 1, 1)
                 dropMenu:Hide()
             end)
@@ -319,7 +319,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
             dropMenu:SetShown(not dropMenu:IsShown())
         end)
         -- Controller cursor: Cancel inside the list clicks the button (closing just the list).
-        if CludesUI.PadCP() then
+        if CUI.PadCP() then
             dropMenu.CloseButton = dropdownBtn
         end
 
@@ -395,7 +395,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
         colTitle:SetFont(fontFile, 11, "")
         colTitle:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", posX, secY - 16)
         colTitle:SetTextColor(1, 1, 1, 0.45)
-        colTitle:SetText(CludesUI.L(titleText))
+        colTitle:SetText(CUI.L(titleText))
 
         -- Add Spell ID: the announcement popup's bordered accent button, secondary weight (dim border, brightens on hover).
         local addBtn = CreateFrame("Button", nil, panelFrame)
@@ -404,12 +404,12 @@ function CludesUI.ShowTrackedAurasPopup(options)
         local abg = addBtn:CreateTexture(nil, "BACKGROUND")
         abg:SetAllPoints()
         abg:SetColorTexture(0.062, 0.070, 0.082, 0.92)
-        local abrd = CludesUI.MakeRoundedBorder(addBtn, ACC.r, ACC.g, ACC.b, 0.35, abg)
+        local abrd = CUI.MakeRoundedBorder(addBtn, ACC.r, ACC.g, ACC.b, 0.35, abg)
         local al = addBtn:CreateFontString(nil, "OVERLAY")
         al:SetFont(fontFile, 12, "")
         al:SetPoint("CENTER")
         al:SetTextColor(ACC.r, ACC.g, ACC.b, 0.7)
-        al:SetText(CludesUI.L("Add Spell ID"))
+        al:SetText(CUI.L("Add Spell ID"))
         addBtn:SetScript("OnEnter", function()
             al:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
             if abrd and abrd.SetColor then
@@ -475,11 +475,11 @@ function CludesUI.ShowTrackedAurasPopup(options)
                     local bxbg = row.box:CreateTexture(nil, "BACKGROUND")
                     bxbg:SetAllPoints()
                     bxbg:SetColorTexture(0.114, 0.106, 0.099, 1)
-                    row.boxBrd = CludesUI.MakeRoundedBorder(row.box, 0.4, 0.4, 0.4, 0.6, bxbg)
+                    row.boxBrd = CUI.MakeRoundedBorder(row.box, 0.4, 0.4, 0.4, 0.6, bxbg)
                     row.chk = row.box:CreateTexture(nil, "ARTWORK")
                     Pix.SetInside(row.chk, row.box, 2, 2)
                     row.chk:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
-                    CludesUI.RoundBody(row.box, row.chk, 2)
+                    CUI.RoundBody(row.box, row.chk, 2)
                     row.icon = row:CreateTexture(nil, "ARTWORK")
                     row.icon:SetSize(20, 20)
                     row.icon:SetPoint("LEFT", row.box, "RIGHT", 6, 0)
@@ -504,7 +504,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
                         row.mine.txt = row.mine:CreateFontString(nil, "OVERLAY")
                         row.mine.txt:SetFont(fontFile, 11, "")
                         row.mine.txt:SetPoint("CENTER")
-                        row.mine.txt:SetText(CludesUI.L("MINE"))
+                        row.mine.txt:SetText(CUI.L("MINE"))
                         row.mine:SetScript("OnClick", function()
                             ToggleMine(row._id)
                             if options.onChanged then
@@ -515,18 +515,18 @@ function CludesUI.ShowTrackedAurasPopup(options)
                         row.mine:SetScript("OnEnter", function(self)
                             local tipText
                             if MineOn(row._id) then
-                                tipText = CludesUI.L(
+                                tipText = CUI.L(
                                     "Showing this aura from your casts only; click for any caster."
                                 )
                             else
-                                tipText = CludesUI.L(
+                                tipText = CUI.L(
                                     "Showing this aura from any caster; click for your casts only."
                                 )
                             end
-                            CludesUI.ShowWidgetTooltip(self, tipText)
+                            CUI.ShowWidgetTooltip(self, tipText)
                         end)
                         row.mine:SetScript("OnLeave", function()
-                            CludesUI.HideWidgetTooltip()
+                            CUI.HideWidgetTooltip()
                         end)
                     end
                     row.x.tex = row.x:CreateTexture(nil, "OVERLAY")
@@ -535,11 +535,11 @@ function CludesUI.ShowTrackedAurasPopup(options)
                     row.x:SetAlpha(0.5)
                     row.x:SetScript("OnEnter", function(self)
                         self:SetAlpha(0.9)
-                        CludesUI.ShowWidgetTooltip(self, CludesUI.L("Remove"))
+                        CUI.ShowWidgetTooltip(self, CUI.L("Remove"))
                     end)
                     row.x:SetScript("OnLeave", function(self)
                         self:SetAlpha(0.5)
-                        CludesUI.HideWidgetTooltip()
+                        CUI.HideWidgetTooltip()
                     end)
                     row:SetScript("OnEnter", function(self)
                         self.hl:SetColorTexture(1, 1, 1, 0.04)
@@ -606,11 +606,11 @@ function CludesUI.ShowTrackedAurasPopup(options)
             childFrame:SetHeight(math.max(1, #sorted * 29))
         end
         addBtn:SetScript("OnClick", function()
-            CludesUI:ShowInputPopup({
-                title = CludesUI.L("Add Spell ID"),
+            CUI:ShowInputPopup({
+                title = CUI.L("Add Spell ID"),
                 message = promptText,
-                confirmText = CludesUI.L("Add"),
-                cancelText = CludesUI.L("Cancel"),
+                confirmText = CUI.L("Add"),
+                cancelText = CUI.L("Cancel"),
                 onConfirm = function(textValue)
                     local ident = tonumber(textValue or "")
                     local entries = ident and listFn()
@@ -640,7 +640,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
     local refreshInc = MakeSpellColumn(
         24,
         "INCLUDED DEBUFFS",
-        CludesUI.L(options.includePrompt or "Enter the spell ID to always show."),
+        CUI.L(options.includePrompt or "Enter the spell ID to always show."),
         options.includeGet,
         options.excludeGet,
         options.includeMine
@@ -648,7 +648,7 @@ function CludesUI.ShowTrackedAurasPopup(options)
     local refreshEx = MakeSpellColumn(
         268,
         "EXCLUDED DEBUFFS",
-        CludesUI.L(options.excludePrompt or "Enter the spell ID to exclude."),
+        CUI.L(options.excludePrompt or "Enter the spell ID to exclude."),
         options.excludeGet,
         options.includeGet
     )
@@ -664,11 +664,11 @@ function CludesUI.ShowTrackedAurasPopup(options)
     local dbg2 = doneBtn:CreateTexture(nil, "BACKGROUND")
     dbg2:SetAllPoints()
     dbg2:SetColorTexture(0.062, 0.070, 0.082, 0.92)
-    local dbrd = CludesUI.MakeRoundedBorder(doneBtn, ACC.r, ACC.g, ACC.b, 0.9, dbg2)
+    local dbrd = CUI.MakeRoundedBorder(doneBtn, ACC.r, ACC.g, ACC.b, 0.9, dbg2)
     local dl2 = doneBtn:CreateFontString(nil, "OVERLAY")
     dl2:SetFont(fontFile, 14, "")
     dl2:SetPoint("CENTER")
-    dl2:SetText(CludesUI.L("Done"))
+    dl2:SetText(CUI.L("Done"))
     dl2:SetTextColor(ACC.r, ACC.g, ACC.b, 0.9)
     doneBtn:SetScript("OnEnter", function()
         dl2:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
@@ -688,20 +688,20 @@ function CludesUI.ShowTrackedAurasPopup(options)
     -- controller's Back (registered while hidden, so it counts from this show);
     -- the full-screen dimmer and the panel are no stops, Cancel clicks the X, the
     -- cursor starts on Done.
-    local pad = CludesUI.PadInUse()
+    local pad = CUI.PadInUse()
     if pad then
         -- Every open asks: the call returns at once while the kept dimmer is
         -- still registered (a named dimmer stays so through the pool's resets).
-        CludesUI.RegisterEscapeClose(shade, TRACKED_AURAS_ESC)
-        CludesUI.PadHint(shade, "nodepass")
-        CludesUI.PadHint(panelFrame, "nodepass")
-        if CludesUI.PadCP() then
+        CUI.RegisterEscapeClose(shade, TRACKED_AURAS_ESC)
+        CUI.PadHint(shade, "nodepass")
+        CUI.PadHint(panelFrame, "nodepass")
+        if CUI.PadCP() then
             panelFrame.CloseButton = closeBtn
         end
     end
     shade:Show()
-    if pad and CludesUI.PadCursorShown() then
-        CludesUI.PadFocus(doneBtn)
+    if pad and CUI.PadCursorShown() then
+        CUI.PadFocus(doneBtn)
     end
 
     RefreshBoth()
@@ -715,23 +715,23 @@ end
 -- open that made it, so the close reads the frame it is handed.
 local function EscapeBlacklist(frame)
     frame:Hide()
-    CludesUI._blacklistPopup = nil
+    CUI._blacklistPopup = nil
 end
 local BLACKLIST_ESC = { padOnly = true, onEscape = EscapeBlacklist }
-function CludesUI.ShowSpellBlacklistPopup(options)
-    if CludesUI._blacklistPopup then
-        CludesUI._blacklistPopup:Hide()
-        CludesUI._blacklistPopup = nil
+function CUI.ShowSpellBlacklistPopup(options)
+    if CUI._blacklistPopup then
+        CUI._blacklistPopup:Hide()
+        CUI._blacklistPopup = nil
     end
     options = options or {}
-    local fontFile = CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
-    local brandGreen = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+    local fontFile = CUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
+    local brandGreen = CUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
     local PW, PH = 320, 400
 
     -- Controller cursor loaded: the dimmer is a named Button, so the cursor can
     -- take the popup as a window and its Cancel press can click the dimmer shut.
     -- One kept dimmer per kind (a kept frame never changes its type).
-    local padCP = CludesUI.PadCP()
+    local padCP = CUI.PadCP()
     -- Kept hidden: shown below once dressed (see ShowTrackedAurasPopup).
     local shade = PoolKept(
         POPUPS,
@@ -751,29 +751,29 @@ function CludesUI.ShowSpellBlacklistPopup(options)
     shade:SetScript("OnMouseWheel", function() end)
     local function CloseBlacklist()
         shade:Hide()
-        CludesUI._blacklistPopup = nil
+        CUI._blacklistPopup = nil
     end
     shade:SetScript("OnMouseDown", CloseBlacklist)
-    CludesUI.SolidTex(shade, "BACKGROUND", 0, 0, 0, 0.25):SetAllPoints(shade)
-    CludesUI._blacklistPopup = shade
+    CUI.SolidTex(shade, "BACKGROUND", 0, 0, 0, 0.25):SetAllPoints(shade)
+    CUI._blacklistPopup = shade
 
     local dialog = CreateFrame("Frame", nil, shade)
     dialog:SetSize(PW, PH)
     dialog:SetPoint("CENTER")
     dialog:EnableMouse(true)
     dialog:SetFrameLevel(shade:GetFrameLevel() + 2)
-    if CludesUI.GetPopupScale then
-        dialog:SetScale(CludesUI.GetPopupScale())
+    if CUI.GetPopupScale then
+        dialog:SetScale(CUI.GetPopupScale())
     end
-    local popBg = CludesUI.SolidTex(dialog, "BACKGROUND", 13 / 255, 17 / 255, 25 / 255, 0.98)
+    local popBg = CUI.SolidTex(dialog, "BACKGROUND", 13 / 255, 17 / 255, 25 / 255, 0.98)
     popBg:SetAllPoints(dialog)
-    CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.22, popBg)
+    CUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.22, popBg)
 
     local title = dialog:CreateFontString(nil, "OVERLAY")
     title:SetFont(fontFile, 14, "")
     title:SetPoint("TOP", dialog, "TOP", 0, -12)
     title:SetTextColor(1, 1, 1, 0.95)
-    title:SetText(CludesUI.L(options.title or "Blacklist"))
+    title:SetText(CUI.L(options.title or "Blacklist"))
 
     local hint = dialog:CreateFontString(nil, "OVERLAY")
     hint:SetFont(fontFile, 11, "")
@@ -781,7 +781,7 @@ function CludesUI.ShowSpellBlacklistPopup(options)
     hint:SetWidth(PW - 32)
     hint:SetJustifyH("CENTER")
     hint:SetTextColor(1, 1, 1, 0.45)
-    hint:SetText(CludesUI.L("Blacklisted spells never display."))
+    hint:SetText(CUI.L("Blacklisted spells never display."))
 
     local addBox = CreateFrame("EditBox", nil, dialog)
     addBox:SetSize(PW - 24 - 70 - 8, 26)
@@ -796,14 +796,14 @@ function CludesUI.ShowSpellBlacklistPopup(options)
     -- Every open starts empty: the dress sets the text itself rather than rely on
     -- the kept box's reset (set before OnTextChanged, so nothing fires).
     addBox:SetText("")
-    local addBg = CludesUI.SolidTex(addBox, "BACKGROUND", 0, 0, 0, 0.4)
+    local addBg = CUI.SolidTex(addBox, "BACKGROUND", 0, 0, 0, 0.4)
     addBg:SetAllPoints(addBox)
-    CludesUI.MakeRoundedBorder(addBox, 1, 1, 1, 0.15, addBg)
+    CUI.MakeRoundedBorder(addBox, 1, 1, 1, 0.15, addBg)
     local ph = addBox:CreateFontString(nil, "OVERLAY")
     ph:SetFont(fontFile, 11, "")
     ph:SetPoint("LEFT", addBox, "LEFT", 6, 0)
     ph:SetTextColor(0.5, 0.5, 0.5, 0.6)
-    ph:SetText(CludesUI.L("Spell ID..."))
+    ph:SetText(CUI.L("Spell ID..."))
     addBox:SetScript("OnTextChanged", function(self)
         ph:SetShown(self:GetText() == "")
     end)
@@ -817,14 +817,14 @@ function CludesUI.ShowSpellBlacklistPopup(options)
     local addBg = addBtn:CreateTexture(nil, "BACKGROUND")
     addBg:SetAllPoints()
     addBg:SetColorTexture(brandGreen.r, brandGreen.g, brandGreen.b, 0.8)
-    CludesUI.RoundBody(addBtn, addBg)
+    CUI.RoundBody(addBtn, addBg)
     local addLbl = addBtn:CreateFontString(nil, "OVERLAY")
     addLbl:SetFont(fontFile, 11, "")
     addLbl:SetPoint("CENTER")
     addLbl:SetTextColor(1, 1, 1)
-    addLbl:SetText(CludesUI.L("Add"))
+    addLbl:SetText(CUI.L("Add"))
     addBtn:SetScript("OnEnter", nil) -- CludesUI.OutlineButton below sets the hover
-    CludesUI.OutlineButton(addBtn, addBg, true)
+    CUI.OutlineButton(addBtn, addBg, true)
 
     local scrollFrame = CreateFrame("ScrollFrame", nil, dialog)
     scrollFrame:SetPoint("TOPLEFT", dialog, "TOPLEFT", 12, -94)
@@ -843,7 +843,7 @@ function CludesUI.ShowSpellBlacklistPopup(options)
     emptyLbl:SetFont(fontFile, 11, "")
     emptyLbl:SetPoint("TOP", childFrame, "TOP", 0, -10)
     emptyLbl:SetTextColor(1, 1, 1, 0.35)
-    emptyLbl:SetText(CludesUI.L("No blacklisted spells."))
+    emptyLbl:SetText(CUI.L("No blacklisted spells."))
 
     local rowList = {}
     local RebuildList
@@ -946,21 +946,21 @@ function CludesUI.ShowSpellBlacklistPopup(options)
     -- controller's Back (registered while hidden, so it counts from this show);
     -- the dimmer and the panel are no stops, Cancel clicks the dimmer (the popup
     -- has no close button), and the cursor starts inside the popup.
-    if padCP or CludesUI.PadNative() then
+    if padCP or CUI.PadNative() then
         if padCP then
             shade:SetScript("OnClick", CloseBlacklist)
-            CludesUI.PadHint(shade, "nodepass")
-            CludesUI.PadHint(dialog, "nodepass")
+            CUI.PadHint(shade, "nodepass")
+            CUI.PadHint(dialog, "nodepass")
             dialog.CloseButton = shade
         end
         -- Every open asks: a named dimmer stays registered through the pool's
         -- resets (the call returns at once), an unnamed one is registered anew.
-        CludesUI.RegisterEscapeClose(shade, BLACKLIST_ESC)
+        CUI.RegisterEscapeClose(shade, BLACKLIST_ESC)
     end
     shade:Show()
 
     RebuildList()
-    if padCP and CludesUI.PadCursorShown() then
-        CludesUI.PadFocus(dialog)
+    if padCP and CUI.PadCursorShown() then
+        CUI.PadFocus(dialog)
     end
 end

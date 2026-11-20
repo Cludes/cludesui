@@ -35,8 +35,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- our own bars), and hiding the last one drops them with any segment shown.
 -------------------------------------------------------------------------------
 
-local CludesUI = _G.CludesUI
-if not (CludesUI and CludesUI.IS_FOREVER) then
+local CUI = _G.CludesUI
+if not (CUI and CUI.IS_FOREVER) then
     return
 end
 
@@ -59,7 +59,7 @@ local castCost -- its mana cost (may be secret)
 local costRead = false -- castCost holds this cast's read
 
 local SCP = {}
-CludesUI.SpellCostPrediction = SCP
+CUI.SpellCostPrediction = SCP
 
 -- Custom color, else Blizzard's mana prediction color, else a light blue.
 function SCP.Color(cfg)
@@ -126,7 +126,7 @@ local function Show(h)
         seg:SetStatusBarTexture(filePath)
         local fill = seg:GetStatusBarTexture()
         if fill then
-            CludesUI.PP.DisablePixelSnap(fill)
+            CUI.PP.DisablePixelSnap(fill)
         end
     end
     local fill = seg:GetStatusBarTexture()

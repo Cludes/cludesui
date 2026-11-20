@@ -13,8 +13,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  protected calls). Forever only (IS_FOREVER is false everywhere else).
 --------------------------------------------------------------------------------
 local ADDON_NAME, mod = ...
-local CludesUI = _G.CludesUI
-if not (CludesUI and CludesUI.IS_FOREVER) then
+local CUI = _G.CludesUI
+if not (CUI and CUI.IS_FOREVER) then
     return
 end
 local Skin = mod.WSkin
@@ -23,7 +23,7 @@ if not (Skin and Skin.RegisterWindow) then
 end
 
 local Theme = Skin.Theme
-local FFD, GetFFD = CludesUI.NewFrameData()
+local FFD, GetFFD = CUI.NewFrameData()
 local OURS = setmetatable({}, { __mode = "k" }) -- the frames this pack created
 
 local ICON_CROP = 0.08
@@ -41,7 +41,7 @@ local BAG_BUTTONS = {
 }
 
 local function BorderPP()
-    return CludesUI.PanelPP or CludesUI.PP
+    return CUI.PanelPP or CUI.PP
 end
 
 -- One-time cell chrome: a box frame of ours with the theme border, the cell

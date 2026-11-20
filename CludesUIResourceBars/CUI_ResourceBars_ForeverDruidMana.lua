@@ -28,9 +28,9 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- Power Bar's anchor links re-cascade only when this bar's edge changes.
 
 local _, mod = ...
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 
-if not CludesUI.IS_FOREVER then
+if not CUI.IS_FOREVER then
     return
 end
 local _, playerClass = UnitClass("player")
@@ -105,7 +105,7 @@ end
 local function ReachOf(pp, es)
     local bs = pp.borderSize or 0
     local texture = pp.borderTexture or "solid"
-    return CludesUI.BorderReach(
+    return CUI.BorderReach(
         bs,
         texture,
         pp.borderTextureOffset,
@@ -114,7 +114,7 @@ local function ReachOf(pp, es)
         pp.borderTextureShiftY,
         "resourcebars",
         bs,
-        CludesUI.BorderPx(pp.borderSizePx, bs, texture),
+        CUI.BorderPx(pp.borderSizePx, bs, texture),
         nil,
         pp.borderA,
         es
@@ -153,7 +153,7 @@ local function PowerBarReach(pp, place, pbSide, vertical, es)
     elseif style == "classic" then
         -- The vanilla frame's whole reach, so its art never covers this bar;
         -- turned with a vertical bar like the art (top rim on the left).
-        local CF = CludesUI.ClassicFrame
+        local CF = CUI.ClassicFrame
         return ((place == "above") and CF.OVER_T or CF.OVER_B) * mod.ERB_BarFrameK(pp)
     end
     local topY, bottom, leftX, right = mod.ERB_BorderExtents(pp)
@@ -169,9 +169,9 @@ local function InsideInset(pp)
     local bs = pp.borderSize or 0
     local texture = pp.borderTexture
     if not texture or texture == "" or texture == "solid" then
-        bs = CludesUI.BorderPx(pp.borderSizePx, bs, texture) or bs
+        bs = CUI.BorderPx(pp.borderSizePx, bs, texture) or bs
     end
-    return bs * CludesUI.PP.mult
+    return bs * CUI.PP.mult
 end
 
 -------------------------------------------------------------------------------
@@ -264,8 +264,8 @@ end
 local cascadeQueued = false
 local function CascadeSettled()
     cascadeQueued = false
-    if not CludesUI._unlockActive then
-        CludesUI.PropagateAnchorChain("ERB_Power")
+    if not CUI._unlockActive then
+        CUI.PropagateAnchorChain("ERB_Power")
     end
 end
 local function NotifyExtent()
@@ -274,8 +274,8 @@ local function NotifyExtent()
         return
     end
     S.extLast = sig
-    if not CludesUI._unlockActive and CludesUI.PropagateAnchorChain then
-        CludesUI.PropagateAnchorChain("ERB_Power")
+    if not CUI._unlockActive and CUI.PropagateAnchorChain then
+        CUI.PropagateAnchorChain("ERB_Power")
         -- A form change cascades mid-rebuild, on the bars' old edges: once more settled.
         if not cascadeQueued then
             cascadeQueued = true
@@ -325,7 +325,7 @@ local function EnsureBuilt(pb)
     owner = CreateFrame("Frame", nil, pb)
     owner:Hide()
     local scrollBar = CreateFrame("StatusBar", nil, owner)
-    local q = CludesUI.PP.mult * 0.25
+    local q = CUI.PP.mult * 0.25
     scrollBar:SetPoint("TOPLEFT", owner, "TOPLEFT", q, -q)
     scrollBar:SetPoint("BOTTOMRIGHT", owner, "BOTTOMRIGHT", -q, q)
     scrollBar:SetStatusBarTexture(WHITE)
@@ -352,7 +352,7 @@ end
 -- (25), the classic frame and a lifted border; Below / Above clear every
 -- frame the Power Bar draws (reach below). Returns orientation, inside.
 local function Layout(pb, pp, g, cfg)
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     local owner, bdr = S.host, S.border
     local base = pb._sb:GetFrameLevel() + 1
     owner:SetFrameLevel(base)
@@ -445,12 +445,12 @@ local function ApplyBorder(pp, inside)
         bdr:SetAllPoints(S.host)
     end
     if inside then
-        CludesUI.ApplyBorderStyle(bdr, 0, 0, 0, 0, 0, "solid")
+        CUI.ApplyBorderStyle(bdr, 0, 0, 0, 0, 0, "solid")
         return
     end
     local bs = pp.borderSize or 0
     local texture = pp.borderTexture or "solid"
-    CludesUI.ApplyBorderStyle(
+    CUI.ApplyBorderStyle(
         bdr,
         bs,
         pp.borderR or 0,
@@ -465,10 +465,10 @@ local function ApplyBorder(pp, inside)
         "resourcebars",
         bs,
         nil,
-        CludesUI.BorderPx(pp.borderSizePx, bs, texture)
+        CUI.BorderPx(pp.borderSizePx, bs, texture)
     )
     -- The strip container was levelled off the border frame when it was made.
-    local edges = CludesUI.PP.GetBorders(bdr)
+    local edges = CUI.PP.GetBorders(bdr)
     if edges then
         edges:SetFrameLevel(bdr:GetFrameLevel() + 1)
     end
@@ -488,7 +488,7 @@ local function ApplyLook(pp, g, profile, ori)
         scrollBar:SetRotatesTexture(false)
         scrollBar:SetReverseFill(false)
     end
-    local filePath = CludesUI.ResolveTexturePath(
+    local filePath = CUI.ResolveTexturePath(
         _G._CURB_BarTextures,
         (profile.splitTex == true and pp.barTexture) or g.barTexture or "none",
         WHITE
@@ -634,8 +634,8 @@ end
 -- stays clear of the bar and a drag measures from the same edge (Below: the
 -- Power Bar's mover wraps this bar, ns.FDM_BottomExtra). Chained in front of
 -- any provider installed before this file loaded.
-local prevExtent = CludesUI._GetAnchorTargetExtent
-CludesUI._GetAnchorTargetExtent = function(targetKey, side)
+local prevExtent = CUI._GetAnchorTargetExtent
+CUI._GetAnchorTargetExtent = function(targetKey, side)
     if targetKey == "ERB_Power" and S.shown and not S.parked and side == S.extSide then
         local owner, pb = S.host, S.pb
         local val, pv

@@ -8,12 +8,12 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  parts. Read at load by the Fonts and Textures options files, so it
 --  loads before them.
 -------------------------------------------------------------------------------
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 -- Page reuse: the frames this file builds go through the options frame pool
 -- (CludesUI_FramePool.lua, loaded first in this addon), which hands a kept
 -- page its previous build's frames back reset to new; on any other parent it
 -- creates as before.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 -------------------------------------------------------------------------------
 --  BuildUnlockPlaceholder
@@ -27,9 +27,9 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 --  }
 --  Returns the placeholder frame.
 -------------------------------------------------------------------------------
-function CludesUI.BuildUnlockPlaceholder(options)
+function CUI.BuildUnlockPlaceholder(options)
     local hostFrame = options.parent
-    local brandGreen = CludesUI.CLUDES_GREEN
+    local brandGreen = CUI.CLUDES_GREEN
     local ar, ag, ab = brandGreen.r, brandGreen.g, brandGreen.b
 
     local frame = CreateFrame("Button", nil, hostFrame)
@@ -49,14 +49,14 @@ function CludesUI.BuildUnlockPlaceholder(options)
     frame._bg = backdrop
 
     -- Accent border at 60% alpha
-    frame._brd = CludesUI.MakeBorder(frame, ar, ag, ab, 0.6)
+    frame._brd = CUI.MakeBorder(frame, ar, ag, ab, 0.6)
 
     -- White centered label matching unlock mode mover style
-    local fontFile = (CludesUI.GetFontPath("extras"))
+    local fontFile = (CUI.GetFontPath("extras"))
         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
     local labelText = frame:CreateFontString(nil, "OVERLAY")
     labelText:SetFont(fontFile, 10, "OUTLINE, SLUG")
-    labelText:SetText(CludesUI.L(options.text or "Move in Layout Mode"))
+    labelText:SetText(CUI.L(options.text or "Move in Layout Mode"))
     labelText:SetTextColor(1, 1, 1, 0.9)
     labelText:SetPoint("CENTER")
     frame._label = labelText
@@ -78,8 +78,8 @@ function CludesUI.BuildUnlockPlaceholder(options)
 
     -- Click: open unlock mode (or custom handler)
     frame:SetScript("OnClick", options.onClick or function()
-        if CludesUI.ToggleUnlockMode then
-            CludesUI:ToggleUnlockMode()
+        if CUI.ToggleUnlockMode then
+            CUI:ToggleUnlockMode()
         end
     end)
 
@@ -92,8 +92,8 @@ end
 -- "Custom (Ns)". get/set move the stored seconds (nil = unlimited); apply
 -- re-drives the display. Shared by the Raid Frames Debuff Manager (base grid
 -- and grid tiles) and Player Aura Bars debuff bars.
-function CludesUI.MaxDurationDropdown(get, set, apply)
-    local L = CludesUI.L
+function CUI.MaxDurationDropdown(get, set, apply)
+    local L = CUI.L
     local current = get()
     local values = {
         unlimited = L("Unlimited"),
@@ -116,11 +116,11 @@ function CludesUI.MaxDurationDropdown(get, set, apply)
                         apply()
                     end
                 end
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
                 return
             end
             local nowTime = get()
-            CludesUI:ShowInputPopup({
+            CUI:ShowInputPopup({
                 title = L("Max Duration"),
                 message = L("Enter the maximum debuff duration in seconds:"),
                 placeholder = nowTime and tostring(nowTime) or "30",
@@ -137,10 +137,10 @@ function CludesUI.MaxDurationDropdown(get, set, apply)
                             end
                         end
                     end
-                    CludesUI:RefreshPage(true)
+                    CUI:RefreshPage(true)
                 end,
                 onCancel = function()
-                    CludesUI:RefreshPage(true)
+                    CUI:RefreshPage(true)
                 end,
             })
         end,
@@ -154,16 +154,16 @@ end
 -- absent). A path is a sound file or a SoundKit id.
 -- Sound preview icon for every sound picker and play button. WoW Forever has no
 -- common-icon-sound atlases; its dropdown speaker stands in for both states.
-CludesUI.SOUND_ICON_ATLAS = C_Texture.GetAtlasInfo("common-icon-sound") and "common-icon-sound"
+CUI.SOUND_ICON_ATLAS = C_Texture.GetAtlasInfo("common-icon-sound") and "common-icon-sound"
     or "common-dropdown-icon-sound-on"
-CludesUI.SOUND_ICON_PRESSED_ATLAS = C_Texture.GetAtlasInfo("common-icon-sound-pressed")
+CUI.SOUND_ICON_PRESSED_ATLAS = C_Texture.GetAtlasInfo("common-icon-sound-pressed")
         and "common-icon-sound-pressed"
-    or CludesUI.SOUND_ICON_ATLAS
+    or CUI.SOUND_ICON_ATLAS
 
-function CludesUI.BuildSoundDropdownValues(paths, nameList, sequence)
-    paths = paths or CludesUI._groupDeathSoundPaths or {}
-    nameList = nameList or CludesUI._groupDeathSoundNames or { none = "None" }
-    sequence = sequence or CludesUI._groupDeathSoundOrder or { "none" }
+function CUI.BuildSoundDropdownValues(paths, nameList, sequence)
+    paths = paths or CUI._groupDeathSoundPaths or {}
+    nameList = nameList or CUI._groupDeathSoundNames or { none = "None" }
+    sequence = sequence or CUI._groupDeathSoundOrder or { "none" }
     local values = {}
     for keyName, val in pairs(nameList) do
         values[keyName] = val
@@ -176,16 +176,16 @@ function CludesUI.BuildSoundDropdownValues(paths, nameList, sequence)
             if key == "none" or not paths[key] then
                 return nil
             end
-            return CludesUI.SOUND_ICON_ATLAS
+            return CUI.SOUND_ICON_ATLAS
         end,
         iconPressedAtlas = function(key)
             if key == "none" or not paths[key] then
                 return nil
             end
-            return CludesUI.SOUND_ICON_PRESSED_ATLAS
+            return CUI.SOUND_ICON_PRESSED_ATLAS
         end,
         iconOnClick = function(key)
-            CludesUI.PlaySoundPath(paths[key])
+            CUI.PlaySoundPath(paths[key])
         end,
         iconTooltip = function()
             return "Preview Sound"
@@ -199,12 +199,12 @@ end
 -------------------------------------------------------------------------------
 
 -- Fresh table per call: DualRow configs must never be shared across rows.
-function CludesUI.BlankRowCfg()
+function CUI.BlankRowCfg()
     return { type = "label", text = "" }
 end
 
-function CludesUI.ModuleNS(folder)
-    return CludesUI._ModuleNS and CludesUI._ModuleNS[folder]
+function CUI.ModuleNS(folder)
+    return CUI._ModuleNS and CUI._ModuleNS[folder]
 end
 
 -- Custom link row: label on the left, an Open Settings button on the right,
@@ -212,19 +212,19 @@ end
 -- opts.warn: the label in the warning red, for a setting there that overrides
 -- this page. Returns the next y and the row; row:Relink(label, module, page,
 -- section, highlight) aims the same row at another setting.
-function CludesUI.BuildLinkRow(hostFrame, cursorY, labelText, module, page, section, highlight, options)
-    local Pix = CludesUI.PanelPP
+function CUI.BuildLinkRow(hostFrame, cursorY, labelText, module, page, section, highlight, options)
+    local Pix = CUI.PanelPP
     local ROW_H = 40
     local row = CreateFrame("Frame", nil, hostFrame)
-    Pix.Size(row, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, ROW_H)
-    Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
+    Pix.Size(row, hostFrame:GetWidth() - CUI.CONTENT_PAD * 2, ROW_H)
+    Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CUI.CONTENT_PAD, cursorY)
     row._skipRowDivider = true
-    CludesUI.RowBg(row, hostFrame)
+    CUI.RowBg(row, hostFrame)
 
-    local labelFS = CludesUI.MakeFont(row, 13, nil, 1, 1, 1)
+    local labelFS = CUI.MakeFont(row, 13, nil, 1, 1, 1)
     labelFS:SetAlpha(0.9)
     labelFS:SetPoint("LEFT", row, "LEFT", 20, 0)
-    labelFS:SetText(CludesUI.L(labelText))
+    labelFS:SetText(CUI.L(labelText))
     if options and options.warn then
         labelFS:SetTextColor(0.9, 0.3, 0.3)
     end
@@ -233,11 +233,11 @@ function CludesUI.BuildLinkRow(hostFrame, cursorY, labelText, module, page, sect
     Pix.Size(button, 122, 26)
     button:SetPoint("RIGHT", row, "RIGHT", -20, 0)
     button:SetFrameLevel(row:GetFrameLevel() + 2)
-    CludesUI.MakeStyledButton(button, "Open Settings", 11, CludesUI.WB_COLOURS, function()
-        CludesUI:NavigateToElementSettings(module, page, section, nil, highlight)
+    CUI.MakeStyledButton(button, "Open Settings", 11, CUI.WB_COLOURS, function()
+        CUI:NavigateToElementSettings(module, page, section, nil, highlight)
     end)
     function row:Relink(l, m, p, s, height)
-        labelFS:SetText(CludesUI.L(l))
+        labelFS:SetText(CUI.L(l))
         module, page, section, highlight = m, p, s, height
     end
 
@@ -262,8 +262,8 @@ end
 -- card:SetPulse(on): a breathing accent outline for an action that wants
 -- attention now, animated only while the card shows.
 local function BuildInlineRow(hostFrame, cursorY, cards, availW, fullW, footer)
-    local Pix = CludesUI.PanelPP
-    local L = CludesUI.L
+    local Pix = CUI.PanelPP
+    local L = CUI.L
     local ROW_H, ICON, DIV_GAP, DIV_H = 60, 26, 24, 40
     local TITLE_SZ, DESC_SZ, DESC_GAP = 13, 11, 4
     -- Plain items, and the boxed hero in the equal cards' values (left pad,
@@ -296,10 +296,10 @@ local function BuildInlineRow(hostFrame, cursorY, cards, availW, fullW, footer)
             icon:SetTexelSnappingBias(0)
         end
         icon:SetAlpha(p.iconA)
-        local titleFs = CludesUI.MakeFont(cardFrame, TITLE_SZ, nil, 1, 1, 1, TITLE_A)
+        local titleFs = CUI.MakeFont(cardFrame, TITLE_SZ, nil, 1, 1, 1, TITLE_A)
         titleFs:SetJustifyH("LEFT")
         titleFs:SetWordWrap(false)
-        local descFs = CludesUI.MakeFont(cardFrame, DESC_SZ, nil, 1, 1, 1, p.descA)
+        local descFs = CUI.MakeFont(cardFrame, DESC_SZ, nil, 1, 1, 1, p.descA)
         descFs:SetJustifyH("LEFT")
         descFs:SetWordWrap(true)
         descFs:SetMaxLines(2)
@@ -341,7 +341,7 @@ local function BuildInlineRow(hostFrame, cursorY, cards, availW, fullW, footer)
         "TOPLEFT",
         hostFrame,
         "TOPLEFT",
-        CludesUI.CONTENT_PAD + math.floor((fullW - totalW) / 2),
+        CUI.CONTENT_PAD + math.floor((fullW - totalW) / 2),
         cursorY
     )
 
@@ -373,12 +373,12 @@ local function BuildInlineRow(hostFrame, cursorY, cards, availW, fullW, footer)
         -- The equal cards' box: dark fill, thin outline, an accent top edge.
         local backdrop, brd, accentLine
         if boxed then
-            brd = CludesUI.MakeRoundedCard(cardFrame, BOX_BRD_A, 0.50, 2)
+            brd = CUI.MakeRoundedCard(cardFrame, BOX_BRD_A, 0.50, 2)
             backdrop, accentLine = brd.bg, brd.accent
         end
         -- The accent is read at paint time, so an accent change repaints it.
         local function Paint(hover)
-            local ac = specInfo.accent or CludesUI.CLUDES_GREEN
+            local ac = specInfo.accent or CUI.CLUDES_GREEN
             icon:SetVertexColor(ac.r, ac.g, ac.b)
             if boxed then
                 accentLine:SetColorTexture(ac.r, ac.g, ac.b, 0.6)
@@ -392,7 +392,7 @@ local function BuildInlineRow(hostFrame, cursorY, cards, availW, fullW, footer)
         end
         Paint(false)
         if not specInfo.accent then
-            CludesUI.RegisterWidgetRefresh(function()
+            CUI.RegisterWidgetRefresh(function()
                 Paint(cardFrame:IsMouseOver())
             end)
         end
@@ -420,11 +420,11 @@ local function BuildInlineRow(hostFrame, cursorY, cards, availW, fullW, footer)
     return cursorY - blockH, built
 end
 
-function CludesUI.BuildActionCardRow(hostFrame, cursorY, cards, options)
-    local Pix = CludesUI.PanelPP
-    local L = CludesUI.L
+function CUI.BuildActionCardRow(hostFrame, cursorY, cards, options)
+    local Pix = CUI.PanelPP
+    local L = CUI.L
     local num = #cards
-    local fullW = hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2
+    local fullW = hostFrame:GetWidth() - CUI.CONTENT_PAD * 2
     local totalW = (options and options.width) and math.floor(fullW * options.width) or fullW
     if options and options.inline then
         return BuildInlineRow(hostFrame, cursorY, cards, totalW, fullW, options.footer)
@@ -442,7 +442,7 @@ function CludesUI.BuildActionCardRow(hostFrame, cursorY, cards, options)
         descA = 0.35,
         pad = 14,
     }
-    local leftX = CludesUI.CONTENT_PAD + math.floor((fullW - totalW) / 2)
+    local leftX = CUI.CONTENT_PAD + math.floor((fullW - totalW) / 2)
     local cardW = math.floor((totalW - CARD_GAP * (num - 1)) / num)
 
     local rowFrame = CreateFrame("Frame", nil, hostFrame)
@@ -452,7 +452,7 @@ function CludesUI.BuildActionCardRow(hostFrame, cursorY, cards, options)
     local built = {}
     for idx = 1, num do
         local specInfo = cards[idx]
-        local ac = specInfo.accent or CludesUI.CLUDES_GREEN
+        local ac = specInfo.accent or CUI.CLUDES_GREEN
         local cardFrame = CreateFrame("Button", nil, rowFrame)
         Pix.Size(cardFrame, cardW, CARD_H)
         Pix.Point(cardFrame, "TOPLEFT", rowFrame, "TOPLEFT", (idx - 1) * (cardW + CARD_GAP), 0)
@@ -460,7 +460,7 @@ function CludesUI.BuildActionCardRow(hostFrame, cursorY, cards, options)
 
         local BRD_A = 0.12
         -- Card look with the accent top edge (CludesUI_RoundedCorners.lua).
-        local brd = CludesUI.MakeRoundedCard(cardFrame, BRD_A, 0.50, 2)
+        local brd = CUI.MakeRoundedCard(cardFrame, BRD_A, 0.50, 2)
         local backdrop = brd.bg
         brd.accent:SetColorTexture(ac.r, ac.g, ac.b, 0.6)
 
@@ -477,13 +477,13 @@ function CludesUI.BuildActionCardRow(hostFrame, cursorY, cards, options)
         local iconSz = specInfo.iconSize or M.icon
         icon:SetSize(iconSz, iconSz)
         Pix.Point(icon, "LEFT", cardFrame, "LEFT", M.iconX + math.floor((M.icon - iconSz) / 2), 0)
-        local titleFs = CludesUI.MakeFont(cardFrame, M.title, nil, 1, 1, 1, TITLE_A)
+        local titleFs = CUI.MakeFont(cardFrame, M.title, nil, 1, 1, 1, TITLE_A)
         -- Off the icon slot, not the icon, so every card's text lines up.
         Pix.Point(titleFs, "TOPLEFT", cardFrame, "LEFT", M.iconX + M.icon + M.titleGap, M.icon / 2 + M.titleY)
         Pix.Point(titleFs, "RIGHT", cardFrame, "RIGHT", -M.pad, 0)
         titleFs:SetJustifyH("LEFT")
         titleFs:SetWordWrap(false)
-        local descFs = CludesUI.MakeFont(cardFrame, M.desc, nil, 1, 1, 1, M.descA)
+        local descFs = CUI.MakeFont(cardFrame, M.desc, nil, 1, 1, 1, M.descA)
         Pix.Point(descFs, "TOPLEFT", titleFs, "BOTTOMLEFT", 0, -M.descGap)
         Pix.Point(descFs, "RIGHT", cardFrame, "RIGHT", -M.pad, 0)
         descFs:SetJustifyH("LEFT")
@@ -508,7 +508,7 @@ function CludesUI.BuildActionCardRow(hostFrame, cursorY, cards, options)
             pulse:SetFrameLevel(cardFrame:GetFrameLevel() + 3)
             pulse:EnableMouse(false)
             pulse:Hide()
-            pulse._ring = CludesUI.MakeRoundedBorder(pulse, ac.r, ac.g, ac.b, 1, nil, nil, nil, 2)
+            pulse._ring = CUI.MakeRoundedBorder(pulse, ac.r, ac.g, ac.b, 1, nil, nil, nil, 2)
             local breathe = pulse:CreateAnimationGroup()
             breathe:SetLooping("BOUNCE")
             local fade = breathe:CreateAnimation("Alpha")
@@ -528,7 +528,7 @@ function CludesUI.BuildActionCardRow(hostFrame, cursorY, cards, options)
                 return
             end
             if on then
-                local live = specInfo.accent or CludesUI.CLUDES_GREEN
+                local live = specInfo.accent or CUI.CLUDES_GREEN
                 pulse._ring:SetColor(live.r, live.g, live.b, 1)
             end
             pulse:SetShown(on and true or false)
@@ -558,22 +558,22 @@ end
 -- Note row: a dim aside (inside a card when its module is disabled, under a
 -- row). opts.banner: the section banner look (row background, brighter text,
 -- up to two lines), for a note the player must read before the rows below.
-function CludesUI.BuildNoteRow(hostFrame, cursorY, textValue, options)
+function CUI.BuildNoteRow(hostFrame, cursorY, textValue, options)
     local banner = options and options.banner
     local ROW_H = banner and 40 or 34
     -- The search prebuild only indexes rows: same y advance, no frames.
-    if CludesUI._prebuilding then
+    if CUI._prebuilding then
         return cursorY - ROW_H
     end
-    local Pix = CludesUI.PanelPP
+    local Pix = CUI.PanelPP
     local row = CreateFrame("Frame", nil, hostFrame)
-    Pix.Size(row, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, ROW_H)
-    Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
+    Pix.Size(row, hostFrame:GetWidth() - CUI.CONTENT_PAD * 2, ROW_H)
+    Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", CUI.CONTENT_PAD, cursorY)
     row._skipRowDivider = true
     if banner then
-        CludesUI.RowBg(row, hostFrame)
+        CUI.RowBg(row, hostFrame)
     end
-    local labelFS = CludesUI.MakeFont(row, 12, nil, 1, 1, 1)
+    local labelFS = CUI.MakeFont(row, 12, nil, 1, 1, 1)
     labelFS:SetAlpha(banner and 0.6 or 0.45)
     labelFS:SetPoint("LEFT", row, "LEFT", 20, 0)
     if banner then
@@ -582,7 +582,7 @@ function CludesUI.BuildNoteRow(hostFrame, cursorY, textValue, options)
         labelFS:SetWordWrap(true)
         labelFS:SetMaxLines(2)
     end
-    labelFS:SetText(CludesUI.L(textValue))
+    labelFS:SetText(CUI.L(textValue))
     return cursorY - ROW_H
 end
 
@@ -600,10 +600,10 @@ local MC_CARD_GAP = 14
 -- A disabled module's card is inert: dimmed header, tag and tooltip only.
 -- Sets tile._hdr and tile._descFS (the header and its description line)
 -- before tile.buildContent runs, for content that updates the header.
-function CludesUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
-    local Pix = CludesUI.PanelPP
-    local ACC = CludesUI.CLUDES_GREEN
-    local L = CludesUI.L
+function CUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
+    local Pix = CUI.PanelPP
+    local ACC = CUI.CLUDES_GREEN
+    local L = CUI.L
     local enabled = options.enabled
     local expanded = enabled and options.expanded[tile.key]
     local cardTop = cursorY
@@ -611,10 +611,10 @@ function CludesUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
 
     -- Explicit size + single TOPLEFT anchor (the widget contract; see the
     -- Window Skins card for why a second point would zero the width).
-    local cardW = hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2
+    local cardW = hostFrame:GetWidth() - CUI.CONTENT_PAD * 2
     local heading = CreateFrame("Button", nil, hostFrame)
     Pix.Size(heading, cardW, MC_HEADER_H)
-    Pix.Point(heading, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, cursorY)
+    Pix.Point(heading, "TOPLEFT", hostFrame, "TOPLEFT", CUI.CONTENT_PAD, cursorY)
     heading:SetFrameLevel(hostFrame:GetFrameLevel() + 3)
 
     -- The header is its own pseudo-section, so searching the module name
@@ -632,19 +632,19 @@ function CludesUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
             heading._sectionNameLoc = searchNameLoc
         end
     end
-    if CludesUI._RegisterSearchEntry and not options.noSearch then
+    if CUI._RegisterSearchEntry and not options.noSearch then
         local titleLoc = L(tile.display)
         local descSearch = sDesc
         local descLoc = L(sDesc)
         if descLoc ~= descSearch then
             descSearch = descSearch .. " " .. descLoc
         end
-        CludesUI._RegisterSearchEntry(
+        CUI._RegisterSearchEntry(
             tile.display,
             titleLoc ~= tile.display and titleLoc or nil,
             descSearch,
-            CludesUI._buildingModule,
-            CludesUI._buildingPage,
+            CUI._buildingModule,
+            CUI._buildingPage,
             searchName,
             nil,
             nil,
@@ -657,11 +657,11 @@ function CludesUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
 
     options.glyph(heading, enabled)
 
-    local title = CludesUI.MakeFont(heading, 14, nil, 1, 1, 1, 0.9)
+    local title = CUI.MakeFont(heading, 14, nil, 1, 1, 1, 0.9)
     Pix.Point(title, "TOPLEFT", heading, "TOPLEFT", 50, -12)
     title:SetText(L(tile.display))
 
-    local desc = CludesUI.MakeFont(heading, 11, nil, 1, 1, 1, 0.42)
+    local desc = CUI.MakeFont(heading, 11, nil, 1, 1, 1, 0.42)
     Pix.Point(desc, "TOPLEFT", title, "BOTTOMLEFT", 0, -4)
     desc:SetWidth(options.descW)
     desc:SetJustifyH("LEFT")
@@ -723,21 +723,21 @@ function CludesUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
         end
         heading:SetScript("OnClick", function()
             options.expanded[tile.key] = not options.expanded[tile.key]
-            CludesUI:RefreshPage(true)
+            CUI:RefreshPage(true)
         end)
     else
-        local tag = CludesUI.MakeFont(heading, 11, nil, 1, 1, 1)
+        local tag = CUI.MakeFont(heading, 11, nil, 1, 1, 1)
         tag:SetAlpha(0.3)
         Pix.Point(tag, "RIGHT", heading, "RIGHT", -16, 0)
         tag:SetText(L("Module Disabled"))
         heading:SetScript("OnEnter", function(self)
-            CludesUI.ShowWidgetTooltip(
+            CUI.ShowWidgetTooltip(
                 self,
-                CludesUI.Lf("Enable %1$s to edit these settings.", L(tile.display))
+                CUI.Lf("Enable %1$s to edit these settings.", L(tile.display))
             )
         end)
         heading:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
         end)
     end
 
@@ -762,7 +762,7 @@ function CludesUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
     backdrop:SetFrameLevel(hostFrame:GetFrameLevel())
     Pix.Size(backdrop, cardW, cardTop - cursorY)
     Pix.Point(backdrop, "TOPLEFT", heading, "TOPLEFT", 0, 0)
-    brd = CludesUI.MakeRoundedCard(backdrop, expanded and 0.16 or 0.12)
+    brd = CUI.MakeRoundedCard(backdrop, expanded and 0.16 or 0.12)
     hbg = backdrop:CreateTexture(nil, "BACKGROUND", nil, 1)
     hbg:SetAllPoints(heading)
     hbg:SetColorTexture(0, 0, 0, 0)
@@ -784,7 +784,7 @@ function CludesUI.BuildModuleCard(hostFrame, cursorY, W, tile, options)
     end
     -- The accent parts follow a live accent change (it refreshes the shown page).
     if enabled then
-        CludesUI.RegisterWidgetRefresh(function()
+        CUI.RegisterWidgetRefresh(function()
             strip:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.7)
             if chev and expanded then
                 chev:SetVertexColor(ACC.r, ACC.g, ACC.b)
@@ -806,9 +806,9 @@ end
 -- onSelect(), onToggle(newState), onDelete(), onEdit(), onContext(tile),
 -- height (66), textRight (-52), titleUnclamped, editSize (16), editTooltip,
 -- editSnap (keep pixel snapping on the pencil). Returns height, tile.
-function CludesUI.BuildManagerTile(parentFrame, cursorY, options)
+function CUI.BuildManagerTile(parentFrame, cursorY, options)
     local fontFile = options.fontPath
-    local Pix = CludesUI.PanelPP
+    local Pix = CUI.PanelPP
     local TILE_H = options.height or 66
     local IR, IG, IB = 0.55, 0.72, 1
     local tile = CreateFrame("Button", nil, parentFrame)
@@ -827,7 +827,7 @@ function CludesUI.BuildManagerTile(parentFrame, cursorY, options)
         if options.inheritedTooltip then
             accent:SetColorTexture(IR, IG, IB, 1)
         else
-            local ac = CludesUI.CLUDES_GREEN
+            local ac = CUI.CLUDES_GREEN
             accent:SetColorTexture(ac.r, ac.g, ac.b, 1)
         end
     elseif options.inheritedTooltip then
@@ -857,7 +857,7 @@ function CludesUI.BuildManagerTile(parentFrame, cursorY, options)
             iconTex:SetTexture(options.iconFn and options.iconFn() or options.icon)
         end
         if options.iconFn then
-            CludesUI.RegisterWidgetRefresh(function()
+            CUI.RegisterWidgetRefresh(function()
                 iconTex:SetTexture(options.iconFn())
             end)
         end
@@ -911,7 +911,7 @@ function CludesUI.BuildManagerTile(parentFrame, cursorY, options)
         -- Re-read on every non-force RefreshPage (a full rebuild would close
         -- an open checkbox dropdown in the detail pane).
         if options.subtitleFn then
-            CludesUI.RegisterWidgetRefresh(function()
+            CUI.RegisterWidgetRefresh(function()
                 subMenu:SetText(options.subtitleFn())
             end)
         end
@@ -922,13 +922,13 @@ function CludesUI.BuildManagerTile(parentFrame, cursorY, options)
             backdrop:SetColorTexture(1, 1, 1, 0.04)
         end
         if options.inheritedTooltip then
-            CludesUI.ShowWidgetTooltip(tile, options.inheritedTooltip)
+            CUI.ShowWidgetTooltip(tile, options.inheritedTooltip)
         end
     end)
     tile:SetScript("OnLeave", function()
         backdrop:SetColorTexture(1, 1, 1, options.selected and 0.06 or 0)
         if options.inheritedTooltip then
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
         end
     end)
     tile:RegisterForClicks("LeftButtonUp", "RightButtonUp")
@@ -957,7 +957,7 @@ function CludesUI.BuildManagerTile(parentFrame, cursorY, options)
         end
         -- Pill and knob on a pixel layer, as the settings toggle draws them.
         local on = options.enabled and true or false
-        local L = CludesUI.MakePixelLayer(toggleBtn, CludesUI.TogglePillFit)
+        local L = CUI.MakePixelLayer(toggleBtn, CUI.TogglePillFit)
         local toggleBg = L._frame:CreateTexture(nil, "BACKGROUND")
         toggleBg:SetAllPoints(L._frame)
         local toggleKnob = L._frame:CreateTexture(nil, "ARTWORK")
@@ -969,7 +969,7 @@ function CludesUI.BuildManagerTile(parentFrame, cursorY, options)
         end
         L:Fit()
         if on then
-            local acr, acg, acb = CludesUI.ResolveActiveAccent()
+            local acr, acg, acb = CUI.ResolveActiveAccent()
             toggleBg:SetVertexColor(acr, acg, acb, 1)
             toggleKnob:SetVertexColor(1, 1, 1, 1)
         else
@@ -991,7 +991,7 @@ function CludesUI.BuildManagerTile(parentFrame, cursorY, options)
         delBtn:SetFrameLevel(tile:GetFrameLevel() + 2)
         local delTex = delBtn:CreateTexture(nil, "OVERLAY")
         delTex:SetAllPoints()
-        CludesUI.SetDeleteIcon(delTex)
+        CUI.SetDeleteIcon(delTex)
         delTex:SetDesaturated(true)
         delTex:SetVertexColor(0.75, 0.75, 0.75)
         delBtn:SetAlpha(0.5)
@@ -1029,13 +1029,13 @@ function CludesUI.BuildManagerTile(parentFrame, cursorY, options)
         editBtn:SetScript("OnEnter", function(self)
             self:SetAlpha(0.9)
             if tipText then
-                CludesUI.ShowWidgetTooltip(self, tipText)
+                CUI.ShowWidgetTooltip(self, tipText)
             end
         end)
         editBtn:SetScript("OnLeave", function(self)
             self:SetAlpha(0.5)
             if tipText then
-                CludesUI.HideWidgetTooltip()
+                CUI.HideWidgetTooltip()
             end
         end)
         editBtn:SetScript("OnClick", function()
@@ -1068,7 +1068,7 @@ end
 -- Full-page cover over a manager page (override-session notice or the PAB
 -- enable prompt). opts: fontPath, width, title, text, sub, buttonLabel.
 -- Returns ov, btn (btn only with buttonLabel; the caller sets its OnClick).
-function CludesUI.BuildActivationOverlay(outerRoot, options)
+function CUI.BuildActivationOverlay(outerRoot, options)
     local fontFile = options.fontPath
     local shade = CreateFrame("Frame", nil, outerRoot)
     shade:SetAllPoints(outerRoot)
@@ -1106,13 +1106,13 @@ function CludesUI.BuildActivationOverlay(outerRoot, options)
     local button = CreateFrame("Button", nil, shade)
     button:SetSize(240, 28)
     button:SetPoint("TOP", subMenu or body, "BOTTOM", 0, -22)
-    local backdrop = CludesUI.SolidTex(button, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
+    local backdrop = CUI.SolidTex(button, "BACKGROUND", 0.10, 0.10, 0.11, 0.9)
     backdrop:SetAllPoints(button)
-    local brd = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.22, backdrop)
-    local labelFS = CludesUI.MakeFont(button, 12, nil, 1, 1, 1, 0.85)
+    local brd = CUI.MakeRoundedBorder(button, 1, 1, 1, 0.22, backdrop)
+    local labelFS = CUI.MakeFont(button, 12, nil, 1, 1, 1, 0.85)
     labelFS:SetPoint("CENTER")
     labelFS:SetText(options.buttonLabel)
-    local brandGreen = CludesUI.CLUDES_GREEN
+    local brandGreen = CUI.CLUDES_GREEN
     button:SetScript("OnEnter", function()
         brd:SetColor(brandGreen.r, brandGreen.g, brandGreen.b, 0.9)
     end)
@@ -1123,18 +1123,18 @@ function CludesUI.BuildActivationOverlay(outerRoot, options)
 end
 
 -- Filter-editor popup button (dark bg, 1px border, accent border on hover).
-function CludesUI.BuildPopupButton(hostFrame, wid, height, labelText, onClick)
+function CUI.BuildPopupButton(hostFrame, wid, height, labelText, onClick)
     local button = CreateFrame("Button", nil, hostFrame)
     button:SetSize(wid, height)
     button:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
-    local backdrop = CludesUI.SolidTex(button, "BACKGROUND", 0, 0, 0, 0.5)
+    local backdrop = CUI.SolidTex(button, "BACKGROUND", 0, 0, 0, 0.5)
     backdrop:SetAllPoints()
-    local brd = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.25, backdrop)
-    local labelFS = CludesUI.MakeFont(button, 12, nil, 1, 1, 1)
+    local brd = CUI.MakeRoundedBorder(button, 1, 1, 1, 0.25, backdrop)
+    local labelFS = CUI.MakeFont(button, 12, nil, 1, 1, 1)
     labelFS:SetAlpha(0.6)
     labelFS:SetPoint("CENTER")
-    labelFS:SetText(CludesUI.L(labelText))
-    local accR, accG, accB = CludesUI.GetAccentColor()
+    labelFS:SetText(CUI.L(labelText))
+    local accR, accG, accB = CUI.GetAccentColor()
     button:SetScript("OnEnter", function()
         labelFS:SetAlpha(0.9)
         brd:SetColor(accR, accG, accB, 0.6)
@@ -1182,7 +1182,7 @@ local function RestOff()
     return not CludesUIDB or CludesUIDB.showRestedIndicator ~= true
 end
 
-function CludesUI.RestedIndicatorCfg()
+function CUI.RestedIndicatorCfg()
     return {
         type = "toggle",
         text = "Rested Indicator",
@@ -1196,18 +1196,18 @@ function CludesUI.RestedIndicatorCfg()
         setValue = function(val)
             RestSet("showRestedIndicator", val)
             RestUpdate()
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     }
 end
 
 -- Animated, Size, X / Y Offset; greyed while the indicator is off. Builds
 -- nothing during the search pre-build.
-function CludesUI.BuildRestedIndicatorCog(regionFrame)
-    if CludesUI._prebuilding then
+function CUI.BuildRestedIndicatorCog(regionFrame)
+    if CUI._prebuilding then
         return
     end
-    return CludesUI.BuildInlineCog(regionFrame, {
+    return CUI.BuildInlineCog(regionFrame, {
         title = "Rested Indicator",
         rows = {
             {

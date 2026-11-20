@@ -7,17 +7,17 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  dropdown and the sync icon.
 --  DEFERRED: body runs on first CludesUI:EnsureLoaded() call, not at load.
 -------------------------------------------------------------------------------
-local CludesUI = _G.CludesUI
-CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
+local CUI = _G.CludesUI
+CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
     -- host are reset and dressed again by the next build instead of made anew;
     -- elsewhere this is CreateFrame.
-    local CreateFrame = CludesUI._Pool.CreateFrame
-    local PoolAttach, PoolGen, PoolIsIdle = CludesUI._Pool.Attach, CludesUI._Pool.Gen, CludesUI._Pool.IsIdle
-    local PP = CludesUI.PanelPP
-    local EXPRESSWAY = CludesUI.EXPRESSWAY
-    local ShowWidgetTooltip = CludesUI.ShowWidgetTooltip
-    local HideWidgetTooltip = CludesUI.HideWidgetTooltip
+    local CreateFrame = CUI._Pool.CreateFrame
+    local PoolAttach, PoolGen, PoolIsIdle = CUI._Pool.Attach, CUI._Pool.Gen, CUI._Pool.IsIdle
+    local PP = CUI.PanelPP
+    local EXPRESSWAY = CUI.EXPRESSWAY
+    local ShowWidgetTooltip = CUI.ShowWidgetTooltip
+    local HideWidgetTooltip = CUI.HideWidgetTooltip
 
     --------------------------------------------------------------------------------
     --  PlaySyncFlash -- accent-colored 4-edge border glow on a target frame
@@ -41,7 +41,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         if not glow then
             glow = _G.CreateFrame("Frame", nil, targetFrame)
             PoolAttach(targetFrame, glow, nil, StopGlow)
-            local accR, accG, accB = CludesUI.GetAccentColor()
+            local accR, accG, accB = CUI.GetAccentColor()
             local function MkEdge()
                 local tex = glow:CreateTexture(nil, "OVERLAY", nil, 7)
                 tex:SetColorTexture(accR, accG, accB, 1)
@@ -68,7 +68,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             _syncGlowPool[targetFrame] = glow
         end
         -- Re-color edges in case accent changed
-        local accR, accG, accB = CludesUI.GetAccentColor()
+        local accR, accG, accB = CUI.GetAccentColor()
         for i = 0, (glow._edgeN or 0) - 1 do
             local e = glow["_c_" .. i]
             if e then
@@ -91,7 +91,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end)
     end
 
-    CludesUI.PlaySyncFlash = PlaySyncFlash
+    CUI.PlaySyncFlash = PlaySyncFlash
 
     --------------------------------------------------------------------------------
     --  PlayWhiteFlash -- white 4-edge border flash on click, fades out over 0.35s
@@ -134,7 +134,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end)
     end
 
-    CludesUI.PlayWhiteFlash = PlayWhiteFlash
+    CUI.PlayWhiteFlash = PlayWhiteFlash
 
     --------------------------------------------------------------------------------
     --  BuildMultiApplyDropdown -- checkbox popup for selective "Apply to Multiple".
@@ -169,11 +169,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
         boxBg:SetAllPoints()
         boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-        row._boxBrd = CludesUI.MakeRoundedBorder(boxFrame, 0.4, 0.4, 0.4, 0.6, boxBg)
+        row._boxBrd = CUI.MakeRoundedBorder(boxFrame, 0.4, 0.4, 0.4, 0.6, boxBg)
 
         local chk = boxFrame:CreateTexture(nil, "ARTWORK")
         PP.SetInside(chk, boxFrame, 2, 2)
-        CludesUI.RoundBody(boxFrame, chk, 2)
+        CUI.RoundBody(boxFrame, chk, 2)
         row._chk = chk
 
         local caption = row:CreateFontString(nil, "OVERLAY")
@@ -208,13 +208,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local menuH = PAD + APPLY_H + 2 + #keys * ITEM_H + PAD
 
         -- Controller cursor loaded: the one gate for everything controller-only below.
-        local padCP = CludesUI.PadCP()
+        local padCP = CUI.PadCP()
         -- Options panel is Expressway-locked by design (locale-aware: CJK/Cyrillic get the system glyph font). The user's global font intentionally does not restyle the settings UI.
-        local fontPath = CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
+        local fontPath = CUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
 
         local menu = ma.menu
         if not menu then
-            menu = CreateFrame("Frame", nil, CludesUI.OverlayParent())
+            menu = CreateFrame("Frame", nil, CUI.OverlayParent())
             menu:SetFrameStrata("FULLSCREEN_DIALOG")
             menu:SetFrameLevel(200)
             menu:SetClampedToScreen(true)
@@ -223,8 +223,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
             local mBg = menu:CreateTexture(nil, "BACKGROUND")
             mBg:SetAllPoints()
-            mBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, 0.96)
-            CludesUI.MakeRoundedBorder(menu, 1, 1, 1, CludesUI.DD_BRD_A, mBg, nil, true)
+            mBg:SetColorTexture(CUI.DD_BG_R, CUI.DD_BG_G, CUI.DD_BG_B, 0.96)
+            CUI.MakeRoundedBorder(menu, 1, 1, 1, CUI.DD_BRD_A, mBg, nil, true)
 
             -- "Apply" button at top -- styled like the footer Reset/Reload buttons (white, muted, fade hover)
             local applyRow = CreateFrame("Button", nil, menu)
@@ -233,16 +233,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             applyRow:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -PAD, -PAD)
             applyRow:SetFrameLevel(menu:GetFrameLevel() + 2)
 
-            local DB_BG = CludesUI.DARK_BG
+            local DB_BG = CUI.DARK_BG
             local applyBg = applyRow:CreateTexture(nil, "BACKGROUND")
             applyBg:SetAllPoints()
             applyBg:SetColorTexture(DB_BG.r, DB_BG.g, DB_BG.b, 0.92)
-            local applyBrd = CludesUI.MakeRoundedBorder(applyRow, 1, 1, 1, 0.4, applyBg)
+            local applyBrd = CUI.MakeRoundedBorder(applyRow, 1, 1, 1, 0.4, applyBg)
 
             local applyLbl = applyRow:CreateFontString(nil, "OVERLAY")
             applyLbl:SetFont(fontPath, 12, "")
             applyLbl:SetTextColor(1, 1, 1, 0.5)
-            applyLbl:SetText(CludesUI.L("Apply"))
+            applyLbl:SetText(CUI.L("Apply"))
             applyLbl:SetPoint("CENTER", applyRow, "CENTER", 0, 0)
 
             -- Fade hover (matches footer button 0.1s fade)
@@ -288,7 +288,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             sep:SetColorTexture(1, 1, 1, 0.08)
 
             -- Click-outside-to-close
-            local blocker = CreateFrame("Button", nil, CludesUI.OverlayParent())
+            local blocker = CreateFrame("Button", nil, CUI.OverlayParent())
             blocker:SetFrameStrata("FULLSCREEN")
             blocker:SetFrameLevel(199)
             blocker:SetAllPoints(UIParent)
@@ -301,19 +301,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 blocker:Hide()
                 _activeMultiApplyDropdown = nil
                 -- Controller cursor: back onto the sync link that opened it (a no-op once that is hidden).
-                if ma.padCP and CludesUI.PadCursorShown() then
-                    CludesUI.PadFocus(ma.anchor)
+                if ma.padCP and CUI.PadCursorShown() then
+                    CUI.PadFocus(ma.anchor)
                 end
             end)
 
             -- Controller cursor: the popup and its catcher block what they cover without
             -- being stops, and Cancel clicks the catcher (closing the popup).
             if padCP then
-                CludesUI.PadHint(menu, "nodepass")
-                CludesUI.PadHint(blocker, "nodepass")
+                CUI.PadHint(menu, "nodepass")
+                CUI.PadHint(blocker, "nodepass")
                 menu.CloseButton = blocker
-                CludesUI.TrackOverlay(blocker)
-                CludesUI.TrackOverlay(menu)
+                CUI.TrackOverlay(blocker)
+                CUI.TrackOverlay(menu)
             end
 
             ma.menu, ma.applyRow, ma.applyBg, ma.applyBrd, ma.applyLbl, ma.blocker =
@@ -321,13 +321,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
         ma.anchor, ma.padCP = anchor, padCP
         local applyRow, applyBg, applyBrd, applyLbl = ma.applyRow, ma.applyBg, ma.applyBrd, ma.applyLbl
-        local DB_BG = CludesUI.DARK_BG
+        local DB_BG = CUI.DARK_BG
         local blocker = ma.blocker
 
         PP.Size(menu, menuW, menuH)
         menu:ClearAllPoints()
         menu:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -2)
-        local ppScale = CludesUI.GetPopupScale() or 1
+        local ppScale = CUI.GetPopupScale() or 1
         menu:SetScale(ppScale)
         ma.resetApplyHover()
 
@@ -381,11 +381,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             row:Show()
 
             local boxBrd, chk, caption, hl = row._boxBrd, row._chk, row._lbl, row._hl
-            local gr = CludesUI.CLUDES_GREEN
+            local gr = CUI.CLUDES_GREEN
             chk:SetColorTexture(gr.r, gr.g, gr.b, 1)
             chk:SetAlpha(1)
 
-            caption:SetText(CludesUI.L(labels[key] or key))
+            caption:SetText(CUI.L(labels[key] or key))
 
             hl:SetColorTexture(1, 1, 1, 0)
 
@@ -465,8 +465,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         _activeMultiApplyDropdown = menu
         menu:Show()
-        if padCP and CludesUI.PadCursorShown() then
-            CludesUI.PadFocus(menu)
+        if padCP and CUI.PadCursorShown() then
+            CUI.PadFocus(menu)
         end
         return menu
     end
@@ -509,7 +509,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- Hover gate: the dropdown list the cursor may have left a slot for (a
     -- standard or checkbox dropdown's, or the Apply to Multiple menu).
     local function OpenList()
-        local m = CludesUI._openDropdownMenu
+        local m = CUI._openDropdownMenu
         if m and m:IsShown() then
             return m
         end
@@ -572,7 +572,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
     end
     -- frame: the picked dropdown's button (its slot is found up to two parents up).
-    function CludesUI._SyncPickNotice(frame)
+    function CUI._SyncPickNotice(frame)
         local set
         for _ = 1, 3 do
             if type(frame) ~= "table" then
@@ -610,7 +610,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             return nil
         end
 
-        local accR, accG, accB = CludesUI.GetAccentColor()
+        local accR, accG, accB = CUI.GetAccentColor()
 
         -- "Apply to:" prefix label + "All" clickable link
         local applyBtn = CreateFrame("Button", nil, region)
@@ -621,7 +621,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local prefixText = applyBtn:CreateFontString(nil, "OVERLAY")
         prefixText:SetFont(EXPRESSWAY, 11, "")
         prefixText:SetTextColor(1, 1, 1, 0.65)
-        prefixText:SetText(CludesUI.L("Apply to:"))
+        prefixText:SetText(CUI.L("Apply to:"))
         prefixText:SetPoint("LEFT", applyBtn, "LEFT", 0, 0)
 
         local allBtn = CreateFrame("Button", nil, region)
@@ -629,20 +629,20 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local allText = allBtn:CreateFontString(nil, "OVERLAY")
         allText:SetFont(EXPRESSWAY, 11, "")
         allText:SetTextColor(accR, accG, accB, 0.65)
-        allText:SetText(CludesUI.L("All"))
+        allText:SetText(CUI.L("All"))
         allText:SetPoint("CENTER", allBtn, "CENTER", 0, 0)
         allBtn:SetSize(20, 14)
         allBtn:SetPoint("LEFT", prefixText, "RIGHT", 4, 0)
 
         allBtn:SetScript("OnEnter", function()
-            local red, green, blue = CludesUI.GetAccentColor()
+            local red, green, blue = CUI.GetAccentColor()
             allText:SetTextColor(red, green, blue, 1)
             if opts.tooltip then
                 ShowWidgetTooltip(allBtn, opts.tooltip, opts.tooltipOpts)
             end
         end)
         allBtn:SetScript("OnLeave", function()
-            local red, green, blue = CludesUI.GetAccentColor()
+            local red, green, blue = CUI.GetAccentColor()
             allText:SetTextColor(red, green, blue, 0.65)
             if opts.tooltip then
                 HideWidgetTooltip()
@@ -663,17 +663,17 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             multiText = multiBtn:CreateFontString(nil, "OVERLAY")
             multiText:SetFont(EXPRESSWAY, 11, "")
             multiText:SetTextColor(accR, accG, accB, 0.65)
-            multiText:SetText(CludesUI.L("Multiple"))
+            multiText:SetText(CUI.L("Multiple"))
             multiText:SetPoint("CENTER", multiBtn, "CENTER", 0, 0)
             multiBtn:SetSize(50, 14)
             multiBtn:SetPoint("LEFT", sepText, "RIGHT", 4, 0)
 
             multiBtn:SetScript("OnEnter", function()
-                local red, green, blue = CludesUI.GetAccentColor()
+                local red, green, blue = CUI.GetAccentColor()
                 multiText:SetTextColor(red, green, blue, 1)
             end)
             multiBtn:SetScript("OnLeave", function()
-                local red, green, blue = CludesUI.GetAccentColor()
+                local red, green, blue = CUI.GetAccentColor()
                 multiText:SetTextColor(red, green, blue, 0.65)
             end)
         end
@@ -711,7 +711,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- Hover gate (see "Hover gate" below): multiplies the state above, 0 while
         -- the slot is not hovered. The controller cursor moves no pointer, so with
         -- it loaded the gate stays open and the state above alone decides.
-        local hoverGate = not CludesUI.PadCP()
+        local hoverGate = not CUI.PadCP()
         local hoverState = hoverGate and 0 or 1
 
         local function PaintFade(s)
@@ -854,7 +854,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             hit:SetAllPoints(region)
             hit:SetFrameLevel(region:GetFrameLevel() + HOVER_LEVEL)
             hit:SetMouseClickEnabled(false)
-            CludesUI.PadHint(hit, "nodeignore")
+            CUI.PadHint(hit, "nodeignore")
             -- hovered: the cursor is on the slot. foreign: a list already open as the
             -- cursor came in (another slot's). holding: this slot's list keeps it.
             -- lingering: a dropdown pick in the slot keeps it (Linger above).
@@ -919,12 +919,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 PaintFade(animState)
             end
         end
-        CludesUI.RegisterWidgetRefresh(function()
+        CUI.RegisterWidgetRefresh(function()
             if Redressed() then
                 return
             end
             -- Re-color accent in case it changed
-            local red, green, blue = CludesUI.GetAccentColor()
+            local red, green, blue = CUI.GetAccentColor()
             prefixText:SetTextColor(1, 1, 1, 0.65)
             allText:SetTextColor(red, green, blue, 0.65)
             if multiText then
@@ -936,20 +936,20 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local target = synced and 0 or 1
 
             -- Slider dragging: allow showing (desynced -> 1) immediately, but defer hiding (synced -> 0) until the drag ends.
-            if CludesUI._sliderDragging then
+            if CUI._sliderDragging then
                 if target == 1 then
                     -- Value diverged mid-drag: show right away
                     FadeTo(1)
                 else
                     -- Values re-converged mid-drag: don't hide yet, defer to drag end
-                    if not CludesUI._deferredDriftChecks then
-                        CludesUI._deferredDriftChecks = {}
+                    if not CUI._deferredDriftChecks then
+                        CUI._deferredDriftChecks = {}
                     end
-                    CludesUI._deferredDriftChecks[function()
+                    CUI._deferredDriftChecks[function()
                         if Redressed() then
                             return
                         end
-                        local r2, g2, b2 = CludesUI.GetAccentColor()
+                        local r2, g2, b2 = CUI.GetAccentColor()
                         prefixText:SetTextColor(1, 1, 1, 0.65)
                         allText:SetTextColor(r2, g2, b2, 0.65)
                         if multiText then
@@ -964,15 +964,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
 
             -- Color picker open: defer all changes until it closes
-            if CludesUI._colorPickerOpen then
-                if not CludesUI._deferredDriftChecks then
-                    CludesUI._deferredDriftChecks = {}
+            if CUI._colorPickerOpen then
+                if not CUI._deferredDriftChecks then
+                    CUI._deferredDriftChecks = {}
                 end
-                CludesUI._deferredDriftChecks[function()
+                CUI._deferredDriftChecks[function()
                     if Redressed() then
                         return
                     end
-                    local r2, g2, b2 = CludesUI.GetAccentColor()
+                    local r2, g2, b2 = CUI.GetAccentColor()
                     prefixText:SetTextColor(1, 1, 1, 0.65)
                     allText:SetTextColor(r2, g2, b2, 0.65)
                     if multiText then
@@ -991,6 +991,6 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         return applyBtn
     end
 
-    CludesUI.BuildSyncIcon = BuildSyncIcon
-    CludesUI.BuildMultiApplyDropdown = BuildMultiApplyDropdown
+    CUI.BuildSyncIcon = BuildSyncIcon
+    CUI.BuildMultiApplyDropdown = BuildMultiApplyDropdown
 end -- end deferred init

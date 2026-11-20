@@ -35,8 +35,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- rogues, who have no mana, get nothing at all.
 -------------------------------------------------------------------------------
 
-local CludesUI = _G.CludesUI
-if not (CludesUI and CludesUI.IS_FOREVER) then
+local CUI = _G.CludesUI
+if not (CUI and CUI.IS_FOREVER) then
     return
 end
 local _, PLAYER_CLASS = UnitClass("player")
@@ -240,7 +240,7 @@ local function OnHostHide(bar)
 end
 
 local MRS = {}
-CludesUI.ManaRegenSpark = MRS
+CUI.ManaRegenSpark = MRS
 
 -- The host's option is on and its bar can draw; ticks = Regen Ticks mode.
 -- Lays the spark out on every call, so hosts call it on every rebuild.

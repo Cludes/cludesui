@@ -34,12 +34,12 @@
 -- untouched and resumes control if the manager is disabled.
 
 local _, mod = ...
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 
 local AK -- CludesUI.AuraKit, resolved at first use
 -- Born in this module's main chunk, so the aura containers it builds bill this
 -- module (AuraKit's shared build scheduler).
-local AKWorker = CludesUI.AuraKit.NewBuildWorker()
+local AKWorker = CUI.AuraKit.NewBuildWorker()
 
 local TYPED_DEBUFFS = { Magic = true, Curse = true, Disease = true, Poison = true, Bleed = true }
 
@@ -910,7 +910,7 @@ local function EaterRect(owner, pinHost, anchorPoint, corner, offX, offY, wid, h
     local pl, pb = pinHost:GetLeft(), pinHost:GetBottom()
     local highlight, hb, hr, ht = owner:GetLeft(), owner:GetBottom(), owner:GetRight(), owner:GetTop()
     if not (pl and pb and highlight and hb and hr and ht)
-        or CludesUI.IsSecret(pl) or CludesUI.IsSecret(highlight) then
+        or CUI.IsSecret(pl) or CUI.IsSecret(highlight) then
         return x0, y0, wid, hgt
     end
     local pw, ph = pinHost:GetSize()
@@ -984,7 +984,7 @@ local function EnsureEater(skinData, slot, owner, boxHolder, isActive, pinHost, 
         -- secure unit menu. Click-cast re-writes these when it is enabled.
         entry:SetAttribute("type1", "target")
         entry:SetAttribute("*type1", "target")
-        CludesUI.AttachSecureUnitMenu(entry)
+        CUI.AttachSecureUnitMenu(entry)
         -- HookScript, not SetScript: the click-cast header wraps these same
         -- script slots securely, and a hook never displaces a wrap. The Lua
         -- side forwards the unit button's own hover (highlight, unit tooltip).
@@ -2246,7 +2246,7 @@ local fxRefs = setmetatable({}, { __mode = "k" })
 -- (shared by filter-gated slots and teardown paths).
 local function FxHideAll(dropdown)
     if dropdown.dmFxGlow then
-        if dropdown.dmFxGlow._cuiGlowActive then CludesUI.Glows.StopGlow(dropdown.dmFxGlow) end
+        if dropdown.dmFxGlow._cuiGlowActive then CUI.Glows.StopGlow(dropdown.dmFxGlow) end
         dropdown.dmFxGlow:Hide()
     end
     if dropdown.dmFxHcFrame then dropdown.dmFxHcFrame:Hide() end
@@ -2271,11 +2271,11 @@ local function FxCreateVisuals(btnFrame, dropdown, kind, hostBtn, health, ownerF
         g:Hide()
         dropdown.dmFxGlow = g
         -- Every region a later colour/parameter/background change can need, created here in the window.
-        CludesUI.Glows.PrewarmEngineHost(g, 24, 24, TILE_GLOW_NEED)
+        CUI.Glows.PrewarmEngineHost(g, 24, 24, TILE_GLOW_NEED)
         -- The slot button runs the glow's animations itself (only while it shows an aura), where the client
         -- can. The slot registers no icon: it gets a hidden one here, which restarts the glow on a later change.
-        if CludesUI.Glows.BindEngineHost(g, btnFrame, dropdown) then
-            CludesUI.AuraKit.EnsureKickIcon(btnFrame, dropdown)
+        if CUI.Glows.BindEngineHost(g, btnFrame, dropdown) then
+            CUI.AuraKit.EnsureKickIcon(btnFrame, dropdown)
         end
     elseif kind == "healthcolor" then
         -- BM healthcolor parity via an owned wrapper: level-tied WITH (not above) the health frame so the tint
@@ -2322,13 +2322,13 @@ end
 local FX_GLOW_SPEC = {}
 local function FxApplyInner(btnFrame, dropdown, refs, effect)
     if effect.kind == "glow" then
-        local Glows = CludesUI.Glows
+        local Glows = CUI.Glows
         local owner = dropdown.dmFxGlow
         if not owner then return end -- created in extraInit
         -- A bound host's button refuses our calls while auras are restricted (outside its creation window):
         -- re-run this style at the lift instead of letting the pcall below drop the change.
-        if Glows.IsEngineHostBound(owner) and not CludesUI.AuraKit.CanTouchButton(btnFrame) then
-            CludesUI.AuraKit.DeferRestyle(dropdown.styleKey)
+        if Glows.IsEngineHostBound(owner) and not CUI.AuraKit.CanTouchButton(btnFrame) then
+            CUI.AuraKit.DeferRestyle(dropdown.styleKey)
             return
         end
         owner:Show()
@@ -2475,7 +2475,7 @@ local function AnchorTileContainer(boxHolder, health, s, tileDef, skinData)
     local kitSeat = anchorPoint == "TOPLEFT" and mod.DM_KitTileY(tileDef, s, skinData) ~= nil
     local grow = kitSeat and "RIGHT" or (tileDef.growDirection or "CENTER")
 
-    AK = AK or CludesUI.AuraKit
+    AK = AK or CUI.AuraKit
     -- Grid wrap: Icons Per Row >= 2 wraps lines away from the anchored edge (simple-grid convention, lowercase
     -- position tokens here); vertical growth flips the flow axis so lines become columns. Below 2 =
     -- single run, corner pick untouched.
@@ -2568,7 +2568,7 @@ local function EnsureTileStyle(skinData, s, tileDef, szOv, szCat)
     local tileStyle = dmTileFP[key]
     if not tileStyle then tileStyle = {}; dmTileFP[key] = tileStyle end
 
-    local font = (CludesUI.GetFontPath("raidFrames")) or ""
+    local font = (CUI.GetFontPath("raidFrames")) or ""
     local val
     if isGrid then
         -- Rebuild handles for DM_RefreshSizedStyles (base-style edits re-derive this key without an apply pass).
@@ -2656,7 +2656,7 @@ local function EnsureBaseSizeStyle(skinData, s, category, size)
     if not tileStyle then tileStyle = { cls = cls, cat = category }; dmSizeFP[key] = tileStyle end
     tileStyle.rawSize = size
     size = EffectiveIconSizeForClass(size, cls)
-    local font = (CludesUI.GetFontPath("raidFrames")) or ""
+    local font = (CUI.GetFontPath("raidFrames")) or ""
     local val = ((mod.RFC_DebuffStyleFP and mod.RFC_DebuffStyleFP(s, font)) or "")
         .. "|" .. tostring(size)
     if tileStyle.style ~= val and mod.RFC_BuildDebuffStyle then
@@ -2676,11 +2676,11 @@ end
 -- Called by the containers file when it rebuilds a class's base debuff styles on a style-fingerprint change: a pure
 -- style edit (border color, font) does not flip the config fingerprint (so the apply pass/EnsureBaseSizeStyle may not run) -- sized siblings must refresh here or render stale.
 function mod.DM_RefreshSizedStyles(baseStyleKey, s)
-    AK = AK or CludesUI.AuraKit
+    AK = AK or CUI.AuraKit
     if not AK then return end
     local cls = baseStyleKey:match("^rf:debuff:(.+)$")
     if not cls then return end
-    local font = (CludesUI.GetFontPath("raidFrames")) or ""
+    local font = (CUI.GetFontPath("raidFrames")) or ""
     for key, tileStyle in pairs(dmSizeFP) do
         if tileStyle.cls == cls and tileStyle.style and tileStyle.rawSize then
             local size = EffectiveIconSizeForClass(tileStyle.rawSize, cls)
@@ -2725,7 +2725,7 @@ local function ParkTileContainer(c)
     c:Hide()
     if c._dmParked then return end
     c._dmParked = true
-    local AKit = CludesUI.AuraKit
+    local AKit = CUI.AuraKit
     local grid = c._dmType == "icons" or c._dmType == "square"
     if c._dmDecl then
         for key in pairs(c._dmDecl) do
@@ -2880,7 +2880,7 @@ end
 -- The apply pass (owns the whole debuff-container config while active)
 -------------------------------------------------------------------------------
 function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
-    AK = AK or CludesUI.AuraKit
+    AK = AK or CUI.AuraKit
     -- Default-ON: no dmDebuff table yet = the defaults (Show All + cc on).
     local dmCfg = DM() or {}
     local declared = skinData.rfcDebuffGroups
@@ -2928,7 +2928,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
     -- Park everything the base does not want (legacy preset groups, stale record variants); setters are dirty marks, runs only on an FP change.
     for key in pairs(declared) do
         if key ~= "cc" and not wantedBase[key] then
-            CludesUI.AuraKit.SetGroupCap(boxHolder, key, 0)
+            CUI.AuraKit.SetGroupCap(boxHolder, key, 0)
         end
     end
 
@@ -2947,7 +2947,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
         local ccBase = (ccPicked or (effectCats and effectCats.cc)) and not claimMap.cc
             and not baseSizedCC
         ccParkCount = ccBase and cap or 0
-        CludesUI.AuraKit.SetGroupCap(boxHolder, "cc", ccParkCount)
+        CUI.AuraKit.SetGroupCap(boxHolder, "cc", ccParkCount)
         boxHolder:SetAuraGroupCandidateFilters("cc", ccCand)
         boxHolder:SetAuraGroupLayout("cc", layout)
     end
@@ -2978,7 +2978,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
             end
             local num = cap
             if region.deadOnly then num = 0 end -- parked until the death edge unparks it
-            CludesUI.AuraKit.SetGroupCap(boxHolder, groupKey, num)
+            CUI.AuraKit.SetGroupCap(boxHolder, groupKey, num)
             boxHolder:SetAuraGroupCandidateFilters(groupKey, region.cand)
             if region.fxSize then
                 -- Sized record: keep the stable per-category style fresh (size edits restyle existing buttons) + same size in the flow math.
@@ -3218,7 +3218,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                         end
                         for key in pairs(tDecl) do
                             if tWanted[key] == nil then
-                                CludesUI.AuraKit.SetGroupCap(tileHost, key, 0)
+                                CUI.AuraKit.SetGroupCap(tileHost, key, 0)
                             end
                         end
                         local tCap = tileDef.cap or cap
@@ -3238,7 +3238,7 @@ function mod.DM_ApplyDebuffConfig(boxHolder, skinData, cfg, styleKey)
                                 end
                                 local num = tCap
                                 if region.deadOnly then num = 0 end -- parked until the death edge unparks it
-                                CludesUI.AuraKit.SetGroupCap(tileHost, groupKey, num)
+                                CUI.AuraKit.SetGroupCap(tileHost, groupKey, num)
                                 tileHost:SetAuraGroupCandidateFilters(groupKey, region.cand)
                                 if region.fxSize then
                                     -- Sized record: per-category tile style variant fresh + matching flow math.
@@ -3414,11 +3414,11 @@ function mod.DM_DeadEdge(skinData, unitToken)
     if swap.tileId then c = skinData.dmTiles and skinData.dmTiles[swap.tileId] else c = skinData.rfcDebuffs end
     if not c then return end
     if dead then
-        for key in pairs(swap.park) do CludesUI.AuraKit.SetGroupCap(c, key, 0) end
-        CludesUI.AuraKit.SetGroupCap(c, swap.show, swap.cap)
+        for key in pairs(swap.park) do CUI.AuraKit.SetGroupCap(c, key, 0) end
+        CUI.AuraKit.SetGroupCap(c, swap.show, swap.cap)
     else
-        for key, num in pairs(swap.park) do CludesUI.AuraKit.SetGroupCap(c, key, num) end
-        CludesUI.AuraKit.SetGroupCap(c, swap.show, 0)
+        for key, num in pairs(swap.park) do CUI.AuraKit.SetGroupCap(c, key, num) end
+        CUI.AuraKit.SetGroupCap(c, swap.show, 0)
     end
 end
 
@@ -3427,7 +3427,7 @@ end
 function mod.DM_ParkGroups(boxHolder, declared, skinData)
     for key in pairs(declared) do
         if key:sub(1, 3) == "dm_" then
-            CludesUI.AuraKit.SetGroupCap(boxHolder, key, 0)
+            CUI.AuraKit.SetGroupCap(boxHolder, key, 0)
         end
     end
     if skinData and skinData.dmTiles then
@@ -3538,7 +3538,7 @@ function mod.DM_BucketHasData(ident, tileStyle)
     if (b.tiles and #b.tiles > 0) or b.baseOff == true then return true end
     local dis = b.inhDis
     if not (dis and next(dis) ~= nil) then return false end
-    if not CludesUI.IS_FOREVER then return true end
+    if not CUI.IS_FOREVER then return true end
     -- WoW Forever renders All Specs and the class's own bucket only, so only
     -- a disable of an All Specs tile counts. Scans dm.tiles in place and
     -- never creates it.
@@ -3554,14 +3554,14 @@ end
 -- fork serves instead (published by Spec Overrides, seeded from the saved
 -- pointer at the first read).
 function mod.DM_ForeverSpecID(token)
-    if not CludesUI._SO_DmForkSeeded then CludesUI._SO_SeedForkSpec(true) end
-    local fk = CludesUI.SpecOverrides_DmForkSpecID
-    if fk and not CludesUI._dmSessionGid
-       and (token == nil or token == CludesUI.SpecClassOf(fk)) then
+    if not CUI._SO_DmForkSeeded then CUI._SO_SeedForkSpec(true) end
+    local fk = CUI.SpecOverrides_DmForkSpecID
+    if fk and not CUI._dmSessionGid
+       and (token == nil or token == CUI.SpecClassOf(fk)) then
         return fk
     end
     local dmCfg = DM()
-    return CludesUI.ForeverClassSpec(token, mod.DM_BucketHasData, dmCfg and dmCfg.specTiles)
+    return CUI.ForeverClassSpec(token, mod.DM_BucketHasData, dmCfg and dmCfg.specTiles)
 end
 function mod.DM_ForeverKey(token)
     local spellRef = mod.DM_ForeverSpecID(token)
@@ -3618,7 +3618,7 @@ function mod.DM_CurrentSpecBaseOff()
     if not tileStyle then return false end
     local index = GetSpecialization and GetSpecialization()
     local spellRef = index and GetSpecializationInfo and GetSpecializationInfo(index) or nil
-    if CludesUI.IS_FOREVER then spellRef = mod.DM_ForeverSpecID() end
+    if CUI.IS_FOREVER then spellRef = mod.DM_ForeverSpecID() end
     local b = spellRef and tileStyle["spec" .. spellRef] or nil
     return (b and b.baseOff) and true or false
 end
@@ -3661,7 +3661,7 @@ local function UnionFor(dmCfg, spellRef)
         end
         -- WoW Forever: a class renders All Specs and its own bucket only
         -- (group buckets are not offered there).
-        if not CludesUI.IS_FOREVER and not (mod.BM_SpecKeyForSpecID and mod.BM_SpecKeyForSpecID(spellRef)) then
+        if not CUI.IS_FOREVER and not (mod.BM_SpecKeyForSpecID and mod.BM_SpecKeyForSpecID(spellRef)) then
             AddBucket("nonhealer", true)
         end
         local roleKey = mod.BM_RoleBucketForSpecID and mod.BM_RoleBucketForSpecID(spellRef)
@@ -3677,7 +3677,7 @@ function mod.DM_ActiveTiles()
     if not dmCfg then return nil end
     local index = GetSpecialization and GetSpecialization()
     local spellRef = index and GetSpecializationInfo and GetSpecializationInfo(index) or nil
-    if CludesUI.IS_FOREVER then spellRef = mod.DM_ForeverSpecID() end
+    if CUI.IS_FOREVER then spellRef = mod.DM_ForeverSpecID() end
     return UnionFor(dmCfg, spellRef)
 end
 
@@ -3859,8 +3859,8 @@ function _G._CURF_DMApplyLayer(dmCfg, noPageRefresh)
     wipe(live)
     for key, val in pairs(CopyTable(dmCfg)) do live[key] = val end
     if mod.RFC_ReloadAll then mod.RFC_ReloadAll() end
-    if not noPageRefresh and mod._dmRoot and CludesUI and CludesUI.RefreshPage then
-        CludesUI:RefreshPage(true)
+    if not noPageRefresh and mod._dmRoot and CUI and CUI.RefreshPage then
+        CUI:RefreshPage(true)
     end
     return true
 end

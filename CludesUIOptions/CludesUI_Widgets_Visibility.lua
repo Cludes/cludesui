@@ -6,13 +6,13 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Unified visibility row and its checklist. Builds on the checkbox
 --  dropdown, so it loads after CludesUI_Widgets_CheckboxDropdowns.lua.
 -------------------------------------------------------------------------------
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 
 -- The options page pool (CludesUI_FramePool.lua, the options addon's first
 -- file): the row and the checklist come from the factory builders, which pool
 -- what they make. This file makes no frame of its own today; the line is kept on
 -- purpose, so a frame it makes later goes through the pool like the rest.
-local CreateFrame = CludesUI._Pool.CreateFrame
+local CreateFrame = CUI._Pool.CreateFrame
 
 -------------------------------------------------------------------------------
 --  Unified Visibility Row (opts contract for the 10 module callers)
@@ -53,7 +53,7 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 --  now free for whatever the page needs. Returns row, height, same as W:DualRow.
 -------------------------------------------------------------------------------
 
-CludesUI.VIS_ROW_ITEMS = {
+CUI.VIS_ROW_ITEMS = {
     { key = "never", label = "Never" },
     { key = "always", label = "Always" },
     {
@@ -206,11 +206,11 @@ CludesUI.VIS_ROW_ITEMS = {
 --  standard labelled row use BuildVisibilityRow; this is the raw attach.
 --  The caller must have skipped the search pre-build pass already.
 -------------------------------------------------------------------------------
-function CludesUI.AttachVisibilityChecklist(regionFrame, options)
-    local Pix = CludesUI.PanelPP
+function CUI.AttachVisibilityChecklist(regionFrame, options)
+    local Pix = CUI.PanelPP
     local caps = options.caps or {}
     local legacyKey = options.legacyKey or "visibility"
-    local GROUP_KEYS = (CludesUI.VIS_AXES and CludesUI.VIS_AXES.group) or { "in_raid", "in_party", "solo" }
+    local GROUP_KEYS = (CUI.VIS_AXES and CUI.VIS_AXES.group) or { "in_raid", "in_party", "solo" }
 
     -- Only the two exclusive states survive an override: the checklist writes them to
     -- the legacy scalar, which the value system can hold. Everything else lives in the
@@ -223,7 +223,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
     -- profile with nothing owning it. On those pages the row simply behaves as it does
     -- outside a session.
     local function OvSessionActive()
-        return (CludesUI.SpecOverrides_SlotOverridable()) and true or false
+        return (CUI.SpecOverrides_SlotOverridable()) and true or false
     end
     local OV_LOCK_TIP =
         "Not overridable. These conditions are shared and can only be changed while no override is being edited. An override replaces the Visibility setting outright -- Never, Always or Mouseover -- and ignores everything set here while it applies."
@@ -251,7 +251,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
         end
         -- Shared value (ignoreOverride): an orphan is a stored SCALAR this row cannot
         -- express, and an applied override neither creates nor cures one.
-        local sel, isMulti = CludesUI.GetVisibilitySelection(storage, legacyKey, true)
+        local sel, isMulti = CUI.GetVisibilitySelection(storage, legacyKey, true)
         if isMulti then
             return nil
         end
@@ -281,7 +281,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
         end
         if foreverSel == nil then
             local storage = options.getStore()
-            foreverSel = storage and CludesUI.GetVisibilitySelection(storage, legacyKey, true) or false
+            foreverSel = storage and CUI.GetVisibilitySelection(storage, legacyKey, true) or false
         end
         return foreverSel ~= false and foreverSel[keyName] == true
     end
@@ -292,12 +292,12 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
         return not (def.forever == "always" and ForeverLaneOn(def, def.hide))
     end
 
-    for _, def in ipairs(CludesUI.VIS_ROW_ITEMS) do
+    for _, def in ipairs(CUI.VIS_ROW_ITEMS) do
         if def.isHeader then
             itemList[#itemList + 1] = def
         elseif
             not (def.key == "mouseover" and caps.noMouseover)
-            and not (def.forever and CludesUI.IS_FOREVER and ForeverRowHidden(def))
+            and not (def.forever and CUI.IS_FOREVER and ForeverRowHidden(def))
         then
             local entry = {
                 key = def.key,
@@ -328,7 +328,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
             -- rides PLAYER_CAN_GLIDE_CHANGED, which is always registered.
             if caps.luaDragonriding and (def.key == "skyAirborne" or def.key == "notSkyAirborne") then
                 entry.lockedFn = function()
-                    return not CludesUI._hasGlidingEvent
+                    return not CUI._hasGlidingEvent
                 end
                 entry.lockedTooltip = "Requires a client with gliding events."
             end
@@ -474,7 +474,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
         if not storage then
             return nil
         end
-        return NormalizeGroupHide(CludesUI.GetVisibilitySelection(storage, legacyKey, true)), storage
+        return NormalizeGroupHide(CUI.GetVisibilitySelection(storage, legacyKey, true)), storage
     end
 
     -- Read-only view for GetChecked, memoized. Every refresh sweep and every menu open
@@ -502,7 +502,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
         _selStore, _selModes = storage, storage.visibilityModes
         _selScalar, _selMatch = storage[legacyKey], storage.visibilityMatch
         _selOv = storage.visibilityOverride
-        _selCache = NormalizeGroupHide(CludesUI.GetVisibilitySelection(storage, legacyKey, true))
+        _selCache = NormalizeGroupHide(CUI.GetVisibilitySelection(storage, legacyKey, true))
         return _selCache, storage
     end
 
@@ -523,7 +523,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
                 stores[idx].visibilityOverride = nil
             end
         end
-        CludesUI.SetVisibilitySelection(storage, legacyKey, sel, options.applyScalarFn)
+        CUI.SetVisibilitySelection(storage, legacyKey, sel, options.applyScalarFn)
     end
 
     -- Stranded-marker heal, once per page build. A live override marker nothing owns any
@@ -533,14 +533,14 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
     -- take the overrides. Never inside a session -- the marker being edited is exactly the
     -- one no map holds yet -- and never for a marker a real override still owns, which
     -- simply gets written back on its next apply. WriteSel's clear stays as the belt.
-    if not CludesUI._prebuilding and not (CludesUI.SpecOverrides_EditSessionActive()) then
+    if not CUI._prebuilding and not (CUI.SpecOverrides_EditSessionActive()) then
         local stores, healed = OverrideStores(), false
         for idx = 1, #stores do
             local st = stores[idx]
             if
                 st.visibilityOverride ~= nil
-                and CludesUI.SpecOverrides_KeyIsOwned
-                and not CludesUI.SpecOverrides_KeyIsOwned(st, "visibilityOverride")
+                and CUI.SpecOverrides_KeyIsOwned
+                and not CUI.SpecOverrides_KeyIsOwned(st, "visibilityOverride")
             then
                 st.visibilityOverride = nil
                 healed = true
@@ -615,7 +615,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
     local function OnlyHideLanes(sel)
         local hasHide = false
         for keyName in pairs(sel) do
-            if not CludesUI.VIS_MODE_HIDE_KEYS[keyName] then
+            if not CUI.VIS_MODE_HIDE_KEYS[keyName] then
                 return false
             end
             hasHide = true
@@ -687,7 +687,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
         -- getter is not guaranteed free (CDM's tracked buff bars CREATE their table on
         -- read), and inside a session such a write becomes a capture of its own.
         if OvSessionActive() and (keyName == "never" or keyName == "always" or keyName == "mouseover") then
-            local shade = storage and CludesUI.VisOverrideValue(storage)
+            local shade = storage and CUI.VisOverrideValue(storage)
             if shade then
                 return (not neg) and (keyName == shade)
             end
@@ -722,7 +722,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
             if not storage then
                 return
             end
-            local held = CludesUI.VisOverrideValue(storage)
+            local held = CUI.VisOverrideValue(storage)
             if held == keyName then
                 -- Cleared on every store first, so the re-snapshot ClearStoreKey takes
                 -- at the end already sees the finished state and nothing diffs back into
@@ -730,7 +730,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
                 for idx = 1, #stores do
                     stores[idx].visibilityOverride = nil
                 end
-                CludesUI.SpecOverrides_ClearStoreKey(stores, "visibilityOverride")
+                CUI.SpecOverrides_ClearStoreKey(stores, "visibilityOverride")
             else
                 for idx = 1, #stores do
                     stores[idx].visibilityOverride = keyName
@@ -786,7 +786,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
         -- combines with every other axis.
         if def.axis or keyName == "mouseover" then
             for key in pairs(sel) do
-                if not CludesUI.VIS_COMBINABLE_KEYS[key] then
+                if not CUI.VIS_COMBINABLE_KEYS[key] then
                     sel[key] = nil
                 end
             end
@@ -832,7 +832,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
             -- side only -- a Hide lane survives it, exactly as an option Hide lane does.
             -- Never is terminal for everything, vetoes included.
             for key in pairs(sel) do
-                if keyName == "never" or not CludesUI.VIS_MODE_HIDE_KEYS[key] then
+                if keyName == "never" or not CUI.VIS_MODE_HIDE_KEYS[key] then
                     sel[key] = nil
                 end
             end
@@ -871,7 +871,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
     local function OnMenuClosed()
         if pendingRefresh then
             pendingRefresh = false
-            CludesUI:RefreshPage(options.refreshPageArg)
+            CUI:RefreshPage(options.refreshPageArg)
         end
     end
 
@@ -879,7 +879,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
     if leftRegion._control then
         leftRegion._control:Hide()
     end
-    checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+    checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
         leftRegion,
         options.width or 210,
         leftRegion:GetFrameLevel() + 2,
@@ -904,7 +904,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
             -- instead of the shared selection it replaces.
             ovHeldFn = function()
                 local _, storage = SelRead()
-                return storage and CludesUI.VisOverrideValue(storage) or nil
+                return storage and CUI.VisOverrideValue(storage) or nil
             end,
             -- The separator reads the match live: under Any the conditions are OR'd.
             separatorFn = function()
@@ -918,7 +918,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
     Pix.Point(checkDrop, "RIGHT", leftRegion, "RIGHT", -20, 0)
     leftRegion._control = checkDrop
     leftRegion._lastInline = nil
-    CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+    CUI.RegisterWidgetRefresh(cbDDRefresh)
 
     -- Spec Overrides capture overlay: exposes the scalar view (a captured multi applies
     -- as its representative single mode). Option axes are not spec-capturable, same as
@@ -948,7 +948,7 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
             -- it into the shared scalar instead would replace a setting the override was
             -- only standing in front of. A value no override can hold falls through and
             -- edits the shared side, exactly as every other slot does under an override.
-            local ovIn = CludesUI.VisOverrideValue(cfg) and CludesUI.VisOverrideNormalize(val)
+            local ovIn = CUI.VisOverrideValue(cfg) and CUI.VisOverrideNormalize(val)
             if ovIn then
                 local stores = OverrideStores()
                 for idx = 1, #stores do
@@ -960,14 +960,14 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
                 return
             end
             if
-                CludesUI.VIS_CONDITION_KEYS[val]
+                CUI.VIS_CONDITION_KEYS[val]
                 or val == "never"
                 or val == "always"
                 or val == "mouseover"
             then
                 local one = {}
                 one[val] = true
-                CludesUI.SetVisibilitySelection(cfg, legacyKey, one, options.applyScalarFn)
+                CUI.SetVisibilitySelection(cfg, legacyKey, one, options.applyScalarFn)
             else
                 if options.applyScalarFn then
                     options.applyScalarFn(cfg, val)
@@ -990,12 +990,12 @@ function CludesUI.AttachVisibilityChecklist(regionFrame, options)
             checkDrop:SetAlpha(off and 0.3 or 1)
             checkDrop:EnableMouse(not off)
         end
-        CludesUI.RegisterWidgetRefresh(ApplyChecklistDisabled)
+        CUI.RegisterWidgetRefresh(ApplyChecklistDisabled)
         ApplyChecklistDisabled()
     end
 end
 
-function CludesUI.BuildVisibilityRow(W, hostFrame, cursorY, options, rightCfg)
+function CUI.BuildVisibilityRow(W, hostFrame, cursorY, options, rightCfg)
     -- The placeholder slot the checklist replaces; W:DualRow only knows plain widgets.
     local function Slot(o)
         return {
@@ -1035,13 +1035,13 @@ function CludesUI.BuildVisibilityRow(W, hostFrame, cursorY, options, rightCfg)
 
     -- Search pre-build: the row is an absorber, so the chrome below would throw. The
     -- row's labels were already indexed by the factory stubs; nothing here registers.
-    if CludesUI._prebuilding then
+    if CUI._prebuilding then
         return row, height
     end
 
-    CludesUI.AttachVisibilityChecklist(leftCfg and row._rightRegion or row._leftRegion, options)
+    CUI.AttachVisibilityChecklist(leftCfg and row._rightRegion or row._leftRegion, options)
     if rightVis and not leftCfg then
-        CludesUI.AttachVisibilityChecklist(row._rightRegion, rightVis)
+        CUI.AttachVisibilityChecklist(row._rightRegion, rightVis)
     end
 
     return row, height

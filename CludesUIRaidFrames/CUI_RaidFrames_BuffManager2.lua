@@ -22,10 +22,10 @@
 -- deletion belongs to the at-launch cleanup pass.
 
 local _, mod = ...
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 -- WoW Forever one-time buff clear (CludesUI_Migration.lua); nil on every
 -- other client.
-local FVBW = CludesUI.FvBW
+local FVBW = CUI.FvBW
 
 -------------------------------------------------------------------------------
 -- Preset filter definitions
@@ -34,23 +34,23 @@ local FVBW = CludesUI.FvBW
 -- shared catalogue (CludesUI_BuffPresets.lua) -- THE single curation
 -- source, also consumed (alt-flattened) by Player Aura Bars' filter seed.
 -- Add or edit curated ids THERE, never here.
-local PRESET_FILTERS = CludesUI.BUFF_PRESETS.filters
+local PRESET_FILTERS = CUI.BUFF_PRESETS.filters
 mod.BM2_PRESET_FILTERS = PRESET_FILTERS
 
 -- Curated spell lists: see the parent catalogue (shape documented there).
-local DEFAULT_FILTER_SPELLS = CludesUI.BUFF_PRESETS.spells
+local DEFAULT_FILTER_SPELLS = CUI.BUFF_PRESETS.spells
 mod.BM2_DEFAULT_FILTER_SPELLS = DEFAULT_FILTER_SPELLS
 
 -- Profiles shared between retail and WoW Forever: the other client's curated
 -- ids per preset key, and the preset keys only that client offers (see the
 -- parent catalogue). Preset filters keep both stored untouched; here they are
 -- inert and hidden.
-local OTHER_IDS = CludesUI.BUFF_PRESET_OTHER_IDS
+local OTHER_IDS = CUI.BUFF_PRESET_OTHER_IDS
 local OTHER_ONLY_PRESETS = {}
 do
     local offered = {}
     for idx = 1, #PRESET_FILTERS do offered[PRESET_FILTERS[idx].key] = true end
-    local other = CludesUI.BUFF_PRESET_OTHER_FILTERS
+    local other = CUI.BUFF_PRESET_OTHER_FILTERS
     for idx = 1, #other do
         if not offered[other[idx].key] then OTHER_ONLY_PRESETS[other[idx].key] = true end
     end
@@ -99,7 +99,7 @@ mod.BM2_SpellClass = SPELL_CLASS
 -- that catalogue). A direct pick or user filter holding a rank alternate
 -- resolves to its family's primary, so it keeps matching every rank. nil on
 -- every other client.
-if CludesUI.IS_FOREVER == true then
+if CUI.IS_FOREVER == true then
     local ap = {}
     for ident, alts in pairs(PRESET_ALTS) do
         for idx = 1, #alts do ap[alts[idx]] = ident end
@@ -609,7 +609,7 @@ end
 function mod.BM2_AddCustomSpell(filterId, spellId, typed)
     local f = mod.BM2_GetFilter(filterId)
     if not (f and spellId and spellId > 0) then return false end
-    local mark = typed == true and CludesUI.IS_FOREVER ~= true
+    local mark = typed == true and CUI.IS_FOREVER ~= true
     if f.spells[spellId] ~= nil and not OtherClientSpell(f, spellId) then
         -- Already present: only a typed id not yet marked, and not one the
         -- filter's preset curates, changes anything.
@@ -638,13 +638,13 @@ end
 -- Overrides, seeded from the saved pointer at the first read); otherwise
 -- every class acts as its first spec. token nil = the player's class.
 function mod.BM2_ForeverSpecID(token)
-    if not CludesUI._SO_BmForkSeeded then CludesUI._SO_SeedForkSpec(false) end
-    local fk = CludesUI.SpecOverrides_BmForkSpecID
-    if fk and not CludesUI._bmSessionGid
-       and (token == nil or token == CludesUI.SpecClassOf(fk)) then
+    if not CUI._SO_BmForkSeeded then CUI._SO_SeedForkSpec(false) end
+    local fk = CUI.SpecOverrides_BmForkSpecID
+    if fk and not CUI._bmSessionGid
+       and (token == nil or token == CUI.SpecClassOf(fk)) then
         return fk
     end
-    return CludesUI.ForeverClassSpec(token)
+    return CUI.ForeverClassSpec(token)
 end
 -- The bucket a class row edits: the healer key of a healer spec, else the
 -- spec's own "spec<ID>" bucket (as on retail).
@@ -665,7 +665,7 @@ end
 -- render the shared bucket).
 function mod.BM2_SpecKey()
     -- WoW Forever: the same formula with the spec the class acts as.
-    if CludesUI.IS_FOREVER then
+    if CUI.IS_FOREVER then
         local spellRef = mod.BM2_ForeverSpecID()
         return (spellRef and mod.BM_SpecKeyForSpecID and mod.BM_SpecKeyForSpecID(spellRef)) or "nonhealer"
     end
@@ -1022,7 +1022,7 @@ end
 -- rank stands for every rank of its spell.
 function mod.BM2_SetSpellExact(ind, ident, exact)
     if exact then
-        if CludesUI.IS_FOREVER == true then return end
+        if CUI.IS_FOREVER == true then return end
         ind.exactSpells = ind.exactSpells or {}
         ind.exactSpells[ident] = true
     elseif ind.exactSpells then
@@ -1036,12 +1036,12 @@ end
 -- confirmed in its popup.
 function mod.BM2_SpellIdAction(onID)
     return { isTopAction = true, label = "Custom Spell ID", onClick = function()
-        CludesUI:ShowInputPopup({
-            title = CludesUI.L("Add Spell ID"),
-            message = CludesUI.L("Enter the spell ID to track on this indicator."),
-            placeholder = CludesUI.L("Spell ID"),
-            confirmText = CludesUI.L("Add"),
-            cancelText = CludesUI.L("Cancel"),
+        CUI:ShowInputPopup({
+            title = CUI.L("Add Spell ID"),
+            message = CUI.L("Enter the spell ID to track on this indicator."),
+            placeholder = CUI.L("Spell ID"),
+            confirmText = CUI.L("Add"),
+            cancelText = CUI.L("Cancel"),
             onConfirm = function(textValue)
                 local ident = tonumber(textValue or "")
                 if ident and ident > 0 then onID(ident) end
@@ -1134,11 +1134,11 @@ function mod.BM2_SpecIndicators(frameKind)
     local specIdx = GetSpecialization and GetSpecialization()
     local specID = specIdx and GetSpecializationInfo and GetSpecializationInfo(specIdx)
     -- WoW Forever: the spec the class acts as (no role group there).
-    if CludesUI.IS_FOREVER then specID = mod.BM2_ForeverSpecID() end
+    if CUI.IS_FOREVER then specID = mod.BM2_ForeverSpecID() end
     local tracked = specID and mod.BM_SpecKeyForSpecID and mod.BM_SpecKeyForSpecID(specID) or nil
     -- WoW Forever: no role groups there, All Non Healers/Aug included -- an
     -- untracked class renders its own bucket and All Specs only.
-    if CludesUI.IS_FOREVER and not tracked then inds = nil end
+    if CUI.IS_FOREVER and not tracked then inds = nil end
     if specID and not tracked then
         ownInds = mod.BM2_SpecInds("spec" .. specID)
     end
@@ -1222,7 +1222,7 @@ end
 -- Mutators already Invalidate internally; Refresh repaints raid frames after
 -- a copy lands new spell content here.
 -------------------------------------------------------------------------------
-CludesUI._BM2FilterBridge = {
+CUI._BM2FilterBridge = {
     Filters        = function() return mod.BM2_Filters() end,
     GetFilter      = function(ident) return mod.BM2_GetFilter(ident) end,
     AddFilter      = function(name) return mod.BM2_AddFilter(name) end,
@@ -1230,7 +1230,7 @@ CludesUI._BM2FilterBridge = {
     AddCustomSpell = function(ident, spellId) return mod.BM2_AddCustomSpell(ident, spellId) end,
     -- True for an id typed into filter f: it tracks that aura alone here,
     -- so a copy does not fan it out to its alternates.
-    SpellExact     = function(f, ident) return CludesUI.IS_FOREVER ~= true and FilterExact(f, ident) end,
+    SpellExact     = function(f, ident) return CUI.IS_FOREVER ~= true and FilterExact(f, ident) end,
     PresetAlts     = function() return mod.BM2_PresetAlts end,
     CuratedSpells  = function(presetKey) return presetKey and DEFAULT_FILTER_SPELLS[presetKey] or nil end,
     -- True for an id a preset filter keeps only for the other client.

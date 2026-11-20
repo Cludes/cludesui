@@ -22,9 +22,9 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  player frame.
 -------------------------------------------------------------------------------
 local _, mod = ...
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 -- WoW Forever: numbers under 10,000 do not abbreviate (CludesUI_NumberFormat.lua).
-local Abbreviate = (CludesUI.IS_FOREVER and CludesUI.ForeverAbbreviateNumbers) or AbbreviateNumbers
+local Abbreviate = (CUI.IS_FOREVER and CUI.ForeverAbbreviateNumbers) or AbbreviateNumbers
 
 local LAYOUT_KEY = "CUI_SelfCombatText"
 local MESSAGES = 12 -- at once; a burst past this restarts the oldest
@@ -84,7 +84,7 @@ local S = { fontGen = 0 }
 
 -- The QoL profile (no defaults merged in: Get falls back to DEFAULTS).
 local function Profile()
-    db = db or CludesUI.Lite.NewDB("CludesUIQoLDB")
+    db = db or CUI.Lite.NewDB("CludesUIQoLDB")
     return db.profile
 end
 
@@ -112,18 +112,18 @@ end
 local function ReadSettings()
     local font = SctGet("font")
     if font == "__global" then
-        S.font = CludesUI.GetFontPath("extras")
+        S.font = CUI.GetFontPath("extras")
     elseif font ~= "__combat" then
-        S.font = CludesUI.ResolveFontName(font)
+        S.font = CUI.ResolveFontName(font)
     else
         local frame = _G.CombatTextFont
         S.font = frame and frame:GetFont() or STANDARD_TEXT_FONT
     end
     local outline = SctGet("outline")
     if outline == "OUTLINE" then
-        S.flags = CludesUI.SlugFlag("OUTLINE, SLUG")
+        S.flags = CUI.SlugFlag("OUTLINE, SLUG")
     elseif outline == "THICKOUTLINE" then
-        S.flags = CludesUI.SlugFlag("THICKOUTLINE, SLUG")
+        S.flags = CUI.SlugFlag("THICKOUTLINE, SLUG")
     else
         S.flags = ""
     end
@@ -161,8 +161,8 @@ local function Place()
 end
 
 local function AddToLayoutMode()
-    CludesUI:RegisterUnlockElements({
-        CludesUI.MakeUnlockElement({
+    CUI:RegisterUnlockElements({
+        CUI.MakeUnlockElement({
             key = LAYOUT_KEY,
             label = "Self Combat Text",
             group = "Utilities",
@@ -182,7 +182,7 @@ local function AddToLayoutMode()
                     return
                 end
                 Own().pos = { point = point, relPoint = relPoint or point, x = x, y = y }
-                if not CludesUI._unlockActive then
+                if not CUI._unlockActive then
                     Place()
                 end
             end,
@@ -338,7 +338,7 @@ local function Show(format, value, color, crit)
     local kind = crit and 2 or 1
     if m.fontGen ~= S.fontGen or m.fontKind ~= kind then
         m.fontGen, m.fontKind = S.fontGen, kind
-        CludesUI.PrimeFontShadow(m, S.shadow)
+        CUI.PrimeFontShadow(m, S.shadow)
         m:SetFont(S.font, size, S.flags)
     end
     m:SetTextColor(color.r, color.g, color.b)
@@ -449,7 +449,7 @@ end
 
 mod.SCT_Refresh = Refresh
 mod.SCT_Get = SctGet
-CludesUI._applySelfCombatText = Refresh -- profile swaps (RefreshAllAddons)
+CUI._applySelfCombatText = Refresh -- profile swaps (RefreshAllAddons)
 
 function mod.SCT_Set(key, value)
     Own()[key] = value

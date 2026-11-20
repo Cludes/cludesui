@@ -8,49 +8,49 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  CludesUI_Widgets_Color.lua.
 --  DEFERRED: body runs on first CludesUI:EnsureLoaded() call, not at load.
 -------------------------------------------------------------------------------
-local CludesUI = _G.CludesUI
-CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
+local CUI = _G.CludesUI
+CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- Page reuse: the frames this file builds go through the options frame pool
     -- (CludesUI_FramePool.lua), which hands a kept page its previous build's
     -- frames back reset to new; on any other parent it creates as before. PoolGen
     -- (a frame's dress count) lets a handler that runs after a setter tell that
     -- the setter rebuilt the page and dressed its frames again for a new use.
-    local CreateFrame = CludesUI._Pool.CreateFrame
-    local PoolGen = CludesUI._Pool.Gen
-    local Pix = CludesUI.PanelPP
-    local SolidTex = CludesUI.SolidTex
-    local MakeFont = CludesUI.MakeFont
-    local MakeRoundedBorder = CludesUI.MakeRoundedBorder
-    local RowBg = CludesUI.RowBg
-    local MakeDropdownArrow = CludesUI.MakeDropdownArrow
-    local RegisterWidgetRefresh = CludesUI.RegisterWidgetRefresh
-    local EXPRESSWAY = CludesUI.EXPRESSWAY
-    local CONTENT_PAD = CludesUI.CONTENT_PAD
-    local TEXT_WHITE_R = CludesUI.TEXT_WHITE_R
-    local TEXT_WHITE_G = CludesUI.TEXT_WHITE_G
-    local TEXT_WHITE_B = CludesUI.TEXT_WHITE_B
-    local BORDER_R = CludesUI.BORDER_R
-    local BORDER_G = CludesUI.BORDER_G
-    local BORDER_B = CludesUI.BORDER_B
-    local DD_BG_R = CludesUI.DD_BG_R
-    local DD_BG_G = CludesUI.DD_BG_G
-    local DD_BG_B = CludesUI.DD_BG_B
-    local DD_BG_A = CludesUI.DD_BG_A
-    local DD_BG_HA = CludesUI.DD_BG_HA
-    local DD_BRD_A = CludesUI.DD_BRD_A
-    local DD_TXT_A = CludesUI.DD_TXT_A
-    local DUAL_ITEM_W = CludesUI.DUAL_ITEM_W
-    local DUAL_GAP = CludesUI.DUAL_GAP
-    local TRIPLE_ITEM_W = CludesUI.TRIPLE_ITEM_W
-    local TRIPLE_GAP = CludesUI.TRIPLE_GAP
-    local MakeStyledButton = CludesUI.MakeStyledButton
-    local WB_COLOURS = CludesUI.WB_COLOURS
-    local RB_COLOURS = CludesUI.RB_COLOURS
-    local ShowWidgetTooltip = CludesUI.ShowWidgetTooltip
-    local HideWidgetTooltip = CludesUI.HideWidgetTooltip
-    local DisabledTooltip = CludesUI.DisabledTooltip
+    local CreateFrame = CUI._Pool.CreateFrame
+    local PoolGen = CUI._Pool.Gen
+    local Pix = CUI.PanelPP
+    local SolidTex = CUI.SolidTex
+    local MakeFont = CUI.MakeFont
+    local MakeRoundedBorder = CUI.MakeRoundedBorder
+    local RowBg = CUI.RowBg
+    local MakeDropdownArrow = CUI.MakeDropdownArrow
+    local RegisterWidgetRefresh = CUI.RegisterWidgetRefresh
+    local EXPRESSWAY = CUI.EXPRESSWAY
+    local CONTENT_PAD = CUI.CONTENT_PAD
+    local TEXT_WHITE_R = CUI.TEXT_WHITE_R
+    local TEXT_WHITE_G = CUI.TEXT_WHITE_G
+    local TEXT_WHITE_B = CUI.TEXT_WHITE_B
+    local BORDER_R = CUI.BORDER_R
+    local BORDER_G = CUI.BORDER_G
+    local BORDER_B = CUI.BORDER_B
+    local DD_BG_R = CUI.DD_BG_R
+    local DD_BG_G = CUI.DD_BG_G
+    local DD_BG_B = CUI.DD_BG_B
+    local DD_BG_A = CUI.DD_BG_A
+    local DD_BG_HA = CUI.DD_BG_HA
+    local DD_BRD_A = CUI.DD_BRD_A
+    local DD_TXT_A = CUI.DD_TXT_A
+    local DUAL_ITEM_W = CUI.DUAL_ITEM_W
+    local DUAL_GAP = CUI.DUAL_GAP
+    local TRIPLE_ITEM_W = CUI.TRIPLE_ITEM_W
+    local TRIPLE_GAP = CUI.TRIPLE_GAP
+    local MakeStyledButton = CUI.MakeStyledButton
+    local WB_COLOURS = CUI.WB_COLOURS
+    local RB_COLOURS = CUI.RB_COLOURS
+    local ShowWidgetTooltip = CUI.ShowWidgetTooltip
+    local HideWidgetTooltip = CUI.HideWidgetTooltip
+    local DisabledTooltip = CUI.DisabledTooltip
     local isRussian = GetLocale() == "ruRU"
-    local WI = CludesUI._widgetInternals
+    local WI = CUI._widgetInternals
     local SL = WI.SL
     local TagOptionRow = WI.TagOptionRow
     local DDResolveLabel = WI.DDResolveLabel
@@ -59,8 +59,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     local PixelizeSliderCfg = WI.PixelizeSliderCfg
     local QueueLabelClamp = WI.QueueLabelClamp
     local LabelTooltipText = WI.LabelTooltipText
-    local WidgetFactory = CludesUI.Widgets
-    local ResolveDisabledTip = CludesUI.ResolveDisabledTip
+    local WidgetFactory = CUI.Widgets
+    local ResolveDisabledTip = CUI.ResolveDisabledTip
 
     -- A row slider dims (label, track and value box) and stops taking input
     -- while conf.disabled() holds: applied now and on every widget refresh.
@@ -133,14 +133,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             BlockWhileDisabled()
         end
     end
-    local BuildDropdownMenu = CludesUI.BuildDropdownMenu
+    local BuildDropdownMenu = CUI.BuildDropdownMenu
     local WireLazyDropdown = WI.WireLazyDropdown
-    local WD_DD_COLOURS = CludesUI.WD_DD_COLOURS
-    local BuildSliderCore = CludesUI.BuildSliderCore
-    local BuildDropdownControl = CludesUI.BuildDropdownControl
-    local BuildToggleControl = CludesUI.BuildToggleControl
-    local BuildCheckboxControl = CludesUI.BuildCheckboxControl
-    local BuildColorSwatch = CludesUI.BuildColorSwatch
+    local WD_DD_COLOURS = CUI.WD_DD_COLOURS
+    local BuildSliderCore = CUI.BuildSliderCore
+    local BuildDropdownControl = CUI.BuildDropdownControl
+    local BuildToggleControl = CUI.BuildToggleControl
+    local BuildCheckboxControl = CUI.BuildCheckboxControl
+    local BuildColorSwatch = CUI.BuildColorSwatch
 
     -- cfg.tooltipOnControl: a slider's tooltip also shows while hovering the slider
     -- itself, not only its label (true = cfg.tooltip; a string = its own text for
@@ -163,9 +163,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- Above the thumb and value box, below the disabled-tooltip hit (+10).
         hit:SetFrameLevel(trackFrame:GetFrameLevel() + 5)
         hit:SetMouseClickEnabled(false)
-        CludesUI.PadHint(hit, "nodeignore")
+        CUI.PadHint(hit, "nodeignore")
         hit:SetScript("OnEnter", function()
-            if CludesUI._sliderDragging or (rowConf.disabled and rowConf.disabled()) then
+            if CUI._sliderDragging or (rowConf.disabled and rowConf.disabled()) then
                 return
             end
             ShowWidgetTooltip(
@@ -221,7 +221,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     end
 
     -- Spec Overrides capture: append an extra accessor to a region/row's capture config so inline extras (swatches, cog fields, inline toggles) built outside the factory capture TOGETHER with the slot's main setting as one override. acc = { type, text, getValue, setValue, step/values/order/hasAlpha }.
-    function CludesUI.AddCaptureAccessor(regionFrame, acc)
+    function CUI.AddCaptureAccessor(regionFrame, acc)
         if not (regionFrame and acc and acc.getValue and acc.setValue) then
             return
         end
@@ -256,7 +256,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- plainMouse (with mouse: an armed bare left/right click binds too, so unbind
     -- is a right-click from rest), canArm (returns false to refuse arming).
     -- Returns btn, refresh.
-    function CludesUI.BuildKeybindButton(hostFrame, options)
+    function CUI.BuildKeybindButton(hostFrame, options)
         local button = CreateFrame("Button", nil, hostFrame)
         local pp = options.pp or Pix
         pp.Size(button, options.w, options.h)
@@ -293,7 +293,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
         local function FormatKey(key)
             if not key or key == "" then
-                return CludesUI.L("Not Bound")
+                return CUI.L("Not Bound")
             end
             local parts = {}
             for mod in key:gmatch("(%u+)%-") do
@@ -359,10 +359,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 return
             end
             listening = true
-            labelFS:SetText(CludesUI.L("Press a key..."))
+            labelFS:SetText(CUI.L("Press a key..."))
             self:EnableKeyboard(true)
             -- Controller in use: its buttons are captured too, only while armed (Stop turns it off).
-            if CludesUI.PadInUse() then
+            if CUI.PadInUse() then
                 if not padWired then
                     padWired = true
                     -- Armed: the button bound to the pause menu cancels, as Escape does on the
@@ -452,7 +452,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             button._border:SetColor(1, 1, 1, 0.3)
             ShowWidgetTooltip(
                 self,
-                options.tooltip or CludesUI.L("Left-click to set a keybind.\nRight-click to unbind.")
+                options.tooltip or CUI.L("Left-click to set a keybind.\nRight-click to unbind.")
             )
         end)
         button:SetScript("OnLeave", function()
@@ -520,7 +520,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         if type(tipText) ~= "string" then
             return nil
         end
-        local text = CludesUI.L(tipText):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|n", "\n")
+        local text = CUI.L(tipText):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|n", "\n")
         text = text:match("^[^\n]+") or ""
         text = (text:match("^(.-[%.%!%?])%s") or text):gsub("^%s+", ""):gsub("%s+$", "")
         if text == "" then
@@ -533,7 +533,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local ROW_H = 50
         local SIDE_PAD = 20 -- padding inside each half
         -- Blizzard Style: a row whose every control is gated for the active style is built (callers still hang cogs and sync icons on its regions) but hidden, takes no row background or search entry, and returns no height, so the page reads as if it were not there.
-        local BS = CludesUI.BlizzStyle
+        local BS = CUI.BlizzStyle
         local hiddenRow = BS and BS.RowHidden and BS.RowHidden(leftCfg, rightCfg)
         local widget = CreateFrame("Frame", nil, hostFrame)
         local totalW = hostFrame:GetWidth() - CONTENT_PAD * 2
@@ -614,7 +614,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             labelText:SetJustifyH("LEFT")
             labelText:SetWordWrap(false)
             labelText:SetMaxLines(1)
-            labelText:SetText(CludesUI.L(rowConf.text or ""))
+            labelText:SetText(CUI.L(rowConf.text or ""))
             regionFrame._label = labelText
             regionFrame._cfg = rowConf
             regionFrame._labelHasHit = (rowConf.tooltip or rowConf.disabledTooltip) and true or false
@@ -631,9 +631,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     regionFrame,
                     11,
                     nil,
-                    CludesUI.TEXT_DIM_R,
-                    CludesUI.TEXT_DIM_G,
-                    CludesUI.TEXT_DIM_B
+                    CUI.TEXT_DIM_R,
+                    CUI.TEXT_DIM_G,
+                    CUI.TEXT_DIM_B
                 )
                 hint:SetAlpha(0.85)
                 hint:SetPoint("TOPLEFT", labelText, "BOTTOMLEFT", 0, -2)
@@ -717,12 +717,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         return
                     end
                     -- Spec Overrides capture and the changed flag, as the other controls report a write.
-                    local snap = CludesUI._SOAttribution(regionFrame)
+                    local snap = CUI._SOAttribution(regionFrame)
                     rowConf.setValue(key)
-                    CludesUI._NotifySettingWrite(regionFrame, snap)
-                    CludesUI._settingsChanged = true
+                    CUI._NotifySettingWrite(regionFrame, snap)
+                    CUI._settingsChanged = true
                 end
-                local segFrame, _, segRefresh = CludesUI.BuildSegmentedControl({
+                local segFrame, _, segRefresh = CUI.BuildSegmentedControl({
                     parent = regionFrame,
                     square = true,
                     autoWidth = true,
@@ -918,7 +918,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                     -- Overlay greys out and blocks the swatch while disabled
                     if rowConf.disabled or sc.disabled then
-                        local swatchBlock = CludesUI.NewSwatchBlocker(colorSwatch)
+                        local swatchBlock = CUI.NewSwatchBlocker(colorSwatch)
                         swatchBlock:SetScript("OnEnter", function()
                             local source = (sc.disabledTooltip ~= nil) and sc or rowConf
                             local tipText = ResolveDisabledTip(source)
@@ -999,7 +999,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         else
                             ph:SetPoint("LEFT", boxFrame, "LEFT", 10, 0)
                         end
-                        ph:SetText(CludesUI.L(rowConf.placeholder))
+                        ph:SetText(CUI.L(rowConf.placeholder))
                         boxFrame:SetScript("OnTextChanged", function(self)
                             ph:SetShown((self:GetText() or "") == "")
                         end)
@@ -1009,7 +1009,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     boxFrame:SetJustifyH("CENTER")
                     boxFrame:SetTextInsets(4, 4, 0, 0)
                     boxBg:SetColorTexture(0.12, 0.12, 0.12, 0.85)
-                    CludesUI.RoundBody(boxFrame, boxBg)
+                    CUI.RoundBody(boxFrame, boxBg)
                 end
                 local function SyncInputText()
                     if boxFrame:HasFocus() then
@@ -1159,7 +1159,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             labelText:SetJustifyH("LEFT")
             labelText:SetWordWrap(false)
             labelText:SetMaxLines(1)
-            labelText:SetText(CludesUI.L(rowConf.text or ""))
+            labelText:SetText(CUI.L(rowConf.text or ""))
             regionFrame._label = labelText
             regionFrame._cfg = rowConf
             regionFrame._labelHasHit = (rowConf.tooltip or rowConf.disabledTooltip) and true or false
@@ -1328,7 +1328,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
                 local cbLabel = MakeFont(button, 14, nil, TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B)
                 cbLabel:SetPoint("LEFT", boxFrame, "RIGHT", 10, 0)
-                cbLabel:SetText(CludesUI.L(rowConf.text or ""))
+                cbLabel:SetText(CUI.L(rowConf.text or ""))
 
                 local isHovering = false
                 local function PaintCheckbox()
@@ -1347,7 +1347,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     local gen = PoolGen(button)
                     local val = not rowConf.getValue()
                     rowConf.setValue(val)
-                    CludesUI._settingsChanged = true
+                    CUI._settingsChanged = true
                     -- A setter that rebuilt the page dressed this checkbox again
                     -- (page reuse): that dress painted itself.
                     if PoolGen(button) ~= gen then
@@ -1465,7 +1465,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         local labelText = MakeFont(widget, 14, nil, TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B)
         Pix.Point(labelText, "LEFT", widget, "LEFT", SIDE_PAD, 0)
-        labelText:SetText(CludesUI.L(rowConf.text or ""))
+        labelText:SetText(CUI.L(rowConf.text or ""))
 
         -- Swatches build right-to-left from the right edge
         local swatches = rowConf.swatches or {}
@@ -1481,7 +1481,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             anchorX = anchorX - 24 - SWATCH_GAP
 
             if sc.disabled then
-                local swatchBlock = CludesUI.NewSwatchBlocker(colorSwatch)
+                local swatchBlock = CUI.NewSwatchBlocker(colorSwatch)
                 if sc.disabledTooltip then
                     swatchBlock:SetScript("OnEnter", function()
                         ShowWidgetTooltip(colorSwatch, sc.disabledTooltip)
@@ -1581,7 +1581,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         local ddLabel = MakeFont(leftRegion, 14, nil, TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B)
         Pix.Point(ddLabel, "LEFT", leftRegion, "LEFT", SIDE_PAD, 0)
-        ddLabel:SetText(CludesUI.L(dropdownCfg.text or ""))
+        ddLabel:SetText(CUI.L(dropdownCfg.text or ""))
 
         local DD_W = 170
         local dropdownBtn, dropCaption = BuildDropdownControl(
@@ -1622,7 +1622,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             -- Axis label ("X" or "Y")
             local axisLabel = MakeFont(rightRegion, 12, nil, TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B)
             axisLabel:SetAlpha(0.6)
-            axisLabel:SetText(CludesUI.L(slCfg.text or ""))
+            axisLabel:SetText(CUI.L(slCfg.text or ""))
 
             local trackFrame, valBox, _, slThumb = BuildSliderCore(
                 rightRegion,
@@ -1809,13 +1809,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             widget,
             13,
             nil,
-            CludesUI.TEXT_SECTION_R,
-            CludesUI.TEXT_SECTION_G,
-            CludesUI.TEXT_SECTION_B,
-            CludesUI.TEXT_SECTION_A
+            CUI.TEXT_SECTION_R,
+            CUI.TEXT_SECTION_G,
+            CUI.TEXT_SECTION_B,
+            CUI.TEXT_SECTION_A
         )
         Pix.Point(titleLabel, "TOP", widget, "TOP", 0, 0)
-        titleLabel:SetText(CludesUI.L(title))
+        titleLabel:SetText(CUI.L(title))
         local dropdownBtn = CreateFrame("Button", nil, widget)
         Pix.Size(dropdownBtn, btnWidth, BTN_H)
         Pix.Point(dropdownBtn, "TOP", titleLabel, "BOTTOM", 0, -GAP)
@@ -1893,13 +1893,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 widget,
                 11,
                 nil,
-                CludesUI.TEXT_SECTION_R,
-                CludesUI.TEXT_SECTION_G,
-                CludesUI.TEXT_SECTION_B,
-                CludesUI.TEXT_SECTION_A
+                CUI.TEXT_SECTION_R,
+                CUI.TEXT_SECTION_G,
+                CUI.TEXT_SECTION_B,
+                CUI.TEXT_SECTION_A
             )
             Pix.Point(titleLbl, "TOP", widget, "TOPLEFT", col + DD_W / 2, 0)
-            titleLbl:SetText(CludesUI.L(rowConf.title))
+            titleLbl:SetText(CUI.L(rowConf.title))
             local dropdownBtn, dropCaption = BuildDropdownControl(
                 widget,
                 DD_W,

@@ -36,8 +36,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  and their events are registered only while shown.
 -------------------------------------------------------------------------------
 
-local CludesUI = _G.CludesUI
-if not CludesUI then
+local CUI = _G.CludesUI
+if not CUI then
     return
 end
 if not (Menu and Menu.ModifyMenu and Menu.GetManager and MenuUtil and MenuUtil.GetElementText) then
@@ -51,15 +51,15 @@ local HOUSING_OK = C_Housing and C_Housing.GetOthersOwnedHouses and C_Housing.Vi
 -------------------------------------------------------------------------------
 local T = {}
 local function ResolveTheme()
-    local ACC = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
+    local ACC = CUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
     T.accR, T.accG, T.accB = ACC.r, ACC.g, ACC.b
     T.bgR, T.bgG, T.bgB, T.bgA = 0.08, 0.08, 0.08, 0.92
     T.insetR, T.insetG, T.insetB, T.insetA = 0.04, 0.04, 0.04, 0.85
     T.brdR, T.brdG, T.brdB, T.brdA = 0.2, 0.2, 0.2, 1
-    T.fontPath = (CludesUI.GetFontPath("blizzardSkin")) or CludesUI._font or STANDARD_TEXT_FONT
-    T.fontFlag = (CludesUI.GetFontOutlineFlag("blizzardSkin")) or ""
+    T.fontPath = (CUI.GetFontPath("blizzardSkin")) or CUI._font or STANDARD_TEXT_FONT
+    T.fontFlag = (CUI.GetFontOutlineFlag("blizzardSkin")) or ""
     T.fontShadow = (T.fontFlag == "")
-        and (not CludesUI.GetFontUseShadow or CludesUI.GetFontUseShadow("blizzardSkin"))
+        and (not CUI.GetFontUseShadow or CUI.GetFontUseShadow("blizzardSkin"))
 end
 
 local function SolidTex(hostFrame, layer, red, green, blue, a, sublevel)
@@ -71,7 +71,7 @@ end
 -- BORDER/-7 strips demoted to the frame's own level, exactly as the window
 -- engine draws its borders (content on the frame renders above them).
 local function AddBorder(widget)
-    local Pix = CludesUI.PanelPP or CludesUI.PP
+    local Pix = CUI.PanelPP or CUI.PP
     if not (Pix and Pix.CreateBorder) then
         return
     end
@@ -86,9 +86,9 @@ end
 local function MakeText(hostFrame, size, red, green, blue, family)
     local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
     if family then
-        CludesUI.SetFontFamily(fontStr, T.fontPath, size, T.fontFlag or "", T.fontShadow)
+        CUI.SetFontFamily(fontStr, T.fontPath, size, T.fontFlag or "", T.fontShadow)
     else
-        CludesUI.PrimeFontShadow(fontStr, T.fontShadow)
+        CUI.PrimeFontShadow(fontStr, T.fontShadow)
         fontStr:SetFont(T.fontPath, size, T.fontFlag or "")
     end
     fontStr:SetTextColor(red or 1, green or 1, blue or 1, 1)
@@ -162,7 +162,7 @@ local function BuildDock()
     d:Hide()
     Panel(d)
 
-    d.houses = MakeButton(d, nil, UNIT_VIEW_HOUSES or CludesUI.L("View Houses"), 112, 22, false)
+    d.houses = MakeButton(d, nil, UNIT_VIEW_HOUSES or CUI.L("View Houses"), 112, 22, false)
     d.houses:SetPoint("CENTER")
     -- The menu closes on any GLOBAL_MOUSE_DOWN outside it UNLESS the frame
     -- under the cursor answers HandlesGlobalMouseEvent (Menu.lua's opt-out for
@@ -199,7 +199,7 @@ end
 
 -- Called by the backstop right after its (tainted) re-open, while that menu is
 -- the open one.
-function CludesUI._ShowReopenedMenuExtras(unitToken)
+function CUI._ShowReopenedMenuExtras(unitToken)
     if not HOUSING_OK or not reopenContext or reopenContext.unit ~= unitToken then
         return
     end
@@ -242,7 +242,7 @@ local function BuildList()
     ResolveTheme()
     local frame = CreateFrame("Frame", "CludesUI_HouseVisitFrame", UIParent)
     frame:SetFrameStrata("DIALOG")
-    frame:SetScale((CludesUI.GetPopupScale()) or 1)
+    frame:SetScale((CUI.GetPopupScale()) or 1)
     frame:SetWidth(FRAME_W)
     frame:SetHeight(HEADER_H + 10 + MAX_ROWS * (ROW_H + ROW_GAP) + 6)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 80)
@@ -304,7 +304,7 @@ local function BuildList()
         row.info:SetJustifyH("LEFT")
 
         -- The teleport: a stock secure action, attributes = plain strings.
-        local visit = MakeButton(row, "CludesUI_HouseVisit" .. idx, CludesUI.L("Visit"), 80, 24, true)
+        local visit = MakeButton(row, "CludesUI_HouseVisit" .. idx, CUI.L("Visit"), 80, 24, true)
         visit:SetPoint("RIGHT", row, "RIGHT", -8, 0)
         visit:SetAttribute("type", "visithouse")
         row.visit = visit
@@ -313,8 +313,8 @@ local function BuildList()
         rowList[idx] = row
     end
 
-    if CludesUI.RegisterEscapeClose then
-        CludesUI.RegisterEscapeClose(frame)
+    if CUI.RegisterEscapeClose then
+        CUI.RegisterEscapeClose(frame)
     end
     listFrame = frame
     return frame
@@ -329,14 +329,14 @@ end
 local function ApplyHouses(houses)
     ClearRows()
     if not houses or #houses == 0 then
-        statusText:SetText(CludesUI.L("No houses found."))
+        statusText:SetText(CUI.L("No houses found."))
         statusText:Show()
         return
     end
     -- Attribute writes are refused in combat; keep the list and re-apply on
     -- PLAYER_REGEN_ENABLED (registered while shown).
     if InCombatLockdown() then
-        statusText:SetText(CludesUI.L("Leave combat to enable visiting."))
+        statusText:SetText(CUI.L("Leave combat to enable visiting."))
         statusText:Show()
         return
     end
@@ -344,7 +344,7 @@ local function ApplyHouses(houses)
     for idx = 1, math.min(#houses, MAX_ROWS) do
         local hgt = houses[idx]
         local row = rowList[idx]
-        row.name:SetText(hgt.houseName or CludesUI.L("House"))
+        row.name:SetText(hgt.houseName or CUI.L("House"))
         local where = hgt.neighborhoodName or ""
         if hgt.plotID then
             where = where
@@ -425,7 +425,7 @@ function OpenHousesFor(contextData)
     pendingHouses = nil
     title:SetText(string.format(VIEW_HOUSES_TITLE or "%s's Houses", name))
     ClearRows()
-    statusText:SetText(CludesUI.L("Loading houses..."))
+    statusText:SetText(CUI.L("Loading houses..."))
     statusText:Show()
     frame:Show()
     C_Housing.GetOthersOwnedHouses(unitGuid, contextData.bnetIDAccount, not not contextData.isGuildMember)
@@ -435,10 +435,10 @@ end
 --  Menu modification: only the backstop's re-opened menu
 -------------------------------------------------------------------------------
 local function ModifyReopenedMenu(ownerFrame, rootDescription, contextData)
-    if not CludesUI._menuReopenUnit then
+    if not CUI._menuReopenUnit then
         return
     end
-    if not contextData or contextData.unit ~= CludesUI._menuReopenUnit then
+    if not contextData or contextData.unit ~= CUI._menuReopenUnit then
         return
     end
     reopenContext = contextData

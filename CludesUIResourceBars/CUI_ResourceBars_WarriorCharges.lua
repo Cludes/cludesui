@@ -11,7 +11,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- ns.WC_EngineOn to gate itself.
 
 local _, mod = ...
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 
 local PLAYER_CLASS = select(2, UnitClass("player"))
 
@@ -19,7 +19,7 @@ local function FillTexPath()
     local ERB = mod.ERB
     local p = ERB and ERB.db and ERB.db.profile
     local key = (p and p.general and p.general.barTexture) or "none"
-    return CludesUI.ResolveTexturePath(_G._CURB_BarTextures, key, "Interface\\Buttons\\WHITE8x8")
+    return CUI.ResolveTexturePath(_G._CURB_BarTextures, key, "Interface\\Buttons\\WHITE8x8")
 end
 
 -- Belt only (the painter's stashed color is the primary source): mirrors the
@@ -28,8 +28,8 @@ end
 -- the painter's POWER_COLORS memo resolves for these string keys; class color
 -- comes from GetClassColor, the same source as its CLASS_COLORS memo.
 local function FillColor(sp, powerKey)
-    if sp.darkTheme and CludesUI.GetDarkModeFill then
-        local red, green, blue = CludesUI.GetDarkModeFill()
+    if sp.darkTheme and CUI.GetDarkModeFill then
+        local red, green, blue = CUI.GetDarkModeFill()
         return red or 1, green or 1, blue or 1, 1
     end
     local ERB = mod.ERB
@@ -43,12 +43,12 @@ local function FillColor(sp, powerKey)
     elseif sp.classColored == false then
         return sp.fillR or 1, sp.fillG or 1, sp.fillB or 1, 1
     else
-        local pc = CludesUI.GetPowerColor(powerKey)
+        local pc = CUI.GetPowerColor(powerKey)
         if pc then
             return pc.r, pc.g, pc.b, 1
         end
     end
-    local classColor = CludesUI.GetClassColor(PLAYER_CLASS)
+    local classColor = CUI.GetClassColor(PLAYER_CLASS)
     if classColor then
         return classColor.r, classColor.g, classColor.b, 1
     end

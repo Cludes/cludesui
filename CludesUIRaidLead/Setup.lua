@@ -20,7 +20,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 local _, mod = ...
 local Planner = mod.Planner
 CludesUI._ModuleNS["CludesUIRaidLead"] = mod
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 
 local MAX_MOVES = 120 -- a 40-player raid needs under 40; this is the runaway stop
 local STEP_WAIT = 0.6 -- seconds to wait for a roster update before trying again
@@ -31,8 +31,8 @@ local widget = CreateFrame("Frame")
 
 local function Say(textValue)
     local line = "|cff4cc9f0Raid Lead:|r " .. textValue
-    if CludesUI and CludesUI.Print then
-        CludesUI.Print(line)
+    if CUI and CUI.Print then
+        CUI.Print(line)
     else
         print(line)
     end
@@ -183,10 +183,10 @@ local function Command(msg)
             if InCombatLockdown() then
                 return
             end
-            if CludesUI.EnsureOptionsLoaded and not CludesUI.EnsureOptionsLoaded() then
+            if CUI.EnsureOptionsLoaded and not CUI.EnsureOptionsLoaded() then
                 return
             end
-            CludesUI:ShowModule("CludesUIRaidLead")
+            CUI:ShowModule("CludesUIRaidLead")
         end)
         return
     end

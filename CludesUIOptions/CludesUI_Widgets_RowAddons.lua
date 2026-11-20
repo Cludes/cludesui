@@ -9,24 +9,24 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  loads after CludesUI_Widgets_CogPopup.lua.
 --  DEFERRED: body runs on first CludesUI:EnsureLoaded() call, not at load.
 -------------------------------------------------------------------------------
-local CludesUI = _G.CludesUI
-CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
+local CUI = _G.CludesUI
+CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
     -- host are reset and dressed again by the next build instead of made anew;
     -- elsewhere this is CreateFrame.
-    local CreateFrame = CludesUI._Pool.CreateFrame
-    local Pix = CludesUI.PanelPP
-    local RegisterWidgetRefresh = CludesUI.RegisterWidgetRefresh
-    local MakeStyledButton = CludesUI.MakeStyledButton
-    local WB_COLOURS = CludesUI.WB_COLOURS
-    local ShowWidgetTooltip = CludesUI.ShowWidgetTooltip
-    local HideWidgetTooltip = CludesUI.HideWidgetTooltip
-    local ResolveDisabledTip = CludesUI.ResolveDisabledTip
-    local BuildToggleControl = CludesUI.BuildToggleControl
-    local BuildColorSwatch = CludesUI.BuildColorSwatch
-    local BuildCogPopup = CludesUI.BuildCogPopup
-    local BuildDropdownMenu = CludesUI.BuildDropdownMenu
-    local WireDropdownScripts = CludesUI.WireDropdownScripts
+    local CreateFrame = CUI._Pool.CreateFrame
+    local Pix = CUI.PanelPP
+    local RegisterWidgetRefresh = CUI.RegisterWidgetRefresh
+    local MakeStyledButton = CUI.MakeStyledButton
+    local WB_COLOURS = CUI.WB_COLOURS
+    local ShowWidgetTooltip = CUI.ShowWidgetTooltip
+    local HideWidgetTooltip = CUI.HideWidgetTooltip
+    local ResolveDisabledTip = CUI.ResolveDisabledTip
+    local BuildToggleControl = CUI.BuildToggleControl
+    local BuildColorSwatch = CUI.BuildColorSwatch
+    local BuildCogPopup = CUI.BuildCogPopup
+    local BuildDropdownMenu = CUI.BuildDropdownMenu
+    local WireDropdownScripts = CUI.WireDropdownScripts
 
     -- Inline toggle: a small toggle placed inline inside a DualRow half-region,
     -- chaining left of the control (slider/dropdown) like the sync icon / cog. Used
@@ -63,7 +63,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- 0.4 idle, 0.7 hovered). They show as the cogs' dots below do: 0.55 idle /
     -- 0.75 hovered, 0.15 disabled, and linearly between (the Raid & Party Frames
     -- eye's 0.6 while its preview is on).
-    function CludesUI.SetGlyphAlpha(button, a)
+    function CUI.SetGlyphAlpha(button, a)
         button._glyphA = a
         button:SetAlpha(a <= 0.15 and a or math.min(1, 0.55 + (a - 0.4) * 2 / 3))
     end
@@ -114,9 +114,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local sec = contentFrame and contentFrame._currentSection
         local rowConf, title = region._cfg, options.title
         local labelText = rowConf and rowConf.text or region._labelText
-        return (CludesUI._buildingModule or CludesUI:GetActiveModule() or "")
+        return (CUI._buildingModule or CUI:GetActiveModule() or "")
             .. "\31"
-            .. (CludesUI._buildingPage or CludesUI:GetActivePage() or "")
+            .. (CUI._buildingPage or CUI:GetActivePage() or "")
             .. "\31"
             .. (sec and sec._sectionName or "")
             .. "\31"
@@ -206,7 +206,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local layer = L._frame
         for idx = 1, 3 do
             local t = L[idx]
-            CludesUI.SetCircleArt(t, d)
+            CUI.SetCircleArt(t, d)
             t:SetSize(d, d)
             t:ClearAllPoints()
             t:SetPoint("TOPLEFT", layer, "TOPLEFT", posX, (2 - idx) * step - cursorY)
@@ -218,11 +218,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local nx = math.max(0, posX - reach)
         local ny = math.max(0, Px(cursorY - step + (d - num) / 2 - hp * CogDot.NY))
         local note, ring = L.note, L.ring
-        CludesUI.SetCircleArt(note, num)
+        CUI.SetCircleArt(note, num)
         note:SetSize(num, num)
         note:ClearAllPoints()
         note:SetPoint("TOPLEFT", layer, "TOPLEFT", nx, -ny)
-        CludesUI.SetCircleArt(ring, num)
+        CUI.SetCircleArt(ring, num)
         ring:SetSize(num, num)
         ring:ClearAllPoints()
         ring:SetPoint("CENTER", note, "CENTER")
@@ -267,7 +267,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- The panel closed (not hidden with the UI, which leaves it shown): this
     -- session's dots go.
     function CogDot.PanelClosed()
-        if CludesUI:IsShown() or not next(CogDot.edited) then
+        if CUI:IsShown() or not next(CogDot.edited) then
             return
         end
         local edited = CogDot.edited
@@ -280,7 +280,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         wipe(edited)
         wipe(CogDot.up)
     end
-    CludesUI:RegisterOnHide(CogDot.PanelClosed)
+    CUI:RegisterOnHide(CogDot.PanelClosed)
 
     local function HideCogTip()
         cogTipCog = nil
@@ -306,7 +306,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     end
 
     local function InScrollArea(frame)
-        local scrollFrame = CludesUI._scrollFrame
+        local scrollFrame = CUI._scrollFrame
         while frame do
             if frame == scrollFrame then
                 return true
@@ -322,12 +322,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         if not (cogTipCog and cogTipInScroll) then
             return
         end
-        local scrollFrame = CludesUI._scrollFrame
+        local scrollFrame = CUI._scrollFrame
         local _, cy = cogTipCog:GetCenter()
         local topY, bottom = scrollFrame:GetTop(), scrollFrame:GetBottom()
         if cy and topY and bottom and cy <= topY and cy >= bottom then
             if not cogTip:IsShown() then
-                CludesUI.ShowTipCallout(cogTip)
+                CUI.ShowTipCallout(cogTip)
             end
         elseif cogTip:IsShown() then
             cogTip:Hide()
@@ -341,11 +341,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         if not cogTip then
             -- The panel tips' metrics (the Raid & Party Frames eye tip's), on the
             -- panel body: it rides the panel scale and hides with the panel.
-            cogTip = CludesUI.BuildTipCallout(CludesUI._panelBody, {
+            cogTip = CUI.BuildTipCallout(CUI._panelBody, {
                 width = 250,
                 arrow = "bottom",
                 -- "icon": a third of the inline cogs wear the directions or resize glyph.
-                text = CludesUI.L("This setting has more options.\nClick this icon to see them."),
+                text = CUI.L("This setting has more options.\nClick this icon to see them."),
                 fontSize = 10,
                 textTop = 12,
                 textInset = 24,
@@ -362,12 +362,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         cogTipInScroll = InScrollArea(cog)
         if cogTipInScroll and not cogTipScrollHooked then
             cogTipScrollHooked = true
-            CludesUI._scrollFrame:HookScript("OnVerticalScroll", CogTipScroll)
+            CUI._scrollFrame:HookScript("OnVerticalScroll", CogTipScroll)
         end
         cogTip:ClearAllPoints()
         cogTip:SetPoint("BOTTOM", cog, "TOP", 0, 14)
         if not cogTip:IsShown() then
-            CludesUI.ShowTipCallout(cogTip)
+            CUI.ShowTipCallout(cogTip)
         end
     end
 
@@ -375,8 +375,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- half (frame or one of its two parents) registered (a page the setter built
     -- again holds a new cog of the same id, which CogDot.Edited finds). A disabled
     -- cog is left alone; the tip goes to a visible one.
-    function CludesUI._CogWriteNotice(widget)
-        if type(widget) ~= "table" or CludesUI._prebuilding then
+    function CUI._CogWriteNotice(widget)
+        if type(widget) ~= "table" or CUI._prebuilding then
             return
         end
         local cog
@@ -418,12 +418,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     --   draws opts.icon bare instead, 26 square and with no dot (the unlock jump).
     -- A cog with a dot is the one its region's writes light (the cog notice above; the last such cog built on the region).
     local function BuildInlineCog(region, options)
-        if CludesUI._prebuilding then
+        if CUI._prebuilding then
             return
         end
         -- A disabled cog with no tooltip of its own explains itself with its host control's requirement.
         local tipSrc = (options.disabled and not options.disabledTooltip) and region._cfg or options
-        if options.disabled and not (tipSrc and tipSrc.disabledTooltip) and CludesUI.IsDevModeActive() then
+        if options.disabled and not (tipSrc and tipSrc.disabledTooltip) and CUI.IsDevModeActive() then
             error("BuildInlineCog: disabled needs a disabledTooltip", 2)
         end
         local show = options.show or select(2, BuildCogPopup(options))
@@ -452,7 +452,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         else
             -- The three dots, the notification dot and its pulse ring: white and
             -- accent art on a pixel layer, placed in whole pixels (CogDot.Fit).
-            L = CludesUI.MakePixelLayer(button, CogDot.Fit)
+            L = CUI.MakePixelLayer(button, CogDot.Fit)
             local layer = L._frame
             L[1] = layer:CreateTexture(nil, "ARTWORK")
             L[2] = layer:CreateTexture(nil, "ARTWORK")
@@ -460,13 +460,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local ring = layer:CreateTexture(nil, "OVERLAY")
             note = layer:CreateTexture(nil, "OVERLAY", nil, 1)
             L.note, L.ring = note, ring
-            local red, green, blue = CludesUI.GetAccentColor()
+            local red, green, blue = CUI.GetAccentColor()
             note:SetVertexColor(red, green, blue, 1)
             ring:SetVertexColor(red, green, blue, 1)
             ring:SetAlpha(0)
             -- Keyed by the textures: the page pool forgets the entries when it resets them.
-            CludesUI.RegAccent({ type = "vertex", obj = note })
-            CludesUI.RegAccent({ type = "vertex", obj = ring })
+            CUI.RegAccent({ type = "vertex", obj = note })
+            CUI.RegAccent({ type = "vertex", obj = ring })
             local pulse = ring:CreateAnimationGroup()
             local grow = pulse:CreateAnimation("Scale")
             grow:SetScaleFrom(1, 1)
@@ -556,7 +556,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- opts.paint reads the accent (the unlock jump), so it repaints on accent changes.
         -- Keyed by the texture: the page pool forgets the entry when it resets it.
         if paint then
-            CludesUI.RegAccent({
+            CUI.RegAccent({
                 type = "callback",
                 obj = texture,
                 fn = function()
@@ -605,8 +605,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- (as ResolveDisabledTip): greyed, click-blocked, without hover colours and
     -- explaining itself on hover while disabled, re-checked with the page's
     -- widgets. Returns the button; nil during the search prebuild.
-    function CludesUI.BuildInlineButton(region, textValue, onClick, options)
-        if CludesUI._prebuilding then
+    function CUI.BuildInlineButton(region, textValue, onClick, options)
+        if CUI._prebuilding then
             return
         end
         options = options or {}
@@ -691,20 +691,20 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- the panel still shows) plus the auto-select key and the flash flag the end
     -- of the open animation reads. In combat nothing changes and the red chat line
     -- explains. Returns whether the open was requested.
-    function CludesUI.OpenUnlockModeAt(key)
+    function CUI.OpenUnlockModeAt(key)
         if InCombatLockdown() then
-            CludesUI.PrintError("Cannot enter Layout Mode during combat.")
+            CUI.PrintError("Cannot enter Layout Mode during combat.")
             return false
         end
         -- Installed by the unlock core's init, so a live check rather than a dead guard.
-        if not CludesUI._openUnlockMode then
+        if not CUI._openUnlockMode then
             return false
         end
-        CludesUI._unlockReturnModule = CludesUI:GetActiveModule()
-        CludesUI._unlockReturnPage = CludesUI:GetActivePage()
-        CludesUI._unlockAutoSelectKey = key
-        CludesUI._unlockAutoSelectFlash = true
-        C_Timer.After(0, CludesUI._openUnlockMode)
+        CUI._unlockReturnModule = CUI:GetActiveModule()
+        CUI._unlockReturnPage = CUI:GetActivePage()
+        CUI._unlockAutoSelectKey = key
+        CUI._unlockAutoSelectFlash = true
+        C_Timer.After(0, CUI._openUnlockMode)
         return true
     end
 
@@ -720,17 +720,17 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- disabled (owner 2026-10-23).
     local function UnlockJumpPaint(button, off, hot)
         button:SetAlpha(off and 0.2 or (hot and 1 or 0.7))
-        local red, green, blue = CludesUI.GetAccentColor()
+        local red, green, blue = CUI.GetAccentColor()
         button._icon:SetVertexColor(red, green, blue)
     end
 
-    function CludesUI.BuildUnlockJump(region, options)
-        if CludesUI._prebuilding then
+    function CUI.BuildUnlockJump(region, options)
+        if CUI._prebuilding then
             return
         end
         local key = options.key
         local button = BuildInlineCog(region, {
-            icon = CludesUI.UNLOCK_ICON,
+            icon = CUI.UNLOCK_ICON,
             tip = options.tooltip or "Move in Layout Mode",
             show = function()
                 local keyName = key
@@ -738,7 +738,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     keyName = keyName()
                 end
                 if keyName then
-                    CludesUI.OpenUnlockModeAt(keyName)
+                    CUI.OpenUnlockModeAt(keyName)
                 end
             end,
             disabled = options.disabled,
@@ -771,8 +771,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- rawTooltip/requireState (the element's own enable, where it has one), size
     -- (20). Returns the button; nil during the search prebuild or without a
     -- titled header.
-    function CludesUI.BuildSectionUnlockJump(heading, options)
-        if CludesUI._prebuilding then
+    function CUI.BuildSectionUnlockJump(heading, options)
+        if CUI._prebuilding then
             return
         end
         local labelText = heading and heading._label
@@ -780,7 +780,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             return
         end
         local size = options.size or 20
-        local button = CludesUI.BuildUnlockJump(heading, {
+        local button = CUI.BuildUnlockJump(heading, {
             key = options.key,
             tooltip = options.tooltip,
             disabled = options.disabled,
@@ -816,7 +816,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
     -- The accent, or a darker white when the accent itself is near white.
     local function RowMenuLitColor()
-        local ac = CludesUI.CLUDES_GREEN
+        local ac = CUI.CLUDES_GREEN
         if ac.r > 0.9 and ac.g > 0.9 and ac.b > 0.9 then
             return 0.72, 0.72, 0.72
         end
@@ -833,7 +833,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     --   page's widgets. Never touches region._lastInline or region._control.
     -- Returns the button; nil during the search prebuild.
     local function BuildRowLabelMenu(region, options)
-        if CludesUI._prebuilding then
+        if CUI._prebuilding then
             return
         end
         local labelText = region._label
@@ -860,7 +860,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 labelText:SetTextColor(red, green, blue)
             else
                 arrow:SetVertexColor(1, 1, 1)
-                labelText:SetTextColor(CludesUI.TEXT_WHITE_R, CludesUI.TEXT_WHITE_G, CludesUI.TEXT_WHITE_B)
+                labelText:SetTextColor(CUI.TEXT_WHITE_R, CUI.TEXT_WHITE_G, CUI.TEXT_WHITE_B)
             end
         end
         local function OnEnter()
@@ -884,7 +884,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
         button:SetScript("OnEnter", OnEnter)
         button:SetScript("OnLeave", OnLeave)
-        local proxyLbl = CludesUI.MakeFont(button, 12, nil, 1, 1, 1)
+        local proxyLbl = CUI.MakeFont(button, 12, nil, 1, 1, 1)
         proxyLbl:Hide()
         local function EnsureMenu()
             if dropMenu then
@@ -910,7 +910,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 NO_PAINT,
                 dropMenu,
                 refresh,
-                CludesUI.RD_DD_COLOURS,
+                CUI.RD_DD_COLOURS,
                 true
             )
             button:HookScript("OnEnter", OnEnter)
@@ -961,11 +961,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     --   setValue(v), itemDisabled(v) (as BuildRowLabelMenu). Returns the toggle the
     --   button's click calls; nil during the search prebuild.
     local function AttachButtonMenu(button, options)
-        if CludesUI._prebuilding then
+        if CUI._prebuilding then
             return
         end
         local enter, leave = button:GetScript("OnEnter"), button:GetScript("OnLeave")
-        local proxyLbl = CludesUI.MakeFont(button, 12, nil, 1, 1, 1)
+        local proxyLbl = CUI.MakeFont(button, 12, nil, 1, 1, 1)
         proxyLbl:Hide()
         local dropMenu
         local function EnsureMenu()
@@ -991,7 +991,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 NO_PAINT,
                 dropMenu,
                 refresh,
-                CludesUI.RD_DD_COLOURS,
+                CUI.RD_DD_COLOURS,
                 true
             )
             if enter then
@@ -1058,9 +1058,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local arrowTex = expanded and LESS_COMMON_ARROW_UP or LESS_COMMON_ARROW_DOWN
         local textValue = expanded and (labelText:gsub("^Show", "Hide", 1)) or labelText
 
-        local fontStr = CludesUI.MakeFont(button, 13, nil, 1, 1, 1)
+        local fontStr = CUI.MakeFont(button, 13, nil, 1, 1, 1)
         fontStr:SetPoint("LEFT", button, "LEFT", ARROW_SZ + ARROW_GAP, 0)
-        fontStr:SetText(CludesUI.L(textValue))
+        fontStr:SetText(CUI.L(textValue))
         fontStr:SetAlpha(0.7)
 
         local leftArrow = button:CreateTexture(nil, "OVERLAY")
@@ -1077,7 +1077,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         button:SetWidth(math.max((fontStr:GetStringWidth() or 0) + 2 * (ARROW_SZ + ARROW_GAP) + 8, 120))
 
-        local ACC = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+        local ACC = CUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
         button:SetScript("OnEnter", function()
             fontStr:SetTextColor(ACC.r, ACC.g, ACC.b)
             fontStr:SetAlpha(1)
@@ -1095,13 +1095,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             rightArrow:SetAlpha(0.7)
         end)
         button:SetScript("OnClick", function()
-            local sess = CludesUI._lessCommonExpanded
+            local sess = CUI._lessCommonExpanded
             if not sess then
                 sess = {}
-                CludesUI._lessCommonExpanded = sess
+                CUI._lessCommonExpanded = sess
             end
             sess[sectionKey] = (not expanded) and true or nil
-            CludesUI:RefreshPage(true)
+            CUI:RefreshPage(true)
         end)
 
         return cursorY - 40
@@ -1109,19 +1109,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
     local function BuildLessCommonExpander(hostFrame, cursorY, sectionKey, labelText)
         -- Hidden search pre-build: always build the wrapped rows so they register in the global search index; no link (the page is never shown).
-        if CludesUI._prebuilding then
+        if CUI._prebuilding then
             return true, cursorY
         end
         -- This page reads the search flag: a search transition rebuilds it (SetLessCommonSearchActive).
-        CludesUI._passReadSearchFlag = true
+        CUI._passReadSearchFlag = true
         -- Active search (either box): sections render force-expanded with NO link line at all; clearing the search collapses them back. Transient flag -- the session Show/Hide state below is untouched and restores afterwards (see SetLessCommonSearchActive).
-        if CludesUI._lessCommonSearchActive then
+        if CUI._lessCommonSearchActive then
             return true, cursorY
         end
-        local sess = CludesUI._lessCommonExpanded
+        local sess = CUI._lessCommonExpanded
         if not sess then
             sess = {}
-            CludesUI._lessCommonExpanded = sess
+            CUI._lessCommonExpanded = sess
         end
         -- Expanded: render nothing here -- the caller builds the rows, then FinishLessCommonExpander places the "Hide ..." link below them.
         if sess[sectionKey] then
@@ -1132,14 +1132,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
     -- Call after the wrapped rows (safe to call unconditionally: no-ops while the section is collapsed, during the search pre-build or during an active search).
     local function FinishLessCommonExpander(hostFrame, cursorY, sectionKey, labelText)
-        if CludesUI._prebuilding then
+        if CUI._prebuilding then
             return cursorY
         end
-        CludesUI._passReadSearchFlag = true
-        if CludesUI._lessCommonSearchActive then
+        CUI._passReadSearchFlag = true
+        if CUI._lessCommonSearchActive then
             return cursorY
         end
-        local sess = CludesUI._lessCommonExpanded
+        local sess = CUI._lessCommonExpanded
         if not (sess and sess[sectionKey]) then
             return cursorY
         end
@@ -1149,12 +1149,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- Search-driven expansion (both the sidebar global box and the top-bar module box call this with query ~= ""). While active, every less-common section renders expanded with no link; on clear, sections fall back to their session Show/Hide state. Idempotent -- only transitions act, and only on the pages whose last build read the flag (the expanders above, Bar Glows): those go (or are marked for a rebuild), and the active one is rebuilt in place, unless a page switch is clearing the box (the page being left is rebuilt on its next visit).
     local function SetLessCommonSearchActive(isActive)
         isActive = isActive and true or false
-        if (CludesUI._lessCommonSearchActive or false) == isActive then
+        if (CUI._lessCommonSearchActive or false) == isActive then
             return
         end
-        CludesUI._lessCommonSearchActive = isActive
-        if CludesUI._InvalidateSearchSensitive() and not CludesUI._selectingPage then
-            CludesUI:RefreshPage(true)
+        CUI._lessCommonSearchActive = isActive
+        if CUI._InvalidateSearchSensitive() and not CUI._selectingPage then
+            CUI:RefreshPage(true)
         end
     end
 
@@ -1190,7 +1190,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -------------------------------------------------------------------------------
     local function BuildInlineSwatches(regionFrame, swatches, options)
         -- Hidden search pre-build: swatches index nothing and the pre-built page is never shown, so none are built (its regions are stand-ins with no frame to build on).
-        if CludesUI._prebuilding then
+        if CUI._prebuilding then
             return
         end
         options = options or {}
@@ -1229,7 +1229,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 return false
             end
             if options.disabled or sc.disabled then
-                local swatchBlock = CludesUI.NewSwatchBlocker(colorSwatch)
+                local swatchBlock = CUI.NewSwatchBlocker(colorSwatch)
                 swatchBlock:SetScript("OnEnter", function()
                     local source = (sc.disabledTooltip ~= nil) and sc or options
                     local tipText = ResolveDisabledTip(source)
@@ -1276,7 +1276,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end)
         end
     end
-    CludesUI.BuildInlineSwatches = BuildInlineSwatches
+    CUI.BuildInlineSwatches = BuildInlineSwatches
 
     -------------------------------------------------------------------------------
     --  Hidden-While-Disabled Section Gate
@@ -1291,7 +1291,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     local function SectionToggleSetValue(func)
         return function(val)
             func(val)
-            CludesUI:RefreshPage(true)
+            CUI:RefreshPage(true)
         end
     end
 
@@ -1315,20 +1315,20 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local before = pred() and true or false
             func(val)
             if (pred() and true or false) ~= before then
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end
         end
     end
 
-    CludesUI.BuildInlineToggle = BuildInlineToggle
-    CludesUI.BuildInlineCog = BuildInlineCog
-    CludesUI.BuildRowLabelMenu = BuildRowLabelMenu
-    CludesUI.AttachButtonMenu = AttachButtonMenu
-    CludesUI.BuildLessCommonExpander = BuildLessCommonExpander
-    CludesUI.FinishLessCommonExpander = FinishLessCommonExpander
-    CludesUI.SetLessCommonSearchActive = SetLessCommonSearchActive
-    CludesUI.SectionToggleSetValue = SectionToggleSetValue
-    CludesUI.DependentSetValue = DependentSetValue
+    CUI.BuildInlineToggle = BuildInlineToggle
+    CUI.BuildInlineCog = BuildInlineCog
+    CUI.BuildRowLabelMenu = BuildRowLabelMenu
+    CUI.AttachButtonMenu = AttachButtonMenu
+    CUI.BuildLessCommonExpander = BuildLessCommonExpander
+    CUI.FinishLessCommonExpander = FinishLessCommonExpander
+    CUI.SetLessCommonSearchActive = SetLessCommonSearchActive
+    CUI.SectionToggleSetValue = SectionToggleSetValue
+    CUI.DependentSetValue = DependentSetValue
 
     -------------------------------------------------------------------------------
     --  BuildCursorAnchorRow
@@ -1363,7 +1363,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 -- Cursor anchor requires a reload to take effect cleanly (Blizzard viewer Layout fights icon positions on live switch).
                 local changed = (old == "mouse") ~= (new == "mouse")
                 if changed then
-                    CludesUI:ShowConfirmPopup({
+                    CUI:ShowConfirmPopup({
                         title = "Reload Required",
                         message = "Changing cursor anchor requires a UI reload to take effect.",
                         confirmText = "Reload Now",
@@ -1373,7 +1373,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 else
                     onApply()
                 end
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
         }, {
             type = "dropdown",
@@ -1399,14 +1399,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- "(Applies on Window Close)" subtitle
         do
             local suffix = row._leftRegion:CreateFontString(nil, "OVERLAY")
-            suffix:SetFont(CludesUI.EXPRESSWAY, 11, "")
+            suffix:SetFont(CUI.EXPRESSWAY, 11, "")
             suffix:SetTextColor(1, 1, 1, 0.35)
-            suffix:SetText(CludesUI.L("(Applies on Window Close)"))
+            suffix:SetText(CUI.L("(Applies on Window Close)"))
             local anchorLabel
             local regions = { row._leftRegion:GetRegions() }
             for idx = 1, #regions do
                 local reg = regions[idx]
-                if reg and reg.GetText and CludesUI.EnKey(reg:GetText()) == "Anchor to Cursor" then
+                if reg and reg.GetText and CUI.EnKey(reg:GetText()) == "Anchor to Cursor" then
                     anchorLabel = reg
                     break
                 end
@@ -1455,5 +1455,5 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         return row, height
     end
-    CludesUI.BuildCursorAnchorRow = BuildCursorAnchorRow
+    CUI.BuildCursorAnchorRow = BuildCursorAnchorRow
 end -- end deferred init

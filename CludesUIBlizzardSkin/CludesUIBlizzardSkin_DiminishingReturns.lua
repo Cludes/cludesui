@@ -19,8 +19,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- data. The calculation below is our own.
 --------------------------------------------------------------------------------
 
-local CludesUI = _G.CludesUI
-if not CludesUI then
+local CUI = _G.CludesUI
+if not CUI then
     return
 end
 
@@ -627,7 +627,7 @@ local STAT_INFO = {
 --   penaltyPct      : the marginal penalty (%) applied to your next point of rating
 --   nextPenaltyPct  : the penalty (%) of the next bracket, or nil at the hard cap
 --   nextThreshold   : raw rating at which that next bracket begins, or nil
-function CludesUI.GetStatDR(statName, rawRating)
+function CUI.GetStatDR(statName, rawRating)
     local details = STAT_INFO[statName]
     if not details or not rawRating or rawRating <= 0 then
         return nil

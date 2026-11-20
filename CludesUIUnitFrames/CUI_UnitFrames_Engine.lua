@@ -36,8 +36,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
 
 local ADDON_NAME, ns = ...
-local CludesUI = _G.CludesUI
-if not CludesUI then
+local CUI = _G.CludesUI
+if not CUI then
     return
 end
 
@@ -299,7 +299,7 @@ do
             return
         end
 
-        textValue = CludesUI.CleanCastName(textValue)
+        textValue = CUI.CleanCastName(textValue)
 
         part.delay = 0
         part.holdTime = 0
@@ -329,7 +329,7 @@ do
         end
         -- Full Craft Time (player only): batch countdown and " (n/N)" count.
         if unitId == "player" and (part._fullCraft or part._craftExtra) then
-            CludesUI.SetCraftBatch(
+            CUI.SetCraftBatch(
                 part,
                 part._fullCraft and part.casting and isTradeSkill,
                 spellId,
@@ -687,7 +687,7 @@ function Engine.ForceAll(evt)
         Engine.RepaintAll(widget, evt or "ForceUpdate")
     end
 end
-CludesUI._UFEngineForceAll = Engine.ForceAll
+CUI._UFEngineForceAll = Engine.ForceAll
 
 -------------------------------------------------------------------------------
 --  Event routing
@@ -1148,7 +1148,7 @@ function Engine.SpawnUnitFrame(unitId, name)
     widget:SetAttribute("unit", unitId)
     widget:SetAttribute("*type1", "target")
     widget:SetAttribute("toggleForVehicle", true)
-    CludesUI.AttachSecureUnitMenu(widget)
+    CUI.AttachSecureUnitMenu(widget)
     -- The secure environment rewrites the unit attribute on vehicle and pet
     -- transitions; re-resolve whenever it moves.
     widget:HookScript("OnAttributeChanged", function(self, attr)

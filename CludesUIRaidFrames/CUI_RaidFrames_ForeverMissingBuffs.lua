@@ -57,8 +57,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  other client all three stay nil.
 -------------------------------------------------------------------------------
 local _, mod = ...
-local CludesUI = _G.CludesUI
-if not (CludesUI and CludesUI.IS_FOREVER) then
+local CUI = _G.CludesUI
+if not (CUI and CUI.IS_FOREVER) then
     return
 end
 
@@ -108,7 +108,7 @@ for index = 1, NUM_FAMILIES do
     local fam = FAMILIES[index]
     local nameList, ranks, ids = {}, {}, {}
     for _, key in ipairs(fam.from) do
-        local shared = CludesUI.FOREVER_BUFF_FAMILIES[key]
+        local shared = CUI.FOREVER_BUFF_FAMILIES[key]
         for _, ident in ipairs(shared.names) do
             nameList[#nameList + 1] = ident
         end
@@ -564,7 +564,7 @@ local function StopGlows(o, from)
     for index = from, NUM_FAMILIES do
         local g = o.slots[index].glow
         if g and g.fvOn then
-            CludesUI.Glows.StopGlow(g)
+            CUI.Glows.StopGlow(g)
             g.fvOn = nil
         end
     end
@@ -576,7 +576,7 @@ local function HideOverlay(o)
 end
 
 local function ApplyGlows(o, s, num, size)
-    local G = CludesUI.Glows
+    local G = CUI.Glows
     local specInfo = G.SpecFromPrefix(glowSpec, s, "missingBuffsGlow")
     if not specInfo then
         StopGlows(o, 1)
@@ -783,7 +783,7 @@ local function Flush()
         fullArmed = false
         return
     end
-    local restricted = CludesUI.AuraKit.AurasRestricted()
+    local restricted = CUI.AuraKit.AurasRestricted()
     local full = fullArmed
     fullArmed = false
     if full then

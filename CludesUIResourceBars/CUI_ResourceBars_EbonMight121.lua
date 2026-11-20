@@ -23,10 +23,10 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -- longer Ebon Might (spec change).
 
 local _, mod = ...
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 -- Born in this module's main chunk, so the aura containers it builds bill this
 -- module (AuraKit's shared build scheduler).
-local AKWorker = CludesUI.AuraKit.NewBuildWorker()
+local AKWorker = CUI.AuraKit.NewBuildWorker()
 
 local EBON_AURA_ID = 395296
 
@@ -59,14 +59,14 @@ local function GetTimeFormatter()
         end
     end
     if not timeFmt then
-        local AK = CludesUI.AuraKit
+        local AK = CUI.AuraKit
         timeFmt = (AK and AK.GetDurationFormatter and AK.GetDurationFormatter()) or false
     end
     return timeFmt or nil
 end
 
 local function Build()
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     if S.built or not AK or not S.rbBar then
         return
     end
@@ -194,7 +194,7 @@ local function Build()
                     )
                     -- 68914 schema key (textFormatter); BuildDurationTextOpts
                     -- when available, bare table fallback otherwise.
-                    local AK2 = CludesUI.AuraKit
+                    local AK2 = CUI.AuraKit
                     local dopts
                     if AK2 and AK2.BuildDurationTextOpts then
                         dopts = AK2.BuildDurationTextOpts(GetTimeFormatter())
@@ -224,7 +224,7 @@ local function EnsureBuilt()
     if S.built or S.queued then
         return
     end
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     if not (AK and AK.QueueBuildJob) then
         return
     end

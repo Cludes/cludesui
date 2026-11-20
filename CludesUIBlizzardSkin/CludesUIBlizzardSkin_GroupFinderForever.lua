@@ -12,8 +12,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  row checkboxes and the group-entry tooltip. Forever only.
 --------------------------------------------------------------------------------
 local ADDON_NAME, mod = ...
-local CludesUI = _G.CludesUI
-if not (CludesUI and CludesUI.IS_FOREVER) then
+local CUI = _G.CludesUI
+if not (CUI and CUI.IS_FOREVER) then
     return
 end
 local Skin = mod.WSkin
@@ -21,7 +21,7 @@ if not (Skin and Skin.RegisterWindow and Skin.Shell) then
     return
 end
 
-local FFD, GetFFD = CludesUI.NewFrameData()
+local FFD, GetFFD = CUI.NewFrameData()
 
 do
     -- Chrome atlases covering the house shell: the metal frame and textured backdrops.
@@ -105,7 +105,7 @@ do
         for idx = 1, #regionList do
             local region = regionList[idx]
             -- Result rows' class and role icons carry secret atlases in instances.
-            local a = region.GetAtlas and CludesUI.PlainString(region:GetAtlas())
+            local a = region.GetAtlas and CUI.PlainString(region:GetAtlas())
             if a then
                 local la = a:lower()
                 for _, wid in ipairs(LFG_FADE) do
@@ -285,7 +285,7 @@ do
         if t:IsForbidden() or (CludesUIDB and CludesUIDB.customTooltips == false) then
             return
         end
-        CludesUI._skinBlizzardTooltipFrame(t)
+        CUI._skinBlizzardTooltipFrame(t)
         FontTip(t, 0)
     end
 

@@ -7,31 +7,31 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  it loads after CludesUI_Widgets_Color.lua.
 --  DEFERRED: body runs on first CludesUI:EnsureLoaded() call, not at load.
 -------------------------------------------------------------------------------
-local CludesUI = _G.CludesUI
-CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
+local CUI = _G.CludesUI
+CUI._deferredInits[#CUI._deferredInits + 1] = function()
     -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
     -- host (a kept popup and every frame it hands out) are reset and dressed again
     -- by the next build instead of made anew; elsewhere this is CreateFrame.
-    local CreateFrame = CludesUI._Pool.CreateFrame
-    local PoolKept, PoolOwned = CludesUI._Pool.Kept, CludesUI._Pool.Owned
+    local CreateFrame = CUI._Pool.CreateFrame
+    local PoolKept, PoolOwned = CUI._Pool.Kept, CUI._Pool.Owned
     -- Deferred work on a pooled frame stops once the frame was reset (dressed
     -- again for another use): its generation moved on, or it waits idle.
-    local PoolGen, PoolIsIdle = CludesUI._Pool.Gen, CludesUI._Pool.IsIdle
-    local Pix = CludesUI.PanelPP
-    local SolidTex = CludesUI.SolidTex
-    local MakeFont = CludesUI.MakeFont
-    local MakeDropdownArrow = CludesUI.MakeDropdownArrow
-    local EXPRESSWAY = CludesUI.EXPRESSWAY
-    local CLUDES_GREEN = CludesUI.CLUDES_GREEN
-    local BORDER_COLOR = CludesUI.BORDER_COLOR
-    local WI = CludesUI._widgetInternals
+    local PoolGen, PoolIsIdle = CUI._Pool.Gen, CUI._Pool.IsIdle
+    local Pix = CUI.PanelPP
+    local SolidTex = CUI.SolidTex
+    local MakeFont = CUI.MakeFont
+    local MakeDropdownArrow = CUI.MakeDropdownArrow
+    local EXPRESSWAY = CUI.EXPRESSWAY
+    local CLUDES_GREEN = CUI.CLUDES_GREEN
+    local BORDER_COLOR = CUI.BORDER_COLOR
+    local WI = CUI._widgetInternals
     local PixelizeSliderCfg = WI.PixelizeSliderCfg
-    local ResolveDisabledTip = CludesUI.ResolveDisabledTip
-    local DDText = CludesUI.DDText
-    local BuildSliderCore = CludesUI.BuildSliderCore
-    local BuildDropdownControl = CludesUI.BuildDropdownControl
-    local BuildToggleControl = CludesUI.BuildToggleControl
-    local BuildColorSwatch = CludesUI.BuildColorSwatch
+    local ResolveDisabledTip = CUI.ResolveDisabledTip
+    local DDText = CUI.DDText
+    local BuildSliderCore = CUI.BuildSliderCore
+    local BuildDropdownControl = CUI.BuildDropdownControl
+    local BuildToggleControl = CUI.BuildToggleControl
+    local BuildColorSwatch = CUI.BuildColorSwatch
 
     -- One hidden font string measures the labels of every popup (made on the first).
     local measureFS
@@ -102,7 +102,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
         -- Spec Overrides capture: a cog's settings belong to its hosting slot -- ONE setting, captured whole. When the call site passes captureRegion (the DualRow half-region the cog sits in), every row with get/set joins that slot's capture group.
         -- row.noCapture opts a single row out (same flag DualRow honors): a popup can mix capturing rows with rows that must not capture (settings stored per palette rather than under a flat key).
-        if options.captureRegion and CludesUI.AddCaptureAccessor and allRows then
+        if options.captureRegion and CUI.AddCaptureAccessor and allRows then
             for _, row in ipairs(allRows) do
                 if
                     row.get
@@ -112,7 +112,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     and row.type ~= "reorder"
                     and row.type ~= "reordercheck"
                 then
-                    CludesUI.AddCaptureAccessor(options.captureRegion, {
+                    CUI.AddCaptureAccessor(options.captureRegion, {
                         type = row.type,
                         text = row.label,
                         getValue = row.get,
@@ -220,9 +220,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     local _s = row.set
                     local function NotifyingSet(...)
                         local f = popupOwner or options.captureRegion
-                        local snap = CludesUI._SOAttribution(f)
+                        local snap = CUI._SOAttribution(f)
                         _s(...)
-                        CludesUI._NotifySettingWrite(f, snap)
+                        CUI._NotifySettingWrite(f, snap)
                     end
                     popupRows = popupRows or {}
                     popupRows[row] = setmetatable({ set = NotifyingSet }, { __index = row })
@@ -322,7 +322,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 local maxDDNeed = COG_DD_W
                 for _, row in ipairs(col.measure) do
                     if row.type == "slider" or row.type == "input" then
-                        tmpFS:SetText(CludesUI.L(row.label))
+                        tmpFS:SetText(CUI.L(row.label))
                         local wid = tmpFS:GetStringWidth()
                         if wid > maxLblW then
                             maxLblW = wid
@@ -332,7 +332,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         or row.type == "segmented"
                         or row.type == "reordercheck"
                     then
-                        tmpFS:SetText(CludesUI.L(row.label))
+                        tmpFS:SetText(CUI.L(row.label))
                         local wid = tmpFS:GetStringWidth()
                             + (
                                 ((row.type == "dropdown" or row.type == "reordercheck") and row.ddWidth)
@@ -348,7 +348,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         or row.type == "button"
                     then
                         -- A long label must not run under the right-aligned switch or swatches, or past a button's edges.
-                        tmpFS:SetText(CludesUI.L(row.label))
+                        tmpFS:SetText(CUI.L(row.label))
                         local control = TG_W
                         if row.type == "colorpicker" then
                             control = 20
@@ -390,7 +390,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 -- A column also fits its title, in whole units (its divider sits on them).
                 if multi then
                     if col.title then
-                        tmpFS:SetText(CludesUI.L(col.title))
+                        tmpFS:SetText(CUI.L(col.title))
                         local tw = SIDE_PAD + tmpFS:GetStringWidth() + SIDE_PAD
                         if tw > POPUP_W then
                             POPUP_W = tw
@@ -471,7 +471,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
 
             local popFrame, isNew =
-                PoolKept(anchorBtn, "cog:" .. (sig or ""), "Frame", CludesUI.OverlayParent())
+                PoolKept(anchorBtn, "cog:" .. (sig or ""), "Frame", CUI.OverlayParent())
             popFrame:SetSize(POPUP_W, totalH)
             popFrame:SetFrameStrata(options.frameStrata or "DIALOG")
             popFrame:SetFrameLevel(options.frameLevel or 200)
@@ -480,18 +480,18 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             -- Spec Overrides auto-capture: edits inside this popup attribute to the slot whose cog opened it.
             popFrame._cuiOptionsPopup = true
             -- Controller cursor: the popup blocks what is under it but is not a stop itself.
-            CludesUI.PadHint(popFrame, "nodepass")
+            CUI.PadHint(popFrame, "nodepass")
 
             -- Match panel scale so the popup matches scrollable-area widgets
-            local ppScale = CludesUI.GetPopupScale() or 1
+            local ppScale = CUI.GetPopupScale() or 1
             popFrame:SetScale(ppScale)
-            if isNew and CludesUI._popupFrames then
-                CludesUI._popupFrames[#CludesUI._popupFrames + 1] = { popup = popFrame }
+            if isNew and CUI._popupFrames then
+                CUI._popupFrames[#CUI._popupFrames + 1] = { popup = popFrame }
             end
 
             local backdrop = SolidTex(popFrame, "BACKGROUND", 0.062, 0.070, 0.082, options.bgAlpha or 0.95)
             backdrop:SetAllPoints()
-            CludesUI.MakeRoundedBorder(
+            CUI.MakeRoundedBorder(
                 popFrame,
                 BORDER_COLOR.r,
                 BORDER_COLOR.g,
@@ -504,9 +504,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local cap = SolidTex(
                 popFrame,
                 "ARTWORK",
-                CludesUI.CLUDES_GREEN.r,
-                CludesUI.CLUDES_GREEN.g,
-                CludesUI.CLUDES_GREEN.b,
+                CUI.CLUDES_GREEN.r,
+                CUI.CLUDES_GREEN.g,
+                CUI.CLUDES_GREEN.b,
                 0.9
             )
             cap:SetPoint("TOPLEFT")
@@ -515,7 +515,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local titleFS = MakeFont(popFrame, TITLE_H, "", 1, 1, 1)
             titleFS:SetAlpha(0.9)
             titleFS:SetPoint("TOPLEFT", popFrame, "TOPLEFT", 14, -TOP_PAD)
-            titleFS:SetText(CludesUI.L(options.title or ""):upper())
+            titleFS:SetText(CUI.L(options.title or ""):upper())
 
             -- A sections popup can be wide: it stays on screen.
             if options.sections then
@@ -569,12 +569,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 disTex:SetAllPoints()
                 dis:SetScript("OnEnter", function(self)
                     local tipText = ResolveDisabledTip(row)
-                    if tipText and CludesUI.ShowWidgetTooltip then
-                        CludesUI.ShowWidgetTooltip(self, tipText)
+                    if tipText and CUI.ShowWidgetTooltip then
+                        CUI.ShowWidgetTooltip(self, tipText)
                     end
                 end)
                 dis:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
+                    CUI.HideWidgetTooltip()
                 end)
                 return dis
             end
@@ -583,7 +583,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local function RowLabel(row, rowH)
                 local caption = MakeFont(popFrame, 11, nil, 1, 1, 1)
                 caption:SetAlpha(0.6)
-                caption:SetText(CludesUI.L(row.label))
+                caption:SetText(CUI.L(row.label))
                 caption:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - rowH / 2 - 1)
                 if row.tooltip then
                     local hit = CreateFrame("Frame", nil, popFrame)
@@ -592,10 +592,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     hit:SetFrameLevel(popFrame:GetFrameLevel() + 3)
                     hit:EnableMouse(true)
                     hit:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(caption, row.tooltip)
+                        CUI.ShowWidgetTooltip(caption, row.tooltip)
                     end)
                     hit:SetScript("OnLeave", function()
-                        CludesUI.HideWidgetTooltip()
+                        CUI.HideWidgetTooltip()
                     end)
                 end
                 return caption
@@ -609,9 +609,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     if col.title then
                         local heading =
                             MakeFont(popFrame, 11, nil, CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b)
-                        heading:SetText(CludesUI.L(col.title))
+                        heading:SetText(CUI.L(col.title))
                         heading:SetPoint("TOPLEFT", ca, "TOPLEFT", SIDE_PAD, curY)
-                        CludesUI.RegAccent({
+                        CUI.RegAccent({
                             type = "callback",
                             obj = heading,
                             fn = function(red, green, blue)
@@ -660,12 +660,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         disTex:SetAllPoints()
                         sliderDis:SetScript("OnEnter", function(self)
                             local tipText = ResolveDisabledTip(row)
-                            if tipText and CludesUI.ShowWidgetTooltip then
-                                CludesUI.ShowWidgetTooltip(self, tipText)
+                            if tipText and CUI.ShowWidgetTooltip then
+                                CUI.ShowWidgetTooltip(self, tipText)
                             end
                         end)
                         sliderDis:SetScript("OnLeave", function()
-                            CludesUI.HideWidgetTooltip()
+                            CUI.HideWidgetTooltip()
                         end)
                     end
 
@@ -716,12 +716,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         disTex:SetAllPoints()
                         toggleDis:SetScript("OnEnter", function(self)
                             local tipText = ResolveDisabledTip(row)
-                            if tipText and CludesUI.ShowWidgetTooltip then
-                                CludesUI.ShowWidgetTooltip(self, tipText)
+                            if tipText and CUI.ShowWidgetTooltip then
+                                CUI.ShowWidgetTooltip(self, tipText)
                             end
                         end)
                         toggleDis:SetScript("OnLeave", function()
-                            CludesUI.HideWidgetTooltip()
+                            CUI.HideWidgetTooltip()
                         end)
                     end
 
@@ -735,7 +735,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 elseif row.type == "dropdown" then
                     local labelFS = MakeFont(popFrame, 11, nil, 1, 1, 1)
                     labelFS:SetAlpha(0.6)
-                    labelFS:SetText(CludesUI.L(row.label))
+                    labelFS:SetText(CUI.L(row.label))
                     labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - DROPDOWN_ROW_H / 2 - 1)
 
                     -- Cog-popup dropdowns render 10% smaller than the panel dropdowns.
@@ -799,12 +799,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 elseif row.type == "reordercheck" then
                     local labelFS = MakeFont(popFrame, 11, nil, 1, 1, 1)
                     labelFS:SetAlpha(0.6)
-                    labelFS:SetText(CludesUI.L(row.label))
+                    labelFS:SetText(CUI.L(row.label))
                     labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - DROPDOWN_ROW_H / 2 - 1)
 
                     local itemList = type(row.items) == "function" and row.items() or row.items or {}
                     local dropdownBtn, refresh
-                    dropdownBtn, refresh = CludesUI.BuildReorderCBDropdown(
+                    dropdownBtn, refresh = CUI.BuildReorderCBDropdown(
                         popFrame,
                         row.ddWidth or COG_DD_W,
                         popFrame:GetFrameLevel() + 2,
@@ -864,10 +864,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 elseif row.type == "segmented" then
                     local labelFS = MakeFont(popFrame, 11, nil, 1, 1, 1)
                     labelFS:SetAlpha(0.6)
-                    labelFS:SetText(CludesUI.L(row.label))
+                    labelFS:SetText(CUI.L(row.label))
                     labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - TOGGLE_ROW_H / 2 - 1)
 
-                    local seg, _seg2, segRefresh = CludesUI.BuildSegmentedControl({
+                    local seg, _seg2, segRefresh = CUI.BuildSegmentedControl({
                         parent = popFrame,
                         keys = row.keys,
                         labels = row.labels,
@@ -899,12 +899,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         disTex:SetAllPoints()
                         segDis:SetScript("OnEnter", function(self)
                             local tipText = ResolveDisabledTip(row)
-                            if tipText and CludesUI.ShowWidgetTooltip then
-                                CludesUI.ShowWidgetTooltip(self, tipText)
+                            if tipText and CUI.ShowWidgetTooltip then
+                                CUI.ShowWidgetTooltip(self, tipText)
                             end
                         end)
                         segDis:SetScript("OnLeave", function()
-                            CludesUI.HideWidgetTooltip()
+                            CUI.HideWidgetTooltip()
                         end)
                     end
 
@@ -946,12 +946,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         cpSwBlock:EnableMouse(true)
                         cpSwBlock:SetScript("OnEnter", function()
                             local tipText = ResolveDisabledTip(row)
-                            if tipText and CludesUI.ShowWidgetTooltip then
-                                CludesUI.ShowWidgetTooltip(cpSwatch, tipText)
+                            if tipText and CUI.ShowWidgetTooltip then
+                                CUI.ShowWidgetTooltip(cpSwatch, tipText)
                             end
                         end)
                         cpSwBlock:SetScript("OnLeave", function()
-                            CludesUI.HideWidgetTooltip()
+                            CUI.HideWidgetTooltip()
                         end)
 
                         cpLblBlock = CreateFrame("Frame", nil, popFrame)
@@ -961,12 +961,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         cpLblBlock:EnableMouse(true)
                         cpLblBlock:SetScript("OnEnter", function()
                             local tipText = ResolveDisabledTip(row)
-                            if tipText and CludesUI.ShowWidgetTooltip then
-                                CludesUI.ShowWidgetTooltip(labelFS, tipText)
+                            if tipText and CUI.ShowWidgetTooltip then
+                                CUI.ShowWidgetTooltip(labelFS, tipText)
                             end
                         end)
                         cpLblBlock:SetScript("OnLeave", function()
-                            CludesUI.HideWidgetTooltip()
+                            CUI.HideWidgetTooltip()
                         end)
                     end
 
@@ -1007,7 +1007,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     -- Cog-row form of the main-page multiSwatch slot: label + N swatches right-to-left from the right edge; click one or the other, the inactive one dims. Same swatch spec: getValue/setValue/hasAlpha/tooltip/onClick (original picker click stashed on _eabOrigClick)/refreshAlpha.
                     local labelFS = MakeFont(popFrame, 11, nil, 1, 1, 1)
                     labelFS:SetAlpha(0.6)
-                    labelFS:SetText(CludesUI.L(row.label))
+                    labelFS:SetText(CUI.L(row.label))
                     labelFS:SetPoint("LEFT", ca, "TOPLEFT", SIDE_PAD, curY - ROW_H / 2 - 1)
 
                     local MSW_GAP = 8
@@ -1022,11 +1022,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             sc.getValue,
                             function(red, green, blue, a)
                                 local f = popupOwner or options.captureRegion
-                                local snap = CludesUI._SOAttribution(f)
+                                local snap = CUI._SOAttribution(f)
                                 if sc.setValue then
                                     sc.setValue(red, green, blue, a)
                                 end
-                                CludesUI._NotifySettingWrite(f, snap)
+                                CUI._NotifySettingWrite(f, snap)
                                 if popFrame._refresh then
                                     popFrame._refresh()
                                 end
@@ -1041,9 +1041,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             colorSwatch._eabOrigClick = colorSwatch:GetScript("OnClick")
                             colorSwatch:SetScript("OnClick", function(self, ...)
                                 local f = popupOwner or options.captureRegion
-                                local snap = CludesUI._SOAttribution(f)
+                                local snap = CUI._SOAttribution(f)
                                 sc.onClick(self, ...)
-                                CludesUI._NotifySettingWrite(f, snap)
+                                CUI._NotifySettingWrite(f, snap)
                                 if popFrame._refresh then
                                     popFrame._refresh()
                                 end
@@ -1051,10 +1051,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         end
                         if sc.tooltip then
                             colorSwatch:HookScript("OnEnter", function()
-                                CludesUI.ShowWidgetTooltip(colorSwatch, sc.tooltip)
+                                CUI.ShowWidgetTooltip(colorSwatch, sc.tooltip)
                             end)
                             colorSwatch:HookScript("OnLeave", function()
-                                CludesUI.HideWidgetTooltip()
+                                CUI.HideWidgetTooltip()
                             end)
                         end
                         mswUpdates[#mswUpdates + 1] = updateSwatch
@@ -1077,12 +1077,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         disTex:SetAllPoints()
                         mswDis:SetScript("OnEnter", function(self)
                             local tipText = ResolveDisabledTip(row)
-                            if tipText and CludesUI.ShowWidgetTooltip then
-                                CludesUI.ShowWidgetTooltip(self, tipText)
+                            if tipText and CUI.ShowWidgetTooltip then
+                                CUI.ShowWidgetTooltip(self, tipText)
                             end
                         end)
                         mswDis:SetScript("OnLeave", function()
-                            CludesUI.HideWidgetTooltip()
+                            CUI.HideWidgetTooltip()
                         end)
                         local initDis = type(row.disabled) == "function" and row.disabled() or row.disabled
                         if initDis then
@@ -1118,10 +1118,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         saveBtn:SetFrameLevel(popFrame:GetFrameLevel() + 3)
                         saveBg = SolidTex(saveBtn, "BACKGROUND", ACC.r, ACC.g, ACC.b, 0.85)
                         saveBg:SetAllPoints()
-                        CludesUI.RoundBody(saveBtn, saveBg)
+                        CUI.RoundBody(saveBtn, saveBg)
                         saveLbl = MakeFont(saveBtn, 10, nil, 1, 1, 1)
                         saveLbl:SetAlpha(0.9)
-                        saveLbl:SetText(CludesUI.L("Save"))
+                        saveLbl:SetText(CUI.L("Save"))
                         saveLbl:SetPoint("CENTER")
                         saveBtn:SetScript("OnEnter", function()
                             saveBg:SetColorTexture(
@@ -1154,7 +1154,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                     local boxBg = SolidTex(boxFrame, "BACKGROUND", 0.12, 0.12, 0.12, 0.8)
                     boxBg:SetAllPoints()
-                    CludesUI.RoundBody(boxFrame, boxBg)
+                    CUI.RoundBody(boxFrame, boxBg)
                     boxFrame:SetText(row.get and row.get() or "")
                     -- Left-aligned text that overflows shows its start, not its end.
                     if row.inputJustify == "LEFT" then
@@ -1177,14 +1177,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         -- Brief white flash on the save button as confirmation
                         if saveBg then
                             saveBg:SetColorTexture(1, 1, 1, 0.9)
-                            saveLbl:SetText(CludesUI.L("Saved"))
+                            saveLbl:SetText(CUI.L("Saved"))
                             local g = PoolGen(saveBg)
                             C_Timer.After(0.4, function()
                                 if PoolGen(saveBg) ~= g or PoolIsIdle(saveBg) then
                                     return
                                 end
                                 saveBg:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.85)
-                                saveLbl:SetText(CludesUI.L("Save"))
+                                saveLbl:SetText(CUI.L("Save"))
                             end)
                         end
                         _committing = false
@@ -1225,12 +1225,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         disTex:SetAllPoints()
                         inputDis:SetScript("OnEnter", function(self)
                             local tipText = ResolveDisabledTip(row)
-                            if tipText and CludesUI.ShowWidgetTooltip then
-                                CludesUI.ShowWidgetTooltip(self, tipText)
+                            if tipText and CUI.ShowWidgetTooltip then
+                                CUI.ShowWidgetTooltip(self, tipText)
                             end
                         end)
                         inputDis:SetScript("OnLeave", function()
-                            CludesUI.HideWidgetTooltip()
+                            CUI.HideWidgetTooltip()
                         end)
                     end
 
@@ -1255,7 +1255,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     local btnLbl = MakeFont(button, 11, nil, 1, 1, 1)
                     btnLbl:SetAlpha(0.7)
                     btnLbl:SetPoint("CENTER")
-                    btnLbl:SetText(CludesUI.L(row.label))
+                    btnLbl:SetText(CUI.L(row.label))
                     button:SetScript("OnEnter", function()
                         btnBg:SetColorTexture(0.25, 0.25, 0.25, 0.85)
                         btnLbl:SetAlpha(1)
@@ -1284,67 +1284,67 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     local rBg = SolidTex(
                         dropdownBtn,
                         "BACKGROUND",
-                        CludesUI.DD_BG_R,
-                        CludesUI.DD_BG_G,
-                        CludesUI.DD_BG_B,
-                        CludesUI.DD_BG_A
+                        CUI.DD_BG_R,
+                        CUI.DD_BG_G,
+                        CUI.DD_BG_B,
+                        CUI.DD_BG_A
                     )
                     rBg:SetAllPoints()
-                    local rBrd = CludesUI.MakeRoundedBorder(dropdownBtn, 1, 1, 1, CludesUI.DD_BRD_A, rBg)
+                    local rBrd = CUI.MakeRoundedBorder(dropdownBtn, 1, 1, 1, CUI.DD_BRD_A, rBg)
                     local rLbl = MakeFont(dropdownBtn, 12, nil, 1, 1, 1)
-                    rLbl:SetAlpha(CludesUI.DD_TXT_A)
+                    rLbl:SetAlpha(CUI.DD_TXT_A)
                     rLbl:SetJustifyH("LEFT")
                     rLbl:SetWordWrap(false)
                     rLbl:SetMaxLines(1)
                     rLbl:SetPoint("LEFT", dropdownBtn, "LEFT", 8, 0)
-                    rLbl:SetText(CludesUI.L(row.label))
+                    rLbl:SetText(CUI.L(row.label))
                     local rArrow = MakeDropdownArrow(dropdownBtn, 12, Pix)
                     rLbl:SetPoint("RIGHT", rArrow, "LEFT", -5, 0)
                     dropdownBtn:SetScript("OnEnter", function()
                         rBg:SetColorTexture(
-                            CludesUI.DD_BG_R,
-                            CludesUI.DD_BG_G,
-                            CludesUI.DD_BG_B,
-                            CludesUI.DD_BG_HA
+                            CUI.DD_BG_R,
+                            CUI.DD_BG_G,
+                            CUI.DD_BG_B,
+                            CUI.DD_BG_HA
                         )
-                        rBrd:SetColor(1, 1, 1, CludesUI.DD_BRD_HA)
-                        rLbl:SetAlpha(CludesUI.DD_TXT_HA)
+                        rBrd:SetColor(1, 1, 1, CUI.DD_BRD_HA)
+                        rLbl:SetAlpha(CUI.DD_TXT_HA)
                     end)
                     dropdownBtn:SetScript("OnLeave", function()
                         rBg:SetColorTexture(
-                            CludesUI.DD_BG_R,
-                            CludesUI.DD_BG_G,
-                            CludesUI.DD_BG_B,
-                            CludesUI.DD_BG_A
+                            CUI.DD_BG_R,
+                            CUI.DD_BG_G,
+                            CUI.DD_BG_B,
+                            CUI.DD_BG_A
                         )
-                        rBrd:SetColor(1, 1, 1, CludesUI.DD_BRD_A)
-                        rLbl:SetAlpha(CludesUI.DD_TXT_A)
+                        rBrd:SetColor(1, 1, 1, CUI.DD_BRD_A)
+                        rLbl:SetAlpha(CUI.DD_TXT_A)
                     end)
 
                     -- Menu is FULLSCREEN_DIALOG so it floats above the popup; it
                     -- belongs to the popup (hidden with it, dressed again with it).
                     local MH = 26
-                    local FONT = (CludesUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
-                    local dropMenu = PoolOwned(popFrame, "reorder", "Frame", CludesUI.OverlayParent())
+                    local FONT = (CUI.GetFontPath()) or "Fonts\\FRIZQT__.TTF"
+                    local dropMenu = PoolOwned(popFrame, "reorder", "Frame", CUI.OverlayParent())
                     dropMenu:SetFrameStrata("FULLSCREEN_DIALOG")
                     dropMenu:SetFrameLevel(220)
                     dropMenu:SetClampedToScreen(true)
                     dropMenu:SetWidth(RR_W)
                     dropMenu:Hide()
                     -- Controller cursor: Cancel clicks the button (it toggles the list closed).
-                    if CludesUI.PadCP() then
+                    if CUI.PadCP() then
                         dropMenu.CloseButton = dropdownBtn
                     end
                     local mBg2 = SolidTex(
                         dropMenu,
                         "BACKGROUND",
-                        CludesUI.DD_BG_R,
-                        CludesUI.DD_BG_G,
-                        CludesUI.DD_BG_B,
+                        CUI.DD_BG_R,
+                        CUI.DD_BG_G,
+                        CUI.DD_BG_B,
                         0.98
                     )
                     mBg2:SetAllPoints()
-                    CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, CludesUI.DD_BRD_A, mBg2, nil, true)
+                    CUI.MakeRoundedBorder(dropMenu, 1, 1, 1, CUI.DD_BRD_A, mBg2, nil, true)
                     dropMenu:SetPoint("TOPLEFT", dropdownBtn, "BOTTOMLEFT", 0, -2)
                     dropdownBtn._ddMenu = dropMenu -- popup click-outside ignores menu interaction
 
@@ -1367,8 +1367,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     dropMenu:SetScript("OnHide", function(self)
                         self:SetScript("OnUpdate", nil)
                         -- Controller cursor: back onto the button (a no-op once the popup hid it too).
-                        if CludesUI.PadCursorShown() then
-                            CludesUI.PadFocus(dropdownBtn)
+                        if CUI.PadCursorShown() then
+                            CUI.PadFocus(dropdownBtn)
                         end
                     end)
 
@@ -1377,7 +1377,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     ht:SetFont(FONT, 10, "")
                     ht:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 10, mY - 4)
                     ht:SetTextColor(1, 1, 1, 0.25)
-                    ht:SetText(CludesUI.L(row.hint or "Drag to Reorder"))
+                    ht:SetText(CUI.L(row.hint or "Drag to Reorder"))
                     mY = mY - 18
 
                     -- Height cap: rows live on a scroll child. Menus longer than
@@ -1410,7 +1410,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     local rowFrames, rowPool = {}, {}
                     local insLine = sChild:CreateTexture(nil, "OVERLAY", nil, 7)
                     insLine:SetHeight(2)
-                    local EG2 = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+                    local EG2 = CUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
                     insLine:SetColorTexture(EG2.r, EG2.g, EG2.b, 0.9)
                     insLine:Hide()
 
@@ -1610,7 +1610,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         dropMenu:SetHeight(20 + visH + 4)
                     end
                     Populate()
-                    CludesUI.TrackOverlay(dropMenu)
+                    CUI.TrackOverlay(dropMenu)
 
                     dropdownBtn:SetScript("OnClick", function()
                         if dropMenu:IsShown() then
@@ -1620,8 +1620,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             dropMenu:Show()
                         end
                         -- Controller cursor: into the opened list.
-                        if CludesUI.PadCursorShown() and dropMenu:IsShown() then
-                            CludesUI.PadFocus(dropMenu)
+                        if CUI.PadCursorShown() and dropMenu:IsShown() then
+                            CUI.PadFocus(dropMenu)
                         end
                     end)
 
@@ -1638,12 +1638,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         disTex:SetAllPoints()
                         reorderDis:SetScript("OnEnter", function(self)
                             local tipText = ResolveDisabledTip(row)
-                            if tipText and CludesUI.ShowWidgetTooltip then
-                                CludesUI.ShowWidgetTooltip(self, tipText)
+                            if tipText and CUI.ShowWidgetTooltip then
+                                CUI.ShowWidgetTooltip(self, tipText)
                             end
                         end)
                         reorderDis:SetScript("OnLeave", function()
-                            CludesUI.HideWidgetTooltip()
+                            CUI.HideWidgetTooltip()
                         end)
                         local initDis = type(row.disabled) == "function" and row.disabled() or row.disabled
                         if initDis then
@@ -1671,7 +1671,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if options.footer and options.footer.unlockKey then
                 local footerY = curY - 10
                 local line1 = MakeFont(popFrame, 12, nil, 0x78 / 255, 0x7b / 255, 0x81 / 255)
-                line1:SetText(CludesUI.L("Reposition freely with"))
+                line1:SetText(CUI.L("Reposition freely with"))
                 line1:SetPoint("TOP", popFrame, "TOPLEFT", POPUP_W / 2, footerY)
 
                 local unlockBtn = CreateFrame("Button", nil, popFrame)
@@ -1683,11 +1683,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 local _uhb = _ugb + (1 - _ugb) * 0.25
                 local unlockFS = MakeFont(unlockBtn, 13, nil, _ugr, _ugg, _ugb)
                 unlockFS:SetAlpha(0.9)
-                unlockFS:SetText(CludesUI.L("Layout Mode"))
+                unlockFS:SetText(CUI.L("Layout Mode"))
                 unlockFS:SetPoint("CENTER")
                 unlockBtn:SetScript("OnClick", function()
                     popFrame:Hide()
-                    CludesUI.OpenUnlockModeAt(options.footer.unlockKey)
+                    CUI.OpenUnlockModeAt(options.footer.unlockKey)
                 end)
                 unlockBtn:SetScript("OnEnter", function(self)
                     unlockFS:SetTextColor(_uhr, _uhg, _uhb)
@@ -1782,7 +1782,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             end
                         end
                         if rw.lbl and rw.get and rw.values then
-                            rw.lbl:SetText(CludesUI.L(DDText(rw.values[rw.get()]) or tostring(rw.get())))
+                            rw.lbl:SetText(CUI.L(DDText(rw.values[rw.get()]) or tostring(rw.get())))
                             if rw.refresh then
                                 rw.refresh()
                             end
@@ -1930,7 +1930,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
                 -- Close when the anchor button scrolls out of the visible area
                 if popupOwner then
-                    local scrollFrame = CludesUI._scrollFrame
+                    local scrollFrame = CUI._scrollFrame
                     if scrollFrame then
                         if popupOwner._inScrollChild == nil then
                             local scrollChild = scrollFrame.GetScrollChild and scrollFrame:GetScrollChild()
@@ -1972,31 +1972,31 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     ownerFrame._cuiCogState()
                 elseif ownerFrame and not options.noOwnerDim then
                     if ownerFrame._glyphA then
-                        CludesUI.SetGlyphAlpha(ownerFrame, 0.4)
+                        CUI.SetGlyphAlpha(ownerFrame, 0.4)
                     else
                         ownerFrame:SetAlpha(0.4)
                     end
                 end
                 -- Controller cursor: back onto the cog (not for the hover-opened popups,
                 -- where it stays free; a no-op once the cog is hidden).
-                if ownerFrame and not options.noOwnerDim and CludesUI.PadCursorShown() then
-                    CludesUI.PadFocus(ownerFrame)
+                if ownerFrame and not options.noOwnerDim and CUI.PadCursorShown() then
+                    CUI.PadFocus(ownerFrame)
                 end
             end)
 
             -- Close when the main CludesUI frame hides (HidePanelPopups)
-            if CludesUI._mainFrame and not panelPopups[popFrame] then
+            if CUI._mainFrame and not panelPopups[popFrame] then
                 panelPopupN = panelPopupN + 1
                 panelPopups[popFrame] = panelPopupN
                 if not panelHooked then
                     panelHooked = true
-                    CludesUI._mainFrame:HookScript("OnHide", HidePanelPopups)
+                    CUI._mainFrame:HookScript("OnHide", HidePanelPopups)
                 end
             end
 
             -- Every dress (a no-op once tracked): a popup first made before the
             -- controller overlay layer existed is tracked once it sits on it.
-            CludesUI.TrackOverlay(popFrame)
+            CUI.TrackOverlay(popFrame)
             popupFrame = popFrame
             popFrame._sig = sig
             if variants then
@@ -2071,10 +2071,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 -- anchor closes the popup), and the cursor moves into the popup. Not for the
                 -- hover-opened popups (noOwnerDim: the anchor is a menu row, not a cog), where
                 -- the cursor must stay free to walk past the row.
-                if CludesUI.PadCP() and not options.noOwnerDim then
+                if CUI.PadCP() and not options.noOwnerDim then
                     popupFrame.CloseButton = anchorBtn.Click and anchorBtn or nil
-                    if CludesUI.PadCursorShown() then
-                        CludesUI.PadFocus(popupFrame)
+                    if CUI.PadCursorShown() then
+                        CUI.PadFocus(popupFrame)
                     end
                 end
             end,
@@ -2109,10 +2109,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if ownerFrame._cuiCogState then
                 ownerFrame._cuiCogState()
             end
-            if CludesUI.PadCP() and not options.noOwnerDim then
+            if CUI.PadCP() and not options.noOwnerDim then
                 wanted.CloseButton = ownerFrame.Click and ownerFrame or nil
-                if CludesUI.PadCursorShown() then
-                    CludesUI.PadFocus(wanted)
+                if CUI.PadCursorShown() then
+                    CUI.PadFocus(wanted)
                 end
             end
         end
@@ -2120,5 +2120,5 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         return popupFrame, showFn
     end
 
-    CludesUI.BuildCogPopup = BuildCogPopup
+    CUI.BuildCogPopup = BuildCogPopup
 end -- end deferred init

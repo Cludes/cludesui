@@ -40,8 +40,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  the Border Style a saved value draws on this client
 --  (CludesUI.ForeverBorderKind).
 -------------------------------------------------------------------------------
-local CludesUI = _G.CludesUI
-if not CludesUI then
+local CUI = _G.CludesUI
+if not CUI then
     return
 end
 
@@ -109,7 +109,7 @@ local RING_MASK = "Interface\\AddOns\\CludesUI\\media\\borders\\forever-slim-mas
 -- RD deep. The shipped art's edges sample its middle, from RC in to RC from
 -- its far side (the live art's sample LIVE_RUN below instead).
 local RS, RM, RC, RD = 55, 3, 12, 6
-CludesUI.FOREVER_BORDER = {
+CUI.FOREVER_BORDER = {
     line = 2, -- the line's thickness
     outer = 1.5, -- its outer shadow's reach past the line
     shade = RD - RM, -- the edges' reach inside the line's outer edge
@@ -161,14 +161,14 @@ local EPS, min = 0.01, math.min -- an edge needs more than EPS of room
 local liveInfo
 local function LiveInfo()
     if liveInfo == nil then
-        liveInfo = CludesUI.IS_FOREVER == true and C_Texture.GetAtlasInfo(RING_ATLAS) or false
+        liveInfo = CUI.IS_FOREVER == true and C_Texture.GetAtlasInfo(RING_ATLAS) or false
     end
     return liveInfo
 end
 
 -- The shipped art makes the ring drawable on every Forever client.
-function CludesUI.ForeverBorderOK()
-    return CludesUI.IS_FOREVER == true
+function CUI.ForeverBorderOK()
+    return CUI.IS_FOREVER == true
 end
 
 -- The corners cw x ch units: each the art's own corner, all of it (RC) or,
@@ -225,8 +225,8 @@ end
 -- (the shipped file where the client has none), the corners, each masked
 -- unless additive, and the edges. Every piece stays hidden until the box
 -- first takes a size. Nil off the Forever client.
-function CludesUI.ForeverBorder(widget, layer, sub, add, source)
-    if CludesUI.IS_FOREVER ~= true then
+function CUI.ForeverBorder(widget, layer, sub, add, source)
+    if CUI.IS_FOREVER ~= true then
         return nil
     end
     local file, L, T, R, B = RING_FILE, RING_LO, RING_LO, RING_HI, RING_HI
@@ -279,14 +279,14 @@ end
 
 -- The line's outer edge (the art reaches RM past it: its clear margin and
 -- outer shadow).
-function CludesUI.ForeverBorderSeat(ring, rel, tp, x1, y1, x2, y2)
+function CUI.ForeverBorderSeat(ring, rel, tp, x1, y1, x2, y2)
     local box = ring.box
     box:ClearAllPoints()
     box:SetPoint("TOPLEFT", rel, tp or "TOPLEFT", (x1 or 0) - RM, (y1 or 0) + RM)
     box:SetPoint("BOTTOMRIGHT", rel, "BOTTOMRIGHT", (x2 or 0) + RM, (y2 or 0) - RM)
 end
 
-function CludesUI.ForeverBorderPaint(ring, red, green, blue, a, desat)
+function CUI.ForeverBorderPaint(ring, red, green, blue, a, desat)
     desat = desat and true or false
     for idx = 1, 8 do
         local t = ring[idx]
@@ -297,7 +297,7 @@ end
 
 -- Shown or hidden as a whole; an edge without room stays hidden either way
 -- (RingShow).
-function CludesUI.ForeverBorderShown(ring, isShown)
+function CUI.ForeverBorderShown(ring, isShown)
     ring.on = isShown and true or false
     RingShow(ring)
 end
@@ -307,8 +307,8 @@ end
 -- inner shadow, top to bottom), so the line runs 1 to 3 units above the
 -- piece's bottom. The caller anchors both ends and the bottom. Nil off the
 -- Forever client.
-function CludesUI.ForeverBorderDivider(widget, layer, sub)
-    if CludesUI.IS_FOREVER ~= true then
+function CUI.ForeverBorderDivider(widget, layer, sub)
+    if CUI.IS_FOREVER ~= true then
         return nil
     end
     local tex = widget:CreateTexture(nil, layer or "ARTWORK", nil, sub or 0)
@@ -373,7 +373,7 @@ local HEAVY_ART = {
 -- title bar (its dark band, the bronze divider and the divider's drop
 -- shadow; the side rims below it match the edge strips).
 local HML, HMR, HMT, HMB, HTOP, HTITLE = 12.5, 2.5, 13, 7.5, 19, 43
-CludesUI.FOREVER_HEAVY = {
+CUI.FOREVER_HEAVY = {
     k = 1, -- a window's art scale (the art's own size)
     margin = 2, -- the outer shadow's reach past the rim (a drop shadow below it)
     band = 6, -- the rim and its dark line
@@ -394,7 +394,7 @@ local heavyInfo
 local function HeavyInfo()
     if heavyInfo == nil then
         heavyInfo = false
-        if CludesUI.IS_FOREVER == true then
+        if CUI.IS_FOREVER == true then
             local details = {}
             for key, name in pairs(HEAVY_ART) do
                 details[key] = C_Texture.GetAtlasInfo(name)
@@ -408,7 +408,7 @@ local function HeavyInfo()
     return heavyInfo
 end
 
-function CludesUI.ForeverHeavyOK()
+function CUI.ForeverHeavyOK()
     return HeavyInfo() and true or false
 end
 
@@ -493,7 +493,7 @@ end
 -- The frame on `frame` (a frame of ours drawn at the art's scale), seated by
 -- ForeverHeavySeat; its pieces stay hidden until the box first takes a size.
 -- Nil without the art.
-function CludesUI.ForeverHeavy(widget, layer, sub, add)
+function CUI.ForeverHeavy(widget, layer, sub, add)
     local Inner = HeavyInfo()
     if not Inner then
         return nil
@@ -513,7 +513,7 @@ function CludesUI.ForeverHeavy(widget, layer, sub, add)
         tex:SetTexelSnappingBias(0)
         tex:SetSnapToPixelGrid(false)
         if add then
-            local l = CludesUI.FOREVER_HEAVY.lift
+            local l = CUI.FOREVER_HEAVY.lift
             tex:SetBlendMode("ADD")
             tex:SetVertexColor(l[1], l[2], l[3], l[4])
         end
@@ -538,7 +538,7 @@ function CludesUI.ForeverHeavy(widget, layer, sub, add)
 end
 
 -- The rim's outer edge (the pieces reach past it by the art's margins).
-function CludesUI.ForeverHeavySeat(ring, rel, tp, x1, y1, x2, y2)
+function CUI.ForeverHeavySeat(ring, rel, tp, x1, y1, x2, y2)
     local box, k = ring.box, ring.k
     box:ClearAllPoints()
     box:SetPoint("TOPLEFT", rel, tp or "TOPLEFT", (x1 or 0) / k, (y1 or 0) / k)
@@ -548,14 +548,14 @@ end
 -- A body under the rim: `tex` (a region on the ring's frame) from
 -- FOREVER_HEAVY.fill (art units) inside the rim's outer edge, that edge
 -- given as ForeverHeavySeat takes it.
-function CludesUI.ForeverHeavyFill(ring, texture, rel, tp, x1, y1, x2, y2)
-    local k, f = ring.k, CludesUI.FOREVER_HEAVY.fill
+function CUI.ForeverHeavyFill(ring, texture, rel, tp, x1, y1, x2, y2)
+    local k, f = ring.k, CUI.FOREVER_HEAVY.fill
     texture:ClearAllPoints()
     texture:SetPoint("TOPLEFT", rel, tp or "TOPLEFT", (x1 or 0) / k + f, (y1 or 0) / k - f)
     texture:SetPoint("BOTTOMRIGHT", rel, "BOTTOMRIGHT", (x2 or 0) / k - f, (y2 or 0) / k + f)
 end
 
-function CludesUI.ForeverHeavyPaint(ring, red, green, blue, a, desat)
+function CUI.ForeverHeavyPaint(ring, red, green, blue, a, desat)
     desat = desat and true or false
     for _, t in pairs(ring.p) do
         t:SetVertexColor(red, green, blue, a or 1)
@@ -563,22 +563,22 @@ function CludesUI.ForeverHeavyPaint(ring, red, green, blue, a, desat)
     end
 end
 
-function CludesUI.ForeverHeavyShown(ring, isShown)
+function CUI.ForeverHeavyShown(ring, isShown)
     ring.on = isShown and true or false
     HeavyShow(ring)
 end
 
 -- A box (w x h at the rim's outer edge, in the frame's parent's units) that
 -- cannot hold the rim on both sides shows no frame.
-function CludesUI.ForeverHeavyFit(ring, wid, hgt)
-    local span = 2 * CludesUI.FOREVER_HEAVY.band * ring.k
+function CUI.ForeverHeavyFit(ring, wid, hgt)
+    local span = 2 * CUI.FOREVER_HEAVY.band * ring.k
     ring.fit = wid >= span and hgt >= span
     HeavyShow(ring)
 end
 
 -- The top pieces cut below the window title bar they carry (on) or at the
 -- rim (off); a box already sized is laid out again at once.
-function CludesUI.ForeverHeavyTitle(ring, enabled)
+function CUI.ForeverHeavyTitle(ring, enabled)
     local topY = enabled and HTITLE or HTOP
     if ring.top == topY then
         return
@@ -599,8 +599,8 @@ end
 --  without its art, reads "slim" (ForeverBorder's shipped line). Nil off the
 --  Forever client.
 -------------------------------------------------------------------------------
-function CludesUI.ForeverBorderKind(val)
-    if CludesUI.IS_FOREVER ~= true then
+function CUI.ForeverBorderKind(val)
+    if CUI.IS_FOREVER ~= true then
         return nil
     end
     if val == "heavy" and HeavyInfo() then
@@ -612,12 +612,12 @@ function CludesUI.ForeverBorderKind(val)
     return "slim"
 end
 
-if not CludesUI.IS_FOREVER then
-    function CludesUI.StockAtlas(texture, name, ...)
+if not CUI.IS_FOREVER then
+    function CUI.StockAtlas(texture, name, ...)
         return texture:SetAtlas(name, ...)
     end
-    CludesUI.StockAtlasInfo = C_Texture.GetAtlasInfo
-    function CludesUI.StockMask(mask, name, useSize)
+    CUI.StockAtlasInfo = C_Texture.GetAtlasInfo
+    function CUI.StockMask(mask, name, useSize)
         return mask:SetAtlas(name, useSize)
     end
     return
@@ -762,7 +762,7 @@ end
 -- Textures currently holding sheet coords (weak: never a prop on the frame).
 local drawn = setmetatable({}, { __mode = "k" })
 
-function CludesUI.StockAtlas(texture, name, ...)
+function CUI.StockAtlas(texture, name, ...)
     local e = resolved[name]
     if e == nil then
         e = Resolve(name)
@@ -787,7 +787,7 @@ function CludesUI.StockAtlas(texture, name, ...)
     return texture:SetAtlas(name, ...)
 end
 
-function CludesUI.StockAtlasInfo(name)
+function CUI.StockAtlasInfo(name)
     local e = resolved[name]
     if e == nil then
         e = Resolve(name)
@@ -887,7 +887,7 @@ local function MaskFile(name)
     return e
 end
 
-function CludesUI.StockMask(mask, name, useSize)
+function CUI.StockMask(mask, name, useSize)
     local e = MaskFile(name)
     if e then
         local file

@@ -14,8 +14,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  leaves Blizzard's window as is. Forever only.
 --------------------------------------------------------------------------------
 local ADDON_NAME, mod = ...
-local CludesUI = _G.CludesUI
-if not (CludesUI and CludesUI.IS_FOREVER) then
+local CUI = _G.CludesUI
+if not (CUI and CUI.IS_FOREVER) then
     return
 end
 local Skin = mod.WSkin

@@ -13,15 +13,15 @@ local mod = CludesUI._ModuleNS["CludesUIRaidFrames"] -- module namespace (publis
 if not mod then
     return
 end -- module disabled: no options page
-local CludesUI = _G.CludesUI
+local CUI = _G.CludesUI
 
 -- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
 -- host (the kept Debuff Manager root, the kept Filter Editor and every frame
 -- they hand out) are reset and dressed again by the next render instead of
 -- made anew; elsewhere this is CreateFrame.
-local CreateFrame = CludesUI._Pool.CreateFrame
-local PoolKept = CludesUI._Pool.Kept
-local PoolOwned = CludesUI._Pool.Owned
+local CreateFrame = CUI._Pool.CreateFrame
+local PoolKept = CUI._Pool.Kept
+local PoolOwned = CUI._Pool.Owned
 
 local floor = math.floor
 local max = math.max
@@ -37,9 +37,9 @@ local POS_VALUES = {
     bottom = "Bottom",
     bottomright = "Bottom Right",
 }
-local POS_ORDER = CludesUI.POSITION_GRID_ORDER
-local GROW_VALUES = CludesUI.GROW_DIR_VALUES_FULL
-local GROW_ORDER = CludesUI.GROW_DIR_ORDER_FULL
+local POS_ORDER = CUI.POSITION_GRID_ORDER
+local GROW_VALUES = CUI.GROW_DIR_VALUES_FULL
+local GROW_ORDER = CUI.GROW_DIR_ORDER_FULL
 
 local CAT_VALUES = {
     boss = "Boss",
@@ -117,7 +117,7 @@ local dmSpecSel = "allspecs"
 local inheritSel = nil
 
 local function Loc(s)
-    return CludesUI.L(s) or s
+    return CUI.L(s) or s
 end
 
 -- The managers share the unit-frame aura border controls and size/offset helpers.
@@ -129,7 +129,7 @@ function mod.RFO_AuraBorderSettings(hostFrame, cursorY, W, get, set, apply, disa
         end
         return fallback
     end
-    local values, sequence = CludesUI.GetBorderTextureDropdown()
+    local values, sequence = CUI.GetBorderTextureDropdown()
     local row, height = W:DualRow(
         hostFrame,
         cursorY,
@@ -145,23 +145,23 @@ function mod.RFO_AuraBorderSettings(hostFrame, cursorY, W, get, set, apply, disa
                 return Val("Texture", "solid")
             end,
             setValue = function(val)
-                local color = CludesUI.GetBorderStyleSelectDefaults(val)
+                local color = CUI.GetBorderStyleSelectDefaults(val)
                 set("Texture", val)
                 set("TextureOffset", nil)
                 set("TextureOffsetY", nil)
                 set("TextureShiftX", nil)
                 set("TextureShiftY", nil)
                 set("Color", color)
-                local size = CludesUI.GetBorderDefaultSize("unitframes", val)
+                local size = CUI.GetBorderDefaultSize("unitframes", val)
                 if size then
                     set("Size", size)
                 end
                 set("SizePx", false)
                 apply()
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
         },
-        CludesUI.BorderPxSliderCfg({
+        CUI.BorderPxSliderCfg({
             trackWidth = 120,
             disabled = disabled,
             disabledTooltip = "Hide Icons",
@@ -185,9 +185,9 @@ function mod.RFO_AuraBorderSettings(hostFrame, cursorY, W, get, set, apply, disa
         })
     )
     cursorY = cursorY - height
-    if not CludesUI._prebuilding then
+    if not CUI._prebuilding then
         local region = row._rightRegion
-        local swatch, refresh = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
+        local swatch, refresh = CUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
             local color = Val("Color", {})
             return color.r or 0, color.g or 0, color.b or 0, color.a or 1
         end, function(red, green, blue, a)
@@ -196,10 +196,10 @@ function mod.RFO_AuraBorderSettings(hostFrame, cursorY, W, get, set, apply, disa
         end, true, 20)
         swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = swatch
-        CludesUI.RegisterWidgetRefresh(refresh)
+        CUI.RegisterWidgetRefresh(refresh)
     end
     local texture = Val("Texture", "solid")
-    if texture ~= "solid" and texture ~= "" and not CludesUI._prebuilding then
+    if texture ~= "solid" and texture ~= "" and not CUI._prebuilding then
         local rowList = {}
         for idx, axis in ipairs({ "X", "Y" }) do
             rowList[#rowList + 1] = {
@@ -214,7 +214,7 @@ function mod.RFO_AuraBorderSettings(hostFrame, cursorY, W, get, set, apply, disa
                         return val
                     end
                     local _, _, sx, sy =
-                        CludesUI.GetBorderDefaults("unitframes", Val("Texture", "solid"), Val("Size", 1))
+                        CUI.GetBorderDefaults("unitframes", Val("Texture", "solid"), Val("Size", 1))
                     return idx == 1 and sx or sy
                 end,
                 set = function(val)
@@ -223,7 +223,7 @@ function mod.RFO_AuraBorderSettings(hostFrame, cursorY, W, get, set, apply, disa
                 end,
             }
         end
-        local offX, offY = CludesUI.BorderOffsetCogRows({
+        local offX, offY = CUI.BorderOffsetCogRows({
             addonKey = "unitframes",
             getTex = function()
                 return Val("Texture", "solid")
@@ -266,7 +266,7 @@ function mod.RFO_AuraBorderSettings(hostFrame, cursorY, W, get, set, apply, disa
                 end,
             }
         end
-        CludesUI.BuildInlineCog(row._leftRegion, {
+        CUI.BuildInlineCog(row._leftRegion, {
             title = "Border Options",
             rows = rowList,
             disabled = disabled,
@@ -303,7 +303,7 @@ end
 -- After a change: the frames re-applied and the page built again.
 local function ApplyAndRedraw()
     ApplyDebuffManager()
-    CludesUI:RefreshPage(true)
+    CUI:RefreshPage(true)
 end
 
 -- Frame Glow tile: the shared glow descriptor over the tile's own keys (always
@@ -312,7 +312,7 @@ local function TileGlowDesc(tbl, onChange)
     return {
         host = "engine",
         noNone = true,
-        excludes = CludesUI.Glows.RECT_EXCLUDES,
+        excludes = CUI.Glows.RECT_EXCLUDES,
         -- The half next to Filters is too narrow for the color swatches.
         colorInCog = true,
         caps = { mode = true, params = true, bg = true },
@@ -330,7 +330,7 @@ local function TileGlowDesc(tbl, onChange)
                     return color.r, color.g, color.b
                 end
             end
-            return CludesUI.GlowOptions.FlatGet(tbl, "glow", f)
+            return CUI.GlowOptions.FlatGet(tbl, "glow", f)
         end,
         set = function(f, a, b2, c2)
             if f == "style" then
@@ -342,7 +342,7 @@ local function TileGlowDesc(tbl, onChange)
             elseif f == "bg" then
                 tbl.glowBackground = a and true or nil
             else
-                CludesUI.GlowOptions.FlatSet(tbl, "glow", f, a, b2, c2)
+                CUI.GlowOptions.FlatSet(tbl, "glow", f, a, b2, c2)
             end
         end,
     }
@@ -460,11 +460,11 @@ local TILE_FILTER_ITEMS = {
 -- entries are mutually exclusive and steer dm.dispelMode. Tile dropdowns use
 -- the full two-lane build below instead.
 local function BuildFilterCBDropdown(region, claimKey, dmConf)
-    local Pix = CludesUI.PP or CludesUI.PanelPP
+    local Pix = CUI.PP or CUI.PanelPP
     if region._control then
         region._control:Hide()
     end
-    local checkDrop = CludesUI.BuildVisOptsCBDropdown(
+    local checkDrop = CUI.BuildVisOptsCBDropdown(
         region,
         190,
         region:GetFrameLevel() + 2,
@@ -494,7 +494,7 @@ local function BuildFilterCBDropdown(region, claimKey, dmConf)
         nil,
         12
     )
-    CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+    CUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
     region._control = checkDrop
     region._lastInline = nil
 end
@@ -629,7 +629,7 @@ local function TileLaneItems(tbl)
     local function Locked()
         return tbl.all == true
     end
-    local lockTip = CludesUI.L("Uncheck All Debuffs to choose how the Show filters combine.")
+    local lockTip = CUI.L("Uncheck All Debuffs to choose how the Show filters combine.")
     local itemList = {}
     for idx = 1, #TILE_LANE_ITEMS do
         local it = TILE_LANE_ITEMS[idx]
@@ -638,19 +638,19 @@ local function TileLaneItems(tbl)
             itemList[#itemList + 1] = { isHeader = true, label = "Match Mode" }
             itemList[#itemList + 1] = {
                 key = TILE_MATCH_ANY,
-                label = CludesUI.L("Match Any Filter"),
+                label = CUI.L("Match Any Filter"),
                 isModifier = true,
                 lockedFn = Locked,
                 lockedTooltip = lockTip,
-                tooltip = CludesUI.L("Shows debuffs that match any checked Show filter (the default)."),
+                tooltip = CUI.L("Shows debuffs that match any checked Show filter (the default)."),
             }
             itemList[#itemList + 1] = {
                 key = TILE_MATCH_ALL,
-                label = CludesUI.L("Match All Filters"),
+                label = CUI.L("Match All Filters"),
                 isModifier = true,
                 lockedFn = Locked,
                 lockedTooltip = lockTip,
-                tooltip = CludesUI.L(
+                tooltip = CUI.L(
                     "Shows only debuffs that match every checked Show filter (dispel types count as one); the rest stay where they already show."
                 ),
             }
@@ -699,7 +699,7 @@ local function WithOwnerHints(itemList, tbl)
                     return not mod.DM_TileMatchOn(tbl)
                 end
             end
-            row.dimTooltip = CludesUI.Lf("Shown by %1$s, which comes first.", TileName(ownerFrame))
+            row.dimTooltip = CUI.Lf("Shown by %1$s, which comes first.", TileName(ownerFrame))
             result[#result + 1] = row
         else
             result[#result + 1] = it
@@ -708,7 +708,7 @@ local function WithOwnerHints(itemList, tbl)
     return result
 end
 local function BuildTileFiltersDD(region, tbl, dmConf)
-    local Pix = CludesUI.PP or CludesUI.PanelPP
+    local Pix = CUI.PP or CUI.PanelPP
     if region._control then
         region._control:Hide()
     end
@@ -720,7 +720,7 @@ local function BuildTileFiltersDD(region, tbl, dmConf)
         return tbl.neg ~= nil and tbl.neg[category] == true
     end
     local warnClosed
-    local checkDrop, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
+    local checkDrop, cbRefresh = CUI.BuildVisOptsCBDropdown(
         region,
         190,
         region:GetFrameLevel() + 2,
@@ -769,7 +769,7 @@ local function BuildTileFiltersDD(region, tbl, dmConf)
                 -- Radio pair: the clicked row wins whatever its checked state.
                 tbl.match = (keyName == TILE_MATCH_ALL) and "all" or nil
                 ApplyDebuffManager()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
                 return
             end
             if keyName == TILE_CA_ALL or keyName == TILE_CA_DUR then
@@ -781,7 +781,7 @@ local function BuildTileFiltersDD(region, tbl, dmConf)
                     tbl.hasDuration = val and true or nil
                 end
                 ApplyDebuffManager()
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
                 return
             end
             -- The dispel and nonplayer flavors are shared with the base grid.
@@ -790,7 +790,7 @@ local function BuildTileFiltersDD(region, tbl, dmConf)
             -- Non-force: re-evaluates the base dropdown's empty-selection
             -- warning (tile claims count as grid content) without closing
             -- the menu.
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
         nil,
         12,
@@ -808,18 +808,18 @@ local function BuildTileFiltersDD(region, tbl, dmConf)
             end,
         }
     )
-    CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+    CUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
     region._control = checkDrop
     region._lastInline = nil
     if cbRefresh then
-        CludesUI.RegisterWidgetRefresh(cbRefresh)
+        CUI.RegisterWidgetRefresh(cbRefresh)
     end
     -- Match All picks that can never match together show nothing here (the
     -- runtime's own test); an ordinary empty tile keeps its quiet subtitle.
-    warnClosed = CludesUI.AttachEmptyFilterWarn(
+    warnClosed = CUI.AttachEmptyFilterWarn(
         region,
         checkDrop,
-        CludesUI.L("These filters can never match together."),
+        CUI.L("These filters can never match together."),
         function()
             return not mod.DM_TileMatchEmpty(tbl)
         end
@@ -840,7 +840,7 @@ local function BuildFxEffects(widget, sy, effectOwner)
         }
         effectOwner.fxGlow = nil
     end
-    return CludesUI.BuildIconEffects(widget, sy, {
+    return CUI.BuildIconEffects(widget, sy, {
         entries = effectOwner.fxList or {},
         apply = ApplyDebuffManager,
         -- The SAME filter dropdown as Assigned Debuffs / tile panes
@@ -879,7 +879,7 @@ end
 -- Detail builders (left pane). Each builds W rows on `frame` and manages
 -- its own vertical cursor.
 local function BuildBaseDetailDM(widget, fontFile)
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     local profile = DmProfile()
     -- Row accessors over p: a key read (or its default) and written.
     local function PFieldThen(filterKey)
@@ -925,7 +925,7 @@ local function BuildBaseDetailDM(widget, fontFile)
             end,
             setValue = function() end,
         },
-        CludesUI.MaxDurationDropdown(function()
+        CUI.MaxDurationDropdown(function()
             return dmConf.maxDurSec
         end, function(val)
             dmConf.maxDurSec = val
@@ -933,7 +933,7 @@ local function BuildBaseDetailDM(widget, fontFile)
     )
     sy = sy - hh
     do
-        local PPl = CludesUI.PP or CludesUI.PanelPP
+        local PPl = CUI.PP or CUI.PanelPP
         local region = safRow._leftRegion
         if region._control then
             region._control:Hide()
@@ -946,7 +946,7 @@ local function BuildBaseDetailDM(widget, fontFile)
         local function AllOn()
             return dmConf.all ~= false
         end
-        local matchLockTip = CludesUI.L("Uncheck All Debuffs to choose how the Show filters combine.")
+        local matchLockTip = CUI.L("Uncheck All Debuffs to choose how the Show filters combine.")
         local FILTER_ITEMS = {
             {
                 key = DM_ALL_KEY,
@@ -975,19 +975,19 @@ local function BuildBaseDetailDM(widget, fontFile)
             { isHeader = true, label = "Match Mode" },
             {
                 key = DM_MATCH_ANY,
-                label = CludesUI.L("Match Any Filter"),
+                label = CUI.L("Match Any Filter"),
                 isModifier = true,
                 lockedFn = AllOn,
                 lockedTooltip = matchLockTip,
-                tooltip = CludesUI.L("Shows debuffs that match any checked Show filter (the default)."),
+                tooltip = CUI.L("Shows debuffs that match any checked Show filter (the default)."),
             },
             {
                 key = DM_MATCH_ALL,
-                label = CludesUI.L("Match All Filters"),
+                label = CUI.L("Match All Filters"),
                 isModifier = true,
                 lockedFn = AllOn,
                 lockedTooltip = matchLockTip,
-                tooltip = CludesUI.L(
+                tooltip = CUI.L(
                     "Shows only debuffs that match every checked Show filter (dispel types count as one); opposites like Non-Player Auras with Cast By You, or a filter an indicator shows, show nothing."
                 ),
             },
@@ -1143,7 +1143,7 @@ local function BuildBaseDetailDM(widget, fontFile)
                     it.dimFn = function()
                         return true
                     end
-                    it.dimTooltip = CludesUI.Lf("Shown by %1$s instead.", TileName(ownerFrame))
+                    it.dimTooltip = CUI.Lf("Shown by %1$s instead.", TileName(ownerFrame))
                 end
             end
         end
@@ -1218,7 +1218,7 @@ local function BuildBaseDetailDM(widget, fontFile)
             end
             return false
         end
-        local checkDrop, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop, cbRefresh = CUI.BuildVisOptsCBDropdown(
             region,
             190,
             region:GetFrameLevel() + 2,
@@ -1271,7 +1271,7 @@ local function BuildBaseDetailDM(widget, fontFile)
                     -- both modes; the show lane goes dormant while All is on).
                     dmConf.all = val and true or false
                     ApplyDebuffManager()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                     return
                 end
                 if keyName == DM_DUR_KEY then
@@ -1279,13 +1279,13 @@ local function BuildBaseDetailDM(widget, fontFile)
                     -- selection; checked alone it acts as the timed catch-all.
                     dmConf.hasDuration = val or nil
                     ApplyDebuffManager()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                     return
                 end
                 if keyName == DM_HIDE_EXH then
                     profile.hideLustDebuff = val and true or false
                     ApplyDebuffManager()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                     return
                 end
                 if keyName == DM_MATCH_ANY or keyName == DM_MATCH_ALL then
@@ -1293,14 +1293,14 @@ local function BuildBaseDetailDM(widget, fontFile)
                     -- state (re-clicking the active row keeps it).
                     dmConf.match = (keyName == DM_MATCH_ALL) and "all" or nil
                     ApplyDebuffManager()
-                    CludesUI:RefreshPage()
+                    CUI:RefreshPage()
                     return
                 end
                 DmSetLane(dmConf, dmConf, dmConf, keyName, val, negated)
                 ApplyDebuffManager()
                 -- Non-force: re-evaluates the empty-selection warning (and
                 -- any other widget refreshers) without closing the menu.
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
             nil,
             12,
@@ -1319,13 +1319,13 @@ local function BuildBaseDetailDM(widget, fontFile)
                 end,
             }
         )
-        CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+        CUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
         region._control = checkDrop
         region._lastInline = nil
         if cbRefresh then
-            CludesUI.RegisterWidgetRefresh(cbRefresh)
+            CUI.RegisterWidgetRefresh(cbRefresh)
         end
-        warnClosed = CludesUI.AttachEmptyFilterWarn(
+        warnClosed = CUI.AttachEmptyFilterWarn(
             region,
             checkDrop,
             Loc("You are displaying NO debuffs at all."),
@@ -1360,7 +1360,7 @@ local function BuildBaseDetailDM(widget, fontFile)
     sy = sy - hh
     do
         local region = sizeRow._leftRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Icon Zoom",
             rows = {
                 {
@@ -1388,7 +1388,7 @@ local function BuildBaseDetailDM(widget, fontFile)
             profile.debuffPosition = val
             profile.debuffGrowDirection = DmDefaultGrow(val)
             ApplyDebuffManager()
-            CludesUI:RefreshPage()
+            CUI:RefreshPage()
         end,
     }, {
         type = "dropdown",
@@ -1401,7 +1401,7 @@ local function BuildBaseDetailDM(widget, fontFile)
     sy = sy - hh
     do
         local region = posRow2._leftRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Position Offset",
             rows = {
                 {
@@ -1486,7 +1486,7 @@ local function BuildBaseDetailDM(widget, fontFile)
     sy = sy - hh
     do
         local region = dtRow._leftRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Duration Text",
             rows = {
                 {
@@ -1519,7 +1519,7 @@ local function BuildBaseDetailDM(widget, fontFile)
             },
         })
 
-        local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
+        local swatch = CUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
             local color = profile.debuffDurTextColor or { r = 1, g = 1, b = 1 }
             return color.r or 1, color.g or 1, color.b or 1, 1
         end, function(red, green, blue)
@@ -1531,7 +1531,7 @@ local function BuildBaseDetailDM(widget, fontFile)
     end
     do
         local region = dtRow._rightRegion
-        CludesUI.BuildInlineCog(region, {
+        CUI.BuildInlineCog(region, {
             title = "Stacks Text",
             rows = {
                 {
@@ -1564,7 +1564,7 @@ local function BuildBaseDetailDM(widget, fontFile)
             },
         })
 
-        local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
+        local swatch = CUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
             local color = profile.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
             return color.r or 1, color.g or 1, color.b or 1, 1
         end, function(red, green, blue)
@@ -1590,7 +1590,7 @@ local function BuildBaseDetailDM(widget, fontFile)
         setValue = function(keyName)
             profile.debuffHideTooltips = TipModeStore(keyName)
             ApplyDebuffManager()
-            CludesUI:RefreshPage() -- update the Use Modifier cog disabled state
+            CUI:RefreshPage() -- update the Use Modifier cog disabled state
         end,
     }, {
         type = "toggle",
@@ -1611,7 +1611,7 @@ local function BuildBaseDetailDM(widget, fontFile)
         local function tipOff()
             return TipModeKey(profile.debuffHideTooltips) ~= "modifier"
         end
-        local tipModBtn = CludesUI.BuildInlineCog(leftRegion, {
+        local tipModBtn = CUI.BuildInlineCog(leftRegion, {
             gap = 9,
             disabled = tipOff,
             -- Whole sentence: DisabledTooltip passes "This option..." strings through verbatim (still localized).
@@ -1627,7 +1627,7 @@ local function BuildBaseDetailDM(widget, fontFile)
                     set = function(val)
                         profile.debuffTooltipModifier = val
                         ApplyDebuffManager()
-                        CludesUI:RefreshPage() -- clear/raise the no-key warning bubble
+                        CUI:RefreshPage() -- clear/raise the no-key warning bubble
                     end,
                 },
             },
@@ -1635,20 +1635,20 @@ local function BuildBaseDetailDM(widget, fontFile)
         if tipModBtn then
             tipModBtn:HookScript("OnEnter", function(self)
                 if (profile.debuffTooltipModifier or "none") == "none" then
-                    CludesUI.ShowWidgetTooltip(
+                    CUI.ShowWidgetTooltip(
                         self,
                         "Select a modifier key here, or tooltips will always be shown"
                     )
                 end
             end)
             tipModBtn:HookScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
+                CUI.HideWidgetTooltip()
             end)
 
             -- Persistent red bubble above the cog while Shown on Modifier is
             -- selected with no key picked (the standard empty-selection warning);
             -- the hover tooltip above keeps the explanation.
-            CludesUI.AttachEmptyFilterWarn(leftRegion, tipModBtn, Loc("Select a Modifier"), function()
+            CUI.AttachEmptyFilterWarn(leftRegion, tipModBtn, Loc("Select a Modifier"), function()
                 return tipOff() or (profile.debuffTooltipModifier or "none") ~= "none"
             end)
         end
@@ -1665,7 +1665,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
             return tbl[filterKey] or default
         end
     end
-    local W = CludesUI.Widgets
+    local W = CUI.Widgets
     if not W then
         return 0
     end
@@ -1734,7 +1734,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                 end,
                 setValue = function() end,
             },
-            CludesUI.MaxDurationDropdown(function()
+            CUI.MaxDurationDropdown(function()
                 return tbl.maxDurSec
             end, function(val)
                 tbl.maxDurSec = val
@@ -1770,7 +1770,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
         sy = sy - hh
         do
             local region = sizeRow._leftRegion
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Icon Zoom",
                 rows = {
                     {
@@ -1799,7 +1799,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
             setValue = function(val)
                 tbl.growDirection = DmDefaultGrow(val)
                 TSet("position", val)
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "dropdown",
@@ -1812,7 +1812,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
         sy = sy - hh
         do
             local region = posRow2._leftRegion
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Position Offset",
                 rows = {
                     {
@@ -1897,7 +1897,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
         sy = sy - hh
         do
             local region = dtRow._leftRegion
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Duration Text",
                 rows = {
                     {
@@ -1936,7 +1936,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                 },
             })
 
-            local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
+            local swatch = CUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
                 local color = tbl.durTextColor or profile.debuffDurTextColor or { r = 1, g = 1, b = 1 }
                 return color.r or 1, color.g or 1, color.b or 1, 1
             end, function(red, green, blue)
@@ -1948,7 +1948,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
         end
         do
             local region = dtRow._rightRegion
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Stacks Text",
                 rows = {
                     {
@@ -1987,7 +1987,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                 },
             })
 
-            local swatch = CludesUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
+            local swatch = CUI.BuildColorSwatch(region, dtRow:GetFrameLevel() + 3, function()
                 local color = tbl.stacksTextColor or profile.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
                 return color.r or 1, color.g or 1, color.b or 1, 1
             end, function(red, green, blue)
@@ -2052,7 +2052,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
     _, hh = W:SectionHeader(widget, "EFFECT", sy)
     sy = sy - hh
     -- Frame Glow: shared glow controls over the tile's own keys (always on: no None).
-    local GO = CludesUI.GlowOptions
+    local GO = CUI.GlowOptions
     local glowDesc
     if tbl.type == "glow" then
         glowDesc = TileGlowDesc(tbl, ApplyDebuffManager)
@@ -2083,7 +2083,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
         -- its swatch has no alpha strip. (The bar's colors live in its
         -- DISPLAY section below, BM parity.)
         local region = catRow._rightRegion
-        local swatch = CludesUI.BuildColorSwatch(region, catRow:GetFrameLevel() + 3, function()
+        local swatch = CUI.BuildColorSwatch(region, catRow:GetFrameLevel() + 3, function()
             local color = tbl.color or { r = 1, g = 1, b = 1 }
             return color.r or 1, color.g or 1, color.b or 1, 1
         end, function(red, green, blue)
@@ -2114,7 +2114,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
             -- with the orientation.
             setValue = function(val)
                 TSet("orientation", val)
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
         }, {
             type = "dropdown",
@@ -2127,7 +2127,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
         sy = sy - hh
         do
             local region = coreRow._rightRegion
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Position Offset",
                 rows = {
                     {
@@ -2213,7 +2213,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
             getValue = TFieldOr("barFullWidth", false),
             setValue = function(val)
                 TSet("barFullWidth", val and true or false)
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         }, {
             type = "toggle",
@@ -2221,7 +2221,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
             getValue = TFieldOr("barFullHeight", false),
             setValue = function(val)
                 TSet("barFullHeight", val and true or false)
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
         })
         sy = sy - hh
@@ -2249,7 +2249,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
         sy = sy - hh
         do
             local region = barBgRow._leftRegion
-            local colorSwatch = CludesUI.BuildColorSwatch(region, barBgRow:GetFrameLevel() + 3, function()
+            local colorSwatch = CUI.BuildColorSwatch(region, barBgRow:GetFrameLevel() + 3, function()
                 local color = tbl.color or { r = 0.25, g = 0.8, b = 0.45 }
                 return color.r or 0.25, color.g or 0.8, color.b or 0.45, 1
             end, function(red, green, blue)
@@ -2261,7 +2261,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
         end
         do
             local region = barBgRow._rightRegion
-            local bgSwatch = CludesUI.BuildColorSwatch(region, barBgRow:GetFrameLevel() + 3, function()
+            local bgSwatch = CUI.BuildColorSwatch(region, barBgRow:GetFrameLevel() + 3, function()
                 local color = tbl.barBgColor or { r = 0, g = 0, b = 0 }
                 return color.r or 0, color.g or 0, color.b or 0, 1
             end, function(red, green, blue)
@@ -2284,7 +2284,7 @@ local function BuildTileDetail(widget, fontFile, tbl)
                 getValue = TFieldOr("opacity", 45),
                 setValue = TSetRow("opacity"),
             },
-            CludesUI.MaxDurationDropdown(function()
+            CUI.MaxDurationDropdown(function()
                 return tbl.maxDurSec
             end, function(val)
                 tbl.maxDurSec = val
@@ -2297,12 +2297,12 @@ local function BuildTileDetail(widget, fontFile, tbl)
         _, hh = W:DualRow(
             widget,
             sy,
-            CludesUI.MaxDurationDropdown(function()
+            CUI.MaxDurationDropdown(function()
                 return tbl.maxDurSec
             end, function(val)
                 tbl.maxDurSec = val
             end, ApplyDebuffManager),
-            CludesUI.BlankRowCfg()
+            CUI.BlankRowCfg()
         )
         sy = sy - hh
     end
@@ -2344,9 +2344,9 @@ local function DmPvEnter(self)
         return
     end
     if self._hoverBdr then
-        local lPP = CludesUI.PanelPP or CludesUI.PP
+        local lPP = CUI.PanelPP or CUI.PP
         if lPP then
-            local ac = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+            local ac = CUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
             lPP.UpdateBorder(self._hoverBdr, 2, ac.r, ac.g, ac.b, 1)
             self._hoverBdr:Show()
         end
@@ -2375,7 +2375,7 @@ local function DmPvClick(self)
             and mod.BM_InheritedGroupsFor(dmSpecSel, true)
         then
             inheritSel = { group = "allspecs", id = "base" }
-            CludesUI:RefreshPage(true)
+            CUI:RefreshPage(true)
             return
         end
     else
@@ -2395,7 +2395,7 @@ local function DmPvClick(self)
                     for idx = 1, #(gl or {}) do
                         if gl[idx].id == ident then
                             inheritSel = { group = inhG[gi], id = ident }
-                            CludesUI:RefreshPage(true)
+                            CUI:RefreshPage(true)
                             return
                         end
                     end
@@ -2405,7 +2405,7 @@ local function DmPvClick(self)
     end
     dmSel = ident
     inheritSel = nil
-    CludesUI:RefreshPage(true)
+    CUI:RefreshPage(true)
 end
 
 function mod.DMP_RefreshPreview()
@@ -2421,8 +2421,8 @@ function mod.DMP_RefreshPreview()
     -- Tile icon sizes live in dmDebuff, outside the proxy's scaled keys: live
     -- party frames scale them by the party indicator scale, so does this.
     local tileScale = preview._bmPvS and (mod._partyIndicatorScale or 1) or 1
-    local Pix = CludesUI.PanelPP or CludesUI.PP
-    local fontFile = preview._dmFontPath or (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+    local Pix = CUI.PanelPP or CUI.PP
+    local fontFile = preview._dmFontPath or (CUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
     local health = preview._health
     local host = (mod.RF_AnchorHost and mod.RF_AnchorHost(health, profile)) or health
     local allVis = mod._dmAllVisible
@@ -2450,7 +2450,7 @@ function mod.DMP_RefreshPreview()
             tiles[#tiles + 1] = own[idx]
         end
     end
-    local Glows = CludesUI.Glows
+    local Glows = CUI.Glows
 
     -- Reset pools
     local icons = preview._dmIconPool
@@ -2685,7 +2685,7 @@ function mod.DMP_RefreshPreview()
                     if wantDurText then
                         local dt = tile._pvDurText
                         local dtc = sv.debuffDurTextColor or { r = 1, g = 1, b = 1 }
-                        CludesUI.ApplyIconTextFont(dt, fontFile, sv.debuffDurTextSize or 10, "raidFrames")
+                        CUI.ApplyIconTextFont(dt, fontFile, sv.debuffDurTextSize or 10, "raidFrames")
                         dt:SetTextColor(dtc.r or 1, dtc.g or 1, dtc.b or 1)
                         dt:ClearAllPoints()
                         dt:SetPoint(
@@ -2710,7 +2710,7 @@ function mod.DMP_RefreshPreview()
             if tile._count then
                 if sv.debuffShowStacks ~= false then
                     local sc = sv.debuffStacksTextColor or { r = 1, g = 1, b = 1 }
-                    CludesUI.ApplyIconTextFont(
+                    CUI.ApplyIconTextFont(
                         tile._count,
                         fontFile,
                         sv.debuffStacksTextSize or 11,
@@ -2918,7 +2918,7 @@ function mod.DMP_RefreshPreview()
                         preview._dmGlow = gov
                     end
                     -- Live parity: the tile's own descriptor, the same call as the slot renderer.
-                    local specInfo = CludesUI.GlowOptions.Spec(TileGlowDesc(t))
+                    local specInfo = CUI.GlowOptions.Spec(TileGlowDesc(t))
                     gov:Show()
                     Glows.StartSpecGlow(
                         gov,
@@ -2938,12 +2938,12 @@ function mod.DMP_RefreshPreview()
 end
 
 function mod.DMP_BuildPage(page, hostFrame, yOffset)
-    local scrollFrame = CludesUI._scrollFrame
+    local scrollFrame = CUI._scrollFrame
     if not scrollFrame then
         return 0
     end
-    local fontFile = (CludesUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
-    local Pix = CludesUI.PanelPP
+    local fontFile = (CUI.GetFontPath("raidFrames")) or "Fonts\\FRIZQT__.TTF"
+    local Pix = CUI.PanelPP
 
     local parentW = scrollFrame:GetWidth()
     local fullH = scrollFrame:GetHeight()
@@ -2952,7 +2952,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
 
     -- The refreshers this render registers replace the previous render's (it
     -- may run outside a page pass: the deferred renders of a cache restore).
-    CludesUI._BeginRootRender("rf.dm")
+    CUI._BeginRootRender("rf.dm")
     -- One root for the session (the options page pool): every render dresses
     -- it again; its reset is the previous render's teardown.
     local outerRoot = PoolKept(mod, "dmRoot", "Frame", scrollFrame)
@@ -2961,15 +2961,15 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     if mod._dmAddPopup then
         mod._dmAddPopup:Hide()
     end
-    if CludesUI._pickMenu then
-        CludesUI._pickMenu:Hide()
+    if CUI._pickMenu then
+        CUI._pickMenu:Hide()
     end
     mod._dmRoot = outerRoot
 
     -- Override-session gate: heals a stale Debuff Manager layer FIRST (so
     -- the page content below renders the edited group's fork) and reports
     -- the full-page overlay to build at the end. nil = normal page.
-    local dmOverlayState = CludesUI.SpecOverrides_DmPagePrelude() or nil
+    local dmOverlayState = CUI.SpecOverrides_DmPagePrelude() or nil
 
     local dmConf = DmTable()
 
@@ -2985,9 +2985,9 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     -- that class renders now: a group view resets to All Specs and a spec
     -- view follows its class's current bucket (it moves with the profile and
     -- when that bucket loses its last tile, per-spec disable or Base Icons off).
-    if CludesUI.IS_FOREVER and dmSpecSel ~= "allspecs" then
+    if CUI.IS_FOREVER and dmSpecSel ~= "allspecs" then
         local m = type(dmSpecSel) == "string" and dmSpecSel:match("^spec(%d+)$")
-        local cls = m and CludesUI.SpecClassOf(tonumber(m))
+        local cls = m and CUI.SpecClassOf(tonumber(m))
         dmSpecSel = (cls and mod.DM_ForeverKey and mod.DM_ForeverKey(cls)) or "allspecs"
     end
     local tiles = (mod.DM_BucketTiles and mod.DM_BucketTiles(dmSpecSel)) or {}
@@ -3053,7 +3053,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
 
     local profile = DmProfile()
     if not profile then
-        CludesUI._EndRootRender("rf.dm")
+        CUI._EndRootRender("rf.dm")
         return 0
     end
 
@@ -3075,7 +3075,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     local sbBg = sidebarOuter:CreateTexture(nil, "BACKGROUND")
     sbBg:SetAllPoints()
     sbBg:SetColorTexture(0, 0, 0, 0.25)
-    CludesUI.CardSidebar(sidebarOuter, sbBg)
+    CUI.CardSidebar(sidebarOuter, sbBg)
 
     local navScroll = CreateFrame("ScrollFrame", nil, sidebarOuter)
     navScroll:SetAllPoints()
@@ -3085,7 +3085,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     navScroll:SetScrollChild(navBody)
     navScroll:EnableMouseWheel(true)
     navScroll:SetScript("OnMouseWheel", function(self, delta)
-        if CludesUI._ShiftWheelScale(delta) then
+        if CUI._ShiftWheelScale(delta) then
             return
         end
         local scroll = self:GetVerticalScroll()
@@ -3098,7 +3098,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     local function AddTile(opts)
         opts.width = sidebarW
         opts.fontPath = fontFile
-        tileY = tileY - CludesUI.BuildManagerTile(navBody, tileY, opts)
+        tileY = tileY - CUI.BuildManagerTile(navBody, tileY, opts)
     end
     -- A tile's gray position suffix: the icon, square and bar containers sit
     -- at a position; the base grid at the debuff position.
@@ -3122,7 +3122,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             onSelect = function()
                 dmSel = "base"
                 inheritSel = nil
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
         })
     elseif baseInherited then
@@ -3134,13 +3134,13 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             title = Loc("Base Icons"),
             posText = basePosText,
             subtitle = allSpecsName,
-            inheritedTooltip = CludesUI.Lf("Inherited from %1$s. Editable only there.", allSpecsName),
+            inheritedTooltip = CUI.Lf("Inherited from %1$s. Editable only there.", allSpecsName),
             selected = inhSelBase,
             enabled = (not disHere) and true or false,
             showToggle = true,
             onSelect = function()
                 inheritSel = { group = "allspecs", id = "base" }
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
             onToggle = function()
                 mod.DM_SetBaseDisabled(dmSpecSel, not mod.DM_BaseDisabled(dmSpecSel))
@@ -3165,7 +3165,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     title = TileName(tbl),
                     posText = TilePosText(tbl),
                     subtitle = gname,
-                    inheritedTooltip = CludesUI.Lf("Inherited from %1$s. Editable only there.", gname),
+                    inheritedTooltip = CUI.Lf("Inherited from %1$s. Editable only there.", gname),
                     selected = (inheritSel and inheritSel.group == gkey and inheritSel.id == tbl.id) and true
                         or false,
                     -- Pill = the PER-SPEC enable only; a group-level disable
@@ -3175,7 +3175,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                     showToggle = true,
                     onSelect = function()
                         inheritSel = { group = gkey, id = tbl.id }
-                        CludesUI:RefreshPage(true)
+                        CUI:RefreshPage(true)
                     end,
                     onToggle = function()
                         mod.DM_SetInhDisabled(dmSpecSel, tbl.id, not mod.DM_InhDisabled(dmSpecSel, tbl.id))
@@ -3207,18 +3207,18 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             onSelect = function()
                 dmSel = tbl.id
                 inheritSel = nil
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end,
             -- Right-click: copy this tile into another editing-spec bucket
             -- (full clone, fresh id; the source stays).
             onContext = function(tileFrame)
-                if not CludesUI.ShowPickMenu then
+                if not CUI.ShowPickMenu then
                     return
                 end
-                CludesUI.ShowPickMenu(tileFrame, {
+                CUI.ShowPickMenu(tileFrame, {
                     title = Loc("Add To"),
                     fontPath = fontFile,
-                    items = CludesUI.SpecBucketMenuItems(dmSpecSel, nil, mod.DM_ForeverKey),
+                    items = CUI.SpecBucketMenuItems(dmSpecSel, nil, mod.DM_ForeverKey),
                     onPick = function(filterKey)
                         if mod.DM_CopyTile and mod.DM_CopyTile(tbl, filterKey) then
                             ApplyAndRedraw()
@@ -3233,7 +3233,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             editTooltip = Loc("Rename Indicator"),
             onEdit = function()
                 local current = TileName(tbl)
-                CludesUI:ShowInputPopup({
+                CUI:ShowInputPopup({
                     title = Loc("Rename Indicator"),
                     message = Loc("Enter a new name for this indicator:"),
                     placeholder = current,
@@ -3243,12 +3243,12 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                         textValue = textValue and textValue:gsub("^%s+", ""):gsub("%s+$", "") or ""
                         -- Empty reverts to the type-name default.
                         tbl.name = (textValue ~= "") and textValue or nil
-                        CludesUI:RefreshPage(true)
+                        CUI:RefreshPage(true)
                     end,
                 })
             end,
             onDelete = function()
-                CludesUI:ShowConfirmPopup({
+                CUI:ShowConfirmPopup({
                     title = Loc("Delete Indicator"),
                     message = Loc("Delete this indicator? Its settings are removed from the profile."),
                     confirmText = Loc("Delete"),
@@ -3280,23 +3280,23 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         newBtn:SetPoint("TOP", navBody, "TOPLEFT", floor(sidebarW / 2), tileY - ADD_BTN_PAD)
         newBtn:SetFrameLevel(navBody:GetFrameLevel() + 1)
 
-        local accentColor = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+        local accentColor = CUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
         local addBg = newBtn:CreateTexture(nil, "BACKGROUND")
         addBg:SetAllPoints()
         addBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.8)
-        CludesUI.RoundBody(newBtn, addBg)
+        CUI.RoundBody(newBtn, addBg)
 
         local addLabel = newBtn:CreateFontString(nil, "OVERLAY")
         -- Drop shadow via the shadow FontObject, primed BEFORE SetFont
         -- (SetShadowOffset alone does not render).
-        CludesUI.PrimeFontShadow(addLabel, true)
+        CUI.PrimeFontShadow(addLabel, true)
         addLabel:SetFont(fontFile, 12, "")
         addLabel:SetPoint("CENTER")
         addLabel:SetText(Loc("Add New"))
         addLabel:SetTextColor(1, 1, 1)
 
         newBtn:SetScript("OnEnter", nil) -- CludesUI.OutlineButton below sets the hover
-        CludesUI.OutlineButton(newBtn, addBg, true)
+        CUI.OutlineButton(newBtn, addBg, true)
 
         newBtn:SetScript("OnClick", function(self)
             -- Toggle popup (BM Add New popup parity: label + dropdown +
@@ -3329,7 +3329,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                 local backdrop = dialog:CreateTexture(nil, "BACKGROUND")
                 backdrop:SetAllPoints()
                 backdrop:SetColorTexture(0.067, 0.067, 0.067, 0.95)
-                CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.2, backdrop)
+                CUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.2, backdrop)
 
                 -- Pending filter picks for the new tile (wiped on hide)
                 dialog._dmFilters = {}
@@ -3392,7 +3392,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                 -- plain lane) and become the new tile's claim/neg/all/
                 -- hasDuration at Create.
                 local pend = dialog._dmFilters
-                local fltDD, fltDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                local fltDD, fltDDRefresh = CUI.BuildVisOptsCBDropdown(
                     dialog,
                     ddW,
                     dialog:GetFrameLevel() + 2,
@@ -3448,7 +3448,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                 indLbl:SetTextColor(1, 1, 1, 0.6)
                 paneY = paneY - LABEL_H - LBL_GAP
 
-                local indDD = CludesUI.BuildDropdownControl(
+                local indDD = CUI.BuildDropdownControl(
                     dialog,
                     ddW,
                     dialog:GetFrameLevel() + 2,
@@ -3465,7 +3465,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                 dialog._indDD = indDD
                 paneY = paneY - ROW_H2 - DD_GAP
 
-                local accentColor = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+                local accentColor = CUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
                 local cBtn = CreateFrame("Button", nil, dialog)
                 cBtn:SetSize(ddW, ROW_H2)
                 cBtn:SetPoint("TOPLEFT", dialog, "TOPLEFT", POPUP_PAD, paneY)
@@ -3473,14 +3473,14 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                 local cBg = cBtn:CreateTexture(nil, "BACKGROUND")
                 cBg:SetAllPoints()
                 cBg:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.8)
-                CludesUI.RoundBody(cBtn, cBg)
+                CUI.RoundBody(cBtn, cBg)
                 local cTx = cBtn:CreateFontString(nil, "OVERLAY")
                 cTx:SetPoint("CENTER")
                 cTx:SetFont(fontFile, 12, "")
                 cTx:SetText(Loc("Create"))
                 cTx:SetTextColor(1, 1, 1)
                 cBtn:SetScript("OnEnter", nil) -- CludesUI.OutlineButton below sets the hover
-                CludesUI.OutlineButton(cBtn, cBg, true)
+                CUI.OutlineButton(cBtn, cBg, true)
                 cBtn:SetScript("OnClick", function()
                     -- Snapshot picks BEFORE Hide (hide wipes the pending set)
                     local picked, negPicked = {}, nil
@@ -3589,8 +3589,8 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
 
     -- Eyeball toggle: show all tiles at full opacity (BM parity)
     do
-        local EYE_VIS = CludesUI.EYE_VISIBLE_ICON
-        local EYE_INVIS = CludesUI.EYE_INVISIBLE_ICON
+        local EYE_VIS = CUI.EYE_VISIBLE_ICON
+        local EYE_INVIS = CUI.EYE_INVISIBLE_ICON
         mod._dmAllVisible = mod._dmAllVisible or false
 
         local eyeButton = CreateFrame("Button", nil, leftPane)
@@ -3601,7 +3601,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
         eyeTex:SetAllPoints()
         eyeTex:SetTexture(mod._dmAllVisible and EYE_INVIS or EYE_VIS)
-        CludesUI.SetGlyphAlpha(eyeButton, 0.4)
+        CUI.SetGlyphAlpha(eyeButton, 0.4)
 
         eyeButton:SetScript("OnClick", function()
             mod._dmAllVisible = not mod._dmAllVisible
@@ -3611,12 +3611,12 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             end
         end)
         eyeButton:SetScript("OnEnter", function(self)
-            CludesUI.SetGlyphAlpha(self, 0.7)
-            CludesUI.ShowWidgetTooltip(self, "Toggle All Indicators")
+            CUI.SetGlyphAlpha(self, 0.7)
+            CUI.ShowWidgetTooltip(self, "Toggle All Indicators")
         end)
         eyeButton:SetScript("OnLeave", function(self)
-            CludesUI.SetGlyphAlpha(self, 0.4)
-            CludesUI.HideWidgetTooltip()
+            CUI.SetGlyphAlpha(self, 0.4)
+            CUI.HideWidgetTooltip()
         end)
     end
 
@@ -3635,7 +3635,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         local specCenterX = pvSplitW + specSplitW / 2
         -- Roster shared with the right-click "Add To" menu (the menu
         -- rebuilds it lazily per open).
-        local specDDValues, specDDOrder, specDDIcons = CludesUI.BuildSpecBucketRoster(nil, mod.DM_ForeverKey)
+        local specDDValues, specDDOrder, specDDIcons = CUI.BuildSpecBucketRoster(nil, mod.DM_ForeverKey)
         specDDValues._menuOpts = {
             maxHeight = 300,
             icon = function(filterKey)
@@ -3653,7 +3653,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         specLabel:SetTextColor(1, 1, 1, 0.75)
 
         local specDDW = specSplitW - PAD - 50
-        local specDD = CludesUI.BuildDropdownControl(
+        local specDD = CUI.BuildDropdownControl(
             leftPane,
             specDDW,
             leftPane:GetFrameLevel() + 2,
@@ -3666,7 +3666,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                 dmSpecSel = val
                 dmSel = "base"
                 inheritSel = nil
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end
         )
         specDD:SetPoint("TOP", specLabel, "BOTTOM", 0, -7)
@@ -3695,7 +3695,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     settingsHeading:SetPoint("TOPLEFT", leftPane, "TOPLEFT", PAD, layoutY)
     settingsHeading:SetJustifyH("LEFT")
     settingsHeading:SetWordWrap(false)
-    local ac2 = CludesUI.CLUDES_GREEN
+    local ac2 = CUI.CLUDES_GREEN
     if ac2 then
         settingsHeading:SetTextColor(ac2.r, ac2.g, ac2.b)
     else
@@ -3727,15 +3727,15 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         local gname2 = ginfo2 and Loc(ginfo2.name) or inheritSel.group
         settingsHeading:SetTextColor(0.55, 0.72, 1)
         settingsHeading:SetText(TileName(inhSelTile))
-        subHeading:SetText("(" .. CludesUI.Lf("Inherited from %1$s", gname2) .. ")")
+        subHeading:SetText("(" .. CUI.Lf("Inherited from %1$s", gname2) .. ")")
     elseif inheritSel and inhSelBase then
         settingsHeading:SetTextColor(0.55, 0.72, 1)
         settingsHeading:SetText(Loc("Base Icons"))
-        subHeading:SetText("(" .. CludesUI.Lf("Inherited from %1$s", allSpecsName) .. ")")
+        subHeading:SetText("(" .. CUI.Lf("Inherited from %1$s", allSpecsName) .. ")")
     elseif selTile then
         settingsHeading:SetText(Loc(TYPE_NAMES[selTile.type] or selTile.type))
         subHeading:SetText("(" .. TileSubtitle(selTile) .. ")")
-        CludesUI.RegisterWidgetRefresh(function()
+        CUI.RegisterWidgetRefresh(function()
             subHeading:SetText("(" .. TileSubtitle(selTile) .. ")")
         end)
     elseif groupEmpty then
@@ -3756,7 +3756,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     --  Settings scroll area (BM parity: smooth scroll + thin thumb;
     --  DualRow width compensated so rows align with the 20px PAD)
     -------------------------------------------------------------------
-    local contentPad = CludesUI.CONTENT_PAD or 45
+    local contentPad = CUI.CONTENT_PAD or 45
     local padDiff = contentPad - PAD
     local viewportH = max(10, visibleH - fixedH)
     local settingsW = leftW + padDiff * 2
@@ -3771,7 +3771,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     settingsChild:SetSize(settingsW, viewportH)
     settingsScroll:SetScrollChild(settingsChild)
 
-    local UpdateThumb = CludesUI.AttachSmoothScrollbar(settingsScroll, {
+    local UpdateThumb = CUI.AttachSmoothScrollbar(settingsScroll, {
         step = 60,
         width = 5,
         rightInset = 31,
@@ -3796,7 +3796,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         details:SetJustifyH("LEFT")
         details:SetWordWrap(true)
         details:SetText(
-            CludesUI.Lf(
+            CUI.Lf(
                 "Inherited from %1$s. Edit it there, or use the tile toggle to enable or disable it for this spec.",
                 gname2
             )
@@ -3808,8 +3808,8 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         local linkFS = itemLink:CreateFontString(nil, "OVERLAY")
         linkFS:SetFont(fontFile, 12, "")
         linkFS:SetPoint("TOPLEFT")
-        linkFS:SetText(CludesUI.Lf("Edit in %1$s", gname2))
-        local lac = CludesUI.CLUDES_GREEN
+        linkFS:SetText(CUI.Lf("Edit in %1$s", gname2))
+        local lac = CUI.CLUDES_GREEN
         if lac then
             linkFS:SetTextColor(lac.r, lac.g, lac.b, 0.85)
         else
@@ -3826,7 +3826,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             dmSpecSel = jumpGroup
             dmSel = jumpId
             inheritSel = nil
-            CludesUI:RefreshPage(true)
+            CUI:RefreshPage(true)
         end)
         return -110
     end
@@ -3851,7 +3851,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         details:SetJustifyH("LEFT")
         details:SetWordWrap(true)
         details:SetText(
-            CludesUI.Lf(
+            CUI.Lf(
                 "Indicators added here show on every spec in this group. The Base Icons grid lives in %1$s.",
                 allSpecsName
             )
@@ -3875,22 +3875,22 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     -- child of outerRoot so every teardown path destroys it.
     if dmOverlayState then
         local st = dmOverlayState
-        local _, button = CludesUI.BuildActivationOverlay(outerRoot, {
+        local _, button = CUI.BuildActivationOverlay(outerRoot, {
             fontPath = fontFile,
             width = parentW,
-            title = CludesUI.L("Custom Debuff Manager"),
+            title = CUI.L("Custom Debuff Manager"),
             text = st.text,
             sub = st.sub,
-            buttonLabel = st.mode == "activate" and CludesUI.L("Activate Custom Debuff Manager") or nil,
+            buttonLabel = st.mode == "activate" and CUI.L("Activate Custom Debuff Manager") or nil,
         })
         if button then
             button:SetScript("OnClick", function()
-                CludesUI.SpecOverrides_ActivateDm(st.kind, st.gid)
+                CUI.SpecOverrides_ActivateDm(st.kind, st.gid)
             end)
         end
     end
 
-    CludesUI._EndRootRender("rf.dm")
+    CUI._EndRootRender("rf.dm")
     return 0
 end
 
@@ -3902,7 +3902,7 @@ end
 -- the Filter Editor popup parents into the root and dies with it.
 -------------------------------------------------------------------------------
 
-local CLASS_ORDER = CludesUI.CLASS_TOKEN_ORDER
+local CLASS_ORDER = CUI.CLASS_TOKEN_ORDER
 
 -- Filter Editor popup: right sidebar = filter list (presets pinned),
 -- left = the selected filter's spells as checkboxes grouped by class
@@ -3941,14 +3941,14 @@ function mod.BMP_ShowFilterEditor(show, hide)
             end
         end
     end
-    local fontFile = (CludesUI.GetFontPath("options"))
-        or (CludesUI.GetFontPath("raidFrames"))
+    local fontFile = (CUI.GetFontPath("options"))
+        or (CUI.GetFontPath("raidFrames"))
         or "Fonts\\FRIZQT__.TTF"
     local ar, ag, ab = 1, 0.82, 0.30
-    if CludesUI.GetAccentColor then
-        ar, ag, ab = CludesUI.GetAccentColor()
+    if CUI.GetAccentColor then
+        ar, ag, ab = CUI.GetAccentColor()
     end
-    local brandGreen = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
+    local brandGreen = CUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
 
     local POPUP_W, POPUP_H = 620, 520
     local SIDE_W = 180
@@ -3957,7 +3957,7 @@ function mod.BMP_ShowFilterEditor(show, hide)
     -- Rebuild below dress it again; its reset is the previous dress's teardown
     -- (a keyboard capture is put back out of combat only, by the pool).
     local shade, dialog =
-        CludesUI.BuildFilterEditorShell(mod, "_bm2FilterEditor", "bm2FilterEditor", POPUP_W, POPUP_H)
+        CUI.BuildFilterEditorShell(mod, "_bm2FilterEditor", "bm2FilterEditor", POPUP_W, POPUP_H)
 
     -- Validate selection
     if fdSel then
@@ -3990,7 +3990,7 @@ function mod.BMP_ShowFilterEditor(show, hide)
     -- this (later-created) editor, so at equal strata it renders BEHIND it.
     -- Raise it above the editor whenever it opens from here.
     local function EditorInput(options)
-        CludesUI:ShowInputPopup(options)
+        CUI:ShowInputPopup(options)
         local d = _G.CUIInputDimmer
         if d and mod._bm2FilterEditor then
             d:SetFrameLevel(dialog:GetFrameLevel() + 40)
@@ -4007,7 +4007,7 @@ function mod.BMP_ShowFilterEditor(show, hide)
     -- region (the settings-viewport pattern). Track shows only on overflow.
     -- Returns UpdateThumb and a SetScrollTo(v) that syncs bar + target.
     local function AttachEditorScroll(scroll, childFrame, onScroll)
-        return CludesUI.AttachSmoothScrollbar(scroll, {
+        return CUI.AttachSmoothScrollbar(scroll, {
             step = 60,
             thumbMin = 20,
             topInset = 2,
@@ -4027,14 +4027,14 @@ function mod.BMP_ShowFilterEditor(show, hide)
     side:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", 0, -44)
     side:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", 0, 0)
     side:SetFrameLevel(dialog:GetFrameLevel() + 1)
-    local sideBg = CludesUI.SolidTex(side, "BACKGROUND", 0, 0, 0, 0.35)
+    local sideBg = CUI.SolidTex(side, "BACKGROUND", 0, 0, 0, 0.35)
     sideBg:SetAllPoints()
     -- Flush with the popup's bottom-right corner: same shape, rows clipped to it.
-    CludesUI.MakeRoundedBorder(side, 1, 1, 1, 0.10, sideBg, nil, true)
+    CUI.MakeRoundedBorder(side, 1, 1, 1, 0.10, sideBg, nil, true)
 
     -- Sidebar content scrolls when it outgrows the popup (standard smooth
     -- scroll + thin custom bar; bar shows only on overflow).
-    local sideScroll, sideChild, fy = CludesUI.BuildFilterSidebar(side, SIDE_W, filters, {
+    local sideScroll, sideChild, fy = CUI.BuildFilterSidebar(side, SIDE_W, filters, {
         selected = fdSel,
         onPick = function(id)
             fdSel = id
@@ -4060,23 +4060,23 @@ function mod.BMP_ShowFilterEditor(show, hide)
     -- by name (same-named filters replaced, missing ones created). Ids here
     -- never change, so indicator assignments and banked spec-override forks
     -- stay valid. Hidden while that module is disabled.
-    if CludesUI._PABFilterBridge then
-        local copyBtn = CludesUI.BuildPopupButton(
+    if CUI._PABFilterBridge then
+        local copyBtn = CUI.BuildPopupButton(
             sideChild,
             SIDE_W - 16,
             26,
-            CludesUI.L("Copy Player Auras Filters"),
+            CUI.L("Copy Player Auras Filters"),
             function()
-                CludesUI:ShowConfirmPopup({
-                    title = CludesUI.L("Copy Player Auras Filters"),
-                    message = CludesUI.L(
+                CUI:ShowConfirmPopup({
+                    title = CUI.L("Copy Player Auras Filters"),
+                    message = CUI.L(
                         "One-time copy of your Player Aura Bars filter setups into these filters. Same-named filters are OVERWRITTEN; the two lists stay separate afterwards."
                     ),
-                    confirmText = CludesUI.L("Copy"),
-                    cancelText = CludesUI.L("Cancel"),
+                    confirmText = CUI.L("Copy"),
+                    cancelText = CUI.L("Cancel"),
                     typeToConfirm = "Confirm",
                     onConfirm = function()
-                        local br = CludesUI._PABFilterBridge
+                        local br = CUI._PABFilterBridge
                         if br and br.CopyIntoBM2() then
                             Apply()
                             Rebuild()
@@ -4107,7 +4107,7 @@ function mod.BMP_ShowFilterEditor(show, hide)
         return (mod.SPELL_NAME_BY_ID and mod.SPELL_NAME_BY_ID[ident])
             or (C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(ident))
     end
-    local leftX, scroll, childFrame = CludesUI.BuildFilterDetail(dialog, SIDE_W, POPUP_W, sel, {
+    local leftX, scroll, childFrame = CUI.BuildFilterDetail(dialog, SIDE_W, POPUP_W, sel, {
         -- The preset universe (the Extra Spells dropdown's list) minus every
         -- spell already on this filter, checked or not, curated or custom.
         searchIds = function()
@@ -4203,11 +4203,11 @@ function mod.BMP_ShowFilterEditor(show, hide)
     end
     table.sort(customList, ByName)
 
-    CludesUI.BuildFilterSpellList(
+    CUI.BuildFilterSpellList(
         childFrame,
         {
-            { CludesUI.L("Custom"), customList },
-            { CludesUI.L("All Classes"), byClass.ALL },
+            { CUI.L("Custom"), customList },
+            { CUI.L("All Classes"), byClass.ALL },
         },
         byClass,
         CLASS_ORDER,
@@ -4225,7 +4225,7 @@ function mod.BMP_ShowFilterEditor(show, hide)
                 Apply()
             end,
             rebuild = Rebuild,
-            emptyText = CludesUI.L("No spells yet. Add spell IDs above."),
+            emptyText = CUI.L("No spells yet. Add spell IDs above."),
             accent = brandGreen,
         }
     )
@@ -4244,8 +4244,8 @@ end
 -- canonical placeholder-dropdown hosting pattern (hide rgn._control, mount
 -- the CB dropdown, re-point, register its refresh).
 function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
-    local W = CludesUI.Widgets
-    local Pix = CludesUI.PP or CludesUI.PanelPP
+    local W = CUI.Widgets
+    local Pix = CUI.PP or CUI.PanelPP
     if not (W and Pix) then
         return sy
     end
@@ -4306,7 +4306,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
             end
             return itemList
         end
-        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
             region,
             190,
             region:GetFrameLevel() + 2,
@@ -4350,15 +4350,15 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
                 elseif mod.ReloadFrames then
                     mod.ReloadFrames()
                 end
-                CludesUI:RefreshPage()
+                CUI:RefreshPage()
             end,
             nil,
             12
         )
-        CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+        CUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
         region._control = checkDrop
         region._lastInline = nil
-        CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+        CUI.RegisterWidgetRefresh(cbDDRefresh)
     end
 
     -- RIGHT: Extra Spells searchable checkbox dropdown; "Custom Spell ID"
@@ -4399,7 +4399,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
                 if mod.ReloadFrames then
                     mod.ReloadFrames()
                 end
-                CludesUI:RefreshPage(true)
+                CUI:RefreshPage(true)
             end
         end)
         -- Universe = curated preset primaries (name-sorted) plus any custom
@@ -4479,7 +4479,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
             end
             return itemList
         end
-        local checkDrop, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local checkDrop, cbDDRefresh = CUI.BuildVisOptsCBDropdown(
             region,
             190,
             region:GetFrameLevel() + 2,
@@ -4509,10 +4509,10 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
             10,
             true
         )
-        CludesUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
+        CUI.PanelPP.Point(checkDrop, "RIGHT", region, "RIGHT", -20, 0)
         region._control = checkDrop
         region._lastInline = nil
-        CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+        CUI.RegisterWidgetRefresh(cbDDRefresh)
     end
 
     -- SHOW IN (every type): which frames build the indicator. ind.showIn nil =
@@ -4669,7 +4669,7 @@ function mod.BMP_BuildAssignedFilters(hostFrame, sy, indicator, fontFile)
                 end
                 return result
             end
-            CludesUI.BuildInlineCog(region, {
+            CUI.BuildInlineCog(region, {
                 title = "Custom Order",
                 rows = {
                     {

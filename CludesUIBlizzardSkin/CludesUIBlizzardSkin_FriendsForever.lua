@@ -43,8 +43,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  (IS_FOREVER is false).
 --------------------------------------------------------------------------------
 local ADDON_NAME, mod = ...
-local CludesUI = _G.CludesUI
-if not (CludesUI and CludesUI.IS_FOREVER) then
+local CUI = _G.CludesUI
+if not (CUI and CUI.IS_FOREVER) then
     return
 end
 local Skin = mod.WSkin
@@ -54,7 +54,7 @@ end
 
 local WIN = "socialui"
 
-local FFD, GetFFD = CludesUI.NewFrameData()
+local FFD, GetFFD = CUI.NewFrameData()
 
 -- One pooled list frame: a category header (carries a Title) loses its art
 -- and takes the house font; a friend or ignore row keeps Blizzard's colours
@@ -259,14 +259,14 @@ local CARD_DEFAULTS = {
     autoAcceptGuildInvites = false,
     -- The custom friends list (CludesUI_FriendsList.lua): the tile height
     -- starts at that list's own default
-    tileHeight = select(3, CludesUI.FriendsList.TileRange()),
+    tileHeight = select(3, CUI.FriendsList.TileRange()),
 }
 -- Custom Friends List Tiles (customTiles) unset: the card's look decides, on
 -- while the card is skinned (CludesUI or Modern) and off under Blizz
 -- Default. A pick is kept only where it differs from that (FriendsCardSet),
 -- so a card that never deviated keeps following its look.
 local function CustomTilesDefault()
-    return CludesUI.GetBlizzWindowStyle(WIN) ~= "off"
+    return CUI.GetBlizzWindowStyle(WIN) ~= "off"
 end
 
 local cardView = setmetatable({}, {
@@ -301,14 +301,14 @@ local function StartHost()
     if not loggedIn then
         return
     end
-    CludesUI.FriendsKit.StartTiles({
+    CUI.FriendsKit.StartTiles({
         Settings = CardSettings,
         style = "cui",
         fontKey = "blizzardSkin",
         cards = skinnedAtLogin,
         onlineCards = skinnedAtLogin and 0.25 or 1,
     })
-    CludesUI.FriendsList.Start()
+    CUI.FriendsList.Start()
 end
 
 function mod.FriendsCardGet(keyName)
@@ -329,24 +329,24 @@ function mod.FriendsCardSet(keyName, val)
     end
     tbl[keyName] = val
     if keyName == "autoAcceptFriendInvites" or keyName == "autoAcceptGuildInvites" then
-        CludesUI.FriendsKit.SyncAutoAccept(CardSettings)
+        CUI.FriendsKit.SyncAutoAccept(CardSettings)
     else
         if keyName == "customTiles" and cardView.customTiles then
             StartHost()
         end
-        CludesUI.FriendsKit.RedecorateTiles()
-        CludesUI.FriendsList.Refresh()
+        CUI.FriendsKit.RedecorateTiles()
+        CUI.FriendsList.Refresh()
     end
 end
 
 -- After a reset cleared the settings
 function mod.FriendsCardRefresh()
-    CludesUI.FriendsKit.SyncAutoAccept(CardSettings)
+    CUI.FriendsKit.SyncAutoAccept(CardSettings)
     if cardView.customTiles then
         StartHost()
     end
-    CludesUI.FriendsKit.RedecorateTiles()
-    CludesUI.FriendsList.Refresh()
+    CUI.FriendsKit.RedecorateTiles()
+    CUI.FriendsList.Refresh()
 end
 
 -- At PLAYER_LOGIN, before any card exists: the kit's host while the card is
@@ -355,9 +355,9 @@ local boot = CreateFrame("Frame")
 boot:RegisterEvent("PLAYER_LOGIN")
 boot:SetScript("OnEvent", function(self)
     self:UnregisterEvent("PLAYER_LOGIN")
-    CludesUI.FriendsKit.SyncAutoAccept(CardSettings)
+    CUI.FriendsKit.SyncAutoAccept(CardSettings)
     loggedIn = true
-    skinnedAtLogin = CludesUI.GetBlizzWindowStyle(WIN) ~= "off"
+    skinnedAtLogin = CUI.GetBlizzWindowStyle(WIN) ~= "off"
     if skinnedAtLogin or cardView.customTiles then
         StartHost()
     end

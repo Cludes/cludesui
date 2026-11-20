@@ -58,12 +58,12 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  card is Off.
 --------------------------------------------------------------------------------
 local ADDON_NAME, mod = ...
-local CludesUI = _G.CludesUI
-if not (CludesUI and CludesUI.IS_FOREVER) then
+local CUI = _G.CludesUI
+if not (CUI and CUI.IS_FOREVER) then
     return
 end
 
-local FFD, GetFFD = CludesUI.NewFrameData()
+local FFD, GetFFD = CUI.NewFrameData()
 
 -- The Character Sheet card's Off and the window skins kill switch, which
 -- stop both looks (as they stop the retail sheet's).
@@ -74,7 +74,7 @@ local function SheetOn()
     if CludesUIDB.themedCharacterSheet == false then
         return false
     end
-    return not CludesUI.BlizzWindowSkinsKilled()
+    return not CUI.BlizzWindowSkinsKilled()
 end
 
 -- The CludesUI look (the card's style is latched at login, so a change
@@ -89,7 +89,7 @@ local function TextEnabled()
 end
 
 local function FontPath()
-    return (CludesUI.GetFontPath("blizzardSkin")) or STANDARD_TEXT_FONT
+    return (CUI.GetFontPath("blizzardSkin")) or STANDARD_TEXT_FONT
 end
 
 local MEDIA = "Interface\\AddOns\\CludesUIBlizzardSkin\\Media\\"
@@ -160,7 +160,7 @@ local function CategoryColor(categoryName)
     if color and color.r then
         return color.r, color.g, color.b
     end
-    local ACC = CludesUI.CLUDES_GREEN
+    local ACC = CUI.CLUDES_GREEN
     if ACC then
         return ACC.r, ACC.g, ACC.b
     end
@@ -191,7 +191,7 @@ end
 --  Stats list elements
 --------------------------------------------------------------------------------
 local function OnePixel(widget)
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     local perfect = (Pix and Pix.perfect) or 1
     local es = widget:GetEffectiveScale()
     if not es or es <= 0 then
@@ -293,7 +293,7 @@ end
 -- the frames alive in both lists. The retail sheet's refresher of the same
 -- name is replaced (it walks retail-only state), so the swatches reach this.
 local STAT_BOXES = { "CharacterStatsPaneScrollBox", "CharacterStatsPanePetScrollBox" }
-function CludesUI._refreshCharacterSheetColors()
+function CUI._refreshCharacterSheetColors()
     if not Enabled() then
         return
     end
@@ -377,7 +377,7 @@ local function SlotBorderColor(slot)
 end
 
 local function ColorSlotBorder(slot)
-    local PanelPP = CludesUI.PanelPP
+    local PanelPP = CUI.PanelPP
     if not (PanelPP and PanelPP.SetBorderColor) then
         return
     end
@@ -449,43 +449,43 @@ local function StatList()
     if STAT_LIST then
         return STAT_LIST
     end
-    local crit, hit = CludesUI.L("Crit"), CludesUI.L("Hit")
-    local mp5, hp5 = CludesUI.L("MP5"), CludesUI.L("HP5")
+    local crit, hit = CUI.L("Crit"), CUI.L("Hit")
+    local mp5, hp5 = CUI.L("MP5"), CUI.L("HP5")
     STAT_LIST = {
-        { "ITEM_MOD_STRENGTH_SHORT", CludesUI.L("Str") },
-        { "ITEM_MOD_AGILITY_SHORT", CludesUI.L("Agi") },
-        { "ITEM_MOD_INTELLECT_SHORT", CludesUI.L("Int") },
-        { "ITEM_MOD_STAMINA_SHORT", CludesUI.L("Stam") },
-        { "ITEM_MOD_SPIRIT_SHORT", CludesUI.L("Spi") },
-        { "ITEM_MOD_ATTACK_POWER_SHORT", CludesUI.L("AP") },
-        { "ITEM_MOD_RANGED_ATTACK_POWER_SHORT", CludesUI.L("RAP") },
-        { "ITEM_MOD_SPELL_POWER_SHORT", CludesUI.L("SP") },
-        { "ITEM_MOD_SPELL_DAMAGE_DONE_SHORT", CludesUI.L("Spell Dmg") },
-        { "ITEM_MOD_SPELL_HEALING_DONE_SHORT", CludesUI.L("Heal") },
+        { "ITEM_MOD_STRENGTH_SHORT", CUI.L("Str") },
+        { "ITEM_MOD_AGILITY_SHORT", CUI.L("Agi") },
+        { "ITEM_MOD_INTELLECT_SHORT", CUI.L("Int") },
+        { "ITEM_MOD_STAMINA_SHORT", CUI.L("Stam") },
+        { "ITEM_MOD_SPIRIT_SHORT", CUI.L("Spi") },
+        { "ITEM_MOD_ATTACK_POWER_SHORT", CUI.L("AP") },
+        { "ITEM_MOD_RANGED_ATTACK_POWER_SHORT", CUI.L("RAP") },
+        { "ITEM_MOD_SPELL_POWER_SHORT", CUI.L("SP") },
+        { "ITEM_MOD_SPELL_DAMAGE_DONE_SHORT", CUI.L("Spell Dmg") },
+        { "ITEM_MOD_SPELL_HEALING_DONE_SHORT", CUI.L("Heal") },
         { "ITEM_MOD_CRIT_RATING_SHORT", crit },
         { "ITEM_MOD_CRIT_MELEE_RATING_SHORT", crit },
         { "ITEM_MOD_CRIT_RANGED_RATING_SHORT", crit },
-        { "ITEM_MOD_CRIT_SPELL_RATING_SHORT", CludesUI.L("Spell Crit") },
+        { "ITEM_MOD_CRIT_SPELL_RATING_SHORT", CUI.L("Spell Crit") },
         { "ITEM_MOD_HIT_RATING_SHORT", hit },
         { "ITEM_MOD_HIT_MELEE_RATING_SHORT", hit },
         { "ITEM_MOD_HIT_RANGED_RATING_SHORT", hit },
-        { "ITEM_MOD_HIT_SPELL_RATING_SHORT", CludesUI.L("Spell Hit") },
-        { "ITEM_MOD_HASTE_RATING_SHORT", CludesUI.L("Haste") },
+        { "ITEM_MOD_HIT_SPELL_RATING_SHORT", CUI.L("Spell Hit") },
+        { "ITEM_MOD_HASTE_RATING_SHORT", CUI.L("Haste") },
         { "ITEM_MOD_MANA_REGENERATION_SHORT", mp5 },
         { "ITEM_MOD_POWER_REGEN0_SHORT", mp5 },
         { "ITEM_MOD_HEALTH_REGEN_SHORT", hp5 },
         { "ITEM_MOD_HEALTH_REGENERATION_SHORT", hp5 },
-        { "ITEM_MOD_DEFENSE_SKILL_RATING_SHORT", CludesUI.L("Def") },
-        { "ITEM_MOD_DODGE_RATING_SHORT", CludesUI.L("Dodge") },
-        { "ITEM_MOD_PARRY_RATING_SHORT", CludesUI.L("Parry") },
-        { "ITEM_MOD_BLOCK_RATING_SHORT", CludesUI.L("Block") },
-        { "ITEM_MOD_SPELL_PENETRATION_SHORT", CludesUI.L("Spell Pen") },
-        { "RESISTANCE1_NAME", CludesUI.L("Holy Res") },
-        { "RESISTANCE2_NAME", CludesUI.L("Fire Res") },
-        { "RESISTANCE3_NAME", CludesUI.L("Nature Res") },
-        { "RESISTANCE4_NAME", CludesUI.L("Frost Res") },
-        { "RESISTANCE5_NAME", CludesUI.L("Shadow Res") },
-        { "RESISTANCE6_NAME", CludesUI.L("Arcane Res") },
+        { "ITEM_MOD_DEFENSE_SKILL_RATING_SHORT", CUI.L("Def") },
+        { "ITEM_MOD_DODGE_RATING_SHORT", CUI.L("Dodge") },
+        { "ITEM_MOD_PARRY_RATING_SHORT", CUI.L("Parry") },
+        { "ITEM_MOD_BLOCK_RATING_SHORT", CUI.L("Block") },
+        { "ITEM_MOD_SPELL_PENETRATION_SHORT", CUI.L("Spell Pen") },
+        { "RESISTANCE1_NAME", CUI.L("Holy Res") },
+        { "RESISTANCE2_NAME", CUI.L("Fire Res") },
+        { "RESISTANCE3_NAME", CUI.L("Nature Res") },
+        { "RESISTANCE4_NAME", CUI.L("Frost Res") },
+        { "RESISTANCE5_NAME", CUI.L("Shadow Res") },
+        { "RESISTANCE6_NAME", CUI.L("Arcane Res") },
     }
     return STAT_LIST
 end
@@ -535,7 +535,7 @@ local function StatText(itemLink)
     else
         local armor = stats.RESISTANCE0_NAME
         if armor and armor > 0 then
-            armorLabel = armorLabel or CludesUI.L("Armor")
+            armorLabel = armorLabel or CUI.L("Armor")
             textValue = string.format("%d %s", armor, armorLabel)
         else
             textValue = ""
@@ -562,7 +562,7 @@ local function DpsText(itemLink)
         end
         local dps = stats.ITEM_MOD_DAMAGE_PER_SECOND_SHORT
         if dps and dps > 0 then
-            dpsLabel = dpsLabel or CludesUI.L("Dps")
+            dpsLabel = dpsLabel or CUI.L("Dps")
             textValue = string.format("%.1f %s", dps, dpsLabel)
         end
     end
@@ -594,7 +594,7 @@ function mod.ForeverEnchantName(textValue)
     return textValue
 end
 local function EnchantName(slotID)
-    return mod.ForeverEnchantName(CludesUI.GetEnchantText(slotID))
+    return mod.ForeverEnchantName(CUI.GetEnchantText(slotID))
 end
 
 local textVer = 1 -- bumped by every options refresh
@@ -607,11 +607,11 @@ local itemWatch -- GET_ITEM_INFO_RECEIVED, registered only while a slot waits
 local function ApplyLabelFonts(skinData)
     local filePath = FontPath()
     local size = SavedVal("charSheetUpgradeTrackSize") or 11
-    local flags = SavedVal("charSheetUpgradeTrackOutline") and CludesUI.SlugFlag("OUTLINE, SLUG") or ""
-    CludesUI.PrimeFontShadow(skinData.stats, SavedVal("charSheetUpgradeTrackShadow"))
+    local flags = SavedVal("charSheetUpgradeTrackOutline") and CUI.SlugFlag("OUTLINE, SLUG") or ""
+    CUI.PrimeFontShadow(skinData.stats, SavedVal("charSheetUpgradeTrackShadow"))
     skinData.stats:SetFont(filePath, size, flags)
     if skinData.dps then
-        CludesUI.PrimeFontShadow(skinData.dps, SavedVal("charSheetUpgradeTrackShadow"))
+        CUI.PrimeFontShadow(skinData.dps, SavedVal("charSheetUpgradeTrackShadow"))
         skinData.dps:SetFont(filePath, size, flags)
     end
     skinData.fontVer = textVer
@@ -859,7 +859,7 @@ local function DrawSlotText(slot)
     if name ~= "" then
         local size = SavedVal("charSheetEnchantSize") or 9
         if SavedVal("charSheetEnchantNames") then
-            ench:SetFont(FontPath(), size, CludesUI.SlugFlag("OUTLINE, SLUG"))
+            ench:SetFont(FontPath(), size, CUI.SlugFlag("OUTLINE, SLUG"))
             ench:SetTextColor(red + (1 - red) * 0.5, green + (1 - green) * 0.5, blue + (1 - blue) * 0.5, 0.9)
         else
             ench:SetFont(FontPath(), size, "")
@@ -1004,11 +1004,11 @@ local function RedrawSlotText()
         end
     end
 end
-CludesUI._refreshItemLevelVisibility = RedrawSlotText
-CludesUI._refreshUpgradeTrackVisibility = RedrawSlotText
-CludesUI._refreshEnchantsVisibility = RedrawSlotText
-CludesUI._refreshCharSheetSlotLabels = RedrawSlotText
-CludesUI._applyCharSheetTextSizes = RedrawSlotText
+CUI._refreshItemLevelVisibility = RedrawSlotText
+CUI._refreshUpgradeTrackVisibility = RedrawSlotText
+CUI._refreshEnchantsVisibility = RedrawSlotText
+CUI._refreshCharSheetSlotLabels = RedrawSlotText
+CUI._applyCharSheetTextSizes = RedrawSlotText
 
 -- Blizzard refreshes every shown slot through this on equipment changes and
 -- on show; the border and the slot text follow. Foreign item buttons (bags)
@@ -1079,7 +1079,7 @@ local function SkinSlot(slotName, Fade)
     backdrop:SetAllPoints(slot)
     backdrop:SetColorTexture(0.5, 0.5, 0.5, 0.7)
     GetFFD(slot).bg = backdrop
-    local PanelPP = CludesUI.PanelPP
+    local PanelPP = CUI.PanelPP
     if PanelPP and PanelPP.CreateBorder then
         PanelPP.CreateBorder(slot, 0.4, 0.4, 0.4, 1, 2, "OVERLAY", 1)
         local borders = PanelPP.GetBorders and PanelPP.GetBorders(slot)
@@ -1093,7 +1093,7 @@ end
 
 -- Options-page refresh: the Icon Zoom slider lands here (the retail sheet's
 -- own refresher is replaced, it walks the retail slot list).
-function CludesUI._refreshCharSheetIconZoom()
+function CUI._refreshCharSheetIconZoom()
     if not Enabled() then
         return
     end
@@ -1278,7 +1278,7 @@ local function SkinFrame()
     -- Top-left eyeball, as on retail: hides every slot's text for the
     -- session by fading their shared overlay.
     if slotOverlay and not skinData.eyeBtn then
-        local EYE_VISIBLE, EYE_INVISIBLE = CludesUI.EYE_VISIBLE_ICON, CludesUI.EYE_INVISIBLE_ICON
+        local EYE_VISIBLE, EYE_INVISIBLE = CUI.EYE_VISIBLE_ICON, CUI.EYE_INVISIBLE_ICON
         local hidden = false
         -- On the slots' own frame: it goes with the slot text (other tabs,
         -- the pet view) and sits above the mouse-enabled model scene, which
@@ -1296,15 +1296,15 @@ local function SkinFrame()
             hidden = not hidden
             eyeTex:SetTexture(hidden and EYE_INVISIBLE or EYE_VISIBLE)
             slotOverlay:SetAlpha(hidden and 0 or 1)
-            CludesUI.ShowWidgetTooltip(self, hidden and "Show Item Text" or "Hide Item Text", { width = 135 })
+            CUI.ShowWidgetTooltip(self, hidden and "Show Item Text" or "Hide Item Text", { width = 135 })
         end)
         eyeBtn:SetScript("OnEnter", function(self)
             self:SetAlpha(0.8)
-            CludesUI.ShowWidgetTooltip(self, hidden and "Show Item Text" or "Hide Item Text", { width = 135 })
+            CUI.ShowWidgetTooltip(self, hidden and "Show Item Text" or "Hide Item Text", { width = 135 })
         end)
         eyeBtn:SetScript("OnLeave", function(self)
             self:SetAlpha(0.4)
-            CludesUI.HideWidgetTooltip()
+            CUI.HideWidgetTooltip()
         end)
         skinData.eyeBtn = eyeBtn
     end

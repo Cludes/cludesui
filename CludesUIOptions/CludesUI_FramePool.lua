@@ -80,11 +80,11 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  In game, /run CludesUI._Pool._DevVerifyReset() checks the reset of every
 --  pooled kind against a new object and prints what differs (dev tool).
 -------------------------------------------------------------------------------
-local CludesUI = _G.CludesUI
-local Pool = CludesUI._Pool
+local CUI = _G.CludesUI
+local Pool = CUI._Pool
 if type(Pool) ~= "table" then
     Pool = {}
-    CludesUI._Pool = Pool
+    CUI._Pool = Pool
 end
 
 local _G = _G
@@ -252,7 +252,7 @@ local PASS_BUTTONS = { "LeftButton", "RightButton", "MiddleButton", "Button4", "
 
 local devOn = false
 local function RefreshDev()
-    local func = CludesUI.IsDevModeActive
+    local func = CUI.IsDevModeActive
     devOn = (func and func()) and true or false
 end
 
@@ -305,7 +305,7 @@ local function DevWarn(key, msg)
         return
     end
     warned[key] = true
-    CludesUI.PrintError("pool: " .. msg)
+    CUI.PrintError("pool: " .. msg)
 end
 
 -- Moves an object the pool does not manage off a host being reset. Its own
@@ -578,14 +578,14 @@ local function ReplayOnUpdate(self)
     replayFocus, replayFocusGen, replayOwner, replayOwnerGen = nil, nil, nil, nil
     if ownerFrame then
         local orec = REC[ownerFrame]
-        local ownerFn = CludesUI._WidgetTooltipOwner
+        local ownerFn = CUI._WidgetTooltipOwner
         if
             (not orec or orec.gen ~= ogen)
             and ownerFn
             and ownerFn() == ownerFrame
-            and CludesUI.HideWidgetTooltip
+            and CUI.HideWidgetTooltip
         then
-            CludesUI.HideWidgetTooltip(true)
+            CUI.HideWidgetTooltip(true)
         end
     end
     if f then
@@ -612,7 +612,7 @@ local function ArmReplay()
     if frec then
         replayFocus, replayFocusGen = f, frec.gen
     end
-    local ownerFn = CludesUI._WidgetTooltipOwner
+    local ownerFn = CUI._WidgetTooltipOwner
     local ownerFrame = ownerFn and ownerFn()
     local orec = ownerFrame and REC[ownerFrame]
     if orec then
@@ -716,37 +716,37 @@ end
 -- Creation goes to the pool only on an object the pool still manages (a
 -- retired one creates as any frame does).
 local function O_CreateTexture(self, label, layer, template, subMenu)
-    if label ~= nil or template ~= nil or CludesUI._prebuilding or not REC[self] then
+    if label ~= nil or template ~= nil or CUI._prebuilding or not REC[self] then
         return getmetatable(self).__index.CreateTexture(self, label, layer, template, subMenu)
     end
     return AcquireRegion(self, "Texture", "CreateTexture", layer, subMenu)
 end
 local function O_CreateMaskTexture(self, label, layer, template, subMenu)
-    if label ~= nil or template ~= nil or CludesUI._prebuilding or not REC[self] then
+    if label ~= nil or template ~= nil or CUI._prebuilding or not REC[self] then
         return getmetatable(self).__index.CreateMaskTexture(self, label, layer, template, subMenu)
     end
     return AcquireRegion(self, "MaskTexture", "CreateMaskTexture", layer, subMenu)
 end
 local function O_CreateLine(self, label, layer, template, subMenu)
-    if label ~= nil or template ~= nil or CludesUI._prebuilding or not REC[self] then
+    if label ~= nil or template ~= nil or CUI._prebuilding or not REC[self] then
         return getmetatable(self).__index.CreateLine(self, label, layer, template, subMenu)
     end
     return AcquireRegion(self, "Line", "CreateLine", layer, subMenu)
 end
 local function O_CreateFontString(self, label, layer, template, ...)
-    if label ~= nil or template ~= nil or CludesUI._prebuilding or not REC[self] then
+    if label ~= nil or template ~= nil or CUI._prebuilding or not REC[self] then
         return getmetatable(self).__index.CreateFontString(self, label, layer, template, ...)
     end
     return AcquireRegion(self, "FontString", "CreateFontString", layer, nil)
 end
 local function O_CreateAnimationGroup(self, label, template)
-    if label ~= nil or template ~= nil or CludesUI._prebuilding or not REC[self] then
+    if label ~= nil or template ~= nil or CUI._prebuilding or not REC[self] then
         return getmetatable(self).__index.CreateAnimationGroup(self, label, template)
     end
     return AcquireAG(self)
 end
 local function O_CreateAnimation(self, atype, label, template)
-    if label ~= nil or template ~= nil or CludesUI._prebuilding or not REC[self] then
+    if label ~= nil or template ~= nil or CUI._prebuilding or not REC[self] then
         return getmetatable(self).__index.CreateAnimation(self, atype, label, template)
     end
     return AcquireAnim(self, atype)
@@ -939,18 +939,18 @@ end
 --  never answers for its previous dress)
 -------------------------------------------------------------------------------
 local function ForgetRegistries(object, isFrame)
-    local acc = CludesUI._accentElements
+    local acc = CUI._accentElements
     local position = acc and acc._idx
     local i = position and position[object]
     if i then
         acc[i] = INERT_ACCENT
     end
     if isFrame then
-        local rc = CludesUI._rowCounters
+        local rc = CUI._rowCounters
         if rc then
             rc[object] = nil
         end
-        local forget = CludesUI._ForgetEscapeClose
+        local forget = CUI._ForgetEscapeClose
         local record = REC[object]
         if forget and not (record and record.exempt and (record.exempt.OnShow or record.exempt.OnHide)) then
             forget(object)
@@ -959,7 +959,7 @@ local function ForgetRegistries(object, isFrame)
 end
 
 local function ForgetPixelSnap(object)
-    local Pix = CludesUI.PP
+    local Pix = CUI.PP
     local f = Pix and Pix.ForgetPixelSnap
     if f then
         f(object)
@@ -1599,7 +1599,7 @@ local function ResetFrame(object, record, hostFrame, pass, hidden)
         pcall(hook, object)
     end
     if HasGlow(object) then
-        local G = CludesUI.Glows
+        local G = CUI.Glows
         if G and G.StopAllGlows then
             pcall(G.StopAllGlows, object)
         end
@@ -2088,7 +2088,7 @@ local function CanonicalType(frameType)
 end
 
 function Pool.CreateFrame(frameType, label, hostFrame, template, ident)
-    if label == nil and ident == nil and hostFrame ~= nil and not CludesUI._prebuilding then
+    if label == nil and ident == nil and hostFrame ~= nil and not CUI._prebuilding then
         local prec = REC[hostFrame]
         if prec and prec.isFrame and (template == nil or TEMPLATES[template]) then
             local ft = CanonicalType(frameType)
@@ -2111,7 +2111,7 @@ end
 
 -- Every reset of a kept frame starts a pass on it (ResetContents).
 function Pool.Kept(ownerFrame, key, frameType, hostFrame, template, label, hidden)
-    if CludesUI._prebuilding or ownerFrame == nil or key == nil then
+    if CUI._prebuilding or ownerFrame == nil or key == nil then
         return NewKept(_G.CreateFrame(frameType, label, hostFrame, template), hidden)
     end
     local ft = CanonicalType(frameType)
@@ -2144,7 +2144,7 @@ end
 
 function Pool.Owned(ownerFrame, labelText, frameType, hostFrame, template)
     local ft = CanonicalType(frameType)
-    if CludesUI._prebuilding or ownerFrame == nil or not ft or (template ~= nil and not TEMPLATES[template]) then
+    if CUI._prebuilding or ownerFrame == nil or not ft or (template ~= nil and not TEMPLATES[template]) then
         return _G.CreateFrame(frameType, nil, hostFrame, template)
     end
     local om = OWNED[ownerFrame]
@@ -2173,7 +2173,7 @@ function Pool.Owned(ownerFrame, labelText, frameType, hostFrame, template)
 end
 
 function Pool.Begin(hostFrame)
-    if CludesUI._prebuilding then
+    if CUI._prebuilding then
         return
     end
     local record = REC[hostFrame]
@@ -2197,7 +2197,7 @@ end
 -- content header before its header root is dressed again). The pass then
 -- finds those objects placed by what the host is placed by and leaves them.
 function Pool.Pin(hostFrame)
-    if CludesUI._prebuilding then
+    if CUI._prebuilding then
         return
     end
     local record = REC[hostFrame]
@@ -2438,7 +2438,7 @@ end
 local verifyOwner
 function Pool._DevVerifyReset()
     if _G.InCombatLockdown() then
-        CludesUI.PrintError("pool check: out of combat only")
+        CUI.PrintError("pool check: out of combat only")
         return
     end
     RefreshDev()
@@ -2967,14 +2967,14 @@ function Pool._DevVerifyReset()
 
     -- what the resets could not put back (those objects are retired)
     for i = 1, #refusedLog do
-        CludesUI.Print("pool check note: " .. refusedLog[i])
+        CUI.Print("pool check note: " .. refusedLog[i])
     end
     refusedLog = nil
     for i = 1, #result do
-        CludesUI.PrintError("pool check: " .. result[i])
+        CUI.PrintError("pool check: " .. result[i])
     end
-    CludesUI.Print(
-        CludesUI.COLOR_CODES.BRAND
+    CUI.Print(
+        CUI.COLOR_CODES.BRAND
             .. "[CludesUI]|r pool check: "
             .. kinds
             .. " kinds, "
@@ -2988,12 +2988,12 @@ end
 -- An options row's eye toggle shell: a 26px glyph button at the left end of
 -- the region's inline controls (resting at 0.4 alpha) and the texture that
 -- fills it. The caller gives it its icon, click and hover.
-function CludesUI.NewInlineEye(region)
+function CUI.NewInlineEye(region)
     local eye = Pool.CreateFrame("Button", nil, region)
     eye:SetSize(26, 26)
     eye:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
     eye:SetFrameLevel(region:GetFrameLevel() + 5)
-    CludesUI.SetGlyphAlpha(eye, 0.4)
+    CUI.SetGlyphAlpha(eye, 0.4)
     region._lastInline = eye
     local glyph = eye:CreateTexture(nil, "OVERLAY")
     glyph:SetAllPoints()
@@ -3004,10 +3004,10 @@ end
 -- click flips it and calls onToggle, the glyph shows the action a click
 -- would take, and the tooltip reads "Hide <what> preview" or "Show <what>
 -- preview" to match.
-function CludesUI.AddPreviewEye(region, store, field, what, onToggle)
-    local eye, glyph = CludesUI.NewInlineEye(region)
+function CUI.AddPreviewEye(region, store, field, what, onToggle)
+    local eye, glyph = CUI.NewInlineEye(region)
     local function Paint()
-        glyph:SetTexture(store[field] and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON)
+        glyph:SetTexture(store[field] and CUI.EYE_INVISIBLE_ICON or CUI.EYE_VISIBLE_ICON)
     end
     Paint()
     eye:SetScript("OnClick", function()
@@ -3016,12 +3016,12 @@ function CludesUI.AddPreviewEye(region, store, field, what, onToggle)
         onToggle()
     end)
     eye:SetScript("OnEnter", function(self)
-        CludesUI.SetGlyphAlpha(self, 0.7)
-        CludesUI.ShowWidgetTooltip(self, (store[field] and "Hide " or "Show ") .. what .. " preview")
+        CUI.SetGlyphAlpha(self, 0.7)
+        CUI.ShowWidgetTooltip(self, (store[field] and "Hide " or "Show ") .. what .. " preview")
     end)
     eye:SetScript("OnLeave", function(self)
-        CludesUI.SetGlyphAlpha(self, 0.4)
-        CludesUI.HideWidgetTooltip()
+        CUI.SetGlyphAlpha(self, 0.4)
+        CUI.HideWidgetTooltip()
     end)
     return eye
 end
@@ -3029,7 +3029,7 @@ end
 -- A mouse-catching cover over a colour swatch (or any control), ten levels
 -- above it: shown, it blocks clicks on a control that cannot be edited right
 -- now. It starts shown; the caller hides or shows it with its state.
-function CludesUI.NewSwatchBlocker(control)
+function CUI.NewSwatchBlocker(control)
     local cover = Pool.CreateFrame("Frame", nil, control)
     cover:SetAllPoints()
     cover:SetFrameLevel(control:GetFrameLevel() + 10)

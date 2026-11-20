@@ -27,8 +27,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  form power's events while the bar shows.
 -------------------------------------------------------------------------------
 local _, mod = ...
-local CludesUI = _G.CludesUI
-if not (CludesUI and CludesUI.IS_FOREVER) then
+local CUI = _G.CludesUI
+if not (CUI and CUI.IS_FOREVER) then
     return
 end
 local _, playerClass = UnitClass("player")
@@ -50,7 +50,7 @@ local evf = CreateFrame("Frame")
 -- fmtBoth (built per apply, so a paint builds no string).
 local S = { on = false, live = false, shown = false }
 
-local Secret = CludesUI.IsSecret
+local Secret = CUI.IsSecret
 
 -- The bar while it shows, else nil: the bottom-anchored player auras reserve
 -- the space it takes under the frame (CUI_UnitFrames_AuraContainers.lua).
@@ -63,8 +63,8 @@ end
 -- One re-anchor of the player auras on the next frame (a no-op unless they
 -- are bottom-anchored).
 local function Reanchor()
-    if CludesUI.UF_RequestResourceReanchor then
-        CludesUI.UF_RequestResourceReanchor()
+    if CUI.UF_RequestResourceReanchor then
+        CUI.UF_RequestResourceReanchor()
     end
 end
 
@@ -106,7 +106,7 @@ end
 -- The form power's colour at Power Bar Opacity, and the power bar's background.
 local function Color()
     local s, barFrame = S.settings, S.bar
-    local details = S.token and CludesUI.GetPowerColor(S.token)
+    local details = S.token and CUI.GetPowerColor(S.token)
     local red, green, blue = 1, 1, 1
     if details then
         red, green, blue = details.r, details.g, details.b
@@ -130,7 +130,7 @@ local function Color()
         barFrame.text:SetTextColor(1, 1, 1)
     end
     if s.powerBgPowerColored then
-        local frame = CludesUI.GetPowerBgDarkenFactor()
+        local frame = CUI.GetPowerBgDarkenFactor()
         barFrame.bg:SetColorTexture(red * frame, green * frame, blue * frame, 1)
     else
         local color = s.customPowerBgColor
@@ -202,7 +202,7 @@ local function Build(widget)
     -- Border on its own child frame (the canonical pattern).
     local bdr = CreateFrame("Frame", nil, barFrame)
     bdr:SetAllPoints(barFrame)
-    CludesUI.PP.CreateBorder(bdr, 0, 0, 0, 1, 1)
+    CUI.PP.CreateBorder(bdr, 0, 0, 0, 1, 1)
     barFrame.border = bdr
     -- Text on a frame over the border.
     local tf = CreateFrame("Frame", nil, barFrame)
@@ -232,7 +232,7 @@ local function StyleText(s)
         or "pct"
     local sign = (FormVal(s, "foreverFormShowPercent", "powerShowPercent", true) ~= false) and "%%" or ""
     S.fmtPct, S.fmtBoth = "%d" .. sign, "%d | %d" .. sign
-    CludesUI.ApplyModuleFont(
+    CUI.ApplyModuleFont(
         fontStr,
         nil,
         FormVal(s, "foreverFormTextSize", "powerPercentSize", 9),
@@ -260,7 +260,7 @@ end
 local FOREVER_RIM_DROP = 3
 
 local function Layout(widget, power, cfg)
-    local barFrame, Pix = S.bar, CludesUI.PP
+    local barFrame, Pix = S.bar, CUI.PP
     local place = mod.UF_PowerPos(cfg)
     local detached = (place == "detached_top" or place == "detached_bottom")
     -- A stock look draws an attached power bar inside its frame art.

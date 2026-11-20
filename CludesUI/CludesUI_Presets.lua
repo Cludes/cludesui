@@ -13,28 +13,28 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --    3. CludesUI_Presets.lua -- THIS FILE
 -------------------------------------------------------------------------------
 
-local CludesUI = _G.CludesUI
-local Pix = CludesUI.PanelPP
+local CUI = _G.CludesUI
+local Pix = CUI.PanelPP
 
 -- Utility functions
-local MakeFont = CludesUI.MakeFont
-local DisablePixelSnap = CludesUI.DisablePixelSnap
-local lerp = CludesUI.lerp
-local MakeDropdownArrow = CludesUI.MakeDropdownArrow
+local MakeFont = CUI.MakeFont
+local DisablePixelSnap = CUI.DisablePixelSnap
+local lerp = CUI.lerp
+local MakeDropdownArrow = CUI.MakeDropdownArrow
 
 -- Visual constants
-local CLUDES_GREEN = CludesUI.CLUDES_GREEN
-local CLASS_COLOR_MAP = CludesUI.CLASS_COLOR_MAP
+local CLUDES_GREEN = CUI.CLUDES_GREEN
+local CLASS_COLOR_MAP = CUI.CLASS_COLOR_MAP
 
 -- Numeric constants used in spec assignment popup
-local BORDER_R = CludesUI.BORDER_R
-local BORDER_G = CludesUI.BORDER_G
-local BORDER_B = CludesUI.BORDER_B
-local CB_BOX_R = CludesUI.CB_BOX_R
-local CB_BOX_G = CludesUI.CB_BOX_G
-local CB_BOX_B = CludesUI.CB_BOX_B
-local CB_BRD_A = CludesUI.CB_BRD_A
-local CB_ACT_BRD_A = CludesUI.CB_ACT_BRD_A
+local BORDER_R = CUI.BORDER_R
+local BORDER_G = CUI.BORDER_G
+local BORDER_B = CUI.BORDER_B
+local CB_BOX_R = CUI.CB_BOX_R
+local CB_BOX_G = CUI.CB_BOX_G
+local CB_BOX_B = CUI.CB_BOX_B
+local CB_BRD_A = CUI.CB_BRD_A
+local CB_ACT_BRD_A = CUI.CB_ACT_BRD_A
 
 -------------------------------------------------------------------------------
 --  SPEC ASSIGNMENT POPUP
@@ -164,7 +164,7 @@ do
             },
         },
     }
-    CludesUI._SPEC_DATA = SPEC_DATA
+    CUI._SPEC_DATA = SPEC_DATA
 
     ---------------------------------------------------------------------------
     --  WoW Forever spec translation. Forever has ONE spec per class (named
@@ -178,7 +178,7 @@ do
     --  Retail never builds these tables: the entry points return their input.
     ---------------------------------------------------------------------------
     -- Forever class -> Forever spec ID (ChrSpecialization, Forever 1.60.1).
-    CludesUI.FOREVER_CLASS_SPEC = {
+    CUI.FOREVER_CLASS_SPEC = {
         MAGE = 1482,
         DRUID = 1484,
         HUNTER = 1485,
@@ -191,7 +191,7 @@ do
     }
     -- Heals a Forever class range-checks with, best first: the retail-parity
     -- heal (learned at level 12-20 there), then the class's level-1 heal.
-    CludesUI.FOREVER_HEAL_SPELLS = {
+    CUI.FOREVER_HEAL_SPELLS = {
         PRIEST = { 2061, 2050 }, -- Flash Heal, Lesser Heal
         PALADIN = { 19750, 635 }, -- Flash of Light, Holy Light
         SHAMAN = { 8004, 331 }, -- Lesser Healing Wave, Healing Wave
@@ -227,7 +227,7 @@ do
                 flagValue.class[cfg.id] = classKey.class
                 flagValue.specName[cfg.id] = cfg.name
             end
-            local fid = CludesUI.FOREVER_CLASS_SPEC[classKey.class]
+            local fid = CUI.FOREVER_CLASS_SPEC[classKey.class]
             if fid then
                 local idList = {}
                 for jdx = 1, #classKey.specs do
@@ -270,8 +270,8 @@ do
     --- withLegacy also offers the class's Forever spec ID, first (stores that
     --- can hold data under it: the CDM spell store). token nil = the player.
     --- nil on retail and for a class Forever does not have.
-    function CludesUI.ForeverClassSpec(classFile, predicate, arg, withLegacy)
-        if not CludesUI.IS_FOREVER then
+    function CUI.ForeverClassSpec(classFile, predicate, arg, withLegacy)
+        if not CUI.IS_FOREVER then
             return nil
         end
         classFile = classFile or PlayerClass()
@@ -279,7 +279,7 @@ do
         if not idList then
             return nil
         end
-        return Pick(idList, withLegacy and CludesUI.FOREVER_CLASS_SPEC[classFile] or nil, predicate, arg)
+        return Pick(idList, withLegacy and CUI.FOREVER_CLASS_SPEC[classFile] or nil, predicate, arg)
     end
 
     --- The spec ID the client reports, translated to the spec ID that keys a
@@ -288,13 +288,13 @@ do
     --- 1482-1491, 1493 or any unknown ID): the raw ID itself when pred holds
     --- (data held under it), else the player's class retail specs in class
     --- order, else the class's first retail spec.
-    function CludesUI.SpecFor(rawID, predicate, arg)
-        if not CludesUI.IS_FOREVER or not rawID or rawID == 0 then
+    function CUI.SpecFor(rawID, predicate, arg)
+        if not CUI.IS_FOREVER or not rawID or rawID == 0 then
             return rawID
         end
         local tbl = FV()
         local ownerFrame = tbl.class[rawID]
-        if ownerFrame and CludesUI.FOREVER_CLASS_SPEC[ownerFrame] ~= rawID then
+        if ownerFrame and CUI.FOREVER_CLASS_SPEC[ownerFrame] ~= rawID then
             return rawID
         end
         local idList = tbl.specs[PlayerClass() or ""]
@@ -306,17 +306,17 @@ do
 
     --- True when specID is a spec the player counts as: retail = the live spec;
     --- Forever = any retail spec of the player's class, or its Forever spec ID.
-    function CludesUI.IsPlayerSpec(specID)
+    function CUI.IsPlayerSpec(specID)
         if not specID then
             return false
         end
-        if CludesUI.IS_FOREVER then
+        if CUI.IS_FOREVER then
             return FV().class[specID] == PlayerClass()
         end
-        local liveValue = CludesUI._specID
+        local liveValue = CUI._specID
         if not liveValue or liveValue == 0 then
-            CludesUI._RefreshSpecID()
-            liveValue = CludesUI._specID
+            CUI._RefreshSpecID()
+            liveValue = CUI._specID
         end
         return liveValue ~= 0 and specID == liveValue
     end
@@ -325,22 +325,22 @@ do
     --- class's retail spec IDs in class order (shared tables, read only); the
     --- class owning a retail spec ID of ANY class or a Forever spec ID; the
     --- English spec name of a retail spec ID; class display name and icon.
-    function CludesUI.ForeverClasses()
+    function CUI.ForeverClasses()
         return FV().order
     end
-    function CludesUI.ForeverClassSpecIDs(classFile)
+    function CUI.ForeverClassSpecIDs(classFile)
         return classFile and FV().specs[classFile] or nil
     end
-    function CludesUI.SpecClassOf(specID)
+    function CUI.SpecClassOf(specID)
         return specID and FV().class[specID] or nil
     end
-    function CludesUI.RetailSpecName(specID)
+    function CUI.RetailSpecName(specID)
         return specID and FV().specName[specID] or nil
     end
-    function CludesUI.ForeverClassName(classFile)
+    function CUI.ForeverClassName(classFile)
         return (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[classFile]) or FV().name[classFile] or classFile
     end
-    function CludesUI.ForeverClassIcon(classFile)
+    function CUI.ForeverClassIcon(classFile)
         local cid = FOREVER_CLASS_ID[classFile]
         if not (cid and GetSpecializationInfoForClassID) then
             return nil
@@ -352,20 +352,20 @@ do
     --- Forever: a spec-ID-keyed set where each Forever spec ID stands for
     --- every retail spec of its class (a new table; the input is untouched).
     --- Retail: the input.
-    function CludesUI.ForeverExpandSpecSet(set)
-        if not CludesUI.IS_FOREVER or not set then
+    function CUI.ForeverExpandSpecSet(set)
+        if not CUI.IS_FOREVER or not set then
             return set
         end
         local t, result = FV(), {}
         for ident, val in pairs(set) do
             local ownerFrame = t.class[ident]
-            if not (ownerFrame and CludesUI.FOREVER_CLASS_SPEC[ownerFrame] == ident) then
+            if not (ownerFrame and CUI.FOREVER_CLASS_SPEC[ownerFrame] == ident) then
                 result[ident] = val
             end
         end
         for ident, val in pairs(set) do
             local ownerFrame = t.class[ident]
-            if ownerFrame and CludesUI.FOREVER_CLASS_SPEC[ownerFrame] == ident then
+            if ownerFrame and CUI.FOREVER_CLASS_SPEC[ownerFrame] == ident then
                 local idList = t.specs[ownerFrame]
                 for i = 1, #idList do
                     if result[idList[i]] == nil then
@@ -379,10 +379,10 @@ do
 
     -- Store predicates for ForeverClassSpec / SpecFor (plain functions, so no
     -- call site builds a closure).
-    function CludesUI.SpecHasEntry(ident, tbl)
+    function CUI.SpecHasEntry(ident, tbl)
         return tbl ~= nil and tbl[ident] ~= nil
     end
-    function CludesUI.SpecHasStringEntry(ident, tbl)
+    function CUI.SpecHasStringEntry(ident, tbl)
         return tbl ~= nil and tbl[tostring(ident)] ~= nil
     end
 
@@ -397,7 +397,7 @@ do
 
     local specDialog -- reusable popup frame
 
-    function CludesUI:ShowSpecAssignPopup(options)
+    function CUI:ShowSpecAssignPopup(options)
         local saved = options.db
         local dbKey = options.dbKey
         local presetKey = options.presetKey
@@ -417,7 +417,7 @@ do
 
         -- Build or reuse the popup
         if not specDialog then
-            local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+            local FONT = CUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
             local COL_W = 165
             local COL_GAP = 12
             local CONTENT_LEFT = 41
@@ -431,7 +431,7 @@ do
 
             local POPUP_W = CONTENT_LEFT + CONTENT_RIGHT + NUM_COLS * COL_W + (NUM_COLS - 1) * COL_GAP
             local POPUP_H = 740
-            local ppScale = CludesUI.GetPopupScale()
+            local ppScale = CUI.GetPopupScale()
 
             -- Dimmer
             local shade = CreateFrame("Frame", "CUISpecAssignDimmer", UIParent)
@@ -449,16 +449,16 @@ do
 
             -- Popup frame
             local dialog = CreateFrame("Frame", "CUISpecAssignPopup", shade)
-            dialog:SetScale(CludesUI.PopupBump(1))
+            dialog:SetScale(CUI.PopupBump(1))
             dialog:SetFrameStrata("FULLSCREEN_DIALOG")
             dialog:SetFrameLevel(shade:GetFrameLevel() + 10)
 
-            local popFrame = CludesUI._popupFrames
+            local popFrame = CUI._popupFrames
             if popFrame then
                 popFrame[#popFrame + 1] = { popup = dialog, dimmer = shade }
             end
             Pix.Size(dialog, POPUP_W, POPUP_H)
-            Pix.Point(dialog, "CENTER", CludesUI._mainFrame, "CENTER", 0, 0)
+            Pix.Point(dialog, "CENTER", CUI._mainFrame, "CENTER", 0, 0)
 
             -- Background
             local backdrop = dialog:CreateTexture(nil, "BACKGROUND")
@@ -467,7 +467,7 @@ do
 
             -- Rounded 1 px outline like the other popups (was a square 2 px edge).
             local BRD_A_SP = 0.15
-            dialog._brd = CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, BRD_A_SP, backdrop)
+            dialog._brd = CUI.MakeRoundedBorder(dialog, 1, 1, 1, BRD_A_SP, backdrop)
 
             -- Title
             local title = dialog:CreateFontString(nil, "OVERLAY")
@@ -476,8 +476,8 @@ do
             Pix.Point(title, "TOP", dialog, "TOP", 0, -32)
             -- WoW Forever has no specs: its rows are classes, and so is the wording.
             title:SetText(
-                CludesUI.IS_FOREVER and CludesUI.L("Assign Preset to Classes")
-                    or CludesUI.L("Assign Preset to Specs")
+                CUI.IS_FOREVER and CUI.L("Assign Preset to Classes")
+                    or CUI.L("Assign Preset to Specs")
             )
             dialog._title = title
 
@@ -501,7 +501,7 @@ do
                 button:SetFrameLevel(dialog:GetFrameLevel() + 2)
                 local labelFS = button:CreateFontString(nil, "OVERLAY")
                 labelFS:SetFont(FONT, 14, "")
-                labelFS:SetText(CludesUI.L(textValue))
+                labelFS:SetText(CUI.L(textValue))
                 labelFS:SetTextColor(1, 1, 1, 0.45)
                 labelFS:SetPoint("CENTER")
                 button:SetSize(labelFS:GetStringWidth() + 4, 20)
@@ -537,7 +537,7 @@ do
             dialog._uncheckAll = MakeLink("Uncheck All")
             -- WoW Forever specs carry no role: the role links are hidden and
             -- Uncheck All sits right after Check All.
-            if CludesUI.IS_FOREVER then
+            if CUI.IS_FOREVER then
                 dialog._checkTanks:Hide()
                 dialog._checkTanks._div:Hide()
                 dialog._checkHealers:Hide()
@@ -581,8 +581,8 @@ do
             defDDLabel:SetTextColor(1, 1, 1, 0.45)
             Pix.Point(defDDLabel, "BOTTOM", defDDContainer, "CENTER", 0, 7)
             defDDLabel:SetText(
-                CludesUI.IS_FOREVER and CludesUI.L("Default Profile (for non-assigned classes)")
-                    or CludesUI.L("Default Profile (for non-assigned specs)")
+                CUI.IS_FOREVER and CUI.L("Default Profile (for non-assigned classes)")
+                    or CUI.L("Default Profile (for non-assigned specs)")
             )
             dialog._defDDLabel = defDDLabel
 
@@ -595,7 +595,7 @@ do
             defDDBg:SetAllPoints()
             defDDBg:SetColorTexture(0.088, 0.098, 0.111, 0.9)
 
-            dialog._defBrd = CludesUI.MakeRoundedBorder(defaultButton, 1, 1, 1, 0.20, defDDBg)
+            dialog._defBrd = CUI.MakeRoundedBorder(defaultButton, 1, 1, 1, 0.20, defDDBg)
 
             local defaultCaption = defaultButton:CreateFontString(nil, "OVERLAY")
             defaultCaption:SetFont(FONT, 13, "")
@@ -633,7 +633,7 @@ do
 
             -- Default dropdown menu (popout list). Controller cursor: overlay
             -- parent (UIParent unless a controller cursor is loaded).
-            local defaultMenu = CreateFrame("Frame", nil, CludesUI.OverlayParent())
+            local defaultMenu = CreateFrame("Frame", nil, CUI.OverlayParent())
             defaultMenu:SetFrameStrata("FULLSCREEN_DIALOG")
             defaultMenu:SetFrameLevel(300)
             defaultMenu:SetClampedToScreen(true)
@@ -643,7 +643,7 @@ do
             local defMenuBg = defaultMenu:CreateTexture(nil, "BACKGROUND")
             defMenuBg:SetAllPoints()
             defMenuBg:SetColorTexture(0.088, 0.098, 0.111, 0.98)
-            dialog._defMenuBrd = CludesUI.MakeRoundedBorder(defaultMenu, 1, 1, 1, 0.20, defMenuBg)
+            dialog._defMenuBrd = CUI.MakeRoundedBorder(defaultMenu, 1, 1, 1, 0.20, defMenuBg)
             dialog._defMenu = defaultMenu
             dialog._defMenuItems = {}
 
@@ -668,7 +668,7 @@ do
                     end
                     defaultMenu:Show()
                     -- Controller cursor: move it into the list.
-                    CludesUI.PadFocus(defaultMenu)
+                    CUI.PadFocus(defaultMenu)
                 end
             end)
             defaultButton:HookScript("OnHide", function()
@@ -701,10 +701,10 @@ do
                     dialog._defBrd:SetColor(1, 1, 1, 0.20)
                 end
             end)
-            CludesUI.TrackOverlay(defaultMenu)
+            CUI.TrackOverlay(defaultMenu)
             -- Controller cursor: its cancel press clicks the dropdown button,
             -- which folds the list.
-            if CludesUI.PadCP() then
+            if CUI.PadCP() then
                 defaultMenu.CloseButton = defaultButton
             end
 
@@ -717,11 +717,11 @@ do
             local closeBg = closeBtn:CreateTexture(nil, "BACKGROUND")
             closeBg:SetAllPoints()
             closeBg:SetColorTexture(0.062, 0.070, 0.082, 0.92)
-            local closeBrd = CludesUI.MakeRoundedBorder(closeBtn, ACC.r, ACC.g, ACC.b, 0.9, closeBg)
+            local closeBrd = CUI.MakeRoundedBorder(closeBtn, ACC.r, ACC.g, ACC.b, 0.9, closeBg)
             local closeLbl = closeBtn:CreateFontString(nil, "OVERLAY")
             closeLbl:SetFont(FONT, 16, "")
             Pix.Point(closeLbl, "CENTER", closeBtn, "CENTER", 0, 0)
-            closeLbl:SetText(CludesUI.L("Done"))
+            closeLbl:SetText(CUI.L("Done"))
             closeLbl:SetTextColor(ACC.r, ACC.g, ACC.b, 0.9)
             closeBtn:SetScript("OnEnter", function()
                 closeLbl:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
@@ -742,11 +742,11 @@ do
             local cancelBg = cancelButton:CreateTexture(nil, "BACKGROUND")
             cancelBg:SetAllPoints()
             cancelBg:SetColorTexture(0.062, 0.070, 0.082, 0.92)
-            local cancelBrd = CludesUI.MakeRoundedBorder(cancelButton, 1, 1, 1, 0.25, cancelBg)
+            local cancelBrd = CUI.MakeRoundedBorder(cancelButton, 1, 1, 1, 0.25, cancelBg)
             local cancelCaption = cancelButton:CreateFontString(nil, "OVERLAY")
             cancelCaption:SetFont(FONT, 16, "")
             Pix.Point(cancelCaption, "CENTER", cancelButton, "CENTER", 0, 0)
-            cancelCaption:SetText(CludesUI.L("Cancel"))
+            cancelCaption:SetText(CUI.L("Cancel"))
             cancelCaption:SetTextColor(1, 1, 1, 0.50)
             cancelButton:SetScript("OnEnter", function()
                 cancelCaption:SetTextColor(1, 1, 1, 0.75)
@@ -776,7 +776,7 @@ do
                 end
             end)
 
-            CludesUI.PopupTakeKeys(dialog, shade)
+            CUI.PopupTakeKeys(dialog, shade)
             dialog:SetScript("OnKeyDown", function(self, key)
                 if InCombatLockdown() then
                     return
@@ -794,8 +794,8 @@ do
 
             -- Controller Back takes the same route as Escape. It counts only when
             -- a controller is in use at the show, so the keyboard path never changes.
-            if CludesUI.RegisterEscapeClose then
-                CludesUI.RegisterEscapeClose(shade, {
+            if CUI.RegisterEscapeClose then
+                CUI.RegisterEscapeClose(shade, {
                     padOnly = true,
                     onEscape = function()
                         shade:Hide()
@@ -806,7 +806,7 @@ do
                 })
             end
             -- Controller cursor: the panel is a blocker, not a stop.
-            CludesUI.PadHint(dialog, "nodepass")
+            CUI.PadHint(dialog, "nodepass")
 
             dialog._CLASS_H = CLASS_H
             dialog._CLASS_PAD_TOP = CLASS_PAD_TOP
@@ -822,19 +822,19 @@ do
 
         -- Update title / subtitle
         if options.title then
-            specDialog._title:SetText(CludesUI.L(options.title))
+            specDialog._title:SetText(CUI.L(options.title))
         else
             specDialog._title:SetText(
-                CludesUI.IS_FOREVER and CludesUI.L("Assign Preset to Classes")
-                    or CludesUI.L("Assign Preset to Specs")
+                CUI.IS_FOREVER and CUI.L("Assign Preset to Classes")
+                    or CUI.L("Assign Preset to Specs")
             )
         end
         if options.subtitle then
-            specDialog._subtitle:SetText(CludesUI.L(options.subtitle))
+            specDialog._subtitle:SetText(CUI.L(options.subtitle))
         else
             local presetName
             if presetKey == "custom" then
-                presetName = CludesUI.L("Custom")
+                presetName = CUI.L("Custom")
             elseif presetKey == "cludesui" then
                 presetName = "CludesUI"
             elseif presetKey and type(presetKey) == "string" and presetKey:sub(1, 5) == "user:" then
@@ -843,9 +843,9 @@ do
                 presetName = presetKey or ""
             end
             specDialog._subtitle:SetText(
-                CludesUI.IS_FOREVER
-                        and CludesUI.Lf("Select which classes you want %1$s to be assigned to", presetName)
-                    or CludesUI.Lf("Select which specs you want %1$s to be assigned to", presetName)
+                CUI.IS_FOREVER
+                        and CUI.Lf("Select which classes you want %1$s to be assigned to", presetName)
+                    or CUI.Lf("Select which specs you want %1$s to be assigned to", presetName)
             )
         end
         -- Per-call subtitle color (default dim white). Lets a caller render a red
@@ -862,7 +862,7 @@ do
         -- spec picker). Normal callers keep the subtitle under the title. The
         -- warning also renders 2px larger for emphasis.
         specDialog._subtitle:ClearAllPoints()
-        Pix.Size(specDialog, specDialog._POPUP_W, CludesUI.IS_FOREVER and FOREVER_POPUP_H or specDialog._POPUP_H)
+        Pix.Size(specDialog, specDialog._POPUP_W, CUI.IS_FOREVER and FOREVER_POPUP_H or specDialog._POPUP_H)
         specDialog._brd:Fit()
         local subFont = specDialog._subtitle:GetFont()
         if options.subtitleAtBottom then
@@ -876,11 +876,11 @@ do
 
         -- Update Done button text
         if specDialog._closeLbl then
-            specDialog._closeLbl:SetText(CludesUI.L(options.buttonText or "Done"))
+            specDialog._closeLbl:SetText(CUI.L(options.buttonText or "Done"))
         end
 
         -- Populate columns
-        local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+        local FONT = CUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
         local CLASS_H = specDialog._CLASS_H
         local CLASS_PAD_TOP = specDialog._CLASS_PAD_TOP
         local CLASS_PAD_BOT = specDialog._CLASS_PAD_BOT
@@ -904,7 +904,7 @@ do
                         for specId in pairs(specList) do
                             local dName
                             if pKey == "custom" then
-                                dName = CludesUI.L("Custom")
+                                dName = CUI.L("Custom")
                             elseif pKey == "cludesui" then
                                 dName = "CludesUI"
                             elseif pKey:sub(1, 5) == "user:" then
@@ -946,14 +946,14 @@ do
                 boxBg:SetColorTexture(CB_BOX_R, CB_BOX_G, CB_BOX_B, 1)
                 line._boxBg = boxBg
                 local boxBorder =
-                    CludesUI.MakeRoundedBorder(checkBox, BORDER_R, BORDER_G, BORDER_B, CB_BRD_A, boxBg)
+                    CUI.MakeRoundedBorder(checkBox, BORDER_R, BORDER_G, BORDER_B, CB_BRD_A, boxBg)
                 line._boxBorder = boxBorder
                 local check = checkBox:CreateTexture(nil, "ARTWORK")
                 Pix.Point(check, "TOPLEFT", checkBox, "TOPLEFT", CHECK_INSET, -CHECK_INSET)
                 Pix.Point(check, "BOTTOMRIGHT", checkBox, "BOTTOMRIGHT", -CHECK_INSET, CHECK_INSET)
                 check:SetColorTexture(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
                 -- The outline's radius less the inset, so the fill's corners follow it.
-                CludesUI.RoundBody(checkBox, check, 1)
+                CUI.RoundBody(checkBox, check, 1)
                 line._check = check
                 line._box = checkBox
 
@@ -997,7 +997,7 @@ do
                 line:Hide()
             end
 
-            local entries = CludesUI.IS_FOREVER and NO_CLASSES or COL_LISTS[colIdx]
+            local entries = CUI.IS_FOREVER and NO_CLASSES or COL_LISTS[colIdx]
             local lineIndex = 0
             local offsetY = 0
             local isFirstClass = true
@@ -1080,9 +1080,9 @@ do
                     end)
                     line:SetScript("OnEnter", function(self)
                         if self._disabled and disabledTip then
-                            CludesUI.ShowWidgetTooltip(self._box, CludesUI.DisabledTooltip(disabledTip))
+                            CUI.ShowWidgetTooltip(self._box, CUI.DisabledTooltip(disabledTip))
                         elseif self._lockedOn and type(lockedOnTip) == "string" then
-                            CludesUI.ShowWidgetTooltip(self._box, CludesUI.DisabledTooltip(lockedOnTip))
+                            CUI.ShowWidgetTooltip(self._box, CUI.DisabledTooltip(lockedOnTip))
                         end
                         if self._lockedOn or self._locked or self._disabled then
                             return
@@ -1090,7 +1090,7 @@ do
                         self._lbl:SetTextColor(1, 1, 1, 0.90)
                     end)
                     line:SetScript("OnLeave", function(self)
-                        CludesUI.HideWidgetTooltip()
+                        CUI.HideWidgetTooltip()
                         if self._lockedOn or self._locked or self._disabled then
                             return
                         end
@@ -1165,7 +1165,7 @@ do
         -- preset the owner. Ticking assigns every spec of the class no other
         -- preset holds; unticking clears them. Specs of classes Forever does
         -- not have stay in the assignments untouched.
-        if CludesUI.IS_FOREVER then
+        if CUI.IS_FOREVER then
             local rowList = specDialog._fvRows or {}
             specDialog._fvRows = rowList
             local function LockedOn(ident)
@@ -1241,7 +1241,7 @@ do
                 end
                 State(line)
             end
-            local classes = CludesUI.ForeverClasses()
+            local classes = CUI.ForeverClasses()
             for num = 1, #classes do
                 local classFile = classes[num]
                 local colour = specDialog._columns[((num - 1) % NUM_COLS) + 1]
@@ -1252,9 +1252,9 @@ do
                 line:ClearAllPoints()
                 Pix.Point(line, "TOPLEFT", colour, "TOPLEFT", 0, -(CLASS_GAP + (r - 1) * (SPEC_H + CLASS_GAP)))
                 line:Show()
-                line._lbl:SetText(CludesUI.ForeverClassName(classFile))
+                line._lbl:SetText(CUI.ForeverClassName(classFile))
                 line._fvClr = CLASS_COLOR_MAP[classFile]
-                line._fvIDs = CludesUI.ForeverClassSpecIDs(classFile)
+                line._fvIDs = CUI.ForeverClassSpecIDs(classFile)
                 line._specID = nil
                 rowList[num] = line
                 State(line)
@@ -1263,13 +1263,13 @@ do
                 end)
                 line:SetScript("OnEnter", function(self)
                     if self._disabled and self._fvDisTip then
-                        CludesUI.ShowWidgetTooltip(self._box, CludesUI.DisabledTooltip(self._fvDisTip))
+                        CUI.ShowWidgetTooltip(self._box, CUI.DisabledTooltip(self._fvDisTip))
                     elseif self._lockedOn and self._fvOnTip then
-                        CludesUI.ShowWidgetTooltip(self._box, CludesUI.DisabledTooltip(self._fvOnTip))
+                        CUI.ShowWidgetTooltip(self._box, CUI.DisabledTooltip(self._fvOnTip))
                     elseif self._locked and self._fvBy then
-                        CludesUI.ShowWidgetTooltip(
+                        CUI.ShowWidgetTooltip(
                             self._box,
-                            CludesUI.Lf("Already assigned to %s", self._fvBy)
+                            CUI.Lf("Already assigned to %s", self._fvBy)
                         )
                     end
                     if self._lockedOn or self._locked or self._disabled then
@@ -1278,7 +1278,7 @@ do
                     Tint(self, 0.90)
                 end)
                 line:SetScript("OnLeave", function(self)
-                    CludesUI.HideWidgetTooltip()
+                    CUI.HideWidgetTooltip()
                     if self._lockedOn or self._locked or self._disabled then
                         return
                     end
@@ -1311,7 +1311,7 @@ do
                     return ""
                 end
                 if key == "custom" then
-                    return CludesUI.L("Custom")
+                    return CUI.L("Custom")
                 end
                 if key == "cludesui" then
                     return "CludesUI"
@@ -1338,7 +1338,7 @@ do
 
                 local presetList = allPresetKeysFn()
                 local mH = 4
-                local ITEM_FONT = CludesUI._font
+                local ITEM_FONT = CUI._font
                     or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
 
                 for position, record in ipairs(presetList) do
@@ -1406,7 +1406,7 @@ do
             Pix.Point(specDialog._closeBtn, "BOTTOM", specDialog, "BOTTOM", 0, 38)
         end
         -- Controller cursor: its cancel press backs out through a visible Cancel.
-        if CludesUI.PadCP() then
+        if CUI.PadCP() then
             specDialog.CloseButton = options.onCancel and specDialog._cancelBtn or nil
         end
 
@@ -1432,6 +1432,6 @@ do
 
         specDialog._dimmer:Show()
         -- Controller cursor: move it into the popup.
-        CludesUI.PadFocus(specDialog)
+        CUI.PadFocus(specDialog)
     end
 end

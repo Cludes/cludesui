@@ -32,8 +32,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  and the countdown text runs on the engine's duration binding.
 -------------------------------------------------------------------------------
 local _, mod = ...
-local CludesUI = _G.CludesUI
-if not (CludesUI and CludesUI.IS_FOREVER) then
+local CUI = _G.CludesUI
+if not (CUI and CUI.IS_FOREVER) then
     return
 end
 local ET, WS = Enum.ItemEnchantType, Enum.WeaponSlot
@@ -162,7 +162,7 @@ end
 
 local function CellEnter(self)
     local c = self.fvImbue
-    local style = CludesUI.AuraKit.styles[STYLE]
+    local style = CUI.AuraKit.styles[STYLE]
     if not (c and c.inv) or (style and style.noTooltips) then
         return
     end
@@ -189,7 +189,7 @@ local function Cell(index, hostFrame)
         end
         return c
     end
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     -- The weapon-enchant init: Blizzard Style rings these cells like the
     -- engine's own weapon-enchant cells.
     local frame, skinData = AK.CreateStyledCell(hostFrame, STYLE, AK.EnchantCellInit)
@@ -213,7 +213,7 @@ end
 
 -- Content only (the style pass owns size, border, fonts and anchors).
 local function Paint(c, cfg)
-    local AK = CludesUI.AuraKit
+    local AK = CUI.AuraKit
     local style = AK.styles[STYLE] or {}
     local skinData = c.d
     c.inv = cfg.inv
@@ -296,7 +296,7 @@ function mod.PAB_FvImbueLayout(boxHolder, hostFrame, conf, grid, layout, anchor)
     if num > 0 and not centered then
         boxHolder:ClearAllPoints()
         boxHolder:SetPoint(anchor, hostFrame, anchor, num * dx, num * dy)
-        CludesUI.AuraKit.SetContainerRowWidth(boxHolder, math.max(step, grid.rowWidth - num * step))
+        CUI.AuraKit.SetContainerRowWidth(boxHolder, math.max(step, grid.rowWidth - num * step))
     end
 end
 

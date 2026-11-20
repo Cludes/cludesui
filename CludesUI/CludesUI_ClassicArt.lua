@@ -29,8 +29,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  scale or orientation changes (memo on the piece table); nothing runs while
 --  the style is off (no caller reaches it).
 -------------------------------------------------------------------------------
-local CludesUI = _G.CludesUI
-if not CludesUI then
+local CUI = _G.CludesUI
+if not CUI then
     return
 end
 
@@ -47,7 +47,7 @@ local CAP, TOP, BOT = 32, 12, 11
 local OVER_L, OVER_R, OVER_T, OVER_B = 14.5, 14.5, TOP, BOT
 
 local CF = {}
-CludesUI.ClassicFrame = CF
+CUI.ClassicFrame = CF
 CF.FILE = FILE
 CF.OVER_L, CF.OVER_R, CF.OVER_T, CF.OVER_B = OVER_L, OVER_R, OVER_T, OVER_B
 

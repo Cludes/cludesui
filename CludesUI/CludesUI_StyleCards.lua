@@ -10,8 +10,8 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --  Settings > Style (CUI_Style_Options.lua). The WoW Forever client adds a
 --  fourth pick card, WoW Forever. Builds frames only when called.
 -------------------------------------------------------------------------------
-local CludesUI = _G.CludesUI
-if not CludesUI then
+local CUI = _G.CludesUI
+if not CUI then
     return
 end
 
@@ -19,7 +19,7 @@ end
 -- options addon fills it in place): each builder below takes CreateFrame from
 -- it when it runs, so its frames are pooled on a pool host (the Style page)
 -- and plain new frames anywhere else (the first-install picker).
-local POOL = CludesUI._Pool
+local POOL = CUI._Pool
 
 local GOLD_R, GOLD_G, GOLD_B = 1.0, 0.80, 0.18
 local BRONZE_R, BRONZE_G, BRONZE_B = 0.86, 0.65, 0.42
@@ -27,8 +27,8 @@ local FOREVER_R, FOREVER_G, FOREVER_B = 0.47, 0.75, 0.95
 -- The CludesUI card and its mock keep the stock #4CC9F0 teal (the
 -- CludesUI theme preset) on every client, whatever accent colour the user
 -- has picked.
-local CUI_TEAL = CludesUI.THEME_PRESETS["CludesUI"]
-local IS_FOREVER = CludesUI.IS_FOREVER == true
+local CUI_TEAL = CUI.THEME_PRESETS["CludesUI"]
+local IS_FOREVER = CUI.IS_FOREVER == true
 -- The vanilla frame sheet: the player frame samples it flipped (portrait on
 -- the left); 193x77 of visible art at 1x.
 local CLASSIC_FRAME = "Interface\\TargetingFrame\\UI-TargetingFrame"
@@ -40,12 +40,12 @@ local CARD_W, CARD_H, CARD_GAP = 212, 296, 16
 -- Display cards (announcements) have no button: the caption is the last row.
 local DISPLAY_CARD_H = 248
 local MOCK_W, MOCK_H = 186, 118
-CludesUI.STYLE_CARD_H = CARD_H
-CludesUI.STYLE_CARD_DISPLAY_H = DISPLAY_CARD_H
+CUI.STYLE_CARD_H = CARD_H
+CUI.STYLE_CARD_DISPLAY_H = DISPLAY_CARD_H
 -- The row of pick cards (four on the WoW Forever client), for callers that
 -- size a host round it; display cards stay three.
 local PICK_CARDS = IS_FOREVER and 4 or 3
-CludesUI.STYLE_CARDS_W = PICK_CARDS * CARD_W + (PICK_CARDS - 1) * CARD_GAP
+CUI.STYLE_CARDS_W = PICK_CARDS * CARD_W + (PICK_CARDS - 1) * CARD_GAP
 
 local function AtlasExists(name)
     return name and C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(name) and true or false
@@ -140,7 +140,7 @@ local function DrawBlizzMock(stage, Pix, MakeBorder, _eg, _font, forever)
         if forever then
             art:SetAtlas(ART, false)
         else
-            CludesUI.StockAtlas(art, ART, false)
+            CUI.StockAtlas(art, ART, false)
         end
         if AtlasExists(HEALTH) then
             local hgt = widget:CreateTexture(nil, "ARTWORK", nil, 1)
@@ -184,7 +184,7 @@ local function DrawBlizzMock(stage, Pix, MakeBorder, _eg, _font, forever)
             if forever then
                 tex:SetAtlas(SLOT, false)
             else
-                CludesUI.StockAtlas(tex, SLOT, false)
+                CUI.StockAtlas(tex, SLOT, false)
             end
             Pix.Point(tex, "TOPLEFT", ic, "TOPLEFT", -3, 3)
             Pix.Point(tex, "BOTTOMRIGHT", ic, "BOTTOMRIGHT", 3, -3)
@@ -211,7 +211,7 @@ local function DrawBlizzMock(stage, Pix, MakeBorder, _eg, _font, forever)
                 end
                 local tex = cap:CreateTexture(nil, "ARTWORK")
                 tex:SetAllPoints()
-                CludesUI.StockAtlas(tex, name, false)
+                CUI.StockAtlas(tex, name, false)
             end
         end
     end
@@ -368,20 +368,20 @@ end
 --  keeps a card lit with an IN USE badge, and dims its button (picks then do
 --  nothing) with an optional label while it has nothing to apply.
 -------------------------------------------------------------------------------
-function CludesUI.BuildStyleCards(hostFrame, topY, options)
+function CUI.BuildStyleCards(hostFrame, topY, options)
     local CreateFrame = POOL.CreateFrame
-    local Pix = CludesUI.PanelPP
-    local MakeBorder = CludesUI.MakeBorder
+    local Pix = CUI.PanelPP
+    local MakeBorder = CUI.MakeBorder
     if not (Pix and MakeBorder) then
         return nil
     end
-    local L = CludesUI.L or function(s)
+    local L = CUI.L or function(s)
         return s
     end
     -- The options font once it has loaded, else the locale-aware core font
     -- (the picker runs before the options addon loads).
-    local FONT = CludesUI._font
-        or CludesUI.EXPRESSWAY
+    local FONT = CUI._font
+        or CUI.EXPRESSWAY
         or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
     options = options or {}
 
@@ -455,7 +455,7 @@ function CludesUI.BuildStyleCards(hostFrame, topY, options)
         Pix.Size(cardFrame, CARD_W, display and DISPLAY_CARD_H or CARD_H)
         Pix.Point(cardFrame, "TOP", hostFrame, "TOP", (index - mid) * (CARD_W + CARD_GAP), topY)
         -- Accent band along the top edge: the colour is the first indicator.
-        local brd = CludesUI.MakeRoundedCard(cardFrame, 0.14, 1, 3, 0.088, 0.098, 0.111)
+        local brd = CUI.MakeRoundedCard(cardFrame, 0.14, 1, 3, 0.088, 0.098, 0.111)
         brd.accent:SetColorTexture(accentR, accentG, accentB, 0.9)
 
         local ct = cardFrame:CreateFontString(nil, "OVERLAY")
@@ -528,7 +528,7 @@ function CludesUI.BuildStyleCards(hostFrame, topY, options)
             Pix.Point(button, "BOTTOM", cardFrame, "BOTTOM", 0, 14)
             local bbg = button:CreateTexture(nil, "BACKGROUND")
             bbg:SetAllPoints()
-            local bbrd = CludesUI.MakeRoundedBorder(button, accentR, accentG, accentB, 0.8, bbg)
+            local bbrd = CUI.MakeRoundedBorder(button, accentR, accentG, accentB, 0.8, bbg)
             local labelFS = button:CreateFontString(nil, "OVERLAY")
             labelFS:SetFont(FONT, 14, "")
             Pix.Point(labelFS, "CENTER", button, "CENTER", 0, 0)
