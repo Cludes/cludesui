@@ -4772,19 +4772,19 @@ function CludesUI:ApplyInlineSearch(searchQuery, skipHighlights)
 
                 if #slots > 0 then
                     -- Split row: check each slot individually
-                    for _, s in ipairs(slots) do
-                        if s.label ~= "" then
+                    for _, slot in ipairs(slots) do
+                        if slot.label ~= "" then
                             slotTotal = slotTotal + 1
-                            local slotMatch = s.label:lower():find(lowerQuery, 1, true)
+                            local slotMatch = slot.label:lower():find(lowerQuery, 1, true)
                             if not slotMatch then
-                                local ddText = GetDropdownValueText(s.region)
+                                local ddText = GetDropdownValueText(slot.region)
                                 if ddText then
                                     slotMatch = ddText:lower():find(lowerQuery, 1, true)
                                 end
                             end
                             if vs.sectionMatch or slotMatch then
                                 litSlots = litSlots + 1
-                                litTargets[#litTargets + 1] = s.region
+                                litTargets[#litTargets + 1] = slot.region
                             end
                         end
                     end
@@ -4817,19 +4817,19 @@ function CludesUI:ApplyInlineSearch(searchQuery, skipHighlights)
             end
 
             if #slots > 0 then
-                for _, s in ipairs(slots) do
-                    if s.label ~= "" then
+                for _, slot in ipairs(slots) do
+                    if slot.label ~= "" then
                         slotTotal = slotTotal + 1
-                        local slotMatch = s.label:lower():find(lowerQuery, 1, true)
+                        local slotMatch = slot.label:lower():find(lowerQuery, 1, true)
                         if not slotMatch then
-                            local ddText = GetDropdownValueText(s.region)
+                            local ddText = GetDropdownValueText(slot.region)
                             if ddText then
                                 slotMatch = ddText:lower():find(lowerQuery, 1, true)
                             end
                         end
                         if slotMatch then
                             litSlots = litSlots + 1
-                            litTargets[#litTargets + 1] = s.region
+                            litTargets[#litTargets + 1] = slot.region
                         end
                     end
                 end
@@ -6818,8 +6818,8 @@ do
             return true
         end
         local reserved = { "Global Settings", "Profiles", "Patch Notes", "CUI Legends" }
-        for _, g in ipairs(CUI_NS.coreGroups) do
-            reserved[#reserved + 1] = g.label
+        for _, group in ipairs(CUI_NS.coreGroups) do
+            reserved[#reserved + 1] = group.label
         end
         for _, r in ipairs(reserved) do
             if lower == r:lower() or lower == tostring(CludesUI.L(r)):lower() then
@@ -7112,8 +7112,8 @@ do
     -- sections: source -> its section, a group table in the plugin lists.
     local owner, placed, sections, offenders = {}, {}, {}, {}
     local suiteGroup = {}
-    for _, g in ipairs(CUI_NS.coreGroups) do
-        suiteGroup[g.key] = true
+    for _, group in ipairs(CUI_NS.coreGroups) do
+        suiteGroup[group.key] = true
     end
 
     -- An addon whose change to a suite page was ignored (named in the notice).
@@ -7211,11 +7211,11 @@ do
     function CUI_NS.SyncExternal()
         local added
         local afterSuite = false
-        for _, g in ipairs(CludesUI.ADDON_GROUPS or {}) do
-            if type(g) == "table" and suiteGroup[g.key] then
+        for _, group in ipairs(CludesUI.ADDON_GROUPS or {}) do
+            if type(group) == "table" and suiteGroup[group.key] then
                 afterSuite = true
-            elseif type(g) == "table" and type(g.members) == "table" then
-                for _, m in ipairs(g.members) do
+            elseif type(group) == "table" and type(group.members) == "table" then
+                for _, m in ipairs(group.members) do
                     if
                         type(m) == "string"
                         and not placed[m]
@@ -7223,8 +7223,8 @@ do
                         and not CUI_NS.IsPluginKey(m)
                     then
                         local s = Section(
-                            "group:" .. tostring(g.key),
-                            PlainText(g.label, MAX_LABEL_CHARS),
+                            "group:" .. tostring(group.key),
+                            PlainText(group.label, MAX_LABEL_CHARS),
                             not afterSuite
                         )
                         if Place(m, s) then

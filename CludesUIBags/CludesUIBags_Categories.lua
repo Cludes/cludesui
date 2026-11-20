@@ -739,8 +739,8 @@ function CategoryManager:ClassifyItem(itemLink, itemId, bagId, slotId, quality)
         local overrideClassID = ITEM_TYPE_OVERRIDES[itemId]
         for i, category in ipairs(categoryList) do
             if category.types then
-                for _, t in ipairs(category.types) do
-                    if t == overrideClassID then
+                for _, kind in ipairs(category.types) do
+                    if kind == overrideClassID then
                         return i
                     end
                 end
@@ -754,8 +754,8 @@ function CategoryManager:ClassifyItem(itemLink, itemId, bagId, slotId, quality)
         if questInfo and (questInfo.isQuestItem or questInfo.questID) then
             for i, category in ipairs(categoryList) do
                 if category.types then
-                    for _, t in ipairs(category.types) do
-                        if t == IC_QUEST then
+                    for _, kind in ipairs(category.types) do
+                        if kind == IC_QUEST then
                             return i
                         end
                     end
@@ -812,8 +812,8 @@ function CategoryManager:ClassifyItem(itemLink, itemId, bagId, slotId, quality)
     for i, category in ipairs(categoryList) do
         if category.types and #category.types > 0 and not category.isSetGear then
             local typeMatch = false
-            for _, t in ipairs(category.types) do
-                if t == classID then
+            for _, kind in ipairs(category.types) do
+                if kind == classID then
                     typeMatch = true
                     break
                 end

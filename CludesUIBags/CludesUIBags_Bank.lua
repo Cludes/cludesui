@@ -2101,8 +2101,8 @@ end
 -- single trailing bucket rather than landing under Unknown / Other.
 local function BuildBankBuckets(slotArray, mode)
     local byKey, entries = {}, {}
-    for _, s in ipairs(slotArray) do
-        local itemLinkText = s._cachedInfo and s._cachedInfo.hyperlink
+    for _, slot in ipairs(slotArray) do
+        local itemLinkText = slot._cachedInfo and slot._cachedInfo.hyperlink
         local k, caption, isOther
         if not itemLinkText then
             k, caption, isOther = EXP_KEY_EMPTY, CludesUI.L("Empty Slots"), false
@@ -2120,7 +2120,7 @@ local function BuildBankBuckets(slotArray, mode)
             byKey[k] = b
             entries[#entries + 1] = b
         end
-        b.slots[#b.slots + 1] = s
+        b.slots[#b.slots + 1] = slot
     end
     -- Empty slots last, then unknown/other, then per-mode order. Keys can be
     -- numbers or strings depending on mode, so never compare across buckets
@@ -2348,14 +2348,14 @@ end
 local function DiscoverBankTabs()
     _allTabs = {}
     local charTabs = GetCharacterBankTabs()
-    for _, t in ipairs(charTabs) do
-        t.isWarband = false
-        _allTabs[#_allTabs + 1] = t
+    for _, tab in ipairs(charTabs) do
+        tab.isWarband = false
+        _allTabs[#_allTabs + 1] = tab
     end
     local warbandTabs = GetWarbandBankTabs()
-    for _, t in ipairs(warbandTabs) do
-        t.isWarband = true
-        _allTabs[#_allTabs + 1] = t
+    for _, tab in ipairs(warbandTabs) do
+        tab.isWarband = true
+        _allTabs[#_allTabs + 1] = tab
     end
     CUI_Bank._allTabs = _allTabs
 end
@@ -2598,13 +2598,13 @@ function CUI_Bank:RefreshBank()
                 w = gridWidth,
             }
             nextY = nextY - 22
-            for vi, s in ipairs(slotArray) do
+            for vi, slot in ipairs(slotArray) do
                 local colour = (vi - 1) % COLUMNS
                 local line = math.floor((vi - 1) / COLUMNS)
                 _layout[#_layout + 1] = {
-                    bagID = s.bagID,
-                    slot = s.slot,
-                    _cachedInfo = s._cachedInfo,
+                    bagID = slot.bagID,
+                    slot = slot.slot,
+                    _cachedInfo = slot._cachedInfo,
                     x = startX + (colour * (SLOT_SIZE + SPACING)),
                     y = nextY - (line * (SLOT_SIZE + SPACING)),
                 }

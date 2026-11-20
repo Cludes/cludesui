@@ -259,8 +259,8 @@ local function AcquireLine(kind, ident, textValue, posX, posY, width, key)
         l.focus:Hide()
     end
     if l.slots and kind ~= "quest" then
-        for _, s in ipairs(l.slots) do
-            s:Hide()
+        for _, slot in ipairs(l.slots) do
+            slot:Hide()
         end
     end
     if l.bar then

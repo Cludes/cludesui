@@ -275,9 +275,9 @@ mod.BLOCK_TYPES = {
 -- after login, once every module has loaded. A bar saved with one keeps it.
 function mod.OfferedBlockTypes()
     local result = {}
-    for _, t in ipairs(mod.BLOCK_TYPES) do
-        if not t.available or t.available() then
-            result[#result + 1] = t
+    for _, kind in ipairs(mod.BLOCK_TYPES) do
+        if not kind.available or kind.available() then
+            result[#result + 1] = kind
         end
     end
     return result

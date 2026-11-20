@@ -696,14 +696,14 @@ local function BuildHelp(panelFrame, K, onClick)
         if bx.cols then
             local cw = math.floor((wid - BOX_PAD * 2 - (bx.cols - 1) * TAG_GAP) / bx.cols)
             local colour, row = 0, 0
-            for _, t in ipairs(bx.tags) do
-                local span = t.span and bx.cols or 1
+            for _, tag in ipairs(bx.tags) do
+                local span = tag.span and bx.cols or 1
                 if colour > 0 and colour + span > bx.cols then
                     colour, row = 0, row + 1
                 end
-                t:SetWidth(cw * span + TAG_GAP * (span - 1))
-                t:ClearAllPoints()
-                t:SetPoint(
+                tag:SetWidth(cw * span + TAG_GAP * (span - 1))
+                tag:ClearAllPoints()
+                tag:SetPoint(
                     "TOPLEFT",
                     bx,
                     "TOPLEFT",
@@ -721,13 +721,13 @@ local function BuildHelp(panelFrame, K, onClick)
             return topY + (row + 1) * (TAG_H + TAG_GAP) - TAG_GAP + VPAD
         end
         local posX, posY = BOX_PAD, topY
-        for _, t in ipairs(bx.tags) do
-            local tw = t:GetWidth()
+        for _, tag in ipairs(bx.tags) do
+            local tw = tag:GetWidth()
             if posX > BOX_PAD and posX + tw > wid - BOX_PAD then
                 posX, posY = BOX_PAD, posY + TAG_H + TAG_GAP
             end
-            t:ClearAllPoints()
-            t:SetPoint("TOPLEFT", bx, "TOPLEFT", posX, -posY)
+            tag:ClearAllPoints()
+            tag:SetPoint("TOPLEFT", bx, "TOPLEFT", posX, -posY)
             posX = posX + tw + TAG_GAP
         end
         return posY + TAG_H + VPAD

@@ -543,8 +543,8 @@ function Views.guild(panelFrame, context)
 
     -- The lines, highest first, slotted into the ranking where they fall.
     local lines = {}
-    for _, s in ipairs(tiers) do
-        lines[#lines + 1] = s
+    for _, tier in ipairs(tiers) do
+        lines[#lines + 1] = tier
     end
     table.sort(lines, function(lhs, rhs)
         return lhs.lineNow > rhs.lineNow

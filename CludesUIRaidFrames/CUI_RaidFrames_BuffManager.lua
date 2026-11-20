@@ -51,18 +51,18 @@ local INDICATOR_TYPES = {
 }
 
 local INDICATOR_TYPE_MAP = {}
-for _, t in ipairs(INDICATOR_TYPES) do
-    INDICATOR_TYPE_MAP[t.key] = t
+for _, kind in ipairs(INDICATOR_TYPES) do
+    INDICATOR_TYPE_MAP[kind.key] = kind
 end
 
 local INDICATOR_TYPE_VALUES = {}
 local INDICATOR_TYPE_ORDER = {}
-for _, t in ipairs(INDICATOR_TYPES) do
-    INDICATOR_TYPE_VALUES[t.key] = t.name
+for _, kind in ipairs(INDICATOR_TYPES) do
+    INDICATOR_TYPE_VALUES[kind.key] = kind.name
     -- Frame Alpha cannot be created: fading the frame needs per-aura presence, which is secret in combat. Existing ones stay listed.
-    local skipType = (t.key == "framealpha")
+    local skipType = (kind.key == "framealpha")
     if not skipType then
-        INDICATOR_TYPE_ORDER[#INDICATOR_TYPE_ORDER + 1] = t.key
+        INDICATOR_TYPE_ORDER[#INDICATOR_TYPE_ORDER + 1] = kind.key
     end
 end
 -- Insert divider after "bar"

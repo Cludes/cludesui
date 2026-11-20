@@ -168,16 +168,16 @@ local function ReadTalents()
     end
     local groups = C_Traits.GetGroupDisplayInfoByTreeID(treeID) or {}
     local ids, spent = {}, {}
-    for index, g in ipairs(groups) do
-        ids[index] = g.groupID
+    for index, group in ipairs(groups) do
+        ids[index] = group.groupID
     end
     for _, details in ipairs(C_Traits.GetGroupCurrencyInfo(configID, ids) or {}) do
         local c = details.currencyInfos and details.currencyInfos[1]
         spent[details.traitNodeGroupID] = c and c.spent or 0
     end
     local best, most = nil, 0
-    for index, g in ipairs(groups) do
-        local num = spent[g.groupID] or 0
+    for index, group in ipairs(groups) do
+        local num = spent[group.groupID] or 0
         if num > most then
             best, most = trees[index], num
         end
@@ -202,8 +202,8 @@ end
 --- The spec weighed by: the one picked, else your talents', else the class's first.
 local function ActiveSpec()
     local picked = Get("spec")
-    for _, s in ipairs(ClassSpecs()) do
-        if s.key == picked then
+    for _, spec in ipairs(ClassSpecs()) do
+        if spec.key == picked then
             return picked
         end
     end

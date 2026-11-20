@@ -2839,16 +2839,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if PoolGen(widget) ~= cardFrame.gen then
                 return
             end
-            for _, t in ipairs(cardFrame.pieces) do
-                t:Hide()
+            for _, tex in ipairs(cardFrame.pieces) do
+                tex:Hide()
             end
         end)
         widget:HookScript("OnShow", function()
             if CARD.searching or PoolGen(widget) ~= cardFrame.gen then
                 return
             end
-            for _, t in ipairs(cardFrame.pieces) do
-                t:Show()
+            for _, tex in ipairs(cardFrame.pieces) do
+                tex:Show()
             end
         end)
         CARD.all[cardFrame] = true
@@ -2908,8 +2908,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 CARD.all[cardFrame] = nil -- its heading was dressed again: not ours now
             else
                 local enabled = isShown and cardFrame.frame:IsShown()
-                for _, t in ipairs(cardFrame.pieces) do
-                    t:SetShown(enabled)
+                for _, tex in ipairs(cardFrame.pieces) do
+                    tex:SetShown(enabled)
                 end
             end
         end
@@ -3009,8 +3009,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 widget._enableBox = button
             end
             if CARD.searching then
-                for _, t in ipairs(cardFrame.pieces) do
-                    t:Hide()
+                for _, tex in ipairs(cardFrame.pieces) do
+                    tex:Hide()
                 end
             end
         end)

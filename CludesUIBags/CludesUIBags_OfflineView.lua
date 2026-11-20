@@ -385,13 +385,13 @@ end
 local function PaintTabs(val)
     local red, green, blue = CUI.GetAccentColor()
     local kind = TabKind(val)
-    for _, t in ipairs(val.tabs) do
-        local enabled = t.key == kind
-        t.text:SetTextColor(enabled and 1 or 0.6, enabled and 1 or 0.6, enabled and 1 or 0.6)
-        t.line:SetColorTexture(red, green, blue, 1)
-        t.line:SetShown(enabled)
+    for _, tab in ipairs(val.tabs) do
+        local enabled = tab.key == kind
+        tab.text:SetTextColor(enabled and 1 or 0.6, enabled and 1 or 0.6, enabled and 1 or 0.6)
+        tab.line:SetColorTexture(red, green, blue, 1)
+        tab.line:SetShown(enabled)
         -- the bank window lists the tabs in its sidebar instead
-        t:SetShown(val.mode == "bank" and not val.side and (t.key ~= "warband" or Offline.HasWarband()))
+        tab:SetShown(val.mode == "bank" and not val.side and (tab.key ~= "warband" or Offline.HasWarband()))
     end
 end
 
@@ -836,8 +836,8 @@ local function Group(itemList)
     table.sort(catGroups, function(lhs, rhs)
         return lhs.idx < rhs.idx
     end)
-    for _, g in ipairs(catGroups) do
-        table.sort(g.items, function(lhs, rhs)
+    for _, group in ipairs(catGroups) do
+        table.sort(group.items, function(lhs, rhs)
             if lhs.q ~= rhs.q then
                 return lhs.q > rhs.q
             end
@@ -1002,26 +1002,26 @@ Paint = function(val, force)
         -- onebank / onewarbank: everything in one block, no headers
         if val.mode == "bank" and select(3, TabKind(val)) then
             local all = {}
-            for _, g in ipairs(catGroups) do
-                for _, item in ipairs(g.items) do
+            for _, group in ipairs(catGroups) do
+                for _, item in ipairs(group.items) do
                     all[#all + 1] = item
                 end
             end
             catGroups = { { items = all } }
         end
-        for _, g in ipairs(catGroups) do
-            if g.name then
+        for _, group in ipairs(catGroups) do
+            if group.name then
                 nh = nh + 1
                 local hgt = Head(val, nh)
                 SetFont(hgt.label, titleSize)
                 hgt:ClearAllPoints()
                 hgt:SetPoint("TOPLEFT", PAD + 5, posY)
                 hgt:SetWidth(gridW)
-                hgt.label:SetText(g.name .. " (" .. #g.items .. ")")
+                hgt.label:SetText(group.name .. " (" .. #group.items .. ")")
                 hgt:Show()
                 posY = posY - 22
             end
-            for i, item in ipairs(g.items) do
+            for i, item in ipairs(group.items) do
                 isShown = isShown + 1
                 local b = Slot(val, isShown)
                 b:ClearAllPoints()
@@ -1032,7 +1032,7 @@ Paint = function(val, force)
                 )
                 PaintSlot(b, item)
             end
-            posY = posY - math.ceil(#g.items / cols) * (SLOT_SIZE + SPACING) - 6
+            posY = posY - math.ceil(#group.items / cols) * (SLOT_SIZE + SPACING) - 6
         end
     end
     for i = isShown + 1, #val.slots do
@@ -1315,23 +1315,23 @@ if CUI_Bank then
         local oneFirst = mod.BankDefaultsToOne()
         local function Add(kind, all, one, iconTex, oneIcon, tabs, bagKey)
             local sum = 0
-            for _, t in ipairs(tabs or {}) do
-                sum = sum + Used(t)
+            for _, tab in ipairs(tabs or {}) do
+                sum = sum + Used(tab)
             end
             local function All()
                 entries[#entries + 1] = { key = kind, name = all, icon = iconTex, n = sum }
                 if BP().bankHideTabsInSidebar and BP().bankCategorySidebar then
                     return
                 end
-                for i, t in ipairs(tabs or {}) do
-                    if type(t) == "table" then
+                for i, tab in ipairs(tabs or {}) do
+                    if type(tab) == "table" then
                         local bagID = Enum.BagIndex[bagKey .. i]
                         entries[#entries + 1] = {
                             key = kind .. ":" .. i,
                             nested = true,
-                            name = (t.name and t.name ~= "") and t.name or CludesUI.Lf("Tab %1$d", i),
-                            icon = mod.BankTabIcon(bagID, t.icon) or t.icon or iconTex,
-                            n = Used(t),
+                            name = (tab.name and tab.name ~= "") and tab.name or CludesUI.Lf("Tab %1$d", i),
+                            icon = mod.BankTabIcon(bagID, tab.icon) or tab.icon or iconTex,
+                            n = Used(tab),
                         }
                     end
                 end

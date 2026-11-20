@@ -194,8 +194,8 @@ CludesUI.AtOptionsLogin(function()
         if not specs then
             return true
         end
-        for _, s in ipairs(specs) do
-            if s == specID then
+        for _, spec in ipairs(specs) do
+            if spec == specID then
                 return true
             end
         end

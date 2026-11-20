@@ -275,11 +275,11 @@ function REMIND.SpecialSoundField(key)
             { Inner.SHAMAN_IMBUES, S.SHAMAN.sound },
             { Inner.SHAMAN_SHIELDS, S.SHAMAN.sound },
         }
-        for _, g in ipairs(groups) do
-            if type(g[1]) == "table" then
-                for _, it in ipairs(g[1]) do
+        for _, group in ipairs(groups) do
+            if type(group[1]) == "table" then
+                for _, it in ipairs(group[1]) do
                     if it.key then
-                        set[it.key] = g[2]
+                        set[it.key] = group[2]
                     end
                 end
             end

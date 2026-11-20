@@ -2193,28 +2193,28 @@ function mod.ERB_BuildClassResourceSection(hostFrame, cursorY, context)
                     local isBar = mod.IsEntryBarType(ent)
                     local isGuardian, isIgnorePain, isVengeance, isStagger, isEnhance
                     if ent.specIDs then
-                        for _, s in ipairs(ent.specIDs) do
+                        for _, spec in ipairs(ent.specIDs) do
                             -- WoW Forever: the Druid class resource there is combo points, which
                             -- draw the card's hash lines, so the Ironfur bar exception is retail only.
                             -- Retail keeps the row while the card holds hash lines, so lines saved
                             -- on WoW Forever can be cleared.
                             if
-                                s == 104
+                                spec == 104
                                 and not CludesUI.IS_FOREVER
                                 and (ent.hashValues == nil or ent.hashValues == "")
                             then
                                 isGuardian = true
                             end
-                            if s == 73 then
+                            if spec == 73 then
                                 isIgnorePain = true
                             end
-                            if s == 581 then
+                            if spec == 581 then
                                 isVengeance = true
                             end
-                            if s == 268 then
+                            if spec == 268 then
                                 isStagger = true
                             end
-                            if s == 263 and c.enhanceFiveBar == true then
+                            if spec == 263 and c.enhanceFiveBar == true then
                                 isEnhance = true
                             end
                         end

@@ -284,9 +284,9 @@ function mod.Window(context, mode, hidden)
 
     -- Reach far enough ahead to show the crossings, within reason.
     local ahead = MIN_AHEAD
-    for _, s in ipairs(sum.tiers) do
-        if s.days and not hidden[s.tier.key] then
-            ahead = math.max(ahead, math.min(s.days * 1.15 + 1, MAX_AHEAD))
+    for _, tier in ipairs(sum.tiers) do
+        if tier.days and not hidden[tier.tier.key] then
+            ahead = math.max(ahead, math.min(tier.days * 1.15 + 1, MAX_AHEAD))
         end
     end
     local x1 = nowTime + ahead * DAY
@@ -308,15 +308,15 @@ function mod.Window(context, mode, hidden)
         end
     end
     take(sum.you + sum.pace * (x1 - nowTime) / DAY)
-    for _, s in ipairs(sum.tiers) do
-        if not hidden[s.tier.key] then
-            take(mod.LineValue(s.pts, s.fit, x0))
-            for _, p in ipairs(s.pts) do
+    for _, tier in ipairs(sum.tiers) do
+        if not hidden[tier.tier.key] then
+            take(mod.LineValue(tier.pts, tier.fit, x0))
+            for _, p in ipairs(tier.pts) do
                 if p[1] >= x0 then
                     take(p[2])
                 end
             end
-            local low, _, high = mod.LineRange(s.pts, s.fit, x1)
+            local low, _, high = mod.LineRange(tier.pts, tier.fit, x1)
             take(low)
             take(high)
         end
@@ -745,41 +745,41 @@ local function DrawTiles(context, hidden)
         you.sub:SetText("The season has just started")
     end
 
-    for idx, s in ipairs(sum.tiers) do
+    for idx, tier in ipairs(sum.tiers) do
         local t = tiles[idx + 1]
-        local c = s.tier.color
-        t.summary, t.ctx = s, context
+        local c = tier.tier.color
+        t.summary, t.ctx = tier, context
         t.swatch:SetColorTexture(c[1], c[2], c[3])
-        t.label:SetText(s.tier.label)
+        t.label:SetText(tier.tier.label)
         -- The same level the Keys view draws: at the season end where known.
-        local level = s.levelEnd or s.levelNow
+        local level = tier.levelEnd or tier.levelNow
         t.levels:SetText(
-            level and level >= 2 and (LevelText(level) .. (s.levelEnd and " by the end" or " now")) or ""
+            level and level >= 2 and (LevelText(level) .. (tier.levelEnd and " by the end" or " now")) or ""
         )
-        if s.gap > 0 then
-            t.value:SetText(mod.Fmt(s.gap))
+        if tier.gap > 0 then
+            t.value:SetText(mod.Fmt(tier.gap))
             t.unit:SetText("to go")
         else
-            t.value:SetText("+" .. mod.Fmt(-s.gap))
+            t.value:SetText("+" .. mod.Fmt(-tier.gap))
             t.unit:SetText("above")
         end
-        if hidden[s.tier.key] then
+        if hidden[tier.tier.key] then
             t.sub:SetText("Hidden. Click to show.")
             t.need:SetText("")
             t.eta:SetText("")
             t:SetAlpha(0.45)
         else
-            if s.lineEnd then
-                t.sub:SetText(("Line %s now, ~%s at the end"):format(mod.Fmt(s.lineNow), mod.Fmt(s.lineEnd)))
+            if tier.lineEnd then
+                t.sub:SetText(("Line %s now, ~%s at the end"):format(mod.Fmt(tier.lineNow), mod.Fmt(tier.lineEnd)))
             else
-                t.sub:SetText("Line " .. mod.Fmt(s.lineNow))
+                t.sub:SetText("Line " .. mod.Fmt(tier.lineNow))
             end
-            if s.need then
-                t.need:SetText(s.need > 0 and ("Need +%.1f a day"):format(s.need) or "On course")
+            if tier.need then
+                t.need:SetText(tier.need > 0 and ("Need +%.1f a day"):format(tier.need) or "On course")
             else
                 t.need:SetText("")
             end
-            t.eta:SetText(s.gap > 0 and mod.EtaText(s, sum.pace, sum.endsAt) or "")
+            t.eta:SetText(tier.gap > 0 and mod.EtaText(tier, sum.pace, sum.endsAt) or "")
             t:SetAlpha(1)
         end
     end
@@ -802,9 +802,9 @@ local function DrawAxes(context, hidden)
         for _, dx in ipairs({ 8, 68 }) do
             local t = view.now + dx / PW * (view.x1 - view.x0)
             ys[#ys + 1] = Y(sum.you + sum.pace * (t - view.now) / DAY)
-            for _, s in ipairs(sum.tiers) do
-                if not hidden[s.tier.key] then
-                    ys[#ys + 1] = Y(mod.LineValue(s.pts, s.fit, t))
+            for _, tier in ipairs(sum.tiers) do
+                if not hidden[tier.tier.key] then
+                    ys[#ys + 1] = Y(mod.LineValue(tier.pts, tier.fit, t))
                 end
             end
         end
@@ -886,14 +886,14 @@ end
 
 local function DrawSeries(context, hidden)
     local sum = context.summary
-    for _, s in ipairs(sum.tiers) do
-        if not hidden[s.tier.key] then
-            local pts, c = s.pts, s.tier.color
+    for _, tier in ipairs(sum.tiers) do
+        if not hidden[tier.tier.key] then
+            local pts, c = tier.pts, tier.tier.color
             for idx = 2, #pts do
                 Segment(pools.series, pts[idx - 1][1], pts[idx - 1][2], pts[idx][1], pts[idx][2], c)
             end
-            Band(s, c)
-            Projection(pools.series, s, c)
+            Band(tier, c)
+            Projection(pools.series, tier, c)
         end
     end
 
@@ -940,9 +940,9 @@ local function DrawMarkers(context, hidden, taken)
     end
 
     -- Where every series stands today.
-    for _, s in ipairs(sum.tiers) do
-        if not hidden[s.tier.key] then
-            mark(today, Y(s.lineNow), s.tier.color, 8)
+    for _, tier in ipairs(sum.tiers) do
+        if not hidden[tier.tier.key] then
+            mark(today, Y(tier.lineNow), tier.tier.color, 8)
         end
     end
     mark(today, Y(sum.you), mod.YOU_COLOR, 9)
@@ -951,11 +951,11 @@ local function DrawMarkers(context, hidden, taken)
     -- above, below, right, then left of its marker, and takes the first spot
     -- clear of the markers and earlier labels.
     local crossings = {}
-    for _, s in ipairs(sum.tiers) do
-        if s.eta and s.eta <= view.x1 and not hidden[s.tier.key] then
-            local posX, posY = X(s.eta), Y(sum.you + sum.pace * s.days)
+    for _, tier in ipairs(sum.tiers) do
+        if tier.eta and tier.eta <= view.x1 and not hidden[tier.tier.key] then
+            local posX, posY = X(tier.eta), Y(sum.you + sum.pace * tier.days)
             mark(posX, posY, mod.YOU_COLOR, 12, true)
-            crossings[#crossings + 1] = { s = s, x = posX, y = posY }
+            crossings[#crossings + 1] = { s = tier, x = posX, y = posY }
         end
     end
     for _, cr in ipairs(crossings) do
@@ -1006,9 +1006,9 @@ end
 local function DrawEndLabels(context, hidden)
     local sum = context.summary
     local entries = { { "You", sum.you + sum.pace * (view.x1 - context.now) / DAY, C.ink } }
-    for _, s in ipairs(sum.tiers) do
-        if not hidden[s.tier.key] then
-            entries[#entries + 1] = { s.tier.short, mod.LineValue(s.pts, s.fit, view.x1), C.ink2 }
+    for _, tier in ipairs(sum.tiers) do
+        if not hidden[tier.tier.key] then
+            entries[#entries + 1] = { tier.tier.short, mod.LineValue(tier.pts, tier.fit, view.x1), C.ink2 }
         end
     end
     local placed = {}
@@ -1185,8 +1185,8 @@ function Graph:Render()
 
     if context.error then
         view = nil
-        for _, t in ipairs(tiles) do
-            t:Hide()
+        for _, tile in ipairs(tiles) do
+            tile:Hide()
         end
         message:SetText(context.error)
         message:Show()
@@ -1197,8 +1197,8 @@ function Graph:Render()
         return
     end
     message:Hide()
-    for _, t in ipairs(tiles) do
-        t:Show()
+    for _, tile in ipairs(tiles) do
+        tile:Show()
     end
 
     -- In a party, the group row opens under the tiles and the rest moves down.
@@ -1322,15 +1322,15 @@ function Graph.OnHover()
         or mod.ScoreAt(context.history.points, t)
     Marker(pools.hoverRings, pools.hoverMarks, plot, posX, Y(you), mod.YOU_COLOR, 8)
     posY = TipRow(mod.YOU_COLOR, "You", mod.Fmt(you), posY)
-    for _, s in ipairs(sum.tiers) do
-        if not CludesUITitleLineDB.hidden[s.tier.key] then
-            local lo, val, hi = mod.LineRange(s.pts, s.fit, t)
-            Marker(pools.hoverRings, pools.hoverMarks, plot, posX, Y(val), s.tier.color, 8)
+    for _, tier in ipairs(sum.tiers) do
+        if not CludesUITitleLineDB.hidden[tier.tier.key] then
+            local lo, val, hi = mod.LineRange(tier.pts, tier.fit, t)
+            Marker(pools.hoverRings, pools.hoverMarks, plot, posX, Y(val), tier.tier.color, 8)
             local textValue = mod.Fmt(val)
             if hi - lo >= 2 then
                 textValue = mod.Fmt(lo) .. "-" .. mod.Fmt(hi)
             end
-            posY = TipRow(s.tier.color, s.tier.label, textValue, posY)
+            posY = TipRow(tier.tier.color, tier.tier.label, textValue, posY)
         end
     end
 

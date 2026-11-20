@@ -520,8 +520,8 @@ do
         if not t.groups then
             return nil
         end
-        for k, g in pairs(t.groups) do
-            if g.globalKey == groupId then
+        for k, group in pairs(t.groups) do
+            if group.globalKey == groupId then
                 return tonumber(k)
             end
         end
@@ -545,8 +545,8 @@ do
             used[mod.TBBBarGroupID(c)] = true
         end
         if t.groups then
-            for k, g in pairs(t.groups) do
-                if g.globalKey then
+            for k, group in pairs(t.groups) do
+                if group.globalKey then
                     local kn = tonumber(k)
                     if kn then
                         used[kn] = true
@@ -660,8 +660,8 @@ do
             local trackBars = profileTbl.trackedBuffBars
             local groups = trackBars and trackBars.groups
             if groups then
-                for _, g in pairs(groups) do
-                    if g.globalKey == groupId then
+                for _, group in pairs(groups) do
+                    if group.globalKey == groupId then
                         return true
                     end
                 end
@@ -952,12 +952,12 @@ do
             for _, profileTbl in pairs(specRec) do
                 local trackBars = profileTbl.trackedBuffBars
                 if trackBars and trackBars.groups then
-                    for k, g in pairs(trackBars.groups) do
-                        if g.globalKey == groupId then
-                            g.globalKey = nil
-                            g.name = record.name
-                            g.grow = record.grow
-                            g.spacing = record.spacing
+                    for k, group in pairs(trackBars.groups) do
+                        if group.globalKey == groupId then
+                            group.globalKey = nil
+                            group.name = record.name
+                            group.grow = record.grow
+                            group.spacing = record.spacing
                             if k == "1" then
                                 trackBars.groupGrowDirection = record.grow
                                 trackBars.groupSpacing = record.spacing
@@ -1008,8 +1008,8 @@ function mod.TBBSetGroupAutoAdd(groupKey, val)
     local t = mod.GetTrackedBuffBars()
     if val then
         if t.groups then
-            for _, g in pairs(t.groups) do
-                g.autoAdd = nil
+            for _, group in pairs(t.groups) do
+                group.autoAdd = nil
             end
         end
         TBBGroupStore(t, groupKey, true).autoAdd = true
@@ -1028,8 +1028,8 @@ function mod.TBBAutoAddGroupID()
         return nil
     end
     local bestMatch
-    for k, g in pairs(t.groups) do
-        if g.autoAdd == true then
+    for k, group in pairs(t.groups) do
+        if group.autoAdd == true then
             local groupKey = tonumber(k)
             if groupKey and (not bestMatch or groupKey < bestMatch) then
                 bestMatch = groupKey

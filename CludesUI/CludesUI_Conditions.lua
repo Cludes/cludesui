@@ -129,9 +129,9 @@ function CludesUI.Conditions_GroupById(groupId)
     if not groups then
         return nil
     end
-    for _, g in ipairs(groups) do
-        if g.id == groupId then
-            return g
+    for _, group in ipairs(groups) do
+        if group.id == groupId then
+            return group
         end
     end
     return nil
@@ -144,9 +144,9 @@ function CludesUI.Conditions_NewGroupId()
     local prof = GetProfileRoot()
     local groups = CludesUI.Conditions_GetGroups(true)
     local maxId = 0
-    for _, g in ipairs(groups or {}) do
-        if type(g.id) == "number" and g.id > maxId then
-            maxId = g.id
+    for _, group in ipairs(groups or {}) do
+        if type(group.id) == "number" and group.id > maxId then
+            maxId = group.id
         end
     end
     if not prof then
@@ -173,9 +173,9 @@ local function PartyGroup(groups)
     if not IsInGroup() or IsInRaid() then
         return nil
     end
-    for _, g in ipairs(groups) do
-        if g.conds and g.conds.party then
-            return g
+    for _, group in ipairs(groups) do
+        if group.conds and group.conds.party then
+            return group
         end
     end
     return nil
@@ -188,17 +188,17 @@ function CludesUI.Conditions_ActiveGroup()
         return nil
     end
     -- Tier 1: keybind toggles (explicit user action).
-    for _, g in ipairs(groups) do
-        if g.conds and g.conds.keybind and g.keyOn then
-            return g
+    for _, group in ipairs(groups) do
+        if group.conds and group.conds.keybind and group.keyOn then
+            return group
         end
     end
     -- Tier 2: WoW Forever's Gamepad interface style (an explicit input-mode
     -- switch, so it outranks the ambient tiers; always false on retail).
     if CludesUI.PadGamepadUI() then
-        for _, g in ipairs(groups) do
-            if g.conds and g.conds.gamepad then
-                return g
+        for _, group in ipairs(groups) do
+            if group.conds and group.conds.gamepad then
+                return group
             end
         end
     end
@@ -206,9 +206,9 @@ function CludesUI.Conditions_ActiveGroup()
     -- deliberately excluded -- see DarkModeMasterOn above).
     -- Location-independent, so it is checked BEFORE the instance early-outs.
     if DarkModeMasterOn() then
-        for _, g in ipairs(groups) do
-            if g.conds and g.conds.darkmode then
-                return g
+        for _, group in ipairs(groups) do
+            if group.conds and group.conds.darkmode then
+                return group
             end
         end
     end
@@ -216,9 +216,9 @@ function CludesUI.Conditions_ActiveGroup()
     local _, instanceType = IsInInstance()
     local cond = instanceType and INSTANCE_COND[instanceType]
     if cond then
-        for _, g in ipairs(groups) do
-            if g.conds and g.conds[cond] then
-                return g
+        for _, group in ipairs(groups) do
+            if group.conds and group.conds[cond] then
+                return group
             end
         end
         -- In an instance: party can still apply, solo never does.
@@ -231,9 +231,9 @@ function CludesUI.Conditions_ActiveGroup()
     end
     -- Tier 6: solo.
     if not IsInGroup() then
-        for _, g in ipairs(groups) do
-            if g.conds and g.conds.solo then
-                return g
+        for _, group in ipairs(groups) do
+            if group.conds and group.conds.solo then
+                return group
             end
         end
     end
@@ -415,8 +415,8 @@ function CludesUI.Conditions_RebuildKeyBindings()
         return
     end
     local idx = 0
-    for _, g in ipairs(groups) do
-        if g.conds and g.conds.keybind and g.key and g.key ~= "" then
+    for _, group in ipairs(groups) do
+        if group.conds and group.conds.keybind and group.key and group.key ~= "" then
             idx = idx + 1
             local button = _keyBtnPool[idx]
             if not button then
@@ -424,11 +424,11 @@ function CludesUI.Conditions_RebuildKeyBindings()
                 button:Hide()
                 _keyBtnPool[idx] = button
             end
-            local groupId = g.id
+            local groupId = group.id
             button:SetScript("OnClick", function()
                 CludesUI.Conditions_ToggleKey(groupId)
             end)
-            SetOverrideBindingClick(button, true, g.key, button:GetName())
+            SetOverrideBindingClick(button, true, group.key, button:GetName())
         end
     end
 end

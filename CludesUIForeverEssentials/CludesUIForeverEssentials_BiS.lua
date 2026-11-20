@@ -57,8 +57,8 @@ local SLOTS = { -- inventory slot, name, in window order
     { 18, "Ranged" },
 }
 local SLOT_NAME = {}
-for _, s in ipairs(SLOTS) do
-    SLOT_NAME[s[1]] = s[2]
+for _, slot in ipairs(SLOTS) do
+    SLOT_NAME[slot[1]] = slot[2]
 end
 
 local BY_EQUIP = {
@@ -145,9 +145,9 @@ function module.ToggleBis(itemLink)
         return Say("that item is not gear.")
     end
     local target = slots[1]
-    for _, s in ipairs(slots) do
-        if not List()[s] then
-            target = s
+    for _, slot in ipairs(slots) do
+        if not List()[slot] then
+            target = slot
             break
         end
     end
@@ -165,10 +165,10 @@ end
 
 function module.ExportBis()
     local parts = {}
-    for _, s in ipairs(SLOTS) do
-        local ident = List()[s[1]]
+    for _, slot in ipairs(SLOTS) do
+        local ident = List()[slot[1]]
         if ident then
-            parts[#parts + 1] = s[1] .. "=" .. ident
+            parts[#parts + 1] = slot[1] .. "=" .. ident
         end
     end
     return "CUIBIS1:" .. CLASS .. ":" .. table.concat(parts, ",")
@@ -334,18 +334,18 @@ local function Build()
         "|cff9aa6b2Alt+Shift-click an item to add or remove it. Right-click a row to clear it.|r"
     )
 
-    for index, s in ipairs(SLOTS) do
+    for index, slot in ipairs(SLOTS) do
         local region = CreateFrame("Button", nil, window)
         region:SetSize(400, ROW_H)
         region:SetPoint("TOPLEFT", 10, -32 - (index - 1) * ROW_H)
         region:RegisterForClicks("AnyUp")
-        region.slot = s[1]
+        region.slot = slot[1]
         region.label = region:CreateFontString(nil, "OVERLAY")
         CludesUI.Kit.Font(region.label, 12, "essentials")
         region.label:SetPoint("LEFT")
         region.label:SetWidth(70)
         region.label:SetJustifyH("LEFT")
-        region.label:SetText("|cff9aa6b2" .. s[2] .. "|r")
+        region.label:SetText("|cff9aa6b2" .. slot[2] .. "|r")
         region.icon = region:CreateTexture(nil, "ARTWORK")
         region.icon:SetSize(ROW_H - 4, ROW_H - 4)
         region.icon:SetPoint("LEFT", 74, 0)

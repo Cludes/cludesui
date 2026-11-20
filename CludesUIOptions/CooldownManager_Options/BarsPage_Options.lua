@@ -319,8 +319,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 end
             end
             local specs = mod.GetCDMSpecInfo and mod.GetCDMSpecInfo() or {}
-            for _, s in ipairs(specs) do
-                s.checked = (s.key == sourceKey)
+            for _, spec in ipairs(specs) do
+                spec.checked = (spec.key == sourceKey)
             end
             CludesUI:ShowCDMSpecPickerPopup({
                 title = "Sync Generic CDs/Buffs",

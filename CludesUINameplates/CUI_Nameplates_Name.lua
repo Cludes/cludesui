@@ -882,8 +882,8 @@ function NameplateFrame:ApplyTarget()
         if self.glowTextures then
             local gc = mod.GetTargetGlowColor()
             local ga = mod.GetTargetGlowAlpha()
-            for _, t in ipairs(self.glowTextures) do
-                t:SetVertexColor(gc.r, gc.g, gc.b, ga)
+            for _, tex in ipairs(self.glowTextures) do
+                tex:SetVertexColor(gc.r, gc.g, gc.b, ga)
             end
         end
         self.glow:Show()
@@ -1026,8 +1026,8 @@ function mod.ApplyHoverExtras(backing)
         if backing.glowTextures then
             local gc = mod.GetHoverGlowColor()
             local ga = mod.GetHoverGlowAlpha()
-            for _, t in ipairs(backing.glowTextures) do
-                t:SetVertexColor(gc.r, gc.g, gc.b, ga)
+            for _, tex in ipairs(backing.glowTextures) do
+                tex:SetVertexColor(gc.r, gc.g, gc.b, ga)
             end
         end
         backing.glow:Show()

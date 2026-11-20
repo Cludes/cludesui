@@ -438,11 +438,11 @@ function mod.Targets(maps, runs, tiers)
         byMap[r.challengeModeID] = r
     end
     local goals = {}
-    for _, s in ipairs(tiers) do
-        local rating = s.lineEnd or s.lineNow
+    for _, tier in ipairs(tiers) do
+        local rating = tier.lineEnd or tier.lineNow
         goals[#goals + 1] = {
-            tier = s.tier,
-            atEnd = s.lineEnd ~= nil,
+            tier = tier.tier,
+            atEnd = tier.lineEnd ~= nil,
             level = mod.LevelFor(rating),
         }
     end
@@ -725,9 +725,9 @@ function mod.Context(options)
 
     -- Each title line as a key level timed in every dungeon.
     context.maps = C_ChallengeMode.GetMapTable() or {}
-    for _, s in ipairs(context.summary.tiers) do
-        s.levelNow = mod.LevelFor(s.lineNow)
-        s.levelEnd = s.lineEnd and mod.LevelFor(s.lineEnd)
+    for _, tier in ipairs(context.summary.tiers) do
+        tier.levelNow = mod.LevelFor(tier.lineNow)
+        tier.levelEnd = tier.lineEnd and mod.LevelFor(tier.lineEnd)
     end
 
     local age = (nowTime - context.region.updatedAt) / DAY
@@ -780,10 +780,10 @@ function mod.AddTooltipLines(tt, spaced)
             true
         )
     end
-    for _, s in ipairs(context.summary.tiers) do
-        local right = s.gap > 0 and (mod.Fmt(s.gap) .. " to go") or "reached"
+    for _, tier in ipairs(context.summary.tiers) do
+        local right = tier.gap > 0 and (mod.Fmt(tier.gap) .. " to go") or "reached"
         tt:AddDoubleLine(
-            mod.Key(s.tier.color) .. " " .. s.tier.label .. "  |cff898781" .. mod.Fmt(s.lineNow) .. "|r",
+            mod.Key(tier.tier.color) .. " " .. tier.tier.label .. "  |cff898781" .. mod.Fmt(tier.lineNow) .. "|r",
             right,
             C.ink2[1],
             C.ink2[2],
@@ -828,19 +828,19 @@ function mod.CheckAlerts()
     local status = CludesUITitleLineDB.alertState[slot] or {}
     CludesUITitleLineDB.alertState[slot] = status
     local today = date("%Y-%m-%d", context.now)
-    for _, s in ipairs(sum.tiers) do
-        local key = s.tier.key
-        local above = s.gap <= 0
+    for _, tier in ipairs(sum.tiers) do
+        local key = tier.tier.key
+        local above = tier.gap <= 0
         local was = status[key]
         if was == "below" and above then
-            Alert(("%s passed the %s line (%s)."):format(who, s.tier.label, mod.Fmt(s.lineNow)), true, true)
+            Alert(("%s passed the %s line (%s)."):format(who, tier.tier.label, mod.Fmt(tier.lineNow)), true, true)
         elseif was == "above" and not above then
             Alert(
                 ("The %s line (%s) passed %s: %s to go."):format(
-                    s.tier.label,
-                    mod.Fmt(s.lineNow),
+                    tier.tier.label,
+                    mod.Fmt(tier.lineNow),
                     who,
-                    mod.Fmt(s.gap)
+                    mod.Fmt(tier.gap)
                 ),
                 true,
                 false
@@ -849,15 +849,15 @@ function mod.CheckAlerts()
         status[key] = above and "above" or "below"
 
         if above and sum.daysLeft and status[key .. ":warned"] ~= today then
-            local d = mod.Overtake(s.pts, s.fit, context.now, sum.you, sum.pace, sum.daysLeft)
+            local d = mod.Overtake(tier.pts, tier.fit, context.now, sum.you, sum.pace, sum.daysLeft)
             if d then
                 status[key .. ":warned"] = today
                 Alert(
                     ("At its pace the %s line passes %s around %s, before the season ends. Staying above takes +%.1f a day."):format(
-                        s.tier.label,
+                        tier.tier.label,
                         who,
                         mod.DateText(context.now + d * DAY),
-                        s.need or 0
+                        tier.need or 0
                     )
                 )
             end
@@ -881,11 +881,11 @@ local function OnKeyCompleted()
     end
     local you = details.newOverallDungeonScore or C_ChallengeMode.GetOverallDungeonScore() or 0
     local parts = {}
-    for _, s in ipairs(mod.Summary(context.region, context.history, context.now, you).tiers) do
-        if not CludesUITitleLineDB.hidden[s.tier.key] then
-            local gap = s.lineNow - you
-            parts[#parts + 1] = gap > 0 and (mod.Fmt(gap) .. " to " .. s.tier.label)
-                or (s.tier.label .. " reached")
+    for _, tier in ipairs(mod.Summary(context.region, context.history, context.now, you).tiers) do
+        if not CludesUITitleLineDB.hidden[tier.tier.key] then
+            local gap = tier.lineNow - you
+            parts[#parts + 1] = gap > 0 and (mod.Fmt(gap) .. " to " .. tier.tier.label)
+                or (tier.tier.label .. " reached")
         end
     end
     if #parts > 0 then

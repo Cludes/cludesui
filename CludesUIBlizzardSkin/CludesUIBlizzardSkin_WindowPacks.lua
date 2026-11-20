@@ -175,8 +175,8 @@ do
                 guard = false
             end
             cd.tabReNorm = ReNorm
-            for _, t in ipairs(cTabs) do
-                hooksecurefunc(t, "SetPoint", ReNorm)
+            for _, tab in ipairs(cTabs) do
+                hooksecurefunc(tab, "SetPoint", ReNorm)
             end
         end
         if cd.tabReNorm then
@@ -1338,8 +1338,8 @@ do
                 region:SetAlpha(0.5)
             end
         end
-        for _, g in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetDisabledTexture" }) do
-            local func = btnFrame[g]
+        for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetDisabledTexture" }) do
+            local func = btnFrame[getter]
             local t = func and func(btnFrame)
             if t and not keepSet[t] and t.SetAlpha then
                 t:SetAlpha(0.5)
@@ -1764,8 +1764,8 @@ do
             return
         end
         local swapped = false
-        for _, g in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetDisabledTexture" }) do
-            local t = gv[g] and gv[g](gv)
+        for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetDisabledTexture" }) do
+            local t = gv[getter] and gv[getter](gv)
             if t and t.SetAtlas then
                 t:SetAtlas(VAULT_BUTTON_ATLAS)
                 swapped = true
@@ -3092,8 +3092,8 @@ local function SquareTabIcon(tabBtn)
             end
         end
     end
-    for _, g in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetCheckedTexture", "GetHighlightTexture" }) do
-        local func = tabBtn[g]
+    for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetCheckedTexture", "GetHighlightTexture" }) do
+        local func = tabBtn[getter]
         local t = func and func(tabBtn)
         if t and t.SetAlpha then
             t:SetAlpha(0)
@@ -5658,10 +5658,10 @@ do
                     Skin.NormalizeTabRow(achTabs)
                     guard = false
                 end
-                for _, t in ipairs(achTabs) do
-                    hooksecurefunc(t, "SetPoint", ReNorm)
-                    t:HookScript("OnShow", ReNorm)
-                    t:HookScript("OnHide", ReNorm)
+                for _, tab in ipairs(achTabs) do
+                    hooksecurefunc(tab, "SetPoint", ReNorm)
+                    tab:HookScript("OnShow", ReNorm)
+                    tab:HookScript("OnHide", ReNorm)
                 end
             end
         end
@@ -7635,8 +7635,8 @@ do
             keepSet[btnFrame.IconBorder] = true
         end
         Skin.FadeRegions(btnFrame, keepSet)
-        for _, g in ipairs({ "GetNormalTexture", "GetPushedTexture" }) do
-            local t = btnFrame[g] and btnFrame[g](btnFrame)
+        for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture" }) do
+            local t = btnFrame[getter] and btnFrame[getter](btnFrame)
             if t and t.SetAlpha then
                 t:SetAlpha(0)
             end
@@ -8070,8 +8070,8 @@ do
                     -- Keep the star art: Icon key survives the strip, state textures restored after.
                     local fav = subFrame.FavoritesSearchButton
                     Skin.Button(fav, { "Icon" })
-                    for _, g in ipairs({ "GetNormalTexture", "GetPushedTexture" }) do
-                        local t = fav[g] and fav[g](fav)
+                    for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture" }) do
+                        local t = fav[getter] and fav[getter](fav)
                         if t and t.SetAlpha then
                             t:SetAlpha(1)
                         end
@@ -12971,10 +12971,10 @@ do
                 return
             end
             local any = false
-            for _, t in ipairs(ahTabs) do
-                if t.displayMode ~= nil then
+            for _, tab in ipairs(ahTabs) do
+                if tab.displayMode ~= nil then
                     any = true
-                    GetFFD(t).selOverride = (t.displayMode == dm)
+                    GetFFD(tab).selOverride = (tab.displayMode == dm)
                 end
             end
             if any then
@@ -13484,23 +13484,23 @@ do
         -- texture with self-guarding fades, sparing our pieces by identity.
         -- Selection is not exposed the standard way either, so drive the FFD override from clicks plus isSelected when Blizzard provides it.
         local function SyncSettingsTabs(clicked)
-            for _, t in ipairs(sTabs) do
-                local titleData = GetFFD(t)
+            for _, tab in ipairs(sTabs) do
+                local titleData = GetFFD(tab)
                 if clicked then
-                    titleData.selOverride = (t == clicked)
-                elseif t.isSelected ~= nil then
-                    titleData.selOverride = t.isSelected and true or false
+                    titleData.selOverride = (tab == clicked)
+                elseif tab.isSelected ~= nil then
+                    titleData.selOverride = tab.isSelected and true or false
                 elseif titleData.selOverride == nil then
-                    titleData.selOverride = (t == sTabs[1]) -- Game tab default
+                    titleData.selOverride = (tab == sTabs[1]) -- Game tab default
                 end
             end
             Skin.UpdateAllTabs()
         end
-        for _, t in ipairs(sTabs) do
-            local titleData = GetFFD(t)
+        for _, tab in ipairs(sTabs) do
+            local titleData = GetFFD(tab)
             if not titleData.pinned then
                 titleData.pinned = true
-                local regionList = { t:GetRegions() }
+                local regionList = { tab:GetRegions() }
                 for idx = 1, #regionList do
                     local region = regionList[idx]
                     if
@@ -13521,7 +13521,7 @@ do
                         end
                     end
                 end
-                t:HookScript("OnClick", function(self)
+                tab:HookScript("OnClick", function(self)
                     SyncSettingsTabs(self)
                 end)
             end
@@ -13539,8 +13539,8 @@ do
                 if cs == nil then
                     return
                 end
-                for _, t in ipairs(sTabs) do
-                    GetFFD(t).selOverride = (t.categorySet == cs)
+                for _, tab in ipairs(sTabs) do
+                    GetFFD(tab).selOverride = (tab.categorySet == cs)
                 end
                 Skin.UpdateAllTabs()
             end)
@@ -14056,9 +14056,9 @@ do
                 WhiteBtn(scrollBar.SearchButton)
                 if scrollBar.FavoritesSearchButton then
                     Skin.Button(scrollBar.FavoritesSearchButton, { "Icon" })
-                    for _, g in ipairs({ "GetNormalTexture", "GetPushedTexture" }) do
-                        local t = scrollBar.FavoritesSearchButton[g]
-                            and scrollBar.FavoritesSearchButton[g](scrollBar.FavoritesSearchButton)
+                    for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture" }) do
+                        local t = scrollBar.FavoritesSearchButton[getter]
+                            and scrollBar.FavoritesSearchButton[getter](scrollBar.FavoritesSearchButton)
                         if t and t.SetAlpha then
                             t:SetAlpha(1)
                         end
@@ -14348,20 +14348,20 @@ do
         -- visibility (mirroring the AH's displayMode SyncTabSel); runs every pass, re-triggered by the browse/mo OnShow hooks on every tab switch.
         local coTabs = {}
         if type(win.Tabs) == "table" then
-            for _, t in ipairs(win.Tabs) do
-                if t then
-                    Skin.Tab(t)
-                    coTabs[#coTabs + 1] = t
+            for _, tab in ipairs(win.Tabs) do
+                if tab then
+                    Skin.Tab(tab)
+                    coTabs[#coTabs + 1] = tab
                 end
             end
         end
         Skin.NormalizeTabRow(coTabs)
-        for _, t in ipairs(coTabs) do
-            local label = t.GetName and t:GetName()
+        for _, tab in ipairs(coTabs) do
+            local label = tab.GetName and tab:GetName()
             if label and label:find("BrowseTab", 1, true) then
-                GetFFD(t).selOverride = (win.BrowseOrders and win.BrowseOrders:IsShown()) and true or false
+                GetFFD(tab).selOverride = (win.BrowseOrders and win.BrowseOrders:IsShown()) and true or false
             elseif label and label:find("OrdersTab", 1, true) then
-                GetFFD(t).selOverride = (win.MyOrdersPage and win.MyOrdersPage:IsShown()) and true or false
+                GetFFD(tab).selOverride = (win.MyOrdersPage and win.MyOrdersPage:IsShown()) and true or false
             end
         end
         Skin.UpdateAllTabs()
@@ -16206,8 +16206,8 @@ do
         if w0 and w0 > 0 and h0 and h0 > 0 then
             rb:SetSize(w0 + 8, h0 * ((w0 + 8) / w0))
         end
-        for _, g in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetHighlightTexture" }) do
-            local func = rb[g]
+        for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetHighlightTexture" }) do
+            local func = rb[getter]
             local t = func and func(rb)
             if t and t.SetAlpha then
                 t:SetAlpha(0)

@@ -649,8 +649,8 @@ local function Index()
             end
         end
     end
-    for _, t in ipairs(saved.warband.tabs) do
-        AddContainer(t, war, nil, nil, 1)
+    for _, tab in ipairs(saved.warband.tabs) do
+        AddContainer(tab, war, nil, nil, 1)
     end
     index, indexRev = { chars = chars, warband = war }, rev
     return index

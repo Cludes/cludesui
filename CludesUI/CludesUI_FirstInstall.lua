@@ -154,9 +154,9 @@ local function ShowFirstInstallPopup()
 
     -- Compute popup height from the tallest group
     local tallestRows = 0
-    for _, g in ipairs(GROUPS) do
-        if #g.entries > tallestRows then
-            tallestRows = #g.entries
+    for _, group in ipairs(GROUPS) do
+        if #group.entries > tallestRows then
+            tallestRows = #group.entries
         end
     end
     local contentH = HEADER_H + HEADER_PAD + tallestRows * ROW_H

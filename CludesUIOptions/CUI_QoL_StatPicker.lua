@@ -115,8 +115,8 @@ local function Build()
     subMenu:SetText(CludesUI.L("Checked stats show in the on-screen block."))
 
     local all = {}
-    for _, g in ipairs(groups) do
-        for _, s in ipairs(g.stats) do
+    for _, group in ipairs(groups) do
+        for _, s in ipairs(group.stats) do
             all[#all + 1] = s
         end
     end
@@ -132,26 +132,26 @@ local function Build()
     end)
     uncheckAll:SetPoint("LEFT", checkAll, "RIGHT", 20, 0)
 
-    for gi, g in ipairs(groups) do
+    for gi, group in ipairs(groups) do
         local colX = PAD + ((gi - 1) % NUM_COLS) * (COL_W + COL_GAP)
         local grpY = -lineTop[math.floor((gi - 1) / NUM_COLS) + 1]
 
         local heading = CludesUI.MakeFont(panelFrame, 13, "", ACC.r, ACC.g, ACC.b)
         heading:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", colX, grpY)
-        heading:SetText(CludesUI.L(g.title))
+        heading:SetText(CludesUI.L(group.title))
         local none = Link(CludesUI.L("None"), function()
-            SetShown(g.stats, false)
+            SetShown(group.stats, false)
         end)
         none:SetPoint("TOPRIGHT", panelFrame, "TOPLEFT", colX + COL_W, grpY - 2)
         local allLink = Link(CludesUI.L("All"), function()
-            SetShown(g.stats, true)
+            SetShown(group.stats, true)
         end)
         allLink:SetPoint("RIGHT", none, "LEFT", -8, 0)
         local underline = CludesUI.SolidTex(panelFrame, "ARTWORK", ACC.r, ACC.g, ACC.b, 0.35)
         underline:SetSize(COL_W, 1)
         underline:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", colX, grpY - HEADER_H + 8)
 
-        for jdx, s in ipairs(g.stats) do
+        for jdx, s in ipairs(group.stats) do
             local row = CreateFrame("Button", nil, panelFrame)
             row:SetSize(COL_W, ITEM_H)
             row:SetPoint("TOPLEFT", panelFrame, "TOPLEFT", colX, grpY - HEADER_H - (jdx - 1) * ITEM_H)

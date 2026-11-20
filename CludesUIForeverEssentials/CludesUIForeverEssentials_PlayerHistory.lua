@@ -33,8 +33,8 @@ local TAGS = {
     { key = "avoid", label = "Avoid", good = false },
 }
 local TAG = {}
-for _, t in ipairs(TAGS) do
-    TAG[t.key] = t
+for _, tag in ipairs(TAGS) do
+    TAG[tag.key] = tag
 end
 local CHANNEL = {
     CHAT_MSG_WHISPER = "WHISPER",
@@ -503,13 +503,13 @@ local function AddMenus()
         sub:CreateButton("Write a Note", function()
             StaticPopup_Show("CLUDESUI_PLAYER_NOTE", name or "this player", nil, { guid = guid, name = name })
         end)
-        for _, t in ipairs(TAGS) do
-            sub:CreateRadio(t.label, function()
+        for _, tag in ipairs(TAGS) do
+            sub:CreateRadio(tag.label, function()
                 local n = module.PlayerNote(guid)
-                return n and n.tag == t.key
+                return n and n.tag == tag.key
             end, function()
                 local n = module.PlayerNote(guid)
-                local tag = (n and n.tag == t.key) and nil or t.key
+                local tag = (n and n.tag == tag.key) and nil or tag.key
                 module.SetPlayerNote(guid, n and n.text, tag, name)
             end)
         end

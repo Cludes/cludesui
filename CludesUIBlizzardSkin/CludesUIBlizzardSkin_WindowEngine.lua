@@ -1067,8 +1067,8 @@ function Skin.FilterResetX(rb, owner)
             region:SetAlpha(0)
         end
     end
-    for _, g in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetHighlightTexture" }) do
-        local t = rb[g] and rb[g](rb)
+    for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetHighlightTexture" }) do
+        local t = rb[getter] and rb[getter](rb)
         if t and t.SetAlpha then
             t:SetAlpha(0)
         end
@@ -1111,8 +1111,8 @@ function Skin.RefreshGlyph(rb)
             region:SetAlpha(0)
         end
     end
-    for _, g in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetHighlightTexture", "GetDisabledTexture" }) do
-        local t = rb[g] and rb[g](rb)
+    for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetHighlightTexture", "GetDisabledTexture" }) do
+        local t = rb[getter] and rb[getter](rb)
         if t and t.SetAlpha then
             t:SetAlpha(0)
         end
@@ -1147,8 +1147,8 @@ function Skin.PageButton(button, ch, size)
         return
     end
     skinData.block = true
-    for _, g in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetDisabledTexture", "GetHighlightTexture" }) do
-        local func = button[g]
+    for _, getter in ipairs({ "GetNormalTexture", "GetPushedTexture", "GetDisabledTexture", "GetHighlightTexture" }) do
+        local func = button[getter]
         local t = func and func(button)
         if t and t.SetAlpha then
             t:SetAlpha(0)

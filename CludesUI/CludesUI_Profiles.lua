@@ -3753,9 +3753,9 @@ function CludesUI.ForeverCDMSelection(assignments, options, output)
             isOpen[t][#isOpen[t] + 1] = entryKey
         end
     end
-    for _, s in ipairs(options.specs or {}) do
-        if s.checked then
-            Opened(s.key)
+    for _, spec in ipairs(options.specs or {}) do
+        if spec.checked then
+            Opened(spec.key)
         end
     end
     for k, v in pairs(options.lockedSpecs or {}) do

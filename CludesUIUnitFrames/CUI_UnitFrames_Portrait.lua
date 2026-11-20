@@ -1493,8 +1493,8 @@ local function ApplyDetachedPortraitShape(portraitBack, unitSettings, portraitUn
             portraitBack._shapeBorderTex:Hide()
         end
         if portraitBack._sqBorderTexs then
-            for _, t in ipairs(portraitBack._sqBorderTexs) do
-                t:Hide()
+            for _, tex in ipairs(portraitBack._sqBorderTexs) do
+                tex:Hide()
             end
         end
         -- Detached mode expands these for mask fill; reset to default.
@@ -1551,8 +1551,8 @@ local function ApplyDetachedPortraitShape(portraitBack, unitSettings, portraitUn
             portraitBack._shapeBorderTex:Hide()
         end
         if portraitBack._sqBorderTexs then
-            for _, t in ipairs(portraitBack._sqBorderTexs) do
-                t:Hide()
+            for _, tex in ipairs(portraitBack._sqBorderTexs) do
+                tex:Hide()
             end
         end
         -- Reset content to fill the backdrop.
@@ -1616,8 +1616,8 @@ local function ApplyDetachedPortraitShape(portraitBack, unitSettings, portraitUn
 
     -- Hide legacy square border textures if this frame has them.
     if portraitBack._sqBorderTexs then
-        for _, t in ipairs(portraitBack._sqBorderTexs) do
-            t:Hide()
+        for _, tex in ipairs(portraitBack._sqBorderTexs) do
+            tex:Hide()
         end
     end
 

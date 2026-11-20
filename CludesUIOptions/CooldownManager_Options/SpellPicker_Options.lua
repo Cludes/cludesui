@@ -6423,12 +6423,12 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 -- Remove picker: only specs that HAVE the spell are pre-checked +
                                 -- selectable; the rest (and current) are disabled. Confirm removes from the checked specs.
                                 local disabled = {}
-                                for _, s in ipairs(specs) do
-                                    s.checked = otherSpecs[s.key] and true or false
-                                    if s.key == curKey then
-                                        disabled[s.key] = "You're on this spec."
-                                    elseif not otherSpecs[s.key] then
-                                        disabled[s.key] = "This spec doesn't have this spell."
+                                for _, spec in ipairs(specs) do
+                                    spec.checked = otherSpecs[spec.key] and true or false
+                                    if spec.key == curKey then
+                                        disabled[spec.key] = "You're on this spec."
+                                    elseif not otherSpecs[spec.key] then
+                                        disabled[spec.key] = "This spec doesn't have this spell."
                                     end
                                 end
                                 CludesUI:ShowCDMSpecPickerPopup({

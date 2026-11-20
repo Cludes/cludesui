@@ -1615,9 +1615,9 @@ do
         local groups = C_Traits.GetGroupDisplayInfoByTreeID(treeID)
         table.sort(groups, ByOrder)
         local trees, byGroup = {}, {}
-        for idx, g in ipairs(groups) do
-            trees[idx] = { groupID = g.groupID, name = g.displayName, nodes = {} }
-            byGroup[g.groupID] = trees[idx]
+        for idx, group in ipairs(groups) do
+            trees[idx] = { groupID = group.groupID, name = group.displayName, nodes = {} }
+            byGroup[group.groupID] = trees[idx]
         end
         for _, nodeId in ipairs(C_Traits.GetTreeNodes(treeID)) do
             local details = C_Traits.GetNodeInfo(configId, nodeId)

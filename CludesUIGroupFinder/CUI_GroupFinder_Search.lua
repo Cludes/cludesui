@@ -201,11 +201,11 @@ end
 local function AllDungeonGroups()
     local F = Enum.LFGListFilter
     local all = {}
-    for _, g in ipairs(GroupsFor(SeasonFilter())) do
-        all[#all + 1] = g
+    for _, group in ipairs(GroupsFor(SeasonFilter())) do
+        all[#all + 1] = group
     end
-    for _, g in ipairs(GroupsFor(bit.bor(F.CurrentExpansion, F.NotCurrentSeason, F.PvE))) do
-        all[#all + 1] = g
+    for _, group in ipairs(GroupsFor(bit.bor(F.CurrentExpansion, F.NotCurrentSeason, F.PvE))) do
+        all[#all + 1] = group
     end
     return all
 end

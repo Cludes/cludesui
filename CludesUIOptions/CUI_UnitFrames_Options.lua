@@ -2196,8 +2196,8 @@ CludesUI.AtLogin(function()
                     previewFrame._shapeBorderTex:Hide()
                 end
                 if previewFrame._sqBorderTexs then
-                    for _, t in ipairs(previewFrame._sqBorderTexs) do
-                        t:Hide()
+                    for _, tex in ipairs(previewFrame._sqBorderTexs) do
+                        tex:Hide()
                     end
                 end
                 -- Reset texture positions to default (detached mode expands them for mask fill)
@@ -2241,8 +2241,8 @@ CludesUI.AtLogin(function()
                     previewFrame._shapeBorderTex:Hide()
                 end
                 if previewFrame._sqBorderTexs then
-                    for _, t in ipairs(previewFrame._sqBorderTexs) do
-                        t:Hide()
+                    for _, tex in ipairs(previewFrame._sqBorderTexs) do
+                        tex:Hide()
                     end
                 end
                 if previewFrame._previewTex then
@@ -2286,8 +2286,8 @@ CludesUI.AtLogin(function()
 
             -- Hide old square border textures if they exist on this frame
             if previewFrame._sqBorderTexs then
-                for _, t in ipairs(previewFrame._sqBorderTexs) do
-                    t:Hide()
+                for _, tex in ipairs(previewFrame._sqBorderTexs) do
+                    tex:Hide()
                 end
             end
 

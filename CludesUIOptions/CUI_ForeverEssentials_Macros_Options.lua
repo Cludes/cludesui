@@ -557,10 +557,10 @@ local function KindValues(onSelect)
         end
     end
     local values, sequence = { __pick = "Choose a type" }, {}
-    for idx, g in ipairs(kindGroups) do
-        values[g.key] =
-            { text = g.text, subnav = { values = g.values, order = g.order, onSelect = onSelect } }
-        sequence[idx] = g.key
+    for idx, group in ipairs(kindGroups) do
+        values[group.key] =
+            { text = group.text, subnav = { values = group.values, order = group.order, onSelect = onSelect } }
+        sequence[idx] = group.key
     end
     return values, sequence
 end

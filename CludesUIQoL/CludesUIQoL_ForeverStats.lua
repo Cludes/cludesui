@@ -170,8 +170,8 @@ local GROUPS = {
 -- order: every key, group by group (the block's default order). hidden: the
 -- profile default for secondaryStatsHidden, every stat not shown by default.
 local byKey, sequence, hidden = {}, {}, {}
-for _, g in ipairs(GROUPS) do
-    for _, s in ipairs(g.stats) do
+for _, group in ipairs(GROUPS) do
+    for _, s in ipairs(group.stats) do
         byKey[s.key] = s
         sequence[#sequence + 1] = s.key
         if not s.on then

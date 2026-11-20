@@ -392,8 +392,8 @@ local function CollectAuras(missing, classFile, specID, instanceNow, combatNow)
                 local specMatches = true
                 if auraInfo.specs then
                     specMatches = false
-                    for _, s in ipairs(auraInfo.specs) do
-                        if s == specID then
+                    for _, spec in ipairs(auraInfo.specs) do
+                        if spec == specID then
                             specMatches = true
                             break
                         end

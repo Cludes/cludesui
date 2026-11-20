@@ -12,12 +12,12 @@ local function Readout()
         return ""
     end
     local parts = {}
-    for _, s in ipairs(context.summary.tiers) do
-        parts[#parts + 1] = mod.Key(s.tier.color)
+    for _, tier in ipairs(context.summary.tiers) do
+        parts[#parts + 1] = mod.Key(tier.tier.color)
             .. " "
-            .. s.tier.short
+            .. tier.tier.short
             .. "  |cfff0efec"
-            .. (s.gap > 0 and (mod.Fmt(s.gap) .. " to go") or "reached")
+            .. (tier.gap > 0 and (mod.Fmt(tier.gap) .. " to go") or "reached")
             .. "|r"
     end
     local line = table.concat(parts, "     ")

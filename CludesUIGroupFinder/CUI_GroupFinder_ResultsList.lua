@@ -1667,8 +1667,8 @@ local function PvCounts(g)
         return g.counts
     end
     local n = { TANK = 0, HEALER = 0, DAMAGER = 0 }
-    for _, s in ipairs(g.specs) do
-        local _, _, _, _, role = GetSpecializationInfoByID(s[1])
+    for _, spec in ipairs(g.specs) do
+        local _, _, _, _, role = GetSpecializationInfoByID(spec[1])
         if n[role] then
             n[role] = n[role] + 1
         end
@@ -1860,16 +1860,16 @@ local function PvPlayers(ident)
             end
         end
     end
-    for _, s in ipairs(PV[ident].specs) do
-        local _, specInfo, _, _, role, cls, className = GetSpecializationInfoByID(s[1])
+    for _, spec in ipairs(PV[ident].specs) do
+        local _, specInfo, _, _, role, cls, className = GetSpecializationInfoByID(spec[1])
         if cls then
             entries[#entries + 1] = {
                 assignedRole = role,
                 classFilename = cls,
                 className = className,
                 specName = specInfo,
-                isLeader = s[2] or false,
-                name = s[3] or Take(cls),
+                isLeader = spec[2] or false,
+                name = spec[3] or Take(cls),
             }
         end
     end

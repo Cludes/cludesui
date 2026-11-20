@@ -1076,10 +1076,10 @@ function CludesUI.SpecOverrides_OwningGroupFor(specId)
     if not specId then
         return nil
     end
-    for _, g in ipairs(GetGroups() or {}) do
-        for _, spellRef in ipairs(g.specs or {}) do
+    for _, group in ipairs(GetGroups() or {}) do
+        for _, spellRef in ipairs(group.specs or {}) do
             if spellRef == specId then
-                return g
+                return group
             end
         end
     end
@@ -1177,11 +1177,11 @@ local function OwnerGid(specId)
     if not s or not next(s.layouts) then
         return nil
     end
-    for _, g in ipairs(GetGroups() or {}) do
-        if s.layouts[g.id] then
-            for _, spellRef in ipairs(g.specs or {}) do
+    for _, group in ipairs(GetGroups() or {}) do
+        if s.layouts[group.id] then
+            for _, spellRef in ipairs(group.specs or {}) do
                 if spellRef == specId then
-                    return g.id
+                    return group.id
                 end
             end
         end

@@ -64,8 +64,8 @@ CludesUI.SPEC_GROUP_BUCKETS = {
     { key = "healers", name = "All Healers/Aug", icon = "Interface\\Icons\\Spell_Holy_Renew" },
 }
 CludesUI.SPEC_GROUP_BUCKET_INFO = {}
-for _, g in ipairs(CludesUI.SPEC_GROUP_BUCKETS) do
-    CludesUI.SPEC_GROUP_BUCKET_INFO[g.key] = g
+for _, group in ipairs(CludesUI.SPEC_GROUP_BUCKETS) do
+    CludesUI.SPEC_GROUP_BUCKET_INFO[group.key] = group
 end
 
 -- Editing-spec roster: the group buckets, "---a", then every spec in the
@@ -98,10 +98,10 @@ function CludesUI.BuildSpecBucketRoster(lead, foreverKeyFor)
         end
         return values, sequence, icons, classes
     end
-    for _, g in ipairs(CludesUI.SPEC_GROUP_BUCKETS) do
-        values[g.key] = CludesUI.L(g.name)
-        sequence[#sequence + 1] = g.key
-        icons[g.key] = g.icon
+    for _, group in ipairs(CludesUI.SPEC_GROUP_BUCKETS) do
+        values[group.key] = CludesUI.L(group.name)
+        sequence[#sequence + 1] = group.key
+        icons[group.key] = group.icon
     end
     sequence[#sequence + 1] = "---a"
     local skip = lead and lead(values, sequence, icons) or {}
@@ -380,9 +380,9 @@ local function NextGroupId()
 end
 
 local function GroupById(ident)
-    for _, g in ipairs(GetGroups() or {}) do
-        if g.id == ident then
-            return g
+    for _, group in ipairs(GetGroups() or {}) do
+        if group.id == ident then
+            return group
         end
     end
     return nil
@@ -393,8 +393,8 @@ local function SpecInAnyGroup(specID)
     if not specID then
         return false
     end
-    for _, g in ipairs(GetGroups() or {}) do
-        for _, spellRef in ipairs(g.specs or {}) do
+    for _, group in ipairs(GetGroups() or {}) do
+        for _, spellRef in ipairs(group.specs or {}) do
             if spellRef == specID then
                 return true
             end
@@ -510,9 +510,9 @@ local function SpecStrandedOnEntry(record, specID)
         end
     end
     local inAnyGroup = false
-    for _, g in ipairs(GetGroups() or {}) do
+    for _, group in ipairs(GetGroups() or {}) do
         local hasSpec = false
-        for _, spellRef in ipairs(g.specs or {}) do
+        for _, spellRef in ipairs(group.specs or {}) do
             if spellRef == specID then
                 hasSpec = true
                 break
@@ -520,7 +520,7 @@ local function SpecStrandedOnEntry(record, specID)
         end
         if hasSpec then
             inAnyGroup = true
-            if not ConflictSpec(record, g) then
+            if not ConflictSpec(record, group) then
                 return false
             end
         end

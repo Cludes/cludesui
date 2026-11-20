@@ -1279,14 +1279,14 @@ do
         for i = #result, 1, -1 do
             result[i] = nil
         end
-        for _, g in ipairs(CUI_NS.pluginGroupsTop) do
-            result[#result + 1] = g
+        for _, group in ipairs(CUI_NS.pluginGroupsTop) do
+            result[#result + 1] = group
         end
-        for _, g in ipairs(coreGroups) do
-            result[#result + 1] = g
+        for _, group in ipairs(coreGroups) do
+            result[#result + 1] = group
         end
-        for _, g in ipairs(CUI_NS.pluginGroupsBottom) do
-            result[#result + 1] = g
+        for _, group in ipairs(CUI_NS.pluginGroupsBottom) do
+            result[#result + 1] = group
         end
     end
     CUI_NS.RebuildNavGroups()

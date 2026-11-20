@@ -3681,9 +3681,9 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
             end)
         end
         local values, sequence = { [""] = "Automatic (talents)" }, { "" }
-        for _, s in ipairs(SWt.Specs()) do
-            values[s.key] = s.name
-            sequence[#sequence + 1] = s.key
+        for _, spec in ipairs(SWt.Specs()) do
+            values[spec.key] = spec.name
+            sequence[#sequence + 1] = spec.key
         end
         _, height = W:Spacer(hostFrame, cursorY, 20)
         cursorY = cursorY - height

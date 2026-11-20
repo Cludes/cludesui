@@ -34,8 +34,8 @@ mod._CURB_IsThresholdCardShadowed = function(entries, position)
     if CludesUI.IS_FOREVER then
         local pick = mod.ForeverThresholdPick(entries)
         if not mod.ThresholdCardLiveFor(current, pick) then
-            for _, s in ipairs(current.specIDs) do
-                if CludesUI.IsPlayerSpec(s) and mod.ThresholdCardLiveFor(current, s) then
+            for _, spec in ipairs(current.specIDs) do
+                if CludesUI.IsPlayerSpec(spec) and mod.ThresholdCardLiveFor(current, spec) then
                     return true
                 end
             end
@@ -43,22 +43,22 @@ mod._CURB_IsThresholdCardShadowed = function(entries, position)
     end
     local curGate = current.talentSpellID
     local curAll, curSet = false, {}
-    for _, s in ipairs(current.specIDs) do
-        if s == 0 then
+    for _, spec in ipairs(current.specIDs) do
+        if spec == 0 then
             curAll = true
         else
-            curSet[s] = true
+            curSet[spec] = true
         end
     end
     for jdx = 1, position - 1 do
         local o = entries[jdx]
         if o and o.specIDs and o.talentSpellID == curGate then
-            for _, s in ipairs(o.specIDs) do
-                if s == 0 then
+            for _, spec in ipairs(o.specIDs) do
+                if spec == 0 then
                     if curAll then
                         return true
                     end
-                elseif curSet[s] then
+                elseif curSet[spec] then
                     return true
                 end
             end

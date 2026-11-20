@@ -1240,13 +1240,13 @@ CludesUI.AtOptionsLogin(function()
                     cpr:SetPoint("BOTTOMRIGHT", cpb, "TOPRIGHT")
                     cpBtn._hlTextures = { cpt, cpb, cpl, cpr }
                     local function ShowCPHL()
-                        for _, t in ipairs(cpBtn._hlTextures) do
-                            t:Show()
+                        for _, tex in ipairs(cpBtn._hlTextures) do
+                            tex:Show()
                         end
                     end
                     local function HideCPHL()
-                        for _, t in ipairs(cpBtn._hlTextures) do
-                            t:Hide()
+                        for _, tex in ipairs(cpBtn._hlTextures) do
+                            tex:Hide()
                         end
                     end
                     HideCPHL()
@@ -1328,13 +1328,13 @@ CludesUI.AtOptionsLogin(function()
                 arr:SetPoint("BOTTOMRIGHT", arb, "TOPRIGHT")
                 arrowBtn._hlTextures = { alt, alb, all, alr, art, arb, arl, arr }
                 local function ShowAHL()
-                    for _, t in ipairs(arrowBtn._hlTextures) do
-                        t:Show()
+                    for _, tex in ipairs(arrowBtn._hlTextures) do
+                        tex:Show()
                     end
                 end
                 local function HideAHL()
-                    for _, t in ipairs(arrowBtn._hlTextures) do
-                        t:Hide()
+                    for _, tex in ipairs(arrowBtn._hlTextures) do
+                        tex:Hide()
                     end
                 end
                 HideAHL()

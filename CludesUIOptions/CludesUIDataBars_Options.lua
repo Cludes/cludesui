@@ -145,8 +145,8 @@ CludesUI.AtOptionsLogin(function()
     --  Block-type registry views
     ---------------------------------------------------------------------------
     local TYPE_LABEL = {}
-    for _, t in ipairs(mod.BLOCK_TYPES) do
-        TYPE_LABEL[t.key] = t.label
+    for _, kind in ipairs(mod.BLOCK_TYPES) do
+        TYPE_LABEL[kind.key] = kind.label
     end
 
     -- A saved block whose type registers no factory on this client (crests,
@@ -3597,14 +3597,14 @@ CludesUI.AtOptionsLogin(function()
                         { key = "---travel", ids = mod.TravelExtraIDs, usable = mod.TravelExtraUsable },
                         { key = "---hearth", ids = mod.TravelHearthstoneIDs, usable = mod.TravelIsUsable },
                     }
-                    for gi, g in ipairs(groups) do
+                    for gi, group in ipairs(groups) do
                         local entries, curInGroup = {}, false
-                        if g.ids and g.usable then
-                            for _, ident in ipairs(g.ids) do
+                        if group.ids and group.usable then
+                            for _, ident in ipairs(group.ids) do
                                 if ident == current then
                                     curInGroup = true
                                 end
-                                if g.usable(ident) and ident ~= current then
+                                if group.usable(ident) and ident ~= current then
                                     entries[#entries + 1] = ident
                                 end
                             end
@@ -3623,7 +3623,7 @@ CludesUI.AtOptionsLogin(function()
                             table.sort(entries, function(a, z)
                                 return nameList[a] < nameList[z]
                             end)
-                            sequence[#sequence + 1] = g.key
+                            sequence[#sequence + 1] = group.key
                             for _, ident in ipairs(entries) do
                                 values[ident] = nameList[ident]
                                 sequence[#sequence + 1] = ident

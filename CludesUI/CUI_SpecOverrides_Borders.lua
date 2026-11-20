@@ -667,10 +667,10 @@ local function SlotTipFor(sink)
                 if type(key) == "number" and type(m) == "table" and m[fkey] ~= nil then
                     held = true
                     local grouped = false
-                    for _, g in ipairs(groups or {}) do
-                        for _, spellRef in ipairs(g.specs or {}) do
+                    for _, group in ipairs(groups or {}) do
+                        for _, spellRef in ipairs(group.specs or {}) do
                             if spellRef == key then
-                                AddTipName(g.name or "?")
+                                AddTipName(group.name or "?")
                                 grouped = true
                                 break
                             end
