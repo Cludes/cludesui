@@ -172,10 +172,10 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
     -- A list's chosen spells, each once, in priority order.
     local function Chosen(singles)
         local result, seen = {}, {}
-        for _, e in ipairs(singles) do
-            if e.spell > 0 and not seen[e.spell] then
-                seen[e.spell] = true
-                result[#result + 1] = e.spell
+        for _, entry in ipairs(singles) do
+            if entry.spell > 0 and not seen[entry.spell] then
+                seen[entry.spell] = true
+                result[#result + 1] = entry.spell
             end
         end
         return result
@@ -245,8 +245,8 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
                 result[#result + 1] = colorKey
             end
         end
-        for _, e in ipairs(singles) do
-            Add(e.spell)
+        for _, entry in ipairs(singles) do
+            Add(entry.spell)
         end
         for _, keyName in ipairs(combos) do
             for _, ident in ipairs(keyName.spells) do
@@ -287,8 +287,8 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
         if missing == nil then
             missing = MissingOf(swatchCell)
         end
-        for num, e in ipairs(singles or Read(swatchCell.class)) do
-            if num ~= swatchCell.n and e.spell == ident and (e.missing == true) == missing then
+        for num, entry in ipairs(singles or Read(swatchCell.class)) do
+            if num ~= swatchCell.n and entry.spell == ident and (entry.missing == true) == missing then
                 return true
             end
         end
@@ -300,12 +300,12 @@ function mod.NP_BuildDebuffColorsOptions(hostFrame, cursorY)
     local MISSING_FULL = CludesUI.Lf("Up to %1$d debuffs can be Missing.", DC.MAX_MISSING)
     local function MissingFull(swatchCell, singles, above)
         local ids, num = {}, 0
-        for idx, e in ipairs(singles or Read(swatchCell.class)) do
+        for idx, entry in ipairs(singles or Read(swatchCell.class)) do
             if above and idx >= swatchCell.n then
                 break
             end
-            if idx ~= swatchCell.n and e.missing and e.spell > 0 and not ids[e.spell] then
-                ids[e.spell], num = true, num + 1
+            if idx ~= swatchCell.n and entry.missing and entry.spell > 0 and not ids[entry.spell] then
+                ids[entry.spell], num = true, num + 1
             end
         end
         return num >= DC.MAX_MISSING

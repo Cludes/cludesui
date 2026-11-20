@@ -52,9 +52,9 @@ end
 
 local function Prune()
     local nowTime, keep = time(), {}
-    for _, e in ipairs(Store().entries) do
-        if nowTime - e.t < HOUR then
-            keep[#keep + 1] = e
+    for _, entry in ipairs(Store().entries) do
+        if nowTime - entry.t < HOUR then
+            keep[#keep + 1] = entry
         end
     end
     Store().entries = keep
@@ -65,9 +65,9 @@ end
 function module.InstanceCount()
     local list = Prune()
     local oldest
-    for _, e in ipairs(list) do
-        if not oldest or e.t < oldest then
-            oldest = e.t
+    for _, entry in ipairs(list) do
+        if not oldest or entry.t < oldest then
+            oldest = entry.t
         end
     end
     return #list, oldest and (oldest + HOUR - time()) or nil
@@ -109,8 +109,8 @@ local function ReadCopy(unitToken)
         record.copy = copy
     end
     -- The same copy earlier this hour: this visit is not a new instance.
-    for index, e in ipairs(Store().entries) do
-        if e ~= record and e.map == visit.map and e.copy == copy then
+    for index, entry in ipairs(Store().entries) do
+        if entry ~= record and entry.map == visit.map and entry.copy == copy then
             for jdx, posX in ipairs(Store().entries) do
                 if posX == record then
                     table.remove(Store().entries, jdx)
@@ -156,8 +156,8 @@ local function StartVisit(reload)
             Say(("%d of %d instances this hour."):format(num, cap))
         end
     end
-    for _, e in ipairs({ "UPDATE_MOUSEOVER_UNIT", "PLAYER_TARGET_CHANGED", "NAME_PLATE_UNIT_ADDED" }) do
-        copyEvents:RegisterEvent(e)
+    for _, event in ipairs({ "UPDATE_MOUSEOVER_UNIT", "PLAYER_TARGET_CHANGED", "NAME_PLATE_UNIT_ADDED" }) do
+        copyEvents:RegisterEvent(event)
     end
 end
 
@@ -307,7 +307,7 @@ local ticker
 local function Apply()
     if Enabled() then
         Build()
-        for _, e in ipairs({
+        for _, event in ipairs({
             "PLAYER_ENTERING_WORLD",
             "PLAYER_DEAD",
             "PLAYER_ALIVE",
@@ -315,7 +315,7 @@ local function Apply()
             "PLAYER_XP_UPDATE",
             "CHAT_MSG_LOOT",
         }) do
-            ev:RegisterEvent(e)
+            ev:RegisterEvent(event)
         end
         if not ticker then
             ticker = C_Timer.NewTicker(1, PaintHud)

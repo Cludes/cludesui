@@ -1012,8 +1012,8 @@ local function DrawEndLabels(context, hidden)
         end
     end
     local placed = {}
-    for _, e in ipairs(entries) do
-        local posY = Y(e[2])
+    for _, entry in ipairs(entries) do
+        local posY = Y(entry[2])
         local clear = true
         for _, py in ipairs(placed) do
             if math.abs(py - posY) < 13 then
@@ -1022,7 +1022,7 @@ local function DrawEndLabels(context, hidden)
         end
         if clear then
             placed[#placed + 1] = posY
-            Text(pools.labels, "tiny", e[3], "LEFT", plot, "BOTTOMLEFT", PW + 8, posY, e[1])
+            Text(pools.labels, "tiny", entry[3], "LEFT", plot, "BOTTOMLEFT", PW + 8, posY, entry[1])
         end
     end
 end

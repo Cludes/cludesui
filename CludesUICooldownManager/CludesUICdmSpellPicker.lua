@@ -523,8 +523,8 @@ local function EnumerateCDMViewerSpells(includeBuffViewer)
         return lhs.sid < rhs.sid
     end)
 
-    for i, e in ipairs(entryList) do
-        result[i] = e -- preserve metadata for picker
+    for i, entry in ipairs(entryList) do
+        result[i] = entry -- preserve metadata for picker
     end
     return result
 end
@@ -798,8 +798,8 @@ function mod.IsCDMTrackedCooldown(spellId)
             end
         end
     end
-    for _, e in ipairs(EnumerateCDMViewerSpells(false)) do
-        Add(e.cdID, e.sid)
+    for _, entry in ipairs(EnumerateCDMViewerSpells(false)) do
+        Add(entry.cdID, entry.sid)
     end
     local catalog = mod.EnumerateCDMSettingsCatalog(mod.CDM_ICON_CD_CATS)
     if catalog then
@@ -843,19 +843,19 @@ function mod.GetCDMSpellsForBar(barId, includeUntalented)
     local entryList = EnumerateCDMViewerSpells(isBuffType)
 
     local spellSet = {}
-    for _, e in ipairs(entryList) do
-        local spellRef = e.sid
+    for _, entry in ipairs(entryList) do
+        local spellRef = entry.sid
         local label = C_Spell.GetSpellName(spellRef)
         local texture = C_Spell.GetSpellTexture(spellRef)
         if label then
             local isOnThisBar = (ResolveVariantValue(ourPool, spellRef) == true)
                 or (ourNames ~= nil and ourNames[label] == true)
             spellSet[#spellSet + 1] = {
-                cdID = e.cdID,
+                cdID = entry.cdID,
                 spellID = spellRef,
                 name = label,
                 icon = texture,
-                cdmCat = e.viewerOrder, -- preserve viewer grouping for sort
+                cdmCat = entry.viewerOrder, -- preserve viewer grouping for sort
                 cdmCatGroup = isBuffType and "buff" or "cooldown",
                 onCUIBar = isOnThisBar,
                 isKnown = true, -- live viewer pool members are always learned
@@ -873,11 +873,11 @@ function mod.GetCDMSpellsForBar(barId, includeUntalented)
         if catalog then
             local evc = Enum and Enum.CooldownViewerCategory
             local seenCd, seenSid = {}, {}
-            for _, e in ipairs(entryList) do
-                if e.cdID ~= nil then
-                    seenCd[e.cdID] = true
+            for _, entry in ipairs(entryList) do
+                if entry.cdID ~= nil then
+                    seenCd[entry.cdID] = true
                 end
-                StoreVariantValue(seenSid, e.sid, true, false)
+                StoreVariantValue(seenSid, entry.sid, true, false)
             end
             for _, ce in ipairs(catalog) do
                 if not seenCd[ce.cdID] and not ResolveVariantValue(seenSid, ce.sid) then
@@ -914,11 +914,11 @@ function mod.GetCDMSpellsForBar(barId, includeUntalented)
         local catalog = mod.EnumerateCDMSettingsCatalog(mod.CDM_BUFF_CATS)
         if catalog then
             local seenCd, seenSid = {}, {}
-            for _, e in ipairs(entryList) do
-                if e.cdID ~= nil then
-                    seenCd[e.cdID] = true
+            for _, entry in ipairs(entryList) do
+                if entry.cdID ~= nil then
+                    seenCd[entry.cdID] = true
                 end
-                StoreVariantValue(seenSid, e.sid, true, false)
+                StoreVariantValue(seenSid, entry.sid, true, false)
             end
             for _, ce in ipairs(catalog) do
                 if not seenCd[ce.cdID] and not ResolveVariantValue(seenSid, ce.sid) then
@@ -1118,9 +1118,9 @@ function mod.MigrateSpecToBarFilterModelV6()
     local sidUnion = {} -- sid -> true (deduped)
 
     local entryList = EnumerateCDMViewerSpells(false)
-    for _, e in ipairs(entryList) do
-        if _IsUsableSID(e.sid) then
-            sidUnion[e.sid] = true
+    for _, entry in ipairs(entryList) do
+        if _IsUsableSID(entry.sid) then
+            sidUnion[entry.sid] = true
         end
     end
 
@@ -1470,11 +1470,11 @@ function mod.CollectDefaultBuffTrackEntries()
     local out = {}
     local seenSet = {}
     local entryList = mod.EnumerateCDMViewerSpells and mod.EnumerateCDMViewerSpells(true) or {}
-    for _, e in ipairs(entryList) do
+    for _, entry in ipairs(entryList) do
         -- Dedup on the stable (cooldownID-derived) key, not e.sid: two viewer
         -- slots can share a spellID but are distinct cooldownIDs; keying on
         -- sid would re-merge what EnumerateCDMViewerSpells keeps separate.
-        local barKey = BuffDisplayStableKey(e.sid, e.cdID)
+        local barKey = BuffDisplayStableKey(entry.sid, entry.cdID)
         -- Native equipment ON-USE rows (equipSlot + category EquipSlotEssential)
         -- are preset-lane-only: never surface them as default-bar buff entries.
         -- Tracked trinket PROC BUFF rows (equipSlot + category EquipSlotTracked)
@@ -1483,28 +1483,28 @@ function mod.CollectDefaultBuffTrackEntries()
         -- bars must mirror that. Field-probed 2026-08-16: buffSlot=1 rides
         -- BOTH categories (and plain cat-2 rows), so CATEGORY is the only
         -- reliable discriminator.
-        local eqInfo = e.cdID
+        local eqInfo = entry.cdID
             and C_CooldownViewer
             and C_CooldownViewer.GetCooldownViewerCooldownInfo
-            and C_CooldownViewer.GetCooldownViewerCooldownInfo(e.cdID)
+            and C_CooldownViewer.GetCooldownViewerCooldownInfo(entry.cdID)
         local eqTracked = Enum
                 and Enum.CooldownViewerCategory
                 and Enum.CooldownViewerCategory.EquipSlotTracked
             or 8
         if
-            e.sid
+            entry.sid
             and not (eqInfo and eqInfo.equipSlot and eqInfo.category ~= eqTracked)
-            and not ResolveVariantValue(diverted, e.sid)
-            and not (e.cdID and divertedCd[e.cdID])
+            and not ResolveVariantValue(diverted, entry.sid)
+            and not (entry.cdID and divertedCd[entry.cdID])
             and barKey
             and not seenSet[barKey]
         then
             seenSet[barKey] = true
             out[#out + 1] = {
                 key = barKey,
-                sid = e.sid,
-                cdID = e.cdID,
-                layoutIndex = e.layoutIndex or 0,
+                sid = entry.sid,
+                cdID = entry.cdID,
+                layoutIndex = entry.layoutIndex or 0,
             }
         end
     end
@@ -1581,9 +1581,9 @@ end
 function mod.CollidedBuffSids()
     local counts, out = {}, {}
     local entryList = mod.EnumerateCDMViewerSpells and mod.EnumerateCDMViewerSpells(true) or {}
-    for _, e in ipairs(entryList) do
-        if e.sid and type(e.cdID) == "number" then
-            counts[e.sid] = (counts[e.sid] or 0) + 1
+    for _, entry in ipairs(entryList) do
+        if entry.sid and type(entry.cdID) == "number" then
+            counts[entry.sid] = (counts[entry.sid] or 0) + 1
         end
     end
     for spellRef, n in pairs(counts) do
@@ -1691,9 +1691,9 @@ local function SyncPresentBuffOrderToBlizzard(sequence, present, entryList)
         return sequence
     end
     local blizzRank = {}
-    for i, e in ipairs(entryList) do
-        if blizzRank[e.key] == nil then
-            blizzRank[e.key] = i
+    for i, entry in ipairs(entryList) do
+        if blizzRank[entry.key] == nil then
+            blizzRank[entry.key] = i
         end
     end
     local sortedPresent = {}
@@ -1750,16 +1750,16 @@ function mod.ReconcileBuffDisplayOrder()
     end
 
     local present = {}
-    for _, e in ipairs(entryList) do
-        if present[e.key] == nil then
-            present[e.key] = { sid = e.sid, cdID = e.cdID, layoutIndex = e.layoutIndex or 0 }
+    for _, entry in ipairs(entryList) do
+        if present[entry.key] == nil then
+            present[entry.key] = { sid = entry.sid, cdID = entry.cdID, layoutIndex = entry.layoutIndex or 0 }
         end
     end
 
     if not sequence or #sequence == 0 then
         local seeded = {}
-        for _, e in ipairs(entryList) do
-            seeded[#seeded + 1] = e.key
+        for _, entry in ipairs(entryList) do
+            seeded[#seeded + 1] = entry.key
         end
         barSpells.buffDisplayOrder = seeded
         mod._spellOrderDirty = true
@@ -1775,9 +1775,9 @@ function mod.ReconcileBuffDisplayOrder()
     end
 
     local newcomers = {}
-    for _, e in ipairs(entryList) do
-        if not seenSet[e.key] then
-            newcomers[#newcomers + 1] = e
+    for _, entry in ipairs(entryList) do
+        if not seenSet[entry.key] then
+            newcomers[#newcomers + 1] = entry
         end
     end
     if #newcomers > 0 then
@@ -1788,20 +1788,20 @@ function mod.ReconcileBuffDisplayOrder()
             return (lhs.key or "") < (rhs.key or "")
         end)
         local blizzRank = {}
-        for i, e in ipairs(entryList) do
-            blizzRank[e.key] = i
+        for i, entry in ipairs(entryList) do
+            blizzRank[entry.key] = i
         end
-        for _, e in ipairs(newcomers) do
+        for _, entry in ipairs(newcomers) do
             local insertAt = #nextOrder + 1
             for i, barKey in ipairs(nextOrder) do
                 local rank = blizzRank[barKey]
-                if rank and rank > blizzRank[e.key] then
+                if rank and rank > blizzRank[entry.key] then
                     insertAt = i
                     break
                 end
             end
-            table.insert(nextOrder, insertAt, e.key)
-            seenSet[e.key] = true
+            table.insert(nextOrder, insertAt, entry.key)
+            seenSet[entry.key] = true
         end
     end
 
@@ -2873,14 +2873,14 @@ function mod.PruneEquipmentBuffRows()
         or nil
     local gci = C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo
     if entryList and entryList[1] and gci then
-        for _, e in ipairs(entryList) do
-            if e.sid and e.cdID then
-                local details = gci(e.cdID)
+        for _, entry in ipairs(entryList) do
+            if entry.sid and entry.cdID then
+                local details = gci(entry.cdID)
                 if details and details.equipSlot then
                     if details.category == eqTracked then
-                        StoreVariantValue(exempt, e.sid, true, false)
+                        StoreVariantValue(exempt, entry.sid, true, false)
                     else
-                        StoreVariantValue(equip, e.sid, true, false)
+                        StoreVariantValue(equip, entry.sid, true, false)
                         any = true
                     end
                 end

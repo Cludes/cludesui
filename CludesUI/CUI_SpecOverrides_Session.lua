@@ -206,13 +206,13 @@ local function SlotOwnerEntry(conf, ownedSet, condRun, moduleName, element, page
             end
         end
     end
-    for _, e in ipairs(sStore or {}) do
-        local groupDef = e.values and e.values.default
+    for _, entry in ipairs(sStore or {}) do
+        local groupDef = entry.values and entry.values.default
         if
             type(groupDef) == "table"
-            and e.slotLabel == slotLabel
-            and (e.page or "") == (page or "")
-            and Qualifies(e)
+            and entry.slotLabel == slotLabel
+            and (entry.page or "") == (page or "")
+            and Qualifies(entry)
         then
             local any, all = false, true
             for fieldKey in pairs(groupDef) do
@@ -224,7 +224,7 @@ local function SlotOwnerEntry(conf, ownedSet, condRun, moduleName, element, page
                 end
             end
             if any and all then
-                return e
+                return entry
             end
         end
     end
@@ -264,13 +264,13 @@ local function RelabelOwnedSlot(ownedSet)
     local moduleName = CludesUI:GetActiveModule()
     local page = CludesUI:GetActivePage()
     local element = CurrentContext()
-    for _, e in ipairs(sStore) do
+    for _, entry in ipairs(sStore) do
         if
-            e.slotLabel == slotLabel
-            and e.module == moduleName
-            and (e.element or "") == (element or "")
-            and (e.page or "") == (page or "")
-            and (e.section or "") == (section or "")
+            entry.slotLabel == slotLabel
+            and entry.module == moduleName
+            and (entry.element or "") == (element or "")
+            and (entry.page or "") == (page or "")
+            and (entry.section or "") == (section or "")
         then
             return -- already under this slot's name
         end
@@ -391,15 +391,15 @@ local function AutoCapture(changes, ownedSet)
     local condRun = Cond._edit
     local sStore = condRun and Cond.GetStore(true) or storage
     local record
-    for _, e in ipairs(sStore or {}) do
+    for _, entry in ipairs(sStore or {}) do
         if
-            e.slotLabel == slotLabel
-            and e.module == moduleName
-            and (e.element or "") == (element or "")
-            and (e.page or "") == (page or "")
-            and (e.section or "") == (section or "")
+            entry.slotLabel == slotLabel
+            and entry.module == moduleName
+            and (entry.element or "") == (element or "")
+            and (entry.page or "") == (page or "")
+            and (entry.section or "") == (section or "")
         then
-            record = e
+            record = entry
             break
         end
     end
@@ -529,13 +529,13 @@ do
     -- Does any entry in `sStore` hold a VALUE (not just a recorded default) for `key` of
     -- `store`? Attribution by table identity, the same rule ClearStoreKey uses.
     local function StoreHoldsKey(sStore, storage, key)
-        for _, e in ipairs(sStore or {}) do
-            local groupDef = e.values and e.values.default
+        for _, entry in ipairs(sStore or {}) do
+            local groupDef = entry.values and entry.values.default
             if groupDef then
                 for fieldKey in pairs(groupDef) do
                     local ownerFrame, leaf = OwnerOf(fieldKey)
                     if ownerFrame == storage and leaf == key then
-                        for mapKey, m in pairs(e.values) do
+                        for mapKey, m in pairs(entry.values) do
                             if mapKey ~= "default" and type(m) == "table" and m[fieldKey] ~= nil then
                                 return true
                             end

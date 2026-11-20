@@ -509,8 +509,8 @@ function NameplateFrame:ApplyAppearance()
     -- Same for the Text Coloring slot memo: the static slot colours written here and
     -- in ApplyHealthTextAppearance below replace what it last painted.
     if self._scMemo then
-        for _, e in pairs(self._scMemo) do
-            e[1] = nil
+        for _, entry in pairs(self._scMemo) do
+            entry[1] = nil
         end
     end
     self:RefreshNamePosition()

@@ -1145,9 +1145,9 @@ RefreshCardsPopup = function()
                             -- exempt: user data this group never owned.
                             for _, spellRef in ipairs(group.specs or {}) do
                                 if not SpecInAnyGroup(spellRef) then
-                                    for _, e in ipairs(st) do
-                                        if e.values and e.group ~= nil then
-                                            e.values[spellRef] = nil
+                                    for _, entry in ipairs(st) do
+                                        if entry.values and entry.group ~= nil then
+                                            entry.values[spellRef] = nil
                                         end
                                     end
                                 end

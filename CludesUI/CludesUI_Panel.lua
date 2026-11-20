@@ -7158,9 +7158,9 @@ do
         if type(navInfo) == "table" then
             return navInfo
         end
-        for _, e in ipairs(ADDON_ROSTER) do
-            if type(e) == "table" and e.folder == entryKey then
-                return e
+        for _, entry in ipairs(ADDON_ROSTER) do
+            if type(entry) == "table" and entry.folder == entryKey then
+                return entry
             end
         end
     end

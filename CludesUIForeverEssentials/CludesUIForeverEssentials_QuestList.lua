@@ -2326,19 +2326,19 @@ function module.QuestListApply()
     killEvents:UnregisterAllEvents()
     ev:UnregisterAllEvents()
     if On() then
-        for _, e in ipairs({ "GOSSIP_SHOW", "QUEST_GREETING", "QUEST_DETAIL", "QUEST_TURNED_IN" }) do
-            giverEvents:RegisterEvent(e)
+        for _, event in ipairs({ "GOSSIP_SHOW", "QUEST_GREETING", "QUEST_DETAIL", "QUEST_TURNED_IN" }) do
+            giverEvents:RegisterEvent(event)
         end
         killEvents:RegisterEvent("PLAYER_TARGET_CHANGED")
         killEvents:RegisterEvent("LOOT_READY")
-        for _, e in ipairs({
+        for _, event in ipairs({
             "QUEST_ACCEPTED",
             "QUEST_TURNED_IN",
             "QUEST_REMOVED",
             "PLAYER_LEVEL_UP",
             "SKILL_LINES_CHANGED",
         }) do
-            pcall(ev.RegisterEvent, ev, e)
+            pcall(ev.RegisterEvent, ev, event)
         end
     end
     PinsApply()

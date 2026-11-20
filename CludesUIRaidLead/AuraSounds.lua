@@ -86,13 +86,13 @@ function mod.RebuildAuraSounds()
     pending = false
     Clear()
     local num = 0
-    for _, e in ipairs(mod.RaidLeadDB().sounds) do
-        local trigger = Trigger(e.when)
-        if e.on ~= false and tonumber(e.id) and trigger then
+    for _, entry in ipairs(mod.RaidLeadDB().sounds) do
+        local trigger = Trigger(entry.when)
+        if entry.on ~= false and tonumber(entry.id) and trigger then
             local success, hgt = pcall(C_UnitAuras.AddAuraSound, trigger, {
                 unitToken = "player",
-                spellID = tonumber(e.id),
-                soundFileName = SOUND_DIR .. (e.sound or "WarningSiren.ogg"),
+                spellID = tonumber(entry.id),
+                soundFileName = SOUND_DIR .. (entry.sound or "WarningSiren.ogg"),
                 outputChannel = "Master",
                 throttleSeconds = 1,
             })

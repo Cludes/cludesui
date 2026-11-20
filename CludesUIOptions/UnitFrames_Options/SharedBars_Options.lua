@@ -4245,17 +4245,17 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, cursorY, context)
             end
             return {
                 copy = function(t, from)
-                    for _, e in ipairs(defs) do
-                        local value = Val(from, e)
+                    for _, entry in ipairs(defs) do
+                        local value = Val(from, entry)
                         if type(value) == "table" then
                             value = { r = value.r, g = value.g, b = value.b, a = value.a }
                         end
-                        t[e.k] = value
+                        t[entry.k] = value
                     end
                 end,
                 same = function(t, from)
-                    for _, e in ipairs(defs) do
-                        if not _AbsSyncValEq(Val(from, e), Val(t, e)) then
+                    for _, entry in ipairs(defs) do
+                        if not _AbsSyncValEq(Val(from, entry), Val(t, entry)) then
                             return false
                         end
                     end

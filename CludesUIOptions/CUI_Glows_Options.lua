@@ -190,17 +190,17 @@ local ENTRY_GLOW_INFOS = {
 }
 
 local function EnsureEntryGlowInfos()
-    for _, e in ipairs(ENTRY_GLOW_INFOS) do
-        if CludesUI.ModuleNS(e.module) then
+    for _, entry in ipairs(ENTRY_GLOW_INFOS) do
+        if CludesUI.ModuleNS(entry.module) then
             local have = false
             for i = 1, #GO.sites do
-                if GO.sites[i].id == e.id then
+                if GO.sites[i].id == entry.id then
                     have = true
                     break
                 end
             end
             if not have then
-                GO.RegisterSite(e)
+                GO.RegisterSite(entry)
             end
         end
     end

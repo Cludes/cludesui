@@ -403,10 +403,10 @@ local function RestoreCVars(t)
     if not t then
         return
     end
-    for name, e in pairs(t) do
+    for name, entry in pairs(t) do
         local current = GetCVar(name)
-        if current ~= nil and current == e.a then
-            local wanted = e.b or C_CVar.GetCVarDefault(name)
+        if current ~= nil and current == entry.a then
+            local wanted = entry.b or C_CVar.GetCVarDefault(name)
             if wanted ~= nil and wanted ~= current then
                 pcall(C_CVar.SetCVar, name, wanted)
                 _putBack[name] = true
@@ -436,10 +436,10 @@ local function RestoreBits(t)
         return
     end
     for name, bits in pairs(t) do
-        for index, e in pairs(bits) do
+        for index, entry in pairs(bits) do
             local current = GetCVarBitfield(name, index)
-            if current ~= nil and current == e.a then
-                local wanted = e.b
+            if current ~= nil and current == entry.a then
+                local wanted = entry.b
                 if wanted == nil then
                     wanted = DefaultBit(name, index)
                 end
@@ -489,14 +489,14 @@ local function RevertOffModules(root, acct)
     end
     local t = root.cvar
     if t then
-        for key, e in pairs(t) do
-            if ModuleOff(e.o, acct) then
+        for key, entry in pairs(t) do
+            if ModuleOff(entry.o, acct) then
                 local current = GetCVar(key)
-                if e.b ~= nil and e.b ~= e.a and current == e.a then
-                    pcall(C_CVar.SetCVar, key, e.b)
+                if entry.b ~= nil and entry.b ~= entry.a and current == entry.a then
+                    pcall(C_CVar.SetCVar, key, entry.b)
                     _putBack[key] = true
                 end
-                if e.b ~= nil or current ~= e.a then
+                if entry.b ~= nil or current ~= entry.a then
                     t[key] = nil
                 end
             end
@@ -508,13 +508,13 @@ local function RevertOffModules(root, acct)
     local bits = root.bits
     if bits then
         for name, byIndex in pairs(bits) do
-            for index, e in pairs(byIndex) do
-                if ModuleOff(e.o, acct) then
+            for index, entry in pairs(byIndex) do
+                if ModuleOff(entry.o, acct) then
                     local current = GetCVarBitfield(name, index)
-                    if e.b ~= nil and e.b ~= e.a and current == e.a then
-                        pcall(C_CVar.SetCVarBitfield, name, index, e.b)
+                    if entry.b ~= nil and entry.b ~= entry.a and current == entry.a then
+                        pcall(C_CVar.SetCVarBitfield, name, index, entry.b)
                     end
-                    if e.b ~= nil or current ~= e.a then
+                    if entry.b ~= nil or current ~= entry.a then
                         byIndex[index] = nil
                     end
                 end
@@ -731,11 +731,11 @@ local function SystemRestores(sys, bySys)
         return e ~= nil and row ~= nil and row.value == e.a
     end
     local result
-    for setting, e in pairs(bySys) do
-        if Ours(setting) and (e.p == nil or Ours(e.p)) then
-            local wanted = e.b
+    for setting, entry in pairs(bySys) do
+        if Ours(setting) and (entry.p == nil or Ours(entry.p)) then
+            local wanted = entry.b
             if wanted == nil then
-                wanted = e.f
+                wanted = entry.f
             end
             if wanted ~= nil and wanted ~= rowList[setting].value then
                 result = result or {}
@@ -857,10 +857,10 @@ local function RestoreChatFonts(t)
     if not t then
         return
     end
-    for index, e in pairs(t) do
+    for index, entry in pairs(t) do
         local _, current = GetChatWindowInfo(index)
-        if current ~= nil and current == e.a and e.b ~= nil and e.b ~= current then
-            SetChatWindowSize(index, e.b)
+        if current ~= nil and current == entry.a and entry.b ~= nil and entry.b ~= current then
+            SetChatWindowSize(index, entry.b)
         end
     end
 end

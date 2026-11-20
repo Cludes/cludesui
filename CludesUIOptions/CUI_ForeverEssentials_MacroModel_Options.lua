@@ -542,8 +542,8 @@ local EQUIP_TYPES = {
 }
 local function EquipOptions()
     local result = {}
-    for _, e in ipairs(EQUIP_TYPES) do
-        local name = C_Item.GetItemSubClassInfo(e[1], e[2])
+    for _, entry in ipairs(EQUIP_TYPES) do
+        local name = C_Item.GetItemSubClassInfo(entry[1], entry[2])
         if name and name ~= "" then
             result[#result + 1] = { value = name, label = name }
         end

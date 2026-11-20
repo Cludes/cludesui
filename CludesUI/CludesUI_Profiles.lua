@@ -4276,9 +4276,9 @@ end
 --- customColored so the bars use runtime class color lookup.
 local function FixupImportedClassColors()
     local rbEntry
-    for _, e in ipairs(ADDON_DB_MAP) do
-        if e.folder == "CludesUIResourceBars" then
-            rbEntry = e
+    for _, entry in ipairs(ADDON_DB_MAP) do
+        if entry.folder == "CludesUIResourceBars" then
+            rbEntry = entry
             break
         end
     end
@@ -6354,9 +6354,9 @@ function CludesUI.ImportProfileSilent(options)
         -- Partition profile-data modules into stripped vs kept (canonical keys,
         -- matching the payload), resolving hosted sub-modules through their host addon.
         local keepCanon, stripCanon = {}, {}
-        for _, e in ipairs(ADDON_DB_MAP) do
-            local canon = FOLDER_TO_CANON[e.folder] or e.folder
-            if disabled[e.folder] or (e.hostAddon and disabled[e.hostAddon]) then
+        for _, entry in ipairs(ADDON_DB_MAP) do
+            local canon = FOLDER_TO_CANON[entry.folder] or entry.folder
+            if disabled[entry.folder] or (entry.hostAddon and disabled[entry.hostAddon]) then
                 stripCanon[canon] = true
             else
                 keepCanon[canon] = true
@@ -6430,8 +6430,8 @@ function CludesUI.ImportProfileSilent(options)
                 C_AddOns.EnableAddOn(moduleFolder)
             end
         end
-        for _, e in ipairs(ADDON_DB_MAP) do
-            apply(e.hostAddon or e.folder)
+        for _, entry in ipairs(ADDON_DB_MAP) do
+            apply(entry.hostAddon or entry.folder)
         end
         -- The pack made the bags decision; keep the bag-addon auto-disable
         -- from overriding it later.

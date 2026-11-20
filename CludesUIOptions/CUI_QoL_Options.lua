@@ -1474,11 +1474,11 @@ CludesUI.AtOptionsLogin(function()
             leftRegion._lastInline = fpsClassSw
 
             local fpsTips = { { fpsClassSw, "Class Color" }, { fpsSwatch, "Custom Color" } }
-            for _, e in ipairs(fpsTips) do
-                e[1]:HookScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(e[1], e[2])
+            for _, entry in ipairs(fpsTips) do
+                entry[1]:HookScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(entry[1], entry[2])
                 end)
-                e[1]:HookScript("OnLeave", function()
+                entry[1]:HookScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
             end
@@ -1486,8 +1486,8 @@ CludesUI.AtOptionsLogin(function()
             -- Blocking overlays while Show FPS Counter is off (shown from the
             -- single refresh below, like the swatch alphas).
             local fpsBlocks = {}
-            for _, e in ipairs(fpsTips) do
-                local sw = e[1]
+            for _, entry in ipairs(fpsTips) do
+                local sw = entry[1]
                 local block = CludesUI.NewSwatchBlocker(sw)
                 block:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip("Show FPS Counter"))
@@ -2281,11 +2281,11 @@ CludesUI.AtOptionsLogin(function()
 
             local ssTips =
                 { { ssMulti, "Multicolored" }, { ssClass, "Class Color" }, { ssCustom, "Custom Color" } }
-            for _, e in ipairs(ssTips) do
-                e[1]:HookScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(e[1], e[2])
+            for _, entry in ipairs(ssTips) do
+                entry[1]:HookScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(entry[1], entry[2])
                 end)
-                e[1]:HookScript("OnLeave", function()
+                entry[1]:HookScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
             end
@@ -2293,8 +2293,8 @@ CludesUI.AtOptionsLogin(function()
             -- Blocking overlays while Secondary Stat Display is off (shown from
             -- the single refresh below, like the swatch alphas).
             local ssBlocks = {}
-            for _, e in ipairs(ssTips) do
-                local sw = e[1]
+            for _, entry in ipairs(ssTips) do
+                local sw = entry[1]
                 local block = CludesUI.NewSwatchBlocker(sw)
                 block:SetScript("OnEnter", function()
                     CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip("Secondary Stat Display"))

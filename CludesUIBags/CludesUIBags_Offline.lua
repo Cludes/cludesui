@@ -554,11 +554,11 @@ function Offline.Sync()
         return
     end
     listening = enabled
-    for _, e in ipairs(EVENTS) do
+    for _, event in ipairs(EVENTS) do
         if enabled then
-            pcall(ev.RegisterEvent, ev, e)
+            pcall(ev.RegisterEvent, ev, event)
         else
-            ev:UnregisterEvent(e)
+            ev:UnregisterEvent(event)
         end
     end
     if enabled then
@@ -694,16 +694,16 @@ local function BuildLines(ident)
             sameName[c.name] = (sameName[c.name] or 0) + 1
         end
     end
-    for key, e in pairs(row or _emptyP) do
+    for key, entry in pairs(row or _emptyP) do
         local c = saved.chars[key]
-        local num = e.bags + e.bank
+        local num = entry.bags + entry.bank
         if c and num > 0 then
             local parts = {}
-            if e.bags > 0 then
-                parts[#parts + 1] = CludesUI.Lf("Bags %1$d", e.bags)
+            if entry.bags > 0 then
+                parts[#parts + 1] = CludesUI.Lf("Bags %1$d", entry.bags)
             end
-            if e.bank > 0 then
-                parts[#parts + 1] = CludesUI.Lf("Bank %1$d", e.bank)
+            if entry.bank > 0 then
+                parts[#parts + 1] = CludesUI.Lf("Bank %1$d", entry.bank)
             end
             local name = c.name or "?"
             if (sameName[name] or 0) > 1 and c.realm and c.realm ~= "" then

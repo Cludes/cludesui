@@ -249,10 +249,10 @@ local function Collect()
     local me = myGuid or PlainString(UnitGUID("player"))
     local hidden = Hidden()
     local minLevel = NumberSetting("mailAltListMinLevel", DEFAULT_MIN_LEVEL)
-    for unitGuid, e in pairs(roster) do
-        if unitGuid ~= me and type(e) == "table" and type(e.name) == "string" and e.realmKey then
+    for unitGuid, entry in pairs(roster) do
+        if unitGuid ~= me and type(entry) == "table" and type(entry.name) == "string" and entry.realmKey then
             mailable = mailable + 1
-            if not (hidden and hidden[unitGuid]) and (e.level or 0) >= minLevel then
+            if not (hidden and hidden[unitGuid]) and (entry.level or 0) >= minLevel then
                 isShown[#isShown + 1] = unitGuid
             end
         end
@@ -733,15 +733,15 @@ function mod.MailAlts.Entries()
     if not roster then
         return result
     end
-    for unitGuid, e in pairs(roster) do
-        if type(e) == "table" and type(e.name) == "string" then
+    for unitGuid, entry in pairs(roster) do
+        if type(entry) == "table" and type(entry.name) == "string" then
             result[#result + 1] = {
                 guid = unitGuid,
-                name = e.name,
-                realm = e.realm or e.realmKey or "",
-                class = e.class,
-                level = e.level,
-                faction = e.faction,
+                name = entry.name,
+                realm = entry.realm or entry.realmKey or "",
+                class = entry.class,
+                level = entry.level,
+                faction = entry.faction,
             }
         end
     end

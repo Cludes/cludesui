@@ -246,9 +246,9 @@ end
 -- Tiles in two columns; returns the height used.
 local function AddTiles(entries, y)
     local width = (INNER - GAP) / 2
-    for i, e in ipairs(entries) do
+    for i, entry in ipairs(entries) do
         local column, row = (i - 1) % 2, math.floor((i - 1) / 2)
-        AddTile(e, column * (width + GAP), y + row * (TILE + GAP), width)
+        AddTile(entry, column * (width + GAP), y + row * (TILE + GAP), width)
     end
     local rows = math.ceil(#entries / 2)
     return rows * TILE + math.max(0, rows - 1) * GAP
@@ -301,9 +301,9 @@ local function Read(logIndex)
     if region then
         parts[#parts + 1] = region.xp .. "/" .. region.money
         for _, list in ipairs({ region.rewards, region.choices }) do
-            for _, e in ipairs(list) do
+            for _, entry in ipairs(list) do
                 parts[#parts + 1] = table.concat(
-                    { tostring(e.name), tostring(e.texture), tostring(e.count), tostring(e.quality) },
+                    { tostring(entry.name), tostring(entry.texture), tostring(entry.count), tostring(entry.quality) },
                     ","
                 )
             end
@@ -381,9 +381,9 @@ function Refresh(force)
         -- An item not cached yet: draw again when it loads, if still on this quest.
         local shownQuest = questID
         for _, list in ipairs({ region.rewards, region.choices }) do
-            for _, e in ipairs(list) do
-                if not e.name then
-                    EQT.OnRewardLoad(e, function()
+            for _, entry in ipairs(list) do
+                if not entry.name then
+                    EQT.OnRewardLoad(entry, function()
                         if questID == shownQuest then
                             Refresh(true)
                         end

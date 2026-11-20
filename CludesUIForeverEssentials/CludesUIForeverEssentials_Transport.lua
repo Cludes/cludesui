@@ -346,16 +346,16 @@ local function CallsWatch(map)
     if not callEv then
         return
     end
-    for _, e in ipairs({
+    for _, event in ipairs({
         "CHAT_MSG_MONSTER_SAY",
         "CHAT_MSG_MONSTER_YELL",
         "CHAT_MSG_MONSTER_EMOTE",
         "CHAT_MSG_RAID_BOSS_EMOTE",
     }) do
         if wanted then
-            callEv:RegisterEvent(e)
+            callEv:RegisterEvent(event)
         else
-            callEv:UnregisterEvent(e)
+            callEv:UnregisterEvent(event)
         end
     end
 end
@@ -640,13 +640,13 @@ local function ShareApply()
     for _, p in ipairs({ PREFIX, FOREVER_PREFIX, NAUTICUS_PREFIX }) do
         C_ChatInfo.RegisterAddonMessagePrefix(p)
     end
-    for _, e in ipairs({
+    for _, event in ipairs({
         "CHAT_MSG_ADDON",
         "PLAYER_ENTERING_WORLD",
         "GROUP_ROSTER_UPDATE",
         "ZONE_CHANGED_NEW_AREA",
     }) do
-        shareEv:RegisterEvent(e)
+        shareEv:RegisterEvent(event)
     end
 end
 
@@ -761,11 +761,11 @@ function Layer:Set(mapID, spots, total)
     for _, pin in ipairs(self.pins) do
         pin.spot = nil
     end
-    for _, e in ipairs({ "PLAYER_STARTED_MOVING", "PLAYER_STOPPED_MOVING", "MINIMAP_UPDATE_ZOOM" }) do
+    for _, event in ipairs({ "PLAYER_STARTED_MOVING", "PLAYER_STOPPED_MOVING", "MINIMAP_UPDATE_ZOOM" }) do
         if self.count > 0 then
-            self.frame:RegisterEvent(e)
+            self.frame:RegisterEvent(event)
         else
-            self.frame:UnregisterEvent(e)
+            self.frame:UnregisterEvent(event)
         end
     end
     if self.count > 0 then
@@ -1020,13 +1020,13 @@ end
 local function Apply()
     ev:UnregisterAllEvents()
     if Enabled() then
-        for _, e in ipairs({
+        for _, event in ipairs({
             "PLAYER_ENTERING_WORLD",
             "ZONE_CHANGED_NEW_AREA",
             "ZONE_CHANGED",
             "ZONE_CHANGED_INDOORS",
         }) do
-            ev:RegisterEvent(e)
+            ev:RegisterEvent(event)
         end
         if IsLoggedIn() then
             Times.Prune(GetServerTime())

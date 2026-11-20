@@ -495,8 +495,8 @@ do
                 return
             end
             if type(profileTbl.specOverrides) == "table" then
-                for _, e in ipairs(profileTbl.specOverrides) do
-                    if type(e) == "table" and e.module == "CludesUIResourceBars" then
+                for _, entry in ipairs(profileTbl.specOverrides) do
+                    if type(entry) == "table" and entry.module == "CludesUIResourceBars" then
                         return
                     end
                 end
@@ -4483,9 +4483,9 @@ do
         local advancedCfg = resourceBars.advancedSpecs
         local advancedActive = {}
         if type(advancedCfg) == "table" then
-            for _, e in ipairs(advancedCfg) do
-                if type(e) == "table" and type(e.specID) == "number" and e.enabled ~= false then
-                    advancedActive[#advancedActive + 1] = e
+            for _, entry in ipairs(advancedCfg) do
+                if type(entry) == "table" and type(entry.specID) == "number" and entry.enabled ~= false then
+                    advancedActive[#advancedActive + 1] = entry
                 end
             end
         end
@@ -4547,16 +4547,16 @@ do
                 local union = {}
                 local copyBySpec = {}
                 local specsWithDiffs = {}
-                for _, e in ipairs(advancedActive) do
-                    local duplicate = e[section.key]
+                for _, entry in ipairs(advancedActive) do
+                    local duplicate = entry[section.key]
                     if type(duplicate) == "table" then
-                        MergeThresholds(simpleCfg, duplicate, e.specID, backupCopy)
-                        copyBySpec[e.specID] = duplicate
+                        MergeThresholds(simpleCfg, duplicate, entry.specID, backupCopy)
+                        copyBySpec[entry.specID] = duplicate
                         local result = {}
                         DiffSection(simpleCfg, duplicate, defaults, nil, result)
                         for filePath in pairs(result) do
                             union[filePath] = true
-                            specsWithDiffs[e.specID] = true
+                            specsWithDiffs[entry.specID] = true
                         end
                     end
                 end

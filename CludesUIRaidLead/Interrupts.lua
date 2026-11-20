@@ -191,14 +191,14 @@ function mod.StartKicks(noteText)
     end
     Build()
     rot = { names = nameList, mine = mine, count = 1, casting = false }
-    for _, e in ipairs({
+    for _, event in ipairs({
         "UNIT_SPELLCAST_START",
         "UNIT_SPELLCAST_CHANNEL_START",
         "UNIT_SPELLCAST_STOP",
         "UNIT_SPELLCAST_CHANNEL_STOP",
         "UNIT_SPELLCAST_INTERRUPTED",
     }) do
-        ev:RegisterUnitEvent(e, s.unit)
+        ev:RegisterUnitEvent(event, s.unit)
     end
     Paint()
 end

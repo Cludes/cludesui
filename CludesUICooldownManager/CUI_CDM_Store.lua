@@ -1457,8 +1457,8 @@ function mod.RescanCustomRangeColorFlag()
         return
     end
     mod._customRangeColorScanned = true
-    for _, e in pairs(customState) do
-        if type(e) == "table" and e.outOfRangeColoring then
+    for _, entry in pairs(customState) do
+        if type(entry) == "table" and entry.outOfRangeColoring then
             mod._cdmAnyCustomRangeColor = true
             -- Arming rides the Show edge; icons already shown missed it.
             mod.RefreshCustomSpellRange()
@@ -1493,12 +1493,12 @@ function mod.RescanReverseSwipeFlag()
     -- Preset / custom cd-utility spells (profile-level customActiveStates).
     local customState = mod.GetCustomActiveStates and mod.GetCustomActiveStates()
     if customState then
-        for _, e in pairs(customState) do
-            if e then
-                if e.reverseSwipe then
+        for _, entry in pairs(customState) do
+            if entry then
+                if entry.reverseSwipe then
                     mod._cdmAnyReverseSwipe = true
                 end
-                if e.hideCDSwipe then
+                if entry.hideCDSwipe then
                     mod._cdmAnyHideCDSwipe = true
                 end
             end
@@ -1526,8 +1526,8 @@ function mod.RescanThresholdTextFlag()
     if not mod._cdmAnyThresholdText then
         local customState = mod.GetCustomActiveStates and mod.GetCustomActiveStates()
         if customState then
-            for _, e in pairs(customState) do
-                if type(e) == "table" and (tonumber(e.thresholdSeconds) or 0) > 0 then
+            for _, entry in pairs(customState) do
+                if type(entry) == "table" and (tonumber(entry.thresholdSeconds) or 0) > 0 then
                     mod._cdmAnyThresholdText = true
                     break
                 end

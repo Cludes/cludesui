@@ -187,9 +187,9 @@ CludesUI.AtOptionsLogin(function()
         end
         values[NONE] = noneText
         sequence[1] = NONE
-        for _, e in ipairs(entries) do
-            values[e.key] = e.text
-            sequence[#sequence + 1] = e.key
+        for _, entry in ipairs(entries) do
+            values[entry.key] = entry.text
+            sequence[#sequence + 1] = entry.key
         end
     end
 
@@ -308,11 +308,11 @@ CludesUI.AtOptionsLogin(function()
     local function SavedEntries()
         local entries, sig = {}, {}
         wipe(savedByKey)
-        for _, e in ipairs(mod.ListInstanceAssignments()) do
-            local key = tostring(e.key)
-            entries[#entries + 1] = { key = key, text = e.label }
-            sig[#sig + 1] = key .. "=" .. e.label
-            savedByKey[key] = e
+        for _, entry in ipairs(mod.ListInstanceAssignments()) do
+            local key = tostring(entry.key)
+            entries[#entries + 1] = { key = key, text = entry.label }
+            sig[#sig + 1] = key .. "=" .. entry.label
+            savedByKey[key] = entry
         end
         return entries, table.concat(sig, "\n")
     end

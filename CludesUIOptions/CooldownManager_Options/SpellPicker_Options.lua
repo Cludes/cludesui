@@ -1011,9 +1011,9 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end)
                             end
                         end
-                        for memberId, e in pairs(familyStore) do
-                            if type(e) == "table" and not claimed[memberId] then
-                                func(memberId, e)
+                        for memberId, entry in pairs(familyStore) do
+                            if type(entry) == "table" and not claimed[memberId] then
+                                func(memberId, entry)
                             end
                         end
                     elseif barSpellData and type(barSpellData.assignedSpells) == "table" then
@@ -1090,8 +1090,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     end
                     local familyStore = mod.GetSpellSettingsStore and mod.GetSpellSettingsStore(barId)
                     if familyStore then
-                        for _, e in pairs(familyStore) do
-                            if type(e) == "table" and hit(e) then
+                        for _, entry in pairs(familyStore) do
+                            if type(entry) == "table" and hit(entry) then
                                 return true
                             end
                         end
@@ -2850,8 +2850,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- the flyout is open ("Lower Alpha (On CD)" gaining "50% ").
                         local function RefitSub()
                             local labels = {}
-                            for _, e in ipairs(flyoutEntries) do
-                                labels[#labels + 1] = e.label
+                            for _, entry in ipairs(flyoutEntries) do
+                                labels[#labels + 1] = entry.label
                             end
                             local fitW = FitMenuWidth(labels, flyoutW)
                             if fitW ~= flyoutW then
@@ -2865,13 +2865,13 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- apply strip's owner): each item's live selection (a bar apply
                         -- included), its caption, its arrow and its lock, then the width.
                         local function RefreshFlyoutSelection()
-                            for _, e in ipairs(flyoutEntries) do
-                                if not e.isDivider then
-                                    e.setSelected(e.computeSelected())
-                                    e.refreshLabel()
-                                    e.updateArrow()
+                            for _, entry in ipairs(flyoutEntries) do
+                                if not entry.isDivider then
+                                    entry.setSelected(entry.computeSelected())
+                                    entry.refreshLabel()
+                                    entry.updateArrow()
                                     if itemState then
-                                        itemState(e.frame, e.item, subMenu)
+                                        itemState(entry.frame, entry.item, subMenu)
                                     end
                                 end
                             end
@@ -3275,25 +3275,25 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 local q = strlower(strtrim(raw or ""))
                                 sePh:SetShown(q == "")
                                 local yy = 4
-                                for _, e in ipairs(flyoutEntries) do
+                                for _, entry in ipairs(flyoutEntries) do
                                     local shown
-                                    if e.isDivider then
+                                    if entry.isDivider then
                                         shown = q == ""
                                     else
-                                        local nm = e.name or (e.label and e.label:GetText()) or ""
+                                        local nm = entry.name or (entry.label and entry.label:GetText()) or ""
                                         shown = q == "" or strfind(strlower(tostring(nm)), q, 1, true) ~= nil
                                     end
-                                    e.frame:SetShown(shown)
+                                    entry.frame:SetShown(shown)
                                     if shown then
                                         -- A separator sits 4px into its 9px slot, inset 6.
                                         local inset, dy = 1, 0
-                                        if e.isDivider then
+                                        if entry.isDivider then
                                             inset, dy = 6, 4
                                         end
-                                        e.frame:ClearAllPoints()
-                                        e.frame:SetPoint("TOPLEFT", flyoutBody, "TOPLEFT", inset, -yy - dy)
-                                        e.frame:SetPoint("TOPRIGHT", flyoutBody, "TOPRIGHT", -inset, -yy - dy)
-                                        yy = yy + (e.isDivider and 9 or ITEM_H)
+                                        entry.frame:ClearAllPoints()
+                                        entry.frame:SetPoint("TOPLEFT", flyoutBody, "TOPLEFT", inset, -yy - dy)
+                                        entry.frame:SetPoint("TOPRIGHT", flyoutBody, "TOPRIGHT", -inset, -yy - dy)
+                                        yy = yy + (entry.isDivider and 9 or ITEM_H)
                                     end
                                 end
                                 flyoutBody:SetHeight(math.max(1, yy + 4))
@@ -3314,16 +3314,16 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- each item's selection, caption, arrow, lock and swatch colour,
                         -- the width from the base, an empty search and the top of the list.
                         reshowSub = function()
-                            for _, e in ipairs(flyoutEntries) do
-                                if e.resetShown then
-                                    e.resetShown(e.computeSelected())
-                                    e.refreshLabel()
-                                    e.updateArrow()
+                            for _, entry in ipairs(flyoutEntries) do
+                                if entry.resetShown then
+                                    entry.resetShown(entry.computeSelected())
+                                    entry.refreshLabel()
+                                    entry.updateArrow()
                                     if itemState then
-                                        itemState(e.frame, e.item, subMenu)
+                                        itemState(entry.frame, entry.item, subMenu)
                                     end
-                                    if e.frame._refreshSwatch then
-                                        e.frame._refreshSwatch()
+                                    if entry.frame._refreshSwatch then
+                                        entry.frame._refreshSwatch()
                                     end
                                 end
                             end

@@ -1504,13 +1504,13 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     local zoneAbilityWatch = CreateFrame("Frame")
     zoneAbilityWatch:RegisterEvent("PLAYER_ENTERING_WORLD")
     -- The texture kit is per zone, so every zone crossing re-applies .Style.
-    for _, e in ipairs({
+    for _, event in ipairs({
         "ZONE_CHANGED",
         "ZONE_CHANGED_NEW_AREA",
         "ZONE_CHANGED_INDOORS",
         "SPELLS_CHANGED",
     }) do
-        pcall(zoneAbilityWatch.RegisterEvent, zoneAbilityWatch, e)
+        pcall(zoneAbilityWatch.RegisterEvent, zoneAbilityWatch, event)
     end
     zoneAbilityWatch:SetScript("OnEvent", function()
         -- Same shape as the extra action button's handler: hooks install

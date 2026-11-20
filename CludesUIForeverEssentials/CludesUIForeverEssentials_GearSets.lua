@@ -218,7 +218,7 @@ end)
 local function Apply()
     if Enabled() then
         Build()
-        for _, e in ipairs({
+        for _, event in ipairs({
             "EQUIPMENT_SETS_CHANGED",
             "EQUIPMENT_SWAP_FINISHED",
             "PLAYER_EQUIPMENT_CHANGED",
@@ -227,7 +227,7 @@ local function Apply()
             "PLAYER_MOUNT_DISPLAY_CHANGED",
             "PLAYER_UPDATE_RESTING",
         }) do
-            ev:RegisterEvent(e)
+            ev:RegisterEvent(event)
         end
         if not CludesUI._unlockActive then
             F.Place(holderFrame)

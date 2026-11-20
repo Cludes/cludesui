@@ -741,8 +741,8 @@ CludesUI.AtOptionsLogin(function()
                 local num = 0
                 for _, fam in ipairs(PER_ICON_FAMILIES) do
                     local st = mod.GetSpellSettingsStore and mod.GetSpellSettingsStore(fam)
-                    for _, e in pairs(st or {}) do
-                        if HasOwnGlow(e) then
+                    for _, entry in pairs(st or {}) do
+                        if HasOwnGlow(entry) then
                             num = num + 1
                         end
                     end
@@ -750,8 +750,8 @@ CludesUI.AtOptionsLogin(function()
                 -- Preset and custom spells keep theirs in the profile-level
                 -- customActiveStates store (read directly: its getter creates it).
                 local prof = mod.ECME and mod.ECME.db and mod.ECME.db.profile
-                for _, e in pairs((prof and prof.customActiveStates) or {}) do
-                    if HasOwnGlow(e) then
+                for _, entry in pairs((prof and prof.customActiveStates) or {}) do
+                    if HasOwnGlow(entry) then
                         num = num + 1
                     end
                 end

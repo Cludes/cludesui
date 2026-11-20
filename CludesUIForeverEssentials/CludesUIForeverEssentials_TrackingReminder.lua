@@ -209,8 +209,8 @@ end)
 local function Apply()
     if Enabled() then
         Build()
-        for _, e in ipairs(EVENTS) do
-            ev:RegisterEvent(e)
+        for _, event in ipairs(EVENTS) do
+            ev:RegisterEvent(event)
         end
         ev:RegisterUnitEvent("UNIT_AURA", "player")
         if not CludesUI._unlockActive and not InCombatLockdown() then

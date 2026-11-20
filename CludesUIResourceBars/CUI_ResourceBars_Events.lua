@@ -168,8 +168,8 @@ do
             local uiS = UIParent:GetEffectiveScale()
             local uiW, uiH = UIParent:GetWidth(), UIParent:GetHeight()
             local cleared = false
-            for _, e in ipairs(entries) do
-                local s, frame = e.cfg, e.frame
+            for _, entry in ipairs(entries) do
+                local s, frame = entry.cfg, entry.frame
                 -- Plain multi-value assignment: wrapping GetCenter in "f and"
                 -- would truncate it to one value and leave cy always nil.
                 local cx, cy

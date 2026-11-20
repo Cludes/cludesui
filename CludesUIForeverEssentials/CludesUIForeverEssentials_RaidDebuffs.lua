@@ -197,13 +197,13 @@ end)
 local function Apply()
     if Enabled() then
         Build()
-        for _, e in ipairs({
+        for _, event in ipairs({
             "PLAYER_TARGET_CHANGED",
             "GROUP_ROSTER_UPDATE",
             "PLAYER_REGEN_ENABLED",
             "PLAYER_ENTERING_WORLD",
         }) do
-            ev:RegisterEvent(e)
+            ev:RegisterEvent(event)
         end
         pcall(ev.RegisterEvent, ev, "ADDON_RESTRICTION_STATE_CHANGED")
         ev:RegisterUnitEvent("UNIT_FACTION", "target")

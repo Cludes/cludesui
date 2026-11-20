@@ -130,8 +130,8 @@ local EVENTS = {
 
 local function Apply()
     if Enabled() then
-        for _, e in ipairs(EVENTS) do
-            ev:RegisterEvent(e)
+        for _, event in ipairs(EVENTS) do
+            ev:RegisterEvent(event)
         end
     else
         ev:UnregisterAllEvents()

@@ -582,7 +582,7 @@ local function Refresh()
         return (lhs.rec.lastSeen or 0) > (rhs.rec.lastSeen or 0)
     end)
     rows = rows or {}
-    for i, e in ipairs(list) do
+    for i, entry in ipairs(list) do
         local region = rows[i]
         if not region then
             region = content:CreateFontString(nil, "OVERLAY")
@@ -592,7 +592,7 @@ local function Refresh()
             region:SetWordWrap(false)
             rows[i] = region
         end
-        local rec, note = e.rec, e.note
+        local rec, note = entry.rec, entry.note
         local c = rec.classFile and RAID_CLASS_COLORS[rec.classFile]
         local name = rec.name or "?"
         if c then
@@ -685,13 +685,13 @@ local function Apply()
             players[myGUID] = nil
             count = count - 1
         end
-        for _, e in ipairs({
+        for _, event in ipairs({
             "GROUP_ROSTER_UPDATE",
             "PLAYER_ENTERING_WORLD",
             "ZONE_CHANGED_NEW_AREA",
             "PLAYER_LOGOUT",
         }) do
-            ev:RegisterEvent(e)
+            ev:RegisterEvent(event)
         end
         for event in pairs(CHANNEL) do
             if Get("chats") then

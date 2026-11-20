@@ -203,10 +203,10 @@ ev:SetScript("OnEvent", function(_, evt, newLevel)
     C_Timer.After(2, function()
         local plan = mod.TrainingPlan()
         local fresh, cost = 0, 0
-        for _, e in ipairs(plan.now) do
-            if e.level == newLevel then
+        for _, entry in ipairs(plan.now) do
+            if entry.level == newLevel then
                 fresh = fresh + 1
-                cost = cost + e.cost
+                cost = cost + entry.cost
             end
         end
         if fresh > 0 then

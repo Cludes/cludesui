@@ -1883,9 +1883,9 @@ local function EnsureBuffAlertLane()
         return
     end
     local record
-    for _, e in ipairs(cachedMovementSpells) do
-        if e.checkType == "buffActive" then
-            record = e
+    for _, entry in ipairs(cachedMovementSpells) do
+        if entry.checkType == "buffActive" then
+            record = entry
             break
         end
     end

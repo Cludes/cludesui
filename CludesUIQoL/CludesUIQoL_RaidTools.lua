@@ -406,12 +406,12 @@ local function ApplyFonts()
     for _, markerOwner in ipairs(fontOwners) do
         local t = markerOwner._fonts
         if t then
-            for _, e in ipairs(t) do
-                if e.family then
-                    CludesUI.SetFontFamily(e.fs, filePath, e.size, "", false)
+            for _, entry in ipairs(t) do
+                if entry.family then
+                    CludesUI.SetFontFamily(entry.fs, filePath, entry.size, "", false)
                 else
-                    local _, _, flags = e.fs:GetFont()
-                    e.fs:SetFont(filePath, e.size, flags or "")
+                    local _, _, flags = entry.fs:GetFont()
+                    entry.fs:SetFont(filePath, entry.size, flags or "")
                 end
             end
         end

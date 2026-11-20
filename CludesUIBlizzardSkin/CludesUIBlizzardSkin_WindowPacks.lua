@@ -14677,14 +14677,14 @@ do
                     end
                 end)
             )
-            for _, e in ipairs({
+            for _, event in ipairs({
                 "ITEM_UPGRADE_MASTER_OPENED",
                 "ITEM_UPGRADE_MASTER_UPDATE",
                 "ITEM_UPGRADE_MASTER_SET_ITEM",
                 "ITEM_UPGRADE_MASTER_CLOSED",
                 "ITEM_INTERACTION_ITEM_SELECTION_UPDATED",
             }) do
-                pcall(ev.RegisterEvent, ev, e)
+                pcall(ev.RegisterEvent, ev, event)
             end
         end
     end
@@ -15539,7 +15539,7 @@ do
         -- the sweep while one was on screen, so it lived and died stock.
         -- TRANSMOG_COLLECTION_SOURCE_ADDED is the same toast on the Trading Post
         -- path (AlertFrames.lua routes both into the same system).
-        for _, e in ipairs({
+        for _, event in ipairs({
             "SHOW_LOOT_TOAST",
             "SHOW_LOOT_TOAST_UPGRADE",
             "SHOW_PVP_FACTION_LOOT_TOAST",
@@ -15548,7 +15548,7 @@ do
             "TRANSMOG_COSMETIC_COLLECTION_SOURCE_ADDED",
             "TRANSMOG_COLLECTION_SOURCE_ADDED",
         }) do
-            pcall(ev.RegisterEvent, ev, e)
+            pcall(ev.RegisterEvent, ev, event)
         end
         SweepAlerts(true)
     end

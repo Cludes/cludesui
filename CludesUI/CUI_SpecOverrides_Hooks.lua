@@ -59,9 +59,9 @@ evFrame:SetScript("OnEvent", function(_, evt)
         -- stored "override"). DeepCopy every table-typed value once so stores own their
         -- data. Harvests skip table values, so it cannot recur.
         local function DeAlias(storage)
-            for _, e in ipairs(storage or {}) do
-                if e.values then
-                    for _, m in pairs(e.values) do
+            for _, entry in ipairs(storage or {}) do
+                if entry.values then
+                    for _, m in pairs(entry.values) do
                         if type(m) == "table" then
                             for fkey, val in pairs(m) do
                                 if type(val) == "table" then

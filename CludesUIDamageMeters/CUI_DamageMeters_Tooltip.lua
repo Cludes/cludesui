@@ -819,8 +819,8 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
     local totalDmg = 0
     local canPercent = type(maxAmount) == "number" and (not issecretvalue or not issecretvalue(maxAmount))
     if canPercent then
-        for _, e in ipairs(_ttSorted) do
-            totalDmg = totalDmg + e.amount
+        for _, entry in ipairs(_ttSorted) do
+            totalDmg = totalDmg + entry.amount
         end
     end
     local texFile, textureKey = GetBreakdownBarTexturePath()

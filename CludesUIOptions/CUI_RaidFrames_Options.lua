@@ -1433,11 +1433,11 @@ CludesUI.AtLogin(function()
                     end
                 end
             end
-            for _, e in pairs(pvModeCtrls) do
-                if PvEntryLive(e) then
-                    e.gold:SetShown(textValue ~= nil)
-                    e.ctrl._ttText = textValue
-                    e.ctrl._ttOpts = nil
+            for _, ctrl in pairs(pvModeCtrls) do
+                if PvEntryLive(ctrl) then
+                    ctrl.gold:SetShown(textValue ~= nil)
+                    ctrl.ctrl._ttText = textValue
+                    ctrl.ctrl._ttOpts = nil
                 end
             end
         end
@@ -1507,9 +1507,9 @@ CludesUI.AtLogin(function()
                             mod.HidePartyPreview()
                         end
                     end
-                    for _, e in pairs(pvModeDropdowns) do
-                        if PvEntryLive(e) then
-                            e.lbl:SetText(previewModeValues[value] or value)
+                    for _, dropdown in pairs(pvModeDropdowns) do
+                        if PvEntryLive(dropdown) then
+                            dropdown.lbl:SetText(previewModeValues[value] or value)
                         end
                     end
                     CludesUI:RefreshPage()

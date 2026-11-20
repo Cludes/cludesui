@@ -905,8 +905,8 @@ local function PruneSeen()
         end
     end
     local keyList = {}
-    for key, e in pairs(CludesUITitleLineDB.seen) do
-        if e.season ~= slug then
+    for key, entry in pairs(CludesUITitleLineDB.seen) do
+        if entry.season ~= slug then
             CludesUITitleLineDB.seen[key] = nil
         else
             keyList[#keyList + 1] = key

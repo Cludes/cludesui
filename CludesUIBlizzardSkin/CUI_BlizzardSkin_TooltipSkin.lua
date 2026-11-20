@@ -418,8 +418,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                         -- entries at most once per TTL, only when a new one is added.
                         if nowTime >= _insp.pruneAt then
                             _insp.pruneAt = nowTime + _ilvlCacheTTL
-                            for g, e in pairs(_ilvlCache) do
-                                if (nowTime - e.time) >= _ilvlCacheTTL then
+                            for g, entry in pairs(_ilvlCache) do
+                                if (nowTime - entry.time) >= _ilvlCacheTTL then
                                     _ilvlCache[g] = nil
                                 end
                             end
@@ -1233,8 +1233,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------
                 -- Expired entries are dropped, so only the last few seconds of hovers stay
                 -- cached and this loop stays tiny; this player's stale entry is refreshed
                 -- in place rather than replaced.
-                for g, e in pairs(_mountCache) do
-                    if e ~= cachedValue and (nowTime - e.time) >= _mountCacheTTL then
+                for g, entry in pairs(_mountCache) do
+                    if entry ~= cachedValue and (nowTime - entry.time) >= _mountCacheTTL then
                         _mountCache[g] = nil
                     end
                 end

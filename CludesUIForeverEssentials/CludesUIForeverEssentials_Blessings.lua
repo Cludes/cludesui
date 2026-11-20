@@ -2765,20 +2765,20 @@ function Apply()
     end
     C_ChatInfo.RegisterAddonMessagePrefix(PREFIX)
     C_ChatInfo.RegisterAddonMessagePrefix(PP_PREFIX)
-    for _, e in ipairs({
+    for _, event in ipairs({
         "CHAT_MSG_ADDON",
         "GROUP_ROSTER_UPDATE",
         "PLAYER_ENTERING_WORLD",
         "PARTY_LEADER_CHANGED",
         "PLAYER_REGEN_ENABLED",
     }) do
-        events:RegisterEvent(e)
+        events:RegisterEvent(event)
     end
     if not IsPaladin() then
         return
     end
-    for _, e in ipairs({ "UNIT_AURA", "PLAYER_ROLES_ASSIGNED", "SPELLS_CHANGED" }) do
-        events:RegisterEvent(e)
+    for _, event in ipairs({ "UNIT_AURA", "PLAYER_ROLES_ASSIGNED", "SPELLS_CHANGED" }) do
+        events:RegisterEvent(event)
     end
     events:RegisterUnitEvent("UNIT_SPELLCAST_SENT", "player")
     events:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")

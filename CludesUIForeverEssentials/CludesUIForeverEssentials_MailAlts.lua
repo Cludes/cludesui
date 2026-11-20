@@ -180,14 +180,14 @@ local function RosterApply()
     rEv:UnregisterAllEvents()
     if RosterOn() then
         UpdateRoster()
-        for _, e in ipairs({ "PLAYER_MONEY", "PLAYER_LEVEL_UP", "MAIL_INBOX_UPDATE" }) do
-            rEv:RegisterEvent(e)
+        for _, event in ipairs({ "PLAYER_MONEY", "PLAYER_LEVEL_UP", "MAIL_INBOX_UPDATE" }) do
+            rEv:RegisterEvent(event)
         end
     end
     if Get("altCounts") then
         ScanBags()
-        for _, e in ipairs({ "BAG_UPDATE_DELAYED", "BANKFRAME_OPENED", "BANKFRAME_CLOSED" }) do
-            rEv:RegisterEvent(e)
+        for _, event in ipairs({ "BAG_UPDATE_DELAYED", "BANKFRAME_OPENED", "BANKFRAME_CLOSED" }) do
+            rEv:RegisterEvent(event)
         end
     end
 end

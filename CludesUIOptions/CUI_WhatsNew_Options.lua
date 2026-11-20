@@ -69,8 +69,8 @@ function CludesUI._BuildWhatsNewPage(pageName, hostFrame, yOffset)
     -- Stable sort by module display name; preserves authored order per module.
     local function SortByModule(entries)
         local position = {}
-        for i, e in ipairs(entries) do
-            position[i] = { e, i }
+        for i, entry in ipairs(entries) do
+            position[i] = { entry, i }
         end
         table.sort(position, function(lhs, rhs)
             local am, bm = lhs[1].module or "", rhs[1].module or ""

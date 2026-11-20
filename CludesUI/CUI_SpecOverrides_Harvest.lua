@@ -929,8 +929,8 @@ function CludesUI.SpecOverrides_IsCaptured(moduleFolder, ...)
             storage = C.GetStore()
         end
         if storage then
-            for _, e in ipairs(storage) do
-                local vals = e.values
+            for _, entry in ipairs(storage) do
+                local vals = entry.values
                 if type(vals) == "table" then
                     for _, map in pairs(vals) do
                         if type(map) == "table" then
@@ -970,8 +970,8 @@ function CludesUI.SpecOverrides_CapturedBy(moduleFolder, keyList)
         end
         if storage then
             local seenKind = seen[kind]
-            for _, e in ipairs(storage) do
-                local vals = e.values
+            for _, entry in ipairs(storage) do
+                local vals = entry.values
                 if type(vals) == "table" then
                     for ident, map in pairs(vals) do
                         if type(ident) == "number" and type(map) == "table" and not seenKind[ident] then

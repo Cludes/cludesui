@@ -3410,8 +3410,8 @@ local function CreateDMWindow(winIdx)
             and (not issecretvalue or not issecretvalue(maxAmt))
             and type(maxAmt) == "number"
         if canPercent then
-            for _, e in ipairs(sorted) do
-                totalDmg = totalDmg + e.amount
+            for _, entry in ipairs(sorted) do
+                totalDmg = totalDmg + entry.amount
             end
         end
         local spCount = math.min(#sorted, BAR_POOL_SIZE)

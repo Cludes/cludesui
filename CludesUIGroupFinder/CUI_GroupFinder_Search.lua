@@ -4304,13 +4304,13 @@ function XF.ShortName(label)
     if not portalsDone then
         -- dungeon names can be missing right after login, so keep asking until they're all in
         portalShort, portalsDone = {}, true
-        for _, e in ipairs(CludesUI.SEASON_PORTALS or XF.EMPTY) do
-            for _, n in ipairs(e.names) do
-                portalShort[n] = e.short
+        for _, entry in ipairs(CludesUI.SEASON_PORTALS or XF.EMPTY) do
+            for _, n in ipairs(entry.names) do
+                portalShort[n] = entry.short
             end
-            local localized = GetLFGDungeonInfo and GetLFGDungeonInfo(e.dungeonID)
+            local localized = GetLFGDungeonInfo and GetLFGDungeonInfo(entry.dungeonID)
             if type(localized) == "string" then
-                portalShort[localized:lower()] = e.short
+                portalShort[localized:lower()] = entry.short
             else
                 portalsDone = false
             end

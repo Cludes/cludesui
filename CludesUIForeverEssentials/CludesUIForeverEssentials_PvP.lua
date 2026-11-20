@@ -1141,7 +1141,7 @@ local function StatsRefresh()
     table.sort(list, function(lhs, rhs)
         return (lhs.p.last or 0) > (rhs.p.last or 0)
     end)
-    for i, e in ipairs(list) do
+    for i, entry in ipairs(list) do
         local region = statRows[i]
         if not region then
             region = statContent:CreateFontString(nil, "OVERLAY")
@@ -1151,12 +1151,12 @@ local function StatsRefresh()
             region:SetWordWrap(false)
             statRows[i] = region
         end
-        local p = e.p
+        local p = entry.p
         region:SetPoint("TOPLEFT", 0, -(i - 1) * 16)
         region:SetText(
             ("%s%s  |cff9aa6b2%s%s|r  |cff60d080W %d|r |cffff6060L %d|r  |cff9aa6b2%s ago|r"):format(
-                s.kos[e.name] and "|cffff5959KoS|r " or "",
-                Label(e.name),
+                s.kos[entry.name] and "|cffff5959KoS|r " or "",
+                Label(entry.name),
                 p.level and ((p.guess and "~" or "") .. p.level .. " ") or "",
                 p.guild and ("<" .. p.guild .. ">") or "",
                 p.wins or 0,
@@ -1697,8 +1697,8 @@ end
 local tipHooked
 local function Apply()
     if Enabled() then
-        for _, e in ipairs(EVENTS) do
-            pcall(ev.RegisterEvent, ev, e)
+        for _, event in ipairs(EVENTS) do
+            pcall(ev.RegisterEvent, ev, event)
         end
         C_ChatInfo.RegisterAddonMessagePrefix(PREFIX)
         if not ticker then
@@ -1772,13 +1772,13 @@ SlashCmdList.CUIPVP = function(message)
         module.PvPToggleWatch(name, reason)
     elseif cmd == "watchlist" then
         local n = 0
-        for name, e in pairs(Store().watch) do
+        for name, entry in pairs(Store().watch) do
             n = n + 1
             Say(
                 ("%s%s%s"):format(
                     name:gsub("%-", " "),
-                    e.reason and (" (" .. e.reason .. ")") or "",
-                    e.seen and (", last seen " .. Ago(time() - e.seen) .. " ago in " .. (e.zone or "?")) or ""
+                    entry.reason and (" (" .. entry.reason .. ")") or "",
+                    entry.seen and (", last seen " .. Ago(time() - entry.seen) .. " ago in " .. (entry.zone or "?")) or ""
                 )
             )
         end

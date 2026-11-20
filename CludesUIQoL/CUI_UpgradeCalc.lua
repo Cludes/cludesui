@@ -1675,8 +1675,8 @@ PopulateGear = function()
         local savedSlots = DB().queue
         if savedSlots and #savedSlots > 0 then
             local slotToEntry = {}
-            for _, e in ipairs(tileEntries) do
-                slotToEntry[e.slotID] = e
+            for _, entry in ipairs(tileEntries) do
+                slotToEntry[entry.slotID] = entry
             end
             queueList = {}
             queuedSlots = {}
@@ -1697,8 +1697,8 @@ PopulateGear = function()
     -- Safe to run on the first PopulateGear call too (entries are already fresh then).
     if #queueList > 0 then
         local slotToEntry = {}
-        for _, e in ipairs(tileEntries) do
-            slotToEntry[e.slotID] = e
+        for _, entry in ipairs(tileEntries) do
+            slotToEntry[entry.slotID] = entry
         end
         local newQueue, newSet = {}, {}
         for _, old in ipairs(queueList) do
@@ -1742,8 +1742,8 @@ PopulateGear = function()
 
     -- Section header positions
     local needsCount = 0
-    for _, e in ipairs(tileEntries) do
-        if not e.isAtMax then
+    for _, entry in ipairs(tileEntries) do
+        if not entry.isAtMax then
             needsCount = needsCount + 1
         end
     end

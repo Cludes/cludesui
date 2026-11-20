@@ -573,11 +573,11 @@ local function BuildNameplatePreview(hostFrame, parentW)
             for _, c in ipairs(self._corners) do
                 Pix.Size(c, sz, sz)
             end
-            for _, e in ipairs(self._hEdges) do
-                Pix.Height(e, sz)
+            for _, edge in ipairs(self._hEdges) do
+                Pix.Height(edge, sz)
             end
-            for _, e in ipairs(self._vEdges) do
-                Pix.Width(e, sz)
+            for _, edge in ipairs(self._vEdges) do
+                Pix.Width(edge, sz)
             end
         end
         return f
@@ -920,8 +920,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
         end
         borderFrame:Hide()
         simpleBorderFrame:Hide()
-        for _, e in ipairs(_solidEdges) do
-            e:Hide()
+        for _, edge in ipairs(_solidEdges) do
+            edge:Hide()
         end
         if healthHolder._customBorder then
             healthHolder._customBorder:Hide()
@@ -1074,8 +1074,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
         end
         borderFrame:Hide()
         simpleBorderFrame:Hide()
-        for _, e in ipairs(_solidEdges) do
-            e:Hide()
+        for _, edge in ipairs(_solidEdges) do
+            edge:Hide()
         end
         if healthHolder._customBorder then
             healthHolder._customBorder:Hide()
@@ -1619,8 +1619,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
             -- Custom border (shared engine) replaces the simple preview border.
             borderFrame:Hide()
             simpleBorderFrame:Hide()
-            for _, e in ipairs(_solidEdges) do
-                e:Hide()
+            for _, edge in ipairs(_solidEdges) do
+                edge:Hide()
             end
             if pcb and CludesUI.ApplyBorderStyle then
                 local ctex = DBVal("customBorderTexture") or defaultSet.customBorderTexture
@@ -1691,8 +1691,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
             if bOn then
                 borderFrame:Hide()
                 simpleBorderFrame:Show()
-                for _, e in ipairs(_solidEdges) do
-                    e:Show()
+                for _, edge in ipairs(_solidEdges) do
+                    edge:Show()
                 end
                 simpleBorderFrame:ApplySize(
                     glowPreview.classic and 1 or (DBVal("borderSize") or defaultSet.borderSize)
@@ -1700,8 +1700,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
             else
                 borderFrame:Hide()
                 simpleBorderFrame:Hide()
-                for _, e in ipairs(_solidEdges) do
-                    e:Hide()
+                for _, edge in ipairs(_solidEdges) do
+                    edge:Hide()
                 end
             end
         end
@@ -1723,8 +1723,8 @@ local function BuildNameplatePreview(hostFrame, parentW)
             if radius > 0 and not customOn and pcb and simpleBorderFrame:IsShown() then
                 local bc = (DB() and DB().borderColor) or defaultSet.borderColor
                 simpleBorderFrame:Hide()
-                for _, e in ipairs(_solidEdges) do
-                    e:Hide()
+                for _, edge in ipairs(_solidEdges) do
+                    edge:Hide()
                 end
                 pcb:Show()
                 CludesUI.ApplyBorderStyle(
@@ -1817,11 +1817,11 @@ local function BuildNameplatePreview(hostFrame, parentW)
         for _, texture in ipairs(simpleBorderFrame._texs) do
             texture:SetVertexColor(bc.r, bc.g, bc.b)
         end
-        for _, e in ipairs(_solidEdges) do
-            e:SetColorTexture(bc.r, bc.g, bc.b, 1)
-            if e.SetSnapToPixelGrid then
-                e:SetSnapToPixelGrid(false)
-                e:SetTexelSnappingBias(0)
+        for _, edge in ipairs(_solidEdges) do
+            edge:SetColorTexture(bc.r, bc.g, bc.b, 1)
+            if edge.SetSnapToPixelGrid then
+                edge:SetSnapToPixelGrid(false)
+                edge:SetTexelSnappingBias(0)
             end
         end
 
@@ -3931,9 +3931,9 @@ local function BuildNameplatePreview(hostFrame, parentW)
             for _, texture in ipairs(simpleBorderFrame._texs) do
                 texture:SetVertexColor(bc.r, bc.g, bc.b)
             end
-            for _, e in ipairs(_solidEdges) do
-                e:SetColorTexture(bc.r, bc.g, bc.b, 1)
-                UnsnapTex(e)
+            for _, edge in ipairs(_solidEdges) do
+                edge:SetColorTexture(bc.r, bc.g, bc.b, 1)
+                UnsnapTex(edge)
             end
         end
         -- Highlight: translucent wash across the preview health bar (color/opacity via the Target Highlight cog).

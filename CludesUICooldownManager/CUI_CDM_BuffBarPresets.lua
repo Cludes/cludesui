@@ -571,9 +571,9 @@ local function _rebuildTimeSpiralSuppress()
     if not known then
         return
     end
-    for _, e in ipairs(TIME_SPIRAL_GLOW_FILTERS) do
-        if known(e.talent) then
-            for _, spellRef in ipairs(e.spells) do
+    for _, entry in ipairs(TIME_SPIRAL_GLOW_FILTERS) do
+        if known(entry.talent) then
+            for _, spellRef in ipairs(entry.spells) do
                 _ts.suppress[spellRef] = true
             end
         end

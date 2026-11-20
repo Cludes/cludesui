@@ -100,12 +100,12 @@ local function Scan()
         local entries = C_Item.GetWeaponEnchantInfo(ws)
         local imbue, temp
         if type(entries) == "table" then
-            for _, e in ipairs(entries) do
-                if Active(e) then
-                    if e.enchantType == IMBUE then
-                        imbue = e
-                    elseif e.enchantType == TEMPORARY then
-                        temp = e
+            for _, entry in ipairs(entries) do
+                if Active(entry) then
+                    if entry.enchantType == IMBUE then
+                        imbue = entry
+                    elseif entry.enchantType == TEMPORARY then
+                        temp = entry
                     end
                 end
             end

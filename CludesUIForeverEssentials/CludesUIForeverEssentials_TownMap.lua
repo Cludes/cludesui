@@ -417,13 +417,13 @@ miniEv:SetScript("OnEvent", MiniRefresh)
 local function MiniApply()
     miniEv:UnregisterAllEvents()
     if Enabled() and (Get("minimapMail") or Get("minimapSpirit")) then
-        for _, e in ipairs({
+        for _, event in ipairs({
             "PLAYER_ENTERING_WORLD",
             "ZONE_CHANGED_NEW_AREA",
             "ZONE_CHANGED",
             "ZONE_CHANGED_INDOORS",
         }) do
-            miniEv:RegisterEvent(e)
+            miniEv:RegisterEvent(event)
         end
     end
     if IsLoggedIn() then

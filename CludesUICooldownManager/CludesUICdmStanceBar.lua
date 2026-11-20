@@ -109,8 +109,8 @@ function mod.RescanStanceBarFlag()
     end
     local cas = mod.GetCustomActiveStates and mod.GetCustomActiveStates()
     if cas then
-        for _, e in pairs(cas) do
-            if type(e) == "table" and Has(e) then
+        for _, entry in pairs(cas) do
+            if type(entry) == "table" and Has(entry) then
                 return
             end
         end

@@ -104,8 +104,8 @@ function _G._CUI_BuildForeverTrainingPage(_, hostFrame, yOffset)
         local lvl = plan.levels[idx]
         local entries = plan.coming[lvl]
         local cost = 0
-        for _, e in ipairs(entries) do
-            cost = cost + e.cost
+        for _, entry in ipairs(entries) do
+            cost = cost + entry.cost
         end
         _, height = W:SectionHeader(hostFrame, ("LEVEL %d  -  %s"):format(lvl, mod.TrainingMoney(cost)), cursorY)
         cursorY = cursorY - height

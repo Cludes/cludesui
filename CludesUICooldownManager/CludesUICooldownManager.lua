@@ -535,9 +535,9 @@ function mod.RefreshLustPresetFaction()
     end
     -- The Tracking Bar list copies name/icon by value at load (spellIDs is the
     -- same table), and is built after this file, so it is absent on the first call.
-    for _, e in ipairs(mod.TBB_POPULAR_BUFFS or {}) do
-        if e.key == "bloodlust" then
-            e.name, e.icon = name, iconTex
+    for _, entry in ipairs(mod.TBB_POPULAR_BUFFS or {}) do
+        if entry.key == "bloodlust" then
+            entry.name, entry.icon = name, iconTex
             break
         end
     end

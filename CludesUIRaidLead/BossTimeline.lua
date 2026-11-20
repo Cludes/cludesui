@@ -426,8 +426,8 @@ function Fight:EncounterRegister(name, evt, enable, units)
     self.frames[name] = self.frames[name] or CreateFrame("Frame")
     local widget = self.frames[name]
     if type(evt) == "table" then
-        for _, e in ipairs(evt) do
-            self:EncounterRegister(name, e, enable, units)
+        for _, event in ipairs(evt) do
+            self:EncounterRegister(name, event, enable, units)
         end
         return
     end
@@ -534,12 +534,12 @@ function mod.StartTimeline(encID, difficulty, testDifficulty)
             rules.start(f)
         end
         if rules.detect then
-            for _, e in ipairs({
+            for _, event in ipairs({
                 "ENCOUNTER_TIMELINE_EVENT_ADDED",
                 "ENCOUNTER_TIMELINE_EVENT_REMOVED",
                 "ENCOUNTER_TIMELINE_EVENT_STATE_CHANGED",
             }) do
-                pcall(timelineEvents.RegisterEvent, timelineEvents, e)
+                pcall(timelineEvents.RegisterEvent, timelineEvents, event)
             end
             if rules.engage then
                 timelineEvents:RegisterEvent("INSTANCE_ENCOUNTER_ENGAGE_UNIT")

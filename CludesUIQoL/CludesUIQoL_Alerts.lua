@@ -644,8 +644,8 @@ do
     local function Apply()
         local enabled = DB("talentAlertEnabled")
         if enabled and not installed then
-            for _, e in ipairs(EVENTS) do
-                watcher:RegisterEvent(e)
+            for _, event in ipairs(EVENTS) do
+                watcher:RegisterEvent(event)
             end
             installed = true
             lastHad, dismissed = false, false

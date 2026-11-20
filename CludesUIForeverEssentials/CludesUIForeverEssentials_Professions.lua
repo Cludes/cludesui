@@ -828,7 +828,7 @@ local function Apply()
         end
         return
     end
-    for _, e in ipairs({
+    for _, event in ipairs({
         "SKILL_LINES_CHANGED",
         "PLAYER_LEVEL_UP",
         "TRADE_SKILL_SHOW",
@@ -838,7 +838,7 @@ local function Apply()
         "TRAINER_UPDATE",
         "LEARNED_SPELL_IN_TAB",
     }) do
-        pcall(ev.RegisterEvent, ev, e)
+        pcall(ev.RegisterEvent, ev, event)
     end
     if Get("rankAlert") then
         C_Timer.After(5, function()

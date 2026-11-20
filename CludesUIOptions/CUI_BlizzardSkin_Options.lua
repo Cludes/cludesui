@@ -3391,16 +3391,16 @@ CludesUI.AtOptionsLogin(function()
         -- Every recorded character, a header per realm (rebuilt on each open).
         local function Items()
             local itemList, lastRealm = {}, nil
-            for _, e in ipairs(MA.Entries()) do
-                if e.realm ~= lastRealm then
-                    lastRealm = e.realm
-                    itemList[#itemList + 1] = { isHeader = true, label = e.realm }
+            for _, entry in ipairs(MA.Entries()) do
+                if entry.realm ~= lastRealm then
+                    lastRealm = entry.realm
+                    itemList[#itemList + 1] = { isHeader = true, label = entry.realm }
                 end
-                local c = CludesUI.GetClassColor(e.class)
+                local c = CludesUI.GetClassColor(entry.class)
                 itemList[#itemList + 1] = {
-                    key = e.guid,
-                    label = CludesUI.HexColor(c.r, c.g, c.b) .. e.name .. "|r",
-                    tooltip = MA.Describe(e),
+                    key = entry.guid,
+                    label = CludesUI.HexColor(c.r, c.g, c.b) .. entry.name .. "|r",
+                    tooltip = MA.Describe(entry),
                 }
             end
             return itemList

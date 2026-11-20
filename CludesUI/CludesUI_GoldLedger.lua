@@ -69,38 +69,38 @@ local function Build()
         local chars = ledger.chars
 
         if type(bags) == "table" then
-            for key, e in pairs(bags) do
-                if type(key) == "string" and type(e) == "table" and IsUsable(e.gold) and e.gold >= 0 then
+            for key, bag in pairs(bags) do
+                if type(key) == "string" and type(bag) == "table" and IsUsable(bag.gold) and bag.gold >= 0 then
                     local name, realm = SplitKey(key)
                     chars[key] = {
-                        money = e.gold,
-                        class = e.class,
+                        money = bag.gold,
+                        class = bag.class,
                         name = name,
                         realm = realm,
-                        updated = IsUsable(e.lastUpdated) and e.lastUpdated or nil,
+                        updated = IsUsable(bag.lastUpdated) and bag.lastUpdated or nil,
                     }
                 end
             end
         end
         if type(dbars) == "table" then
-            for key, e in pairs(dbars) do
+            for key, bar in pairs(dbars) do
                 if
                     type(key) == "string"
-                    and type(e) == "table"
-                    and IsUsable(e.currentMoney)
-                    and e.currentMoney >= 0
+                    and type(bar) == "table"
+                    and IsUsable(bar.currentMoney)
+                    and bar.currentMoney >= 0
                 then
                     local current = chars[key]
                     local name, realm = SplitKey(key)
-                    if current and current.money == e.currentMoney then
-                        current.class = current.class or e.class
-                        current.name, current.realm = e.name or current.name, e.realm or current.realm
+                    if current and current.money == bar.currentMoney then
+                        current.class = current.class or bar.class
+                        current.name, current.realm = bar.name or current.name, bar.realm or current.realm
                     else
                         chars[key] = {
-                            money = e.currentMoney,
-                            class = e.class,
-                            name = e.name or name,
-                            realm = e.realm or realm,
+                            money = bar.currentMoney,
+                            class = bar.class,
+                            name = bar.name or name,
+                            realm = bar.realm or realm,
                         }
                     end
                 end

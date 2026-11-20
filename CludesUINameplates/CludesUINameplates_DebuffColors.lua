@@ -134,11 +134,11 @@ function DC.Encode(singles, comboList)
         return nil
     end
     local s, c = {}, {}
-    for index, e in ipairs(singles) do
-        s[index] = (e.missing and "!" or "") .. e.spell .. ":" .. ColorText(e.color)
+    for index, entry in ipairs(singles) do
+        s[index] = (entry.missing and "!" or "") .. entry.spell .. ":" .. ColorText(entry.color)
     end
-    for index, e in ipairs(comboList) do
-        c[index] = table.concat(e.spells, "+") .. ":" .. ColorText(e.color)
+    for index, entry in ipairs(comboList) do
+        c[index] = table.concat(entry.spells, "+") .. ":" .. ColorText(entry.color)
     end
     return table.concat(s, ";") .. "/" .. table.concat(c, ";")
 end
@@ -297,14 +297,14 @@ local function ReadConfig()
     -- MAX_MISSING. A spell listed again lower down in the same state can never
     -- show beneath itself, so only its highest entry gets a slot.
     local ranked, seen, missing = {}, {}, 0
-    for _, e in ipairs(singles) do
-        local colorKey = (e.missing and "!" or "") .. e.spell
-        if e.spell > 0 and not seen[colorKey] and not (e.missing and missing == DC.MAX_MISSING) then
+    for _, entry in ipairs(singles) do
+        local colorKey = (entry.missing and "!" or "") .. entry.spell
+        if entry.spell > 0 and not seen[colorKey] and not (entry.missing and missing == DC.MAX_MISSING) then
             seen[colorKey] = true
-            ranked[#ranked + 1] = e
-            if e.missing then
+            ranked[#ranked + 1] = entry
+            if entry.missing then
                 missing = missing + 1
-                e.sublevel = -3 - missing
+                entry.sublevel = -3 - missing
             end
         end
     end
@@ -1101,11 +1101,11 @@ end
 -- combos, then the Missing ones by their sublevel (the first listed on top).
 local function NameEntries(c)
     local result, missing = {}, {}
-    for _, e in ipairs(c.singles) do
-        if e.missing then
-            missing[#missing + 1] = e
+    for _, entry in ipairs(c.singles) do
+        if entry.missing then
+            missing[#missing + 1] = entry
         else
-            result[#result + 1] = { spells = { e.spell }, color = e.color }
+            result[#result + 1] = { spells = { entry.spell }, color = entry.color }
         end
     end
     for _, combo in ipairs(c.combos) do
@@ -1114,8 +1114,8 @@ local function NameEntries(c)
     table.sort(missing, function(posX, posY)
         return posX.sublevel < posY.sublevel
     end)
-    for _, e in ipairs(missing) do
-        result[#result + 1] = { spells = { e.spell }, color = e.color, missing = true }
+    for _, entry in ipairs(missing) do
+        result[#result + 1] = { spells = { entry.spell }, color = entry.color, missing = true }
     end
     return result
 end
@@ -1131,21 +1131,21 @@ local function CreateNameBundle(backing)
     local b = { config = settings, kit = colorKit, nameKit = kitKey, containers = {} }
     colorKit.used = 0
     local sensorOf = {}
-    for index, e in ipairs(settings.nameEntries) do
-        local channel = Chain(kitKey, index, #e.spells, e.missing and kitKey.gated or kitKey.root)
-        for skinData, spell in ipairs(e.spells) do
+    for index, entry in ipairs(settings.nameEntries) do
+        local channel = Chain(kitKey, index, #entry.spells, entry.missing and kitKey.gated or kitKey.root)
+        for skinData, spell in ipairs(entry.spells) do
             local s = sensorOf[spell]
             if not s then
                 colorKit.used = colorKit.used + 1
                 s = PointSensor(colorKit, colorKit.used, spell)
                 sensorOf[spell] = s
             end
-            AnchorClip(channel.clips[skinData], s, e.missing)
+            AnchorClip(channel.clips[skinData], s, entry.missing)
         end
         local fontStr = channel.copy
         fontStr:ClearAllPoints()
         fontStr:SetAllPoints(backing.name)
-        fontStr:SetTextColor(e.color.r, e.color.g, e.color.b, 1)
+        fontStr:SetTextColor(entry.color.r, entry.color.g, entry.color.b, 1)
     end
     kitKey.used = #settings.nameEntries
     for index = kitKey.used + 1, #kitKey.chains do

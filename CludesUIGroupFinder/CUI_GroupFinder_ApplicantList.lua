@@ -1522,8 +1522,8 @@ local function SyncEvents()
     end
     watching = wanted
     if wanted then
-        for _, e in ipairs(EVENTS) do
-            watch:RegisterEvent(e)
+        for _, event in ipairs(EVENTS) do
+            watch:RegisterEvent(event)
         end
     else
         watch:UnregisterAllEvents()

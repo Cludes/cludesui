@@ -519,11 +519,11 @@ local function MigrateAbilityKeys(backdrop)
         local barIdx, btnIdx = key:match("^(%d+)_(%d+)$")
         barIdx, btnIdx = tonumber(barIdx), tonumber(btnIdx)
         if barIdx and btnIdx and barIdx <= #BAR_OFFSETS and type(entries) == "table" then
-            for _, e in ipairs(entries) do
-                local spellRef = tonumber(e.actionSpellID)
+            for _, entry in ipairs(entries) do
+                local spellRef = tonumber(entry.actionSpellID)
                 if spellRef and spellRef > 0 then
                     moves = moves or {}
-                    moves[#moves + 1] = { key, "spell_" .. BaseSpell(spellRef), e }
+                    moves[#moves + 1] = { key, "spell_" .. BaseSpell(spellRef), entry }
                 end
             end
         end

@@ -576,11 +576,11 @@ local function TravelAddAltRows(ar, ag, ab, onRemoved)
     local mine = _myHearthKey or CludesUI.CharKey("-")
     local num = 0
     wipe(_altKeyOf)
-    for key, e in pairs(storage) do
-        if key ~= mine and type(e) == "table" and e.name then
+    for key, entry in pairs(storage) do
+        if key ~= mine and type(entry) == "table" and entry.name then
             num = num + 1
-            _altBuf[num] = e
-            _altKeyOf[e] = key
+            _altBuf[num] = entry
+            _altKeyOf[entry] = key
         end
     end
     for index = num + 1, #_altBuf do
@@ -829,15 +829,15 @@ end
 
 -- Season M+ teleports from the shared season list (one update per season).
 local SEASON_TELEPORTS = {}
-for _, e in ipairs(CludesUI.SEASON_PORTALS) do
-    local ids = e.spellID
-    if e.altSpellIDs then
-        ids = { e.spellID }
-        for _, a in ipairs(e.altSpellIDs) do
+for _, entry in ipairs(CludesUI.SEASON_PORTALS) do
+    local ids = entry.spellID
+    if entry.altSpellIDs then
+        ids = { entry.spellID }
+        for _, a in ipairs(entry.altSpellIDs) do
             ids[#ids + 1] = a
         end
     end
-    SEASON_TELEPORTS[#SEASON_TELEPORTS + 1] = { spellIds = ids, dungeonId = e.dungeonID }
+    SEASON_TELEPORTS[#SEASON_TELEPORTS + 1] = { spellIds = ids, dungeonId = entry.dungeonID }
 end
 
 mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)

@@ -2179,24 +2179,24 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                             self._elapsed = self._elapsed + dt
                             if self._elapsed >= 0.7 then
                                 self._active = false
-                                for _, e in ipairs(self._edges) do
-                                    e:SetColorTexture(0.9, 0.15, 0.15, 0)
+                                for _, edge in ipairs(self._edges) do
+                                    edge:SetColorTexture(0.9, 0.15, 0.15, 0)
                                 end
                                 self:Hide()
                                 return
                             end
                             local t = self._elapsed / 0.7
                             local a = 0.7 * (1 - t)
-                            for _, e in ipairs(self._edges) do
-                                e:SetColorTexture(0.9, 0.15, 0.15, a)
+                            for _, edge in ipairs(self._edges) do
+                                edge:SetColorTexture(0.9, 0.15, 0.15, a)
                             end
                         end)
                         fallback:Hide()
                         fallback.Flash = function(self)
                             self._elapsed = 0
                             self._active = true
-                            for _, e in ipairs(self._edges) do
-                                e:SetColorTexture(0.9, 0.15, 0.15, 0.7)
+                            for _, edge in ipairs(self._edges) do
+                                edge:SetColorTexture(0.9, 0.15, 0.15, 0.7)
                             end
                             self:Show()
                         end

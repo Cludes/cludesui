@@ -1727,8 +1727,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
             local sdBuf = mod.GetBarSpellData("buffs")
             local sequence = sdBuf and sdBuf.buffDisplayOrder
             local byKey = {}
-            for _, e in ipairs(entries) do
-                byKey[e.key] = e
+            for _, entry in ipairs(entries) do
+                byKey[entry.key] = entry
             end
             local finalKeys = {}
             if sequence and #sequence > 0 then
@@ -1736,8 +1736,8 @@ local function BuildCDMLivePreview(hostFrame, yOff)
                     finalKeys[#finalKeys + 1] = key
                 end
             else
-                for _, e in ipairs(entries) do
-                    finalKeys[#finalKeys + 1] = e.key
+                for _, entry in ipairs(entries) do
+                    finalKeys[#finalKeys + 1] = entry.key
                 end
             end
             -- Rendered slot i <-> stable key map for the drag/reorder code: absent

@@ -438,8 +438,8 @@ function mod.ReconcileAssignedSpellDrops(barId)
     -- shown too (ns.CDMRankName), as the presence check that kept it found it.
     local RankName = mod.CDMRankName
     local displayed, displayedNames
-    for _, e in ipairs(mod.EnumerateCDMViewerSpells(false)) do
-        local spellRef = e.sid
+    for _, entry in ipairs(mod.EnumerateCDMViewerSpells(false)) do
+        local spellRef = entry.sid
         if type(spellRef) == "number" and spellRef > 0 then
             displayed = displayed or {}
             displayed[spellRef] = true
@@ -1348,9 +1348,9 @@ local function BuildBuffFamilyPresentSet()
     -- Union live displayed buff-icon frame ids: shown always means keep, regardless of
     -- catalog/hidden-channel state.
     if mod.EnumerateCDMViewerSpells then
-        for _, e in ipairs(mod.EnumerateCDMViewerSpells(true)) do
-            if _IsUsableSID(e.sid) then
-                present[e.sid] = true
+        for _, entry in ipairs(mod.EnumerateCDMViewerSpells(true)) do
+            if _IsUsableSID(entry.sid) then
+                present[entry.sid] = true
             end
         end
     end
@@ -1553,8 +1553,8 @@ function mod.RepopulateFromBlizzard(fromRequest)
         racialBar = racialSid and mod.RACIAL_REPOP_BAR[racialSid]
         racialMoves = racialBar ~= nil
         if racialSid and not racialMoves then
-            for _, e in ipairs(mod.EnumerateCDMViewerSpells(false)) do
-                if _myRacialsSet[e.sid] then
+            for _, entry in ipairs(mod.EnumerateCDMViewerSpells(false)) do
+                if _myRacialsSet[entry.sid] then
                     racialMoves = true
                     break
                 end

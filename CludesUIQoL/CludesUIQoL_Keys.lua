@@ -32,9 +32,9 @@ do
         -- Spell IDs indexed by dungeon name (case-insensitive matching), built
         -- from the shared season list (CludesUI.SEASON_PORTALS) -- one place
         -- to update per season.
-        for _, e in ipairs(CludesUI.SEASON_PORTALS) do
-            for _, num in ipairs(e.names) do
-                TELEPORT_BY_NAME[num] = e.spellID
+        for _, entry in ipairs(CludesUI.SEASON_PORTALS) do
+            for _, num in ipairs(entry.names) do
+                TELEPORT_BY_NAME[num] = entry.spellID
             end
             -- Locale-agnostic: GetLFGDungeonInfo returns the dungeon's name in
             -- whatever locale THIS client is running -- the same source the LFG
@@ -42,10 +42,10 @@ do
             -- every client locale automatically instead of only the languages
             -- hardcoded in `names` above (English/Russian only, so e.g. a German
             -- client never got a match and the LFG Reminder popup silently never fired).
-            if e.dungeonID and GetLFGDungeonInfo then
-                local success, localName = pcall(GetLFGDungeonInfo, e.dungeonID)
+            if entry.dungeonID and GetLFGDungeonInfo then
+                local success, localName = pcall(GetLFGDungeonInfo, entry.dungeonID)
                 if success and type(localName) == "string" and localName ~= "" then
-                    TELEPORT_BY_NAME[localName:lower()] = e.spellID
+                    TELEPORT_BY_NAME[localName:lower()] = entry.spellID
                 end
             end
         end
@@ -620,15 +620,15 @@ ShowKeystonePopup = function()
     local ccMap
     do
         local needMap = false
-        for _, e in ipairs(partyEntries) do
-            if not e.classFile then
+        for _, entry in ipairs(partyEntries) do
+            if not entry.classFile then
                 needMap = true
                 break
             end
         end
         if not needMap then
-            for _, e in ipairs(guildEntries) do
-                if not e.classFile then
+            for _, entry in ipairs(guildEntries) do
+                if not entry.classFile then
                     needMap = true
                     break
                 end
@@ -676,10 +676,10 @@ ShowKeystonePopup = function()
         region:Show()
         curY = curY - ROW_H
     else
-        for _, e in ipairs(partyEntries) do
+        for _, entry in ipairs(partyEntries) do
             rowIdx = rowIdx + 1
             local region = AcquireRow(rowIdx)
-            PopulateRow(region, e, ccMap)
+            PopulateRow(region, entry, ccMap)
             region:ClearAllPoints()
             region:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
             region:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
@@ -715,10 +715,10 @@ ShowKeystonePopup = function()
         region:Show()
         curY = curY - ROW_H
     else
-        for _, e in ipairs(guildEntries) do
+        for _, entry in ipairs(guildEntries) do
             rowIdx = rowIdx + 1
             local region = AcquireRow(rowIdx)
-            PopulateRow(region, e, ccMap)
+            PopulateRow(region, entry, ccMap)
             region:ClearAllPoints()
             region:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
             region:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)

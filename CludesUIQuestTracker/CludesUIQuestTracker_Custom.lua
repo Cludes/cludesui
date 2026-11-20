@@ -1559,8 +1559,8 @@ local function AddRewards(questId, ownerFrame)
     if region.money > 0 then
         GameTooltip:AddLine(GetMoneyString(region.money), 1, 1, 1)
     end
-    for _, e in ipairs(region.rewards) do
-        AddRewardLine(e, ownerFrame)
+    for _, entry in ipairs(region.rewards) do
+        AddRewardLine(entry, ownerFrame)
     end
     if #region.choices > 0 then
         GameTooltip:AddLine(
@@ -1570,8 +1570,8 @@ local function AddRewards(questId, ownerFrame)
             NORMAL_FONT_COLOR.b,
             true
         )
-        for _, e in ipairs(region.choices) do
-            AddRewardLine(e, ownerFrame)
+        for _, entry in ipairs(region.choices) do
+            AddRewardLine(entry, ownerFrame)
         end
     end
 end
@@ -2150,8 +2150,8 @@ function EQT.InitCustom()
     -- profile's width, height and spot.
     EQT.SyncPosition = ApplySpot
 
-    for _, e in ipairs(EVENTS) do
-        eventTag:RegisterEvent(e)
+    for _, event in ipairs(EVENTS) do
+        eventTag:RegisterEvent(event)
     end
     CludesUI.RegisterVisibilityUpdater(UpdateVisibility)
     CludesUI.RegisterMouseoverTarget(widget, function()

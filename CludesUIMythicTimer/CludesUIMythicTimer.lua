@@ -2783,19 +2783,19 @@ local function RenderStandalone()
                     limit = (e.center - half) - GAP
                 end
 
-                for _, e in ipairs(entries) do
-                    local rightJustified = segmentedThresholds or e.pinRight
-                    local anchorX = rightJustified and (e.center + e.w / 2) or e.center
+                for _, entry in ipairs(entries) do
+                    local rightJustified = segmentedThresholds or entry.pinRight
+                    local anchorX = rightJustified and (entry.center + entry.w / 2) or entry.center
                     local offX, offY
-                    if e.fs == frame._threshFS then
+                    if entry.fs == frame._threshFS then
                         offX, offY = p.thresholdPlusThreeTextOffsetX, p.thresholdPlusThreeTextOffsetY
-                    elseif e.fs == frame._threshFS2 then
+                    elseif entry.fs == frame._threshFS2 then
                         offX, offY = p.thresholdPlusTwoTextOffsetX, p.thresholdPlusTwoTextOffsetY
-                    elseif e.fs == frame._threshRemFS then
+                    elseif entry.fs == frame._threshRemFS then
                         offX, offY = p.thresholdPlusOneTextOffsetX, p.thresholdPlusOneTextOffsetY
                     end
-                    placeAt(e.fs, anchorX, rightJustified, offX, offY)
-                    e.fs:Show()
+                    placeAt(entry.fs, anchorX, rightJustified, offX, offY)
+                    entry.fs:Show()
                 end
             end
 

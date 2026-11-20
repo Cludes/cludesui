@@ -272,7 +272,7 @@ stealthEv:SetScript("OnEvent", StealthUpdate)
 local function StealthApply()
     if S.Enabled() then
         StealthBuild()
-        for _, e in ipairs({
+        for _, event in ipairs({
             "UPDATE_STEALTH",
             "UPDATE_SHAPESHIFT_FORM",
             "PLAYER_REGEN_DISABLED",
@@ -284,7 +284,7 @@ local function StealthApply()
             "PLAYER_ALIVE",
             "PLAYER_UNGHOST",
         }) do
-            stealthEv:RegisterEvent(e)
+            stealthEv:RegisterEvent(event)
         end
         if not CludesUI._unlockActive then
             S.Place(stealthFrame)

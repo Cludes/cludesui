@@ -637,8 +637,8 @@ function CludesUI.CreatePortalFlyout(options)
     end
 
     local portalBtns = {}
-    for i, e in ipairs(CludesUI.SEASON_PORTALS) do
-        local spellId = e.spellID
+    for i, entry in ipairs(CludesUI.SEASON_PORTALS) do
+        local spellId = entry.spellID
         local col = (i - 1) % COLS
         local row = floor((i - 1) / COLS)
         local button, cooldown = NewButton(options.name .. "Portal" .. i, BTN_SIZE)
@@ -655,7 +655,7 @@ function CludesUI.CreatePortalFlyout(options)
             button.icon:SetTexture(spellInfo.iconID)
         end
 
-        local short = e.short
+        local short = entry.short
         if short then
             local labelFrame = CreateFrame("Frame", nil, button)
             labelFrame:SetAllPoints()
@@ -4203,10 +4203,10 @@ do
         { key = "CLUDESUNITFRAMES", "/cuf" },
         { key = "CLUDESDATABARS", "/cdb" },
     }
-    for _, e in ipairs(LOD_SLASH) do
-        local entryKey = e.key
-        for i = 1, #e do
-            _G["SLASH_" .. entryKey .. i] = e[i]
+    for _, entry in ipairs(LOD_SLASH) do
+        local entryKey = entry.key
+        for i = 1, #entry do
+            _G["SLASH_" .. entryKey .. i] = entry[i]
         end
         local function bootstrap(message)
             if InCombatLockdown() then

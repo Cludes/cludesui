@@ -252,13 +252,13 @@ function mod.RunNote(textValue)
     local entries, skipped = Parser.Parse(textValue, SpellName)
     local me, role, roster = UnitName("player"), MyRole(), Roster()
     local total = 0
-    for _, e in ipairs(entries) do
-        if Parser.IsFor(e, me, role, roster) then
+    for _, entry in ipairs(entries) do
+        if Parser.IsFor(entry, me, role, roster) then
             total = total + 1
-            local delay = math.max(0, e.at - Settings().lead)
+            local delay = math.max(0, entry.at - Settings().lead)
             C_Timer.After(delay, function()
                 if run == mine then
-                    Show(e)
+                    Show(entry)
                 end
             end)
         end

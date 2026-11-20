@@ -128,8 +128,8 @@ local MOVEMENT_PRESETS = {
 -- Set of every preset id (all variants): any other id in ma.spellOverrides
 -- is a user-added custom spell and gets its own deletable grid cell.
 local MOVEMENT_PRESET_IDS = {}
-for _, e in ipairs(MOVEMENT_PRESETS) do
-    for _, ident in ipairs(e.ids) do
+for _, entry in ipairs(MOVEMENT_PRESETS) do
+    for _, ident in ipairs(entry.ids) do
         MOVEMENT_PRESET_IDS[ident] = true
     end
 end

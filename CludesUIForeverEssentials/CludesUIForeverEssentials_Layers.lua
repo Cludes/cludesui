@@ -96,8 +96,8 @@ local function Label(key, zone)
     if not list then
         return zone
     end
-    for other, e in pairs(list.entries) do
-        if other ~= key and e.zone == zone then
+    for other, entry in pairs(list.entries) do
+        if other ~= key and entry.zone == zone then
             return key
         end
     end
@@ -227,8 +227,8 @@ local function Build()
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
         GameTooltip:SetText(("Layers in %s"):format(details and details.name or "?"), 1, 1, 1)
         local sequence = {}
-        for _, e in pairs(map and seen[map] and seen[map].entries or {}) do
-            sequence[#sequence + 1] = e
+        for _, entry in pairs(map and seen[map] and seen[map].entries or {}) do
+            sequence[#sequence + 1] = entry
         end
         table.sort(sequence, function(lhs, rhs)
             return lhs.at > rhs.at
@@ -236,10 +236,10 @@ local function Build()
         if #sequence == 0 then
             GameTooltip:AddLine("Target or mouse over an NPC to read your layer.", 0.6, 0.6, 0.6, true)
         end
-        for _, e in ipairs(sequence) do
-            if e.key == layer then
+        for _, entry in ipairs(sequence) do
+            if entry.key == layer then
                 GameTooltip:AddDoubleLine(
-                    Label(e.key, e.zone),
+                    Label(entry.key, entry.zone),
                     "You are here",
                     1,
                     1,
@@ -247,9 +247,9 @@ local function Build()
                     CludesUI.Kit.Accent()
                 )
             else
-                local ago = time() - e.at
+                local ago = time() - entry.at
                 GameTooltip:AddDoubleLine(
-                    Label(e.key, e.zone),
+                    Label(entry.key, entry.zone),
                     ago < 60 and (ago .. "s ago") or (math.floor(ago / 60) .. "m ago"),
                     1,
                     1,
@@ -284,7 +284,7 @@ local function Apply()
     if not CludesUI._unlockActive then
         F.Place(widget)
     end
-    for _, e in ipairs({
+    for _, event in ipairs({
         "PLAYER_ENTERING_WORLD",
         "ZONE_CHANGED_NEW_AREA",
         "PLAYER_TARGET_CHANGED",
@@ -294,7 +294,7 @@ local function Apply()
         "SHARD_TRANSFER_CANCELLED",
         "SHARD_TRANSFER",
     }) do
-        pcall(ev.RegisterEvent, ev, e)
+        pcall(ev.RegisterEvent, ev, event)
     end
     inside = IsInInstance()
     map = ZoneMap()

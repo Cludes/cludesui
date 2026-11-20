@@ -5205,20 +5205,20 @@ CUI_NS.unlockParts.Movers = function(LM)
                             local entries = buildEntries()
                             local rsY = -4
                             local maxW = 140
-                            for _, e in ipairs(entries) do
-                                if e.title then
+                            for _, entry in ipairs(entries) do
+                                if entry.title then
                                     local t = MenuPool.Title(flyout)
                                     t:SetPoint("TOPLEFT", flyout, "TOPLEFT", 10, rsY - 4)
-                                    t:SetText(e.text)
+                                    t:SetText(entry.text)
                                     rsY = rsY - 18
                                     MenuPool.Div(flyout, rsY - 2, 1)
                                     rsY = rsY - 5
                                 else
-                                    rsY = OvSubRow(flyout, rsY, e.text, e.fn)
+                                    rsY = OvSubRow(flyout, rsY, entry.text, entry.fn)
                                 end
                                 local tw = (
                                     CludesUI.MeasureText
-                                    and CludesUI.MeasureText(e.text, FONT_PATH, e.title and 10 or 11)
+                                    and CludesUI.MeasureText(entry.text, FONT_PATH, entry.title and 10 or 11)
                                 ) or 0
                                 local needed = 10 + tw + 10 + 2
                                 if needed > maxW then

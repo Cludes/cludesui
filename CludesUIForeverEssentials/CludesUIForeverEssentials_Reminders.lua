@@ -475,7 +475,7 @@ local function RApply()
     for ident in pairs(TARGETS) do
         C_Item.RequestLoadItemDataByID(ident)
     end
-    for _, e in ipairs({
+    for _, event in ipairs({
         "MERCHANT_SHOW",
         "MERCHANT_CLOSED",
         "PLAYER_UPDATE_RESTING",
@@ -484,7 +484,7 @@ local function RApply()
         "PLAYER_REGEN_ENABLED",
         "BAG_UPDATE_DELAYED",
     }) do
-        rEvents:RegisterEvent(e)
+        rEvents:RegisterEvent(event)
     end
     if R.Get("ammo") or HunterAmmoOn() then
         rEvents:RegisterUnitEvent("UNIT_INVENTORY_CHANGED", "player")
@@ -747,8 +747,8 @@ local function GApply()
         G.Place(gFrame)
     end
     gFrame:Show()
-    for _, e in ipairs({ "PLAYER_EQUIPMENT_CHANGED", "ZONE_CHANGED_NEW_AREA", "PLAYER_ENTERING_WORLD" }) do
-        gEv:RegisterEvent(e)
+    for _, event in ipairs({ "PLAYER_EQUIPMENT_CHANGED", "ZONE_CHANGED_NEW_AREA", "PLAYER_ENTERING_WORLD" }) do
+        gEv:RegisterEvent(event)
     end
     GUpdate()
 end
@@ -837,7 +837,7 @@ local function TApply()
     end
     TBuild()
     tCombat = UnitAffectingCombat("player")
-    for _, e in ipairs({
+    for _, event in ipairs({
         "PLAYER_LEVEL_UP",
         "TRAIT_CONFIG_UPDATED",
         "TRAIT_TREE_CURRENCY_INFO_UPDATED",
@@ -845,7 +845,7 @@ local function TApply()
         "PLAYER_REGEN_ENABLED",
         "PLAYER_ENTERING_WORLD",
     }) do
-        pcall(tEv.RegisterEvent, tEv, e)
+        pcall(tEv.RegisterEvent, tEv, event)
     end
     if not CludesUI._unlockActive then
         T.Place(tFrame)

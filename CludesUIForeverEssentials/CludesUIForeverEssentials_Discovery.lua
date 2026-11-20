@@ -534,14 +534,14 @@ local function FieldApply()
             end
         end)
     end
-    for _, e in ipairs({
+    for _, event in ipairs({
         "LOOT_OPENED",
         "LOOT_SLOT_CLEARED",
         "LOOT_CLOSED",
         "TRADE_SKILL_SHOW",
         "TRADE_SKILL_CLOSE",
     }) do
-        fieldEvents:RegisterEvent(e)
+        fieldEvents:RegisterEvent(event)
     end
 end
 
@@ -1532,7 +1532,7 @@ end)
 local function Apply()
     ev:UnregisterAllEvents()
     if On() then
-        for _, e in ipairs({
+        for _, event in ipairs({
             "PLAYER_ENTERING_WORLD",
             "ZONE_CHANGED_NEW_AREA",
             "BAG_UPDATE_DELAYED",
@@ -1540,7 +1540,7 @@ local function Apply()
             "QUEST_LOG_UPDATE",
             "PLAYER_LEVEL_UP",
         }) do
-            ev:RegisterEvent(e)
+            ev:RegisterEvent(event)
         end
     end
     NearRefresh()

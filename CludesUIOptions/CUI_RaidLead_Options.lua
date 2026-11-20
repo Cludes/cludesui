@@ -1034,19 +1034,19 @@ CludesUI.AtOptionsLogin(function()
         }, { type = "label", text = "" })
         cursorY = cursorY - height
 
-        for idx, e in ipairs(entries) do
-            local name = SpellName(e.id)
+        for idx, entry in ipairs(entries) do
+            local name = SpellName(entry.id)
             _, height = W:SectionHeader(hostFrame, name:upper(), cursorY)
             cursorY = cursorY - height
             _, height = W:DualRow(hostFrame, cursorY, {
                 type = "toggle",
                 text = "Play a Sound for " .. name,
-                tooltip = "Spell ID " .. e.id,
+                tooltip = "Spell ID " .. entry.id,
                 getValue = function()
-                    return e.on ~= false
+                    return entry.on ~= false
                 end,
                 setValue = function(val)
-                    e.on = val and true or false
+                    entry.on = val and true or false
                     mod.RebuildAuraSounds()
                 end,
             }, {
@@ -1055,10 +1055,10 @@ CludesUI.AtOptionsLogin(function()
                 values = whenValues,
                 order = whenOrder,
                 getValue = function()
-                    return e.when or "added"
+                    return entry.when or "added"
                 end,
                 setValue = function(val)
-                    e.when = val
+                    entry.when = val
                     mod.RebuildAuraSounds()
                 end,
             })
@@ -1069,10 +1069,10 @@ CludesUI.AtOptionsLogin(function()
                 values = soundValues,
                 order = soundOrder,
                 getValue = function()
-                    return e.sound or "WarningSiren.ogg"
+                    return entry.sound or "WarningSiren.ogg"
                 end,
                 setValue = function(val)
-                    e.sound = val
+                    entry.sound = val
                     mod.PreviewSound(val)
                     mod.RebuildAuraSounds()
                 end,

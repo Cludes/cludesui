@@ -333,14 +333,14 @@ local function XApply()
         X.Place(cardFrame)
     end
     lastXP, lastXPMax = UnitXP("player"), UnitXPMax("player")
-    for _, e in ipairs({
+    for _, event in ipairs({
         "PLAYER_XP_UPDATE",
         "PLAYER_UPDATE_RESTING",
         "PLAYER_LEVEL_UP",
         "PLAYER_LOGOUT",
         "UPDATE_EXHAUSTION",
     }) do
-        xEv:RegisterEvent(e)
+        xEv:RegisterEvent(event)
     end
     TrackSplits()
     if not clock then
@@ -637,7 +637,7 @@ local function GApply()
         gFrame = CreateFrame("Frame", "CludesUIGroupXP", UIParent)
     end
     C_ChatInfo.RegisterAddonMessagePrefix(PREFIX)
-    for _, e in ipairs({
+    for _, event in ipairs({
         "CHAT_MSG_ADDON",
         "GROUP_ROSTER_UPDATE",
         "PLAYER_ENTERING_WORLD",
@@ -646,7 +646,7 @@ local function GApply()
         "UNIT_LEVEL",
         "PLAYER_REGEN_ENABLED",
     }) do
-        gEv:RegisterEvent(e)
+        gEv:RegisterEvent(event)
     end
     if not CludesUI._unlockActive then
         G.Place(gFrame)

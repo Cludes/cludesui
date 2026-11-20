@@ -2303,8 +2303,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             heightMatch = CludesUIDB and CludesUIDB.unlockHeightMatch,
         })
         local FOLDER_DISPLAY = {}
-        for _, e in ipairs(ADDON_DB_MAP_LOCAL) do
-            FOLDER_DISPLAY[e.folder] = e.display
+        for _, entry in ipairs(ADDON_DB_MAP_LOCAL) do
+            FOLDER_DISPLAY[entry.folder] = entry.display
         end
 
         for _, entry in ipairs(ADDON_DB_MAP_LOCAL) do

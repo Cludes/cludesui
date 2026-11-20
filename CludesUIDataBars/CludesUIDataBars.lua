@@ -3221,8 +3221,8 @@ do
                 visFrame = CreateFrame("Frame")
                 visFrame:SetScript("OnEvent", OnVisEvent)
             end
-            for _, e in ipairs(VIS_EVENTS) do
-                visFrame:RegisterEvent(e)
+            for _, event in ipairs(VIS_EVENTS) do
+                visFrame:RegisterEvent(event)
             end
             if CludesUI._hasGlidingEvent then
                 visFrame:RegisterEvent("PLAYER_IS_GLIDING_CHANGED")

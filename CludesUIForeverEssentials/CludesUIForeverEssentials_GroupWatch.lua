@@ -379,8 +379,8 @@ local function Watch()
         if wid.unit ~= m.unit then
             wid:UnregisterAllEvents()
             wid.unit = m.unit
-            for _, e in ipairs(UNIT_EVENTS) do
-                wid:RegisterUnitEvent(e, m.unit)
+            for _, event in ipairs(UNIT_EVENTS) do
+                wid:RegisterUnitEvent(event, m.unit)
             end
         end
     end
@@ -422,8 +422,8 @@ HMApply = function()
         hmFrame = CreateFrame("Frame", "CludesUIHealerMana", UIParent)
         CludesUI.Kit.Panel(hmFrame, 0.75)
     end
-    for _, e in ipairs({ "GROUP_ROSTER_UPDATE", "PLAYER_ROLES_ASSIGNED", "PLAYER_ENTERING_WORLD" }) do
-        hmEvents:RegisterEvent(e)
+    for _, event in ipairs({ "GROUP_ROSTER_UPDATE", "PLAYER_ROLES_ASSIGNED", "PLAYER_ENTERING_WORLD" }) do
+        hmEvents:RegisterEvent(event)
     end
     wipe(list)
     wipe(tracked)
@@ -672,8 +672,8 @@ local function PTApply()
     BuildCurve()
     mounted = IsMounted()
     CheckSacrifice()
-    for _, e in ipairs(PT_EVENTS) do
-        ptEvents:RegisterEvent(e)
+    for _, event in ipairs(PT_EVENTS) do
+        ptEvents:RegisterEvent(event)
     end
     ptEvents:RegisterUnitEvent("UNIT_PET", "player")
     ptEvents:RegisterUnitEvent("UNIT_HEALTH", "pet")
