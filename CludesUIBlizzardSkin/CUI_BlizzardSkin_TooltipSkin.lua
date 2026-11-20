@@ -16,9 +16,8 @@ if not Inner or Inner.last ~= "main" then
     return
 end
 
-local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent Blizzard frames; hooks are hooksecurefunc post-hooks only.
--------------------------------------------------------------------------------
-; ------------------------------------------------------------------------------- --  Tooltip / Context Menu / Static Popup Skinning --  Restyles GameTooltip et al in CUI dark style; visual-only (alpha, backdrop color,
+local FFD, GetFFD = Inner.FFD, Inner.GetFFD-------------------------------------------------------------------------------
+; ------------------------------------------------------------------------------- --  Tooltip / Context Menu / Static Popup Skinning --  Restyles GameTooltip et al in CUI dark style; visual-only (alpha, backdrop color, --  font). NEVER Hide/Show/SetParent Blizzard frames; hooks are hooksecurefunc post-hooks only.
 (function()
     local _ttSkinned = {}
     local _isSecret = issecretvalue
@@ -924,11 +923,15 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
     local _compactParts = {}
     local function _ttLineColors(tip, payload, unitToken, classColor)
         local saved = CludesUIDB
+        -- Forever: a hidden ("??") player level the PvP feature knows. Looked up first so
+        -- it is written in even when none of the tooltip colour options is on.
+        local knownLevel = unitToken and CludesUI.KnownHiddenLevel and CludesUI.KnownHiddenLevel(unitToken)
         if
             not (
                 saved
                 and (
-                    saved.tooltipLevelColor
+                    knownLevel
+                    or saved.tooltipLevelColor
                     or saved.tooltipClassLineColor
                     or saved.tooltipFactionColor
                     or saved.tooltipGuildmateColor
@@ -971,10 +974,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
         -- comparable to the player's, so pets keep Blizzard's line.
         local hex, compact
         -- Forever: a hidden player level the PvP feature knows replaces the "??".
-        local known = levelIdx
-            and unitToken
-            and CludesUI.KnownHiddenLevel
-            and CludesUI.KnownHiddenLevel(unitToken)
+        local known = levelIdx and knownLevel
         if
             levelIdx
             and unitToken
@@ -1239,7 +1239,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                     end
                 end
                 if cachedValue then
-                    cachedValue.name, cachedValue.collected, cachedValue.time = mountLabel, mountCollected, nowTime
+                    cachedValue.name, cachedValue.collected, cachedValue.time =
+                        mountLabel, mountCollected, nowTime
                 else
                     _mountCache[unitGuid] = { name = mountLabel, collected = mountCollected, time = nowTime }
                 end
@@ -1636,7 +1637,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
                 func(b)
             end
         end
-        local editField = dialogFrame.editBox or (dialogFrame.GetName and _G[dialogFrame:GetName() .. "EditBox"])
+        local editField = dialogFrame.editBox
+            or (dialogFrame.GetName and _G[dialogFrame:GetName() .. "EditBox"])
         if editField and not GetFFD(editField).skinned then
             GetFFD(editField).skinned = true
             local regionList = { editField:GetRegions() }
@@ -1706,7 +1708,8 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent 
     end
 
     local function _resGlowButton(dialogFrame)
-        return dialogFrame.button1 or (dialogFrame.GetName and dialogFrame:GetName() and _G[dialogFrame:GetName() .. "Button1"])
+        return dialogFrame.button1
+            or (dialogFrame.GetName and dialogFrame:GetName() and _G[dialogFrame:GetName() .. "Button1"])
     end
 
     -- Addon-owned overlay 3px outside the button, built once per button on first glow; state lives in FFD, never on the Blizzard frame.
